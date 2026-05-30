@@ -9,7 +9,7 @@ import { LetterType } from "$lib/shared/foundation/domain/models/LetterType";
 import { TURN_VALUES } from "../domain/turn-pattern-parser";
 
 /** Canonical zero-turn TnD base catalog; all turn-grid cells derive from it. */
-export const TND_BASE_CATALOG_ID = "l1-vtg-motions";
+export const TND_BASE_CATALOG_ID = "l1-tnd-motions";
 
 interface PoolEntry {
   sequenceId: string;

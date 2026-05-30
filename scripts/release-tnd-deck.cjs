@@ -1,14 +1,14 @@
 /**
- * Release a VTG deck to Firestore
+ * Release a TnD deck to Firestore
  *
- * Composes a deck from VTG catalogs filtered by turn pattern,
+ * Composes a deck from TnD catalogs filtered by turn pattern,
  * then writes a release manifest to deckReleases/counter/manifests.
  *
  * Usage:
- *   node scripts/release-vtg-deck.cjs                          # All symmetric whole-turn patterns
- *   node scripts/release-vtg-deck.cjs --patterns "uniform-0t,uniform-1t"  # Specific patterns
- *   node scripts/release-vtg-deck.cjs --notes "Whole Turn VTG" # Custom edition notes
- *   node scripts/release-vtg-deck.cjs --dry-run                # Preview without writing
+ *   node scripts/release-tnd-deck.cjs                          # All symmetric whole-turn patterns
+ *   node scripts/release-tnd-deck.cjs --patterns "uniform-0t,uniform-1t"  # Specific patterns
+ *   node scripts/release-tnd-deck.cjs --notes "Whole Turn TnD" # Custom edition notes
+ *   node scripts/release-tnd-deck.cjs --dry-run                # Preview without writing
  */
 
 const admin = require("firebase-admin");
@@ -26,9 +26,9 @@ const PATTERNS = patternsIdx >= 0 && process.argv[patternsIdx + 1]
 const notesIdx = process.argv.indexOf("--notes");
 const NOTES = notesIdx >= 0 && process.argv[notesIdx + 1]
   ? process.argv[notesIdx + 1]
-  : "Whole Turn VTG";
+  : "Whole Turn TnD";
 
-const VTG_ELEMENT_MAP = {
+const TND_ELEMENT_MAP = {
   "split-same":   { name: "Split-Same", iconPath: "/images/elements/water-v2.png" },
   "tog-same":     { name: "Tog-Same", iconPath: "/images/elements/earth-v2.png" },
   "quarter-same": { name: "Quarter-Same", iconPath: "/images/elements/sun-v4.png" },
@@ -61,26 +61,26 @@ function formatTurnPattern(tp) {
 }
 
 async function main() {
-  console.log("=== VTG Deck Release ===");
+  console.log("=== TnD Deck Release ===");
   console.log(`Turn patterns: ${[...PATTERNS].join(", ")}`);
   console.log(`Edition notes: ${NOTES}`);
   console.log(`Dry run: ${DRY_RUN}`);
   console.log();
 
-  // 1. Load VTG catalogs
+  // 1. Load TnD catalogs
   const decksSnap = await db.collection("decks").get();
-  const vtgCatalogs = decksSnap.docs
+  const tndCatalogs = decksSnap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
     .filter((c) => c.collection === "TnD" && PATTERNS.has(c.turnPattern));
 
-  console.log(`Found ${vtgCatalogs.length} VTG catalogs matching patterns`);
+  console.log(`Found ${tndCatalogs.length} TnD catalogs matching patterns`);
 
-  if (vtgCatalogs.length === 0) {
-    console.log("No matching catalogs. Available VTG turn patterns:");
-    const allVtg = decksSnap.docs
+  if (tndCatalogs.length === 0) {
+    console.log("No matching catalogs. Available TnD turn patterns:");
+    const allTnd = decksSnap.docs
       .map((d) => d.data())
       .filter((c) => c.collection === "TnD");
-    const patterns = [...new Set(allVtg.map((c) => c.turnPattern))].sort();
+    const patterns = [...new Set(allTnd.map((c) => c.turnPattern))].sort();
     for (const p of patterns) {
       console.log(`  - ${p}`);
     }
@@ -91,11 +91,11 @@ async function main() {
   const cards = [];
   const patternCounts = {};
 
-  for (const catalog of vtgCatalogs) {
+  for (const catalog of tndCatalogs) {
     const tp = catalog.turnPattern;
     for (const family of catalog.families || []) {
       if (!family.id || family.id === "unknown") continue;
-      const el = VTG_ELEMENT_MAP[family.id];
+      const el = TND_ELEMENT_MAP[family.id];
       const footer = el
         ? { center: el.name, iconPath: el.iconPath }
         : { center: family.id };

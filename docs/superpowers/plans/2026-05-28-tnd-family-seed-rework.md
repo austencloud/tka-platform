@@ -12,7 +12,7 @@
 
 ## Context for the implementer
 
-- Live Firestore audit: base continuous catalogs `l1-vtg-motions` (uniform-0t) and `vtg-2to1-motions` (uniform-0.5t) carry six families with ids `split-same, tog-same, quarter-same, split-opp, tog-opp, quarter-opp`. Their reversal variants `{base}-book`, `{base}-red-book`, `{base}-blue-book`, `{base}-long-book`, `{base}-alternating` each have `families: [{ id: "unknown", ... , sequenceIds: [all 19] }]`. That single "unknown" family is the bug — the By-Family grid matches `theme.familyId` (one of the six) against `family.id`, so it never matches.
+- Live Firestore audit: base continuous catalogs `l1-tnd-motions` (uniform-0t) and `vtg-2to1-motions` (uniform-0.5t) carry six families with ids `split-same, tog-same, quarter-same, split-opp, tog-opp, quarter-opp`. Their reversal variants `{base}-book`, `{base}-red-book`, `{base}-blue-book`, `{base}-long-book`, `{base}-alternating` each have `families: [{ id: "unknown", ... , sequenceIds: [all 19] }]`. That single "unknown" family is the bug — the By-Family grid matches `theme.familyId` (one of the six) against `family.id`, so it never matches.
 - Reversal preserves hand-path family membership and sequence ids, so the base's `families` array is exactly correct for the variant. The fix is a metadata copy, not a re-transform.
 - `scripts/seed-reversal-decks.cjs` is the reference for firebase-admin init (`serviceAccountKey.json` at repo root, `admin.firestore()`), CLI arg parsing, and `--dry-run` convention. Catalogs live in the `decks` collection.
 - `seedReversalPattern(baseCatalogs, pattern, onProgress)` (in `src/lib/features/choreo-card/services/reversal-seed-service.ts`) writes all base-variant catalogs for a pattern with correct six families and calls `onProgress({ written, total })` per catalog. `SeedProgress = { written: number; total: number; catalogId?: string }`.
@@ -68,7 +68,7 @@ function hasSixFamilies(families) {
 
 function resolveBaseId(doc) {
   if (doc.sourceDeck && !doc.sourceDeck.includes("-book") && !doc.sourceDeck.includes("alternating")) {
-    // sourceDeck on these points at the continuous base (e.g. "l1-vtg-motions")
+    // sourceDeck on these points at the continuous base (e.g. "l1-tnd-motions")
     return doc.sourceDeck;
   }
   // Fallback: strip the trailing -{pattern} suffix from the doc id.
@@ -111,7 +111,7 @@ main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit
 - [ ] **Step 2: Dry-run to confirm targeting**
 
 Run: `node scripts/reseed-tnd-family-variants.cjs --dry-run`
-Expected: 10 lines `l1-vtg-motions-{pattern}` / `vtg-2to1-motions-{pattern}` showing `unknown -> 6 families`, then `[dry-run] would rewrite 10, skipped 0`.
+Expected: 10 lines `l1-tnd-motions-{pattern}` / `vtg-2to1-motions-{pattern}` showing `unknown -> 6 families`, then `[dry-run] would rewrite 10, skipped 0`.
 
 - [ ] **Step 3: Apply the migration**
 

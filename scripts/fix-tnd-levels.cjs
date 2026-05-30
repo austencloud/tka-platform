@@ -1,7 +1,7 @@
 /**
- * Fix VTG Sequence Levels in Firestore
+ * Fix TnD Sequence Levels in Firestore
  *
- * The VTG base sequences were seeded with level: 1 regardless of actual
+ * The TnD base sequences were seeded with level: 1 regardless of actual
  * turn values. This script recomputes the level from step data:
  *   Level 1 = no turns, radial orientations only (in/out)
  *   Level 2 = has turns > 0, radial orientations only
@@ -11,8 +11,8 @@
  * recomputes level, and updates any that are wrong.
  *
  * Usage:
- *   node scripts/fix-vtg-levels.cjs              # Fix all VTG sequences
- *   node scripts/fix-vtg-levels.cjs --dry-run    # Preview without writing
+ *   node scripts/fix-tnd-levels.cjs              # Fix all TnD sequences
+ *   node scripts/fix-tnd-levels.cjs --dry-run    # Preview without writing
  */
 
 const admin = require("firebase-admin");
@@ -78,14 +78,14 @@ function computeLevel(steps) {
 // ============================================================================
 
 async function main() {
-  console.log("=== Fix VTG Sequence Levels ===\n");
+  console.log("=== Fix TnD Sequence Levels ===\n");
 
-  // Find all VTG decks
+  // Find all TnD decks
   const decksSnapshot = await db.collection("decks")
     .where("collection", "==", "TnD")
     .get();
 
-  console.log(`Found ${decksSnapshot.size} VTG decks\n`);
+  console.log(`Found ${decksSnapshot.size} TnD decks\n`);
 
   let totalScanned = 0;
   let totalFixed = 0;
@@ -150,8 +150,8 @@ async function main() {
     }
   }
 
-  // Also fix the base VTG motions deck
-  const baseDeckId = "l1-vtg-motions";
+  // Also fix the base TnD motions deck
+  const baseDeckId = "l1-tnd-motions";
   const baseSnapshot = await db.collection(`decks/${baseDeckId}/sequences`).get();
   if (!baseSnapshot.empty) {
     let batch = db.batch();

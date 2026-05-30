@@ -1,19 +1,19 @@
 /**
- * Seed the Level 1 VTG Motions Deck to Firestore
+ * Seed the Level 1 TnD Motions Deck to Firestore
  *
- * 19 VTG base motions as quartered and halved rotated LOOPs.
- * Each card represents one fundamental VTG motion category.
+ * 19 TnD base motions as quartered and halved rotated LOOPs.
+ * Each card represents one fundamental TnD motion category.
  *
  * Same-direction motions (10): 1-letter seed walked 4 beats 90° around the grid.
  * Opposite-direction motions (9): 2-letter seed alternated, walked 4 beats 180°.
  *
  * CANONICAL SOURCE: static/data/pictographs/DiamondPictographDataframe.csv.
- * The CSV already contains every rotated beat of every VTG motion, so this
+ * The CSV already contains every rotated beat of every TnD motion, so this
  * seeder walks the CSV directly — it does NOT route through any rotation
  * executor. Each of the 4 beats is one (letter, startPos, endPos[, blueDir])
  * CSV row; orientations chain through the engine's OrientationCalculator.
  *
- * This is the single canonical seeder for decks/l1-vtg-motions. It folds in the
+ * This is the single canonical seeder for decks/l1-tnd-motions. It folds in the
  * former scripts/seed-vtg-togopp.ts (the tog-opp mirror-chirality re-seed): the
  * 3 tog-opp sequences (DJDJ/EKEK/FLFL) walk beta5→alpha3→beta1→alpha7→beta5
  * with blue=anti (EK/FL) / blue=pro (DJ), reproducing the live mirror chirality.
@@ -28,7 +28,7 @@
  * StrictRotatedExecutor) but is still imported by scripts/seed-l1-deck.ts, so it
  * is left in place; this seeder simply no longer depends on it.
  *
- * Usage: npx tsx scripts/seed-vtg-deck.ts [--dry-run]
+ * Usage: npx tsx scripts/seed-tnd-deck.ts [--dry-run]
  * Requires: serviceAccountKey.json in project root
  */
 
@@ -51,7 +51,7 @@ const CSV_PATH = path.resolve(
   "static/data/pictographs/DiamondPictographDataframe.csv"
 );
 const SERVICE_ACCOUNT_PATH = path.resolve(PROJECT_ROOT, "serviceAccountKey.json");
-const DECK_ID = "l1-vtg-motions";
+const DECK_ID = "l1-tnd-motions";
 const DRY_RUN = process.argv.includes("--dry-run");
 
 // Period labels for metadata (matches the prior enum's two values).
@@ -109,9 +109,9 @@ function loadCsv(): CsvRow[] {
 }
 
 // ============================================================================
-// VTG MOTION DEFINITIONS
+// TnD MOTION DEFINITIONS
 //
-// Each VTG motion is a 4-beat walk. Every beat is one explicit
+// Each TnD motion is a 4-beat walk. Every beat is one explicit
 // (letter, startPos, endPos) triple resolving to exactly one CSV row, plus an
 // optional blueDir discriminator for hybrid letters (F, L) that have two
 // pictographs per triple differing in which hand is anti vs pro.
@@ -130,7 +130,7 @@ interface BeatRef {
   blueDir?: string;
 }
 
-interface VTGMotionDef {
+interface TnDMotionDef {
   id: number;
   word: string; // Full 4-beat word (e.g. "AAAA" or "JDJD")
   vtg: string; // VTG category label
@@ -144,9 +144,9 @@ interface VTGMotionDef {
 }
 
 /**
- * Every VTG motion's 4-beat walk is written out explicitly as
+ * Every TnD motion's 4-beat walk is written out explicitly as
  * (letter, startPos, endPos) triples. The walk direction is NOT a uniform grid
- * rotation — each VTG family circles the grid differently (e.g. SSSS walks
+ * rotation — each TnD family circles the grid differently (e.g. SSSS walks
  * gamma11→gamma9→gamma15→gamma13, UUUU walks gamma11→gamma13→gamma15→gamma9),
  * so the positions are taken directly from the canonical production data rather
  * than computed. findRow resolves each triple to the FIRST matching CSV row
@@ -159,7 +159,7 @@ interface VTGMotionDef {
  * The 3 tog-opp walks (DJDJ/EKEK/FLFL) use the live mirror chirality
  * (beta5→alpha3→beta1→alpha7→beta5).
  */
-const VTG_MOTIONS: VTGMotionDef[] = [
+const TND_MOTIONS: TnDMotionDef[] = [
   // Same-Direction Quartered — Split-Same (alpha1, walks alpha1→alpha3→alpha5→alpha7)
   {
     id: 1, word: "AAAA", vtg: "Split-Same", familyId: "split-same", startPos: "alpha1", period: PERIOD_QUARTERED, seed: ["A"],
@@ -348,10 +348,10 @@ const VTG_MOTIONS: VTGMotionDef[] = [
 ];
 
 // ============================================================================
-// VTG FAMILY DEFINITIONS (for Firestore deck metadata)
+// TnD FAMILY DEFINITIONS (for Firestore deck metadata)
 // ============================================================================
 
-const VTG_FAMILIES = [
+const TND_FAMILIES = [
   { id: "split-same",   label: "Split-Same",   typeCombo: "Quartered" },
   { id: "tog-same",     label: "Tog-Same",     typeCombo: "Quartered" },
   { id: "quarter-same", label: "Quarter-Same", typeCombo: "Quartered" },
@@ -463,10 +463,10 @@ function traceHandPath(beats: BuiltBeat[]): { blue: string; red: string } {
 }
 
 // ============================================================================
-// VTG SEQUENCE BUILDER
+// TnD SEQUENCE BUILDER
 // ============================================================================
 
-interface VTGSequence {
+interface TnDSequence {
   seqId: string;
   word: string;
   vtg: string;
@@ -478,11 +478,11 @@ interface VTGSequence {
   beats: BuiltBeat[];
 }
 
-function buildVTGSequence(def: VTGMotionDef, rows: CsvRow[]): VTGSequence {
+function buildTnDSequence(def: TnDMotionDef, rows: CsvRow[]): TnDSequence {
   const csvRows = def.beats.map((b) => findRow(rows, b));
   const beats = chainOrientations(csvRows);
   const handPathId = computeHandPathId(beats);
-  const seqId = `vtg-${def.familyId}-${def.word.toLowerCase()}`;
+  const seqId = `tnd-${def.familyId}-${def.word.toLowerCase()}`;
   return {
     seqId,
     word: def.word,
@@ -541,7 +541,7 @@ function buildFirestoreStep(beat: BuiltBeat, stepNumber: number) {
  * The start position is a static pose at the walk's startPos, using beat-1's
  * start hand locations so the opening pose matches the walk's first beat.
  */
-function buildFirestoreStartPosition(seq: VTGSequence) {
+function buildFirestoreStartPosition(seq: TnDSequence) {
   const first = seq.beats[0];
   const staticMotion = (loc: string, color: string) =>
     buildFirestoreMotion(
@@ -574,7 +574,7 @@ interface FamilyMeta {
   sequenceIds: string[];
 }
 
-async function writeToFirestore(sequences: VTGSequence[]): Promise<void> {
+async function writeToFirestore(sequences: TnDSequence[]): Promise<void> {
   const admin = await import("firebase-admin");
 
   const serviceAccount = JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, "utf8"));
@@ -622,7 +622,7 @@ async function writeToFirestore(sequences: VTGSequence[]): Promise<void> {
       sequenceLength: 4,
       level: 1,
       isFavorite: false,
-      tags: ["vtg-deck", seq.familyId],
+      tags: ["tnd-deck", seq.familyId],
       thumbnails: [],
       steps: firestoreSteps,
       startPosition: buildFirestoreStartPosition(seq),
@@ -636,14 +636,14 @@ async function writeToFirestore(sequences: VTGSequence[]): Promise<void> {
         vtgCategory: seq.vtg,
       },
       author: "TKA System",
-      notes: `VTG ${seq.vtg}: ${seq.word}`,
+      notes: `TnD ${seq.vtg}: ${seq.word}`,
     });
 
     batchCount++;
   }
 
   // Write deck metadata
-  const familiesMeta: FamilyMeta[] = VTG_FAMILIES.map((f) => ({
+  const familiesMeta: FamilyMeta[] = TND_FAMILIES.map((f) => ({
     ...f,
     sequenceIds: familySequenceIds.get(f.id) ?? [],
   }));
@@ -651,8 +651,8 @@ async function writeToFirestore(sequences: VTGSequence[]): Promise<void> {
   const deckRef = db.doc(`decks/${DECK_ID}`);
   batch.set(deckRef, {
     id: DECK_ID,
-    name: "Level 1: VTG Motions",
-    description: "The 19 fundamental VTG motion categories as rotated LOOPs.",
+    name: "Level 1: TnD Motions",
+    description: "The 19 fundamental TnD motion categories as rotated LOOPs.",
     families: familiesMeta,
     totalSequences: sequences.length,
     gridMode: "diamond",
@@ -670,30 +670,30 @@ async function writeToFirestore(sequences: VTGSequence[]): Promise<void> {
 // ============================================================================
 
 async function main(): Promise<void> {
-  console.log("=== Level 1 VTG Motions Deck Seeder ===\n");
+  console.log("=== Level 1 TnD Motions Deck Seeder ===\n");
 
   console.log("Loading CSV data...");
   const rows = loadCsv();
   console.log(`  Loaded ${rows.length} pictograph rows`);
 
-  console.log("\nBuilding VTG sequences...");
-  const sequences: VTGSequence[] = [];
-  for (const def of VTG_MOTIONS) {
-    const seq = buildVTGSequence(def, rows);
+  console.log("\nBuilding TnD sequences...");
+  const sequences: TnDSequence[] = [];
+  for (const def of TND_MOTIONS) {
+    const seq = buildTnDSequence(def, rows);
     sequences.push(seq);
     console.log(`  #${def.id} ${def.word} (${def.vtg}, ${def.period}) ✓`);
   }
 
-  console.log(`\nBuilt ${sequences.length}/${VTG_MOTIONS.length} sequences`);
+  console.log(`\nBuilt ${sequences.length}/${TND_MOTIONS.length} sequences`);
 
   console.log("\nFamilies:");
-  for (const family of VTG_FAMILIES) {
+  for (const family of TND_FAMILIES) {
     const familySeqs = sequences.filter((s) => s.familyId === family.id);
     console.log(`  ${family.label} (${family.typeCombo}): ${familySeqs.length} sequences`);
     for (const seq of familySeqs) console.log(`    ${seq.word}`);
   }
 
-  const handPaths = new Map<string, VTGSequence[]>();
+  const handPaths = new Map<string, TnDSequence[]>();
   for (const seq of sequences) {
     const group = handPaths.get(seq.handPathId) ?? [];
     group.push(seq);
@@ -729,7 +729,7 @@ async function main(): Promise<void> {
 
   if (DRY_RUN) {
     console.log("\n--- DRY RUN — Skipping Firestore write ---");
-    console.log(`Would write ${sequences.length} sequences in ${VTG_FAMILIES.length} families`);
+    console.log(`Would write ${sequences.length} sequences in ${TND_FAMILIES.length} families`);
     console.log(`Firestore path: decks/${DECK_ID}`);
   } else {
     console.log("\nWriting to Firestore...");
@@ -740,7 +740,7 @@ async function main(): Promise<void> {
   console.log(`Deck: ${DECK_ID}`);
   console.log(`Total sequences: ${sequences.length}`);
   console.log(`Unique hand paths: ${handPaths.size}`);
-  console.log(`Families: ${VTG_FAMILIES.length}`);
+  console.log(`Families: ${TND_FAMILIES.length}`);
   console.log(`Steps per sequence: 4`);
   console.log(`Firestore path: decks/${DECK_ID}`);
 }
@@ -749,21 +749,21 @@ async function main(): Promise<void> {
 // The build path is pure (CSV in → sequences out) and does not touch Firestore.
 export {
   loadCsv,
-  buildVTGSequence,
+  buildTnDSequence,
   buildFirestoreStep,
   buildFirestoreStartPosition,
-  VTG_MOTIONS,
+  TND_MOTIONS,
   DECK_ID,
 };
-export type { VTGSequence, VTGMotionDef, BuiltBeat };
+export type { TnDSequence, TnDMotionDef, BuiltBeat };
 
-// Only auto-run when executed directly (tsx scripts/seed-vtg-deck.ts), not when
+// Only auto-run when executed directly (tsx scripts/seed-tnd-deck.ts), not when
 // imported by a verification harness. Compare resolved filesystem paths so the
 // check is robust to Windows drive-letter casing and file:// slash variants.
 const isDirectRun = (() => {
   try {
     const invoked = process.argv[1] ? path.resolve(process.argv[1]) : "";
-    return path.resolve(__filename) === invoked || invoked.endsWith("seed-vtg-deck.ts");
+    return path.resolve(__filename) === invoked || invoked.endsWith("seed-tnd-deck.ts");
   } catch {
     return true;
   }

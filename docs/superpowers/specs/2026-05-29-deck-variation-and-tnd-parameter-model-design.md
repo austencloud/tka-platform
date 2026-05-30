@@ -73,7 +73,7 @@ Already branches on `rs.deckMode`:
 
 ### 6. TnD composer — cartesian product (`deck-composer.ts`)
 
-- `getTnDFamilyOptions(catalogs)`: read **only the zero-turn base catalog(s)** (`l1-vtg-motions`). Drop the cross-deck merge + dedup hack (:236-258). Each family = its base seq ids; `sequenceCount` = base count (e.g. 3 for tog-same).
+- `getTnDFamilyOptions(catalogs)`: read **only the zero-turn base catalog(s)** (`l1-tnd-motions`). Drop the cross-deck merge + dedup hack (:236-258). Each family = its base seq ids; `sequenceCount` = base count (e.g. 3 for tog-same).
 - `getTnDTurnPatternOptions`: derive the 49-cell grid from `TURN_VALUES²` directly, not from counting deck `totalSequences`. Every cell always offerable.
 - `buildTnDCards(families, selectedFamilies, selectedTurnPatterns)`: cartesian —
   ```

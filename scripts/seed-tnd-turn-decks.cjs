@@ -1,21 +1,21 @@
 /**
- * Seed VTG Turn Variant Decks to Firestore
+ * Seed TnD Turn Variant Decks to Firestore
  *
- * Reads the 19 base VTG sequences from decks/l1-vtg-motions/sequences,
+ * Reads the 19 base TnD sequences from decks/l1-tnd-motions/sequences,
  * then creates 5 new decks with different turn values applied to all motions.
  *
- * Each VTG ratio maps to a TKA turn value:
+ * Each TnD ratio maps to a TKA turn value:
  *   2:1 → 0.5 turns (float)
  *   3:1 → 1 turn
  *   4:1 → 1.5 turns
  *   5:1 → 2 turns
  *   7:1 → 3 turns
  *
- * The 1:1 ratio (0 turns) already exists as l1-vtg-motions and is not recreated.
+ * The 1:1 ratio (0 turns) already exists as l1-tnd-motions and is not recreated.
  *
  * Usage:
- *   node scripts/seed-vtg-turn-decks.cjs              # Seed all 5 decks
- *   node scripts/seed-vtg-turn-decks.cjs --dry-run     # Preview without writing
+ *   node scripts/seed-tnd-turn-decks.cjs              # Seed all 5 decks
+ *   node scripts/seed-tnd-turn-decks.cjs --dry-run     # Preview without writing
  */
 
 const admin = require("firebase-admin");
@@ -54,18 +54,18 @@ try {
 // TURN VARIANT DEFINITIONS
 // ============================================================================
 
-const SOURCE_DECK_ID = "l1-vtg-motions";
+const SOURCE_DECK_ID = "l1-tnd-motions";
 
 /**
  * Each entry defines a new deck. The 1:1 ratio (0 turns) already exists.
  */
 const TURN_VARIANTS = [
-  { ratio: "2:1", turns: 0.5, deckId: "vtg-2to1-motions", name: "VTG Motions (2:1 ratio)" },
-  { ratio: "3:1", turns: 1,   deckId: "vtg-3to1-motions", name: "VTG Motions (3:1 ratio)" },
-  { ratio: "4:1", turns: 1.5, deckId: "vtg-4to1-motions", name: "VTG Motions (4:1 ratio)" },
-  { ratio: "5:1", turns: 2,   deckId: "vtg-5to1-motions", name: "VTG Motions (5:1 ratio)" },
-  { ratio: "6:1", turns: 2.5, deckId: "vtg-6to1-motions", name: "VTG Motions (6:1 ratio)" },
-  { ratio: "7:1", turns: 3,   deckId: "vtg-7to1-motions", name: "VTG Motions (7:1 ratio)" },
+  { ratio: "2:1", turns: 0.5, deckId: "tnd-2to1-motions", name: "TnD Motions (2:1 ratio)" },
+  { ratio: "3:1", turns: 1,   deckId: "tnd-3to1-motions", name: "TnD Motions (3:1 ratio)" },
+  { ratio: "4:1", turns: 1.5, deckId: "tnd-4to1-motions", name: "TnD Motions (4:1 ratio)" },
+  { ratio: "5:1", turns: 2,   deckId: "tnd-5to1-motions", name: "TnD Motions (5:1 ratio)" },
+  { ratio: "6:1", turns: 2.5, deckId: "tnd-6to1-motions", name: "TnD Motions (6:1 ratio)" },
+  { ratio: "7:1", turns: 3,   deckId: "tnd-7to1-motions", name: "TnD Motions (7:1 ratio)" },
 ];
 
 // ============================================================================
@@ -176,7 +176,7 @@ async function loadSourceSequences() {
   if (snapshot.empty) {
     throw new Error(
       `No sequences found in decks/${SOURCE_DECK_ID}/sequences. ` +
-        "Run seed-vtg-deck.ts first."
+        "Run seed-tnd-deck.ts first."
     );
   }
 
@@ -229,7 +229,7 @@ async function writeDeck(variant, sourceSequences, sourceMeta) {
     const newStartPos = cloneStartPosition(srcSeq.startPosition);
 
     // Build new sequence ID: replace "vtg-" prefix with ratio-specific prefix
-    const newSeqId = srcSeq.id.replace("vtg-", `vtg-${ratio.replace(":", "to")}-`);
+    const newSeqId = srcSeq.id.replace("tnd-", `tnd-${ratio.replace(":", "to")}-`);
 
     const seqRef = db.doc(`${deckPath}/sequences/${newSeqId}`);
     batch.set(seqRef, {
@@ -237,8 +237,8 @@ async function writeDeck(variant, sourceSequences, sourceMeta) {
       id: newSeqId,
       steps: newSteps,
       startPosition: newStartPos,
-      tags: ["vtg-deck", `vtg-${ratio.replace(":", "to")}`, ...(srcSeq.tags || []).filter(t => t !== "vtg-deck")],
-      notes: `VTG ${srcSeq.metadata?.vtgCategory || ""} (${ratio}): ${srcSeq.word}`,
+      tags: ["tnd-deck", `vtg-${ratio.replace(":", "to")}`, ...(srcSeq.tags || []).filter(t => t !== "tnd-deck")],
+      notes: `TnD ${srcSeq.metadata?.vtgCategory || ""} (${ratio}): ${srcSeq.word}`,
       metadata: {
         ...srcSeq.metadata,
         deckId,
@@ -263,7 +263,7 @@ async function writeDeck(variant, sourceSequences, sourceMeta) {
     ...sourceMeta,
     id: deckId,
     name,
-    description: `The 19 VTG motion categories at ${ratio} ratio (${turns} turns).`,
+    description: `The 19 TnD motion categories at ${ratio} ratio (${turns} turns).`,
     vtgRatio: ratio,
     turns,
     sourceDeck: SOURCE_DECK_ID,
@@ -281,7 +281,7 @@ async function writeDeck(variant, sourceSequences, sourceMeta) {
 // ============================================================================
 
 async function main() {
-  console.log("=== VTG Turn Variant Deck Seeder ===\n");
+  console.log("=== TnD Turn Variant Deck Seeder ===\n");
 
   // Load source data
   console.log(`Loading source sequences from decks/${SOURCE_DECK_ID}...`);

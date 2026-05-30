@@ -8,9 +8,9 @@ import type { Catalog } from "../../domain/models/Catalog";
 
 function baseCatalog(): Catalog {
   return {
-    id: "l1-vtg-motions",
-    name: "VTG Motions (1:1)",
-    canonicalName: "vtg",
+    id: "l1-tnd-motions",
+    name: "TnD Motions (1:1)",
+    canonicalName: "tnd",
     description: "",
     families: [
       { id: "tog-same", label: "Tog-Same", typeCombo: "", sequenceIds: ["AA", "BB", "CC"] },
@@ -30,13 +30,13 @@ function baseCatalog(): Catalog {
 }
 
 describe("getTnDFamilyOptions (base-only)", () => {
-  it("reads families from l1-vtg-motions, skips 'unknown', counts base seqs", () => {
+  it("reads families from l1-tnd-motions, skips 'unknown', counts base seqs", () => {
     const opts = getTnDFamilyOptions([baseCatalog()]);
     expect(opts.map((o) => o.familyId).sort()).toEqual(["split-same", "tog-same"]);
     const tog = opts.find((o) => o.familyId === "tog-same")!;
     expect(tog.sequenceCount).toBe(3);
     expect(tog.entries).toHaveLength(3);
-    expect(tog.entries[0]).toMatchObject({ sequenceId: "AA", sourceCatalogId: "l1-vtg-motions" });
+    expect(tog.entries[0]).toMatchObject({ sequenceId: "AA", sourceCatalogId: "l1-tnd-motions" });
   });
 
   it("returns empty when the base catalog is absent", () => {
@@ -64,7 +64,7 @@ describe("buildTnDCards (cartesian)", () => {
     expect(cards).toHaveLength(3 * 2); // 3 base × 2 patterns
     expect(cards.every((c) => c.variation?.turnPattern != null)).toBe(true);
     expect(cards.filter((c) => c.variation!.turnPattern === "1|1")).toHaveLength(3);
-    expect(cards[0]!.sourceCatalogId).toBe("l1-vtg-motions");
+    expect(cards[0]!.sourceCatalogId).toBe("l1-tnd-motions");
   });
 
   it("returns no cards when no pattern is selected", () => {

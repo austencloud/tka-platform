@@ -38,7 +38,7 @@ function hasSixFamilies(families) {
 
 // The correct base is the SAME-turn-ratio continuous catalog: strip the pattern
 // suffix from the variant id. sourceDeck is unreliable — on most variants it
-// points at the original enumeration root (l1-vtg-motions), not the ratio base.
+// points at the original enumeration root (l1-tnd-motions), not the ratio base.
 function resolveBaseId(doc) {
   for (const suffix of PATTERN_SUFFIXES) {
     if (doc.id.endsWith(`-${suffix}`)) return doc.id.slice(0, -(suffix.length + 1));

@@ -6,9 +6,9 @@
  * recalculates orientations, and writes each pattern variant as a new deck.
  *
  * Usage:
- *   node scripts/seed-reversal-decks.cjs --source l1-vtg-motions --patterns book,red-book,blue-book,long-book,alternating
- *   node scripts/seed-reversal-decks.cjs --source l1-vtg-motions --patterns book --dry-run
- *   node scripts/seed-reversal-decks.cjs --source l1-vtg-motions --patterns book --gridMode diamond
+ *   node scripts/seed-reversal-decks.cjs --source l1-tnd-motions --patterns book,red-book,blue-book,long-book,alternating
+ *   node scripts/seed-reversal-decks.cjs --source l1-tnd-motions --patterns book --dry-run
+ *   node scripts/seed-reversal-decks.cjs --source l1-tnd-motions --patterns book --gridMode diamond
  */
 
 const admin = require("firebase-admin");

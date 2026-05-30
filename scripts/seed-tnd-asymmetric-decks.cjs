@@ -1,10 +1,10 @@
 /**
- * Seed VTG Asymmetric Turn Variant Decks to Firestore
+ * Seed TnD Asymmetric Turn Variant Decks to Firestore
  *
- * Takes the 19 base VTG sequences from decks/l1-vtg-motions/sequences and
+ * Takes the 19 base TnD sequences from decks/l1-tnd-motions/sequences and
  * creates 42 new decks with DIFFERENT turn values per hand (blue vs red).
  *
- * Turn value → VTG ratio mapping:
+ * Turn value → TnD ratio mapping:
  *   0   → 1:1
  *   0.5 → 2:1
  *   1   → 3:1
@@ -13,16 +13,16 @@
  *   2.5 → 6:1
  *   3   → 7:1
  *
- * Symmetric combos (blue == red) already exist from seed-vtg-turn-decks.cjs.
+ * Symmetric combos (blue == red) already exist from seed-tnd-turn-decks.cjs.
  * This script generates all 42 asymmetric pairs where blue ≠ red.
  *
  * Notation on cards: "3:1|5:1" means blue=3:1, red=5:1 (pipe-separated, color-coded).
  * In TKA: "1|2" (just the turn counts).
  *
  * Usage:
- *   node scripts/seed-vtg-asymmetric-decks.cjs              # Seed all 42 decks
- *   node scripts/seed-vtg-asymmetric-decks.cjs --dry-run    # Preview without writing
- *   node scripts/seed-vtg-asymmetric-decks.cjs --only 1,2   # Only seed blue=1, red=2
+ *   node scripts/seed-tnd-asymmetric-decks.cjs              # Seed all 42 decks
+ *   node scripts/seed-tnd-asymmetric-decks.cjs --dry-run    # Preview without writing
+ *   node scripts/seed-tnd-asymmetric-decks.cjs --only 1,2   # Only seed blue=1, red=2
  */
 
 const admin = require("firebase-admin");
@@ -62,7 +62,7 @@ try {
 // TURN/RATIO DEFINITIONS
 // ============================================================================
 
-const SOURCE_DECK_ID = "l1-vtg-motions";
+const SOURCE_DECK_ID = "l1-tnd-motions";
 
 const TURN_VALUES = [0, 0.5, 1, 1.5, 2, 2.5, 3];
 
@@ -95,8 +95,8 @@ function buildAsymmetricVariants() {
         redRatio,
         pipeRatio: `${blueRatio}|${redRatio}`,
         tkaPipe: `${blueTurns}|${redTurns}`,
-        deckId: `vtg-${blueSlug}v${redSlug}-motions`,
-        name: `VTG Motions (${blueRatio}|${redRatio})`,
+        deckId: `tnd-${blueSlug}v${redSlug}-motions`,
+        name: `TnD Motions (${blueRatio}|${redRatio})`,
       });
     }
   }
@@ -208,7 +208,7 @@ function cloneStartPosition(startPosition) {
 async function loadSourceSequences() {
   const snapshot = await db.collection(`decks/${SOURCE_DECK_ID}/sequences`).get();
   if (snapshot.empty) {
-    throw new Error(`No sequences in decks/${SOURCE_DECK_ID}/sequences. Run seed-vtg-deck.ts first.`);
+    throw new Error(`No sequences in decks/${SOURCE_DECK_ID}/sequences. Run seed-tnd-deck.ts first.`);
   }
   return snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
 }
@@ -240,7 +240,7 @@ async function writeDeck(variant, sourceSequences, sourceMeta) {
     const newStartPos = cloneStartPosition(srcSeq.startPosition);
 
     const ratioSlug = pipeRatio.replace(/:/g, "to").replace("|", "v");
-    const newSeqId = srcSeq.id.replace("vtg-", `vtg-${ratioSlug}-`);
+    const newSeqId = srcSeq.id.replace("tnd-", `tnd-${ratioSlug}-`);
 
     const seqRef = db.doc(`${deckPath}/sequences/${newSeqId}`);
     batch.set(seqRef, {
@@ -248,8 +248,8 @@ async function writeDeck(variant, sourceSequences, sourceMeta) {
       id: newSeqId,
       steps: newSteps,
       startPosition: newStartPos,
-      tags: ["vtg-deck", "vtg-asymmetric", `vtg-blue-${blueTurns}`, `vtg-red-${redTurns}`, ...(srcSeq.tags || []).filter(t => !t.startsWith("vtg-"))],
-      notes: `VTG ${srcSeq.metadata?.vtgCategory || ""} (${pipeRatio}): ${srcSeq.word}`,
+      tags: ["tnd-deck", "tnd-asymmetric", `vtg-blue-${blueTurns}`, `vtg-red-${redTurns}`, ...(srcSeq.tags || []).filter(t => !t.startsWith("vtg-") && !t.startsWith("tnd-"))],
+      notes: `TnD ${srcSeq.metadata?.vtgCategory || ""} (${pipeRatio}): ${srcSeq.word}`,
       metadata: {
         ...srcSeq.metadata,
         deckId,
@@ -275,7 +275,7 @@ async function writeDeck(variant, sourceSequences, sourceMeta) {
     id: deckId,
     name,
     canonicalName: name,
-    description: `VTG motions with asymmetric turns: blue=${blueTurns} (${variant.blueRatio}), red=${redTurns} (${variant.redRatio}).`,
+    description: `TnD motions with asymmetric turns: blue=${blueTurns} (${variant.blueRatio}), red=${redTurns} (${variant.redRatio}).`,
     vtgRatio: pipeRatio,
     tkaTurns: tkaPipe,
     blueTurns,
@@ -298,7 +298,7 @@ async function writeDeck(variant, sourceSequences, sourceMeta) {
 async function main() {
   const variants = buildAsymmetricVariants();
 
-  console.log("=== VTG Asymmetric Turn Deck Seeder ===\n");
+  console.log("=== TnD Asymmetric Turn Deck Seeder ===\n");
   console.log(`Turn values: [${TURN_VALUES.join(", ")}]`);
   console.log(`Asymmetric combos: ${variants.length}`);
   console.log(`Total new sequences: ${variants.length} decks × 19 base patterns = ${variants.length * 19}\n`);

@@ -581,7 +581,7 @@ const sa=require(path.join(process.cwd(),"serviceAccountKey.json"));
 if(!admin.apps.length)admin.initializeApp({credential:admin.credential.cert(sa)});
 const db=admin.firestore();
 (async()=>{
-  const seqs=await db.collection("decks").doc("l1-vtg-motions").collection("sequences").limit(1).get();
+  const seqs=await db.collection("decks").doc("l1-tnd-motions").collection("sequences").limit(1).get();
   const d=seqs.docs[0]?.data();
   console.log("has startPosition:", !!d?.startPosition, "| blue ori:", d?.startPosition?.motions?.blue?.endOrientation);
   process.exit(0);

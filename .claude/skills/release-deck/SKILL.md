@@ -39,7 +39,7 @@ Parse `$ARGUMENTS` to determine collection and turn pattern filter.
 Run the release script in dry-run mode first:
 
 ```bash
-node scripts/release-vtg-deck.cjs --dry-run --patterns "uniform-0t,uniform-1t,uniform-2t,uniform-3t" --notes "Whole Turn VTG"
+node scripts/release-tnd-deck.cjs --dry-run --patterns "uniform-0t,uniform-1t,uniform-2t,uniform-3t" --notes "Whole Turn TnD"
 ```
 
 Show the user:
@@ -53,7 +53,7 @@ Show the user:
 After user confirms (or if they said "just do it" in their original message), run without `--dry-run`:
 
 ```bash
-node scripts/release-vtg-deck.cjs --patterns "uniform-0t,uniform-1t,uniform-2t,uniform-3t" --notes "Whole Turn VTG"
+node scripts/release-tnd-deck.cjs --patterns "uniform-0t,uniform-1t,uniform-2t,uniform-3t" --notes "Whole Turn TnD"
 ```
 
 Report the deck number assigned.
@@ -101,7 +101,7 @@ If user asks for a LOOP deck via this skill, tell them:
 
 | Purpose | Path |
 |---------|------|
-| Release script | `scripts/release-vtg-deck.cjs` |
+| Release script | `scripts/release-tnd-deck.cjs` |
 | Deck composer | `src/lib/features/choreo-card/services/deck-composer.ts` |
 | Release store | `src/lib/features/choreo-card/services/deck-release-store.ts` |
 | Print renderer | `src/lib/features/choreo-card/services/PrintCardRenderer.ts` |

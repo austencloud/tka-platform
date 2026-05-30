@@ -1192,7 +1192,7 @@ Replace materialized TnD decks with a render-time cartesian product sourced from
 - Modify: `src/lib/features/choreo-card/services/deck-composer.ts:235-266`
 - Test: `src/lib/features/choreo-card/services/__tests__/deck-composer-tnd.test.ts`
 
-The base catalog id is `l1-vtg-motions` (collection "TnD", `turnPattern` "uniform-0t", 6 families). Drop the cross-deck merge + dedup hack.
+The base catalog id is `l1-tnd-motions` (collection "TnD", `turnPattern` "uniform-0t", 6 families). Drop the cross-deck merge + dedup hack.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1205,7 +1205,7 @@ import type { Catalog } from "../../domain/models/Catalog";
 
 function baseCatalog(): Catalog {
   return {
-    id: "l1-vtg-motions",
+    id: "l1-tnd-motions",
     name: "VTG Motions (1:1)",
     canonicalName: "vtg", description: "",
     families: [
@@ -1220,13 +1220,13 @@ function baseCatalog(): Catalog {
 }
 
 describe("getTnDFamilyOptions (base-only)", () => {
-  it("reads families from l1-vtg-motions, skips 'unknown', counts base seqs", () => {
+  it("reads families from l1-tnd-motions, skips 'unknown', counts base seqs", () => {
     const opts = getTnDFamilyOptions([baseCatalog()]);
     expect(opts.map((o) => o.familyId).sort()).toEqual(["split-same", "tog-same"]);
     const tog = opts.find((o) => o.familyId === "tog-same")!;
     expect(tog.sequenceCount).toBe(3);
     expect(tog.entries).toHaveLength(3);
-    expect(tog.entries[0]).toMatchObject({ sequenceId: "AA", sourceCatalogId: "l1-vtg-motions" });
+    expect(tog.entries[0]).toMatchObject({ sequenceId: "AA", sourceCatalogId: "l1-tnd-motions" });
   });
 
   it("returns empty when the base catalog is absent", () => {
@@ -1246,7 +1246,7 @@ Add a constant near the top of `deck-composer.ts` (after imports):
 
 ```ts
 /** Canonical zero-turn TnD base catalog; all turn-grid cells derive from it. */
-export const TND_BASE_CATALOG_ID = "l1-vtg-motions";
+export const TND_BASE_CATALOG_ID = "l1-tnd-motions";
 ```
 
 Replace `getTnDFamilyOptions` (`:235-266`) with:
@@ -1403,7 +1403,7 @@ describe("buildTnDCards (cartesian)", () => {
     expect(cards).toHaveLength(3 * 2); // 3 base × 2 patterns
     expect(cards.every((c) => c.variation?.turnPattern != null)).toBe(true);
     expect(cards.filter((c) => c.variation!.turnPattern === "1|1")).toHaveLength(3);
-    expect(cards[0]!.sourceCatalogId).toBe("l1-vtg-motions");
+    expect(cards[0]!.sourceCatalogId).toBe("l1-tnd-motions");
   });
 
   it("returns no cards when no pattern is selected", () => {
@@ -1631,13 +1631,13 @@ Create `scripts/teardown-tnd-materialized-decks.cjs`. Mirror the firebase-admin 
 //   - asymmetric === true            (42 blue|red enumerations)
 //   - symmetric turn variants        (turnPattern uniform with turns > 0)
 //   - named-pattern reversal variants (reversalPattern set, on a vtg base id)
-// PRESERVES: l1-vtg-motions (the zero-turn base — canonical source of truth).
+// PRESERVES: l1-tnd-motions (the zero-turn base — canonical source of truth).
 
 const admin = require("firebase-admin");
 // ... init exactly as scripts/seed-vtg-turn-decks.cjs does ...
 const db = admin.firestore();
 
-const BASE_ID = "l1-vtg-motions";
+const BASE_ID = "l1-tnd-motions";
 const APPLY = process.argv.includes("--apply");
 
 async function main() {
@@ -1688,7 +1688,7 @@ main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit
 - [ ] **Step 2: Run the DRY RUN and present the list to Austen**
 
 Run: `node scripts/teardown-tnd-materialized-decks.cjs`
-Expected: prints ~58 ids, `l1-vtg-motions` NOT among them. **Present this list to Austen and STOP. Do not proceed without explicit "yes, delete these" in the conversation.**
+Expected: prints ~58 ids, `l1-tnd-motions` NOT among them. **Present this list to Austen and STOP. Do not proceed without explicit "yes, delete these" in the conversation.**
 
 - [ ] **Step 3: Commit the script (not the deletion)**
 
@@ -1711,7 +1711,7 @@ Verify Austen has explicitly approved the exact dry-run list from Task 20 Step 2
 - [ ] **Step 2: Run the deletion**
 
 Run: `node scripts/teardown-tnd-materialized-decks.cjs --apply`
-Expected: deletes each listed deck + its sequences; `l1-vtg-motions` untouched.
+Expected: deletes each listed deck + its sequences; `l1-tnd-motions` untouched.
 
 - [ ] **Step 3: Verify the base survived + targets gone**
 

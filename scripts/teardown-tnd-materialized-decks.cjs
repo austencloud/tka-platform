@@ -11,12 +11,12 @@
  *
  * Targets (collection "TnD", excluding the base) — ONLY decks reproducible at
  * render time OR reseedable by an existing script:
- *   - asymmetric === true                 (reseed: seed-vtg-asymmetric-decks.cjs)
- *   - symmetric turn variants             (reseed: seed-vtg-turn-decks.cjs)
+ *   - asymmetric === true                 (reseed: seed-tnd-asymmetric-decks.cjs)
+ *   - symmetric turn variants             (reseed: seed-tnd-turn-decks.cjs)
  *   - RESEEDABLE named-reversal variants  (reseed: reseed-all-reversal-decks.cjs)
  *
  * PRESERVES:
- *   - l1-vtg-motions (the zero-turn base — canonical source of truth)
+ *   - l1-tnd-motions (the zero-turn base — canonical source of truth)
  *   - any deck whose reversalPattern is NOT a reseedable named pattern (e.g. the
  *     raw "BB--" pattern), because no seed script regenerates it.
  */
@@ -47,7 +47,7 @@ try {
   process.exit(1);
 }
 
-const BASE_ID = "l1-vtg-motions";
+const BASE_ID = "l1-tnd-motions";
 const APPLY = process.argv.includes("--apply");
 
 async function main() {

@@ -44,21 +44,21 @@ decks/{deckId}/sequences/{seqId}
 ```
 
 **Deck ID convention:** `l{level}-{slice}-{loopType}-{totalBeats}beat`
-**VTG deck ID convention:** `vtg-{N}to{M}-motions`
+**TnD deck ID convention:** `tnd-{N}to{M}-motions`
 
-## VTG Ratio-to-Turns Mapping
+## TnD Ratio-to-Turns Mapping
 
 | Ratio | Turns | Deck ID |
 |-------|-------|---------|
-| 1:1 | 0 | l1-vtg-motions (base) |
-| 2:1 | 0.5 | vtg-2to1-motions |
-| 3:1 | 1 | vtg-3to1-motions |
-| 4:1 | 1.5 | vtg-4to1-motions |
-| 5:1 | 2 | vtg-5to1-motions |
-| 6:1 | 2.5 | vtg-6to1-motions |
-| 7:1 | 3 | vtg-7to1-motions |
+| 1:1 | 0 | l1-tnd-motions (base) |
+| 2:1 | 0.5 | tnd-2to1-motions |
+| 3:1 | 1 | tnd-3to1-motions |
+| 4:1 | 1.5 | tnd-4to1-motions |
+| 5:1 | 2 | tnd-5to1-motions |
+| 6:1 | 2.5 | tnd-6to1-motions |
+| 7:1 | 3 | tnd-7to1-motions |
 
-Script: `scripts/seed-vtg-turn-decks.cjs`
+Script: `scripts/seed-tnd-turn-decks.cjs`
 
 ## Scaling Estimates
 
@@ -81,7 +81,7 @@ Each extra beat multiplies by ~17x. Level 2 (adding 1-turn motions) further mult
 | l1-halved-strict-rotated-8beat | 8 | 22,595 |
 | l1-quartered-strict-rotated-12beat | 12 | 1,606 |
 | l1-quartered-strict-rotated-16beat | 16 | 27,892 |
-| l1-vtg-motions + 6 ratio variants | 4 | 19 × 7 = 133 |
+| l1-tnd-motions + 6 ratio variants | 4 | 19 × 7 = 133 |
 
 ## Orientation Rules (L1, 0-turn)
 

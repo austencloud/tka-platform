@@ -14,7 +14,7 @@ You are the TKA deck release pipeline expert. You handle the full lifecycle: com
 
 Two collection types:
 
-**VTG Motions** — 4-step sequences classified by hand-path family and turn pattern.
+**TnD Motions** — 4-step sequences classified by hand-path family and turn pattern.
 - 6 families: Split-Same (Water), Tog-Same (Earth), Quarter-Same (Sun), Split-Opp (Fire), Tog-Opp (Air), Quarter-Opp (Moon)
 - 7 turn values per hand: 0, 0.5, 1, 1.5, 2, 2.5, 3
 - Turn patterns: symmetric = `uniform-Nt` (e.g. `uniform-2t`), asymmetric = `blue|red` (e.g. `1.5|3`)
@@ -102,7 +102,7 @@ Extract from the user's message:
 Always dry-run first unless the user said "just do it":
 
 ```bash
-node scripts/release-vtg-deck.cjs --dry-run --patterns "uniform-0t,uniform-1t,uniform-2t,uniform-3t" --notes "Whole Turn VTG"
+node scripts/release-tnd-deck.cjs --dry-run --patterns "uniform-0t,uniform-1t,uniform-2t,uniform-3t" --notes "Whole Turn TnD"
 ```
 
 Report: total cards, breakdown by pattern, breakdown by family, sample cards.
@@ -110,7 +110,7 @@ Report: total cards, breakdown by pattern, breakdown by family, sample cards.
 ### Step 3: Release
 
 ```bash
-node scripts/release-vtg-deck.cjs --patterns "..." --notes "..."
+node scripts/release-tnd-deck.cjs --patterns "..." --notes "..."
 ```
 
 Report the deck number assigned.
@@ -150,7 +150,7 @@ Tell the user how to get printable files:
 
 | Purpose | Path |
 |---------|------|
-| Release script | `scripts/release-vtg-deck.cjs` |
+| Release script | `scripts/release-tnd-deck.cjs` |
 | Deck composer | `src/lib/features/choreo-card/services/deck-composer.ts` |
 | Release store | `src/lib/features/choreo-card/services/deck-release-store.ts` |
 | Print renderer | `src/lib/features/choreo-card/services/PrintCardRenderer.ts` |

@@ -44,7 +44,7 @@ node scripts/enumerate-deck.cjs --loopType rotated --slice quartered --seedLengt
 
 ## VTG Turn Expansion
 
-Script: `scripts/seed-vtg-turn-decks.cjs` — clones the base VTG deck (19 sequences) with different turn values per VTG ratio (1:1 through 7:1). See `deck-reference.md` for the ratio table.
+Script: `scripts/seed-tnd-turn-decks.cjs` — clones the base TnD deck (19 sequences) with different turn values per VTG ratio (1:1 through 7:1). See `deck-reference.md` for the ratio table.
 
 ## UI Structure
 
