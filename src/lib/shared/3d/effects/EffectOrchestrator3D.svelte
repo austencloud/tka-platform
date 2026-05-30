@@ -113,6 +113,17 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
   const qualityTierDetector = getQualityTierDetector();
   const tipBridge = new TipPositionBridge3D();
 
+  // Brighter HDR core on capable tiers so the scene bloom pass makes trails
+  // glow (presence). LOW keeps the additive Gaussian halo alone - no bloom
+  // there, so over-driving emissive would just clip to white.
+  const trailTierBoost = $derived(
+    qualityTierDetector.currentTier === "high"
+      ? 1.6
+      : qualityTierDetector.currentTier === "medium"
+        ? 1.3
+        : 1.0,
+  );
+
   // Canonical effect config - read from context, or create a default-seeded
   // local state as a fallback so this component still works when mounted
   // outside a viewer that sets the context explicitly.
@@ -375,7 +386,9 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
           tipEffectMap,
           globalTipEffectMap ?? {},
         );
-        const effect = resolved === "none" ? "trails" : resolved;
+        // "none" renders nothing - no silent fallback to trails. The default
+        // effect comes from the resolved tip map, not an invented value here.
+        const effect = resolved;
 
         if (effect === "led") {
           // Run the LED pattern evaluator for this specific tip so
@@ -443,7 +456,9 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
           tipEffectMap,
           globalTipEffectMap ?? {},
         );
-        const effect = resolved === "none" ? "trails" : resolved;
+        // "none" renders nothing - no silent fallback to trails. The default
+        // effect comes from the resolved tip map, not an invented value here.
+        const effect = resolved;
 
         if (effect === "led") {
           // Same pattern evaluator call for red prop's tips. The red prop
@@ -691,6 +706,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
     rainbow={resolvedTrails.rainbow}
     enabled={isPlaying}
     qualityTier={qualityTierDetector.currentTier}
+    emissiveStrength={resolvedTrails.emissive * trailTierBoost}
     {lightManager}
   />
 {/each}
@@ -707,6 +723,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
     rainbow={resolvedTrails.rainbow}
     enabled={isPlaying}
     qualityTier={qualityTierDetector.currentTier}
+    emissiveStrength={resolvedTrails.emissive * trailTierBoost}
     {lightManager}
   />
 {/each}

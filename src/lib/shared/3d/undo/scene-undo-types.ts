@@ -4,7 +4,7 @@ import type { FormationPreset } from "@austencloud/scene-3d";
 import type { Plane } from "@austencloud/scene-3d";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
-import type { EffectId } from "../state/performer-settings-types";
+import type { EffectType } from "$lib/shared/effects/domain/EffectsConfig";
 import type { BackgroundType } from "@austencloud/backgrounds";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SceneId } from "$lib/features/lab/tabs/scene-lab/domain/scene-lab-types";
@@ -75,7 +75,7 @@ export interface PerformerDomainSnapshot {
   settings: {
     prop: PropType | null;
     effortId: EffortId | null;
-    effects: Set<EffectId> | null;
+    effect: EffectType | null;
     staffLengthCm: number | null;
   };
   planes: {
@@ -98,7 +98,6 @@ export interface VisibilityDomainSnapshot {
 
 export interface DefaultsDomainSnapshot {
   prop: PropType;
-  effects: Set<EffectId>;
   effortId: EffortId;
   planeMode: PlaneMode;
   customBluePlane: Plane;

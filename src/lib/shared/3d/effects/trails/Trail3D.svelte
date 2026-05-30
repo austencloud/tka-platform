@@ -20,6 +20,8 @@
     lightManager?: DynamicLightManager | null;
     mode?: TrailMode;
     fadeDuration?: number;
+    /** HDR core multiplier; >1 so scene bloom (HIGH/MED tier) catches the trail. */
+    emissiveStrength?: number;
   }
 
   let {
@@ -35,6 +37,7 @@
     lightManager = null,
     mode = "fade" as TrailMode,
     fadeDuration = 2.0,
+    emissiveStrength = 2.5,
   }: Props = $props();
 
   const { camera } = useThrelte();
@@ -43,7 +46,6 @@
   const renderer = new TrailRenderer3D({
     // svelte-ignore state_referenced_locally
     maxPoints,
-    subdivisions: 4,
     // svelte-ignore state_referenced_locally
     width,
     // svelte-ignore state_referenced_locally
@@ -58,6 +60,8 @@
     mode,
     // svelte-ignore state_referenced_locally
     fadeDuration,
+    // svelte-ignore state_referenced_locally
+    emissiveStrength,
   });
 
   let lightHandle: LightHandle | null = null;

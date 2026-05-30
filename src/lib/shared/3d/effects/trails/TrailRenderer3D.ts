@@ -21,6 +21,16 @@ import {
  */
 const TRAIL_GLOW_RATIO = 2.5;
 
+/**
+ * Upper bound on Catmull-Rom subsamples per segment. Buffers are sized for this
+ * so the per-frame adaptive count (which rises when there are few control
+ * points) never overruns. 150/pointCount clamped to [4, MAX] matches the 2D
+ * trail's ~150 total-interpolated-point target, killing the faceting that the
+ * old fixed `subdivisions: 4` showed on tight arcs.
+ */
+const MAX_SUBDIVISIONS = 12;
+const TARGET_TOTAL_INTERPOLATED = 150;
+
 export class TrailRingBuffer {
   private buffer: Vector3[];
   private timestamps: Float64Array;
@@ -90,7 +100,6 @@ export type TrailMode = "fade" | "loop_clear" | "persistent";
 
 export interface TrailRendererConfig {
   maxPoints: number;
-  subdivisions: number;
   width: number;
   color: string;
   opacity: number;
@@ -98,11 +107,12 @@ export interface TrailRendererConfig {
   qualityTier: QualityTier;
   mode: TrailMode;
   fadeDuration: number;
+  /** HDR core multiplier passed to the material; >1 so scene bloom catches it. */
+  emissiveStrength: number;
 }
 
 const DEFAULT_CONFIG: TrailRendererConfig = {
   maxPoints: 120,
-  subdivisions: 4,
   width: 0.08,
   color: "#3b82f6",
   opacity: 1.0,
@@ -110,6 +120,7 @@ const DEFAULT_CONFIG: TrailRendererConfig = {
   qualityTier: "medium" as QualityTier,
   mode: "fade",
   fadeDuration: 2.0,
+  emissiveStrength: 2.5,
 };
 
 export class TrailRenderer3D {
@@ -140,7 +151,7 @@ export class TrailRenderer3D {
 
     this.ringBuffer = new TrailRingBuffer(effectiveMaxPoints);
 
-    const maxInterpolated = (effectiveMaxPoints - 1) * this.config.subdivisions + 1;
+    const maxInterpolated = (effectiveMaxPoints - 1) * MAX_SUBDIVISIONS + 1;
     this.maxVertices = maxInterpolated * 2;
 
     this.positions = new Float32Array(this.maxVertices * 3);
@@ -166,6 +177,7 @@ export class TrailRenderer3D {
       rainbow: this.config.rainbow,
       // Solid core stays at the authored line width inside the widened ribbon.
       coreFrac: 1 / TRAIL_GLOW_RATIO,
+      emissiveStrength: this.config.emissiveStrength,
     });
 
     this.mesh = new Mesh(this.geometry, material);
@@ -194,7 +206,13 @@ export class TrailRenderer3D {
     }
 
     let vertexIndex = 0;
-    const subdivisions = this.config.subdivisions;
+    // Adaptive subdivision: aim for ~150 interpolated points across the whole
+    // spline. Few control points (early trail / tight arc) get more subsamples
+    // so the ribbon never facets; a long trail needs fewer per segment.
+    const subdivisions = Math.max(
+      4,
+      Math.min(MAX_SUBDIVISIONS, Math.round(TARGET_TOTAL_INTERPOLATED / Math.max(2, pointCount))),
+    );
     const totalSegments = pointCount - 1;
     const totalInterpolatedPoints = totalSegments * subdivisions + 1;
 

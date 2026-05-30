@@ -409,6 +409,11 @@
     {@const performerGridOffset = GRID_OFFSETS[performer.planeMode]}
     {@const perfStaffCm = performer.settings.staffLengthCm}
     {@const propLength = perfStaffCm != null ? cmToUnits(perfStaffCm) : undefined}
+    <!-- Per-performer effect cascade: this performer's override, else the
+         global default (effects-config wildcard). This is what makes the
+         Performer Hub effect selection actually reach the renderer. -->
+    {@const perfEffect = performer.rawEffect ?? globalTipEffectMap["*"]?.effect ?? "none"}
+    {@const perfTipMap = { "*": { effect: perfEffect } }}
     <AvatarSwapTransition
       {performer}
       performerIndex={i}
@@ -428,7 +433,7 @@
           redPropType={resolvePerformerProp(performer, redPropType)}
           bluePropState={performer.bluePropState}
           redPropState={performer.redPropState}
-          tipEffectMap={globalTipEffectMap}
+          tipEffectMap={perfTipMap}
           {propLength}
           {isPlaying}
           enableLocomotion={true}
@@ -451,7 +456,7 @@
               {redPropState}
               isPlaying={rigPlaying}
               {staffHalfLength}
-              tipEffectMap={globalTipEffectMap}
+              tipEffectMap={perfTipMap}
               {blueHandPos}
               {redHandPos}
               {effectsParentRef}

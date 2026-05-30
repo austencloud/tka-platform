@@ -14,7 +14,7 @@ describe("AvatarInstanceState — performer settings", () => {
     const a = createAvatarInstanceState(makeConfig(), makeDeps());
     expect(a.settings.effortId).toBeNull();
     expect(a.settings.prop).toBeNull();
-    expect(a.settings.effects).toBeNull();
+    expect(a.settings.effect).toBeNull();
   });
 
   it("effective values resolve to defaults when raw settings are null", () => {
@@ -22,7 +22,8 @@ describe("AvatarInstanceState — performer settings", () => {
     const a = createAvatarInstanceState(makeConfig(), makeDeps());
     expect(a.effectiveEffortId).toBe("linear");
     expect(a.effectiveProp).toBe(PropType.STAFF);
-    expect(a.effectiveEffects.size).toBe(0);
+    // The effect override starts null (inherit the global default).
+    expect(a.rawEffect).toBeNull();
   });
 
   it("setEffort updates raw effortId", () => {
@@ -40,17 +41,20 @@ describe("AvatarInstanceState — performer settings", () => {
     expect(a.settings.prop).toBe(PropType.FAN);
   });
 
-  it("toggleEffect adds an inactive effect", () => {
+  it("setEffect sets the single active effect (radio)", () => {
     const a = createAvatarInstanceState(makeConfig(), makeDeps());
-    a.toggleEffect("trails");
-    expect(a.settings.effects!.has("trails")).toBe(true);
+    a.setEffect("trails");
+    expect(a.settings.effect).toBe("trails");
+    // Selecting another replaces it - one effect at a time.
+    a.setEffect("fire");
+    expect(a.settings.effect).toBe("fire");
   });
 
-  it("toggleEffect removes an already-active effect", () => {
+  it("setEffect('none') turns the effect explicitly off", () => {
     const a = createAvatarInstanceState(makeConfig(), makeDeps());
-    a.toggleEffect("fire");
-    a.toggleEffect("fire");
-    expect(a.settings.effects!.has("fire")).toBe(false);
+    a.setEffect("fire");
+    a.setEffect("none");
+    expect(a.settings.effect).toBe("none");
   });
 
   it("hasOverride starts false for all categories", () => {
@@ -78,24 +82,24 @@ describe("AvatarInstanceState — performer settings", () => {
     expect(a.settings.effortId).toBeNull();
   });
 
-  it("resetEffects clears effects override to null", () => {
+  it("resetEffects clears the effect override to null (inherit)", () => {
     const a = createAvatarInstanceState(makeConfig(), makeDeps());
-    a.toggleEffect("trails");
-    expect(a.settings.effects).not.toBeNull();
+    a.setEffect("trails");
+    expect(a.settings.effect).toBe("trails");
     a.resetEffects();
-    expect(a.settings.effects).toBeNull();
+    expect(a.settings.effect).toBeNull();
   });
 
   it("resetAllOverrides clears all settings to null, preserves staffLengthCm", () => {
     const a = createAvatarInstanceState(makeConfig(), makeDeps());
     a.setProp(PropType.FAN);
     a.setEffort("glide");
-    a.toggleEffect("trails");
+    a.setEffect("trails");
     a.setStaffLengthCm(120);
     a.resetAllOverrides();
     expect(a.settings.prop).toBeNull();
     expect(a.settings.effortId).toBeNull();
-    expect(a.settings.effects).toBeNull();
+    expect(a.settings.effect).toBeNull();
     expect(a.settings.staffLengthCm).toBe(120);
   });
 });

@@ -1,20 +1,10 @@
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { Plane, PlaneMode } from "@austencloud/scene-3d";
-
-export type EffectId =
-  | "trails"
-  | "fire"
-  | "charcoal"
-  | "led"
-  | "electricity"
-  | "sparkles"
-  | "motion"
-  | "bloom";
+import type { EffectType } from "$lib/shared/effects/domain/EffectsConfig";
 
 export interface DefaultPerformerSettings {
   prop: PropType;
-  effects: Set<EffectId>;
   effortId: EffortId;
   planeMode: PlaneMode;
   customBluePlane: Plane;
@@ -24,7 +14,12 @@ export interface DefaultPerformerSettings {
 export interface PerformerSettings {
   effortId: EffortId | null;
   prop: PropType | null;
-  effects: Set<EffectId> | null;
+  /**
+   * Single active per-performer effect (the canonical EffectType, one at a
+   * time). `null` = inherit the global default (config.tipEffectMap wildcard);
+   * `"none"` = explicitly off; any other EffectType = that effect.
+   */
+  effect: EffectType | null;
   staffLengthCm: number | null;
 }
 
@@ -41,7 +36,7 @@ export function makeDefaultPerformerSettings(): PerformerSettings {
   return {
     effortId: null,
     prop: null,
-    effects: null,
+    effect: null,
     staffLengthCm: null,
   };
 }
@@ -55,7 +50,6 @@ export function makeDefaultPerformerSettings(): PerformerSettings {
 export function makeStandaloneDefaults(): DefaultPerformerSettings {
   return {
     prop: PropType.STAFF,
-    effects: new Set<EffectId>(),
     effortId: "linear" as EffortId,
     planeMode: PlaneMode.WALL,
     customBluePlane: Plane.WALL,

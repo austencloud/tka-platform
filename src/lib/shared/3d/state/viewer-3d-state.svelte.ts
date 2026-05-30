@@ -17,7 +17,7 @@ import type { DefaultsDomainSnapshot, PerformerPositionSnapshot, ViewerDomainSna
 import { Plane, PlaneMode } from "@austencloud/scene-3d";
 import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
 import { derivePlaneModeFromHands } from "./avatar-instance-state.svelte";
-import type { DefaultPerformerSettings, CascadeCategory, EffectId } from "./performer-settings-types";
+import type { DefaultPerformerSettings, CascadeCategory } from "./performer-settings-types";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import { createPerformerManager, type PerformerManager } from "./performer-manager.svelte";
@@ -309,7 +309,6 @@ export function createViewer3DState() {
   // null overrides inherit from these defaults.
   const _defaultSettings = $state<DefaultPerformerSettings>({
     prop: loadPersistedDefaultProp(),
-    effects: new Set<EffectId>(),
     effortId: "linear" as EffortId,
     planeMode: PlaneMode.WALL,
     customBluePlane: Plane.WALL,
@@ -438,21 +437,6 @@ export function createViewer3DState() {
   function setDefaultEffort(effortId: EffortId): void {
     sceneUndo.captureState("change-default-effort", `Default effort: ${effortId}`);
     _defaultSettings.effortId = effortId;
-    sceneUndo.commitState();
-  }
-
-  function setDefaultEffects(effects: Set<EffectId>): void {
-    sceneUndo.captureState("change-default-effects", "Default effects");
-    _defaultSettings.effects = new Set(effects);
-    sceneUndo.commitState();
-  }
-
-  function toggleDefaultEffect(effect: EffectId): void {
-    sceneUndo.captureState("change-default-effects", `Toggle default ${effect}`);
-    const next = new Set(_defaultSettings.effects);
-    if (next.has(effect)) next.delete(effect);
-    else next.add(effect);
-    _defaultSettings.effects = next;
     sceneUndo.commitState();
   }
 
@@ -710,7 +694,6 @@ export function createViewer3DState() {
   function captureDefaultsSnapshot(): DefaultsDomainSnapshot {
     return {
       prop: _defaultSettings.prop,
-      effects: new Set(_defaultSettings.effects),
       effortId: _defaultSettings.effortId,
       planeMode: _defaultSettings.planeMode,
       customBluePlane: _defaultSettings.customBluePlane,
@@ -720,7 +703,6 @@ export function createViewer3DState() {
 
   function restoreDefaultsSnapshot(snap: DefaultsDomainSnapshot): void {
     _defaultSettings.prop = snap.prop;
-    _defaultSettings.effects = new Set(snap.effects);
     _defaultSettings.effortId = snap.effortId;
     _defaultSettings.planeMode = snap.planeMode;
     _defaultSettings.customBluePlane = snap.customBluePlane;
@@ -1106,8 +1088,6 @@ export function createViewer3DState() {
     get defaultSettings() { return _defaultSettings; },
     setDefaultProp,
     setDefaultEffort,
-    setDefaultEffects,
-    toggleDefaultEffect,
     setDefaultPlaneMode,
     setDefaultHandPlane,
     overrideCountForCategory,

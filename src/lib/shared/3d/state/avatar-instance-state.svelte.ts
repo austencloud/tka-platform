@@ -28,10 +28,10 @@ import {
   makeDefaultPerformerSettings,
   makeStandaloneDefaults,
   type PerformerSettings,
-  type EffectId,
   type DefaultPerformerSettings,
   type OverrideState,
 } from "./performer-settings-types";
+import type { EffectType } from "$lib/shared/effects/domain/EffectsConfig";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { getSceneUndoManager } from "../undo/getSceneUndoManager";
 import type { PerformerDomainSnapshot } from "../undo/scene-undo-types";
@@ -163,7 +163,12 @@ export function createAvatarInstanceState(
 
   const effectiveProp = $derived(_settings.prop ?? getDefaults().prop);
   const effectiveEffortId = $derived(_settings.effortId ?? getDefaults().effortId);
-  const effectiveEffects = $derived(_settings.effects ?? getDefaults().effects);
+  // The per-performer effect OVERRIDE only. `null` means "inherit the global
+  // default" - the inherited value (config.tipEffectMap wildcard) is resolved
+  // by the consumer (Viewer3DScene / EffectsSettingsPanel), which has the
+  // effects-config in scope. This state factory deliberately doesn't reach into
+  // that context.
+  const rawEffect = $derived(_settings.effect);
   // effectivePlaneMode/BluePlane/RedPlane defined after plane state declarations below
 
   // ============================================
@@ -244,7 +249,7 @@ export function createAvatarInstanceState(
   // Override detection (all categories)
   const hasOverride = $derived<OverrideState>({
     prop: _settings.prop !== null,
-    effects: _settings.effects !== null,
+    effects: _settings.effect !== null,
     effort: _settings.effortId !== null,
     planes: planeMode !== null,
   });
@@ -751,7 +756,7 @@ export function createAvatarInstanceState(
       settings: {
         prop: _settings.prop,
         effortId: _settings.effortId,
-        effects: _settings.effects ? new Set(_settings.effects) : null,
+        effect: _settings.effect,
         staffLengthCm: _settings.staffLengthCm,
       },
       planes: {
@@ -767,7 +772,7 @@ export function createAvatarInstanceState(
     _settings = {
       prop: snap.settings.prop,
       effortId: snap.settings.effortId,
-      effects: snap.settings.effects ? new Set(snap.settings.effects) : null,
+      effect: snap.settings.effect,
       staffLengthCm: snap.settings.staffLengthCm,
     };
     customBluePlane = snap.planes.customBluePlane;
@@ -801,15 +806,17 @@ export function createAvatarInstanceState(
     });
   }
 
-  function toggleEffect(effect: EffectId): void {
+  /**
+   * Set the single active per-performer effect. Pass an EffectType to apply it
+   * (radio semantics - replaces any prior effect), "none" to explicitly turn
+   * effects off for this performer, or null to clear the override and inherit
+   * the global default.
+   */
+  function setEffect(effect: EffectType | null): void {
     const before = $state.snapshot(_settings);
-    const current = _settings.effects ?? new Set(getDefaults().effects);
-    const next = new Set(current);
-    if (next.has(effect)) next.delete(effect);
-    else next.add(effect);
-    _settings = { ..._settings, effects: next };
+    _settings = { ..._settings, effect };
     const after = $state.snapshot(_settings);
-    sceneUndo.pushSelfRestoringEntry("toggle-effect", `Toggle ${effect}`, {
+    sceneUndo.pushSelfRestoringEntry("toggle-effect", `Effect: ${effect ?? "inherit"}`, {
       undo: () => { _settings = before; },
       redo: () => { _settings = after; },
     });
@@ -851,7 +858,7 @@ export function createAvatarInstanceState(
 
   function resetEffects(): void {
     const before = $state.snapshot(_settings);
-    _settings = { ..._settings, effects: null };
+    _settings = { ..._settings, effect: null };
     const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("toggle-effect", "Reset effects to default", {
       undo: () => { _settings = before; },
@@ -874,7 +881,7 @@ export function createAvatarInstanceState(
 
   function resetAllOverrides(): void {
     const beforeSnap = capturePerformerSnapshot();
-    _settings = { prop: null, effortId: null, effects: null, staffLengthCm: _settings.staffLengthCm };
+    _settings = { prop: null, effortId: null, effect: null, staffLengthCm: _settings.staffLengthCm };
     planeMode = null;
     customBluePlane = null;
     customRedPlane = null;
@@ -1071,13 +1078,14 @@ export function createAvatarInstanceState(
     get settings() { return _settings; },
     setEffort,
     setProp,
-    toggleEffect,
+    setEffect,
     setStaffLengthCm,
 
     // Effective values (resolved cascade: null → inherit from viewer defaults)
     get effectiveProp() { return effectiveProp; },
     get effectiveEffortId() { return effectiveEffortId; },
-    get effectiveEffects() { return effectiveEffects; },
+    /** Per-performer effect override; null = inherit the global default. */
+    get rawEffect() { return rawEffect; },
     get effectivePlaneMode() { return effectivePlaneMode; },
     get effectiveBluePlane() { return effectiveBluePlane; },
     get effectiveRedPlane() { return effectiveRedPlane; },

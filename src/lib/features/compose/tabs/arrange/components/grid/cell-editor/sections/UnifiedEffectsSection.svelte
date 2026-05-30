@@ -13,6 +13,7 @@
   } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
   import type { CellEffect } from "$lib/shared/animation-engine/domain/compose-types";
+  import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
 
   const SHIPPED_CELL_EFFECTS = new Set<string>(["none", "fire", "charcoal", "led", "trails"]);
   function asCellEffect(e: EffectType): CellEffect {
@@ -42,29 +43,20 @@
     onUpdateMap: (map: TipEffectMap) => void;
   } = $props();
 
+  // Single source of truth for effect color/icon/label - the canonical
+  // effect-registry, same as the 2D animation panel and the 3D effects panel.
+  // (Was 16 hardcoded hexes here, 11 of which had drifted out of sync.)
   const effectGrid: {
     value: EffectType;
     icon: string;
     color: string;
     label: string;
-  }[] = [
-    { value: "trails",   icon: "fa-route",        color: "#60a5fa", label: "Trails" },
-    { value: "fire",     icon: "fa-fire",          color: "#f97316", label: "Fire" },
-    { value: "led",      icon: "fa-lightbulb",     color: "#22c55e", label: "LED" },
-    { value: "charcoal", icon: "fa-diamond",       color: "#a855f7", label: "Charcoal" },
-    { value: "zap",      icon: "fa-bolt",          color: "#eab308", label: "Zap" },
-    { value: "sparkles", icon: "fa-star",          color: "#f59e0b", label: "Sparkles" },
-    { value: "echo",     icon: "fa-clone",         color: "#06b6d4", label: "Echo" },
-    { value: "bloom",    icon: "fa-sun",           color: "#f472b6", label: "Bloom" },
-    { value: "water",    icon: "fa-droplet",       color: "#38bdf8", label: "Water" },
-    { value: "bubbles",  icon: "fa-circle-notch",  color: "#a78bfa", label: "Bubbles" },
-    { value: "petals",   icon: "fa-leaf",          color: "#34d399", label: "Petals" },
-    { value: "smoke",    icon: "fa-smog",          color: "#9ca3af", label: "Smoke" },
-    { value: "ink",      icon: "fa-paint-brush",   color: "#f87171", label: "Ink" },
-    { value: "frost",    icon: "fa-snowflake",     color: "#7dd3fc", label: "Frost" },
-    { value: "silk",     icon: "fa-wind",          color: "#c084fc", label: "Silk" },
-    { value: "pulse",    icon: "fa-bullseye",      color: "#fb923c", label: "Pulse" },
-  ];
+  }[] = EFFECTS.map((e) => ({
+    value: e.id as EffectType,
+    icon: e.icon,
+    color: e.color,
+    label: e.label,
+  }));
 
   const trailModes: { value: TrailMode; label: string }[] = [
     { value: TrailMode.FADE, label: "Fade" },

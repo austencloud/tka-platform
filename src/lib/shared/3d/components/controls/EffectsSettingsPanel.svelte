@@ -7,9 +7,10 @@
    * Uses chip-style buttons consistent with GridSettingsPanel.
    *
    * Accepts an optional `performer` prop. When provided, reads/writes that
-   * performer's `settings.effects` Set via `performer.toggleEffect()`.
-   * When absent, reads the unified EffectsConfig via
-   * `getEffectsConfigContext()` plus the Scene3DRenderConfig for motion.
+   * performer's single `settings.effect` (radio) via `performer.setEffect()`,
+   * inheriting the global default when the override is null. When absent, reads
+   * the unified EffectsConfig via `getEffectsConfigContext()` plus the
+   * Scene3DRenderConfig for motion.
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
@@ -24,7 +25,6 @@
   } from "$lib/shared/animation-engine/components/effects-panel/effect-primary-param";
   import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
-  import type { EffectId } from "$lib/shared/3d/state/performer-settings-types";
   import type { EffectType } from "$lib/shared/effects/domain/EffectsConfig";
 
   interface Props {
@@ -48,44 +48,27 @@
     { key: "motion" as const, label: "Motion", icon: "wind", color: "#22d3ee" },
   ];
 
-  // Per-performer Sets use the legacy EffectId union. Translate between the
-  // canonical EffectType and EffectId where they diverge; unrepresentable
-  // keys (echo/water/bubbles/petals/smoke/ink) hide from the per-performer
-  // toggle - Phase 2.5 migrates the per-performer Set to the canonical enum.
-  function toPerformerEffect(key: EffectKey): EffectId | null {
-    if (key === "zap") return "electricity";
-    if (key === "motion") return "motion";
-    if (
-      key === "echo" ||
-      key === "water" ||
-      key === "bubbles" ||
-      key === "petals" ||
-      key === "smoke" ||
-      key === "ink" ||
-      key === "none"
-    ) {
-      return null;
-    }
-    return key as EffectId;
-  }
+  // The single per-performer effect now uses the canonical EffectType directly
+  // (no legacy EffectId translation), so the full 16-effect grid is selectable
+  // per performer. Motion stays a scene-level modifier in both modes.
+  // The global default a performer inherits when it has no override is the
+  // effects-config wildcard.
+  const inheritedEffect = $derived(config.config.tipEffectMap["*"]?.effect ?? "none");
+  const performerEffect = $derived(
+    performer ? (performer.rawEffect ?? inheritedEffect) : null,
+  );
 
   function isEnabled(key: EffectKey): boolean {
-    if (performer) {
-      const pk = toPerformerEffect(key);
-      return pk !== null && performer.effectiveEffects.has(pk);
-    }
     if (key === "motion") {
       return scene3DRender.motion.blur || scene3DRender.motion.speedLines;
+    }
+    if (performer) {
+      return performerEffect === key;
     }
     return config.config.tipEffectMap["*"]?.effect === key;
   }
 
   function toggle(key: EffectKey) {
-    if (performer) {
-      const pk = toPerformerEffect(key);
-      if (pk !== null) performer.toggleEffect(pk);
-      return;
-    }
     if (key === "motion") {
       const motionEnabled = scene3DRender.motion.blur || scene3DRender.motion.speedLines;
       scene3DRender.updateMotion({
@@ -94,8 +77,15 @@
       });
       return;
     }
-    // Global fallback - wildcard tip map. Toggling the active effect off
-    // returns to "none" so the grid has a consistent off-state semantic.
+    if (performer) {
+      // Radio: clicking the active effect turns it off ("none"); clicking
+      // another replaces it. Reset-to-inherit is the CascadeBadge's job.
+      const active = performerEffect === key;
+      performer.setEffect(active ? "none" : (key as EffectType));
+      return;
+    }
+    // Global mode - wildcard tip map. Toggling the active effect off returns
+    // to "none" so the grid has a consistent off-state semantic.
     const currentlyActive = config.config.tipEffectMap["*"]?.effect === key;
     config.setTipEffectMap({ "*": { effect: currentlyActive ? "none" : key } });
   }
@@ -240,11 +230,8 @@
 
   <!-- Quick Info -->
   {#if performer}
-    {@const count = performer.effectiveEffects.size}
-    {#if count > 0}
-      <div class="active-count">
-        {count} effect{count > 1 ? "s" : ""} active
-      </div>
+    {#if performerEffect && performerEffect !== "none"}
+      <div class="active-count">1 effect active</div>
     {/if}
   {:else if globalEnabledCount > 0}
     <div class="active-count">
