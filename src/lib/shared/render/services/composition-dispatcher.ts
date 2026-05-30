@@ -5,6 +5,7 @@ import type { CompositionProgressCallback, RenderCanvas } from "./types";
 import type { ImageComposer } from "./image-composer";
 import type { TextRenderer } from "./text-renderer";
 import { convertGlyphCacheToBitmaps } from "./glyph-bitmap-loader";
+import { bundleTransferables } from "./card-asset-bundle";
 
 // ---- Protocol types (shared with composition.worker.ts) ----
 
@@ -68,6 +69,7 @@ export class CompositionDispatcher {
   private pendingBundle: import("./card-asset-bundle").AssetBundle | null = null;
 
   private static workerSupport: boolean | null = null;
+  private static probing: Promise<boolean> | null = null;
 
   constructor(
     private readonly imageComposer: ImageComposer,
@@ -93,15 +95,25 @@ export class CompositionDispatcher {
    */
   static async probeWorkerSupport(): Promise<boolean> {
     if (CompositionDispatcher.workerSupport !== null) return CompositionDispatcher.workerSupport;
-    if (typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined") {
-      return (CompositionDispatcher.workerSupport = false);
-    }
-    try {
-      const ok = await CompositionDispatcher.runProbe();
-      return (CompositionDispatcher.workerSupport = ok);
-    } catch {
-      return (CompositionDispatcher.workerSupport = false);
-    }
+    // In-flight dedup: concurrent callers share the single probe in progress
+    // (mirrors the `initializing` guard) instead of each spawning a worker.
+    if (CompositionDispatcher.probing) return CompositionDispatcher.probing;
+    CompositionDispatcher.probing = (async () => {
+      try {
+        if (typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined") {
+          return (CompositionDispatcher.workerSupport = false);
+        }
+        try {
+          const ok = await CompositionDispatcher.runProbe();
+          return (CompositionDispatcher.workerSupport = ok);
+        } catch {
+          return (CompositionDispatcher.workerSupport = false);
+        }
+      } finally {
+        CompositionDispatcher.probing = null;
+      }
+    })();
+    return CompositionDispatcher.probing;
   }
 
   // Bootstraps via the SVG-free back paint path: a minimal proof-mode BackJob
@@ -113,10 +125,12 @@ export class CompositionDispatcher {
         type: "module",
       });
       const timeout = setTimeout(() => {
+        console.warn("[CompositionDispatcher] worker probe timed out");
         w.terminate();
         resolve(false);
       }, 8000);
-      w.onerror = () => {
+      w.onerror = (err) => {
+        console.warn("[CompositionDispatcher] worker probe errored:", err);
         clearTimeout(timeout);
         w.terminate();
         resolve(false);
@@ -126,6 +140,12 @@ export class CompositionDispatcher {
         if (d?.type === "probe-result") {
           clearTimeout(timeout);
           w.terminate();
+          if (!d.ok) {
+            console.warn(
+              "[CompositionDispatcher] worker probe failed:",
+              d.error ?? "(no detail)",
+            );
+          }
           resolve(!!d.ok);
         }
       };
@@ -341,7 +361,6 @@ export class CompositionDispatcher {
           bitmaps: [],
           grids: { diamond: null, box: null, diamondNonRadial: null, boxNonRadial: null },
         };
-        const bundleTransfer: Transferable[] = [];
         if (bundle) {
           const clonedBmps = await Promise.all(
             bundle.bitmaps.map((b) => createImageBitmap(b)),
@@ -362,9 +381,9 @@ export class CompositionDispatcher {
               boxNonRadial: await cloneGrid(bundle.grids.boxNonRadial),
             },
           };
-          bundleTransfer.push(...clonedBmps);
-          for (const v of Object.values(bundleClone.grids)) if (v) bundleTransfer.push(v);
         }
+        // Reuse the exported helper instead of duplicating the transfer-list build.
+        const bundleTransfer = bundleTransferables(bundleClone);
 
         const initMessage: CompositionWorkerInMessage = {
           type: "init",
