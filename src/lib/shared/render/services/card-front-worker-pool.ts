@@ -1,0 +1,132 @@
+import type { PreparedPictographData } from "../../pictograph/shared/domain/models/PreparedPictographData";
+import type { LayerRenderOptions, LayerVisibility } from "./types";
+import type { AssetBundle } from "./card-asset-bundle";
+import { bundleTransferables } from "./card-asset-bundle";
+import { createPictographWorker } from "../workers/create-pictograph-worker";
+import type { WorkerInMessage, WorkerOutMessage } from "../workers/pictograph-render.worker";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+
+interface Lane { worker: Worker; seeded: boolean; pending: number; }
+interface PendingRender { resolve: (blob: Blob) => void; reject: (e: Error) => void; }
+
+const POOL_SIZE = Math.max(
+  1,
+  (typeof navigator !== "undefined" ? navigator.hardwareConcurrency || 4 : 4) - 1,
+);
+
+export class CardFrontWorkerPool {
+  private lanes: Lane[] = [];
+  private pending = new Map<number, PendingRender>();
+  private nextId = 0;
+  private deckKey: string | null = null;
+  private bootPromise: Promise<void> | null = null;
+  private booted = false;
+
+  isReady(): boolean {
+    return this.booted && this.lanes.length > 0 && this.deckKey !== null && this.lanes.every((l) => l.seeded);
+  }
+
+  private boot(): Promise<void> {
+    if (this.booted) return Promise.resolve();
+    if (this.bootPromise) return this.bootPromise;
+    this.bootPromise = (async () => {
+      if (typeof OffscreenCanvas === "undefined") { this.booted = true; return; } // no lanes → never ready → caller falls back
+      for (let i = 0; i < POOL_SIZE; i++) {
+        const worker = createPictographWorker();
+        const lane: Lane = { worker, seeded: false, pending: 0 };
+        worker.onmessage = (ev: MessageEvent<WorkerOutMessage>) => this.onMessage(ev.data);
+        this.lanes.push(lane);
+      }
+      this.booted = true;
+    })();
+    return this.bootPromise;
+  }
+
+  /** Build + seed the deck's AssetBundle into every lane. Idempotent per deckKey. */
+  async seedForDeck(
+    sequences: SequenceData[],
+    opts: { bluePropType: PropType; redPropType: PropType; theme: string },
+    deckKey: string,
+  ): Promise<void> {
+    await this.boot();
+    if (this.lanes.length === 0) return; // no OffscreenCanvas
+    if (this.deckKey === deckKey && this.lanes.every((l) => l.seeded)) return;
+
+    const { getCardAssetBundle } = await import("./get-card-asset-bundle");
+    const bundle = await getCardAssetBundle(sequences, opts);
+
+    this.lanes.forEach((l) => (l.seeded = false));
+    await Promise.all(this.lanes.map((lane) => this.seedLane(lane, bundle)));
+    this.deckKey = deckKey;
+  }
+
+  private seedLane(lane: Lane, bundle: AssetBundle): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const handler = (ev: MessageEvent<WorkerOutMessage>) => {
+        const m = ev.data;
+        if (m.type === "seed-done") { lane.worker.removeEventListener("message", handler); lane.seeded = true; resolve(); }
+        else if (m.type === "error" && m.id === -1) { lane.worker.removeEventListener("message", handler); reject(new Error(m.message)); }
+      };
+      lane.worker.addEventListener("message", handler);
+      // Transfer detaches bitmaps, so each lane needs its own copy.
+      const copy = structuredClone(bundle);
+      const msg: WorkerInMessage = { type: "seed", bundle: copy };
+      lane.worker.postMessage(msg, bundleTransferables(copy));
+    });
+  }
+
+  async composeCell(
+    prepared: PreparedPictographData,
+    options: LayerRenderOptions,
+    visibility: LayerVisibility,
+    stepNumber: number | undefined,
+  ): Promise<ImageBitmap> {
+    if (!this.isReady()) throw new Error("CardFrontWorkerPool not ready");
+    const id = this.nextId++;
+    const lane = this.pickLane();
+    lane.pending++;
+    const msg: WorkerInMessage = JSON.parse(
+      JSON.stringify({ type: "render", id, preparedData: prepared, options, visibility, stepNumber }),
+    );
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      this.pending.set(id, { resolve, reject });
+      lane.worker.postMessage(msg);
+    });
+    return createImageBitmap(blob);
+  }
+
+  private pickLane(): Lane {
+    let best = this.lanes[0]!;
+    for (const l of this.lanes) if (l.pending < best.pending) best = l;
+    return best;
+  }
+
+  private onMessage(msg: WorkerOutMessage): void {
+    if (msg.type === "render-result") {
+      const p = this.pending.get(msg.id);
+      if (p) { this.pending.delete(msg.id); this.decPending(); p.resolve(msg.blob); }
+    } else if (msg.type === "error" && msg.id >= 0) {
+      const p = this.pending.get(msg.id);
+      if (p) { this.pending.delete(msg.id); this.decPending(); p.reject(new Error(msg.message)); }
+    }
+  }
+
+  private decPending(): void {
+    let max: Lane | null = null;
+    for (const l of this.lanes) if (l.pending > 0 && (!max || l.pending > max.pending)) max = l;
+    if (max) max.pending--;
+  }
+
+  dispose(): void {
+    for (const l of this.lanes) l.worker.terminate();
+    this.lanes = []; this.booted = false; this.deckKey = null; this.bootPromise = null;
+    for (const [, p] of this.pending) p.reject(new Error("pool disposed"));
+    this.pending.clear();
+  }
+}
+
+let instance: CardFrontWorkerPool | null = null;
+export function getCardFrontWorkerPool(): CardFrontWorkerPool {
+  return (instance ??= new CardFrontWorkerPool());
+}
