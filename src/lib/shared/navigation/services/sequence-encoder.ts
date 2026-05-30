@@ -72,18 +72,6 @@ const ROTATION_DECODE: Record<string, RotationDirection> = Object.fromEntries(
   Object.entries(ROTATION_ENCODE).map(([k, v]) => [v, k as RotationDirection])
 );
 
-const MOTION_TYPE_ENCODE: Record<MotionType, string> = {
-  [MotionType.PRO]: "p",
-  [MotionType.ANTI]: "a",
-  [MotionType.FLOAT]: "l",
-  [MotionType.DASH]: "d",
-  [MotionType.STATIC]: "s",
-};
-
-const MOTION_TYPE_DECODE: Record<string, MotionType> = Object.fromEntries(
-  Object.entries(MOTION_TYPE_ENCODE).map(([k, v]) => [v, k as MotionType])
-);
-
 const PROP_TYPE_ENCODE: Record<PropType, string> = {
   [PropType.STAFF]: "S",
   [PropType.SIMPLESTAFF]: "s",
