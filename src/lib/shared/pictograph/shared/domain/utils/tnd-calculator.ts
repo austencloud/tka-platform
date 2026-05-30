@@ -35,7 +35,7 @@ const GAMMA_DIAG: GridPosition[] = [
  * Mapping from VTG mode to elemental type.
  * Based on legacy SVG_PATHS mapping from elemental_glyph.py
  */
-const TND_TO_ELEMENTAL: Record<TnDMode, ElementalType> = {
+export const TND_TO_ELEMENTAL: Record<TnDMode, ElementalType> = {
   [TnDMode.SPLIT_SAME]: ElementalType.WATER,
   [TnDMode.SPLIT_OPP]: ElementalType.FIRE,
   [TnDMode.TOG_SAME]: ElementalType.EARTH,
