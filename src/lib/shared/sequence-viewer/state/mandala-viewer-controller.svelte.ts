@@ -28,10 +28,13 @@ const COLOR_CYCLE_BREATHS = 3;
 const BG_COLOR = "#000000";
 
 const EXPORT_STORAGE_KEY = "tka_mandala_export";
+// A mandala is thin bright strokes on flat black — it compresses to far less
+// than typical video at the same resolution. Lower bitrates cut entropy-coding
+// work (faster encode) with no visible loss; 4K was wastefully high at 40 Mbps.
 const BITRATE_BY_RES: Record<number, number> = {
   720: 6_000_000,
-  1080: 12_000_000,
-  2160: 40_000_000,
+  1080: 10_000_000,
+  2160: 20_000_000,
 };
 
 function clampReps(n: number): number {
@@ -357,7 +360,7 @@ export class MandalaViewerController {
           } else {
             const mp = +((d.resolution * d.resolution) / 1_000_000).toFixed(1);
             console.log(
-              `${tag} ${d.encodedFrames}/${d.totalFrames} · encode=${d.encodeFps}fps · render=${d.renderMs}ms wait=${d.encodeWaitMs}ms mux=${d.muxMs}ms · ${mp}MP/frame codec=${d.codec}` +
+              `${tag} ${d.encodedFrames}/${d.totalFrames} · encode=${d.encodeFps}fps · render=${d.renderMs}ms wait=${d.encodeWaitMs}ms vframe=${d.vfMs}ms mux=${d.muxMs}ms · ${mp}MP/frame codec=${d.codec}` +
               (d.phase === "done" && d.encodeFps > 0 && d.encodeFps < 24
                 ? `  ⚠ encode-bound — H.264 can't keep up at ${d.resolution}² (${mp}MP). Lower resolution encodes ~(px ratio)× faster.`
                 : ""),

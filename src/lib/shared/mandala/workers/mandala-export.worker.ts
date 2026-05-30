@@ -34,9 +34,14 @@ import {
 
 const hasWebCodecs = typeof VideoEncoder !== "undefined";
 
-// Cap the WebCodecs encoder's internal queue so the final flush stays cheap and
-// progress tracks real encode throughput.
-const MAX_ENCODE_QUEUE = 6;
+// Keep the WebCodecs encoder's input queue deep enough to stay fed (a shallow
+// queue starves the HW pipeline — depth 6 cut 4K throughput by ~2.4×), but
+// bounded by a ~150MB in-flight frame budget so 4K can't OOM a phone. Computed
+// per-resolution in runExport via queueDepthFor().
+function queueDepthFor(size: number): number {
+  const frameBytes = size * size * 1.5; // YUV420 bytes per frame
+  return Math.max(8, Math.min(24, Math.round(150_000_000 / frameBytes)));
+}
 
 // ── Messages ────────────────────────────────────────────────────────────────
 
@@ -69,6 +74,8 @@ export interface MandalaExportDiag {
   muxMs: number;
   /** Observed encode throughput so far (frames / wall-second since first frame). */
   encodeFps: number;
+  /** Cumulative ms creating VideoFrames from the canvas (GPU upload / copy). */
+  vfMs: number;
 }
 
 export type MandalaExportOut =
@@ -150,6 +157,7 @@ async function runExport(msg: StartMessage): Promise<void> {
   const math = deriveFrameMath(spec);
   const totalFrames = math.totalFrames;
   const frameDurationUs = Math.round(1_000_000 / spec.fps);
+  const maxQueue = queueDepthFor(size);
 
   const canvas = new OffscreenCanvas(size, size);
   const ctx = canvas.getContext("2d", { alpha: false });
@@ -163,7 +171,7 @@ async function runExport(msg: StartMessage): Promise<void> {
   const scratch = { a: new OffscreenCanvas(size, size), b: new OffscreenCanvas(size, size) };
 
   // ── Diagnostics ──
-  let renderMs = 0, waitMs = 0, muxMs = 0;
+  let renderMs = 0, waitMs = 0, muxMs = 0, vfMs = 0;
   let codec = "";
   let hwSupported = false;
   let firstFrameMs = 0;
@@ -174,6 +182,7 @@ async function runExport(msg: StartMessage): Promise<void> {
       type: "diag", phase, codec, hwSupported, encoder: encoderKind,
       resolution: size, fps: spec.fps, totalFrames, encodedFrames: encodedCount,
       renderMs: Math.round(renderMs), encodeWaitMs: Math.round(waitMs), muxMs: Math.round(muxMs),
+      vfMs: Math.round(vfMs),
       encodeFps: elapsedS > 0 ? +(encodedCount / elapsedS).toFixed(1) : 0,
     });
   };
@@ -240,7 +249,7 @@ async function runExport(msg: StartMessage): Promise<void> {
       if (hasWebCodecs) {
         // Respect encoder backpressure so the queue (and final flush) stays shallow.
         const w0 = performance.now();
-        while (videoEncoder && videoEncoder.encodeQueueSize >= MAX_ENCODE_QUEUE && !cancelled && !encoderErrored) {
+        while (videoEncoder && videoEncoder.encodeQueueSize >= maxQueue && !cancelled && !encoderErrored) {
           await nextTick();
         }
         waitMs += performance.now() - w0;
@@ -248,7 +257,9 @@ async function runExport(msg: StartMessage): Promise<void> {
         if (!videoEncoder || encoderErrored || videoEncoder.state !== "configured") {
           throw new Error("Encoder stopped accepting frames");
         }
+        const v0 = performance.now();
         const frame = new VideoFrame(canvas, { timestamp: i * frameDurationUs, duration: frameDurationUs });
+        vfMs += performance.now() - v0;
         videoEncoder.encode(frame, { keyFrame: i % 30 === 0 });
         frame.close();
       } else {
