@@ -13,8 +13,6 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { ImageComposer } from "../../../shared/render/services/image-composer";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 import type { RenderCanvas } from "$lib/shared/render/services/types";
-import { CompositionDispatcher } from "$lib/shared/render/services/composition-dispatcher";
-import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
 import type { PrintRenderOptions } from "./types";
 import { renderCardBack } from "./card-back-dom-renderer";
 import { renderInfoCardFront, renderInfoCardBack } from "./info-card-canvas-renderer";
@@ -161,23 +159,14 @@ export class PrintCardRenderer {
       },
     };
 
-    // Route the inner pictograph composite through the worker pool when
-    // available; the cheap stripe/bleed wrap stays on the main thread. Any
-    // worker error falls back to the main-thread compose.
-    let sequenceCanvas: RenderCanvas | ImageBitmap;
-    if (CompositionDispatcher.canUseWorker()) {
-      try {
-        sequenceCanvas = await getCompositionDispatcher().composeFrontBitmap(
-          sequence,
-          composeOptions,
-        );
-      } catch (e) {
-        console.warn("[PrintCardRenderer] front worker failed, main-thread:", e);
-        sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
-      }
-    } else {
-      sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
-    }
+    // Worker front rendering is parked: the worker pipeline crashes on deep
+    // $env coupling + missing preparer wiring (see worker-pool-card-rendering
+    // spec). Fronts render on the proven main-thread path until a FrontJob
+    // (plain-data) worker rebuild lands.
+    const sequenceCanvas: RenderCanvas = await this.imageComposer.composeSequenceImage(
+      sequence,
+      composeOptions,
+    );
 
     // Build the card canvas
     const mpcCanvas = document.createElement("canvas");
