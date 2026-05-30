@@ -4,6 +4,12 @@
   import { buildBackJob } from "$lib/features/choreo-card/services/card-back/card-back-job-builder";
   import { paintBackJob } from "$lib/features/choreo-card/services/card-back/card-back-raster";
   import { createBrowseEngine } from "$lib/shared/browse/engine/createBrowseEngine.svelte";
+  import { getImageComposer } from "$lib/shared/render/get-image-composer";
+  import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
+  import { CompositionDispatcher } from "$lib/shared/render/services/composition-dispatcher";
+  import { getCardAssetBundle } from "$lib/shared/render/services/get-card-asset-bundle";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
   import { onMount, onDestroy } from "svelte";
 
   // Logical MPC dimensions; both render paths end at scale-2 (1644x2244).
@@ -37,6 +43,7 @@
 
   const engine = createBrowseEngine({ persistKey: null, minColumns: 2, initialColumns: 3 });
 
+  let mode = $state<"back" | "front">("back");
   let status = $state("idle");
   let running = $state(false);
   let rows = $state<ParityRow[]>([]);
@@ -95,7 +102,7 @@
   }
 
   /** Normalize any canvas to OUT_W x OUT_H (the DOM path may emit a different size). */
-  function normalize(src: HTMLCanvasElement | OffscreenCanvas): HTMLCanvasElement {
+  function normalize(src: HTMLCanvasElement | OffscreenCanvas | ImageBitmap): HTMLCanvasElement {
     const out = document.createElement("canvas");
     out.width = OUT_W;
     out.height = OUT_H;
@@ -164,6 +171,59 @@
     return normalize(c);
   }
 
+  // FRONT compose options. Mirrors PrintCardRenderer.renderFront's composeOptions
+  // for a generic card (lines 112-162), trimmed to the deck-independent fields so
+  // the worker and main-thread paths receive byte-identical options. Content area
+  // is the full harness output size for a clean full-card diff.
+  function frontOptions(): Partial<SequenceExportOptions> {
+    const contentW = OUT_W;
+    const contentH = OUT_H;
+    return {
+      deckCard: { contentWidth: contentW, contentHeight: contentH },
+      includeStartPosition: true,
+      startPositionLayout: "row",
+      addStepNumbers: true,
+      addWord: true,
+      addDifficultyLevel: false,
+      stepSize: 300,
+      stepScale: 1,
+      margin: 0,
+      format: "PNG",
+      quality: 1,
+      scale: 1,
+      redVisible: true,
+      blueVisible: true,
+      addReversalSymbols: true,
+      combinedGrids: false,
+      showLoopGlyph: false,
+      visibilityOverrides: {
+        showTKA: true,
+        showTnD: false,
+        showElemental: false,
+        showPositions: false,
+        showReversals: true,
+        showNonRadialPoints: false,
+        showGrid: true,
+        printMode: true,
+        darkMode: false,
+        handPointVisibility: "all",
+      },
+    };
+  }
+
+  // MAIN-THREAD front (the reference / "old" side for front mode).
+  async function renderFrontMain(seq: SequenceData): Promise<HTMLCanvasElement> {
+    const canvas = await getImageComposer().composeSequenceImage(seq, frontOptions());
+    return normalize(canvas);
+  }
+
+  // WORKER front (the candidate / "new" side). Same options as the main-thread
+  // path, so any pixel difference is purely worker-vs-main.
+  async function renderFrontWorker(seq: SequenceData): Promise<HTMLCanvasElement> {
+    const bmp = await getCompositionDispatcher().composeFrontBitmap(seq, frontOptions());
+    return normalize(bmp);
+  }
+
   async function run() {
     if (running) return;
     running = true;
@@ -178,21 +238,48 @@
       return;
     }
 
+    // Front mode is theme-independent (the pictograph composite ignores card
+    // theming), so iterate sequences once under a single pseudo-theme label.
+    const themes: readonly string[] = mode === "front" ? ["front"] : THEMES;
+
+    // Front mode needs the worker pool: probe it, then seed one asset bundle
+    // (front render is theme-independent for the pictograph, so THEMES[0] is fine).
+    if (mode === "front") {
+      status = "probing worker support…";
+      const ok = await CompositionDispatcher.probeWorkerSupport();
+      if (!ok) {
+        status = "worker probe failed — front mode needs the worker pool";
+        running = false;
+        summaryJson = JSON.stringify({ error: "worker probe failed" }, null, 2);
+        return;
+      }
+      status = "building asset bundle…";
+      const blue = PropType.STAFF, red = PropType.STAFF;
+      const bundle = await getCardAssetBundle(selected, {
+        bluePropType: blue,
+        redPropType: red,
+        theme: THEMES[0],
+      });
+      getCompositionDispatcher().setAssetBundle(bundle);
+    }
+
     const results: ParityRow[] = [];
     let done = 0;
-    const totalRuns = selected.length * THEMES.length;
+    const totalRuns = selected.length * themes.length;
     let oldTotalMs = 0, newTotalMs = 0;
     const perCardMs: { old: number; new: number; first: boolean }[] = [];
 
     for (const seq of selected) {
-      for (const theme of THEMES) {
+      for (const theme of themes) {
         status = `rendering ${seq.word ?? seq.name ?? seq.id} (${theme}) — ${++done}/${totalRuns}`;
         const lvl = seq.level ?? 0;
         try {
           const t0 = performance.now();
-          const oldCanvas = await renderOld(seq, theme);
+          const oldCanvas =
+            mode === "front" ? await renderFrontMain(seq) : await renderOld(seq, theme);
           const t1 = performance.now();
-          const newCanvas = await renderNew(seq, theme);
+          const newCanvas =
+            mode === "front" ? await renderFrontWorker(seq) : await renderNew(seq, theme);
           const t2 = performance.now();
           oldTotalMs += t1 - t0; newTotalMs += t2 - t1;
           perCardMs.push({ old: Math.round(t1 - t0), new: Math.round(t2 - t1), first: done === 1 });
@@ -238,8 +325,9 @@
     const worst = valid.reduce((m, r) => Math.max(m, r.diffPct), 0);
     const maxDelta = valid.reduce((m, r) => Math.max(m, r.maxDelta), 0);
     const summary = {
+      mode,
       count: results.length,
-      themes: THEMES,
+      themes,
       aaTolerance: AA_TOLERANCE,
       outputSize: { width: OUT_W, height: OUT_H },
       worstDiffPct: Number(worst.toFixed(4)),
@@ -286,18 +374,48 @@
 </script>
 
 <svelte:head>
-  <title>Card Back Parity — Old DOM vs New BackJob</title>
+  <title>Card Parity — {mode === "front" ? "Front Worker vs Main" : "Back Old DOM vs New BackJob"}</title>
 </svelte:head>
 
 <div class="page">
   <header>
-    <h1>Card Back Parity Harness</h1>
-    <p>
-      Renders representative card backs via the OLD DOM screenshot path and the NEW BackJob
-      paint path, then pixel-diffs them. AA tolerance: {AA_TOLERANCE} per channel. Output:
-      {OUT_W}×{OUT_H}.
-    </p>
+    <h1>Card Parity Harness — {mode === "front" ? "Front (worker vs main)" : "Back (old vs new)"}</h1>
+    {#if mode === "front"}
+      <p>
+        Renders representative card fronts via the MAIN-THREAD compose path and the WORKER
+        pool compose path with identical options, then pixel-diffs them. AA tolerance:
+        {AA_TOLERANCE} per channel. Output: {OUT_W}×{OUT_H}.
+      </p>
+    {:else}
+      <p>
+        Renders representative card backs via the OLD DOM screenshot path and the NEW BackJob
+        paint path, then pixel-diffs them. AA tolerance: {AA_TOLERANCE} per channel. Output:
+        {OUT_W}×{OUT_H}.
+      </p>
+    {/if}
     <div class="controls">
+      <div class="mode-toggle" role="radiogroup" aria-label="Parity mode">
+        <button
+          type="button"
+          role="radio"
+          aria-checked={mode === "back"}
+          class:active={mode === "back"}
+          disabled={running}
+          onclick={() => (mode = "back")}
+        >
+          Back (old vs new)
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={mode === "front"}
+          class:active={mode === "front"}
+          disabled={running}
+          onclick={() => (mode = "front")}
+        >
+          Front (worker vs main)
+        </button>
+      </div>
       <button type="button" onclick={run} disabled={running || !!loadError}>
         {running ? "Running…" : "Run parity check"}
       </button>
@@ -336,8 +454,14 @@
         <div class="cell">
           <div class="cell-head">{r.label} — {r.theme} ({r.diffPct.toFixed(3)}%)</div>
           <div class="trio">
-            <figure><figcaption>OLD (DOM)</figcaption><div use:attach={r.oldCanvas}></div></figure>
-            <figure><figcaption>NEW (BackJob)</figcaption><div use:attach={r.newCanvas}></div></figure>
+            <figure>
+              <figcaption>{mode === "front" ? "MAIN (main thread)" : "OLD (DOM)"}</figcaption>
+              <div use:attach={r.oldCanvas}></div>
+            </figure>
+            <figure>
+              <figcaption>{mode === "front" ? "WORKER (pool)" : "NEW (BackJob)"}</figcaption>
+              <div use:attach={r.newCanvas}></div>
+            </figure>
             <figure><figcaption>DIFF (red = differs)</figcaption><div use:attach={r.diffCanvas}></div></figure>
           </div>
         </div>
@@ -390,6 +514,24 @@
   .status {
     font-size: 13px;
     color: #8ab4f8;
+  }
+  .mode-toggle {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid #2a2a33;
+  }
+  .mode-toggle button {
+    padding: 8px 14px;
+    font-size: 13px;
+    background: transparent;
+    border: 1px solid transparent;
+  }
+  .mode-toggle button.active {
+    background: rgba(99, 102, 241, 0.3);
+    border-color: rgba(99, 102, 241, 0.5);
   }
   #parity-summary {
     background: #0c0c10;
