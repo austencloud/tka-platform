@@ -116,9 +116,18 @@ type H264MP4Encoder = {
 // it accelerates Main/High, not Baseline. So pick the profile by platform.
 const IS_MOBILE = (() => {
   try {
-    const uaData = (scope.navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData;
-    if (uaData && typeof uaData.mobile === "boolean") return uaData.mobile;
-    return /Android|iPhone|iPad|iPod|Mobile/i.test(scope.navigator.userAgent);
+    const nav = scope.navigator as Navigator & {
+      userAgentData?: { mobile?: boolean; platform?: string };
+    };
+    const ua = nav.userAgent ?? "";
+    const platform = nav.userAgentData?.platform ?? "";
+    // Detect by OS/GPU class, NOT form factor: a folded-open phone (e.g. Z Fold)
+    // reports userAgentData.mobile === false yet still has a Qualcomm mobile
+    // encoder that wants Constrained Baseline. So OR the Android/iOS signals
+    // instead of trusting the `mobile` flag (which gates on screen size).
+    const isAndroid = /Android/i.test(ua) || platform === "Android";
+    const isApple = /iPhone|iPad|iPod/i.test(ua) || platform === "iOS";
+    return isAndroid || isApple || nav.userAgentData?.mobile === true;
   } catch {
     return false;
   }
