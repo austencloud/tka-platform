@@ -20,7 +20,7 @@ import { buildBackJob } from "./card-back/card-back-job-builder";
 import { paintBackJob } from "./card-back/card-back-raster";
 import { buildCanonicalCardVisibility } from "../domain/canonical-card-visibility";
 import { getCardFrontWorkerPool } from "../../../shared/render/services/card-front-worker-pool";
-import { composeCardFrontParallel } from "../../../shared/render/services/compose-card-front-parallel";
+import { buildFrontJob } from "../../../shared/render/services/build-front-job";
 import { wrapContentInCardFrame } from "./card-front-frame";
 
 
@@ -32,7 +32,7 @@ const CONTENT_WIDTH = MPC_WIDTH - MPC_BLEED * 2;   // 750
 
 // Colored frame thickness as a multiple of the print bleed. Must match the
 // frame module's BORDER_SCALE — both inset content by round(bleed * 1.3).
-const BORDER_SCALE = 1.3;
+const BORDER_SCALE = 2.0;
 
 export class PrintCardRenderer {
   constructor(
@@ -106,14 +106,26 @@ export class PrintCardRenderer {
       },
     };
 
-    // Fan per-cell raster to the seeded worker pool when ready; else main thread.
+    // Render the full card front in one worker round-trip when the seeded pool
+    // is ready; else compose on the main thread. The pool gate
+    // (PARALLEL_FRONT_ENABLED) is currently off, so isReady() is false and the
+    // main-thread branch runs in production — this worker path stays dormant
+    // until the perf gate flips it.
     const pool = getCardFrontWorkerPool();
-    let sequenceCanvas: RenderCanvas;
+    let sequenceCanvas: RenderCanvas | HTMLCanvasElement;
     if (pool.isReady()) {
       try {
-        sequenceCanvas = await composeCardFrontParallel(sequence, composeOptions, pool);
+        const job = await buildFrontJob(sequence, composeOptions);
+        const bitmap = await pool.composeFront(job);
+        // Draw the worker's full-card bitmap into a content canvas for the bleed wrap.
+        const content = document.createElement("canvas");
+        content.width = bitmap.width;
+        content.height = bitmap.height;
+        content.getContext("2d")!.drawImage(bitmap, 0, 0);
+        bitmap.close?.();
+        sequenceCanvas = content;
       } catch (err) {
-        console.warn("[PrintCardRenderer] parallel front failed, main-thread fallback:", err);
+        console.warn("[PrintCardRenderer] full-card worker failed, main-thread fallback:", err);
         sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
       }
     } else {
