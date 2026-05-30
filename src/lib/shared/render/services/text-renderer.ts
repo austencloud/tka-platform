@@ -53,6 +53,14 @@ export interface UserInfoFooterOptions {
   leftLabel?: string;
   rightLabel?: string;
   iconPath?: string;
+  /**
+   * Pre-loaded footer icon image. When supplied, it is forwarded straight to
+   * renderFooter and loadFooterIcon is skipped — this is the worker path (the
+   * seeded icon bitmap), where `new Image()` (used by loadFooterIcon) is
+   * unavailable. The main thread leaves this undefined and keeps passing
+   * iconPath, so its behavior is unchanged.
+   */
+  iconImage?: CanvasImageSource;
   accentColor?: string;
   accentTintOpacity?: number;
 }
@@ -311,7 +319,9 @@ export class TextRenderer {
         ? new Date(opts.userInfo.exportDate)
         : undefined;
 
-    const iconImage = opts.iconPath ? await loadFooterIcon(opts.iconPath) : undefined;
+    // Prefer a pre-loaded icon (worker path — seeded bitmap, no new Image()).
+    // Otherwise fall back to loading from iconPath on the main thread.
+    const iconImage = opts.iconImage ?? (opts.iconPath ? await loadFooterIcon(opts.iconPath) : undefined);
 
     renderFooter(ctx, {
       canvasWidth: opts.canvas.width,
