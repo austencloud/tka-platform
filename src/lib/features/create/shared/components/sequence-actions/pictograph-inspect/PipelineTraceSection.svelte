@@ -10,12 +10,30 @@
     PipelineDiagnostics,
     PipelineTier,
   } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
+  import { getDefaultOverrideRepository } from "$lib/shared/pictograph/arrow/positioning/default-override/services/default-override-singleton";
+  import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
 
   interface Props {
     diagnostics: PipelineDiagnostics | null;
   }
 
   let { diagnostics }: Props = $props();
+
+  // Live Default value, synchronous O(1) repo lookup — no async pipeline rerun.
+  // Reactive to the same version bus the editor bumps on every WASD keystroke,
+  // so the Default row reflects the live edit immediately (not just after Save).
+  const liveDefaultValue = $derived.by((): { x: number; y: number } | null => {
+    const _ = globalAdjustmentVersion.version;
+    const d = diagnostics?.default;
+    if (!d?.gridMode || !d?.motionType || !d?.placementKey) return null;
+    const v = getDefaultOverrideRepository()?.getValue(
+      d.gridMode,
+      d.motionType,
+      d.placementKey,
+      d.turns,
+    );
+    return v ? { x: v[0], y: v[1] } : null;
+  });
 
   function tierLabel(tier: PipelineTier): string {
     switch (tier) {
@@ -81,7 +99,11 @@
           <span class="tier-detail">{detail}</span>
         {/if}
         <span class="tier-value" class:none={!info}>
-          {info ? formatValue(info.value) : "none"}
+          {#if tier === "default" && liveDefaultValue}
+            {formatValue(liveDefaultValue)}
+          {:else}
+            {info ? formatValue(info.value) : "none"}
+          {/if}
         </span>
       </div>
 
