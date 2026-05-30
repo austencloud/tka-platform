@@ -1,7 +1,7 @@
 # Enterprise Ceremony Retirement
 
 Date: 2026-04-30
-Status: Draft
+Status: In progress — Phases 1–4 substantially done (interface retirement + directory flattening); Phases 5–6 (stateless→function conversion, getter simplification) not started. See "Progress (2026-05-29)" at the end.
 Scope: Codebase-wide removal of unnecessary 1:1 interface/implementation indirection AND conversion of stateless classes to plain function modules
 
 ## Problem
@@ -362,3 +362,41 @@ This is ideal for parallel agentic execution. The work is mechanical, repetitive
 4. **Capacitor/Tauri builds.** Run platform builds after completion to verify no path issues.
 5. **Getter call-site patterns.** Some consumers may store getter results in variables, pass services as arguments, or hold them in Svelte reactive state. These patterns need manual attention during Phase 5. The Phase 0 manifest should flag consumers that use non-trivial getter patterns.
 6. **Services mistakenly classified as stateless.** The audit checks for constructor params and instance field declarations, but a class could acquire state through closure or external mutation. Manual review of the Phase 0 manifest before executing Phase 5 is prudent.
+
+## Progress (2026-05-29)
+
+Executed across multiple parallel sessions (the wave/cluster batches). What's landed vs the plan, measured against the live tree:
+
+### Done
+
+- **Phases 1–2 (interface retirement), bulk.** The ~470 zero-consumer + ~270 type-exporting interfaces were retired across the wave/cluster batches. Residual interface files: **20** `I*.ts` (down from 757).
+- **Phase 4 (directory flattening), complete.** `contracts/` directories: **0 remain** (all collapsed; the last 5 single-interface dirs were hoisted 2026-05-29 — `ILOOPExecutor`, `IAsciiRenderer`, `IEndpointDetector`, `IInputProvider`, `ISubInterpreter` moved up out of `contracts/`). `implementations/` directories: **2 remain, deliberately** (see Deferred).
+- **Kebab-rename + resolution-based import rewrite**, complete for the flattened modules. Two Windows-specific hazards were found and now have guard scripts: `scripts/import-case-scan.cjs` (case-only renames that pass on Windows but break Cloudflare's case-sensitive Linux) and `scripts/worker-url-scan.cjs` (`new URL("…worker.ts", import.meta.url)` paths broken by depth changes during flatten).
+
+### Residual interface inventory (20 `I*.ts`)
+
+| Class | Count | Disposition |
+|---|---|---|
+| Genuine 2+ implementations | 8 — `ILOOPExecutor`, `ISubInterpreter`, `ILOOPDetector`, `IAsciiRenderer`, `IDirectRenderer`, `IEndpointDetector`, `IInputProvider`, `ITrailOverlayCanvas` | **Keep** (real polymorphism) |
+| Dependency-inversion boundary (1 impl, but interface lets a lower layer call a higher one via register/get) | 1 — `IFeedbackTesterWorkflow` | **Keep** — retiring it = layering violation (`shared/` would import `features/`) |
+| Type-only `I*` (impls=0; data-shape interfaces, not service contracts) | 10 — `IAnimationRenderer` (19 importers), `IAnimationRenderLoop`, `IAnimationPrecomputer`, `IAnimatorLoader`, `IAnimatorCanvasInitializer`, `IGlyphTextureLoader`, `IPropTextureLoader`, `ISVGGenerator`, `ITrailCapturer`, `IPublicIndexSyncer` | **Phase 3 pending** — migrate to `types.ts`, drop `I` prefix |
+| Retired 2026-05-29 | `ICSVPictographParser` | Done — `CSVRow` moved to `csv-pictograph-parser.ts`, consumers retyped to the concrete class |
+
+**Lesson:** the residual interfaces are the *hard tail*, not leftover ceremony. The easy 1:1 contracts were already retired by the waves. What remains is genuine polymorphism, inversion boundaries, and type-only shapes — each needs individual judgment, not a codemod.
+
+### Not started
+
+- **Phase 5 (stateless class → function modules), ~328 classes.** This is the only remaining phase with a **measurable runtime benefit**: classes are not tree-shakeable per-method (import the class, ship every method); standalone function exports get per-function dead-code elimination → smaller client bundle. Phases 1–4 were pure source-org (zero bundle delta); Phase 5 moves the needle. Quantify with a before/after bundle diff.
+- **Phase 6 (getter return-type simplification for ~200 stateful classes).**
+- **Phase 7 (validation sweep).**
+
+Current metrics vs targets: `implements I` **55** (target ~25 — the surplus is mostly stateless classes still implementing retired-elsewhere shapes, cleared in Phase 5); singleton getter files **289** (target ~200 stateful; ~89 stateless getters die in Phase 5); exported classes **656**.
+
+### Deferred (deliberate keeps, not flatten targets)
+
+- `foundation/services/implementations/data/` — `CsvParser` + `EnumMapper`. These are genuine dedup candidates (class API vs the canonical standalone-function modules `csv-parser.ts`/`enum-mapper.ts`), needing behavior analysis, not a mechanical move.
+- `animation-engine/services/implementations/` — structural subdirs (`canvas2d/`, `fire/`, `led/`, `managers/`), not a flat hoist.
+
+### Sequencing note
+
+Phase 3 (the 10 type-only migrations) and Phase 5 touch consumers broadly in the **render / animation / trail / export** subtrees — run them on a clean tree, since that's where in-flight feature work concentrates and rename/migration churn collides.
