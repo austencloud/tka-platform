@@ -7,8 +7,7 @@
  * Mirrors the pattern used by global-adjustment-singleton.ts.
  */
 
-import { SpecialArrowPlacementRepository } from "./special-arrow-placement-repository";
-import { SpecialArrowPlacementPersister } from "./special-arrow-placement-persister";
+import type { SpecialArrowPlacementRepository } from "./special-arrow-placement-repository";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("SpecialOverrideSingleton");
@@ -39,6 +38,8 @@ export async function initializeSpecialOverrides(): Promise<void> {
 async function doInitialize(): Promise<void> {
   try {
     logger.info("Initializing special placement override system...");
+    const { SpecialArrowPlacementPersister } = await import("./special-arrow-placement-persister");
+    const { SpecialArrowPlacementRepository } = await import("./special-arrow-placement-repository");
     const persister = new SpecialArrowPlacementPersister();
     const repository = new SpecialArrowPlacementRepository(persister);
     await repository.initialize();

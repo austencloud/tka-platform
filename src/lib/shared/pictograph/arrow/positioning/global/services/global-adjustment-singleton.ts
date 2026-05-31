@@ -8,8 +8,7 @@
  * like SpecialPlacer without requiring DI container reconstruction.
  */
 
-import { GlobalArrowAdjustmentRepository } from "./global-arrow-adjustment-repository";
-import { GlobalArrowAdjustmentPersister } from "./global-arrow-adjustment-persister";
+import type { GlobalArrowAdjustmentRepository } from "./global-arrow-adjustment-repository";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("GlobalAdjustmentSingleton");
@@ -54,6 +53,8 @@ async function doInitialize(): Promise<void> {
     logger.info("Initializing global arrow adjustment system...");
 
     // Create persister and repository
+    const { GlobalArrowAdjustmentPersister } = await import("./global-arrow-adjustment-persister");
+    const { GlobalArrowAdjustmentRepository } = await import("./global-arrow-adjustment-repository");
     const persister = new GlobalArrowAdjustmentPersister();
     const repository = new GlobalArrowAdjustmentRepository(persister);
 

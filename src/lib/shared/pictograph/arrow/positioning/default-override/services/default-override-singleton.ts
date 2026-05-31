@@ -7,8 +7,7 @@
  * static JSON. Mirrors special-override-singleton.ts.
  */
 
-import { DefaultArrowPlacementRepository } from "./default-arrow-placement-repository";
-import { DefaultArrowPlacementPersister } from "./default-arrow-placement-persister";
+import type { DefaultArrowPlacementRepository } from "./default-arrow-placement-repository";
 import { setDefaultOverrideResolver } from "../../placement/services/arrow-placer";
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
@@ -32,6 +31,8 @@ export async function initializeDefaultOverrides(): Promise<void> {
 async function doInitialize(): Promise<void> {
   try {
     logger.info("Initializing default placement override system...");
+    const { DefaultArrowPlacementPersister } = await import("./default-arrow-placement-persister");
+    const { DefaultArrowPlacementRepository } = await import("./default-arrow-placement-repository");
     const persister = new DefaultArrowPlacementPersister();
     const repository = new DefaultArrowPlacementRepository(persister);
     await repository.initialize();
