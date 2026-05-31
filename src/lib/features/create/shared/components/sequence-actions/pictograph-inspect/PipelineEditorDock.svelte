@@ -199,6 +199,17 @@
     syncNumericInputs();
   });
 
+  // Re-seed the numeric inputs from the stored value whenever the pipeline
+  // diagnostics refresh (after a Z-revert, Save, or delete) — but never while a
+  // WASD/numeric edit is in flight. Without this, reverting leaves editX/editY at
+  // the pre-revert value, so the next nudge resumes from the stale spot instead
+  // of the reverted baseline.
+  $effect(() => {
+    void diagnostics; // re-run when diagnostics change
+    if (!activeColor || hasLocalChanges || saveState === "saving") return;
+    syncNumericInputs();
+  });
+
   function syncNumericInputs() {
     if (editTarget === "special-json") {
       const repo = getSpecialOverrideRepository();
