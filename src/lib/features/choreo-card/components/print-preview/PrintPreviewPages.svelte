@@ -17,6 +17,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import { deckCardBlobCache, blobToDataUrl, canvasToBlob } from "../../services/DeckCardBlobCache";
   import { hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
   import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
+  import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
+  import { CompositionDispatcher } from "$lib/shared/render/services/composition-dispatcher";
+  import { getCardAssetBundle } from "$lib/shared/render/services/get-card-asset-bundle";
   import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
 
   // Render-schema version baked into every card cache key (memory + IndexedDB).
@@ -182,7 +185,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     return pages;
   });
 
-  function buildRenderOptions(stepCount?: number, footer?: CardFooter, cardIndex?: number): PrintRenderOptions {
+  function buildRenderOptions(stepCount?: number, footer?: CardFooter, cardIndex?: number, useWorkerPool = false): PrintRenderOptions {
     const imageComposition = getImageCompositionManager();
     const element = (cardIndex != null ? tndElements?.[cardIndex] : undefined) ?? tndElement;
     return {
@@ -205,6 +208,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       bleedPx: 36,
       deckId,
       deckName,
+      useWorkerPool,
     };
   }
 
@@ -355,6 +359,27 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
     const renderer = getPrintCardRenderer();
 
+    // Engage the OffscreenCanvas worker pool for this draw: probe support once,
+    // then build + seed the AssetBundle so worker renders have their SVGs.
+    // Best-effort — on failure (or an unsupported browser) workerPoolReady stays
+    // false and every card renders on the main thread exactly as before.
+    let workerPoolReady = false;
+    try {
+      if (await CompositionDispatcher.probeWorkerSupport()) {
+        const bundle = await getCardAssetBundle(seqs, {
+          bluePropType: resolvedBlueProp ?? PropType.STAFF,
+          redPropType: resolvedRedProp ?? PropType.STAFF,
+          theme: resolvedBackground,
+        });
+        if (generation !== renderGeneration) return;
+        getCompositionDispatcher().setAssetBundle(bundle);
+        workerPoolReady = true;
+      }
+    } catch (err) {
+      console.warn("[PrintPreview] worker pool unavailable, main-thread render:", err);
+    }
+    if (generation !== renderGeneration) return;
+
     // Pre-resolve every card's QR short code in one batched pass before the
     // render lanes fan out. Without this, each lane's first render does a
     // serial ~380ms Firestore round-trip (the cold-deck bottleneck) which
@@ -386,7 +411,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
           if (!cached.pair) cached.pair = await reconstructPair(cached.rendered);
           pairs[i] = cached.pair;
         } else {
-          const options = buildRenderOptions(stepCount, footer, i);
+          const options = buildRenderOptions(stepCount, footer, i, workerPoolReady);
           // Front (Canvas2D) and back (DOM screenshot, ~200ms fixed wait) are
           // independent and each allocate their own canvas/container, so render
           // them together rather than front-then-back.
