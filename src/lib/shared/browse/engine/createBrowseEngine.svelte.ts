@@ -32,7 +32,10 @@ import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils
 import { detectRotationPeriod } from "$lib/shared/create/domain/detect-rotation-period";
 import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 import { getBrowseFilter } from "$lib/shared/browse/getBrowseFilter";
-import { getMultiFilter } from "$lib/shared/browse/getMultiFilter";
+import {
+	applyFilters as applyMultiFilters,
+	getFilteredCount as getMultiFilteredCount,
+} from "$lib/shared/browse/services/multi-filter";
 import { sortSequences as browseSortSequences } from "$lib/shared/browse/services/browse-sorter";
 import { getBrowseSectionManager } from "$lib/shared/browse/getBrowseSectionManager";
 import { toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
@@ -104,7 +107,6 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 	// --- Services (singleton factories) ---
 	const loaderService = getBrowseLoader();
 	const filterService = getBrowseFilter();
-	const multiFilterService = getMultiFilter();
 	const sectionManager = getBrowseSectionManager();
 
 	// --- Resolve persisted state ---
@@ -188,7 +190,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 		// Apply filters
 		if (activeFilters.size > 0) {
 			// Cast to the service's ActiveFilter type (it only reads `type` and `value`)
-			result = multiFilterService.applyFilters(
+			result = applyMultiFilters(
 				result,
 				activeFilters as unknown as Map<string, ActiveFilter>
 			);
@@ -617,7 +619,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			candidateType: BrowseFilterType,
 			candidateValue: BrowseFilterValue
 		): number {
-			return multiFilterService.getFilteredCount(
+			return getMultiFilteredCount(
 				allSequences,
 				candidateType,
 				candidateValue,

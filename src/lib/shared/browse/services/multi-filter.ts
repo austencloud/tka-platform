@@ -1,60 +1,51 @@
 /**
- * Multi-Filter Implementation
+ * Multi-Filter
  *
  * Composes the existing BrowseFilter to apply multiple filters
  * with AND logic. Each filter type narrows the result set.
+ *
+ * Stateless — plain module functions. BrowseFilter has no instance state, so a
+ * single module-level instance replaces the former ctor injection (the getter
+ * created exactly one `new BrowseFilter()` per app).
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/filtering-types";
 import type { ActiveFilter } from "$lib/shared/browse/domain/multi-filter-models";
-import type { BrowseFilter } from "./browse-filter";
-export class MultiFilter {
-  constructor(private readonly browseFilter: BrowseFilter) {}
+import { BrowseFilter } from "./browse-filter";
 
-  applyFilters(
-    sequences: SequenceData[],
-    filters: Map<string, ActiveFilter>
-  ): SequenceData[] {
-    let result = sequences;
+const browseFilter = new BrowseFilter();
 
-    for (const filter of filters.values()) {
-      result = this.browseFilter.applyFilter(
-        result,
-        filter.type,
-        filter.value
-      );
-    }
+export function applyFilters(
+  sequences: SequenceData[],
+  filters: Map<string, ActiveFilter>
+): SequenceData[] {
+  let result = sequences;
 
-    return result;
+  for (const filter of filters.values()) {
+    result = browseFilter.applyFilter(result, filter.type, filter.value);
   }
 
-  getFilteredCount(
-    sequences: SequenceData[],
-    candidateType: BrowseFilterType,
-    candidateValue: BrowseFilterValue,
-    otherFilters: Map<string, ActiveFilter>
-  ): number {
-    // First apply all other filters (excluding the candidate type)
-    let filtered = sequences;
+  return result;
+}
 
-    for (const [key, filter] of otherFilters) {
-      if (key === candidateType) continue;
-      filtered = this.browseFilter.applyFilter(
-        filtered,
-        filter.type,
-        filter.value
-      );
-    }
+export function getFilteredCount(
+  sequences: SequenceData[],
+  candidateType: BrowseFilterType,
+  candidateValue: BrowseFilterValue,
+  otherFilters: Map<string, ActiveFilter>
+): number {
+  // First apply all other filters (excluding the candidate type)
+  let filtered = sequences;
 
-    // Then apply the candidate filter
-    filtered = this.browseFilter.applyFilter(
-      filtered,
-      candidateType,
-      candidateValue
-    );
-
-    return filtered.length;
+  for (const [key, filter] of otherFilters) {
+    if (key === candidateType) continue;
+    filtered = browseFilter.applyFilter(filtered, filter.type, filter.value);
   }
+
+  // Then apply the candidate filter
+  filtered = browseFilter.applyFilter(filtered, candidateType, candidateValue);
+
+  return filtered.length;
 }
