@@ -27,10 +27,8 @@ import {
 import type { SpecialPlacementDataProvider } from "./special-placement-data-provider";
 import type { TurnsTupleGenerator } from "./turns-tuple-generator";
 import type { SpecialPlacementLookup } from "./special-placement-lookup";
-import {
-  getGlobalAdjustmentRepository,
-  isGlobalReadDisabled,
-} from "../../global/services/global-adjustment-singleton";
+import { isGlobalReadDisabled } from "../../global/services/global-adjustment-singleton";
+import { getGlobalAdjustmentResolver } from "./override-resolvers";
 
 export class SpecialPlacer {
   constructor(
@@ -101,8 +99,8 @@ export class SpecialPlacer {
     // oriKey is already "from_layer1" - mapToLegacyBucket would parse the underscores
     // as orientation separators, producing "from_layer2" (wrong layer entirely).
     const legacyOriKey = mapToLegacyBucket(rawOriKey);
-    const globalAdjustmentRepo = getGlobalAdjustmentRepository();
-    if (!isGlobalReadDisabled() && globalAdjustmentRepo?.isInitialized) {
+    const globalResolver = getGlobalAdjustmentResolver();
+    if (!isGlobalReadDisabled() && globalResolver) {
       const baseKey = {
         gridMode,
         oriKey,
@@ -110,7 +108,7 @@ export class SpecialPlacer {
         turnsTuple,
         arrowKey,
       };
-      const cascadingResult = globalAdjustmentRepo.getAdjustmentCascading(
+      const cascadingResult = globalResolver(
         baseKey,
         thisPropType,
         otherPropType,

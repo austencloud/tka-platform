@@ -29,15 +29,17 @@ import { generateTurnsTuple } from "../../key-generation/services/turns-tuple-ke
 import { getKeyFromArrow } from "../../key-generation/services/attribute-key-generator";
 import { GridMode } from "../../../../grid/domain/enums/grid-enums";
 import { Point } from "fabric";
-import { getPropGeometryRepository } from "../../prop-geometry/services/prop-geometry-singleton";
 import { derivePropGeometryKey } from "../../prop-geometry/domain/prop-geometry-key-deriver";
 import type {
   PipelineDiagnostics,
   GlobalTierInfo,
   SpecialJsonTierInfo,
 } from "../domain/PipelineDiagnostics";
-import { getGlobalAdjustmentRepository } from "../../global/services/global-adjustment-singleton";
-import { getSpecialOverrideRepository } from "../../special-override/services/special-override-singleton";
+import {
+  getSpecialOverrideResolver,
+  getGlobalAdjustmentResolver,
+  getPropGeometryResolver,
+} from "../../placement/services/override-resolvers";
 import {
   generateSpecialOverrideKey,
   extractOriFolderFromPath,
@@ -200,8 +202,8 @@ export class ArrowAdjustmentCalculator {
     // Requires a letter to build a meaningful key. Same constraint as special placement.
     if (letter) {
       try {
-        const repo = getGlobalAdjustmentRepository();
-        if (repo?.isInitialized) {
+        const globalResolver = getGlobalAdjustmentResolver();
+        if (globalResolver) {
           const arrowKey = arrowColor || motionData.color || "blue";
           const thisPropType = motionData.propType?.toLowerCase() || "staff";
           const otherColor = arrowKey === "blue" ? "red" : "blue";
@@ -260,7 +262,7 @@ export class ArrowAdjustmentCalculator {
             arrowKey,
           };
 
-          const cascadingResult = repo.getAdjustmentCascading(
+          const cascadingResult = globalResolver(
             baseKey,
             thisPropType,
             otherPropType,
@@ -305,8 +307,8 @@ export class ArrowAdjustmentCalculator {
             firestoreOverride: null,
           };
 
-          const specialOverrideRepo = getSpecialOverrideRepository();
-          if (specialOverrideRepo?.isInitialized) {
+          const specialResolver = getSpecialOverrideResolver();
+          if (specialResolver) {
             const oriFolder = extractOriFolderFromPath(jsonResult.filePath);
             const gridMode =
               motionData.gridMode ||
@@ -322,7 +324,7 @@ export class ArrowAdjustmentCalculator {
               attributeKey: attrKey || "",
               propType: motionData.propType?.toLowerCase() || "staff",
             });
-            const fullOverride = specialOverrideRepo.getFullOverride(overrideKey);
+            const fullOverride = specialResolver.getFullOverride(overrideKey);
             if (fullOverride) {
               specialJsonInfo.firestoreOverride = {
                 value: { x: fullOverride.adjustmentX, y: fullOverride.adjustmentY },
@@ -336,8 +338,8 @@ export class ArrowAdjustmentCalculator {
           diagnostics.specialJson = specialJsonInfo;
         } else {
           // No static JSON entry — check for Firestore-only override
-          const specialOverrideRepo = getSpecialOverrideRepository();
-          if (specialOverrideRepo?.isInitialized && pictographData.letter) {
+          const specialResolver = getSpecialOverrideResolver();
+          if (specialResolver && pictographData.letter) {
             const rawOriKey = generateOrientationKey(motionData, pictographData);
             const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
             const gridMode =
@@ -361,7 +363,7 @@ export class ArrowAdjustmentCalculator {
                 attributeKey: attrKeyForOverride || "",
                 propType: motionData.propType?.toLowerCase() || "staff",
               });
-              const fullOverride = specialOverrideRepo.getFullOverride(overrideKey);
+              const fullOverride = specialResolver.getFullOverride(overrideKey);
               if (fullOverride) {
                 diagnostics.specialJson = {
                   value: { x: fullOverride.adjustmentX, y: fullOverride.adjustmentY },
@@ -586,17 +588,16 @@ export class ArrowAdjustmentCalculator {
   ): Promise<Point | null> {
     try {
       // Prop-scoped special override, checked regardless of static-JSON presence.
-      const overrideRepo = getSpecialOverrideRepository();
-      if (overrideRepo?.isInitialized && pictographData.letter) {
-        const override = overrideRepo.getOverride(
+      const specialResolver = getSpecialOverrideResolver();
+      if (specialResolver && pictographData.letter) {
+        const override = specialResolver.getOverride(
           computeSpecialOverrideKey(pictographData, motionData, arrowColor ?? motionData.color),
         );
         if (override) return override;
       }
 
       // Check Firestore special overrides first
-      const specialOverrideRepo = getSpecialOverrideRepository();
-      if (specialOverrideRepo?.isInitialized && pictographData.letter) {
+      if (specialResolver && pictographData.letter) {
         const jsonResult = await this.SpecialPlacer.getSpecialJsonAdjustmentOnly(
           motionData,
           pictographData,
@@ -621,7 +622,7 @@ export class ArrowAdjustmentCalculator {
             propType: motionData.propType?.toLowerCase() || "staff",
           });
 
-          const override = specialOverrideRepo.getOverride(overrideKey);
+          const override = specialResolver.getOverride(overrideKey);
           if (override) {
             return new Point(override.x, override.y);
           }
@@ -662,8 +663,8 @@ export class ArrowAdjustmentCalculator {
     motionData: MotionData,
     arrowColor?: string
   ): Point | null {
-    const repo = getPropGeometryRepository();
-    if (!repo?.isInitialized) return null;
+    const propGeometryResolver = getPropGeometryResolver();
+    if (!propGeometryResolver) return null;
 
     const propGeometryKey = derivePropGeometryKey(
       pictographData,
@@ -672,7 +673,7 @@ export class ArrowAdjustmentCalculator {
     );
     if (!propGeometryKey) return null;
 
-    const result = repo.getAdjustmentCascading(propGeometryKey);
+    const result = propGeometryResolver(propGeometryKey);
     return result ? result.adjustment : null;
   }
 
