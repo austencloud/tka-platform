@@ -1,18 +1,20 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { PrintRenderOptions } from "$lib/features/choreo-card/services/types";
   import { renderCardBack } from "$lib/features/choreo-card/services/card-back-dom-renderer";
   import { buildBackJob } from "$lib/features/choreo-card/services/card-back/card-back-job-builder";
   import { paintBackJob } from "$lib/features/choreo-card/services/card-back/card-back-raster";
-  import { createBrowseEngine } from "$lib/shared/browse/engine/createBrowseEngine.svelte";
+  import { buildFrontComposeOptions } from "$lib/features/choreo-card/services/build-front-compose-options";
+  import { wrapContentInCardFrame } from "$lib/features/choreo-card/services/card-front-frame";
+  import { loadParityDeck, listParityDecks, type ParityDeck, type ParityDeckSummary } from "$lib/features/choreo-card/services/parity-deck-source";
   import { getImageComposer } from "$lib/shared/render/get-image-composer";
   import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
   import { CompositionDispatcher } from "$lib/shared/render/services/composition-dispatcher";
   import { getCardAssetBundle } from "$lib/shared/render/services/get-card-asset-bundle";
   import { buildOverridePlacementBundle } from "$lib/shared/render/services/override-placement-bundle";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
-  import { onMount, onDestroy } from "svelte";
-  import ParityHarness from "$lib/shared/parity/ParityHarness.svelte";
+  import { onMount } from "svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import CardParityViewer from "$lib/shared/parity/CardParityViewer.svelte";
   import { diff, normalizeToCanvas, AA_TOLERANCE } from "$lib/shared/parity/image-diff";
   import type { ParityRun, ParityRow, ParityVerdict } from "$lib/shared/parity/parity-types";
 
@@ -24,65 +26,67 @@
   const OUT_W = LOGICAL_W * SCALE; // 1644
   const OUT_H = LOGICAL_H * SCALE; // 2244
 
-  // Themes to exercise. cosmic is the default; ocean adds a second palette.
-  const THEMES = ["cosmic", "ocean"] as const;
+  // One fixed timestamp shared by the main + worker front renders so the
+  // exportDate-derived footer text is byte-identical (pixel parity).
+  const EXPORT_DATE = "2026-05-31T00:00:00.000Z";
 
-  const engine = createBrowseEngine({ persistKey: null, minColumns: 2, initialColumns: 3 });
-
-  let mode = $state<"back" | "front">("back");
+  let mode = $state<"front" | "back">("front");
+  let decks = $state<ParityDeckSummary[]>([]);
+  let selectedDeck = $state<number | null>(null);
   let loadError = $state<string | null>(null);
-  let oldSlot: HTMLDivElement;
 
   onMount(async () => {
     try {
-      await engine.initialize();
+      decks = await listParityDecks();
+      selectedDeck = decks[0]?.deckNumber ?? null;
     } catch (err) {
       loadError = err instanceof Error ? err.message : String(err);
     }
   });
 
-  onDestroy(() => engine.destroy());
-
-  /** Pick a representative subset spanning levels, loop/no-loop, startPos/no. */
-  function selectSequences(all: SequenceData[]): SequenceData[] {
-    const renderable = all.filter((s) => Array.isArray(s.steps) && s.steps.length > 0);
-    const picked: SequenceData[] = [];
-    const seen = new Set<string>();
-
-    const want = (pred: (s: SequenceData) => boolean) => {
-      const hit = renderable.find((s) => !seen.has(s.id) && pred(s));
-      if (hit) {
-        picked.push(hit);
-        seen.add(hit.id);
-      }
-    };
-
-    const lvl = (s: SequenceData) => s.level ?? 0;
-    const hasLoop = (s: SequenceData) => !!s.isCircular || !!s.loopType;
-    const hasStart = (s: SequenceData) => !!s.startPosition;
-
-    // Matrix coverage
-    want((s) => lvl(s) === 1 && !hasLoop(s) && hasStart(s));
-    want((s) => lvl(s) === 1 && hasLoop(s));
-    want((s) => lvl(s) === 2 && hasStart(s));
-    want((s) => lvl(s) === 2 && hasLoop(s));
-    want((s) => lvl(s) === 3 && hasStart(s));
-    want((s) => lvl(s) === 3 && hasLoop(s));
-    want((s) => !hasStart(s)); // explicit no-start-position case
-    want((s) => hasLoop(s) && hasStart(s)); // loop + start together
-
-    // Top up to ~8 with any remaining renderable sequences.
-    for (const s of renderable) {
-      if (picked.length >= 8) break;
-      if (!seen.has(s.id)) {
-        picked.push(s);
-        seen.add(s.id);
-      }
-    }
-    return picked;
+  function htmlCanvas(w: number, h: number): HTMLCanvasElement {
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    return c;
   }
 
-  async function renderNew(seq: SequenceData, theme: string): Promise<HTMLCanvasElement> {
+  function printOptionsFor(deck: ParityDeck, card: ParityDeck["cards"][number]): PrintRenderOptions {
+    return {
+      canvasWidth: OUT_W,
+      canvasHeight: OUT_H,
+      bleedPx: LOGICAL_BLEED * SCALE,
+      includeStartPosition: true,
+      startPositionLayout: "row",
+      tndElement: card.tndElement,
+      leftLabel: card.footer.left,
+      rightLabel: card.footer.right,
+      notes: card.footer.center,
+      iconPath: card.footer.iconPath,
+      bluePropType: deck.bluePropType,
+      redPropType: deck.redPropType,
+      deckName: deck.name,
+    } as PrintRenderOptions;
+  }
+
+  // MAIN-THREAD real card front (the reference): the production renderFront path
+  // with a fixed exportDate so it matches the worker byte-for-byte.
+  async function renderFrontMain(deck: ParityDeck, card: ParityDeck["cards"][number]): Promise<HTMLCanvasElement> {
+    const { composeOptions, frame } = buildFrontComposeOptions(card.sequence, printOptionsFor(deck, card), EXPORT_DATE);
+    const inner = await getImageComposer().composeSequenceImage(card.sequence, composeOptions);
+    const framed = wrapContentInCardFrame(inner, frame, htmlCanvas) as HTMLCanvasElement;
+    return normalizeToCanvas(framed as CanvasImageSource, OUT_W, OUT_H);
+  }
+
+  // WORKER real card front (the candidate): same composeOptions + frame, applied
+  // off-thread (frontCardFrame triggers the in-worker frame wrap).
+  async function renderFrontWorker(deck: ParityDeck, card: ParityDeck["cards"][number]): Promise<HTMLCanvasElement> {
+    const { composeOptions, frame } = buildFrontComposeOptions(card.sequence, printOptionsFor(deck, card), EXPORT_DATE);
+    const bmp = await getCompositionDispatcher().composeFrontBitmap(card.sequence, { ...composeOptions, frontCardFrame: frame });
+    return normalizeToCanvas(bmp as CanvasImageSource, OUT_W, OUT_H);
+  }
+
+  async function renderBackNew(seq: SequenceData, theme: string): Promise<HTMLCanvasElement> {
     const job = await buildBackJob(seq, {
       width: OUT_W,
       height: OUT_H,
@@ -92,7 +96,7 @@
     return normalizeToCanvas(paintBackJob(job) as CanvasImageSource, OUT_W, OUT_H);
   }
 
-  async function renderOld(seq: SequenceData, theme: string): Promise<HTMLCanvasElement> {
+  async function renderBackOld(seq: SequenceData, theme: string): Promise<HTMLCanvasElement> {
     const c = await renderCardBack(seq, {
       width: LOGICAL_W,
       height: LOGICAL_H,
@@ -102,170 +106,88 @@
     return normalizeToCanvas(c as CanvasImageSource, OUT_W, OUT_H);
   }
 
-  // FRONT compose options. Mirrors PrintCardRenderer.renderFront's composeOptions
-  // for a generic card, trimmed to the deck-independent fields so the worker and
-  // main-thread paths receive byte-identical options.
-  function frontOptions(): Partial<SequenceExportOptions> {
-    return {
-      deckCard: { contentWidth: OUT_W, contentHeight: OUT_H },
-      // Pin the prop type so BOTH paths render deterministically. Without this,
-      // main resolves prop type via getSettings (app default) while the worker's
-      // getSettings is unavailable and falls back to STAFF — a guaranteed
-      // mismatch. STAFF matches the asset bundle seeded below.
-      propTypeOverride: PropType.STAFF,
-      bluePropTypeOverride: PropType.STAFF,
-      redPropTypeOverride: PropType.STAFF,
-      includeStartPosition: true,
-      startPositionLayout: "row",
-      addStepNumbers: true,
-      addWord: true,
-      addDifficultyLevel: false,
-      stepSize: 300,
-      stepScale: 1,
-      margin: 0,
-      format: "PNG",
-      quality: 1,
-      scale: 1,
-      redVisible: true,
-      blueVisible: true,
-      addReversalSymbols: true,
-      combinedGrids: false,
-      showLoopGlyph: false,
-      visibilityOverrides: {
-        showTKA: true,
-        showTnD: false,
-        showElemental: false,
-        showPositions: false,
-        showReversals: true,
-        showNonRadialPoints: false,
-        showGrid: true,
-        printMode: true,
-        darkMode: false,
-        handPointVisibility: "all",
-      },
-    };
-  }
-
-  // MAIN-THREAD front (the reference / "old" side for front mode).
-  async function renderFrontMain(seq: SequenceData): Promise<HTMLCanvasElement> {
-    const canvas = await getImageComposer().composeSequenceImage(seq, frontOptions());
-    return normalizeToCanvas(canvas as CanvasImageSource, OUT_W, OUT_H);
-  }
-
-  // WORKER front (the candidate / "new" side). Same options as the main-thread
-  // path, so any pixel difference is purely worker-vs-main.
-  async function renderFrontWorker(seq: SequenceData): Promise<HTMLCanvasElement> {
-    const bmp = await getCompositionDispatcher().composeFrontBitmap(seq, frontOptions());
-    return normalizeToCanvas(bmp as CanvasImageSource, OUT_W, OUT_H);
-  }
-
   function makeRun(): ParityRun {
-    const runMode = mode; // capture at click time
+    const runMode = mode;
+    const deckNumber = selectedDeck;
     return {
       async run(ctx) {
-        const selected = selectSequences([...engine.allSequences]);
-        if (selected.length === 0) {
-          return {
-            verdict: "FAIL",
-            summary: "no renderable sequences",
-            gates: [],
-            result: { error: "no renderable sequences" },
-          };
+        if (deckNumber == null) {
+          return { verdict: "FAIL", summary: "no released decks", gates: [], result: { error: "no released decks" } };
         }
-        const themes: readonly string[] = runMode === "front" ? ["front"] : THEMES;
+        ctx.onProgress({ phase: "loading deck" });
+        const deck = await loadParityDeck(deckNumber, 8);
+        if (!deck || deck.cards.length === 0) {
+          return { verdict: "FAIL", summary: "deck has no renderable cards", gates: [], result: { error: "empty deck" } };
+        }
 
         if (runMode === "front") {
           ctx.onProgress({ phase: "probing worker support" });
           const ok = await CompositionDispatcher.probeWorkerSupport();
           if (!ok) {
-            return {
-              verdict: "FAIL",
-              summary: "worker probe failed",
-              gates: [],
-              result: { error: "worker probe failed" },
-            };
+            return { verdict: "FAIL", summary: "worker probe failed", gates: [], result: { error: "worker probe failed" } };
           }
           ctx.onProgress({ phase: "building asset bundle" });
-          const bundle = await getCardAssetBundle(selected, {
-            bluePropType: PropType.STAFF,
-            redPropType: PropType.STAFF,
-            theme: THEMES[0],
-          });
+          const bundle = await getCardAssetBundle(
+            deck.cards.map((c) => c.sequence),
+            {
+              bluePropType: deck.bluePropType,
+              redPropType: deck.redPropType,
+              theme: deck.theme,
+              iconPaths: deck.cards.map((c) => c.footer.iconPath).filter(Boolean) as string[],
+            },
+          );
           getCompositionDispatcher().setAssetBundle(bundle);
-          // Snapshot whatever overrides the main thread has loaded so worker
-          // placement resolution matches main pixel-for-pixel.
           getCompositionDispatcher().setOverrideBundle(buildOverridePlacementBundle());
         }
 
-        const total = selected.length * themes.length;
+        const total = deck.cards.length;
         let done = 0;
         let worst = 0;
         let worstMaxDelta = 0;
         const summaryRows: Record<string, unknown>[] = [];
 
-        for (const seq of selected) {
-          for (const theme of themes) {
-            if (ctx.signal.aborted) break;
-            const label = seq.word ?? seq.name ?? seq.id;
-            ctx.onProgress({ phase: "rendering", current: ++done, total, detail: `${label} (${theme})` });
-            const lvl = seq.level ?? 0;
-            const hasLoop = !!seq.isCircular || !!seq.loopType;
-            const hasStart = !!seq.startPosition;
-            try {
-              const oldCanvas =
-                runMode === "front" ? await renderFrontMain(seq) : await renderOld(seq, theme);
-              const newCanvas =
-                runMode === "front" ? await renderFrontWorker(seq) : await renderNew(seq, theme);
-              const d = diff(oldCanvas, newCanvas, OUT_W, OUT_H);
-              worst = Math.max(worst, d.diffPct);
-              worstMaxDelta = Math.max(worstMaxDelta, d.maxDelta);
-              const row: ParityRow = {
-                id: `${seq.id}:${theme}`,
-                title: `${label} — ${theme}`,
-                metrics: { "% diff": d.diffPct, "max Δ": d.maxDelta },
-                bad: d.diffPct > 1,
-                cells: [
-                  { label: runMode === "front" ? "MAIN (main thread)" : "OLD (DOM)", canvas: oldCanvas },
-                  { label: runMode === "front" ? "WORKER (pool)" : "NEW (BackJob)", canvas: newCanvas },
-                  { label: "DIFF (red = differs)", canvas: d.heat },
-                ],
-              };
-              ctx.addRow(row);
-              summaryRows.push({
-                label,
-                theme,
-                seqId: seq.id,
-                level: lvl,
-                hasLoop,
-                hasStartPos: hasStart,
-                diffPct: Number(d.diffPct.toFixed(4)),
-                maxDelta: d.maxDelta,
-              });
-            } catch (err) {
-              const msg = err instanceof Error ? err.message : String(err);
-              const blank = document.createElement("canvas");
-              blank.width = OUT_W;
-              blank.height = OUT_H;
-              ctx.addRow({
-                id: `${seq.id}:${theme}`,
-                title: `${label} — ${theme}`,
-                metrics: {},
-                error: msg,
-                cells: [{ label: "ERROR", canvas: blank }],
-              });
-              summaryRows.push({ label, theme, seqId: seq.id, level: lvl, hasLoop, hasStartPos: hasStart, error: msg });
-            }
+        for (const card of deck.cards) {
+          if (ctx.signal.aborted) break;
+          const label = card.word || card.sequence.word || card.sequence.id;
+          ctx.onProgress({ phase: "rendering", current: ++done, total, detail: `${label} (${deck.name})` });
+          try {
+            const oldCanvas = runMode === "front" ? await renderFrontMain(deck, card) : await renderBackOld(card.sequence, deck.theme);
+            const newCanvas = runMode === "front" ? await renderFrontWorker(deck, card) : await renderBackNew(card.sequence, deck.theme);
+            const d = diff(oldCanvas, newCanvas, OUT_W, OUT_H);
+            worst = Math.max(worst, d.diffPct);
+            worstMaxDelta = Math.max(worstMaxDelta, d.maxDelta);
+            const row: ParityRow = {
+              id: `${card.sequence.id}:${runMode}`,
+              title: `${label}${card.tndElement ? ` — ${card.tndElement.name}` : ""}`,
+              metrics: { "% diff": d.diffPct, "max Δ": d.maxDelta },
+              bad: d.diffPct > 1,
+              cells: [
+                { label: runMode === "front" ? "MAIN (main thread)" : "OLD (DOM)", canvas: oldCanvas },
+                { label: runMode === "front" ? "WORKER (pool)" : "NEW (BackJob)", canvas: newCanvas },
+                { label: "DIFF", canvas: d.heat },
+              ],
+            };
+            ctx.addRow(row);
+            summaryRows.push({ label, element: card.tndElement?.name, seqId: card.sequence.id, diffPct: Number(d.diffPct.toFixed(4)), maxDelta: d.maxDelta });
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            const blank = document.createElement("canvas");
+            blank.width = OUT_W;
+            blank.height = OUT_H;
+            ctx.addRow({ id: `${card.sequence.id}:${runMode}`, title: label, metrics: {}, error: msg, cells: [{ label: "ERROR", canvas: blank }] });
+            summaryRows.push({ label, seqId: card.sequence.id, error: msg });
           }
         }
 
         const verdict: ParityVerdict["verdict"] = worst <= 1 ? "PASS" : "FAIL";
         return {
           verdict,
-          summary: `worst diff ${worst.toFixed(3)}% across ${summaryRows.length} renders`,
+          summary: `worst diff ${worst.toFixed(3)}% across ${summaryRows.length} cards`,
           gates: [{ label: "diff ≤ 1%", pass: worst <= 1, detail: `${worst.toFixed(3)}% · Δ${worstMaxDelta}` }],
           result: {
             mode: runMode,
-            themes,
+            deck: deck.name,
+            theme: deck.theme,
             aaTolerance: AA_TOLERANCE,
             outputSize: { width: OUT_W, height: OUT_H },
             worstDiffPct: Number(worst.toFixed(4)),
@@ -279,71 +201,44 @@
 </script>
 
 <svelte:head>
-  <title>Card Parity — {mode === "front" ? "Front Worker vs Main" : "Back Old DOM vs New BackJob"}</title>
+  <title>Card Parity — {mode === "front" ? "Front Worker vs Main" : "Back Old vs New"}</title>
 </svelte:head>
 
-<ParityHarness
-  title="Card Parity Harness"
-  description={`Renders representative cards two ways and pixel-diffs them. AA tolerance ${AA_TOLERANCE}/channel. Output ${OUT_W}×${OUT_H}. Back mode: old DOM vs new BackJob. Front mode: worker pool vs main thread.`}
+<CardParityViewer
+  title="Card Parity"
+  description={`Renders real released-deck cards two ways and pixel-diffs them. AA tolerance ${AA_TOLERANCE}/channel. Output ${OUT_W}×${OUT_H}. Front: worker pool vs main thread (full framed card). Back: old DOM vs new BackJob.`}
   resultKey="cardParityResult"
   run={makeRun}
 >
   {#snippet controls()}
-    <div class="mode-toggle" role="radiogroup" aria-label="Parity mode">
-      <button
-        type="button"
-        role="radio"
-        aria-checked={mode === "back"}
-        class:active={mode === "back"}
-        onclick={() => (mode = "back")}
-      >
-        Back (old vs new)
-      </button>
-      <button
-        type="button"
-        role="radio"
-        aria-checked={mode === "front"}
-        class:active={mode === "front"}
-        onclick={() => (mode = "front")}
-      >
-        Front (worker vs main)
-      </button>
-    </div>
-    {#if loadError}<span class="load-err">load error: {loadError}</span>{/if}
+    <SegmentedControl
+      options={[
+        { value: "front", label: "Front (worker vs main)" },
+        { value: "back", label: "Back (old vs new)" },
+      ]}
+      value={mode}
+      onchange={(v) => (mode = v as "front" | "back")}
+      size="sm"
+    />
+    {#if decks.length > 0 && selectedDeck != null}
+      <SegmentedControl
+        options={decks.map((d) => ({ value: String(d.deckNumber), label: d.name }))}
+        value={String(selectedDeck)}
+        onchange={(v) => (selectedDeck = Number(v))}
+        color="accent"
+        size="sm"
+      />
+    {:else if loadError}
+      <span class="load-err">load error: {loadError}</span>
+    {:else}
+      <span class="load-err">no released decks</span>
+    {/if}
   {/snippet}
-</ParityHarness>
-
-<div bind:this={oldSlot} class="offscreen"></div>
+</CardParityViewer>
 
 <style>
-  .mode-toggle {
-    display: inline-flex;
-    gap: 4px;
-    padding: 4px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid #2a2a33;
-  }
-  .mode-toggle button {
-    padding: 8px 14px;
-    font-size: 13px;
-    background: transparent;
-    border: 1px solid transparent;
-    color: #fff;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  .mode-toggle button.active {
-    background: rgba(99, 102, 241, 0.3);
-    border-color: rgba(99, 102, 241, 0.5);
-  }
   .load-err {
     color: #ff6b6b;
     font-size: 13px;
-  }
-  .offscreen {
-    position: fixed;
-    left: -99999px;
-    top: -99999px;
   }
 </style>
