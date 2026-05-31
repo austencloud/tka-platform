@@ -31,9 +31,12 @@
     show: boolean;
     stepData: StepData | null;
     onClose: () => void;
+    /** When set, the editor dock shows a single "Done" button that persists the
+        edit then calls this (one-shot flows like choreo-card Fix Arrows). */
+    onDone?: () => void;
   }
 
-  let { show, stepData, onClose }: Props = $props();
+  let { show, stepData, onClose, onDone }: Props = $props();
 
   // Calculated data with arrow positions populated
   let calculatedData = $state<StepData | null>(null);
@@ -477,6 +480,7 @@
         {blueDiagnostics}
         {redDiagnostics}
         onDiagnosticsChanged={refreshDiagnostics}
+        {onDone}
       />
     </div>
   </div>

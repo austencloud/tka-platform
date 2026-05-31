@@ -41,8 +41,13 @@
     blueDiagnostics: PipelineDiagnostics | null;
     redDiagnostics: PipelineDiagnostics | null;
     onDiagnosticsChanged?: () => void;
+    /** When set, the dock shows a single "Done" button (instead of Save) that
+        persists the current edit then calls this — for one-shot flows like the
+        choreo-card Fix Arrows surface, where the user edits one pictograph and
+        wants to commit + leave in one click. */
+    onDone?: () => void;
   }
-  let { stepData, blueDiagnostics, redDiagnostics, onDiagnosticsChanged }: Props = $props();
+  let { stepData, blueDiagnostics, redDiagnostics, onDiagnosticsChanged, onDone }: Props = $props();
 
   // Selection-driven binding (live re-bind on color switch)
   const activeColor = $derived<"blue" | "red" | null>(
@@ -344,6 +349,14 @@
     haptic?.trigger("selection");
   }
 
+  // One-shot finish: persist any pending edit (current tier), then hand control
+  // back to the host so it can leave + re-render. Save is async so the override
+  // is committed before the host re-bakes off it.
+  async function handleDoneClick() {
+    if (hasLocalChanges) await handleSave();
+    onDone?.();
+  }
+
   async function handleSave() {
     if (editTarget === "special-json") {
       return handleSpecialJsonSave();
@@ -572,10 +585,17 @@
       {:else if editTarget === "default" && defaultHasValue}
         <button class="btn btn-delete" onclick={handleDelete} title="Revert to JSON baseline"><i class="fas fa-undo" aria-hidden="true"></i> Revert</button>
       {/if}
-      <button class="btn btn-save" onclick={handleSave} disabled={!hasLocalChanges}>
-        {#if saveState === "saving"}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>{:else if saveState === "saved"}<i class="fas fa-check" aria-hidden="true"></i>{:else}<i class="fas fa-save" aria-hidden="true"></i>{/if}
-        Save
-      </button>
+      {#if onDone}
+        <button class="btn btn-done" onclick={handleDoneClick}>
+          {#if saveState === "saving"}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>{:else}<i class="fas fa-check" aria-hidden="true"></i>{/if}
+          Done
+        </button>
+      {:else}
+        <button class="btn btn-save" onclick={handleSave} disabled={!hasLocalChanges}>
+          {#if saveState === "saving"}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>{:else if saveState === "saved"}<i class="fas fa-check" aria-hidden="true"></i>{:else}<i class="fas fa-save" aria-hidden="true"></i>{/if}
+          Save
+        </button>
+      {/if}
     </div>
   {/if}
 </footer>
@@ -628,5 +648,7 @@
 .btn-delete { background: transparent; color: var(--semantic-error, #f85149); border-color: color-mix(in srgb, var(--semantic-error, #f85149) 40%, transparent); }
   .btn-save { background: var(--semantic-success, #238636); color: #fff; border-color: var(--semantic-success, #238636); }
   .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+  /* One-shot "Done": prominent — it's the primary action for the Fix Arrows flow. */
+  .btn-done { background: var(--semantic-success, #238636); color: #fff; border-color: var(--semantic-success, #238636); font-size: 16px; font-weight: 700; padding: 0 28px; }
   @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
 </style>
