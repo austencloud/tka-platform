@@ -2,6 +2,7 @@
   import type { Catalog } from "../domain/models/Catalog";
   import type { TnDTurnPatternOption } from "../services/deck-composer";
   import { parseTurnPattern, TURN_VALUES } from "../domain/turn-pattern-parser";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
 
   interface Props {
     // Navigate mode (catalog browser): click a cell to open that catalog.
@@ -79,6 +80,13 @@
       build: () => filteredPatterns((b, r) => Number.isInteger(b) && Number.isInteger(r)),
     },
     { id: "matched", label: "Matched", icon: "fa-equals", build: () => filteredPatterns((b, r) => b === r) },
+    {
+      id: "matched-whole",
+      label: "Matched Whole",
+      icon: "fa-circle-dot",
+      // Diagonal whole-turn cells only: 0|0, 1|1, 2|2, 3|3.
+      build: () => filteredPatterns((b, r) => b === r && Number.isInteger(b)),
+    },
     { id: "clear", label: "Clear", icon: "fa-xmark", build: () => new Set<string>() },
   ] as const;
 </script>
@@ -87,15 +95,13 @@
   {#if selectable}
     <div class="preset-bar">
       {#each presets as preset (preset.id)}
-        <button
-          type="button"
-          class="preset-btn"
-          class:danger={preset.id === "clear"}
+        <FilterChipBase
+          label={preset.label}
+          icon={"fas " + preset.icon}
+          mode="action"
+          chipColor={preset.id === "clear" ? "#f87171" : "var(--theme-accent)"}
           onclick={() => onSetPatterns?.(preset.build())}
-        >
-          <i class="fas {preset.icon}" aria-hidden="true"></i>
-          {preset.label}
-        </button>
+        />
       {/each}
     </div>
   {/if}
@@ -203,47 +209,22 @@
     justify-content: center;
   }
 
-  .preset-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 36px;
-    padding: 6px 14px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.65));
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .preset-btn i {
-    font-size: 11px;
-  }
-
-  .preset-btn:hover {
-    background: color-mix(in srgb, var(--theme-accent, #b763cd) 14%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #b763cd) 40%, transparent);
-    color: var(--theme-accent, #c79ad8);
-  }
-
-  .preset-btn.danger:hover {
-    background: rgba(248, 113, 113, 0.12);
-    border-color: rgba(248, 113, 113, 0.35);
-    color: #f87171;
-  }
-
+  /* Fill the parent column (centred by .matrix-container), capped so it never
+     dwarfs a wide catalog-browser pane. Container-relative — NOT viewport — so a
+     narrow deck-releaser column shrinks the grid instead of overflowing it. */
   .matrix-grid-wrapper {
-    width: clamp(420px, 52vmin, 600px);
+    width: 100%;
+    max-width: 600px;
+    /* Self-containment: cell sizes/fonts below scale to THIS width via cqi,
+       so the grid stays legible whether it's 600px or a cramped 360px column. */
+    container-type: inline-size;
   }
 
   .matrix-grid {
     display: grid;
     grid-template-columns: auto repeat(7, 1fr);
     grid-template-rows: auto repeat(7, 1fr);
-    gap: clamp(4px, 0.6vmin, 8px);
+    gap: clamp(4px, 1cqi, 8px);
     width: 100%;
   }
 
@@ -252,11 +233,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: clamp(4px, 0.6vmin, 8px);
+    padding: clamp(4px, 1cqi, 8px);
   }
 
   .corner {
-    font-size: clamp(10px, 1.4vmin, 14px);
+    font-size: clamp(10px, 2.3cqi, 14px);
     font-weight: 700;
     gap: 1px;
     display: flex;
@@ -268,7 +249,7 @@
   .corner-red { color: #f87171; }
 
   .header-val {
-    font-size: clamp(11px, 1.5vmin, 15px);
+    font-size: clamp(11px, 2.5cqi, 15px);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
@@ -291,8 +272,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: clamp(2px, 0.3vmin, 4px);
-    border-radius: clamp(4px, 0.6vmin, 8px);
+    gap: clamp(2px, 0.5cqi, 4px);
+    border-radius: clamp(4px, 1cqi, 8px);
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.06);
     cursor: pointer;
@@ -361,7 +342,7 @@
     align-items: baseline;
     gap: 0.12em;
     font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace;
-    font-size: clamp(12px, 1.7vmin, 17px);
+    font-size: clamp(12px, 2.8cqi, 17px);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     line-height: 1;
@@ -372,7 +353,7 @@
   .turn-sep { color: rgba(255, 255, 255, 0.2); font-weight: 400; }
 
   .cell-count {
-    font-size: clamp(9px, 1.1vmin, 12px);
+    font-size: clamp(9px, 1.9cqi, 12px);
     font-weight: 400;
     color: rgba(255, 255, 255, 0.35);
     line-height: 1;

@@ -2,12 +2,28 @@
   import { onMount } from "svelte";
   import { SIMPLE_PATTERNS } from "../domain/reversal-patterns";
   import { resolvePattern, type ResolvedReversalPattern } from "../domain/reversal-transform";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
 
   interface Props {
     activePatternId: string | null;
     onPatternChange: (resolved: ResolvedReversalPattern) => void;
+    /**
+     * Preset-first mode: presets + a compact summary show by default; the 2×4
+     * Blue/Red spin timeline stays folded behind a "Custom" toggle. Keeps the
+     * builder's footprint to a couple of rows for the common preset case.
+     */
+    collapsible?: boolean;
+    /**
+     * Initial open state of the Blue/Red spin timeline in collapsible mode.
+     * Defaults to true (legacy: rail had vertical room). Pass false for a
+     * preset-first resting view that folds the cryptic spin grid away.
+     */
+    startCustomOpen?: boolean;
   }
-  const { activePatternId, onPatternChange }: Props = $props();
+  const { activePatternId, onPatternChange, collapsible = false, startCustomOpen = true }: Props = $props();
+
+  let showCustom = $state(startCustomOpen);
+  const timelineOpen = $derived(!collapsible || showCustom);
 
   const STEPS = 4;
   let blue = $state<boolean[]>([false, false, false, false]);
@@ -60,39 +76,35 @@
   }
 </script>
 
-<div class="reversal-strip">
+<div class="reversal-strip" class:collapsible>
   <div class="preset-row" role="group" aria-label="Reversal presets">
     {#each SIMPLE_PATTERNS as p (p.id)}
-      <button
-        type="button"
-        class="preset-chip"
-        class:active={resolved.id === p.id}
-        onclick={() => applyPreset(p.sequence)}
-      >{p.label}</button>
+      <FilterChipBase label={p.label} mode="toggle" active={resolved.id === p.id} onclick={() => applyPreset(p.sequence)} />
     {/each}
   </div>
 
-  <div class="timeline">
-    {#each [{ key: "blue", arr: blue, label: "Blue" }, { key: "red", arr: red, label: "Red" }] as row (row.key)}
-      <div class="row">
-        <span class="row-label {row.key}">{row.label}</span>
-        {#each row.arr as active, step (step)}
-          <button
-            type="button"
-            role="switch"
-            aria-pressed={active}
-            aria-label="{row.label} reversal at step {step + 1}"
-            class="cell {row.key}"
-            class:active
-            onclick={() => toggle(row.key as "blue" | "red", step)}
-          >
-            <span class="arrow" class:ccw={!spinCW(row.arr, step)}>↻</span>
-            {#if active}<span class="rev">REV</span>{/if}
-          </button>
-        {/each}
-      </div>
-    {/each}
-  </div>
+  {#if timelineOpen}
+    <div class="timeline">
+      {#each [{ key: "blue", arr: blue, label: "Blue" }, { key: "red", arr: red, label: "Red" }] as row (row.key)}
+        <div class="row">
+          <span class="row-label {row.key}">{row.label}</span>
+          {#each row.arr as active, step (step)}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={active}
+              aria-label="{row.label} reversal at step {step + 1}"
+              class="cell {row.key}"
+              class:active
+              onclick={() => toggle(row.key as "blue" | "red", step)}
+            >
+              <span class="arrow" class:ccw={!spinCW(row.arr, step)}>↻</span>
+            </button>
+          {/each}
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   <div class="footer">
     <span class="pattern-string">
@@ -104,6 +116,15 @@
       {resolved.isCleanLoop ? "Clean loop" : "Boundary discontinuity"}
     </span>
     <span class="label">{resolved.label}</span>
+    {#if collapsible}
+      <FilterChipBase
+        label={showCustom ? "Hide custom" : "Custom"}
+        icon={showCustom ? "fas fa-chevron-up" : "fas fa-sliders"}
+        mode="toggle"
+        active={showCustom}
+        onclick={() => (showCustom = !showCustom)}
+      />
+    {/if}
   </div>
 </div>
 
@@ -114,35 +135,31 @@
     gap: 14px;
     align-items: center;
     width: 100%;
-    max-width: 640px;
+    max-width: 560px;
     margin: 0 auto;
     padding: 18px 20px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 14px;
+    /* Cells below scale to THIS width (cqi) so the builder fits a slim modifier
+       rail without overflowing or stranding gutters in a wide panel. */
+    container-type: inline-size;
+    box-sizing: border-box;
   }
 
-  .preset-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
-
-  .preset-chip {
-    padding: 6px 12px;
-    border-radius: 16px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: transparent;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    font: inherit;
-    font-size: var(--font-size-compact, 12px);
-    cursor: pointer;
-    transition: border-color 0.15s ease, color 0.15s ease;
+  /* 3-up preset grid: six presets read as two even rows of three. */
+  .preset-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    width: 100%;
   }
-  .preset-chip:hover { color: var(--theme-text, #fff); }
-  .preset-chip.active {
-    color: var(--theme-text, #fff);
-    border-color: var(--tnd-accent-border, rgba(183, 99, 205, 0.5));
-    background: var(--tnd-accent-bg, rgba(183, 99, 205, 0.15));
+  .preset-row :global(.filter-chip) {
+    width: 100%;
+    justify-content: center;
   }
 
-  .timeline { display: flex; flex-direction: column; gap: 6px; }
+  .timeline { display: flex; flex-direction: column; gap: 6px; align-items: center; }
   .row { display: flex; align-items: center; gap: 6px; }
 
   .row-label { width: 42px; text-align: right; font-size: 12px; font-weight: 600; padding-right: 6px; }
@@ -150,8 +167,9 @@
   .row-label.red { color: var(--prop-red, #e74c3c); }
 
   .cell {
-    width: 56px;
-    height: 52px;
+    width: clamp(40px, 13cqi, 56px);
+    height: clamp(40px, 12cqi, 52px);
+    flex: 0 0 auto;
     border-radius: 8px;
     border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     background: rgba(255, 255, 255, 0.02);
@@ -161,7 +179,7 @@
     align-items: center;
     justify-content: center;
     gap: 2px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     transition: border-color 0.15s ease, background 0.15s ease;
   }
   .cell:hover { border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2)); }
@@ -171,22 +189,31 @@
 
   .arrow { font-size: 20px; transition: transform 0.2s ease; display: inline-block; }
   .arrow.ccw { transform: scaleX(-1); }
-  .rev { font-size: 8px; letter-spacing: 0.05em; font-weight: 600; }
 
   .footer { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+  /* Collapsible (Transform-rail) mode: drop the card chrome so it reads as a
+     bare axis matching Registers / Grid, not a boxed leftover. */
+  .reversal-strip.collapsible {
+    padding: 0;
+    gap: 10px;
+    align-items: stretch;
+    background: transparent;
+    border: none;
+  }
 
   .pattern-string { font-family: var(--font-mono, monospace); font-size: 16px; letter-spacing: 5px; display: inline-flex; }
   .pat { min-width: 16px; text-align: center; }
   .pat.pair { color: #c084fc; }
   .pat.blue-only { color: var(--prop-blue, #3498db); }
   .pat.red-only { color: var(--prop-red, #e74c3c); }
-  .pat.none { color: var(--theme-text-muted, rgba(255, 255, 255, 0.3)); }
+  .pat.none { color: var(--theme-text-dim, rgba(255, 255, 255, 0.3)); }
 
   .badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; }
   .badge.clean { color: #4ade80; background: rgba(74, 222, 128, 0.15); }
   .badge.broken { color: #facc15; background: rgba(250, 204, 21, 0.15); }
 
-  .label { font-size: 12px; color: var(--theme-text-muted, rgba(255, 255, 255, 0.5)); }
+  .label { font-size: 12px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.5)); }
 
   @media (prefers-reduced-motion: reduce) {
     .preset-chip, .cell, .arrow { transition: none; }
