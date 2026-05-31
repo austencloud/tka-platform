@@ -245,6 +245,16 @@
     if (!activeColor) return false;
     const key = event.key.toLowerCase();
 
+    // Z (no modifier): revert the current tier's override for the selected arrow
+    // back to its baseline (clears the Special override → arrow returns to default
+    // placement and the tier shows "none"). Mirrors the Revert button.
+    if (key === "z" && !event.ctrlKey && !event.metaKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      handleDelete();
+      return true;
+    }
+
     if (!["w", "a", "s", "d"].includes(key)) return false;
 
     event.preventDefault();

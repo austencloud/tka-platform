@@ -39,9 +39,12 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
     stepData: StepData;
     onStepDataUpdate: (updatedStepData: StepData) => void;
     onPushUndoSnapshot?: () => void;
+    /** When false, this panel ignores all keyboard input so a foreground editor
+     *  (the Inspect modal's PipelineEditorDock) owns the keys without conflict. */
+    keyboardActive?: boolean;
   }
 
-  let { stepData, onStepDataUpdate, onPushUndoSnapshot }: Props = $props();
+  let { stepData, onStepDataUpdate, onPushUndoSnapshot, keyboardActive = true }: Props = $props();
 
   // Services
   let hapticService: HapticFeedback | null = null;
@@ -149,6 +152,8 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
   }
 
   function handleKeydown(event: KeyboardEvent) {
+    // Yield to a foreground editor (Inspect modal) when it owns the keyboard.
+    if (!keyboardActive) return;
     const key = event.key.toLowerCase();
 
     // Calculate increment based on modifiers

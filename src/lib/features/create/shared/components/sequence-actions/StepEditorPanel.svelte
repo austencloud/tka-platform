@@ -364,6 +364,7 @@
           stepData={displayedStepData}
           onStepDataUpdate={handleStepDataUpdate}
           {onPushUndoSnapshot}
+          keyboardActive={!showInspectModal}
         />
         <ArrowAdjustmentHistory />
       {/if}
