@@ -1,8 +1,12 @@
 import { getLetterImagePath } from "../../pictograph/tka-glyph/utils/letter-image-getter";
 import { Letter } from "../../foundation/domain/models/Letter";
 import { getElementImagePath } from "../../pictograph/shared/domain/enums/pictograph-enums";
+import { sanitizeSvgForBitmap } from "./svg-bitmap-sanitize";
 
-const GLYPH_CACHE_VERSION = 4;
+// Bumped 4→5: glyph SVGs are now sanitized before base64 encoding, so any
+// data URLs cached under v4 (built from the raw, malformed letter markup that
+// strict parsers reject) must be discarded.
+const GLYPH_CACHE_VERSION = 5;
 
 const hmrGlyphCache: Map<string, string> =
   (import.meta.hot?.data?.glyphCacheVersion === GLYPH_CACHE_VERSION
@@ -106,7 +110,7 @@ export class GlyphCache {
         return;
       }
 
-      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(svgContent)}`;
+      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(sanitizeSvgForBitmap(svgContent))}`;
       this.cache.set(letter, dataUrl);
       this.cache.set(path, dataUrl);
 
@@ -135,7 +139,7 @@ export class GlyphCache {
         return;
       }
 
-      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(svgContent)}`;
+      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(sanitizeSvgForBitmap(svgContent))}`;
       this.cache.set(path, dataUrl);
       this.loadedCount++;
     } catch {
@@ -177,7 +181,7 @@ export class GlyphCache {
         return;
       }
 
-      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(svgContent)}`;
+      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(sanitizeSvgForBitmap(svgContent))}`;
       this.cache.set(path, dataUrl);
       this.loadedCount++;
     } catch {
@@ -198,7 +202,7 @@ export class GlyphCache {
         return;
       }
 
-      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(svgContent)}`;
+      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(sanitizeSvgForBitmap(svgContent))}`;
       this.cache.set(path, dataUrl);
       this.loadedCount++;
     } catch {
@@ -245,7 +249,7 @@ export class GlyphCache {
         return null;
       }
 
-      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(svgContent)}`;
+      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(sanitizeSvgForBitmap(svgContent))}`;
       this.cache.set(path, dataUrl);
 
       try {

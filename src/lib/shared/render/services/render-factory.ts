@@ -8,6 +8,8 @@
  * createImageBitmap: Chrome 50+, Firefox 42+, Safari 15+
  */
 
+import { sanitizeSvgForBitmap } from "./svg-bitmap-sanitize";
+
 /**
  * Create a render canvas (works in both main thread and workers)
  */
@@ -36,36 +38,9 @@ export async function loadImageFromUrl(url: string): Promise<ImageBitmap> {
  * Sanitizes SVG for createImageBitmap() compatibility (used in workers).
  */
 export async function loadImageFromSvgString(svg: string): Promise<ImageBitmap> {
-  const processed = sanitizeSvgForCreateImageBitmap(svg);
+  const processed = sanitizeSvgForBitmap(svg);
   const blob = new Blob([processed], { type: "image/svg+xml;charset=utf-8" });
   return createImageBitmap(blob);
-}
-
-/**
- * Sanitize SVG for createImageBitmap() strict XML parser.
- * Strips malformed attributes and ensures explicit dimensions.
- */
-function sanitizeSvgForCreateImageBitmap(svgString: string): string {
-  let processed = svgString;
-
-  // Strip malformed double-encoded style attributes
-  processed = processed.replace(/\s+style="style=&quot;[^"]*&quot;"/g, '');
-
-  // Ensure explicit width/height
-  if (!/<svg[^>]*\bwidth\s*=/.test(processed) || !/<svg[^>]*\bheight\s*=/.test(processed)) {
-    const viewBoxMatch = processed.match(/viewBox\s*=\s*["']([^"']+)["']/);
-    const viewBoxValue = viewBoxMatch?.[1];
-    if (viewBoxValue) {
-      const parts = viewBoxValue.split(/\s+/).map(Number);
-      const width = parts[2] || 100;
-      const height = parts[3] || 100;
-      processed = processed.replace(/<svg/, `<svg width="${width}" height="${height}"`);
-    } else {
-      processed = processed.replace(/<svg/, '<svg width="100" height="100"');
-    }
-  }
-
-  return processed;
 }
 
 /**

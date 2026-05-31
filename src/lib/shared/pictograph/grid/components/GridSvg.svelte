@@ -626,13 +626,21 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
       stroke 150ms ease-out;
   }
 
+  /* Dark mode grid color is the literal #d0d0d0 (the value of --dm-grid-color
+     in :root.dark), NOT the var(). iOS Safari/WebKit does not honor a CSS
+     custom property inside an SVG fill/stroke presentation context here: the
+     declaration gets discarded and the cascade falls back to the base
+     fill/stroke:#000, so the grid renders BLACK on iPhone while resolving
+     correctly on desktop. A literal color sidesteps the bug. Do not revert
+     to var(--dm-grid-color). */
+
   /* Dark mode - outer points use light color */
   :global(:root.dark #n_diamond_outer_point),
   :global(:root.dark #e_diamond_outer_point),
   :global(:root.dark #s_diamond_outer_point),
   :global(:root.dark #w_diamond_outer_point) {
-    fill: var(--dm-grid-color, #d0d0d0);
-    stroke: var(--dm-grid-color, #d0d0d0);
+    fill: #d0d0d0;
+    stroke: #d0d0d0;
   }
 
   /* Diamond mode - filled circles */
@@ -671,7 +679,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   :global(:root.dark #se_diamond_layer2_point),
   :global(:root.dark #sw_diamond_layer2_point),
   :global(:root.dark #nw_diamond_layer2_point) {
-    fill: var(--dm-grid-color, #d0d0d0);
+    fill: #d0d0d0;
   }
 
   /* Show non-radial points when enabled */
@@ -740,7 +748,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   /* Dark mode - normal hand points use light color */
   /* Note: strict-hand-point is intentionally excluded - it stays hidden in pictograph */
   :global(:root.dark .normal-hand-point) {
-    fill: var(--dm-grid-color, #d0d0d0);
+    fill: #d0d0d0;
   }
 
   /* Center point */
@@ -751,7 +759,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 
   /* Dark mode - center point uses light color */
   :global(:root.dark #center_point) {
-    fill: var(--dm-grid-color, #d0d0d0);
+    fill: #d0d0d0;
   }
 
   /* Strict layer 2 points - intentionally NOT styled for dark mode
@@ -767,7 +775,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 
   /* Dark mode - lines use light color */
   :global(:root.dark .grid-container line) {
-    stroke: var(--dm-grid-color, #d0d0d0);
+    stroke: #d0d0d0;
   }
 
   /* ====================================================================
@@ -871,23 +879,23 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   :global(:root.dark .grid-container.skewed-mode #e_diamond_outer_point),
   :global(:root.dark .grid-container.skewed-mode #s_diamond_outer_point),
   :global(:root.dark .grid-container.skewed-mode #w_diamond_outer_point) {
-    fill: var(--dm-grid-color, #d0d0d0);
-    stroke: var(--dm-grid-color, #d0d0d0);
+    fill: #d0d0d0;
+    stroke: #d0d0d0;
   }
 
   /* Dark mode - box outer rings in skewed mode */
   :global(:root.dark .grid-container.skewed-mode .box-outer-ring) {
-    stroke: var(--dm-grid-color, #d0d0d0);
+    stroke: #d0d0d0;
   }
 
   /* Dark mode - center point in skewed mode */
   :global(:root.dark .grid-container.skewed-mode #center_point) {
-    fill: var(--dm-grid-color, #d0d0d0);
+    fill: #d0d0d0;
   }
 
   /* Dark mode - hand points in skewed mode */
   :global(:root.dark .grid-container.skewed-mode .normal-hand-point) {
-    fill: var(--dm-grid-color, #d0d0d0);
+    fill: #d0d0d0;
   }
 
   /* Export mode overrides for skewed mode - light */

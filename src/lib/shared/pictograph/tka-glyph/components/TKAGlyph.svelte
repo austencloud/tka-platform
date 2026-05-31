@@ -337,11 +337,9 @@
     class:visible={visible && imageReady}
     class:preview-mode={previewMode}
     class:interactive={onToggle !== undefined}
-    class:dark-mode-override={effectiveDarkMode === true}
-    class:light-mode-override={effectiveDarkMode === false}
-    style={effectiveDarkMode ? "filter: invert(0.9)" : "filter: none"}
     data-letter={letter}
     transform="translate({x}, {y}) scale({scale})"
+    filter={effectiveDarkMode ? "url(#tka-glyph-invert)" : undefined}
     onclick={onToggle}
     {...onToggle
       ? {
@@ -351,6 +349,24 @@
         }
       : {}}
   >
+      {#if effectiveDarkMode}
+        <!-- Recolor the black letter art to near-white via an SVG filter
+             primitive. iOS Safari (PWA) silently drops a CSS `filter: invert()`
+             set on this <g> (whether via class cascade or inline style), leaving
+             the glyph black against the dark canvas. The SVG-native filter
+             attribute + inline <filter> is honored on iOS - the same primitive
+             approach TurnsColumn uses - and, unlike CSS filter, survives the
+             outerHTML serialization the export pipeline relies on.
+             feColorMatrix replicates CSS invert(0.9) in sRGB: out = 0.9 - 0.8*in.
+             Duplicate ids across glyph instances are harmless: every definition
+             is identical, so url(#tka-glyph-invert) always resolves the same. -->
+        <filter id="tka-glyph-invert" color-interpolation-filters="sRGB">
+          <feColorMatrix
+            type="matrix"
+            values="-0.8 0 0 0 0.9  0 -0.8 0 0 0.9  0 0 -0.8 0 0.9  0 0 0 1 0"
+          />
+        </filter>
+      {/if}
       <!-- Main letter with exact legacy dimensions -->
       <!-- Uses cached data URL if available for instant rendering, otherwise falls back to file path -->
       <image
@@ -382,9 +398,7 @@
     z-index: 4;
     /* Beautiful fade in/out effect */
     opacity: 0;
-    transition:
-      opacity var(--duration-fast) ease-out,
-      filter var(--duration-fast) ease-out;
+    transition: opacity var(--duration-fast) ease-out;
   }
 
   .tka-glyph.visible {
@@ -416,19 +430,9 @@
     image-rendering: optimizeQuality;
   }
 
-  /* Dark mode: invert letter color for dark backgrounds */
-  /* Uses CSS-first approach - triggered by .dark class on <html> element */
-  :global(:root.dark) .tka-glyph {
-    filter: invert(0.9);
-  }
-
-  /* Dark mode override (for export with darkMode=true) */
-  .tka-glyph.dark-mode-override {
-    filter: invert(0.9);
-  }
-
-  /* Light mode override (for export with darkMode=false) - overrides :root.dark */
-  .tka-glyph.light-mode-override {
-    filter: none !important;
-  }
+  /* Dark mode recoloring is handled by the SVG <filter> primitive applied via
+     the `filter` attribute on the .tka-glyph group above (see the markup
+     comment). CSS `filter: invert()` was dropped because iOS Safari PWA does
+     not apply it to this <g>, and it is not captured by outerHTML during
+     export serialization. */
 </style>

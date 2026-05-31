@@ -15,6 +15,8 @@
 
 // TEMP assembly profiler — DECODE phase tap. Times the SVG→drawable miss path.
 
+import { sanitizeSvgForBitmap } from "./svg-bitmap-sanitize";
+
 /** Union type for drawable images (works with canvas drawImage) */
 export type DrawableImage = ImageBitmap | HTMLImageElement;
 
@@ -124,7 +126,7 @@ export class SvgImageCache {
       return this.bitmapSvgViaImageElement(svgString);
     }
     // Worker: ensure dimensions exist, then use blob directly
-    const processed = this.sanitizeSvgForCreateImageBitmap(svgString);
+    const processed = sanitizeSvgForBitmap(svgString);
     const blob = new Blob([processed], { type: "image/svg+xml;charset=utf-8" });
     return createImageBitmap(blob);
   }
@@ -161,7 +163,7 @@ export class SvgImageCache {
     // letter glyphs) produce a dimensionless image, and a later
     // createImageBitmap(img) snapshot (AssetBundle build) throws
     // InvalidStateError. Aligns the main decode with the worker decode.
-    const sanitized = this.sanitizeSvgForCreateImageBitmap(svgString);
+    const sanitized = sanitizeSvgForBitmap(svgString);
     return new Promise((resolve, reject) => {
       const img = new Image();
 
@@ -255,7 +257,7 @@ export class SvgImageCache {
     const response = await fetch(url);
     if (url.endsWith(".svg")) {
       let svgText = await response.text();
-      svgText = this.sanitizeSvgForCreateImageBitmap(svgText);
+      svgText = sanitizeSvgForBitmap(svgText);
       const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
       return createImageBitmap(blob);
     }
@@ -325,40 +327,6 @@ export class SvgImageCache {
     }
   }
 
-  /**
-   * Sanitize SVG for createImageBitmap() compatibility.
-   * Required in Web Workers where Image element isn't available.
-   *
-   * createImageBitmap uses a strict XML parser that rejects:
-   * 1. SVGs without explicit width/height (can't determine intrinsic size)
-   * 2. Malformed attributes with HTML entities (e.g., style="style=&quot;...&quot;")
-   *
-   * The Image element on main thread is lenient about both issues.
-   */
-  private sanitizeSvgForCreateImageBitmap(svgString: string): string {
-    let processed = svgString;
-
-    // Strip malformed double-encoded style attributes found in letter SVGs.
-    // Pattern: style="style=&quot;enable-background:new 0 0 200.0 100.0&quot;"
-    // The enable-background property is deprecated and safe to remove.
-    processed = processed.replace(/\s+style="style=&quot;[^"]*&quot;"/g, '');
-
-    // Ensure explicit width/height (required for intrinsic size)
-    if (!/<svg[^>]*\bwidth\s*=/.test(processed) || !/<svg[^>]*\bheight\s*=/.test(processed)) {
-      const viewBoxMatch = processed.match(/viewBox\s*=\s*["']([^"']+)["']/);
-      const viewBoxValue = viewBoxMatch?.[1];
-      if (viewBoxValue) {
-        const parts = viewBoxValue.split(/\s+/).map(Number);
-        const width = parts[2] || 100;
-        const height = parts[3] || 100;
-        processed = processed.replace(/<svg/, `<svg width="${width}" height="${height}"`);
-      } else {
-        processed = processed.replace(/<svg/, '<svg width="100" height="100"');
-      }
-    }
-
-    return processed;
-  }
 
   /**
    * Simple string hash for cache keys
