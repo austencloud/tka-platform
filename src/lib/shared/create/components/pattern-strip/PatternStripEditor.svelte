@@ -74,24 +74,26 @@
 
 <div class="pse">
   <div class="axis">
-    <div class="axis-lbl">Length <span class="hint">— pattern period</span></div>
-    <div class="seg-row">
+    <div class="axis-row">
+      <span class="axis-lbl">Length</span>
+      <span class="reps">×{reps} over {sequenceLength} beats</span>
+    </div>
+    <div class="seg-wrap">
       <SegmentedControl
         size="sm" color="accent"
         options={periods.map((p) => ({ value: String(p), label: String(p) }))}
         value={String(period)}
         onchange={(v) => setPeriod(Number(v))}
       />
-      <span class="reps">repeats <b>×{reps}</b> across {sequenceLength} beats</span>
     </div>
   </div>
 
   <div class="axis">
-    <div class="axis-lbl">Rhythm <span class="hint">— which beats are active</span></div>
+    <div class="axis-lbl">Rhythm</div>
     <div class="chips">
       {#each binding.rhythms as r}
         <FilterChipBase
-          label={r.label} mode="toggle" size="sm" active={rhythmActive(r.sym)}
+          label={r.label} mode="toggle" size="md" active={rhythmActive(r.sym)}
           onclick={() => applyRhythm(r.sym, r)}
         >
           {#snippet iconSnippet()}<RhythmGlyph sym={r.sym} lanes={binding.lanes} />{/snippet}
@@ -101,24 +103,26 @@
   </div>
 
   <div class="axis">
-    <div class="axis-lbl">Amount <span class="hint">— value on active beats</span></div>
+    <div class="axis-lbl">Amount</div>
     <div class="amt-grid">
       {#each binding.laneLabels as label, li}
         <div class="amt-row">
           <span class="amt-lane {binding.laneColors[li]}">{label}</span>
-          <SegmentedControl
-            size="sm" color={binding.laneColors[li]}
-            options={binding.amountList.map((a) => ({ value: String(a), label: binding.format(a) }))}
-            value={String(laneAmount(li) ?? -1)}
-            onchange={(a) => applyAmount(li, Number(a))}
-          />
+          <div class="seg-wrap">
+            <SegmentedControl
+              size="sm" color={binding.laneColors[li]}
+              options={binding.amountList.map((a) => ({ value: String(a), label: binding.format(a) }))}
+              value={String(laneAmount(li) ?? -1)}
+              onchange={(a) => applyAmount(li, Number(a))}
+            />
+          </div>
         </div>
       {/each}
     </div>
   </div>
 
   <div class="axis result">
-    <div class="axis-lbl">Result <span class="hint">— edit freely; chips light when matched</span></div>
+    <div class="axis-lbl">Result</div>
     <PatternBeatStrip
       lanes={stripLanes}
       cellKind="number"
@@ -131,15 +135,20 @@
 </div>
 
 <style>
-  .pse { display: flex; flex-direction: column; gap: 18px; }
-  .axis-lbl { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--theme-text-dim); margin: 0 0 10px; }
-  .axis-lbl .hint { font-weight: 500; letter-spacing: 0; text-transform: none; }
-  .seg-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
-  .reps { font-size: 12.5px; color: var(--theme-text-dim); } .reps b { color: var(--theme-text); font-variant-numeric: tabular-nums; }
-  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
-  .amt-grid { display: flex; flex-direction: column; gap: 9px; }
-  .amt-row { display: flex; align-items: center; gap: 13px; }
-  .amt-lane { width: 42px; flex: 0 0 42px; font-size: 13px; font-weight: 800; }
+  .pse { display: flex; flex-direction: column; gap: 16px; max-width: 540px; }
+  .axis-lbl { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--theme-text-dim); }
+  .axis > .axis-lbl { display: block; margin: 0 0 9px; }
+  .axis-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 9px; }
+  .reps { font-size: 12px; color: var(--theme-text-dim); font-variant-numeric: tabular-nums; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .amt-grid { display: flex; flex-direction: column; gap: 8px; }
+  .amt-row { display: flex; align-items: center; gap: 12px; }
+  .amt-lane { width: 44px; flex: 0 0 44px; font-size: 13px; font-weight: 800; }
   .amt-lane.blue { color: var(--theme-blue, #6f9bff); } .amt-lane.red { color: var(--theme-red, #ff7a8a); } .amt-lane.accent { color: var(--theme-accent, #2dd4bf); }
-  .result { margin-top: 4px; }
+  .result { margin-top: 2px; }
+
+  /* Cohesion: stop SegmentedControl stretching full-width; unify value type with the strip. */
+  .seg-wrap { width: max-content; max-width: 100%; }
+  :global(.pse .seg-wrap .segmented-control) { width: max-content; }
+  :global(.pse .seg-wrap .segment) { min-width: 46px; padding: 0 14px; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
 </style>

@@ -144,12 +144,15 @@
     padding: 18px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
   }
 
   .apply-btn {
-    margin-top: auto;
-    padding: 14px;
+    width: 100%;
+    max-width: 540px;
+    min-height: 48px;
+    margin-top: 4px;
+    padding: 0 14px;
     border: none;
     border-radius: 12px;
     font: inherit;
