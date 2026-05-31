@@ -58,34 +58,65 @@
   }
 </script>
 
-<div class="fix-grid" role="group" aria-label="Pictographs — click one to fix its arrows">
-  {#each cells as step, i (step.id ?? i)}
-    <div class="fix-cell">
-      <StepCell
-        {step}
-        index={i}
-        bluePropTypeOverride={bluePropType}
-        redPropTypeOverride={redPropType}
-        onClick={() => handleSelect(step)}
-      />
-    </div>
-  {/each}
+<div class="fix-grid-scroll">
+  <div class="fix-grid" role="group" aria-label="Pictographs — click one to fix its arrows">
+    {#each cells as step, i (step.id ?? i)}
+      <div class="fix-cell">
+        <StepCell
+          {step}
+          index={i}
+          bluePropTypeOverride={bluePropType}
+          redPropTypeOverride={redPropType}
+          onClick={() => handleSelect(step)}
+        />
+      </div>
+    {/each}
+  </div>
 </div>
 
 <style>
+  /* Fill the central space both cards used; center a tidy block of large
+     cells (auto-fit collapses empty tracks so a short sequence doesn't pack
+     into a small top-left cluster). */
+  .fix-grid-scroll {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
   .fix-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 260px));
+    gap: 20px;
+    justify-content: center;
+    align-content: center;
     width: 100%;
-    max-height: 100%;
-    overflow-y: auto;
-    padding: 8px;
-    align-content: start;
+    max-width: 1100px;
   }
   .fix-cell {
     aspect-ratio: 1 / 1;
     min-width: 0;
+    padding: 8px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  }
+  .fix-cell:hover {
+    border-color: var(--theme-accent, #58a6ff);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    transform: translateY(-2px);
+  }
+  .fix-cell:focus-visible {
+    outline: 2px solid var(--theme-accent, #58a6ff);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fix-cell { transition: none; }
   }
 </style>
