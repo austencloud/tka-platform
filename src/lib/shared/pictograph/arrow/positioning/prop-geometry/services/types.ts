@@ -1,8 +1,6 @@
 // --- From PropGeometryAdjustmentRepository ---
 
-import type { Point } from "fabric";
-
 export interface CascadingPropGeometryResult {
-  readonly adjustment: Point;
+  readonly adjustment: { x: number; y: number };
   readonly matchedKey: string;
 }

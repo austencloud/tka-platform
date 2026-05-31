@@ -5,7 +5,6 @@
  * Provides the main interface for the rendering pipeline and UI.
  */
 
-import type { Point } from "fabric";
 import type { Timestamp } from "firebase/firestore";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import {
@@ -121,9 +120,9 @@ export class GlobalArrowAdjustmentRepository {
 
   /**
    * Get adjustment by key components
-   * Returns Point if found, null otherwise
+   * Returns x/y pair if found, null otherwise
    */
-  getAdjustment(key: GlobalAdjustmentKey): Point | null {
+  getAdjustment(key: GlobalAdjustmentKey): { x: number; y: number } | null {
     return this.state.getAdjustment(key);
   }
 

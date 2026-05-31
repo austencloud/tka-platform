@@ -25,17 +25,13 @@ export interface KeyGeneratorPropOptions {
  * Provides the main interface for the rendering pipeline and UI.
  */
 
-import type { Point } from "fabric";
-import type {
-} from "../domain/GlobalArrowAdjustment";
-
 /**
  * Result of a cascading adjustment lookup.
- * Includes the adjustment point and which layer it was found at.
+ * Includes the adjustment offset and which layer it was found at.
  */
 export interface CascadingLookupResult {
-  /** The adjustment offset as a Point */
-  adjustment: Point;
+  /** The adjustment offset as a plain x/y pair (no fabric dependency) */
+  adjustment: { x: number; y: number };
   /** Which layer the adjustment was found at: 1 (base), 2 (prop-specific), or 3 (combination) */
   layer: 1 | 2 | 3;
 }

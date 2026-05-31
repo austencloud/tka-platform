@@ -525,7 +525,7 @@ export class ArrowAdjustmentCalculator {
         arrowColor
       );
       if (propGeometryAdjustment) {
-        return propGeometryAdjustment;
+        return new Point(propGeometryAdjustment.x, propGeometryAdjustment.y);
       }
 
       // Fall back to default calculation
@@ -593,7 +593,7 @@ export class ArrowAdjustmentCalculator {
         const override = specialResolver.getOverride(
           computeSpecialOverrideKey(pictographData, motionData, arrowColor ?? motionData.color),
         );
-        if (override) return override;
+        if (override) return new Point(override.x, override.y);
       }
 
       // Check Firestore special overrides first
@@ -662,7 +662,7 @@ export class ArrowAdjustmentCalculator {
     pictographData: PictographData,
     motionData: MotionData,
     arrowColor?: string
-  ): Point | null {
+  ): { x: number; y: number } | null {
     const propGeometryResolver = getPropGeometryResolver();
     if (!propGeometryResolver) return null;
 

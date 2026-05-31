@@ -6,7 +6,6 @@
  * letter-free prop geometry tier.
  */
 
-import { Point } from "fabric";
 import {
   generatePropGeometryKeyString,
   generateCascadingKeys,
@@ -52,7 +51,7 @@ export function createPropGeometryAdjustmentState() {
         const adjustment = adjustmentsMap.get(candidateKey);
         if (adjustment) {
           return {
-            adjustment: new Point(adjustment.adjustmentX, adjustment.adjustmentY),
+            adjustment: { x: adjustment.adjustmentX, y: adjustment.adjustmentY },
             matchedKey: candidateKey,
           };
         }

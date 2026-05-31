@@ -4,7 +4,6 @@
 // doInitialize); the composition worker registers resolvers backed by the
 // import-clean *State classes seeded from a transferred bundle. Mirrors the
 // existing defaultOverrideResolver slot in arrow-placer.ts.
-import type { Point } from "fabric";
 import type { GlobalAdjustmentKey } from "../../global/domain/GlobalArrowAdjustment";
 import type { CascadingLookupResult } from "../../global/services/types";
 import type { SpecialArrowPlacement } from "../../special-override/domain/SpecialArrowPlacement";
@@ -12,7 +11,7 @@ import type { PropGeometryKey } from "../../prop-geometry/domain/PropGeometryAdj
 import type { CascadingPropGeometryResult } from "../../prop-geometry/services/types";
 
 export interface SpecialOverrideResolver {
-  getOverride(key: string): Point | null;
+  getOverride(key: string): { x: number; y: number } | null;
   getFullOverride(key: string): SpecialArrowPlacement | null;
 }
 export type GlobalAdjustmentResolver = (

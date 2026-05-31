@@ -5,7 +5,6 @@
  * Provides reactive access to adjustments for the rendering pipeline.
  */
 
-import { Point } from "fabric";
 import {
   generateAdjustmentKeyString,
   type GlobalAdjustmentKey,
@@ -24,13 +23,13 @@ export function createGlobalArrowAdjustmentState() {
    * Internal helper: look up an adjustment by key and return a Point.
    * Used by both getAdjustment (public) and getAdjustmentCascading (public).
    */
-  function _getAdjustment(key: GlobalAdjustmentKey): Point | null {
+  function _getAdjustment(key: GlobalAdjustmentKey): { x: number; y: number } | null {
     const keyString = generateAdjustmentKeyString(key);
     const adjustment = adjustmentsMap.get(keyString);
     if (!adjustment) {
       return null;
     }
-    return new Point(adjustment.adjustmentX, adjustment.adjustmentY);
+    return { x: adjustment.adjustmentX, y: adjustment.adjustmentY };
   }
 
   // Loading state
@@ -71,19 +70,19 @@ export function createGlobalArrowAdjustmentState() {
      * Get adjustment by key components
      * Returns Point if found, null otherwise
      */
-    getAdjustment(key: GlobalAdjustmentKey): Point | null {
+    getAdjustment(key: GlobalAdjustmentKey): { x: number; y: number } | null {
       return _getAdjustment(key);
     },
 
     /**
      * Get adjustment by string key
      */
-    getAdjustmentByKey(keyString: string): Point | null {
+    getAdjustmentByKey(keyString: string): { x: number; y: number } | null {
       const adjustment = adjustmentsMap.get(keyString);
       if (!adjustment) {
         return null;
       }
-      return new Point(adjustment.adjustmentX, adjustment.adjustmentY);
+      return { x: adjustment.adjustmentX, y: adjustment.adjustmentY };
     },
 
     /**
