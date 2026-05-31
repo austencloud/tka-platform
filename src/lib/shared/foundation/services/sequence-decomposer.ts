@@ -70,35 +70,32 @@ function makePlaceholderStep(
   };
 }
 
-export class SequenceDecomposer {
-  constructor() {}
+export function extractBlueSoloProp(sequence: SequenceData): SoloPropData {
+  return extractSoloProp(sequence, "blue");
+}
 
-  extractBlueSoloProp(sequence: SequenceData): SoloPropData {
-    return this.extractSoloProp(sequence, "blue");
-  }
+export function extractRedSoloProp(sequence: SequenceData): SoloPropData {
+  return extractSoloProp(sequence, "red");
+}
 
-  extractRedSoloProp(sequence: SequenceData): SoloPropData {
-    return this.extractSoloProp(sequence, "red");
-  }
+export function extractStepPairings(sequence: SequenceData): readonly StepPairingData[] {
+  return sequence.steps.map((step) => ({
+    letter: step.letter ?? null,
+    blueReversal: step.blueReversal,
+    redReversal: step.redReversal,
+    startPosition: step.startPosition ?? null,
+    endPosition: step.endPosition ?? null,
+  }));
+}
 
-  extractStepPairings(sequence: SequenceData): readonly StepPairingData[] {
-    return sequence.steps.map((step) => ({
-      letter: step.letter ?? null,
-      blueReversal: step.blueReversal,
-      redReversal: step.redReversal,
-      startPosition: step.startPosition ?? null,
-      endPosition: step.endPosition ?? null,
-    }));
-  }
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
 
-  // ---------------------------------------------------------------------------
-  // Private helpers
-  // ---------------------------------------------------------------------------
-
-  private extractSoloProp(
-    sequence: SequenceData,
-    color: "blue" | "red"
-  ): SoloPropData {
+function extractSoloProp(
+  sequence: SequenceData,
+  color: "blue" | "red"
+): SoloPropData {
     // Resolve the authoritative start location and orientation.
     //
     // Priority order:
@@ -140,5 +137,4 @@ export class SequenceDecomposer {
     });
 
     return createSoloProp(steps, startLocation, startOrientation);
-  }
 }
