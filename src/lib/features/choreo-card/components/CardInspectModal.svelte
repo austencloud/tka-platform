@@ -194,10 +194,10 @@
 
     <div class="bottom-bar">
       <div class="actions">
-        <button class="action-btn edit-btn" onclick={editSequence} aria-label="Open sequence in construct for full editing">
+        <button class="action-btn" onclick={editSequence} aria-label="Open sequence in construct for full editing">
           <i class="fas fa-pen-to-square"></i> Edit in Construct
         </button>
-        <button class="action-btn copy-image-btn" onclick={copyCardImage} disabled={copyImageState === "copying"} aria-label="Copy image">
+        <button class="action-btn" onclick={copyCardImage} disabled={copyImageState === "copying"} aria-label="Copy image">
           {#if copyImageState === "copying"}
             <i class="fas fa-spinner fa-spin"></i> Capturing...
           {:else if copyImageState === "success"}
@@ -209,7 +209,7 @@
           {/if}
         </button>
         {#if mode === "preview"}
-          <button class="action-btn fix-arrows-btn" onclick={enterFixMode} aria-label="Fix arrow positions on this card's pictographs">
+          <button class="action-btn" onclick={enterFixMode} aria-label="Fix arrow positions on this card's pictographs">
             <i class="fas fa-arrows-up-down-left-right"></i> Fix Arrows
           </button>
         {:else}
@@ -327,39 +327,49 @@
 
   .actions {
     display: flex;
-    gap: 8px;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
-  .action-btn {
-    display: flex;
+  /* One uniform toolbar button for every action — including the Swap Card
+     button injected via the extraActions snippet from another component, which
+     is why these are :global descendant rules (they out-specify that button's
+     own scoped style). Token-based, 44px touch target, single hover. The green
+     Done keeps its own accent below. */
+  .actions :global(button) {
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 18px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 6px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    font-size: 13px;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 18px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
+    font-family: inherit;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
   }
 
-  .action-btn:hover {
+  .actions :global(button:hover:not(:disabled)) {
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text, rgba(255, 255, 255, 0.9));
-    border-color: var(--theme-text-dim, rgba(255, 255, 255, 0.2));
-  }
-
-  .edit-btn {
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(124, 58, 237, 0.05));
-    border-color: rgba(124, 58, 237, 0.3);
-    color: rgba(124, 58, 237, 0.9);
-  }
-
-  .edit-btn:hover {
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(124, 58, 237, 0.1));
-    border-color: rgba(124, 58, 237, 0.5);
+    border-color: var(--theme-accent, #6366f1);
     color: #fff;
+    transform: translateY(-1px);
+  }
+
+  .actions :global(button:focus-visible) {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .actions :global(button:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .hints {
@@ -381,25 +391,21 @@
     margin-right: 4px;
   }
 
-  .copy-image-btn:hover {
-    background: rgba(59, 130, 246, 0.15);
-    border-color: rgba(59, 130, 246, 0.35);
-    color: #fff;
-  }
-
-  .fix-arrows-btn:hover {
-    background: rgba(245, 158, 11, 0.15);
-    border-color: rgba(245, 158, 11, 0.35);
-    color: #fff;
-  }
-  .done-btn {
+  /* Primary action — the green Done in fix mode. Out-specifies the uniform
+     rule via the extra class. */
+  .actions :global(.done-btn) {
     background: var(--semantic-success, #238636);
     border-color: var(--semantic-success, #238636);
     color: #fff;
   }
-  .done-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .actions :global(.done-btn:hover:not(:disabled)) {
+    background: color-mix(in srgb, var(--semantic-success, #238636) 85%, #fff);
+    border-color: var(--semantic-success, #238636);
+    color: #fff;
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .modal-backdrop { animation: none; }
+    .actions :global(button:hover:not(:disabled)) { transform: none; }
   }
 </style>
