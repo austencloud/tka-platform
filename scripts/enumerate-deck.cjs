@@ -663,7 +663,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     const db = admin.firestore();
 
     const totalBeats = seedLength * (slice === "quartered" ? 4 : 2);
-    const deckId = `l${level}-${slice}-${loopType.replace(/_/g, "-")}-${totalBeats}beat`;
+    const deckId = `l${level}-${slice}-${loopType.replace(/_/g, "-")}${twin ? "-twin" : ""}-${totalBeats}beat`;
     const sliceLabel = slice === "quartered" ? "Quartered" : "Halved";
     const loopLabel = loopType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
@@ -1198,9 +1198,30 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       return { id: `family-${idx}`, label: family, typeCombo: family, sequenceIds: ids };
     }).filter(f => f.sequenceIds.length > 0);
 
+    // Fold twin cards into family docs: same-label families merge; new labels
+    // become additional family docs so the Decks UI surfaces every twin.
+    if (twin) {
+      let twinFamilyIdx = 0;
+      for (const [label, idSet] of twinIdsByFamily) {
+        const existing = familyDocs.find((f) => f.label === label);
+        if (existing) {
+          existing.sequenceIds.push(...idSet);
+        } else {
+          familyDocs.push({
+            id: `family-twin-${twinFamilyIdx++}`,
+            label,
+            typeCombo: label,
+            sequenceIds: [...idSet],
+          });
+        }
+      }
+    }
+
     const deckData = {
-      name: `Level ${level}: ${sliceLabel} ${loopLabel} LOOP`,
-      description: `Complete enumeration of all L${level} ${slice} ${loopLabel} LOOP sequences. ${totalWritten} sequences across ${familyDocs.length} hand-path families.`,
+      name: `Level ${level}: ${sliceLabel} ${loopLabel} LOOP${twin ? " · Twin" : ""}`,
+      description: twin
+        ? `${sliceLabel} ${loopLabel} LOOP, Twin edition: each card paired with its mirror-swap (vertical mirror + color swap), self-twins excluded. ${totalWritten} sequences across ${familyDocs.length} hand-path families.`
+        : `Complete enumeration of all L${level} ${slice} ${loopLabel} LOOP sequences. ${totalWritten} sequences across ${familyDocs.length} hand-path families.`,
       families: familyDocs,
       totalSequences: totalWritten,
       gridMode,
