@@ -102,6 +102,15 @@ export interface SequenceExportOptions {
     contentWidth: number;
     contentHeight: number;
   };
+
+  /**
+   * A pre-rendered QR code image, drawn into the QR cell instead of generating
+   * one. Render-only and NEVER serialized — the composition worker attaches it
+   * to its local options copy after structured-clone, because the worker's
+   * ImageComposer has no QR generator (and no Firebase). On the main thread this
+   * stays undefined and renderQRCode generates as usual.
+   */
+  qrImageBitmap?: CanvasImageSource;
 }
 
 export interface StepRenderOptions {
