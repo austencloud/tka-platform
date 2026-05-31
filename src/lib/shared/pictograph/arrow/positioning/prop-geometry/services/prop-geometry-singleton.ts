@@ -8,6 +8,7 @@
 
 import type { PropGeometryAdjustmentRepository } from "./prop-geometry-adjustment-repository";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import { setPropGeometryResolver } from "../../placement/services/override-resolvers";
 
 const logger = createComponentLogger("PropGeometrySingleton");
 
@@ -38,6 +39,8 @@ async function doInitialize(): Promise<void> {
     await repository.initialize();
     repositoryInstance = repository;
 
+    setPropGeometryResolver((key) => repository.getAdjustmentCascading(key));
+
     logger.success("Prop geometry adjustment system initialized");
   } catch (error) {
     logger.error("Failed to initialize prop geometry adjustments:", error);
@@ -49,6 +52,7 @@ async function doInitialize(): Promise<void> {
 export function disposePropGeometryAdjustments(): void {
   if (repositoryInstance) {
     repositoryInstance.dispose();
+    setPropGeometryResolver(null);
     repositoryInstance = null;
     logger.info("Prop geometry adjustment system disposed");
   }

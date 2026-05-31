@@ -10,6 +10,7 @@
 
 import type { GlobalArrowAdjustmentRepository } from "./global-arrow-adjustment-repository";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import { setGlobalAdjustmentResolver } from "../../placement/services/override-resolvers";
 
 const logger = createComponentLogger("GlobalAdjustmentSingleton");
 
@@ -64,6 +65,10 @@ async function doInitialize(): Promise<void> {
     // Store singleton
     repositoryInstance = repository;
 
+    setGlobalAdjustmentResolver((baseKey, thisPropType, otherPropType, legacyOriKey) =>
+      repository.getAdjustmentCascading(baseKey, thisPropType, otherPropType, legacyOriKey),
+    );
+
     logger.success(
       `Global arrow adjustment system initialized with ${repository.isInitialized ? "success" : "failure"}`
     );
@@ -82,6 +87,7 @@ async function doInitialize(): Promise<void> {
 export function disposeGlobalAdjustments(): void {
   if (repositoryInstance) {
     repositoryInstance.dispose();
+    setGlobalAdjustmentResolver(null);
     repositoryInstance = null;
     logger.info("Global arrow adjustment system disposed");
   }

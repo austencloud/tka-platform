@@ -107,6 +107,11 @@ export class PropGeometryAdjustmentRepository {
     return this.state.getAdjustment(key);
   }
 
+  /** All loaded adjustments, in the exact shape `state.loadAll` consumes (bundle snapshot). */
+  getAll(): PropGeometryAdjustment[] {
+    return this.state.getAllAdjustments();
+  }
+
   hasAdjustment(key: PropGeometryKey): boolean {
     return this.state.hasAdjustment(key);
   }

@@ -3,6 +3,8 @@ import type { SpecialArrowPlacement } from "../domain/SpecialArrowPlacement";
 
 export function createSpecialArrowPlacementState() {
   let overridesMap = $state<Map<string, SpecialArrowPlacement>>(new Map());
+  // Raw overrides as received by loadAll, retained so the bundle can round-trip via loadAll(getAllOverrides()).
+  let loadedOverrides: SpecialArrowPlacement[] = [];
   let isLoading = $state(false);
   let isInitialized = $state(false);
   let lastError = $state<string | null>(null);
@@ -52,6 +54,7 @@ export function createSpecialArrowPlacementState() {
           newMap.set(override.key, override);
         }
         overridesMap = newMap;
+        loadedOverrides = [...overrides];
         isInitialized = true;
       } catch (error) {
         lastError = error instanceof Error ? error.message : "Failed to load overrides";
@@ -60,8 +63,14 @@ export function createSpecialArrowPlacementState() {
       }
     },
 
+    /** Raw loaded overrides (shallow copy) in the exact shape loadAll consumes — for the bundle snapshot. */
+    getAllOverrides(): SpecialArrowPlacement[] {
+      return [...loadedOverrides];
+    },
+
     clear(): void {
       overridesMap = new Map();
+      loadedOverrides = [];
       isInitialized = false;
     },
 

@@ -8,6 +8,8 @@ import {
 
 export function createDefaultArrowPlacementState() {
   let docsMap = $state<Map<string, DefaultArrowPlacementDoc>>(new Map());
+  // Raw docs as received by loadAll, retained so the bundle can round-trip via loadAll(getAllDocs()).
+  let loadedDocs: DefaultArrowPlacementDoc[] = [];
   let isLoading = $state(false);
   let isInitialized = $state(false);
   let lastError = $state<string | null>(null);
@@ -115,6 +117,7 @@ export function createDefaultArrowPlacementState() {
         // Canonical 3-part key so legacy 2-part docs decode to the staff path.
         for (const doc of docs) newMap.set(generateDefaultDocId(doc.gridMode, doc.propType, doc.motionType), doc);
         docsMap = newMap;
+        loadedDocs = [...docs];
         isInitialized = true;
       } catch (error) {
         lastError = error instanceof Error ? error.message : "Failed to load defaults";
@@ -123,8 +126,14 @@ export function createDefaultArrowPlacementState() {
       }
     },
 
+    /** Raw loaded docs (shallow copy) in the exact shape loadAll consumes — for the bundle snapshot. */
+    getAllDocs(): DefaultArrowPlacementDoc[] {
+      return [...loadedDocs];
+    },
+
     clear(): void {
       docsMap = new Map();
+      loadedDocs = [];
       isInitialized = false;
     },
 

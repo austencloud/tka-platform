@@ -9,6 +9,7 @@
 
 import type { SpecialArrowPlacementRepository } from "./special-arrow-placement-repository";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import { setSpecialOverrideResolver } from "../../placement/services/override-resolvers";
 
 const logger = createComponentLogger("SpecialOverrideSingleton");
 
@@ -44,6 +45,10 @@ async function doInitialize(): Promise<void> {
     const repository = new SpecialArrowPlacementRepository(persister);
     await repository.initialize();
     repositoryInstance = repository;
+    setSpecialOverrideResolver({
+      getOverride: (key) => repository.getOverride(key),
+      getFullOverride: (key) => repository.getFullOverride(key),
+    });
     logger.success("Special placement override system initialized");
   } catch (error) {
     logger.error("Failed to initialize special overrides:", error);
@@ -60,6 +65,7 @@ async function doInitialize(): Promise<void> {
 export function disposeSpecialOverrides(): void {
   if (repositoryInstance) {
     repositoryInstance.dispose();
+    setSpecialOverrideResolver(null);
     repositoryInstance = null;
     logger.info("Special placement override system disposed");
   }

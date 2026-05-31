@@ -17,6 +17,8 @@ import type { CascadingPropGeometryResult } from "../services/types";
 
 export function createPropGeometryAdjustmentState() {
   let adjustmentsMap = $state<Map<string, PropGeometryAdjustment>>(new Map());
+  // Raw adjustments as received by loadAll, retained so the bundle can round-trip via loadAll(getAllAdjustments()).
+  let loadedAdjustments: PropGeometryAdjustment[] = [];
   let isLoading = $state(false);
   let isInitialized = $state(false);
   let lastError = $state<string | null>(null);
@@ -119,6 +121,7 @@ export function createPropGeometryAdjustmentState() {
           newMap.set(keyString, adjustment);
         }
         adjustmentsMap = newMap;
+        loadedAdjustments = [...adjustments];
         isInitialized = true;
       } catch (error) {
         lastError =
@@ -129,8 +132,14 @@ export function createPropGeometryAdjustmentState() {
       }
     },
 
+    /** Raw loaded adjustments (shallow copy) in the exact shape loadAll consumes — for the bundle snapshot. */
+    getAllAdjustments(): PropGeometryAdjustment[] {
+      return [...loadedAdjustments];
+    },
+
     clear(): void {
       adjustmentsMap = new Map();
+      loadedAdjustments = [];
       isInitialized = false;
     },
 

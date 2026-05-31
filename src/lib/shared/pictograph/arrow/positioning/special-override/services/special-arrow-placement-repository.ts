@@ -89,6 +89,11 @@ export class SpecialArrowPlacementRepository {
     return this.state.getFullOverride(key);
   }
 
+  /** All loaded overrides, in the exact shape `state.loadAll` consumes (bundle snapshot). */
+  getAll(): SpecialArrowPlacement[] {
+    return this.state.getAllOverrides();
+  }
+
   hasOverride(key: string): boolean {
     return this.state.hasOverride(key);
   }

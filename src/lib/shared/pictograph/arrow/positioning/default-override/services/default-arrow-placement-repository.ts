@@ -1,5 +1,5 @@
 import { authState } from "$lib/shared/auth/state/authState.svelte";
-import type { PlacementValue } from "../domain/DefaultArrowPlacement";
+import type { DefaultArrowPlacementDoc, PlacementValue } from "../domain/DefaultArrowPlacement";
 import type { DefaultArrowPlacementPersister } from "./default-arrow-placement-persister";
 import {
   createDefaultArrowPlacementState,
@@ -70,6 +70,11 @@ export class DefaultArrowPlacementRepository {
     turns: string,
   ): PlacementValue | null {
     return this.state.getValue(gridMode, propType, motionType, placementKey, turns);
+  }
+
+  /** All loaded docs, in the exact shape `state.loadAll` consumes (bundle snapshot). */
+  getAll(): DefaultArrowPlacementDoc[] {
+    return this.state.getAllDocs();
   }
 
   hasValue(

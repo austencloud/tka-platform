@@ -161,6 +161,11 @@ export class GlobalArrowAdjustmentRepository {
     return this.state.getAdjustmentCascading(baseKey, thisPropType, otherPropType, legacyOriKey);
   }
 
+  /** All loaded adjustments, in the exact shape `state.loadAll` consumes (bundle snapshot). */
+  getAll(): GlobalArrowAdjustment[] {
+    return this.state.getAllAdjustments();
+  }
+
   /**
    * Save an adjustment to local cache only (admin only).
    * Use this for live preview during WASD adjustment.
