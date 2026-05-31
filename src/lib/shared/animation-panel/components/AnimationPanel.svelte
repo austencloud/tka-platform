@@ -35,6 +35,7 @@
   import IconRailNav from "../pill-nav/IconRailNav.svelte";
   import PillBody from "../pill-nav/PillBody.svelte";
   import { buildPillSpecs, type PillId } from "../pill-nav/pill-types";
+  import { loadActivePill, saveActivePill } from "../state/active-pill-persistence";
   import {
     computeDisplaySummary,
     computeEffectsSummary,
@@ -91,7 +92,11 @@
   const exportButtonLabel = $derived(renderMode === '3d' ? 'Record Scene' : 'Download Animation');
 
   // ── Active pill state ──
-  let activePill = $state<PillId | null>(null);
+  // Desktop sidebar reopens to the last section (default Effects) for proper
+  // persistence; mobile bottom sheet stays closed on mount.
+  let activePill = $state<PillId | null>(
+    layout === "sidebar" ? loadActivePill() : null,
+  );
   let panelDirection = $state(1);
 
   function handlePillSelect(id: PillId): void {
@@ -252,6 +257,11 @@
   });
 
   // ── Pill specs ──
+  // Effects leads the rail — it's the section users reach for most.
+  const ANIMATION_PILL_ORDER = [
+    "effects", "props", "effort", "playback", "display", "export",
+  ] as const satisfies readonly PillId[];
+
   const pillSpecs = $derived(
     buildPillSpecs({
       ...(onPropChange ? { props: { icon: "fa-paintbrush", label: "Props", summary: propsSummary } } : {}),
@@ -260,8 +270,21 @@
       playback: { icon: "fa-play",      label: "Playback", summary: playbackSummary },
       display:  { icon: "fa-eye",       label: "Display",  summary: displaySummary },
       export:   { icon: "fa-sliders",   label: "Export",   summary: exportSummary },
-    }),
+    }, ANIMATION_PILL_ORDER),
   );
+
+  // Persist the active section and keep it pointed at a section this host
+  // actually exposes (e.g. a remembered "props" falls back to Effects where
+  // there's no Props pill). Sidebar-only — see active-pill-persistence.
+  $effect(() => {
+    if (layout !== "sidebar" || !activePill) return;
+    const ids = pillSpecs.map((p) => p.id);
+    if (!ids.includes(activePill)) {
+      activePill = ids.includes("effects") ? "effects" : (ids[0] ?? null);
+      return;
+    }
+    saveActivePill(activePill);
+  });
 
   const activePillLabel = $derived(
     pillSpecs.find((p) => p.id === activePill)?.label ?? "",

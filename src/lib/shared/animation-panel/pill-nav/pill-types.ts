@@ -34,12 +34,15 @@ export interface PillSpec {
 /**
  * Build the ordered PillSpec array from a PillId-keyed partial record.
  * Only pills present in the record are included in the output.
- * Ordering follows PILL_ORDER.
+ * Ordering follows `order` (defaults to PILL_ORDER). A consumer that wants a
+ * different rail order — e.g. surfacing Effects first — passes its own order
+ * built from PILL_ORDER's ids, so the two still cannot drift on membership.
  */
 export function buildPillSpecs(
   specs: Partial<Record<PillId, Omit<PillSpec, "id">>>,
+  order: readonly PillId[] = PILL_ORDER,
 ): PillSpec[] {
-  return PILL_ORDER
+  return order
     .filter((id) => id in specs)
     .map((id) => ({ id, ...specs[id]! }));
 }
