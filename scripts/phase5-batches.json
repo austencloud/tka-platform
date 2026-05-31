@@ -1,0 +1,1142 @@
+[
+ {
+  "mod": "video",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/features/video/video-trails/services/video-tip-adapter.ts",
+    "cls": "stateless-cache",
+    "className": "VideoTipAdapter",
+    "consumers": 3,
+    "methods": 4,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/auth",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/shared/auth/services/user-document-manager.ts",
+    "cls": "stateless",
+    "className": "UserDocumentManager",
+    "consumers": 1,
+    "methods": 4,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/feedback",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/shared/feedback/services/feedback-status-manager.ts",
+    "cls": "stateless",
+    "className": "FeedbackStatusService",
+    "consumers": 1,
+    "methods": 7,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/mandala",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/shared/mandala/services/mandala-geometry-calculator.ts",
+    "cls": "stateless-cache",
+    "className": "MandalaGeometryCalculator",
+    "consumers": 9,
+    "methods": 4,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/voice-control",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/shared/voice-control/services/command-dispatcher.ts",
+    "cls": "stateless-cache",
+    "className": "CommandDispatcher",
+    "consumers": 4,
+    "methods": 2,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "compose",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/features/compose/services/tunnel-mode-sequence-manager.ts",
+    "cls": "stateless-deps",
+    "className": "TunnelModeSequenceManager",
+    "consumers": 0,
+    "methods": 3,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "gallery-generator",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/features/gallery-generator/services/gallery-renderer.ts",
+    "cls": "stateless-deps",
+    "className": "GalleryRenderer",
+    "consumers": 1,
+    "methods": 3,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "lab",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/features/lab/services/screenshot-upload-orchestrator.ts",
+    "cls": "stateless-deps",
+    "className": "ScreenshotUploadOrchestrator",
+    "consumers": 2,
+    "methods": 3,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "mandala",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/features/mandala/tabs/collection/services/local-mandala-collection-repository.ts",
+    "cls": "stateless-deps",
+    "className": "LocalMandalaCollectionRepository",
+    "consumers": 1,
+    "methods": 3,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "moderation",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/features/moderation/services/report-resolver.ts",
+    "cls": "stateless-deps",
+    "className": "ReportResolver",
+    "consumers": 1,
+    "methods": 6,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "museum",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/features/museum/services/museum-grid-builder.ts",
+    "cls": "stateless",
+    "className": "MuseumGridBuilder",
+    "consumers": 1,
+    "methods": 8,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "poi",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/features/poi/services/strip-pattern-engine.ts",
+    "cls": "stateless-cache",
+    "className": "StripPatternEngine",
+    "consumers": 2,
+    "methods": 5,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "village",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/features/village/services/lineage-tracker.ts",
+    "cls": "stateless-cache",
+    "className": "LineageTracker",
+    "consumers": 2,
+    "methods": 7,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "voice-sessions",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/features/voice-sessions/services/voice-session-replayer.ts",
+    "cls": "stateless-deps",
+    "className": "VoiceSessionReplayer",
+    "consumers": 5,
+    "methods": 5,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "watch",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/features/watch/services/feed-loader.ts",
+    "cls": "stateless-deps",
+    "className": "FeedLoader",
+    "consumers": 2,
+    "methods": 8,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/application",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/shared/application/services/deep-link-resolver.ts",
+    "cls": "stateless-deps",
+    "className": "DeepLinkResolver",
+    "consumers": 1,
+    "methods": 1,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/keyboard",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/shared/keyboard/services/shortcut-registry.ts",
+    "cls": "stateless-cache",
+    "className": "ShortcutRegistry",
+    "consumers": 3,
+    "methods": 10,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/mobile",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/shared/mobile/services/gesture-handler.ts",
+    "cls": "stateless",
+    "className": "GestureHandler",
+    "consumers": 1,
+    "methods": 3,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/platform",
+  "n": 1,
+  "files": [
+   {
+    "p": "src/lib/shared/platform/services/native-initializer.ts",
+    "cls": "stateless",
+    "className": "NativeInitializer",
+    "consumers": 1,
+    "methods": 6,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "loop-labeler",
+  "n": 2,
+  "files": [
+   {
+    "p": "src/lib/features/loop-labeler/services/comparison/step-comparison-orchestrator.ts",
+    "cls": "stateless",
+    "className": "StepComparisonOrchestrator",
+    "consumers": 5,
+    "methods": 5,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/loop-labeler/services/transformation-analyzer.ts",
+    "cls": "stateless",
+    "className": "TransformationAnalyzer",
+    "consumers": 3,
+    "methods": 17,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/navigation",
+  "n": 2,
+  "files": [
+   {
+    "p": "src/lib/shared/navigation/services/position-deriver.ts",
+    "cls": "stateless",
+    "className": "PositionDeriver",
+    "consumers": 3,
+    "methods": 2,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/navigation/services/sheet-router-service.ts",
+    "cls": "stateless",
+    "className": "SheetRouter",
+    "consumers": 1,
+    "methods": 16,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/render",
+  "n": 2,
+  "files": [
+   {
+    "p": "src/lib/shared/render/services/image-format-converter.ts",
+    "cls": "stateless",
+    "className": "ImageFormatConverter",
+    "consumers": 4,
+    "methods": 15,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/render/services/svg-image-cache.ts",
+    "cls": "stateless-cache",
+    "className": "SvgImageCache",
+    "consumers": 12,
+    "methods": 17,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "admin",
+  "n": 2,
+  "files": [
+   {
+    "p": "src/lib/features/admin/services/event-activity-analyzer.ts",
+    "cls": "stateless",
+    "className": "EventActivityAnalyzer",
+    "consumers": 2,
+    "methods": 7,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/admin/services/user-activity-tracker.ts",
+    "cls": "stateless-deps",
+    "className": "UserActivityTracker",
+    "consumers": 2,
+    "methods": 7,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "feedback",
+  "n": 2,
+  "files": [
+   {
+    "p": "src/lib/features/feedback/services/archive-loader.ts",
+    "cls": "stateless",
+    "className": "ArchiveLoaderImpl",
+    "consumers": 1,
+    "methods": 1,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/feedback/services/feedback-tester-workflow.ts",
+    "cls": "stateless",
+    "className": "FeedbackTesterWorkflowService",
+    "consumers": 1,
+    "methods": 5,
+    "impl": [
+     "IFeedbackTesterWorkflow"
+    ]
+   }
+  ]
+ },
+ {
+  "mod": "levels",
+  "n": 2,
+  "files": [
+   {
+    "p": "src/lib/features/levels/poi-lab/services/poi-option-filter-decorator.ts",
+    "cls": "stateless",
+    "className": "PoiOptionFilterDecorator",
+    "consumers": 1,
+    "methods": 1,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/levels/poi-lab/services/poi-sequence-validator.ts",
+    "cls": "stateless",
+    "className": "PoiSequenceValidator",
+    "consumers": 1,
+    "methods": 2,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "sticker-lab",
+  "n": 2,
+  "files": [
+   {
+    "p": "src/lib/features/sticker-lab/services/local-sticker-sheet-repository.ts",
+    "cls": "stateless-deps",
+    "className": "LocalStickerSheetRepository",
+    "consumers": 1,
+    "methods": 3,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/sticker-lab/services/sticker-sheet-pdf-exporter.ts",
+    "cls": "stateless",
+    "className": "StickerSheetPdfExporter",
+    "consumers": 1,
+    "methods": 2,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "tika",
+  "n": 2,
+  "files": [
+   {
+    "p": "src/lib/features/tika/services/conversation-memory-retriever.ts",
+    "cls": "stateless-deps",
+    "className": "ConversationMemoryRetriever",
+    "consumers": 1,
+    "methods": 5,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/tika/services/tika-interaction-tracker.ts",
+    "cls": "stateless",
+    "className": "TikaInteractionTracker",
+    "consumers": 2,
+    "methods": 4,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/comparison",
+  "n": 2,
+  "files": [
+   {
+    "p": "src/lib/shared/comparison/services/motion-signature-generator.ts",
+    "cls": "stateless",
+    "className": "MotionSignatureGenerator",
+    "consumers": 3,
+    "methods": 8,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/comparison/services/spatial-transform-detector.ts",
+    "cls": "stateless",
+    "className": "SpatialTransformDetector",
+    "consumers": 5,
+    "methods": 5,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/multi-grid",
+  "n": 2,
+  "files": [
+   {
+    "p": "src/lib/shared/multi-grid/services/topology-beta-separator.ts",
+    "cls": "stateless",
+    "className": "TopologyBetaSeparator",
+    "consumers": 0,
+    "methods": 3,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/multi-grid/services/topology-prop-loader.ts",
+    "cls": "stateless",
+    "className": "TopologyPropLoader",
+    "consumers": 0,
+    "methods": 4,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/share",
+  "n": 2,
+  "files": [
+   {
+    "p": "src/lib/shared/share/services/r2-video-uploader.ts",
+    "cls": "stateless",
+    "className": "R2VideoUploader",
+    "consumers": 3,
+    "methods": 10,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/share/services/sequence-image-sharer.ts",
+    "cls": "stateless-deps",
+    "className": "SequenceImageSharer",
+    "consumers": 3,
+    "methods": 5,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/animation-engine",
+  "n": 3,
+  "files": [
+   {
+    "p": "src/lib/shared/animation-engine/services/frame-builder-service.ts",
+    "cls": "stateless",
+    "className": "FrameBuilderService",
+    "consumers": 1,
+    "methods": 3,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/animation-engine/services/render-context-factory.ts",
+    "cls": "stateless",
+    "className": "RenderContextFactory",
+    "consumers": 3,
+    "methods": 1,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/animation-engine/services/render-context-registry.ts",
+    "cls": "stateless-cache",
+    "className": "RenderContextRegistry",
+    "consumers": 4,
+    "methods": 4,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "browse",
+  "n": 4,
+  "files": [
+   {
+    "p": "src/lib/features/browse/sequences/display/services/browse-filter.ts",
+    "cls": "stateless",
+    "className": "BrowseFilter",
+    "consumers": 1,
+    "methods": 21,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/browse/sequences/display/services/browse-metadata-extractor.ts",
+    "cls": "stateless",
+    "className": "BrowseMetadataExtractor",
+    "consumers": 1,
+    "methods": 15,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/browse/sequences/display/services/multi-filter.ts",
+    "cls": "stateless-deps",
+    "className": "MultiFilter",
+    "consumers": 0,
+    "methods": 2,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/browse/shared/services/browse-data-source.ts",
+    "cls": "stateless-deps",
+    "className": "BrowseDataSource",
+    "consumers": 1,
+    "methods": 1,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "library",
+  "n": 4,
+  "files": [
+   {
+    "p": "src/lib/features/library/services/artifact-extractor.ts",
+    "cls": "stateless-deps",
+    "className": "ArtifactExtractor",
+    "consumers": 2,
+    "methods": 1,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/library/services/favorites-manager.ts",
+    "cls": "stateless",
+    "className": "FavoritesManager",
+    "consumers": 0,
+    "methods": 5,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/library/services/hand-path-save-orchestrator.ts",
+    "cls": "stateless-deps",
+    "className": "HandPathSaveOrchestrator",
+    "consumers": 2,
+    "methods": 1,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/library/services/solo-prop-save-orchestrator.ts",
+    "cls": "stateless-deps",
+    "className": "SoloPropSaveOrchestrator",
+    "consumers": 2,
+    "methods": 1,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/create",
+  "n": 5,
+  "files": [
+   {
+    "p": "src/lib/shared/create/services/LOOPDetector.ts",
+    "cls": "stateless",
+    "className": "LOOPDetector",
+    "consumers": 2,
+    "methods": 19,
+    "impl": [
+     "ILOOPDetector"
+    ]
+   },
+   {
+    "p": "src/lib/shared/create/services/OrientationCycleDetector.ts",
+    "cls": "stateless",
+    "className": "OrientationCycleDetector",
+    "consumers": 6,
+    "methods": 3,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/create/services/SequenceImporter.ts",
+    "cls": "stateless-deps",
+    "className": "SequenceImporter",
+    "consumers": 3,
+    "methods": 2,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/create/services/SequenceTransformer.ts",
+    "cls": "stateless-deps",
+    "className": "SequenceTransformer",
+    "consumers": 2,
+    "methods": 10,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/create/services/StartPositionManager.ts",
+    "cls": "stateless",
+    "className": "StartPositionManager",
+    "consumers": 9,
+    "methods": 7,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/sequence-viewer",
+  "n": 5,
+  "files": [
+   {
+    "p": "src/lib/shared/sequence-viewer/services/cell-cache-key-deriver.ts",
+    "cls": "stateless-deps",
+    "className": "CellCacheKeyDeriver",
+    "consumers": 3,
+    "methods": 2,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/sequence-viewer/services/cell-pre-warmer.ts",
+    "cls": "stateless-cache",
+    "className": "CellPreWarmer",
+    "consumers": 4,
+    "methods": 10,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/sequence-viewer/services/public-sequence-hash-matcher.ts",
+    "cls": "stateless",
+    "className": "PublicSequenceHashMatcher",
+    "consumers": 2,
+    "methods": 3,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/sequence-viewer/services/sequence-motion-loader.ts",
+    "cls": "stateless-deps",
+    "className": "SequenceMotionLoader",
+    "consumers": 5,
+    "methods": 1,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/sequence-viewer/services/sequence-viewer.ts",
+    "cls": "stateless",
+    "className": "SequenceViewer",
+    "consumers": 1,
+    "methods": 13,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "retro",
+  "n": 6,
+  "files": [
+   {
+    "p": "src/lib/features/retro/dos/services/ascii-renderer.ts",
+    "cls": "stateless",
+    "className": "AsciiRenderer",
+    "consumers": 0,
+    "methods": 24,
+    "impl": [
+     "IAsciiRenderer"
+    ]
+   },
+   {
+    "p": "src/lib/features/retro/dos/services/svg-to-braille-converter.ts",
+    "cls": "stateless-deps",
+    "className": "SvgToBrailleConverter",
+    "consumers": 2,
+    "methods": 4,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/retro/shared/services/era-renderer-base.ts",
+    "cls": "stateless-deps",
+    "className": "EraRendererBase",
+    "consumers": 2,
+    "methods": 9,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/retro/win95/services/pixel-renderer.ts",
+    "cls": "stateless-deps",
+    "className": "PixelRenderer",
+    "consumers": 3,
+    "methods": 12,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/retro/win95/services/window-manager.ts",
+    "cls": "stateless-cache",
+    "className": "WindowManager",
+    "consumers": 2,
+    "methods": 13,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/retro/winxp/services/xp-renderer.ts",
+    "cls": "stateless-deps",
+    "className": "XPRenderer",
+    "consumers": 1,
+    "methods": 12,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/browse",
+  "n": 6,
+  "files": [
+   {
+    "p": "src/lib/shared/browse/services/BrowseSectionManager.ts",
+    "cls": "stateless",
+    "className": "BrowseSectionManager",
+    "consumers": 1,
+    "methods": 16,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/browse/services/ClaudeCodeCopier.ts",
+    "cls": "stateless-deps",
+    "className": "ClaudeCodeCopier",
+    "consumers": 3,
+    "methods": 7,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/browse/services/ThumbnailRenderOrchestrator.ts",
+    "cls": "stateless-cache",
+    "className": "MemoryUrlCache",
+    "consumers": 4,
+    "methods": 3,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/browse/services/VariationGrouper.ts",
+    "cls": "stateless-cache",
+    "className": "VariationGrouper",
+    "consumers": 2,
+    "methods": 9,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/browse/services/VideoCountManager.ts",
+    "cls": "stateless-cache",
+    "className": "VideoCountManager",
+    "consumers": 3,
+    "methods": 4,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/browse/services/browse-filter.ts",
+    "cls": "stateless",
+    "className": "BrowseFilter",
+    "consumers": 4,
+    "methods": 21,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/foundation",
+  "n": 6,
+  "files": [
+   {
+    "p": "src/lib/shared/foundation/services/implementations/data/CsvParser.ts",
+    "cls": "stateless",
+    "className": "CSVParser",
+    "consumers": 3,
+    "methods": 8,
+    "impl": [
+     "ICSVParser"
+    ]
+   },
+   {
+    "p": "src/lib/shared/foundation/services/implementations/data/EnumMapper.ts",
+    "cls": "stateless",
+    "className": "EnumMapper",
+    "consumers": 4,
+    "methods": 8,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/foundation/services/hand-path-repository-store.ts",
+    "cls": "stateless",
+    "className": "HandPathRepository",
+    "consumers": 8,
+    "methods": 5,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/foundation/services/sequence-decomposer.ts",
+    "cls": "stateless",
+    "className": "SequenceDecomposer",
+    "consumers": 2,
+    "methods": 4,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/foundation/services/solo-prop-repository-store.ts",
+    "cls": "stateless",
+    "className": "SoloPropRepository",
+    "consumers": 6,
+    "methods": 5,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/foundation/services/svg-image-converter.ts",
+    "cls": "stateless-cache",
+    "className": "SvgImageConverter",
+    "consumers": 2,
+    "methods": 5,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "shared/pictograph",
+  "n": 6,
+  "files": [
+   {
+    "p": "src/lib/shared/pictograph/arrow/positioning/calculation/services/directional-tuple-processor.ts",
+    "cls": "stateless",
+    "className": "DirectionalTupleCalculator",
+    "consumers": 4,
+    "methods": 2,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/pictograph/arrow/positioning/placement/services/special-placement-lookup.ts",
+    "cls": "stateless",
+    "className": "SpecialPlacementLookup",
+    "consumers": 2,
+    "methods": 6,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator.ts",
+    "cls": "stateless",
+    "className": "TurnsTupleGenerator",
+    "consumers": 19,
+    "methods": 14,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/pictograph/prop/services/beta-detector.ts",
+    "cls": "stateless",
+    "className": "BetaDetector",
+    "consumers": 5,
+    "methods": 3,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/pictograph/shared/services/simple-json-cache.ts",
+    "cls": "stateless-cache",
+    "className": "SimpleJsonCache",
+    "consumers": 5,
+    "methods": 6,
+    "impl": []
+   },
+   {
+    "p": "src/lib/shared/pictograph/shared/services/start-position-deriver.ts",
+    "cls": "stateless",
+    "className": "StartPositionDeriver",
+    "consumers": 20,
+    "methods": 3,
+    "impl": []
+   }
+  ]
+ },
+ {
+  "mod": "create",
+  "n": 25,
+  "files": [
+   {
+    "p": "src/lib/features/create/construct/option-picker/services/layout-detector.ts",
+    "cls": "stateless-deps",
+    "className": "LayoutDetector",
+    "consumers": 1,
+    "methods": 2,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/construct/option-picker/services/position-analyzer.ts",
+    "cls": "stateless",
+    "className": "PositionAnalyzer",
+    "consumers": 9,
+    "methods": 5,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/generate/circular/services/mirrored-inverted-loop-executor.ts",
+    "cls": "stateless-deps",
+    "className": "MirroredInvertedLOOPExecutor",
+    "consumers": 3,
+    "methods": 9,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/generate/circular/services/mirrored-swapped-inverted-loop-executor.ts",
+    "cls": "stateless-deps",
+    "className": "MirroredSwappedInvertedLOOPExecutor",
+    "consumers": 3,
+    "methods": 9,
+    "impl": [
+     "ILOOPExecutor"
+    ]
+   },
+   {
+    "p": "src/lib/features/create/generate/circular/services/mirrored-swapped-loop-executor.ts",
+    "cls": "stateless",
+    "className": "MirroredSwappedLOOPExecutor",
+    "consumers": 2,
+    "methods": 9,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/generate/circular/services/orientation-cycle-extender.ts",
+    "cls": "stateless-deps",
+    "className": "OrientationCycleExtender",
+    "consumers": 5,
+    "methods": 1,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/generate/circular/services/rewound-loop-executor.ts",
+    "cls": "stateless",
+    "className": "RewoundLOOPExecutor",
+    "consumers": 2,
+    "methods": 4,
+    "impl": [
+     "ILOOPExecutor"
+    ]
+   },
+   {
+    "p": "src/lib/features/create/generate/circular/services/rotated-inverted-loop-executor.ts",
+    "cls": "stateless-deps",
+    "className": "RotatedInvertedLOOPExecutor",
+    "consumers": 2,
+    "methods": 9,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/generate/circular/services/rotated-swapped-loop-executor.ts",
+    "cls": "stateless",
+    "className": "RotatedSwappedLOOPExecutor",
+    "consumers": 2,
+    "methods": 7,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/generate/circular/services/strict-flipped-loop-executor.ts",
+    "cls": "stateless",
+    "className": "StrictFlippedLOOPExecutor",
+    "consumers": 2,
+    "methods": 8,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/generate/circular/services/strict-inverted-loop-executor.ts",
+    "cls": "stateless",
+    "className": "StrictInvertedLOOPExecutor",
+    "consumers": 2,
+    "methods": 8,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/generate/circular/services/strict-mirrored-loop-executor.ts",
+    "cls": "stateless",
+    "className": "StrictMirroredLOOPExecutor",
+    "consumers": 3,
+    "methods": 8,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/generate/circular/services/strict-rotated-loop-executor.ts",
+    "cls": "stateless",
+    "className": "StrictRotatedLOOPExecutor",
+    "consumers": 5,
+    "methods": 8,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/generate/circular/services/strict-swapped-loop-executor.ts",
+    "cls": "stateless",
+    "className": "StrictSwappedLOOPExecutor",
+    "consumers": 2,
+    "methods": 5,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/generate/circular/services/swapped-complementary-loop-executor.ts",
+    "cls": "stateless",
+    "className": "SwappedInvertedLOOPExecutor",
+    "consumers": 0,
+    "methods": 9,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/generate/circular/services/swapped-inverted-loop-executor.ts",
+    "cls": "stateless",
+    "className": "SwappedInvertedLOOPExecutor",
+    "consumers": 2,
+    "methods": 9,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/generate/shared/services/turn-allocator.ts",
+    "cls": "stateless-deps",
+    "className": "TurnAllocator",
+    "consumers": 1,
+    "methods": 1,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/shared/layout/services/create-module-layout-manager.ts",
+    "cls": "stateless-deps",
+    "className": "CreateModuleLayoutManager",
+    "consumers": 1,
+    "methods": 5,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/shared/services/create-module-handlers.ts",
+    "cls": "stateless-deps",
+    "className": "CreateModuleHandlers",
+    "consumers": 4,
+    "methods": 7,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/shared/services/loop-validator.ts",
+    "cls": "stateless-deps",
+    "className": "LOOPValidator",
+    "consumers": 9,
+    "methods": 3,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/shared/services/panel-persister.svelte.ts",
+    "cls": "stateless",
+    "className": "PanelPersister",
+    "consumers": 0,
+    "methods": 5,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/shared/services/sequence-analyzer.ts",
+    "cls": "stateless-deps",
+    "className": "SequenceAnalyzer",
+    "consumers": 8,
+    "methods": 16,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/shared/services/sequence-persister.ts",
+    "cls": "stateless",
+    "className": "SequencePersister",
+    "consumers": 13,
+    "methods": 7,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/shared/workspace-panel/shared/services/workbench.ts",
+    "cls": "stateless-deps",
+    "className": "Workbench",
+    "consumers": 1,
+    "methods": 6,
+    "impl": []
+   },
+   {
+    "p": "src/lib/features/create/spell/services/variation-exploration-orchestrator.ts",
+    "cls": "stateless-deps",
+    "className": "VariationExplorationOrchestrator",
+    "consumers": 3,
+    "methods": 2,
+    "impl": []
+   }
+  ]
+ }
+]

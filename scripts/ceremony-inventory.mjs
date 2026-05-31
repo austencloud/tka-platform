@@ -281,9 +281,20 @@ async function main() {
   const pascalFiles = allTsFiles.filter(f => isPascalOrGetterCase(basename(f)));
   console.log(`\n${pascalFiles.length} PascalCase/getter .ts files`);
 
+  // Post-flatten fix: the May-28 flatten kebab-renamed service files, so the
+  // class targets no longer have PascalCase *filenames* — but classifyServiceFile
+  // works on any /services/ path. Index ALL /services/ .ts (union with pascalFiles)
+  // so kebab-named service classes are classified, not just PascalCase ones.
+  const serviceFiles = allTsFiles.filter(f => {
+    const rel = f.replace(/\\/g, '/');
+    return rel.includes('/services/') && !rel.endsWith('.d.ts');
+  });
+  const filesToIndex = Array.from(new Set([...pascalFiles, ...serviceFiles]));
+  console.log(`${serviceFiles.length} /services/ .ts files; ${filesToIndex.length} total indexed (union)`);
+
   // Categorize by module
   const byModule = new Map();
-  for (const f of pascalFiles) {
+  for (const f of filesToIndex) {
     const mod = getModuleName(f);
     if (!byModule.has(mod)) byModule.set(mod, []);
     byModule.get(mod).push({
