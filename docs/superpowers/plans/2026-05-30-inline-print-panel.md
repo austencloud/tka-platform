@@ -896,7 +896,7 @@ git commit -m "feat(deck-releaser): inline two-step delete on release rows" -- s
 - Modify: `src/lib/features/choreo-card/components/deck-releaser/ReviewStep.svelte`
 - Modify: `src/lib/features/choreo-card/components/deck-releaser/DeckReleaserTab.svelte`
 
-Goal: move the print dials (`cardSize`/`copies`/`groupByElement` + localStorage), the `elementSorted` derivation, `renderedPairs`, the export/print state, and the handlers (`handlePrint`/`handleExportPDF`/`handleExportZIP`/`triggerDownload`) OUT of `ReviewStep` and INTO `DeckReleaserTab`. `ReviewStep` receives them as props/callbacks. **The modal still renders this step** (driven by tab state) so the tree stays green and behavior is unchanged; Task 6 removes it.
+Goal: move the print dials (`cardSize`/`copies`/`groupByElement` + localStorage), the `elementSorted` derivation, `renderedPairs`, the export/print state, and the handlers (`handlePrint`/`handleExportPDF`/`handleExportZIP`/`triggerDownload`) OUT of `ReviewStep` and INTO `DeckReleaserTab`. `ReviewStep` receives them as props/callbacks. This task also **removes the `PrintDialog` modal** from `ReviewStep` (Step 2). Between this task and Task 6 the print controls have no on-screen entry (the toolbar Print button becomes a temporary no-op), but the tree compiles and the preview renders — Task 6 adds the sidebar Print panel that surfaces the lifted handlers.
 
 - [ ] **Step 1: Add lifted state + handlers to `DeckReleaserTab`**
 

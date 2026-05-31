@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Glyph Tiles — Style Lab</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root { --ink:#e8ecf6; --muted:rgba(232,236,246,.42); --hair:rgba(255,255,255,.08); font-family:"Inter",system-ui,sans-serif; }
+  * { box-sizing:border-box; }
+  body { margin:0; color:var(--ink); min-height:100vh; padding:26px 30px 80px;
+    background:radial-gradient(1200px 600px at 20% -10%,#16204022,transparent),radial-gradient(900px 500px at 90% 110%,#2a164022,transparent),#0a0e1a; }
+  h1 { font-size:19px; font-weight:800; letter-spacing:-.02em; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:13px; margin:0 0 20px; max-width:760px; line-height:1.5; }
+
+  .bar { display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; padding:14px 16px; margin-bottom:14px;
+    background:rgba(255,255,255,.03); border:1px solid var(--hair); border-radius:14px; }
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; }
+  .tab { appearance:none; border:1px solid var(--hair); background:transparent; color:var(--muted); font:inherit;
+    font-weight:600; font-size:13px; padding:9px 14px; border-radius:10px; cursor:pointer; transition:all .15s; }
+  .tab:hover { color:var(--ink); border-color:rgba(255,255,255,.2); }
+  .tab.active { color:#fff; background:linear-gradient(135deg,#6d4bff,#4b7bff); border-color:transparent; }
+  .knobs { display:flex; flex-wrap:wrap; gap:8px 16px; padding:12px 16px; margin-bottom:20px;
+    background:rgba(255,255,255,.02); border:1px solid var(--hair); border-radius:14px; }
+  .ctl { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+  .ctl input[type=range] { width:120px; accent-color:#6d4bff; }
+  .ctl b { color:var(--ink); font-variant-numeric:tabular-nums; width:38px; text-align:right; }
+  .toggle { appearance:none; border:1px solid var(--hair); background:transparent; color:var(--muted); font:inherit;
+    font-size:12px; font-weight:600; padding:7px 12px; border-radius:9px; cursor:pointer; }
+  .toggle.on { color:#fff; border-color:#6d4bff; background:rgba(109,75,255,.18); }
+  .preset { appearance:none; border:1px solid var(--hair); background:transparent; color:var(--muted); font:inherit;
+    font-size:11px; font-weight:600; padding:7px 10px; border-radius:8px; cursor:pointer; }
+  .preset:hover { color:var(--ink); border-color:rgba(255,255,255,.2); }
+
+  .stage { display:flex; gap:26px; align-items:flex-start; flex-wrap:wrap; }
+  .frame-meta { font-size:11px; color:var(--muted); margin-bottom:8px; }
+  .panel { background:linear-gradient(180deg,#131a30,#0e1324); border:1px solid var(--hair); border-radius:18px;
+    overflow:hidden; box-shadow:0 30px 80px -30px rgba(0,0,0,.8); display:flex; flex-direction:column; }
+  .panel-head { padding:13px 16px 10px; flex-shrink:0; border-bottom:1px solid var(--hair);
+    display:flex; align-items:center; justify-content:space-between; }
+  .panel-head h2 { margin:0; font-size:13px; font-weight:700; }
+  .panel-head .dot { width:8px; height:8px; border-radius:50%; background:#2bd576; box-shadow:0 0 10px #2bd576; }
+  .viewport { flex:1; min-height:0; overflow-y:auto; padding:14px; container-type:size; }
+  .viewport::-webkit-scrollbar { width:8px; } .viewport::-webkit-scrollbar-thumb { background:rgba(255,255,255,.12); border-radius:8px; }
+  .notes { max-width:300px; font-size:13px; line-height:1.55; color:var(--muted); }
+  .notes h3 { color:var(--ink); font-size:15px; margin:0 0 8px; }
+
+  /* ---- scaffold ---- */
+  .actions { display:flex; flex-direction:column; gap:clamp(12px,2.4cqh,26px);
+    --r:18px; --fill:1; --gscale:1; }
+  .sec { display:flex; flex-direction:column; gap:clamp(6px,1.2cqh,12px); }
+  .sec-label { font-size:clamp(10px,1.4cqh,12px); font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); padding-left:2px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(clamp(94px,22cqw,150px),1fr)); gap:clamp(8px,1.6cqh,14px); }
+  .btn { position:relative; aspect-ratio:1/.86; min-height:82px; border:none; cursor:pointer; border-radius:var(--r);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(7px,1.5cqh,13px);
+    padding:10px; overflow:hidden; transition:transform .14s ease, box-shadow .14s ease, background .14s ease, border-color .14s ease; }
+  .btn i { font-size:calc(clamp(22px,5.2cqh,40px) * var(--gscale)); line-height:1; }
+  .btn .lab { font-size:clamp(11px,1.7cqh,14px); font-weight:700; text-align:center; }
+  .nolabel .btn .lab { display:none; }
+  .btn:hover { transform:translateY(-2px); }
+
+  /* ===== A · AURORA — radial tinted glow, glowing colored glyph ===== */
+  .s-aurora .btn { background:radial-gradient(120% 120% at 50% 0%, rgba(var(--c),calc(.30*var(--fill))), rgba(var(--c),calc(.10*var(--fill))) 60%, rgba(var(--c),calc(.05*var(--fill))));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 10px 26px -16px rgba(var(--c),.9); }
+  .s-aurora .btn::after { content:""; position:absolute; inset:0; border-radius:inherit; border:1px solid rgba(var(--c),.45); mask:linear-gradient(#000,transparent 70%); }
+  .s-aurora .btn i { color:rgb(var(--c)); filter:drop-shadow(0 2px 8px rgba(var(--c),.55)); }
+  .s-aurora .btn .lab { color:#fff; }
+  .s-aurora .btn:hover { background:radial-gradient(120% 120% at 50% 0%, rgba(var(--c),calc(.46*var(--fill))), rgba(var(--c),calc(.16*var(--fill))) 60%, rgba(var(--c),calc(.07*var(--fill)))); }
+
+  /* ===== B · SOLID POP — saturated solid color, dark glyph punched out ===== */
+  .s-solid .btn { background:linear-gradient(160deg, rgba(var(--c),calc(.92*var(--fill))), rgba(var(--c),calc(.72*var(--fill))));
+    box-shadow:0 12px 26px -14px rgba(var(--c),.95), inset 0 1px 0 rgba(255,255,255,.25); }
+  .s-solid .btn i { color:rgba(8,12,24,.85); }
+  .s-solid .btn .lab { color:rgba(8,12,24,.92); }
+  .s-solid .btn:hover { filter:brightness(1.08); }
+
+  /* ===== C · MONO TILE — all tiles same neutral; ONLY glyph carries color ===== */
+  .s-mono .btn { background:rgba(255,255,255,.045); border:1px solid var(--hair); }
+  .s-mono .btn i { color:rgb(var(--c)); }
+  .s-mono .btn .lab { color:rgba(255,255,255,.9); }
+  .s-mono .btn:hover { background:rgba(var(--c),calc(.12*var(--fill))); box-shadow:0 0 0 1px rgba(var(--c),.4); }
+
+  /* ===== D · OUTLINE — thin-stroke big glyph, near-empty fill, colored ring ===== */
+  .s-outline .btn { background:rgba(var(--c),calc(.04*var(--fill))); border:1.5px solid rgba(var(--c),.4); }
+  .s-outline .btn i { color:rgb(var(--c)); -webkit-text-stroke:0; font-weight:300; }
+  .s-outline .btn .lab { color:rgba(255,255,255,.92); font-weight:600; }
+  .s-outline .btn:hover { background:rgba(var(--c),calc(.12*var(--fill))); border-color:rgb(var(--c)); box-shadow:0 0 18px -4px rgba(var(--c),.6); }
+
+  /* ===== E · NEON EDGE — dark tile, glowing color border ring, bright glyph ===== */
+  .s-neon .btn { background:#0c1020; border:1px solid rgba(var(--c),.55);
+    box-shadow:0 0 0 1px rgba(var(--c),.15), 0 0 22px -6px rgba(var(--c),calc(.7*var(--fill))), inset 0 0 18px -10px rgba(var(--c),.8); }
+  .s-neon .btn i { color:rgb(var(--c)); filter:drop-shadow(0 0 6px rgba(var(--c),.8)); }
+  .s-neon .btn .lab { color:#fff; }
+  .s-neon .btn:hover { box-shadow:0 0 0 1px rgba(var(--c),.3), 0 0 30px -4px rgba(var(--c),calc(.9*var(--fill))), inset 0 0 22px -8px rgba(var(--c),.9); }
+
+  /* ===== F · EMBOSS — soft raised matte tile, tinted, colored glyph ===== */
+  .s-emboss .btn { background:linear-gradient(160deg,#1a2138,#10162a);
+    box-shadow:6px 6px 16px -8px rgba(0,0,0,.8), -4px -4px 12px -8px rgba(255,255,255,.06), inset 0 0 0 1px rgba(var(--c),calc(.22*var(--fill))); }
+  .s-emboss .btn i { color:rgb(var(--c)); }
+  .s-emboss .btn .lab { color:rgba(255,255,255,.9); }
+  .s-emboss .btn:hover { box-shadow:8px 8px 20px -8px rgba(0,0,0,.9), -4px -4px 12px -8px rgba(255,255,255,.08), inset 0 0 0 1px rgba(var(--c),.5), 0 0 20px -8px rgba(var(--c),.6); }
+</style>
+</head>
+<body>
+  <h1>Glyph Tiles — Style Lab</h1>
+  <p class="sub">Six treatments of the chosen direction. Dial radius / fill intensity / glyph scale live, toggle labels, resize the panel. All keep the auto-fit grid (wide → more columns, no void). Swap uses a stand-in glyph.</p>
+
+  <div class="bar">
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-s="aurora">A · Aurora</button>
+      <button class="tab" data-s="solid">B · Solid Pop</button>
+      <button class="tab" data-s="mono">C · Mono Tile</button>
+      <button class="tab" data-s="outline">D · Outline</button>
+      <button class="tab" data-s="neon">E · Neon Edge</button>
+      <button class="tab" data-s="emboss">F · Emboss</button>
+    </div>
+  </div>
+
+  <div class="knobs">
+    <div class="ctl">Radius <input id="r" type="range" min="6" max="30" value="18" /><b id="rv">18</b></div>
+    <div class="ctl">Fill <input id="f" type="range" min="20" max="160" value="100" /><b id="fv">100</b></div>
+    <div class="ctl">Glyph <input id="g" type="range" min="60" max="170" value="100" /><b id="gv">100</b></div>
+    <button class="toggle on" id="labtog">Labels: ON</button>
+    <span style="flex:1"></span>
+    <div class="ctl">W <input id="w" type="range" min="280" max="760" value="690" /><b id="wvv">690</b></div>
+    <div class="ctl">H <input id="h" type="range" min="320" max="1000" value="940" /><b id="hvv">940</b></div>
+    <button class="preset" data-w="690" data-h="940">Tall&amp;Wide</button>
+    <button class="preset" data-w="340" data-h="560">Short&amp;Narrow</button>
+  </div>
+
+  <div class="stage">
+    <div>
+      <div class="frame-meta" id="meta">690 × 940</div>
+      <div class="panel" id="panel" style="width:690px;height:940px">
+        <div class="panel-head"><h2 id="title">Aurora</h2><span class="dot"></span></div>
+        <div class="viewport"><div id="render"></div></div>
+      </div>
+    </div>
+    <div class="notes" id="notes"></div>
+  </div>
+
+<script>
+  const SECTIONS = [
+    { name:"Transform", items:[
+      {lab:"Mirror",c:"139,92,246",i:"fa-left-right"},{lab:"Flip",c:"99,102,241",i:"fa-up-down"},
+      {lab:"Swap",c:"16,185,129",i:"fa-right-left"},{lab:"Invert",c:"245,158,11",i:"fa-repeat"},
+      {lab:"Rotate L",c:"249,115,22",i:"fa-rotate-left"},{lab:"Rotate R",c:"249,115,22",i:"fa-rotate-right"}]},
+    { name:"Patterns", items:[
+      {lab:"Turn Pattern",c:"20,184,166",i:"fa-wand-magic-sparkles"},{lab:"Direction",c:"14,165,233",i:"fa-compass"},
+      {lab:"Duration",c:"251,146,60",i:"fa-stopwatch"},{lab:"Extend",c:"34,197,94",i:"fa-circle-check"},
+      {lab:"First Beat",c:"6,182,212",i:"fa-forward"},{lab:"Rewind",c:"244,63,94",i:"fa-backward"}]},
+    { name:"Edit", items:[
+      {lab:"Edit Turns",c:"59,130,246",i:"fa-sliders"},{lab:"Edit in Construct",c:"124,58,237",i:"fa-pen-to-square"}]},
+  ];
+  const TITLES={aurora:"Aurora",solid:"Solid Pop",mono:"Mono Tile",outline:"Outline",neon:"Neon Edge",emboss:"Emboss"};
+  const NOTES={
+    aurora:`<h3>A · Aurora</h3>Radial glow rises from the tile floor, glyph glows in its own color. Rich, alive, premium. The v1 look — refined.`,
+    solid:`<h3>B · Solid Pop</h3>Saturated solid color fields, glyph punched out near-black. Maximum boldness + instant color-coding. Loudest.`,
+    mono:`<h3>C · Mono Tile</h3>Every tile identical neutral; the glyph is the only color. Your "just a color" idea at its purest. Calmest, most cohesive — color reads as a system, not noise.`,
+    outline:`<h3>D · Outline</h3>Thin-weight big glyph, near-empty fill, colored ring. Airy, technical, drafting-table. Lightest visual weight.`,
+    neon:`<h3>E · Neon Edge</h3>Dark tile, glowing color border + glow-dropped glyph. Synthwave / control-room. High energy without solid fills.`,
+    emboss:`<h3>F · Emboss</h3>Soft raised matte tiles, colored glyph + tinted inner ring. Tactile, physical-button feel. Modern neumorphism, restrained.`,
+  };
+
+  let style="aurora", labels=true;
+  function render(){
+    const root=document.getElementById("render");
+    root.className="actions s-"+style+(labels?"":" nolabel");
+    root.style.setProperty("--r", document.getElementById("r").value+"px");
+    root.style.setProperty("--fill", document.getElementById("f").value/100);
+    root.style.setProperty("--gscale", document.getElementById("g").value/100);
+    let html="";
+    for(const sec of SECTIONS){
+      html+=`<div class="sec"><span class="sec-label">${sec.name}</span><div class="grid">`;
+      for(const it of sec.items) html+=`<button class="btn" style="--c:${it.c}"><i class="fas ${it.i}"></i><span class="lab">${it.lab}</span></button>`;
+      html+=`</div></div>`;
+    }
+    root.innerHTML=html;
+    document.getElementById("title").textContent=TITLES[style];
+    document.getElementById("notes").innerHTML=NOTES[style];
+  }
+  document.getElementById("tabs").addEventListener("click",e=>{
+    const t=e.target.closest(".tab"); if(!t)return;
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active"); style=t.dataset.s; render();
+  });
+  const knob=(id,vid,suf="")=>{const el=document.getElementById(id),v=document.getElementById(vid);
+    el.addEventListener("input",()=>{v.textContent=el.value; render();});};
+  knob("r","rv"); knob("f","fv"); knob("g","gv");
+  const labtog=document.getElementById("labtog");
+  labtog.addEventListener("click",()=>{labels=!labels; labtog.textContent="Labels: "+(labels?"ON":"OFF"); labtog.classList.toggle("on",labels); render();});
+
+  const panel=document.getElementById("panel"),w=document.getElementById("w"),h=document.getElementById("h");
+  const wvv=document.getElementById("wvv"),hvv=document.getElementById("hvv"),meta=document.getElementById("meta");
+  function size(){panel.style.width=w.value+"px";panel.style.height=h.value+"px";wvv.textContent=w.value;hvv.textContent=h.value;meta.textContent=w.value+" × "+h.value;}
+  w.addEventListener("input",size); h.addEventListener("input",size);
+  document.querySelectorAll(".preset").forEach(p=>p.addEventListener("click",()=>{w.value=p.dataset.w;h.value=p.dataset.h;size();}));
+  render(); size();
+</script>
+</body>
+</html>
