@@ -39,8 +39,6 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
-  import { getReturnContext } from "$lib/shared/coordinators/sequence-handoff.svelte";
 
   // Animation imports
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
@@ -258,27 +256,9 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
     }
   }
 
-  // When panelState.isSequenceViewerOpen becomes true, open the sequence viewer
-  $effect(() => {
-    if (panelState.isSequenceViewerOpen && currentSequence) {
-      // Clear the flag immediately
-      panelState.closeSequenceViewer();
-
-      // Stamp ownership on the sequence so the viewer shows Save/Edit/Delete actions.
-      // Sequences built in the create module don't have ownerId since they haven't
-      // been persisted to Firestore yet.
-      const sequenceWithOwner = currentSequence.ownerId
-        ? currentSequence
-        : {
-            ...currentSequence,
-            ownerId: authState.user?.uid ?? undefined,
-            ownerDisplayName: authState.user?.displayName ?? undefined,
-          };
-
-      const { returnPath, returnLabel } = getReturnContext();
-      openSequenceViewer(sequenceWithOwner, { returnPath, returnLabel });
-    }
-  });
+  // View-sequence redirect (panelState.isSequenceViewerOpen → openSequenceViewer)
+  // lives in SequenceDrawerLauncher.svelte so the heavy navigator subtree loads
+  // on-demand and stays out of the Create module's eager graph.
 
   // Initialize animation when services ready and sequence available
   // Check requestedExportFormat to avoid initializing when user explicitly requested static format
@@ -757,4 +737,4 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
   {/key}
 {/if}
 
-<!-- Sequence Details Modal removed - $effect intercept at line 314 redirects to /sequence/[id] route -->
+<!-- View-sequence redirect moved to SequenceDrawerLauncher.svelte (on-demand navigator import). -->
