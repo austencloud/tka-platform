@@ -193,10 +193,13 @@ existing primitives (`SegmentedControl`, `FilterChipBase`) per `chip-primitives`
 - **Top — bento tiles** (deck-defining, frequent): Word (all-variations-of-a-word mode) ·
   Deck Size · Length (step count) · Level · Grid (Diamond/Box) · **Turn Intensity**
   (revealed at Level ≥ 2) · Orientation · Loop type · Period (Quartered/Halved) ·
-  **Customize** (entry) · **Generate** (action).
-- **Customize panel — quick toggles:** Prop reversals (`constraintPreset`) · Hand reversals
-  (`handPathMode`) · Dashes (`motionTypeFilter`).
-- **Customize panel — deep drill-in:** per-step reversal editor.
+  **Props · Hands · Dashes** (each a 3-position Smooth→Mixed→Choppy stepper tile) ·
+  **Generate** (action). The Customize entry tile is **removed** — once turns moved to their
+  own card, Customize held only the three style axes, so they were promoted to first-class
+  stepper tiles.
+- **Deep drill-in:** per-step reversal editor (reached from the Props/Hands tiles; future).
+- **Responsive:** 3 tiles per row by default, expanding to 4 per row on wide (≥ 1700px / 4K)
+  displays.
 - **Orientation tile folds in Start Position** — tapping it opens orientation
   (Radial/Nonradial/Split) **and** start mode (All/Classic/Specific); "Specific" reveals the
   position grid (deep tier).
