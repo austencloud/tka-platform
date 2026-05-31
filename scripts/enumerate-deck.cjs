@@ -1075,8 +1075,12 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         propagateOrientations(twinSteps);
 
         // Re-derive letters for the beat steps from the transformed motions.
+        // Seed the miss flag from the START step too: under canonical starts its
+        // transformed pair is always in the CSV, but a non-canonical
+        // --startPositions could yield a null start position, which would
+        // otherwise produce a "null_WORD" doc id.
         const twinBeatSteps = twinSteps.slice(1);
-        let twinPositionMiss = false;
+        let twinPositionMiss = twinSteps[0].startPosition === null;
         for (const ts of twinBeatSteps) {
           if (ts.startPosition === null || ts.endPosition === null) {
             twinPositionMiss = true;
