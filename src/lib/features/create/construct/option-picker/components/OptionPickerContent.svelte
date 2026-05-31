@@ -16,6 +16,7 @@ Uses organizer and sizer services for section grouping and sizing.
   import OptionCard from "./OptionCard.svelte";
   import OptionViewerSwipeLayout from "../swipe-layout/components/OptionViewerSwipeLayout.svelte";
   import OptionViewerSection from "../swipe-layout/components/OptionViewerSection.svelte";
+  import HorizontalSwipeContainer from "$lib/shared/foundation/ui/HorizontalSwipeContainer.svelte";
   import { identifyContinuation } from "../services/continuation-identifier";
 
   interface Props {
@@ -52,6 +53,15 @@ Uses organizer and sizer services for section grouping and sizing.
   let containerWidth = $state(800); // Default to desktop-size to avoid mobile flash
   let containerHeight = $state(600);
   let sizingStable = $state(false);
+
+  // Content-area bounds for the continuous compact grid. Fed by the same
+  // HorizontalSwipeContainer the sectioned (All) layout uses, so the continuous
+  // grid sizes its tiles via the identical measured-viewport path → exact size
+  // parity with the All-mode Type-1 grid (no fudge-factor divergence).
+  let compactBounds = $state<{ left: number; right: number; width: number } | null>(null);
+  function handleCompactBounds(bounds: { left: number; right: number; width: number }) {
+    compactBounds = bounds;
+  }
 
   // Layout thresholds
   // Wide layout (>= 750px): 8-column grouped vertical layout
@@ -336,16 +346,32 @@ Uses organizer and sizer services for section grouping and sizing.
 
       {#if shouldUseCompact4x4()}
         <!-- ==================== COMPACT 4x4 LAYOUT ==================== -->
-        <div class="compact-4x4-container">
-          <OptionViewerSection
-            pictographs={options}
-            onPictographSelected={(p) => onSelect(p as PreparedPictographData)}
-            layoutConfig={mobileLayoutConfig()}
-            fitToViewport={true}
-            showHeader={false}
-            {currentSequence}
-            {onSlotClicked}
-          />
+        <!-- Single continuous grid rendered inside the SAME swipe container the
+             sectioned (All) layout uses. One panel: arrows reserve their gutter
+             (so the content width matches the All-mode panels exactly) but never
+             render. The section measures the real embla viewport for height, so
+             the continuous tiles come out the same size as the All-mode Type-1
+             grid instead of from a parallel fudge-factor formula. -->
+        <div class="swipe-container">
+          <HorizontalSwipeContainer
+            showArrows={true}
+            showIndicators={false}
+            height="100%"
+            width="100%"
+            onContentAreaChange={handleCompactBounds}
+          >
+            <div class="compact-panel">
+              <OptionViewerSection
+                pictographs={options}
+                onPictographSelected={(p) => onSelect(p as PreparedPictographData)}
+                layoutConfig={mobileLayoutConfig()}
+                showHeader={false}
+                contentAreaBounds={compactBounds}
+                {currentSequence}
+                {onSlotClicked}
+              />
+            </div>
+          </HorizontalSwipeContainer>
         </div>
       {:else if shouldUseSwipeLayout()}
         <!-- ==================== SWIPE LAYOUT ==================== -->
@@ -574,12 +600,13 @@ Uses organizer and sizer services for section grouping and sizing.
     min-height: 0;
   }
 
-  /* Compact 4x4 grid for continuous mode on mobile */
-  .compact-4x4-container {
-    flex: 1;
+  /* Continuous compact grid panel inside the swipe container. Full height so
+     OptionViewerSection measures the embla viewport and centers the grid. */
+  .compact-panel {
     width: 100%;
+    height: 100%;
     display: flex;
-    align-items: center;
+    flex-direction: column;
     justify-content: center;
     min-height: 0;
   }
