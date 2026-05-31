@@ -44,13 +44,17 @@
   }
   function mintSeed(): string {
     const buf = new Uint32Array(2); crypto.getRandomValues(buf);
-    return buf[0].toString(16).padStart(8, "0") + buf[1].toString(16).padStart(8, "0");
+    return buf[0]!.toString(16).padStart(8, "0") + buf[1]!.toString(16).padStart(8, "0");
   }
 
   const LOOP_TYPES = ["rotated", "mirrored", "swapped", "inverted", "flipped"] as const;
   type LoopType = (typeof LOOP_TYPES)[number];
-  const BASE_POP: Record<number, number> = { 16: 12612, 12: 1252, 8: 108, 6: 40, 4: 10 };
   const LOOP_FACTOR: Record<LoopType, number> = { rotated: 1, mirrored: 0.55, swapped: 0.5, inverted: 0.6, flipped: 0.45 };
+  // Base LOOP seeds that close for a (type, stepCount). Finite & computable, but nonzero for
+  // every valid length — generation produces these FRESH; it never draws from a fixed store.
+  function baseLoops(step: number, lt: LoopType): number {
+    return Math.max(6, Math.round(Math.pow(step / 2, 3) * 4 * LOOP_FACTOR[lt]));
+  }
 
   // ---- state ------------------------------------------------------------------
   let word = $state("");
@@ -67,18 +71,20 @@
   let seed = $state(mintSeed());
 
   const ORI = ["radial", "nonradial", "split"] as const;
-  function cycleOrientation() { orientation = ORI[(ORI.indexOf(orientation) + 1) % ORI.length]; }
-  function cycleLoop() { loopType = LOOP_TYPES[(LOOP_TYPES.indexOf(loopType) + 1) % LOOP_TYPES.length]; }
+  function cycleOrientation() { orientation = ORI[(ORI.indexOf(orientation) + 1) % ORI.length]!; }
+  function cycleLoop() { loopType = LOOP_TYPES[(LOOP_TYPES.indexOf(loopType) + 1) % LOOP_TYPES.length]!; }
   function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
   // ---- derived ----------------------------------------------------------------
   const wordMode = $derived(word.trim().length > 0);
-  // variation count for a specific word = (turn variants) × grid × orientation registers (mock)
-  const wordVariations = $derived(wordMode ? Math.max(1, word.trim().length * 6) * (period === "quartered" ? 2 : 1) : 0);
-  const population = $derived(wordMode ? wordVariations : Math.round((BASE_POP[stepCount] ?? 0) * LOOP_FACTOR[loopType]));
+  // Generation fans each base seed across the variation axes → the real card space is deep.
+  const variationMultiplier = $derived((turns === "none" ? 1 : 4) * (period === "quartered" ? 2 : 1) * 2);
+  const wordVariations = $derived(wordMode ? Math.max(1, word.trim().length * 6) * variationMultiplier : 0);
+  const cardSpace = $derived(wordMode ? wordVariations : baseLoops(stepCount, loopType) * variationMultiplier);
   const requested = $derived(wordMode ? wordVariations : deckSize); // word deck = ALL variations
-  const drawCount = $derived(Math.min(requested, population));
-  const capped = $derived(!wordMode && deckSize > population);
+  const drawCount = $derived(Math.min(requested, cardSpace));
+  // Rare: only when you ask for more UNIQUE cards than the entire variation space holds.
+  const exhausted = $derived(requested > cardSpace);
 
   const customizeSummary = $derived(
     turns === "none" && grid === "diamond" && orientation === "radial" ? "Default" : "Custom",
@@ -98,7 +104,7 @@
     const n = Math.min(drawCount, 24);
     const out: string[] = [];
     for (let i = 0; i < n; i++) {
-      const id = Math.floor(rand() * Math.max(1, population)).toString(36).toUpperCase().padStart(4, "0");
+      const id = Math.floor(rand() * Math.max(1, cardSpace)).toString(36).toUpperCase().padStart(4, "0");
       out.push(wordMode ? `${word.trim().slice(0, 3).toUpperCase()}·${id}` : `${loopType.slice(0, 3)}-${stepCount}-${id}`);
     }
     return out;
@@ -166,7 +172,7 @@
         <!-- Row 4 -->
         <button class="generate" style:grid-column="span 6" onclick={generate}>
           <i class="fas fa-dice"></i>
-          <span>{wordMode ? `Generate ${drawCount} variations` : capped ? `Generate ${drawCount} (capped)` : `Generate ${drawCount}`}</span>
+          <span>{wordMode ? `Generate ${drawCount} variations` : `Generate ${drawCount}`}</span>
         </button>
       </div>
 
@@ -185,8 +191,8 @@
 
     <aside class="rail">
       <div class="stat">
-        <div class="stat-big" class:warn={capped}>{drawCount}</div>
-        <div class="stat-sub">{wordMode ? "variations of the word" : "cards"}{#if capped}<span class="cap">capped — only {population} exist</span>{:else}<span class="ok">of {population} possible</span>{/if}</div>
+        <div class="stat-big" class:warn={exhausted}>{drawCount}</div>
+        <div class="stat-sub">{wordMode ? "variations of the word" : "fresh cards"}{#if exhausted}<span class="cap">that's the whole space</span>{:else}<span class="ok">from a {cardSpace.toLocaleString()}-deep space</span>{/if}</div>
       </div>
 
       <div class="recipe-head"><span>Recipe (durable truth)</span><button class="copy" onclick={copyRecipe}>{copied ? "Copied!" : "Copy"}</button></div>
