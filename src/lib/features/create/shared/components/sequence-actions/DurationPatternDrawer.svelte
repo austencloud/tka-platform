@@ -94,13 +94,13 @@
     bind:isOpen
     placement="right"
     onclose={onClose}
-    showHandle={false}
+    showHandle={true}
     respectLayoutMode={true}
     class="duration-pattern-drawer"
     backdropClass="duration-pattern-backdrop"
   >
     <div class="dp-content">
-      <DrawerHeader title="Duration Patterns" onClose={onClose} />
+      <DrawerHeader title="Duration Patterns" onBack={onClose} onClose={onClose} />
       <div class="dp-body">
         <PatternStripEditor
           {binding}

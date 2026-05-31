@@ -96,13 +96,13 @@
     bind:isOpen
     placement="right"
     onclose={onClose}
-    showHandle={false}
+    showHandle={true}
     respectLayoutMode={true}
     class="turn-pattern-drawer"
     backdropClass="turn-pattern-backdrop"
   >
     <div class="tp-content">
-      <DrawerHeader title="Turn Patterns" onClose={onClose} />
+      <DrawerHeader title="Turn Patterns" onBack={onClose} onClose={onClose} />
       <div class="tp-body">
         <PatternStripEditor
           {binding}

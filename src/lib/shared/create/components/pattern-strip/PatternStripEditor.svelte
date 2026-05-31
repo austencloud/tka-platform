@@ -135,13 +135,13 @@
 </div>
 
 <style>
-  .pse { display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: 600px; margin: 0 auto; }
+  .pse { display: flex; flex-direction: column; gap: 26px; width: 100%; max-width: 640px; margin: 8px auto 0; }
   .axis-lbl { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--theme-text-dim); }
-  .axis > .axis-lbl { display: block; margin: 0 0 9px; }
-  .axis-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 9px; }
+  .axis > .axis-lbl { display: block; margin: 0 0 12px; }
+  .axis-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 12px; }
   .reps { font-size: 12px; color: var(--theme-text-dim); font-variant-numeric: tabular-nums; }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .amt-grid { display: flex; flex-direction: column; gap: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .amt-grid { display: flex; flex-direction: column; gap: 10px; }
   .amt-row { display: flex; align-items: center; gap: 12px; }
   .amt-lane { width: 44px; flex: 0 0 44px; font-size: 13px; font-weight: 800; }
   .amt-lane.blue { color: var(--theme-blue, #6f9bff); } .amt-lane.red { color: var(--theme-red, #ff7a8a); } .amt-lane.accent { color: var(--theme-accent, #2dd4bf); }

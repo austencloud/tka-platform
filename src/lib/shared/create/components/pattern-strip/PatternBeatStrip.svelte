@@ -96,13 +96,13 @@
 {/if}
 
 <style>
-  .pbs { display: flex; flex-direction: column; gap: 8px; }
+  .pbs { display: flex; flex-direction: column; gap: 10px; }
   .pbs-lane { display: flex; align-items: center; gap: 12px; }
   .pbs-label { width: 44px; flex: 0 0 44px; font-size: 14px; font-weight: 800; }
   .pbs-label.blue { color: var(--theme-blue, #6f9bff); }
   .pbs-label.red { color: var(--theme-red, #ff7a8a); }
   .pbs-label.hold { color: var(--theme-accent, #2dd4bf); }
-  .pbs-beats { display: flex; gap: 8px; flex: 1; min-width: 0; }
+  .pbs-beats { display: flex; gap: 10px; flex: 1; min-width: 0; }
   .pbs-cell {
     position: relative; flex: 1; min-width: 0; height: 56px; border-radius: 12px;
     border: 1px solid var(--theme-stroke); background: var(--theme-card-bg);

@@ -17,6 +17,12 @@
     title: string;
     /** Callback when close button is clicked */
     onClose: () => void;
+    /**
+     * Optional back callback. When provided, renders a leading back chevron
+     * (top-left) and centers the title — turns the header into a drill-down
+     * sub-page header (back returns to the parent view).
+     */
+    onBack?: () => void;
     /** Optional subtitle or secondary text */
     subtitle?: string;
     /** Optional Font Awesome icon class (e.g., "fa-gift", "fa-tasks") */
@@ -25,7 +31,7 @@
     iconColor?: string;
   }
 
-  let { title, onClose, subtitle, icon, iconColor }: Props = $props();
+  let { title, onClose, onBack, subtitle, icon, iconColor }: Props = $props();
 
   let hapticService: HapticFeedback | null = null;
   try {
@@ -38,9 +44,36 @@
     hapticService?.trigger("selection");
     onClose();
   }
+
+  function handleBack() {
+    hapticService?.trigger("selection");
+    onBack?.();
+  }
 </script>
 
-<header class="drawer-header">
+<header class="drawer-header" class:has-back={onBack}>
+  {#if onBack}
+    <button
+      class="drawer-back-btn"
+      onclick={handleBack}
+      aria-label="Back"
+      type="button"
+    >
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </button>
+  {/if}
   <div class="drawer-header-text">
     <h2>
       {#if icon}
@@ -90,6 +123,22 @@
     gap: 16px;
   }
 
+  /* Drill-down sub-page header: back-left, title-centered, close-right. */
+  .drawer-header.has-back {
+    display: grid;
+    grid-template-columns: var(--min-touch-target, 48px) 1fr var(--min-touch-target, 48px);
+    gap: 12px;
+  }
+
+  .drawer-header.has-back .drawer-header-text {
+    align-items: center;
+    text-align: center;
+  }
+
+  .drawer-header.has-back h2 {
+    justify-content: center;
+  }
+
   .drawer-header-text {
     display: flex;
     flex-direction: column;
@@ -120,7 +169,8 @@
     line-height: 1.3;
   }
 
-  .drawer-close-btn {
+  .drawer-close-btn,
+  .drawer-back-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -135,17 +185,20 @@
     flex-shrink: 0;
   }
 
-  .drawer-close-btn:hover {
+  .drawer-close-btn:hover,
+  .drawer-back-btn:hover {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text, white);
   }
 
-  .drawer-close-btn:active {
+  .drawer-close-btn:active,
+  .drawer-back-btn:active {
     transform: scale(0.95);
   }
 
-  .drawer-close-btn:focus-visible {
+  .drawer-close-btn:focus-visible,
+  .drawer-back-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #3b82f6);
     outline-offset: 2px;
   }
