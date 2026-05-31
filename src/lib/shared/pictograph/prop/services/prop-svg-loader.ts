@@ -243,21 +243,18 @@ export class PropSvgLoader {
     viewBox: { width: number; height: number };
     center: { x: number; y: number };
   } {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(svgText, "image/svg+xml");
-    const svgElement = doc.querySelector("svg");
-
-    if (!svgElement) {
+    // Regex parse (no DOMParser): the composition worker has no DOM, and
+    // DOMParser is undefined there. Reads the same `viewBox` attribute.
+    const viewBoxMatch = svgText.match(/<svg\b[^>]*\bviewBox\s*=\s*["']([^"']+)["']/i);
+    if (!svgText.match(/<svg\b/i)) {
       throw new Error("Invalid SVG: No SVG element found");
     }
 
-    // Extract viewBox
-    const viewBoxAttr = svgElement.getAttribute("viewBox");
     let width = 100,
       height = 100;
 
-    if (viewBoxAttr) {
-      const [, , w, h] = viewBoxAttr.split(" ").map(Number);
+    if (viewBoxMatch) {
+      const [, , w, h] = viewBoxMatch[1]!.trim().split(/\s+/).map(Number);
       width = w || 100;
       height = h || 100;
     }
@@ -294,15 +291,10 @@ export class PropSvgLoader {
    * Extract SVG content (remove outer SVG wrapper)
    */
   private extractSvgContent(svgText: string): string {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(svgText, "image/svg+xml");
-    const svgElement = doc.querySelector("svg");
-
-    if (!svgElement) {
-      return svgText;
-    }
-
-    return svgElement.innerHTML;
+    // Regex parse (no DOMParser): worker-safe. Returns the inner markup between
+    // the outer <svg> tags (equivalent to svgElement.innerHTML for these props).
+    const match = svgText.match(/<svg\b[^>]*>([\s\S]*)<\/svg\s*>/i);
+    return match ? match[1]! : svgText;
   }
 
   /**
