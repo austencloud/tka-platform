@@ -756,6 +756,7 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   <LazyMount
     loader={() => import("./coordinators/StepEditorCoordinator.svelte")}
     active={panelState.isStepEditorPanelOpen}
+    prefetch
   />
 
   <!-- LOOP Coordinator -->
