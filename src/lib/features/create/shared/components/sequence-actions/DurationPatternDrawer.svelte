@@ -149,9 +149,9 @@
 
   .apply-btn {
     width: 100%;
-    max-width: 540px;
-    min-height: 48px;
-    margin-top: 4px;
+    max-width: 600px;
+    min-height: 52px;
+    margin: 6px auto 0;
     padding: 0 14px;
     border: none;
     border-radius: 12px;

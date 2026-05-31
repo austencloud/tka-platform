@@ -80,7 +80,7 @@
     </div>
     <div class="seg-wrap">
       <SegmentedControl
-        size="sm" color="accent"
+        size="md" color="accent"
         options={periods.map((p) => ({ value: String(p), label: String(p) }))}
         value={String(period)}
         onchange={(v) => setPeriod(Number(v))}
@@ -110,7 +110,7 @@
           <span class="amt-lane {binding.laneColors[li]}">{label}</span>
           <div class="seg-wrap">
             <SegmentedControl
-              size="sm" color={binding.laneColors[li]}
+              size="md" color={binding.laneColors[li]}
               options={binding.amountList.map((a) => ({ value: String(a), label: binding.format(a) }))}
               value={String(laneAmount(li) ?? -1)}
               onchange={(a) => applyAmount(li, Number(a))}
@@ -135,8 +135,8 @@
 </div>
 
 <style>
-  .pse { display: flex; flex-direction: column; gap: 16px; max-width: 540px; }
-  .axis-lbl { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--theme-text-dim); }
+  .pse { display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: 600px; margin: 0 auto; }
+  .axis-lbl { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--theme-text-dim); }
   .axis > .axis-lbl { display: block; margin: 0 0 9px; }
   .axis-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 9px; }
   .reps { font-size: 12px; color: var(--theme-text-dim); font-variant-numeric: tabular-nums; }
@@ -150,5 +150,5 @@
   /* Cohesion: stop SegmentedControl stretching full-width; unify value type with the strip. */
   .seg-wrap { width: max-content; max-width: 100%; }
   :global(.pse .seg-wrap .segmented-control) { width: max-content; }
-  :global(.pse .seg-wrap .segment) { min-width: 46px; padding: 0 14px; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  :global(.pse .seg-wrap .segment) { min-width: 56px; padding: 0 16px; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
 </style>

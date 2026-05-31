@@ -98,18 +98,18 @@
 <style>
   .pbs { display: flex; flex-direction: column; gap: 8px; }
   .pbs-lane { display: flex; align-items: center; gap: 12px; }
-  .pbs-label { width: 44px; flex: 0 0 44px; font-size: 13px; font-weight: 800; }
+  .pbs-label { width: 44px; flex: 0 0 44px; font-size: 14px; font-weight: 800; }
   .pbs-label.blue { color: var(--theme-blue, #6f9bff); }
   .pbs-label.red { color: var(--theme-red, #ff7a8a); }
   .pbs-label.hold { color: var(--theme-accent, #2dd4bf); }
   .pbs-beats { display: flex; gap: 8px; flex: 1; min-width: 0; }
   .pbs-cell {
-    position: relative; flex: 1; min-width: 0; height: 48px; border-radius: 11px;
+    position: relative; flex: 1; min-width: 0; height: 56px; border-radius: 12px;
     border: 1px solid var(--theme-stroke); background: var(--theme-card-bg);
     color: var(--theme-text); cursor: pointer; overflow: hidden;
     display: flex; align-items: center; justify-content: center; user-select: none;
   }
-  .pbs-cell .v { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; z-index: 2; pointer-events: none; }
+  .pbs-cell .v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; z-index: 2; pointer-events: none; }
   .pbs-cell.muted .v { color: var(--theme-text-dim); }
   .pbs-cell.num.blue:not(.muted) { background: color-mix(in srgb, var(--theme-blue, #6f9bff) 30%, var(--theme-card-bg)); }
   .pbs-cell.num.red:not(.muted) { background: color-mix(in srgb, var(--theme-red, #ff7a8a) 30%, var(--theme-card-bg)); }
