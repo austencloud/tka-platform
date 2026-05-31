@@ -204,7 +204,6 @@
     {renderTotal}
     onCardSizeChange={onCardSizeChange}
     onRerender={onRerender}
-    onPrint={() => {}}
     {copies}
     onCopiesChange={onCopiesChange}
     {copiesPresets}

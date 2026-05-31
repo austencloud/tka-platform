@@ -1,6 +1,7 @@
 <script lang="ts">
   import CardSizeToggle from "../card-preview/CardSizeToggle.svelte";
   import CopiesSelect from "./CopiesSelect.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import type { CardSizeId } from "../../domain/card-sizes";
 
   interface Props {
@@ -11,7 +12,6 @@
     renderTotal: number;
     onCardSizeChange: (size: CardSizeId) => void;
     onRerender?: () => void;
-    onPrint: () => void;
     /** Copies per card for the print layout. Omit to hide the control. */
     copies?: number;
     onCopiesChange?: (n: number) => void;
@@ -19,6 +19,10 @@
     copiesPresets?: number[];
     /** Per-count waste readout for chip badges. */
     copiesAnnotate?: (n: number) => { blanks: number; perfect: boolean } | null;
+    /** One-color-per-sheet grouping. Off = normal sequential fill (no blanks
+     *  between colors). Omit both to hide the toggle. */
+    groupByElement?: boolean;
+    onGroupByElementChange?: (on: boolean) => void;
   }
 
   let {
@@ -29,11 +33,12 @@
     renderTotal,
     onCardSizeChange,
     onRerender,
-    onPrint,
     copies,
     onCopiesChange,
     copiesPresets,
     copiesAnnotate,
+    groupByElement,
+    onGroupByElementChange,
   }: Props = $props();
 
   const progressText = $derived(
@@ -46,7 +51,9 @@
 <div class="toolbar" role="toolbar" aria-label="Print preview controls">
   <div class="toolbar-left">
     <CardSizeToggle selected={cardSize} onchange={onCardSizeChange} />
+  </div>
 
+  <div class="toolbar-right">
     {#if copies != null && onCopiesChange}
       <span class="copies-label">Copies</span>
       <CopiesSelect
@@ -54,6 +61,18 @@
         onchange={onCopiesChange}
         presets={copiesPresets}
         annotate={copiesAnnotate}
+      />
+    {/if}
+
+    {#if groupByElement != null && onGroupByElementChange}
+      <FilterChipBase
+        mode="toggle"
+        size="sm"
+        icon="fas fa-palette"
+        label="Group by color"
+        active={groupByElement}
+        chipColor="#10b981"
+        onclick={() => onGroupByElementChange(!groupByElement)}
       />
     {/if}
 
@@ -76,16 +95,6 @@
       </span>
     {/if}
   </div>
-
-  <button
-    class="print-btn"
-    disabled={isRendering || totalCards === 0}
-    onclick={onPrint}
-    title={totalCards === 0 ? "Load a deck first" : `Print ${totalCards} cards`}
-  >
-    <i class="fas fa-print" aria-hidden="true"></i>
-    <span>Print This Deck</span>
-  </button>
 </div>
 
 <style>
@@ -102,7 +111,16 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    flex: 1;
+    flex-shrink: 0;
+  }
+
+  .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .copies-label {
@@ -154,47 +172,10 @@
     white-space: nowrap;
   }
 
-  .print-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 22px;
-    min-height: 44px;
-    font-size: 15px;
-    font-weight: 600;
-    font-family: inherit;
-    color: #fff;
-    background: linear-gradient(135deg, #7c3aed, #6d28d9);
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.15s;
-  }
-
-  .print-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    box-shadow: 0 2px 12px rgba(124, 58, 237, 0.3);
-  }
-
-  .print-btn:active:not(:disabled) {
-    transform: scale(0.98);
-  }
-
-  .print-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
   @media (max-width: 767px) {
     .toolbar {
       flex-wrap: wrap;
       row-gap: 8px;
-    }
-
-    .print-btn {
-      width: 100%;
-      justify-content: center;
     }
   }
 </style>

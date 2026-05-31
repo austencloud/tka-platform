@@ -241,7 +241,6 @@
           {renderTotal}
           onCardSizeChange={(s) => { cardSize = s; }}
           onRerender={() => { rerenderKey++; }}
-          onPrint={() => { showPrintDialog = true; }}
         />
 
         <div class="preview-area">
