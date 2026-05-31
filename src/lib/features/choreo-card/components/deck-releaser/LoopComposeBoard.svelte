@@ -3,7 +3,7 @@
    * LoopComposeBoard — the de-overwhelmed LOOP board for "Compose Your Catalog".
    *
    * Surfaces only high-level choices; precision folds behind an opt-in disclosure:
-   *   Left   — Source decks · quiet Deck Size · live "This Deck" recipe
+   *   Left   — Source catalogs · quiet Deck Size · live "This Deck" recipe
    *   Center — Deck Shape: Step Count + Turn Variation single-tap rows, with a
    *            "Customize mix & turns" disclosure for the weight sliders, turn
    *            density, and turn-pattern toggles.
@@ -144,7 +144,7 @@
     <section class="block">
       <span class="area-label">Source</span>
       <AxisCardGroup
-        label="Source Decks"
+        label="Source Catalogs"
         options={sourceOptions}
         selected={selectedSliceTypes as Set<string>}
         onToggle={(id) => onSliceTypeToggle(id as "halved" | "quartered")}

@@ -332,7 +332,7 @@
     <div class="deck-list">
       {#if loopDecks.length > 0}
         <section>
-          <h3 class="section-label">LOOP Decks <span class="dim">({loopDecks.length})</span></h3>
+          <h3 class="section-label">LOOP Catalogs <span class="dim">({loopDecks.length})</span></h3>
           <div class="deck-grid">
             {#each loopDecks as deck (deck.id)}
               <button class="deck-card" onclick={() => openDeck(deck)}>
@@ -345,7 +345,7 @@
       {/if}
       {#if tndDecks.length > 0}
         <section>
-          <h3 class="section-label">TnD Decks <span class="dim">({tndDecks.length})</span></h3>
+          <h3 class="section-label">TnD Catalogs <span class="dim">({tndDecks.length})</span></h3>
           <div class="deck-grid">
             {#each tndDecks as deck (deck.id)}
               <button class="deck-card" onclick={() => openDeck(deck)}>
