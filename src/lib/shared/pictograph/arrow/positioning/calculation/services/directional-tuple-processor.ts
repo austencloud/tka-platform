@@ -367,6 +367,24 @@ export class DirectionalTupleProcessor {
       // Select the appropriate tuple based on quadrant (legacy parity)
       const selectedTuple = directionalTuples[quadrantIndex] || [0, 0];
 
+      // TEMP DIAGNOSTIC — universal chokepoint. EVERY arrow render path funnels
+      // through here (solo, non-solo, diagnostics). Set `window.__DBG_ARROW = true`
+      // then nudge an arrow. If this prints on nudge, the live preview uses the
+      // positioning pipeline (tuple applied → arrows mirror). If it prints
+      // NOTHING on nudge, the preview moves arrows outside the pipeline (raw
+      // delta → uniform movement). Remove once resolved.
+      if (
+        typeof globalThis !== "undefined" &&
+        (globalThis as { __DBG_ARROW?: boolean }).__DBG_ARROW
+      ) {
+        console.log(
+          `[TUPLE] ${motion.color} mt=${String(motion.motionType).toLowerCase()}` +
+            ` rot=${String(motion.rotationDirection).toLowerCase()} loc=${location} qi=${quadrantIndex}` +
+            ` | base=(${baseAdjustment.x},${baseAdjustment.y})` +
+            ` → out=(${selectedTuple[0]},${selectedTuple[1]})`,
+        );
+      }
+
       // Final adjustment = selected tuple only (baseAdjustment already used to build tuples)
       return new Point(selectedTuple[0], selectedTuple[1]);
     } catch (error) {

@@ -66,14 +66,14 @@ export const BOX_RADIAL_MAP: Record<GridLocation, ColorMap> = {
  * as a close approximation — both are perpendicular-ish to the radial axis.
  */
 export const BOX_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
-  ne: { red: "upleft", blue: "downright" },
-  se: { red: "upright", blue: "downleft" },
-  sw: { red: "upleft", blue: "downright" },
-  nw: { red: "downleft", blue: "upright" },
-  n: { red: "upleft", blue: "downright" },
-  e: { red: "upleft", blue: "downright" },
-  s: { red: "upleft", blue: "downright" },
-  w: { red: "upleft", blue: "downright" },
+  ne: { red: "upright", blue: "downleft" },
+  se: { red: "upleft", blue: "downright" },
+  sw: { red: "upright", blue: "downleft" },
+  nw: { red: "upleft", blue: "downright" },
+  n: { red: "upright", blue: "downleft" },
+  e: { red: "upright", blue: "downleft" },
+  s: { red: "upright", blue: "downleft" },
+  w: { red: "upright", blue: "downleft" },
   c: { red: "up", blue: "down" },
 };
 

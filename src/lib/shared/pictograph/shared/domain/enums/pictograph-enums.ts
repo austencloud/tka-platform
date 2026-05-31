@@ -106,7 +106,7 @@ export const Orientation = {
   // Non-radial orientations (Level 3)
   CLOCK: "clock",
   COUNTER: "counter",
-  // Centric orientations (Level 5 - prop at center, points toward compass direction)
+  // Centric orientations (Level 4 - prop at center, points toward compass direction)
   CENTER_N: "centerN",
   CENTER_NE: "centerNE",
   CENTER_E: "centerE",

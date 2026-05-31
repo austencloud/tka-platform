@@ -50,15 +50,20 @@ export const BOX_RADIAL_MAP: Record<GridLocation, ColorMap> = {
 /**
  * Box grid (NE/SE/SW/NW) - non-radial orientation (CLOCK/COUNTER)
  */
+// Non-radial separation is the radial separation rotated 90° CCW (x,y)->(y,-x),
+// because a non-radial staff lies perpendicular to the radial axis, so props
+// nest along the radial axis instead of across it. Must stay the exact CCW
+// rotation of BOX_RADIAL_MAP — the center entry (right/left -> up/down) already
+// follows this; the corners had drifted to mixed/scrambled rotations.
 export const BOX_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
-  ne: { red: "upleft", blue: "downright" },
-  se: { red: "upright", blue: "downleft" },
-  sw: { red: "upleft", blue: "downright" },
-  nw: { red: "downleft", blue: "upright" },
-  n: { red: "upleft", blue: "downright" },
-  e: { red: "upleft", blue: "downright" },
-  s: { red: "upleft", blue: "downright" },
-  w: { red: "upleft", blue: "downright" },
+  ne: { red: "upright", blue: "downleft" },
+  se: { red: "upleft", blue: "downright" },
+  sw: { red: "upright", blue: "downleft" },
+  nw: { red: "upleft", blue: "downright" },
+  n: { red: "upright", blue: "downleft" },
+  e: { red: "upright", blue: "downleft" },
+  s: { red: "upright", blue: "downleft" },
+  w: { red: "upright", blue: "downleft" },
   c: { red: "up", blue: "down" },
 };
 

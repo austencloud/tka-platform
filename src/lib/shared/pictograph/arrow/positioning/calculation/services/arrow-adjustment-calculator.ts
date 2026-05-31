@@ -142,6 +142,22 @@ export class ArrowAdjustmentCalculator {
         location
       );
 
+      // TEMP DIAGNOSTIC — set `window.__DBG_ARROW = true` in the console, then
+      // nudge an arrow with WASD. Shows base (pre-tuple) vs final (post-tuple)
+      // per arrow, so we can see whether the directional tuple is actually
+      // rotating the shared base per-quadrant at runtime. Remove once resolved.
+      if (
+        typeof globalThis !== "undefined" &&
+        (globalThis as { __DBG_ARROW?: boolean }).__DBG_ARROW
+      ) {
+        console.log(
+          `[ARROW-ADJ] ${arrowColor ?? motionData.color} ${letter}` +
+            ` mt=${motionData.motionType} rot=${motionData.rotationDirection} loc=${location}` +
+            ` | base=(${baseAdjustment.x},${baseAdjustment.y})` +
+            ` final=(${finalAdjustment.x},${finalAdjustment.y})`,
+        );
+      }
+
       return new Point(finalAdjustment.x, finalAdjustment.y);
     } catch (error) {
       console.error(

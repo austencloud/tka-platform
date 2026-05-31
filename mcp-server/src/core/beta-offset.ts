@@ -92,10 +92,12 @@ const BOX_RADIAL_MAP: Record<string, ColorMap> = {
 /**
  * Box grid (NE/SE/SW/NW) - non-radial orientation
  */
+// CCW 90° rotation of BOX_RADIAL_MAP — non-radial staff lies perpendicular to
+// the radial axis, so props nest along the radial axis.
 const BOX_NON_RADIAL_MAP: Record<string, ColorMap> = {
   [GridLocation.NORTHEAST]: { red: VectorDirection.UPRIGHT, blue: VectorDirection.DOWNLEFT },
-  [GridLocation.SOUTHEAST]: { red: VectorDirection.DOWNRIGHT, blue: VectorDirection.UPLEFT },
-  [GridLocation.SOUTHWEST]: { red: VectorDirection.DOWNLEFT, blue: VectorDirection.UPRIGHT },
+  [GridLocation.SOUTHEAST]: { red: VectorDirection.UPLEFT, blue: VectorDirection.DOWNRIGHT },
+  [GridLocation.SOUTHWEST]: { red: VectorDirection.UPRIGHT, blue: VectorDirection.DOWNLEFT },
   [GridLocation.NORTHWEST]: { red: VectorDirection.UPLEFT, blue: VectorDirection.DOWNRIGHT },
 };
 
