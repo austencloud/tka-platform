@@ -9,7 +9,7 @@
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/endless-spinner-orchestrator";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
-  import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";
+  import { sequenceTransformer } from "$lib/shared/create/services/SequenceTransformer";
 
   import { startPositionDeriver as startPositionDeriverInstance } from "$lib/shared/pictograph/shared/services/start-position-deriver";
   import { generationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
@@ -96,7 +96,6 @@
       // Get services
       const browseLoader = getBrowseLoader();
       const pc = getAnimationPlaybackController();
-      const sequenceTransformer = getSequenceTransformer();
 
       // Create EndlessSpinnerOrchestrator (library-mode sequence provider)
       const spinnerOrch = new EndlessSpinnerOrchestrator(

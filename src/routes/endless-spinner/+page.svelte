@@ -9,7 +9,7 @@
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
   import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/get-generation-orchestrator";
-  import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";
+  import { sequenceTransformer } from "$lib/shared/create/services/SequenceTransformer";
 
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
   import {
@@ -90,7 +90,6 @@
       const browseLoader = getBrowseLoader();
       const pc = getAnimationPlaybackController();
       const generationOrchestrator = getGenerationOrchestrator();
-      const sequenceTransformer = getSequenceTransformer();
 
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(
         browseLoader,

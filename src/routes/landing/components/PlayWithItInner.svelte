@@ -9,7 +9,7 @@
 <script lang="ts">
 
 import { createAnimationPlaybackController } from "$lib/features/compose/services/animation-playback-controller-factory";
-import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";
+import { sequenceTransformer } from "$lib/shared/create/services/SequenceTransformer";
   import { onMount, onDestroy } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
@@ -151,7 +151,6 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
 
       const browseLoader = getBrowseLoader();
       const pc = createAnimationPlaybackController();
-      const sequenceTransformer = getSequenceTransformer();
 
       const spinnerOrch = new EndlessSpinnerOrchestrator(
         browseLoader as any,
