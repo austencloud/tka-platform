@@ -352,8 +352,21 @@
   }
 
   async function handleDelete() {
+    // Z / Revert means "drop this tier's override and fall back to the layer
+    // below" — Special → Default, Default → JSON baseline. It NEVER means
+    // "zero the value": the JSON baseline holds hand-authored non-zero defaults.
+    // If there is no override at the current tier, the arrow is already at its
+    // baseline, so this is a no-op (no pointless Firestore write, no error).
     if (editTarget === "special-json") {
+      if (!diagnostics?.specialJson?.firestoreOverride) {
+        getHapticFeedback()?.trigger("selection");
+        return;
+      }
       return handleSpecialJsonDelete();
+    }
+    if (!defaultHasValue) {
+      getHapticFeedback()?.trigger("selection");
+      return;
     }
     return handleDefaultDelete();
   }

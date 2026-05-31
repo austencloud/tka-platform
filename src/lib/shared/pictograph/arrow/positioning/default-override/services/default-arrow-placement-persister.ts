@@ -88,6 +88,15 @@ export class DefaultArrowPlacementPersister {
       await updateDoc(docRef, new FieldPath("placements", placementKey, turns), deleteField());
       logger.success(`Deleted default ${id} ${placementKey}/${turns}`);
     } catch (error) {
+      // Already at JSON baseline: no Firestore doc/field to remove. `updateDoc`
+      // on a nonexistent doc throws not-found — that's a successful no-op here,
+      // not a failure. Swallow it; rethrow anything else.
+      const code = (error as { code?: string })?.code;
+      const msg = error instanceof Error ? error.message : String(error);
+      if (code === "not-found" || msg.includes("No document to update")) {
+        logger.info(`No default override to delete for ${id} ${placementKey}/${turns} (already at baseline)`);
+        return;
+      }
       logger.error(`Failed to delete default ${id} ${placementKey}/${turns}:`, error);
       throw error;
     }
