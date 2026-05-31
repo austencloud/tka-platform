@@ -32,13 +32,13 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   import TransformsGridMode from "./TransformsGridMode.svelte";
   import TransformHelpOverlay from "../transform-help/TransformHelpOverlay.svelte";
   import TransformDetailModal from "../transform-help/TransformDetailModal.svelte";
-  import TurnPatternDrawer from "./TurnPatternDrawer.svelte";
+  import TurnPatternView from "./TurnPatternView.svelte";
 
   // Transform help mode types
   import type { ActionHelpId } from "../../domain/transforms/transform-help-content";
   type HelpMode = "inactive" | "selecting" | "viewing";
   import RotationDirectionDrawer from "./RotationDirectionDrawer.svelte";
-  import DurationPatternDrawer from "./DurationPatternDrawer.svelte";
+  import DurationPatternView from "./DurationPatternView.svelte";
   import ExtendDrawer from "./ExtendDrawer.svelte";
   import StepGridSection from "./StepGridSection.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -79,11 +79,6 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   // Swap is disabled when only one hand is selected (swap requires both hands)
   const isSwapDisabled = $derived(panelState.targetHand !== "both");
 
-  // Rewind is a temporal whole-sequence op; it has no coherent single-hand form
-  // (reversing one hand's timeline desyncs the hands and breaks position
-  // continuity). Gate it to both hands, same as Swap.
-  const isRewindDisabled = $derived(panelState.targetHand !== "both");
-
   $effect(() => {
     if (typeof window === "undefined") return;
     viewportWidth = window.innerWidth; // Update on mount
@@ -122,9 +117,17 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   // Transform help mode state machine
   let helpMode = $state<HelpMode>("inactive");
   let selectedTransform = $state<ActionHelpId | null>(null);
-  let showTurnPatternDrawer = $state(false);
+  // Pattern editors (Turns / Duration) render INLINE as a drill-down view that
+  // swaps the panel content in place — not as a separate covering drawer.
+  let patternSubView = $state<"turnPattern" | "duration" | null>(null);
+  const patternSubViewTitle = $derived(
+    patternSubView === "turnPattern"
+      ? "Turn Patterns"
+      : patternSubView === "duration"
+        ? "Duration Patterns"
+        : ""
+  );
   let showRotationDirectionDrawer = $state(false);
-  let showDurationDrawer = $state(false);
   let showExtendDrawer = $state(false);
   let extensionAnalysis = $state<ExtensionAnalysis | null>(null);
   // Spotlight modal state (legacy - modal replaced with route navigation)
@@ -146,9 +149,9 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     if (!subDrawerPersister) return;
 
     let activeDrawer: SubDrawerType = null;
-    if (showTurnPatternDrawer) activeDrawer = "turnPattern";
+    if (patternSubView === "turnPattern") activeDrawer = "turnPattern";
     else if (showRotationDirectionDrawer) activeDrawer = "rotationDirection";
-    else if (showDurationDrawer) activeDrawer = "duration";
+    else if (patternSubView === "duration") activeDrawer = "duration";
     else if (showExtendDrawer) activeDrawer = "extend";
     else if (helpMode !== "inactive") activeDrawer = "help";
 
@@ -201,10 +204,10 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
       if (restoredSubDrawer) {
         if (restoredSubDrawer === "help") helpMode = "selecting";
         else if (restoredSubDrawer === "turnPattern")
-          showTurnPatternDrawer = true;
+          patternSubView = "turnPattern";
         else if (restoredSubDrawer === "rotationDirection")
           showRotationDirectionDrawer = true;
-        else if (restoredSubDrawer === "duration") showDurationDrawer = true;
+        else if (restoredSubDrawer === "duration") patternSubView = "duration";
         else if (restoredSubDrawer === "extend") showExtendDrawer = true;
         restorationComplete = true;
       }
@@ -285,7 +288,16 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
 
   function handleTurnPattern() {
     hapticService?.trigger("selection");
-    showTurnPatternDrawer = true;
+    patternSubView = "turnPattern";
+  }
+
+  /** Back out of an inline pattern sub-view, reverting duration preview. */
+  function exitPatternSubView() {
+    hapticService?.trigger("selection");
+    if (patternSubView === "duration" && panelState.isDurationPreviewMode) {
+      panelState.exitDurationPreviewMode(false);
+    }
+    patternSubView = null;
   }
 
   function handleTurnPatternApply(result: {
@@ -321,26 +333,10 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
 
   function handleDuration() {
     hapticService?.trigger("selection");
-    showDurationDrawer = true;
+    patternSubView = "duration";
     // Enter preview mode on desktop (side-by-side layout)
     if (isSideBySideLayout && sequence) {
       panelState.enterDurationPreviewMode(sequence);
-    }
-  }
-
-  function handleDurationDrawerClose() {
-    showDurationDrawer = false;
-    // Exit preview mode and revert to original sequence
-    if (panelState.isDurationPreviewMode) {
-      const { sequence: original } = panelState.exitDurationPreviewMode(false);
-      // Don't need to do anything with original - preview mode already reverts
-    }
-  }
-
-  function handleDurationPreview(previewSequence: any) {
-    // Update preview sequence in panel state (for workspace display)
-    if (panelState.isDurationPreviewMode) {
-      panelState.setPreviewSequence(previewSequence);
     }
   }
 
@@ -361,6 +357,8 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     // Update the active sequence with the pattern-applied sequence
     activeSequenceState.setCurrentSequence(result.sequence);
     hapticService?.trigger("success");
+    // Duration preview lifecycle ends on apply — return to the actions grid.
+    patternSubView = null;
   }
 
   async function handleExtend() {
@@ -639,6 +637,40 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   onClose={handleClose}
 >
   <div class="editor-panel" class:help-active={helpMode === "selecting"}>
+    {#if patternSubView}
+      <!-- Inline drill-down: pattern editor swaps the panel content in place -->
+      <div class="compact-header sub">
+        <button
+          class="icon-btn back"
+          onclick={exitPatternSubView}
+          aria-label="Back to sequence actions"
+        >
+          <i class="fas fa-chevron-left" aria-hidden="true"></i>
+        </button>
+        <h2 class="panel-title">{patternSubViewTitle}</h2>
+        <div class="header-actions">
+          <button
+            class="icon-btn close"
+            onclick={handleClose}
+            aria-label="Close"
+          >
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+      <div class="sub-view-body">
+        {#if patternSubView === "turnPattern"}
+          <TurnPatternView {sequence} onApply={handleTurnPatternApply} />
+        {:else}
+          <DurationPatternView
+            sequence={panelState.isDurationPreviewMode
+              ? panelState.previewSequence
+              : sequence}
+            onApply={handleDurationApply}
+          />
+        {/if}
+      </div>
+    {:else}
     <!-- Simple header with title and actions -->
     <div class="compact-header" class:dimmed={helpMode === "selecting"}>
       <h2 class="panel-title">Sequence Actions</h2>
@@ -769,6 +801,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
         />
       </div>
     {/if}
+    {/if}
   </div>
 </CreatePanelDrawer>
 
@@ -797,15 +830,6 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   }}
 />
 
-<TurnPatternDrawer
-  bind:isOpen={showTurnPatternDrawer}
-  {sequence}
-  targetHand={panelState.targetHand}
-  toolPanelWidth={panelState.toolPanelWidth}
-  onClose={() => (showTurnPatternDrawer = false)}
-  onApply={handleTurnPatternApply}
-/>
-
 <RotationDirectionDrawer
   bind:isOpen={showRotationDirectionDrawer}
   {sequence}
@@ -813,16 +837,6 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   toolPanelWidth={panelState.toolPanelWidth}
   onClose={() => (showRotationDirectionDrawer = false)}
   onApply={handleRotationDirectionApply}
-/>
-
-<DurationPatternDrawer
-  bind:isOpen={showDurationDrawer}
-  sequence={panelState.isDurationPreviewMode ? panelState.previewSequence : sequence}
-  toolPanelWidth={panelState.toolPanelWidth}
-  previewMode={isSideBySideLayout}
-  onClose={handleDurationDrawerClose}
-  onPreview={handleDurationPreview}
-  onApply={handleDurationApply}
 />
 
 <ExtendDrawer
@@ -879,6 +893,36 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     font-size: 1rem;
     font-weight: 600;
     color: var(--theme-text);
+  }
+
+  /* Drill-down sub-view header: back-left, title-centered, close-right */
+  .compact-header.sub {
+    display: grid;
+    grid-template-columns: var(--min-touch-target) 1fr var(--min-touch-target);
+    align-items: center;
+    gap: 8px;
+  }
+
+  .compact-header.sub .panel-title {
+    text-align: center;
+  }
+
+  .icon-btn.back {
+    background: var(--theme-card-bg);
+    color: var(--theme-text-dim);
+  }
+
+  .icon-btn.back:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--theme-text);
+  }
+
+  /* Scrollable body for an inline pattern editor view */
+  .sub-view-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 18px;
   }
 
   .header-actions {
