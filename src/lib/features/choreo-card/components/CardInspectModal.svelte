@@ -164,7 +164,9 @@
       <h2 class="modal-title" id="inspect-modal-title">
         <TKAWordGlyph {word} height={28} darkMode />
       </h2>
-      <p class="modal-hint">{mode === "fix" ? "Click a pictograph to fix its arrows" : "Front and back side by side"}</p>
+      {#if mode === "fix"}
+        <p class="modal-hint">Click a pictograph to fix its arrows</p>
+      {/if}
     </div>
 
     <div class="stack-wrapper" bind:this={stackEl} role="group" aria-label="Card preview">
@@ -274,6 +276,12 @@
   }
 
   .modal-title {
+    /* The TKA glyph is a flex container that fills this h2's width; without a
+       flex wrapper here its content left-aligns (text-align can't center it).
+       Flex + center shrinks the glyph to its content and centers it. */
+    display: flex;
+    justify-content: center;
+    align-items: center;
     font-size: 28px;
     font-weight: 600;
     color: var(--theme-text, rgba(255, 255, 255, 0.8));
