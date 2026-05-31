@@ -47,24 +47,23 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PictographVisibilityOptions } from "$lib/shared/render/utils/pictograph-to-svg";
 import type { PreviewCellRenderOptions } from "./preview-cell-renderer";
-import type { PictographKeyHasher } from "$lib/shared/render/services/pictograph-key-hasher";
 import { pictographKeyHasher } from "$lib/shared/render/services/pictograph-key-hasher";
 
-export class CellCacheKeyDeriver {
-  constructor(private readonly keyHasher: PictographKeyHasher) {}
+// Stateless — plain module functions. The only ctor dependency was the shared
+// pictographKeyHasher singleton, now imported directly instead of injected.
 
-  deriveCacheKey(
-    pictographData: PictographData,
-    stepNumber: number | undefined,
-    isDark: boolean,
-    options: PreviewCellRenderOptions
-  ): string {
-    // Delegate pictograph identity to the single source of truth.
-    // PictographKeyHasher captures: letter, all motion fields (motionType,
-    // locations, turns, orientations, rotationDirection, propType, gridMode),
-    // and all visibility settings (showTKA, darkMode, bluePropType, etc.).
-    const visibility = this.mapToVisibility(options, isDark);
-    const pictographHash = this.keyHasher.deriveKey(pictographData, visibility);
+export function deriveCacheKey(
+  pictographData: PictographData,
+  stepNumber: number | undefined,
+  isDark: boolean,
+  options: PreviewCellRenderOptions
+): string {
+  // Delegate pictograph identity to the single source of truth.
+  // PictographKeyHasher captures: letter, all motion fields (motionType,
+  // locations, turns, orientations, rotationDirection, propType, gridMode),
+  // and all visibility settings (showTKA, darkMode, bluePropType, etc.).
+  const visibility = mapToVisibility(options, isDark);
+  const pictographHash = pictographKeyHasher.deriveKey(pictographData, visibility);
 
     // Append cell-specific dimensions that PictographKeyHasher intentionally
     // excludes (size, step number, browseViewMode affect presentation, not
@@ -90,10 +89,10 @@ export class CellCacheKeyDeriver {
    * Note: PreviewCellRenderOptions.handPointVisibility is narrowed to "all" | "active".
    * The value "none" only exists in PictographVisibilityOptions and never appears here.
    */
-  private mapToVisibility(
-    options: PreviewCellRenderOptions,
-    isDark: boolean
-  ): PictographVisibilityOptions {
+function mapToVisibility(
+  options: PreviewCellRenderOptions,
+  isDark: boolean
+): PictographVisibilityOptions {
     return {
       showTKA: options.showTKA ?? true,
       showTnD: options.showTnD ?? false,
@@ -113,7 +112,3 @@ export class CellCacheKeyDeriver {
       showRedMotion: options.showRedMotion,
     };
   }
-}
-
-// Singleton - composes the shared PictographKeyHasher instance
-export const cellCacheKeyDeriver = new CellCacheKeyDeriver(pictographKeyHasher);

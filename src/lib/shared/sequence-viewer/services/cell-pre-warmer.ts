@@ -4,7 +4,7 @@ import type { PreviewCellRenderOptions } from "./preview-cell-renderer";
 import type { LayerRenderOptions, LayerVisibility } from "../../render/services/types";
 
 export type PreWarmPriority = "background" | "user-visible" | "user-blocking";
-import { cellCacheKeyDeriver } from "./cell-cache-key-deriver";
+import { deriveCacheKey } from "./cell-cache-key-deriver";
 import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 import { getWorkerRenderPool } from "$lib/shared/render/services/worker-render-pool";
@@ -143,7 +143,7 @@ export class CellPreWarmer {
       tasks.push({
         pictographData: startData,
         stepNumber: undefined,
-        cacheKey: cellCacheKeyDeriver.deriveCacheKey(startData, undefined, isDark, options),
+        cacheKey: deriveCacheKey(startData, undefined, isDark, options),
         isDark,
       });
     }
@@ -155,7 +155,7 @@ export class CellPreWarmer {
       tasks.push({
         pictographData: step,
         stepNumber,
-        cacheKey: cellCacheKeyDeriver.deriveCacheKey(step, stepNumber, isDark, options),
+        cacheKey: deriveCacheKey(step, stepNumber, isDark, options),
         isDark,
       });
     }

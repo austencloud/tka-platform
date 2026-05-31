@@ -32,7 +32,7 @@
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
   import { renderCell, deleteCellCache } from "../services/preview-cell-renderer";
   import { compositeStepNumberOnBlob } from "../services/step-number-compositor";
-  import { cellCacheKeyDeriver } from "../services/cell-cache-key-deriver";
+  import { deriveCacheKey } from "../services/cell-cache-key-deriver";
   import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
@@ -819,7 +819,7 @@
           options: renderOptions,
           // Look up the NUMBER-FREE base blob (the shared, persistent cache) —
           // the step number is composited on afterwards, never keyed in.
-          cacheKey: cellCacheKeyDeriver.deriveCacheKey(startData, undefined, isDark, { ...renderOptions, showStepNumbers: false }),
+          cacheKey: deriveCacheKey(startData, undefined, isDark, { ...renderOptions, showStepNumbers: false }),
         });
       }
       for (let i = 0; i < sequence.steps.length; i++) {
@@ -835,7 +835,7 @@
           stepNumber: i + 1,
           options: cellOpts,
           // Number-free base key — number composited on afterwards (see Phase 1).
-          cacheKey: cellCacheKeyDeriver.deriveCacheKey(step, undefined, isDark, { ...cellOpts, showStepNumbers: false }),
+          cacheKey: deriveCacheKey(step, undefined, isDark, { ...cellOpts, showStepNumbers: false }),
         });
       }
 

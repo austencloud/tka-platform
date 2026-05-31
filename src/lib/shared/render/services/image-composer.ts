@@ -500,8 +500,8 @@ export class ImageComposer {
     };
 
     import("../../sequence-viewer/services/cell-cache-key-deriver")
-      .then(({ cellCacheKeyDeriver: keyDeriver }) => {
-        const previewKey = keyDeriver.deriveCacheKey(
+      .then(({ deriveCacheKey }) => {
+        const previewKey = deriveCacheKey(
           pictographData as PictographData,
           stepNumber,
           isDark,

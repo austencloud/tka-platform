@@ -74,7 +74,7 @@ export interface PreviewCellRenderOptions {
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
 import { getWorkerRenderPool } from "$lib/shared/render/services/worker-render-pool";
-import { cellCacheKeyDeriver } from "./cell-cache-key-deriver";
+import { deriveCacheKey } from "./cell-cache-key-deriver";
 import { compositeStepNumberOnBlob } from "./step-number-compositor";
 
 function filterSoloMotions(
@@ -108,7 +108,7 @@ export async function renderCell(
   // during crossfades — without ever entering the base cache key.
   const baseOptions: PreviewCellRenderOptions =
     options.showStepNumbers ? { ...options, showStepNumbers: false } : options;
-  const cacheKey = cellCacheKeyDeriver.deriveCacheKey(pictographData, undefined, isDark, baseOptions);
+  const cacheKey = deriveCacheKey(pictographData, undefined, isDark, baseOptions);
 
   // Solo / motion-solo views keep their repositioned location label as a live
   // overlay (CellRenderer), so don't bake a number into those.
@@ -208,6 +208,6 @@ export async function deleteCellCache(
   isDark: boolean,
   options: PreviewCellRenderOptions
 ): Promise<boolean> {
-  const cacheKey = cellCacheKeyDeriver.deriveCacheKey(pictographData, stepNumber, isDark, options);
+  const cacheKey = deriveCacheKey(pictographData, stepNumber, isDark, options);
   return pictographBlobCache.delete(cacheKey);
 }
