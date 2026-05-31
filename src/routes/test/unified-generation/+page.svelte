@@ -33,8 +33,10 @@
   function stepArr<T extends string>(arr: readonly T[], cur: T, dir: number): T {
     return arr[Math.max(0, Math.min(arr.length - 1, arr.indexOf(cur) + dir))]!;
   }
-  // Deck size = a preset choice, not a 1-by-1 dial. 52 anchors (standard deck).
-  const DECK_PRESETS = [30, 40, 52, 54];
+  // Deck size = preset choice, not a 1-by-1 dial. These decks get PRINTED (poker 2.5x3.5,
+  // MPC pipeline), so stops are print-run-friendly. 52 = standard deck (default anchor),
+  // 54 = +2 jokers, 36 = small run, 72 = double pack. Retune freely.
+  const DECK_PRESETS = [36, 52, 54, 72];
   const STYLE_COLORS = {
     props: { color: c.continuity.color, shadow: c.continuity.shadowColor },
     hands: { color: "linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%)", shadow: "245deg 70% 55%" },
@@ -194,16 +196,9 @@
 
         {#if level > 1}
           <TurnIntensityCard currentIntensity={turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => (turnIntensity = v)} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
-        {:else}
-          <!-- Locked slot: keeps the grid a clean rectangle AND signals progressive disclosure. -->
-          <div class="locked-tile" style:grid-column="span 2">
-            <i class="fas fa-lock"></i>
-            <span class="lk-title">Max Turns</span>
-            <span class="lk-hint">Level 2 unlocks</span>
-          </div>
         {/if}
 
-        <BaseCard title="Orientation" currentValue={orientSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showOrient = !showOrient)} />
+        <BaseCard title="Pos & Ori" currentValue={orientSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showOrient = !showOrient)} />
 
         <!-- Row 3 -->
         <BaseCard title="Loop" currentValue={LOOP_TYPE_LABELS[loopType]} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
@@ -216,7 +211,7 @@
         <StepperCard title="Dashes" currentValue={DASH.indexOf(dashes)} minValue={0} maxValue={2} description="FREQUENCY" formatValue={(i: number) => DASH_LABEL[i]} color={STYLE_COLORS.dashes.color} shadowColor={STYLE_COLORS.dashes.shadow} gridColumnSpan={2} onIncrement={() => (dashes = stepArr(DASH, dashes, 1))} onDecrement={() => (dashes = stepArr(DASH, dashes, -1))} />
 
         <!-- Generate -->
-        <button class="generate" style:grid-column="1 / -1" onclick={generate}>
+        <button class="generate" onclick={generate}>
           <i class="fas fa-dice"></i>
           <span>{wordMode ? `Generate ${drawCount} variations` : `Generate ${drawCount}`}</span>
         </button>
@@ -297,17 +292,21 @@
 
   .grid-pane { display: flex; flex-direction: column; gap: 14px; }
   .grid-stage { position: relative; }
+  /* Flex-wrap, not fixed grid: whatever lands on the last row stretches to fill the
+     width equally (3-up stretched when Turns is hidden, 4-up when it appears) — no holes
+     at any tile count, and the reflow is the thing that can animate on add/remove. */
   .card-grid {
-    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
-    grid-auto-rows: 120px; gap: 10px; width: 100%; margin: 0;
+    display: flex; flex-wrap: wrap; align-content: flex-start;
+    gap: 10px; width: 100%; margin: 0;
   }
-  .card-grid > :global(*) { grid-column: span 2; min-width: 0; }
+  .card-grid > :global(*) {
+    flex: 1 1 230px; min-width: 200px; height: 120px; min-height: 0;
+    transition: flex-basis 220ms ease, width 220ms ease;
+  }
+  /* Generate spans the full width on its own row. */
+  .card-grid > .generate { flex: 1 1 100%; height: auto; min-height: 92px; }
 
-  /* Wide screens (4K etc.) — expand to 4 tiles per row instead of 3. */
-  @media (min-width: 1700px) {
-    .layout { max-width: 1700px; }
-    .card-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
-  }
+  @media (min-width: 1700px) { .layout { max-width: 1700px; } }
 
   /* Unify typography across BaseCard / StepperCard / ToggleCard.
      Each component sized its value text differently (stepper up to 60px, base 22px,
@@ -319,18 +318,6 @@
   .card-grid :global(.base-card .card-value) { font-size: 24px !important; line-height: 1.15 !important; }
   .card-grid :global(.option-label) { font-size: 17px !important; }
   .card-grid :global(.card-title) { font-size: 11px !important; letter-spacing: 0.8px !important; }
-
-  /* locked turns slot — same footprint as a card, visually inactive */
-  .locked-tile {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
-    border-radius: 16px; padding: 10px;
-    background: rgba(255, 255, 255, 0.035);
-    border: 1.5px dashed rgba(255, 255, 255, 0.14);
-    color: rgba(255, 255, 255, 0.4);
-  }
-  .locked-tile i { font-size: 17px; opacity: 0.7; }
-  .lk-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; }
-  .lk-hint { font-size: 10px; letter-spacing: 0.3px; opacity: 0.75; }
 
   /* word edit tile mirrors the base-card look while typing */
   .word-edit {
