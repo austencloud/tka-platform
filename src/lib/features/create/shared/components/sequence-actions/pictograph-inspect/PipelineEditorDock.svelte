@@ -358,7 +358,29 @@
     // If there is no override at the current tier, the arrow is already at its
     // baseline, so this is a no-op (no pointless Firestore write, no error).
     if (editTarget === "special-json") {
-      if (!diagnostics?.specialJson?.firestoreOverride) {
+      // An override is removable here if it's persisted in Firestore, present
+      // in the repo's local state, OR an unsaved live nudge (hasLocalChanges).
+      // A fresh nudge has only the last two — keying off firestoreOverride alone
+      // made Z a no-op right after editing, which is exactly when you press it.
+      const repo = getSpecialOverrideRepository();
+      const repoHas =
+        !!repo?.isInitialized && !!specialOverrideKey
+          ? repo.hasOverride(specialOverrideKey)
+          : false;
+      const hasSpecial =
+        !!diagnostics?.specialJson?.firestoreOverride || repoHas || hasLocalChanges;
+      // TEMP DIAGNOSTIC — set window.__DBG_ARROW = true, press Z. Shows the three
+      // signals the guard ORs together + repo init (the card-context concern).
+      // Remove once Z-delete is confirmed.
+      if (typeof globalThis !== "undefined" && (globalThis as { __DBG_ARROW?: boolean }).__DBG_ARROW) {
+        console.log(
+          `[Z-DELETE] tier=special key=${specialOverrideKey ?? "null"}` +
+            ` repoInit=${!!repo?.isInitialized} repoHas=${repoHas}` +
+            ` firestoreOverride=${!!diagnostics?.specialJson?.firestoreOverride}` +
+            ` hasLocalChanges=${hasLocalChanges} → willDelete=${hasSpecial}`,
+        );
+      }
+      if (!hasSpecial) {
         getHapticFeedback()?.trigger("selection");
         return;
       }
