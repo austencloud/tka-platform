@@ -16,7 +16,7 @@ import {
 } from "firebase/firestore";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
+import { ensureComposition } from "$lib/shared/foundation/services/sequence-hydrator";
 import {
   getUserSequencesPath,
   getUserSequencePath,
@@ -205,8 +205,7 @@ export class LibraryBatchOperations {
         });
 
         if (visibility === "public" && existing.visibility !== "public") {
-          const hydrator = getSequenceHydrator();
-          const withComposition = hydrator.ensureComposition(existing);
+          const withComposition = ensureComposition(existing);
           toPublish.push({ ...existing, ...withComposition, visibility });
         } else if (
           visibility !== "public" &&

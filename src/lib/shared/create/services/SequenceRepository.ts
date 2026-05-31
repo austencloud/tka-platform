@@ -10,7 +10,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
+import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { SequenceCreateRequest } from "$lib/shared/create/domain/sequence-models";
 import {
@@ -49,8 +49,7 @@ export class SequenceRepository {
   // compositional model is the source of truth for all downstream readers.
   private hydrateSequence(seq: SequenceData): SequenceData {
     try {
-      const hydrator = getSequenceHydrator();
-      return hydrator.hydrate(seq);
+      return hydrate(seq);
     } catch {
       return seq;
     }

@@ -9,8 +9,7 @@
 import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { SequenceHydrator } from '$lib/shared/foundation/services/sequence-hydrator'
-  import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
+  import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
 import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
@@ -55,8 +54,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepo
       repo.getSequence(sequenceId).then((seq) => {
         if (seq) {
           try {
-            const hydrator = getSequenceHydrator();
-            selectedSequence = hydrator.hydrate(seq);
+            selectedSequence = hydrate(seq);
           } catch {
             selectedSequence = seq;
           }

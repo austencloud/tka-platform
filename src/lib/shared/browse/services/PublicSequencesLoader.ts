@@ -23,7 +23,7 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { getPublicSequencesPath } from "$lib/shared/library/data/firestore-paths";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/PublicSequenceIndex";
-import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
+import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
 import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 import type { GalleryOfflineCache } from "$lib/shared/offline/services/gallery-offline-cache";
 import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
@@ -325,8 +325,7 @@ export class PublicSequencesLoader {
     // so the sequence is fully renderable without a sourceRef fetch
     if (data.blueSoloProp && data.redSoloProp && data.stepPairings) {
       try {
-        const hydrator = getSequenceHydrator();
-        const hydrated = hydrator.hydrate(seq);
+        const hydrated = hydrate(seq);
         // Trust the actual step count over the stored sequenceLength,
         // which may be stale (e.g. base word length before LOOP expansion)
         if (hydrated.steps && hydrated.steps.length > 0) {
@@ -413,8 +412,7 @@ export class PublicSequencesLoader {
     // If compositional fields are present, derive steps from them so
     // the compositional model is the single source of truth.
     try {
-      const hydrator = getSequenceHydrator();
-      const hydrated = hydrator.hydrate(seq);
+      const hydrated = hydrate(seq);
 
       // Normalize: ensure step 0 (start position) is separated from the steps
       // array. Gallery sequences from Firebase may store it inline, which causes

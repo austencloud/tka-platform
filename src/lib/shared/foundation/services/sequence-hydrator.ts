@@ -1,5 +1,9 @@
 import { deriveSteps } from "$lib/shared/foundation/services/step-deriver";
-import type { SequenceDecomposer } from "./sequence-decomposer";
+import {
+	extractBlueSoloProp,
+	extractRedSoloProp,
+	extractStepPairings,
+} from "./sequence-decomposer";
 import type { SequenceData } from "../domain/models/SequenceData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -90,16 +94,11 @@ function backfillPrefloatFromLegacySteps(
 	});
 }
 
-export class SequenceHydrator {
-	constructor(
-		private readonly sequenceDecomposer: SequenceDecomposer
-	) {}
-
-	/**
-	 * Re-derives StepData from compositional fields (SoloPropData + StepPairingData).
-	 * Ensures derived fields are up-to-date with current domain logic.
-	 */
-	hydrate(sequence: SequenceData): SequenceData {
+/**
+ * Re-derives StepData from compositional fields (SoloPropData + StepPairingData).
+ * Ensures derived fields are up-to-date with current domain logic.
+ */
+export function hydrate(sequence: SequenceData): SequenceData {
 		// constructed creatorIntent from legacy fields
 		if (!sequence.creatorIntent) {
 			const legacyPropConfig = sequence.intendedProp;
@@ -190,31 +189,27 @@ export class SequenceHydrator {
 			);
 		}
 
-		return sequence.steps.length > 0
-			? reversalDetector.processReversals(sequence)
-			: sequence;
-	}
+	return sequence.steps.length > 0
+		? reversalDetector.processReversals(sequence)
+		: sequence;
+}
 
-	ensureComposition(sequence: SequenceData): SequenceData {
-		// Nothing to decompose from an empty sequence.
-		if (sequence.steps.length === 0) return sequence;
+export function ensureComposition(sequence: SequenceData): SequenceData {
+	// Nothing to decompose from an empty sequence.
+	if (sequence.steps.length === 0) return sequence;
 
-		const blueSoloProp =
-			this.sequenceDecomposer.extractBlueSoloProp(sequence);
-		const redSoloProp =
-			this.sequenceDecomposer.extractRedSoloProp(sequence);
-		const stepPairings =
-			this.sequenceDecomposer.extractStepPairings(sequence);
+	const blueSoloProp = extractBlueSoloProp(sequence);
+	const redSoloProp = extractRedSoloProp(sequence);
+	const stepPairings = extractStepPairings(sequence);
 
-		return {
-			...sequence,
-			blueSoloProp,
-			redSoloProp,
-			stepPairings,
-			bluePathHash: blueSoloProp.handPath.contentHash,
-			redPathHash: redSoloProp.handPath.contentHash,
-			blueSoloHash: blueSoloProp.contentHash,
-			redSoloHash: redSoloProp.contentHash,
-		};
-	}
+	return {
+		...sequence,
+		blueSoloProp,
+		redSoloProp,
+		stepPairings,
+		bluePathHash: blueSoloProp.handPath.contentHash,
+		redPathHash: redSoloProp.handPath.contentHash,
+		blueSoloHash: blueSoloProp.contentHash,
+		redSoloHash: redSoloProp.contentHash,
+	};
 }

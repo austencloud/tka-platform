@@ -11,7 +11,7 @@
 import type { ArenaRating, ArenaVote, ArenaLeaderboardEntry, ArenaUserStats, ArenaEntry, } from "../domain/models/arena-models";
 import type { MatchupCandidate } from "./types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
+import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
 import {
   INITIAL_MU,
   INITIAL_PHI,
@@ -258,8 +258,7 @@ export async function loadFullSequenceData(sourceRef: string): Promise<SequenceD
     };
 
     // Hydrate: re-derive steps from compositional fields if present
-    const hydrator = getSequenceHydrator();
-    return hydrator.hydrate(mapped);
+    return hydrate(mapped);
   } catch (err) {
     console.error(`[Arena] Failed to load full sequence from ${sourceRef}:`, err);
     return null;

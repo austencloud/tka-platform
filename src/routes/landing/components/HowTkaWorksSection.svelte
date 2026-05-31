@@ -16,7 +16,7 @@
   import { doc, getDoc } from "firebase/firestore";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import { getPublicSequencesPath } from "$lib/shared/library/data/firestore-paths";
-  import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
+  import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -28,7 +28,6 @@
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
-  import type { SequenceHydrator } from '$lib/shared/foundation/services/sequence-hydrator'
   import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/PublicSequenceIndex";
   import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import HowTkaAnimationCard from "./HowTkaAnimationCard.svelte";
@@ -169,8 +168,7 @@
       };
 
       if (data.blueSoloProp && data.redSoloProp && data.stepPairings) {
-        const hydrator = getSequenceHydrator();
-        const hydrated = hydrator.hydrate(seq);
+        const hydrated = hydrate(seq);
         if (hydrated.steps && hydrated.steps.length > 0) {
           setupFromSequence({ ...hydrated, sequenceLength: hydrated.steps.length });
           return;
