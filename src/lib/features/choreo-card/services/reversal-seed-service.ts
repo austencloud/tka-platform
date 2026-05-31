@@ -157,6 +157,145 @@ export function transformSequence(
   });
 }
 
+// ---------------------------------------------------------------------------
+// Live, idempotent reversal apply (create module)
+// ---------------------------------------------------------------------------
+
+type Spin = "cw" | "ccw";
+
+/** A motion's spin, or null when it isn't spinning (static / dash / no dir). */
+function spinOf(motion: MutableMotion | undefined): Spin | null {
+  if (!motion) return null;
+  if (motion.rotationDirection === "cw") return "cw";
+  if (motion.rotationDirection === "ccw") return "ccw";
+  return null;
+}
+
+/**
+ * Solve which beats of one hand must flip so that the *detected* reversals of
+ * the result land exactly on the caller's `desired` cells.
+ *
+ * A reversal is "this beat's spin differs from the previous spinning beat"
+ * (matching `reversal-detector.ts`). So we walk the hand's spinning beats in
+ * order, anchor the first to its current spin, and set every later beat's target
+ * spin to flip-from-previous iff its cell is on. A beat flips only when its
+ * current spin already disagrees with that target — which makes a second apply
+ * of the same matrix a no-op (idempotent) and the rendered dots match the matrix
+ * 1:1 (WYSIWYG).
+ *
+ * Non-spinning beats (static / dash) can't carry a reversal, so their cells are
+ * inert. The first spinning beat's cell is honoured on a loop via the wrap (when
+ * the hand reverses an even number of times the loop closes and the wrap
+ * reversal falls out automatically); on a non-loop it has no predecessor and is
+ * inert, exactly as the detector reports.
+ */
+export function solveHandFlips(
+  motions: (MutableMotion | undefined)[],
+  desired: boolean[],
+): boolean[] {
+  const len = motions.length;
+  const flips = new Array<boolean>(len).fill(false);
+
+  let firstSpin = -1;
+  for (let i = 0; i < len; i++) {
+    if (spinOf(motions[i])) {
+      firstSpin = i;
+      break;
+    }
+  }
+  if (firstSpin < 0) return flips; // hand never spins → nothing to reverse
+
+  // Anchor the first spinning beat to its current spin (flips[firstSpin] = false).
+  let target: Spin = spinOf(motions[firstSpin])!;
+  for (let i = firstSpin + 1; i < len; i++) {
+    const base = spinOf(motions[i]);
+    if (!base) continue; // non-spinning beat: inert cell
+    if (desired[i]) target = target === "cw" ? "ccw" : "cw";
+    flips[i] = base !== target;
+  }
+  return flips;
+}
+
+/**
+ * Apply a reversal matrix to a live sequence, idempotently.
+ *
+ * `blueReversals` / `redReversals` are per-beat "reverse here" flags (already
+ * tiled to the sequence length). Unlike {@link transformSequence} (which toggles
+ * relative to the current motions and is therefore designed to run once on a
+ * clean catalog base), this solves for an absolute target spin and flips only
+ * the delta — so re-applying the same matrix changes nothing, and the reversal
+ * dots the detector renders match the matrix exactly.
+ *
+ * Reuses the proven flip → re-derive-letter → recompute-orientation pipeline.
+ */
+export function applyReversalMatrix(
+  seq: SequenceData,
+  blueReversals: boolean[],
+  redReversals: boolean[],
+  edges: CsvEdge[],
+): SequenceData {
+  const clone = JSON.parse(JSON.stringify(seq)) as SequenceData;
+  const steps = (clone.steps ?? []) as readonly StepData[];
+
+  const blueMotions = steps.map(
+    (s) => (s as unknown as { motions?: { blue?: MutableMotion } }).motions?.blue,
+  );
+  const redMotions = steps.map(
+    (s) => (s as unknown as { motions?: { red?: MutableMotion } }).motions?.red,
+  );
+
+  const blueFlips = solveHandFlips(blueMotions, blueReversals);
+  const redFlips = solveHandFlips(redMotions, redReversals);
+
+  const transformedSteps = steps.map((step, beatIndex) => {
+    const mutable = step as unknown as {
+      motions?: { blue?: MutableMotion; red?: MutableMotion };
+      startPosition?: string | null;
+      endPosition?: string | null;
+      letter?: string | null;
+      blueReversal?: boolean;
+      redReversal?: boolean;
+    };
+
+    const blue = mutable.motions?.blue;
+    const red = mutable.motions?.red;
+
+    flipMotion(blue, blueFlips[beatIndex] ?? false);
+    flipMotion(red, redFlips[beatIndex] ?? false);
+    mutable.blueReversal = blueReversals[beatIndex] ?? false;
+    mutable.redReversal = redReversals[beatIndex] ?? false;
+
+    if (blue && red) {
+      const letter = lookupLetter(edges, {
+        startPosition: String(mutable.startPosition ?? ""),
+        endPosition: String(mutable.endPosition ?? ""),
+        blue: {
+          motionType: String(blue.motionType ?? ""),
+          startLocation: String(blue.startLocation ?? ""),
+          endLocation: String(blue.endLocation ?? ""),
+        },
+        red: {
+          motionType: String(red.motionType ?? ""),
+          startLocation: String(red.startLocation ?? ""),
+          endLocation: String(red.endLocation ?? ""),
+        },
+      });
+      if (letter) mutable.letter = letter;
+    }
+
+    return step;
+  });
+
+  const withSteps = updateSequenceData(clone, { steps: transformedSteps });
+  const reoriented = recalculateAllOrientations(withSteps);
+
+  const word = reoriented.steps
+    .map((s) => (s.letter as Letter | null | undefined) ?? "")
+    .join("");
+
+  return updateSequenceData(reoriented, { word, name: word });
+}
+
 export interface SeedProgress {
   /** Number of base catalogs whose variant has been written so far. */
   written: number;

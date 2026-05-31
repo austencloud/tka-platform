@@ -42,7 +42,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   // Transform help mode types
   import type { ActionHelpId } from "../../domain/transforms/transform-help-content";
   type HelpMode = "inactive" | "selecting" | "viewing";
-  import RotationDirectionView from "./RotationDirectionView.svelte";
+  import DirectionView from "./DirectionView.svelte";
   import DurationPatternView from "./DurationPatternView.svelte";
   import ExtendView from "./ExtendView.svelte";
   import StepGridSection from "./StepGridSection.svelte";
@@ -139,7 +139,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
       : subView === "duration"
         ? "Duration Patterns"
         : subView === "rotation"
-          ? "Rotation Direction"
+          ? "Direction"
           : subView === "extend"
             ? extendDirectlyLoopable
               ? "Extend"
@@ -375,6 +375,17 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     );
 
     // Update the active sequence with the pattern-applied sequence
+    activeSequenceState.setCurrentSequence(result.sequence);
+    hapticService?.trigger("success");
+  }
+
+  function handleReversalApply(result: {
+    sequence: any;
+    warnings?: readonly string[];
+  }) {
+    // Reversal flips prop spin (same axis as rotation direction) — reuse the
+    // rotation-pattern undo bucket.
+    CreateModuleState.pushUndoSnapshot(UndoOperationType.APPLY_ROTATION_PATTERN);
     activeSequenceState.setCurrentSequence(result.sequence);
     hapticService?.trigger("success");
   }
@@ -723,10 +734,11 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
             onApply={handleDurationApply}
           />
         {:else if subView === "rotation"}
-          <RotationDirectionView
+          <DirectionView
             {sequence}
             targetHand={panelState.targetHand}
-            onApply={handleRotationDirectionApply}
+            onReversalApply={handleReversalApply}
+            onRotationApply={handleRotationDirectionApply}
           />
         {:else if subView === "extend"}
           <ExtendView

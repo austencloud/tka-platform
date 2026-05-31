@@ -30,6 +30,15 @@
   function setPeriod(p: number) {
     onChange(value.map((lane) => resizePeriod(lane, p, binding.base)));
   }
+  /** Value stamped on active beats: a binary binding's fixed activeValue, else
+   *  the lane's current uniform amount (falling back to the first amount). */
+  function stampValue(li: number): StripValue {
+    if (binding.activeValue !== undefined) return binding.activeValue;
+    return (
+      uniformActive(value[li] ?? [], binding.base) ??
+      (binding.amountList?.[0] as StripValue)
+    );
+  }
   function laneAmount(li: number): StripValue | null {
     return uniformActive(value[li] ?? [], binding.base);
   }
@@ -59,13 +68,12 @@
     // at the user's current period (unchanged behavior).
     const effPeriod = rhythm.period ?? period;
     if (binding.lanes === 2) {
-      const bAmt = uniformActive(value[0] ?? [], binding.base) ?? (binding.amountList[0] as StripValue);
-      const rAmt = uniformActive(value[1] ?? [], binding.base) ?? (binding.amountList[0] as StripValue);
-      const { blue, red } = stampPerHand(rhythm, effPeriod, bAmt, rAmt, binding.base);
+      const { blue, red } = stampPerHand(
+        rhythm, effPeriod, stampValue(0), stampValue(1), binding.base
+      );
       onChange([blue, red]);
     } else {
-      const amt = uniformActive(value[0] ?? [], binding.base) ?? (binding.amountList[0] as StripValue);
-      onChange([stampSingle(rhythm, effPeriod, amt, binding.base)]);
+      onChange([stampSingle(rhythm, effPeriod, stampValue(0), binding.base)]);
     }
   }
   function editCell(li: number, bi: number, v: StripValue) {
@@ -114,30 +122,32 @@
     </div>
   </div>
 
-  <div class="axis">
-    <div class="axis-lbl">Amount</div>
-    <div class="amt-grid">
-      {#each binding.laneLabels as label, li}
-        <div class="amt-row">
-          <span class="amt-lane {binding.laneColors[li]}">{label}</span>
-          <div class="seg-wrap">
-            <SegmentedControl
-              size="md" color={binding.laneColors[li]}
-              options={binding.amountList.map((a) => ({ value: String(a), label: binding.format(a) }))}
-              value={String(laneAmount(li) ?? -1)}
-              onchange={(a) => applyAmount(li, Number(a))}
-            />
+  {#if binding.amountList}
+    <div class="axis">
+      <div class="axis-lbl">Amount</div>
+      <div class="amt-grid">
+        {#each binding.laneLabels as label, li}
+          <div class="amt-row">
+            <span class="amt-lane {binding.laneColors[li]}">{label}</span>
+            <div class="seg-wrap">
+              <SegmentedControl
+                size="md" color={binding.laneColors[li]}
+                options={binding.amountList.map((a) => ({ value: String(a), label: binding.format(a) }))}
+                value={String(laneAmount(li) ?? -1)}
+                onchange={(a) => applyAmount(li, Number(a))}
+              />
+            </div>
           </div>
-        </div>
-      {/each}
+        {/each}
+      </div>
     </div>
-  </div>
+  {/if}
 
   <div class="axis result">
     <div class="axis-lbl">Result</div>
     <PatternBeatStrip
       lanes={stripLanes}
-      cellKind="number"
+      cellKind={binding.cellKind ?? "number"}
       valueList={binding.valueList}
       base={binding.base}
       format={binding.format}
