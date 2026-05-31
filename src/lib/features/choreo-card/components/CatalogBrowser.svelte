@@ -813,6 +813,11 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
         }
       });
     } : undefined}
+    onRerender={async () => {
+      if (!inspectedRerender) return;
+      const newUrl = await inspectedRerender();
+      if (newUrl) inspectedFrontImageUrl = newUrl;
+    }}
     frontImageUrl={inspectedFrontImageUrl}
     onClose={() => { inspectedSequence = null; inspectedFrontImageUrl = null; inspectedRerender = null; }}
   />
