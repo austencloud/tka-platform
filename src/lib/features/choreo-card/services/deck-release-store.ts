@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  deleteDoc,
   getDoc,
   getDocs,
   setDoc,
@@ -89,6 +90,17 @@ export async function getAllReleases(): Promise<DeckRelease[]> {
   return snapshot.docs
     .map(d => d.data() as DeckRelease)
     .sort((a, b) => b.deckNumber - a.deckNumber);
+}
+
+/**
+ * Permanently delete a released deck's manifest. The release counter is left
+ * untouched — deck numbers are permanent identifiers (content hashes, scan /
+ * short codes, and released-id pruning all key off them), so a freed number is
+ * never reused.
+ */
+export async function deleteDeck(deckNumber: number): Promise<void> {
+  const db = await getFirestoreInstance();
+  await deleteDoc(doc(db, getDeckReleaseManifestPath(deckNumber)));
 }
 
 export async function getAllReleasedSequenceIds(): Promise<Set<string>> {
