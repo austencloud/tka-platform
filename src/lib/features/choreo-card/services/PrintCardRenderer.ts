@@ -12,7 +12,10 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ImageComposer } from "../../../shared/render/services/image-composer";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
+import type { RenderCanvas } from "$lib/shared/render/services/types";
 import type { PrintRenderOptions } from "./types";
+import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
+import { CompositionDispatcher } from "$lib/shared/render/services/composition-dispatcher";
 import { renderCardBack } from "./card-back-dom-renderer";
 import { renderInfoCardFront, renderInfoCardBack } from "./info-card-canvas-renderer";
 import { buildBackJob } from "./card-back/card-back-job-builder";
@@ -103,7 +106,7 @@ export class PrintCardRenderer {
       },
     };
 
-    const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
+    const sequenceCanvas = await this.composeFront(sequence, composeOptions, options);
 
     // Wrap the content in the MPC card frame (stripe border + edge glow +
     // white inner area inset by the colored border). Single source of truth.
@@ -114,6 +117,70 @@ export class PrintCardRenderer {
       accent,
       dark,
     });
+  }
+
+  // Fixed authoring resolution for the worker-bound QR. The worker scales it to
+  // the QR cell via drawImage, so this just needs to be crisp at cell size.
+  private static readonly QR_BITMAP_SIZE = 512;
+
+  /**
+   * Render the inner sequence composite. When the deck driver has enabled the
+   * worker pool (probed + AssetBundle seeded), render off-thread and return the
+   * worker's bitmap as a canvas; otherwise (or on any worker error) render on
+   * the main thread. The worker has no QR generator, so the QR is rendered here
+   * on main and transferred in.
+   */
+  private async composeFront(
+    sequence: SequenceData,
+    composeOptions: Partial<SequenceExportOptions>,
+    options: PrintRenderOptions,
+  ): Promise<RenderCanvas> {
+    if (options.useWorkerPool && CompositionDispatcher.canUseWorker()) {
+      try {
+        const qrBitmap = await this.renderQrBitmap(sequence, composeOptions);
+        const inner = await getCompositionDispatcher().composeFrontBitmap(
+          sequence,
+          composeOptions,
+          qrBitmap,
+        );
+        const canvas = document.createElement("canvas");
+        canvas.width = inner.width;
+        canvas.height = inner.height;
+        canvas.getContext("2d")!.drawImage(inner, 0, 0);
+        inner.close();
+        return canvas;
+      } catch (err) {
+        console.warn(
+          "[PrintCardRenderer] worker front render failed, main-thread fallback:",
+          err,
+        );
+      }
+    }
+    return this.imageComposer.composeSequenceImage(sequence, composeOptions);
+  }
+
+  private async renderQrBitmap(
+    sequence: SequenceData,
+    composeOptions: Partial<SequenceExportOptions>,
+  ): Promise<ImageBitmap | null> {
+    const gen = this.imageComposer.qrGenerator;
+    if (!gen) return null;
+    try {
+      const dark = composeOptions.visibilityOverrides?.darkMode ?? false;
+      const img = await gen.generateAsImage(sequence, PrintCardRenderer.QR_BITMAP_SIZE, {
+        style: "modern",
+        margin: 1,
+        darkMode: dark,
+        bluePropType: composeOptions.bluePropTypeOverride,
+        redPropType: composeOptions.redPropTypeOverride,
+        deckId: composeOptions.deckId,
+        deckName: composeOptions.deckName,
+      });
+      return await createImageBitmap(img as ImageBitmapSource);
+    } catch (err) {
+      console.warn("[PrintCardRenderer] QR bitmap render failed:", err);
+      return null;
+    }
   }
 
   async renderBack(
