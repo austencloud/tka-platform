@@ -213,12 +213,6 @@
         <ToggleCard title="Grid" option1={{ value: "diamond", label: "Diamond" }} option2={{ value: "box", label: "Box" }} activeOption={grid} onToggle={(v) => (grid = v as typeof grid)} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} gridColumnSpan={2} />
         </div>
 
-        {#if level > 1}
-          <div class="tile" style:view-transition-name="t-turns">
-          <TurnIntensityCard currentIntensity={turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => (turnIntensity = v)} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
-          </div>
-        {/if}
-
         <div class="tile" style:view-transition-name="t-posori">
         <BaseCard title="Pos & Ori" currentValue={orientSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showOrient = !showOrient)} />
         </div>
@@ -232,7 +226,13 @@
         <ToggleCard title="Period" option1={{ value: "quartered", label: "Quartered" }} option2={{ value: "halved", label: "Halved" }} activeOption={period} onToggle={(v) => (period = v as typeof period)} color={c.period.color} shadowColor={c.period.shadowColor} gridColumnSpan={2} />
         </div>
 
-        <!-- Row 4 — Style steppers (Smooth→Mixed→Choppy) -->
+        <!-- Row 3 — Max Turns leads the style row (appears at Level 2+), then Props/Hands/Dashes -->
+        {#if level > 1}
+          <div class="tile" style:view-transition-name="t-turns">
+          <TurnIntensityCard currentIntensity={turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => (turnIntensity = v)} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
+          </div>
+        {/if}
+
         <div class="tile" style:view-transition-name="t-props">
         <StepperCard title="Props" currentValue={TRI.indexOf(propRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i]} color={STYLE_COLORS.props.color} shadowColor={STYLE_COLORS.props.shadow} gridColumnSpan={2} onIncrement={() => (propRev = stepArr(TRI, propRev, 1))} onDecrement={() => (propRev = stepArr(TRI, propRev, -1))} />
         </div>
