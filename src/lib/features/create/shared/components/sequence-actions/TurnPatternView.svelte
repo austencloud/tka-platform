@@ -75,15 +75,17 @@
 </script>
 
 <div class="pattern-view-body">
-  <PatternStripEditor
-    {binding}
-    sequenceLength={seqLen}
-    value={strip}
-    onChange={(v) => (strip = v)}
-  />
-  <button class="apply-btn turn" onclick={applyStrip} disabled={!sequence}>
-    Apply to sequence
-  </button>
+  <div class="pattern-view-inner">
+    <PatternStripEditor
+      {binding}
+      sequenceLength={seqLen}
+      value={strip}
+      onChange={(v) => (strip = v)}
+    />
+    <button class="apply-btn turn" onclick={applyStrip} disabled={!sequence}>
+      Apply to sequence
+    </button>
+  </div>
 </div>
 
 <style>
@@ -94,13 +96,18 @@
     padding: 18px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    /* One shared content column: every row (Length/Rhythm/Amount/Result/Apply)
-       aligns to this width. Bounded so Result cells stay sane; centered so the
-       extra panel width reads as intentional margin, not a lopsided void. */
+  }
+
+  /* One shared content column, centered both axes. margin:auto centers it in the
+     panel when there's room and collapses to top-aligned + scrollable when the
+     content is taller than the panel (no clipping on short screens). */
+  .pattern-view-inner {
+    margin: auto;
     width: 100%;
     max-width: 820px;
-    align-self: center; /* center within the stretch-aligned sub-view body */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 
   .apply-btn {

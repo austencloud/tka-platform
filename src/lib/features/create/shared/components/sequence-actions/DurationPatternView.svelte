@@ -66,15 +66,17 @@
 </script>
 
 <div class="pattern-view-body">
-  <PatternStripEditor
-    {binding}
-    sequenceLength={seqLen}
-    value={strip}
-    onChange={(v) => (strip = v)}
-  />
-  <button class="apply-btn duration" onclick={applyStrip} disabled={!sequence}>
-    Apply to sequence
-  </button>
+  <div class="pattern-view-inner">
+    <PatternStripEditor
+      {binding}
+      sequenceLength={seqLen}
+      value={strip}
+      onChange={(v) => (strip = v)}
+    />
+    <button class="apply-btn duration" onclick={applyStrip} disabled={!sequence}>
+      Apply to sequence
+    </button>
+  </div>
 </div>
 
 <style>
@@ -85,11 +87,16 @@
     padding: 18px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    /* One shared content column — see TurnPatternView for rationale. */
+  }
+
+  /* Centered content column — see TurnPatternView for rationale. */
+  .pattern-view-inner {
+    margin: auto;
     width: 100%;
     max-width: 820px;
-    align-self: center; /* center within the stretch-aligned sub-view body */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 
   .apply-btn {
