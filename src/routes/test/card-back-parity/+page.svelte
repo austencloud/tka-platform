@@ -8,6 +8,7 @@
   import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
   import { CompositionDispatcher } from "$lib/shared/render/services/composition-dispatcher";
   import { getCardAssetBundle } from "$lib/shared/render/services/get-card-asset-bundle";
+  import { buildOverridePlacementBundle } from "$lib/shared/render/services/override-placement-bundle";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
   import { onMount, onDestroy } from "svelte";
@@ -184,6 +185,9 @@
             theme: THEMES[0],
           });
           getCompositionDispatcher().setAssetBundle(bundle);
+          // Snapshot whatever overrides the main thread has loaded so worker
+          // placement resolution matches main pixel-for-pixel.
+          getCompositionDispatcher().setOverrideBundle(buildOverridePlacementBundle());
         }
 
         const total = selected.length * themes.length;
