@@ -299,6 +299,17 @@
     .card-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); max-width: 1140px; }
   }
 
+  /* Unify typography across BaseCard / StepperCard / ToggleCard.
+     Each component sized its value text differently (stepper up to 60px, base 22px,
+     toggle option clamp 11–28px). Normalize to one hierarchy:
+       single-value text (stepper number + base value) → 24px
+       toggle option labels (two stacked) → 17px
+       card headers (GRID, PROPS, …) → 11px */
+  .card-grid :global(.value-number),
+  .card-grid :global(.base-card .card-value) { font-size: 24px !important; line-height: 1.15 !important; }
+  .card-grid :global(.option-label) { font-size: 17px !important; }
+  .card-grid :global(.card-title) { font-size: 11px !important; letter-spacing: 0.8px !important; }
+
   /* word edit tile mirrors the base-card look while typing */
   .word-edit {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
@@ -315,7 +326,8 @@
 
   .generate {
     display: flex; align-items: center; justify-content: center; gap: 12px; border: none; cursor: pointer;
-    border-radius: 20px; color: #06121a; font-size: 20px; font-weight: 800; letter-spacing: 0.3px;
+    border-radius: 20px; color: #fff; font-size: 24px; font-weight: 800; letter-spacing: 0.3px;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
     background: linear-gradient(135deg, color-mix(in srgb, #22c55e 85%, #065f46) 0%, #22c55e 25%, color-mix(in srgb, #22c55e 100%, #a7f3d0) 50%, #22c55e 75%, color-mix(in srgb, #22c55e 85%, #065f46) 100%);
     box-shadow: 0 4px 14px color-mix(in srgb, #22c55e 45%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
     transition: transform 200ms, filter 200ms;
