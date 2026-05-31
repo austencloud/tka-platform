@@ -194,6 +194,13 @@
 
         {#if level > 1}
           <TurnIntensityCard currentIntensity={turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => (turnIntensity = v)} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
+        {:else}
+          <!-- Locked slot: keeps the grid a clean rectangle AND signals progressive disclosure. -->
+          <div class="locked-tile" style:grid-column="span 2">
+            <i class="fas fa-lock"></i>
+            <span class="lk-title">Max Turns</span>
+            <span class="lk-hint">Level 2 unlocks</span>
+          </div>
         {/if}
 
         <BaseCard title="Orientation" currentValue={orientSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showOrient = !showOrient)} />
@@ -209,7 +216,7 @@
         <StepperCard title="Dashes" currentValue={DASH.indexOf(dashes)} minValue={0} maxValue={2} description="FREQUENCY" formatValue={(i: number) => DASH_LABEL[i]} color={STYLE_COLORS.dashes.color} shadowColor={STYLE_COLORS.dashes.shadow} gridColumnSpan={2} onIncrement={() => (dashes = stepArr(DASH, dashes, 1))} onDecrement={() => (dashes = stepArr(DASH, dashes, -1))} />
 
         <!-- Generate -->
-        <button class="generate" style:grid-column="span 6" onclick={generate}>
+        <button class="generate" style:grid-column="1 / -1" onclick={generate}>
           <i class="fas fa-dice"></i>
           <span>{wordMode ? `Generate ${drawCount} variations` : `Generate ${drawCount}`}</span>
         </button>
@@ -312,6 +319,18 @@
   .card-grid :global(.base-card .card-value) { font-size: 24px !important; line-height: 1.15 !important; }
   .card-grid :global(.option-label) { font-size: 17px !important; }
   .card-grid :global(.card-title) { font-size: 11px !important; letter-spacing: 0.8px !important; }
+
+  /* locked turns slot — same footprint as a card, visually inactive */
+  .locked-tile {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+    border-radius: 16px; padding: 10px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1.5px dashed rgba(255, 255, 255, 0.14);
+    color: rgba(255, 255, 255, 0.4);
+  }
+  .locked-tile i { font-size: 17px; opacity: 0.7; }
+  .lk-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; }
+  .lk-hint { font-size: 10px; letter-spacing: 0.3px; opacity: 0.75; }
 
   /* word edit tile mirrors the base-card look while typing */
   .word-edit {
