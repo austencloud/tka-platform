@@ -28,7 +28,7 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
+import { hydrate, ensureComposition } from "$lib/shared/foundation/services/sequence-hydrator";
 import {
   firestoreGet,
   firestoreList,
@@ -40,13 +40,12 @@ import {
 } from "$lib/shared/library/domain/library-schemas";
 import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 import type { AchievementManager } from '$lib/shared/gamification/services/achievement-manager'
-import type { OrientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
+import { detectOrientationCycle } from "$lib/shared/create/services/OrientationCycleDetector";
 import type { IPublicIndexSyncer as PublicIndexSyncer } from "$lib/shared/library/services/IPublicIndexSyncer";
 import type { ConflictResolver } from "$lib/shared/offline/services/conflict-resolver";
 import { computeHash } from "$lib/shared/library/services/sequence-content-hasher";
 import { getTagMigrator } from "$lib/shared/library/getTagMigrator";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SequenceHydrator } from '$lib/shared/foundation/services/sequence-hydrator'
 import type {
   LibraryStats, LibraryQueryOptions } from "$lib/shared/library/domain/library-contract-types";
 import type {
@@ -95,7 +94,6 @@ export class LibraryRepository {
 
   constructor(
     private achievementService: AchievementManager,
-    private orientationCycleDetector: OrientationCycleDetector,
     private publicIndexSyncer: PublicIndexSyncer,
     private conflictResolver?: ConflictResolver
   ) {
@@ -379,8 +377,7 @@ export class LibraryRepository {
     // Detect orientation cycle count for circular sequences (sync CPU operation)
     if (libSeq.isCircular) {
       try {
-        const cycleResult =
-          this.orientationCycleDetector.detectOrientationCycle(libSeq);
+        const cycleResult = detectOrientationCycle(libSeq);
         libSeq = {
           ...libSeq,
           orientationCycleCount: cycleResult.cycleCount,
@@ -398,8 +395,7 @@ export class LibraryRepository {
     // compositional data - even if the sequence was modified via the old
     // steps-based mutation API.
     try {
-      const hydrator = getSequenceHydrator();
-      libSeq = hydrator.ensureComposition(libSeq) as LibrarySequence;
+      libSeq = ensureComposition(libSeq) as LibrarySequence;
     } catch {
       // Composition services not available (e.g. during SSR or early boot).
       // Save without compositional fields - the migration script can backfill.
@@ -578,8 +574,7 @@ export class LibraryRepository {
 
     // Hydrate: derive steps from compositional fields if present
     try {
-      const hydrator = getSequenceHydrator();
-      return hydrator.hydrate(seq) as LibrarySequence;
+      return hydrate(seq) as LibrarySequence;
     } catch {
       return seq;
     }
@@ -649,8 +644,7 @@ export class LibraryRepository {
         console.warn("[LibraryRepository] Visibility changed but publicIndexSyncer is null - public gallery will not reflect this change.", { sequenceId, newVisibility: updates.visibility });
       } else if (updates.visibility === "public") {
         // Ensure compositional fields are fresh before publishing
-        const hydrator = getSequenceHydrator();
-        const compositionReady = { ...updated, ...hydrator.ensureComposition(updated) };
+        const compositionReady = { ...updated, ...ensureComposition(updated) };
         this.publicIndexSyncer
           .syncToPublicIndex(compositionReady, userId)
           .catch((error) => {
@@ -805,21 +799,12 @@ export class LibraryRepository {
     // Without this, sequences saved after f0f9928ae (which stopped persisting
     // steps to Firestore) would have empty steps arrays, causing the browse
     // gallery to miscalculate aspect ratios and show black bars.
-    let hydrator: SequenceHydrator | null = null;
-    try {
-      hydrator = getSequenceHydrator();
-    } catch {
-      // Hydrator not available - steps will remain as loaded from Firestore
-    }
-
     snapshot.forEach((docSnap) => {
       let seq = this.mapDocToLibrarySequence(docSnap.data(), docSnap.id);
-      if (hydrator) {
-        try {
-          seq = hydrator.hydrate(seq) as LibrarySequence;
-        } catch {
-          // Hydration failed for this sequence - use raw data
-        }
+      try {
+        seq = hydrate(seq) as LibrarySequence;
+      } catch {
+        // Hydration failed for this sequence - use raw data
       }
       sequences.push(seq);
     });
@@ -942,17 +927,11 @@ export class LibraryRepository {
           q,
           (snapshot) => {
             const sequences: LibrarySequence[] = [];
-            let snapshotHydrator: SequenceHydrator | null = null;
-            try {
-              snapshotHydrator = getSequenceHydrator();
-            } catch {
-              // Hydrator not available
-            }
             snapshot.forEach((docSnap) => {
               let serverSeq = { ...this.mapDocToLibrarySequence(docSnap.data(), docSnap.id), ownerId: userId } as LibrarySequence;
-              if (snapshotHydrator) {
+              {
                 try {
-                  serverSeq = snapshotHydrator.hydrate(serverSeq) as LibrarySequence;
+                  serverSeq = hydrate(serverSeq) as LibrarySequence;
                 } catch {
                   // Hydration failed - use raw data
                 }

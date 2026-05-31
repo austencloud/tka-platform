@@ -5,7 +5,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { OrientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
+import { detectOrientationCycle } from "$lib/shared/create/services/OrientationCycleDetector";
 import {
   updateStartOrientations,
   updateEndOrientations,
@@ -15,12 +15,8 @@ import {
 } from "$lib/shared/foundation/domain/models/SequenceData";
 
 export class OrientationCycleExtender {
-  constructor(
-    private readonly cycleDetector: OrientationCycleDetector
-  ) {}
-
   extendIfNeeded(sequence: SequenceData): SequenceData {
-    const result = this.cycleDetector.detectOrientationCycle(sequence);
+    const result = detectOrientationCycle(sequence);
 
     if (result.cycleCount === 1) {
       return updateSequenceData(sequence, { orientationCycleCount: 1 });
@@ -62,8 +58,4 @@ export class OrientationCycleExtender {
   }
 }
 
-import { orientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
-
-export const orientationCycleExtender = new OrientationCycleExtender(
-  orientationCycleDetector
-);
+export const orientationCycleExtender = new OrientationCycleExtender();

@@ -1,6 +1,5 @@
 import { LibraryRepository } from './services/LibraryRepository';
 import { getAchievementManager } from '$lib/shared/gamification/get-achievement-manager';
-import { getOrientationCycleDetector } from '$lib/shared/create/getOrientationCycleDetector';
 import { getConflictResolver } from '$lib/shared/offline/get-conflict-resolver';
 import type { IPublicIndexSyncer } from './services/IPublicIndexSyncer';
 
@@ -27,7 +26,6 @@ export function getLibraryRepository(): LibraryRepository {
   }
   return instance ??= new LibraryRepository(
     getAchievementManager(),
-    getOrientationCycleDetector(),
     publicIndexSyncerFactory(),
     getConflictResolver()
   );

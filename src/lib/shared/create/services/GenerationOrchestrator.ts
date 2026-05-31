@@ -244,7 +244,6 @@ import { BrowserVariationProvider } from "$lib/shared/create/services/BrowserVar
 import { BuildResultTransformer } from "$lib/shared/create/services/BuildResultTransformer";
 import { sequenceMetadataManager } from "$lib/shared/create/services/sequence-metadata-manager";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
-import { orientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
 
 const browserVariationProvider = new BrowserVariationProvider(
   letterQueryHandler
@@ -252,8 +251,7 @@ const browserVariationProvider = new BrowserVariationProvider(
 
 const buildResultTransformer = new BuildResultTransformer(
   sequenceMetadataManager,
-  reversalDetector,
-  orientationCycleDetector
+  reversalDetector
 );
 
 export const generationOrchestrator = new GenerationOrchestrator(

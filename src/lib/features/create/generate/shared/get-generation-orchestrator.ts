@@ -4,7 +4,6 @@ import { BrowserVariationProvider } from './services/browser-variation-provider'
 import { BuildResultTransformer } from './services/build-result-transformer';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/letter-query-handler';
 import { reversalDetector } from '$lib/shared/create/services/reversal-detector';
-import { getOrientationCycleDetector } from '$lib/features/create/generate/circular/get-orientation-cycle-detector';
 import { getSequenceMetadataManager } from './get-sequence-metadata-manager';
 
 let instance: GenerationOrchestrator | null = null;
@@ -15,7 +14,7 @@ export function getGenerationOrchestrator(): GenerationOrchestrator {
 		const metadataManager = getSequenceMetadataManager();
 		instance = new GenerationOrchestrator(
 			new BrowserVariationProvider(letterQueryHandler),
-			new BuildResultTransformer(metadataManager, reversalDetector, getOrientationCycleDetector()),
+			new BuildResultTransformer(metadataManager, reversalDetector),
 			metadataManager
 		);
 	}

@@ -21,121 +21,112 @@ export interface OrientationCycleResult {
   redOrientations: Orientation[];
 }
 
-export class OrientationCycleDetector {
+export function detectOrientationCycle(
+  sequence: SequenceData
+): OrientationCycleResult {
+  const steps = sequence.steps;
 
-  detectOrientationCycle(sequence: SequenceData): OrientationCycleResult {
-    const steps = sequence.steps;
-
-    if (!steps || steps.length === 0) {
-      return {
-        cycleCount: 1,
-        blueOrientations: [Orientation.IN],
-        redOrientations: [Orientation.IN],
-      };
-    }
-
-    const startOrientations = this.getStartingOrientations(sequence);
-
-    const blueOrientations: Orientation[] = [startOrientations.blue];
-    const redOrientations: Orientation[] = [startOrientations.red];
-
-    let currentBlue = startOrientations.blue;
-    let currentRed = startOrientations.red;
-
-    for (let rep = 1; rep <= 4; rep++) {
-      // Step through each beat, recalculating orientations from the accumulated
-      // current orientation. We can't just re-read stored endOrientation because
-      // those values are fixed from the original pass - on subsequent passes the
-      // start orientations differ, producing different end orientations.
-      for (const step of steps) {
-        const blueMotion = step.motions.blue;
-        const redMotion = step.motions.red;
-
-        if (blueMotion) {
-          const adjusted = { ...blueMotion, startOrientation: currentBlue };
-          currentBlue = calculateEndOrientation(
-            adjusted,
-            MotionColor.BLUE
-          );
-        }
-        if (redMotion) {
-          const adjusted = { ...redMotion, startOrientation: currentRed };
-          currentRed = calculateEndOrientation(
-            adjusted,
-            MotionColor.RED
-          );
-        }
-      }
-
-      blueOrientations.push(currentBlue);
-      redOrientations.push(currentRed);
-
-      // Check if we're back to starting orientation
-      if (
-        currentBlue === startOrientations.blue &&
-        currentRed === startOrientations.red
-      ) {
-        return {
-          cycleCount: rep as 1 | 2 | 4,
-          blueOrientations,
-          redOrientations,
-        };
-      }
-    }
-
-    // If we haven't returned after 4 reps, something is wrong
-    // Default to 4 (maximum cycle count)
-    console.warn(
-      `Sequence ${sequence.id} did not return to starting orientation after 4 repetitions`
-    );
+  if (!steps || steps.length === 0) {
     return {
-      cycleCount: 4,
-      blueOrientations,
-      redOrientations,
-      };
-      }
-
-      private getStartingOrientations(sequence: SequenceData): {
-      blue: Orientation;
-      red: Orientation;
-      } {
-    // Try start position first
-    const startPos = sequence.startPosition || sequence.startingPosition;
-
-    if (startPos && this.isStartPositionData(startPos)) {
-      const blueMotion = startPos.motions?.blue;
-      const redMotion = startPos.motions?.red;
-
-      return {
-        blue: blueMotion?.startOrientation ?? Orientation.IN,
-        red: redMotion?.startOrientation ?? Orientation.IN,
-      };
-    }
-
-    // Fall back to first beat if no start position
-    const firstStep = sequence.steps[0];
-    if (firstStep) {
-      const blueMotion = firstStep.motions?.blue;
-      const redMotion = firstStep.motions?.red;
-
-      return {
-        blue: blueMotion?.startOrientation ?? Orientation.IN,
-        red: redMotion?.startOrientation ?? Orientation.IN,
-      };
-    }
-
-    // Default to IN
-    return {
-      blue: Orientation.IN,
-      red: Orientation.IN,
+      cycleCount: 1,
+      blueOrientations: [Orientation.IN],
+      redOrientations: [Orientation.IN],
     };
   }
 
-  private isStartPositionData(
-    data: StartPositionData | StepData
-  ): data is StartPositionData {
-    return "isStartPosition" in data && data.isStartPosition === true;
+  const startOrientations = getStartingOrientations(sequence);
+
+  const blueOrientations: Orientation[] = [startOrientations.blue];
+  const redOrientations: Orientation[] = [startOrientations.red];
+
+  let currentBlue = startOrientations.blue;
+  let currentRed = startOrientations.red;
+
+  for (let rep = 1; rep <= 4; rep++) {
+    // Step through each beat, recalculating orientations from the accumulated
+    // current orientation. We can't just re-read stored endOrientation because
+    // those values are fixed from the original pass - on subsequent passes the
+    // start orientations differ, producing different end orientations.
+    for (const step of steps) {
+      const blueMotion = step.motions.blue;
+      const redMotion = step.motions.red;
+
+      if (blueMotion) {
+        const adjusted = { ...blueMotion, startOrientation: currentBlue };
+        currentBlue = calculateEndOrientation(adjusted, MotionColor.BLUE);
+      }
+      if (redMotion) {
+        const adjusted = { ...redMotion, startOrientation: currentRed };
+        currentRed = calculateEndOrientation(adjusted, MotionColor.RED);
+      }
+    }
+
+    blueOrientations.push(currentBlue);
+    redOrientations.push(currentRed);
+
+    // Check if we're back to starting orientation
+    if (
+      currentBlue === startOrientations.blue &&
+      currentRed === startOrientations.red
+    ) {
+      return {
+        cycleCount: rep as 1 | 2 | 4,
+        blueOrientations,
+        redOrientations,
+      };
+    }
   }
+
+  // If we haven't returned after 4 reps, something is wrong
+  // Default to 4 (maximum cycle count)
+  console.warn(
+    `Sequence ${sequence.id} did not return to starting orientation after 4 repetitions`
+  );
+  return {
+    cycleCount: 4,
+    blueOrientations,
+    redOrientations,
+  };
 }
 
-export const orientationCycleDetector = new OrientationCycleDetector();
+function getStartingOrientations(sequence: SequenceData): {
+  blue: Orientation;
+  red: Orientation;
+} {
+  // Try start position first
+  const startPos = sequence.startPosition || sequence.startingPosition;
+
+  if (startPos && isStartPositionData(startPos)) {
+    const blueMotion = startPos.motions?.blue;
+    const redMotion = startPos.motions?.red;
+
+    return {
+      blue: blueMotion?.startOrientation ?? Orientation.IN,
+      red: redMotion?.startOrientation ?? Orientation.IN,
+    };
+  }
+
+  // Fall back to first beat if no start position
+  const firstStep = sequence.steps[0];
+  if (firstStep) {
+    const blueMotion = firstStep.motions?.blue;
+    const redMotion = firstStep.motions?.red;
+
+    return {
+      blue: blueMotion?.startOrientation ?? Orientation.IN,
+      red: redMotion?.startOrientation ?? Orientation.IN,
+    };
+  }
+
+  // Default to IN
+  return {
+    blue: Orientation.IN,
+    red: Orientation.IN,
+  };
+}
+
+function isStartPositionData(
+  data: StartPositionData | StepData
+): data is StartPositionData {
+  return "isStartPosition" in data && data.isStartPosition === true;
+}

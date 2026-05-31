@@ -28,7 +28,7 @@ import type { GenerationOptions } from "$lib/shared/foundation/domain/models/gen
 import type { sequenceMetadataManager as SequenceMetadataManagerSingleton } from "$lib/shared/create/services/sequence-metadata-manager";
 type SequenceMetadataManager = typeof SequenceMetadataManagerSingleton;
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
-import type { OrientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
+import { detectOrientationCycle } from "$lib/shared/create/services/OrientationCycleDetector";
 import { PropContinuity } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import {
@@ -48,8 +48,7 @@ import type { LOOPType as AppLOOPType } from "$lib/shared/foundation/domain/mode
 export class BuildResultTransformer {
   constructor(
     private readonly metadataManager: SequenceMetadataManager,
-    private readonly reversalDetector: ReversalDetector,
-    private readonly orientationCycleDetector: OrientationCycleDetector
+    private readonly reversalDetector: ReversalDetector
   ) {}
 
   async convertToSequenceData(
@@ -119,8 +118,7 @@ export class BuildResultTransformer {
 
     // For circular sequences, detect orientation cycle count
     if (isCircular) {
-      const cycleResult =
-        this.orientationCycleDetector.detectOrientationCycle(withReversals);
+      const cycleResult = detectOrientationCycle(withReversals);
 
       if (cycleResult.cycleCount > 1) {
         const { updateSequenceData } = await import(
