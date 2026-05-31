@@ -1,7 +1,8 @@
 import { z } from "zod";
-// Leaf import (pure zod), not the barrel: keeps this domain module free of the
-// firebase/firestore runtime that the barrel transitively pulls in.
-import { firestoreDate } from "$lib/shared/firestore/firestore-helpers";
+// Pure-zod leaf module (no firebase/auth): keeps this domain worker-safe. The
+// barrel AND firestore-helpers both transitively import authState → $app/navigation
+// → SvelteKit client, which crashes the composition worker.
+import { firestoreDate } from "$lib/shared/firestore/firestore-date";
 import type { Timestamp } from "firebase/firestore";
 
 /** A single base adjustment, pre directional-tuple rotation. */

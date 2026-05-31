@@ -1,4 +1,3 @@
-import { z } from "zod";
 import {
   collection,
   doc,
@@ -8,12 +7,10 @@ import {
 } from "firebase/firestore";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 
-export const firestoreDate = z.preprocess((val) => {
-  if (val && typeof val === "object" && "toDate" in val) {
-    return (val as { toDate(): Date }).toDate();
-  }
-  return val;
-}, z.coerce.date());
+// firestoreDate lives in its own worker-safe module (no auth/firebase-client
+// import). Re-exported here so existing firestore-helpers / barrel consumers
+// keep working unchanged.
+export { firestoreDate } from "./firestore-date";
 
 export function stripUndefined<T extends Record<string, unknown>>(
   obj: T,

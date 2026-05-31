@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { firestoreDate } from "$lib/shared/firestore";
+// Worker-safe leaf (no auth/firebase-client): the barrel pulls authState → $app/navigation.
+import { firestoreDate } from "$lib/shared/firestore/firestore-date";
 
 export const PropGeometryAdjustmentSchema = z
   .object({
