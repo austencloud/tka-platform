@@ -9,11 +9,11 @@ that adapt to dark/light mode automatically.
 -->
 <script lang="ts">
   import type { TnDMode } from "../domain/enums/pictograph-enums";
-  import { LetterType } from "../../../foundation/domain/models/LetterType";
+  import { LetterType } from "../../../foundation/domain/models/letter-type";
   import {
     type Letter,
     getLetterType,
-  } from "../../../foundation/domain/models/Letter";
+  } from "../../../foundation/domain/models/letter";
 
   let {
     tndMode = null,

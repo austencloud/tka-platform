@@ -4,12 +4,12 @@
   import { PerformerRig, Plane, PlaneMode, userProportionsState } from "@austencloud/scene-3d";
   import type { GridMode } from "@austencloud/scene-3d";
   import { OrbitControls } from "@threlte/extras";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     createAvatarInstanceState,
     makeStandaloneDeps,
   } from "$lib/shared/3d/state/avatar-instance-state.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
   import type { BackgroundType } from "@austencloud/backgrounds";
   import Environment3D from "$lib/shared/3d/environments/components/Environment3D.svelte";

@@ -1,15 +1,15 @@
 <!-- StepGrid.svelte - Responsive step grid with display animations -->
 <script lang="ts">
-  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-  import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/TimeSignature";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { createStepData } from "$lib/shared/create/factories/createStepData";
+  import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+  import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/time-signature";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { createStepData } from "$lib/shared/create/factories/create-step-data";
   import { onMount } from "svelte";
   import {
     createStepGridDisplayState,

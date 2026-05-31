@@ -7,11 +7,11 @@ embedded within the elemental shape. Only displays for Type1 letters.
 -->
 <script lang="ts">
   import { type ElementalType, getElementImagePath } from "../domain/enums/pictograph-enums";
-  import { LetterType } from "../../../foundation/domain/models/LetterType";
+  import { LetterType } from "../../../foundation/domain/models/letter-type";
   import {
     type Letter,
     getLetterType,
-  } from "../../../foundation/domain/models/Letter";
+  } from "../../../foundation/domain/models/letter";
 
   let {
     elementalType = null,

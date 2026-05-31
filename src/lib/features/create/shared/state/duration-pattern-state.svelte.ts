@@ -13,7 +13,7 @@ import {
   deletePattern as dpDeletePattern,
 } from "../services/duration-pattern-manager";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 const logger = createComponentLogger("DurationPatternState");
 

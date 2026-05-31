@@ -17,17 +17,17 @@
 <script lang="ts">
   import "./drawer/Drawer.css";
   import { onMount, onDestroy, untrack, type Snippet } from "svelte";
-  import { responsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
-  import { SwipeToDismiss } from "./drawer/SwipeToDismiss";
-  import { FocusTrap } from "./drawer/FocusTrap";
-  import { SnapPoints, type SnapPointValue } from "./drawer/SnapPoints";
-  import { DrawerEffects } from "./drawer/DrawerEffects";
+  import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
+  import { SwipeToDismiss } from "./drawer/swipe-to-dismiss";
+  import { FocusTrap } from "./drawer/focus-trap";
+  import { SnapPoints, type SnapPointValue } from "./drawer/snap-points";
+  import { DrawerEffects } from "./drawer/drawer-effects";
   import {
     generateDrawerId,
     registerDrawer,
     unregisterDrawer,
     isTopDrawer,
-  } from "./drawer/DrawerStack";
+  } from "./drawer/drawer-stack";
 
   type CloseReason = "backdrop" | "escape" | "programmatic";
 

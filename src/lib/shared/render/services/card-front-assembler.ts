@@ -1,4 +1,4 @@
-import type { SequenceData } from "../../foundation/domain/models/SequenceData";
+import type { SequenceData } from "../../foundation/domain/models/sequence-data";
 import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
 import type { PictographVisibilityOptions } from "../utils/pictograph-to-svg";
 import type { RenderCanvas, LayerRenderOptions, LayerVisibility } from "./types";
@@ -8,7 +8,7 @@ import { calculateLayout } from "./layout-calculator";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { drawSmartCellBorders } from "./cell-border-renderer";
 import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
-import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/getLoopDisplayResolver";
+import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import {
   RESERVED_ORIENTATION_PRIMITIVES,

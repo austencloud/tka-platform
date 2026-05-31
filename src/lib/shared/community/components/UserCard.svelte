@@ -6,7 +6,7 @@
    */
 
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
-  import { ROLE_DISPLAY } from "$lib/shared/auth/domain/models/UserRole";
+  import { ROLE_DISPLAY } from "$lib/shared/auth/domain/models/user-role";
 
   interface Props {
     user: UserProfile;

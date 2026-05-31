@@ -20,9 +20,9 @@
 -->
 <script lang="ts">
 
-import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
-import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/getVideoExportOrchestrator";
-import { getVideoExporter } from "$lib/shared/animation-engine/getVideoExporter";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
+import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
+import { getVideoExporter } from "$lib/shared/animation-engine/get-video-exporter";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { replaceState } from "$app/navigation";
   import AnimationShareDrawer from "../animation-engine/components/AnimationShareDrawer.svelte";
@@ -30,9 +30,9 @@ import { getVideoExporter } from "$lib/shared/animation-engine/getVideoExporter"
 import type { IVideoExportOrchestrator, VideoExportProgress, VideoExportFormat } from "$lib/shared/compose/domain/video-export-types";
   import type { VideoExporter } from "$lib/shared/animation-engine/services/video-exporter";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
   import {
     getCurrentAnimationPanelState,
     updateAnimationPanelState,
@@ -40,7 +40,7 @@ import type { IVideoExportOrchestrator, VideoExportProgress, VideoExportFormat }
     closeSheet,
     onRouteChange,
   } from "$lib/shared/navigation/services/sheet-router";
-  import type { SequenceData } from "../foundation/domain/models/SequenceData";
+  import type { SequenceData } from "../foundation/domain/models/sequence-data";
   import type { HapticFeedback } from "../application/services/haptic-feedback";
   import { onMount, onDestroy } from "svelte";
   import {

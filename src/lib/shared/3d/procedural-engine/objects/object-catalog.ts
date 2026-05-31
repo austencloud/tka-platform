@@ -6,7 +6,7 @@
  * with optional GLTF model path for higher-quality versions.
  */
 
-import type { PlacedObjectType } from "./PlacedObject";
+import type { PlacedObjectType } from "./placed-object";
 
 export interface ObjectDefinition {
 	key: string;

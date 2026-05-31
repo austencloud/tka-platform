@@ -5,7 +5,7 @@
  * Based on the legacy desktop ShiftLocationCalculator.
  */
 
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 
 function createPairKey(first: GridLocation, second: GridLocation): string {

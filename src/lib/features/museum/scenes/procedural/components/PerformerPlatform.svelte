@@ -10,11 +10,11 @@
   import { T } from "@threlte/core";
   import { Color } from "three";
   import type { ExhibitSlot } from "../domain/museum-types";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { PerformerRig } from "@austencloud/scene-3d";
   import { Plane } from "@austencloud/scene-3d";
   import { PlaneMode } from "@austencloud/scene-3d";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { createAvatarInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   interface Props {

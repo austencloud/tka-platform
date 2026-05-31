@@ -5,7 +5,7 @@
  * All persistence-aware concerns are delegated to the persistence controller.
  */
 
-import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
+import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 import type { SequenceState } from "../sequence-state-orchestrator.svelte";
 import type { CreateModulePersistenceController } from "./persistence-controller.svelte";

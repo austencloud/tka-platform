@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type { MessageReaction } from "$lib/shared/messaging/domain/models/message-models";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
   let {
     reactions,

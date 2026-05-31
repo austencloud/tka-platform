@@ -5,7 +5,7 @@
  * following the microservices architecture pattern.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type {
   BrowseNavigationConfig,
   BrowseNavigationItem,

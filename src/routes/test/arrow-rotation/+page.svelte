@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     GridLocation,
     GridMode,
@@ -18,8 +18,8 @@
     MotionColor,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import { Letter } from "$lib/shared/foundation/domain/models/letter";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
   // Helper to convert lowercase location string to GridLocation enum
   function toGridLocation(loc: string): GridLocation {

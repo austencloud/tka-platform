@@ -11,7 +11,7 @@
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 
   // Background types with 3D environment support
   // Others will show but with "no 3D scene" indicator

@@ -4,8 +4,8 @@ OptionSection.svelte - A section of options (header + grid)
 Single responsibility: Combine header and grid for a letter type section.
 -->
 <script lang="ts">
-  import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PreparedPictographData } from "$lib/shared/pictograph/option/prepared-pictograph-data";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import OptionSectionHeader from "./OptionSectionHeader.svelte";
   import OptionGrid from "./OptionGrid.svelte";
 

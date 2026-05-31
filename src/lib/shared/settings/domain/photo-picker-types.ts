@@ -1,4 +1,4 @@
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export type PhotoSelectionType = "upload" | "google" | "facebook" | "generated";
 

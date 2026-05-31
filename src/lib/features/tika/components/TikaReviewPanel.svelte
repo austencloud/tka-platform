@@ -14,7 +14,7 @@
 	import { browser } from '$app/environment';
 	import * as tikaSessionRepository from '../services/tika-session-repository';
 	import { formatForAIReview } from '../services/tika-session-formatter';
-	import { authState } from '$lib/shared/auth/state/authState.svelte';
+	import { authState } from '$lib/shared/auth/state/auth-state.svelte';
 	import type { TikaSession, ReviewStatus } from '../domain/models/tika-conversation-models';
 	import CopyAsImageButton from '$lib/shared/foundation/ui/CopyAsImageButton.svelte';
 	import CopyForAIButton from '$lib/shared/foundation/ui/CopyForAIButton.svelte';

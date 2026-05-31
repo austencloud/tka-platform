@@ -6,7 +6,7 @@
 
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
-import { authState } from '$lib/shared/auth/state/authState.svelte';
+import { authState } from '$lib/shared/auth/state/auth-state.svelte';
 interface ReportQuerier {
 	getById(reportId: string): Promise<UserReport | null>;
 }

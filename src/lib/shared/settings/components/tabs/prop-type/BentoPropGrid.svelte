@@ -10,7 +10,7 @@
   - "inline": no border/background, used inside drawers that already provide a container
 -->
 <script lang="ts">
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     PROP_CATEGORIES,
     getBasePropType,
@@ -18,7 +18,7 @@
     getPropTypeDisplayInfo,
     isPropActive,
     getBasePropsByCategory,
-  } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { Popover } from "bits-ui";
   import { scale } from "svelte/transition";
   import { backOut, cubicOut } from "svelte/easing";

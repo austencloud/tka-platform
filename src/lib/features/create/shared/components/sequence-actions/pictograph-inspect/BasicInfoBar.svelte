@@ -6,8 +6,8 @@
    * keys) shown between the inspect modal header and body. Not a column, not
    * collapsible.
    */
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { formatBasicInfo, formatRotationOverrideKey } from "./formatters";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 

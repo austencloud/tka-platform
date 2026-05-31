@@ -16,10 +16,10 @@
  */
 
 // Type imports removed — value imports at bottom of file provide both type and value
-import type { ArrowPlacementData } from "../../positioning/placement/domain/ArrowPlacementData";
+import type { ArrowPlacementData } from "../../positioning/placement/domain/arrow-placement-data";
 import type { ArrowSvgData } from "../../../shared/domain/models/svg-models";
 import type { ArrowSvgLoadOptions } from "./types";
-import type { MotionData } from "../../../shared/domain/models/MotionData";
+import type { MotionData } from "../../../shared/domain/models/motion-data";
 import type { ThemeMode } from "../../../../utils/svg-color-utils";
 import { getAnimationVisibilityManager } from "../../../../animation-engine/state/animation-visibility-state.svelte";
 import { getArrowPath } from "./arrow-path-resolver";

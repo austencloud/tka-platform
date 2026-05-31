@@ -8,7 +8,7 @@
 import * as notificationPreferencesManager from "$lib/features/feedback/services/notification-preferences-manager";
 import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
   import { onMount } from "svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import type {
     NotificationPreferences,
     NotificationType,

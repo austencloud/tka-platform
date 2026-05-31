@@ -29,7 +29,7 @@
 
 import { Period } from "../domain/models/circular-models";
 import type { ILOOPExecutor } from "./ILOOPExecutor";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { VERTICAL_MIRROR_POSITION_MAP } from "../domain/constants/strict-loop-position-maps";
 

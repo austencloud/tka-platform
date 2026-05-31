@@ -5,7 +5,7 @@
  * Extracts handler logic from component to improve testability and maintainability.
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { CreateModuleState } from "../state/create-module-state.svelte";
 import type { PanelCoordinationState } from "../state/panel-coordination-state.svelte";
 import type { ConstructTabState } from "../state/construct-tab-state.svelte";
@@ -20,7 +20,7 @@ export interface ClearSequenceParams {
   panelState: PanelCoordinationState;
 }
 import type { StepOperator } from "$lib/features/create/shared/services/step-operator";
-import { executeClearSequenceWorkflow } from "$lib/shared/create/utils/clearSequenceWorkflow";
+import { executeClearSequenceWorkflow } from "$lib/shared/create/utils/clear-sequence-workflow";
 
 export class CreateModuleHandlers {
   constructor(

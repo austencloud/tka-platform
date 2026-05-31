@@ -6,7 +6,7 @@
  */
 
 import { GridLocation } from "../../../../grid/domain/enums/grid-enums";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
 
 export function calculateStaticLocation(motion: MotionData): GridLocation {
   const startLocation = motion.startLocation;

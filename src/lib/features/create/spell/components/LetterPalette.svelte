@@ -11,7 +11,7 @@ Haptic feedback on letter selection.
     GREEK_LETTER_PALETTE,
     GREEK_LETTER_DISPLAY,
   } from "$lib/shared/create/domain/spell-constants";
-  import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import { Letter } from "$lib/shared/foundation/domain/models/letter";
 
   let {
     onSelect,

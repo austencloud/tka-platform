@@ -1,7 +1,7 @@
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Plane, PlaneMode } from "@austencloud/scene-3d";
-import type { EffectType } from "$lib/shared/effects/domain/EffectsConfig";
+import type { EffectType } from "$lib/shared/effects/domain/effects-config";
 
 export interface DefaultPerformerSettings {
   prop: PropType;

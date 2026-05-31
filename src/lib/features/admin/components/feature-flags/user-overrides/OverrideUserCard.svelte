@@ -6,7 +6,7 @@
 
   import UserCard from "$lib/shared/community/components/UserCard.svelte";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
-  import type { UserFeatureOverrides } from "$lib/shared/auth/domain/models/FeatureFlag";
+  import type { UserFeatureOverrides } from "$lib/shared/auth/domain/models/feature-flag";
   import {
     getCachedOrFallbackColor,
     extractDominantColor,

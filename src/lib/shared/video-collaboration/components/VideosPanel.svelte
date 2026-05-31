@@ -8,11 +8,11 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
+  import type { CollaborativeVideo } from "../domain/collaborative-video";
   import { onMount } from "svelte";
   import CollaboratorAvatars from "./CollaboratorAvatars.svelte";
   import VideoUploadSheet from "./VideoUploadSheet.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   const {

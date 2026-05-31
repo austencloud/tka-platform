@@ -2,7 +2,7 @@
  * Co-exported types from retired interface contracts.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { Section } from '../domain/types';
 
 // === From ISheetRouter ===

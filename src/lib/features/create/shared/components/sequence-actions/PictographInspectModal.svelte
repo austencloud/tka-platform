@@ -5,9 +5,9 @@
   Designed for widescreen desktop use with easy copy-paste for AI agents.
 -->
 <script lang="ts">
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { generateOrientationKey } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/special-placement-ori-key-generator";
   import { deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
   import { calculateAllArrowPoints } from "$lib/shared/pictograph/arrow/orchestration/services/arrow-positioning-orchestrator";
@@ -15,7 +15,7 @@
   import { generateRotationAngleOverrideKey } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/rotation-angle-override-key-generator";
   import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 
-  import type { PipelineDiagnostics } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
+  import type { PipelineDiagnostics } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/pipeline-diagnostics";
   import { arrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-adjustment-calculator";
   import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator";
 

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildFrontComposeOptions } from "../build-front-compose-options";
 import type { PrintRenderOptions } from "../types";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 const SEQ: SequenceData = {
   id: "seq-1",

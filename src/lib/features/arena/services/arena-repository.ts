@@ -10,7 +10,7 @@
 
 import type { ArenaRating, ArenaVote, ArenaLeaderboardEntry, ArenaUserStats, ArenaEntry, } from "../domain/models/arena-models";
 import type { MatchupCandidate } from "./types";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
 import {
   INITIAL_MU,

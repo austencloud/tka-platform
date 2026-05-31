@@ -5,7 +5,7 @@
  * Lab settings are persisted via the app settings service for localStorage + Firebase sync.
  */
 
-import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import { BackgroundType } from "@austencloud/backgrounds";
 import {
   DEFAULT_COSMIC_SETTINGS,

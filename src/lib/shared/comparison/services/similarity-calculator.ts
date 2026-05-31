@@ -9,7 +9,7 @@
  * - Common subsequence detection
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SimilarityReport, CommonSubsequence, SimilarityBreakdown, QuickSimilarityResult, SimilarityOptions } from "./types";
 import type { StepSignatureGenerator } from "./step-signature-generator";
 import type { SequenceAligner } from "./sequence-aligner";

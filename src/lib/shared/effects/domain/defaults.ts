@@ -1,5 +1,5 @@
-import type { EffectsConfig } from "./EffectsConfig";
-import { EFFECTS_CONFIG_VERSION } from "./EffectsConfig";
+import type { EffectsConfig } from "./effects-config";
+import { EFFECTS_CONFIG_VERSION } from "./effects-config";
 
 export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   version: EFFECTS_CONFIG_VERSION,

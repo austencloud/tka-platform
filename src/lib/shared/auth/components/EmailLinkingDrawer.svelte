@@ -12,7 +12,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { Dialog as DialogPrimitive } from "bits-ui";
-  import { authState } from "../state/authState.svelte";
+  import { authState } from "../state/auth-state.svelte";
   import type { HapticFeedback } from "../../application/services/haptic-feedback";
   import { onMount, onDestroy } from "svelte";
   import {

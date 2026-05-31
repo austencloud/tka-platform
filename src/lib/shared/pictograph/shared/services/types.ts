@@ -26,9 +26,9 @@ export interface PictographRenderingState {
  * Used before rendering to eliminate per-component async calculations.
  */
 
-import type { PreparedPictographData } from "../domain/models/PreparedPictographData";
+import type { PreparedPictographData } from "../domain/models/prepared-pictograph-data";
 import type { ThemeMode } from "../../../utils/svg-color-utils";
-import type { PropType } from "../../prop/domain/enums/PropType";
+import type { PropType } from "../../prop/domain/enums/prop-type";
 
 // Re-export for convenience
 export type { PreparedPictographData };

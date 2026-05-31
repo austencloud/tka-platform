@@ -27,14 +27,14 @@ import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type {
   LibraryCollection,
   SystemCollectionType,
-} from "$lib/shared/library/domain/models/Collection";
+} from "$lib/shared/library/domain/models/collection";
 import {
   createCollection,
   createSystemCollection,
   isSystemCollection,
   SYSTEM_COLLECTION_IDS,
-} from "$lib/shared/library/domain/models/Collection";
-import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
+} from "$lib/shared/library/domain/models/collection";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import {
   getUserCollectionsPath,
   getUserCollectionPath,

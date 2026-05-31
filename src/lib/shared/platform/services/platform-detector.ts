@@ -1,5 +1,5 @@
 import { Capacitor } from "@capacitor/core";
-import { isDesktop } from "../../desktop/isDesktop";
+import { isDesktop } from "../../desktop/is-desktop";
 
 export function isNative(): boolean {
   return Capacitor.isNativePlatform();

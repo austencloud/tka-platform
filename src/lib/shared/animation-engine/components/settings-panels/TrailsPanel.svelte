@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { animationSettings } from "../../state/animation-settings-state.svelte";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
@@ -8,8 +8,8 @@
 		TAIL_LENGTH_MIN,
 		TAIL_LENGTH_MAX,
 		DEFAULT_TRAIL_SETTINGS,
-	} from "../../domain/types/TrailTypes";
-	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
+	} from "../../domain/types/trail-types";
+	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
 	import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
 	import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 

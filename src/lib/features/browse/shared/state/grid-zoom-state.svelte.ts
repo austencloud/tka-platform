@@ -9,7 +9,7 @@
  * Preserves state across HMR updates.
  */
 
-import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 
 const MIN_COLUMNS = 2;
 

@@ -43,7 +43,7 @@ import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-dis
 import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-import type { TipEffectMap } from '$lib/shared/animation-engine/domain/types/TipEffectTypes';
+import type { TipEffectMap } from '$lib/shared/animation-engine/domain/types/tip-effect-types';
 
 export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   private _isExporting = false;

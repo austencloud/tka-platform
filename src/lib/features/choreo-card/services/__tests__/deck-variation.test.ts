@@ -8,9 +8,9 @@ import {
   type Rng,
 } from "../deck-variation";
 import type { VariationConfig } from "../deck-variation";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 /** Deterministic rng that yields the given values in order, then 0. */
 function seededRng(values: number[]): Rng {

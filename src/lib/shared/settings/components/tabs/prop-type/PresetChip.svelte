@@ -6,9 +6,9 @@
   Desktop: Shows keyboard shortcut badge (1-9, 0)
 -->
 <script lang="ts">
-  import type { PropPreset } from "../../../domain/AppSettings";
-  import { getPropTypeDisplayInfo } from "./PropTypeRegistry";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropPreset } from "../../../domain/app-settings";
+  import { getPropTypeDisplayInfo } from "./prop-type-registry";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   const NO_ROTATE_PROPS = new Set([PropType.HAND]);
 

@@ -12,7 +12,7 @@
   import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
   import { messagingService } from "$lib/shared/messaging/services/messenger";
   import { inboxState } from "../../state/inbox-state.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";

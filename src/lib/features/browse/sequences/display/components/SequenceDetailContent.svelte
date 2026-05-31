@@ -11,25 +11,25 @@ Used by both desktop side panel and mobile slide-up overlay.
 <script lang="ts">
 
 import { isFavorite as checkIsFavorite, toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
-import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { SequenceDetailLoader } from "$lib/shared/browse/services/SequenceDetailLoader";
-  import type { VideoCountManager } from "$lib/shared/browse/services/VideoCountManager";
+  import type { SequenceDetailLoader } from "$lib/shared/browse/services/sequence-detail-loader";
+  import type { VideoCountManager } from "$lib/shared/browse/services/video-count-manager";
   import type { SequenceImageSharer } from "$lib/shared/share/services/sequence-image-sharer";
   import { getSequenceImageSharer } from "$lib/shared/share/get-sequence-image-sharer";
-  import type { ClaudeCodeCopier } from "$lib/shared/browse/services/ClaudeCodeCopier";
+  import type { ClaudeCodeCopier } from "$lib/shared/browse/services/claude-code-copier";
   import type { MediaType } from "$lib/shared/sequence-viewer/domain/types";
-  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import PropContextChip from "$lib/shared/sequence-viewer/components/PropContextChip.svelte";
   import { resolvePresentation } from "$lib/shared/sequence-viewer/services/presentation-resolver";
 import type { ViewingContext } from "$lib/shared/sequence-viewer/services/presentation-resolver";
-  import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
-  import { getSequenceDetailLoader } from "$lib/shared/browse/getSequenceDetailLoader";
-  import { getVideoCountManager } from "$lib/shared/browse/getVideoCountManager";
-  import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
+  import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
+  import { getSequenceDetailLoader } from "$lib/shared/browse/get-sequence-detail-loader";
+  import { getVideoCountManager } from "$lib/shared/browse/get-video-count-manager";
+  import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
   import { onMount } from "svelte";
   import { untrack } from "svelte";
   import { getAuthSync } from "$lib/shared/auth/firebase";
@@ -52,9 +52,9 @@ import type { ViewingContext } from "$lib/shared/sequence-viewer/services/presen
   // State imports
   import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
   import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-state.svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // Services (resolved in onMount)

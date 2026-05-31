@@ -12,14 +12,14 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { BackgroundType } from "@austencloud/backgrounds";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { savePropPreferences } from "$lib/shared/community/services/prop-preference-persister";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { FirstRunStep } from "../../domain/first-run-types";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
   import WelcomeStep from "./steps/WelcomeStep.svelte";
   import DisplayNameStep from "./steps/DisplayNameStep.svelte";

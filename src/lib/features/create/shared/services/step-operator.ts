@@ -7,13 +7,13 @@
  * Domain: Create module - Beat Manipulation for Sequence Construction
  */
 
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type {
   ICreateModuleState,
   BatchEditChanges,
 } from "../types/create-module-types";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 // Import handlers
 import { removeStep } from "./step-operations/step-removal-handler";

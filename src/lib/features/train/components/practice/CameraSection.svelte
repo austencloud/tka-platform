@@ -10,13 +10,13 @@
   import GridOverlay from "../GridOverlay.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { TrainMode } from "../../domain/enums/train-enums";
-  import type { DetectionFrame } from "$lib/shared/train/domain/DetectionFrame";
+  import type { DetectionFrame } from "$lib/shared/train/domain/detection-frame";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getPositionDetector } from "$lib/features/train/get-position-detector";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   interface Props {
     isCameraReady?: boolean;

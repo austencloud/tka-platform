@@ -11,13 +11,13 @@
 
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
 import type { ITrailCapturer as TrailCapturer } from "$lib/shared/animation-engine/services/ITrailCapturer";
-import type { TrailPoint, TrailSettings } from "../domain/types/TrailTypes";
-import { TrailMode } from "../domain/types/TrailTypes";
+import type { TrailPoint, TrailSettings } from "../domain/types/trail-types";
+import { TrailMode } from "../domain/types/trail-types";
 import type { AnimationPathCache } from "$lib/shared/animation-engine/services/animation-path-cache";
 import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/frame-budget-monitor'
 import type { WebGLFireRenderer } from "./fire/web-gl-fire-renderer";
 import type { CharcoalSparkRenderer } from "./charcoal/charcoal-spark-renderer";
-import type { RenderedPropTransform, PropTipData } from "../domain/types/FireTypes";
+import type { RenderedPropTransform, PropTipData } from "../domain/types/fire-types";
 import type { FireTipTrackerConfig } from "./fire-tip-tracker";
 import type { FireTipTracker } from "./fire-tip-tracker";
 import type { WebGLLedRenderer } from '$lib/shared/animation-engine/services/led/web-gl-led-renderer'
@@ -28,13 +28,13 @@ import type {
   RenderLoopConfig,
   RenderFrameParams,
 } from "./IAnimationRenderLoop";
-import type { EffectRendererLike } from "./effects/EffectRenderer";
-import { QualityTier } from "../domain/types/QualityTypes";
+import type { EffectRendererLike } from "./effects/effect-renderer";
+import { QualityTier } from "../domain/types/quality-types";
 import { effectErrorSignal } from "../state/effect-error-signal.svelte";
-import { resolveEffect } from "../domain/types/TipEffectTypes";
-import type { EffectType, TipEffectMap } from "../domain/types/TipEffectTypes";
+import { resolveEffect } from "../domain/types/tip-effect-types";
+import type { EffectType, TipEffectMap } from "../domain/types/tip-effect-types";
 import type { FireTipUpdateResult } from './fire-tip-tracker';
-import type { FireFrameInput } from '../domain/types/FireTypes';
+import type { FireFrameInput } from '../domain/types/fire-types';
 
 // ============================================================================
 // Longtask observer singleton - one PerformanceObserver shared across every

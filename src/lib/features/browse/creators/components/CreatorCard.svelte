@@ -14,7 +14,7 @@
   import { formatTimeAgo } from "$lib/shared/i18n/i18n-formatters";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { isGoogleAvatarUrl } from "$lib/shared/foundation/utils/google-avatar";
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 
   interface Props {
     user: EnhancedUserProfile;

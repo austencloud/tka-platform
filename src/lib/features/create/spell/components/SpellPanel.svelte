@@ -12,7 +12,7 @@ Same functionality, different density.
   import { onMount } from "svelte";
   import type { SequenceState } from "$lib/features/create/shared/state/sequence-state-orchestrator.svelte";
   import type { SpellTabState } from "../state/spell-tab-state.svelte";
-import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { VariationExplorationOrchestrator } from "../services/variation-exploration-orchestrator";
@@ -22,7 +22,7 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import { UndoOperationType } from "../../shared/services/undo-manager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import WordInput from "./WordInput.svelte";
   import SpellSettingsBar from "./SpellSettingsBar.svelte";
   import SpellInputToolbar from "./SpellInputToolbar.svelte";

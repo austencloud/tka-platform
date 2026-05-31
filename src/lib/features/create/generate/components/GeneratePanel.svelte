@@ -11,7 +11,7 @@ Card-based architecture with integrated Generate button:
 - Tour: Guided tour triggered from help button or ButtonPanel
 -->
 <script lang="ts">
-  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SequenceState } from "$lib/features/create/shared/state/sequence-state-orchestrator.svelte";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
@@ -39,9 +39,9 @@ Card-based architecture with integrated Generate button:
     type GeneratorVoiceRef,
   } from "$lib/shared/create/state/generator-voice-ref.svelte";
   import { uiConfigToGenerationOptions } from "../shared/utils/config-mapper";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   // Get context for panel coordination (optional - may not be available in all contexts)
   const context = tryGetCreateModuleContext();
   const panelState = context?.panelState;

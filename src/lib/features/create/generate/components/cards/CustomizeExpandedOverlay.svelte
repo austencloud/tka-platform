@@ -44,7 +44,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   import { getTemplateById } from "$lib/features/create/shared/domain/templates/duration-templates";
   import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import { GridMode, type GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import {
     detectPresetFromBlocked,
     getAllPositions,
@@ -59,7 +59,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   } from "$lib/features/create/shared/domain/templates/duration-templates";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
-  import { startPositionManager } from "$lib/shared/create/services/StartPositionManager";
+  import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
 
   type AccordionSection = "style" | "rhythm" | "startEnd";
   type StartPosMode = "all" | "classic" | "specific";

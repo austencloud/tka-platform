@@ -4,7 +4,7 @@ Uses 4x4 pictograph grid with all 16 variations
 50px touch targets, modern Material 2026 design
 -->
 <script lang="ts">
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import PositionPickerGrid from "./PositionPickerGrid.svelte";
 

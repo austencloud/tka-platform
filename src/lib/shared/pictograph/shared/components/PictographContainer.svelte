@@ -33,10 +33,10 @@ with pre-prepared data for better performance.
   import { getSettings } from "../../../application/state/app-state.svelte";
   import type { PictographPreparer } from "../services/pictograph-preparer";
   import { pictographPreparer } from "../services/pictograph-preparer";
-  import type { PreparedPictographData } from "../domain/models/PreparedPictographData";
-  import type { PictographData } from "../domain/models/PictographData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { PropType } from "../../prop/domain/enums/PropType";
+  import type { PreparedPictographData } from "../domain/models/prepared-pictograph-data";
+  import type { PictographData } from "../domain/models/pictograph-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { PropType } from "../../prop/domain/enums/prop-type";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import PictographRenderer from "./PictographRenderer.svelte";
   import { globalAdjustmentVersion } from "../../arrow/positioning/global/state/global-adjustment-version.svelte";

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RefractionCausticsEffect, type RefractionCausticsOptions } from "./RefractionCausticsEffect";
+  import { RefractionCausticsEffect, type RefractionCausticsOptions } from "./refraction-caustics-effect";
   import { getEffectComposerContext } from "threlte-postprocessing";
   import { onMount, tick } from "svelte";
 

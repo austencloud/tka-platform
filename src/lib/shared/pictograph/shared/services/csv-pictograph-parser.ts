@@ -1,11 +1,11 @@
 import type { GridMode } from "../../grid/domain/enums/grid-enums";
 import { GridPosition } from "../../grid/domain/enums/grid-enums";
-import type { Letter } from "../../../foundation/domain/models/Letter";
+import type { Letter } from "../../../foundation/domain/models/letter";
 import { MotionColor, HandPath, SkewDirection } from "../domain/enums/pictograph-enums";
-import { createMotionData } from "../domain/models/MotionData";
-import type { PictographData } from "../domain/models/PictographData";
-import { createPictographData } from "../domain/factories/createPictographData";
-import type { EnumMapper } from "../../../foundation/services/implementations/data/EnumMapper";
+import { createMotionData } from "../domain/models/motion-data";
+import type { PictographData } from "../domain/models/pictograph-data";
+import { createPictographData } from "../domain/factories/create-pictograph-data";
+import type { EnumMapper } from "../../../foundation/services/implementations/data/enum-mapper";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import { Orientation } from "../domain/enums/pictograph-enums";
 
@@ -212,7 +212,7 @@ export class CSVPictographParser {
   }
 }
 
-import { enumMapper } from "../../../foundation/services/implementations/data/EnumMapper";
+import { enumMapper } from "../../../foundation/services/implementations/data/enum-mapper";
 
 export const csvPictographParser = new CSVPictographParser(
   enumMapper

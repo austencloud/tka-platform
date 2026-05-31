@@ -6,12 +6,12 @@ import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloade
 import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { recordExportThroughput } from "$lib/shared/animation-panel/state/export-timing-tracker";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { AnimationPlaybackController } from '$lib/shared/animation-engine/services/animation-playback-controller';
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
-import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/getVideoExportOrchestrator";
-import { getOffline3DExporter } from "$lib/shared/3d/getOffline3DExporter";
+import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
+import { getOffline3DExporter } from "$lib/shared/3d/get-offline-3d-exporter";
 import type { CameraKeyframeBuffer } from '$lib/shared/video-export/domain/camera-keyframe';
 
 export interface VideoExportEffectOverrides {

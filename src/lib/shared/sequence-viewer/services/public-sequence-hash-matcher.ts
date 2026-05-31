@@ -17,8 +17,8 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { getPublicSequencesPath } from "$lib/shared/library/data/firestore-paths";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/PublicSequenceIndex";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/public-sequence-index";
 import { encodeSequence } from "$lib/shared/navigation/services/sequence-encoder";
 
 export interface SequenceMatchResult {

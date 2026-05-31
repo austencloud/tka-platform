@@ -14,7 +14,7 @@
 	import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
 	import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 	import type { CellConfig, GridLayout } from "$lib/shared/animation-engine/domain/compose-types";
-	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 	const {
 		cells,

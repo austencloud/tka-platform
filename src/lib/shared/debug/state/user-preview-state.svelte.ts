@@ -17,7 +17,7 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { AppSettings } from "$lib/shared/settings/domain/AppSettings";
+import type { AppSettings } from "$lib/shared/settings/domain/app-settings";
 import type { NotificationPreferences } from "$lib/shared/notifications/domain/models/notification-models";
 import { DEFAULT_NOTIFICATION_PREFERENCES } from "$lib/shared/notifications/domain/models/notification-models";
 

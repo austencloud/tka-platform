@@ -7,8 +7,8 @@
  * Uses reactive state ownership - service owns $state, component derives from it.
  */
 
-import type { TrailSettings } from "../domain/types/TrailTypes";
-import { TrailMode as TrailModeEnum } from "../domain/types/TrailTypes";
+import type { TrailSettings } from "../domain/types/trail-types";
+import { TrailMode as TrailModeEnum } from "../domain/types/trail-types";
 import type { TrailCapturer } from "$lib/shared/animation-engine/services/trail-capturer";
 import { saveTrailSettings } from "$lib/shared/animation-engine/utils/animation-panel-persistence";
 export type RenderTriggerCallback = () => void;

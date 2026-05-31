@@ -8,13 +8,13 @@
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { getCameraManager } from "$lib/shared/train/getCameraManager";
+  import { getCameraManager } from "$lib/shared/train/get-camera-manager";
   import { getVideoRecorder } from "../services/video-recorder";
   import type {
     RecordingProgress,
     RecordingResult,
   } from "../services/types";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { createVideoRecordSettings } from "../state/video-record-settings.svelte";
   import GridPreview from "./GridPreview.svelte";
   import VideoRecordSettingsSheet from "./VideoRecordSettingsSheet.svelte";

@@ -15,7 +15,7 @@ import {
   GridMode,
   GridPositionGroup,
 } from "../../pictograph/grid/domain/enums/grid-enums";
-import { PropType } from "../../pictograph/prop/domain/enums/PropType";
+import { PropType } from "../../pictograph/prop/domain/enums/prop-type";
 import type { MotionDataSchema } from "../../pictograph/shared/domain/schemas/pictograph-schemas";
 import { PictographDataSchema } from "../../pictograph/shared/domain/schemas/pictograph-schemas";
 

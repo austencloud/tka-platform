@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
+  import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
   import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
 import type { SequenceState } from "../../../state/sequence-state-orchestrator.svelte";
   import { getCreateModuleContext } from "../../../context/create-module-context";

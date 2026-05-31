@@ -10,7 +10,7 @@
 import { getAgeVerifier } from "$lib/features/hall-of-shame/get-age-verifier";
 import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-shame-loader";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import type { HallOfShameLoader } from "../services/hall-of-shame-loader";
   import type { AgeVerifier } from "../services/age-verifier";
   import type {

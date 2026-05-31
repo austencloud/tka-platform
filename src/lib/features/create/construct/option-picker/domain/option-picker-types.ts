@@ -1,4 +1,4 @@
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 // ===== Basic State Types =====
 export type OptionPickerState = "loading" | "ready" | "error";

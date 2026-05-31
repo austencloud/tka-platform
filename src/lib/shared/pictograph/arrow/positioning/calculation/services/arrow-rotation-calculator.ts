@@ -3,11 +3,11 @@ import {
   MotionType,
   Orientation,
 } from "../../../../shared/domain/enums/pictograph-enums";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 import type { SpecialPlacer } from "../../placement/services/special-placer";
 import type { IRotationAngleOverrideKeyGenerator } from "../../key-generation/services/rotation-angle-override-key-generator";
-import { dashNoRotationMap } from "../config/DashRotationMaps";
+import { dashNoRotationMap } from "../config/dash-rotation-maps";
 import {
   selectStaticMap,
   selectProMap,
@@ -15,9 +15,9 @@ import {
   selectDashMap,
   selectFloatMap,
 } from "../utils/rotation-map-selector";
-import { calculateSkewedFloatRotation } from "../config/FloatRotationMaps";
+import { calculateSkewedFloatRotation } from "../config/float-rotation-maps";
 import { checkAndApplyOverride } from "../utils/rotation-override-checker";
-import { isNoRotation } from "../utils/RotationDirectionUtils";
+import { isNoRotation } from "../utils/rotation-direction-utils";
 import { calculateHandpathDirection } from "./handpath-direction-calculator";
 
 export class ArrowRotationCalculator {

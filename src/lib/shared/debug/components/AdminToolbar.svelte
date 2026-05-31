@@ -12,7 +12,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
+  import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
   import {
     userPreviewState,
     loadUserPreview,
@@ -25,15 +25,15 @@
   import { firstRunState } from "$lib/shared/onboarding/state/first-run-state.svelte.ts";
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte.ts";
   import { createTutorialState } from "$lib/shared/onboarding/state/create-tutorial-state.svelte";
-  import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
+  import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
   import * as cloudThumbnailCacheModule from "$lib/shared/browse/services/cloud-thumbnail-cache";
-  import { getThumbnailLocalCache } from "$lib/shared/browse/getThumbnailLocalCache";
-  import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
+  import { getThumbnailLocalCache } from "$lib/shared/browse/get-thumbnail-local-cache";
+  import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/get-thumbnail-render-orchestrator";
   import { getQuickAccessPersister } from "$lib/shared/debug/get-quick-access-persister";
   import { getImageComposer } from "$lib/shared/render/get-image-composer";
   import type { QuickAccessPersister } from "../services/quick-access-persister";
 import type { QuickAccessUser } from "../services/types";
-  import { tikaPictographCache } from "$lib/shared/tika/services/TikaPictographCache";
+  import { tikaPictographCache } from "$lib/shared/tika/services/tika-pictograph-cache";
   import AdminToolbarDesktop from "./AdminToolbarDesktop.svelte";
   import AdminToolbarMobile from "./AdminToolbarMobile.svelte";
 

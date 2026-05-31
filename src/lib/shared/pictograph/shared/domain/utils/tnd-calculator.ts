@@ -11,7 +11,7 @@
  */
 
 import { TnDMode as TnDMode, ElementalType } from "../enums/pictograph-enums";
-import type { Letter } from "../../../../foundation/domain/models/Letter";
+import type { Letter } from "../../../../foundation/domain/models/letter";
 import { GridMode, GridPosition } from "../../../grid/domain/enums/grid-enums";
 
 export interface TnDCalculationResult {

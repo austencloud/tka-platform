@@ -10,7 +10,7 @@ import {
   type TipEffortMap,
   resolveEffect,
   resolveEffort,
-} from "../domain/types/TipEffectTypes";
+} from "../domain/types/tip-effect-types";
 
 export {
   resolveEffect as resolveTipEffect,

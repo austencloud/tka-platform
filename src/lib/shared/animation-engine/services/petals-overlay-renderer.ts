@@ -16,8 +16,8 @@ import type { Petals2DParams } from "$lib/shared/effects/translators/canvas2d-ty
 import {
   Petals2DRenderer,
   type PetalsTipInput,
-} from "$lib/shared/effects/renderers/Petals2DRenderer";
-import { EffectRenderer } from "./effects/EffectRenderer";
+} from "$lib/shared/effects/renderers/petals-2d-renderer";
+import { EffectRenderer } from "./effects/effect-renderer";
 
 export class PetalsOverlayRenderer extends EffectRenderer {
   private renderer = new Petals2DRenderer();
@@ -39,8 +39,8 @@ export class PetalsOverlayRenderer extends EffectRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "./effects/EffectPlugin";
-import type { PetalsIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import type { EffectPlugin } from "./effects/effect-plugin";
+import type { PetalsIntent } from "$lib/shared/effects/domain/effects-config";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 
 export const petalsEffectPlugin: EffectPlugin<PetalsIntent> = {

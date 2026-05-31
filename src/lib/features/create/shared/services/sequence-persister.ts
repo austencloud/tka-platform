@@ -15,9 +15,9 @@ import {
   loadCurrentSequenceState,
   clearCurrentSequenceState,
 } from "$lib/shared/persistence/services/dexie-persistence-service";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { ActiveCreateModule } from "$lib/shared/foundation/ui/ui-types";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 

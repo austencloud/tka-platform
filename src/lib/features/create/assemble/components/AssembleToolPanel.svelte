@@ -5,20 +5,20 @@
   Building: panel disappears, grid recenters via flex layout.
 -->
 <script lang="ts">
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import type { AssembleTabState } from "../../shared/state/assemble-tab-state.svelte";
   import BuilderInstructionHeader from "$lib/features/assemble-lab/components/BuilderInstructionHeader.svelte";
   import BuilderControls from "$lib/features/assemble-lab/components/BuilderControls.svelte";
   import InteractiveGrid from "$lib/features/assemble-lab/components/InteractiveGrid.svelte";
   import BuilderTurnBar from "$lib/features/assemble-lab/components/BuilderTurnBar.svelte";
   import AssembleIdlePanel from "$lib/features/assemble-lab/components/AssembleIdlePanel.svelte";
-  import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
-  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
-  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
+  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
+  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
-  import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/AuthNudgeTrigger";
+  import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
 
   const props: { tabState: AssembleTabState } = $props();
 

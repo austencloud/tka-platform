@@ -3,16 +3,16 @@
   import { scale } from "svelte/transition";
   import { cubicOut, backOut } from "svelte/easing";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { createEndlessPlayback, type EndlessPlaybackState } from "$lib/shared/animation-engine/state/endless-playback-state.svelte";
   import * as propTypeApplier from "$lib/shared/landing/services/prop-type-applier";
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/endless-spinner-orchestrator";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-  import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
-  import { sequenceTransformer } from "$lib/shared/create/services/SequenceTransformer";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+  import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
+  import { sequenceTransformer } from "$lib/shared/create/services/sequence-transformer";
 
   import { startPositionDeriver as startPositionDeriverInstance } from "$lib/shared/pictograph/shared/services/start-position-deriver";
-  import { generationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
+  import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
   import {
     animationSettings,
     TrackingMode,
@@ -22,7 +22,7 @@
   import DemoControlBar from "./DemoControlBar.svelte";
   import { RANDOM_PROPS } from "../landing-content";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // Transition key - changes trigger the crossfade animation
   let transitionKey = $state(0);

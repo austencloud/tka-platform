@@ -14,12 +14,12 @@
  * grid points are ~143 units apart.
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { createArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/createArrowPlacementData";
+import { createArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/create-arrow-placement-data";
 
 // ============================================================================
 // OUTWARD OFFSET VECTORS

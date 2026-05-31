@@ -4,10 +4,10 @@
 // only state factories + resolver setters — no repo, persister, firebase,
 // or auth — so it is safe to import inside the composition worker.
 import type { OverridePlacementBundle } from "./override-placement-bundle";
-import { createDefaultArrowPlacementState } from "$lib/shared/pictograph/arrow/positioning/default-override/state/DefaultArrowPlacementState.svelte";
-import { createSpecialArrowPlacementState } from "$lib/shared/pictograph/arrow/positioning/special-override/state/SpecialArrowPlacementState.svelte";
-import { createGlobalArrowAdjustmentState } from "$lib/shared/pictograph/arrow/positioning/global/state/GlobalArrowAdjustmentState.svelte";
-import { createPropGeometryAdjustmentState } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/state/PropGeometryAdjustmentState.svelte";
+import { createDefaultArrowPlacementState } from "$lib/shared/pictograph/arrow/positioning/default-override/state/default-arrow-placement-state.svelte";
+import { createSpecialArrowPlacementState } from "$lib/shared/pictograph/arrow/positioning/special-override/state/special-arrow-placement-state.svelte";
+import { createGlobalArrowAdjustmentState } from "$lib/shared/pictograph/arrow/positioning/global/state/global-arrow-adjustment-state.svelte";
+import { createPropGeometryAdjustmentState } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/state/prop-geometry-adjustment-state.svelte";
 import { setDefaultOverrideResolver } from "$lib/shared/pictograph/arrow/positioning/placement/services/arrow-placer";
 import {
   setSpecialOverrideResolver,

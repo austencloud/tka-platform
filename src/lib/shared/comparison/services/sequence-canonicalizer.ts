@@ -6,7 +6,7 @@
  * 2. Spatial normalization to a canonical grid orientation
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { CanonicalSequence } from "./types";
 import type { StepSignatureGenerator } from "./step-signature-generator";
 import type { WordCyclicEquivalenceDetector } from "$lib/shared/foundation/utils/word-cyclic-equivalence-detector";

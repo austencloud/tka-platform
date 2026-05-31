@@ -1,4 +1,4 @@
-import type { EffectsPreset } from "../EffectsPreset";
+import type { EffectsPreset } from "../effects-preset";
 
 export const BUILT_IN_TRAIL_PRESETS: EffectsPreset[] = [
   {

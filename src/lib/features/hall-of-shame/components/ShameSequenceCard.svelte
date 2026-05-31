@@ -9,7 +9,7 @@
 import { getHallOfShameVoter } from "$lib/features/hall-of-shame/get-hall-of-shame-voter";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { HallOfShameEntry } from "../domain/models/hall-of-shame-models";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import type { HallOfShameVoter } from "../services/hall-of-shame-voter";
 
   interface Props {

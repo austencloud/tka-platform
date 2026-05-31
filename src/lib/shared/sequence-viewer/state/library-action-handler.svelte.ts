@@ -1,13 +1,13 @@
 import { isFavorite as checkIsFavorite, toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
-import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
-import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
-import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
 export interface LibraryActionHandlerDeps {

@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type { PreviewAuthProvider } from "../../../debug/state/user-preview-state.svelte";
-  import { PROVIDERS, type ProviderId } from "./connectedAccounts.providers";
+  import { PROVIDERS, type ProviderId } from "./connected-accounts.providers";
 
   interface Props {
     providers?: PreviewAuthProvider[];

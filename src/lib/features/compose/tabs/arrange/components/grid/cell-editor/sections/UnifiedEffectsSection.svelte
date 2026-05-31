@@ -10,8 +10,8 @@
   import type {
     TipEffectMap,
     EffectType,
-  } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
-  import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
+  } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+  import { getTipPoints } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
   import type { CellEffect } from "$lib/shared/animation-engine/domain/compose-types";
   import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
 
@@ -19,7 +19,7 @@
   function asCellEffect(e: EffectType): CellEffect {
     return SHIPPED_CELL_EFFECTS.has(e) ? (e as CellEffect) : "none";
   }
-  import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+  import { TrailMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 
   type Scope = "cell" | "hand" | "tip";
 

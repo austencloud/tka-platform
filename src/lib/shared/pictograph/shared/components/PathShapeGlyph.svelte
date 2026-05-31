@@ -7,7 +7,7 @@
   Only shows when a motion has a per-step override set.
 -->
 <script lang="ts">
-  import type { MotionData } from "../domain/models/MotionData";
+  import type { MotionData } from "../domain/models/motion-data";
   import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
   import { MotionColor } from "../domain/enums/pictograph-enums";
 

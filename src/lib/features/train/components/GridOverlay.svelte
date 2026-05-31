@@ -3,7 +3,7 @@
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
-  import type { DetectedPosition } from "$lib/shared/train/domain/DetectionFrame";
+  import type { DetectedPosition } from "$lib/shared/train/domain/detection-frame";
 
   interface Props {
     bluePosition: DetectedPosition | null;

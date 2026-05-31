@@ -9,7 +9,7 @@
  *   saveSequenceRouteHandoff(...) + goto(sequenceEncoder.generateSequenceRoutePath(...))
  */
 
-import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
+import type { SequenceData } from '$lib/shared/foundation/domain/models/sequence-data';
 import type { ViewingContext } from "./presentation-resolver";
 import { openSequenceOverlay } from '../state/sequence-viewer-overlay-state.svelte';
 import { cellPreWarmer } from './cell-pre-warmer';

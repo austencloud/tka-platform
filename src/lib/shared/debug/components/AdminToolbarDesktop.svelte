@@ -15,7 +15,7 @@
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import type { QuickAccessUser } from "../services/types";
   import type { PreviewUserProfile } from "../state/user-preview-state.svelte";
-  import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
+  import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
 
   const ROLE_CONFIG: { role: UserRole; label: string; icon: string; color: string }[] = [
     { role: "admin", label: "Admin", icon: "fas fa-crown", color: "#ffd700" },

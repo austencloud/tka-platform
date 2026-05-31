@@ -5,7 +5,7 @@
  * Provides Letter-typed interface for type safety.
  */
 
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { TransitionGraph } from "$lib/shared/sequence-engine/services/transition-graph";
 import { BrowserDataProvider } from "$lib/shared/sequence-engine/data/browser-data-provider";

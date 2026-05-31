@@ -7,11 +7,11 @@
 
 import type { LetterTransitionGraph } from "./letter-transition-graph";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
-import { LetterType } from "$lib/shared/foundation/domain/models/LetterType";
+import { getLetterType } from "$lib/shared/foundation/domain/models/letter";
+import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
 
 export class StartPositionValidator {
   constructor(

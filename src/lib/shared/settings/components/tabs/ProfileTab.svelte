@@ -1,11 +1,11 @@
 <!-- ProfileTab.svelte - User Profile & Account Settings (Refactored) -->
 <script lang="ts">
-  import { getUserDocumentManager } from "$lib/shared/auth/getUserDocumentManager";
+  import { getUserDocumentManager } from "$lib/shared/auth/get-user-document-manager";
   import { generateAndUploadAvatar } from "$lib/shared/auth/services/profile-picture-manager";
-  import { getAccountManager } from "$lib/shared/auth/getAccountManager";
+  import { getAccountManager } from "$lib/shared/auth/get-account-manager";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
-  import { authState } from "../../../auth/state/authState.svelte";
+  import { authState } from "../../../auth/state/auth-state.svelte";
   import {
     userPreviewState,
     loadPreviewSection,
@@ -32,7 +32,7 @@
   import { updateProfile } from "firebase/auth";
   import { doc, getDoc } from "firebase/firestore";
   import { getFirestoreInstance } from "../../../auth/firebase";
-  import { refreshUser } from "../../../auth/state/authState.svelte";
+  import { refreshUser } from "../../../auth/state/auth-state.svelte";
 
   import type { PreviewUserProfile } from "../../../debug/state/user-preview-state.svelte";
   import type { User } from "firebase/auth";

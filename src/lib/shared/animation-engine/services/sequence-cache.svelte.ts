@@ -7,7 +7,7 @@
  * Clear operations are signaled via incrementing counters that trigger $effect.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 export interface SequenceCacheState {
   sequenceId: string | null;
   clearSignal: number;

@@ -9,14 +9,14 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getAllTabsForModule, hideTab, showTab } from "../../getSidebarTabToggler";
+  import { getAllTabsForModule, hideTab, showTab } from "../../get-sidebar-tab-toggler";
 import type { TabVisibilityInfo } from "../../services/types";
   import type { ModuleId } from "../../domain/types";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
-  import { featureFlagService, featureFlagState } from "../../../auth/services/PostHogFeatureFlagService.svelte";
+  import { featureFlagService, featureFlagState } from "../../../auth/services/post-hog-feature-flag-service.svelte";
   import { MODULE_DEFINITIONS } from "../../config/module-definitions";
-  import { moduleIdToFeatureId } from "../../../auth/domain/models/FeatureFlag";
+  import { moduleIdToFeatureId } from "../../../auth/domain/models/feature-flag";
   import { isModuleEnabledInEnvironment } from "../../../environment/environment-features";
   import { getModuleDefinitions } from "../../../navigation-coordinator/navigation-coordinator.svelte";
   import { toast } from "../../../toast/state/toast-state.svelte";

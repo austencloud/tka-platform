@@ -10,10 +10,10 @@ import { getOptionFilter } from "$lib/features/create/construct/option-picker/ge
 import { getOptionLoader } from "$lib/features/create/construct/option-picker/get-option-loader";
 import { organizePictographs } from "$lib/features/create/construct/option-picker/services/option-organizer";
 import { getOptionSorter } from "$lib/features/create/construct/option-picker/get-option-sorter";
-import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModeProvider";
+import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-provider";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { onMount } from "svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
@@ -25,7 +25,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
   import type { OptionSorter } from "$lib/features/create/construct/option-picker/services/option-sorter";
   import type { OrganizedSection, SortMethod } from "$lib/features/create/construct/option-picker/domain/option-picker-types";
   import type { DeviceAwareSizingParams, DeviceAwareSizingResult } from "../services/types";
-  import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
+  import type { PreparedPictographData } from "$lib/shared/pictograph/option/prepared-pictograph-data";
   import type { PictographPreparer } from "../services/pictograph-preparer";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { DarkModeProvider } from "$lib/shared/animation-engine/services/dark-mode-provider";

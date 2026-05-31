@@ -14,7 +14,7 @@ import {
   generatePropGeometryKeyString,
   type PropGeometryAdjustment,
   type PropGeometryAdjustmentInput,
-} from "../domain/PropGeometryAdjustment";
+} from "../domain/prop-geometry-adjustment";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("PropGeometryAdjustmentPersister");

@@ -15,9 +15,9 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { EffortId } from "$lib/shared/effort/domain/effort-types";
   import type { EffortTimeline, EffortPhrase } from "./domain/effort-timeline-types";
@@ -46,9 +46,9 @@
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
-  import type { CreatorIntent } from "$lib/shared/foundation/domain/models/CreatorIntent";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import type { CreatorIntent } from "$lib/shared/foundation/domain/models/creator-intent";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { createPhraseEffortLabState } from "./state/phrase-effort-lab-state.svelte";
   import { persistTimeline as persistTimelineToSession, getPersistedSequenceId as getStoredSequenceId } from "./services/phrase-effort-lab-persister";
 
@@ -78,7 +78,7 @@
   let blueProp = $state<PropState>({ ...DEFAULT_PROP_STATE });
   let redProp = $state<PropState>({ ...DEFAULT_PROP_STATE });
   let currentStep = $state(0);
-  let currentLetter = $state<import("$lib/shared/foundation/domain/models/Letter").Letter | null>(null);
+  let currentLetter = $state<import("$lib/shared/foundation/domain/models/letter").Letter | null>(null);
   let currentStepData = $state<StepData | null>(null);
   let saving = $state(false);
   let saveStatus = $state<"idle" | "saved" | "error">("idle");

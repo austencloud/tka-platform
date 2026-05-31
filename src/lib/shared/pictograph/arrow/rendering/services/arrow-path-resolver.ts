@@ -4,13 +4,13 @@
  * Responsible for determining the correct SVG file path based on motion data.
  */
 
-import type { MotionData } from "../../../shared/domain/models/MotionData";
+import type { MotionData } from "../../../shared/domain/models/motion-data";
 import {
   MotionType,
   Orientation,
   SkewDirection,
 } from "../../../shared/domain/enums/pictograph-enums";
-import type { ArrowPlacementData } from "../../positioning/placement/domain/ArrowPlacementData";
+import type { ArrowPlacementData } from "../../positioning/placement/domain/arrow-placement-data";
 
 /**
  * Get arrow SVG path based on motion type and properties (extracted from Arrow.svelte)

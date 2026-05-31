@@ -1,8 +1,8 @@
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { SoloPropData } from "../domain/models/SoloPropData";
-import type { SoloPropStepData } from "../domain/models/SoloPropStepData";
-import type { SequenceData } from "../domain/models/SequenceData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { SoloPropData } from "../domain/models/solo-prop-data";
+import type { SoloPropStepData } from "../domain/models/solo-prop-step-data";
+import type { SequenceData } from "../domain/models/sequence-data";
 
 const BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 

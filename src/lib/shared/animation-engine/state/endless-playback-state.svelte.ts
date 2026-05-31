@@ -1,4 +1,4 @@
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type {
   SourceMode,
   IBroadcastProvider,
@@ -6,17 +6,17 @@ import type {
   IEndlessSpinnerOrchestrator,
   IInfiniteSequenceGenerator,
 } from "$lib/shared/animation-engine/domain/chaining-types";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { CopyResult } from "$lib/shared/browse/services/ClaudeCodeCopier";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { CopyResult } from "$lib/shared/browse/services/claude-code-copier";
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import { SequenceChainingOrchestrator } from "$lib/shared/animation-engine/services/sequence-chaining-orchestrator";
 import { createAnimationPanelState, type AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
+import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 
 export interface EndlessPlaybackConfig {
   modes: SourceMode[];

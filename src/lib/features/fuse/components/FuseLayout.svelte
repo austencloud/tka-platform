@@ -15,7 +15,7 @@
 	import { animateFuseAssembly } from "../services/fuse-assembly-animator";
 	import { deriveLettersForSequence } from "$lib/shared/navigation/services/letter-deriver";
 	import { onMount } from "svelte";
-	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 	const { state: fuseState } = getFuseContext();
 

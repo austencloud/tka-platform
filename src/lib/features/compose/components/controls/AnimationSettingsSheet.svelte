@@ -7,7 +7,7 @@
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import AnimationSettingsContent from "./AnimationSettingsContent.svelte";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type {
     PlaybackMode,
     StepPlaybackStepSize,

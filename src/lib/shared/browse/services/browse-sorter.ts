@@ -5,7 +5,7 @@
  * Provides consistent sorting behavior across the gallery.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
 import { sortSequencesByKineticAlphabet } from "$lib/shared/browse/utils/kinetic-alphabet-sort";
 

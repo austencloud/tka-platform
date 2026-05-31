@@ -19,7 +19,7 @@
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import ProfileAdminSection from "$lib/features/browse/creators/components/profile/ProfileAdminSection.svelte";
   import UserActivityAnalytics from "./UserActivityAnalytics.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
   interface Props {
     open: boolean;

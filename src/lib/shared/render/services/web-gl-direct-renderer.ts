@@ -15,9 +15,9 @@ import type {
   RenderTiming,
   ArrowPathsData,
 } from "./IDirectRenderer";
-import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { MotionData } from "../../pictograph/shared/domain/models/MotionData";
+import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { MotionData } from "../../pictograph/shared/domain/models/motion-data";
 import { MotionColor } from "../../pictograph/shared/domain/enums/pictograph-enums";
 import { drawPathCommands, type PathCommand } from "../utils/svg-path-parser";
 

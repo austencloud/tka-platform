@@ -6,7 +6,7 @@
 
 	import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
 	import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-	import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+	import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 	import type { RotationStyle } from "../domain/vtg-lab-types";
 
 	interface Props {

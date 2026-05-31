@@ -7,7 +7,7 @@ import {
 } from "firebase/auth";
 import { doc, deleteDoc } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../firebase";
-import { nuclearCacheClear } from "../utils/nuclearCacheClear";
+import { nuclearCacheClear } from "../utils/nuclear-cache-clear";
 import type { HapticFeedback } from "../../application/services/haptic-feedback";
 
 /**

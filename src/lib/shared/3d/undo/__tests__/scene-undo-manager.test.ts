@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { SceneUndoManager } from "../SceneUndoManager";
+import { SceneUndoManager } from "../scene-undo-manager";
 import type { SceneUndoSnapshot, ViewerDomainSnapshot } from "../scene-undo-types";
 
 function makeViewerSnapshot(overrides: Partial<ViewerDomainSnapshot> = {}): ViewerDomainSnapshot {

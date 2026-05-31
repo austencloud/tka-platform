@@ -17,8 +17,8 @@ import type { Echo2DParams } from "$lib/shared/effects/translators/canvas2d-type
 import {
   Echo2DRenderer,
   type EchoTipInput,
-} from "$lib/shared/effects/renderers/Echo2DRenderer";
-import { EffectRenderer } from "./effects/EffectRenderer";
+} from "$lib/shared/effects/renderers/echo-2d-renderer";
+import { EffectRenderer } from "./effects/effect-renderer";
 
 export class EchoOverlayRenderer extends EffectRenderer {
   private renderer = new Echo2DRenderer();
@@ -36,8 +36,8 @@ export class EchoOverlayRenderer extends EffectRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "./effects/EffectPlugin";
-import type { EchoIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import type { EffectPlugin } from "./effects/effect-plugin";
+import type { EchoIntent } from "$lib/shared/effects/domain/effects-config";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 
 export const echoEffectPlugin: EffectPlugin<EchoIntent> = {

@@ -9,8 +9,8 @@
   import type {
     TipEffectMap,
     EffectType,
-  } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
-  import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
+  } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+  import { getTipPoints } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 
   type Scope = "cell" | "hand" | "tip";
 

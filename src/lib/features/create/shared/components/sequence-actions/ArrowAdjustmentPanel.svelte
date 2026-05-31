@@ -19,7 +19,7 @@
 
 import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/get-arrow-adjustment-orchestrator";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { ArrowAdjustmentOrchestrator } from "../../services/arrow-adjustment-orchestrator";
 import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orchestrator";
@@ -27,7 +27,7 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
   import { onMount } from "svelte";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
-  import { arrowAdjustmentUndoStack } from "$lib/shared/pictograph/arrow/positioning/global/state/ArrowAdjustmentUndoStack";
+  import { arrowAdjustmentUndoStack } from "$lib/shared/pictograph/arrow/positioning/global/state/arrow-adjustment-undo-stack";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
   import { rotationOverrideManager } from "$lib/shared/pictograph/arrow/positioning/placement/services/rotation-override-manager";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";

@@ -12,10 +12,10 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
-import type { SoloPropData } from "../domain/models/SoloPropData";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import type { SoloPropData } from "../domain/models/solo-prop-data";
 import type { SoloPropFilters } from "./types";
-import type { ArtifactProvenance } from "../domain/models/ArtifactProvenance";
+import type { ArtifactProvenance } from "../domain/models/artifact-provenance";
 
 function toDateOrUndefined(value: unknown): Date | undefined {
   if (value == null) return undefined;

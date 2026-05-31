@@ -34,13 +34,13 @@ captureEffectDiagnostics to the context menu.
 -->
 <script lang="ts">
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-  import type { TrailSettings } from "../domain/types/TrailTypes";
-  import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/TrailCaptureTypes";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+  import type { TrailSettings } from "../domain/types/trail-types";
+  import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
   import GlyphRenderer from "./GlyphRenderer.svelte";
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
   import PathLinesOverlay from "./layers/PathLinesOverlay.svelte";
@@ -48,16 +48,16 @@ captureEffectDiagnostics to the context menu.
   import { AnimationEngine } from "../services/animation-engine.svelte";
   import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
   import { isSeamlesslyLoopable as sequenceLoopabilityCheck } from "$lib/shared/foundation/services/sequence-loopability-checker";
-  import type { FireOverlayConfig } from "../domain/types/FireTypes";
-  import type { LedOverlayConfig } from "../domain/types/LedTypes";
-  import type { TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
+  import type { FireOverlayConfig } from "../domain/types/fire-types";
+  import type { LedOverlayConfig } from "../domain/types/led-types";
+  import type { TipEffectMap, TipEffortMap } from "../domain/types/tip-effect-types";
   import { untrack } from "svelte";
   import { fireCacheInvalidation } from "../state/fire-invalidation-signal.svelte";
   import { effectErrorSignal } from "../state/effect-error-signal.svelte";
   import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
-  import { getRenderContextRegistry } from "../getRenderContextRegistry";
+  import { getRenderContextRegistry } from "../get-render-context-registry";
   import { installAnimatorDiagnostics } from "../debug/animator-diagnostics";
 
   let {

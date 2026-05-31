@@ -1,4 +1,4 @@
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 // Props to randomize between for the landing page demo
 export const RANDOM_PROPS = [

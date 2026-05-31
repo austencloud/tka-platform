@@ -4,8 +4,8 @@
  */
 
 import type { Achievement } from "$lib/shared/gamification/domain/models/achievement-models";
-import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { PinnedItem } from "./pinned-item";
 
 /**

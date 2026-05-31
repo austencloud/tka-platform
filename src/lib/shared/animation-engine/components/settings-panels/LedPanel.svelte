@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import { BUILT_IN_COLOR_PRESETS, type LedColorPreset } from "../../domain/types/LedColorPresets";
+  import { BUILT_IN_COLOR_PRESETS, type LedColorPreset } from "../../domain/types/led-color-presets";
   import {
     CATEGORY_LABELS,
     type PatternCategory,

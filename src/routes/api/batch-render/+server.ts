@@ -6,9 +6,9 @@
  */
 
 import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";

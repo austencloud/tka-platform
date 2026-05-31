@@ -9,7 +9,7 @@ import type { DocumentSnapshot } from "firebase/firestore";
 import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 import type { CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";
 import { getUsersPaginated, getFeaturedCreators } from "$lib/shared/community/services/user-repository";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const DEFAULT_PAGE_SIZE = 30;
 

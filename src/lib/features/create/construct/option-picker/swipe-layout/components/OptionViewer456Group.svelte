@@ -12,11 +12,11 @@ Matches the desktop version exactly:
 
 import { calculateOptimalLayout as calculateAspectLayout } from "$lib/features/create/construct/option-picker/services/aspect-layout-planner";
 import { getAnimator } from "$lib/shared/application/get-animator";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import {
     Letter,
     getLetterType,
-  } from "$lib/shared/foundation/domain/models/Letter";
+  } from "$lib/shared/foundation/domain/models/letter";
   import { calculateFitSize as calculateGridFitSize } from "../../services/option-grid-fit-calculator";
   import type { TypeFilter } from "../../domain/option-picker-types";
   import OptionViewerSection from "./OptionViewerSection.svelte";

@@ -9,8 +9,8 @@ Only renders buttons for elements that exist on the sequence - if blueSoloProp o
 redSoloProp is missing, those buttons are hidden.
 -->
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {

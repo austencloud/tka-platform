@@ -27,8 +27,8 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import {
   type SequenceData,
   createSequenceData,
-} from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
+} from "$lib/shared/foundation/domain/models/sequence-data";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
 import {
   encodeSequenceForQR,
   isInlineEncoded,

@@ -9,14 +9,14 @@
  * No skeleton loaders. No Firestore wait.
  */
 
-import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
 import type { GalleryOfflineCache } from "../../../../shared/offline/services/gallery-offline-cache";
 import {
   onLibraryMutated,
   onLibrarySequenceAdded,
   onLibrarySequenceUpdated,
 } from "$lib/shared/library/library-events";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { GalleryCacheEntry } from "$lib/shared/offline/domain/offline-cache-types";
 import { db } from "$lib/shared/persistence/database/tka-database";
 

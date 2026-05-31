@@ -28,9 +28,9 @@
   import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { createExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
@@ -211,7 +211,7 @@
       let orchestrator;
       try {
         const { getVideoExportOrchestrator } = await import(
-          "$lib/shared/animation-engine/getVideoExportOrchestrator"
+          "$lib/shared/animation-engine/get-video-export-orchestrator"
         );
         orchestrator = getVideoExportOrchestrator();
       } catch {
@@ -223,10 +223,10 @@
           { getBackgroundVideoEncoder },
         ] = await Promise.all([
           import("$lib/features/compose/services/video-export-orchestrator"),
-          import("$lib/shared/animation-engine/getVideoExporter"),
-          import("$lib/shared/animation-engine/getCompositeVideoRenderer"),
-          import("$lib/shared/animation-engine/getExportGlyphPrerenderer"),
-          import("$lib/shared/animation-engine/getBackgroundVideoEncoder"),
+          import("$lib/shared/animation-engine/get-video-exporter"),
+          import("$lib/shared/animation-engine/get-composite-video-renderer"),
+          import("$lib/shared/animation-engine/get-export-glyph-prerenderer"),
+          import("$lib/shared/animation-engine/get-background-video-encoder"),
         ]);
         orchestrator = new VideoExportOrchestrator(
           getVideoExporter(),

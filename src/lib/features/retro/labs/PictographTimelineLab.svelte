@@ -19,7 +19,7 @@
   import AsciiRawPreview from "./AsciiRawPreview.svelte";
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { RetroPictographData, RetroHandData } from "$lib/features/retro/shared/domain/pictograph-types";
   import { MotionColor, MotionType, Orientation, RotationDirection, GridLocation } from "$lib/features/retro/shared/domain/pictograph-types";
   import { getCanvas2DRenderer } from "$lib/shared/render/get-canvas-2d-renderer";

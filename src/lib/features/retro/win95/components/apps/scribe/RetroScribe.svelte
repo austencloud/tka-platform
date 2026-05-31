@@ -20,7 +20,7 @@
   import RetroSaveDialog from "./RetroSaveDialog.svelte";
   import { RETRO_ICONS } from "../../rendering/retro-icons";
   import { saveRetroSequence } from "../../../adapters/notation-adapter";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */

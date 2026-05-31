@@ -16,17 +16,17 @@
 -->
 <script lang="ts">
 
-import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
 import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
 	import { onMount, onDestroy, untrack } from "svelte";
 	import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 	import { createAnimationPanelState, type AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 	import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-	import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
+	import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
+	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
 	import { tryGetAnimationExportContext } from "$lib/shared/export-panel/context/animation-export-context.svelte";
 	import type { ControlsLevel } from "../domain/types";
 
@@ -38,7 +38,7 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 
 	const DEFAULT_BPM = 60;
 
-	import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+	import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 	let {
 		sequence,

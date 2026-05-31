@@ -20,7 +20,7 @@ import type {
 	RetroPictographData,
 	RetroHandData,
 } from "$lib/features/retro/shared/domain/pictograph-types";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
 
 import { getRandomSequenceGenerator } from "$lib/features/create/spell/get-random-sequence-generator";

@@ -23,13 +23,13 @@ Last audit: 2025-12-27
 -->
 <script lang="ts">
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-  import type { TrailSettings } from "../domain/types/TrailTypes";
-  import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/TrailCaptureTypes";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+  import type { TrailSettings } from "../domain/types/trail-types";
+  import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
   import CanvasSurface from "./CanvasSurface.svelte";
   import WordHeader from "./layers/WordHeader.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
@@ -38,11 +38,11 @@ Last audit: 2025-12-27
   import { AnimationEngine } from "../services/animation-engine.svelte";
   import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
   import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
-  import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/getLoopDisplayResolver";
+  import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
-  import type { FireOverlayConfig } from "../domain/types/FireTypes";
-  import type { LedOverlayConfig } from "../domain/types/LedTypes";
-  import type { TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
+  import type { FireOverlayConfig } from "../domain/types/fire-types";
+  import type { LedOverlayConfig } from "../domain/types/led-types";
+  import type { TipEffectMap, TipEffortMap } from "../domain/types/tip-effect-types";
   import CanvasContextMenuHost from "./canvas-context-menu/CanvasContextMenuHost.svelte";
   import SplitCanvasView from "./SplitCanvasView.svelte";
   import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";

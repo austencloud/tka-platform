@@ -1,12 +1,12 @@
 <script lang="ts">
 
 import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cache-orchestrator";
-  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
   import { getBrowseEventHandler } from "../get-browse-event-handler";
-  import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
+  import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/get-thumbnail-render-orchestrator";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { onMount, onDestroy, setContext } from "svelte";
   import { fly } from "svelte/transition";
@@ -24,9 +24,9 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   import CreatorsPanel from "../../creators/components/CreatorsPanel.svelte";
   import UserProfilePanel from "../../creators/components/UserProfilePanel.svelte";
   import { creatorsViewState } from "../../creators/state/creators-view-state.svelte";
-  import { createBrowseEngine } from "$lib/shared/browse/engine/createBrowseEngine.svelte";
+  import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import GalleryTab from "./GalleryTab.svelte";
-  import { browseScrollState } from "$lib/shared/browse/state/BrowseScrollState.svelte";
+  import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
   import {
     browseNavigationState,
     getCreatorIdFromURL,
@@ -34,7 +34,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   } from "$lib/shared/browse/state/browse-navigation-state.svelte";
   import { BrowseScrollBehavior } from "../services/browse-scroll-behavior";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import AnimationSheetCoordinator from "../../../../shared/coordinators/AnimationSheetCoordinator.svelte";
   import { consumePendingSequenceView } from "../../state/pending-sequence.svelte";
   import HallOfShameGallery from "$lib/features/hall-of-shame/components/HallOfShameGallery.svelte";

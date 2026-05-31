@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { Catalog } from "../../domain/models/Catalog";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { loadCatalogs, loadSequencesByIds } from "../../services/catalog-loader";
   import {
     buildSequencePool,
@@ -20,7 +20,7 @@
     type CatalogPoolFilter,
   } from "../../services/deck-composer";
   import type { DeckRelease, DeckReleaseCard, DeckRecipe } from "../../domain/models/DeckRelease";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getNextDeckNumber, releaseDeck, getAllReleases, updateDeckMeta, deleteDeck } from "../../services/deck-release-store";
   import ConfigureStep from "./ConfigureStep.svelte";
   import ReviewStep from "./ReviewStep.svelte";

@@ -19,8 +19,8 @@
     />
 -->
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import type { MediaType, MediaFormat, ExportSettings } from "../domain/types";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";

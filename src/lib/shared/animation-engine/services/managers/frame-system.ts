@@ -24,8 +24,8 @@ import type { CanvasLifecycleManager } from "../canvas-lifecycle-manager";
 import type { PropSystem } from "./prop-system";
 import type { AnimationEngineProps } from "../animation-engine.svelte";
 import type { RenderFrameParams } from "../IAnimationRenderLoop";
-import type { TrailSettings } from "../../domain/types/TrailTypes";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { TrailSettings } from "../../domain/types/trail-types";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import type { EffectRendererManager } from "../effect-renderer-manager";
 

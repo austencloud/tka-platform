@@ -1,7 +1,7 @@
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 
 /**
  * SequenceTransferHandler

@@ -35,9 +35,9 @@
  * ```
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { DetectionFrame } from "$lib/shared/train/domain/DetectionFrame";
-import type { PerformanceData } from "$lib/shared/train/domain/PerformanceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { DetectionFrame } from "$lib/shared/train/domain/detection-frame";
+import type { PerformanceData } from "$lib/shared/train/domain/performance-data";
 import {
   TrainMode,
   VisualizationMode,

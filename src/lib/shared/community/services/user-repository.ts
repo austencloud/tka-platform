@@ -37,7 +37,7 @@ import type {
   CreatorQueryOptions,
   CreatorSortCriteria,
 } from "../domain/models/enhanced-user-profile";
-import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
+import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
 import {
   UserFirestoreDataSchema,
   UserAchievementFirestoreSchema,

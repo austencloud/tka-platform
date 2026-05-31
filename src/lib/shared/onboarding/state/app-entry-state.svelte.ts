@@ -180,7 +180,7 @@ function createAppEntryState() {
         );
         const { doc, getDoc } = await import("firebase/firestore");
         const { authState } = await import(
-          "$lib/shared/auth/state/authState.svelte"
+          "$lib/shared/auth/state/auth-state.svelte"
         );
 
         const userId = authState.effectiveUserId;
@@ -223,7 +223,7 @@ function createAppEntryState() {
           "firebase/firestore"
         );
         const { authState } = await import(
-          "$lib/shared/auth/state/authState.svelte"
+          "$lib/shared/auth/state/auth-state.svelte"
         );
 
         const userId = authState.effectiveUserId;

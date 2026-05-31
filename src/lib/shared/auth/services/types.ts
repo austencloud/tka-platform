@@ -6,7 +6,7 @@
  * so they apply across all users and devices, not just the admin's browser.
  */
 
-import type { UserRole } from "../domain/models/UserRole";
+import type { UserRole } from "../domain/models/user-role";
 
 export interface GlobalFlagOverrides {
   globalFlagOverrides: Record<string, boolean>;
@@ -36,7 +36,7 @@ export interface ImpersonatedUser {
  * Handles provider-specific logic for Facebook and Google profile pictures.
  */
 
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export interface GeneratedAvatarData {
   gradientId: string;

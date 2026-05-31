@@ -12,9 +12,9 @@
     MotionColor,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
-  import { getPropTypeDisplayInfo } from "$lib/shared/settings/components/tabs/prop-type/PropTypeRegistry";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
+  import { getPropTypeDisplayInfo } from "$lib/shared/settings/components/tabs/prop-type/prop-type-registry";
   import {
     getSettings,
     updateSettings,

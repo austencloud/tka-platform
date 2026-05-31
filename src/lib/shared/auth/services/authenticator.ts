@@ -42,9 +42,9 @@ export function notePopupCoop(): void {
 }
 
 export async function signInWithGoogle(): Promise<void> {
-  const { isDesktop } = await import("$lib/shared/desktop/isDesktop");
+  const { isDesktop } = await import("$lib/shared/desktop/is-desktop");
   if (isDesktop()) {
-    const { signInWithDesktopOAuth } = await import("$lib/shared/desktop/TauriAuthBridge");
+    const { signInWithDesktopOAuth } = await import("$lib/shared/desktop/tauri-auth-bridge");
     await signInWithDesktopOAuth();
     return;
   }

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { Snippet } from "svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
@@ -9,9 +9,9 @@
   import { getCatalogLayoutPolicy } from "../domain/catalog-layout-policy";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { initializeSpecialOverrides } from "$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-singleton";
   import { initializeDefaultOverrides } from "$lib/shared/pictograph/arrow/positioning/default-override/services/default-override-singleton";
 

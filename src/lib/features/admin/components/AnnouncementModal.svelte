@@ -4,7 +4,7 @@
   Shows important announcements that require user dismissal.
 -->
 <script lang="ts">
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { dismissAnnouncement } from "$lib/features/admin/services/announcement-manager";
   import type { Announcement } from "../domain/models/announcement-models";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";

@@ -18,8 +18,8 @@ even when Svelte recreates the component instance.
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { HapticFeedback } from "../../../../application/services/haptic-feedback";
-  import type { MotionData } from "../../../shared/domain/models/MotionData";
-  import type { PictographData } from "../../../shared/domain/models/PictographData";
+  import type { MotionData } from "../../../shared/domain/models/motion-data";
+  import type { PictographData } from "../../../shared/domain/models/pictograph-data";
   import {
     Orientation,
     RotationDirection,

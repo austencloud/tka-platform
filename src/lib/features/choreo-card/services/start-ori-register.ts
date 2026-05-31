@@ -17,7 +17,7 @@
  * Pure module — no sequence-engine / firebase deps, so it loads in unit tests
  * (unlike deck-variation.ts). deck-variation re-exports for backward compat.
  */
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import { Orientation, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 

@@ -22,8 +22,8 @@
   └──────────┴──────────┘
 -->
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { DetectionFrame } from "$lib/shared/train/domain/DetectionFrame";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { DetectionFrame } from "$lib/shared/train/domain/detection-frame";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { TrainMode, PracticeMode } from "../../domain/enums/train-enums";

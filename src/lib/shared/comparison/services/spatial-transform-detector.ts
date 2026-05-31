@@ -5,7 +5,7 @@
  * A spatial transform is a rotation around the grid center (0-7 steps of 45°).
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { SpatialTransform, SpatialTransformResult } from "../domain/models/signatures";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";

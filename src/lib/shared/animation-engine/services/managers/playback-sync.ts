@@ -32,11 +32,11 @@ import type { EffectSystem } from "./effect-system";
 import type { AnimationVisibilityState } from "../animation-visibility-synchronizer";
 import type { AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
 import type { AnimationEngineProps, AnimationEngineCallbacks } from "../animation-engine.svelte";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { TrailSettings } from "../../domain/types/TrailTypes";
+import type { TrailSettings } from "../../domain/types/trail-types";
 import { DEFAULT_CANVAS_SIZE } from "../canvas-resizer.svelte";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -590,7 +590,7 @@ export class PlaybackSync {
   }
 
   /** Returns true if any entry in the map has the given effect type. */
-  private hasEffectInMap(map: import("../../domain/types/TipEffectTypes").TipEffectMap | undefined, effect: string): boolean {
+  private hasEffectInMap(map: import("../../domain/types/tip-effect-types").TipEffectMap | undefined, effect: string): boolean {
     if (!map) return false;
     return Object.values(map).some((a) => a.effect === effect);
   }

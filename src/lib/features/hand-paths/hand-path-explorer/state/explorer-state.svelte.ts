@@ -1,7 +1,7 @@
-import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { HandPathData } from "$lib/shared/foundation/domain/models/hand-path-data";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { handPathToName } from '$lib/shared/foundation/services/hand-path-namer';
-import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
 
 export type HandSide = "blue" | "red";
 

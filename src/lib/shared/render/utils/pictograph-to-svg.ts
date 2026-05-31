@@ -10,9 +10,9 @@
  * - Browser-only utility (requires DOM)
  */
 
-import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { PropType } from "../../pictograph/prop/domain/enums/PropType";
+import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { PropType } from "../../pictograph/prop/domain/enums/prop-type";
 import PictographContainer from "../../pictograph/shared/components/PictographContainer.svelte";
 import { mount, tick, unmount } from "svelte";
 

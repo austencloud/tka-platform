@@ -12,14 +12,14 @@ import {
   handleModuleChange,
   getModuleDefinitions,
 } from "../../navigation-coordinator/navigation-coordinator.svelte";
-import { authState } from "../../auth/state/authState.svelte";
+import { authState } from "../../auth/state/auth-state.svelte";
 import { isModuleAccessible } from "../../auth/domain/guest-access-config";
-import { resolveAccessTier } from "../../auth/domain/AccessTier";
-import { isPremiumOrAbove } from "../../auth/domain/models/UserRole";
+import { resolveAccessTier } from "../../auth/domain/access-tier";
+import { isPremiumOrAbove } from "../../auth/domain/models/user-role";
 import { quickFeedbackState } from "$lib/shared/feedback/state/quick-feedback-state.svelte";
 import { saveActiveTab } from "../../settings/utils/tab-persistence.svelte";
 import { adminToolbarState } from "../../debug/state/admin-toolbar-state.svelte";
-import { settingsService } from "../../settings/state/SettingsState.svelte";
+import { settingsService } from "../../settings/state/settings-state.svelte";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
 import { getImageCompositionManager } from "../../share/state/image-composition-state.svelte";
 import {
@@ -35,7 +35,7 @@ import { propDrawerState } from "../../settings/state/prop-drawer-state.svelte";
 import {
   getAllPropTypes,
   PROP_TYPE_DISPLAY_REGISTRY,
-} from "../../pictograph/prop/domain/PropTypeDisplayRegistry";
+} from "../../pictograph/prop/domain/prop-type-display-registry";
 
 export function registerGlobalShortcuts(
   service: KeyboardShortcutManager,

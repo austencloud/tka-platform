@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
   import SceneFeatureTiles from "../scene-features/components/SceneFeatureTiles.svelte";

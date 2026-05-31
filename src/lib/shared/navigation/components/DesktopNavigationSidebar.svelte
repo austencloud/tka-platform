@@ -25,7 +25,7 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     navigationState,
     SETTINGS_TABS,
   } from "../state/navigation-state.svelte";
-  import { featureFlagService } from "../../auth/services/PostHogFeatureFlagService.svelte";
+  import { featureFlagService } from "../../auth/services/post-hog-feature-flag-service.svelte";
   import { t } from "../../i18n/i18n.svelte";
   import { getReactiveLocale } from "../../i18n/locale-state.svelte";
 

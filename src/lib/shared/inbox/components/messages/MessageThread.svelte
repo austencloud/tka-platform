@@ -13,7 +13,7 @@
     ConversationType,
   } from "$lib/shared/messaging/domain/models/conversation-models";
   import type { Message } from "$lib/shared/messaging/domain/models/message-models";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import { messagingService } from "$lib/shared/messaging/services/messenger";
   import { inboxState } from "../../state/inbox-state.svelte";

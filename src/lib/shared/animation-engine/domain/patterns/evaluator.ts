@@ -1,4 +1,4 @@
-import type { LedColor } from "../types/LedPatterns";
+import type { LedColor } from "../types/led-patterns";
 import type { TipEvaluationContext } from "./context";
 
 // Direct imports of all evaluators - no lazy initialization, no side effects

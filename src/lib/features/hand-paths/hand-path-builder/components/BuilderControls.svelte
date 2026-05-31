@@ -14,7 +14,7 @@ import { getHandPathSaveOrchestrator } from "$lib/features/library/get-hand-path
   import { getBuilderContext } from "../context/builder-context";
   import { createHandPath } from "$lib/shared/foundation/services/hand-path-factory";
   import type { HandPathSaveOrchestrator } from "$lib/features/library/services/hand-path-save-orchestrator";
-  import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
+  import type { HandPathData } from "$lib/shared/foundation/domain/models/hand-path-data";
 
   const builder = getBuilderContext();
 

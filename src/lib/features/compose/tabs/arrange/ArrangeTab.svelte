@@ -27,7 +27,7 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import SaveCompositionModal from "./components/grid/SaveCompositionModal.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CellMediaType } from "$lib/shared/animation-engine/domain/compose-types";
   import type { TransformType } from "$lib/shared/animation-engine/domain/compose-types";
   import type { KeyboardContext, KeyboardCallbacks } from "./services/types";

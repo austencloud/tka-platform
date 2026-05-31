@@ -10,8 +10,8 @@
  */
 
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type {
   DifficultyLevel,
   GenerationOptions,

@@ -15,7 +15,7 @@
     MODULE_DEFINITIONS,
   } from "../../state/navigation-state.svelte";
   import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-state.svelte";
-  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
+  import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
   import { adminToolbarState } from "$lib/shared/debug/state/admin-toolbar-state.svelte";
 
   // Module color no longer needed - using global theme system

@@ -5,8 +5,8 @@
  * Handles converting typed words into valid TKA sequences with bridge letters.
  */
 
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { GridPosition, GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { ConstraintPresetId } from "$lib/shared/sequence-engine/constraints";

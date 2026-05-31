@@ -21,10 +21,10 @@
   import InteractiveCanvas from "$lib/shared/interactive-canvas/InteractiveCanvas.svelte";
   import { HandPathAnimator, getPathD } from "./services/hand-path-animator";
   import { propSvgLoader } from "$lib/shared/pictograph/prop/services/prop-svg-loader";
-  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { PropRenderData } from "$lib/shared/pictograph/prop/domain/models/PropRenderData";
+  import type { PropRenderData } from "$lib/shared/pictograph/prop/domain/models/prop-render-data";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { HandMove } from "./state/builder-state.svelte";
   import { getHitTargets } from "$lib/shared/assemble-lab/services/grid-hit-target-calculator";

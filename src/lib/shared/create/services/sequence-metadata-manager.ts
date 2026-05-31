@@ -2,7 +2,7 @@
  * Sequence Metadata — name generation, metadata creation, and word calculation.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import {
   DifficultyLevel,
   type GenerationOptions,

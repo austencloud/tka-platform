@@ -7,8 +7,8 @@
  * This allows the base layer cache to survive ALL visibility toggles.
  */
 
-import type { PreparedPictographData } from "../../pictograph/shared/domain/models/PreparedPictographData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { PreparedPictographData } from "../../pictograph/shared/domain/models/prepared-pictograph-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { LayerRenderOptions } from "../services/types";
 
 export interface BaseLayerKeyComponents {

@@ -4,10 +4,10 @@
   import Scene3D from "$lib/shared/3d/components/Scene3D.svelte";
   import { Avatar3D, Prop3D, STAGE, WALL_OFFSET } from "@austencloud/scene-3d";
   import { T } from "@threlte/core";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { snapToNearestGridLocation } from "../services/grid-snap";
   import { Vector3, type Group } from "three";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
 
   interface Props {

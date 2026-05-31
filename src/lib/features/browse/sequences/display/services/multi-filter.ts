@@ -5,7 +5,7 @@
  * with AND logic. Each filter type narrows the result set.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/filtering-types";
 import type { ActiveFilter } from "../../../shared/domain/models/multi-filter-models";

@@ -3,7 +3,7 @@
  * within complex UI components like Pictograph.
  */
 
-import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
 import { MotionColor as MotionColorEnum } from "../../pictograph/shared/domain/enums/pictograph-enums";
 
 export interface ComponentLoadingState {

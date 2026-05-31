@@ -10,8 +10,8 @@
   - PropButtonLab (visual tuning lab tab)
 -->
 <script lang="ts">
-  import { PropType } from "../domain/enums/PropType";
-  import { getPropTypeDisplayInfo, getBasePropType } from "../domain/PropTypeDisplayRegistry";
+  import { PropType } from "../domain/enums/prop-type";
+  import { getPropTypeDisplayInfo, getBasePropType } from "../domain/prop-type-display-registry";
   import {
     getCompositionRecipe,
     type CompositionRecipe,

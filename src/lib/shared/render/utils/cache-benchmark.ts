@@ -11,7 +11,7 @@
  */
 
 import { browser } from "$app/environment";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 interface SequenceRenderResult {
   name: string;
@@ -297,7 +297,7 @@ async function runPass(
  */
 async function loadRealSequences(count: number): Promise<SequenceData[]> {
   try {
-    const { getBrowseLoader } = await import("$lib/shared/browse/getBrowseLoader");
+    const { getBrowseLoader } = await import("$lib/shared/browse/get-browse-loader");
     const browseLoader = getBrowseLoader() as {
       loadSequenceMetadata: () => Promise<SequenceData[]>;
       loadFullSequenceData: (name: string) => Promise<SequenceData | null>;

@@ -13,7 +13,7 @@ import type {
   SmokeIntent,
   InkIntent,
   FrostIntent,
-} from "../domain/EffectsConfig";
+} from "../domain/effects-config";
 import type {
   Trails3DParams,
   Fire3DParams,
@@ -30,12 +30,12 @@ import type {
   Ink3DParams,
   Frost3DParams,
 } from "./webgl3d-types";
-import { resolveWaterPalette } from "../domain/WaterPalettes";
-import { resolveBubblePalette } from "../domain/BubblePalettes";
-import { resolvePetalPalette } from "../domain/PetalPalettes";
-import { resolveSmokePalette } from "../domain/SmokePalettes";
-import { resolveInkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
-import { resolveFrostPalette } from "../domain/FrostPalettes";
+import { resolveWaterPalette } from "../domain/water-palettes";
+import { resolveBubblePalette } from "../domain/bubble-palettes";
+import { resolvePetalPalette } from "../domain/petal-palettes";
+import { resolveSmokePalette } from "../domain/smoke-palettes";
+import { resolveInkPalette } from "$lib/shared/3d/effects/ink/ink-palettes";
+import { resolveFrostPalette } from "../domain/frost-palettes";
 
 export function resolveTrails3D(
   intent: TrailsIntent,

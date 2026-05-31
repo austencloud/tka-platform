@@ -12,8 +12,8 @@ import {
 } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import type { FirePhysicsParams } from "../domain/types/FireTypes";
-import type { PropTipConfig } from "../domain/types/PropTipPoints";
+import type { FirePhysicsParams } from "../domain/types/fire-types";
+import type { PropTipConfig } from "../domain/types/prop-tip-points";
 
 const FIRESTORE_DOC_PATH = "config/fireDefaults";
 

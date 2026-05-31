@@ -8,8 +8,8 @@
  * Uses reactive state ownership - service owns $state, component derives from it.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { TrailSettings } from "../domain/types/TrailTypes";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { TrailSettings } from "../domain/types/trail-types";
 import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
 import type { ITrailCapturer as TrailCapturer } from "$lib/shared/animation-engine/services/ITrailCapturer";
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";

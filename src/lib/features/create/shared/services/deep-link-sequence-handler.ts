@@ -11,7 +11,7 @@
 import {
   createSequenceData,
   type SequenceData,
-} from "$lib/shared/foundation/domain/models/SequenceData";
+} from "$lib/shared/foundation/domain/models/sequence-data";
 
 /**
  * Deep Link Sequence Service Contract

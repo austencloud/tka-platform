@@ -5,8 +5,8 @@
  * Each function returns a new MotionData without mutating the input.
  */
 
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";

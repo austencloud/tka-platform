@@ -5,8 +5,8 @@
    * Displays motion data for a single color (blue or red).
    * Reusable component for the pictograph inspector modal.
    */
-  import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-  import type { PipelineDiagnostics } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
+  import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import type { PipelineDiagnostics } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/pipeline-diagnostics";
   import { formatMotionText, formatMotionTypeLabel, formatRotationLabel } from "./formatters";
   import PipelineTraceSection from "./PipelineTraceSection.svelte";
   import CollapsibleSection from "$lib/features/admin/components/feature-flags/shared/CollapsibleSection.svelte";

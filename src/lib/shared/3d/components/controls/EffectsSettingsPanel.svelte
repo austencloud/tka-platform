@@ -25,7 +25,7 @@
   } from "$lib/shared/animation-engine/components/effects-panel/effect-primary-param";
   import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
-  import type { EffectType } from "$lib/shared/effects/domain/EffectsConfig";
+  import type { EffectType } from "$lib/shared/effects/domain/effects-config";
 
   interface Props {
     performer?: AvatarInstanceState | null;

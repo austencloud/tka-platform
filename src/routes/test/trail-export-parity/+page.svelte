@@ -21,19 +21,19 @@
    */
   import { onMount, onDestroy } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
-  import { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
+  import { getSequenceRepository } from "$lib/shared/create/get-sequence-repository";
+  import { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
   import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
   import { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
-  import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/getVideoExportOrchestrator";
+  import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-  import { getRenderContextRegistry } from "$lib/shared/animation-engine/getRenderContextRegistry";
+  import { getRenderContextRegistry } from "$lib/shared/animation-engine/get-render-context-registry";
   import { assembleExportEngineProps } from "$lib/shared/video-export/services/export-engine-props";
   import { Input, BufferSource, ALL_FORMATS, VideoSampleSink } from "mediabunny";
   import ParityHarness from "$lib/shared/parity/ParityHarness.svelte";

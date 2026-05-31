@@ -10,7 +10,7 @@
   import { loadCatalogs, loadCatalogSequences } from "$lib/features/choreo-card/services/catalog-loader";
   import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
   import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { forceFreshReload } from "$lib/shared/foundation/services/force-fresh";
 
   // ── Sequence sourcing (same approach as /test/mandala-paths) ──────

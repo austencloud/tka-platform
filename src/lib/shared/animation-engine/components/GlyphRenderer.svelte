@@ -27,9 +27,9 @@ canvas rendering. This ensures the entire glyph fades as a unified unit.
 <script lang="ts">
   import TKAGlyph from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
   import TurnsColumn from "$lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
   import { onMount } from "svelte";
 

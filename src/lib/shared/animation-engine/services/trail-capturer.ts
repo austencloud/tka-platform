@@ -16,23 +16,23 @@
  * - Coordinates with AnimationCacheService for backfill during stutters
  */
 
-import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
+import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import type {
   TrailPoint,
   TrailSettings,
-} from "$lib/shared/animation-engine/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-types";
 import {
   TrackingMode,
   TrailMode,
   TrailEffect,
-} from "$lib/shared/animation-engine/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-types";
 import type {
   TrailCapturePropStates,
   PropDimensions,
   TrailCaptureConfig,
   IAnimationCacheService,
   IPerformanceMonitorService,
-} from "$lib/shared/animation-engine/domain/types/TrailCaptureTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-capture-types";
 
 export type {
   AdditionalLayerProps,
@@ -41,12 +41,12 @@ export type {
   TrailCaptureConfig,
   IAnimationCacheService,
   IPerformanceMonitorService,
-} from "$lib/shared/animation-engine/domain/types/TrailCaptureTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-capture-types";
 import {
   calculatePropCenter,
   type PropEndpointConfig,
 } from "$lib/shared/animation-engine/services/prop-position-calculator";
-import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
+import { getTipPoints } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 
 /** Standard viewbox size used by the prop coordinate system */
 const VIEWBOX_SIZE = 950;

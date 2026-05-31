@@ -5,8 +5,8 @@ Displays Types 4, 5, 6 (Dash, Dual-Dash, Static) in a horizontal row layout
 with individual headers for each type.
 -->
 <script lang="ts">
-  import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PreparedPictographData } from "$lib/shared/pictograph/option/prepared-pictograph-data";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import OptionSectionHeader from "./OptionSectionHeader.svelte";
   import OptionGrid from "./OptionGrid.svelte";
 

@@ -5,7 +5,7 @@ import { aggregateFamilySequences } from "$lib/features/choreo-card/services/tnd
 
   import type { Catalog } from "../domain/models/Catalog";
   import type { CardFooter } from "../domain/models/DeckRelease";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { FamilyRatioGroup } from "../services/types";
 import type { CardPair } from "../services/types";
   import { TND_ELEMENTS } from "../domain/tnd-element";
@@ -16,7 +16,7 @@ import type { CardPair } from "../services/types";
   import type { PrintPDFMode } from "../services/print-pdf-exporter";
   import CardSizeToggle from "./card-preview/CardSizeToggle.svelte";
   import type { CardSizeId } from "../domain/card-sizes";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 
   type ViewMode = 'grid' | 'print';
 

@@ -1,5 +1,5 @@
-import { PropType } from "./enums/PropType";
-import { getBasePropType } from "./PropTypeDisplayRegistry";
+import { PropType } from "./enums/prop-type";
+import { getBasePropType } from "./prop-type-display-registry";
 
 /**
  * Transform parameters for one prop in a paired composition.

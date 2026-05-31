@@ -5,9 +5,9 @@
  * Manages sequences, canvas settings, and playback controls across all animation modes.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-import { DEFAULT_TRAIL_SETTINGS } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
+import { DEFAULT_TRAIL_SETTINGS } from "$lib/shared/animation-engine/domain/types/trail-types";
 import type { ComposeMode } from "../../../shared/state/compose-module-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type {

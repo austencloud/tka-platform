@@ -5,7 +5,7 @@
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { ModuleDefinition } from "../../domain/types";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import NotificationBadge from "../NotificationBadge.svelte";
   import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";

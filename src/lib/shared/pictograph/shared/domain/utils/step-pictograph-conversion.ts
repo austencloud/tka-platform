@@ -6,9 +6,9 @@
  * while maintaining backward compatibility.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import { createPictographData } from "../factories/createPictographData";
-import type { PictographData } from "../models/PictographData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { createPictographData } from "../factories/create-pictograph-data";
+import type { PictographData } from "../models/pictograph-data";
 
 /**
  * Convert StepData to enhanced PictographData

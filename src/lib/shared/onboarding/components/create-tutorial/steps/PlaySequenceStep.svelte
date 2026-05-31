@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
 
-import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount, onDestroy } from "svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
@@ -16,9 +16,9 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   import {
     createSequenceData,
     type SequenceData,
-  } from "$lib/shared/foundation/domain/models/SequenceData";
+  } from "$lib/shared/foundation/domain/models/sequence-data";
   import { pictographDataToStepData } from "$lib/shared/pictograph/shared/domain/utils/step-pictograph-conversion";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import {

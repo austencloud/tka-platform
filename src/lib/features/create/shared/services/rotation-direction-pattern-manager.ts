@@ -27,9 +27,9 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type {
   RotationDirectionPattern,
   RotationDirectionPatternCreateData,
@@ -56,7 +56,7 @@ export interface RotationDirectionPatternApplyResult {
 import {
   createMotionData,
   type MotionData,
-} from "$lib/shared/pictograph/shared/domain/models/MotionData";
+} from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionColor,
   MotionType,
@@ -65,8 +65,8 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import { createStepData } from "$lib/shared/create/factories/createStepData";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import { createStepData } from "$lib/shared/create/factories/create-step-data";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("RotationDirectionPatternManager");

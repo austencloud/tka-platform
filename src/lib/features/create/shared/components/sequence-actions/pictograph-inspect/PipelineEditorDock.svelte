@@ -11,10 +11,10 @@
   import type {
     PipelineDiagnostics,
     PipelineTier,
-  } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/pipeline-diagnostics";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { SelectedArrowContext } from "../../../services/arrow-adjustment-orchestrator";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
@@ -24,7 +24,7 @@
   import {
     parseSpecialOverrideKey,
     type SpecialArrowPlacementInput,
-  } from "$lib/shared/pictograph/arrow/positioning/special-override/domain/SpecialArrowPlacement";
+  } from "$lib/shared/pictograph/arrow/positioning/special-override/domain/special-arrow-placement";
   import { getDefaultOverrideRepository } from "$lib/shared/pictograph/arrow/positioning/default-override/services/default-override-singleton";
   import { livePipelineEdit } from "./live-pipeline-edit.svelte";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";

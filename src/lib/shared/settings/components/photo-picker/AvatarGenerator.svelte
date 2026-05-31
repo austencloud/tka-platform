@@ -5,11 +5,11 @@
   Standard layout for larger screens (non-wizard mode).
 -->
 <script lang="ts">
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     PROP_TYPE_DISPLAY_REGISTRY,
     VARIANT_PROP_TYPES,
-  } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import {
     ALL_GRADIENTS,
     COLOR_FAMILIES,

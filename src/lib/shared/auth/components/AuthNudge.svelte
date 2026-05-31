@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { AuthNudgeTrigger } from "../domain/AuthNudgeTrigger";
-  import { AUTH_NUDGE_TEXTS } from "../domain/AuthNudgeTrigger";
+  import type { AuthNudgeTrigger } from "../domain/auth-nudge-trigger";
+  import { AUTH_NUDGE_TEXTS } from "../domain/auth-nudge-trigger";
 
   interface Props {
     trigger: AuthNudgeTrigger;

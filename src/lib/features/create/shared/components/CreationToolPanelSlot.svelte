@@ -11,7 +11,7 @@
    */
 
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { IToolPanelMethods } from "../types/create-module-types";
   import { getCreateModuleContext } from "../context/create-module-context";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";

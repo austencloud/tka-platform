@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { T, useTask, useThrelte, useScheduler } from "@threlte/core";
   import { onMount, onDestroy, untrack } from "svelte";
   import { PerformerRig } from "@austencloud/scene-3d";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { BackgroundType } from "@austencloud/backgrounds";
   import Environment3D from "../environments/components/Environment3D.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
@@ -14,9 +14,9 @@
   import type { GridMode } from "@austencloud/scene-3d";
   import Grid3D from "./Grid3D.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
+  import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { resolvePerformerProp } from "$lib/shared/3d/state/performer-prop-resolution";
   import { Raycaster, Vector2, AdditiveBlending } from "three";
   import type { Object3D, Scene } from "three";
@@ -24,7 +24,7 @@
   import PerformerBadge3D from "./PerformerBadge3D.svelte";
   import { getPerformerColor } from "../constants/performer-colors";
   import { attachSceneUndoKeyboard } from "../undo/scene-undo-keyboard";
-  import { getSceneUndoManager } from "../undo/getSceneUndoManager";
+  import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import AvatarSwapTransition from "./AvatarSwapTransition.svelte";
   import EffectOrchestrator3D from "../effects/EffectOrchestrator3D.svelte";

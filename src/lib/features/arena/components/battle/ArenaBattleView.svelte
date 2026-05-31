@@ -20,11 +20,11 @@
   import { arenaState } from "../../state/arena-state.svelte";
   import { getArenaOrchestrator } from "../../get-arena-orchestrator";
   import { getAuthSync } from "$lib/shared/auth/firebase";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     PROP_TYPE_DISPLAY_REGISTRY,
     getAllPropTypes,
-  } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // All prop types for the random pool (excludes POI which is momentum-based)

@@ -1,1 +1,1 @@
-export { getSequenceDomainManager } from '$lib/shared/create/getSequenceDomainManager';
+export { getSequenceDomainManager } from '$lib/shared/create/get-sequence-domain-manager';

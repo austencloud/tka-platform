@@ -1,5 +1,5 @@
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import { deriveGridMode as _deriveGridMode } from "../../../../grid/services/grid-mode-deriver";
 import { GridMode } from "../../../../grid/domain/enums/grid-enums";
 import {
@@ -8,7 +8,7 @@ import {
 } from "../../key-generation/services/special-placement-ori-key-generator";
 import { generateTurnsTuple } from "../../key-generation/services/turns-tuple-key-generator";
 import { getKeyFromArrow } from "../../key-generation/services/attribute-key-generator";
-import { generateSpecialOverrideKey } from "../domain/SpecialArrowPlacement";
+import { generateSpecialOverrideKey } from "../domain/special-arrow-placement";
 
 /**
  * The single source of truth for a pictograph arrow's special-override key.

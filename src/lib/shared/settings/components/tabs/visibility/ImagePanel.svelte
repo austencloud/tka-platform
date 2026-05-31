@@ -7,7 +7,7 @@ so the preview matches exactly what the user will see when exporting.
 <script lang="ts">
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { getAabbSequenceData } from "./example-data";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
   interface Props {
     addWord: boolean;

@@ -18,16 +18,16 @@
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import ArrowAdjustmentPanel from "$lib/features/create/shared/components/sequence-actions/ArrowAdjustmentPanel.svelte";
   import TurnsEditMode from "$lib/features/create/shared/components/sequence-actions/TurnsEditMode.svelte";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
     MotionColor,
     MotionType,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 

@@ -12,16 +12,16 @@
  */
 
 import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
-import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/prepared-pictograph-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { RetroPictographData, RetroHandData } from "../domain/pictograph-types";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { getSvgImageCache, type DrawableImage } from "$lib/shared/render/services/svg-image-cache";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 
 // The canonical viewBox size used throughout the TKA rendering system
 const VIEWBOX_SIZE = 950;

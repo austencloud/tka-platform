@@ -1,14 +1,14 @@
 import type { Catalog } from "../domain/models/Catalog";
 import type { CardFooter, DeckReleaseCard, StepCountWeight } from "../domain/models/DeckRelease";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { applyBoxMode, type StartOriMode } from "./deck-variation";
 import { TND_BY_FAMILY } from "../domain/tnd-element";
 import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
 import { TnDMode } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
-import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import { LetterType } from "$lib/shared/foundation/domain/models/LetterType";
+import { getLetterType } from "$lib/shared/foundation/domain/models/letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
+import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
 import { TURN_VALUES } from "../domain/turn-pattern-parser";
 
 type GridModeKey = "diamond" | "box";

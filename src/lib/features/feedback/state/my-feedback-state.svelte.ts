@@ -13,7 +13,7 @@ import type {
   FeedbackType,
 } from "$lib/shared/feedback/domain/models/feedback-models";
 import { feedbackService } from "$lib/shared/feedback/services/feedback-repository";
-import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 

@@ -5,10 +5,10 @@
  * Responsible for working with pictograph data and arrow data structures.
  */
 
-import type { ArrowPlacementData } from "../../positioning/placement/domain/ArrowPlacementData";
+import type { ArrowPlacementData } from "../../positioning/placement/domain/arrow-placement-data";
 import type { Point } from "fabric";
-import type { MotionData } from "../../../shared/domain/models/MotionData";
-import type { PictographData } from "../../../shared/domain/models/PictographData";
+import type { MotionData } from "../../../shared/domain/models/motion-data";
+import type { PictographData } from "../../../shared/domain/models/pictograph-data";
 import { getSceneCenter } from "./arrow-grid-coordinator";
 
 export function getMotionFromPictograph(

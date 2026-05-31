@@ -1,6 +1,6 @@
-import type { Letter } from "../../../foundation/domain/models/Letter";
-import { getLetterType } from "../../../foundation/domain/models/Letter";
-import { LetterType } from "../../../foundation/domain/models/LetterType";
+import type { Letter } from "../../../foundation/domain/models/letter";
+import { getLetterType } from "../../../foundation/domain/models/letter";
+import { LetterType } from "../../../foundation/domain/models/letter-type";
 
 /**
  * Check if a letter is a dash letter (Type3 or Type5)

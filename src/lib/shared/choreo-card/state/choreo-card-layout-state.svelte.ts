@@ -7,7 +7,7 @@
  */
 
 import { calculateLayout } from "$lib/shared/render/services/layout-calculator";
-import { getMandalaPlacements } from "$lib/shared/sequence-viewer/services/getMandalaPlacements";
+import { getMandalaPlacements } from "$lib/shared/sequence-viewer/services/get-mandala-placements";
 import { simplifyAndTruncate } from "$lib/shared/foundation/utils/word-simplifier";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import {
@@ -17,7 +17,7 @@ import {
   FOOTER_FONT_SCALE, FOOTER_MARGIN_SCALE,
   STEP_NUMBER_FONT_RATIO, STEP_NUMBER_FONT_MAX,
 } from "@tka/render-composition";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 export interface ChoreoCardLayoutDeps {
   /** The sequence being displayed */

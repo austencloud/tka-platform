@@ -8,8 +8,8 @@
  * - Shared animation state (for workspace beat grid sync)
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
 import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";

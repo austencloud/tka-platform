@@ -12,21 +12,21 @@
 import type { GenerationOptions } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import {
   DifficultyLevel, GenerationMode, } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
   GridLocation,
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
   MotionColor,
   MotionType,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 
 import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/get-generation-orchestrator";
 

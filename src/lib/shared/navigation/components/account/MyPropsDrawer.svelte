@@ -14,9 +14,9 @@
   import SelectionFooterBar from "./SelectionFooterBar.svelte";
   import FavoritePicker from "./FavoritePicker.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PropPreferenceState } from "$lib/shared/community/state/prop-preference-state.svelte";
-  import { getBasePropType } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import { getBasePropType } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 
   interface Props {
     isOpen: boolean;

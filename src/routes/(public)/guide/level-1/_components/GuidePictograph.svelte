@@ -1,9 +1,9 @@
 <script lang="ts">
   import PictographRenderer from "$lib/shared/pictograph/shared/components/PictographRenderer.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/prepared-pictograph-data";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   let {
     data,

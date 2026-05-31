@@ -1,8 +1,8 @@
 import type { DeckRelease, DeckReleaseCard, DeckRecipe, StepCountWeight } from "../../domain/models/DeckRelease";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { CatalogSourceSummary, TnDFamilyOption, TnDTurnPatternOption, TnDSeedClass } from "../../services/deck-composer";
-import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { DEFAULT_VARIATION_CONFIG, type VariationConfig, type StartOriMode } from "../../services/deck-variation";
 import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
 

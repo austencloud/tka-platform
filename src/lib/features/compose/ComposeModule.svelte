@@ -18,7 +18,7 @@
   import { getComposeModuleState } from "./shared/state/compose-module-state.svelte.ts";
   import type { ComposeTab } from "./shared/state/compose-module-state.svelte.ts";
   import type { URLSyncer } from "$lib/shared/navigation/services/url-syncer";
-  import { getURLSyncer } from "$lib/shared/navigation/getURLSyncer";
+  import { getURLSyncer } from "$lib/shared/navigation/get-url-syncer";
   import { deepLinker } from "$lib/shared/navigation/services/deep-linker";
   import { consumeSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import { arrangeGridState } from "./tabs/arrange/state/arrange-grid-state.svelte";

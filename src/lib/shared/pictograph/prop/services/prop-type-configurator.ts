@@ -5,8 +5,8 @@
  * With the unified PropType enum, prop types are used directly without mapping.
  */
 
-import type { PictographData } from "../../shared/domain/models/PictographData";
-import type { PropType } from "../domain/enums/PropType";
+import type { PictographData } from "../../shared/domain/models/pictograph-data";
+import type { PropType } from "../domain/enums/prop-type";
 
 /**
  * Convert UI prop type to filename format.

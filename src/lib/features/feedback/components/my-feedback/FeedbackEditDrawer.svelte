@@ -11,7 +11,7 @@
     TYPE_CONFIG,
     STATUS_CONFIG,
   } from "$lib/shared/feedback/domain/models/feedback-models";
-  import { responsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
+  import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 

@@ -9,7 +9,7 @@
 
 import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/get-arrow-adjustment-orchestrator";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orchestrator";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import LayerTabBar from "./LayerTabBar.svelte";
@@ -20,8 +20,8 @@ import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/get-
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import type { ArrowAdjustmentOrchestrator } from "../../services/arrow-adjustment-orchestrator";
 import type { SelectedArrowContext } from "../../services/arrow-adjustment-orchestrator";
-  import type { GlobalAdjustmentKey } from "$lib/shared/pictograph/arrow/positioning/global/domain/GlobalArrowAdjustment";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { GlobalAdjustmentKey } from "$lib/shared/pictograph/arrow/positioning/global/domain/global-arrow-adjustment";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
   const logger = createComponentLogger("ArrowLayerModal");
 

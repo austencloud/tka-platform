@@ -5,9 +5,9 @@
  * Coordinates with other services to compute final arrow positions.
  */
 
-import type { ArrowPlacementData } from "../../positioning/placement/domain/ArrowPlacementData";
-import type { MotionData } from "../../../shared/domain/models/MotionData";
-import type { PictographData } from "../../../shared/domain/models/PictographData";
+import type { ArrowPlacementData } from "../../positioning/placement/domain/arrow-placement-data";
+import type { MotionData } from "../../../shared/domain/models/motion-data";
+import type { PictographData } from "../../../shared/domain/models/pictograph-data";
 import type { GridMode } from "../../../grid/domain/enums/grid-enums";
 import { getInitialPosition, getSceneCenter } from "./arrow-grid-coordinator";
 import {

@@ -11,9 +11,9 @@
   import type { IEndpointDetector } from "../services/IEndpointDetector";
   import type * as EffectConfigMapperModule from "../services/effect-config-mapper";
   import type { VideoTipAdapter } from "../services/video-tip-adapter";
-  import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-  import type { FireFrameInput } from "$lib/shared/animation-engine/domain/types/FireTypes";
-  import type { LedFrameInput } from "$lib/shared/animation-engine/domain/types/LedTypes";
+  import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/trail-types";
+  import type { FireFrameInput } from "$lib/shared/animation-engine/domain/types/fire-types";
+  import type { LedFrameInput } from "$lib/shared/animation-engine/domain/types/led-types";
   import { WebGLFireRenderer } from "$lib/shared/animation-engine/services/fire/web-gl-fire-renderer";
   import { WebGLLedRenderer } from "$lib/shared/animation-engine/services/led/web-gl-led-renderer";
   import { CharcoalSparkRenderer } from "$lib/shared/animation-engine/services/charcoal/charcoal-spark-renderer";

@@ -1,6 +1,6 @@
 <script lang="ts" module>
   import { getLetterImagePath as getPath } from "../utils/letter-image-getter";
-  import { Letter as LetterType } from "$lib/shared/foundation/domain/models/Letter";
+  import { Letter as LetterType } from "$lib/shared/foundation/domain/models/letter";
 
   // Restore caches from HMR data if available, otherwise create fresh
   const globalDimensionsCache: Map<string, { width: number; height: number }> =
@@ -115,8 +115,8 @@
 </script>
 
 <script lang="ts">
-  import type { PictographData } from "../../shared/domain/models/PictographData";
-  import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import type { PictographData } from "../../shared/domain/models/pictograph-data";
+  import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import {
     getLetterImagePath,
     isDashLetter,

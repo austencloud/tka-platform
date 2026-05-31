@@ -9,7 +9,7 @@
  * docs/superpowers/specs/2026-04-19-effects-engine-unification-design.md).
  */
 
-import { getSceneUndoManager } from "../../undo/getSceneUndoManager";
+import { getSceneUndoManager } from "../../undo/get-scene-undo-manager";
 
 export interface MotionRenderConfig {
   /** Enable motion blur pass. */

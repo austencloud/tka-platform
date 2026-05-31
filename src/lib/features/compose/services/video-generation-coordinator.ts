@@ -1,4 +1,4 @@
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { VideoRenderProgress, VideoRenderResult } from "$lib/shared/animation-engine/services/video-pre-renderer";
 
 export interface VideoGenerationOptions {

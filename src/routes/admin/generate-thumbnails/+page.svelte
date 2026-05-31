@@ -7,9 +7,9 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import {
     MotionType,
     RotationDirection,
@@ -21,11 +21,11 @@
     GridMode,
     GridPosition,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     createSequenceData,
     type SequenceData,
-  } from "$lib/shared/foundation/domain/models/SequenceData";
+  } from "$lib/shared/foundation/domain/models/sequence-data";
   import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
   import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
 

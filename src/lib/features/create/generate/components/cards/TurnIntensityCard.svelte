@@ -4,7 +4,7 @@ Uses stepper pattern for direct increment/decrement interaction
 -->
 <script lang="ts">
   import { BackgroundType } from "@austencloud/backgrounds";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { isBrightBackground } from "../../shared/domain/card-colors";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import StepperCard from "./StepperCard/StepperCard.svelte";

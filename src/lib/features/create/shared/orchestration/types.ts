@@ -7,10 +7,10 @@ import type { ViewportManager } from '$lib/shared/device/services/viewport-manag
  */
 
 import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
-import type { StartPositionManager } from "$lib/shared/create/services/StartPositionManager";
+import type { StartPositionManager } from "$lib/shared/create/services/start-position-manager";
 import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/create-module-orchestrator";
 import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
-import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";

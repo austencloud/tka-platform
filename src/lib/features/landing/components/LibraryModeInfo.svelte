@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { fade } from "svelte/transition";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   let {
     sequence,

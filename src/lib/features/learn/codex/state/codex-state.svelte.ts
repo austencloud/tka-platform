@@ -6,7 +6,7 @@
  * Matches desktop functionality with row organization and control operations.
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { getCodex as getCodexService } from "$lib/features/learn/codex/get-codex";
 import type { Codex } from "../services/codex";
 

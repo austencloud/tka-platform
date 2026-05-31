@@ -10,11 +10,11 @@ import type { SequenceState } from "$lib/features/create/shared/state/sequence-s
 import { setPendingGenerationAnimation } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
 import { clearArrowPositionCache } from "$lib/shared/pictograph/arrow/rendering/arrow-position-cache";
 import { clearPropPositionCache } from "$lib/shared/pictograph/prop/prop-position-cache";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { GenerationOptions } from "../shared/domain/models/generate-models";
 import { GenerationMode } from "../shared/domain/models/generate-models";
-import type { GenerationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
-import { generationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
+import type { GenerationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
+import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
 import { levelToDifficulty, type UIGenerationConfig } from "../shared/utils/config-mapper";
 import {
   getTemplateById,
@@ -34,11 +34,11 @@ import {
   periodToNumber,
 } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { loopViabilityService } from "$lib/features/create/generate/shared/services/loop-viability-service";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
-import { authState } from "$lib/shared/auth/state/authState.svelte";
-import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
 
 import { applyPattern as dpApplyPattern } from "$lib/features/create/shared/services/duration-pattern-manager";

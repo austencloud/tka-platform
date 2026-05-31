@@ -5,9 +5,9 @@ import type {
 } from "../../domain/voice-command-types";
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 import { getVisibilityStateManager } from "../../../pictograph/shared/state/visibility-state.svelte";
-import { settingsService } from "../../../settings/state/SettingsState.svelte";
+import { settingsService } from "../../../settings/state/settings-state.svelte";
 import type { IVoiceCommandHandler } from "../types";
-import type { EffectType } from '../../../animation-engine/domain/types/TipEffectTypes';
+import type { EffectType } from '../../../animation-engine/domain/types/tip-effect-types';
 
 type SettingOwner = "animVis" | "pictVis" | "appSettings";
 

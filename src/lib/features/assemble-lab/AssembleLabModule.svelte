@@ -2,7 +2,7 @@
   AssembleLabModule.svelte - Standalone assemble lab (accessed from Lab tab).
 -->
 <script lang="ts">
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { createAssembleState } from "./state/assemble-state.svelte";
   import InteractiveGrid from "./components/InteractiveGrid.svelte";
   import BuilderControls from "./components/BuilderControls.svelte";
@@ -10,7 +10,7 @@
   import BuilderTurnBar from "./components/BuilderTurnBar.svelte";
   import StepStrip from "./components/StepStrip.svelte";
   import AssembleIdlePanel from "./components/AssembleIdlePanel.svelte";
-  import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
+  import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
   import { createTimingState } from "./state/timing-state.svelte";
   import { handleAssembleKeyDown } from "./services/assemble-keyboard-handler";
   import type { KeyboardAction } from "./services/assemble-keyboard-handler";

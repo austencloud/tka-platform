@@ -17,14 +17,14 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type {
   TurnPattern,
   TurnPatternCreateData,
   TurnPatternEntry,
   TurnValue,
-} from "$lib/shared/create/domain/TurnPatternData";
+} from "$lib/shared/create/domain/turn-pattern-data";
 /**
  * Specifies which hand(s) to apply pattern changes to
  */
@@ -48,7 +48,7 @@ export interface TurnPatternApplyResult {
 import {
   createMotionData,
   type MotionData,
-} from "$lib/shared/pictograph/shared/domain/models/MotionData";
+} from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionColor,
   MotionType,

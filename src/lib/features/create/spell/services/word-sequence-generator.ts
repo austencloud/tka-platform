@@ -4,16 +4,16 @@
  * Converts typed words into valid TKA sequences with bridge letters.
  */
 
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { stepConverter as StepConverterSingleton } from "$lib/features/create/generate/shared/services/step-converter";
 type StepConverter = typeof StepConverterSingleton;
 import type { SequenceExtender } from "../../shared/services/sequence-extender";
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 import type { LetterTransitionGraph } from "./letter-transition-graph";
 import type { StartPositionValidator } from "./start-position-validator";

@@ -17,9 +17,9 @@
     DurationTemplateDefinition,
     DurationCategory,
   } from "$lib/features/create/shared/domain/templates/duration-templates";
-  import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
   // State
   let stepCount = $state(8);
@@ -62,7 +62,7 @@
 
       steps.push({
         id: `lab-step-${i}`,
-        letter: letter as import("$lib/shared/foundation/domain/models/Letter").Letter,
+        letter: letter as import("$lib/shared/foundation/domain/models/letter").Letter,
         stepNumber: i + 1,
         duration,
         blueReversal: false,

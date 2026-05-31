@@ -1,4 +1,4 @@
-import type { FeatureFlagConfig } from "$lib/shared/auth/domain/models/FeatureFlag";
+import type { FeatureFlagConfig } from "$lib/shared/auth/domain/models/feature-flag";
 
 /**
  * Each premium capability needs a FeatureFlagConfig so that

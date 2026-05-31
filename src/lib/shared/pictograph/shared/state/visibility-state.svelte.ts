@@ -1,5 +1,5 @@
-import type { AppSettings } from "../../../settings/domain/AppSettings";
-import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
+import type { AppSettings } from "../../../settings/domain/app-settings";
+import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { browser } from "$app/environment";
 
@@ -11,7 +11,7 @@ async function getSettingsService(): Promise<SettingsState | null> {
   if (!browser) return null;
   if (!settingsServiceInstance) {
     const { settingsService } =
-      await import("../../../settings/state/SettingsState.svelte");
+      await import("../../../settings/state/settings-state.svelte");
     settingsServiceInstance = settingsService;
   }
   return settingsServiceInstance;

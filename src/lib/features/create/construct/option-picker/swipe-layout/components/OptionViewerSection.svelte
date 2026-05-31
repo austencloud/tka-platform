@@ -10,7 +10,7 @@ Renders a section with:
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { reversalDetector as _reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
   import type { PictographWithReversals } from "$lib/shared/create/services/reversal-detector";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { calculateFitSize as calculateGridFitSize, calculateOptimalColumnLayout } from "../../services/option-grid-fit-calculator";
   import { onMount } from "svelte";
@@ -18,7 +18,7 @@ Renders a section with:
   import OptionPictographCell from "./OptionPictographCell.svelte";
   import SectionHeader from "./SectionHeader.svelte";
   import PictographContextMenuHost from "$lib/shared/pictograph/shared/components/context-menu/PictographContextMenuHost.svelte";
-  import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
+  import type { PreparedPictographData } from "$lib/shared/pictograph/option/prepared-pictograph-data";
 
   // Props - Dark mode is handled via CSS (:root.dark) not prop drilling
   const {

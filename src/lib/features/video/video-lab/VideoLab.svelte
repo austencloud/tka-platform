@@ -8,8 +8,8 @@
     3. Synced Playback - side-by-side video + choreo card preview
 -->
 <script lang="ts">
-  import type { StepMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   import UploadSelectView from "./views/UploadSelectView.svelte";
   import StepMappingView from "./views/StepMappingView.svelte";

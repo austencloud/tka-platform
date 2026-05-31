@@ -1,5 +1,5 @@
-import { hslToRgb } from "../types/LedPatterns";
-import type { LedColor } from "../types/LedPatterns";
+import { hslToRgb } from "../types/led-patterns";
+import type { LedColor } from "../types/led-patterns";
 import type { TipEvaluationContext } from "./context";
 
 const TWO_PI = Math.PI * 2;

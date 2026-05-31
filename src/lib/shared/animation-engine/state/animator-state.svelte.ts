@@ -15,14 +15,14 @@
 
 import type { AnimationVisibilityState } from "../services/animation-visibility-synchronizer";
 import type { PreRenderProgress } from "../services/sequence-frame-pre-renderer";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { TrailSettings } from "../domain/types/TrailTypes";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { TrailSettings } from "../domain/types/trail-types";
 import { loadTrailSettings } from "../utils/animation-panel-persistence";
 import {
   DEFAULT_PROP_DIMENSIONS,
   type PropDimensions,
 } from "../services/IPropTextureLoader";
-import type { EffectType, TipEffectMap } from "../domain/types/TipEffectTypes";
+import type { EffectType, TipEffectMap } from "../domain/types/tip-effect-types";
 
 export interface AnimatorState {
   readonly isInitialized: boolean;

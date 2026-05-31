@@ -25,7 +25,7 @@
   import AuthFooter from "./AuthFooter.svelte";
   import GoogleOneTap from "./GoogleOneTap.svelte";
   import LegalSheet from "../../legal/components/LegalSheet.svelte";
-  import { settingsService } from "../../settings/state/SettingsState.svelte";
+  import { settingsService } from "../../settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { applyThemeForBackground } from "../../settings/utils/background-theme-calculator";
   import { isGoogleOneTapConfigured } from "../config/google-oauth";

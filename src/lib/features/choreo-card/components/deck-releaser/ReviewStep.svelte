@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CardFooter, DeckReleaseCard } from "../../domain/models/DeckRelease";
   import type { CardPair } from "../../services/types";
   import PrintPreviewPages from "../print-preview/PrintPreviewPages.svelte";
@@ -8,7 +8,7 @@
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
   import type { CardSizeId } from "../../domain/card-sizes";
   import type { TnDElement } from "../../domain/tnd-element";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   interface Props {
     cards: DeckReleaseCard[];

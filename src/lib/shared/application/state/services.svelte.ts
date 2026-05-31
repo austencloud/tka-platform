@@ -1,4 +1,4 @@
-import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
+import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
 
 // ============================================================================
@@ -22,7 +22,7 @@ export async function initializeAppServices(): Promise<void> {
   if (isInitialized) return;
 
   const { settingsService: singleton } = await import(
-    "../../settings/state/SettingsState.svelte"
+    "../../settings/state/settings-state.svelte"
   );
   settingsService = singleton;
   isInitialized = true;
@@ -58,7 +58,7 @@ export function getSettingsServiceSync(): SettingsState {
 export async function getSettingsService(): Promise<SettingsState> {
   if (!settingsService) {
     const { settingsService: singleton } = await import(
-      "../../settings/state/SettingsState.svelte"
+      "../../settings/state/settings-state.svelte"
     );
     settingsService = singleton;
   }

@@ -1,5 +1,5 @@
-import type { EffectsPreset } from "../EffectsPreset";
-import type { FireColorCurve } from "$lib/shared/animation-engine/domain/types/FireTypes";
+import type { EffectsPreset } from "../effects-preset";
+import type { FireColorCurve } from "$lib/shared/animation-engine/domain/types/fire-types";
 
 const CLASSIC_CURVE: FireColorCurve = {
   coldColor: [0.2, 0.02, 0.0],

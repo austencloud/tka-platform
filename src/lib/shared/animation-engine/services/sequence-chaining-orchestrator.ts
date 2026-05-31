@@ -6,7 +6,7 @@
  * and hot-swapping sequences into the playback controller.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { EndState } from "$lib/shared/landing/domain/types";
@@ -16,7 +16,7 @@ export type { SourceMode };
 
 import * as propTypeApplierModule from "$lib/shared/landing/services/prop-type-applier";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 

@@ -10,26 +10,26 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { SequenceImageSharer } from "$lib/shared/share/services/sequence-image-sharer";
   import { getSequenceImageSharer } from "$lib/shared/share/get-sequence-image-sharer";
-  import type { SequenceDetailLoader } from "$lib/shared/browse/services/SequenceDetailLoader";
-  import type { VideoCountManager } from "$lib/shared/browse/services/VideoCountManager";
+  import type { SequenceDetailLoader } from "$lib/shared/browse/services/sequence-detail-loader";
+  import type { VideoCountManager } from "$lib/shared/browse/services/video-count-manager";
   import type { MediaType, MediaFormat, ExportSettings } from "../domain/types";
-  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import type { PlaybackMode, StepPlaybackStepSize } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
-  import { getSequenceDetailLoader } from "$lib/shared/browse/getSequenceDetailLoader";
-  import { getVideoCountManager } from "$lib/shared/browse/getVideoCountManager";
+  import { getSequenceDetailLoader } from "$lib/shared/browse/get-sequence-detail-loader";
+  import { getVideoCountManager } from "$lib/shared/browse/get-video-count-manager";
   import { onMount, untrack } from "svelte";
 
   import SequenceViewer from "./SequenceViewer.svelte";
   import QuickShareRow from "./QuickShareRow.svelte";
   // ExportControlsSection removed - edit mode now uses inline action buttons
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
 
   /**

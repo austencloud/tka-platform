@@ -5,9 +5,9 @@
   import { getVideosForSequence, saveVideo, deleteVideo, updateStepMap } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-  import type { StepMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
+  import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import { getAuthSync } from "$lib/shared/auth/firebase";
   import {
     createVideoFromUpload,

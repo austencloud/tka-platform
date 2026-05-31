@@ -9,8 +9,8 @@
 
 import { convertFileName } from "../services/file-name-converter";
 
-import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
-import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
 
 export interface RecycleBinItem {
 	id: string;

@@ -9,7 +9,7 @@
   import {
     TIME_SIGNATURES,
     type TimeSignatureKey,
-  } from "$lib/shared/foundation/domain/models/TimeSignature";
+  } from "$lib/shared/foundation/domain/models/time-signature";
   import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
 
   // Available time signatures with display info

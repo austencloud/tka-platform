@@ -5,7 +5,7 @@
  * Extracted from OptionPickerService for better separation of concerns.
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { SortMethod } from "../domain/option-picker-types";
 import type { PositionAnalyzer } from "./position-analyzer";
 import { hasReversals } from "./reversal-checker";

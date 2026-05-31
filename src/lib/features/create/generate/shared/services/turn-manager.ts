@@ -2,7 +2,7 @@
  * Turn Manager — turn values and rotation directions for dash/static motions.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import {
   MotionType,
   RotationDirection,

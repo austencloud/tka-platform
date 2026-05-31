@@ -28,8 +28,8 @@
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
   import DisplayPanel from "$lib/shared/animation-engine/components/settings-panels/DisplayPanel.svelte";
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import RailBentoSheet from "../bento/RailBentoSheet.svelte";
   import DownloadPillNav from "../pill-nav/DownloadPillNav.svelte";
   import IconRailNav from "../pill-nav/IconRailNav.svelte";

@@ -3,7 +3,7 @@
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import AvatarImage from "$lib/shared/browse/components/AvatarImage.svelte";
   import { reportModalState } from "$lib/features/moderation/state/report-modal-state.svelte";
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 
   let {
     userProfile,

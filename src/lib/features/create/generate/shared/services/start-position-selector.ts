@@ -13,7 +13,7 @@ import type {
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { stepConverter as StepConverterType } from "$lib/features/create/generate/shared/services/step-converter";
 import type { pictographFilter as PictographFilterType } from "./pictograph-filter";
 

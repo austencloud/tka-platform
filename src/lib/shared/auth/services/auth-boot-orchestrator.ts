@@ -28,7 +28,7 @@ export async function initializeChildServices(
   })();
 
   // Initialize settings Firebase sync (non-blocking)
-  import("$lib/shared/settings/state/SettingsState.svelte")
+  import("$lib/shared/settings/state/settings-state.svelte")
     .then(async (settingsModule) => {
       const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
       await getFirestoreInstance();

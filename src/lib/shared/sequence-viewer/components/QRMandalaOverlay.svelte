@@ -8,13 +8,13 @@
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { getQRCodeGenerator } from "$lib/shared/qr/getQRCodeGenerator";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { getMandalaPlacements } from "../services/getMandalaPlacements";
-  import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
-  import { encodeViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { getMandalaPlacements } from "../services/get-mandala-placements";
+  import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
+  import { encodeViewMode } from "$lib/shared/browse/domain/browse-view-mode";
 
   interface MandalaPlacement {
     row: number;

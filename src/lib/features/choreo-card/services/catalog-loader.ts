@@ -1,14 +1,14 @@
 import { collection, getDocs, query, where, limit, startAfter, orderBy, type QueryDocumentSnapshot } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { Catalog } from "../domain/models/Catalog";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   getSystemCatalogsPath,
   getSystemCatalogSequencesPath,

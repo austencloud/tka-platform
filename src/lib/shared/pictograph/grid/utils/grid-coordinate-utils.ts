@@ -8,7 +8,7 @@
 
 import { GridMode } from "../domain/enums/grid-enums";
 import type { GridPointData } from "../domain/models/grid-models";
-import { gridCoordinates } from "../domain/constants/gridCoordinates";
+import { gridCoordinates } from "../domain/constants/grid-coordinates";
 
 /**
  * Parse coordinate string "(x, y)" into {x, y} object

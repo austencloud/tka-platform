@@ -6,7 +6,7 @@
  * Uses reactive state ownership - service owns $state, component derives from it.
  */
 
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 
 /**
  * Current transition state - owned by service

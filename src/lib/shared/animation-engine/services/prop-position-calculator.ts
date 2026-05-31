@@ -2,9 +2,9 @@
  * Single source of truth for calculating prop endpoint positions for trail rendering.
  */
 
-import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-import { getTrailPointConfig, type TrailPointSource } from "../domain/types/TrailPointTypes";
-import { getTipPoints } from "../domain/types/PropTipPoints";
+import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+import { getTrailPointConfig, type TrailPointSource } from "../domain/types/trail-point-types";
+import { getTipPoints } from "../domain/types/prop-tip-points";
 
 /** Configuration for prop endpoint calculations */
 export interface PropEndpointConfig {

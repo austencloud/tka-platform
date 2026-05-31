@@ -15,7 +15,7 @@
   import SimpleTrailControls from "$lib/shared/animation-engine/components/trail/SimpleTrailControls.svelte";
   import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
   import StepModeSettings from "./StepModeSettings.svelte";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type {
     PlaybackMode,
     StepPlaybackStepSize,

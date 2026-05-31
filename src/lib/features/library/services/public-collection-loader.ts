@@ -15,9 +15,9 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { LibraryCollection } from "$lib/shared/library/domain/models/Collection";
-import { SYSTEM_COLLECTION_IDS } from "$lib/shared/library/domain/models/Collection";
-import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
+import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
+import { SYSTEM_COLLECTION_IDS } from "$lib/shared/library/domain/models/collection";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import {
   getUserCollectionsPath,
   getUserCollectionPath,

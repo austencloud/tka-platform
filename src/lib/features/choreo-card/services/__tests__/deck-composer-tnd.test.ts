@@ -6,13 +6,13 @@ import {
   classifyTnDSeedForGrid,
   type TnDSeedClass,
 } from "../deck-composer";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionColor,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 // ───────────────────────────────────────────────────────────────────────────
 // Seed classes per §4.2: each base seed's grid-correct family (diamond | box).

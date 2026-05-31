@@ -14,7 +14,7 @@ import {
 } from "../../navigation-coordinator/navigation-coordinator.svelte";
 import { navigationState } from "../../navigation/state/navigation-state.svelte";
 import type { ModuleId } from "../../navigation/domain/types";
-import { authState } from "../../auth/state/authState.svelte";
+import { authState } from "../../auth/state/auth-state.svelte";
 
 export function registerCommandPaletteCommands(
   service: CommandPalette,

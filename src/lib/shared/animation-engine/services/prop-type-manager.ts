@@ -9,7 +9,7 @@
  */
 
 import { animationSettings as animationSettingsState } from "../state/animation-settings-state.svelte";
-import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
+import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 import type { IPropTextureLoader } from "./IPropTextureLoader";
 import type { TrailCapturer } from "$lib/shared/animation-engine/services/trail-capturer";
 import type { IAnimationRenderLoop, RenderFrameParams } from "./IAnimationRenderLoop";

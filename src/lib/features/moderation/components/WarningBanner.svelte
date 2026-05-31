@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { doc, onSnapshot, type Unsubscribe } from 'firebase/firestore';
   import { getFirestoreInstance } from '$lib/shared/auth/firebase';
-  import { authState, getEffectiveUserId } from '$lib/shared/auth/state/authState.svelte';
+  import { authState, getEffectiveUserId } from '$lib/shared/auth/state/auth-state.svelte';
   import { acknowledgeWarning } from '../services/warning-acknowledger';
   import { t } from '$lib/shared/i18n/i18n.svelte';
 

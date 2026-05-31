@@ -6,8 +6,8 @@
   import { voiceControlState } from "../../../voice-control/state/voice-control-state.svelte";
   import { getSettings } from "../../../application/state/app-state.svelte";
   import { propDrawerState } from "../../../settings/state/prop-drawer-state.svelte";
-  import { getPropTypeDisplayInfo } from "../../../pictograph/prop/domain/PropTypeDisplayRegistry";
-  import { PropType } from "../../../pictograph/prop/domain/enums/PropType";
+  import { getPropTypeDisplayInfo } from "../../../pictograph/prop/domain/prop-type-display-registry";
+  import { PropType } from "../../../pictograph/prop/domain/enums/prop-type";
   import AccountRow from "../account/AccountRow.svelte";
   import { inboxState } from "../../../inbox/state/inbox-state.svelte";
 

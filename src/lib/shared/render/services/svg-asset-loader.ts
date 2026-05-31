@@ -11,7 +11,7 @@
  */
 
 import { getSvgImageCache, type DrawableImage } from "./svg-image-cache";
-import { Letter } from "../../foundation/domain/models/Letter";
+import { Letter } from "../../foundation/domain/models/letter";
 import { getLetterImagePath } from "../../pictograph/tka-glyph/utils/letter-image-getter";
 
 export interface LetterAsset {

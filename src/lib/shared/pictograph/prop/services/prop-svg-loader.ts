@@ -11,9 +11,9 @@
  * - HMR-aware cache persistence (prevents mass refetches on code changes)
  */
 
-import type { MotionData } from "../../shared/domain/models/MotionData";
-import type { PropPlacementData } from "../domain/models/PropPlacementData";
-import type { PropRenderData } from "../domain/models/PropRenderData";
+import type { MotionData } from "../../shared/domain/models/motion-data";
+import type { PropPlacementData } from "../domain/models/prop-placement-data";
+import type { PropRenderData } from "../domain/models/prop-render-data";
 import type { PropSvgLoadOptions } from "./types";
 import { MotionColor } from "../../shared/domain/enums/pictograph-enums";
 import {

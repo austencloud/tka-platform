@@ -1,5 +1,5 @@
 import { browser } from "$app/environment";
-import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import { createSceneLabState } from "$lib/features/lab/tabs/scene-lab/state/scene-lab-state.svelte";
 import { createComposerEditorState } from "$lib/shared/3d/scene-composer/composer-editor-state.svelte";
 import {

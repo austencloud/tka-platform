@@ -9,7 +9,7 @@
  * by tracking pointer position and using a generous movement threshold.
  */
 
-import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
 import { attachRipple } from "$lib/shared/application/services/ripple-effect";
 import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 import type { DeviceDetector } from '$lib/shared/device/services/device-detector'

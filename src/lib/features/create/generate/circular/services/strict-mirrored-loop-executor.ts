@@ -24,7 +24,7 @@
  * wheel by 180° per cycle (or 90° per quarter), closing at pass 4.
  */
 
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   RotationDirection,
   MotionColor,
@@ -43,7 +43,7 @@ import {
   MIRRORED_LOOP_VALIDATION_SET,
 } from "../domain/constants/strict-loop-position-maps";
 import { Period } from "../domain/models/circular-models";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 export class StrictMirroredLOOPExecutor {
   constructor() {}

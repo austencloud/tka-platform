@@ -1,7 +1,7 @@
 import type { EffectRendererManager } from "./effect-renderer-manager";
-import type { FireOverlayConfig } from "../domain/types/FireTypes";
-import type { LedOverlayConfig } from "../domain/types/LedTypes";
-import type { TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
+import type { FireOverlayConfig } from "../domain/types/fire-types";
+import type { LedOverlayConfig } from "../domain/types/led-types";
+import type { TipEffectMap, TipEffortMap } from "../domain/types/tip-effect-types";
 
 export interface DiagnosticContext {
   isInitialized: boolean;

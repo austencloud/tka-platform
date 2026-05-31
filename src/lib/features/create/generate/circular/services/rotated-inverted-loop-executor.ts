@@ -16,9 +16,9 @@
  * IMPORTANT: End position is calculated from rotated locations
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import {
   MotionType,

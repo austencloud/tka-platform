@@ -5,7 +5,7 @@
  * before they start using the app.
  */
 
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { BackgroundType } from "@austencloud/backgrounds";
 
 /**

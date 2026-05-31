@@ -6,20 +6,20 @@
  */
 
 import type { Timestamp } from "firebase/firestore";
-import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import {
   generateAdjustmentKeyString,
   parseAdjustmentKeyString,
   type GlobalAdjustmentKey,
   type GlobalArrowAdjustment,
   type GlobalArrowAdjustmentInput,
-} from "../domain/GlobalArrowAdjustment";
+} from "../domain/global-arrow-adjustment";
 import type { CascadingLookupResult } from "./types";
 import type { GlobalArrowAdjustmentPersister } from "./global-arrow-adjustment-persister";
 import {
   createGlobalArrowAdjustmentState,
   type GlobalArrowAdjustmentState,
-} from "../state/GlobalArrowAdjustmentState.svelte";
+} from "../state/global-arrow-adjustment-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { globalAdjustmentVersion } from "../state/global-adjustment-version.svelte";
 

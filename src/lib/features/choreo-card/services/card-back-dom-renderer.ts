@@ -2,7 +2,7 @@ import { mount, unmount } from "svelte";
 import CardBack from "../components/card-back/CardBack.svelte";
 import { getCardBackThemeVisuals } from "../components/card-back/card-back-theme-visuals";
 import type { CardBackDomRenderOptions } from "./types";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 export async function renderCardBack(sequence: SequenceData, options: CardBackDomRenderOptions): Promise<HTMLCanvasElement> {
   const { width, height, theme } = options;

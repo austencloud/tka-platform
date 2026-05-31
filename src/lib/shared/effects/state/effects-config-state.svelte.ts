@@ -26,7 +26,7 @@ import type {
   FrostIntent,
   SilkIntent,
   PulseIntent,
-} from "../domain/EffectsConfig";
+} from "../domain/effects-config";
 
 export interface EffectConfigMap {
   trails: TrailsIntent;
@@ -46,12 +46,12 @@ export interface EffectConfigMap {
   silk: SilkIntent;
   pulse: PulseIntent;
 }
-import type { EffectsPreset } from "../domain/EffectsPreset";
-import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
+import type { EffectsPreset } from "../domain/effects-preset";
+import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 import { DEFAULT_EFFECTS_CONFIG } from "../domain/defaults";
-import { EFFECTS_CONFIG_VERSION } from "../domain/EffectsConfig";
-import { getSceneUndoManager } from "$lib/shared/3d/undo/getSceneUndoManager";
-import { charcoalParamsToSemantic } from "$lib/shared/animation-engine/domain/types/CharcoalSparkTypes";
+import { EFFECTS_CONFIG_VERSION } from "../domain/effects-config";
+import { getSceneUndoManager } from "$lib/shared/3d/undo/get-scene-undo-manager";
+import { charcoalParamsToSemantic } from "$lib/shared/animation-engine/domain/types/charcoal-spark-types";
 
 const STORAGE_KEY = "tka_effects_config";
 const VM_STORAGE_KEY = "animation-visibility-settings";

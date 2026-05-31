@@ -1,15 +1,15 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import PictographContextMenuHost from "$lib/shared/pictograph/shared/components/context-menu/PictographContextMenuHost.svelte";
   import ArrowLayerModal from "../../../components/arrow-adjustment/ArrowLayerModal.svelte";
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
   import { createStepCellAnimationManager } from "../services/step-cell-animation-manager";
-  import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
+  import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
 
 
   let {

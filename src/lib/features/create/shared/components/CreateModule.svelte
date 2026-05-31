@@ -5,7 +5,7 @@
 // LOOP action) so they stay OUT of the Create module's eager first-paint graph.
 // See scripts/trace-create-three.cjs. getLibraryRepository stays static — it's
 // read synchronously by a context getter children rely on.
-import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 
   /**
    * CreateModule.svelte - COMPOSITION ROOT
@@ -41,12 +41,12 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
    * Domain: Create module - Composition Root
    */
 
-  import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/settings-state.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { setSideBySideLayout } from "$lib/shared/application/state/animation-visibility-state.svelte";
   import { onMount, setContext, tick } from "svelte";
   import ErrorBanner from "./ErrorBanner.svelte";
@@ -76,15 +76,15 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   import IndeterminateBar from "$lib/shared/components/loading/IndeterminateBar.svelte";
   import { SessionManager } from "../services/session-manager.svelte";
   import { Autosaver } from "../services/autosaver";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
-  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
-  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
+  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
+  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
-  import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/AuthNudgeTrigger";
+  import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
   import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
   import { createPanelHeightTracker } from "../state/managers/panel-height-tracker.svelte";
-  import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
+  import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
   import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { formatLOOPTypeForDisplay } from "$lib/shared/create/services/loop-type-utils";

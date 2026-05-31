@@ -12,7 +12,7 @@ import {
   addSequenceToCollection,
   getCollectionSequences,
 } from "$lib/shared/library/services/collection-manager";
-import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 
 export class FavoritesManager {
   constructor() {}

@@ -21,8 +21,8 @@
  *   - packages/domain/src/curriculum/knowledge-graph.ts
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 const CENTER_ORIENTATIONS = new Set([
   "centerN", "centerNE", "centerE", "centerSE",

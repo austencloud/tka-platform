@@ -18,7 +18,7 @@ import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
   import { inboxState } from "../state/inbox-state.svelte";
   import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
   import { notificationService } from "$lib/shared/feedback/services/notifier";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import PushPermissionPrompt from "$lib/shared/push/components/PushPermissionPrompt.svelte";
   import type { FCMTokenManager } from "$lib/shared/push/services/fcm-token-manager";

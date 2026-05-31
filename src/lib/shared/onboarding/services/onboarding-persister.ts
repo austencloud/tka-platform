@@ -15,7 +15,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import type { OnboardingStatus } from "./types";
 import {
   ONBOARDING_COMPLETED_KEY,

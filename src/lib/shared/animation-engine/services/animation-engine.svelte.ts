@@ -14,16 +14,16 @@
  */
 
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-import { type TrailSettings } from "../domain/types/TrailTypes";
-import type { AdditionalLayerProps } from "../domain/types/TrailCaptureTypes";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+import { type TrailSettings } from "../domain/types/trail-types";
+import type { AdditionalLayerProps } from "../domain/types/trail-capture-types";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
-import type { TipEffortMap } from "../domain/types/TipEffectTypes";
+import type { TipEffortMap } from "../domain/types/tip-effect-types";
 
 // Services
 import {
@@ -32,9 +32,9 @@ import {
 import { FrameBudgetMonitor } from "./frame-budget-monitor";
 import { detectDeviceTier } from "./device-tier-detector";
 import { AnimatorCanvasInitializer } from "./animator-canvas-initializer";
-import type { FireOverlayConfig } from "../domain/types/FireTypes";
+import type { FireOverlayConfig } from "../domain/types/fire-types";
 import type { FireDefaultsLoader } from "./fire-defaults-loader";
-import type { LedOverlayConfig } from "../domain/types/LedTypes";
+import type { LedOverlayConfig } from "../domain/types/led-types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 import { LiveRenderContext } from "./render-context";
@@ -46,7 +46,7 @@ import { PropSystem } from "./managers/prop-system";
 import { FrameSystem } from "./managers/frame-system";
 import { EffectSystem } from "./managers/effect-system";
 import { PlaybackSync } from "./managers/playback-sync";
-import type { EffectType, TipEffectMap } from '../domain/types/TipEffectTypes';
+import type { EffectType, TipEffectMap } from '../domain/types/tip-effect-types';
 import { createAnimatorState, type AnimatorState } from '../state/animator-state.svelte';
 
 // ── Effects helper utility (used by initialize + hasEffectInMap) ────────────
@@ -292,7 +292,7 @@ export class AnimationEngine {
 
     // fireDefaultsLoader - load on demand via getter
     try {
-      const { getFireDefaultsLoader } = await import("$lib/shared/animation-engine/getFireDefaultsLoader");
+      const { getFireDefaultsLoader } = await import("$lib/shared/animation-engine/get-fire-defaults-loader");
       this.fireDefaultsLoader = getFireDefaultsLoader();
     } catch {
       console.warn("[AnimationEngine] Fire defaults loader not available");

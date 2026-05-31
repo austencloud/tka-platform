@@ -10,8 +10,8 @@
  * current SVG-based renderer for A/B comparison.
  */
 
-import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographVisibilityOptions } from "../utils/pictograph-to-svg";
 import type { RenderCanvas } from "./types";
 

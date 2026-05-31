@@ -7,8 +7,8 @@ transition in place via their own CSS transforms when data changes.
 Computes reversal indicators for options based on current sequence.
 -->
 <script lang="ts">
-  import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PreparedPictographData } from "$lib/shared/pictograph/option/prepared-pictograph-data";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
   import type { PictographWithReversals } from "$lib/shared/create/services/reversal-detector";
   import OptionCard from "./OptionCard.svelte";

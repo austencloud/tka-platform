@@ -7,7 +7,7 @@
 
 import { getGridPositionFromLocations } from "../../grid/services/grid-position-deriver";
 import type { GridPosition } from "../../grid/domain/enums/grid-enums";
-import type { PictographData } from "../../shared/domain/models/PictographData";
+import type { PictographData } from "../../shared/domain/models/pictograph-data";
 
 export class BetaDetector {
 

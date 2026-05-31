@@ -12,7 +12,7 @@
  */
 
 import { GridMode, type GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
   GenerationMode,
   DifficultyLevel,
@@ -24,7 +24,7 @@ import {
   Period,
 } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { VERTICAL_MIRROR_POSITION_MAP } from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
-import type { GenerationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
+import type { GenerationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
 import type { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
 import type { GeneratedSequenceInfo, GenerationSettings } from "../domain/models/spinner-models";
 import type { EndState } from "$lib/shared/landing/domain/types";

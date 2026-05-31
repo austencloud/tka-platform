@@ -5,7 +5,7 @@
  * Separated from interfaces for clean architecture.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 // Type aliases only
 export type WordCardPaperSize = "A4" | "Letter" | "Legal" | "A3" | "Tabloid";

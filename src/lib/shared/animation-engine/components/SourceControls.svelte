@@ -5,7 +5,7 @@
   action buttons (pick/skip/shuffle), and current sequence info.
 -->
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { SourceMode } from "$lib/shared/animation-engine/services/sequence-chaining-orchestrator";
   import { simplifyAndTruncate } from "$lib/shared/foundation/utils/word-simplifier";
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";

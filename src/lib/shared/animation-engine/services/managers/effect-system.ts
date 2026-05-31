@@ -23,15 +23,15 @@ import { EffectController } from "../effect-controller";
 import type { AnimatorState } from "../../state/animator-state.svelte";
 import type { CanvasLifecycleManager } from "../canvas-lifecycle-manager";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-import type { FireOverlayConfig, FireColorCurve } from "../../domain/types/FireTypes";
+import type { FireOverlayConfig, FireColorCurve } from "../../domain/types/fire-types";
 import {
   BASE_FIRE_PHYSICS,
   BASE_COLOR_CURVE,
   intensityToPhysics,
-} from "../../domain/types/FireTypes";
-import type { LedOverlayConfig } from "../../domain/types/LedTypes";
-import type { TipEffectMap, TipEffortMap } from "../../domain/types/TipEffectTypes";
-import { semanticToCharcoalParams, type CharcoalSparkParams } from "../../domain/types/CharcoalSparkTypes";
+} from "../../domain/types/fire-types";
+import type { LedOverlayConfig } from "../../domain/types/led-types";
+import type { TipEffectMap, TipEffortMap } from "../../domain/types/tip-effect-types";
+import { semanticToCharcoalParams, type CharcoalSparkParams } from "../../domain/types/charcoal-spark-types";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { AnimationVisibilityState } from "../animation-visibility-synchronizer";
 import type { AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";

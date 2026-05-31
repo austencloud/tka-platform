@@ -27,13 +27,13 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   } from "../circular/domain/models/circular-models";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { BackgroundType } from "@austencloud/backgrounds";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getCardColors } from "../shared/domain/card-colors";
   import * as spellServiceLoader from "$lib/features/create/spell/services/spell-service-loader";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
-  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
-  import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/AuthNudgeTrigger";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
+  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
+  import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   // Card components

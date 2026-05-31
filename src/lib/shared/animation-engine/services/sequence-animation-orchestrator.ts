@@ -5,16 +5,16 @@
  * Single responsibility: Coordinate animation services and manage sequence lifecycle.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type {
   PropState,
   PropStates,
-} from "$lib/shared/foundation/domain/types/PropState";
+} from "$lib/shared/foundation/domain/types/prop-state";
 import type {
   SequenceData,
   SequenceMetadata,
-} from "$lib/shared/foundation/domain/models/SequenceData";
+} from "$lib/shared/foundation/domain/models/sequence-data";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import type {
   AnimationStateManager,
@@ -36,7 +36,7 @@ import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
 import { interpolatePhrase } from "$lib/shared/phrase-effort-lab/services/phrase-interpolator";
 import { findPhraseAtBeat } from "$lib/shared/effort/domain/effort-timeline-types";
 import type { EffortTimeline } from "$lib/shared/effort/domain/effort-timeline-types";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 /**
  * Lightweight Animation Orchestrator

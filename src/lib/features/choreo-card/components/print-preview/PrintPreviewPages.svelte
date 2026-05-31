@@ -1,22 +1,22 @@
 <script lang="ts">
 
 import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRenderer";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CardFooter } from "../../domain/models/DeckRelease";
   import type { CardSizeId } from "../../domain/card-sizes";
   import type { CardPair } from "../../services/types";
   import type { PrintRenderOptions } from "../../services/types";
   import type { TnDElement } from "../../domain/tnd-element";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
   import { planPrintSlots } from "../../services/print-slot-planner";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getCatalogLayoutPolicy } from "../../domain/catalog-layout-policy";
   import { cardCache, type RenderedCard, type CachedCard } from "./print-preview-cache";
   import { deckCardBlobCache, blobToDataUrl, canvasToBlob } from "../../services/DeckCardBlobCache";
   import { hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
-  import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
+  import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
 
   // Render-schema version baked into every card cache key (memory + IndexedDB).

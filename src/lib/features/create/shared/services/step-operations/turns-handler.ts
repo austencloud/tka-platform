@@ -3,15 +3,15 @@
  * Handles beat turns updates including float conversion and rotation direction auto-assignment.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import { createStartPositionData } from "$lib/shared/create/factories/createStartPositionData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import type { ICreateModuleState } from "../../types/create-module-types";
 import {
   createMotionData,
   type MotionData,
-} from "$lib/shared/pictograph/shared/domain/models/MotionData";
+} from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type {
   MotionColor} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {

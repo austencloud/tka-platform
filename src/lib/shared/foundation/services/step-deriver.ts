@@ -1,12 +1,12 @@
 import type { ViewerPreferences } from "./types";
-import type { SoloPropData } from "../domain/models/SoloPropData";
-import type { StepPairingData } from "../domain/models/StepPairingData";
-import type { SoloPropStepData } from "../domain/models/SoloPropStepData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { SoloPropData } from "../domain/models/solo-prop-data";
+import type { StepPairingData } from "../domain/models/step-pairing-data";
+import type { SoloPropStepData } from "../domain/models/solo-prop-step-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
   MotionColor,
   MotionType,

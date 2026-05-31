@@ -36,8 +36,8 @@ import {
 } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import { isValidUserRole } from "../domain/models/FeatureFlag";
-import type { UserRole } from "../domain/models/UserRole";
+import { isValidUserRole } from "../domain/models/feature-flag";
+import type { UserRole } from "../domain/models/user-role";
 import type { GlobalFlagOverrides } from "./types";
 
 const LOG_PREFIX = "[GlobalFeatureFlagPersister]";

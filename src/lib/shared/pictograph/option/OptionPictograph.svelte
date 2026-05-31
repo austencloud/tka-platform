@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { PreparedPictographData } from "../shared/domain/models/PreparedPictographData";
+  import type { PreparedPictographData } from "../shared/domain/models/prepared-pictograph-data";
   import PictographRenderer from "../shared/components/PictographRenderer.svelte";
   import { getVisibilityStateManager } from "../shared/state/visibility-state.svelte";
   import type { GridLocation } from "../grid/domain/enums/grid-enums";

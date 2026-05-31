@@ -5,7 +5,7 @@
  * Each filter type has its own dedicated method for clarity.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/filtering-types";

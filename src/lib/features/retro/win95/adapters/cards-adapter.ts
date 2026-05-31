@@ -8,8 +8,8 @@
  * Domain: Retro CARDS App
  */
 
-import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import {
   GridMode,
   GridLocation,
@@ -20,8 +20,8 @@ import {
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 
 import type {
   RetroPictographData,

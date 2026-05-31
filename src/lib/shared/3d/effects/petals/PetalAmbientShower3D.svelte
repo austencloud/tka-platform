@@ -19,7 +19,7 @@
     pickPetalTint,
     rollEmberFlag,
     type PetalSpriteShape,
-  } from "$lib/shared/effects/domain/PetalPalettes";
+  } from "$lib/shared/effects/domain/petal-palettes";
 
   interface Props {
     /** Resolved petal params. */

@@ -6,11 +6,11 @@
  */
 
 import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
-import type { LibraryCollection } from "$lib/shared/library/domain/models/Collection";
-import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
+import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import { getUsers } from "$lib/shared/community/services/user-repository";
 import { getUserPublicCollections } from "$lib/features/library/services/public-collection-loader";
-import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
+import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
 
 /**
  * Creator library data - profile + their public content

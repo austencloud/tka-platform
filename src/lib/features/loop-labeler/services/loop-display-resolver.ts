@@ -1,4 +1,4 @@
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceEntry } from "$lib/shared/loop-labeler/domain/sequence-models";
 import type { ComponentId } from "../domain/constants/loop-components";
 import {

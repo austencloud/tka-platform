@@ -1,17 +1,17 @@
 <script lang="ts">
   import { onMount, onDestroy, tick } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
+import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
 
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import * as propTypeApplier from "$lib/shared/landing/services/prop-type-applier";
-  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
 
   const animationState = createAnimationPanelState();
   const visibilityManager = getAnimationVisibilityManager();

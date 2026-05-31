@@ -16,7 +16,7 @@ import type { FeedbackFormData, FeedbackFormErrors, FeedbackSubmitStatus, Feedba
 import { feedbackService } from "$lib/shared/feedback/services/feedback-repository";
 import * as imageStager from "../services/image-stager";
 import type { StagedUploadHandle } from "$lib/shared/feedback/domain/feedback-contract-types";
-import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import {
   getCapturedModule,
   getCapturedTab,

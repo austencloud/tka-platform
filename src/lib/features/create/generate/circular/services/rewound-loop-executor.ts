@@ -16,8 +16,8 @@
  * No position validation is needed (unlike rotation-based LOOPs).
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionColor,
   RotationDirection,

@@ -18,7 +18,7 @@
    */
   import { onMount } from "svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { ExportUrlManager } from "$lib/shared/export-panel/services/export-url-manager";
 
   const { CreateModuleState, panelState } = getCreateModuleContext();

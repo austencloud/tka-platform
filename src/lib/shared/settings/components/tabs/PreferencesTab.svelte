@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { AppSettings } from "../../domain/AppSettings";
+  import type { AppSettings } from "../../domain/app-settings";
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";

@@ -26,8 +26,8 @@
   import { setSceneFeatureContext } from "../scene-features/context/scene-feature-context";
   import { createViewerCameraPlayerState } from "@austencloud/camera-3d";
 
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 
   export type CameraMode = "orthographic-2d" | "perspective-3d";
 

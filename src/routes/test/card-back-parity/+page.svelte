@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PrintRenderOptions } from "$lib/features/choreo-card/services/types";
   import { renderCardBack } from "$lib/features/choreo-card/services/card-back-dom-renderer";
   import { buildBackJob } from "$lib/features/choreo-card/services/card-back/card-back-job-builder";

@@ -14,8 +14,8 @@
   import PendingInviteCard from "$lib/shared/video-collaboration/components/PendingInviteCard.svelte";
   import InviteCollaboratorsSheet from "$lib/shared/video-collaboration/components/InviteCollaboratorsSheet.svelte";
   import VideoUploadSheet from "$lib/shared/video-collaboration/components/VideoUploadSheet.svelte";
-  import type { CollaborativeVideo, VideoCollaborator } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { CollaborativeVideo, VideoCollaborator } from "$lib/shared/video-collaboration/domain/collaborative-video";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   // Demo data
   const mockCollaborators: VideoCollaborator[] = [

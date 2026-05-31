@@ -1,4 +1,4 @@
-import type { TipEffectMap, EffectType } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
+import type { TipEffectMap, EffectType } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
 
 const VALID = new Set<string>(EFFECTS.map((e) => e.id));

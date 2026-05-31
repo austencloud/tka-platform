@@ -14,15 +14,15 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import RenderingOverlay from "$lib/shared/components/loading/RenderingOverlay.svelte";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { ThumbnailVariant, ThumbnailRenderInput, ThumbnailVisibilitySettings } from "$lib/shared/browse/services/thumbnail-key-deriver";
-  import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
-  import { getThumbnailLocalCache } from "$lib/shared/browse/getThumbnailLocalCache";
-  import type { ThumbnailLoadStatus, ThumbnailRenderOrchestrator } from "$lib/shared/browse/services/ThumbnailRenderOrchestrator";
-  import type { ThumbnailLocalCache } from "$lib/shared/browse/services/ThumbnailLocalCache";
+  import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/get-thumbnail-render-orchestrator";
+  import { getThumbnailLocalCache } from "$lib/shared/browse/get-thumbnail-local-cache";
+  import type { ThumbnailLoadStatus, ThumbnailRenderOrchestrator } from "$lib/shared/browse/services/thumbnail-render-orchestrator";
+  import type { ThumbnailLocalCache } from "$lib/shared/browse/services/thumbnail-local-cache";
   import { deriveKey } from "$lib/shared/browse/services/thumbnail-key-deriver";
   import { invalidateUrl as invalidateCloudUrl } from "$lib/shared/browse/services/cloud-thumbnail-cache";
   import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";

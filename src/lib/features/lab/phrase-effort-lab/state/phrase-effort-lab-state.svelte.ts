@@ -1,7 +1,7 @@
-import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { EffortTimeline } from "../domain/effort-timeline-types";

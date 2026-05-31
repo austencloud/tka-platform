@@ -11,7 +11,7 @@
  */
 
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
-import type { EffectType, TipEffortMap } from "../domain/types/TipEffectTypes";
+import type { EffectType, TipEffortMap } from "../domain/types/tip-effect-types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 type VisibilityObserver = () => void;

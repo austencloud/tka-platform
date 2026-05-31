@@ -9,15 +9,15 @@ Hands render at the exact same size/position as everywhere else in the app.
   import { untrack } from 'svelte';
   import { GridMode, GridLocation } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
   import PictographContainer from '$lib/shared/pictograph/shared/components/PictographContainer.svelte';
-  import { createMotionData } from '$lib/shared/pictograph/shared/domain/models/MotionData';
+  import { createMotionData } from '$lib/shared/pictograph/shared/domain/models/motion-data';
   import {
     MotionColor,
     MotionType,
     Orientation,
     RotationDirection,
   } from '$lib/shared/pictograph/shared/domain/enums/pictograph-enums';
-  import { PropType } from '$lib/shared/pictograph/prop/domain/enums/PropType';
-  import type { PictographData } from '$lib/shared/pictograph/shared/domain/models/PictographData';
+  import { PropType } from '$lib/shared/pictograph/prop/domain/enums/prop-type';
+  import type { PictographData } from '$lib/shared/pictograph/shared/domain/models/pictograph-data';
   import type { HandPosition } from '../../../domain/constants/position-quiz-data';
 interface PlacementGridProps {
     gridMode: GridMode;

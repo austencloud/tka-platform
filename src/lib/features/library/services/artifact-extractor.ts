@@ -15,8 +15,8 @@
 
 import type { HandPathRepository } from "$lib/shared/foundation/services/hand-path-repository-store";
 import type { SoloPropRepository } from "$lib/shared/foundation/services/solo-prop-repository-store";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ArtifactProvenance } from "$lib/shared/foundation/domain/models/ArtifactProvenance";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { ArtifactProvenance } from "$lib/shared/foundation/domain/models/artifact-provenance";
 
 export class ArtifactExtractor {
   constructor(

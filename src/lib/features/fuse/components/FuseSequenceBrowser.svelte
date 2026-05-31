@@ -7,11 +7,11 @@
 	 * User shuffles until they find a prop path they like.
 	 */
 
-	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-	import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
-	import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
+	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+	import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
+	import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
 	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
-	import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+	import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
 	import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 	import { getFuseContext } from "../context/fuse-context";
 

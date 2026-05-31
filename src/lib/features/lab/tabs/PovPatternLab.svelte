@@ -22,7 +22,7 @@ import { getStripPatternEngine } from "$lib/features/poi/get-strip-pattern-engin
   import DevicePanel from "$lib/features/poi/components/DevicePanel.svelte";
   import ScrubValue from "$lib/features/poi/components/ScrubValue.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   const poi = createPoiState(
     getStripPatternEngine(),

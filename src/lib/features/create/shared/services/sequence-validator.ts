@@ -5,9 +5,9 @@
  * All functions are pure - return validation results without side effects.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { ValidationResult } from "../../../../shared/validation/ValidationResult";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { ValidationResult } from "../../../../shared/validation/validation-result";
 
 /**
  * Interface describing the shape of the sequence validator module.

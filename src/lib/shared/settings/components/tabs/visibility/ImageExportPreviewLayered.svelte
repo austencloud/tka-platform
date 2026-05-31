@@ -14,7 +14,7 @@ This gives users a live preview of exactly how their settings affect the exporte
     exampleStartPositionData,
     getAabbPictographSteps,
   } from "./example-data";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
   interface Props {
     showWord?: boolean;

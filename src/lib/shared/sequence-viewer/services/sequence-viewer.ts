@@ -1,6 +1,6 @@
-import type { SequenceData } from "../../foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { SequenceData } from "../../foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import {
   loadSequence as persistLoadSequence,
   saveSequence as persistSaveSequence,
@@ -13,7 +13,7 @@ import {
 import {
   updateSequenceData,
   removeStepFromSequence,
-} from "../../foundation/domain/models/SequenceData";
+} from "../../foundation/domain/models/sequence-data";
 
 export class SequenceViewer {
 

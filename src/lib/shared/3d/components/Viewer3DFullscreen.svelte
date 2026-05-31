@@ -13,7 +13,7 @@
    * The parent must have called setViewer3DContext() before mounting this.
    */
 
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import Viewer3DCanvas from "./Viewer3DCanvas.svelte";
   import Viewer3DEffectPills from "./Viewer3DEffectPills.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";

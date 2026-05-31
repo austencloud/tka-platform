@@ -10,7 +10,7 @@
 import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-exporter";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { Catalog } from "../domain/models/Catalog";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import CatalogInteriorFilterPanel from "./filters/CatalogInteriorFilterPanel.svelte";
   import CardInspectModal from "./CardInspectModal.svelte";
   import CatalogBrowseFilterBar from "./CatalogBrowseFilterBar.svelte";
@@ -25,7 +25,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   import type { PrintPDFMode } from "../services/print-pdf-exporter";
   import { type CardSizeId } from "../domain/card-sizes";
   import type { CardPair } from "../services/types";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import type { CardFooter } from "../domain/models/DeckRelease";
   import {
     resolveTnDFamilyId as resolveTnDFamily,
@@ -38,7 +38,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   import { getTnDElement } from "../domain/tnd-element";
   import { calculateTnD } from "$lib/shared/pictograph/shared/domain/utils/tnd-calculator";
   import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import type { Letter } from "$lib/shared/foundation/domain/models/letter";
   import { seedReversalPattern, type SeedProgress } from "../services/reversal-seed-service";
   import type { ResolvedReversalPattern } from "../domain/reversal-transform";
 

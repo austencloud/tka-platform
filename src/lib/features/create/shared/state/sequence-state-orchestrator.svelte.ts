@@ -16,19 +16,19 @@
  * REPLACES: The 890-line god object sequence-state.svelte.ts
  */
 
-import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
+import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
 import type { ArrowPosition } from "$lib/shared/pictograph/arrow/orchestration/domain/arrow-models";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ValidationResult } from "$lib/shared/validation/ValidationResult";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { ValidationResult } from "$lib/shared/validation/validation-result";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { deepLinker } from "$lib/shared/navigation/services/deep-linker";
 import type { TargetHand } from "./panel-coordination-state.svelte";
 import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
-import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";

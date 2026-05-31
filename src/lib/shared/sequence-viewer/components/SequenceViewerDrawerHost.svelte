@@ -3,7 +3,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { onMount } from "svelte";
   import { goto, replaceState } from "$app/navigation";
   import { fly } from "svelte/transition";
-  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { cubicOut } from "svelte/easing";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequenceViewerOrchestrator from "./SequenceViewerOrchestrator.svelte";
@@ -26,12 +26,12 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import Recording3DOverlay from "./Recording3DOverlay.svelte";
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
-  import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
-  import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
+  import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
+  import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
-  import { getLoopDetector } from "$lib/shared/create/getLoopDetector";
+  import { getLoopDetector } from "$lib/shared/create/get-loop-detector";
   import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
@@ -43,7 +43,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     buildSequenceSharePayload,
     buildThumbnailUrl,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
   import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";

@@ -5,7 +5,7 @@
 <script lang="ts">
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
-  import { buildChoreoCardContextMenuItems } from "$lib/shared/choreo-card/services/CardDesignerContextMenuBuilder";
+  import { buildChoreoCardContextMenuItems } from "$lib/shared/choreo-card/services/card-designer-context-menu-builder";
   import type { ExportOptionsStateManager } from "$lib/shared/animation-panel/state/export-options-state.svelte";
 
   interface Props {

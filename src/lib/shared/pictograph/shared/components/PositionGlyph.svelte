@@ -8,7 +8,7 @@ Based on legacy start_to_end_pos_glyph.py implementation.
 -->
 <script lang="ts">
   import { GridPosition } from "../../grid/domain/enums/grid-enums";
-  import { Letter } from "../../../foundation/domain/models/Letter";
+  import { Letter } from "../../../foundation/domain/models/letter";
 
   let {
     startPosition = null,

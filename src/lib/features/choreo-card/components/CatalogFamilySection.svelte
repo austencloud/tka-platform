@@ -11,10 +11,10 @@
 import { buildFromHandPathId } from "$lib/features/choreo-card/services/hand-path-data-builder";
   import { resolveCollisions } from "$lib/features/choreo-card/services/arrow-collision-resolver";
   import type { CatalogFamily } from "../domain/models/Catalog";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import ChoreoCard from "./ChoreoCard.svelte";
   import MotionTypePills from "./MotionTypePills.svelte";
   import { getCatalogLayoutPolicy } from "../domain/catalog-layout-policy";

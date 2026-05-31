@@ -5,7 +5,7 @@
   Each cell can contain a sequence with a specific rotation offset.
 -->
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import CanvasControls from "../components/CanvasControls.svelte";
 
   type GridIndex = 0 | 1 | 2 | 3;

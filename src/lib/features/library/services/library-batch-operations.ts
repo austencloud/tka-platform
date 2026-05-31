@@ -26,9 +26,9 @@ import { notifyLibraryMutated } from "$lib/shared/library/library-events";
 import type {
   LibrarySequence,
   SequenceVisibility,
-} from "$lib/shared/library/domain/models/LibrarySequence";
+} from "$lib/shared/library/domain/models/library-sequence";
 import type { PublicIndexSyncer } from "./public-index-syncer";
-import { LibraryError } from "$lib/shared/library/services/LibraryRepository";
+import { LibraryError } from "$lib/shared/library/services/library-repository";
 
 type MapDocFn = (doc: DocumentData, id: string) => LibrarySequence;
 

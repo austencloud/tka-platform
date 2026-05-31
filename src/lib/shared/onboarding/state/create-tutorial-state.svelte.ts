@@ -5,7 +5,7 @@
  * The "add-beat" step repeats until the user has picked REQUIRED_BEATS beats.
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 export const REQUIRED_BEATS = 4;

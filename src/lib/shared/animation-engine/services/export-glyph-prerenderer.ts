@@ -10,7 +10,7 @@
  * pre-rendering, the export would only show a bare letter SVG.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { SvgImageConverter } from '$lib/shared/foundation/services/svg-image-converter'
 
 export interface GlyphAsset {
@@ -20,7 +20,7 @@ export interface GlyphAsset {
    *  When turns are present, the top turn number sits above the letter. */
   yOffset: number;
 }
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 import { interpretTurnColors } from "$lib/shared/pictograph/tka-glyph/services/turn-color-interpreter";
 import {

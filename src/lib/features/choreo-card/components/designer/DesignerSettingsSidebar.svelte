@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import type { BackgroundType } from "@austencloud/backgrounds";

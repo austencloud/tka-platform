@@ -20,7 +20,7 @@
  * jsdom-based unit testing.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { MandalaPaths, MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
 import type { MandalaPathOptions } from "$lib/shared/mandala/services/types";
 import {

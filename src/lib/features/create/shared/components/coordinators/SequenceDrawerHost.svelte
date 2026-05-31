@@ -1,7 +1,7 @@
 <script lang="ts">
 
-import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
-import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/getVideoExportOrchestrator";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
+import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
 import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orchestrator";
   /**
    * SequenceDrawerHost
@@ -32,20 +32,20 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { ExportOrchestrator } from "$lib/shared/export-panel/services/export-orchestrator";
 
-  import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
+  import { getSequenceRepository } from "$lib/shared/create/get-sequence-repository";
   import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
-  import { responsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
+  import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
   // Animation imports
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import type { IVideoExportOrchestrator, VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
-  import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+  import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
   import { ExportUrlManager } from "$lib/shared/export-panel/services/export-url-manager";
-  import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
+  import type { ResponsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import {
     createAnimationPanelState,
     type PlaybackMode,
@@ -54,7 +54,7 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
   } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { ANIMATION_AUTO_START_DELAY_MS } from "$lib/shared/animation-engine/domain/constants/timing";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
   // Get context

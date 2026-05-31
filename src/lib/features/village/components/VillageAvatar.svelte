@@ -12,8 +12,8 @@
 	import { PerformerRig } from "@austencloud/scene-3d";
 	import { userProportionsState } from "@austencloud/scene-3d";
 	import { PlaneMode } from "@austencloud/scene-3d";
-	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-	import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
+	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+	import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 	import type { AvatarRenderState } from "../state/village-state.svelte";
 	import type { AvatarId } from "@austencloud/scene-3d";
 

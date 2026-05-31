@@ -13,7 +13,7 @@
   import { T, useTask } from "@threlte/core";
   import { Vector3 } from "three";
   import type { Bubbles3DParams } from "$lib/shared/effects/translators/webgl3d-types";
-  import { oilIridescentRim } from "$lib/shared/effects/domain/BubblePalettes";
+  import { oilIridescentRim } from "$lib/shared/effects/domain/bubble-palettes";
 
   interface Props {
     /** World-space position of this tip. null = hidden. */

@@ -9,7 +9,7 @@
 <script lang="ts">
   import ChoreoCard from "$lib/features/choreo-card/components/ChoreoCard.svelte";
   import type { CodeEntry } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   let {
     entry,

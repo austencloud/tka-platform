@@ -29,7 +29,7 @@ export interface StepGridPosition {
   width: number; // Beat cell width
   height: number; // Beat cell height
 }
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ImageComposer } from "../../render/services/image-composer";
 import { calculateLayout } from "$lib/shared/render/services/layout-calculator";
 

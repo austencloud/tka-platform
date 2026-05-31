@@ -7,8 +7,8 @@
  * loop off this registry instead of the inline OVERLAY_REGISTRY.
  */
 
-import type { EffectPlugin } from "./EffectPlugin";
-import type { EffectType } from "../../domain/types/TipEffectTypes";
+import type { EffectPlugin } from "./effect-plugin";
+import type { EffectType } from "../../domain/types/tip-effect-types";
 
 import { fireEffectPlugin } from "../fire/web-gl-fire-renderer";
 import { charcoalEffectPlugin } from "../charcoal/charcoal-spark-renderer";

@@ -4,9 +4,9 @@
     getVideosForSequence,
     deleteVideo,
   } from '$lib/shared/video-collaboration/services/collaborative-video-manager';
-  import type { CollaborativeVideo } from '$lib/shared/video-collaboration/domain/CollaborativeVideo';
-  import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
-  import { authState } from '$lib/shared/auth/state/authState.svelte';
+  import type { CollaborativeVideo } from '$lib/shared/video-collaboration/domain/collaborative-video';
+  import type { SequenceData } from '$lib/shared/foundation/domain/models/sequence-data';
+  import { authState } from '$lib/shared/auth/state/auth-state.svelte';
 
   interface Props {
     sequence: SequenceData;

@@ -16,11 +16,11 @@
   } from "firebase/firestore";
   import { ref, remove } from "firebase/database";
   import { getFirestoreInstance, getDatabaseInstance } from "$lib/shared/auth/firebase";
-  import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
+  import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
   import {
     ROLE_DISPLAY,
     ROLE_HIERARCHY,
-  } from "$lib/shared/auth/domain/models/UserRole";
+  } from "$lib/shared/auth/domain/models/user-role";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
   import { getContributorLoader } from "$lib/shared/feedback/get-contributor-loader";

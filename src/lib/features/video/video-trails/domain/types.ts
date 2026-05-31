@@ -1,4 +1,4 @@
-import type { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+import type { TrailMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 
 export interface DetectedEndpoint {
   x: number;

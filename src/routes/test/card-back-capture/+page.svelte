@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { createBrowseEngine } from "$lib/shared/browse/engine/createBrowseEngine.svelte";
+  import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import { renderCardBack } from "$lib/features/choreo-card/services/card-back-dom-renderer";
   import CardBack from "$lib/features/choreo-card/components/card-back/CardBack.svelte";
   import { getProofModeVisuals } from "$lib/features/choreo-card/components/card-back/card-back-theme-visuals";
   import type { CardBackThemeVisuals } from "$lib/features/choreo-card/components/card-back/card-back-theme-visuals";
   import { onMount, onDestroy } from "svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   const MPC_WIDTH = 750;
   const MPC_HEIGHT = 1050;

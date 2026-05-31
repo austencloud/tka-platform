@@ -5,8 +5,8 @@
  * Delegates to PublicSequencesLoader for gallery-based sequence loading.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
 
 export async function ensureMotionData(
   seq: SequenceData

@@ -8,7 +8,7 @@
  * by hand-mirrored option objects (which drift).
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 import type { PrintRenderOptions } from "./types";
 import { buildCanonicalCardVisibility } from "../domain/canonical-card-visibility";

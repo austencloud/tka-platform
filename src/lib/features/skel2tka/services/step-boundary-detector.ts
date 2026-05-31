@@ -10,7 +10,7 @@
  */
 
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { DetectionFrame } from "$lib/shared/train/domain/DetectionFrame";
+import type { DetectionFrame } from "$lib/shared/train/domain/detection-frame";
 import type { HandTimeline, DetectedBeat, StepPosition } from "../domain/models";
 import type { StepDetectionOptions } from "./types";
 

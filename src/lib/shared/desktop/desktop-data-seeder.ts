@@ -1,6 +1,6 @@
 import { db } from "$lib/shared/persistence/database/tka-database";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { AppSettings } from "$lib/shared/settings/domain/AppSettings";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { AppSettings } from "$lib/shared/settings/domain/app-settings";
 
 const BUNDLE_VERSION_KEY = "desktop-bundle-version";
 

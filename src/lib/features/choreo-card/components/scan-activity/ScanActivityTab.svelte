@@ -7,7 +7,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { goto } from "$app/navigation";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { scanActivityState } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
   import ScanActivityCard from "./ScanActivityCard.svelte";
   import RecentScansList from "./RecentScansList.svelte";

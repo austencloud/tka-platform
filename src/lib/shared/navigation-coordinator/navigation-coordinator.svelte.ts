@@ -24,8 +24,8 @@ import {
   navigationState,
 } from "../navigation/state/navigation-state.svelte";
 import { switchModule } from "../application/state/ui/module-state";
-import { authState } from "../auth/state/authState.svelte";
-import { featureFlagService, featureFlagState } from "../auth/services/PostHogFeatureFlagService.svelte";
+import { authState } from "../auth/state/auth-state.svelte";
+import { featureFlagService, featureFlagState } from "../auth/services/post-hog-feature-flag-service.svelte";
 import {
   pushState as svelteKitPushState,
   replaceState as svelteKitReplaceState,

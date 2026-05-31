@@ -13,13 +13,13 @@
     BACKGROUND_CARD_REGISTRY,
   } from "@austencloud/backgrounds/card";
   import type { BackgroundCardSelectDetail } from "@austencloud/backgrounds/card";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   registerBackgroundCard();
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { examplePictographData } from "$lib/shared/settings/components/tabs/visibility/example-data";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {

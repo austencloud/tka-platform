@@ -14,8 +14,8 @@ import {
 	RotationDirection,
 	type MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { createMotionData, type MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { createMotionData, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { calculateMotionType, calculateRotationDirection } from "$lib/features/create/assemble/services/hand-path-motion-calculator";
 
 export function deriveMotion(

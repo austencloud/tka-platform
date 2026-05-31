@@ -4,7 +4,7 @@ import {
   MotionColor,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 // Minimal StepData factory - only the fields the calculator reads.
 function makeStep(

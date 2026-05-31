@@ -1,15 +1,15 @@
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/createPictographData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/create-pictograph-data";
 import {
   MotionType,
   MotionColor,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 export class StartPositionDeriver {

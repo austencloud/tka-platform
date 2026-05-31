@@ -5,12 +5,12 @@
  * and CollaborativeVideoManager (collaborative metadata).
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
   createCollaborativeVideo,
   type CollaborativeVideo,
   type VideoVisibility,
-} from "../domain/CollaborativeVideo";
+} from "../domain/collaborative-video";
 import type { VideoUploadResult } from "../../share/services/types";
 
 export interface CreateVideoFromUploadOptions {

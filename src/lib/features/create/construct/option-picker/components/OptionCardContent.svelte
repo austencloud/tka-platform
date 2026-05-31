@@ -7,7 +7,7 @@ Used by the desktop hierarchy: OptionSection → OptionGrid → OptionCard → O
 Dark mode is handled via CSS-first approach (:root.dark class).
 -->
 <script lang="ts">
-  import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
+  import type { PreparedPictographData } from "$lib/shared/pictograph/option/prepared-pictograph-data";
   import OptionPictograph from "$lib/shared/pictograph/option/OptionPictograph.svelte";
 
   interface Props {

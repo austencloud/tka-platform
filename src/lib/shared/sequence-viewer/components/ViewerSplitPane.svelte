@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type {
     ViewerPlaybackState,
     ImageCompositionProps,
@@ -28,8 +28,8 @@
   import MandalaPane from './MandalaPane.svelte';
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-  import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
+  import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
+  import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext, getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";

@@ -28,7 +28,7 @@ export interface DetectionOptions {
 import type {
   DetectionFrame,
   DetectedPosition,
-} from "$lib/shared/train/domain/DetectionFrame";
+} from "$lib/shared/train/domain/detection-frame";
 import type { HandLandmarker } from "./hand-landmarker";
 import type { HandTrackingStabilizer } from "./hand-tracking-stabilizer";
 import { analyzeHandedness } from "./handedness-analyzer";

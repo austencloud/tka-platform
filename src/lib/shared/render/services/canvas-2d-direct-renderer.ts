@@ -3,14 +3,14 @@ import type {
   DirectRenderOptions,
   RenderTiming,
 } from "./IDirectRenderer";
-import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { PreparedPictographData } from "../../pictograph/shared/domain/models/PreparedPictographData";
+import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { PreparedPictographData } from "../../pictograph/shared/domain/models/prepared-pictograph-data";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { getSvgImageCache } from "./svg-image-cache";
 import { getSvgAssetLoader } from "./svg-asset-loader";
 import { isDashLetter } from "../../pictograph/tka-glyph/utils/letter-image-getter";
-import type { Letter } from "../../foundation/domain/models/Letter";
+import type { Letter } from "../../foundation/domain/models/letter";
 import type { PictographPreparer } from "../../pictograph/shared/services/pictograph-preparer";
 import type { TurnsTupleGenerator } from "../../pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 import {

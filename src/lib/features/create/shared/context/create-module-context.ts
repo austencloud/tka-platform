@@ -18,7 +18,7 @@ import type { PanelCoordinationState } from "../state/panel-coordination-state.s
 import type { CreateModuleOrchestrators } from "../types/create-module-services";
 import type { SessionManager } from "../services/session-manager.svelte";
 import type { Autosaver } from "../services/autosaver";
-import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
+import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
 
 type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
 type ConstructTabState = ReturnType<typeof ConstructTabStateType>;

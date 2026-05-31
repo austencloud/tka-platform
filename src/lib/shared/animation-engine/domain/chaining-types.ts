@@ -5,7 +5,7 @@
  * needs from landing-feature services, avoiding shared/ → features/ imports.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { EndState } from "$lib/shared/landing/domain/types";
 import type { BroadcastStateClient } from "$lib/shared/landing/domain/broadcast-models";
 

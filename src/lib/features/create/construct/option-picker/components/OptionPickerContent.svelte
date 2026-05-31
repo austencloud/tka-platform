@@ -5,10 +5,10 @@ Single responsibility: Organize prepared options into sections and layout.
 Uses organizer and sizer services for section grouping and sizing.
 -->
 <script lang="ts">
-  import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
+  import type { PreparedPictographData } from "$lib/shared/pictograph/option/prepared-pictograph-data";
   import type { OrganizedSection, SortMethod } from "../domain/option-picker-types";
   import type { DeviceAwareSizingParams, DeviceAwareSizingResult } from "../services/types";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   // CSS animations used instead of Svelte transitions to avoid carousel dimension issues
   import OptionSection from "./OptionSection.svelte";
   import Option456Row from "./Option456Row.svelte";

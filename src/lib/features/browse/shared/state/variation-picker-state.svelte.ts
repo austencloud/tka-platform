@@ -6,7 +6,7 @@
  * multiple sequences with the same word.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 let _isOpen = $state(false);
 let _variations = $state<SequenceData[]>([]);

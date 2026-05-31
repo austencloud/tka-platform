@@ -1,7 +1,7 @@
 import { createHandPath } from "./hand-path-factory";
 import { hashSoloProp } from "$lib/shared/foundation/services/content-hasher";
-import type { SoloPropStepData } from "../domain/models/SoloPropStepData";
-import type { SoloPropData } from "../domain/models/SoloPropData";
+import type { SoloPropStepData } from "../domain/models/solo-prop-step-data";
+import type { SoloPropData } from "../domain/models/solo-prop-data";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 

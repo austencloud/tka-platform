@@ -1,5 +1,5 @@
 // src/lib/shared/render/services/implementations/CompositionDispatcher.ts
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
 import type { CompositionProgressCallback, RenderCanvas } from "./types";
 import type { ImageComposer } from "./image-composer";

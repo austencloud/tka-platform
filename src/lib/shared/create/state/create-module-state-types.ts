@@ -7,9 +7,9 @@
  */
 
 import type { UndoOperationType } from "$lib/shared/create/domain/undo-operation-types";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 /**
  * SequenceState interface covering what shared/ consumers access.

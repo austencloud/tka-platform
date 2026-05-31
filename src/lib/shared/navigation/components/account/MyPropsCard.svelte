@@ -5,7 +5,7 @@
   Tapping opens a drawer/sheet for full prop selection using BentoPropGrid.
 -->
 <script lang="ts">
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import type { PropPreferenceState } from "$lib/shared/community/state/prop-preference-state.svelte";
 
   interface Props {

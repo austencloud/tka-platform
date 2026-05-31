@@ -9,7 +9,7 @@
  */
 
 import { getStorageInstance } from "$lib/shared/auth/firebase";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export interface UploadResult {
   name: string;

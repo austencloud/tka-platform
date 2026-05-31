@@ -4,22 +4,22 @@
  * of how visibility settings affect the displayed content.
  */
 
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   GridLocation,
   GridMode,
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
   RotationDirection,
   Orientation,
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 
 /** Example pictograph data showing Letter A with blue and red motions */
 export const examplePictographData = {

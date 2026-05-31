@@ -27,7 +27,7 @@
     createPlayerController,
     disposePlayerController,
   } from "$lib/shared/3d/physics/player-controller";
-  import { createRapierPhysicsProvider } from "$lib/shared/3d/physics/RapierPhysicsProvider";
+  import { createRapierPhysicsProvider } from "$lib/shared/3d/physics/rapier-physics-provider";
 
   // Camera - use the SAME controller as Museum/Realm
   import { UnifiedCameraController, CameraMode } from "@austencloud/camera-3d";

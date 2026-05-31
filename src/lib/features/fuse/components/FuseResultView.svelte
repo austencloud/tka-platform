@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
 
-import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
 import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
 	import { onMount, onDestroy, untrack } from "svelte";
 	import { getFuseContext } from "../context/fuse-context";

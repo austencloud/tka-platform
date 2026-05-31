@@ -9,7 +9,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import BentoPropGrid from "./BentoPropGrid.svelte";
   import CatDogToggle from "./CatDogToggle.svelte";

@@ -17,7 +17,7 @@
    * Parameterized from TelekineticFormation3D: takes ANY sequence, ANY effect,
    * an optional GLB stage, and a level-of-detail band.
    */
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { untrack } from "svelte";
   import { T } from "@threlte/core";
   import { Vector3, Quaternion, Color } from "three";
@@ -25,10 +25,10 @@
   import type { PropState3D } from "@austencloud/scene-3d";
   import { Plane } from "@austencloud/scene-3d";
   import { PlaneMode } from "@austencloud/scene-3d";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { createAvatarInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { buildTipEffectMap } from "$lib/features/coven-hub/domain/coven-effect-map";
   import type { LodBand } from "$lib/features/coven-hub/domain/coven-lod";
   import { useGltf } from "@threlte/extras";

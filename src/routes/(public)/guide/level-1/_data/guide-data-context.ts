@@ -1,6 +1,6 @@
 import { getContext, setContext } from "svelte";
 import type { GuideChapterData } from "./guide-types";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 const GUIDE_DATA_KEY = Symbol("guide-data");
 const ACTIVE_SECTION_KEY = Symbol("active-section");

@@ -17,8 +17,8 @@
 import { Point as FabricPoint } from "fabric";
 import { deriveGridMode as _deriveGridMode } from "../../../../grid/services/grid-mode-deriver";
 import { GridMode } from "../../../../grid/domain/enums/grid-enums";
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import {
   generateOrientationKey,
   resolveEffectiveOriKey,

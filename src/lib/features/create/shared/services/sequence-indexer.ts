@@ -5,7 +5,7 @@
  * Provides search capabilities across sequence metadata.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 interface SearchIndex {
   wordIndex: Map<string, Set<string>>; // word -> sequence IDs

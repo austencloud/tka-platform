@@ -9,16 +9,16 @@
  * can gate "Enter 3D" before attempting any WebGL work.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 // propInterpolator / sequenceConverter are now module-level functions; no type imports needed
 import type { CameraStateSnapshot } from "@austencloud/scene-3d";
-import { getSceneUndoManager } from "../undo/getSceneUndoManager";
+import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
 import type { DefaultsDomainSnapshot, PerformerPositionSnapshot, ViewerDomainSnapshot, VisibilityDomainSnapshot } from "../undo/scene-undo-types";
 import { Plane, PlaneMode } from "@austencloud/scene-3d";
 import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
 import { derivePlaneModeFromHands } from "./avatar-instance-state.svelte";
 import type { DefaultPerformerSettings, CascadeCategory } from "./performer-settings-types";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import { createPerformerManager, type PerformerManager } from "./performer-manager.svelte";
 import { DEFAULT_AVATAR_ID } from "@austencloud/scene-3d";

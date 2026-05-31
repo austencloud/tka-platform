@@ -6,9 +6,9 @@
  * Returns null when the scenario can't form a full key (missing motion or endPosition).
  */
 import { deriveGridMode as _deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { PropGeometryKey } from "./PropGeometryAdjustment";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { PropGeometryKey } from "./prop-geometry-adjustment";
 
 export function derivePropGeometryKey(
   pictographData: PictographData,

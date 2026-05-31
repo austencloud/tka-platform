@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import GuidePictograph from "./GuidePictograph.svelte";
 
   interface GridRow {

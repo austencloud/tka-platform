@@ -12,7 +12,7 @@
   import GoogleOneTap from "./GoogleOneTap.svelte";
   import SocialAuthCompact from "./SocialAuthCompact.svelte";
   import EmailAuthTabs from "./EmailAuthTabs.svelte";
-  import { ACCESS_TIER_LABELS } from "../domain/AccessTier";
+  import { ACCESS_TIER_LABELS } from "../domain/access-tier";
 
   interface Props {
     open: boolean;

@@ -1,13 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
 import { StepOperator } from "./step-operator";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionColor,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { ICreateModuleState } from "../types/create-module-types";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 

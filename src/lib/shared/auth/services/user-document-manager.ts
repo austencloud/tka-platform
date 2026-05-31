@@ -10,7 +10,7 @@ import { type User } from "firebase/auth";
 import { getFirestoreInstance } from "../firebase";
 import { getProviderIds } from './profile-picture-manager';
 import { generateUniqueUsername, claimUsername } from './username-validator';
-import { formatUsername } from "../domain/models/UsernameValidation";
+import { formatUsername } from "../domain/models/username-validation";
 
 import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
 

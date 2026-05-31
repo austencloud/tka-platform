@@ -8,7 +8,7 @@
   import { slide } from "svelte/transition";
   import { getTrainPracticeState } from "../../state/train-practice-state.svelte";
   import TrainModePanel from "../TrainModePanel.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { activeChallengeState } from "../../state/active-challenge-state.svelte";
   import { formatChallengeRequirement } from "../../domain/models/train-challenge-models";
 

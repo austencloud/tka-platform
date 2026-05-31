@@ -10,7 +10,7 @@
   Mobile: Swipe left from left edge to exit (matches portal animation direction)
 -->
 <script lang="ts">
-  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import {
@@ -26,7 +26,7 @@
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
-  import type { AppSettings } from "$lib/shared/settings/domain/AppSettings";
+  import type { AppSettings } from "$lib/shared/settings/domain/app-settings";
 
   // Navigation state - use global activeTab
   import {

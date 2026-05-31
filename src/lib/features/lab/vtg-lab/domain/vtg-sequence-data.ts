@@ -12,7 +12,7 @@
  * between letters.
  */
 
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
 	GridLocation,
 	GridMode,
@@ -24,9 +24,9 @@ import {
 	Orientation,
 	MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { VTGMode } from "$lib/features/learn/domain/constants/vtg-experience-data";
 import type { RotationStyle } from "./vtg-lab-types";
 

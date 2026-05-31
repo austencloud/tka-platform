@@ -13,7 +13,7 @@
   import type { Message } from "$lib/shared/messaging/domain/models/message-models";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { layoutState } from "$lib/shared/layout/layout-state.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { messagingService } from "$lib/shared/messaging/services/messenger";
   import { inboxState } from "../../state/inbox-state.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";

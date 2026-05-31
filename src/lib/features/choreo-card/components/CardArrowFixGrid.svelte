@@ -9,9 +9,9 @@
   pins the prop types so the edited override key matches the card-front bake key.
 -->
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import { withEffectivePropTypes } from "../services/with-effective-prop-types";
 

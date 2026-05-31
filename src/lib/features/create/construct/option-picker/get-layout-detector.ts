@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
 import { LayoutDetector } from './services/layout-detector';
-import { getDeviceDetector } from '$lib/shared/device/getDeviceDetector';
+import { getDeviceDetector } from '$lib/shared/device/get-device-detector';
 
 let instance: LayoutDetector | null = null;
 

@@ -11,8 +11,8 @@ import {
 	deleteDoc,
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '../firebase';
-import type { UsernameValidationResult } from '../domain/models/UsernameValidation';
-import { validateUsernameFormat, formatUsername } from '../domain/models/UsernameValidation';
+import type { UsernameValidationResult } from '../domain/models/username-validation';
+import { validateUsernameFormat, formatUsername } from '../domain/models/username-validation';
 
 const USERNAMES_COLLECTION = 'usernames';
 const USERS_COLLECTION = 'users';

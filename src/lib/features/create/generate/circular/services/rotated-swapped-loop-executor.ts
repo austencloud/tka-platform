@@ -21,7 +21,7 @@ import {
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type {
   GridLocation,
   GridPosition,
@@ -37,7 +37,7 @@ import {
   QUARTERED_LOOPS,
 } from "../domain/constants/circular-position-maps";
 import { Period } from "../domain/models/circular-models";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 export class RotatedSwappedLOOPExecutor {
   constructor() {}

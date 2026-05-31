@@ -6,8 +6,8 @@
  *   level, gridMode, loopType, sliceType, stepCount, reversalPattern
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { Catalog } from "./models/Catalog";
 import { matchReversalPatternId } from "./reversal-matcher";
 import { detectLevelFeatures } from "$lib/shared/domain/curriculum/level-feature-detector";

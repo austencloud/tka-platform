@@ -9,7 +9,7 @@
     ContextMenuState,
     ContextMenuEntry,
   } from "$lib/shared/components/context-menu/context-menu-types";
-  import { buildCanvasContextMenuItems } from "./CanvasContextMenuBuilder";
+  import { buildCanvasContextMenuItems } from "./canvas-context-menu-builder";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";

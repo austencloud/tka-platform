@@ -26,7 +26,7 @@
     pickPetalTint,
     rollEmberFlag,
     type PetalSpriteShape,
-  } from "$lib/shared/effects/domain/PetalPalettes";
+  } from "$lib/shared/effects/domain/petal-palettes";
 
   interface Props {
     /** World-space position of this tip. null = hidden. */

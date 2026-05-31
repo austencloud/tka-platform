@@ -2,7 +2,7 @@
  * Determines the starting quality tier based on device capabilities.
  */
 
-import { DeviceTier } from "../domain/types/QualityTypes";
+import { DeviceTier } from "../domain/types/quality-types";
 
 function isMobileDevice(): boolean {
   if (typeof navigator === "undefined") return false;

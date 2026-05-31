@@ -24,7 +24,7 @@
   import { T, useTask } from "@threlte/core";
   import { Vector3, CanvasTexture, type Texture } from "three";
   import type { Smoke3DParams } from "$lib/shared/effects/translators/webgl3d-types";
-  import { SampledCurlGrid2D } from "./SmokeCurlField";
+  import { SampledCurlGrid2D } from "./smoke-curl-field";
 
   interface Props {
     /** World-space position of this tip. null = hidden. */

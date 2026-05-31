@@ -37,10 +37,10 @@ import {
 } from "../domain/reversal-transform";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
 import type { Catalog } from "../domain/models/Catalog";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 
 /** Firestore batch limit is 500 writes; mirror the reference's 450 headroom. */
 const BATCH_SIZE = 450;

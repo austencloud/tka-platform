@@ -14,8 +14,8 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
 <script lang="ts">
   import { fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import TKAGlyph from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
   import TurnsColumn from "$lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte";
   import StepNumber from "$lib/shared/pictograph/shared/components/StepNumber.svelte";

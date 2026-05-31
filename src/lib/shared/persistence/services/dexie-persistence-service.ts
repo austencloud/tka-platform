@@ -1,12 +1,12 @@
-import type { AppSettings } from "../../settings/domain/AppSettings";
+import type { AppSettings } from "../../settings/domain/app-settings";
 import type { CompleteBrowseState } from "$lib/shared/browse/domain/models/browse-models";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { TabId } from "../../navigation/domain/types";
 import {
   createSequenceData,
   type SequenceData,
-} from "../../foundation/domain/models/SequenceData";
-import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
+} from "../../foundation/domain/models/sequence-data";
+import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
 import { db } from "../database/tka-database";
 import { UserWorkType } from "../domain/enums/user-work-type";
 import type { UserProject } from "../domain/models/user-project";

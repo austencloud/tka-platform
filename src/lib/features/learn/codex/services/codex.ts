@@ -5,9 +5,9 @@
  * No more hardcoded mappings or mixed responsibilities!
  */
 
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { QuizRepoManager } from "../../quiz/services/quiz-repo-manager";
 import type {
@@ -22,7 +22,7 @@ interface ICodexPictographUpdater {
   colorSwapAllPictographs: typeof colorSwapAllPictographs;
 }
 
-import type { CodexLetterMappingRepo } from "$lib/shared/learn/services/CodexLetterMappingRepo";
+import type { CodexLetterMappingRepo } from "$lib/shared/learn/services/codex-letter-mapping-repo";
 
 export class Codex {
   private initialized = false;

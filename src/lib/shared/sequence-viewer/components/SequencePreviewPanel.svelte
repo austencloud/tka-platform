@@ -9,7 +9,7 @@
   Internal sequence preview panel used within Create module and Browse gallery.
 -->
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type {
     ViewerMode,
     MediaType,

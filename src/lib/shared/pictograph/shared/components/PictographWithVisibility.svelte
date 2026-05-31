@@ -5,8 +5,8 @@ Thin wrapper around PictographContainer for visibility settings preview.
 Handles the forceShowAll logic for showing all glyphs in settings panel.
 -->
 <script lang="ts">
-  import type { PictographData } from "../domain/models/PictographData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { PictographData } from "../domain/models/pictograph-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import PictographContainer from "./PictographContainer.svelte";
 
   let {

@@ -14,9 +14,9 @@
  * - Testability (can pass mocks directly to constructor)
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { StartPositionManager } from "$lib/shared/create/services/StartPositionManager";
+import type { StartPositionManager } from "$lib/shared/create/services/start-position-manager";
 import { createCreateModuleState } from "$lib/features/create/shared/state/create-module-state.svelte";
 import { createConstructTabState } from "$lib/features/create/shared/state/construct-tab-state.svelte";
 // ARCHIVED: createAssemblerTabState import removed (Feb 2026)
@@ -30,9 +30,9 @@ import type { CreateModuleHandlers } from "./create-module-handlers";
 import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/create-module-orchestrator";
 import type { DeepLinkSequenceHandler } from "./deep-link-sequence-handler";
 import type { NavigationSyncer } from "./navigation-syncer";
-import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
+import type { ResponsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
 import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
-import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
@@ -40,7 +40,7 @@ import { getCreateModuleEventHandler } from "./create-module-event-handler";
 import type { DeepLinker } from "$lib/shared/navigation/services/deep-linker";
 import type { ICreateModuleState } from "../types/create-module-types";
 import type { PanelPersister } from "./panel-persister.svelte";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { UndoOperationType } from "./undo-manager";
 import type { UndoMetadata } from "./undo-manager";
 import type { Sharer } from "$lib/shared/share/services/sharer";
@@ -318,11 +318,11 @@ export class CreateModuleInitializer {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { sequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+import { sequenceRepository } from "$lib/shared/create/services/sequence-repository";
 import { sequencePersister } from "./sequence-persister";
-import { startPositionManager } from "$lib/shared/create/services/StartPositionManager";
+import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
 import { createModuleOrchestrator } from "./create-module-orchestrator";
-import { responsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
+import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
 import { navigationSyncer } from "./navigation-syncer";
 import { stepOperator } from "./step-operator";
 import { deepLinkSequenceHandler } from "./deep-link-sequence-handler";

@@ -10,11 +10,11 @@
  */
 
 import type { LibraryQueryOptions } from "$lib/features/library/services/types";
-import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import { convertFileName } from "../services/file-name-converter";
 
-import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
-import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
 
 export interface RetroFile {
 	id: string;

@@ -13,9 +13,9 @@ import type {
 	FeedItemIntent,
 } from "../domain/models/feed-models";
 import { loadPublicVideos } from "./public-video-loader";
-import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
-import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
+import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 const DEFAULT_LIMIT = 15;
 const LOAD_BATCH_SIZE = 30;

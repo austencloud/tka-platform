@@ -1,7 +1,7 @@
 import type { DetectedEndpoint } from "../domain/types";
-import type { PropTipData } from "$lib/shared/animation-engine/domain/types/FireTypes";
-import type { LedTipData, LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/LedTypes";
-import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+import type { PropTipData } from "$lib/shared/animation-engine/domain/types/fire-types";
+import type { LedTipData, LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/led-types";
+import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/trail-types";
 
 // Tracks a single endpoint's last known position and timestamp so we can
 // compute instantaneous velocity via finite differencing on the next frame.

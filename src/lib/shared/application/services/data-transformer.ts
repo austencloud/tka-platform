@@ -2,9 +2,9 @@
  * Data transformation and derivation logic for UI components.
  */
 
-import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
 import type { MotionColor } from "../../pictograph/shared/domain/enums/pictograph-enums";
-import type { MotionData } from "../../pictograph/shared/domain/models/MotionData";
+import type { MotionData } from "../../pictograph/shared/domain/models/motion-data";
 import type { MotionRenderData, PictographDisplayData } from "./types";
 
 export function getEffectivePictographData(

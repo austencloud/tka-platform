@@ -11,7 +11,7 @@
 import type * as performanceHistoryTrackerModule from "./performance-history-tracker";
 import type { AchievementManager } from '$lib/shared/gamification/services/achievement-manager'
 import type { TrainChallengeManager } from "./train-challenge-manager";
-import type { StoredPerformance } from "$lib/shared/train/domain/TrainDatabaseModels";
+import type { StoredPerformance } from "$lib/shared/train/domain/train-database-models";
 import type { TrainChallenge } from "../domain/models/train-challenge-models";
 import { PracticeMode } from "../domain/enums/train-enums";
 

@@ -1,6 +1,6 @@
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
-import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
+import { getSequenceRepository } from "$lib/shared/create/get-sequence-repository";
 
 const cache = $state<Record<string, MandalaPaths>>({});
 const inFlight = new Map<string, Promise<MandalaPaths | null>>();

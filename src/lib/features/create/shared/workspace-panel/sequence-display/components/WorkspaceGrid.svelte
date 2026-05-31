@@ -1,13 +1,13 @@
 <!-- WorkspaceGrid.svelte - Unified workspace grid with standard and timeline layout modes -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-  import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+  import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
   import type { GridLayout, TimelineRow } from "$lib/shared/create/utils/grid-calculations";
   import type { StepGridDisplayState } from "../state/step-grid-display-state.svelte";
   import type { ScrollState } from "../state/scroll-state.svelte";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     calculateStepPosition,
     getTimelineWidthMultiplier,
@@ -27,7 +27,7 @@
     ContextMenuState,
   } from "$lib/shared/components/context-menu/context-menu-types";
   import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { MandalaPathShape } from "$lib/shared/mandala/domain/mandala-types";

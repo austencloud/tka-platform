@@ -6,7 +6,7 @@
   import * as QuestionGenerator from "../services/question-generator";
   import { QuizType } from "../domain/enums/quiz-enums";
   import type { QuizQuestionData, QuizAnswerEvent } from "../domain/models/quiz-models";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { DetectedGap } from "../../services/types";
   import QuizContainer from "./shared/QuizContainer.svelte";
   import QuizLoadingState from "./shared/QuizLoadingState.svelte";
@@ -18,7 +18,7 @@
   import MisconceptionHint from "./shared/MisconceptionHint.svelte";
   import ScorePopAnimation from "./shared/ScorePopAnimation.svelte";
   import { getDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
   import { getCatalogIdForSequence } from "../services/sequence-question-generator";

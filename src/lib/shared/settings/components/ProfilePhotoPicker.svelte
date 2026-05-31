@@ -2,14 +2,14 @@
   import { getProviderIds } from "$lib/shared/auth/services/profile-picture-manager";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import {
     ALL_GRADIENTS,
     THEME_TO_GRADIENT,
   } from "$lib/shared/settings/domain/avatar-gradients";
-  import { detectLayout } from "$lib/shared/settings/services/PhotoPickerLayoutDetector";
+  import { detectLayout } from "$lib/shared/settings/services/photo-picker-layout-detector";
   import type { PhotoSelection } from "$lib/shared/settings/domain/photo-picker-types";
 
   import PhotoOptionsList from "$lib/shared/settings/components/photo-picker/PhotoOptionsList.svelte";

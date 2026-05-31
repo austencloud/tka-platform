@@ -10,16 +10,16 @@
   - Desktop: Fixed layout with full controls
 -->
 <script lang="ts">
-  import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/settings-state.svelte";
   import { browser } from "$app/environment";
   import { onMount } from "svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import {
     animationSettings,
     TrailMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
+  import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 
   // Subcomponents
   import QuickBpmPresets from "$lib/shared/animation-engine/components/QuickBpmPresets.svelte";

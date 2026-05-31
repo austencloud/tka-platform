@@ -2,12 +2,12 @@
   import type { SequenceEntry } from "$lib/shared/loop-labeler/domain/sequence-models";
   import type { LabeledSequence } from "../../domain/models/label-models";
   import type { LOOPDetectionResult } from "../../services/ILOOPDetector";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import {
     createMotionData,
     type MotionData,
-  } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+  } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {

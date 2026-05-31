@@ -8,9 +8,9 @@
  * Components use this single module instead of juggling multiple loaders.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
-import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { getSequenceRepository } from "$lib/shared/create/get-sequence-repository";
+import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { cellPreWarmer } from "./cell-pre-warmer";
 

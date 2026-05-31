@@ -11,7 +11,7 @@ import {
   clearMyFavorite as clearMyFavoriteInDb,
   getCommunityFavorites,
 } from "../services/favorite-config-repository";
-import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
+import { getEffectiveUserId } from "$lib/shared/auth/state/auth-state.svelte";
 import type { FavoriteConfig, CommunityFavorite } from "../domain/models/favorite-config";
 import type { UIGenerationConfig } from "./generate-config.svelte";
 import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";

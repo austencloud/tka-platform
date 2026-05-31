@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { rotateBeat } from "./step-transforms";
-import { createStepData } from "$lib/shared/create/factories/createStepData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { createStepData } from "$lib/shared/create/factories/create-step-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionColor,
   MotionType,

@@ -5,8 +5,8 @@
  * for different motion types.
  */
 
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/models/MotionEndpoints";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/models/motion-endpoints";
 import {
   MotionType,
   RotationDirection,

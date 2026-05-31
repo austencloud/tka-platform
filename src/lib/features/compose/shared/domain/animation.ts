@@ -7,8 +7,8 @@
  */
 
 import type { AnimationMode } from "./animation-mode";
-import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
+import { TrailMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 
 /**
  * Animation Entity

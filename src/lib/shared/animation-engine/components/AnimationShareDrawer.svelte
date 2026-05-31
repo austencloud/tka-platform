@@ -27,18 +27,18 @@
 
   // Services
   import { getKeyboardShortcutManager } from "$lib/shared/keyboard/get-keyboard-shortcut-manager";
-  import { responsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
-  import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
+  import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
+  import type { ResponsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'
   import { animationShortcutRegistrar } from "../services/animation-shortcut-registrar";
 
   // Types
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-  import { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+  import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+  import { Letter } from "$lib/shared/foundation/domain/models/letter";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
   // ============================================================================

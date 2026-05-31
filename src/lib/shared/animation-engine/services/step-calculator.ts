@@ -5,7 +5,7 @@
  * Single responsibility: Beat timing and progress calculations.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 export interface StepCalculationResult {
   currentStepIndex: number;

@@ -6,13 +6,13 @@
  * and converted to client-side format at import time.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { GridLocation, GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { MotionType, RotationDirection, Orientation, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 
 // ── Raw MCP format ──
 

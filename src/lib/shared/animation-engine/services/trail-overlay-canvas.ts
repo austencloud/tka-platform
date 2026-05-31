@@ -22,16 +22,16 @@ import type {
   ITrailOverlayCanvas,
   TrailOverlayRenderParams,
 } from "./ITrailOverlayCanvas";
-import type { TrailPoint, TrailSettings } from "../domain/types/TrailTypes";
-import { TrackingMode } from "../domain/types/TrailTypes";
-import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
+import type { TrailPoint, TrailSettings } from "../domain/types/trail-types";
+import { TrackingMode } from "../domain/types/trail-types";
+import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-trail-renderer";
 import { Canvas2DVisibilityFadeManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-visibility-fade-manager";
 import { calculatePropCenter } from "$lib/shared/animation-engine/services/prop-position-calculator";
-import { getTipPoints } from "../domain/types/PropTipPoints";
-import { getTrailPointConfig } from "../domain/types/TrailPointTypes";
-import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
-import { resolveEffect } from "../domain/types/TipEffectTypes";
+import { getTipPoints } from "../domain/types/prop-tip-points";
+import { getTrailPointConfig } from "../domain/types/trail-point-types";
+import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
+import { resolveEffect } from "../domain/types/tip-effect-types";
 
 /** Minimum ring capacity; actual capacity grows with `trailSettings.tailLength`. */
 const RING_BUFFER_MIN = 120;

@@ -9,7 +9,7 @@
     galleryGeneratorState,
     CORE_PROP_TYPES,
   } from "../state/gallery-generator-state.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   const state = galleryGeneratorState;
 

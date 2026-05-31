@@ -10,7 +10,7 @@ This creates a better UX than height-based thresholds by directly detecting
 the actual fullscreen state rather than inferring from viewport size.
 -->
 <script lang="ts">
-  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { getMobileFullscreenManager } from "$lib/shared/mobile/get-mobile-fullscreen-manager";
   import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { MobileFullscreenManager } from '$lib/shared/mobile/services/mobile-fullscreen-manager'

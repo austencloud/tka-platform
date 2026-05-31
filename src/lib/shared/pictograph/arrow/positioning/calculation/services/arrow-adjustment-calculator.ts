@@ -13,8 +13,8 @@
 
 import type { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
 import type { GridLocation } from "../../../../grid/domain/enums/grid-enums";
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import type { DefaultPlacer } from "../../placement/services/default-placer";
 import type { DirectionalTupleProcessor } from "./directional-tuple-processor";
 import { deriveGridMode as _deriveGridMode } from "../../../../grid/services/grid-mode-deriver";
@@ -34,7 +34,7 @@ import type {
   PipelineDiagnostics,
   GlobalTierInfo,
   SpecialJsonTierInfo,
-} from "../domain/PipelineDiagnostics";
+} from "../domain/pipeline-diagnostics";
 import {
   getSpecialOverrideResolver,
   getGlobalAdjustmentResolver,
@@ -43,7 +43,7 @@ import {
 import {
   generateSpecialOverrideKey,
   extractOriFolderFromPath,
-} from "../../special-override/domain/SpecialArrowPlacement";
+} from "../../special-override/domain/special-arrow-placement";
 import { computeSpecialOverrideKey } from "../../special-override/services/special-override-key";
 
 export class ArrowAdjustmentCalculator {

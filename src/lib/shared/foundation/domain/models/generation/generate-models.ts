@@ -7,7 +7,7 @@
 // ============================================================================
 // GENERATION OPTIONS
 // ============================================================================
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type {
   LOOPType,
   Period,
@@ -20,8 +20,8 @@ import type {
   GridMode,
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 // ============================================================================
 // DATA CONTRACTS (Domain Models)

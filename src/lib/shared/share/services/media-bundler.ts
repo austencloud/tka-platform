@@ -1,4 +1,4 @@
-import type { SequenceData } from "../../foundation/domain/models/SequenceData";
+import type { SequenceData } from "../../foundation/domain/models/sequence-data";
 import type { InstagramMediaItem } from "../domain/models/instagram-media";
 import type { ShareOptions } from "../domain/models/share-options";
 import {

@@ -10,7 +10,7 @@
     createTutorialState,
     REQUIRED_BEATS,
   } from "../../../state/create-tutorial-state.svelte";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
   interface Props {
     onAdvance: () => void;

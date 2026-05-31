@@ -25,7 +25,7 @@ import {
   createDraftSequence,
   type DraftSequence,
 } from "../domain/draft-sequence";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { db } from "$lib/shared/persistence/database/tka-database";
 import { UserWorkType } from "$lib/shared/persistence/domain/enums/user-work-type";
 

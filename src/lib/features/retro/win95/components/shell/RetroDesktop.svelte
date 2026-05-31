@@ -51,7 +51,7 @@
   import RetroContextMenu from "./RetroContextMenu.svelte";
   import RetroMobileWarning from "./RetroMobileWarning.svelte";
   import RetroLoginDialog from "./RetroLoginDialog.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { loadRetroSettings } from "../../adapters/settings-adapter";
 
   /* ------------------------------------------------------------------ */

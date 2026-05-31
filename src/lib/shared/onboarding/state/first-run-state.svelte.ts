@@ -195,7 +195,7 @@ function createFirstRunState() {
           await import("$lib/shared/auth/firebase");
         const { doc, getDoc } = await import("firebase/firestore");
         const { authState } =
-          await import("$lib/shared/auth/state/authState.svelte");
+          await import("$lib/shared/auth/state/auth-state.svelte");
 
         const userId = authState.effectiveUserId;
         if (!userId) {
@@ -273,7 +273,7 @@ function createFirstRunState() {
         const { doc, setDoc, serverTimestamp } =
           await import("firebase/firestore");
         const { authState } =
-          await import("$lib/shared/auth/state/authState.svelte");
+          await import("$lib/shared/auth/state/auth-state.svelte");
 
         const userId = authState.effectiveUserId;
         if (!userId) return;

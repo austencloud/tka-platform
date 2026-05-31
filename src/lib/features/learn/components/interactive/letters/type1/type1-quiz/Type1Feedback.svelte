@@ -2,7 +2,7 @@
 Type1Feedback - Shows feedback after answer
 -->
 <script lang="ts">
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import type { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { PatternInfo } from "../../../../../domain/constants/type1-letter-questions";
 
   let {

@@ -11,7 +11,7 @@
   import { onMount, onDestroy } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { inboxState } from "../state/inbox-state.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { notificationService } from "$lib/shared/feedback/services/notifier";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import { toast } from "../../toast/state/toast-state.svelte";

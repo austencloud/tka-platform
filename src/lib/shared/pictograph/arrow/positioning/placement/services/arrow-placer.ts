@@ -12,7 +12,7 @@ import type { SimpleJsonCache } from '$lib/shared/pictograph/shared/services/sim
 import type {
   GridPlacementData,
   JsonPlacementData,
-} from "../domain/models/PlacementDataTypes";
+} from "../domain/models/placement-data-types";
 /**
  * Optional Firestore-first override for default base adjustments. Registered by
  * default-override-singleton on init. Unset in workers / pre-auth → pure JSON.

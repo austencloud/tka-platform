@@ -10,17 +10,17 @@
  * ✅ Component-scoped state (not global singleton)
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 import { createSimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 const debug = createComponentLogger("ConstructTabState");
-import { createStartPositionData } from "$lib/shared/create/factories/createStartPositionData";
+import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/create-module-orchestrator";
 import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
-import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
@@ -29,7 +29,7 @@ import { createSequenceState } from "./sequence-state-orchestrator.svelte";
 import type { SequenceState } from "./sequence-state-orchestrator.svelte";
 import type { UndoMetadata } from "../services/undo-manager";
 import { UndoOperationType } from "../services/undo-manager";
-import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
+import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
 import type { IFilterPersister } from "../../construct/option-picker/services/filter-persister";
 
 /**

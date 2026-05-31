@@ -1,7 +1,7 @@
 import type { SubDrawerType } from "../services/sub-drawer-state-persister";
 import type { ExtensionAnalysis, CircularizationOption } from "../services/sequence-extender";
 import type { ActionHelpId } from "../domain/transforms/transform-help-content";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 type HelpMode = "inactive" | "selecting" | "viewing";
 

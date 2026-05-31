@@ -5,7 +5,7 @@
  * Integrates with LibraryRepository for Firestore operations.
  */
 
-import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import {
   userPreviewState,
   type PreviewSequence,
@@ -15,13 +15,13 @@ import type { LibraryQueryOptions, LibraryStats } from "../services/types";
 import type {
   LibrarySequence,
   SequenceVisibility,
-} from "$lib/shared/library/domain/models/LibrarySequence";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+} from "$lib/shared/library/domain/models/library-sequence";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { compareKineticLetters } from "$lib/shared/browse/utils/kinetic-alphabet-sort";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
-import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
-import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
 
 export type LibraryViewSection =
   | "sequences"

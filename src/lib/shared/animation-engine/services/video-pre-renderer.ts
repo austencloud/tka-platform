@@ -17,8 +17,8 @@
  * The result is a video that looks EXACTLY like the live preview.
  */
 
-import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 export interface VideoRenderProgress {
   /** Current frame being rendered */
@@ -66,12 +66,12 @@ export interface VideoRenderOptions {
 }
 import { Canvas2DAnimationRenderer } from "$lib/shared/animation-engine/services/canvas-2d-animation-renderer";
 import { generateBluePropSvg, generateRedPropSvg } from "$lib/shared/animation-engine/services/svg-generator";
-import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/getSequenceAnimationOrchestrator";
+import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/get-sequence-animation-orchestrator";
 
 import {
   DEFAULT_TRAIL_SETTINGS,
   type TrailSettings,
-} from "$lib/shared/animation-engine/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-types";
 
 // IndexedDB database name and store for video caching
 const DB_NAME = "tka-video-cache";

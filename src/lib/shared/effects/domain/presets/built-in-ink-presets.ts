@@ -1,4 +1,4 @@
-import type { EffectsPreset } from "../EffectsPreset";
+import type { EffectsPreset } from "../effects-preset";
 
 /**
  * Built-in ink presets.

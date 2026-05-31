@@ -16,12 +16,12 @@ Variation support:
 
 -->
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
-  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
-  import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
+  import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
+  import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/share-options";
   import {

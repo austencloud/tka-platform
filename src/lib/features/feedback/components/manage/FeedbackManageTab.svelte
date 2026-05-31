@@ -3,7 +3,7 @@
   import AdminTwoPanelLayout from "$lib/shared/admin/components/AdminTwoPanelLayout.svelte";
   import { createFeedbackManageState } from "$lib/shared/feedback/state/feedback-manage-state.svelte";
   import { createVersionState } from "$lib/shared/feedback/state/version-state.svelte";
-  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
+  import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
   import {
     notificationTargetState,
     getNotificationTargetFeedback,

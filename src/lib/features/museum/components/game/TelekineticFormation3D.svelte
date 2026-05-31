@@ -1,7 +1,7 @@
 <script lang="ts">
   import CovenStation from "$lib/features/coven-hub/components/CovenStation.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { MUSEUM_EXHIBIT_SEQUENCES } from "../../data/museum-exhibit-sequences";
 
   interface Props {

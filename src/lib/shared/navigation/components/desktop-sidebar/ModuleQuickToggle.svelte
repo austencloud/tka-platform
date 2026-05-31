@@ -17,10 +17,10 @@
   import { flip } from "svelte/animate";
   import { dragHandleZone, dragHandle } from "svelte-dnd-action";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-  import { featureFlagService, featureFlagState } from "../../../auth/services/PostHogFeatureFlagService.svelte";
+  import { featureFlagService, featureFlagState } from "../../../auth/services/post-hog-feature-flag-service.svelte";
   import { getModuleDefinitions } from "../../../navigation-coordinator/navigation-coordinator.svelte";
   import { MODULE_DEFINITIONS } from "../../config/module-definitions";
-  import { moduleIdToFeatureId } from "../../../auth/domain/models/FeatureFlag";
+  import { moduleIdToFeatureId } from "../../../auth/domain/models/feature-flag";
   import { isModuleEnabledInEnvironment } from "../../../environment/environment-features";
   import { toast } from "../../../toast/state/toast-state.svelte";
   import type { ModuleDefinition, ModuleId } from "../../domain/types";

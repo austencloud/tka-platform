@@ -1,5 +1,5 @@
 import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 /**
  * Resolves the prop type for a performer.

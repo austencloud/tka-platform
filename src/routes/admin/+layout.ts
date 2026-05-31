@@ -19,7 +19,7 @@ export const load: LayoutLoad = async () => {
   }
 
   const { isInitialized, isAdmin } = await import(
-    "$lib/shared/auth/state/authState.svelte"
+    "$lib/shared/auth/state/auth-state.svelte"
   );
 
   // Wait for auth to initialize (Firebase needs to resolve the token)

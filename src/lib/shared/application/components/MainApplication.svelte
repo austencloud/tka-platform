@@ -8,8 +8,8 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
 </script>
 
 <script lang="ts">
-  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
-  import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
+  import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/settings-state.svelte";
   import AchievementNotificationToast from "../../gamification/components/AchievementNotificationToast.svelte";
   import XPToast from "../../gamification/components/XPToast.svelte";
   import WhatsNewChecker from "../../settings/components/WhatsNewChecker.svelte";
@@ -21,7 +21,7 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
   import { appEntryState } from "../../onboarding/state/app-entry-state.svelte.ts";
   import SendSequenceSheetHost from "../../inbox/components/SendSequenceSheetHost.svelte";
   import { propDrawerState } from "../../settings/state/prop-drawer-state.svelte";
-  import { PropType } from "../../pictograph/prop/domain/enums/PropType";
+  import { PropType } from "../../pictograph/prop/domain/enums/prop-type";
 
   import { getContext, onMount } from "svelte";
   import { bootProfiler } from "$lib/shared/analytics/boot-profiler";
@@ -34,11 +34,11 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
     onRouteChange,
   } from "../../navigation/services/sheet-router";
 import type { SheetType } from "../../navigation/services/types";
-  import { authState } from "../../auth/state/authState.svelte";
+  import { authState } from "../../auth/state/auth-state.svelte";
   import LandingPage from "../../auth/components/LandingPage.svelte";
   import { authDrawerState } from "../../auth/state/auth-drawer-state.svelte";
   import ErrorScreen from "../../foundation/ui/ErrorScreen.svelte";
-  import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
+  import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
   import { initializeTheme, updateTheme as updateThemeService } from "../../theme/services/theme-service";
   import type { ApplicationInitializer } from '$lib/shared/application/services/application-initializer'
   import {
@@ -67,8 +67,8 @@ import type { SheetType } from "../../navigation/services/types";
   import { MODULE_DEFINITIONS } from "../../navigation/config/module-definitions";
   import { handleModuleChange } from "../../navigation-coordinator/navigation-coordinator.svelte";
   import { isModuleAccessible } from "../../auth/domain/guest-access-config";
-  import { resolveAccessTier } from "../../auth/domain/AccessTier";
-  import { isPremiumOrAbove } from "../../auth/domain/models/UserRole";
+  import { resolveAccessTier } from "../../auth/domain/access-tier";
+  import { isPremiumOrAbove } from "../../auth/domain/models/user-role";
   import { detectAndCaptureScanEntry } from "../../analytics/scan-attribution";
   // Get DI container from context
 // Services - resolved lazily

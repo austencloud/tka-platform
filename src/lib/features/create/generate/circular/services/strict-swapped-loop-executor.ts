@@ -21,7 +21,7 @@ import {
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   updateStartOrientations,
@@ -32,7 +32,7 @@ import {
   SWAPPED_LOOP_VALIDATION_SET,
 } from "../domain/constants/strict-loop-position-maps";
 import { Period } from "../domain/models/circular-models";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 export class StrictSwappedLOOPExecutor {
   constructor() {}

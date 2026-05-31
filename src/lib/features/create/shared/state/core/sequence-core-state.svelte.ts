@@ -10,7 +10,7 @@
  * RESPONSIBILITY: Pure state management, no business logic or side effects
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { normalizeSequenceDerived } from "$lib/shared/create/services/sequence-derived-fields";
 

@@ -1,4 +1,4 @@
-import { LetterType } from "./LetterType";
+import { LetterType } from "./letter-type";
 
 /**
  * Letter Enum - all TKA letters

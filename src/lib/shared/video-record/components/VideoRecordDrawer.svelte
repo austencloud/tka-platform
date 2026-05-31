@@ -9,7 +9,7 @@
   import PanelHeader from "$lib/shared/create/components/PanelHeader.svelte";
   import VideoRecordPanel from "./VideoRecordPanel.svelte";
   import type { RecordingResult } from "../services/types";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   let {
     show = $bindable(false),

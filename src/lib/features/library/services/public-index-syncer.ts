@@ -25,7 +25,7 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { stripUndefined } from "$lib/shared/firestore";
 import { getPublicSequencePath, getPublicSequencesPath } from "$lib/shared/library/data/firestore-paths";
-import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import type { FlaggedTerm } from "$lib/features/moderation/domain/models/content-moderation-models";
 
 interface ContentModerator {
@@ -34,10 +34,10 @@ interface ContentModerator {
 interface ContentAppealManager {
   isWhitelisted(contentType: 'sequence' | 'act', contentId: string): Promise<boolean>;
 }
-import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { ContentModerationError } from "$lib/features/moderation/errors/content-moderation-error";
-import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";
+import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/get-public-sequence-hash-matcher";
 import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 import { LOOP_LABELS_COLLECTION } from "$lib/features/loop-labeler/domain/constants/firebase-collections";
 import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";

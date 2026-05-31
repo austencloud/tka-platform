@@ -13,7 +13,7 @@
   import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { inboxState } from "../../state/inbox-state.svelte";
   import { getFollowing } from "$lib/shared/community/services/user-repository";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";

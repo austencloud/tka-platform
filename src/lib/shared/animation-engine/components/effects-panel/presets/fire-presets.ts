@@ -12,10 +12,10 @@
 
 import type { EffectPreset, EffectPresetGroup } from "./types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-import type { FireIntent } from "$lib/shared/effects/domain/EffectsConfig";
-import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
-import type { FireColorCurve } from "../../../domain/types/FireTypes";
-import { hexToFlameColor } from "../../../domain/types/FireTypes";
+import type { FireIntent } from "$lib/shared/effects/domain/effects-config";
+import type { EffectsPreset } from "$lib/shared/effects/domain/effects-preset";
+import type { FireColorCurve } from "../../../domain/types/fire-types";
+import { hexToFlameColor } from "../../../domain/types/fire-types";
 
 // RGB values are normalized [0-1] for shader consumption
 const CLASSIC_CURVE: FireColorCurve = {

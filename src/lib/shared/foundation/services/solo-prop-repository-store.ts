@@ -13,9 +13,9 @@ import {
   type WhereClause,
 } from "$lib/shared/firestore";
 import { SoloPropDataSchema } from "../domain/models/solo-prop-schemas";
-import type { SoloPropData } from "../domain/models/SoloPropData";
+import type { SoloPropData } from "../domain/models/solo-prop-data";
 import type { SoloPropFilters } from "./types";
-import type { ArtifactProvenance } from "../domain/models/ArtifactProvenance";
+import type { ArtifactProvenance } from "../domain/models/artifact-provenance";
 
 function soloPropToDoc(soloProp: SoloPropData): Record<string, unknown> {
   const raw: Record<string, unknown> = {

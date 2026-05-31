@@ -1,1 +1,1 @@
-export { BuildResultTransformer } from "$lib/shared/create/services/BuildResultTransformer";
+export { BuildResultTransformer } from "$lib/shared/create/services/build-result-transformer";

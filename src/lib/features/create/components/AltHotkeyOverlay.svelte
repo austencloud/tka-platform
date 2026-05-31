@@ -1,14 +1,14 @@
 <script lang="ts">
   import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { getCreateModuleContext } from "../shared/context/create-module-context";
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { shiftStartPosition } from "$lib/shared/create/services/sequence-transforms";
   import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
   import * as subDrawerStatePersister from "../shared/services/sub-drawer-state-persister";
-  import type { PropPreset } from "$lib/shared/settings/domain/AppSettings";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropPreset } from "$lib/shared/settings/domain/app-settings";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   const ctx = getCreateModuleContext();
 

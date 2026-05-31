@@ -10,8 +10,8 @@
 -->
 <script lang="ts">
   import type { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
-  import type { TrailPointConfig, TrailPointSource } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
-  import { isUnilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
+  import type { TrailPointConfig, TrailPointSource } from "$lib/shared/animation-engine/domain/types/trail-point-types";
+  import { isUnilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
 
   interface Props {
     editorState: EffectPointEditorState;

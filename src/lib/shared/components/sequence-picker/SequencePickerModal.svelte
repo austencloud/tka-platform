@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { createBrowseEngine } from "$lib/shared/browse/engine/createBrowseEngine.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";

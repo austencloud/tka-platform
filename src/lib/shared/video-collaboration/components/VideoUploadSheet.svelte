@@ -10,7 +10,7 @@
   import { saveVideo } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { getAuthSync } from "$lib/shared/auth/firebase";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
@@ -18,7 +18,7 @@
     createVideoFromUpload,
     getVideoFileMetadata,
   } from "../helpers/create-video-from-upload";
-  import type { VideoVisibility } from "../domain/CollaborativeVideo";
+  import type { VideoVisibility } from "../domain/collaborative-video";
   import {
     extractVideoThumbnail,
     type ThumbnailResult,

@@ -1,13 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
 import { deriveSequenceLetters } from "./sequence-transforms";
-import { createStepData } from "$lib/shared/create/factories/createStepData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { createStepData } from "$lib/shared/create/factories/create-step-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   GridLocation,
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 
 describe("deriveSequenceLetters derives gridMode per-step", () => {
