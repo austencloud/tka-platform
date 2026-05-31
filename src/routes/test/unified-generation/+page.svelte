@@ -20,6 +20,12 @@
   import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
   import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
+  import StartPositionPicker from "$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte";
+  import { createSimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { scale } from "svelte/transition";
+  import { quintOut } from "svelte/easing";
 
   const c = getCardColors(BackgroundType.COSMIC); // DEFAULT_COLORS gradients
   const LOOP_COLOR = "linear-gradient(135deg, #a3a32a 0%, #8a8a22 50%, #6b6b1a 100%)";
@@ -83,8 +89,6 @@
   let deckSize = $state(52);
   let stepCount = $state(8);
   let level = $state(1);
-  let grid = $state<"diamond" | "box">("diamond");
-  let orientation = $state<"radial" | "nonradial" | "split">("radial");
   let loopType = $state<LOOPType>(LOOPType.ROTATED);
   let loopComponents = $state<Set<LOOPComponent>>(parseLoopComponents(LOOPType.ROTATED));
   let showLoop = $state(false);
@@ -93,11 +97,15 @@
   let propRev = $state<"smooth" | "mixed" | "choppy">("smooth");
   let handRev = $state<"smooth" | "mixed" | "choppy">("mixed");
   let dashes = $state<"low" | "mixed" | "high">("mixed");
-  let startMode = $state<"all" | "classic" | "specific">("all");
-  let showOrient = $state(false);
   let seed = $state(mintSeed());
 
-  function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  // Start Position & Orientation: reuse the REAL picker (3 positions / 16 variations grid,
+  // Diamond/Box toggle, per-hand orientation cyclers). Grid mode now lives in here, so the
+  // standalone Grid toggle tile is gone.
+  const posOri = createSimplifiedStartPositionState();
+  let showPosOri = $state(false);
+  const oriShort = (o: Orientation): string =>
+    ({ [Orientation.IN]: "In", [Orientation.OUT]: "Out", [Orientation.CLOCK]: "Clock", [Orientation.COUNTER]: "Counter" } as Record<string, string>)[o] ?? String(o);
 
   // ---- derived ----------------------------------------------------------------
   const wordMode = $derived(word.trim().length > 0);
@@ -114,16 +122,22 @@
   // Rare: only when you ask for more UNIQUE cards than the entire variation space holds.
   const exhausted = $derived(requested > cardSpace);
 
-  const orientSummary = $derived(
-    (orientation === "nonradial" ? "Non-radial" : cap(orientation)) +
-    (startMode === "all" ? "" : ` · ${cap(startMode)}`),
-  );
+  const gridLabel = $derived(posOri.currentGridMode === GridMode.DIAMOND ? "Diamond" : "Box");
+  const posOriSummary = $derived.by(() => {
+    const b = posOri.blueOrientation, r = posOri.redOrientation;
+    const ori = b === r ? oriShort(b) : `${oriShort(b)}/${oriShort(r)}`;
+    const pos = posOri.selectedPosition?.startPosition;
+    return pos ? `${pos} · ${gridLabel}` : `${gridLabel} · ${ori}`;
+  });
 
   const recipe = $derived({
     schemaVersion: 1, generatorVersion: "loop-gen@0.1.0", seed,
     params: {
       ...(wordMode ? { word: word.trim().toUpperCase(), deck: "all-variations" } : { deckSize }),
-      loopType, stepCount, level, grid, orientation, startMode, period,
+      loopType, stepCount, level, period,
+      grid: posOri.currentGridMode === GridMode.DIAMOND ? "diamond" : "box",
+      startPosition: posOri.selectedPosition?.startPosition ?? "any",
+      blueOrientation: posOri.blueOrientation, redOrientation: posOri.redOrientation,
       propReversals: propRev, handReversals: handRev, dashes,
       ...(level > 1 ? { turnIntensity } : {}),
     },
@@ -200,12 +214,8 @@
         <StepperCard title="Level" currentValue={level} minValue={1} maxValue={4} description="BASE MOTIONS" color={c.level.color} shadowColor={c.level.shadowColor} gridColumnSpan={2} onIncrement={() => (level = clamp(level + 1, 1, 4))} onDecrement={() => (level = clamp(level - 1, 1, 4))} />
         </div>
 
-        <div class="tile" style:view-transition-name="t-grid">
-        <ToggleCard title="Grid" option1={{ value: "diamond", label: "Diamond" }} option2={{ value: "box", label: "Box" }} activeOption={grid} onToggle={(v) => (grid = v as typeof grid)} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} gridColumnSpan={2} />
-        </div>
-
-        <div class="tile" style:view-transition-name="t-posori">
-        <BaseCard title="Pos & Ori" currentValue={orientSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showOrient = !showOrient)} />
+        <div class="tile">
+        <BaseCard title="Pos & Ori" currentValue={posOriSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showPosOri = true)} />
         </div>
 
         <!-- Row 3 -->
@@ -250,25 +260,22 @@
             onClose={() => (showLoop = false)}
           />
         {/if}
+
+        {#if showPosOri}
+          <div class="picker-overlay" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+            <div class="po-header">
+              <h3>Start Position &amp; Orientation</h3>
+              <button class="po-close" aria-label="Close" onclick={() => (showPosOri = false)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div class="po-body">
+              <StartPositionPicker startPositionState={posOri} />
+            </div>
+            <button class="po-done" onclick={() => (showPosOri = false)}>Done</button>
+          </div>
+        {/if}
       </div>
-
-      {#if showOrient}
-        <div class="detail">
-          <span class="detail-title">Orientation &amp; Start</span>
-          <div class="brow"><span class="brow-label">Orientation</span><div class="opts">
-            {#each [["radial", "Radial"], ["nonradial", "Non-radial"], ["split", "Split"]] as [v, l]}
-              <button class="opt" class:on={orientation === v} onclick={() => (orientation = v as typeof orientation)}>{l}</button>
-            {/each}
-          </div></div>
-          <div class="brow"><span class="brow-label">Start</span><div class="opts">
-            {#each [["all", "All"], ["classic", "Classic 3"], ["specific", "Specific"]] as [v, l]}
-              <button class="opt" class:on={startMode === v} onclick={() => (startMode = v as typeof startMode)}>{l}</button>
-            {/each}
-          </div></div>
-          <p class="detail-note">Start position folds in here. “Specific” reveals the position grid (deep tier).</p>
-        </div>
-      {/if}
-
     </section>
 
     <aside class="rail">
@@ -389,22 +396,35 @@
   .generate:active { transform: scale(0.985); }
   .generate i { font-size: 22px; }
 
-  .detail {
-    width: 100%;
-    background: rgba(6, 182, 212, 0.1); border: 1.5px solid rgba(6, 182, 212, 0.3);
-    border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
+  /* Full-stage picker overlay (Pos & Ori), styled to match LOOPExpandedOverlay. */
+  .picker-overlay {
+    position: absolute; inset: 0; z-index: 100;
+    display: flex; flex-direction: column; gap: 10px; padding: 12px;
+    background: linear-gradient(135deg,
+      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 25%, #1a1a2e) 0%,
+      color-mix(in srgb, var(--theme-accent, #818cf8) 15%, #1a1a2e) 50%,
+      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 20%, #1a1a2e) 100%);
+    border-radius: 16px; border: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 24px color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    overflow: hidden;
   }
-  .detail-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255, 255, 255, 0.6); }
-  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
-  .brow { display: flex; align-items: center; gap: 12px; }
-  .brow-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.5); min-width: 72px; flex-shrink: 0; }
-  .opts { display: flex; gap: 4px; flex: 1; }
-  .opt { flex: 1; min-height: 40px; background: rgba(0, 0, 0, 0.25); border: 1.5px solid rgba(255, 255, 255, 0.15); border-radius: 10px; color: rgba(255, 255, 255, 0.7); cursor: pointer; font-weight: 600; font-size: 12px; padding: 4px 6px; transition: all 150ms; }
-  .opt:active { transform: scale(0.96); }
-  .opt.on { background: rgba(6, 182, 212, 0.28); border-color: rgba(6, 182, 212, 0.7); color: #fff; box-shadow: 0 0 12px rgba(6, 182, 212, 0.2); }
-  .pill { padding: 8px 16px; border-radius: 999px; border: 1.5px solid rgba(255, 255, 255, 0.18); background: rgba(0, 0, 0, 0.25); color: rgba(255, 255, 255, 0.75); font-size: 13px; font-weight: 600; cursor: pointer; }
-  .pill.on { background: rgba(6, 182, 212, 0.25); border-color: rgba(6, 182, 212, 0.7); color: #fff; }
-  .detail-note { margin: 0; font-size: 12px; color: rgba(255, 255, 255, 0.45); }
+  .po-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .po-header h3 { margin: 0; font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 0.3px; }
+  .po-close {
+    background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px;
+    color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; padding: 8px;
+  }
+  .po-close svg { width: 20px; height: 20px; }
+  .po-close:hover { background: rgba(255, 255, 255, 0.15); }
+  .po-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+  .po-done {
+    flex-shrink: 0; width: 100%; padding: 12px 20px; min-height: 44px;
+    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border: 2px solid var(--theme-accent); border-radius: 10px; color: #fff;
+    font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer;
+  }
+  .po-done:hover { background: color-mix(in srgb, var(--theme-accent) 45%, transparent); }
 
   .rail { display: flex; flex-direction: column; gap: 14px; }
   .stat { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 18px; text-align: center; }
