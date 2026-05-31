@@ -16,7 +16,11 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 
 // ───────────────────────────────────────────────────────────────────────────
 // Seed classes per §4.2: each base seed's grid-correct family (diamond | box).
-// §4.3 option A: PM/QN/RO are diamond quarter-opp AND box split-opp.
+// Mirror-half seeds share a letter multiset (MP/PM, DJ/JD, …). When both halves
+// collapse onto the SAME family in a grid, only the canonical (word-sorts-first)
+// seed is kept for that grid — diamond quarter-opp keeps MP/NQ/OR (not PM/QN/RO),
+// box quarter-opp keeps DJ/EK/FL (not JD/KE/LF). The dropped half still appears in
+// the OTHER family it lands in per grid (PM → box split-opp; JD → diamond split-opp).
 // ───────────────────────────────────────────────────────────────────────────
 function seedClass(
   seedId: string,
@@ -63,15 +67,8 @@ const seedsIn = (familyId: string, grids: ("diamond" | "box")[]): string[] => {
 // getTnDFamilyOptions — grid-aware grouping by computed element
 // ───────────────────────────────────────────────────────────────────────────
 describe("getTnDFamilyOptions (grid-aware)", () => {
-  it("diamond grouping reproduces today's correct diamond families", () => {
-    expect(seedsIn("quarter-opp", ["diamond"])).toEqual([
-      "MP",
-      "NQ",
-      "OR",
-      "PM",
-      "QN",
-      "RO",
-    ]);
+  it("diamond grouping keeps canonical gamma seeds (MP/NQ/OR), drops mirror PM/QN/RO", () => {
+    expect(seedsIn("quarter-opp", ["diamond"])).toEqual(["MP", "NQ", "OR"]);
     expect(seedsIn("tog-opp", ["diamond"])).toEqual(["DJ", "EK", "FL"]);
     expect(seedsIn("split-opp", ["diamond"])).toEqual(["JD", "KE", "LF"]);
     expect(seedsIn("split-same", ["diamond"])).toEqual(["A"]);
@@ -79,15 +76,9 @@ describe("getTnDFamilyOptions (grid-aware)", () => {
     expect(seedsIn("quarter-same", ["diamond"])).toEqual(["S"]);
   });
 
-  it("box quarter-opp = DEFJKL compounds, NOT the gamma seeds", () => {
-    expect(seedsIn("quarter-opp", ["box"])).toEqual([
-      "DJ",
-      "EK",
-      "FL",
-      "JD",
-      "KE",
-      "LF",
-    ]);
+  it("box quarter-opp keeps canonical DJ/EK/FL, drops mirror JD/KE/LF and the gamma seeds", () => {
+    expect(seedsIn("quarter-opp", ["box"])).toEqual(["DJ", "EK", "FL"]);
+    expect(seedsIn("quarter-opp", ["box"])).not.toContain("JD");
     expect(seedsIn("quarter-opp", ["box"])).not.toContain("MP");
   });
 
@@ -115,28 +106,39 @@ describe("getTnDFamilyOptions (grid-aware)", () => {
   it("returns empty when no seed classes", () => {
     expect(getTnDFamilyOptions([], ["box"])).toEqual([]);
   });
+
+  it("mirror-half dedup is per grid: dropped half still appears in its other-grid family", () => {
+    // PM is deduped out of diamond quarter-opp but remains the box split-opp seed.
+    expect(seedsIn("quarter-opp", ["diamond"])).not.toContain("PM");
+    expect(seedsIn("split-opp", ["box"])).toContain("PM");
+    // JD is deduped out of box quarter-opp but remains the diamond split-opp seed.
+    expect(seedsIn("quarter-opp", ["box"])).not.toContain("JD");
+    expect(seedsIn("split-opp", ["diamond"])).toContain("JD");
+  });
 });
 
 // ───────────────────────────────────────────────────────────────────────────
 // Family counts per grid selection (§6 test 7)
 // ───────────────────────────────────────────────────────────────────────────
 describe("getTnDFamilyOptions — counts per grid selection", () => {
-  it("diamond-only: quarter-opp counts 6 (3 γ-tog + 3 γ-split)", () => {
+  it("diamond-only: quarter-opp counts 3 (canonical γ seeds, mirror half deduped)", () => {
     const opts = getTnDFamilyOptions(SEED_CLASSES, ["diamond"]);
-    expect(opts.find((o) => o.familyId === "quarter-opp")!.sequenceCount).toBe(6);
+    expect(opts.find((o) => o.familyId === "quarter-opp")!.sequenceCount).toBe(3);
   });
 
-  it("box-only: quarter-opp counts 6 (DEFJKL), tog-opp 3, split-opp 3", () => {
+  it("box-only: quarter-opp counts 3 (DJ/EK/FL), tog-opp 3, split-opp 3", () => {
     const opts = getTnDFamilyOptions(SEED_CLASSES, ["box"]);
-    expect(opts.find((o) => o.familyId === "quarter-opp")!.sequenceCount).toBe(6);
+    expect(opts.find((o) => o.familyId === "quarter-opp")!.sequenceCount).toBe(3);
     expect(opts.find((o) => o.familyId === "tog-opp")!.sequenceCount).toBe(3);
     expect(opts.find((o) => o.familyId === "split-opp")!.sequenceCount).toBe(3);
   });
 
-  it("both grids: every (seed × grid) is counted once", () => {
+  it("both grids: each grid keeps its canonical seed per family (mirror halves deduped per grid)", () => {
     const opts = getTnDFamilyOptions(SEED_CLASSES, ["diamond", "box"]);
     const total = opts.reduce((s, o) => s + o.sequenceCount, 0);
-    expect(total).toBe(SEED_CLASSES.length * 2); // 15 seeds × 2 grids
+    // diamond 12 (qopp 3, togopp 3, splitopp 3, ss/ts/qs 1 each)
+    // + box 12 (qopp 3, togopp 3, splitopp 3, ss/ts/qs 1 each) = 24
+    expect(total).toBe(24);
   });
 });
 
@@ -144,11 +146,12 @@ describe("getTnDFamilyOptions — counts per grid selection", () => {
 // buildTnDCards — emits grid-correct content (§6 tests 4 & 5)
 // ───────────────────────────────────────────────────────────────────────────
 describe("buildTnDCards — box quarter-opp content (§6 test 4)", () => {
-  it("Box + Quarter-Opp emits exactly DEFJKL, no MP/NQ/OR", () => {
+  it("Box + Quarter-Opp emits canonical DJ/EK/FL, no mirror JD/KE/LF, no MP/NQ/OR", () => {
     const families = getTnDFamilyOptions(SEED_CLASSES, ["box"]);
     const cards = buildTnDCards(families, new Set(["quarter-opp"]), new Set(["0|0"]));
     const ids = cards.map((c) => c.sequenceId).sort();
-    expect(ids).toEqual(["DJ", "EK", "FL", "JD", "KE", "LF"]);
+    expect(ids).toEqual(["DJ", "EK", "FL"]);
+    expect(ids).not.toContain("JD");
     expect(ids).not.toContain("MP");
     expect(cards.every((c) => c.variation?.gridMode === "box")).toBe(true);
     expect(cards.every((c) => c.footer.center === "Quarter-Opp")).toBe(true);
@@ -171,18 +174,11 @@ describe("buildTnDCards — box tog/split content (§6 test 5)", () => {
   });
 });
 
-describe("buildTnDCards — diamond unchanged (§6 test 6 regression guard)", () => {
-  it("Diamond + Quarter-Opp → MP/NQ/OR + PM/QN/RO, no DEFJKL", () => {
+describe("buildTnDCards — diamond canonical gamma half (§6 test 6 regression guard)", () => {
+  it("Diamond + Quarter-Opp → MP/NQ/OR only (mirror PM/QN/RO deduped), no DEFJKL", () => {
     const families = getTnDFamilyOptions(SEED_CLASSES, ["diamond"]);
     const cards = buildTnDCards(families, new Set(["quarter-opp"]), new Set(["0|0"]));
-    expect(cards.map((c) => c.sequenceId).sort()).toEqual([
-      "MP",
-      "NQ",
-      "OR",
-      "PM",
-      "QN",
-      "RO",
-    ]);
+    expect(cards.map((c) => c.sequenceId).sort()).toEqual(["MP", "NQ", "OR"]);
     expect(cards.every((c) => c.variation?.gridMode === undefined)).toBe(true);
   });
 });

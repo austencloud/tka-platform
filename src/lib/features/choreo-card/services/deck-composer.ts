@@ -318,10 +318,50 @@ export function buildTnDSeedClasses(seqs: SequenceData[]): TnDSeedClass[] {
 }
 
 /**
+ * Extract the LOOP word from a base-seed id (`tnd-<family>-<word>` → `<word>`).
+ * The word is always the final hyphen segment even though the family id itself
+ * contains a hyphen (e.g. `quarter-opp` → id `tnd-quarter-opp-mpmp`).
+ */
+function seedWordOf(sequenceId: string): string {
+  return sequenceId.split("-").pop() ?? sequenceId;
+}
+
+/**
+ * Drop redundant mirror-half seeds within one (grid, family) bucket.
+ *
+ * Opposite-direction compounds are seeded as mirror pairs (MPMP/PMPM, DJDJ/JDJD,
+ * …). In a given grid both halves can collapse onto the SAME family: in diamond
+ * MPMP and PMPM are both quarter-opp; in box DJDJ and JDJD are both quarter-opp.
+ * They are the same hand-path shape mirrored, so only one canonical seed belongs
+ * per grid — the other half exists to populate whichever family it lands in under
+ * the OTHER grid (e.g. PMPM is the box split-opp seed; JDJD is the diamond
+ * split-opp seed), and that role is preserved because dedup is keyed by gridMode.
+ *
+ * A mirror pair shares a letter multiset; the canonical keeper is the seed whose
+ * word sorts first — the non-reversed original (MP over PM, DJ over JD). This
+ * matches the standard diamond-gamma start (gamma11 MP/NQ/OR, not gamma9 PM/QN/RO)
+ * and the box keep-DJ/drop-JD rule. Same-direction families (single-letter words)
+ * never collide and pass through untouched.
+ */
+function dedupeMirrorHalfSeeds(entries: TnDSequenceEntry[]): TnDSequenceEntry[] {
+  const keep = new Map<string, TnDSequenceEntry>();
+  for (const e of entries) {
+    const word = seedWordOf(e.sequenceId);
+    const letterKey = [...new Set(word.split(""))].sort().join("");
+    const mapKey = `${e.gridMode}::${letterKey}`;
+    const cur = keep.get(mapKey);
+    if (!cur || word < seedWordOf(cur.sequenceId)) keep.set(mapKey, e);
+  }
+  return [...keep.values()];
+}
+
+/**
  * Group the seed classes into family options for the currently-selected grid
  * modes. A seed contributes one (seed × grid) entry to whichever family it lands
  * in per grid — so with both grids selected MP appears under Quarter-Opp (diamond)
  * and Tog-Opp (box). Family + count are always computed, never the static catalog.
+ * Mirror-half duplicates that collapse onto the same family in a grid are pruned
+ * (see `dedupeMirrorHalfSeeds`) so each grid keeps only its canonical seed.
  */
 export function getTnDFamilyOptions(
   seedClasses: TnDSeedClass[],
@@ -346,12 +386,15 @@ export function getTnDFamilyOptions(
   }
 
   return [...byFamily.entries()]
-    .map(([familyId, entries]) => ({
-      familyId,
-      label: TND_BY_FAMILY[familyId]?.name ?? familyId,
-      sequenceCount: entries.length,
-      entries,
-    }))
+    .map(([familyId, entries]) => {
+      const deduped = dedupeMirrorHalfSeeds(entries);
+      return {
+        familyId,
+        label: TND_BY_FAMILY[familyId]?.name ?? familyId,
+        sequenceCount: deduped.length,
+        entries: deduped,
+      };
+    })
     .sort(
       (a, b) => FAMILY_ORDER.indexOf(a.familyId) - FAMILY_ORDER.indexOf(b.familyId)
     );
