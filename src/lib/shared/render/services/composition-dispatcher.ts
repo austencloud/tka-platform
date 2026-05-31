@@ -61,10 +61,17 @@ interface PendingRequest {
   resolveBitmap?: (bitmap: ImageBitmap) => void;
 }
 
-// One in-flight 1644x2244 RGBA card canvas per worker ≈ 14.7 MB; N = cores-1
-// → up to ~220 MB transient on a 16-core machine. Acceptable on the desktop
-// deck-rendering target. Revisit if memory profiling shows pressure.
-const POOL_SIZE = Math.max(1, (navigator?.hardwareConcurrency || 4) - 1);
+// One in-flight 1644x2244 RGBA card canvas per worker ≈ 14.7 MB. Reserve a core
+// for the main thread and cap at 8 — past ~8 the seed/memory cost outweighs the
+// throughput gain (a 32-core box would otherwise spawn 31 workers ≈ 455 MB).
+export function computePoolSize(hardwareConcurrency: number | undefined): number {
+  const cores = hardwareConcurrency || 4;
+  return Math.max(2, Math.min(cores - 1, 8));
+}
+
+const POOL_SIZE = computePoolSize(
+  typeof navigator !== "undefined" ? navigator.hardwareConcurrency : undefined,
+);
 const INIT_TIMEOUT_MS = 15_000;
 
 export class CompositionDispatcher {
