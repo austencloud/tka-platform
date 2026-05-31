@@ -13,6 +13,8 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { initializeSpecialOverrides } from "$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-singleton";
+  import { initializeDefaultOverrides } from "$lib/shared/pictograph/arrow/positioning/default-override/services/default-override-singleton";
 
   interface Props {
     sequence: SequenceData;
@@ -44,7 +46,6 @@
 
   let mode = $state<"preview" | "fix">("preview");
   let selectedStep = $state<StepData | null>(null);
-  let dirty = $state(false);
   let rebaking = $state(false);
 
   // Mirror PrintPreviewPages: explicit prop types win, else global settings,
@@ -53,24 +54,33 @@
   const effBlueProp = $derived(bluePropType ?? settings.bluePropType ?? PropType.STAFF);
   const effRedProp = $derived(redPropType ?? settings.redPropType ?? PropType.STAFF);
 
-  function enterFixMode(): void { mode = "fix"; dirty = false; }
+  async function enterFixMode(): Promise<void> {
+    mode = "fix";
+    // The editor writes to the Special/Default override repos and the card-front
+    // re-bake reads its arrow placements through the resolver those repos
+    // register on init. Opened from /choreo_card/releaser the app may never have
+    // initialized them (that normally happens in Create), so a save would not
+    // persist and the re-bake would read nothing — the edit would not show.
+    // Initialize here; both are idempotent (no-op if already initialized).
+    await Promise.all([initializeSpecialOverrides(), initializeDefaultOverrides()]);
+  }
 
   function onCellSelected(step: StepData): void { selectedStep = step; }
 
-  function closeEditor(): void {
-    // A save in the editor persisted the override globally; mark dirty so Done
-    // (or close) re-bakes. We can't distinguish "saved" from "looked only", so
-    // any editor visit marks dirty — a redundant re-bake is cheap and correct.
-    dirty = true;
+  async function rebakeFront(): Promise<void> {
+    if (!onRerender || rebaking) return;
+    rebaking = true;
+    try { await onRerender(); } finally { rebaking = false; }
+  }
+
+  async function closeEditor(): Promise<void> {
     selectedStep = null;
+    // Auto re-render the card front after each fix — no manual Done needed.
+    await rebakeFront();
   }
 
   async function exitFixMode(): Promise<void> {
-    if (dirty && onRerender) {
-      rebaking = true;
-      try { await onRerender(); } finally { rebaking = false; }
-    }
-    dirty = false;
+    await rebakeFront();   // ensure the latest fix is baked before showing preview
     mode = "preview";
   }
 
