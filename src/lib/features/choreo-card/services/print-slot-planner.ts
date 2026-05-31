@@ -18,15 +18,14 @@ export type PrintSlot = PlannedSlot<CardPair>;
 const UNTAGGED = "__untagged__";
 
 /** Group items by element (fixed TND_ELEMENTS order, untagged trailing),
- *  whole-block-repeat each color `copies` times, and pad each color block with
- *  blank slots so its length is a multiple of `cardsPerPage`. The result is an
- *  ordered slot list in which every page holds exactly one element.
+ *  repeat each card `copies` times consecutively (cut-collation: each page holds
+ *  a single card repeated, so stacking all pages and cutting yields `copies`
+ *  identical sorted decks with zero manual sorting), and pad each color block
+ *  with blank slots so its length is a multiple of `cardsPerPage`.
  *
  *  `groupByElement=false` relaxes the one-color-per-sheet rule: items lay out in
- *  their given order, whole-deck-repeated `copies` times, with blanks padding
- *  ONLY the final sheet. No empty cells between colors — sheets fill normally.
- *  Used for single-copy pre-release proofs where clean cuts don't matter.
- *  elementName is null in this mode (a sheet may mix colors, so no sheet label). */
+ *  their given order, each card repeated `copies` times consecutively, with
+ *  blanks padding ONLY the final sheet. elementName is null in this mode. */
 export function planPrintSlots<T>(
   items: T[],
   elements: (TnDElement | undefined)[],
@@ -38,8 +37,8 @@ export function planPrintSlots<T>(
 
   if (!groupByElement) {
     const out: PlannedSlot<T>[] = [];
-    for (let c = 0; c < n; c++) {
-      for (let i = 0; i < items.length; i++) {
+    for (let i = 0; i < items.length; i++) {
+      for (let c = 0; c < n; c++) {
         out.push({ item: items[i]!, elementName: null });
       }
     }
@@ -66,8 +65,8 @@ export function planPrintSlots<T>(
     const elementName = key === UNTAGGED ? null : key;
 
     const repeated: PlannedSlot<T>[] = [];
-    for (let c = 0; c < n; c++) {
-      for (const p of bucket) repeated.push({ item: p, elementName });
+    for (const p of bucket) {
+      for (let c = 0; c < n; c++) repeated.push({ item: p, elementName });
     }
     while (repeated.length % cardsPerPage !== 0) {
       repeated.push({ item: null, elementName });

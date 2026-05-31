@@ -77,10 +77,9 @@
       if (entry) entry.count++;
       else counts.set(el.element, { element: el, count: 1 });
     }
-    const perPage = layout.cardsPerPage;
     return TND_ELEMENTS.filter((e) => counts.has(e.element)).map((e) => {
       const { element, count } = counts.get(e.element)!;
-      return { element, count, sheets: Math.ceil((count * copies) / perPage) };
+      return { element, count };
     });
   });
 
@@ -137,32 +136,13 @@
 </script>
 
 <div class="print-panel">
-  <section class="summary" aria-label="Deck summary">
-    <div class="summary-row">
-      <span class="summary-label">Cards</span>
-      <span class="summary-value">{cardCount}</span>
-    </div>
-    <div class="summary-row">
-      <span class="summary-label">Sheets</span>
-      <span class="summary-value">{sheetCount} ({layout.cols}&times;{layout.rows} per sheet)</span>
-    </div>
-    <div class="summary-row">
-      <span class="summary-label">Copies / card</span>
-      <span class="summary-value">{copies}<span class="inline-hint">toolbar</span></span>
-    </div>
-    <div class="summary-row">
-      <span class="summary-label">Theme</span>
-      <span class="summary-value theme-badge">{theme}</span>
-    </div>
-  </section>
-
   {#if elementCounts.length > 0 && groupByElement}
     <div class="elements" aria-label="Element breakdown">
-      {#each elementCounts as { element, count, sheets }}
+      {#each elementCounts as { element, count }}
         <div class="element-pill" style="--el-color: {element.accentColor}"
-          title="{count} card{count === 1 ? '' : 's'} × {copies} = {sheets} sheet{sheets === 1 ? '' : 's'}">
+          title="{element.element}: {count} card{count === 1 ? '' : 's'}">
           <img src={element.iconPath} alt={element.element} class="element-icon" width="16" height="16" />
-          <span class="element-count">{count} · {sheets}sh</span>
+          <span class="element-count">{count}</span>
         </div>
       {/each}
     </div>
@@ -214,69 +194,33 @@
   .print-panel {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
     padding: 16px;
     overflow-y: auto;
     min-height: 0;
   }
 
-  .summary {
+  .elements {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 14px 16px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
   }
-
-  .summary-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 28px;
-  }
-
-  .summary-label { font-size: 13px; color: rgba(255, 255, 255, 0.4); }
-
-  .summary-value {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 8px;
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.8);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .inline-hint { font-size: 11px; font-weight: 400; color: rgba(255, 255, 255, 0.3); }
-
-  .theme-badge {
-    text-transform: capitalize;
-    padding: 2px 10px;
-    background: rgba(139, 92, 246, 0.12);
-    border: 1px solid rgba(139, 92, 246, 0.25);
-    border-radius: 6px;
-    font-size: 12px;
-    color: #a78bfa;
-  }
-
-  .elements { display: flex; gap: 6px; flex-wrap: wrap; }
 
   .element-pill {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
+    gap: 4px;
+    padding: 4px 8px;
     background: color-mix(in srgb, var(--el-color) 10%, transparent);
     border: 1px solid color-mix(in srgb, var(--el-color) 25%, transparent);
     border-radius: 20px;
   }
 
-  .element-icon { width: 16px; height: 16px; object-fit: contain; }
+  .element-icon { width: 14px; height: 14px; object-fit: contain; }
 
   .element-count {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--el-color);
     font-variant-numeric: tabular-nums;

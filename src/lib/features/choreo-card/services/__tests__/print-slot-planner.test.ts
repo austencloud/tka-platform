@@ -25,13 +25,13 @@ describe("planPrintSlots", () => {
     expect(slots[9]!.elementName).toBe("fire");
   });
 
-  it("whole-block repeats each color N times (not per-card runs)", () => {
+  it("cut-collates: each card repeated N times consecutively", () => {
     const pairs = [pair("a"), pair("b")];
     const elements = [EL("fire"), EL("fire")];
     const slots = planPrintSlots(pairs, elements, 3, 9);
 
     const labels = slots.slice(0, 6).map((s) => s.item?.label);
-    expect(labels).toEqual(["a", "b", "a", "b", "a", "b"]);
+    expect(labels).toEqual(["a", "a", "a", "b", "b", "b"]);
     expect(slots.length).toBe(9);
     expect(slots[6]!.item).toBeNull();
   });
@@ -44,6 +44,21 @@ describe("planPrintSlots", () => {
     expect(slots[0]!.item?.label).toBe("fire1");
     expect(slots[9]!.item?.label).toBe("u1");
     expect(slots[9]!.elementName).toBeNull();
+  });
+
+  it("cut-collation: when copies == cardsPerPage, each page has one card repeated", () => {
+    const pairs = [pair("A"), pair("B"), pair("C")];
+    const elements = [EL("water"), EL("water"), EL("water")];
+    const slots = planPrintSlots(pairs, elements, 9, 9);
+
+    // 3 cards × 9 copies = 27 slots = 3 pages of 9
+    expect(slots.length).toBe(27);
+    // Page 1: all A
+    expect(slots.slice(0, 9).every((s) => s.item?.label === "A")).toBe(true);
+    // Page 2: all B
+    expect(slots.slice(9, 18).every((s) => s.item?.label === "B")).toBe(true);
+    // Page 3: all C
+    expect(slots.slice(18, 27).every((s) => s.item?.label === "C")).toBe(true);
   });
 
   it("copies < 1 is clamped to 1", () => {
@@ -72,11 +87,11 @@ describe("planPrintSlots", () => {
       expect(slots.every((s) => s.elementName === null)).toBe(true);
     });
 
-    it("whole-deck repeats N copies before tail-padding", () => {
+    it("cut-collates: each card repeated N times consecutively", () => {
       const pairs = [pair("a"), pair("b")];
       const slots = planPrintSlots(pairs, [EL("fire"), EL("water")], 2, 9, false);
 
-      expect(slots.slice(0, 4).map((s) => s.item?.label)).toEqual(["a", "b", "a", "b"]);
+      expect(slots.slice(0, 4).map((s) => s.item?.label)).toEqual(["a", "a", "b", "b"]);
       expect(slots.length).toBe(9);
       expect(slots[4]!.item).toBeNull();
     });

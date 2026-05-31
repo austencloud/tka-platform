@@ -107,13 +107,6 @@ export interface PrintRenderOptions {
   deckId?: string;
   /** Deck name for QR attribution tracking */
   deckName?: string;
-  /**
-   * Render the front via the OffscreenCanvas worker pool. Set true by the deck
-   * preview driver ONLY after it has probed worker support and seeded the pool's
-   * AssetBundle. Other callers (single-card rerender) leave it falsy and use the
-   * main-thread path, so an un-seeded worker never produces a blank card.
-   */
-  useWorkerPool?: boolean;
 }
 
 export interface CardPair {

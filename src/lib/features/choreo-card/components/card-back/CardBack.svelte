@@ -250,6 +250,7 @@
     letter-spacing: 0.22em;
     font-style: italic;
     font-family: Georgia, "Times New Roman", serif;
+    white-space: nowrap;
   }
 
   .brand-main.italic-serif {
@@ -325,6 +326,7 @@
     font-weight: 500;
     letter-spacing: 0.4em;
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .brand-sub.uppercase-sans-sub {
