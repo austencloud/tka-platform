@@ -67,7 +67,7 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   import { setCreateModuleContext } from "../context/create-module-context";
   import LOOPCoordinator from "./coordinators/LOOPCoordinator.svelte";
   import StartEndCoordinator from "./coordinators/StartEndCoordinator.svelte";
-  import SequenceDrawerHost from "./coordinators/SequenceDrawerHost.svelte";
+  import SequenceDrawerLauncher from "./coordinators/SequenceDrawerLauncher.svelte";
   // Deferred (loaded on first open via LazyMount) — keeps their ~110-file
   // dependency subtrees out of the Create module's eager first-paint graph.
   // See scripts/trace-create-three.cjs for the deferral analysis.
@@ -749,8 +749,15 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
     active={panelState.isVideoRecordPanelOpen}
   />
 
-  <!-- Sequence Drawer Host (eager: owns animation deep-link restore + view-sequence redirect) -->
-  <SequenceDrawerHost />
+  <!-- Always-mounted launcher (light): owns deep-link open + view-sequence redirect.
+       The heavy export/animation drawer host is deferred until first open via
+       LazyMount, then idle-prefetched so the first open is instant. -->
+  <SequenceDrawerLauncher />
+  <LazyMount
+    loader={() => import("./coordinators/SequenceDrawerHost.svelte")}
+    active={panelState.isExportPanelOpen}
+    prefetch
+  />
 
   <!-- Orientation Picker Drawer (deferred until first opened) -->
   <LazyMount
