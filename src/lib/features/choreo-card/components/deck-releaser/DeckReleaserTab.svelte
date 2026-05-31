@@ -28,6 +28,7 @@
   import { releaserState as rs } from "./deck-releaser-state.svelte";
   import { resolveDeckSequences, applyVariationDescriptor, rollVariation } from "../../services/deck-variation";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
+  import { hashDeckContent } from "$lib/shared/foundation/services/content-hasher";
 
   interface Props {
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
@@ -41,6 +42,25 @@
   let releases = $state<DeckRelease[]>([]);
   let isLoadingReleases = $state(true);
   let showNameModal = $state(false);
+
+  // Content fingerprint → release. A freshly composed deck whose card set exactly
+  // matches a release (any order) bounces the user into that release instead of
+  // re-creating a twin. Rebuilds automatically as releases load / one is added.
+  const releaseHashes = $derived.by(() => {
+    const map = new Map<string, DeckRelease>();
+    for (const r of releases) map.set(hashDeckContent(r.sequences ?? []), r);
+    return map;
+  });
+
+  /** If the composed deck matches an existing release, bounce into it and return
+   *  true; the caller skips the fresh-review path. */
+  async function bounceIfDuplicate(): Promise<boolean> {
+    const match = releaseHashes.get(hashDeckContent(rs.cards));
+    if (!match) return false;
+    toast.info(`This deck already exists as Deck #${String(match.deckNumber).padStart(3, "0")}`);
+    await handleSelectRelease(match);
+    return true;
+  }
 
   const ICON_UPGRADES: Record<string, string> = {
     "/images/elements/sun-v2.png": "/images/elements/sun-v4.png",
@@ -59,8 +79,23 @@
     if (releasedIds.size > 0) {
       prunePool(pool, releasedIds, new Set([4]));
     }
-    rs.weights = getAvailableWeights(pool);
+    // Re-derive `available` counts from the fresh pool, but carry over the user's
+    // weight values (restored from a prior session or set this session) so a
+    // rebuild never silently resets the dials.
+    const fresh = getAvailableWeights(pool);
+    const prevWeights = new Map(rs.weights.map((w) => [w.stepCount, w.weight]));
+    rs.weights = fresh.map((w) =>
+      prevWeights.has(w.stepCount) ? { ...w, weight: prevWeights.get(w.stepCount)! } : w,
+    );
   }
+
+  // Auto-persist every configure-step modification. Because persist() runs inside
+  // the effect, it reactively tracks every field it serializes (dials, weights,
+  // selections, draft) — so any change to the catalog config is saved without
+  // each handler having to remember to call persist().
+  $effect(() => {
+    rs.persist();
+  });
 
   function extractReleasedIds(rels: DeckRelease[]): Set<string> {
     const ids = new Set<string>();
@@ -83,6 +118,7 @@
       rs.isLoadingPools = false;
       await releasesPromise;
       restoreViewedRelease(savedDeckNumber);
+      await restoreDraftDeck(savedDeckNumber);
       return;
     }
 
@@ -116,12 +152,25 @@
     }
 
     restoreViewedRelease(savedDeckNumber);
+    await restoreDraftDeck(savedDeckNumber);
   });
 
   function restoreViewedRelease(deckNumber: number | null) {
     if (!deckNumber || rs.viewingRelease) return;
     const match = releases.find(r => r.deckNumber === deckNumber);
     if (match) handleSelectRelease(match);
+  }
+
+  // The state singleton restored rs.cards from localStorage, but sequences (heavy
+  // SequenceData) are never stored — re-derive them here so the deck renders after
+  // an HMR re-eval / refresh / tab reopen. No-op when viewing a release or when a
+  // draw already populated sequences this session.
+  async function restoreDraftDeck(savedDeckNumber: number | null) {
+    if (savedDeckNumber || rs.viewingRelease) return;
+    if (rs.step !== "review" || rs.cards.length === 0) return;
+    if (rs.sequences.length === rs.cards.length) return;
+    const gen = ++rs.drawGeneration;
+    await loadSelectedSequences(gen);
   }
 
   function handleSliceTypeToggle(sliceType: 'halved' | 'quartered') {
@@ -267,6 +316,7 @@
     // the last deck's title.
     rs.name = "";
     rs.cards = composeFullDeck();
+    if (await bounceIfDuplicate()) return;
     await loadSelectedSequences(gen);
     if (gen !== rs.drawGeneration) return;
     rs.step = "review";
@@ -276,7 +326,10 @@
   async function handleRedraw() {
     const gen = ++rs.drawGeneration;
     rs.cards = composeFullDeck();
+    if (await bounceIfDuplicate()) return;
     await loadSelectedSequences(gen);
+    if (gen !== rs.drawGeneration) return;
+    rs.persist();
   }
 
   async function loadSelectedSequences(generation: number) {
@@ -342,6 +395,8 @@
     } catch (err) {
       console.warn("Failed to load swapped sequence:", err);
     }
+    // Persist the post-swap deck so the manual edit survives reload/HMR too.
+    rs.persist();
   }
 
   function openReleaseModal() {

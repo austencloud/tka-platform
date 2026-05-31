@@ -52,6 +52,37 @@ function hash128(input: string): string {
   return toBase62(bytes);
 }
 
+/** A deck card's identity for content matching: which base sequence, from which
+ *  catalog, under which frozen variation recipe. Structural so `shared/` need not
+ *  depend on the choreo-card feature's `DeckReleaseCard`. */
+interface DeckCardIdentity {
+  sequenceId: string;
+  sourceCatalogId: string;
+  variation?: Record<string, unknown>;
+}
+
+/**
+ * Order-independent content fingerprint of a composed deck. Two decks with the
+ * same set of (catalog, sequence, variation) cards hash equal regardless of
+ * shuffle/position — a re-drawn LOOP deck with identical cards matches its
+ * already-released twin. Variation keys are sorted so field order never shifts
+ * the hash.
+ */
+export function hashDeckContent(cards: readonly DeckCardIdentity[]): string {
+  const identities = cards.map((c) => {
+    const v = c.variation;
+    const variationKey = v
+      ? Object.keys(v)
+          .sort()
+          .map((k) => `${k}=${String(v[k])}`)
+          .join(",")
+      : "";
+    return `${c.sourceCatalogId}|${c.sequenceId}|${variationKey}`;
+  });
+  identities.sort();
+  return hash128(identities.join("~"));
+}
+
 export function hashHandPath(locations: readonly GridLocation[]): string {
   const canonical = locations.join("|");
   return hash128(canonical);

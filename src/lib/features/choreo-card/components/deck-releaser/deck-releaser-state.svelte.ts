@@ -24,19 +24,34 @@ interface PersistedSession {
   startOriModes?: StartOriMode[];
   gridModes?: ("diamond" | "box")[];
   reversalPattern?: ResolvedReversalPattern | null;
+  /** LOOP pool slice filter. */
+  sliceTypes?: ("halved" | "quartered")[];
+  /** Selected TnD family ids. */
+  tndFamilyIds?: string[];
+  /** Selected TnD turn-pattern ids. */
+  tndTurnPatternIds?: string[];
+  /** LOOP step-count weights (the per-count weight values; `available` is
+   *  re-derived from the live pool on load). */
+  weights?: StepCountWeight[];
+  /** Composed-but-unreleased deck. Light card recipes only — sequences are
+   *  re-derived on mount, never stored. Omitted while viewing a release (those
+   *  re-fetch from Firestore by deck number). */
+  cards?: DeckReleaseCard[];
 }
 
+// localStorage (not session): a composed draft survives a full tab/browser
+// close, not just refresh + HMR, so an in-progress deck is never lost.
 function loadSession(): PersistedSession | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
 
 function saveSession(s: PersistedSession) {
   if (typeof window === "undefined") return;
-  try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
 }
 
 class DeckReleaserState {
@@ -118,6 +133,18 @@ class DeckReleaserState {
         this.selectedGridModes = new Set(saved.gridModes);
       }
       if (saved.reversalPattern) this.reversalPattern = saved.reversalPattern;
+      // Configure-step dials: restore the user's last selections so going Back to
+      // the catalog (or refreshing) shows what they had set, not defaults.
+      if (saved.sliceTypes?.length) this.selectedSliceTypes = new Set(saved.sliceTypes);
+      if (saved.tndFamilyIds?.length) this.selectedTnDFamilies = new Set(saved.tndFamilyIds);
+      if (saved.tndTurnPatternIds?.length) this.selectedTnDTurnPatterns = new Set(saved.tndTurnPatternIds);
+      if (saved.weights?.length) this.weights = saved.weights;
+      // Restore a composed draft so an HMR re-eval / refresh / tab reopen lands
+      // back on the deck. Sequences re-derive in the tab's onMount. Skip when
+      // the session was viewing a release — that path re-fetches by deck number.
+      if (saved.cards?.length && saved.viewingDeckNumber == null) {
+        this.cards = saved.cards;
+      }
     }
   }
 
@@ -134,6 +161,13 @@ class DeckReleaserState {
       startOriModes: [...this.selectedStartOriModes],
       gridModes: [...this.selectedGridModes],
       reversalPattern: this.reversalPattern,
+      sliceTypes: [...this.selectedSliceTypes],
+      tndFamilyIds: [...this.selectedTnDFamilies],
+      tndTurnPatternIds: [...this.selectedTnDTurnPatterns],
+      weights: this.weights,
+      // Persist the draft only while composing fresh. Released-deck views re-load
+      // from Firestore, so storing their cards would bloat localStorage for free.
+      cards: this.viewingRelease ? undefined : this.cards,
     });
   }
 
