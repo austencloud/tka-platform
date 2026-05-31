@@ -5,15 +5,18 @@
  * for different motion types.
  */
 
-// HMR deep path test - testing file watcher in nested directory with spaces
-
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/models/MotionEndpoints";
 import {
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { AngleCalculatorLike } from "./angle-calculator";
+import {
+  mapPositionToAngle,
+  mapOrientationToAngle,
+  normalizeAngleSigned,
+  normalizeAnglePositive,
+} from "./angle-calculator";
 import {
   calculateProTargetAngle,
   calculateAntispinTargetAngle,
@@ -26,196 +29,185 @@ import { PI } from "$lib/shared/foundation/domain/math-constants";
 // ✅ ELIMINATED: StepEndpoints and StepDefinition - pointless reshuffling!
 // Work directly with MotionData and return simple objects
 
-export class EndpointCalculator {
-  constructor(
-    private angleCalculator: AngleCalculatorLike
-  ) {}
+/**
+ * Calculate motion endpoints directly from MotionData (NATIVE!)
+ */
+export function calculateMotionEndpoints(motionData: MotionData): MotionEndpoints {
+  const {
+    startLocation,
+    endLocation,
+    startOrientation,
+    endOrientation,
+    motionType,
+    rotationDirection,
+    turns = 0,
+  } = motionData;
 
-  /**
-   * Calculate motion endpoints directly from MotionData (NATIVE!)
-   */
-  calculateMotionEndpoints(motionData: MotionData): MotionEndpoints {
-    const {
-      startLocation,
-      endLocation,
-      startOrientation,
-      endOrientation,
-      motionType,
-      rotationDirection,
-      turns = 0,
-    } = motionData;
+  // Logging removed - too noisy
+  const normalizedTurns = typeof turns === "number" ? turns : 0;
 
-    // Logging removed - too noisy
-    const normalizedTurns = typeof turns === "number" ? turns : 0;
+  const startCenterAngle = mapPositionToAngle(startLocation);
+  const startStaffAngle = mapOrientationToAngle(
+    startOrientation,
+    startCenterAngle
+  );
+  const targetCenterAngle = mapPositionToAngle(endLocation);
 
-    const startCenterAngle =
-      this.angleCalculator.mapPositionToAngle(startLocation);
-    const startStaffAngle = this.angleCalculator.mapOrientationToAngle(
-      startOrientation,
-      startCenterAngle
-    );
-    const targetCenterAngle =
-      this.angleCalculator.mapPositionToAngle(endLocation);
+  let calculatedTargetStaffAngle: number;
+  let calculatedStaffRotationDelta: number;
 
-    let calculatedTargetStaffAngle: number;
-    let calculatedStaffRotationDelta: number;
+  // Calculate target staff angle based on motion type
+  switch (motionType) {
+    case MotionType.PRO: {
+      const numericTurns = normalizedTurns;
+      const effectiveRotDir = rotationDirection;
 
-    // Calculate target staff angle based on motion type
-    switch (motionType) {
-      case MotionType.PRO: {
-        const numericTurns = normalizedTurns;
-        const effectiveRotDir = rotationDirection;
+      // Calculate delta for interpolation (un-normalized)
+      const centerMovement = normalizeAngleSigned(
+        targetCenterAngle - startCenterAngle
+      );
+      const dir =
+        effectiveRotDir === RotationDirection.COUNTER_CLOCKWISE ? -1 : 1;
+      const propRotation = dir * numericTurns * PI;
+      const staffMovement = centerMovement; // PRO: same direction as grid movement
+      calculatedStaffRotationDelta = staffMovement + propRotation;
 
-        // Calculate delta for interpolation (un-normalized)
-        const centerMovement = this.angleCalculator.normalizeAngleSigned(
-          targetCenterAngle - startCenterAngle
+      // Calculate normalized target angle
+      calculatedTargetStaffAngle =
+        calculateProTargetAngle(
+          startCenterAngle,
+          targetCenterAngle,
+          startStaffAngle,
+          numericTurns,
+          effectiveRotDir
         );
+      break;
+    }
+    case MotionType.ANTI: {
+      const numericTurns = normalizedTurns;
+      const effectiveRotDir = rotationDirection;
+
+      // Calculate delta for interpolation (un-normalized)
+      const centerMovement = normalizeAngleSigned(
+        targetCenterAngle - startCenterAngle
+      );
+      const dir =
+        effectiveRotDir === RotationDirection.COUNTER_CLOCKWISE ? -1 : 1;
+      const propRotation = dir * numericTurns * PI;
+      const staffMovement = -centerMovement; // ANTI: opposite direction to grid movement
+      calculatedStaffRotationDelta = staffMovement + propRotation;
+
+      // Calculate normalized target angle
+      calculatedTargetStaffAngle =
+        calculateAntispinTargetAngle(
+          startCenterAngle,
+          targetCenterAngle,
+          startStaffAngle,
+          numericTurns,
+          effectiveRotDir
+        );
+      break;
+    }
+    case MotionType.STATIC: {
+      const numericTurns = normalizedTurns;
+      const effectiveRotDir = rotationDirection;
+
+      // Calculate base orientation angle (without turns)
+      const baseTargetAngle = calculateStaticStaffAngle(
+        startStaffAngle,
+        endOrientation,
+        targetCenterAngle
+      );
+
+      // If there are turns, calculate rotation delta respecting direction
+      if (
+        numericTurns > 0 &&
+        effectiveRotDir !== RotationDirection.NO_ROTATION
+      ) {
+        // STATIC with turns: rotation is determined ONLY by turns and direction
+        // DO NOT add orientation change - the turns value is the total rotation
         const dir =
           effectiveRotDir === RotationDirection.COUNTER_CLOCKWISE ? -1 : 1;
-        const propRotation = dir * numericTurns * PI;
-        const staffMovement = centerMovement; // PRO: same direction as grid movement
-        calculatedStaffRotationDelta = staffMovement + propRotation;
-
-        // Calculate normalized target angle
-        calculatedTargetStaffAngle =
-          calculateProTargetAngle(
-            startCenterAngle,
-            targetCenterAngle,
-            startStaffAngle,
-            numericTurns,
-            effectiveRotDir
-          );
-        break;
-      }
-      case MotionType.ANTI: {
-        const numericTurns = normalizedTurns;
-        const effectiveRotDir = rotationDirection;
-
-        // Calculate delta for interpolation (un-normalized)
-        const centerMovement = this.angleCalculator.normalizeAngleSigned(
-          targetCenterAngle - startCenterAngle
+        calculatedStaffRotationDelta = dir * numericTurns * PI; // 1 turn = 180° (π)
+        calculatedTargetStaffAngle = normalizeAnglePositive(
+          startStaffAngle + calculatedStaffRotationDelta
         );
-        const dir =
-          effectiveRotDir === RotationDirection.COUNTER_CLOCKWISE ? -1 : 1;
-        const propRotation = dir * numericTurns * PI;
-        const staffMovement = -centerMovement; // ANTI: opposite direction to grid movement
-        calculatedStaffRotationDelta = staffMovement + propRotation;
-
-        // Calculate normalized target angle
-        calculatedTargetStaffAngle =
-          calculateAntispinTargetAngle(
-            startCenterAngle,
-            targetCenterAngle,
-            startStaffAngle,
-            numericTurns,
-            effectiveRotDir
-          );
-        break;
+      } else {
+        // No turns or NO_ROTATION: use orientation (shortest path)
+        calculatedTargetStaffAngle = baseTargetAngle;
+        calculatedStaffRotationDelta = normalizeAngleSigned(
+          calculatedTargetStaffAngle - startStaffAngle
+        );
       }
-      case MotionType.STATIC: {
-        const numericTurns = normalizedTurns;
-        const effectiveRotDir = rotationDirection;
+      break;
+    }
+    case MotionType.DASH: {
+      const numericTurns = normalizedTurns;
+      const effectiveRotDir = rotationDirection;
 
-        // Calculate base orientation angle (without turns)
-        const baseTargetAngle = calculateStaticStaffAngle(
+      calculatedTargetStaffAngle =
+        calculateDashTargetAngle(
           startStaffAngle,
           endOrientation,
-          targetCenterAngle
+          targetCenterAngle,
+          numericTurns,
+          effectiveRotDir
         );
 
-        // If there are turns, calculate rotation delta respecting direction
-        if (
-          numericTurns > 0 &&
-          effectiveRotDir !== RotationDirection.NO_ROTATION
-        ) {
-          // STATIC with turns: rotation is determined ONLY by turns and direction
-          // DO NOT add orientation change - the turns value is the total rotation
-          const dir =
-            effectiveRotDir === RotationDirection.COUNTER_CLOCKWISE ? -1 : 1;
-          calculatedStaffRotationDelta = dir * numericTurns * PI; // 1 turn = 180° (π)
-          calculatedTargetStaffAngle =
-            this.angleCalculator.normalizeAnglePositive(
-              startStaffAngle + calculatedStaffRotationDelta
-            );
-        } else {
-          // No turns or NO_ROTATION: use orientation (shortest path)
-          calculatedTargetStaffAngle = baseTargetAngle;
-          calculatedStaffRotationDelta =
-            this.angleCalculator.normalizeAngleSigned(
-              calculatedTargetStaffAngle - startStaffAngle
-            );
-        }
-        break;
-      }
-      case MotionType.DASH: {
-        const numericTurns = normalizedTurns;
-        const effectiveRotDir = rotationDirection;
-
-        calculatedTargetStaffAngle =
-          calculateDashTargetAngle(
-            startStaffAngle,
-            endOrientation,
-            targetCenterAngle,
-            numericTurns,
-            effectiveRotDir
-          );
-
-        // DASH with turns: rotation is determined ONLY by turns and direction
-        // DO NOT add orientation change - the turns value is the total rotation
-        // This ensures multi-turn dashes rotate the full amount, not shortest path
-        if (numericTurns > 0) {
-          const dir =
-            effectiveRotDir === RotationDirection.COUNTER_CLOCKWISE ? -1 : 1;
-          calculatedStaffRotationDelta = dir * numericTurns * PI; // 1 turn = 180° (π)
-        } else {
-          // No turns: calculate based on orientation change only
-          const baseAngle = calculateDashTargetAngle(
-            startStaffAngle,
-            endOrientation,
-            targetCenterAngle,
-            0,
-            effectiveRotDir
-          );
-          calculatedStaffRotationDelta =
-            this.angleCalculator.normalizeAngleSigned(
-              baseAngle - startStaffAngle
-            );
-        }
-        break;
-      }
-      case MotionType.FLOAT: {
-        calculatedTargetStaffAngle =
-          calculateFloatStaffAngle(startStaffAngle);
-        // For FLOAT, no rotation
-        calculatedStaffRotationDelta = 0;
-        break;
-      }
-      default: {
-        const _exhaustiveCheck: never = motionType;
-        console.warn(
-          `Unknown motion type '${String(_exhaustiveCheck)}'. Treating as static.`
+      // DASH with turns: rotation is determined ONLY by turns and direction
+      // DO NOT add orientation change - the turns value is the total rotation
+      // This ensures multi-turn dashes rotate the full amount, not shortest path
+      if (numericTurns > 0) {
+        const dir =
+          effectiveRotDir === RotationDirection.COUNTER_CLOCKWISE ? -1 : 1;
+        calculatedStaffRotationDelta = dir * numericTurns * PI; // 1 turn = 180° (π)
+      } else {
+        // No turns: calculate based on orientation change only
+        const baseAngle = calculateDashTargetAngle(
+          startStaffAngle,
+          endOrientation,
+          targetCenterAngle,
+          0,
+          effectiveRotDir
         );
-        calculatedTargetStaffAngle = startStaffAngle;
-        calculatedStaffRotationDelta = 0;
-        break;
+        calculatedStaffRotationDelta = normalizeAngleSigned(
+          baseAngle - startStaffAngle
+        );
       }
+      break;
     }
-
-    return {
-      startCenterAngle,
-      startStaffAngle,
-      targetCenterAngle,
-      targetStaffAngle: calculatedTargetStaffAngle,
-      staffRotationDelta: calculatedStaffRotationDelta,
-      rotationDirection, // Pass through for interpolation
-    };
+    case MotionType.FLOAT: {
+      calculatedTargetStaffAngle =
+        calculateFloatStaffAngle(startStaffAngle);
+      // For FLOAT, no rotation
+      calculatedStaffRotationDelta = 0;
+      break;
+    }
+    default: {
+      const _exhaustiveCheck: never = motionType;
+      console.warn(
+        `Unknown motion type '${String(_exhaustiveCheck)}'. Treating as static.`
+      );
+      calculatedTargetStaffAngle = startStaffAngle;
+      calculatedStaffRotationDelta = 0;
+      break;
+    }
   }
 
-  /**
-   * Calculate endpoint staff angle for a motion (NATIVE MotionData!)
-   */
-  calculateEndpointStaffAngle(motionData: MotionData): number {
-    const endpoints = this.calculateMotionEndpoints(motionData);
-    return endpoints.targetStaffAngle;
-  }
+  return {
+    startCenterAngle,
+    startStaffAngle,
+    targetCenterAngle,
+    targetStaffAngle: calculatedTargetStaffAngle,
+    staffRotationDelta: calculatedStaffRotationDelta,
+    rotationDirection, // Pass through for interpolation
+  };
+}
+
+/**
+ * Calculate endpoint staff angle for a motion (NATIVE MotionData!)
+ */
+export function calculateEndpointStaffAngle(motionData: MotionData): number {
+  const endpoints = calculateMotionEndpoints(motionData);
+  return endpoints.targetStaffAngle;
 }
