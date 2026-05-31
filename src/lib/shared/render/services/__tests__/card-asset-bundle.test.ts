@@ -13,6 +13,7 @@ describe("seedCachesFromBundle", () => {
       keys: ["arrow_blue_exp_123"],
       bitmaps: [bmpA],
       grids: { diamond: bmpGrid, box: null, diamondNonRadial: null, boxNonRadial: null },
+      icons: [],
     };
     seedCachesFromBundle(bundle, cache, loader);
     expect(cache.entries().get("arrow_blue_exp_123")).toBe(bmpA);

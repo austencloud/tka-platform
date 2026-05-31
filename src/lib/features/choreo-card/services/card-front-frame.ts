@@ -5,7 +5,14 @@
  * stripe border + edge glow, with the rendered content drawn into a white inner
  * area inset by the colored border. Both production (PrintCardRenderer) and the
  * parity harness call `wrapContentInCardFrame` so the frame stays identical.
+ *
+ * Worker-safe: builds the canvas via `createRenderCanvas` (OffscreenCanvas in a
+ * worker, HTMLCanvasElement on the main thread) so the composition worker can
+ * apply the frame off-thread.
  */
+
+import { createRenderCanvas } from "$lib/shared/render/services/create-render-canvas";
+import type { RenderCanvas } from "$lib/shared/render/services/types";
 
 // MPC poker card defaults (822x1122 at 300 DPI with 36px bleed).
 const MPC_WIDTH = 822;
@@ -98,7 +105,8 @@ export interface CardFrameOptions {
 export function wrapContentInCardFrame(
   content: CanvasImageSource,
   opts: CardFrameOptions,
-): HTMLCanvasElement {
+  createCanvas: (w: number, h: number) => RenderCanvas = createRenderCanvas,
+): RenderCanvas {
   const canvasW = opts.canvasWidth ?? MPC_WIDTH;
   const canvasH = opts.canvasHeight ?? MPC_HEIGHT;
   const bleed = opts.bleedPx ?? MPC_BLEED;
@@ -108,11 +116,11 @@ export function wrapContentInCardFrame(
   const contentW = canvasW - border * 2;
   const contentH = canvasH - border * 2;
 
-  // Build the card canvas
-  const mpcCanvas = document.createElement("canvas");
-  mpcCanvas.width = canvasW;
-  mpcCanvas.height = canvasH;
-  const ctx = mpcCanvas.getContext("2d")!;
+  // Build the card canvas via the injected factory (defaults to the
+  // worker-safe createRenderCanvas → OffscreenCanvas; the main thread passes a
+  // factory that yields an HTMLCanvasElement to preserve the print seam).
+  const mpcCanvas = createCanvas(canvasW, canvasH);
+  const ctx = mpcCanvas.getContext("2d") as CanvasRenderingContext2D;
 
   const outerRadius = OUTER_RADIUS;
   const innerRadius = INNER_RADIUS;

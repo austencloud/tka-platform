@@ -435,6 +435,7 @@ export class CompositionDispatcher {
           keys: [],
           bitmaps: [],
           grids: { diamond: null, box: null, diamondNonRadial: null, boxNonRadial: null },
+          icons: [],
         };
         if (bundle) {
           const clonedBmps = await Promise.all(
@@ -443,6 +444,13 @@ export class CompositionDispatcher {
           type GridSlot = import("./card-asset-bundle").AssetBundle["grids"]["diamond"];
           const cloneGrid = async (g: GridSlot): Promise<ImageBitmap | null> =>
             g ? await createImageBitmap(g as ImageBitmapSource) : null;
+          // Clone footer icons per worker (transfer detaches the source).
+          const clonedIcons = await Promise.all(
+            bundle.icons.map(async (icon) => ({
+              path: icon.path,
+              bitmap: await createImageBitmap(icon.bitmap),
+            })),
+          );
           bundleClone = {
             keys: [...bundle.keys],
             bitmaps: clonedBmps,
@@ -452,6 +460,7 @@ export class CompositionDispatcher {
               diamondNonRadial: await cloneGrid(bundle.grids.diamondNonRadial),
               boxNonRadial: await cloneGrid(bundle.grids.boxNonRadial),
             },
+            icons: clonedIcons,
           };
         }
 

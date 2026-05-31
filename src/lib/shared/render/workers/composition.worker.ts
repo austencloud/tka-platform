@@ -216,7 +216,7 @@ async function handleCompose(
       });
     };
 
-    const canvas: RenderCanvas = effectiveOptions.cardMode
+    let canvas: RenderCanvas = effectiveOptions.cardMode
       ? await imageComposer.composeCardImage(
           sequence,
           effectiveOptions,
@@ -229,6 +229,19 @@ async function handleCompose(
           onProgress,
           pseudoSignal,
         );
+
+    // Front card frame: wrap the rendered content in the MPC stripe border +
+    // glow so the worker returns a full framed card (matches renderFront). The
+    // frame module builds an OffscreenCanvas in worker scope (createRenderCanvas).
+    if (effectiveOptions.frontCardFrame) {
+      const { wrapContentInCardFrame } = await import(
+        "$lib/features/choreo-card/services/card-front-frame"
+      );
+      canvas = wrapContentInCardFrame(
+        canvas as CanvasImageSource,
+        effectiveOptions.frontCardFrame,
+      );
+    }
 
     if (renderState.cancelled) {
       postResult({

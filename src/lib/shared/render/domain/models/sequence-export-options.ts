@@ -37,6 +37,21 @@ export interface SequenceExportOptions {
   bluePropTypeOverride?: PropType;
   redPropTypeOverride?: PropType;
 
+  /**
+   * When set, the composition worker wraps the rendered content in the MPC card
+   * frame (diagonal stripe border + edge glow + inset white content area) via
+   * `wrapContentInCardFrame`, returning a full framed card. The main-thread
+   * `PrintCardRenderer.renderFront` applies the frame itself and leaves this
+   * unset. Carried through `composeFrontBitmap`'s JSON-serialized options.
+   */
+  frontCardFrame?: {
+    canvasWidth: number;
+    canvasHeight: number;
+    bleedPx: number;
+    accent: string;
+    dark: string;
+  };
+
   stepScale: number;
   stepSize: number;
   margin: number;

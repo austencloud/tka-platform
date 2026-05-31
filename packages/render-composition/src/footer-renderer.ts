@@ -76,6 +76,16 @@ export interface FooterOptions {
 
 const iconCache = new Map<string, CanvasImageSource>();
 
+/**
+ * Pre-populate the footer-icon cache with an already-decoded image, keyed by
+ * path. Used to seed a Web Worker (which has no `new Image()`): the main thread
+ * decodes each deck element's icon to an ImageBitmap, transfers it in, and the
+ * worker seeds it here so `loadFooterIcon` hits the cache instead of fetching.
+ */
+export function seedFooterIcon(path: string, image: CanvasImageSource): void {
+  iconCache.set(path, image);
+}
+
 export async function loadFooterIcon(path: string): Promise<CanvasImageSource | undefined> {
   const cached = iconCache.get(path);
   if (cached) return cached;

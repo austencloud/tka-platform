@@ -16,4 +16,4 @@ export {
 export { renderStepNumber } from "./step-number-renderer.js";
 export { renderSmartBorders } from "./border-renderer.js";
 export { renderHeader, type HeaderOptions } from "./header-renderer.js";
-export { renderFooter, loadFooterIcon, type FooterOptions } from "./footer-renderer.js";
+export { renderFooter, loadFooterIcon, seedFooterIcon, type FooterOptions } from "./footer-renderer.js";

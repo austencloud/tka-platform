@@ -24,7 +24,7 @@ const WARM_H = 168; // ~5:7 card-ish; size is irrelevant to cache keys, just kee
  */
 export function getCardAssetBundle(
   sequences: SequenceData[],
-  opts: { bluePropType: PropType; redPropType: PropType; theme: string },
+  opts: { bluePropType: PropType; redPropType: PropType; theme: string; iconPaths?: string[] },
 ): Promise<AssetBundle> {
   return buildAssetBundle(sequences, opts, async (seqs, o) => {
     const composer = getImageComposer();

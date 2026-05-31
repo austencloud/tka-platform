@@ -7,6 +7,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { seedFooterIcon } from "@tka/render-composition";
 import { getSvgImageCache, type DrawableImage } from "./svg-image-cache";
 import { getSvgAssetLoader } from "./svg-asset-loader";
 import type { LoadedAssets } from "./svg-asset-loader";
@@ -15,6 +16,10 @@ export interface AssetBundle {
   keys: string[];
   bitmaps: ImageBitmap[];               // index-aligned with keys
   grids: LoadedAssets["grids"];         // four grid drawables (ImageBitmap | null)
+  // Footer element icons (TnD element PNGs), pre-decoded so the worker — which
+  // has no `new Image()` — can draw them. Seeded into render-composition's
+  // path-keyed iconCache via seedFooterIcon.
+  icons: { path: string; bitmap: ImageBitmap }[];
 }
 
 // Square fallback raster size for a dimensionless SVG (TKA pictograph assets +
@@ -54,9 +59,27 @@ async function toBitmap(img: DrawableImage | null): Promise<ImageBitmap | null> 
  * `prepareDeck` is injected (defaults to the real preparer wiring) so the heavy
  * pictograph-preparer import isn't pulled into worker/unit bundles.
  */
+/** Fetch + decode a footer icon (PNG) to an ImageBitmap. Returns null on failure. */
+async function decodeIcon(path: string): Promise<ImageBitmap | null> {
+  try {
+    const res = await fetch(path);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await createImageBitmap(blob);
+  } catch (e) {
+    console.warn("[card-asset-bundle] footer icon decode failed:", path, e);
+    return null;
+  }
+}
+
 export async function buildAssetBundle(
   sequences: SequenceData[],
-  opts: { bluePropType: PropType; redPropType: PropType; theme: string },
+  opts: {
+    bluePropType: PropType;
+    redPropType: PropType;
+    theme: string;
+    iconPaths?: string[];
+  },
   prepareDeck: (seqs: SequenceData[], o: typeof opts) => Promise<void>,
 ): Promise<AssetBundle> {
   await prepareDeck(sequences, opts);
@@ -80,13 +103,22 @@ export async function buildAssetBundle(
     boxNonRadial: await toBitmap(g.boxNonRadial),
   };
 
-  return { keys, bitmaps, grids };
+  // Pre-decode each unique footer icon path so the worker can draw it.
+  const icons: { path: string; bitmap: ImageBitmap }[] = [];
+  const uniqueIconPaths = [...new Set((opts.iconPaths ?? []).filter(Boolean))];
+  for (const path of uniqueIconPaths) {
+    const bmp = await decodeIcon(path);
+    if (bmp) icons.push({ path, bitmap: bmp });
+  }
+
+  return { keys, bitmaps, grids, icons };
 }
 
 /** Collect every transferable in a bundle (for postMessage transfer list). */
 export function bundleTransferables(bundle: AssetBundle): Transferable[] {
   const t: Transferable[] = [...bundle.bitmaps];
   for (const v of Object.values(bundle.grids)) if (v) t.push(v);
+  for (const icon of bundle.icons) t.push(icon.bitmap);
   return t;
 }
 
@@ -100,4 +132,9 @@ export function seedCachesFromBundle(
     cache.setImage(bundle.keys[i]!, bundle.bitmaps[i]!);
   }
   loader.seedGrids(bundle.grids);
+  // Seed footer element icons into render-composition's path-keyed iconCache so
+  // the worker's loadFooterIcon hits the cache instead of calling new Image().
+  for (const icon of bundle.icons) {
+    seedFooterIcon(icon.path, icon.bitmap);
+  }
 }
