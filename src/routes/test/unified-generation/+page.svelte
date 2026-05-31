@@ -33,6 +33,8 @@
   function stepArr<T extends string>(arr: readonly T[], cur: T, dir: number): T {
     return arr[Math.max(0, Math.min(arr.length - 1, arr.indexOf(cur) + dir))]!;
   }
+  // Deck size = a preset choice, not a 1-by-1 dial. 52 anchors (standard deck).
+  const DECK_PRESETS = [30, 40, 52, 54];
   const STYLE_COLORS = {
     props: { color: c.continuity.color, shadow: c.continuity.shadowColor },
     hands: { color: "linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%)", shadow: "245deg 70% 55%" },
@@ -143,6 +145,7 @@
     catch (e) { console.error(e); }
   }
   function generate() { seed = mintSeed(); }
+  function cycleDeck() { deckSize = DECK_PRESETS[(DECK_PRESETS.indexOf(deckSize) + 1) % DECK_PRESETS.length] ?? 52; }
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 </script>
 
@@ -179,7 +182,7 @@
         {#if wordMode}
           <BaseCard title="Deck" currentValue={`${drawCount} vars`} color={c.favorite.color} shadowColor={c.favorite.shadowColor} gridColumnSpan={2} clickable={false} />
         {:else}
-          <StepperCard title="Deck Size" currentValue={deckSize} minValue={1} maxValue={200} color={c.favorite.color} shadowColor={c.favorite.shadowColor} gridColumnSpan={2} onIncrement={() => (deckSize = clamp(deckSize + 1, 1, 200))} onDecrement={() => (deckSize = clamp(deckSize - 1, 1, 200))} />
+          <BaseCard title="Deck Size" currentValue={`${deckSize}`} color={c.favorite.color} shadowColor={c.favorite.shadowColor} gridColumnSpan={2} onClick={cycleDeck} />
         {/if}
 
         <StepperCard title="Length" currentValue={stepCount} minValue={4} maxValue={16} description="STEP COUNT" color={c.length.color} shadowColor={c.length.shadowColor} gridColumnSpan={2} onIncrement={() => (stepCount = clamp(stepCount + 2, 4, 16))} onDecrement={() => (stepCount = clamp(stepCount - 2, 4, 16))} />
@@ -289,14 +292,14 @@
   .grid-stage { position: relative; }
   .card-grid {
     display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
-    grid-auto-rows: 112px; gap: 10px; width: 100%; max-width: 760px; margin: 0 auto;
+    grid-auto-rows: 120px; gap: 10px; width: 100%; margin: 0;
   }
   .card-grid > :global(*) { grid-column: span 2; min-width: 0; }
 
   /* Wide screens (4K etc.) — expand to 4 tiles per row instead of 3. */
   @media (min-width: 1700px) {
     .layout { max-width: 1700px; }
-    .card-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); max-width: 1140px; }
+    .card-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
   }
 
   /* Unify typography across BaseCard / StepperCard / ToggleCard.
@@ -337,7 +340,7 @@
   .generate i { font-size: 22px; }
 
   .detail {
-    max-width: 760px; margin: 0 auto; width: 100%;
+    width: 100%;
     background: rgba(6, 182, 212, 0.1); border: 1.5px solid rgba(6, 182, 212, 0.3);
     border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
   }
