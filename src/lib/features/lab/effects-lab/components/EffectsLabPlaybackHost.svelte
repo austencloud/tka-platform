@@ -8,9 +8,8 @@
 -->
 <script lang="ts">
 
-import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpolator";
 import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/get-generation-orchestrator";
-import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";
+import { sequenceTransformer } from "$lib/shared/create/services/SequenceTransformer";
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
@@ -175,11 +174,10 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     window.addEventListener("keydown", handleKeydown);
     try {
       sequenceService = getSequenceRepository();
-      const propInterpolator = getPropInterpolator();
       const stateManager = new AnimationStateManager();
       const loop = new AnimationLoop();
       const animOrchestrator = new SequenceAnimationOrchestrator(
-        stateManager, propInterpolator
+        stateManager
       );
       playbackController = new AnimationPlaybackController(
         animOrchestrator, loop
@@ -187,7 +185,6 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
 
       const browseLoader = getBrowseLoader();
       const generationOrchestrator = getGenerationOrchestrator();
-      const sequenceTransformer = getSequenceTransformer();
 
       const spinnerOrch = new EndlessSpinnerOrchestrator(
         browseLoader,

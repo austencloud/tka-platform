@@ -25,7 +25,6 @@
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
   import { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
-  import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpolator";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
@@ -107,10 +106,9 @@
   let gridMode = $derived(animationState.sequenceData?.gridMode);
 
   onMount(() => {
-    const propInterpolator = getPropInterpolator();
     const stateManager = new AnimationStateManager();
     const loop = new AnimationLoop();
-    const orchestrator = new SequenceAnimationOrchestrator(stateManager, propInterpolator);
+    const orchestrator = new SequenceAnimationOrchestrator(stateManager);
     playbackController = new AnimationPlaybackController(orchestrator, loop);
   });
 

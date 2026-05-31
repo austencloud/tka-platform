@@ -8,7 +8,6 @@
 -->
 <script lang="ts">
 
-import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpolator";
 	import { onMount, onDestroy } from "svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
@@ -73,8 +72,6 @@ import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpo
 
 	onMount(() => {
 		try {
-			const propInterpolationService = getPropInterpolator();
-
 			const states: CellAnimState[] = [];
 
 			for (const cell of cells) {
@@ -83,7 +80,6 @@ import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpo
 
 				const orchestrator = new SequenceAnimationOrchestrator(
 					new AnimationStateManager(),
-					propInterpolationService,
 				);
 				const animState = createAnimationPanelState();
 

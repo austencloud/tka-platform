@@ -29,7 +29,6 @@ import { loadAnimatorServices as loadServices } from "./animator-loader";
 import { TrailCapturer as TrailCapturerImpl } from "./trail-capturer";
 import { SequenceAnimationOrchestrator as SAO } from "./sequence-animation-orchestrator";
 import { AnimationStateManager } from "./animation-state-manager";
-import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpolator";
 import { AnimationPrecomputer } from "./animation-precomputer.svelte";
 import { CanvasResizer as CanvasResizerImpl } from "./canvas-resizer.svelte";
 import { GlyphTextureLoader } from "./glyph-texture-loader.svelte";
@@ -293,7 +292,7 @@ export class CanvasLifecycleManager {
 
     this._svgGenerator = services.svgGenerator;
     this._settingsService = services.settingsService;
-    this._orchestrator = new SAO(new AnimationStateManager(), getPropInterpolator());
+    this._orchestrator = new SAO(new AnimationStateManager());
     if (visibilityManagerOverride) {
       this._orchestrator.setVisibilityManager(visibilityManagerOverride);
     }

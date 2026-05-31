@@ -1,8 +1,5 @@
 import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
 import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
-import { PropInterpolator } from "$lib/shared/animation-engine/services/prop-interpolator";
-import { createAngleCalculator } from "$lib/shared/animation-engine/services/angle-calculator";
-import { EndpointCalculator } from "$lib/shared/animation-engine/services/endpoint-calculator";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
@@ -28,11 +25,8 @@ export class HeadlessAnimationOrchestrator extends SequenceAnimationOrchestrator
 
   constructor(config: HeadlessConfig) {
     const stateManager = new AnimationStateManager();
-    const angleCalculator = createAngleCalculator();
-    const endpointCalculator = new EndpointCalculator(angleCalculator);
-    const propInterpolator = new PropInterpolator(angleCalculator, endpointCalculator);
 
-    super(stateManager, propInterpolator);
+    super(stateManager);
     this.headlessConfig = config;
 
     const vm = {

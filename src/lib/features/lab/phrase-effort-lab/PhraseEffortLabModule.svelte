@@ -30,9 +30,7 @@
   } from "./domain/effort-timeline-types";
   import { interpolatePhrase } from "$lib/shared/phrase-effort-lab/services/phrase-interpolator";
 
-  import { createAngleCalculator } from "$lib/shared/animation-engine/services/angle-calculator";
-  import { EndpointCalculator } from "$lib/shared/animation-engine/services/endpoint-calculator";
-  import { PropInterpolator } from "$lib/shared/animation-engine/services/prop-interpolator";
+  import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
   import { mapTimePositionToBeat } from "$lib/shared/animation-engine/services/step-calculator";
 
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -63,8 +61,8 @@
     staffRotationAngle: 0,
   };
 
-  // ─── Services (constructed in onMount) ───────────────────────────────
-  let propInterpolator: PropInterpolator;
+  // ─── Services ready flag (set in onMount) ────────────────────────────
+  let servicesReady = false;
 
   // ─── Core state ──────────────────────────────────────────────────────
   let selectedEffort: EffortId = $state("linear");
@@ -143,9 +141,7 @@
   }
 
   onMount(() => {
-    const angleCalculator = createAngleCalculator();
-    const endpointCalculator = new EndpointCalculator(angleCalculator);
-    propInterpolator = new PropInterpolator(angleCalculator, endpointCalculator);
+    servicesReady = true;
 
     document.addEventListener("keydown", handleKeydown);
     rafId = requestAnimationFrame(onFrame);
@@ -218,7 +214,7 @@
   }
 
   function updatePropStates() {
-    if (!propInterpolator || steps.length === 0) return;
+    if (!servicesReady || steps.length === 0) return;
 
     const beat1Based = playbackBeat + 1;
     const activePhrase = findPhraseAtBeat(timeline, beat1Based);
@@ -298,7 +294,7 @@
     currentStep = stepIndex + 1;
     currentLetter = stepData?.letter ?? null;
 
-    const result = propInterpolator.interpolatePropAngles(stepData!, localProgress);
+    const result = interpolatePropAngles(stepData!, localProgress);
     if (result.isValid) {
       blueProp = result.blueAngles ?? { ...DEFAULT_PROP_STATE };
       redProp = result.redAngles ?? { ...DEFAULT_PROP_STATE };

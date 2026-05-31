@@ -24,9 +24,7 @@
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-  import { createAngleCalculator } from "$lib/shared/animation-engine/services/angle-calculator";
-  import { EndpointCalculator } from "$lib/shared/animation-engine/services/endpoint-calculator";
-  import { PropInterpolator } from "$lib/shared/animation-engine/services/prop-interpolator";
+  import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
 
   const poi = getPoiContext();
 
@@ -35,19 +33,11 @@
     staffRotationAngle: 0,
   };
 
-  // Services are constructed once on mount. Signatures match the
-  // phrase-effort-lab reference wiring exactly.
-  let propInterpolator: PropInterpolator | null = $state(null);
+  // Interpolation runs through the shared module functions once mounted.
+  let servicesReady = $state(false);
 
   onMount(() => {
-    const angleCalculator = createAngleCalculator();
-    const endpointCalculator = new EndpointCalculator(
-      angleCalculator,
-    );
-    propInterpolator = new PropInterpolator(
-      angleCalculator,
-      endpointCalculator,
-    );
+    servicesReady = true;
   });
 
   // ── Playhead → step derivation ──────────────────────────────────
@@ -81,13 +71,13 @@
   let redProp = $state<PropState>({ ...DEFAULT_PROP_STATE });
 
   $effect(() => {
-    if (!propInterpolator || !currentStepData) {
+    if (!servicesReady || !currentStepData) {
       blueProp = { ...DEFAULT_PROP_STATE };
       redProp = { ...DEFAULT_PROP_STATE };
       return;
     }
 
-    const result = propInterpolator.interpolatePropAngles(
+    const result = interpolatePropAngles(
       currentStepData,
       stepProgress,
     );

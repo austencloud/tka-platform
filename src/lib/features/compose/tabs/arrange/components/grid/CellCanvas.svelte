@@ -9,7 +9,6 @@
 -->
 <script lang="ts">
 
-import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpolator";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { onMount, onDestroy } from "svelte";
@@ -176,22 +175,17 @@ import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpo
   // Initialize services - create per-cell orchestrators
   onMount(() => {
     try {
-      // Get shared STATELESS services from DI
-      const propInterpolationService = getPropInterpolator();
-
       // Each orchestrator gets its own AnimationStateManager so they don't
       // overwrite each other's prop state through the shared singleton.
       primaryOrchestrator = new SequenceAnimationOrchestrator(
-        new AnimationStateManager(),
-        propInterpolationService
+        new AnimationStateManager()
       );
 
       // Create orchestrators for up to 3 additional layers
       for (let i = 0; i < 3; i++) {
         additionalOrchestrators.push(
           new SequenceAnimationOrchestrator(
-            new AnimationStateManager(),
-            propInterpolationService
+            new AnimationStateManager()
           )
         );
         additionalAnimationStates.push(createAnimationPanelState());

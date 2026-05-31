@@ -8,7 +8,6 @@
 -->
 <script lang="ts">
 
-import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpolator";
   import { onMount, onDestroy, untrack } from "svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -175,15 +174,11 @@ import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpo
     try {
       sequenceService = getSequenceRepository();
 
-      // Stateless services shared from container
-      const propInterpolator = getPropInterpolator();
-
       // Stateful services - fresh instance per player
       const stateManager = new AnimationStateManager();
       const loop = new AnimationLoop();
       const orchestrator = new SequenceAnimationOrchestrator(
-        stateManager,
-        propInterpolator
+        stateManager
       );
       playbackController = new AnimationPlaybackController(
         orchestrator,

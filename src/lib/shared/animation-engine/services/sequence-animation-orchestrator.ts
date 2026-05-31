@@ -27,7 +27,10 @@ import {
   calculateBeatStateDurationAware,
   getStepStartTime,
 } from "$lib/shared/animation-engine/services/step-calculator";
-import type { PropInterpolator } from "$lib/shared/animation-engine/services/prop-interpolator";
+import {
+  interpolatePropAngles,
+  calculateInitialAngles,
+} from "$lib/shared/animation-engine/services/prop-interpolator";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
 import { interpolatePhrase } from "$lib/shared/phrase-effort-lab/services/phrase-interpolator";
@@ -63,8 +66,7 @@ export class SequenceAnimationOrchestrator {
   private atStartPosition = true; // Track if we're at start position
 
   constructor(
-    private readonly animationStateService: AnimationStateManager,
-    private readonly propInterpolationService: PropInterpolator
+    private readonly animationStateService: AnimationStateManager
   ) {}
 
   setVisibilityManager(vm: AnimationVisibilityStateManager): void {
@@ -181,8 +183,7 @@ export class SequenceAnimationOrchestrator {
 
       const firstStep = this.steps[0];
       if (firstStep?.motions?.blue || firstStep?.motions?.red) {
-        const initialAngles =
-          this.propInterpolationService.calculateInitialAngles(firstStep);
+        const initialAngles = calculateInitialAngles(firstStep);
         if (initialAngles.isValid) {
           if (initialAngles.blueAngles) {
             this.animationStateService.updateBluePropState({
@@ -287,13 +288,13 @@ export class SequenceAnimationOrchestrator {
         );
         const targetStep = this.steps[phraseResult.stepIndex];
         if (targetStep) {
-          interpolationResult = this.propInterpolationService.interpolatePropAngles(
+          interpolationResult = interpolatePropAngles(
             targetStep, phraseResult.localProgress,
           );
         }
       } else {
         // Gap between phrases - use linear (no easing)
-        interpolationResult = this.propInterpolationService.interpolatePropAngles(
+        interpolationResult = interpolatePropAngles(
           stepState.currentStepData, stepState.stepProgress,
         );
       }
@@ -301,7 +302,7 @@ export class SequenceAnimationOrchestrator {
       // No effort timeline - existing behavior (global preset)
       const effortPreset = (this.visibilityManagerOverride ?? getAnimationVisibilityManager()).getEffortPreset();
       const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
-      interpolationResult = this.propInterpolationService.interpolatePropAngles(
+      interpolationResult = interpolatePropAngles(
         stepState.currentStepData, easedProgress,
       );
     }
@@ -426,7 +427,7 @@ export class SequenceAnimationOrchestrator {
     }
 
     const initialAngles =
-      this.propInterpolationService.calculateInitialAngles(firstStepWithMotion);
+      calculateInitialAngles(firstStepWithMotion);
 
     if (initialAngles.isValid) {
       if (initialAngles.blueAngles) {
@@ -597,13 +598,13 @@ export class SequenceAnimationOrchestrator {
         );
         const targetStep = this.steps[phraseResult.stepIndex];
         if (targetStep) {
-          interpolationResult = this.propInterpolationService.interpolatePropAngles(
+          interpolationResult = interpolatePropAngles(
             targetStep, phraseResult.localProgress,
           );
         }
       } else {
         // Gap between phrases - use linear (no easing)
-        interpolationResult = this.propInterpolationService.interpolatePropAngles(
+        interpolationResult = interpolatePropAngles(
           stepState.currentStepData, stepState.stepProgress,
         );
       }
@@ -611,7 +612,7 @@ export class SequenceAnimationOrchestrator {
       // No effort timeline - existing behavior (global preset)
       const effortPreset = (this.visibilityManagerOverride ?? getAnimationVisibilityManager()).getEffortPreset();
       const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
-      interpolationResult = this.propInterpolationService.interpolatePropAngles(
+      interpolationResult = interpolatePropAngles(
         stepState.currentStepData, easedProgress,
       );
     }
@@ -634,7 +635,7 @@ export class SequenceAnimationOrchestrator {
 
     const firstStep = this.steps[0];
     if (firstStep?.motions?.blue || firstStep?.motions?.red) {
-      const initialAngles = this.propInterpolationService.calculateInitialAngles(firstStep);
+      const initialAngles = calculateInitialAngles(firstStep);
       if (initialAngles.isValid) {
         if (initialAngles.blueAngles) {
           this.animationStateService.updateBluePropState({
