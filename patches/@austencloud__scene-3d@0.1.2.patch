@@ -1,5 +1,68 @@
+diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
+index 908cf723d3be044b12f87c0764068f3720925c1c..9b167be2ff90dd8f228587b0a15afe75f53cdf9d 100644
+--- a/src/lib/components/Avatar3D.svelte
++++ b/src/lib/components/Avatar3D.svelte
+@@ -143,6 +143,12 @@
+      *  rotations from the sampled turn clip between locomotion and root
+      *  motion in the animation pipeline. Null means no turn is active. */
+     turnRequest?: TurnRequest | null;
++    /** Mesh opacity 0-1 applied to every material on the loaded model.
++     *  Drives avatar-swap cross-fades. 1 = fully opaque (default). */
++    opacity?: number;
++    /** Fired with the avatar id once a model finishes loading (initial load
++     *  or swap). Lets a swap-transition wrapper know when to fade back in. */
++    onModelSwapped?: (avatarId: string) => void;
+   }
+ 
+   let {
+@@ -176,6 +182,8 @@
+     spinePitchOffset = 0,
+     enableFootPlanting = false,
+     turnRequest: turnRequestProp = null,
++    opacity = 1,
++    onModelSwapped,
+   }: Props = $props();
+ 
+   // Current locomotion state - tracked so FootPlanter can decide when to
+@@ -342,6 +350,10 @@
+       modelLoaded = true;
+       useProceduralFallback = false;
+ 
++      // Notify a swap-transition wrapper that the new model is ready (so it
++      // can fade the avatar back in). Fires on initial load and on every swap.
++      onModelSwapped?.(targetAvatarId);
++
+       // Widen the default stance - rotate upper legs outward so feet
+       // are shoulder-width apart instead of the narrow T-pose default.
+       // This gives the avatar a more natural standing base and helps
+@@ -849,6 +861,25 @@
+     });
+   });
+ 
++  // Apply avatar opacity to every material on the loaded model. Reacts to
++  // both the opacity prop (swap cross-fade) and cachedRoot changes (new model
++  // after a swap inherits the current opacity). Below 1, materials switch to
++  // transparent with depth-write off so the fade blends correctly.
++  $effect(() => {
++    if (!cachedRoot) return;
++    const o = opacity;
++    const transparent = o < 1;
++    cachedRoot.traverse((child: any) => {
++      if (!child.isMesh || !child.material) return;
++      const materials = Array.isArray(child.material) ? child.material : [child.material];
++      for (const material of materials) {
++        material.transparent = transparent;
++        material.opacity = o;
++        material.depthWrite = !transparent;
++      }
++    });
++  });
++
+   onDestroy(() => {
+     // Dispose locomotion animator, state machine, and foot planter
+     if (locomotionAnimator) {
 diff --git a/src/lib/components/PerformerRig.svelte b/src/lib/components/PerformerRig.svelte
-index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..8cc147a1b43ffbad6de887f5385279b278ceaf88 100644
+index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..99a40cd26b35183a5e71c93105e0704084dbf9e9 100644
 --- a/src/lib/components/PerformerRig.svelte
 +++ b/src/lib/components/PerformerRig.svelte
 @@ -78,6 +78,7 @@
@@ -10,7 +73,7 @@ index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..8cc147a1b43ffbad6de887f5385279b2
  
      // Vertical offset (museum platforms, stages)
      groundOffset?: number;
-@@ -111,8 +112,23 @@
+@@ -111,8 +112,30 @@
  
      /** Optional grid component rendered at appropriate offset */
      gridSlot?: Snippet;
@@ -33,10 +96,17 @@ index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..8cc147a1b43ffbad6de887f5385279b2
 +      staffHalfLength: number;
 +      effectsParentRef: Group | undefined;
 +    }]>;
++
++    /** Avatar mesh opacity 0-1, forwarded to Avatar3D for swap cross-fades.
++     *  1 = fully opaque (default). */
++    avatarOpacity?: number;
++    /** Fired with the avatar id when the avatar model finishes loading or
++     *  swapping. Forwarded from Avatar3D for swap-transition wrappers. */
++    onAvatarSwapped?: (avatarId: string) => void;
    }
  
    let {
-@@ -132,7 +148,8 @@
+@@ -132,7 +155,8 @@
      redPropState: redPropStateOverride,
      tipEffectMap = {},
      isPlaying = false,
@@ -46,7 +116,13 @@ index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..8cc147a1b43ffbad6de887f5385279b2
      groundOffset = 0,
      avatarId,
      enableLocomotion = false,
-@@ -147,6 +164,10 @@
+@@ -143,10 +167,16 @@
+     enableRootMotion = false,
+     enableFootPlanting = false,
+     turnRequestOverride,
++    avatarOpacity = 1,
++    onAvatarSwapped,
+     gridSlot,
      effectsSlot,
    }: Props = $props();
  
@@ -57,7 +133,16 @@ index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..8cc147a1b43ffbad6de887f5385279b2
    // Animation-driven yaw accumulator. When animationDrivenYaw is true, the
    // rig's rotation is advanced by yawDelta from Avatar3D's onRootMotion
    // callback each frame (the turn clip drives the rotation). When the flag
-@@ -328,6 +349,7 @@
+@@ -279,6 +309,8 @@
+     <Avatar3D
+       id={avatarState.id}
+       {avatarId}
++      opacity={avatarOpacity}
++      onModelSwapped={onAvatarSwapped}
+       bluePropState={bluePropState}
+       redPropState={redPropState}
+       facingAngle={0}
+@@ -328,6 +360,7 @@
              propType={bluePropType}
              propState={bluePropState}
              color="blue"
@@ -65,7 +150,7 @@ index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..8cc147a1b43ffbad6de887f5385279b2
            />
          {/if}
        </T.Group>
-@@ -351,6 +373,7 @@
+@@ -351,6 +384,7 @@
              propType={redPropType}
              propState={redPropState}
              color="red"
@@ -73,7 +158,7 @@ index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..8cc147a1b43ffbad6de887f5385279b2
            />
          {/if}
        </T.Group>
-@@ -360,7 +383,16 @@
+@@ -360,7 +394,16 @@
    <!-- Effects (consumer-provided via effectsSlot) -->
    {#if showEffects && effectsSlot}
      <T.Group bind:ref={effectsGroupRef}>
