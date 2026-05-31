@@ -3,7 +3,7 @@
   import type { VersionState } from "$lib/shared/feedback/state/version-state.svelte";
   import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
   import { getFeedback } from "$lib/shared/feedback/services/feedback-querier";
-  import { archiveLoader } from "../../services/archive-loader";
+  import { loadAllArchived } from "../../services/archive-loader";
   import type { AppVersion } from "$lib/shared/feedback/domain/models/version-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import FeedbackDetailPanel from "./FeedbackDetailPanel.svelte";
@@ -70,7 +70,7 @@
 
   async function loadAllArchivedItems() {
     isLoadingAll = true;
-    allArchivedItems = await archiveLoader.loadAllArchived();
+    allArchivedItems = await loadAllArchived();
     isLoadingAll = false;
   }
 
