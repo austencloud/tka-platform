@@ -11,7 +11,6 @@
 -->
 <script lang="ts">
   import BaseCard from "$lib/features/create/generate/components/cards/BaseCard.svelte";
-  import ToggleCard from "$lib/features/create/generate/components/cards/ToggleCard.svelte";
   import StepperCard from "$lib/features/create/generate/components/cards/StepperCard/StepperCard.svelte";
   import { getCardColors } from "$lib/shared/create/domain/card-colors";
   import { BackgroundType } from "@austencloud/backgrounds";
@@ -28,6 +27,7 @@
   import { quintOut } from "svelte/easing";
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
 
   const c = getCardColors(BackgroundType.COSMIC); // DEFAULT_COLORS gradients
   const LOOP_COLOR = "linear-gradient(135deg, #a3a32a 0%, #8a8a22 50%, #6b6b1a 100%)";
@@ -130,6 +130,7 @@
   // Rare: only when you ask for more UNIQUE cards than the entire variation space holds.
   const exhausted = $derived(requested > cardSpace);
 
+  const periodLabel = $derived(period === "quartered" ? "Quartered" : "Halved");
   const gridLabel = $derived(posOri.currentGridMode === GridMode.DIAMOND ? "Diamond" : "Box");
   const posOriSummary = $derived.by(() => {
     const b = posOri.blueOrientation, r = posOri.redOrientation;
@@ -230,13 +231,9 @@
         <BaseCard title="Pos & Ori" currentValue={posOriSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showPosOri = true)} />
         </div>
 
-        <!-- Row 3 -->
-        <div class="tile" style:view-transition-name="t-loop">
-        <BaseCard title="Loop" currentValue={LOOP_TYPE_LABELS[loopType]} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
-        </div>
-
-        <div class="tile" style:view-transition-name="t-period">
-        <ToggleCard title="Period" option1={{ value: "quartered", label: "Quartered" }} option2={{ value: "halved", label: "Halved" }} activeOption={period} onToggle={(v) => (period = v as typeof period)} color={c.period.color} shadowColor={c.period.shadowColor} gridColumnSpan={2} />
+        <!-- Loop now also carries Period (chosen together in the loop modal). -->
+        <div class="tile">
+        <BaseCard title="Loop" currentValue={`${LOOP_TYPE_LABELS[loopType]} · ${periodLabel}`} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
         </div>
 
       </div>
@@ -284,20 +281,32 @@
   <!-- Big centered modals (deck releaser owns the full viewport). -->
   {#if showLoop}
     <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showLoop = false; }}>
-      <div class="loop-panel" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
-        <LOOPExpandedOverlay
-          currentType={loopType}
-          selectedComponents={loopComponents}
-          onChange={(lt: LOOPType) => { loopType = lt; loopComponents = parseLoopComponents(lt); showLoop = false; }}
-          onClose={() => (showLoop = false)}
-        />
+      <div class="loop-col" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+        <div class="loop-host">
+          <LOOPExpandedOverlay
+            currentType={loopType}
+            selectedComponents={loopComponents}
+            onChange={(lt: LOOPType) => { loopType = lt; loopComponents = parseLoopComponents(lt); showLoop = false; }}
+            onClose={() => (showLoop = false)}
+          />
+        </div>
+        <!-- Period chosen alongside the loop; it shows on the Loop card. -->
+        <div class="loop-period">
+          <span class="lp-label">Period</span>
+          <SegmentedControl
+            options={[{ value: "quartered", label: "Quartered" }, { value: "halved", label: "Halved" }]}
+            value={period}
+            onchange={(v: "quartered" | "halved") => (period = v)}
+            color="accent"
+          />
+        </div>
       </div>
     </div>
   {/if}
 
   {#if showPosOri}
     <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showPosOri = false; }}>
-      <div class="picker-overlay" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+      <div class="picker-overlay posori" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
         <div class="po-header">
           <h3>Start Position &amp; Orientation</h3>
           <button class="po-close" aria-label="Close" onclick={() => (showPosOri = false)}>
@@ -453,10 +462,29 @@
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 40px color-mix(in srgb, var(--theme-accent) 28%, transparent);
     overflow: hidden;
   }
-  /* Panel that hosts the loop overlay (which positions itself absolute:inset:0). */
-  .loop-panel {
-    position: relative; width: min(1080px, 94vw); height: min(820px, 88vh);
+  /* Pos & Ori: narrower + near-square so the picker sizes pictographs large
+     (PictographGrid scales to ~28cqmin of its container and picks columns by aspect). */
+  .picker-overlay.posori { width: min(760px, 92vw); }
+  .posori .po-body { min-height: 56vh; }
+
+  /* Loop modal: let the overlay flow (not absolute) so the panel sizes to content —
+     no dead space below the cards. Period footer sits beneath it. */
+  .loop-col {
+    width: min(1000px, 94vw); max-height: 92vh;
+    display: flex; flex-direction: column; gap: 12px;
   }
+  .loop-host { position: relative; min-height: 0; overflow: hidden; border-radius: 18px; }
+  .loop-host :global(.loop-expanded-overlay) {
+    position: relative !important; inset: auto !important;
+    width: 100%; max-height: 82vh;
+  }
+  .loop-host :global(.grid-container) { min-height: 260px; }
+  .loop-period {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 16px;
+    padding: 12px 16px; background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px;
+  }
+  .lp-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255, 255, 255, 0.72); }
   .po-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .po-header h3 { margin: 0; font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 0.3px; }
   .po-close {
