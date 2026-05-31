@@ -4,10 +4,15 @@
   import type { Snippet } from "svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
+  import CardArrowFixGrid from "./CardArrowFixGrid.svelte";
+  import PictographInspectModal from "$lib/features/create/shared/components/sequence-actions/PictographInspectModal.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { getCatalogLayoutPolicy } from "../domain/catalog-layout-policy";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   interface Props {
     sequence: SequenceData;
@@ -17,6 +22,11 @@
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
     frontImageUrl?: string | null;
     extraActions?: Snippet;
+    /** Async re-bake of THIS card's front (updates the preview image). */
+    onRerender?: () => Promise<void>;
+    /** Card's effective prop types (default: global settings, matching the bake). */
+    bluePropType?: PropType;
+    redPropType?: PropType;
   }
 
   let {
@@ -27,7 +37,42 @@
     onContextMenu,
     frontImageUrl,
     extraActions,
+    onRerender,
+    bluePropType,
+    redPropType,
   }: Props = $props();
+
+  let mode = $state<"preview" | "fix">("preview");
+  let selectedStep = $state<StepData | null>(null);
+  let dirty = $state(false);
+  let rebaking = $state(false);
+
+  // Mirror PrintPreviewPages: explicit prop types win, else global settings,
+  // else staff. Keeps the edited override key identical to the baked key.
+  const settings = $derived(getSettings());
+  const effBlueProp = $derived(bluePropType ?? settings.bluePropType ?? PropType.STAFF);
+  const effRedProp = $derived(redPropType ?? settings.redPropType ?? PropType.STAFF);
+
+  function enterFixMode(): void { mode = "fix"; dirty = false; }
+
+  function onCellSelected(step: StepData): void { selectedStep = step; }
+
+  function closeEditor(): void {
+    // A save in the editor persisted the override globally; mark dirty so Done
+    // (or close) re-bakes. We can't distinguish "saved" from "looked only", so
+    // any editor visit marks dirty — a redundant re-bake is cheap and correct.
+    dirty = true;
+    selectedStep = null;
+  }
+
+  async function exitFixMode(): Promise<void> {
+    if (dirty && onRerender) {
+      rebaking = true;
+      try { await onRerender(); } finally { rebaking = false; }
+    }
+    dirty = false;
+    mode = "preview";
+  }
 
   let stackEl: HTMLDivElement | undefined = $state();
   let copyImageState = $state<"idle" | "copying" | "success" | "error">("idle");
@@ -78,7 +123,10 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') onClose();
+    if (e.key !== 'Escape') return;
+    if (selectedStep) return;        // editor handles its own Esc
+    if (mode === "fix") { void exitFixMode(); return; }
+    onClose();
   }
 
   function handleBackdropClick(e: MouseEvent) {
@@ -97,22 +145,32 @@
       <h2 class="modal-title" id="inspect-modal-title">
         <TKAWordGlyph {word} height={28} darkMode />
       </h2>
-      <p class="modal-hint">Front and back side by side</p>
+      <p class="modal-hint">{mode === "fix" ? "Click a pictograph to fix its arrows" : "Front and back side by side"}</p>
     </div>
 
     <div class="stack-wrapper" bind:this={stackEl} role="group" aria-label="Card preview">
-      <CardPreviewStack
-        {sequence}
-        {showWord}
-        {includeStartPosition}
-        startPositionLayout={getCatalogLayoutPolicy(sequence.steps?.length ?? 0)}
-        showBirthday={true}
-        {showQRCode}
-        showInfoCard={false}
-        printMode={true}
-        {frontImageUrl}
-        onCardContextMenu={onContextMenu}
-      />
+      {#if mode === "preview"}
+        <CardPreviewStack
+          {sequence}
+          {showWord}
+          {includeStartPosition}
+          startPositionLayout={getCatalogLayoutPolicy(sequence.steps?.length ?? 0)}
+          showBirthday={true}
+          {showQRCode}
+          showInfoCard={false}
+          printMode={true}
+          {frontImageUrl}
+          onCardContextMenu={onContextMenu}
+        />
+      {:else}
+        <CardArrowFixGrid
+          {sequence}
+          bluePropType={effBlueProp}
+          redPropType={effRedProp}
+          {includeStartPosition}
+          onSelect={onCellSelected}
+        />
+      {/if}
     </div>
 
     <div class="bottom-bar">
@@ -131,6 +189,19 @@
             <i class="fas fa-image"></i> Copy Image
           {/if}
         </button>
+        {#if mode === "preview"}
+          <button class="action-btn fix-arrows-btn" onclick={enterFixMode} aria-label="Fix arrow positions on this card's pictographs">
+            <i class="fas fa-arrows-up-down-left-right"></i> Fix Arrows
+          </button>
+        {:else}
+          <button class="action-btn done-btn" onclick={exitFixMode} disabled={rebaking} aria-label="Finish fixing arrows and re-render the card">
+            {#if rebaking}
+              <i class="fas fa-spinner fa-spin"></i> Re-rendering...
+            {:else}
+              <i class="fas fa-check"></i> Done
+            {/if}
+          </button>
+        {/if}
         {#if extraActions}
           {@render extraActions()}
         {/if}
@@ -145,6 +216,10 @@
     <i class="fas fa-times"></i>
   </button>
 </div>
+
+{#if selectedStep}
+  <PictographInspectModal show stepData={selectedStep} onClose={closeEditor} />
+{/if}
 
 
 <style>
@@ -292,6 +367,18 @@
     border-color: rgba(59, 130, 246, 0.35);
     color: #fff;
   }
+
+  .fix-arrows-btn:hover {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.35);
+    color: #fff;
+  }
+  .done-btn {
+    background: var(--semantic-success, #238636);
+    border-color: var(--semantic-success, #238636);
+    color: #fff;
+  }
+  .done-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
   @media (prefers-reduced-motion: reduce) {
     .modal-backdrop { animation: none; }
