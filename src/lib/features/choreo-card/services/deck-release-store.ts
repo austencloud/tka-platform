@@ -13,7 +13,7 @@ import {
   getDeckReleaseManifestPath,
   getDeckReleaseManifestsPath,
 } from "$lib/shared/library/data/firestore-paths";
-import type { DeckRelease, DeckReleaseCard } from "../domain/models/DeckRelease";
+import type { DeckRelease, DeckReleaseCard, DeckRecipe } from "../domain/models/DeckRelease";
 
 export async function getNextDeckNumber(): Promise<number> {
   const db = await getFirestoreInstance();
@@ -34,6 +34,7 @@ export async function releaseDeck(
   theme: string,
   notes: string,
   meta: ReleaseMeta,
+  recipe?: DeckRecipe,
 ): Promise<DeckRelease> {
   const db = await getFirestoreInstance();
   const counterRef = doc(db, getDeckReleaseCounterPath());
@@ -61,6 +62,8 @@ export async function releaseDeck(
       notes,
       sequences: cards,
       stepCountDistribution: distribution,
+      // Firestore rejects `undefined` fields — only attach recipe when present.
+      ...(recipe ? { recipe } : {}),
     };
 
     const manifestRef = doc(db, getDeckReleaseManifestPath(deckNumber));

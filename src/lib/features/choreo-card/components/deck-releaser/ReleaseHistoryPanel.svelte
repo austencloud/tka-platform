@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { DeckRelease } from "../../domain/models/DeckRelease";
+  import type { DeckRelease, DeckRecipe } from "../../domain/models/DeckRelease";
 
   interface Props {
     releases: DeckRelease[];
@@ -8,9 +8,16 @@
     onSelectRelease: (release: DeckRelease) => void;
     /** Permanently delete a deck. Omit to hide delete affordances. */
     onDeleteRelease?: (deckNumber: number) => void;
+    /** Load a deck's stamped recipe back into Configure. Omit to hide reuse. */
+    onReuseRecipe?: (recipe: DeckRecipe) => void;
   }
 
-  const { releases, isLoading, activeDeckNumber, onSelectRelease, onDeleteRelease }: Props = $props();
+  const { releases, isLoading, activeDeckNumber, onSelectRelease, onDeleteRelease, onReuseRecipe }: Props = $props();
+
+  function reuse(e: MouseEvent, recipe: DeckRecipe) {
+    e.stopPropagation();
+    onReuseRecipe?.(recipe);
+  }
 
   // Deck number currently in the two-step confirm state (trash → ✓/✗). Only one
   // row confirms at a time; selecting/confirming/cancelling clears it.
@@ -90,8 +97,20 @@
             </div>
           </button>
 
-          {#if onDeleteRelease}
+          {#if onDeleteRelease || (onReuseRecipe && release.recipe)}
             <div class="row-actions">
+              {#if onReuseRecipe && release.recipe}
+                <button
+                  type="button"
+                  class="reuse-btn"
+                  onclick={(e) => reuse(e, release.recipe!)}
+                  aria-label="Reuse recipe from Deck {release.deckNumber}"
+                  title="Reuse this deck's recipe"
+                >
+                  <i class="fas fa-rotate" aria-hidden="true"></i>
+                </button>
+              {/if}
+              {#if onDeleteRelease}
               {#if confirmingDelete === release.deckNumber}
                 <button
                   type="button"
@@ -119,6 +138,7 @@
                 >
                   <i class="fas fa-trash" aria-hidden="true"></i>
                 </button>
+              {/if}
               {/if}
             </div>
           {/if}
@@ -234,8 +254,9 @@
     flex-shrink: 0;
   }
 
-  /* Trash hidden until row hover/focus on pointer devices; always shown on touch. */
-  .trash-btn {
+  /* Row actions hidden until row hover/focus on pointer devices; shown on touch. */
+  .trash-btn,
+  .reuse-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -251,11 +272,18 @@
   }
 
   .release-row:hover .trash-btn,
-  .release-row:focus-within .trash-btn { opacity: 1; }
+  .release-row:focus-within .trash-btn,
+  .release-row:hover .reuse-btn,
+  .release-row:focus-within .reuse-btn { opacity: 1; }
 
   .trash-btn:hover {
     color: #f87171;
     background: rgba(248, 113, 113, 0.12);
+  }
+
+  .reuse-btn:hover {
+    color: var(--theme-accent, #a78bfa);
+    background: rgba(139, 92, 246, 0.15);
   }
 
   .confirm-btn {
@@ -284,7 +312,8 @@
   .confirm-no:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
 
   @media (hover: none) {
-    .trash-btn { opacity: 1; }
+    .trash-btn,
+    .reuse-btn { opacity: 1; }
   }
 
   .release-header {

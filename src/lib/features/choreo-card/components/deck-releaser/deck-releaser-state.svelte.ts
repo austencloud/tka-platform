@@ -1,4 +1,4 @@
-import type { DeckRelease, DeckReleaseCard, StepCountWeight } from "../../domain/models/DeckRelease";
+import type { DeckRelease, DeckReleaseCard, DeckRecipe, StepCountWeight } from "../../domain/models/DeckRelease";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { CatalogSourceSummary, TnDFamilyOption, TnDTurnPatternOption, TnDSeedClass } from "../../services/deck-composer";
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -200,6 +200,71 @@ class DeckReleaserState {
 
   get savedViewingDeckNumber(): number | null {
     return loadSession()?.viewingDeckNumber ?? null;
+  }
+
+  /** Project the current dials into a frozen recipe for stamping onto a release.
+   *  Mode-scoped: only the active mode's dials are emitted (plus shared transform
+   *  dials). `available` is stripped from weights — it is a live pool count, not a
+   *  recipe input, and a stale snapshot would mislead on reuse. */
+  toRecipe(): DeckRecipe {
+    const recipe: DeckRecipe = {
+      deckMode: this.deckMode,
+      startOriModes: [...this.selectedStartOriModes],
+      gridModes: [...this.selectedGridModes],
+      reversalPattern: this.reversalPattern,
+    };
+    if (this.deckMode === "loop") {
+      recipe.weights = this.weights.map((w) => ({ stepCount: w.stepCount, weight: w.weight }));
+      recipe.totalCards = this.totalCards;
+      recipe.sliceTypes = [...this.selectedSliceTypes];
+      recipe.variationConfig = this.variationConfig;
+    } else {
+      recipe.tndFamilyIds = [...this.selectedTnDFamilies];
+      recipe.tndTurnPatternIds = [...this.selectedTnDTurnPatterns];
+    }
+    return recipe;
+  }
+
+  /** Load a stamped recipe back into the configure dials and reset to a fresh,
+   *  unreleased compose. Clears any composed draft / viewed release so Draw yields
+   *  a brand-new deck — for LOOP a fresh random subset from the same recipe, for
+   *  TnD the same deterministic enumeration. Pool `available` counts re-derive on
+   *  the Configure mount, so a reused recipe self-heals against pool changes. */
+  loadRecipe(recipe: DeckRecipe) {
+    this.cards = [];
+    this.sequences = [];
+    this.releasedNumber = null;
+    this.viewingRelease = null;
+    this.name = "";
+    this.description = "";
+    this.themeOverride = null;
+    this.bluePropOverride = null;
+    this.redPropOverride = null;
+    this.brokenLoopCount = 0;
+
+    this.deckMode = recipe.deckMode;
+    this.selectedStartOriModes = new Set(recipe.startOriModes.length ? recipe.startOriModes : ["radial"]);
+    this.selectedGridModes = new Set(recipe.gridModes.length ? recipe.gridModes : ["diamond"]);
+    this.reversalPattern = recipe.reversalPattern ?? null;
+
+    if (recipe.deckMode === "loop") {
+      // Restore weight values onto the live pool rows so `available` stays current.
+      if (recipe.weights?.length) {
+        const byStep = new Map(recipe.weights.map((w) => [w.stepCount, w.weight]));
+        this.weights = this.weights.length
+          ? this.weights.map((w) => ({ ...w, weight: byStep.get(w.stepCount) ?? w.weight }))
+          : recipe.weights.map((w) => ({ ...w, available: 0 }));
+      }
+      if (recipe.totalCards != null) this.totalCards = recipe.totalCards;
+      if (recipe.sliceTypes?.length) this.selectedSliceTypes = new Set(recipe.sliceTypes);
+      if (recipe.variationConfig) this.variationConfig = recipe.variationConfig;
+    } else {
+      this.selectedTnDFamilies = new Set(recipe.tndFamilyIds ?? []);
+      this.selectedTnDTurnPatterns = new Set(recipe.tndTurnPatternIds ?? []);
+    }
+
+    this.step = "configure";
+    this.persist();
   }
 
   reset() {

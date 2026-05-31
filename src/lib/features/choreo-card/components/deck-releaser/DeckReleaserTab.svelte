@@ -18,7 +18,7 @@
     TND_BASE_CATALOG_ID,
     type CatalogPoolFilter,
   } from "../../services/deck-composer";
-  import type { DeckRelease, DeckReleaseCard } from "../../domain/models/DeckRelease";
+  import type { DeckRelease, DeckReleaseCard, DeckRecipe } from "../../domain/models/DeckRelease";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { getNextDeckNumber, releaseDeck, getAllReleases, updateDeckMeta, deleteDeck } from "../../services/deck-release-store";
   import ConfigureStep from "./ConfigureStep.svelte";
@@ -611,7 +611,7 @@
         description,
         bluePropType: rs.bluePropType,
         redPropType: rs.redPropType,
-      });
+      }, rs.toRecipe());
       rs.name = name;
       rs.description = description;
       rs.releasedNumber = release.deckNumber;
@@ -648,6 +648,11 @@
 
   function handleStartNew() {
     rs.reset();
+  }
+
+  function handleReuseRecipe(recipe: DeckRecipe) {
+    rs.loadRecipe(recipe);
+    toast.success("Recipe loaded — tweak or press Draw for a fresh deck.");
   }
 
   async function handleSelectRelease(release: DeckRelease) {
@@ -802,6 +807,7 @@
           activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
           onSelectRelease={handleSelectRelease}
           onDeleteRelease={handleDeleteRelease}
+          onReuseRecipe={handleReuseRecipe}
         />
       </div>
       {#if rs.step === "review" && rs.viewingRelease === null}

@@ -1,3 +1,6 @@
+import type { ResolvedReversalPattern } from "../reversal-transform";
+import type { VariationConfig } from "../../services/deck-variation";
+
 export interface CardFooter {
   left?: string;
   center?: string;
@@ -40,9 +43,34 @@ export interface DeckReleaseCard {
   variation?: CardVariation;
 }
 
+/**
+ * The frozen dial-set that produced a deck. Stamped onto the manifest at release
+ * so any saved deck can be reused as a recipe — the deck list doubles as the
+ * recipe library (no separate recipe collection). Only the dials are stored, NOT
+ * per-deck instance metadata (name/notes/description) or re-derivable pool counts
+ * (`StepCountWeight.available`). Absent on legacy manifests → no reuse affordance.
+ */
+export interface DeckRecipe {
+  deckMode: "loop" | "tnd";
+  /** Shared transform dials (both modes). */
+  startOriModes: ("radial" | "nonradial" | "split")[];
+  gridModes: ("diamond" | "box")[];
+  reversalPattern?: ResolvedReversalPattern | null;
+  /** LOOP-only: per-step-count weights (`available` dropped — re-derived live). */
+  weights?: { stepCount: number; weight: number }[];
+  totalCards?: number;
+  sliceTypes?: ("halved" | "quartered")[];
+  variationConfig?: VariationConfig;
+  /** TnD-only. */
+  tndFamilyIds?: string[];
+  tndTurnPatternIds?: string[];
+}
+
 export interface DeckRelease {
   deckNumber: number;
   createdAt: string;
+  /** Frozen dial-set that produced this deck. Absent on legacy manifests. */
+  recipe?: DeckRecipe;
   /** Display name shown in the releaser header and history; editable post-release. */
   name?: string;
   /** Optional free-text description of the deck. */

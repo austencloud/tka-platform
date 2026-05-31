@@ -90,11 +90,16 @@ async function main() {
   // 2. Build cards
   const cards = [];
   const patternCounts = {};
+  // Collected for the stamped recipe (best-effort provenance for script decks).
+  const recipeFamilyIds = new Set();
+  const recipeTurnPatternIds = new Set();
 
   for (const catalog of tndCatalogs) {
     const tp = catalog.turnPattern;
+    if (tp) recipeTurnPatternIds.add(tp);
     for (const family of catalog.families || []) {
       if (!family.id || family.id === "unknown") continue;
+      recipeFamilyIds.add(family.id);
       const el = TND_ELEMENT_MAP[family.id];
       const footer = el
         ? { center: el.name, iconPath: el.iconPath }
@@ -162,6 +167,15 @@ async function main() {
       notes: NOTES,
       sequences: cards,
       stepCountDistribution: distribution,
+      // Deterministic recipe so script-released decks are reusable in the UI.
+      recipe: {
+        deckMode: "tnd",
+        startOriModes: ["radial"],
+        gridModes: ["diamond"],
+        reversalPattern: null,
+        tndFamilyIds: [...recipeFamilyIds],
+        tndTurnPatternIds: [...recipeTurnPatternIds],
+      },
     };
 
     const manifestRef = db.doc(`deckReleases/counter/manifests/${String(deckNumber).padStart(3, "0")}`);
