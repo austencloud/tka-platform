@@ -5,6 +5,7 @@
   import PrintPreviewPages from "../print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "../print-preview/PrintPreviewToolbar.svelte";
   import CardInspectModal from "../CardInspectModal.svelte";
+  import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
   import type { CardSizeId } from "../../domain/card-sizes";
   import type { TnDElement } from "../../domain/tnd-element";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -34,6 +35,9 @@
     cardSize: CardSizeId;
     copies: number;
     groupByElement: boolean;
+    groupByLetter: boolean;
+    /** Builds the markdown deck bundle for the Copy-for-AI button. */
+    getAiSummary: () => string;
     sortedSequences: SequenceData[];
     sortedFooters: CardFooter[];
     tndElements: (TnDElement | undefined)[];
@@ -47,6 +51,7 @@
     onCardSizeChange: (s: CardSizeId) => void;
     onCopiesChange: (n: number) => void;
     onGroupByElementChange: (on: boolean) => void;
+    onGroupByLetterChange: (on: boolean) => void;
     onRerender: () => void;
     onPairsReady: (pairs: CardPair[]) => void;
     onRenderStateChange: (s: { isRendering: boolean; progress: number; total: number }) => void;
@@ -74,6 +79,8 @@
     cardSize,
     copies,
     groupByElement,
+    groupByLetter,
+    getAiSummary,
     sortedSequences,
     sortedFooters,
     tndElements,
@@ -87,6 +94,7 @@
     onCardSizeChange,
     onCopiesChange,
     onGroupByElementChange,
+    onGroupByLetterChange,
     onRerender,
     onPairsReady,
     onRenderStateChange,
@@ -186,14 +194,23 @@
       </div>
     </div>
 
-    {#if !readOnly && showRedraw}
-      <div class="action-buttons">
+    <div class="action-buttons">
+      <CopyForAIButton
+        getData={getAiSummary}
+        variant="icon-text"
+        size="sm"
+        idleIcon="fa-robot"
+        ariaLabel="Copy deck info for AI"
+        labels={{ idle: "Copy for AI" }}
+        useToast
+      />
+      {#if !readOnly && showRedraw}
         <button type="button" class="redraw-btn" onclick={onRedraw} disabled={isReleasing}>
           <i class="fas fa-dice" aria-hidden="true"></i>
           Redraw
         </button>
-      </div>
-    {/if}
+      {/if}
+    </div>
   </div>
 
   <PrintPreviewToolbar
@@ -210,6 +227,8 @@
     {copiesAnnotate}
     {groupByElement}
     onGroupByElementChange={onGroupByElementChange}
+    {groupByLetter}
+    onGroupByLetterChange={onGroupByLetterChange}
   />
 
   <div class="preview-area">

@@ -31,10 +31,11 @@
   import { releaserState as rs } from "./deck-releaser-state.svelte";
   import { resolveDeckSequences, applyVariationDescriptor, rollVariation } from "../../services/deck-variation";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
-  import { hashDeckContent } from "$lib/shared/foundation/services/content-hasher";
+  import { hashDeckContent, hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
   import { getPageLayout, type CardSizeId } from "../../domain/card-sizes";
   import { getTnDElementByIconPath, TND_ELEMENTS, type TnDElement } from "../../domain/tnd-element";
   import { suggestCopyCounts, copyWaste } from "../../services/print-copy-suggester";
+  import { buildDeckAiSummary } from "../../services/deck-ai-summary";
   import type { CardPair } from "../../services/types";
   import type { PrintPDFMode } from "../../services/print-pdf-exporter";
   import type { PrintSide } from "../print-preview/PrintPanel.svelte";
@@ -94,7 +95,7 @@
   // ── Print state (lifted from ReviewStep so the sidebar PrintPanel and the
   //    preview pane share one owner) ──────────────────────────────────────────
   const PRINT_SETTINGS_KEY = "deckReleaser.printSettings";
-  interface PersistedPrintSettings { cardSize: CardSizeId; copies: number; groupByElement: boolean; }
+  interface PersistedPrintSettings { cardSize: CardSizeId; copies: number; groupByElement: boolean; groupByLetter?: boolean; }
   function loadPrintSettings(): Partial<PersistedPrintSettings> {
     if (typeof window === "undefined") return {};
     try {
@@ -107,13 +108,14 @@
   let cardSize = $state<CardSizeId>(savedPrint.cardSize ?? "poker");
   let copies = $state(savedPrint.copies ?? 1);
   let groupByElement = $state(savedPrint.groupByElement ?? true);
+  let groupByLetter = $state(savedPrint.groupByLetter ?? false);
   let selectedSide = $state<PrintSide>("fronts");
 
   $effect(() => {
     if (typeof window === "undefined") return;
     try {
       localStorage.setItem(PRINT_SETTINGS_KEY,
-        JSON.stringify({ cardSize, copies, groupByElement } satisfies PersistedPrintSettings));
+        JSON.stringify({ cardSize, copies, groupByElement, groupByLetter } satisfies PersistedPrintSettings));
     } catch { /* quota / private mode — non-fatal */ }
   });
 
@@ -134,10 +136,30 @@
     const rawElements = (footers ?? []).map((f) => getTnDElementByIconPath(f.iconPath ?? "") ?? undefined);
     const elementOrder = TND_ELEMENTS.map((e) => e.element);
     const indexed = rs.sequences.map((seq, i) => ({ seq, footer: footers?.[i], el: rawElements[i], origIndex: i }));
+
+    // First-appearance rank per letter (word), in original composition order, so
+    // clustering yields AAABBBCCC. When color grouping is also on, color is the
+    // primary key and letters cluster within each color block. The two toggles
+    // are independent axes — neither, either, or both can be active.
+    const letterRank = new Map<string, number>();
+    if (groupByLetter) {
+      for (const r of indexed) {
+        const w = r.seq.word ?? "";
+        if (!letterRank.has(w)) letterRank.set(w, letterRank.size);
+      }
+    }
+    const elIndex = (el?: TnDElement) => (el ? elementOrder.indexOf(el.element) : 999);
+
     indexed.sort((a, b) => {
-      const ai = a.el ? elementOrder.indexOf(a.el.element) : 999;
-      const bi = b.el ? elementOrder.indexOf(b.el.element) : 999;
-      return ai !== bi ? ai - bi : a.origIndex - b.origIndex;
+      if (groupByElement) {
+        const d = elIndex(a.el) - elIndex(b.el);
+        if (d !== 0) return d;
+      }
+      if (groupByLetter) {
+        const d = (letterRank.get(a.seq.word ?? "") ?? 0) - (letterRank.get(b.seq.word ?? "") ?? 0);
+        if (d !== 0) return d;
+      }
+      return a.origIndex - b.origIndex;
     });
     return {
       sequences: indexed.map((r) => r.seq),
@@ -158,10 +180,60 @@
     return [...counts.values()];
   });
   const cardsPerPage = $derived(getPageLayout(cardSize).cardsPerPage);
-  const copiesPresets = $derived(suggestCopyCounts(groupSizes, cardsPerPage).map((s) => s.copies));
+  const copiesPresets = $derived.by(() => {
+    const ladder = suggestCopyCounts(groupSizes, cardsPerPage).map((s) => s.copies);
+    // copies === cardsPerPage fills exactly one sheet per card (one card repeated
+    // a full sheet, cut into N identical copies) — always zero-waste, max cut
+    // consistency. Always offer it (9 for poker, 4 for tarot) even when the waste
+    // ladder wouldn't surface it on its own.
+    const withSheet = ladder.includes(cardsPerPage) ? ladder : [...ladder, cardsPerPage];
+    return withSheet.sort((a, b) => a - b);
+  });
   function copiesAnnotate(n: number) {
     const w = copyWaste(groupSizes, cardsPerPage, n);
     return { blanks: w.blanks, perfect: w.blanks === 0 };
+  }
+
+  // Bundle the deck — identity, current print layout, frozen recipe, full card
+  // list — as markdown for the Copy-for-AI button. Recipe comes from the viewed
+  // release when open, else the live dial-set.
+  function getAiSummary(): string {
+    const w = copyWaste(groupSizes, cardsPerPage, copies);
+    return buildDeckAiSummary({
+      name: rs.name,
+      deckNumber: rs.viewingRelease?.deckNumber ?? rs.nextDeckNumber,
+      isReleased: rs.viewingRelease != null,
+      cards: rs.cards,
+      layout: {
+        cardSize,
+        cardsPerPage,
+        copies,
+        groupByColor: groupByElement,
+        groupByLetter,
+        sheets: w.sheets,
+        blanks: w.blanks,
+      },
+      recipe: rs.viewingRelease?.recipe ?? rs.toRecipe(),
+    });
+  }
+
+  // Order-sensitive content + visual fingerprint of exactly what the print PDF
+  // will draw. The built-PDF cache keys on this (plus mode/copies/grouping/size),
+  // so an unchanged deck re-prints the same blob instantly instead of rebuilding.
+  // Covers: ordered card content (sorted = the print order), per-card element
+  // accent, the back theme, and prop types — every input that changes a pixel.
+  // copies/groupByElement affect slot planning, not order, so they're appended
+  // per-call in buildPrintKey, not here.
+  const printDeckSig = $derived.by(() => {
+    const cards = sortedSequences
+      .map((s, i) => `${hashSequenceContent(s)}:${tndElements[i]?.element ?? "_"}`)
+      .join(",");
+    return ["v1", rs.theme, rs.bluePropType, rs.redPropType, cardSize, cards].join("|");
+  });
+
+  function buildPrintKey(mode: PrintPDFMode): string {
+    const deckName = `Deck_${String(rs.nextDeckNumber).padStart(3, "0")}`;
+    return [deckName, mode, copies, groupByElement, printDeckSig].join("§");
   }
 
   // 'fronts'/'backs' scope the preview to that side; combined/zip show all.
@@ -182,13 +254,14 @@
     if (renderedPairs.length === 0) return;
     isExporting = true; exportError = ""; exportProgress = 0; exportTotal = 0;
     try {
-      const { exportHomePrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-exporter");
+      const { getOrBuildPrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-cache");
       const deckName = `Deck_${String(rs.nextDeckNumber).padStart(3, "0")}`;
       const copiesSuffix = copies > 1 ? `_x${copies}` : "";
       const suffix = (mode === "fronts" ? "_fronts" : mode === "backs" ? "_backs" : "_print") + copiesSuffix;
-      const blob = await exportHomePrintPDF(renderedPairs, deckName, cardSize, (current, total) => {
-        exportProgress = current; exportTotal = total;
-      }, mode, { copies, elements: tndElements, groupByElement });
+      const blob = await getOrBuildPrintPDF(buildPrintKey(mode), renderedPairs, deckName, cardSize, mode,
+        { copies, elements: tndElements, groupByElement }, (current, total) => {
+          exportProgress = current; exportTotal = total;
+        });
       triggerDownload(blob, `${deckName}${suffix}.pdf`);
     } catch (e) {
       exportError = `PDF export failed: ${e instanceof Error ? e.message : e}`;
@@ -201,12 +274,11 @@
     if (renderedPairs.length === 0 || isPrinting) return;
     isPrinting = true; exportError = "";
     try {
-      const { exportHomePrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-exporter");
+      const { getOrBuildPrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-cache");
       const { printPdfBlob } = await import("$lib/features/choreo-card/services/print-blob");
       const deckLabel = `Deck_${String(rs.nextDeckNumber).padStart(3, "0")}`;
-      const blob = await exportHomePrintPDF(renderedPairs, deckLabel, cardSize, undefined, mode, {
-        copies, elements: tndElements, groupByElement,
-      });
+      const blob = await getOrBuildPrintPDF(buildPrintKey(mode), renderedPairs, deckLabel, cardSize, mode,
+        { copies, elements: tndElements, groupByElement });
       printPdfBlob(blob);
     } catch (e) {
       exportError = `Print failed: ${e instanceof Error ? e.message : e}`;
@@ -737,6 +809,8 @@
         {cardSize}
         {copies}
         {groupByElement}
+        {groupByLetter}
+        {getAiSummary}
         {sortedSequences}
         {sortedFooters}
         {tndElements}
@@ -750,6 +824,7 @@
         onCardSizeChange={(s) => { cardSize = s; }}
         onCopiesChange={(n) => { copies = n; }}
         onGroupByElementChange={(on) => { groupByElement = on; }}
+        onGroupByLetterChange={(on) => { groupByLetter = on; }}
         onRerender={() => { rerenderKey++; }}
         onPairsReady={(pairs) => { renderedPairs = pairs; }}
         onRenderStateChange={(s) => { isRendering = s.isRendering; renderProgress = s.progress; renderTotal = s.total; }}
@@ -842,6 +917,7 @@
             onSideChange={(s) => { selectedSide = s; }}
             {isExporting}
             {isPrinting}
+            {isRendering}
             {exportProgress}
             {exportTotal}
             {exportError}

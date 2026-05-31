@@ -23,13 +23,17 @@
     if (isCustom) customText = String(value);
   });
 
-  const customAnnotation = $derived(annotate?.(Math.max(1, Math.floor(Number(customText) || 1))) ?? null);
-
-  function badge(n: number): string {
-    const a = annotate?.(n);
-    if (!a) return "";
-    return a.perfect ? "fit" : `${a.blanks}b`;
-  }
+  // The single "best" count: smallest preset that fills every sheet (zero waste).
+  // Only this chip wears the FITS badge — a perfect fit can be true for several
+  // counts, but flagging the smallest keeps one clear, legible "use this" marker
+  // instead of a row of tiny duplicate badges.
+  const bestFit = $derived.by(() => {
+    if (!annotate) return null;
+    for (const p of [...presets].sort((a, b) => a - b)) {
+      if (annotate(p)?.perfect) return p;
+    }
+    return null;
+  });
 
   function commitCustom() {
     const n = Math.max(1, Math.floor(Number(customText) || 1));
@@ -49,7 +53,7 @@
       type="button"
       class="copies-option"
       class:active={value === p}
-      class:perfect={a?.perfect}
+      class:perfect={p === bestFit}
       role="radio"
       aria-checked={value === p}
       aria-label="{p} {p === 1 ? 'copy' : 'copies'} per card{a ? (a.perfect ? ', fills every sheet' : `, ${a.blanks} blank cells`) : ''}"
@@ -57,7 +61,7 @@
       onclick={() => onchange(p)}
     >
       <span class="copies-num">{p}</span>
-      {#if badge(p)}<span class="copies-badge">{badge(p)}</span>{/if}
+      {#if p === bestFit}<span class="copies-badge">fits</span>{/if}
     </button>
   {/each}
   <div class="copies-custom-wrap" class:active={isCustom}>
@@ -72,9 +76,6 @@
       onblur={commitCustom}
       onkeydown={onCustomKey}
     />
-    {#if isCustom && customAnnotation}
-      <span class="copies-badge">{customAnnotation.perfect ? "fit" : `${customAnnotation.blanks}b`}</span>
-    {/if}
   </div>
 </div>
 
@@ -92,7 +93,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 1px;
+    gap: 2px;
     min-width: 40px;
     min-height: 40px;
     padding: 4px 10px;
@@ -116,12 +117,12 @@
   }
 
   .copies-badge {
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    opacity: 0.7;
-    line-height: 1;
+    opacity: 0.85;
+    line-height: 1.1;
   }
 
   .copies-option.active {
@@ -166,10 +167,6 @@
   }
 
   .copies-custom-wrap.active .copies-custom {
-    color: var(--theme-text, #fff);
-  }
-
-  .copies-custom-wrap.active .copies-badge {
     color: var(--theme-text, #fff);
   }
 

@@ -18,6 +18,9 @@
     onSideChange: (side: PrintSide) => void;
     isExporting: boolean;
     isPrinting?: boolean;
+    /** Cards still rasterizing — block print/export so a half-rendered deck
+     *  can't be sent to the printer (or cached as a stale PDF). */
+    isRendering?: boolean;
     exportProgress: number;
     exportTotal: number;
     exportError: string;
@@ -37,6 +40,7 @@
     onSideChange,
     isExporting,
     isPrinting = false,
+    isRendering = false,
     exportProgress,
     exportTotal,
     exportError,
@@ -45,7 +49,7 @@
     onExportZIP,
   }: Props = $props();
 
-  const busy = $derived(isExporting || isPrinting);
+  const busy = $derived(isExporting || isPrinting || isRendering);
   const printable = $derived(selectedSide !== "zip");
   const layout = $derived(getPageLayout(cardSize));
 

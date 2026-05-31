@@ -23,7 +23,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   // Bump when rendered pixels change for reasons NOT captured by the keyed
   // options below — e.g. the canonical profile changes. Rotates all keys so
   // stale persisted renders self-invalidate.
-  const CARD_RENDER_SCHEMA = "v3";
+  const CARD_RENDER_SCHEMA = "v4";
 
   interface Props {
     sequences: SequenceData[];
@@ -185,7 +185,14 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   function buildRenderOptions(stepCount?: number, footer?: CardFooter, cardIndex?: number): PrintRenderOptions {
     const imageComposition = getImageCompositionManager();
     const element = (cardIndex != null ? tndElements?.[cardIndex] : undefined) ?? tndElement;
+    // Render at the SELECTED card size's canvas dims. Without this the renderer
+    // falls back to its MPC poker default (822×1122), so tarot cards render at
+    // poker aspect and then get squished into tarot print slots — stretch, a gap
+    // where the tall slot isn't filled, and crop marks that don't meet the card.
+    const size = CARD_SIZES[cardSize];
     return {
+      canvasWidth: size.canvasWidth,
+      canvasHeight: size.canvasHeight,
       includeStartPosition,
       startPositionLayout:
         deckMode && stepCount != null

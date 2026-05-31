@@ -23,6 +23,10 @@
      *  between colors). Omit both to hide the toggle. */
     groupByElement?: boolean;
     onGroupByElementChange?: (on: boolean) => void;
+    /** Cluster same-letter cards together (AAABBBCCC). Independent of color —
+     *  both on = letters cluster within each color. Omit both to hide. */
+    groupByLetter?: boolean;
+    onGroupByLetterChange?: (on: boolean) => void;
     /** Open the print dialog. Omit to hide the Print button (Deck Releaser prints via its sidebar). */
     onPrint?: () => void;
   }
@@ -41,6 +45,8 @@
     copiesAnnotate,
     groupByElement,
     onGroupByElementChange,
+    groupByLetter,
+    onGroupByLetterChange,
     onPrint,
   }: Props = $props();
 
@@ -76,6 +82,18 @@
         active={groupByElement}
         chipColor="#10b981"
         onclick={() => onGroupByElementChange(!groupByElement)}
+      />
+    {/if}
+
+    {#if groupByLetter != null && onGroupByLetterChange}
+      <FilterChipBase
+        mode="toggle"
+        size="sm"
+        icon="fas fa-font"
+        label="Group by letter"
+        active={groupByLetter}
+        chipColor="#a78bfa"
+        onclick={() => onGroupByLetterChange(!groupByLetter)}
       />
     {/if}
 
