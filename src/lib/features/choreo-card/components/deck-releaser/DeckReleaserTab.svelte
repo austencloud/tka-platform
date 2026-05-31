@@ -13,6 +13,7 @@
     buildTnDCards,
     buildTnDSeedClasses,
     composeDeck,
+    loopDrawCounts,
     swapCard,
     prunePool,
     TND_BASE_CATALOG_ID,
@@ -484,7 +485,12 @@
         };
       });
     }
-    const cards = composeDeck(pool, rs.weights, rs.totalCards, { center: rs.notes });
+    // Target deck size is the FINAL count. Registers × grid modes each duplicate
+    // every base card, so compose `base = target / multiplier` and let the
+    // enumeration below fan it back up to ~target (e.g. 52 target + radial &
+    // nonradial → 26 base × 2 = 52 out, not 104).
+    const { base } = loopDrawCounts(rs.totalCards, registers.length, grids.length);
+    const cards = composeDeck(pool, rs.weights, base, { center: rs.notes });
     // Full enumeration: each composed card is emitted once per (register × grid
     // mode), sharing the same rolled reversal/turn so register/grid are pure axes.
     const out: DeckReleaseCard[] = [];

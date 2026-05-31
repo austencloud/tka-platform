@@ -22,6 +22,7 @@
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";
   import { TURN_PATTERNS, type VariationConfig, type StartOriMode } from "../../services/deck-variation";
+  import { loopDrawCounts } from "../../services/deck-composer";
   import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
   import type { StepCountWeight } from "../../domain/models/DeckRelease";
   import type { CatalogSourceSummary } from "../../services/deck-composer";
@@ -88,12 +89,20 @@
     onVariationConfigChange({ ...variationConfig, turnFrequency: TURN_PRESETS[id]! });
   }
 
+  // Deck Size is the FINAL target; orientation + grid axes duplicate each base
+  // card, so the true output equals the target (when it divides by the axis
+  // multiplier) or the nearest reachable size. Drives the recipe + per-step ~cards
+  // so what's shown matches what Draw emits.
+  const effectiveTotal = $derived(
+    loopDrawCounts(totalCards, startOriModes.size, gridModes.size).effective
+  );
+
   const totalWeight = $derived(weights.reduce((s, w) => s + w.weight, 0));
   function pct(w: StepCountWeight): number {
     return totalWeight > 0 ? Math.round((w.weight / totalWeight) * 100) : 0;
   }
   function cardCount(w: StepCountWeight): number {
-    return totalWeight > 0 ? Math.round((totalCards * w.weight) / totalWeight) : 0;
+    return totalWeight > 0 ? Math.round((effectiveTotal * w.weight) / totalWeight) : 0;
   }
 
   const sourceOptions = $derived(
@@ -109,7 +118,7 @@
   const ORI_LABEL: Record<string, string> = { radial: "Radial", nonradial: "Nonradial", split: "Mixed" };
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const recipe = $derived([
-    { k: "Cards", v: `${totalCards}` },
+    { k: "Cards", v: `${effectiveTotal}` },
     { k: "Source", v: [...selectedSliceTypes].map(cap).join(" + ") || "—" },
     { k: "Step Count", v: cap(stepPreset) },
     { k: "Turns", v: cap(turnPreset) },

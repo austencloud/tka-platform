@@ -109,6 +109,24 @@ export function getAvailableWeights(pool: Map<number, PoolEntry[]>): StepCountWe
   return weights;
 }
 
+/**
+ * LOOP deck-size math. Orientation + grid registers each duplicate every base
+ * card (a card emitted once per selected register × grid mode), so a target deck
+ * size is hit by composing `base` cards and letting the enumeration fan them back
+ * up. `effective` is the true output count — it equals `target` when `target`
+ * divides evenly by the axis multiplier, otherwise the nearest reachable size.
+ * Single source of truth for both the draw label and the compose loop.
+ */
+export function loopDrawCounts(
+  target: number,
+  oriCount: number,
+  gridCount: number,
+): { base: number; effective: number; multiplier: number } {
+  const multiplier = Math.max(1, oriCount * gridCount);
+  const base = Math.max(1, Math.round(target / multiplier));
+  return { base, effective: base * multiplier, multiplier };
+}
+
 export function composeDeck(
   pool: Map<number, PoolEntry[]>,
   weights: StepCountWeight[],

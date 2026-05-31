@@ -6,6 +6,7 @@
   import TnDFamilyCards from "./TnDFamilyCards.svelte";
   import TransformPanel from "./TransformPanel.svelte";
   import LoopComposeBoard from "./LoopComposeBoard.svelte";
+  import { loopDrawCounts } from "../../services/deck-composer";
   import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
   import type { VariationConfig, StartOriMode } from "../../services/deck-variation";
 
@@ -97,10 +98,16 @@
     deckMode === "tnd" ? tndCardCount > 0 : totalWeight > 0
   );
 
+  // LOOP target = final deck size; orientation/grid axes fan a smaller base back
+  // up to it (loopDrawCounts), so the label shows the true emitted count.
+  const loopEffective = $derived(
+    loopDrawCounts(totalCards, startOriModes.size, gridModes.size).effective
+  );
+
   const drawLabel = $derived(
     deckMode === "tnd"
       ? `Draw ${tndCardCount} TnD Cards`
-      : `Draw ${totalCards} Cards`
+      : `Draw ${loopEffective} Cards`
   );
 </script>
 
