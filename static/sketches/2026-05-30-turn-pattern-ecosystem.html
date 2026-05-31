@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Turn Pattern Ecosystem — Drawer Integration Directions</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:#0a0e1a; --panel:#11162a; --ink:#e8ecf6;
+    --muted:rgba(232,236,246,.46); --faint:rgba(232,236,246,.28);
+    --hair:rgba(255,255,255,.08);
+    --blue:#4b7bff; --red:#ff5b6e; --teal:#14b8a6; --violet:#6d4bff;
+    --green:#22c55e; --amber:#f0a83a;
+    font-family:"Inter",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:
+      radial-gradient(1200px 600px at 20% -10%,#16204022,transparent),
+      radial-gradient(900px 500px at 90% 110%,#2a164022,transparent),var(--bg);
+    color:var(--ink);min-height:100vh;padding:24px 26px 80px;}
+  h1{font-size:20px;font-weight:800;letter-spacing:-.02em;margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:12.5px;margin:0 0 8px;max-width:920px;line-height:1.5;}
+  .sub b{color:var(--ink);font-weight:600;}
+  .hint{color:var(--faint);font-size:12px;margin:0 0 20px;}
+  .hint b{color:var(--teal);}
+
+  .cols{display:flex;gap:18px;align-items:flex-start;}
+  .col{flex:1;min-width:0;}
+  .col-head{margin:0 2px 12px;}
+  .col-head .tag{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    color:#fff;padding:3px 9px;border-radius:7px;display:inline-block;margin-bottom:7px;}
+  .col-A .tag{background:linear-gradient(135deg,#3a4a7a,#2c3666);}
+  .col-B .tag{background:linear-gradient(135deg,var(--violet),var(--blue));}
+  .col-C .tag{background:linear-gradient(135deg,var(--teal),#0e8f80);}
+  .col-head .ess{font-size:12.5px;color:var(--muted);line-height:1.45;min-height:54px;}
+  .col-head .ess b{color:var(--ink);font-weight:600;}
+
+  /* structure spine */
+  .spine{display:flex;flex-direction:column;gap:4px;margin:0 2px 12px;
+    padding:11px;border:1px solid var(--hair);border-radius:11px;background:rgba(255,255,255,.02);}
+  .spine .row{display:flex;align-items:center;gap:7px;font-size:12px;}
+  .spine .dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px;}
+  .spine .nm{font-weight:600;}
+  .spine .badge{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.04em;
+    text-transform:uppercase;padding:2px 6px;border-radius:6px;}
+  .b-keep{color:var(--faint);}
+  .b-same .dot{background:var(--muted);}
+  .b-new .dot{background:var(--green);} .b-new .nm{color:#bff0cf;} .b-new .badge{color:#bff0cf;background:rgba(34,197,94,.16);}
+  .b-gone .dot{background:var(--red);} .b-gone .nm{color:var(--faint);text-decoration:line-through;} .b-gone .badge{color:#ffb3bd;background:rgba(255,91,110,.14);}
+  .b-p2 .dot{background:var(--violet);} .b-p2 .nm{color:#c8b6ff;} .b-p2 .badge{color:#c8b6ff;background:rgba(109,75,255,.16);}
+
+  /* drawer */
+  .drawer{background:var(--panel);border:1px solid var(--hair);border-radius:16px;overflow:hidden;
+    box-shadow:0 20px 50px -22px rgba(0,0,0,.6);}
+  .dhead{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--hair);}
+  .dhead .t{display:flex;align-items:center;gap:8px;} .dhead .t i{color:var(--teal);font-size:13px;} .dhead .t b{font-size:13.5px;}
+  .ht{display:flex;gap:3px;} .ht span{font-size:10px;font-weight:600;padding:4px 7px;border-radius:7px;border:1px solid var(--hair);color:var(--muted);}
+  .ht span.on{color:#fff;border-color:transparent;background:rgba(255,255,255,.1);}
+  .scroll{padding:13px 15px 18px;}
+
+  .sec{margin-bottom:16px;} .sec:last-child{margin-bottom:0;}
+  .sh{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px;}
+  .sh .l{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);}
+  .sh .l i{font-size:10px;}
+  .sh .m{font-size:10px;color:var(--faint);}
+  .sec.is-new .sh .l{color:#bff0cf;} .sec.is-p2 .sh .l{color:#c8b6ff;}
+  .p2pill{font-size:8.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#c8b6ff;
+    background:rgba(109,75,255,.16);border:1px solid rgba(109,75,255,.3);padding:1px 6px;border-radius:999px;}
+  .legacypill{font-size:8.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#ffb3bd;
+    background:rgba(255,91,110,.12);border:1px solid rgba(255,91,110,.28);padding:1px 6px;border-radius:999px;}
+
+  .urow{display:flex;gap:5px;}
+  .urow .u{flex:1;text-align:center;padding:7px 0;border-radius:8px;border:1px solid var(--hair);background:rgba(255,255,255,.025);
+    font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .urow .u small{display:block;font-size:7.5px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-top:1px;}
+
+  .cards{display:flex;flex-direction:column;gap:7px;}
+  /* compact preset card: header row + combined strip */
+  .pc{padding:9px 10px;border-radius:11px;border:1px solid var(--hair);background:rgba(255,255,255,.025);}
+  .pc .top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px;}
+  .pc .nm{font-size:13px;font-weight:700;} .pc .pd{font-size:9.5px;color:var(--faint);font-weight:600;font-variant-numeric:tabular-nums;}
+  .strip{display:flex;flex-direction:column;gap:3px;}
+  .lane{display:flex;gap:3px;align-items:center;}
+  .lane.b-lane{border-left:3px solid var(--blue);padding-left:5px;}
+  .lane.r-lane{border-left:3px solid var(--red);padding-left:5px;}
+  .tg{width:26px;font-size:8px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;}
+  .tg.b{color:var(--blue);} .tg.r{color:var(--red);}
+  .cell{flex:1;min-width:0;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;background:rgba(255,255,255,.04);color:var(--faint);}
+  .cell.b{color:#fff;background:rgba(75,123,255,.62);}
+  .cell.r{color:#fff;background:rgba(255,91,110,.6);}
+  .cell.z{color:var(--faint);background:rgba(255,255,255,.035);}
+  .cell.edge{box-shadow:inset -2px 0 0 rgba(255,255,255,.3);}
+
+  /* reversal */
+  .rstrip{display:flex;gap:3px;}
+  .rc{flex:1;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;}
+  .rP{background:linear-gradient(135deg,rgba(75,123,255,.55),rgba(255,91,110,.55));color:#fff;}
+  .rR{background:rgba(255,91,110,.5);color:#fff;}
+  .rB{background:rgba(75,123,255,.55);color:#fff;}
+  .rx{background:rgba(255,255,255,.04);color:var(--faint);}
+
+  .saved{display:flex;flex-direction:column;gap:6px;}
+  .sv{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border-radius:9px;border:1px solid var(--hair);background:rgba(255,255,255,.02);}
+  .sv .nm{font-size:12px;font-weight:600;} .sv .s2{font-size:9.5px;color:var(--faint);} .sv i{color:var(--faint);}
+  .cta{margin-top:7px;width:100%;padding:9px;border-radius:9px;border:1px dashed var(--hair);background:transparent;color:var(--muted);font:inherit;font-weight:600;font-size:11.5px;}
+
+  .templates-chips{display:flex;gap:5px;margin-bottom:8px;}
+  .templates-chips span{font-size:10px;font-weight:700;padding:5px 9px;border-radius:7px;border:1px solid var(--hair);color:var(--muted);}
+  .templates-chips span.on{background:rgba(34,197,94,.16);color:#7ee2a8;border-color:transparent;}
+
+  .legend{margin-top:22px;font-size:11px;color:var(--faint);line-height:1.6;max-width:920px;}
+  .legend b{color:var(--muted);}
+</style>
+</head>
+<body>
+  <h1>Turn Pattern Ecosystem → Sequence Actions Drawer</h1>
+  <p class="sub">Three integration directions, <b>side by side</b>. Phase 1 = turn presets (tile to any length, reuse <b>applyPattern</b>). Phase 2 = reversal patterns (book / red-book / blue-book / long-book / alternating — prop spin flips via <b>transformSequence</b>). Real catalog data.</p>
+  <p class="hint">Each column's <b>structure spine</b> shows exactly which sections it has — that's where the directions differ. Drawer below is the full mock.</p>
+
+  <div class="cols" id="cols"></div>
+
+  <div class="legend">
+    <b>Preset strip:</b> blue / red lanes, number = turns that beat, faint 0 = no turn, right-edge tick = period boundary (repeats to fill length).
+    &nbsp;·&nbsp; <b>Reversal strip:</b> <span style="color:#fff">P</span> both flip · <span style="color:#fff">R</span> red · <span style="color:#fff">B</span> blue · — none.
+    &nbsp;·&nbsp; Spine badges: <span style="color:#bff0cf">NEW</span> added · <span style="color:#ffb3bd">RETIRED</span> removed · <span style="color:#c8b6ff">PHASE 2</span> later.
+  </div>
+
+<script>
+  const TURN_PRESETS=[
+    {label:"Hold 1",period:1,pattern:"1|1"},
+    {label:"Pulse 1",period:2,pattern:"1|1-0|0"},
+    {label:"Trade 1",period:2,pattern:"1|0-0|1"},
+    {label:"½ / 1 Trade",period:2,pattern:"0.5|0-0|1"},
+    {label:"Wave 2·1",period:4,pattern:"2|1-0|0-1|2-0|0"},
+  ];
+  const PORTED=[
+    {label:"Contrast",period:2,pattern:"0|2-2|0"},
+    {label:"Half Steps",period:4,pattern:"0|0-0.5|0.5-1|1-0.5|0.5"},
+  ];
+  const REVERSALS=[
+    {label:"Book",seq:"PPPP"},{label:"Red Book",seq:"RRRR"},{label:"Blue Book",seq:"BBBB"},
+    {label:"Long Book",seq:"P-P-"},{label:"Alternating",seq:"RBRB"},
+  ];
+  const N=8;
+  const parseUnit=p=>p.split("-").map(t=>{const[b,r]=t.split("|");return{b:b.trim(),r:r.trim()};});
+  const tile=(p,n)=>{const u=parseUnit(p);const o=[];for(let i=0;i<n;i++)o.push({...u[i%u.length],edge:(i%u.length)===u.length-1});return o;};
+
+  function pcard(p){
+    const beats=tile(p.pattern,N);
+    const lane=(k,cls)=>beats.map(bt=>{const v=bt[k];const z=(v==="0"||v==="0.0");return `<div class="cell ${z?'z':cls} ${bt.edge?'edge':''}">${z?'0':v}</div>`;}).join("");
+    return `<div class="pc"><div class="top"><span class="nm">${p.label}</span><span class="pd">×${p.period} · ${p.pattern}</span></div>
+      <div class="strip"><div class="lane b-lane"><span class="tg b">Blue</span>${lane("b","b")}</div>
+      <div class="lane r-lane"><span class="tg r">Red</span>${lane("r","r")}</div></div></div>`;
+  }
+  function rcard(p){
+    let c="";for(let i=0;i<N;i++){const s=p.seq[i%p.seq.length];const cl=s==="P"?"rP":s==="R"?"rR":s==="B"?"rB":"rx";c+=`<div class="rc ${cl}">${s==="-"?"":s}</div>`;}
+    return `<div class="pc"><div class="top"><span class="nm">${p.label}</span><span class="pd">${p.seq}</span></div><div class="rstrip">${c}</div></div>`;
+  }
+
+  const secUniform=()=>`<div class="sec"><div class="sh"><span class="l"><i class="fa-solid fa-equals"></i>Uniform</span><span class="m">all beats</span></div>
+    <div class="urow">${[0,1,2,3,"fl"].map(v=>`<div class="u">${v}<small>${v==="fl"?"float":"turns"}</small></div>`).join("")}</div></div>`;
+  const secPresets=()=>`<div class="sec is-new"><div class="sh"><span class="l"><i class="fa-solid fa-layer-group"></i>Presets <span class="p2pill" style="color:#bff0cf;background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.3)">New</span></span><span class="m">tile any length</span></div><div class="cards">${TURN_PRESETS.map(pcard).join("")}</div></div>`;
+  const secTemplates=()=>`<div class="sec"><div class="sh"><span class="l"><i class="fa-solid fa-table-cells"></i>Templates <span class="legacypill">Legacy · 8/16 only</span></span></div>
+    <div class="templates-chips"><span class="on">🟢 Simple</span><span>🟡 Medium</span><span>🔴 Complex</span></div>
+    <div class="cards">${pcard({label:"Zeros",period:1,pattern:"0|0"})}${pcard({label:"Alternating",period:2,pattern:"0|0-1|1"})}</div></div>`;
+  const secPorted=()=>`<div class="sec is-new"><div class="sh"><span class="l"><i class="fa-solid fa-star"></i>Ported Classics <span class="p2pill" style="color:#bff0cf;background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.3)">New</span></span><span class="m">re-tiled</span></div><div class="cards">${PORTED.map(pcard).join("")}</div></div>`;
+  const secReversals=()=>`<div class="sec is-p2"><div class="sh"><span class="l"><i class="fa-solid fa-rotate"></i>Reversals <span class="p2pill">Phase 2</span></span><span class="m">spin flips</span></div><div class="cards">${REVERSALS.map(rcard).join("")}</div></div>`;
+  const secSaved=()=>`<div class="sec"><div class="sh"><span class="l"><i class="fa-solid fa-bookmark"></i>Saved</span><span class="m">yours</span></div>
+    <div class="saved"><div class="sv"><div><div class="nm">My Wave</div><div class="s2">16 beats</div></div><i class="fa-solid fa-trash"></i></div></div>
+    <button class="cta"><i class="fa-solid fa-plus"></i> Save current as pattern</button></div>`;
+
+  const DIRS={
+    A:{tag:"A · keep all",
+      ess:"Add a <b>Presets</b> section, change nothing else. Lowest risk, but the legacy 8/16-only Templates browser stays — three overlapping \"pick a turn pattern\" lists, and Templates still goes empty at 12/20/24 beats.",
+      spine:[["Uniform","same"],["Presets","new"],["Templates","keep"],["Reversals","p2"],["Saved","same"]],
+      build:()=>secUniform()+secPresets()+secTemplates()+secReversals()+secSaved()},
+    B:{tag:"B · presets replace templates",
+      ess:"Tiled <b>Presets</b> become the curated library; retire the 8/16-only Templates browser. One mental model (Uniform / Presets / Saved), fixes the length gap — but Pyramid / Half Steps / Contrast / Diverge are dropped unless re-authored.",
+      spine:[["Uniform","same"],["Presets","new"],["Templates","gone"],["Reversals","p2"],["Saved","same"]],
+      build:()=>secUniform()+secPresets()+secReversals()+secSaved()},
+    C:{tag:"C · replace + port best",
+      ess:"Replace Templates, but first re-tile the genuinely good ones (Contrast, Half Steps) into period-form so they tile any length too. Best coverage, one unified string model. Cost: hand-port ~5 patterns; intrinsically length-bound ones (Pyramid) still drop.",
+      spine:[["Uniform","same"],["Presets","new"],["Ported Classics","new"],["Reversals","p2"],["Saved","same"]],
+      build:()=>secUniform()+secPresets()+secPorted()+secReversals()+secSaved()},
+  };
+
+  const badgeText={same:"keep",new:"new",gone:"retired",p2:"phase 2",keep:"legacy"};
+  function spine(items){
+    return `<div class="spine">`+items.map(([nm,k])=>{
+      const cls={same:"b-same",new:"b-new",gone:"b-gone",p2:"b-p2",keep:"b-same"}[k];
+      const showBadge=k!=="same";
+      return `<div class="row ${cls}"><span class="dot"></span><span class="nm">${nm}</span>${showBadge?`<span class="badge">${badgeText[k]}</span>`:`<span class="badge b-keep">keep</span>`}</div>`;
+    }).join("")+`</div>`;
+  }
+
+  document.getElementById("cols").innerHTML=["A","B","C"].map(id=>{
+    const d=DIRS[id];
+    return `<div class="col col-${id}">
+      <div class="col-head"><span class="tag">${d.tag}</span><div class="ess">${d.ess}</div></div>
+      ${spine(d.spine)}
+      <div class="drawer"><div class="dhead"><div class="t"><i class="fa-solid fa-wand-magic-sparkles"></i><b>Turn Patterns</b></div>
+      <div class="ht"><span>Blue</span><span>Red</span><span class="on">Both</span></div></div>
+      <div class="scroll">${d.build()}</div></div></div>`;
+  }).join("");
+</script>
+</body>
+</html>
