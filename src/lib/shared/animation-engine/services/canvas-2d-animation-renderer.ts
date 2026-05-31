@@ -26,18 +26,18 @@
  * - Canvas2DVisibilityFadeManager: Props and trails visibility transitions
  */
 
-import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/FireTypes";
+import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/fire-types";
 import type {
-} from "$lib/shared/animation-engine/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-types";
 import type {
   RenderSceneParams,
-} from "$lib/shared/animation-engine/domain/types/AnimationRenderTypes";
+} from "$lib/shared/animation-engine/domain/types/animation-render-types";
 
 export type {
   AdditionalLayerRenderData,
   AnimationVisibilitySettings,
   RenderSceneParams,
-} from "$lib/shared/animation-engine/domain/types/AnimationRenderTypes";
+} from "$lib/shared/animation-engine/domain/types/animation-render-types";
 import { Canvas2DApplicationManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-application-manager";
 import { Canvas2DImageLoader } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-image-loader";
 import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-trail-renderer";
