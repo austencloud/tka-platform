@@ -9,12 +9,11 @@
 
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 import { getWordSequenceGenerator } from "$lib/features/create/spell/get-word-sequence-generator";
-import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequenceMotionLoader";
+import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
   import { onMount, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
-  import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
   import type { WordSequenceGenerator } from "$lib/features/create/spell/services/word-sequence-generator";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { InlineSequencePlayer } from "../types";
@@ -28,7 +27,6 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 
   // Services (resolved from DI container)
   let controller = $state<AnimationPlaybackController | null>(null);
-  let motionLoader = $state<SequenceMotionLoader | null>(null);
   let sequenceGenerator = $state<WordSequenceGenerator | null>(null);
 
   // State
@@ -59,7 +57,6 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
   // Initialize services on mount
   onMount(() => {
     try {
-      motionLoader = getSequenceMotionLoader();
       controller = getAnimationPlaybackController();
       sequenceGenerator = getWordSequenceGenerator();
       loading = false;
@@ -86,11 +83,10 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
   $effect(() => {
     // Read reactive dependencies
     const currentController = controller;
-    const currentMotionLoader = motionLoader;
     const currentGenerator = sequenceGenerator;
     const currentWord = sequence.word;
 
-    if (!currentController || !currentMotionLoader || !currentGenerator) return;
+    if (!currentController || !currentGenerator) return;
     if (currentWord === lastWord) return;
 
     untrack(async () => {
@@ -130,7 +126,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
         generatedSequence = result.sequence;
 
         // Load motion data (enriches with full motion details)
-        const fullSeq = await currentMotionLoader!.ensureMotionData(result.sequence);
+        const fullSeq = await ensureMotionData(result.sequence);
         if (!fullSeq) {
           error = "Failed to load sequence motion data";
           loading = false;

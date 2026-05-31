@@ -7,12 +7,11 @@
 -->
 <script lang="ts">
 
-import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequenceMotionLoader";
+import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
 	import { onMount, onDestroy, untrack } from "svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
-	import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
 	import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 	import { createPlaybackControllerFactory } from "$lib/shared/animation-engine/createPlaybackControllerFactory";
 
@@ -35,7 +34,6 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	} = $props();
 
 	let controller = $state<AnimationPlaybackController | null>(null);
-	let motionLoader = $state<SequenceMotionLoader | null>(null);
 	const animState = createAnimationPanelState();
 	let initialized = $state(false);
 	let totalSteps = $state(0);
@@ -62,7 +60,6 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 
 	onMount(async () => {
 		try {
-			motionLoader = getSequenceMotionLoader();
 			controller = createPlaybackControllerFactory();
 			loading = false;
 		} catch (err) {
@@ -80,16 +77,15 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	// Initialize controller with sequence (but do NOT start its playback loop)
 	$effect(() => {
 		void controller;
-		void motionLoader;
 
-		if (!controller || !motionLoader) return;
+		if (!controller) return;
 
 		untrack(async () => {
 			// Stop any existing playback
 			if (animState.isPlaying) controller!.togglePlayback();
 			animState.reset();
 
-			const fullSeq = await motionLoader!.ensureMotionData(sequence);
+			const fullSeq = await ensureMotionData(sequence);
 			if (!fullSeq) {
 				error = "Failed to load sequence motion data";
 				return;

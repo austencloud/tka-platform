@@ -6,32 +6,30 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
+import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 
-export class SequenceMotionLoader {
-  constructor(private readonly browseLoader: PublicSequencesLoader) {}
+export async function ensureMotionData(
+  seq: SequenceData
+): Promise<SequenceData | null> {
+  // Check if sequence already has motion data
+  const hasMotions = seq.steps?.some(
+    (b) => b?.motions?.blue && b?.motions?.red
+  );
+  if (hasMotions) return seq;
 
-  async ensureMotionData(seq: SequenceData): Promise<SequenceData | null> {
-    // Check if sequence already has motion data
-    const hasMotions = seq.steps?.some(
-      (b) => b?.motions?.blue && b?.motions?.red
-    );
-    if (hasMotions) return seq;
-
-    // Try to load from gallery using word/name (gallery sequences)
-    const galleryId = seq.word || seq.name;
-    if (galleryId) {
-      try {
-        const loaded = await this.browseLoader.loadFullSequenceData(galleryId);
-        if (loaded?.steps?.some((b) => b?.motions?.blue && b?.motions?.red)) {
-          return loaded;
-        }
-      } catch (err) {
-        console.warn(`Could not load sequence from gallery: ${galleryId}`, err);
+  // Try to load from gallery using word/name (gallery sequences)
+  const galleryId = seq.word || seq.name;
+  if (galleryId) {
+    try {
+      const loaded = await getBrowseLoader().loadFullSequenceData(galleryId);
+      if (loaded?.steps?.some((b) => b?.motions?.blue && b?.motions?.red)) {
+        return loaded;
       }
+    } catch (err) {
+      console.warn(`Could not load sequence from gallery: ${galleryId}`, err);
     }
-
-    // Return original sequence if we couldn't load motion data
-    return seq;
   }
+
+  // Return original sequence if we couldn't load motion data
+  return seq;
 }

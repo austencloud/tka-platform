@@ -17,13 +17,12 @@
 <script lang="ts">
 
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
-import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequenceMotionLoader";
+import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
 	import { onMount, onDestroy, untrack } from "svelte";
 	import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
-	import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
 	import { createAnimationPanelState, type AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 	import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 	import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
@@ -84,7 +83,6 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 
 	// Services (standalone mode only)
 	let controller = $state<AnimationPlaybackController | null>(null);
-	let motionLoader = $state<SequenceMotionLoader | null>(null);
 
 	// State (standalone mode only)
 	const animState = createAnimationPanelState();
@@ -170,7 +168,6 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 		}
 
 		try {
-			motionLoader = getSequenceMotionLoader();
 			controller = getAnimationPlaybackController();
 			loading = false;
 			// Expose toggle function to parent for keyboard control
@@ -190,13 +187,12 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	});
 
 	// Watch sequence changes (standalone mode)
-	// IMPORTANT: Explicitly track controller and motionLoader so effect re-runs when they're set
+	// IMPORTANT: Explicitly track controller so effect re-runs when it's set
 	$effect(() => {
-		// Track dependencies to ensure effect re-runs when controller/motionLoader are set
+		// Track dependencies to ensure effect re-runs when controller is set
 		void controller;
-		void motionLoader;
 
-		if (useContext || !controller || !motionLoader) return;
+		if (useContext || !controller) return;
 
 		// Create content hash to detect edits (same ID, different content)
 		// Include steps data to detect any beat modifications
@@ -215,7 +211,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 			if (animState?.isPlaying) controller?.togglePlayback();
 			animState?.reset();
 
-			const fullSeq = await motionLoader!.ensureMotionData(sequence);
+			const fullSeq = await ensureMotionData(sequence);
 			if (!fullSeq) {
 				error = "Failed to load sequence";
 				return;

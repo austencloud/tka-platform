@@ -8,14 +8,13 @@
 <script lang="ts">
 
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
-import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequenceMotionLoader";
+import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
 	import { onMount, onDestroy, untrack } from "svelte";
 	import { getFuseContext } from "../context/fuse-context";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
 	import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
-	import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
 
 	const { state: fuseState } = getFuseContext();
@@ -24,7 +23,6 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 
 	// Animation playback state
 	let controller = $state<AnimationPlaybackController | null>(null);
-	let motionLoader = $state<SequenceMotionLoader | null>(null);
 	const animState = createAnimationPanelState();
 
 	let loading = $state(true);
@@ -65,7 +63,6 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 
 	onMount(async () => {
 		try {
-			motionLoader = getSequenceMotionLoader();
 			controller = getAnimationPlaybackController();
 			loading = false;
 		} catch (err) {
@@ -83,16 +80,15 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	// Initialize playback when controller and sequence are ready - autoplay immediately
 	$effect(() => {
 		void controller;
-		void motionLoader;
 		const seq = sequence;
 
-		if (!controller || !motionLoader || !seq) return;
+		if (!controller || !seq) return;
 
 		untrack(async () => {
 			if (animState.isPlaying) controller!.togglePlayback();
 			animState.reset();
 
-			const fullSeq = await motionLoader!.ensureMotionData(seq);
+			const fullSeq = await ensureMotionData(seq);
 			if (!fullSeq) {
 				error = "Failed to load sequence motion data";
 				return;
