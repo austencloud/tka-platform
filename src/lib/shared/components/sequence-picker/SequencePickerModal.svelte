@@ -4,7 +4,7 @@
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
+  import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import { onDestroy } from "svelte";
 
@@ -56,12 +56,10 @@
 
   onDestroy(() => engine.destroy());
 
-  const sequenceDataProvider = getSequenceDataProvider();
-
   async function handleSelect(sequence: SequenceData) {
     isSelectingSequence = true;
     try {
-      const fullData = await sequenceDataProvider.hydrateSequence(sequence);
+      const fullData = await hydrateSequenceData(sequence);
       onSelect(fullData ?? sequence);
       onClose();
     } finally {

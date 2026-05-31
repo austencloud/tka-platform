@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
 
-import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
+import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { onMount, onDestroy } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
@@ -140,8 +140,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 			}
 
 			// Source 3: Unified provider - tries local repo then public Firestore
-			const sequenceDataProvider = getSequenceDataProvider();
-			const fromProvider = await sequenceDataProvider.loadByIdentifier(session.sequenceWord);
+			const fromProvider = await loadByIdentifier(session.sequenceWord);
 			if (fromProvider) {
 				sequence = fromProvider;
 				return;

@@ -4,7 +4,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
 import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 // propInterpolator and sequenceConverter are now module-level functions injected directly
 import { getLanSyncCoordinator } from "$lib/shared/lan-sync/get-lan-sync-coordinator";
-import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
+import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
@@ -164,7 +164,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { SequenceDataProvider } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -245,7 +244,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   let lastLoadedSequenceId: string | null = null;
 
   let playbackControllerRef = $state<AnimationPlaybackController | null>(null);
-  let sequenceDataProvider: SequenceDataProvider | null = null;
   let hapticService: HapticFeedback | null = null;
 
   const playback = createPlaybackController({ modalAnimationState, initialBpm: 60, initialStep: 0 });
@@ -557,7 +555,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   async function loadServices() {
     try {
       playbackControllerRef = getAnimationPlaybackController();
-      sequenceDataProvider = getSequenceDataProvider();
       hapticService = getHapticFeedback();
 
       playback.setPlaybackController(playbackControllerRef);
@@ -575,7 +572,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   }
 
   async function initializeAnimation(seq: SequenceData) {
-    if (!playbackControllerRef || !sequenceDataProvider) return;
+    if (!playbackControllerRef) return;
 
     const seqId = seq.id || seq.word || "unknown";
     if (seqId === lastLoadedSequenceId) return;
@@ -585,7 +582,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     modalAnimationState.setError(null);
 
     try {
-      const loadedSequence = await sequenceDataProvider.hydrateSequence(seq);
+      const loadedSequence = await hydrateSequenceData(seq);
       if (!loadedSequence) throw new Error("Failed to load sequence");
 
       cellPreWarmer.preWarmSequence(loadedSequence, "user-blocking");

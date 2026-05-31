@@ -13,7 +13,7 @@ import type { SequenceData } from '$lib/shared/foundation/domain/models/Sequence
 import type { ViewingContext } from "./presentation-resolver";
 import { openSequenceOverlay } from '../state/sequence-viewer-overlay-state.svelte';
 import { cellPreWarmer } from './cell-pre-warmer';
-import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
+import { getCached } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
 
 export interface OpenSequenceViewerOptions {
 	/** Path to return to when closing (e.g., "/browse/gallery") */
@@ -53,8 +53,7 @@ export function openSequenceViewer(
 	// versions loaded from IndexedDB or public index may lack ownerId.
 	let seqToOpen = sequence;
 	try {
-		const provider = getSequenceDataProvider();
-		const cached = provider?.getCached(sequence);
+		const cached = getCached(sequence);
 		if (cached) {
 			seqToOpen = sequence.ownerId && !cached.ownerId
 				? { ...cached, ownerId: sequence.ownerId }
