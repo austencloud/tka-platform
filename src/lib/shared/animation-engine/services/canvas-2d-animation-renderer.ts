@@ -151,6 +151,26 @@ export class Canvas2DAnimationRenderer {
   // Track current grid mode for resize operations
   private currentGridMode: string = "diamond";
 
+  // Cached off-white tinted grid for dark mode. ctx.filter("invert") is
+  // silently ignored on iOS Safari, leaving the grid pure black and invisible
+  // on the dark canvas. We pre-tint the grid on an offscreen canvas instead
+  // (drawImage + "source-in" fill), which iOS does support. Rebuilt only when
+  // the source grid image or canvas size changes.
+  private tintedGridCanvas: HTMLCanvasElement | null = null;
+  private tintedGridImageRef: HTMLImageElement | null = null;
+  private tintedGridSize = 0;
+
+  // Cached inverted glyph copies for dark mode. The bottom-left glyph is drawn
+  // from a serialized SVG whose dark-mode inversion came from an SVG filter that
+  // iOS Safari drops when the SVG is rasterized as an <img>, leaving the glyph
+  // black (invisible). We invert per-pixel on an offscreen canvas instead
+  // (replicates invert(0.85), preserves any colored sub-glyph elements). Keyed
+  // by source image; rebuilt only when the glyph image or size changes.
+  private invertedGlyphCache = new Map<
+    HTMLImageElement,
+    { canvas: HTMLCanvasElement; size: number }
+  >();
+
   constructor() {
     this.appManager = new Canvas2DApplicationManager();
     this.imageLoader = new Canvas2DImageLoader();
@@ -162,6 +182,94 @@ export class Canvas2DAnimationRenderer {
     this.bluePropFadeManager = new Canvas2DVisibilityFadeManager(300, 200);
     this.redPropFadeManager = new Canvas2DVisibilityFadeManager(300, 200);
     this.trailsFadeManager = new Canvas2DVisibilityFadeManager(350, 250);
+  }
+
+  /**
+   * Return an off-white tinted copy of the grid image for dark mode.
+   *
+   * Uses an offscreen canvas with "source-in" compositing rather than
+   * ctx.filter — iOS Safari silently ignores CanvasRenderingContext2D.filter,
+   * which left the grid pure black (invisible) on the dark animation canvas.
+   * #d9d9d9 matches the old invert(0.85) output (0.85 * 255 ≈ 217). Cached
+   * across frames; rebuilt only when the source image or size changes.
+   */
+  private getTintedGrid(
+    gridImage: HTMLImageElement,
+    canvasSize: number
+  ): HTMLCanvasElement | null {
+    if (
+      this.tintedGridCanvas &&
+      this.tintedGridImageRef === gridImage &&
+      this.tintedGridSize === canvasSize
+    ) {
+      return this.tintedGridCanvas;
+    }
+
+    const offscreen = this.tintedGridCanvas ?? document.createElement("canvas");
+    offscreen.width = canvasSize;
+    offscreen.height = canvasSize;
+    const offCtx = offscreen.getContext("2d");
+    if (!offCtx) return null;
+
+    offCtx.clearRect(0, 0, canvasSize, canvasSize);
+    // 1. Draw the grid (black ink) as an alpha mask.
+    offCtx.drawImage(gridImage, 0, 0, canvasSize, canvasSize);
+    // 2. Recolor only the drawn pixels to off-white.
+    offCtx.globalCompositeOperation = "source-in";
+    offCtx.fillStyle = "#d9d9d9";
+    offCtx.fillRect(0, 0, canvasSize, canvasSize);
+    offCtx.globalCompositeOperation = "source-over";
+
+    this.tintedGridCanvas = offscreen;
+    this.tintedGridImageRef = gridImage;
+    this.tintedGridSize = canvasSize;
+    return offscreen;
+  }
+
+  /**
+   * Return an off-white tinted copy of a glyph image for dark mode.
+   *
+   * The glyph's dark-mode inversion normally came from an SVG filter, which iOS
+   * Safari ignores when the SVG is rasterized as an <img> (glyph stayed black /
+   * invisible). We recolor on an offscreen canvas with "source-in" — the SAME
+   * compositing the grid uses, which is confirmed working on iPhone. We do NOT
+   * use getImageData here: on iOS, drawing an SVG data-URL image taints the
+   * canvas, so getImageData throws a SecurityError and the glyph draw aborts.
+   * #d9d9d9 matches the grid and the old invert(0.85). The glyph is black
+   * line-art, so flattening reads the same as inverting. Cached per source
+   * image; rebuilt only when the image or size change.
+   */
+  private getTintedGlyph(
+    image: HTMLImageElement,
+    canvasSize: number
+  ): HTMLCanvasElement | null {
+    const cached = this.invertedGlyphCache.get(image);
+    if (cached && cached.size === canvasSize) {
+      return cached.canvas;
+    }
+
+    const offscreen = cached?.canvas ?? document.createElement("canvas");
+    offscreen.width = canvasSize;
+    offscreen.height = canvasSize;
+    const offCtx = offscreen.getContext("2d");
+    if (!offCtx) return null;
+
+    offCtx.clearRect(0, 0, canvasSize, canvasSize);
+    // 1. Draw the glyph (black ink) as an alpha mask.
+    offCtx.drawImage(image, 0, 0, canvasSize, canvasSize);
+    // 2. Recolor only the drawn pixels to off-white.
+    offCtx.globalCompositeOperation = "source-in";
+    offCtx.fillStyle = "#d9d9d9";
+    offCtx.fillRect(0, 0, canvasSize, canvasSize);
+    offCtx.globalCompositeOperation = "source-over";
+
+    // Bound the cache (current + previous glyph during a crossfade + slack).
+    if (this.invertedGlyphCache.size > 8) {
+      const oldest = this.invertedGlyphCache.keys().next().value;
+      if (oldest !== undefined) this.invertedGlyphCache.delete(oldest);
+    }
+    this.invertedGlyphCache.set(image, { canvas: offscreen, size: canvasSize });
+    return offscreen;
   }
 
   async initialize(
@@ -282,12 +390,14 @@ export class Canvas2DAnimationRenderer {
       ctx.save();
       ctx.globalAlpha = gridFadeState.alpha;
 
-      // In Dark Mode, invert the grid colors so black points become off-white
+      // In Dark Mode the grid (black ink) must render off-white. ctx.filter is
+      // unsupported on iOS Safari, so we draw a pre-tinted offscreen copy
+      // instead of inverting at draw time (which left the grid black on iPhone).
       const isDarkMode = this.appManager.isDarkModeEnabled();
-      if (isDarkMode) {
-        ctx.filter = "invert(0.85)"; // Invert to off-white (not pure white)
-      }
-      ctx.drawImage(gridImage, 0, 0, canvasSize, canvasSize);
+      const tinted = isDarkMode
+        ? this.getTintedGrid(gridImage, canvasSize)
+        : null;
+      ctx.drawImage(tinted ?? gridImage, 0, 0, canvasSize, canvasSize);
       ctx.restore();
     }
 
@@ -667,19 +777,29 @@ export class Canvas2DAnimationRenderer {
     // Get fade state
     const fadeState = this.fadeManager.updateFadeProgress(currentTime);
 
+    // In dark mode draw a per-pixel-inverted copy (iOS ignores the glyph's SVG
+    // invert filter when rasterized, leaving it black/invisible on the dark canvas).
+    const isDarkMode = this.appManager.isDarkModeEnabled();
+
     // Draw previous glyph (fading out)
     if (previousImage && !fadeState.isComplete) {
+      const img = isDarkMode
+        ? (this.getTintedGlyph(previousImage, canvasSize) ?? previousImage)
+        : previousImage;
       ctx.save();
       ctx.globalAlpha = fadeState.previousAlpha;
-      ctx.drawImage(previousImage, 0, 0, canvasSize, canvasSize);
+      ctx.drawImage(img, 0, 0, canvasSize, canvasSize);
       ctx.restore();
     }
 
     // Draw current glyph
     if (currentImage) {
+      const img = isDarkMode
+        ? (this.getTintedGlyph(currentImage, canvasSize) ?? currentImage)
+        : currentImage;
       ctx.save();
       ctx.globalAlpha = fadeState.isComplete ? 1 : fadeState.currentAlpha;
-      ctx.drawImage(currentImage, 0, 0, canvasSize, canvasSize);
+      ctx.drawImage(img, 0, 0, canvasSize, canvasSize);
       ctx.restore();
     }
 
@@ -714,5 +834,8 @@ export class Canvas2DAnimationRenderer {
     this.trailsFadeManager.reset();
     this.imageLoader.destroy();
     this.appManager.destroy();
+    this.invertedGlyphCache.clear();
+    this.tintedGridCanvas = null;
+    this.tintedGridImageRef = null;
   }
 }
