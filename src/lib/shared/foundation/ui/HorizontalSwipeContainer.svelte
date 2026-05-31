@@ -328,12 +328,21 @@
   .embla {
     position: relative;
     overflow: hidden;
+    /* Column flex + a small bottom gap so the viewport never extends all the
+       way to the bottom nav. The grid sizes itself to the viewport height, so
+       this gap keeps the last pictograph row clear of the nav on short devices
+       (the original clip bug). Pagination dots are disabled (showIndicators),
+       so this gap replaces the space they used to reserve. */
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 10px;
   }
 
   .embla__viewport {
     overflow: hidden;
     width: 100%;
-    height: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
     /* Dynamic padding to prevent content from being clipped at top and bottom
        The panel-content applies a translateY transform to center content,
        which can push headers/labels above the viewport and bottom content below.
@@ -455,11 +464,12 @@
   }
 
   .embla__dots {
+    flex: 0 0 auto;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    margin-top: 1.8rem;
+    margin-top: 0.4rem;
   }
 
   .embla__dot {

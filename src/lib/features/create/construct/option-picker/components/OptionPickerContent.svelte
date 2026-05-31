@@ -456,6 +456,30 @@ Uses organizer and sizer services for section grouping and sizing.
     position: relative;
   }
 
+  /* Short option-picker areas (iPhone SE: ~275px): a 4x4 grid of min-44px
+     touch targets + the dots row won't fit if the filter chip also claims a
+     full row. Float the chip into the top-left arrow gutter (icon-only) so the
+     grid reclaims that row. The grid stays centered, so symmetry is preserved,
+     and the gutter (reserved for the swipe arrow, which sits mid-height) means
+     the chip never covers a pictograph. Queries .option-picker-content. */
+  @container (max-height: 340px) {
+    .filter-header {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: auto;
+      z-index: 5;
+    }
+    .filter-toggle.mobile {
+      min-width: var(--min-touch-target, 44px);
+      padding: 0;
+      gap: 0;
+    }
+    .filter-toggle .filter-label {
+      display: none;
+    }
+  }
+
   .filter-toggle {
     display: flex;
     align-items: center;

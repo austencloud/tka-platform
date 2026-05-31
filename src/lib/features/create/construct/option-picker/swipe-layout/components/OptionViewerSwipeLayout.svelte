@@ -106,7 +106,7 @@ Features:
 
 <div class="swipe-layout">
   <HorizontalSwipeContainer
-    showIndicators={true}
+    showIndicators={false}
     {initialPanelIndex}
     onPanelChange={handlePanelChange}
     onContentAreaChange={handleContentAreaChange}

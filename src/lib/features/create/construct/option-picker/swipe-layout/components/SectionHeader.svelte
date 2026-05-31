@@ -64,6 +64,17 @@ Styling: Uses CSS cascade from parent OptionPickerContent via custom properties:
     width: 100%;
   }
 
+  /* On a very short option-picker area (iPhone SE: ~275px tall), the type
+     heading's ~41px pushes the 4th pictograph row under the bottom nav. Drop
+     the heading entirely so the grid reclaims the space — the type is still
+     conveyed by each tile's letter label. Queries the nearest size container,
+     .option-picker-content. Taller phones (~420px+) keep the heading. */
+  @container (max-height: 340px) {
+    .section-header {
+      display: none;
+    }
+  }
+
   .header-layout {
     display: flex;
     align-items: center;
