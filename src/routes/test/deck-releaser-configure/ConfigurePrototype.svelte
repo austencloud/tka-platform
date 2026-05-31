@@ -14,7 +14,7 @@
   import TnDFamilyCards from "$lib/features/choreo-card/components/deck-releaser/TnDFamilyCards.svelte";
   import TransformPanel from "$lib/features/choreo-card/components/deck-releaser/TransformPanel.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
-  import LoopConfigurePrototype from "./LoopConfigurePrototype.svelte";
+  import LoopComposeBoard from "$lib/features/choreo-card/components/deck-releaser/LoopComposeBoard.svelte";
   import type { TnDFamilyOption, TnDTurnPatternOption } from "$lib/features/choreo-card/services/deck-composer";
   import type { ResolvedReversalPattern } from "$lib/features/choreo-card/domain/reversal-transform";
   import type { StartOriMode, VariationConfig } from "$lib/features/choreo-card/services/deck-variation";
@@ -58,7 +58,6 @@
     onTotalChange: (n: number) => void;
     onSliceToggle: (s: "halved" | "quartered") => void;
     onWeightChange: (stepCount: number, weight: number) => void;
-    onApplyPreset: (weights: Record<number, number>) => void;
     onVariationChange: (c: VariationConfig) => void;
   }
 
@@ -93,7 +92,6 @@
     onTotalChange,
     onSliceToggle,
     onWeightChange,
-    onApplyPreset,
     onVariationChange,
   }: Props = $props();
 
@@ -129,20 +127,19 @@
   </header>
 
   {#if deckMode === "loop"}
-    <LoopConfigurePrototype
+    <LoopComposeBoard
       {weights}
       {totalCards}
-      {sources}
-      {selectedSlices}
+      sourceSummaries={sources}
+      selectedSliceTypes={selectedSlices}
       {variationConfig}
       {startOriModes}
       {gridModes}
       {reversalPattern}
-      {onTotalChange}
-      {onSliceToggle}
       {onWeightChange}
-      {onApplyPreset}
-      {onVariationChange}
+      onTotalCardsChange={onTotalChange}
+      onSliceTypeToggle={onSliceToggle}
+      onVariationConfigChange={onVariationChange}
       {onToggleStartOriMode}
       {onToggleGridMode}
       {onReversalChange}

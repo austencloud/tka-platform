@@ -63,10 +63,6 @@
     turnFrequency: 0.5,
     enabledTurnPatterns: ["hold-1", "pulse-1", "trade-1", "half-trade", "wave-21"],
   });
-
-  function applyStepPreset(p: Record<number, number>) {
-    weights = weights.map((w) => (p[w.stepCount] !== undefined ? { ...w, weight: p[w.stepCount]! } : w));
-  }
   let selectedTnDFamilies = $state<Set<string>>(new Set(["split-opp"]));
   let selectedTnDTurnPatterns = $state<Set<string>>(
     new Set(["0|0", "0.5|0.5", "1|1", "1.5|1.5", "2|2", "2.5|2.5", "3|3"]),
@@ -191,7 +187,6 @@
       onSliceToggle={(s) => (selectedSlices = toggleIn(selectedSlices, s))}
       onWeightChange={(stepCount, weight) =>
         (weights = weights.map((w) => (w.stepCount === stepCount ? { ...w, weight } : w)))}
-      onApplyPreset={applyStepPreset}
       onVariationChange={(c) => (variationConfig = c)}
     />
   </div>

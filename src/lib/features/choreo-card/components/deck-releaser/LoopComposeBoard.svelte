@@ -1,71 +1,62 @@
 <script lang="ts">
   /**
-   * LoopConfigurePrototype — de-overwhelmed LOOP board for "Compose Your Catalog".
+   * LoopComposeBoard — the de-overwhelmed LOOP board for "Compose Your Catalog".
    *
-   * The old board buried the user in abstract numeric knobs (4 weight sliders +
-   * %, ~cards, pool counts, two competing preset rows, oversized buttons). This
-   * surfaces only high-level choices and hides every precision control behind an
-   * opt-in disclosure:
+   * Surfaces only high-level choices; precision folds behind an opt-in disclosure:
+   *   Left   — Source decks · quiet Deck Size · live "This Deck" recipe
+   *   Center — Deck Shape: Step Count + Turn Variation single-tap rows, with a
+   *            "Customize mix & turns" disclosure for the weight sliders, turn
+   *            density, and turn-pattern toggles.
+   *   Right  — shared Transform rail (Orientations · Grid · Reversal), identical
+   *            to the TnD board; the Reversal spin grid stays folded by default.
    *
-   *   Resting view — Source · Size (quiet) · Step Count preset row · Turn
-   *   Variation preset row · shared Transform rail. ~4 real decisions.
+   * Real primitives only (SegmentedControl, AxisCardGroup, FilterChipBase,
+   * CollapsibleLabSection, TransformPanel). Color is reserved for the elemental
+   * families — every control here is mono accent.
    *
-   *   "Customize mix & turns" (collapsed) — the 4 step-weight sliders + pool
-   *   counts, turn-frequency slider, and turn-pattern toggle chips, for power use.
-   *
-   * Real primitives: SegmentedControl (single-select preset rows + size),
-   * AxisCardGroup (source), CollapsibleLabSection (disclosure), FilterChipBase
-   * (turn-pattern toggles), TransformPanel (shared rail). Color stays reserved
-   * for the elemental families — every control here is mono accent.
+   * Design: docs/superpowers/specs/active/2026-05-30-loop-composer-deoverwhelm-design.md
    */
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
-  import AxisCardGroup from "$lib/features/choreo-card/components/deck-releaser/AxisCardGroup.svelte";
-  import TransformPanel from "$lib/features/choreo-card/components/deck-releaser/TransformPanel.svelte";
+  import AxisCardGroup from "./AxisCardGroup.svelte";
+  import TransformPanel from "./TransformPanel.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";
-  import { TURN_PATTERNS, type VariationConfig, type StartOriMode } from "$lib/features/choreo-card/services/deck-variation";
-  import type { ResolvedReversalPattern } from "$lib/features/choreo-card/domain/reversal-transform";
-  import type { StepCountWeight } from "$lib/features/choreo-card/domain/models/DeckRelease";
-
-  interface SourceSummary {
-    sliceType: "halved" | "quartered";
-    catalogCount: number;
-    sequenceCount: number;
-  }
+  import { TURN_PATTERNS, type VariationConfig, type StartOriMode } from "../../services/deck-variation";
+  import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
+  import type { StepCountWeight } from "../../domain/models/DeckRelease";
+  import type { CatalogSourceSummary } from "../../services/deck-composer";
 
   interface Props {
     weights: StepCountWeight[];
     totalCards: number;
-    sources: SourceSummary[];
-    selectedSlices: Set<"halved" | "quartered">;
+    sourceSummaries: CatalogSourceSummary[];
+    selectedSliceTypes: Set<"halved" | "quartered">;
     variationConfig: VariationConfig;
     startOriModes: Set<StartOriMode>;
     gridModes: Set<"diamond" | "box">;
-    reversalPattern: ResolvedReversalPattern | null;
-    onTotalChange: (n: number) => void;
-    onSliceToggle: (s: "halved" | "quartered") => void;
+    reversalPattern?: ResolvedReversalPattern | null;
     onWeightChange: (stepCount: number, weight: number) => void;
-    onApplyPreset: (weights: Record<number, number>) => void;
-    onVariationChange: (c: VariationConfig) => void;
-    onToggleStartOriMode: (m: StartOriMode) => void;
-    onToggleGridMode: (m: "diamond" | "box") => void;
-    onReversalChange: (p: ResolvedReversalPattern) => void;
+    onTotalCardsChange: (total: number) => void;
+    onSliceTypeToggle: (sliceType: "halved" | "quartered") => void;
+    onVariationConfigChange: (config: VariationConfig) => void;
+    onToggleStartOriMode: (mode: StartOriMode) => void;
+    onToggleGridMode: (mode: "diamond" | "box") => void;
+    onReversalChange?: (pattern: ResolvedReversalPattern) => void;
   }
 
   let {
     weights,
     totalCards,
-    sources,
-    selectedSlices,
+    sourceSummaries,
+    selectedSliceTypes,
     variationConfig,
     startOriModes,
     gridModes,
-    reversalPattern,
-    onTotalChange,
-    onSliceToggle,
+    reversalPattern = null,
     onWeightChange,
-    onApplyPreset,
-    onVariationChange,
+    onTotalCardsChange,
+    onSliceTypeToggle,
+    onVariationConfigChange,
     onToggleStartOriMode,
     onToggleGridMode,
     onReversalChange,
@@ -81,16 +72,20 @@
   };
   const TURN_PRESETS: Record<string, number> = { clean: 0, sprinkle: 0.4, spicy: 0.7 };
 
-  let stepPreset = $state<string>("advanced");
+  let stepPreset = $state<string>("balanced");
   let turnPreset = $state<string>("sprinkle");
 
   function selectStep(id: string) {
     stepPreset = id;
-    onApplyPreset(STEP_PRESETS[id]!);
+    const preset = STEP_PRESETS[id]!;
+    for (const w of weights) {
+      const target = preset[w.stepCount];
+      if (target !== undefined) onWeightChange(w.stepCount, target);
+    }
   }
   function selectTurn(id: string) {
     turnPreset = id;
-    onVariationChange({ ...variationConfig, turnFrequency: TURN_PRESETS[id]! });
+    onVariationConfigChange({ ...variationConfig, turnFrequency: TURN_PRESETS[id]! });
   }
 
   const totalWeight = $derived(weights.reduce((s, w) => s + w.weight, 0));
@@ -102,7 +97,7 @@
   }
 
   const sourceOptions = $derived(
-    sources.map((s) => ({
+    sourceSummaries.map((s) => ({
       id: s.sliceType,
       label: s.sliceType === "halved" ? "Halved" : "Quartered",
       icon: s.sliceType === "halved" ? "fa-circle-half-stroke" : "fa-table-cells-large",
@@ -115,7 +110,7 @@
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const recipe = $derived([
     { k: "Cards", v: `${totalCards}` },
-    { k: "Source", v: [...selectedSlices].map(cap).join(" + ") || "—" },
+    { k: "Source", v: [...selectedSliceTypes].map(cap).join(" + ") || "—" },
     { k: "Step Count", v: cap(stepPreset) },
     { k: "Turns", v: cap(turnPreset) },
     { k: "Orientation", v: [...startOriModes].map((m) => ORI_LABEL[m] ?? m).join(" · ") || "—" },
@@ -125,25 +120,25 @@
 
   const turnFreqPct = $derived(Math.round(variationConfig.turnFrequency * 100));
   function setTurnFreq(v: number) {
-    onVariationChange({ ...variationConfig, turnFrequency: v / 100 });
+    onVariationConfigChange({ ...variationConfig, turnFrequency: v / 100 });
   }
   function toggleTurn(id: string) {
     const next = new Set(variationConfig.enabledTurnPatterns);
     if (next.has(id)) next.delete(id); else next.add(id);
-    onVariationChange({ ...variationConfig, enabledTurnPatterns: [...next] });
+    onVariationConfigChange({ ...variationConfig, enabledTurnPatterns: [...next] });
   }
 </script>
 
 <div class="loop-board">
-  <!-- Left: where cards come from + how many -->
+  <!-- Left: where cards come from + how many + the live recipe -->
   <div class="col col-source">
     <section class="block">
       <span class="area-label">Source</span>
       <AxisCardGroup
         label="Source Decks"
         options={sourceOptions}
-        selected={selectedSlices as Set<string>}
-        onToggle={(id) => onSliceToggle(id as "halved" | "quartered")}
+        selected={selectedSliceTypes as Set<string>}
+        onToggle={(id) => onSliceTypeToggle(id as "halved" | "quartered")}
       />
     </section>
     <section class="block">
@@ -155,14 +150,12 @@
           { value: "52", label: "52" },
         ]}
         value={String(totalCards)}
-        onchange={(v) => onTotalChange(parseInt(v))}
+        onchange={(v) => onTotalCardsChange(parseInt(v))}
         color="accent"
         size="sm"
       />
     </section>
 
-    <!-- Live recipe: turns the abstract knobs into a readable outcome and fills
-         the otherwise-empty left column. -->
     <section class="recipe">
       <span class="recipe-title">This Deck</span>
       <dl class="recipe-list">
@@ -176,7 +169,7 @@
     </section>
   </div>
 
-  <!-- Center: the two shape decisions, precision folded away -->
+  <!-- Center: the two shape decisions; precision folded away -->
   <div class="col col-shape">
     <section class="block">
       <span class="area-label">Deck Shape</span>
@@ -267,7 +260,7 @@
         {gridModes}
         {onToggleGridMode}
         {reversalPattern}
-        {onReversalChange}
+        onReversalChange={(p) => onReversalChange?.(p)}
         reversalCustomDefault={false}
       />
     </section>
@@ -368,7 +361,6 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
-
   .sub-label {
     font-size: 11px;
     font-weight: 600;
@@ -388,7 +380,6 @@
     flex-direction: column;
     gap: 10px;
   }
-
   .sliders {
     display: flex;
     flex-direction: column;
@@ -406,18 +397,15 @@
   .slider-row.freq {
     grid-template-columns: 60px 1fr 3ch;
   }
-
   .slider-name {
     font-size: 13px;
     font-weight: 600;
     color: var(--theme-text, #fff);
   }
-
   .slider {
     width: 100%;
     accent-color: var(--theme-accent, #8b5cf6);
   }
-
   .slider-pct {
     font-size: 13px;
     font-weight: 600;
@@ -445,7 +433,7 @@
   }
 
   /* Narrow pane: single column, rail drops below. */
-  @container proto (max-width: 860px) {
+  @container configure (max-width: 860px) {
     .loop-board {
       grid-template-columns: 1fr;
       max-width: none;
