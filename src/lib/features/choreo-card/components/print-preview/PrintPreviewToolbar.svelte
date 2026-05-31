@@ -23,6 +23,8 @@
      *  between colors). Omit both to hide the toggle. */
     groupByElement?: boolean;
     onGroupByElementChange?: (on: boolean) => void;
+    /** Open the print dialog. Omit to hide the Print button (Deck Releaser prints via its sidebar). */
+    onPrint?: () => void;
   }
 
   let {
@@ -39,6 +41,7 @@
     copiesAnnotate,
     groupByElement,
     onGroupByElementChange,
+    onPrint,
   }: Props = $props();
 
   const progressText = $derived(
@@ -95,6 +98,18 @@
       </span>
     {/if}
   </div>
+
+  {#if onPrint}
+    <button
+      class="print-btn"
+      disabled={isRendering || totalCards === 0}
+      onclick={onPrint}
+      title={totalCards === 0 ? "Load a deck first" : `Print ${totalCards} cards`}
+    >
+      <i class="fas fa-print" aria-hidden="true"></i>
+      <span>Print This Deck</span>
+    </button>
+  {/if}
 </div>
 
 <style>
@@ -172,10 +187,47 @@
     white-space: nowrap;
   }
 
+  .print-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    min-height: 44px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    color: #fff;
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  .print-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    box-shadow: 0 2px 12px rgba(124, 58, 237, 0.3);
+  }
+
+  .print-btn:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .print-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
   @media (max-width: 767px) {
     .toolbar {
       flex-wrap: wrap;
       row-gap: 8px;
+    }
+
+    .print-btn {
+      width: 100%;
+      justify-content: center;
     }
   }
 </style>

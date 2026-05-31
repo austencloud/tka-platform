@@ -217,6 +217,7 @@ import type { CardPair } from "../services/types";
         if (typeof window !== 'undefined') localStorage.setItem('cardPreview.cardSize', s);
       }}
       onRerender={() => { rerenderKey++; }}
+      onPrint={() => { showPrintDialog = true; }}
     />
   {/if}
 

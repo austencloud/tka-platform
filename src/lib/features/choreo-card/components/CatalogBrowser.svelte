@@ -665,6 +665,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
             {renderTotal}
             onCardSizeChange={setCardSize}
             onRerender={() => { rerenderKey++; }}
+            onPrint={() => { showPrintDialog = true; }}
           />
         {/if}
 
