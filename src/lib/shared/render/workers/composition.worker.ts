@@ -175,6 +175,13 @@ async function handleCompose(
     }
 
     const effectiveOptions = { ...options };
+    // The QR bitmap is rendered on the main thread (the worker has no Firebase /
+    // QR generator) and transferred in. Attach it so composeSequenceImage's
+    // renderQRCode draws it instead of generating. Not part of the serialized
+    // options — it arrived via the transfer list.
+    if (msg.qrBitmap) {
+      (effectiveOptions as { qrImageBitmap?: CanvasImageSource }).qrImageBitmap = msg.qrBitmap;
+    }
 
     // Pseudo AbortSignal that checks the local cancelled flag.
     // ImageComposer checks signal?.aborted between beats.
@@ -278,6 +285,7 @@ self.onmessage = (event: MessageEvent<CompositionWorkerInMessage>) => {
             width: 64,
             height: 64,
             bleedPx: 4,
+            borderPx: 8,
             borderGradient: {
               type: "linear",
               angleDeg: 0,

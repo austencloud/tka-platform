@@ -242,6 +242,7 @@ export class CompositionDispatcher {
   async composeFrontBitmap(
     sequence: SequenceData,
     options: Partial<SequenceExportOptions>,
+    qrBitmap: ImageBitmap | null = null,
     signal?: AbortSignal,
   ): Promise<ImageBitmap> {
     await this.ensureInitialized();
@@ -278,10 +279,10 @@ export class CompositionDispatcher {
         id,
         sequence: plainSequence,
         options: plainOptions,
-        qrBitmap: null,
+        qrBitmap,
       };
 
-      worker.worker.postMessage(message);
+      worker.worker.postMessage(message, qrBitmap ? [qrBitmap] : []);
     });
   }
 
