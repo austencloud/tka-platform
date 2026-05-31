@@ -20,8 +20,11 @@
     /** Period-length lanes. lanes[0]=blue (or hold), lanes[1]=red. */
     value: StripValue[][];
     onChange: (lanes: StripValue[][]) => void;
+    /** Optional per-lane, period-aligned "cell can't take effect" mask
+     *  (reversals: beat isn't spinning). Lane order matches laneColors. */
+    inertMask?: boolean[][];
   }
-  let { binding, sequenceLength, value, onChange }: Props = $props();
+  let { binding, sequenceLength, value, onChange, inertMask }: Props = $props();
 
   const periods = $derived(divisorsUpTo(sequenceLength));
   const period = $derived(value[0]?.length ?? 1);
@@ -87,6 +90,7 @@
       label,
       color: (binding.laneColors[i] === "accent" ? "hold" : binding.laneColors[i]) as "blue" | "red" | "hold",
       values: value[i] ?? [],
+      inert: inertMask?.[i],
     })),
   );
 </script>

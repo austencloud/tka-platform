@@ -69,6 +69,30 @@
   });
   const hasInert = $derived(spin.left < spin.total || spin.right < spin.total);
 
+  /** Per-lane, period-aligned mask: a strip cell is inert when none of the
+   *  sequence beats it tiles onto are spinning for that hand. Lets the strip
+   *  grey the cells where a toggle would have no effect. */
+  const inertMask = $derived.by((): boolean[][] | undefined => {
+    const steps = sequence?.steps ?? [];
+    const len = steps.length;
+    const period = strip[0]?.length ?? 0;
+    if (!len || !period) return undefined;
+
+    const spins = (color: MotionColor) =>
+      steps.map((s) => {
+        const d = s.motions?.[color]?.rotationDirection;
+        return d === "cw" || d === "ccw";
+      });
+    const cellInert = (beatSpins: boolean[]) =>
+      Array.from({ length: period }, (_, p) => {
+        for (let b = p; b < len; b += period) if (beatSpins[b]) return false;
+        return true;
+      });
+
+    // Lane order matches binding.laneColors: [0] Left=blue, [1] Right=red.
+    return [cellInert(spins(MotionColor.BLUE)), cellInert(spins(MotionColor.RED))];
+  });
+
   function seedAlternating(): StripValue[][] {
     const alt = stampPerHand(PER_HAND_RHYTHMS[2]!, initPeriod, true, false, false);
     return [alt.blue, alt.red];
@@ -120,6 +144,7 @@
       sequenceLength={seqLen}
       value={strip}
       onChange={handleChange}
+      {inertMask}
     />
     <p class="reversal-note" class:emphasis={hasInert}>
       A reversal flips a spinning prop, so dash and static beats stay put.
