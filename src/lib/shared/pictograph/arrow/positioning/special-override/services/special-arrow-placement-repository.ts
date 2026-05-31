@@ -115,6 +115,7 @@ export class SpecialArrowPlacementRepository {
       turnsTuple: input.turnsTuple,
       motionType: input.motionType,
       attributeKey: input.attributeKey,
+      propType: input.propType,
       adjustmentX: input.adjustmentX,
       adjustmentY: input.adjustmentY,
       originalX: input.originalX,
@@ -134,12 +135,16 @@ export class SpecialArrowPlacementRepository {
 
   /**
    * Save an override to Firestore (admin only).
+   * A [0,0] adjustment is treated as a removal — it deletes the Firestore doc
+   * rather than persisting an empty record that would shadow lower tiers.
    * @throws Error if user is not admin
    */
   async saveOverride(input: SpecialArrowPlacementInput): Promise<void> {
     const email = authState.user?.email;
-    if (email !== ADMIN_EMAIL) {
-      throw new Error("Only admin can save special placement overrides");
+    if (email !== ADMIN_EMAIL) throw new Error("Only admin can save special placement overrides");
+    if (input.adjustmentX === 0 && input.adjustmentY === 0) {
+      await this.deleteOverride(generateSpecialOverrideKey(input)); // zero = remove, never persist [0,0]
+      return;
     }
     await this.persister.save(input, email);
   }

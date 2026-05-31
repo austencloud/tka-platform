@@ -16,6 +16,7 @@ export function createSpecialArrowPlacementState() {
     getOverride(key: string): Point | null {
       const entry = overridesMap.get(key);
       if (!entry) return null;
+      if (entry.adjustmentX === 0 && entry.adjustmentY === 0) return null; // zero = absent
       return new Point(entry.adjustmentX, entry.adjustmentY);
     },
 
@@ -24,7 +25,8 @@ export function createSpecialArrowPlacementState() {
     },
 
     hasOverride(key: string): boolean {
-      return overridesMap.has(key);
+      const entry = overridesMap.get(key);
+      return !!entry && !(entry.adjustmentX === 0 && entry.adjustmentY === 0);
     },
 
     setOverride(override: SpecialArrowPlacement): void {

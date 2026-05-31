@@ -17,6 +17,7 @@ import {
   parseSpecialOverrideKey,
   SpecialArrowPlacementSchema,
 } from "$lib/shared/pictograph/arrow/positioning/special-override/domain/SpecialArrowPlacement";
+import { createSpecialArrowPlacementState } from "$lib/shared/pictograph/arrow/positioning/special-override/state/SpecialArrowPlacementState.svelte";
 
 describe("special override key — propType dimension", () => {
   it("includes propType as the 7th segment", () => {
@@ -49,5 +50,25 @@ describe("special override key — propType dimension", () => {
       updatedAt: new Date().toISOString(), updatedBy: "x",
     });
     expect(parsed.propType).toBe("staff");
+  });
+});
+
+describe("special override state — prop isolation + zero handling", () => {
+  const base = {
+    gridMode: "box", oriFolder: "from_layer2", letter: "P", turnsTuple: "(0, 0)",
+    motionType: "pro", attributeKey: "red", originalX: 0, originalY: 0,
+    updatedAt: undefined as never, updatedBy: "me",
+  };
+  it("isolates fan from staff under distinct keys", () => {
+    const s = createSpecialArrowPlacementState();
+    s.setOverride({ ...base, key: "box|from_layer2|P|(0, 0)|pro|red|fan", propType: "fan", adjustmentX: 3, adjustmentY: 4 });
+    expect(s.getOverride("box|from_layer2|P|(0, 0)|pro|red|fan")?.x).toBe(3);
+    expect(s.getOverride("box|from_layer2|P|(0, 0)|pro|red|staff")).toBeNull();
+  });
+  it("treats a [0,0] override as absent", () => {
+    const s = createSpecialArrowPlacementState();
+    s.setOverride({ ...base, key: "box|from_layer2|P|(0, 0)|pro|red|staff", propType: "staff", adjustmentX: 0, adjustmentY: 0 });
+    expect(s.getOverride("box|from_layer2|P|(0, 0)|pro|red|staff")).toBeNull();
+    expect(s.hasOverride("box|from_layer2|P|(0, 0)|pro|red|staff")).toBe(false);
   });
 });
