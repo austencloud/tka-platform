@@ -16,6 +16,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import { cardCache, type RenderedCard, type CachedCard } from "./print-preview-cache";
   import { deckCardBlobCache, blobToDataUrl, canvasToBlob } from "../../services/DeckCardBlobCache";
   import { hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
+  import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
   import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
 
   // Render-schema version baked into every card cache key (memory + IndexedDB).
@@ -42,6 +43,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     /** Whole-deck copies. Each element fills whole sheets, repeated N times.
      *  Reuses cached renders — a copy costs one extra <img>, never a re-render. */
     copies?: number;
+    /** When false, relax one-color-per-sheet: cards fill sheets in order, blanks
+     *  only on the final sheet. Preview + PDF share this flag. Default true. */
+    groupByElement?: boolean;
     /** Right-click context menu on a card cell: (x, y, rerender callback for that card, sequence) */
     onCardContextMenu?: (x: number, y: number, rerender: () => void, sequence: SequenceData) => void;
     /** Left-click a card to inspect it (includes the pre-rendered front image URL and a rerender callback) */
@@ -63,6 +67,12 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
      */
     bluePropType?: PropType;
     redPropType?: PropType;
+    /**
+     * Scope the sheet preview to one printed side. 'fronts' renders only the
+     * fronts phase, 'backs' only the backs phase, null (default) renders both.
+     * Lets the print panel show exactly what the selected Print button sends.
+     */
+    sideFilter?: "fronts" | "backs" | null;
   }
 
   let {
@@ -77,6 +87,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     deckMode = false,
     rerenderKey = 0,
     copies = 1,
+    groupByElement = true,
     onCardContextMenu,
     onCardClick,
     onPairsReady,
@@ -87,6 +98,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     deckName,
     bluePropType,
     redPropType,
+    sideFilter = null,
   }: Props = $props();
 
   // Resolve render-visual inputs: explicit overrides pin a released deck's
@@ -156,7 +168,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   // target the correct source card despite grouping, copies, and blank padding.
   let sheets = $derived.by(() => {
     const indexed = renderedCards.map((card, seqIndex) => ({ card, seqIndex }));
-    const slots = planPrintSlots(indexed, tndElements ?? [], copies, layout.cardsPerPage);
+    const slots = planPrintSlots(indexed, tndElements ?? [], copies, layout.cardsPerPage, groupByElement);
     const pages: SheetSlot[][] = [];
     for (let i = 0; i < slots.length; i += layout.cardsPerPage) {
       pages.push(
@@ -342,6 +354,19 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     onRenderStateChange?.({ isRendering: true, progress: 0, total: seqs.length });
 
     const renderer = getPrintCardRenderer();
+
+    // Pre-resolve every card's QR short code in one batched pass before the
+    // render lanes fan out. Without this, each lane's first render does a
+    // serial ~380ms Firestore round-trip (the cold-deck bottleneck) which
+    // also pegs the main thread and freezes the Print Deck modal. Best-effort:
+    // any miss falls through to per-card resolution at render time.
+    await getShortCodeManager().resolveCodesForDeck(seqs, {
+      bluePropType: resolvedBlueProp,
+      redPropType: resolvedRedProp,
+      deckId,
+      deckName,
+    });
+    if (generation !== renderGeneration) return;
 
     const cards: RenderedCard[] = new Array(seqs.length);
     const pairs: (CardPair | null)[] = new Array(seqs.length).fill(null);
@@ -574,6 +599,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     {:else}
       <div class="pages-scroll">
         <!-- ═══ PHASE 1: ALL FRONTS ═══ -->
+        {#if sideFilter !== "backs"}
         {#each sheets as sheet, sheetIndex (sheetIndex)}
           {@const elName = capitalize(sheet[0]?.elementName ?? null)}
           <span class="page-label">Fronts{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span>
@@ -629,8 +655,10 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
             {/each}
           </div>
         {/each}
+        {/if}
 
         <!-- ═══ PHASE 2: ALL BACKS ═══ -->
+        {#if sideFilter !== "fronts"}
         {#each sheets as sheet, sheetIndex (sheetIndex)}
           {@const elName = capitalize(sheet[0]?.elementName ?? null)}
           <span class="page-label">Backs{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span>
@@ -693,6 +721,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
             {/each}
           </div>
         {/each}
+        {/if}
       </div>
     {/if}
   {/if}
