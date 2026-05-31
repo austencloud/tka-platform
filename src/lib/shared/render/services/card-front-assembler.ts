@@ -290,7 +290,9 @@ export async function paintCardFrontChrome(
   const { columns, rows, stepSize, gridOffsetY, gridOffsetX, isDarkMode, headerHeight, footerHeight, derivedWord } =
     layout;
 
-  if (options.visibilityOverrides?.showQRCode && deps.qrCodeGenerator) {
+  // Draw the QR when we can produce one: either a generator (main thread) OR a
+  // pre-rendered bitmap transferred in (the worker has no generator).
+  if (options.visibilityOverrides?.showQRCode && (deps.qrCodeGenerator || options.qrImageBitmap)) {
     await deps.renderQRCode(ctx);
   }
 
