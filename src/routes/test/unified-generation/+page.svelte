@@ -149,15 +149,6 @@
   function generate() { seed = mintSeed(); }
   function cycleDeck() { deckSize = DECK_PRESETS[(DECK_PRESETS.indexOf(deckSize) + 1) % DECK_PRESETS.length] ?? 52; }
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-
-  // Morph layout changes via the View Transitions API: the browser snapshots every named
-  // tile before/after and tweens position + size, so siblings glide to fill freed space and
-  // the Turns card cross-fades in/out. Falls back to an instant change where unsupported.
-  function morph(fn: () => void) {
-    const d = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-    if (typeof document !== "undefined" && d.startViewTransition) d.startViewTransition(fn);
-    else fn();
-  }
 </script>
 
 <svelte:head><title>Unified Generation — Bento Grid Prototype</title></svelte:head>
@@ -183,12 +174,12 @@
               autofocus
               placeholder="A–Z"
               bind:value={word}
-              onblur={() => morph(() => (wordEditing = false))}
+              onblur={() => (wordEditing = false)}
               onkeydown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
             />
           </div>
         {:else}
-          <BaseCard title="Word" currentValue={wordMode ? word.trim().toUpperCase() : "A–Z"} color={c.mode.color} shadowColor={c.mode.shadowColor} gridColumnSpan={2} onClick={() => morph(() => (wordEditing = true))} />
+          <BaseCard title="Word" currentValue={wordMode ? word.trim().toUpperCase() : "A–Z"} color={c.mode.color} shadowColor={c.mode.shadowColor} gridColumnSpan={2} onClick={() => (wordEditing = true)} />
         {/if}
         </div>
 
@@ -206,7 +197,7 @@
 
         <!-- Row 2 -->
         <div class="tile" style:view-transition-name="t-level">
-        <StepperCard title="Level" currentValue={level} minValue={1} maxValue={4} description="BASE MOTIONS" color={c.level.color} shadowColor={c.level.shadowColor} gridColumnSpan={2} onIncrement={() => morph(() => (level = clamp(level + 1, 1, 4)))} onDecrement={() => morph(() => (level = clamp(level - 1, 1, 4)))} />
+        <StepperCard title="Level" currentValue={level} minValue={1} maxValue={4} description="BASE MOTIONS" color={c.level.color} shadowColor={c.level.shadowColor} gridColumnSpan={2} onIncrement={() => (level = clamp(level + 1, 1, 4))} onDecrement={() => (level = clamp(level - 1, 1, 4))} />
         </div>
 
         <div class="tile" style:view-transition-name="t-grid">
@@ -226,14 +217,13 @@
         <ToggleCard title="Period" option1={{ value: "quartered", label: "Quartered" }} option2={{ value: "halved", label: "Halved" }} activeOption={period} onToggle={(v) => (period = v as typeof period)} color={c.period.color} shadowColor={c.period.shadowColor} gridColumnSpan={2} />
         </div>
 
-        <!-- Row 3 — Max Turns leads the style row (appears at Level 2+), then Props/Hands/Dashes -->
-        {#if level > 1}
-          <div class="tile" style:view-transition-name="t-turns">
-          <TurnIntensityCard currentIntensity={turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => (turnIntensity = v)} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
-          </div>
-        {/if}
+        <!-- Row 3 — Max Turns leads the style row. Always mounted; collapses its flex-basis to
+             0 at Level 1 so the row's real widths morph live (crisp) instead of remount+fade. -->
+        <div class="tile turns" class:collapsed={level <= 1} aria-hidden={level <= 1}>
+        <TurnIntensityCard currentIntensity={turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => (turnIntensity = v)} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
+        </div>
 
-        <div class="tile" style:view-transition-name="t-props">
+        <div class="tile">
         <StepperCard title="Props" currentValue={TRI.indexOf(propRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i]} color={STYLE_COLORS.props.color} shadowColor={STYLE_COLORS.props.shadow} gridColumnSpan={2} onIncrement={() => (propRev = stepArr(TRI, propRev, 1))} onDecrement={() => (propRev = stepArr(TRI, propRev, -1))} />
         </div>
         <div class="tile" style:view-transition-name="t-hands">
@@ -335,21 +325,28 @@
   .card-grid > .tile {
     flex: 1 1 230px; min-width: 200px; height: 120px; min-height: 0;
   }
-  /* Card fills its named tile wrapper (wrapper carries the view-transition-name). */
   .tile > :global(*) { width: 100%; height: 100%; }
   /* Generate spans the full width on its own row. */
   .card-grid > .generate { flex: 1 1 100%; height: auto; min-height: 92px; }
 
   @media (min-width: 1700px) { .layout { max-width: 1700px; } }
 
-  /* View Transitions: tween every named tile's position + size as the layout reflows.
-     Siblings glide to fill freed space; the Turns tile cross-fades in/out. */
-  :global(::view-transition-group(*)) {
-    animation-duration: 300ms;
-    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Max Turns morph: always mounted. Animating its flex-basis 230->0 makes the row
+     re-flow live every frame, so the sibling style tiles shrink/grow their REAL width
+     with crisp content — no bitmap cross-fade, no remount. */
+  .tile.turns {
+    min-width: 0; overflow: hidden;
+    transition: flex-basis 340ms cubic-bezier(0.4, 0, 0.2, 1),
+                flex-grow 340ms cubic-bezier(0.4, 0, 0.2, 1),
+                margin-right 340ms cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 240ms ease;
+  }
+  .tile.turns.collapsed {
+    flex: 0 0 0; opacity: 0; pointer-events: none;
+    margin-right: -10px; /* cancel the grid gap left by the zero-width tile */
   }
   @media (prefers-reduced-motion: reduce) {
-    :global(::view-transition-group(*)) { animation-duration: 0.001ms; }
+    .tile.turns { transition-duration: 0.001ms; }
   }
 
   /* Unify typography across BaseCard / StepperCard / ToggleCard.
