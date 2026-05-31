@@ -69,20 +69,46 @@
     } as PrintRenderOptions;
   }
 
-  // MAIN-THREAD real card front (the reference): the production renderFront path
-  // with a fixed exportDate so it matches the worker byte-for-byte.
-  async function renderFrontMain(deck: ParityDeck, card: ParityDeck["cards"][number]): Promise<HTMLCanvasElement> {
-    const { composeOptions, frame } = buildFrontComposeOptions(card.sequence, printOptionsFor(deck, card), EXPORT_DATE);
-    const inner = await getImageComposer().composeSequenceImage(card.sequence, composeOptions);
-    const framed = wrapContentInCardFrame(inner, frame, htmlCanvas) as HTMLCanvasElement;
+  type Composed = ReturnType<typeof buildFrontComposeOptions>;
+
+  // The QR is generated on the main thread (the QR generator uses new Image() and
+  // Firebase, neither available in the worker) and the SAME bitmap is fed to both
+  // renders — main via options.qrImageBitmap, worker via the transfer param — so
+  // the QR cell is byte-identical instead of present-on-one-side-only.
+  async function generateQr(deck: ParityDeck, card: ParityDeck["cards"][number], composed: Composed): Promise<HTMLImageElement | null> {
+    const qrGen = getImageComposer().qrGenerator;
+    if (!qrGen || !composed.composeOptions.visibilityOverrides?.showQRCode) return null;
+    return qrGen.generateAsImage(card.sequence, 600, {
+      style: "modern",
+      margin: 1,
+      darkMode: false,
+      bluePropType: deck.bluePropType,
+      redPropType: deck.redPropType,
+      deckName: deck.name,
+    });
+  }
+
+  // MAIN-THREAD real card front (the reference): production renderFront path with
+  // a fixed exportDate + the shared QR so it matches the worker byte-for-byte.
+  async function renderFrontMain(card: ParityDeck["cards"][number], composed: Composed, qr: HTMLImageElement | null): Promise<HTMLCanvasElement> {
+    const opts = qr
+      ? ({ ...composed.composeOptions, qrImageBitmap: qr } as typeof composed.composeOptions)
+      : composed.composeOptions;
+    const inner = await getImageComposer().composeSequenceImage(card.sequence, opts);
+    const framed = wrapContentInCardFrame(inner, composed.frame, htmlCanvas) as HTMLCanvasElement;
     return normalizeToCanvas(framed as CanvasImageSource, OUT_W, OUT_H);
   }
 
   // WORKER real card front (the candidate): same composeOptions + frame, applied
-  // off-thread (frontCardFrame triggers the in-worker frame wrap).
-  async function renderFrontWorker(deck: ParityDeck, card: ParityDeck["cards"][number]): Promise<HTMLCanvasElement> {
-    const { composeOptions, frame } = buildFrontComposeOptions(card.sequence, printOptionsFor(deck, card), EXPORT_DATE);
-    const bmp = await getCompositionDispatcher().composeFrontBitmap(card.sequence, { ...composeOptions, frontCardFrame: frame });
+  // off-thread (frontCardFrame triggers the in-worker frame wrap). The QR clone is
+  // transferred via composeFrontBitmap's qrBitmap param.
+  async function renderFrontWorker(card: ParityDeck["cards"][number], composed: Composed, qr: HTMLImageElement | null): Promise<HTMLCanvasElement> {
+    const qrBitmap = qr ? await createImageBitmap(qr) : null;
+    const bmp = await getCompositionDispatcher().composeFrontBitmap(
+      card.sequence,
+      { ...composed.composeOptions, frontCardFrame: composed.frame },
+      qrBitmap,
+    );
     return normalizeToCanvas(bmp as CanvasImageSource, OUT_W, OUT_H);
   }
 
@@ -151,8 +177,17 @@
           const label = card.word || card.sequence.word || card.sequence.id;
           ctx.onProgress({ phase: "rendering", current: ++done, total, detail: `${label} (${deck.name})` });
           try {
-            const oldCanvas = runMode === "front" ? await renderFrontMain(deck, card) : await renderBackOld(card.sequence, deck.theme);
-            const newCanvas = runMode === "front" ? await renderFrontWorker(deck, card) : await renderBackNew(card.sequence, deck.theme);
+            let oldCanvas: HTMLCanvasElement;
+            let newCanvas: HTMLCanvasElement;
+            if (runMode === "front") {
+              const composed = buildFrontComposeOptions(card.sequence, printOptionsFor(deck, card), EXPORT_DATE);
+              const qr = await generateQr(deck, card, composed);
+              oldCanvas = await renderFrontMain(card, composed, qr);
+              newCanvas = await renderFrontWorker(card, composed, qr);
+            } else {
+              oldCanvas = await renderBackOld(card.sequence, deck.theme);
+              newCanvas = await renderBackNew(card.sequence, deck.theme);
+            }
             const d = diff(oldCanvas, newCanvas, OUT_W, OUT_H);
             worst = Math.max(worst, d.diffPct);
             worstMaxDelta = Math.max(worstMaxDelta, d.maxDelta);
