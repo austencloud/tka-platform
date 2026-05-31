@@ -4,6 +4,7 @@ import type { TrailCapturer } from "./trail-capturer";
 import type { IAnimationRenderLoop } from "$lib/shared/animation-engine/services/IAnimationRenderLoop";
 import type { CanvasResizer } from "./canvas-resizer.svelte";
 import type { IAnimationPrecomputer } from "$lib/shared/animation-engine/services/IAnimationPrecomputer";
+import type { AnimationEngineProps } from "$lib/shared/animation-engine/services/animation-engine.svelte";
 
 export interface RenderContext {
   readonly id: string;
@@ -21,6 +22,18 @@ export interface RenderContext {
   resize(size: number): void;
   restoreSize(): void;
   dispose(): void;
+
+  /** Render ONE frame synchronously at an explicit virtual clock + fixed dt —
+   *  the same deterministic path the offscreen export uses (engine.renderFrame).
+   *  Lets a caller drive the live engine off a virtual clock instead of the
+   *  rAF wall-clock, so its trail accumulator decays on the export's fixed
+   *  cadence rather than real render speed (the parity harness uses this to make
+   *  the live reference faithful). */
+  renderFrameSync(
+    props: AnimationEngineProps,
+    timeMs: number,
+    dtSeconds: number,
+  ): void;
 }
 
 export class RenderContextRegistry {

@@ -4,15 +4,26 @@
  * Owns a fresh headless AnimationEngine for ONE export and renders each frame
  * deterministically. Replaces live-engine-capture: instead of scraping whatever
  * the on-screen engine happens to be showing, we drive a clean offscreen engine
- * frame-by-frame at a fixed virtual clock.
+ * at a fixed virtual clock.
  *
- * Two things make the trail match live density without live's rAF jitter:
- *  1. Sub-stepping — between the previous beat position and the current one we
- *     over-sample N intermediate prop states (via the PURE sampler) and feed each
- *     into the offscreen trail capturer. The capturer's 0.75px distance-gate then
- *     prunes that over-sampling back to exact live density.
- *  2. The capturer config (canvasSize, prop types, loopability) is primed up front
- *     so the very first sub-step lands at the right resolution.
+ * ── Why a fixed 60fps internal timestep ────────────────────────────────────────
+ * The WebGL2 trail overlay captures ONE ring point per engine render and its
+ * visible length = `tailLength` ring segments × the prop movement per render.
+ * It also advances tail recession by the render's dt. So the trail's spatial
+ * length is a function of the RENDER CADENCE, not of wall-clock or beat time:
+ * render the overlay once per (coarse) export frame and every segment is longer,
+ * so the trail reads longer than the live animation, which free-runs at ~60fps.
+ *
+ * The live animation the user is matching runs at 60fps (the design reference).
+ * So we simulate the engine at a FIXED 60fps internal timestep regardless of the
+ * export frame rate, and composite whatever the last sub-step painted. A standard
+ * fixed-timestep accumulator carries the sub-step remainder across export frames,
+ * so the trail/fire cadence is exactly 60fps for any export fps. At the default
+ * 60fps export this is a 1:1 passthrough (one sub-step per frame, byte-for-byte
+ * the live cadence); at 30fps each export frame drains two 60fps sub-steps; etc.
+ *
+ * Determinism: the timestep is fixed and the beat is linearly interpolated by
+ * time within each export frame, so the same machine reproduces the same frames.
  */
 
 import {
@@ -23,7 +34,7 @@ import {
   assembleExportEngineProps,
   type ExportFrameContext,
 } from "./export-engine-props";
-import { computeTrailSubSteps } from "./export-substep";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
@@ -32,7 +43,7 @@ import type { AnimationPlaybackController } from "$lib/shared/animation-engine/s
 export interface OffscreenExportInit {
   /** Square canvas size (px) for the offscreen engine. */
   outputCanvasSize: number;
-  /** Export frame rate; sets dtSeconds = 1/fps for the fluid sim. */
+  /** Export frame rate; the visible frames are sampled from the 60fps internal sim at 1/fps. */
   fps: number;
   /** When true, run synchronous warmup renders so the fluid sim (fire/charcoal) converges. */
   needsFluidWarmup: boolean;
@@ -44,11 +55,25 @@ export interface OffscreenExportInit {
 /** Synchronous render passes to converge the fluid sim before capture starts. */
 const FLUID_WARMUP_FRAMES = 60;
 
+/**
+ * Fixed internal simulation timestep. The live animation runs at 60fps and the
+ * trail length / fire sim are cadence-dependent, so the offscreen engine steps
+ * at exactly this rate to reproduce the live look at any export fps.
+ */
+const REFERENCE_STEP_MS = 1000 / 60;
+const REFERENCE_STEP_S = 1 / 60;
+
 export class OffscreenExportRenderer {
   private handle: OffscreenContextHandle | null = null;
-  private dtSeconds = 0;
-  private prevBeatPos: number | null = null;
   private init!: OffscreenExportInit;
+
+  // Fixed-timestep clock. `internalClockMs` is the engine's virtual clock (drives
+  // the overlay's dt and the fluid sim); `accumulatorMs` carries the unsimulated
+  // remainder between export frames so the 60fps cadence stays exact.
+  private internalClockMs = 0;
+  private accumulatorMs = 0;
+  private prevBeatPos: number | null = null;
+  private prevTargetMs = 0;
 
   constructor(
     private readonly playback: AnimationPlaybackController,
@@ -57,7 +82,6 @@ export class OffscreenExportRenderer {
 
   async initialize(init: OffscreenExportInit): Promise<void> {
     this.init = init;
-    this.dtSeconds = 1 / init.fps;
     // Hand the offscreen engine the SAME visibility manager + effects config the
     // export already configured (applyEffectOverrides set the active effect, e.g.
     // trails/fire, on the global VM). Without this the offscreen engine renders
@@ -69,10 +93,8 @@ export class OffscreenExportRenderer {
     );
 
     // Prime the capturer config so the FIRST sub-step capture lands at the right
-    // resolution + prop geometry. Without this, the first frame's sub-steps run
-    // before renderFrame's PlaybackSync configures the capturer, so they'd capture
-    // at the default 500px size with no prop type. canvasSize is already seeded on
-    // the engine via setInitialCanvasSize; mirror it onto the capturer here.
+    // resolution + prop geometry. (The WebGL2 overlay keeps its own ring; this
+    // feeds the canvas2D fallback path consistently.)
     this.handle.context.trailCapturer.updateConfig({
       canvasSize: init.outputCanvasSize,
       bluePropType: init.bluePropType,
@@ -81,15 +103,26 @@ export class OffscreenExportRenderer {
       isSeamlesslyLoopable: this.playback.isSeamlesslyLoopable,
     });
 
+    // Load the sequence's grid texture. The renderer draws whatever grid IMAGE is
+    // currently loaded (canvas-2d-animation-renderer getGridImage); that texture
+    // is normally loaded by PlaybackSync.loadGridTexture on gridMode change. The
+    // offscreen engine is driven only through renderFrame, which bypasses
+    // PlaybackSync — so without this the renderer keeps its default "diamond"
+    // texture and a box-mode sequence exports with a diamond grid.
+    const gridMode =
+      this.panelState.sequenceData?.gridMode ?? GridMode.DIAMOND;
+    await this.handle.context.renderer.loadGridTexture(gridMode, true);
+
     if (init.needsFluidWarmup) {
       // Deterministic warmup: render the start position repeatedly so the fluid
       // sim reaches steady state, then discard the warmup trail so it doesn't
-      // bleed into frame 0.
+      // bleed into frame 0. Stationary at beat 0 + constant clock ⇒ no trail
+      // stamps accumulate (the overlay's duplicate-timestamp guard).
       for (let w = 0; w < FLUID_WARMUP_FRAMES; w++) {
-        this.renderAt(0, 0);
+        this.renderSubStep(0, 0, REFERENCE_STEP_S);
       }
       this.handle.context.trailCapturer.clearTrails();
-      this.prevBeatPos = null;
+      this.resetClock();
     }
   }
 
@@ -101,43 +134,73 @@ export class OffscreenExportRenderer {
     return this.handle.context.canvas;
   }
 
-  /** Render one export frame at `beatPos` with the given virtual clock (ms). */
+  /** Render one export frame at `beatPos` with the export-frame virtual clock (ms). */
   renderFrame(beatPos: number, virtualTimeMs: number): void {
     this.renderAt(beatPos, virtualTimeMs);
   }
 
-  private renderAt(beatPos: number, virtualTimeMs: number): void {
+  private resetClock(): void {
+    this.internalClockMs = 0;
+    this.accumulatorMs = 0;
+    this.prevBeatPos = null;
+    this.prevTargetMs = 0;
+  }
+
+  /**
+   * Drain fixed 60fps sub-steps up to this export frame's target time, then leave
+   * the canvas holding the last sub-step. The beat is interpolated linearly by
+   * time across the export frame so each 60fps sub-step lands at the right spot.
+   */
+  private renderAt(beatPos: number, targetTimeMs: number): void {
     if (!this.handle) {
       throw new Error("OffscreenExportRenderer not initialized");
     }
-    const trailCapturer = this.handle.context.trailCapturer;
 
-    // 1) Sub-step trail capture: walk from the previous beat to this one, sampling
-    // N intermediate prop states and feeding each into the capturer. The capturer's
-    // distance-gate prunes the over-sampling to live density. Skip when there's no
-    // prior position (first frame / post-warmup) or no movement.
-    if (this.prevBeatPos !== null && this.prevBeatPos !== beatPos) {
-      const prev = this.prevBeatPos;
-      const span = beatPos - prev;
-      const n = computeTrailSubSteps(span);
-      for (let k = 1; k <= n; k++) {
-        const subPos = prev + span * (k / n);
-        const sampled = this.playback.samplePropStateAt(subPos);
-        trailCapturer.captureFrame(
-          { blueProp: sampled.blue, redProp: sampled.red },
-          Math.floor(subPos),
-          virtualTimeMs,
-        );
-      }
+    const prevBeat = this.prevBeatPos ?? beatPos;
+    const spanMs = Math.max(0, targetTimeMs - this.prevTargetMs);
+    const beatAt = (clockMs: number): number => {
+      if (spanMs <= 0) return beatPos;
+      const frac = Math.min(1, Math.max(0, (clockMs - this.prevTargetMs) / spanMs));
+      return prevBeat + (beatPos - prevBeat) * frac;
+    };
+
+    this.accumulatorMs += spanMs;
+
+    let stepped = false;
+    while (this.accumulatorMs >= REFERENCE_STEP_MS) {
+      this.internalClockMs += REFERENCE_STEP_MS;
+      this.accumulatorMs -= REFERENCE_STEP_MS;
+      this.renderSubStep(beatAt(this.internalClockMs), this.internalClockMs, REFERENCE_STEP_S);
+      stepped = true;
     }
-    this.prevBeatPos = beatPos;
 
-    // 2) Render the final frame at the beat position. calculateStateForStep drives
-    // the panel state's prop states, which assembleExportEngineProps reads.
-    this.playback.calculateStateForStep(beatPos);
+    // Guarantee one paint per export frame. Hit only when the export fps exceeds
+    // 60 (sub-step span < one 60fps step) or on the first/stationary frame: repaint
+    // at the exact target so the composited canvas is current. dt is the small real
+    // span so trail/fire stay consistent.
+    if (!stepped) {
+      this.internalClockMs = this.prevTargetMs + spanMs;
+      const dtSec = spanMs > 0 ? spanMs / 1000 : REFERENCE_STEP_S;
+      this.renderSubStep(beatPos, this.internalClockMs, dtSec);
+      this.accumulatorMs = 0;
+    }
+
+    this.prevBeatPos = beatPos;
+    this.prevTargetMs = targetTimeMs;
+  }
+
+  /**
+   * One engine render at a beat position + virtual clock. Sets the panel prop
+   * states (calculateStateForStep), feeds the trail capturer, then renders the
+   * frame synchronously with the explicit dt that drives the overlay tail
+   * recession + fluid sim.
+   */
+  private renderSubStep(beat: number, clockMs: number, dtSeconds: number): void {
+    const handle = this.handle!;
+    this.playback.calculateStateForStep(beat);
 
     const frameCtx: ExportFrameContext = {
-      virtualTime: virtualTimeMs,
+      virtualTime: clockMs,
       isSeamlesslyLoopable: this.playback.isSeamlesslyLoopable,
       backgroundAlpha: 1,
       showNonRadialPoints: true,
@@ -146,12 +209,17 @@ export class OffscreenExportRenderer {
       redPropType: this.init.redPropType,
       previewDarkMode: null,
     };
+    const props = assembleExportEngineProps(this.panelState, frameCtx);
 
-    this.handle.engine.renderFrame(
-      assembleExportEngineProps(this.panelState, frameCtx),
-      virtualTimeMs,
-      this.dtSeconds,
+    // Feed the capturer at the same cadence the WebGL2 overlay captures its own
+    // ring, so the canvas2D fallback path (if ever active) stays consistent.
+    handle.context.trailCapturer.captureFrame(
+      { blueProp: props.blueProp, redProp: props.redProp },
+      Math.floor(beat),
+      clockMs,
     );
+
+    handle.engine.renderFrame(props, clockMs, dtSeconds);
   }
 
   dispose(): void {

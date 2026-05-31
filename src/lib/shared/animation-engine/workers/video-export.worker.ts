@@ -187,16 +187,23 @@ function selectCodec(width: number, height: number): string {
 }
 
 /**
- * AV1 High profile (profile 1) = 4:4:4, 8-bit. No chroma subsampling, so
- * saturated red/blue edges and soft glow gradients survive intact — the lever
- * for near-exact parity. seq_level_idx scales with resolution (08=4.0 covers
- * 1080p, 13=5.1 covers 4K, 16=6.0 for 8K). Tier Main, bit depth 08.
+ * AV1 High profile (profile 1) = 4:4:4, no chroma subsampling, so saturated
+ * red/blue edges and soft glow gradients survive intact — the lever for
+ * near-exact parity. seq_level_idx scales with resolution (08=4.0 covers 1080p,
+ * 13=5.1 covers 4K, 16=6.0 for 8K). `bitDepth` is "10" for max fidelity (10-bit
+ * reconstruction kills the encoder-introduced banding/quantization noise on the
+ * near-black background gradient) with "08" as the fallback for platforms whose
+ * AV1 encoder can't do 10-bit.
  */
-function selectCodecAv1(width: number, height: number): string {
+function selectCodecAv1(
+  width: number,
+  height: number,
+  bitDepth: "08" | "10" = "10",
+): string {
   const pixelArea = width * height;
-  if (pixelArea <= 2_073_600) return "av01.1.08M.08";
-  if (pixelArea <= 8_912_896) return "av01.1.13M.08";
-  return "av01.1.16M.08";
+  if (pixelArea <= 2_073_600) return `av01.1.08M.${bitDepth}`;
+  if (pixelArea <= 8_912_896) return `av01.1.13M.${bitDepth}`;
+  return `av01.1.16M.${bitDepth}`;
 }
 
 /**
@@ -348,10 +355,6 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
     },
   });
 
-  const codec = useAv1
-    ? selectCodecAv1(encoderWidth, encoderHeight)
-    : selectCodec(encoderWidth, encoderHeight);
-
   // Omit `hardwareAcceleration` entirely - this is the spec default
   // (`"no-preference"`) and it's what production encoders should use.
   //
@@ -366,8 +369,10 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
   // With "no-preference" the browser picks hardware when it's safe and
   // transparently uses software when it isn't, which is exactly the
   // correctness/speed tradeoff we actually want.
-  await encoder.configure({
-    codec,
+  const baseConfig: VideoEncoderConfig = {
+    codec: useAv1
+      ? selectCodecAv1(encoderWidth, encoderHeight, "10")
+      : selectCodec(encoderWidth, encoderHeight),
     width: encoderWidth,
     height: encoderHeight,
     bitrate: config.bitrate,
@@ -376,7 +381,33 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
     // lookahead + frame reordering (B-frames under High profile) instead of
     // the low-latency single-pass mode tuned for live streaming.
     latencyMode: "quality",
-  });
+    // Constant bitrate floors the per-frame allocation. Under the default VBR,
+    // the encoder spends few bits on the "simple" near-black frames, so the
+    // dark background gradient quantizes coarsely and reads as speckle/noise.
+    // CBR keeps the dark regions clean — the visible noise lever alongside
+    // 10-bit depth.
+    bitrateMode: "constant",
+  };
+
+  // Probe support and degrade gracefully. AV1 10-bit + CBR is the max-fidelity
+  // target, but not every platform AV1 encoder offers 10-bit; fall back to
+  // 8-bit (still 4:4:4 CBR) rather than failing the export. If even that probe
+  // is unsupported, fall through to the base config and let configure() throw
+  // its own descriptive error.
+  let encoderConfig = baseConfig;
+  if (useAv1) {
+    const tenBitOk = await VideoEncoder.isConfigSupported(baseConfig)
+      .then((r) => r.supported === true)
+      .catch(() => false);
+    if (!tenBitOk) {
+      encoderConfig = {
+        ...baseConfig,
+        codec: selectCodecAv1(encoderWidth, encoderHeight, "08"),
+      };
+    }
+  }
+
+  await encoder.configure(encoderConfig);
 }
 
 function handleFrameWebCodecs(msg: FrameMessageLegacy): void {

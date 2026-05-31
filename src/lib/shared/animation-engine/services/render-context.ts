@@ -5,6 +5,7 @@ import type { TrailCapturer } from "./trail-capturer";
 import type { IAnimationRenderLoop } from "$lib/shared/animation-engine/services/IAnimationRenderLoop";
 import type { CanvasResizer } from "./canvas-resizer.svelte";
 import type { IAnimationPrecomputer } from "$lib/shared/animation-engine/services/IAnimationPrecomputer";
+import type { AnimationEngineProps } from "$lib/shared/animation-engine/services/animation-engine.svelte";
 
 export interface RenderContextDeps {
   id: string;
@@ -16,6 +17,13 @@ export interface RenderContextDeps {
   renderLoop: IAnimationRenderLoop;
   resizer: CanvasResizer;
   precomputer: IAnimationPrecomputer;
+  /** Deterministic single-frame drive — delegates to the owning engine's
+   *  renderFrame(props, timeMs, dtSeconds). */
+  renderFrameSync: (
+    props: AnimationEngineProps,
+    timeMs: number,
+    dtSeconds: number,
+  ) => void;
 }
 
 export class LiveRenderContext implements RenderContext {
@@ -28,6 +36,7 @@ export class LiveRenderContext implements RenderContext {
   readonly renderLoop: IAnimationRenderLoop;
   readonly resizer: CanvasResizer;
   readonly precomputer: IAnimationPrecomputer;
+  private readonly _renderFrameSync: RenderContextDeps["renderFrameSync"];
 
   size: number;
 
@@ -41,7 +50,16 @@ export class LiveRenderContext implements RenderContext {
     this.renderLoop = deps.renderLoop;
     this.resizer = deps.resizer;
     this.precomputer = deps.precomputer;
+    this._renderFrameSync = deps.renderFrameSync;
     this.size = deps.canvas.width;
+  }
+
+  renderFrameSync(
+    props: AnimationEngineProps,
+    timeMs: number,
+    dtSeconds: number,
+  ): void {
+    this._renderFrameSync(props, timeMs, dtSeconds);
   }
 
   resize(newSize: number): void {

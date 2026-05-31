@@ -136,6 +136,15 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   private warmupFramesRemaining = 0;
   private static readonly WARMUP_FRAMES = 3;
 
+  // Monotonic VIRTUAL clock (ms) handed to the backend so the trail accumulator's
+  // decay steps on the frame's virtual dt, NOT wall-clock. The backend derives its
+  // decay dt from successive timestamps; feeding it performance.now() makes the
+  // fade depend on real render cadence — fine for live (≈60fps rAF) but wrong for
+  // a synchronous offscreen export, where it produced trails that started late and
+  // never faded. Advancing this by params.deltaTime keeps live identical (its dt is
+  // the rAF delta) and makes export deterministic (its dt is the fixed 1/60 step).
+  private backendClockMs = 0;
+
   // Per-tip trail mask from previous frame (4 bits).
   private prevTipTrailMask = 0xF;
 
@@ -198,6 +207,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       return;
     }
 
+    // Advance the monotonic VIRTUAL clock by this frame's dt. Used for both the
+    // visibility envelope and the backend's decay so the trail's timing is
+    // frame-rate-independent: live advances it by the rAF delta (unchanged
+    // behavior), the offscreen export by the fixed 1/60 step (deterministic).
+    this.backendClockMs += Math.max(0, params.deltaTime * 1000);
+
     const {
       trailSettings,
       canvasSize,
@@ -230,7 +245,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // Advance per-color envelopes toward the current target visibility.
     this.blueEnvelope.setVisible(hasBlue);
     this.redEnvelope.setVisible(hasRed);
-    const nowMs = performance.now();
+    const nowMs = this.backendClockMs;
     const blueAlpha = this.blueEnvelope.updateProgress(nowMs).alpha;
     const redAlpha = this.redEnvelope.updateProgress(nowMs).alpha;
 
@@ -419,7 +434,10 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       },
     };
 
-    this.backend.executeFrame(graph, performance.now());
+    // Backend decay steps on the virtual clock (accumulated at the top of render),
+    // so the offscreen export fades exactly like 60fps live instead of decaying on
+    // wall-clock cadence.
+    this.backend.executeFrame(graph, this.backendClockMs);
   }
 
   clear(): void {

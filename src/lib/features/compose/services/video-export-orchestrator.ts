@@ -204,7 +204,11 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         fps,
         bitrate,
         totalFrames: totalFramesEstimate,
-        codec: options.codec,
+        // Default to AV1 for max fidelity: 4:4:4 (no chroma bleed on saturated
+        // prop edges) + 10-bit depth (no banding/noise on the dark gradient),
+        // resolved in the worker. Callers can still force "h264" for max
+        // device compatibility.
+        codec: options.codec ?? "av1",
       });
     } else {
       // Legacy inline exporter for WebM

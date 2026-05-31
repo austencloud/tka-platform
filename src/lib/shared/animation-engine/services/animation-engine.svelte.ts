@@ -360,6 +360,18 @@ export class AnimationEngine {
    *  the frame's virtual time; `dtSeconds` is the fixed sim step (e.g. 1/fps).
    *  Used by the offscreen export driver — no rAF, no live-engine mutation. */
   renderFrame(props: AnimationEngineProps, timeMs: number, dtSeconds: number): void {
+    // Honor the caller's trail settings the same way the live update() path does.
+    // buildFrameParams resolves trailSettings from STATE (getEffectiveTrailSettings
+    // reads state.trailSettings), NOT from props — so without this sync the
+    // offscreen export engine, which is driven only through renderFrame (never
+    // PlaybackSync.update), renders trails with the DEFAULT settings. That dropped
+    // the user's trackingMode (default RIGHT_END instead of their BOTH_ENDS), so
+    // the export showed a single-end trail while the live animator showed both —
+    // and ignored custom colors / line width / tailLength too. Mirrors
+    // PlaybackSync.update's externalTrailSettings → state sync.
+    if (props.externalTrailSettings) {
+      this._animatorState.setTrailSettings(props.externalTrailSettings);
+    }
     const params = this.frameSystem.buildFrameParams(props, this.buildFrameDeps());
     params.virtualTime = timeMs;
     this.lifecycleManager.renderLoop?.renderSync(params, timeMs, dtSeconds);
@@ -509,6 +521,8 @@ export class AnimationEngine {
       renderLoop,
       resizer,
       precomputer: precomputer!,
+      renderFrameSync: (props, timeMs, dtSeconds) =>
+        this.renderFrame(props, timeMs, dtSeconds),
     });
   }
 
