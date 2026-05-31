@@ -26,6 +26,8 @@
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
+  import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   const c = getCardColors(BackgroundType.COSMIC); // DEFAULT_COLORS gradients
   const LOOP_COLOR = "linear-gradient(135deg, #a3a32a 0%, #8a8a22 50%, #6b6b1a 100%)";
@@ -104,6 +106,12 @@
   // standalone Grid toggle tile is gone.
   const posOri = createSimplifiedStartPositionState();
   let showPosOri = $state(false);
+
+  // Deck Prop: reuse the real BentoPropGrid (props by family). The deck's prop is part of the
+  // recipe — it overrides the user's saved global prop setting at generation time.
+  let propType = $state<PropType>(PropType.STAFF);
+  let showProp = $state(false);
+  const propLabel = $derived(propType.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()));
   const oriShort = (o: Orientation): string =>
     ({ [Orientation.IN]: "In", [Orientation.OUT]: "Out", [Orientation.CLOCK]: "Clock", [Orientation.COUNTER]: "Counter" } as Record<string, string>)[o] ?? String(o);
 
@@ -134,7 +142,7 @@
     schemaVersion: 1, generatorVersion: "loop-gen@0.1.0", seed,
     params: {
       ...(wordMode ? { word: word.trim().toUpperCase(), deck: "all-variations" } : { deckSize }),
-      loopType, stepCount, level, period,
+      loopType, stepCount, level, period, prop: propType,
       grid: posOri.currentGridMode === GridMode.DIAMOND ? "diamond" : "box",
       startPosition: posOri.selectedPosition?.startPosition ?? "any",
       blueOrientation: posOri.blueOrientation, redOrientation: posOri.redOrientation,
@@ -215,6 +223,10 @@
         </div>
 
         <div class="tile">
+        <BaseCard title="Prop" currentValue={propLabel} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} gridColumnSpan={2} onClick={() => (showProp = true)} />
+        </div>
+
+        <div class="tile">
         <BaseCard title="Pos & Ori" currentValue={posOriSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showPosOri = true)} />
         </div>
 
@@ -237,13 +249,13 @@
         </div>
 
         <div class="tile">
-        <StepperCard title="Props" currentValue={TRI.indexOf(propRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i]} color={STYLE_COLORS.props.color} shadowColor={STYLE_COLORS.props.shadow} gridColumnSpan={2} onIncrement={() => (propRev = stepArr(TRI, propRev, 1))} onDecrement={() => (propRev = stepArr(TRI, propRev, -1))} />
+        <StepperCard title="Props" currentValue={TRI.indexOf(propRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i] ?? ""} color={STYLE_COLORS.props.color} shadowColor={STYLE_COLORS.props.shadow} gridColumnSpan={2} onIncrement={() => (propRev = stepArr(TRI, propRev, 1))} onDecrement={() => (propRev = stepArr(TRI, propRev, -1))} />
         </div>
         <div class="tile">
-        <StepperCard title="Hands" currentValue={TRI.indexOf(handRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i]} color={STYLE_COLORS.hands.color} shadowColor={STYLE_COLORS.hands.shadow} gridColumnSpan={2} onIncrement={() => (handRev = stepArr(TRI, handRev, 1))} onDecrement={() => (handRev = stepArr(TRI, handRev, -1))} />
+        <StepperCard title="Hands" currentValue={TRI.indexOf(handRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i] ?? ""} color={STYLE_COLORS.hands.color} shadowColor={STYLE_COLORS.hands.shadow} gridColumnSpan={2} onIncrement={() => (handRev = stepArr(TRI, handRev, 1))} onDecrement={() => (handRev = stepArr(TRI, handRev, -1))} />
         </div>
         <div class="tile">
-        <StepperCard title="Dashes" currentValue={DASH.indexOf(dashes)} minValue={0} maxValue={2} description="FREQUENCY" formatValue={(i: number) => DASH_LABEL[i]} color={STYLE_COLORS.dashes.color} shadowColor={STYLE_COLORS.dashes.shadow} gridColumnSpan={2} onIncrement={() => (dashes = stepArr(DASH, dashes, 1))} onDecrement={() => (dashes = stepArr(DASH, dashes, -1))} />
+        <StepperCard title="Dashes" currentValue={DASH.indexOf(dashes)} minValue={0} maxValue={2} description="FREQUENCY" formatValue={(i: number) => DASH_LABEL[i] ?? ""} color={STYLE_COLORS.dashes.color} shadowColor={STYLE_COLORS.dashes.shadow} gridColumnSpan={2} onIncrement={() => (dashes = stepArr(DASH, dashes, 1))} onDecrement={() => (dashes = stepArr(DASH, dashes, -1))} />
         </div>
       </div>
 
@@ -273,6 +285,21 @@
               <StartPositionPicker startPositionState={posOri} />
             </div>
             <button class="po-done" onclick={() => (showPosOri = false)}>Done</button>
+          </div>
+        {/if}
+
+        {#if showProp}
+          <div class="picker-overlay" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+            <div class="po-header">
+              <h3>Deck Prop</h3>
+              <button class="po-close" aria-label="Close" onclick={() => (showProp = false)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div class="po-body">
+              <BentoPropGrid selectedPropType={propType} variant="inline" title="Select Prop" onSelect={(p: PropType) => { propType = p; showProp = false; }} />
+            </div>
+            <button class="po-done" onclick={() => (showProp = false)}>Done</button>
           </div>
         {/if}
       </div>
@@ -431,7 +458,6 @@
   .stat-big { font-size: 44px; font-weight: 800; color: #22c55e; font-variant-numeric: tabular-nums; line-height: 1; }
   .stat-big.warn { color: #fbbf24; }
   .stat-sub { margin-top: 8px; font-size: 12px; color: rgba(255, 255, 255, 0.55); display: flex; flex-direction: column; gap: 2px; }
-  .cap { color: #fbbf24; } .ok { color: rgba(255, 255, 255, 0.4); }
   .recipe-head, .draw-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255, 255, 255, 0.5); }
   .copy { padding: 4px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: none; color: #fff; font-size: 12px; cursor: pointer; }
   .recipe { margin: 0; max-height: 300px; overflow: auto; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 14px; font-size: 12px; line-height: 1.5; color: #cbd5e1; }
