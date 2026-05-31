@@ -188,6 +188,23 @@ The "bubbly button" panel: SegmentedControl rows + preset chips + per-step drill
 progressive disclosure and a single write path. Consumed by all three surfaces. Built on
 existing primitives (`SegmentedControl`, `FilterChipBase`) per `chip-primitives` rule.
 
+**Deck-generator control tiering (decided 2026-05-31):**
+
+- **Top — bento tiles** (deck-defining, frequent): Word (all-variations-of-a-word mode) ·
+  Deck Size · Length (step count) · Level · Grid (Diamond/Box) · Orientation · Loop type ·
+  Period (Quartered/Halved) · **Customize** (entry) · **Generate** (action).
+- **Customize panel — quick toggles:** Prop reversals (`constraintPreset`) · Hand reversals
+  (`handPathMode`) · Dashes (`motionTypeFilter`) · Turn intensity (`turnIntensity`) · Turn
+  variation (Clean/Sprinkle/Spicy) · Turn patterns (Hold/Pulse/Trade…).
+- **Customize panel — deep drill-in:** per-step turn editor · per-step reversal editor.
+- **Orientation tile folds in Start Position** — tapping it opens orientation
+  (Radial/Nonradial/Split) **and** start mode (All/Classic/Specific); "Specific" reveals the
+  position grid (deep tier).
+- **Decisions:** Turn intensity lives in Customize, not as its own top tile (keeps the grid
+  tight). **Rhythm/Duration is omitted from deck generation** — it is sequence-playback
+  timing, not static-card data. No Recipe tile on the grid for now; recipe reuse stays in the
+  released-decks panel.
+
 ### Phase 2 — Deck generates from recipe (headline)
 
 Wire the deck composer to generation: closed-form ceiling + lazy Fisher-Yates draw +
