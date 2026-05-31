@@ -19,6 +19,7 @@
   import { LOOPType, LOOP_TYPE_LABELS, ROTATED_LOOP_TYPES } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
+  import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
 
   const c = getCardColors(BackgroundType.COSMIC); // DEFAULT_COLORS gradients
   const LOOP_COLOR = "linear-gradient(135deg, #a3a32a 0%, #8a8a22 50%, #6b6b1a 100%)";
@@ -70,9 +71,7 @@
   let loopComponents = $state<Set<LOOPComponent>>(parseLoopComponents(LOOPType.ROTATED));
   let showLoop = $state(false);
   let period = $state<"quartered" | "halved">("quartered");
-  let turns = $state<"none" | "light" | "medium" | "heavy">("light"); // turn intensity
-  let turnVariation = $state<"clean" | "sprinkle" | "spicy">("sprinkle");
-  let turnPatterns = $state<Set<string>>(new Set(["Hold 1", "Pulse 1"]));
+  let turnIntensity = $state(1); // max turn intensity — generator model; appears at Level 2+
   let propRev = $state<"smooth" | "mixed" | "choppy">("smooth");
   let handRev = $state<"smooth" | "mixed" | "choppy">("mixed");
   let dashes = $state<"low" | "mixed" | "high">("mixed");
@@ -81,17 +80,14 @@
   let showOrient = $state(false);
   let seed = $state(mintSeed());
 
-  const TURN_PATTERNS = ["Hold 1", "Pulse 1", "Trade 1", "½/1 Trade", "Wave 2·1"];
-  function togglePattern(p: string) {
-    const next = new Set(turnPatterns); next.has(p) ? next.delete(p) : next.add(p); turnPatterns = next;
-  }
   function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
   // ---- derived ----------------------------------------------------------------
   const wordMode = $derived(word.trim().length > 0);
   // Generation fans each base seed across the variation axes → the real card space is deep.
+  const turnAllowed = $derived(level >= 3 ? [0, 0.5, 1, 1.5, 2, 2.5, 3] : [0, 1, 2, 3]);
   const variationMultiplier = $derived(
-    (turns === "none" ? 1 : 4) * (period === "quartered" ? 2 : 1) *
+    (level > 1 && turnIntensity > 0 ? 4 : 1) * (period === "quartered" ? 2 : 1) *
     (propRev === "smooth" ? 1 : 2) * (handRev === "smooth" ? 1 : 2),
   );
   const wordVariations = $derived(wordMode ? Math.max(1, word.trim().length * 6) * variationMultiplier : 0);
@@ -102,8 +98,7 @@
   const exhausted = $derived(requested > cardSpace);
 
   const customizeSummary = $derived(
-    propRev === "smooth" && handRev === "mixed" && dashes === "mixed" &&
-    turns === "light" && turnVariation === "sprinkle" ? "Default" : "Custom",
+    propRev === "smooth" && handRev === "mixed" && dashes === "mixed" ? "Default" : "Custom",
   );
   const orientSummary = $derived(
     (orientation === "nonradial" ? "Non-radial" : cap(orientation)) +
@@ -116,7 +111,7 @@
       ...(wordMode ? { word: word.trim().toUpperCase(), deck: "all-variations" } : { deckSize }),
       loopType, stepCount, level, grid, orientation, startMode, period,
       propReversals: propRev, handReversals: handRev, dashes,
-      turnIntensity: turns, turnVariation, turnPatterns: [...turnPatterns],
+      ...(level > 1 ? { turnIntensity } : {}),
     },
   });
 
@@ -184,6 +179,10 @@
 
         <ToggleCard title="Grid" option1={{ value: "diamond", label: "Diamond" }} option2={{ value: "box", label: "Box" }} activeOption={grid} onToggle={(v) => (grid = v as typeof grid)} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} gridColumnSpan={2} />
 
+        {#if level > 1}
+          <TurnIntensityCard currentIntensity={turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => (turnIntensity = v)} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
+        {/if}
+
         <BaseCard title="Orientation" currentValue={orientSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showOrient = !showOrient)} />
 
         <!-- Row 3 -->
@@ -244,23 +243,7 @@
               <button class="opt" class:on={dashes === v} onclick={() => (dashes = v as typeof dashes)}>{l}</button>
             {/each}
           </div></div>
-          <span class="detail-title">Customize · Turns</span>
-          <div class="brow"><span class="brow-label">Intensity</span><div class="opts">
-            {#each [["none", "None"], ["light", "Light"], ["medium", "Medium"], ["heavy", "Heavy"]] as [v, l]}
-              <button class="opt" class:on={turns === v} onclick={() => (turns = v as typeof turns)}>{l}</button>
-            {/each}
-          </div></div>
-          <div class="brow"><span class="brow-label">Variation</span><div class="opts">
-            {#each [["clean", "Clean"], ["sprinkle", "Sprinkle"], ["spicy", "Spicy"]] as [v, l]}
-              <button class="opt" class:on={turnVariation === v} onclick={() => (turnVariation = v as typeof turnVariation)}>{l}</button>
-            {/each}
-          </div></div>
-          <div class="brow"><span class="brow-label">Patterns</span><div class="pills">
-            {#each TURN_PATTERNS as p}
-              <button class="pill" class:on={turnPatterns.has(p)} onclick={() => togglePattern(p)}>{p}</button>
-            {/each}
-          </div></div>
-          <p class="detail-note">Per-step turn &amp; reversal editors are the deep tier (drill-in from here).</p>
+          <p class="detail-note">Turns aren't here — Max Turn Intensity is its own card that appears at Level 2+ (just like the generator). The per-step reversal editor is the deep tier (drill-in from here).</p>
         </div>
       {/if}
     </section>
