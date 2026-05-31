@@ -135,7 +135,7 @@
 </div>
 
 <style>
-  .pse { display: flex; flex-direction: column; gap: 26px; width: 100%; max-width: 640px; margin: 8px auto 0; }
+  .pse { display: flex; flex-direction: column; gap: 26px; width: 100%; margin: 8px 0 0; }
   .axis-lbl { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--theme-text-dim); }
   .axis > .axis-lbl { display: block; margin: 0 0 12px; }
   .axis-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 12px; }

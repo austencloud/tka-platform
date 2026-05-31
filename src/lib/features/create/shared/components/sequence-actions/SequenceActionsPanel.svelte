@@ -744,7 +744,16 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
       <div class="view-layer" transition:sharedAxis|local={{ x: -30 }}>
     <!-- Simple header with title and actions -->
     <div class="compact-header" class:dimmed={helpMode === "selecting"}>
-      <h2 class="panel-title">Sequence Actions</h2>
+      <div class="header-lead">
+        <button
+          class="icon-btn back"
+          onclick={handleClose}
+          aria-label="Close panel"
+        >
+          <i class="fas fa-chevron-left" aria-hidden="true"></i>
+        </button>
+        <h2 class="panel-title">Sequence Actions</h2>
+      </div>
 
       {#if isMobileLayout}
         <!-- Mobile: inline segmented hand selector in header -->
@@ -939,7 +948,10 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     justify-content: space-between;
     gap: 8px;
     padding: 8px 12px;
-    background: rgba(15, 20, 30, 0.95);
+    /* Glassmorphic to match the translucent panel body (was opaque gray). */
+    background: rgba(15, 20, 30, 0.55);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
     border-bottom: 1px solid var(--theme-stroke);
     height: var(--min-touch-target);
     flex-shrink: 0;
@@ -950,6 +962,14 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     font-size: 1rem;
     font-weight: 600;
     color: var(--theme-text);
+  }
+
+  /* Back chevron + title grouped at the left of the root header. */
+  .header-lead {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
   }
 
   /* Drill-down sub-view header: back-left, title-centered, close-right */

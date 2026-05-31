@@ -97,9 +97,8 @@
 
   .apply-btn {
     width: 100%;
-    max-width: 640px;
     min-height: 52px;
-    margin: 6px auto 0;
+    margin: 6px 0 0;
     padding: 0 14px;
     border: none;
     border-radius: 12px;
