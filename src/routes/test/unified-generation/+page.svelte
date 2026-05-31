@@ -126,6 +126,7 @@
     <span class="badge">Deck Generator</span>
     <p class="ctx-note">Generate a deck the way you generate a sequence. {#if wordMode}<strong>Word mode:</strong> drawing every variation of “{word.trim().toUpperCase()}”.{:else}Pick dials → <strong>Generate</strong> draws {drawCount}.{/if}</p>
   </header>
+  <div class="mock-banner"><i class="fas fa-flask"></i> Counts are <strong>illustrative placeholders</strong>, not computed. Real enumeration (closed-form ceiling) is Phase&nbsp;0/2. This prototype is for layout & feel.</div>
 
   <div class="layout">
     <section class="grid-pane">
@@ -192,7 +193,7 @@
     <aside class="rail">
       <div class="stat">
         <div class="stat-big" class:warn={exhausted}>{drawCount}</div>
-        <div class="stat-sub">{wordMode ? "variations of the word" : "fresh cards"}{#if exhausted}<span class="cap">that's the whole space</span>{:else}<span class="ok">from a {cardSpace.toLocaleString()}-deep space</span>{/if}</div>
+        <div class="stat-sub">{wordMode ? "variations of the word" : "fresh cards"}<span class="mocktag">illustrative — not computed</span></div>
       </div>
 
       <div class="recipe-head"><span>Recipe (durable truth)</span><button class="copy" onclick={copyRecipe}>{copied ? "Copied!" : "Copy"}</button></div>
@@ -227,6 +228,9 @@
   .badge { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #06121a; background: #22c55e; padding: 5px 12px; border-radius: 999px; }
   .ctx-note { margin: 0; font-size: 13px; color: rgba(255, 255, 255, 0.65); }
   .ctx-note strong { color: #22c55e; }
+  .mock-banner { display: flex; align-items: center; gap: 8px; max-width: 1180px; margin: 12px auto 0; padding: 8px 28px; font-size: 12px; color: #fbbf24; }
+  .mock-banner strong { color: #fbbf24; }
+  .mocktag { color: #fbbf24; font-size: 11px; opacity: 0.85; }
 
   .layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.8fr); gap: 24px; max-width: 1180px; margin: 28px auto 0; padding: 0 28px; align-items: start; }
   @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
