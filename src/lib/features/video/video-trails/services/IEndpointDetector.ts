@@ -1,4 +1,4 @@
-import type { DetectedEndpoint, DetectionConfig, DetectorCapabilities } from "../../domain/types";
+import type { DetectedEndpoint, DetectionConfig, DetectorCapabilities } from "../domain/types";
 
 export interface IEndpointDetector {
   detect(frame: ImageData, config: DetectionConfig): DetectedEndpoint[];

@@ -6,7 +6,7 @@
  * and is tried in priority order by the orchestrating CommandInterpreter.
  */
 
-import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../domain/voice-command-types";
+import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../domain/voice-command-types";
 
 export interface ISubInterpreter {
   /** Which command category this interpreter handles */

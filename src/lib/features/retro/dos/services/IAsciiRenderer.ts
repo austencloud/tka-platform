@@ -9,7 +9,7 @@
  * Domain: Retro DOS Era
  */
 
-import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
+import type { RetroPictographData } from "../../shared/domain/pictograph-types";
 
 export interface AsciiRenderOptions {
 	layers?: {

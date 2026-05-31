@@ -1,5 +1,5 @@
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { Period } from "../../domain/models/circular-models";
+import type { Period } from "../domain/models/circular-models";
 
 /**
  * Common interface for all LOOP executors
