@@ -126,14 +126,24 @@ export async function createUserCollection(
   });
 
   const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
-  await setDoc(docRef, {
-    ...newCollection,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
+  try {
+    await setDoc(docRef, {
+      ...newCollection,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
 
-  const userDocRef = doc(firestore, `users/${userId}`);
-  await updateDoc(userDocRef, { lastActivityDate: serverTimestamp() });
+    const userDocRef = doc(firestore, `users/${userId}`);
+    await updateDoc(userDocRef, { lastActivityDate: serverTimestamp() });
+  } catch (error) {
+    console.error("[CollectionManager] Failed to create collection:", error);
+    toast.error("Failed to create collection. Please try again.");
+    throw new CollectionError(
+      "Failed to create collection",
+      "NETWORK",
+      collectionId
+    );
+  }
 
   return {
     ...newCollection,
@@ -184,10 +194,20 @@ export async function updateCollection(
   }
 
   const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
-  await updateDoc(docRef, {
-    ...updates,
-    updatedAt: serverTimestamp(),
-  });
+  try {
+    await updateDoc(docRef, {
+      ...updates,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("[CollectionManager] Failed to update collection:", error);
+    toast.error("Failed to update collection. Please try again.");
+    throw new CollectionError(
+      "Failed to update collection",
+      "NETWORK",
+      collectionId
+    );
+  }
 
   return {
     ...existing,
@@ -270,11 +290,24 @@ export async function addSequenceToCollection(
     firestore,
     getUserCollectionPath(userId, collectionId)
   );
-  await updateDoc(collectionRef, {
-    sequenceIds: arrayUnion(sequenceId),
-    sequenceCount: (await getCollection(collectionId))!.sequenceCount + 1,
-    updatedAt: serverTimestamp(),
-  });
+  try {
+    await updateDoc(collectionRef, {
+      sequenceIds: arrayUnion(sequenceId),
+      sequenceCount: (await getCollection(collectionId))!.sequenceCount + 1,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error(
+      "[CollectionManager] Failed to add sequence to collection:",
+      error
+    );
+    toast.error("Failed to add to collection. Please try again.");
+    throw new CollectionError(
+      "Failed to add sequence to collection",
+      "NETWORK",
+      collectionId
+    );
+  }
 
   // Update sequence's collectionIds if it exists in the user's library.
   // The sequence might not exist locally when favoriting someone else's public
@@ -315,11 +348,24 @@ export async function removeSequenceFromCollection(
     firestore,
     getUserCollectionPath(userId, collectionId)
   );
-  await updateDoc(collectionRef, {
-    sequenceIds: arrayRemove(sequenceId),
-    sequenceCount: Math.max(0, existing.sequenceCount - 1),
-    updatedAt: serverTimestamp(),
-  });
+  try {
+    await updateDoc(collectionRef, {
+      sequenceIds: arrayRemove(sequenceId),
+      sequenceCount: Math.max(0, existing.sequenceCount - 1),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error(
+      "[CollectionManager] Failed to remove sequence from collection:",
+      error
+    );
+    toast.error("Failed to remove from collection. Please try again.");
+    throw new CollectionError(
+      "Failed to remove sequence from collection",
+      "NETWORK",
+      collectionId
+    );
+  }
 
   try {
     const sequenceRef = doc(
@@ -388,10 +434,20 @@ export async function reorderSequences(
   const userId = getAuthenticatedUserId();
   const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
 
-  await updateDoc(docRef, {
-    sequenceIds,
-    updatedAt: serverTimestamp(),
-  });
+  try {
+    await updateDoc(docRef, {
+      sequenceIds,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("[CollectionManager] Failed to reorder sequences:", error);
+    toast.error("Failed to reorder sequences. Please try again.");
+    throw new CollectionError(
+      "Failed to reorder sequences",
+      "NETWORK",
+      collectionId
+    );
+  }
 }
 
 export async function addSequencesToCollection(
