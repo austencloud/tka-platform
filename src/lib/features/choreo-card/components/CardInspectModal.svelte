@@ -215,9 +215,6 @@
           {@render extraActions()}
         {/if}
       </div>
-      <div class="hints">
-        <span><kbd>Esc</kbd> close</span>
-      </div>
     </div>
   </div>
 
@@ -341,25 +338,6 @@
   .actions :global(button:disabled) {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-
-  .hints {
-    display: flex;
-    gap: 16px;
-    font-size: 12px;
-    color: var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    flex-shrink: 0;
-  }
-
-  .hints kbd {
-    display: inline-block;
-    padding: 1px 5px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    border-radius: 3px;
-    font-family: inherit;
-    font-size: 12px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.25));
-    margin-right: 4px;
   }
 
   /* Primary action — the green Done in fix mode. Out-specifies the uniform
