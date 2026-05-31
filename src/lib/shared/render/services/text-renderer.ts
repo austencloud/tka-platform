@@ -58,7 +58,7 @@ export interface UserInfoFooterOptions {
 }
 
 export class TextRenderer {
-  private readonly titleFontFamily = "Georgia, serif";
+  private readonly titleFontFamily = "Gelasio, Georgia, serif";
   private readonly titleFontWeight = "600";
   private readonly fallbackFontFamily =
     "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";

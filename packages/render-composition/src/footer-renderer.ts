@@ -150,23 +150,23 @@ export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptio
 
   // Left: leftLabel, or username (bold), suppressed for system authors
   if (leftLabel?.trim()) {
-    ctx.font = `bold ${fontSize}px Cambria, Georgia, serif`;
+    ctx.font = `bold ${fontSize}px Gelasio, Cambria, Georgia, serif`;
     drawPipeColoredText(ctx, leftLabel, margin, yPosition, "left", baseColor);
   } else if (showCreatorName && userName?.trim() && !SYSTEM_AUTHORS.has(userName.trim())) {
-    ctx.font = `bold ${fontSize}px Cambria, Georgia, serif`;
+    ctx.font = `bold ${fontSize}px Gelasio, Cambria, Georgia, serif`;
     ctx.textAlign = "left";
     ctx.fillText(userName, margin, yPosition);
   }
 
   // Right: rightLabel or year
   if (rightLabel?.trim()) {
-    ctx.font = `bold ${fontSize}px Cambria, Georgia, serif`;
+    ctx.font = `bold ${fontSize}px Gelasio, Cambria, Georgia, serif`;
     drawPipeColoredText(ctx, rightLabel, canvasWidth - margin, yPosition, "right", baseColor);
   } else if (showBirthday) {
     const dateToUse = birthday || new Date();
     const year = dateToUse.getFullYear().toString();
 
-    ctx.font = `${fontSize}px Cambria, Georgia, serif`;
+    ctx.font = `${fontSize}px Gelasio, Cambria, Georgia, serif`;
     ctx.textAlign = "right";
     ctx.fillText(year, canvasWidth - margin, yPosition);
   }
@@ -175,7 +175,7 @@ export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptio
   if (showNotes) {
     const centerText = notes?.trim() || "The Kinetic Alphabet";
     ctx.fillStyle = baseColor;
-    ctx.font = `${fontSize}px Cambria, Georgia, serif`;
+    ctx.font = `${fontSize}px Gelasio, Cambria, Georgia, serif`;
     ctx.textAlign = "center";
 
     if (iconImage) {

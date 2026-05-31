@@ -33,6 +33,7 @@ import {
 import type { CardFrontLayout, CardFrontChromeDeps } from "./card-front-assembler";
 import type { LayerRenderOptions, LayerVisibility } from "./types";
 import { composeCardImage as composeCardImageFn } from "./card-composer";
+import { ensureCardFonts } from "./gelasio-fonts";
 // mandala geometry calculate() loaded dynamically to keep its dependency graph out of the worker bundle until needed
 import { renderMandalaToCanvas } from "../../mandala/services/mandala-renderer";
 import { getMandalaPlacements } from "../../sequence-viewer/services/getMandalaPlacements";
@@ -268,6 +269,9 @@ export class ImageComposer {
     }
 
     await (this.TextRenderer as TextRenderer).preloadGlyphImages();
+    // Ensure Gelasio is loaded into document.fonts before any canvas text draw
+    // (no-op in the worker, which seeds self.fonts at init). Cached after first.
+    await ensureCardFonts();
 
     this.compositionL2Hits = 0;
     this.compositionL1Hits = 0;

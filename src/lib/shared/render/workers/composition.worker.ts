@@ -147,16 +147,11 @@ async function handleInit(
   seedOverrideResolvers(overrideBundle);
   console.log("[composition.worker] seeded glyphs:", glyphMeta.length, "bundle keys:", bundle.keys.length, "grids:", Object.values(bundle.grids).filter(Boolean).length);
 
-  // Attempt to register fonts in the worker context
-  try {
-    const georgiaFont = new FontFace("Georgia", "local('Georgia')");
-    await georgiaFont.load();
-    (self as unknown as WorkerGlobalScope & { fonts: FontFaceSet }).fonts?.add(
-      georgiaFont,
-    );
-  } catch {
-    // Font load failure is non-fatal; text renders in fallback font
-  }
+  // Load Gelasio (metric-compatible Georgia) into the worker FontFaceSet so step
+  // labels + footer text match the main thread. local('Georgia') is blocked in
+  // workers, so we load the bundled woff2 by URL.
+  const { loadGelasioInto } = await import("../services/gelasio-fonts");
+  await loadGelasioInto((self as unknown as WorkerGlobalScope & { fonts: FontFaceSet }).fonts);
 
   postResult({ type: "init-done" });
 }
