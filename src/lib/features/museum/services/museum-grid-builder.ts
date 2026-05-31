@@ -30,8 +30,16 @@ import { validate as validateLayout } from "./layout-validator";
 import { stampRoom } from "./wall-segment-stamper";
 import { ROOM_CONTENT } from "../data/museum-room-content";
 
-export class MuseumGridBuilder {
-  build(rooms: RoomNode[], edges: RoomEdge[], config: GridConfig): MuseumGridBuildResult {
+/**
+ * Builds the museum grid: runs the full layout pipeline (layout → floors →
+ * wall segments → corridors → walls → performers/furniture → spawn → validate).
+ * Used by MuseumModule.svelte. Stateless — plain module functions, no singleton.
+ */
+export function buildMuseumGrid(
+  rooms: RoomNode[],
+  edges: RoomEdge[],
+  config: GridConfig,
+): MuseumGridBuildResult {
     // Step 1: Compute room positions
     const layout = computeLayout(rooms, edges, config);
     const roomLookup = new Map(layout.rooms.map((r: PlacedRoom) => [r.id, r]));
@@ -43,7 +51,7 @@ export class MuseumGridBuilder {
 
     // Step 2: Carve room floors
     for (const room of layout.rooms) {
-      this.carveRoomFloor(tiles, room);
+      carveRoomFloor(tiles, room);
     }
 
     // Step 3: Stamp wall segments + collect door positions
@@ -73,16 +81,16 @@ export class MuseumGridBuilder {
 
     // Step 5: Carve corridor floors
     for (const { segments } of corridorData) {
-      this.carveCorridorFloor(tiles, segments);
+      carveCorridorFloor(tiles, segments);
     }
 
     // Step 6: Derive walls - any empty tile adjacent to a walkable tile becomes a wall
-    this.deriveWalls(tiles, layout.gridWidth, layout.gridHeight);
+    deriveWalls(tiles, layout.gridWidth, layout.gridHeight);
 
     // Step 7: Place performers + furniture
     for (const room of layout.rooms) {
-      this.placePerformers(tiles, room, performers);
-      this.placeFurniture(room, furniture);
+      placePerformers(tiles, room, performers);
+      placeFurniture(room, furniture);
     }
 
     // Step 8: Spawn position - center of first room, facing north.
@@ -120,7 +128,7 @@ export class MuseumGridBuilder {
   /**
    * Stamps a tile onto the grid at the given position.
    */
-  private placeTile(tiles: Map<string, MuseumTile>, x: number, y: number, tile: MuseumTile): void {
+function placeTile(tiles: Map<string, MuseumTile>, x: number, y: number, tile: MuseumTile): void {
     tiles.set(tileKey(x, y), tile);
   }
 
@@ -130,7 +138,7 @@ export class MuseumGridBuilder {
    * walls. Wall segments (exhibits, doors, torches, etc.) are stamped onto
    * the boundary separately by WallSegmentStamper.
    */
-  private carveRoomFloor(tiles: Map<string, MuseumTile>, room: PlacedRoom): void {
+function carveRoomFloor(tiles: Map<string, MuseumTile>, room: PlacedRoom): void {
     for (let dy = 1; dy < room.h - 1; dy++) {
       for (let dx = 1; dx < room.w - 1; dx++) {
         tiles.set(tileKey(room.x + dx, room.y + dy), {
@@ -146,7 +154,7 @@ export class MuseumGridBuilder {
    * Each segment is a straight run. The corridor width expands perpendicular
    * to the run direction.
    */
-  private carveCorridorFloor(
+function carveCorridorFloor(
     tiles: Map<string, MuseumTile>,
     segments: CorridorSegment[],
   ): void {
@@ -181,7 +189,7 @@ export class MuseumGridBuilder {
    * Any empty tile (not in the map) that is adjacent (8-directional)
    * to a walkable tile becomes a wall.
    */
-  private deriveWalls(
+function deriveWalls(
     tiles: Map<string, MuseumTile>,
     gridWidth: number,
     gridHeight: number,
@@ -218,7 +226,7 @@ export class MuseumGridBuilder {
   /**
    * Places performer tiles inside a room based on center-relative offsets.
    */
-  private placePerformers(
+function placePerformers(
     tiles: Map<string, MuseumTile>,
     room: PlacedRoom,
     performers: PerformerDefinition[],
@@ -234,7 +242,7 @@ export class MuseumGridBuilder {
       const px = centerX + Math.floor(placement.offsetX * interiorW);
       const py = centerY + Math.floor(placement.offsetY * interiorH);
 
-      this.placeTile(tiles, px, py, {
+      placeTile(tiles, px, py, {
         type: "performer-station",
         refId: placement.refId,
         facing: placement.facing,
@@ -258,7 +266,7 @@ export class MuseumGridBuilder {
    * Furniture doesn't stamp tiles - it only produces FurnitureDefinition entries
    * that the 3D renderer reads to place GLTF models.
    */
-  private placeFurniture(
+function placeFurniture(
     room: PlacedRoom,
     furniture: FurnitureDefinition[],
   ): void {
@@ -283,45 +291,3 @@ export class MuseumGridBuilder {
       });
     }
   }
-
-  /**
-   * Finds a walkable tile near the center of a room.
-   * Spirals outward from center until a walkable floor tile is found.
-   */
-  private findWalkableSpawn(
-    tiles: Map<string, MuseumTile>,
-    room: PlacedRoom,
-  ): { x: number; y: number } {
-    const centerX = room.x + Math.floor(room.w / 2);
-    const centerY = room.y + Math.floor(room.h / 2);
-
-    for (let radius = 0; radius < Math.max(room.w, room.h); radius++) {
-      for (let dy = -radius; dy <= radius; dy++) {
-        for (let dx = -radius; dx <= radius; dx++) {
-          if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
-          const x = centerX + dx;
-          const y = centerY + dy;
-          const tile = tiles.get(tileKey(x, y));
-          if (tile && isWalkable(tile.type)) {
-            return { x, y };
-          }
-        }
-      }
-    }
-
-    return { x: room.x + 2, y: room.y + 2 };
-  }
-}
-
-/**
- * Convenience function for building the museum grid.
- * Used by Museum2DModule.svelte.
- */
-export function buildMuseumGrid(
-  rooms: RoomNode[],
-  edges: RoomEdge[],
-  config: GridConfig,
-): MuseumGridBuildResult {
-  const builder = new MuseumGridBuilder();
-  return builder.build(rooms, edges, config);
-}
