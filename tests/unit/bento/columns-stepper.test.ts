@@ -2,21 +2,41 @@ import { describe, it, expect } from "vitest";
 import {
   nextColumnValue,
   prevColumnValue,
+  columnOptionsFor,
 } from "../../../src/lib/shared/sequence-viewer/components/bento/columns-stepper";
 
+describe("columnOptionsFor", () => {
+  it("4 steps hides the awkward 3-column option", () => {
+    expect(columnOptionsFor(4)).toEqual([2, 4]);
+  });
+
+  it("caps numeric options at the beat count", () => {
+    expect(columnOptionsFor(2)).toEqual([2]);
+    expect(columnOptionsFor(3)).toEqual([2, 3]);
+    expect(columnOptionsFor(6)).toEqual([2, 3, 4, 5, 6]);
+  });
+
+  it("clamps to the 8-column ceiling", () => {
+    expect(columnOptionsFor(20)).toEqual([2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it("returns no numeric options for stepCount < 2", () => {
+    expect(columnOptionsFor(1)).toEqual([]);
+    expect(columnOptionsFor(0)).toEqual([]);
+  });
+});
+
 describe("columns stepper", () => {
-  it("nextColumnValue cycles Auto -> 2 -> 3 -> stepCount -> Auto", () => {
+  it("nextColumnValue cycles Auto -> 2 -> 4 -> Auto for 4 steps (skips 3)", () => {
     expect(nextColumnValue(null, 4)).toBe(2);
-    expect(nextColumnValue(2, 4)).toBe(3);
-    expect(nextColumnValue(3, 4)).toBe(4);
+    expect(nextColumnValue(2, 4)).toBe(4);
     expect(nextColumnValue(4, 4)).toBe(null);
     expect(nextColumnValue(null, 4)).toBe(2);
   });
 
-  it("prevColumnValue cycles Auto -> stepCount -> ... -> 2 -> Auto", () => {
+  it("prevColumnValue cycles Auto -> 4 -> 2 -> Auto for 4 steps (skips 3)", () => {
     expect(prevColumnValue(null, 4)).toBe(4);
-    expect(prevColumnValue(4, 4)).toBe(3);
-    expect(prevColumnValue(3, 4)).toBe(2);
+    expect(prevColumnValue(4, 4)).toBe(2);
     expect(prevColumnValue(2, 4)).toBe(null);
   });
 

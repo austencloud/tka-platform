@@ -31,6 +31,7 @@
   import { encodeViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
   import { renderCell, deleteCellCache } from "../services/preview-cell-renderer";
+  import { compositeStepNumberOnBlob } from "../services/step-number-compositor";
   import { cellCacheKeyDeriver } from "../services/cell-cache-key-deriver";
   import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -495,24 +496,29 @@
    * Build render options from current component state (delegates to extracted pure function)
    */
   function buildRenderOptionsFn(): PreviewCellRenderOptions {
-    return buildRenderOptions({
-      cellSize: CELL_SIZE,
-      bluePropType,
-      redPropType,
-      catDogModeEnabled,
-      showNonRadial,
-      handPointVis,
-      showTKA,
-      showReversals,
-      showTnD,
-      showElemental,
-      showPositions,
-      isSoloMode,
-      handPathMode,
-      browseViewMode,
-      showBlueMotion,
-      showRedMotion,
-    });
+    return {
+      ...buildRenderOptions({
+        cellSize: CELL_SIZE,
+        bluePropType,
+        redPropType,
+        catDogModeEnabled,
+        showNonRadial,
+        handPointVis,
+        showTKA,
+        showReversals,
+        showTnD,
+        showElemental,
+        showPositions,
+        isSoloMode,
+        handPathMode,
+        browseViewMode,
+        showBlueMotion,
+        showRedMotion,
+      }),
+      // Drives renderCell to composite the step number onto the (number-free)
+      // base cell so it bakes into the image and crossfades in lockstep.
+      showStepNumbers,
+    };
   }
 
   /**
@@ -811,7 +817,9 @@
           data: startData,
           stepNumber: undefined,
           options: renderOptions,
-          cacheKey: cellCacheKeyDeriver.deriveCacheKey(startData, undefined, isDark, renderOptions),
+          // Look up the NUMBER-FREE base blob (the shared, persistent cache) —
+          // the step number is composited on afterwards, never keyed in.
+          cacheKey: cellCacheKeyDeriver.deriveCacheKey(startData, undefined, isDark, { ...renderOptions, showStepNumbers: false }),
         });
       }
       for (let i = 0; i < sequence.steps.length; i++) {
@@ -826,7 +834,8 @@
           data: step,
           stepNumber: i + 1,
           options: cellOpts,
-          cacheKey: cellCacheKeyDeriver.deriveCacheKey(step, i + 1, isDark, cellOpts),
+          // Number-free base key — number composited on afterwards (see Phase 1).
+          cacheKey: cellCacheKeyDeriver.deriveCacheKey(step, undefined, isDark, { ...cellOpts, showStepNumbers: false }),
         });
       }
 
@@ -837,19 +846,36 @@
         tasks.map(t => pictographBlobCache.get(t.cacheKey).catch(() => null))
       );
 
-      // Apply all IDB hits in a single batch assignment. One Svelte reactive
-      // flush → one paint. Replaces the sequential cell-by-cell loop that
-      // stalled warm sequences for ~1.5s.
+      // Composite the step number onto each cache hit so warm cells bake the
+      // number into the image (matching the fresh-render path), then apply all
+      // hits in a single batch assignment — one Svelte flush → one paint.
+      const hitUrls = await Promise.all(
+        blobResults.map(async (blob, t) => {
+          if (!blob) return null;
+          const task = tasks[t]!;
+          const bakeNum =
+            showStepNumbers &&
+            !isBrowseSoloMode &&
+            !isMotionSoloMode &&
+            task.stepNumber != null &&
+            task.stepNumber !== -1;
+          const finalBlob = bakeNum
+            ? await compositeStepNumberOnBlob(blob, task.stepNumber!, task.options.size, isDark, task.options.widthMultiplier ?? 1)
+            : blob;
+          return URL.createObjectURL(finalBlob);
+        })
+      );
+
       const updatedCells: CellData[] = cells.map(c => ({ ...c }));
       const missedTasks: { task: CellTask; cellArrayIndex: number }[] = [];
       let hitCount = 0;
       for (let t = 0; t < tasks.length; t++) {
         const task = tasks[t]!;
-        const blob = blobResults[t];
+        const url = hitUrls[t];
         const idx = updatedCells.findIndex(c => c.index === task.cellIndex);
         if (idx === -1) continue;
-        if (blob) {
-          updatedCells[idx] = { ...updatedCells[idx]!, imageUrl: URL.createObjectURL(blob), isLoaded: true };
+        if (url) {
+          updatedCells[idx] = { ...updatedCells[idx]!, imageUrl: url, isLoaded: true };
           hitCount++;
         } else {
           missedTasks.push({ task, cellArrayIndex: idx });

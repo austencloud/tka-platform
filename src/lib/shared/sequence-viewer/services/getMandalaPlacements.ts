@@ -51,12 +51,7 @@ export function getMandalaPlacements(args: GetMandalaPlacementsArgs): GetMandala
 	if (!mandalaEnabled) return EMPTY;
 	if (!includeStartPosition) return EMPTY;
 	if (!blueVisible && !redVisible) return EMPTY;
-	if (stepCount <= 4) return EMPTY;
-
-	// 4-count horizontal metadata row: column layout only (row layout handles it generically below).
-	if (stepCount === 4 && showQRCode && startPositionLayout === "column") {
-		return buildFourCountHorizontal(blueVisible, redVisible);
-	}
+	if (stepCount < 4) return EMPTY;
 
 	if (startPositionLayout === "row") {
 		// Info cells live in row 1 between start (col 1) and QR (col `cols`).
@@ -127,29 +122,4 @@ function buildColumnPlacements(
 	}
 	if (blueVisible) return [{ row: topRow, col: 1, variant: "blue" }];
 	return [{ row: topRow, col: 1, variant: "red" }];
-}
-
-function buildFourCountHorizontal(
-	blueVisible: boolean,
-	redVisible: boolean,
-): GetMandalaPlacementsResult {
-	const placements: MandalaPlacement[] = [];
-	// Anchored: blue at col 2 (left/start side), red at col 3 (right/far side).
-	if (blueVisible) placements.push({ row: 1, col: 2, variant: "blue" });
-	if (redVisible) placements.push({ row: 1, col: 3, variant: "red" });
-
-	const layoutOverride: MandalaLayoutOverride = {
-		cols: 4,
-		rows: 2,
-		startPos: { col: 1, row: 1 },
-		qrPos: { col: 4, row: 1 },
-		stepPositions: [
-			{ col: 1, row: 2 },
-			{ col: 2, row: 2 },
-			{ col: 3, row: 2 },
-			{ col: 4, row: 2 },
-		],
-	};
-
-	return { placements, layoutOverride };
 }

@@ -14,7 +14,7 @@
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import RailBentoSheet from "$lib/shared/animation-panel/bento/RailBentoSheet.svelte";
   import "$lib/shared/animation-panel/bento/rail-tile.css";
-  import { nextColumnValue, prevColumnValue } from "./bento/columns-stepper";
+  import { nextColumnValue, prevColumnValue, columnOptionsFor } from "./bento/columns-stepper";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -111,29 +111,35 @@
     vm.setGlyphVisibility("elementalGlyph", next);
   }
 
-  const allColumnOptions = [
+  // Columns options share one source with the mobile stepper (columnOptionsFor):
+  // numeric counts capped at the beat count, with awkward layouts hidden.
+  const columnOptions = $derived<{ label: string; value: number | null }[]>([
     { label: "Auto", value: null },
-    { label: "2", value: 2 },
-    { label: "3", value: 3 },
-    { label: "4", value: 4 },
-    { label: "5", value: 5 },
-    { label: "6", value: 6 },
-    { label: "7", value: 7 },
-    { label: "8", value: 8 },
-  ] as const;
+    ...columnOptionsFor(stepCount).map((v) => ({ label: String(v), value: v })),
+  ]);
 
-  // Max columns = beat count only. The start position is an extra cell
-  // that doesn't count toward the column limit.
-  const columnOptions = $derived(
-    allColumnOptions.filter((opt) => opt.value === null || opt.value <= stepCount)
-  );
+  // The rendered layout reads the per-step column override from the composition
+  // manager (ChoreoCard + choreo-card-layout-state). That is the authoritative
+  // store for what the user sees, so the control reflects and writes it.
+  // null = Auto = calculated layout.
+  const currentColumnCount = $derived.by<number | null>(() => {
+    void compositionVersion;
+    return imageComposition.getColumnCountForStepCount(stepCount);
+  });
+
+  // Write both stores: composition drives the live preview and persists the
+  // per-length choice; export-options feeds the PNG export pipeline. Syncing
+  // them keeps the preview and the downloaded card from disagreeing.
+  function setColumns(value: number | null): void {
+    imageComposition.setColumnCountForStepCount(stepCount, value);
+    exportOptions.setImageColumnCount(value);
+  }
 
   // If the current selection exceeds the beat count (e.g. user switched
   // to a shorter sequence), reset to Auto.
   $effect(() => {
-    const current = exportOptions.imageColumnCount;
-    if (current !== null && current > stepCount) {
-      exportOptions.setImageColumnCount(null);
+    if (currentColumnCount !== null && currentColumnCount > stepCount) {
+      setColumns(null);
     }
   });
 
@@ -169,7 +175,7 @@
   const CONTENT_TOTAL = 13;
 
   const columnsLabel = $derived(
-    exportOptions.imageColumnCount === null ? "Auto" : String(exportOptions.imageColumnCount)
+    currentColumnCount === null ? "Auto" : String(currentColumnCount)
   );
 </script>
 
@@ -301,12 +307,12 @@
         <div class="rt-tile" role="group" aria-label="Card columns">
           <div class="rt-stepper">
             <button type="button" class="rt-step-btn"
-              onclick={() => exportOptions.setImageColumnCount(prevColumnValue(exportOptions.imageColumnCount, stepCount))}
+              onclick={() => setColumns(prevColumnValue(currentColumnCount, stepCount))}
               aria-label="Previous column value"
             ><i class="fas fa-minus" aria-hidden="true"></i></button>
             <span class="rt-val">{columnsLabel}</span>
             <button type="button" class="rt-step-btn"
-              onclick={() => exportOptions.setImageColumnCount(nextColumnValue(exportOptions.imageColumnCount, stepCount))}
+              onclick={() => setColumns(nextColumnValue(currentColumnCount, stepCount))}
               aria-label="Next column value"
             ><i class="fas fa-plus" aria-hidden="true"></i></button>
           </div>
@@ -491,9 +497,9 @@
         <div class="chip-group">
           {#each columnOptions as option}
             <button type="button" class="chip"
-              class:active={exportOptions.imageColumnCount === option.value}
-              onclick={() => exportOptions.setImageColumnCount(option.value)}
-              aria-pressed={exportOptions.imageColumnCount === option.value}
+              class:active={currentColumnCount === option.value}
+              onclick={() => setColumns(option.value)}
+              aria-pressed={currentColumnCount === option.value}
             >{option.label}</button>
           {/each}
         </div>

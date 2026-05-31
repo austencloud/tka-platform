@@ -76,7 +76,11 @@
     alt={cell.label}
     draggable="false"
   />
-  {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={activeDarkMode} class:solo-location={isBrowseSoloMode} style="font-size: {isBrowseSoloMode ? Math.round(stepNumFontSize * 0.75) : stepNumFontSize}px;" transition:fade|local={{ duration: 150 }}>{cell.label}</span>{/if}
+  <!-- Normal-mode step numbers are baked into the cell image (see
+       step-number-compositor) so they dissolve in lockstep with the pictograph
+       during crossfades. The HTML overlay remains only for cases the compositor
+       skips: solo / motion-solo location labels and the start cell. -->
+  {#if showStepNumbers && (isBrowseSoloMode || isMotionSoloMode || cell.index === -1)}<span class="step-number-overlay" class:dark-mode={activeDarkMode} class:solo-location={isBrowseSoloMode} style="font-size: {isBrowseSoloMode ? Math.round(stepNumFontSize * 0.75) : stepNumFontSize}px;" transition:fade|local={{ duration: 150 }}>{cell.label}</span>{/if}
   {#if showDurBadge && hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={activeDarkMode}>{formatDuration(cell.duration)}</span>{/if}
   {#if isMotionSoloMode}
     {@const soloMotion = getMotionSoloMotion(cell.index)}

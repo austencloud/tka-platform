@@ -43,34 +43,43 @@ describe("getMandalaPlacements — toggle/off cases", () => {
 });
 
 describe("getMandalaPlacements — 4-count", () => {
-	// The source now returns EMPTY for stepCount <= 4 (early exit at line 54).
-	// 4-count sequences no longer get mandala placements or layout overrides.
-	it("returns empty for stepCount 4 (below threshold)", () => {
+	// stepCount 4 uses the generic branches (no special horizontal override).
+	// Column layout defaults to the [3,2] table (2 step columns + start col), which
+	// with QR on leaves no empty col-1 cell → no mandala. Mandalas appear only where
+	// the chosen grid actually leaves an empty cell.
+	it("stepCount 4 (column + QR, 2-col grid) → no empties → no mandala, no override", () => {
 		const res = getMandalaPlacements(args({ stepCount: 4, cols: 3, rows: 2 }));
 		expect(res.placements).toEqual([]);
 		expect(res.layoutOverride).toBeNull();
 	});
 
-	it("returns empty for stepCount 4 even when red hidden", () => {
-		const res = getMandalaPlacements(
-			args({ stepCount: 4, cols: 3, rows: 2, redVisible: false }),
-		);
-		expect(res.placements).toEqual([]);
-		expect(res.layoutOverride).toBeNull();
-	});
-
-	it("returns empty for stepCount 4 even when blue hidden", () => {
-		const res = getMandalaPlacements(
-			args({ stepCount: 4, cols: 3, rows: 2, blueVisible: false }),
-		);
-		expect(res.placements).toEqual([]);
-		expect(res.layoutOverride).toBeNull();
-	});
-
-	it("returns empty for stepCount 4 when QR is off", () => {
+	it("stepCount 4 (column) with QR off → one col-1 empty → full mandala", () => {
 		const res = getMandalaPlacements(
 			args({ stepCount: 4, cols: 3, rows: 2, showQRCode: false }),
 		);
+		expect(res.layoutOverride).toBeNull();
+		expect(res.placements).toEqual([{ row: 2, col: 1, variant: "full" }]);
+	});
+
+	it("stepCount 4 (row layout + QR) → blue col 2, red col 3 in top row, no override", () => {
+		const res = getMandalaPlacements(
+			args({ stepCount: 4, cols: 4, rows: 2, startPositionLayout: "row" }),
+		);
+		expect(res.placements).toEqual([
+			{ row: 1, col: 2, variant: "blue" },
+			{ row: 1, col: 3, variant: "red" },
+		]);
+		expect(res.layoutOverride).toBeNull();
+	});
+
+	it("never emits a layoutOverride (horizontal 4-count override removed)", () => {
+		const res = getMandalaPlacements(args({ stepCount: 4, cols: 3, rows: 2 }));
+		expect(res.layoutOverride).toBeNull();
+	});
+
+	it("stepCount 3 stays below threshold → empty", () => {
+		const res = getMandalaPlacements(args({ stepCount: 3, cols: 3, rows: 2 }));
+		expect(res.placements).toEqual([]);
 		expect(res.layoutOverride).toBeNull();
 	});
 });

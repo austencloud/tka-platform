@@ -1025,7 +1025,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     imgShowNotes: imgComp.imgShowNotes,
     imgShowBirthday: imgComp.imgShowBirthday,
     imgDarkMode: imgComp.imgDarkMode,
-    imgColumnCount: imgComp.imgColumnCount,
+    imgColumnCount: exportCoord.exportOptions.imageColumnCount,
 
     isSyncToggling,
     isSyncActive: lanSyncState.isActive,
@@ -1114,7 +1114,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       showLoopGlyph: !isHandPath && imgComp.imgShowLoopGlyph,
       handPathMode: isHandPath,
       darkMode: imgComp.imgDarkMode,
-      columnCount: imgComp.imgColumnCount,
+      columnCount: exportCoord.exportOptions.imageColumnCount,
       forceContain: false,
       userName: authState.user?.displayName || "",
     },

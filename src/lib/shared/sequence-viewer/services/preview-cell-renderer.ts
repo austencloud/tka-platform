@@ -75,6 +75,7 @@ import { pictographPreparer } from "$lib/shared/pictograph/shared/services/picto
 import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
 import { getWorkerRenderPool } from "$lib/shared/render/services/worker-render-pool";
 import { cellCacheKeyDeriver } from "./cell-cache-key-deriver";
+import { compositeStepNumberOnBlob } from "./step-number-compositor";
 
 function filterSoloMotions(
   data: PictographData,
@@ -100,12 +101,35 @@ export async function renderCell(
   isDark: boolean,
   options: PreviewCellRenderOptions
 ): Promise<string> {
-  const cacheKey = cellCacheKeyDeriver.deriveCacheKey(pictographData, stepNumber, isDark, options);
+  // The base pictograph is cached NUMBER-FREE (step number forced off) so blobs
+  // are shared across beats and the persistent cache never bloats per-number.
+  // The step number is composited on top afterwards (see compositeStepNumberOnBlob)
+  // so it lands in the displayed image — dissolving in lockstep with the cell
+  // during crossfades — without ever entering the base cache key.
+  const baseOptions: PreviewCellRenderOptions =
+    options.showStepNumbers ? { ...options, showStepNumbers: false } : options;
+  const cacheKey = cellCacheKeyDeriver.deriveCacheKey(pictographData, undefined, isDark, baseOptions);
+
+  // Solo / motion-solo views keep their repositioned location label as a live
+  // overlay (CellRenderer), so don't bake a number into those.
+  const isMotionSoloCell =
+    (options.showBlueMotion === true && options.showRedMotion === false) ||
+    (options.showRedMotion === true && options.showBlueMotion === false);
+  const wantNumber =
+    !!options.showStepNumbers &&
+    stepNumber != null &&
+    stepNumber !== -1 &&
+    options.browseViewMode?.granularity !== "solo" &&
+    !isMotionSoloCell;
 
   try {
     const cachedBlob = await pictographBlobCache.get(cacheKey);
     if (cachedBlob) {
-      return URL.createObjectURL(cachedBlob);
+      return wantNumber
+        ? URL.createObjectURL(
+            await compositeStepNumberOnBlob(cachedBlob, stepNumber!, options.size, isDark, options.widthMultiplier ?? 1),
+          )
+        : URL.createObjectURL(cachedBlob);
     }
   } catch {
     // Cache miss or error, proceed to render
@@ -162,12 +186,17 @@ export async function renderCell(
   };
 
   const pool = getWorkerRenderPool();
-  const resolvedStepNumber = options.showStepNumbers ? stepNumber : undefined;
-  const blob = await pool.render(prepared, renderOptions, visibility, resolvedStepNumber);
+  // Render the base number-free (the worker never bakes the number), then
+  // composite the number on top below.
+  const blob = await pool.render(prepared, renderOptions, visibility, undefined);
 
   pictographBlobCache.set(cacheKey, blob).catch(() => {});
 
-  return URL.createObjectURL(blob);
+  return wantNumber
+    ? URL.createObjectURL(
+        await compositeStepNumberOnBlob(blob, stepNumber!, options.size, isDark, options.widthMultiplier ?? 1),
+      )
+    : URL.createObjectURL(blob);
 }
 
 /**
