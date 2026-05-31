@@ -137,12 +137,12 @@ function validateSequence(seq, deckId) {
 }
 
 async function loadAllDecks() {
-  const snapshot = await db.collection("decks").get();
+  const snapshot = await db.collection("catalogs").get();
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
 async function loadDeckSequences(deckId) {
-  const snapshot = await db.collection(`decks/${deckId}/sequences`).get();
+  const snapshot = await db.collection(`catalogs/${deckId}/sequences`).get();
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
@@ -151,7 +151,7 @@ async function main() {
 
   let decks;
   if (targetDeckId) {
-    const deckDoc = await db.collection("decks").doc(targetDeckId).get();
+    const deckDoc = await db.collection("catalogs").doc(targetDeckId).get();
     if (!deckDoc.exists) {
       console.error(`Deck ${targetDeckId} not found.`);
       process.exit(1);

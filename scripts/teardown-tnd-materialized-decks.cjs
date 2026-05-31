@@ -51,7 +51,7 @@ const BASE_ID = "l1-tnd-motions";
 const APPLY = process.argv.includes("--apply");
 
 async function main() {
-  const snap = await db.collection("decks").get();
+  const snap = await db.collection("catalogs").get();
   const targets = [];
   snap.forEach((doc) => {
     const d = doc.data();
@@ -85,7 +85,7 @@ async function main() {
   }
 
   for (const id of targets) {
-    const seqs = await db.collection("decks").doc(id).collection("sequences").get();
+    const seqs = await db.collection("catalogs").doc(id).collection("sequences").get();
     const batchLimit = 450;
     let batch = db.batch();
     let n = 0;
@@ -97,7 +97,7 @@ async function main() {
       }
     }
     await batch.commit();
-    await db.collection("decks").doc(id).delete();
+    await db.collection("catalogs").doc(id).delete();
     console.log(`Deleted ${id} (+${seqs.size} sequences)`);
   }
   console.log(`\nDeleted ${targets.length} decks.`);

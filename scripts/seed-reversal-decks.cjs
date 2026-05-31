@@ -265,7 +265,7 @@ async function main() {
   console.log(`Dry run: ${DRY_RUN}\n`);
 
   // Load source deck metadata
-  const sourceDeckDoc = await db.doc(`decks/${sourceDeckId}`).get();
+  const sourceDeckDoc = await db.doc(`catalogs/${sourceDeckId}`).get();
   if (!sourceDeckDoc.exists) {
     console.error(`Source deck not found: ${sourceDeckId}`);
     process.exit(1);
@@ -273,7 +273,7 @@ async function main() {
   const sourceDeck = sourceDeckDoc.data();
 
   // Load source sequences
-  const seqSnapshot = await db.collection(`decks/${sourceDeckId}/sequences`).get();
+  const seqSnapshot = await db.collection(`catalogs/${sourceDeckId}/sequences`).get();
   const sourceSequences = seqSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
   console.log(`Loaded ${sourceSequences.length} sequences from ${sourceDeckId}\n`);
 
@@ -353,7 +353,7 @@ async function main() {
     const resolvedTurns = sourceDeck.turns ?? undefined;
 
     // Write deck document
-    await db.doc(`decks/${newDeckId}`).set({
+    await db.doc(`catalogs/${newDeckId}`).set({
       ...sourceDeck,
       id: newDeckId,
       name: `${sourceDeck.name} (${patternDef.sequence})`,
@@ -373,7 +373,7 @@ async function main() {
       const batch = db.batch();
       const chunk = transformedSequences.slice(i, i + BATCH_SIZE);
       for (const seq of chunk) {
-        batch.set(db.doc(`decks/${newDeckId}/sequences/${seq.id}`), seq);
+        batch.set(db.doc(`catalogs/${newDeckId}/sequences/${seq.id}`), seq);
       }
       await batch.commit();
     }

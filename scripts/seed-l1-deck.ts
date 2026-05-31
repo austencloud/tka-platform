@@ -647,7 +647,7 @@ async function writeToFirestore(
   const db = admin.default.firestore();
 
   // Delete old sequences first (clean slate)
-  const oldSeqsRef = db.collection(`decks/${DECK_ID}/sequences`);
+  const oldSeqsRef = db.collection(`catalogs/${DECK_ID}/sequences`);
   const oldSnap = await oldSeqsRef.get();
   if (!oldSnap.empty) {
     console.log(`Deleting ${oldSnap.size} old sequence docs...`);
@@ -675,7 +675,7 @@ async function writeToFirestore(
         buildFirestoreStep(step, i + 1)
       );
 
-      const seqRef = db.doc(`decks/${DECK_ID}/sequences/${seq.seqId}`);
+      const seqRef = db.doc(`catalogs/${DECK_ID}/sequences/${seq.seqId}`);
       currentBatch.set(seqRef, {
         id: seq.seqId,
         name: seq.loopWord,
@@ -724,7 +724,7 @@ async function writeToFirestore(
   }
 
   // Write deck metadata in the final batch
-  const deckRef = db.doc(`decks/${DECK_ID}`);
+  const deckRef = db.doc(`catalogs/${DECK_ID}`);
   currentBatch.set(deckRef, {
     id: DECK_ID,
     name: "Level 1: Quartered Rotated LOOP",

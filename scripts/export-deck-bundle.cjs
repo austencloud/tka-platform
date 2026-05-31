@@ -32,7 +32,7 @@ const db = getFirestore();
 
 async function exportAllDecks() {
   console.log("Fetching deck list from Firestore...");
-  const decksSnapshot = await db.collection("decks").get();
+  const decksSnapshot = await db.collection("catalogs").get();
   console.log(`Found ${decksSnapshot.size} decks.`);
 
   if (!fs.existsSync(outDir)) {
@@ -50,7 +50,7 @@ async function exportAllDecks() {
     console.log(`\nExporting deck: ${deckName} (${deckId})`);
 
     const seqSnapshot = await db
-      .collection("decks")
+      .collection("catalogs")
       .doc(deckId)
       .collection("sequences")
       .get();

@@ -57,14 +57,14 @@ async function main() {
 
   // Load all deck ids (the /decks/ doc list is small — just metadata)
   console.log("Loading deck ids...");
-  const decksSnap = await db.collection("decks").get();
+  const decksSnap = await db.collection("catalogs").get();
   const deckIds = decksSnap.docs.map(d => d.id);
   console.log(`  ${deckIds.length} decks\n`);
 
   for (const c of candidates) {
     console.log(`--- ${c.code} (seqId=${c.sequenceId}, word=${c.word}) ---`);
     const started = Date.now();
-    const refs = deckIds.map(deckId => db.doc(`decks/${deckId}/sequences/${c.sequenceId}`));
+    const refs = deckIds.map(deckId => db.doc(`catalogs/${deckId}/sequences/${c.sequenceId}`));
     const snaps = await db.getAll(...refs);
     const hits = snaps
       .map((s, i) => ({ deckId: deckIds[i]!, exists: s.exists }))

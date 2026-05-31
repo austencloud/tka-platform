@@ -39,7 +39,7 @@ const KEEP_IDS = new Set([
 ]);
 
 async function deleteDeckAndSequences(deckId, index, total) {
-  const seqRef = db.collection("decks").doc(deckId).collection("sequences");
+  const seqRef = db.collection("catalogs").doc(deckId).collection("sequences");
   let totalDeleted = 0;
 
   while (true) {
@@ -53,13 +53,13 @@ async function deleteDeckAndSequences(deckId, index, total) {
     totalDeleted += snap.size;
   }
 
-  await db.collection("decks").doc(deckId).delete();
+  await db.collection("catalogs").doc(deckId).delete();
   console.log(`[${index}/${total}] Deleted ${deckId} (${totalDeleted} sequences)`);
   return totalDeleted;
 }
 
 async function main() {
-  const snap = await db.collection("decks").get();
+  const snap = await db.collection("catalogs").get();
   const allDecks = snap.docs.map((d) => ({
     id: d.id,
     collection: d.data().collection || "",

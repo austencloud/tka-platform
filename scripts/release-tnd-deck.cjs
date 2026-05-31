@@ -68,7 +68,7 @@ async function main() {
   console.log();
 
   // 1. Load TnD catalogs
-  const decksSnap = await db.collection("decks").get();
+  const decksSnap = await db.collection("catalogs").get();
   const tndCatalogs = decksSnap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
     .filter((c) => c.collection === "TnD" && PATTERNS.has(c.turnPattern));

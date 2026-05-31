@@ -620,7 +620,7 @@ async function writeToFirestore(sequences: TnDSequence[]): Promise<void> {
   const db = admin.default.firestore();
 
   // Delete old sequences first
-  const oldSeqsRef = db.collection(`decks/${DECK_ID}/sequences`);
+  const oldSeqsRef = db.collection(`catalogs/${DECK_ID}/sequences`);
   const oldSnap = await oldSeqsRef.get();
   if (!oldSnap.empty) {
     console.log(`Deleting ${oldSnap.size} old sequence docs...`);
@@ -643,7 +643,7 @@ async function writeToFirestore(sequences: TnDSequence[]): Promise<void> {
 
     const firestoreSteps = seq.beats.map((beat, i) => buildFirestoreStep(beat, i + 1));
 
-    const seqRef = db.doc(`decks/${DECK_ID}/sequences/${seq.seqId}`);
+    const seqRef = db.doc(`catalogs/${DECK_ID}/sequences/${seq.seqId}`);
     batch.set(seqRef, {
       id: seq.seqId,
       name: seq.word,
@@ -680,7 +680,7 @@ async function writeToFirestore(sequences: TnDSequence[]): Promise<void> {
     sequenceIds: familySequenceIds.get(f.id) ?? [],
   }));
 
-  const deckRef = db.doc(`decks/${DECK_ID}`);
+  const deckRef = db.doc(`catalogs/${DECK_ID}`);
   batch.set(deckRef, {
     id: DECK_ID,
     name: "Level 1: TnD Motions",

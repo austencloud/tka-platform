@@ -616,7 +616,7 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
     console.log(`\nSeeding deck "${DECK_ID}" to Firestore...`);
 
     // Delete old sequences
-    const oldRef = db.collection(`decks/${DECK_ID}/sequences`);
+    const oldRef = db.collection(`catalogs/${DECK_ID}/sequences`);
     const oldSnap = await oldRef.get();
     if (!oldSnap.empty) {
       console.log(`  Deleting ${oldSnap.size} old docs...`);
@@ -672,7 +672,7 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
       // Build Firestore document
       const sp = rep.fullSteps[0];
       const seqId = `${rep.seed.startPos}_${rep.fullWord}`;
-      const seqRef = db.doc(`decks/${DECK_ID}/sequences/${seqId}`);
+      const seqRef = db.doc(`catalogs/${DECK_ID}/sequences/${seqId}`);
 
       const firestoreSteps = stepsWithTurns.map((step, i) => ({
         beat: i,
@@ -802,7 +802,7 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
       newHandPathCount: newCount,
     };
 
-    await db.doc(`decks/${DECK_ID}`).set(deckData);
+    await db.doc(`catalogs/${DECK_ID}`).set(deckData);
     console.log(`  Deck doc written. ${totalWritten} sequences in decks/${DECK_ID}/`);
   }
 

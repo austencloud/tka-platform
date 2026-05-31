@@ -170,7 +170,7 @@ function cloneStartPosition(startPosition) {
  */
 async function loadSourceSequences() {
   const snapshot = await db
-    .collection(`decks/${SOURCE_DECK_ID}/sequences`)
+    .collection(`catalogs/${SOURCE_DECK_ID}/sequences`)
     .get();
 
   if (snapshot.empty) {
@@ -192,7 +192,7 @@ async function loadSourceSequences() {
  * Load the source deck metadata.
  */
 async function loadSourceDeckMeta() {
-  const doc = await db.doc(`decks/${SOURCE_DECK_ID}`).get();
+  const doc = await db.doc(`catalogs/${SOURCE_DECK_ID}`).get();
   if (!doc.exists) {
     throw new Error(`Deck metadata not found at decks/${SOURCE_DECK_ID}`);
   }
@@ -204,7 +204,7 @@ async function loadSourceDeckMeta() {
  */
 async function writeDeck(variant, sourceSequences, sourceMeta) {
   const { deckId, turns, ratio, name } = variant;
-  const deckPath = `decks/${deckId}`;
+  const deckPath = `catalogs/${deckId}`;
 
   // Delete existing sequences in this deck
   const existingSeqs = await db.collection(`${deckPath}/sequences`).get();

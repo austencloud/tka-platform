@@ -117,7 +117,7 @@ function detectReversals(seq) {
 async function main() {
   console.log("=== Deck Reversal Audit ===\n");
 
-  const decksSnap = await db.collection("decks").get();
+  const decksSnap = await db.collection("catalogs").get();
   const allDecks = decksSnap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
     .filter((d) => d.collection === "LOOPs");
@@ -142,7 +142,7 @@ async function main() {
     console.log(`    turnPattern: ${deck.turnPattern}, level: ${deck.level}`);
 
     const seqsSnap = await db
-      .collection("decks")
+      .collection("catalogs")
       .doc(deck.id)
       .collection("sequences")
       .get();
@@ -207,7 +207,7 @@ async function main() {
   }
 
   for (const [deckId, badIds] of badByDeck) {
-    const deckRef = db.collection("decks").doc(deckId);
+    const deckRef = db.collection("catalogs").doc(deckId);
     const deckDoc = await deckRef.get();
     const deckData = deckDoc.data();
 

@@ -55,7 +55,7 @@ function setsEqual(a, b) {
 }
 
 async function main() {
-  const snap = await db.collection("decks").where("collection", "==", "TnD").get();
+  const snap = await db.collection("catalogs").where("collection", "==", "TnD").get();
   const byId = new Map();
   snap.forEach((d) => byId.set(d.id, { id: d.id, ...d.data() }));
 
@@ -81,7 +81,7 @@ async function main() {
     }
     console.log(`${doc.id}: ${(doc.families ?? []).map((f) => f.id).join(",")} -> 6 families (from ${baseId})`);
     if (!DRY_RUN) {
-      await db.collection("decks").doc(doc.id).update({ families: base.families });
+      await db.collection("catalogs").doc(doc.id).update({ families: base.families });
     }
     rewritten++;
   }

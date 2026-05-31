@@ -22,7 +22,7 @@ async function main() {
   console.log(dryRun ? "[DRY RUN] Preview mode — no writes.\n" : "[LIVE] Writing updates.\n");
 
   const snapshot = await db
-    .collection("decks")
+    .collection("catalogs")
     .where("collection", "==", "VTG")
     .get();
 

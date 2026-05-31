@@ -126,38 +126,45 @@ export function getSequenceMetadataPath(sequenceId: string): string {
 // ============================================================================
 
 /**
- * Path to the system catalogs collection (stored as "decks" in Firestore)
- * @example "decks"
+ * Path to the system catalogs collection.
+ *
+ * Catalogs are algorithmically enumerated source pools. They are distinct from
+ * released printable Decks, which live in the separate `deckReleases/`
+ * collection (see getDeckReleasesPath). This collection was historically named
+ * `decks/`; it was migrated to `catalogs/` so the name matches its contents.
+ * The legacy `decks/` collection is retained (copy-don't-delete) as a rollback
+ * safety net until `catalogs/` is verified live in production.
+ * @example "catalogs"
  */
 export function getSystemCatalogsPath(): string {
-  return "decks";
+  return "catalogs";
 }
 
 /**
  * Path to a specific system catalog
- * @example "decks/l1-quartered-loop"
+ * @example "catalogs/l1-quartered-loop"
  */
 export function getSystemCatalogPath(catalogId: string): string {
-  return `decks/${catalogId}`;
+  return `catalogs/${catalogId}`;
 }
 
 /**
  * Path to sequences within a system catalog
- * @example "decks/l1-quartered-loop/sequences"
+ * @example "catalogs/l1-quartered-loop/sequences"
  */
 export function getSystemCatalogSequencesPath(catalogId: string): string {
-  return `decks/${catalogId}/sequences`;
+  return `catalogs/${catalogId}/sequences`;
 }
 
 /**
  * Path to a specific sequence within a system catalog
- * @example "decks/l1-quartered-loop/sequences/alpha1-AB"
+ * @example "catalogs/l1-quartered-loop/sequences/alpha1-AB"
  */
 export function getSystemCatalogSequencePath(
   catalogId: string,
   sequenceId: string
 ): string {
-  return `decks/${catalogId}/sequences/${sequenceId}`;
+  return `catalogs/${catalogId}/sequences/${sequenceId}`;
 }
 
 // ============================================================================

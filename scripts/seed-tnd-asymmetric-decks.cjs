@@ -206,7 +206,7 @@ function cloneStartPosition(startPosition) {
 // ============================================================================
 
 async function loadSourceSequences() {
-  const snapshot = await db.collection(`decks/${SOURCE_DECK_ID}/sequences`).get();
+  const snapshot = await db.collection(`catalogs/${SOURCE_DECK_ID}/sequences`).get();
   if (snapshot.empty) {
     throw new Error(`No sequences in decks/${SOURCE_DECK_ID}/sequences. Run seed-tnd-deck.ts first.`);
   }
@@ -214,14 +214,14 @@ async function loadSourceSequences() {
 }
 
 async function loadSourceDeckMeta() {
-  const doc = await db.doc(`decks/${SOURCE_DECK_ID}`).get();
+  const doc = await db.doc(`catalogs/${SOURCE_DECK_ID}`).get();
   if (!doc.exists) throw new Error(`Deck metadata not found at decks/${SOURCE_DECK_ID}`);
   return doc.data();
 }
 
 async function writeDeck(variant, sourceSequences, sourceMeta) {
   const { deckId, blueTurns, redTurns, pipeRatio, tkaPipe, name } = variant;
-  const deckPath = `decks/${deckId}`;
+  const deckPath = `catalogs/${deckId}`;
 
   // Delete existing
   const existing = await db.collection(`${deckPath}/sequences`).get();

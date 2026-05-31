@@ -81,7 +81,7 @@ async function main() {
   console.log("=== Fix TnD Sequence Levels ===\n");
 
   // Find all TnD decks
-  const decksSnapshot = await db.collection("decks")
+  const decksSnapshot = await db.collection("catalogs")
     .where("collection", "==", "TnD")
     .get();
 
@@ -97,7 +97,7 @@ async function main() {
     const deckId = deckDoc.id;
     const deckName = deckDoc.data().name || deckId;
 
-    const seqSnapshot = await db.collection(`decks/${deckId}/sequences`).get();
+    const seqSnapshot = await db.collection(`catalogs/${deckId}/sequences`).get();
     if (seqSnapshot.empty) {
       console.log(`  [${deckId}] No sequences, skipping`);
       continue;
@@ -152,7 +152,7 @@ async function main() {
 
   // Also fix the base TnD motions deck
   const baseDeckId = "l1-tnd-motions";
-  const baseSnapshot = await db.collection(`decks/${baseDeckId}/sequences`).get();
+  const baseSnapshot = await db.collection(`catalogs/${baseDeckId}/sequences`).get();
   if (!baseSnapshot.empty) {
     let batch = db.batch();
     let batchCount = 0;

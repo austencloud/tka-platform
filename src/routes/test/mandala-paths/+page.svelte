@@ -39,14 +39,14 @@
 	];
 
 	let calcReady: boolean = $state(false);
-	let decks: Catalog[] = $state([]);
-	let selectedDeckId: string = $state("");
-	let deckSequences: any[] = $state([]);
+	let catalogs: Catalog[] = $state([]);
+	let selectedCatalogId: string = $state("");
+	let catalogSequences: any[] = $state([]);
 	let loading: boolean = $state(false);
 	let error: string = $state("");
 	let currentIndex: number = $state(0);
 
-	type DataSource = "collection" | "decks";
+	type DataSource = "collection" | "catalogs";
 	let dataSource: DataSource = $state<DataSource>("collection");
 
 	type ViewMode = "compare" | "grid";
@@ -65,7 +65,7 @@
 		}))
 	);
 
-	const sequences = $derived(dataSource === "collection" ? collectionSequences : deckSequences);
+	const sequences = $derived(dataSource === "collection" ? collectionSequences : catalogSequences);
 	const currentSeq = $derived(sequences[currentIndex] ?? null);
 
 	const comparePaths = $derived.by((): { mode: PathMode; label: string; paths: MandalaPaths | null }[] => {
@@ -124,21 +124,21 @@
 	onMount(async () => {
 		calcReady = true;
 		try {
-			decks = await loadCatalogs();
-			const first = decks[0];
-			if (first) selectedDeckId = first.id;
+			catalogs = await loadCatalogs();
+			const first = catalogs[0];
+			if (first) selectedCatalogId = first.id;
 		} catch (e: any) {
-			error = e.message ?? "Failed to load decks";
+			error = e.message ?? "Failed to load catalogs";
 		}
 	});
 
 	$effect(() => {
-		if (dataSource !== "decks" || !selectedDeckId) return;
+		if (dataSource !== "catalogs" || !selectedCatalogId) return;
 		loading = true;
 		error = "";
 		currentIndex = 0;
-		loadCatalogSequences(selectedDeckId)
-			.then((seqs) => { deckSequences = seqs; })
+		loadCatalogSequences(selectedCatalogId)
+			.then((seqs) => { catalogSequences = seqs; })
 			.catch((e: any) => { error = e.message ?? "Failed to load sequences"; })
 			.finally(() => { loading = false; });
 	});
@@ -175,15 +175,15 @@
 					<span class="badge">{mandalaCollectionState.count}</span>
 				{/if}
 			</button>
-			<button class:active={dataSource === "decks"} onclick={() => switchSource("decks")}>
-				<i class="fas fa-layer-group" aria-hidden="true"></i> Decks
+			<button class:active={dataSource === "catalogs"} onclick={() => switchSource("catalogs")}>
+				<i class="fas fa-layer-group" aria-hidden="true"></i> Catalogs
 			</button>
 		</div>
 
-		{#if dataSource === "decks"}
-			<select bind:value={selectedDeckId} class="deck-select">
-				{#each decks as deck}
-					<option value={deck.id}>{deck.name} ({deck.totalSequences})</option>
+		{#if dataSource === "catalogs"}
+			<select bind:value={selectedCatalogId} class="deck-select">
+				{#each catalogs as catalog}
+					<option value={catalog.id}>{catalog.name} ({catalog.totalSequences})</option>
 				{/each}
 			</select>
 		{/if}

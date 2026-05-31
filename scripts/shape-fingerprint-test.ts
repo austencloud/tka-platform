@@ -91,7 +91,7 @@ interface ShapeGroup {
 async function main() {
   // 1. Find quartered rotated LOOP decks
   console.log("Loading decks...");
-  const decksSnap = await db.collection("decks").get();
+  const decksSnap = await db.collection("catalogs").get();
   const allDecks = decksSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
   const filteredDecks = allDecks.filter(d =>
     d.collection === "LOOPs" &&
@@ -122,7 +122,7 @@ async function main() {
     let lastDoc: any = null;
     let hasMore = true;
     while (hasMore) {
-      let q = db.collection(`decks/${deck.id}/sequences`).orderBy("__name__").limit(PAGE);
+      let q = db.collection(`catalogs/${deck.id}/sequences`).orderBy("__name__").limit(PAGE);
       if (lastDoc) q = q.startAfter(lastDoc);
       const snap = await q.get();
       allDocs.push(...snap.docs);

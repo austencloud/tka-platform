@@ -14,14 +14,14 @@
   import { forceFreshReload } from "$lib/shared/foundation/services/force-fresh";
 
   // ── Sequence sourcing (same approach as /test/mandala-paths) ──────
-  let decks: Catalog[] = $state([]);
-  let selectedDeckId = $state("");
-  let deckSequences: any[] = $state([]);
+  let catalogs: Catalog[] = $state([]);
+  let selectedCatalogId = $state("");
+  let catalogSequences: any[] = $state([]);
   let loading = $state(false);
   let error = $state("");
   let currentIndex = $state(0);
 
-  type DataSource = "collection" | "decks";
+  type DataSource = "collection" | "catalogs";
   let dataSource = $state<DataSource>("collection");
 
   const collectionSequences = $derived(
@@ -31,7 +31,7 @@
     })),
   );
 
-  const sequences = $derived(dataSource === "collection" ? collectionSequences : deckSequences);
+  const sequences = $derived(dataSource === "collection" ? collectionSequences : catalogSequences);
   const currentSeq = $derived(sequences[currentIndex] ?? null);
   const blueProp = $derived(currentSeq?.bluePropType ?? "staff");
   const redProp = $derived(currentSeq?.redPropType ?? "staff");
@@ -100,22 +100,22 @@
 
   onMount(async () => {
     try {
-      decks = await loadCatalogs();
-      const first = decks[0];
-      if (first) selectedDeckId = first.id;
-      if (mandalaCollectionState.count === 0) dataSource = "decks";
+      catalogs = await loadCatalogs();
+      const first = catalogs[0];
+      if (first) selectedCatalogId = first.id;
+      if (mandalaCollectionState.count === 0) dataSource = "catalogs";
     } catch (e: any) {
-      error = e.message ?? "Failed to load decks";
+      error = e.message ?? "Failed to load catalogs";
     }
   });
 
   $effect(() => {
-    if (dataSource !== "decks" || !selectedDeckId) return;
+    if (dataSource !== "catalogs" || !selectedCatalogId) return;
     loading = true;
     error = "";
     currentIndex = 0;
-    loadCatalogSequences(selectedDeckId)
-      .then((seqs) => { deckSequences = seqs; })
+    loadCatalogSequences(selectedCatalogId)
+      .then((seqs) => { catalogSequences = seqs; })
       .catch((e: any) => { error = e.message ?? "Failed to load sequences"; })
       .finally(() => { loading = false; });
   });
@@ -135,11 +135,11 @@
       <button class:active={dataSource === "collection"} onclick={() => { dataSource = "collection"; currentIndex = 0; }}>
         Collection{#if mandalaCollectionState.count > 0}<span class="badge">{mandalaCollectionState.count}</span>{/if}
       </button>
-      <button class:active={dataSource === "decks"} onclick={() => { dataSource = "decks"; currentIndex = 0; }}>Decks</button>
+      <button class:active={dataSource === "catalogs"} onclick={() => { dataSource = "catalogs"; currentIndex = 0; }}>Catalogs</button>
     </div>
-    {#if dataSource === "decks"}
-      <select bind:value={selectedDeckId} class="deck-select" transition:fade={{ duration: dur(180) }}>
-        {#each decks as deck}<option value={deck.id}>{deck.name} ({deck.totalSequences})</option>{/each}
+    {#if dataSource === "catalogs"}
+      <select bind:value={selectedCatalogId} class="deck-select" transition:fade={{ duration: dur(180) }}>
+        {#each catalogs as catalog}<option value={catalog.id}>{catalog.name} ({catalog.totalSequences})</option>{/each}
       </select>
     {/if}
     <div class="picker">

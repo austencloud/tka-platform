@@ -104,7 +104,7 @@ async function main() {
   const limit = parseInt(process.argv[3] ?? "80", 10);
 
   console.log(`Loading decks matching "${deckFilter}"...`);
-  const decksSnap = await db.collection("decks").get();
+  const decksSnap = await db.collection("catalogs").get();
   const allDecks = decksSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
   const filteredDecks = allDecks.filter(d =>
     d.collection === "LOOPs" &&
@@ -123,7 +123,7 @@ async function main() {
     console.log(`\nDECK: ${deck.name ?? deck.id}`);
     console.log("=".repeat(60));
 
-    let q = db.collection(`decks/${deck.id}/sequences`).orderBy("__name__").limit(limit);
+    let q = db.collection(`catalogs/${deck.id}/sequences`).orderBy("__name__").limit(limit);
     const snap = await q.get();
     console.log(`Loaded ${snap.docs.length} sequences\n`);
 

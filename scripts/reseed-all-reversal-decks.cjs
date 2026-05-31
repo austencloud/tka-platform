@@ -25,7 +25,7 @@ const db = admin.firestore();
 const REVERSAL_SUFFIXES = ["-book", "-red-book", "-blue-book", "-long-book", "-alternating"];
 
 async function main() {
-  const snap = await db.collection("decks").get();
+  const snap = await db.collection("catalogs").get();
   const allIds = snap.docs.map((d) => d.id).sort();
   const sources = allIds.filter((id) => !REVERSAL_SUFFIXES.some((s) => id.endsWith(s)));
 

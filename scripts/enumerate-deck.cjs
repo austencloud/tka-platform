@@ -881,7 +881,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
 
     for (const item of deduped) {
       const seqId = `${item.startPos}_${item.seedWord}`;
-      const seqRef = db.doc(`decks/${deckId}/sequences/${seqId}`);
+      const seqRef = db.doc(`catalogs/${deckId}/sequences/${seqId}`);
 
       // Build seed as engine SequenceStep array (start position + beats)
       const firstEdge = item.edges[0];
@@ -1180,7 +1180,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
               notes: "",
             };
 
-            const twinRef = db.doc(`decks/${deckId}/sequences/${twinSeqId}`);
+            const twinRef = db.doc(`catalogs/${deckId}/sequences/${twinSeqId}`);
             batch.set(twinRef, twinSeqData);
             batchCount++;
             totalWritten++;
@@ -1248,7 +1248,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       reversalPattern: reversalPattern || 'continuous',
     };
 
-    await db.doc(`decks/${deckId}`).set(deckData);
+    await db.doc(`catalogs/${deckId}`).set(deckData);
     console.log(`  Deck document written`);
     console.log(`  Done! ${totalWritten} sequences written to decks/${deckId}/sequences/`);
     if (totalWritten < deduped.length) {

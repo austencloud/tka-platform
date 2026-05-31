@@ -1208,11 +1208,26 @@ service cloud.firestore {
     }
 
     // ============================================================================
-    // SYSTEM DECKS (Curated Sequence Collections)
+    // SYSTEM CATALOGS (Algorithmically Enumerated Sequence Pools)
     // ============================================================================
 
-    // System decks - readable by all authenticated users, writable by admins only
-    // These are curated collections of sequences (e.g., Level 1 LOOP deck)
+    // System catalogs - algorithmically enumerated source pools of sequences
+    // (e.g., Level 1 LOOP catalog). Readable by all authenticated users,
+    // writable by admins only. Distinct from released printable Decks, which
+    // live in deckReleases/ below. Migrated from the legacy decks/ collection.
+    match /catalogs/{catalogId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+
+      // Sequences within a catalog
+      match /sequences/{sequenceId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+      }
+    }
+
+    // Legacy decks/ collection - migrated to catalogs/ above, retained as a
+    // rollback safety net. Same rules. Remove once catalogs/ is verified live.
     match /decks/{deckId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
