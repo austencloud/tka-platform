@@ -142,9 +142,16 @@ Recipe {
 
 (Knuth TAOCP §3.4.2 / MacIver lazy Fisher-Yates; Vitter reservoir; coupon-collector math.)
 
-1. **Ceiling, in closed form.** Compute population size `P` via a path-count DP over the
-   generation graph — O(states), never enumerate to count. Cap every request:
-   `n = min(requested, P − |ledger|)`. This is the "asked for 52 but only 10 exist" guard.
+1. **Ceiling, in closed form.** Generation produces cards **fresh** — it never draws from a
+   fixed bin. The only finite quantity is the count of distinct **base LOOP seeds** that
+   close for a `(loopType, stepCount, level)`; a deck *card* is a base seed fanned across the
+   variation axes (orientation × grid × turns × reversals), so the real population is
+   `P = baseSeeds × variationMultiplier` — deep. Compute `P` via a path-count DP over the
+   generation graph — O(states), never enumerate to count. The guard
+   `n = min(requested, P − |ledger|)` is therefore a **rare edge** (only when a request
+   exceeds the *entire* variation space), surfaced as "that's the whole space," not a cap.
+   A genuinely impossible config (zero closing seeds at that step/type) is guidance
+   ("no rotated LOOPs close at 10 steps — try 8 or 12"), never a dead "0".
 2. **Draw `n` uniques** via lazy/sparse Fisher-Yates over ranks `[0, P)` + an **un-rank**
    function (`rank → artifact` by walking the generator). O(n), independent of whether `P`
    is 10 or 12,612 — never materializes the population.
