@@ -1,17 +1,14 @@
 <!--
-  RotationDirectionDrawer.svelte
+  RotationDirectionView.svelte
 
-  Drawer for saving and applying rotation direction patterns.
-  - Save: Extract rotation directions from current sequence and save
-  - Apply: Browse and apply saved patterns or templates
-
-  This is a thin orchestrator that composes child components.
+  Chrome-free rotation-direction editor body, rendered INLINE inside the
+  Sequence Actions panel as a drill-down view (no Drawer wrapper).
+  - Apply: uniform/template/saved rotation-direction patterns
+  - Save: extract rotation directions from the current sequence and save
 -->
 <script lang="ts">
-
-import * as rotationDirectionPatternManagerModule from "$lib/features/create/shared/services/rotation-direction-pattern-manager";
-  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
+  import { onMount } from "svelte";
+  import * as rotationDirectionPatternManagerModule from "$lib/features/create/shared/services/rotation-direction-pattern-manager";
   import { rotationDirectionPatternState } from "../../state/rotation-direction-pattern-state.svelte.ts";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { layoutState } from "$lib/shared/layout/layout-state.svelte";
@@ -24,69 +21,44 @@ import * as rotationDirectionPatternManagerModule from "$lib/features/create/sha
   } from "../../domain/templates/rotation-direction-templates";
   import type { TargetHand } from "../../state/panel-coordination-state.svelte";
 
-  // Child components
   import SaveModePanel from "./rotation-direction/SaveModePanel.svelte";
   import UniformPatternButtons from "./rotation-direction/UniformPatternButtons.svelte";
   import TemplatePatternGrid from "./rotation-direction/TemplatePatternGrid.svelte";
   import SavedPatternList from "./rotation-direction/SavedPatternList.svelte";
 
   interface Props {
-    isOpen: boolean;
     sequence: SequenceData | null;
     /** Which hand(s) to apply patterns to - controlled by parent panel */
     targetHand: TargetHand;
-    toolPanelWidth?: number;
-    onClose: () => void;
     onApply: (result: {
       sequence: SequenceData;
       warnings?: readonly string[];
     }) => void;
   }
 
-  let {
-    isOpen = $bindable(),
-    sequence,
-    targetHand,
-    toolPanelWidth = 0,
-    onClose,
-    onApply,
-  }: Props = $props();
+  let { sequence, targetHand, onApply }: Props = $props();
 
-  // Local state
   let mode: "save" | "apply" = $state("apply");
   let patternName = $state("");
   let savingPattern = $state(false);
   let applyingPattern = $state(false);
   let errorMessage = $state<string | null>(null);
 
-  // Derived state
   const isMobile = $derived(!layoutState.isSideBySideLayout);
-  const drawerStyle = $derived(
-    toolPanelWidth > 0 ? `--measured-panel-width: ${toolPanelWidth}px` : ""
-  );
 
-  // Load patterns when drawer opens
-  $effect(() => {
-    if (
-      isOpen &&
-      authState.user?.uid &&
-      !rotationDirectionPatternState.initialized
-    ) {
+  // Load saved patterns once when the view mounts (entering the drill-down).
+  onMount(() => {
+    if (authState.user?.uid && !rotationDirectionPatternState.initialized) {
       rotationDirectionPatternState.loadPatterns(authState.user.uid);
     }
   });
 
-  // === Handlers ===
-
   function handleSavePattern() {
     if (!sequence || !authState.user?.uid) return;
-
     savingPattern = true;
     errorMessage = null;
-
     const finalName =
       patternName.trim() || `Rotation ${new Date().toLocaleTimeString()}`;
-
     rotationDirectionPatternState
       .savePattern(finalName, authState.user.uid, sequence)
       .then((saved) => {
@@ -105,22 +77,16 @@ import * as rotationDirectionPatternManagerModule from "$lib/features/create/sha
 
   async function handleApplyPattern(pattern: RotationDirectionPattern) {
     if (!sequence) return;
-
     applyingPattern = true;
     errorMessage = null;
-
     try {
       const result = await rotationDirectionPatternManagerModule.applyPattern(
         pattern,
         sequence,
         targetHand
       );
-
       if (result.success && result.sequence) {
-        onApply({
-          sequence: result.sequence,
-          warnings: result.warnings,
-        });
+        onApply({ sequence: result.sequence, warnings: result.warnings });
       } else {
         errorMessage = result.error ?? "Failed to apply pattern";
       }
@@ -134,7 +100,6 @@ import * as rotationDirectionPatternManagerModule from "$lib/features/create/sha
 
   function handleApplyUniform(direction: "cw" | "ccw") {
     if (!sequence || !authState.user?.uid) return;
-
     const pattern = createUniformPattern(
       sequence.steps.length,
       direction,
@@ -145,7 +110,6 @@ import * as rotationDirectionPatternManagerModule from "$lib/features/create/sha
 
   function handleApplyTemplate(template: RotationDirectionTemplateDefinition) {
     if (!sequence || !authState.user?.uid) return;
-
     const pattern = templateToPattern(
       template,
       authState.user.uid,
@@ -158,136 +122,99 @@ import * as rotationDirectionPatternManagerModule from "$lib/features/create/sha
     if (!authState.user?.uid) return;
     rotationDirectionPatternState.deletePattern(pattern.id, authState.user.uid);
   }
-
-  function handleClose() {
-    errorMessage = null;
-    onClose();
-  }
 </script>
 
-<div style={drawerStyle}>
-  <Drawer
-    bind:isOpen
-    placement="right"
-    onclose={handleClose}
-    showHandle={false}
-    respectLayoutMode={true}
-    class="rotation-direction-drawer"
-    backdropClass="rotation-direction-backdrop"
-  >
-    <div class="drawer-content">
-      <DrawerHeader title="Rotation Direction" onClose={handleClose} />
+<div class="rotation-view">
+  <div class="mode-tabs">
+    <button
+      class="tab"
+      class:active={mode === "apply"}
+      onclick={() => (mode = "apply")}
+    >
+      Apply
+    </button>
+    <button
+      class="tab"
+      class:active={mode === "save"}
+      onclick={() => (mode = "save")}
+    >
+      Save Current
+    </button>
+  </div>
 
-      <div class="mode-tabs">
-        <button
-          class="tab"
-          class:active={mode === "apply"}
-          onclick={() => (mode = "apply")}
-        >
-          Apply
-        </button>
-        <button
-          class="tab"
-          class:active={mode === "save"}
-          onclick={() => (mode = "save")}
-        >
-          Save Current
-        </button>
-      </div>
+  {#if mode === "apply"}
+    <div class="hand-indicator">
+      <span class="indicator-label">Applying to:</span>
+      <span class="indicator-value" class:both={targetHand === "both"}>
+        {#if targetHand === "blue"}
+          <span class="hand-dot blue"></span>Blue hand
+        {:else if targetHand === "red"}
+          <span class="hand-dot red"></span>Red hand
+        {:else}
+          Both hands
+        {/if}
+      </span>
+    </div>
+  {/if}
 
-      <!-- Hand indicator (read-only - controlled by parent panel) -->
-      {#if mode === "apply"}
-        <div class="hand-indicator">
-          <span class="indicator-label">Applying to:</span>
-          <span class="indicator-value" class:both={targetHand === "both"}>
-            {#if targetHand === "blue"}
-              <span class="hand-dot blue"></span>Blue hand
-            {:else if targetHand === "red"}
-              <span class="hand-dot red"></span>Red hand
-            {:else}
-              Both hands
-            {/if}
-          </span>
+  {#if errorMessage}
+    <div class="error-message">
+      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+      {errorMessage}
+    </div>
+  {/if}
+
+  {#if mode === "save"}
+    <SaveModePanel
+      {sequence}
+      {patternName}
+      saving={savingPattern}
+      onSave={handleSavePattern}
+      onNameChange={(name) => (patternName = name)}
+    />
+  {:else}
+    <div class="apply-section">
+      {#if rotationDirectionPatternState.isLoading}
+        <div class="loading">
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          Loading patterns...
         </div>
-      {/if}
-
-      {#if errorMessage}
-        <div class="error-message">
-          <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-          {errorMessage}
-        </div>
-      {/if}
-
-      {#if mode === "save"}
-        <SaveModePanel
-          {sequence}
-          {patternName}
-          saving={savingPattern}
-          onSave={handleSavePattern}
-          onNameChange={(name) => (patternName = name)}
-        />
       {:else}
-        <div class="apply-section">
-          {#if rotationDirectionPatternState.isLoading}
-            <div class="loading">
-              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-              Loading patterns...
-            </div>
-          {:else}
-            {#if sequence && sequence.steps.length > 0}
-              <UniformPatternButtons
-                disabled={applyingPattern}
-                onApplyUniform={handleApplyUniform}
-              />
-
-              <TemplatePatternGrid
-                stepCount={sequence.steps.length}
-                {isMobile}
-                onApplyTemplate={handleApplyTemplate}
-              />
-            {/if}
-
-            <SavedPatternList
-              patterns={rotationDirectionPatternState.patterns}
-              currentStepCount={sequence?.steps.length ?? 0}
-              applying={applyingPattern}
-              onApply={handleApplyPattern}
-              onDelete={handleDeletePattern}
-            />
-          {/if}
-        </div>
+        {#if sequence && sequence.steps.length > 0}
+          <UniformPatternButtons
+            disabled={applyingPattern}
+            onApplyUniform={handleApplyUniform}
+          />
+          <TemplatePatternGrid
+            stepCount={sequence.steps.length}
+            {isMobile}
+            onApplyTemplate={handleApplyTemplate}
+          />
+        {/if}
+        <SavedPatternList
+          patterns={rotationDirectionPatternState.patterns}
+          currentStepCount={sequence?.steps.length ?? 0}
+          applying={applyingPattern}
+          onApply={handleApplyPattern}
+          onDelete={handleDeletePattern}
+        />
       {/if}
     </div>
-  </Drawer>
+  {/if}
 </div>
 
 <style>
-  /* Drawer positioning for desktop - must include [data-placement] for specificity */
-  :global(
-    .rotation-direction-drawer[data-placement="right"].side-by-side-layout
-  ) {
-    width: var(--measured-panel-width, clamp(360px, 44.44vw, 900px)) !important;
-    max-width: 100% !important;
-  }
-
-  :global(.rotation-direction-backdrop) {
-    background: transparent !important;
-    backdrop-filter: none !important;
-    pointer-events: none !important;
-  }
-
-  .drawer-content {
+  .rotation-view {
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    width: 100%;
-    height: 100%;
-    background: var(--theme-panel-bg);
-    color: var(--theme-text);
   }
 
   .mode-tabs {
     display: flex;
     border-bottom: 1px solid var(--theme-stroke);
+    flex-shrink: 0;
   }
 
   .tab {
@@ -338,7 +265,6 @@ import * as rotationDirectionPatternManagerModule from "$lib/features/create/sha
     color: var(--theme-text-muted);
   }
 
-  /* Hand indicator (read-only display) */
   .hand-indicator {
     display: flex;
     align-items: center;
@@ -347,6 +273,7 @@ import * as rotationDirectionPatternManagerModule from "$lib/features/create/sha
     border-bottom: 1px solid var(--theme-stroke);
     background: var(--theme-card-bg);
     font-size: 0.85rem;
+    flex-shrink: 0;
   }
 
   .indicator-label {
@@ -378,15 +305,5 @@ import * as rotationDirectionPatternManagerModule from "$lib/features/create/sha
 
   .hand-dot.red {
     background: var(--prop-red);
-  }
-
-  /* Fullscreen on mobile - browsing interface needs space */
-  @media (max-width: 768px) {
-    :global(.drawer-content:has(.rotation-direction-drawer)) {
-      height: 100vh !important;
-      height: 100dvh !important;
-      max-height: none !important;
-      border-radius: 0 !important;
-    }
   }
 </style>

@@ -37,9 +37,9 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   // Transform help mode types
   import type { ActionHelpId } from "../../domain/transforms/transform-help-content";
   type HelpMode = "inactive" | "selecting" | "viewing";
-  import RotationDirectionDrawer from "./RotationDirectionDrawer.svelte";
+  import RotationDirectionView from "./RotationDirectionView.svelte";
   import DurationPatternView from "./DurationPatternView.svelte";
-  import ExtendDrawer from "./ExtendDrawer.svelte";
+  import ExtendView from "./ExtendView.svelte";
   import StepGridSection from "./StepGridSection.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import FirstStepConfirmDialog from "./FirstStepConfirmDialog.svelte";
@@ -117,19 +117,42 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   // Transform help mode state machine
   let helpMode = $state<HelpMode>("inactive");
   let selectedTransform = $state<ActionHelpId | null>(null);
-  // Pattern editors (Turns / Duration) render INLINE as a drill-down view that
-  // swaps the panel content in place — not as a separate covering drawer.
-  let patternSubView = $state<"turnPattern" | "duration" | null>(null);
-  const patternSubViewTitle = $derived(
-    patternSubView === "turnPattern"
-      ? "Turn Patterns"
-      : patternSubView === "duration"
-        ? "Duration Patterns"
-        : ""
-  );
-  let showRotationDirectionDrawer = $state(false);
-  let showExtendDrawer = $state(false);
+  // Sub-views (Turns / Duration / Rotation / Extend) render INLINE as a
+  // drill-down that swaps the panel content in place — not covering drawers.
+  let subView = $state<
+    "turnPattern" | "duration" | "rotation" | "extend" | null
+  >(null);
   let extensionAnalysis = $state<ExtensionAnalysis | null>(null);
+
+  // Extend's header is dynamic and depends on the live analysis.
+  const extendDirectlyLoopable = $derived(
+    (extensionAnalysis?.availableLOOPOptions ?? []).length > 0
+  );
+  const subViewTitle = $derived(
+    subView === "turnPattern"
+      ? "Turn Patterns"
+      : subView === "duration"
+        ? "Duration Patterns"
+        : subView === "rotation"
+          ? "Rotation Direction"
+          : subView === "extend"
+            ? extendDirectlyLoopable
+              ? "Extend"
+              : "Choose Bridge"
+            : ""
+  );
+  const subViewSubtitle = $derived.by(() => {
+    if (subView !== "extend") return "";
+    if (!extendDirectlyLoopable)
+      return "Select a pictograph to reach a loopable position";
+    if (extensionAnalysis?.extensionType === "half_rotation")
+      return "180° rotation patterns";
+    if (extensionAnalysis?.extensionType === "quarter_rotation")
+      return "90° rotation patterns";
+    if (extensionAnalysis?.extensionType === "already_complete")
+      return "Extend with pattern";
+    return "Extend your sequence";
+  });
   // Spotlight modal state (legacy - modal replaced with route navigation)
   let spotlightOpen = $state(false);
   let spotlightSequence = $state<SequenceData | null>(null);
@@ -149,10 +172,10 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     if (!subDrawerPersister) return;
 
     let activeDrawer: SubDrawerType = null;
-    if (patternSubView === "turnPattern") activeDrawer = "turnPattern";
-    else if (showRotationDirectionDrawer) activeDrawer = "rotationDirection";
-    else if (patternSubView === "duration") activeDrawer = "duration";
-    else if (showExtendDrawer) activeDrawer = "extend";
+    if (subView === "turnPattern") activeDrawer = "turnPattern";
+    else if (subView === "rotation") activeDrawer = "rotationDirection";
+    else if (subView === "duration") activeDrawer = "duration";
+    else if (subView === "extend") activeDrawer = "extend";
     else if (helpMode !== "inactive") activeDrawer = "help";
 
     if (activeDrawer) {
@@ -203,12 +226,10 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
       const restoredSubDrawer = subDrawerPersister.getActiveSubDrawer();
       if (restoredSubDrawer) {
         if (restoredSubDrawer === "help") helpMode = "selecting";
-        else if (restoredSubDrawer === "turnPattern")
-          patternSubView = "turnPattern";
-        else if (restoredSubDrawer === "rotationDirection")
-          showRotationDirectionDrawer = true;
-        else if (restoredSubDrawer === "duration") patternSubView = "duration";
-        else if (restoredSubDrawer === "extend") showExtendDrawer = true;
+        else if (restoredSubDrawer === "turnPattern") subView = "turnPattern";
+        else if (restoredSubDrawer === "rotationDirection") subView = "rotation";
+        else if (restoredSubDrawer === "duration") subView = "duration";
+        else if (restoredSubDrawer === "extend") subView = "extend";
         restorationComplete = true;
       }
     }
@@ -288,16 +309,21 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
 
   function handleTurnPattern() {
     hapticService?.trigger("selection");
-    patternSubView = "turnPattern";
+    subView = "turnPattern";
   }
 
-  /** Back out of an inline pattern sub-view, reverting duration preview. */
-  function exitPatternSubView() {
+  /** Back out of an inline sub-view, reverting any per-view side effects. */
+  function exitSubView() {
     hapticService?.trigger("selection");
-    if (patternSubView === "duration" && panelState.isDurationPreviewMode) {
+    if (subView === "duration" && panelState.isDurationPreviewMode) {
       panelState.exitDurationPreviewMode(false);
     }
-    patternSubView = null;
+    if (subView === "extend") {
+      extensionAnalysis = null;
+      circularizationOptions = [];
+      directUnavailableReason = null;
+    }
+    subView = null;
   }
 
   function handleTurnPatternApply(result: {
@@ -314,7 +340,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
 
   function handleRotationDirection() {
     hapticService?.trigger("selection");
-    showRotationDirectionDrawer = true;
+    subView = "rotation";
   }
 
   function handleRotationDirectionApply(result: {
@@ -333,7 +359,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
 
   function handleDuration() {
     hapticService?.trigger("selection");
-    patternSubView = "duration";
+    subView = "duration";
     // Enter preview mode on desktop (side-by-side layout)
     if (isSideBySideLayout && sequence) {
       panelState.enterDurationPreviewMode(sequence);
@@ -358,7 +384,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     activeSequenceState.setCurrentSequence(result.sequence);
     hapticService?.trigger("success");
     // Duration preview lifecycle ends on apply — return to the actions grid.
-    patternSubView = null;
+    subView = null;
   }
 
   async function handleExtend() {
@@ -375,7 +401,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     extensionAnalysis = result.analysis;
     circularizationOptions = result.circularizationOptions;
     directUnavailableReason = result.directUnavailableReason;
-    showExtendDrawer = true;
+    subView = "extend";
   }
 
   /**
@@ -429,8 +455,8 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
       hapticService?.trigger("success");
       toast.success(result.message);
 
-      // Close the drawer on success
-      showExtendDrawer = false;
+      // Return to the actions grid on success
+      subView = null;
       extensionAnalysis = null;
       circularizationOptions = [];
       directUnavailableReason = null;
@@ -637,17 +663,22 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   onClose={handleClose}
 >
   <div class="editor-panel" class:help-active={helpMode === "selecting"}>
-    {#if patternSubView}
-      <!-- Inline drill-down: pattern editor swaps the panel content in place -->
+    {#if subView}
+      <!-- Inline drill-down: sub-view swaps the panel content in place -->
       <div class="compact-header sub">
         <button
           class="icon-btn back"
-          onclick={exitPatternSubView}
+          onclick={exitSubView}
           aria-label="Back to sequence actions"
         >
           <i class="fas fa-chevron-left" aria-hidden="true"></i>
         </button>
-        <h2 class="panel-title">{patternSubViewTitle}</h2>
+        <div class="sub-title">
+          <h2 class="panel-title">{subViewTitle}</h2>
+          {#if subViewSubtitle}
+            <p class="sub-subtitle">{subViewSubtitle}</p>
+          {/if}
+        </div>
         <div class="header-actions">
           <button
             class="icon-btn close"
@@ -659,14 +690,29 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
         </div>
       </div>
       <div class="sub-view-body">
-        {#if patternSubView === "turnPattern"}
+        {#if subView === "turnPattern"}
           <TurnPatternView {sequence} onApply={handleTurnPatternApply} />
-        {:else}
+        {:else if subView === "duration"}
           <DurationPatternView
             sequence={panelState.isDurationPreviewMode
               ? panelState.previewSequence
               : sequence}
             onApply={handleDurationApply}
+          />
+        {:else if subView === "rotation"}
+          <RotationDirectionView
+            {sequence}
+            targetHand={panelState.targetHand}
+            onApply={handleRotationDirectionApply}
+          />
+        {:else if subView === "extend"}
+          <ExtendView
+            analysis={extensionAnalysis}
+            {circularizationOptions}
+            {directUnavailableReason}
+            isApplying={isExtending}
+            onBridgeAppend={handleBridgeAppend}
+            onApply={handleExtendApply}
           />
         {/if}
       </div>
@@ -830,32 +876,6 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   }}
 />
 
-<RotationDirectionDrawer
-  bind:isOpen={showRotationDirectionDrawer}
-  {sequence}
-  targetHand={panelState.targetHand}
-  toolPanelWidth={panelState.toolPanelWidth}
-  onClose={() => (showRotationDirectionDrawer = false)}
-  onApply={handleRotationDirectionApply}
-/>
-
-<ExtendDrawer
-  bind:isOpen={showExtendDrawer}
-  analysis={extensionAnalysis}
-  {circularizationOptions}
-  {directUnavailableReason}
-  isApplying={isExtending}
-  toolPanelWidth={panelState.toolPanelWidth}
-  onClose={() => {
-    showExtendDrawer = false;
-    extensionAnalysis = null;
-    circularizationOptions = [];
-    directUnavailableReason = null;
-  }}
-  onBridgeAppend={handleBridgeAppend}
-  onApply={handleExtendApply}
-/>
-
 <!-- First Beat Confirmation Dialog (non-circular sequences) -->
 <FirstStepConfirmDialog
   show={showShiftConfirmDialog && pendingShiftStepNumber !== null}
@@ -901,9 +921,28 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     grid-template-columns: var(--min-touch-target) 1fr var(--min-touch-target);
     align-items: center;
     gap: 8px;
+    height: auto;
+    min-height: var(--min-touch-target);
+    padding-block: 8px;
+  }
+
+  .sub-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
   }
 
   .compact-header.sub .panel-title {
+    text-align: center;
+  }
+
+  .sub-subtitle {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    color: var(--theme-text-dim);
     text-align: center;
   }
 
@@ -917,12 +956,13 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     color: var(--theme-text);
   }
 
-  /* Scrollable body for an inline pattern editor view */
+  /* Bare flex container — each inline view owns its own scroll + padding. */
   .sub-view-body {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
-    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .header-actions {
