@@ -167,7 +167,7 @@
 
     // Analytics: PostHog (same instance as app mode - lightweight, no DI needed)
     const { initPostHog } = await import("$lib/shared/analytics/services/posthog");
-    initPostHog();
+    void initPostHog();
 
     // Landing doesn't need DI container or auth - mark ready immediately
     containerReady = true;
@@ -273,7 +273,7 @@
     // Analytics: PostHog
     bootProfiler.mark("posthog");
     const { initPostHog } = await imports.posthog;
-    initPostHog();
+    void initPostHog();
     bootProfiler.end("posthog");
 
     // i18n

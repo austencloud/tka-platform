@@ -14,7 +14,19 @@
 
 import posthog from "posthog-js";
 import { browser } from "$app/environment";
-import { env } from "$env/dynamic/public";
+
+// `$env/dynamic/public` throws on module-eval in a worker (no globalThis
+// sveltekit env object), which crashes the composition worker the moment it
+// imports anything in this module's graph (authState -> posthog). Load it
+// lazily so importing this module is worker-safe; the loader is only ever
+// awaited from browser-guarded code paths, so the worker never fetches it.
+type PublicEnv = Record<string, string | undefined>;
+let _publicEnv: PublicEnv | null = null;
+async function loadPublicEnv(): Promise<PublicEnv> {
+  if (_publicEnv) return _publicEnv;
+  ({ env: _publicEnv } = (await import("$env/dynamic/public")) as { env: PublicEnv });
+  return _publicEnv;
+}
 
 let initialized = false;
 
@@ -22,10 +34,11 @@ let initialized = false;
  * Initialize PostHog analytics.
  * Call once on app startup in +layout.svelte.
  */
-export function initPostHog(): void {
+export async function initPostHog(): Promise<void> {
   if (!browser) return;
   if (initialized) return;
 
+  const env = await loadPublicEnv();
   if (!env.PUBLIC_POSTHOG_KEY) {
     console.warn("[PostHog] No API key found. Analytics disabled.");
     return;
@@ -196,12 +209,13 @@ export function stopSessionRecording(): void {
  * Get the current session replay URL.
  * Useful for support tickets or bug reports.
  */
-export function getSessionReplayUrl(): string | null {
+export async function getSessionReplayUrl(): Promise<string | null> {
   if (!browser || !initialized) return null;
 
   const sessionId = posthog.get_session_id();
   if (!sessionId) return null;
 
+  const env = await loadPublicEnv();
   if (!env.PUBLIC_POSTHOG_PROJECT_ID) return null;
 
   return `https://us.posthog.com/project/${env.PUBLIC_POSTHOG_PROJECT_ID}/replay/${sessionId}`;

@@ -93,7 +93,7 @@ export const handle: Handle = async ({ event, resolve }) => {
       "img-src 'self' data: blob: https: http:",
       "media-src 'self' blob: https://firebasestorage.googleapis.com https://storage.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "frame-src 'self' https://accounts.google.com https://*.firebaseapp.com",
+      "frame-src 'self' blob: https://accounts.google.com https://*.firebaseapp.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
