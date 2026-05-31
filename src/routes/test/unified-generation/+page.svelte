@@ -66,19 +66,31 @@
   let orientation = $state<"radial" | "nonradial" | "split">("radial");
   let loopType = $state<LoopType>("rotated");
   let period = $state<"quartered" | "halved">("quartered");
-  let turns = $state<"none" | "light" | "medium" | "heavy">("light");
+  let turns = $state<"none" | "light" | "medium" | "heavy">("light"); // turn intensity
+  let turnVariation = $state<"clean" | "sprinkle" | "spicy">("sprinkle");
+  let turnPatterns = $state<Set<string>>(new Set(["Hold 1", "Pulse 1"]));
+  let propRev = $state<"smooth" | "mixed" | "choppy">("smooth");
+  let handRev = $state<"smooth" | "mixed" | "choppy">("mixed");
+  let dashes = $state<"low" | "mixed" | "high">("mixed");
+  let startMode = $state<"all" | "classic" | "specific">("all");
   let showDetail = $state(false);
+  let showOrient = $state(false);
   let seed = $state(mintSeed());
 
-  const ORI = ["radial", "nonradial", "split"] as const;
-  function cycleOrientation() { orientation = ORI[(ORI.indexOf(orientation) + 1) % ORI.length]!; }
+  const TURN_PATTERNS = ["Hold 1", "Pulse 1", "Trade 1", "½/1 Trade", "Wave 2·1"];
+  function togglePattern(p: string) {
+    const next = new Set(turnPatterns); next.has(p) ? next.delete(p) : next.add(p); turnPatterns = next;
+  }
   function cycleLoop() { loopType = LOOP_TYPES[(LOOP_TYPES.indexOf(loopType) + 1) % LOOP_TYPES.length]!; }
   function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
   // ---- derived ----------------------------------------------------------------
   const wordMode = $derived(word.trim().length > 0);
   // Generation fans each base seed across the variation axes → the real card space is deep.
-  const variationMultiplier = $derived((turns === "none" ? 1 : 4) * (period === "quartered" ? 2 : 1) * 2);
+  const variationMultiplier = $derived(
+    (turns === "none" ? 1 : 4) * (period === "quartered" ? 2 : 1) *
+    (propRev === "smooth" ? 1 : 2) * (handRev === "smooth" ? 1 : 2),
+  );
   const wordVariations = $derived(wordMode ? Math.max(1, word.trim().length * 6) * variationMultiplier : 0);
   const cardSpace = $derived(wordMode ? wordVariations : baseLoops(stepCount, loopType) * variationMultiplier);
   const requested = $derived(wordMode ? wordVariations : deckSize); // word deck = ALL variations
@@ -87,14 +99,21 @@
   const exhausted = $derived(requested > cardSpace);
 
   const customizeSummary = $derived(
-    turns === "none" && grid === "diamond" && orientation === "radial" ? "Default" : "Custom",
+    propRev === "smooth" && handRev === "mixed" && dashes === "mixed" &&
+    turns === "light" && turnVariation === "sprinkle" ? "Default" : "Custom",
+  );
+  const orientSummary = $derived(
+    (orientation === "nonradial" ? "Non-radial" : cap(orientation)) +
+    (startMode === "all" ? "" : ` · ${cap(startMode)}`),
   );
 
   const recipe = $derived({
     schemaVersion: 1, generatorVersion: "loop-gen@0.1.0", seed,
     params: {
       ...(wordMode ? { word: word.trim().toUpperCase(), deck: "all-variations" } : { deckSize }),
-      loopType, stepCount, level, grid, orientation, period, turns,
+      loopType, stepCount, level, grid, orientation, startMode, period,
+      propReversals: propRev, handReversals: handRev, dashes,
+      turnIntensity: turns, turnVariation, turnPatterns: [...turnPatterns],
     },
   });
 
@@ -161,7 +180,7 @@
 
         <ToggleCard title="Grid" option1={{ value: "diamond", label: "Diamond" }} option2={{ value: "box", label: "Box" }} activeOption={grid} onToggle={(v) => (grid = v as typeof grid)} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} gridColumnSpan={2} />
 
-        <BaseCard title="Orientation" currentValue={orientation === "nonradial" ? "Non-radial" : cap(orientation)} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={cycleOrientation} />
+        <BaseCard title="Orientation" currentValue={orientSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showOrient = !showOrient)} />
 
         <!-- Row 3 -->
         <BaseCard title="Customize" currentValue={customizeSummary} color={c.customize.color} shadowColor={c.customize.shadowColor} gridColumnSpan={2} onClick={() => (showDetail = !showDetail)} />
@@ -177,15 +196,58 @@
         </button>
       </div>
 
+      {#if showOrient}
+        <div class="detail">
+          <span class="detail-title">Orientation &amp; Start</span>
+          <div class="brow"><span class="brow-label">Orientation</span><div class="opts">
+            {#each [["radial", "Radial"], ["nonradial", "Non-radial"], ["split", "Split"]] as [v, l]}
+              <button class="opt" class:on={orientation === v} onclick={() => (orientation = v as typeof orientation)}>{l}</button>
+            {/each}
+          </div></div>
+          <div class="brow"><span class="brow-label">Start</span><div class="opts">
+            {#each [["all", "All"], ["classic", "Classic 3"], ["specific", "Specific"]] as [v, l]}
+              <button class="opt" class:on={startMode === v} onclick={() => (startMode = v as typeof startMode)}>{l}</button>
+            {/each}
+          </div></div>
+          <p class="detail-note">Start position folds in here. “Specific” reveals the position grid (deep tier).</p>
+        </div>
+      {/if}
+
       {#if showDetail}
         <div class="detail">
-          <span class="detail-title">Customize · Turns</span>
-          <div class="pills">
-            {#each [["none", "Clean"], ["light", "Sprinkle"], ["heavy", "Spicy"]] as [v, l]}
-              <button class="pill" class:on={turns === v} onclick={() => (turns = v as typeof turns)}>{l}</button>
+          <span class="detail-title">Customize · Style</span>
+          <div class="brow"><span class="brow-label">Props</span><div class="opts">
+            {#each [["smooth", "Smooth"], ["mixed", "Mixed"], ["choppy", "Choppy"]] as [v, l]}
+              <button class="opt" class:on={propRev === v} onclick={() => (propRev = v as typeof propRev)}>{l}</button>
             {/each}
-          </div>
-          <p class="detail-note">Tap-to-open detail = the secondary tier (full per-step turn / reversal editors land here). The grid stays the primary surface.</p>
+          </div></div>
+          <div class="brow"><span class="brow-label">Hands</span><div class="opts">
+            {#each [["smooth", "Smooth"], ["mixed", "Mixed"], ["choppy", "Choppy"]] as [v, l]}
+              <button class="opt" class:on={handRev === v} onclick={() => (handRev = v as typeof handRev)}>{l}</button>
+            {/each}
+          </div></div>
+          <div class="brow"><span class="brow-label">Dashes</span><div class="opts">
+            {#each [["low", "Low"], ["mixed", "Mixed"], ["high", "High"]] as [v, l]}
+              <button class="opt" class:on={dashes === v} onclick={() => (dashes = v as typeof dashes)}>{l}</button>
+            {/each}
+          </div></div>
+          <span class="detail-title">Customize · Turns</span>
+          <div class="brow"><span class="brow-label">Intensity</span><div class="opts">
+            {#each [["none", "None"], ["light", "Light"], ["medium", "Medium"], ["heavy", "Heavy"]] as [v, l]}
+              <button class="opt" class:on={turns === v} onclick={() => (turns = v as typeof turns)}>{l}</button>
+            {/each}
+          </div></div>
+          <div class="brow"><span class="brow-label">Variation</span><div class="opts">
+            {#each [["clean", "Clean"], ["sprinkle", "Sprinkle"], ["spicy", "Spicy"]] as [v, l]}
+              <button class="opt" class:on={turnVariation === v} onclick={() => (turnVariation = v as typeof turnVariation)}>{l}</button>
+            {/each}
+          </div></div>
+          <div class="brow"><span class="brow-label">Patterns</span><div class="pills">
+            {#each TURN_PATTERNS as p}
+              <button class="pill" class:on={turnPatterns.has(p)} onclick={() => togglePattern(p)}>{p}</button>
+            {/each}
+          </div></div>
+          <p class="detail-note">Per-step turn &amp; reversal editors are the deep tier (drill-in from here).</p>
         </div>
       {/if}
     </section>
@@ -273,7 +335,13 @@
     border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
   }
   .detail-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255, 255, 255, 0.6); }
-  .pills { display: flex; gap: 8px; }
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .brow { display: flex; align-items: center; gap: 12px; }
+  .brow-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.5); min-width: 72px; flex-shrink: 0; }
+  .opts { display: flex; gap: 4px; flex: 1; }
+  .opt { flex: 1; min-height: 40px; background: rgba(0, 0, 0, 0.25); border: 1.5px solid rgba(255, 255, 255, 0.15); border-radius: 10px; color: rgba(255, 255, 255, 0.7); cursor: pointer; font-weight: 600; font-size: 12px; padding: 4px 6px; transition: all 150ms; }
+  .opt:active { transform: scale(0.96); }
+  .opt.on { background: rgba(6, 182, 212, 0.28); border-color: rgba(6, 182, 212, 0.7); color: #fff; box-shadow: 0 0 12px rgba(6, 182, 212, 0.2); }
   .pill { padding: 8px 16px; border-radius: 999px; border: 1.5px solid rgba(255, 255, 255, 0.18); background: rgba(0, 0, 0, 0.25); color: rgba(255, 255, 255, 0.75); font-size: 13px; font-weight: 600; cursor: pointer; }
   .pill.on { background: rgba(6, 182, 212, 0.25); border-color: rgba(6, 182, 212, 0.7); color: #fff; }
   .detail-note { margin: 0; font-size: 12px; color: rgba(255, 255, 255, 0.45); }
