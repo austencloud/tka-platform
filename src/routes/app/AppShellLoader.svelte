@@ -7,9 +7,15 @@
 
   onMount(() => {
     (window as any).__tkaLoadProgress?.(84, "Resolving services...");
+    import("$lib/shared/analytics/boot-profiler").then(({ bootProfiler }) =>
+      bootProfiler.mark("shell:main-app-chunk")
+    );
     import("$lib/shared/application/components/MainApplication.svelte").then(
       (mod) => {
         MainApp = mod.default;
+        import("$lib/shared/analytics/boot-profiler").then(({ bootProfiler }) =>
+          bootProfiler.end("shell:main-app-chunk")
+        );
       }
     );
   });

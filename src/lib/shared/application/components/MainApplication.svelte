@@ -24,6 +24,7 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
   import { PropType } from "../../pictograph/prop/domain/enums/PropType";
 
   import { getContext, onMount } from "svelte";
+  import { bootProfiler } from "$lib/shared/analytics/boot-profiler";
   import MainInterface from "../../MainInterface.svelte";
   import AuthSheet from "../../navigation/components/AuthSheet.svelte";
   import LegalSheet from "../../legal/components/LegalSheet.svelte";
@@ -211,7 +212,9 @@ import type { SheetType } from "../../navigation/services/types";
 
         setInitializationState(false, true, null, 0);
         // ITI container is created synchronously - no ensureContainerInitialized needed
+        bootProfiler.mark("app:init-state");
         await initializeAppState();
+        bootProfiler.end("app:init-state");
 
         // Services are already resolved from ITI container in $effect above
         // Wait briefly for $effect to run
@@ -260,10 +263,13 @@ import type { SheetType } from "../../navigation/services/types";
           }
         );
 
+        bootProfiler.mark("app:restore-workspace");
         await restoreApplicationState();
         await initService.initialize();
+        bootProfiler.end("app:restore-workspace");
         (window as any).__tkaLoadProgress?.(92, "Restoring workspace...");
 
+        bootProfiler.mark("app:load-settings+theme");
         await settingsService.loadSettings();
         updateSettings(settingsService.currentSettings);
         initializeTheme();
@@ -279,10 +285,12 @@ import type { SheetType } from "../../navigation/services/types";
         if (bgType) {
           applyThemeForBackground(bgType);
         }
+        bootProfiler.end("app:load-settings+theme");
 
         // Initialize gamification system (authenticated users only - requires Firestore)
         if (authState.isAuthenticated) {
           (window as any).__tkaLoadProgress?.(98, "Initializing achievements...");
+          bootProfiler.mark("app:gamification");
           try {
             const { initializeGamification } =
               await import("../../gamification/init/gamification-initializer");
@@ -293,6 +301,7 @@ import type { SheetType } from "../../navigation/services/types";
               gamError
             );
           }
+          bootProfiler.end("app:gamification");
         }
 
         setInitializationState(true, false, null, 0);

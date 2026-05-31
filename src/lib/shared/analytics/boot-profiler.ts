@@ -159,15 +159,47 @@ class BootProfiler {
     // console output unless the user opted in.
     if (!isBootProfileVerbose()) return;
 
-    const totalTime = performance.now() - this.bootStart;
-    const entries = Array.from(this.phases.values())
-      .filter((p) => p.duration !== undefined)
-      .sort((a, b) => a.startTime - b.startTime);
+    // Anchor everything to navigation start. performance.now()'s timeOrigin
+    // IS navigationStart for the top document, so navStart === 0 in this clock.
+    // Total reflects the WHOLE loading screen, not just post-bundle-eval work.
+    const totalTime = performance.now();
 
-    // Console table
+    // Synthetic pre-JS phases from Navigation Timing so the table covers the
+    // network + html-parse + bundle-eval segment that runs before any boot:* mark.
+    const nav = performance.getEntriesByType(
+      "navigation"
+    )[0] as PerformanceNavigationTiming | undefined;
+    const synthetic: PhaseEntry[] = [];
+    if (nav) {
+      const ttfb = nav.responseStart - nav.requestStart;
+      if (ttfb > 0) {
+        synthetic.push({
+          label: "net:ttfb (request→response)",
+          startTime: nav.requestStart,
+          endTime: nav.responseStart,
+          duration: ttfb,
+        });
+      }
+      const parseEval = this.bootStart - nav.responseEnd;
+      if (parseEval > 0) {
+        synthetic.push({
+          label: "html:download→bundle-eval",
+          startTime: nav.responseEnd,
+          endTime: this.bootStart,
+          duration: parseEval,
+        });
+      }
+    }
+
+    const entries = [
+      ...synthetic,
+      ...Array.from(this.phases.values()).filter((p) => p.duration !== undefined),
+    ].sort((a, b) => a.startTime - b.startTime);
+
+    // Console table (Start is absolute ms since navigation start)
     const tableData = entries.map((p) => ({
       Phase: p.label,
-      "Start (ms)": Math.round(p.startTime - this.bootStart),
+      "Start (ms)": Math.round(p.startTime),
       "Duration (ms)": Math.round(p.duration!),
       "% of Total": `${((p.duration! / totalTime) * 100).toFixed(1)}%`,
     }));
