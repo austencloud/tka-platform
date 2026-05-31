@@ -14,6 +14,11 @@
 const fs = require("fs");
 const path = require("path");
 const { REVERSAL_PATTERNS, applyReversalPattern } = require("./apply-reversal-pattern.cjs");
+const {
+  buildLocationToPositionMap,
+  twinSequence,
+  isSelfTwin,
+} = require("./twin-transform.cjs");
 
 // ---------------------------------------------------------------------------
 // CLI Argument Parsing
@@ -41,6 +46,7 @@ const outPath = getArg("out");
 const seedFirestore = hasFlag("seed-firestore");
 const startPositionsArg = getArg("startPositions");
 const reversalPattern = getArg("reversalPattern");
+const twin = hasFlag("twin");
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -108,6 +114,7 @@ console.log(`  Seed length: ${seedLength} beats`);
 console.log(`  Level: ${level}`);
 console.log(`  Grid: ${gridMode}`);
 console.log(`  Reversal: ${reversalPattern || 'continuous'}`);
+  console.log(`  Twin (mirror+swap): ${twin}`);
 console.log(`  Dry run: ${dryRun}`);
 if (outPath) console.log(`  Output: ${outPath}`);
 console.log("");
