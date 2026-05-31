@@ -347,3 +347,6 @@ static/models/**/_tmp_*.glb
 
 # Local KTX-Software / texture-tool binaries (platform-specific, not source).
 .tools/
+
+# Claude scratch / diagnostic artifacts (logs, traces, throwaway scripts)
+.claude-tmp/
