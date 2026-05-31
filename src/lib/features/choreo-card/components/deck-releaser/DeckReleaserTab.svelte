@@ -265,7 +265,22 @@
   }
 
   type SidebarMode = "browse" | "print";
-  let sidebarMode = $state<SidebarMode>("browse");
+  // Persist the Browse/Print sidebar tab across refresh / re-open, same lifetime
+  // as the print dials. localStorage, not session.
+  const SIDEBAR_MODE_KEY = "deckReleaser.sidebarMode";
+  function loadSidebarMode(): SidebarMode {
+    if (typeof window === "undefined") return "browse";
+    try {
+      const raw = localStorage.getItem(SIDEBAR_MODE_KEY);
+      return raw === "print" || raw === "browse" ? raw : "browse";
+    } catch { return "browse"; }
+  }
+  let sidebarMode = $state<SidebarMode>(loadSidebarMode());
+
+  $effect(() => {
+    if (typeof window === "undefined") return;
+    try { localStorage.setItem(SIDEBAR_MODE_KEY, sidebarMode); } catch { /* quota / private mode — non-fatal */ }
+  });
 
   async function handleDeleteRelease(deckNumber: number) {
     try {
