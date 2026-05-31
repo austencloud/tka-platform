@@ -58,7 +58,9 @@ function hash128(input: string): string {
 interface DeckCardIdentity {
   sequenceId: string;
   sourceCatalogId: string;
-  variation?: Record<string, unknown>;
+  // `object`, not Record<string, unknown>, so a typed variation interface
+  // (CardVariation) is assignable without an index signature. Indexed internally.
+  variation?: object;
 }
 
 /**
@@ -70,7 +72,7 @@ interface DeckCardIdentity {
  */
 export function hashDeckContent(cards: readonly DeckCardIdentity[]): string {
   const identities = cards.map((c) => {
-    const v = c.variation;
+    const v = c.variation as Record<string, unknown> | undefined;
     const variationKey = v
       ? Object.keys(v)
           .sort()
