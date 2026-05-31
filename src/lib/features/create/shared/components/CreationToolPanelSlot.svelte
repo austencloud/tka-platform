@@ -14,10 +14,12 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { IToolPanelMethods } from "../types/create-module-types";
   import { getCreateModuleContext } from "../context/create-module-context";
-  import GeneratePanel from "../../generate/components/GeneratePanel.svelte";
+  import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import ConstructTabContent from "./ConstructTabContent.svelte";
-  import AssembleToolPanel from "../../assemble/components/AssembleToolPanel.svelte";
-  import FuseTab from "$lib/features/fuse/FuseTab.svelte";
+  // GeneratePanel (136-file subtree), AssembleToolPanel (21), and FuseTab (235!)
+  // are deferred via LazyMount — only the active build-mode tab's chunk loads.
+  // Construct is the default tab so ConstructTabContent stays eager. This keeps
+  // ~400 files out of the Create module's first-paint graph (see scripts/trace-create-three.cjs).
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
 
   // Get context
@@ -152,24 +154,32 @@
               />
             {/if}
           {:else if activeToolPanel === "generate"}
-            <!-- Generator Mode - Automatic sequence generation -->
-            <GeneratePanel
-              sequenceState={createModuleState.getActiveTabSequenceState()}
-              isDesktop={showDesktopSidebar}
+            <!-- Generator Mode - Automatic sequence generation (deferred chunk) -->
+            <LazyMount
+              loader={() => import("../../generate/components/GeneratePanel.svelte")}
+              active
+              props={{
+                sequenceState: createModuleState.getActiveTabSequenceState(),
+                isDesktop: showDesktopSidebar,
+              }}
             />
           {:else if activeToolPanel === "assemble"}
-            <!-- Assemble Mode - Click grid points to build sequences -->
+            <!-- Assemble Mode - Click grid points to build sequences (deferred chunk) -->
             {@const assembleTabState = createModuleState.assembleTabState}
             {#if assembleTabState}
-              <AssembleToolPanel tabState={assembleTabState} />
+              <LazyMount
+                loader={() => import("../../assemble/components/AssembleToolPanel.svelte")}
+                active
+                props={{ tabState: assembleTabState }}
+              />
             {:else}
               <div class="coming-soon-panel">
                 <p>Assemble loading...</p>
               </div>
             {/if}
           {:else if activeToolPanel === "fuse"}
-            <!-- Fuse Mode - Combine two sequences into one -->
-            <FuseTab />
+            <!-- Fuse Mode - Combine two sequences into one (deferred chunk) -->
+            <LazyMount loader={() => import("$lib/features/fuse/FuseTab.svelte")} active />
           {/if}
         </div>
       {/key}

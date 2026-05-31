@@ -11,7 +11,9 @@
 
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import ButtonPanel from "../workspace-panel/shared/components/ButtonPanel.svelte";
-  import CreationWorkspaceArea from "./CreationWorkspaceArea.svelte";
+  import LazyMount from "$lib/shared/components/LazyMount.svelte";
+  // CreationWorkspaceArea (85-file subtree) only renders once a sequence exists,
+  // so its chunk is deferred via LazyMount — empty/first-paint Create loads skip it.
   import CreationToolPanelSlot from "./CreationToolPanelSlot.svelte";
   import type { createCreateModuleState as CreateModuleStateType } from "../state/create-module-state.svelte";
   import type { PanelCoordinationState } from "../state/panel-coordination-state.svelte";
@@ -167,14 +169,18 @@
     <!-- Workspace Content Area -->
     <div class="workspace-content">
       {#if hasWorkspaceContent}
-        <CreationWorkspaceArea
-          {animatingStepNumber}
-          {currentDisplayWord}
-          {buttonPanelHeight}
-          letterSources={currentLetterSources}
-          {...toolPanelRef?.getAnimationStateRef?.()
-            ? { animationStateRef: toolPanelRef.getAnimationStateRef() }
-            : {}}
+        <LazyMount
+          loader={() => import("./CreationWorkspaceArea.svelte")}
+          active
+          props={{
+            animatingStepNumber,
+            currentDisplayWord,
+            buttonPanelHeight,
+            letterSources: currentLetterSources,
+            ...(toolPanelRef?.getAnimationStateRef?.()
+              ? { animationStateRef: toolPanelRef.getAnimationStateRef() }
+              : {}),
+          }}
         />
       {/if}
     </div>

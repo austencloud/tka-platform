@@ -1,7 +1,10 @@
 <script lang="ts">
 
-import { getCreateModuleInitializer } from "$lib/features/create/shared/get-create-module-initializer";
-import { getExtensionFlowCoordinator } from "$lib/features/create/shared/get-extension-flow-coordinator";
+// get-create-module-initializer (64-file subtree) and get-extension-flow-coordinator
+// (10-file subtree) are imported dynamically at their only call sites (onMount /
+// LOOP action) so they stay OUT of the Create module's eager first-paint graph.
+// See scripts/trace-create-three.cjs. getLibraryRepository stays static — it's
+// read synchronously by a context getter children rely on.
 import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 
   /**
@@ -277,6 +280,9 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
       try {
         const initStart = performance.now();
         initProgress = "Resolving services...";
+        const { getCreateModuleInitializer } = await import(
+          "$lib/features/create/shared/get-create-module-initializer"
+        );
         const initService = getCreateModuleInitializer();
 
         initProgress = "Initializing workspace...";
@@ -536,6 +542,9 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   async function handleLoopCompletionRequest(loopType: LOOPType) {
     if (!CreateModuleState) return;
 
+    const { getExtensionFlowCoordinator } = await import(
+      "$lib/features/create/shared/get-extension-flow-coordinator"
+    );
     const extensionFlowCoordinator = getExtensionFlowCoordinator();
     if (!extensionFlowCoordinator) return;
 
@@ -574,6 +583,9 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   async function confirmLoopCompletion() {
     if (!pendingLoopType || isApplyingLoop || !CreateModuleState) return;
 
+    const { getExtensionFlowCoordinator } = await import(
+      "$lib/features/create/shared/get-extension-flow-coordinator"
+    );
     const extensionFlowCoordinator = getExtensionFlowCoordinator();
     if (!extensionFlowCoordinator) return;
 
