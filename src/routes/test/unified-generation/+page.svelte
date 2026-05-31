@@ -149,6 +149,15 @@
   function generate() { seed = mintSeed(); }
   function cycleDeck() { deckSize = DECK_PRESETS[(DECK_PRESETS.indexOf(deckSize) + 1) % DECK_PRESETS.length] ?? 52; }
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+  // Morph layout changes via the View Transitions API: the browser snapshots every named
+  // tile before/after and tweens position + size, so siblings glide to fill freed space and
+  // the Turns card cross-fades in/out. Falls back to an instant change where unsupported.
+  function morph(fn: () => void) {
+    const d = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    if (typeof document !== "undefined" && d.startViewTransition) d.startViewTransition(fn);
+    else fn();
+  }
 </script>
 
 <svelte:head><title>Unified Generation — Bento Grid Prototype</title></svelte:head>
@@ -165,53 +174,77 @@
       <div class="grid-stage">
       <div class="card-grid">
         <!-- Row 1 -->
+        <div class="tile" style:view-transition-name="t-word">
         {#if wordEditing}
-          <div class="word-edit" style="--c: {c.mode.color}" style:grid-column="span 2">
+          <div class="word-edit" style="--c: {c.mode.color}">
             <span class="we-label">Word</span>
             <input
               class="we-input"
               autofocus
               placeholder="A–Z"
               bind:value={word}
-              onblur={() => (wordEditing = false)}
+              onblur={() => morph(() => (wordEditing = false))}
               onkeydown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
             />
           </div>
         {:else}
-          <BaseCard title="Word" currentValue={wordMode ? word.trim().toUpperCase() : "A–Z"} color={c.mode.color} shadowColor={c.mode.shadowColor} gridColumnSpan={2} onClick={() => (wordEditing = true)} />
+          <BaseCard title="Word" currentValue={wordMode ? word.trim().toUpperCase() : "A–Z"} color={c.mode.color} shadowColor={c.mode.shadowColor} gridColumnSpan={2} onClick={() => morph(() => (wordEditing = true))} />
         {/if}
+        </div>
 
+        <div class="tile" style:view-transition-name="t-deck">
         {#if wordMode}
           <BaseCard title="Deck" currentValue={`${drawCount} vars`} color={c.favorite.color} shadowColor={c.favorite.shadowColor} gridColumnSpan={2} clickable={false} />
         {:else}
           <BaseCard title="Deck Size" currentValue={`${deckSize}`} color={c.favorite.color} shadowColor={c.favorite.shadowColor} gridColumnSpan={2} onClick={cycleDeck} />
         {/if}
+        </div>
 
+        <div class="tile" style:view-transition-name="t-length">
         <StepperCard title="Length" currentValue={stepCount} minValue={4} maxValue={16} description="STEP COUNT" color={c.length.color} shadowColor={c.length.shadowColor} gridColumnSpan={2} onIncrement={() => (stepCount = clamp(stepCount + 2, 4, 16))} onDecrement={() => (stepCount = clamp(stepCount - 2, 4, 16))} />
+        </div>
 
         <!-- Row 2 -->
-        <StepperCard title="Level" currentValue={level} minValue={1} maxValue={4} description="BASE MOTIONS" color={c.level.color} shadowColor={c.level.shadowColor} gridColumnSpan={2} onIncrement={() => (level = clamp(level + 1, 1, 4))} onDecrement={() => (level = clamp(level - 1, 1, 4))} />
+        <div class="tile" style:view-transition-name="t-level">
+        <StepperCard title="Level" currentValue={level} minValue={1} maxValue={4} description="BASE MOTIONS" color={c.level.color} shadowColor={c.level.shadowColor} gridColumnSpan={2} onIncrement={() => morph(() => (level = clamp(level + 1, 1, 4)))} onDecrement={() => morph(() => (level = clamp(level - 1, 1, 4)))} />
+        </div>
 
+        <div class="tile" style:view-transition-name="t-grid">
         <ToggleCard title="Grid" option1={{ value: "diamond", label: "Diamond" }} option2={{ value: "box", label: "Box" }} activeOption={grid} onToggle={(v) => (grid = v as typeof grid)} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} gridColumnSpan={2} />
+        </div>
 
         {#if level > 1}
+          <div class="tile" style:view-transition-name="t-turns">
           <TurnIntensityCard currentIntensity={turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => (turnIntensity = v)} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
+          </div>
         {/if}
 
+        <div class="tile" style:view-transition-name="t-posori">
         <BaseCard title="Pos & Ori" currentValue={orientSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showOrient = !showOrient)} />
+        </div>
 
         <!-- Row 3 -->
+        <div class="tile" style:view-transition-name="t-loop">
         <BaseCard title="Loop" currentValue={LOOP_TYPE_LABELS[loopType]} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
+        </div>
 
+        <div class="tile" style:view-transition-name="t-period">
         <ToggleCard title="Period" option1={{ value: "quartered", label: "Quartered" }} option2={{ value: "halved", label: "Halved" }} activeOption={period} onToggle={(v) => (period = v as typeof period)} color={c.period.color} shadowColor={c.period.shadowColor} gridColumnSpan={2} />
+        </div>
 
         <!-- Row 4 — Style steppers (Smooth→Mixed→Choppy) -->
+        <div class="tile" style:view-transition-name="t-props">
         <StepperCard title="Props" currentValue={TRI.indexOf(propRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i]} color={STYLE_COLORS.props.color} shadowColor={STYLE_COLORS.props.shadow} gridColumnSpan={2} onIncrement={() => (propRev = stepArr(TRI, propRev, 1))} onDecrement={() => (propRev = stepArr(TRI, propRev, -1))} />
+        </div>
+        <div class="tile" style:view-transition-name="t-hands">
         <StepperCard title="Hands" currentValue={TRI.indexOf(handRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i]} color={STYLE_COLORS.hands.color} shadowColor={STYLE_COLORS.hands.shadow} gridColumnSpan={2} onIncrement={() => (handRev = stepArr(TRI, handRev, 1))} onDecrement={() => (handRev = stepArr(TRI, handRev, -1))} />
+        </div>
+        <div class="tile" style:view-transition-name="t-dashes">
         <StepperCard title="Dashes" currentValue={DASH.indexOf(dashes)} minValue={0} maxValue={2} description="FREQUENCY" formatValue={(i: number) => DASH_LABEL[i]} color={STYLE_COLORS.dashes.color} shadowColor={STYLE_COLORS.dashes.shadow} gridColumnSpan={2} onIncrement={() => (dashes = stepArr(DASH, dashes, 1))} onDecrement={() => (dashes = stepArr(DASH, dashes, -1))} />
+        </div>
 
         <!-- Generate -->
-        <button class="generate" onclick={generate}>
+        <button class="generate" style:view-transition-name="t-generate" onclick={generate}>
           <i class="fas fa-dice"></i>
           <span>{wordMode ? `Generate ${drawCount} variations` : `Generate ${drawCount}`}</span>
         </button>
@@ -299,14 +332,25 @@
     display: flex; flex-wrap: wrap; align-content: flex-start;
     gap: 10px; width: 100%; margin: 0;
   }
-  .card-grid > :global(*) {
+  .card-grid > .tile {
     flex: 1 1 230px; min-width: 200px; height: 120px; min-height: 0;
-    transition: flex-basis 220ms ease, width 220ms ease;
   }
+  /* Card fills its named tile wrapper (wrapper carries the view-transition-name). */
+  .tile > :global(*) { width: 100%; height: 100%; }
   /* Generate spans the full width on its own row. */
   .card-grid > .generate { flex: 1 1 100%; height: auto; min-height: 92px; }
 
   @media (min-width: 1700px) { .layout { max-width: 1700px; } }
+
+  /* View Transitions: tween every named tile's position + size as the layout reflows.
+     Siblings glide to fill freed space; the Turns tile cross-fades in/out. */
+  :global(::view-transition-group(*)) {
+    animation-duration: 300ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(::view-transition-group(*)) { animation-duration: 0.001ms; }
+  }
 
   /* Unify typography across BaseCard / StepperCard / ToggleCard.
      Each component sized its value text differently (stepper up to 60px, base 22px,
