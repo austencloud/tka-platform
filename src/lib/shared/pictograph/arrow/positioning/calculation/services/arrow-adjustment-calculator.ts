@@ -319,6 +319,7 @@ export class ArrowAdjustmentCalculator {
               turnsTuple: String(jsonResult.turnsTupleKey),
               motionType: motionData.motionType?.toLowerCase() || "",
               attributeKey: attrKey || "",
+              propType: motionData.propType?.toLowerCase() || "staff",
             });
             const fullOverride = specialOverrideRepo.getFullOverride(overrideKey);
             if (fullOverride) {
@@ -357,6 +358,7 @@ export class ArrowAdjustmentCalculator {
                 turnsTuple: turnsTupleArr.join(","),
                 motionType: motionData.motionType?.toLowerCase() || "",
                 attributeKey: attrKeyForOverride || "",
+                propType: motionData.propType?.toLowerCase() || "staff",
               });
               const fullOverride = specialOverrideRepo.getFullOverride(overrideKey);
               if (fullOverride) {
@@ -606,6 +608,7 @@ export class ArrowAdjustmentCalculator {
             turnsTuple: String(jsonResult.turnsTupleKey),
             motionType: motionData.motionType?.toLowerCase() || "",
             attributeKey: attributeKey || "",
+            propType: motionData.propType?.toLowerCase() || "staff",
           });
 
           const override = specialOverrideRepo.getOverride(overrideKey);
