@@ -6,7 +6,6 @@
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
   import CardArrowFixGrid from "./CardArrowFixGrid.svelte";
   import PictographInspectModal from "$lib/features/create/shared/components/sequence-actions/PictographInspectModal.svelte";
-  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { getCatalogLayoutPolicy } from "../domain/catalog-layout-policy";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -103,7 +102,6 @@
     clearTimeout(imageErrorTimer);
   });
 
-  const word = $derived(sequence.word ?? sequence.name ?? '');
 
   const imageComposition = getImageCompositionManager();
   let compositionVersion = $state(0);
@@ -158,17 +156,7 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div class="modal-backdrop" role="presentation" onclick={handleBackdropClick}>
-  <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="inspect-modal-title">
-    <!-- Header -->
-    <div class="modal-header">
-      <h2 class="modal-title" id="inspect-modal-title">
-        <TKAWordGlyph {word} height={28} darkMode />
-      </h2>
-      {#if mode === "fix"}
-        <p class="modal-hint">Click a pictograph to fix its arrows</p>
-      {/if}
-    </div>
-
+  <div class="modal-container" role="dialog" aria-modal="true" aria-label="Card inspector">
     <div class="stack-wrapper" bind:this={stackEl} role="group" aria-label="Card preview">
       {#if mode === "preview"}
         <CardPreviewStack
@@ -268,31 +256,6 @@
     width: 90vw;
     height: 90vh;
     max-width: 1600px;
-  }
-
-  .modal-header {
-    text-align: center;
-    flex-shrink: 0;
-  }
-
-  .modal-title {
-    /* The TKA glyph is a flex container that fills this h2's width; without a
-       flex wrapper here its content left-aligns (text-align can't center it).
-       Flex + center shrinks the glyph to its content and centers it. */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 28px;
-    font-weight: 600;
-    color: var(--theme-text, rgba(255, 255, 255, 0.8));
-    letter-spacing: 1.5px;
-    margin: 0 0 4px 0;
-  }
-
-  .modal-hint {
-    font-size: 12px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.2));
-    margin: 0;
   }
 
   .stack-wrapper {
