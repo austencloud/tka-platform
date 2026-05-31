@@ -58,4 +58,34 @@ describe("planPrintSlots", () => {
     expect(slots.slice(0, 2).map((s) => s.item?.label)).toEqual(["a", "b"]);
     expect(slots[0]!.elementName).toBeNull();
   });
+
+  describe("groupByElement=false (normal fill)", () => {
+    it("ignores element grouping and pads only the final sheet", () => {
+      const pairs = [pair("fire1"), pair("water1"), pair("water2")];
+      const elements = [EL("fire"), EL("water"), EL("water")];
+      const slots = planPrintSlots(pairs, elements, 1, 9, false);
+
+      // 3 cards → one sheet, no inter-color blanks, source order preserved.
+      expect(slots.length).toBe(9);
+      expect(slots.slice(0, 3).map((s) => s.item?.label)).toEqual(["fire1", "water1", "water2"]);
+      expect(slots[3]!.item).toBeNull();
+      expect(slots.every((s) => s.elementName === null)).toBe(true);
+    });
+
+    it("whole-deck repeats N copies before tail-padding", () => {
+      const pairs = [pair("a"), pair("b")];
+      const slots = planPrintSlots(pairs, [EL("fire"), EL("water")], 2, 9, false);
+
+      expect(slots.slice(0, 4).map((s) => s.item?.label)).toEqual(["a", "b", "a", "b"]);
+      expect(slots.length).toBe(9);
+      expect(slots[4]!.item).toBeNull();
+    });
+
+    it("fills whole sheets with no blanks when the count divides evenly", () => {
+      const pairs = Array.from({ length: 9 }, (_, i) => pair(`c${i}`));
+      const slots = planPrintSlots(pairs, [], 1, 9, false);
+      expect(slots.length).toBe(9);
+      expect(slots.every((s) => s.item)).toBe(true);
+    });
+  });
 });

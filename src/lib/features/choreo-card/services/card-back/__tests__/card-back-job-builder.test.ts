@@ -190,7 +190,7 @@ describe("buildBackJob", () => {
     const layout = computeCardBackLayout(data, {
       width: WIDTH,
       height: HEIGHT,
-      borderWidthCqi: 3.5, // proof-mode borderWidth for "cosmic" (matches builder via getProofModeVisuals)
+      borderWidthCqi: 8.759, // proof-mode borderWidth for "cosmic" (matches builder via getProofModeVisuals)
     });
     const job = await buildBackJob(
       seq,
@@ -234,7 +234,7 @@ describe("buildBackJob", () => {
     const layout = computeCardBackLayout(data, {
       width: WIDTH,
       height: HEIGHT,
-      borderWidthCqi: 3.5, // proof-mode borderWidth for "cosmic" (matches builder via getProofModeVisuals)
+      borderWidthCqi: 8.759, // proof-mode borderWidth for "cosmic" (matches builder via getProofModeVisuals)
     });
     const job = await buildBackJob(
       seq,
@@ -285,7 +285,7 @@ describe("buildBackJob", () => {
     const layout = computeCardBackLayout(data, {
       width: WIDTH,
       height: HEIGHT,
-      borderWidthCqi: 3.5, // proof-mode borderWidth for "cosmic" (matches builder via getProofModeVisuals)
+      borderWidthCqi: 8.759, // proof-mode borderWidth for "cosmic" (matches builder via getProofModeVisuals)
     });
     const jobStart = await buildBackJob(
       seqStart,
@@ -317,7 +317,7 @@ describe("buildBackJob", () => {
 
     // Row bitmap spans the full content-box width, centered.
     const a = job.bitmaps.find((b) => b.kind === "loop-icon")!;
-    const borderPx = 3.5 * (WIDTH / 100);
+    const borderPx = 8.759 * (WIDTH / 100);
     expect(a.placement.x).toBeCloseTo(borderPx, 0); // x = content-box origin (ox)
   });
 

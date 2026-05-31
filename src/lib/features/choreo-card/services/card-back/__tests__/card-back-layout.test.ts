@@ -2,10 +2,11 @@
  * Tests for computeCardBackLayout().
  *
  * Concrete case: render dims 1644×2244 (scale-2 card back), proof-mode
- * borderWidth = 3.5cqi. CRITICAL: cqi resolves against the border-frame
+ * borderWidth = 8.759cqi (wide colored border, matches the card-front frame for
+ * back-to-back cut symmetry). CRITICAL: cqi resolves against the border-frame
  * CONTENT-box (card inset by the borderWidth-cqi padding), and all boxes are
- * offset by that border inset. These expected values were validated against the
- * live DOM render (mandala centered at x≈822, center-y≈969, extent ≈1101px).
+ * offset by that border inset. Mandala centered at x≈822, center-y≈986,
+ * extent ≈976px (content reflows inward + smaller vs the prior 3.5cqi border).
  */
 
 import { describe, it, expect } from "vitest";
@@ -16,16 +17,16 @@ import type { CardBackData } from "../../../components/card-back/card-back-data"
 // ── Render geometry (proof mode) ────────────────────────────────────────────
 const WIDTH = 1644;
 const HEIGHT = 2244;
-const BORDER_CQI = 3.5;
+const BORDER_CQI = 8.759;
 const DIMS = { width: WIDTH, height: HEIGHT, borderWidthCqi: BORDER_CQI };
 
 // Border-aware basis (mirrors computeCardBackLayout):
-const BORDER_PX = BORDER_CQI * (WIDTH / 100);      // 57.54
+const BORDER_PX = BORDER_CQI * (WIDTH / 100);      // ≈144.0
 const OX = BORDER_PX;
 const OY = BORDER_PX;
-const INNER_W = WIDTH - 2 * BORDER_PX;             // 1528.92
-const INNER_H = HEIGHT - 2 * BORDER_PX;            // 2128.92
-const CQI = INNER_W / 100;                         // 15.2892
+const INNER_W = WIDTH - 2 * BORDER_PX;             // ≈1356.0
+const INNER_H = HEIGHT - 2 * BORDER_PX;            // ≈1956.0
+const CQI = INNER_W / 100;                         // ≈13.56
 
 function makeData(loopComponents: Set<LOOPComponent>): CardBackData {
   return {
@@ -63,16 +64,16 @@ describe("computeCardBackLayout (border-frame aware)", () => {
   describe("mandala (validated against live DOM)", () => {
     it("is a 72cqi (content-box) square", () => {
       const l = computeCardBackLayout(makeData(new Set()), DIMS);
-      expect(l.mandala.w).toBeCloseTo(72 * CQI, 3);   // ≈1100.8
+      expect(l.mandala.w).toBeCloseTo(72 * CQI, 3);   // ≈976.3
       expect(l.mandala.h).toBeCloseTo(72 * CQI, 3);
     });
     it("is horizontally centered on the full card (x+w/2 ≈ 822)", () => {
       const l = computeCardBackLayout(makeData(new Set()), DIMS);
       expect(l.mandala.x + l.mandala.w / 2).toBeCloseTo(WIDTH / 2, 2); // 822
     });
-    it("center-y matches the DOM-validated ≈969", () => {
+    it("center-y matches the DOM-validated ≈986", () => {
       const l = computeCardBackLayout(makeData(new Set()), DIMS);
-      expect(l.mandala.y + l.mandala.h / 2).toBeCloseTo(969, 0);
+      expect(l.mandala.y + l.mandala.h / 2).toBeCloseTo(986, 0);
     });
   });
 

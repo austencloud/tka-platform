@@ -20,7 +20,12 @@ export interface GradientSpec {
 export interface BackJob {
   width: number;            // 1644 (822 * scale 2)
   height: number;           // 2244 (1122 * scale 2)
-  bleedPx: number;          // 72 (36 * scale 2)
+  bleedPx: number;          // 72 (36 * scale 2) — print trim line; metadata only
+  // Colored-border inset in px (= the border-frame content-box origin). The light
+  // bg + content both start here, so the gradient border fills edge→borderPx. This
+  // is the SINGLE source for the visible border width (mirrors the card-front
+  // frame's `border`), kept ≥ bleedPx so the border survives an imprecise cut.
+  borderPx: number;         // 144 (8.759cqi @ 1644) — matches the front's 72px @ 822
   borderGradient: GradientSpec;
   bgGradient: GradientSpec;
   // Decorations pre-rasterized on the MAIN thread (SVG -> Image -> ImageBitmap),

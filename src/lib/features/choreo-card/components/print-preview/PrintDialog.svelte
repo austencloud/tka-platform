@@ -15,13 +15,21 @@
     /** Copies per card, chosen on the deck-viewer toolbar. Drives the estimate
      *  and the export; this dialog only reflects it (no control here). */
     copies?: number;
+    /** When false, sheets fill in order (colors may share a sheet) — relaxes the
+     *  one-color-per-sheet rule, so the estimate is a flat card count. */
+    groupByElement?: boolean;
     theme: string;
     isExporting: boolean;
+    /** True while the print PDF is being built for the OS print dialog. */
+    isPrinting?: boolean;
     exportProgress: number;
     exportTotal: number;
     exportError: string;
     onExportPDF: (mode: PrintPDFMode, copies: number) => void;
     onExportZIP: () => void;
+    /** Build the selected side's PDF and open the browser print dialog directly.
+     *  Omit to hide the Print action (download-only callers). */
+    onPrint?: (mode: PrintPDFMode) => void;
     onCardSizeChange: (size: CardSizeId) => void;
     onClose: () => void;
   }
@@ -33,29 +41,37 @@
     tndElements = [],
     cardSize,
     copies = 1,
+    groupByElement = true,
     theme,
     isExporting,
+    isPrinting = false,
     exportProgress,
     exportTotal,
     exportError,
     onExportPDF,
     onExportZIP,
+    onPrint,
     onCardSizeChange,
     onClose,
   }: Props = $props();
 
+  const busy = $derived(isExporting || isPrinting);
+
   let selectedFormat = $state<ExportFormat>("fronts");
+
+  // The Card-Images zip can't be sent to a paper printer; everything else is a PDF.
+  const canPrint = $derived(!!onPrint);
+  const printable = $derived(selectedFormat !== "zip");
 
   const sizeSpec = $derived(CARD_SIZES[cardSize]);
   const layout = $derived(getPageLayout(cardSize));
 
   // Sheets = Σ over colors of ceil(colorCount * copies / cardsPerPage), because
-  // each color is padded to whole sheets. Falls back to a flat estimate when the
-  // deck carries no element tags.
+  // each color is padded to whole sheets. Normal-fill (or untagged) → flat count.
   const sheetCount = $derived.by(() => {
     const perPage = layout.cardsPerPage;
     const tagged = tndElements.filter((e): e is TnDElement => !!e);
-    if (tagged.length === 0) {
+    if (!groupByElement || tagged.length === 0) {
       return Math.ceil((cardCount * copies) / perPage);
     }
     const counts = new Map<string, number>();
@@ -97,55 +113,69 @@
     {
       id: "fronts",
       icon: "fa-layer-group",
-      label: "Fronts Only",
+      label: "Fronts",
       getDetail: () => `${sheetCount} sheets`,
-      getHint: () => "Print first. Card fronts arranged in a grid.",
+      getHint: () => "Print these first, then flip the stack for the backs.",
     },
     {
       id: "backs",
       icon: "fa-rotate",
-      label: "Backs Only",
+      label: "Backs",
       getDetail: () => `${sheetCount} sheets`,
-      getHint: () => "Print second. Columns mirrored for long-edge duplex.",
+      getHint: () => "Print after the fronts. Columns mirrored for the long-edge flip.",
     },
     {
       id: "combined",
       icon: "fa-book-open",
-      label: "Combined PDF",
+      label: "Combined",
       getDetail: () => `${sheetCount * 2 + 2} pages`,
-      getHint: () => "Fronts + flip instructions + backs + finishing tips.",
+      getHint: () => "Fronts + flip instructions + backs + finishing tips, in one file.",
     },
     {
       id: "zip",
       icon: "fa-images",
-      label: "Card Images",
+      label: "Images",
       getDetail: () => `${cardCount * 2} PNGs`,
-      getHint: () => "Individual files for MPC or custom layouts.",
+      getHint: () => "Individual files for MPC or custom layouts. Download only.",
     },
   ];
 
-  const actionLabel = $derived.by(() => {
-    if (isExporting) {
-      return exportTotal > 0
-        ? `Exporting ${exportProgress} / ${exportTotal}...`
-        : "Preparing...";
+  const selectedOption = $derived(FORMAT_OPTIONS.find((f) => f.id === selectedFormat)!);
+
+  const printLabel = $derived.by(() => {
+    if (isPrinting) return "Preparing…";
+    switch (selectedFormat) {
+      case "fronts": return "Print Fronts";
+      case "backs": return "Print Backs";
+      case "combined": return "Print Combined";
+      default: return "Print";
     }
-    const opt = FORMAT_OPTIONS.find((f) => f.id === selectedFormat)!;
-    return `Download ${opt.label}`;
   });
 
+  const downloadLabel = $derived.by(() => {
+    if (isExporting) {
+      return exportTotal > 0 ? `Exporting ${exportProgress} / ${exportTotal}…` : "Preparing…";
+    }
+    return `Download ${selectedOption.label}`;
+  });
+
+  function handlePrint() {
+    if (busy || !onPrint || !printable) return;
+    onPrint(selectedFormat as PrintPDFMode);
+  }
+
   function handleExport() {
-    if (isExporting) return;
+    if (busy) return;
     if (selectedFormat === "zip") onExportZIP();
     else onExportPDF(selectedFormat, Math.max(1, Math.floor(copies || 1)));
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape" && !isExporting) onClose();
+    if (e.key === "Escape" && !busy) onClose();
   }
 
   function handleBackdropClick(e: MouseEvent) {
-    if ((e.target as HTMLElement).classList.contains("dialog-backdrop") && !isExporting) {
+    if ((e.target as HTMLElement).classList.contains("dialog-backdrop") && !busy) {
       onClose();
     }
   }
@@ -155,12 +185,7 @@
 
 <div class="dialog-backdrop" role="presentation" onclick={handleBackdropClick}>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="print-dialog-title">
-    <button
-      class="close-btn"
-      onclick={onClose}
-      disabled={isExporting}
-      aria-label="Close"
-    >
+    <button class="close-btn" onclick={onClose} disabled={busy} aria-label="Close">
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
 
@@ -172,112 +197,113 @@
       {/if}
     </div>
 
-    <!-- Deck summary -->
-    <div class="summary">
-      <div class="summary-row">
-        <span class="summary-label">Cards</span>
-        <span class="summary-value">{cardCount}</span>
-      </div>
-      <div class="summary-row">
-        <span class="summary-label">Sheets</span>
-        <span class="summary-value">{sheetCount} ({layout.cols}&times;{layout.rows} per sheet)</span>
-      </div>
-      <div class="summary-row">
-        <span class="summary-label">Size</span>
-        <span class="summary-value">
-          <CardSizeToggle selected={cardSize} onchange={onCardSizeChange} />
-        </span>
-      </div>
-      <div class="summary-row">
-        <span class="summary-label">Theme</span>
-        <span class="summary-value theme-badge">{theme}</span>
-      </div>
-    </div>
-
-    <!-- Element breakdown -->
-    {#if elementCounts.length > 0}
-      <div class="elements" aria-label="Element breakdown">
-        {#each elementCounts as { element, count, sheets }}
-          <div
-            class="element-pill"
-            style="--el-color: {element.accentColor}"
-            title="{count} card{count === 1 ? '' : 's'} × {copies} = {sheets} sheet{sheets === 1 ? '' : 's'}"
-          >
-            <img
-              src={element.iconPath}
-              alt={element.element}
-              class="element-icon"
-              width="16"
-              height="16"
-            />
-            <span class="element-count">{count} · {sheets}sh</span>
+    <div class="dialog-body">
+      <!-- Left: deck summary + element breakdown -->
+      <section class="col col-info" aria-label="Deck summary">
+        <div class="summary">
+          <div class="summary-row">
+            <span class="summary-label">Cards</span>
+            <span class="summary-value">{cardCount}</span>
           </div>
-        {/each}
-      </div>
-    {/if}
-
-    <!-- Format selector -->
-    <div class="format-section">
-      <h3 class="section-label">Export Format</h3>
-      <div class="format-grid" role="radiogroup" aria-label="Export format">
-        {#each FORMAT_OPTIONS as opt (opt.id)}
-          <button
-            class="format-card"
-            class:selected={selectedFormat === opt.id}
-            role="radio"
-            aria-checked={selectedFormat === opt.id}
-            onclick={() => { selectedFormat = opt.id; }}
-          >
-            <i class="fas {opt.icon} format-icon" aria-hidden="true"></i>
-            <span class="format-label">{opt.label}</span>
-            <span class="format-detail">{opt.getDetail()}</span>
-          </button>
-        {/each}
-      </div>
-      <p class="format-hint">
-        {FORMAT_OPTIONS.find((f) => f.id === selectedFormat)?.getHint()}
-      </p>
-
-      {#if selectedFormat !== "zip"}
-        <div class="copies-row">
-          <span class="copies-label">Copies per card</span>
-          <span class="copies-value">{copies}<span class="copies-hint">set on the deck toolbar</span></span>
+          <div class="summary-row">
+            <span class="summary-label">Sheets</span>
+            <span class="summary-value">{sheetCount} ({layout.cols}&times;{layout.rows} per sheet)</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Size</span>
+            <span class="summary-value">
+              <CardSizeToggle selected={cardSize} onchange={onCardSizeChange} />
+            </span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Copies / card</span>
+            <span class="summary-value">{copies}<span class="inline-hint">set on the toolbar</span></span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Theme</span>
+            <span class="summary-value theme-badge">{theme}</span>
+          </div>
         </div>
-      {/if}
-    </div>
 
-    <!-- Error -->
-    {#if exportError}
-      <div class="error" role="alert">
-        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-        {exportError}
-      </div>
-    {/if}
-
-    <!-- Action -->
-    <button
-      class="export-action"
-      disabled={isExporting}
-      onclick={handleExport}
-    >
-      {#if isExporting}
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      {:else}
-        <i class="fas fa-download" aria-hidden="true"></i>
-      {/if}
-      <span>{actionLabel}</span>
-    </button>
-
-    <!-- Workflow tip -->
-    {#if selectedFormat === "fronts" || selectedFormat === "backs"}
-      <p class="workflow-tip">
-        {#if selectedFormat === "fronts"}
-          Print this first. Then download the backs PDF, flip your paper stack on the <strong>long edge</strong>, and print again.
-        {:else}
-          Make sure you've already printed the fronts. Flip the stack on the <strong>long edge</strong> before feeding it back in.
+        {#if elementCounts.length > 0 && groupByElement}
+          <div class="elements" aria-label="Element breakdown">
+            {#each elementCounts as { element, count, sheets }}
+              <div
+                class="element-pill"
+                style="--el-color: {element.accentColor}"
+                title="{count} card{count === 1 ? '' : 's'} × {copies} = {sheets} sheet{sheets === 1 ? '' : 's'}"
+              >
+                <img src={element.iconPath} alt={element.element} class="element-icon" width="16" height="16" />
+                <span class="element-count">{count} · {sheets}sh</span>
+              </div>
+            {/each}
+          </div>
         {/if}
-      </p>
-    {/if}
+      </section>
+
+      <!-- Right: what to print/download + actions -->
+      <section class="col col-actions" aria-label="Print and export">
+        <h3 class="section-label">Choose a side</h3>
+        <div class="format-grid" role="radiogroup" aria-label="Print format">
+          {#each FORMAT_OPTIONS as opt (opt.id)}
+            <button
+              class="format-card"
+              class:selected={selectedFormat === opt.id}
+              role="radio"
+              aria-checked={selectedFormat === opt.id}
+              onclick={() => { selectedFormat = opt.id; }}
+            >
+              <i class="fas {opt.icon} format-icon" aria-hidden="true"></i>
+              <span class="format-label">{opt.label}</span>
+              <span class="format-detail">{opt.getDetail()}</span>
+            </button>
+          {/each}
+        </div>
+        <p class="format-hint">{selectedOption.getHint()}</p>
+
+        {#if exportError}
+          <div class="error" role="alert">
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+            {exportError}
+          </div>
+        {/if}
+
+        <div class="action-row">
+          {#if canPrint}
+            <button
+              class="action print-action"
+              disabled={busy || !printable || cardCount === 0}
+              title={!printable ? "Card images can't be sent to a printer — download instead." : undefined}
+              onclick={handlePrint}
+            >
+              {#if isPrinting}
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              {:else}
+                <i class="fas fa-print" aria-hidden="true"></i>
+              {/if}
+              <span>{printLabel}</span>
+            </button>
+          {/if}
+          <button
+            class="action download-action"
+            class:full={!canPrint}
+            disabled={busy}
+            onclick={handleExport}
+          >
+            {#if isExporting}
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            {:else}
+              <i class="fas fa-download" aria-hidden="true"></i>
+            {/if}
+            <span>{downloadLabel}</span>
+          </button>
+        </div>
+
+        <p class="workflow-tip">
+          Print the fronts, flip your paper stack on the <strong>long edge</strong>, then print the backs.
+        </p>
+      </section>
+    </div>
   </div>
 </div>
 
@@ -304,9 +330,8 @@
     background: #151520;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
-    padding: 32px;
-    max-width: 520px;
-    width: 100%;
+    padding: 28px 32px 32px;
+    width: min(900px, 100%);
     max-height: 90vh;
     overflow-y: auto;
     display: flex;
@@ -361,6 +386,22 @@
     color: rgba(255, 255, 255, 0.45);
   }
 
+  /* Two columns on wide screens so the dialog fills instead of stranding a tall
+     narrow strip in the middle of a 4K display. Single column when narrow. */
+  .dialog-body {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+
   .summary {
     display: flex;
     flex-direction: column;
@@ -375,6 +416,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     min-height: 28px;
   }
 
@@ -384,9 +426,18 @@
   }
 
   .summary-value {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
     font-size: 13px;
     color: rgba(255, 255, 255, 0.8);
     font-variant-numeric: tabular-nums;
+  }
+
+  .inline-hint {
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.3);
   }
 
   .theme-badge {
@@ -402,7 +453,6 @@
   .elements {
     display: flex;
     gap: 6px;
-    justify-content: center;
     flex-wrap: wrap;
   }
 
@@ -429,12 +479,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .format-section {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
   .section-label {
     margin: 0;
     font-size: 11px;
@@ -455,7 +499,7 @@
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    padding: 16px 12px;
+    padding: 14px 12px;
     background: rgba(255, 255, 255, 0.02);
     border: 1.5px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
@@ -500,41 +544,8 @@
   .format-hint {
     margin: 0;
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.35);
-    text-align: center;
-    min-height: 18px;
-  }
-
-  .copies-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-  }
-
-  .copies-label {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.6);
-  }
-
-  .copies-value {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 8px;
-    font-size: 16px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    color: #fff;
-  }
-
-  .copies-hint {
-    font-size: 11px;
-    font-weight: 400;
-    color: rgba(255, 255, 255, 0.35);
+    color: rgba(255, 255, 255, 0.4);
+    min-height: 32px;
   }
 
   .error {
@@ -549,45 +560,79 @@
     color: #f87171;
   }
 
-  .export-action {
+  /* Print + Download sit side by side — the two actions a user chooses between. */
+  .action-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .action {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    width: 100%;
-    padding: 14px 24px;
+    flex: 1;
+    padding: 14px 20px;
     min-height: 52px;
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 700;
     font-family: inherit;
     color: #fff;
-    background: linear-gradient(135deg, #7c3aed, #6d28d9);
     border: none;
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.15s;
   }
 
-  .export-action:hover:not(:disabled) {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
-  }
-
-  .export-action:active:not(:disabled) {
+  .action:active:not(:disabled) {
     transform: translateY(0);
   }
 
-  .export-action:disabled {
-    opacity: 0.7;
-    cursor: wait;
+  .action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .print-action {
+    background: linear-gradient(135deg, #10b981, #059669);
+  }
+
+  .print-action:hover:not(:disabled) {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+  }
+
+  .download-action {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .download-action:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  /* No print path (download-only callers): Download becomes the primary action. */
+  .download-action.full {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    border: none;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .download-action.full:hover:not(:disabled) {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
   }
 
   .workflow-tip {
     margin: 0;
     font-size: 12px;
     color: rgba(255, 255, 255, 0.3);
-    text-align: center;
     line-height: 1.5;
   }
 
@@ -595,28 +640,25 @@
     color: rgba(255, 255, 255, 0.6);
   }
 
-  @media (max-width: 480px) {
+  @media (max-width: 760px) {
     .dialog {
       padding: 20px;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .dialog-body {
+      grid-template-columns: 1fr;
       gap: 16px;
     }
 
     .header h2 {
       font-size: 18px;
     }
-
-    .format-grid {
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-    }
-
-    .format-card {
-      padding: 12px 8px;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .dialog-backdrop { animation: none; }
-    .export-action:hover:not(:disabled) { transform: none; }
+    .action:hover:not(:disabled) { transform: none; }
   }
 </style>

@@ -58,6 +58,9 @@ export interface HomePrintOptions {
 	/** Element tag per pair, parallel to `pairs`. Absent → no grouping (single
 	 *  trailing bucket, tail-padded). */
 	elements?: (TnDElement | undefined)[];
+	/** When false, relax the one-color-per-sheet rule: cards fill sheets in order
+	 *  with blanks only on the final sheet (no inter-color gaps). Default true. */
+	groupByElement?: boolean;
 }
 
 /** Capitalize an element key for sheet labels: "fire" → "Fire". */
@@ -71,9 +74,9 @@ function capitalize(s: string): string {
  *  whole-block-repeated `copies` times and padded to whole sheets, so every
  *  printed sheet holds exactly one element — a cut never crosses two colors.
  *
- *  Combined mode: all fronts → flip instruction → all backs → finishing tips
- *  Fronts mode: all fronts → finishing tips
- *  Backs mode: all backs (columns mirrored for long-edge duplex) → finishing tips
+ *  Combined mode: all fronts → flip instruction → all backs
+ *  Fronts mode: all fronts
+ *  Backs mode: all backs (columns mirrored for long-edge duplex)
  *
  *  Every page gets: crop marks, sheet labels (with element name), flip hints.
  */
@@ -90,7 +93,8 @@ export async function exportHomePrintPDF(
 
 	const copies = Math.max(1, Math.floor(options.copies ?? 1));
 	const elements = options.elements ?? [];
-	const slots = planPrintSlots(pairs, elements, copies, cardsPerPage);
+	const groupByElement = options.groupByElement ?? true;
+	const slots = planPrintSlots(pairs, elements, copies, cardsPerPage, groupByElement);
 	const totalSheets = slots.length / cardsPerPage; // integer by construction
 
 	const pdfDoc = await PDFDocument.create();
@@ -172,8 +176,6 @@ export async function exportHomePrintPDF(
 			onProgress?.(++progressCount, progressTotal);
 		}
 	}
-
-	addFinishingTipsPage(pdfDoc, font, fontBold);
 
 	const pdfBytes = await pdfDoc.save();
 	return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
@@ -308,64 +310,6 @@ function addFlipInstructionPage(
 	const note = "This page does not print on card stock — it is an instruction separator.";
 	const noteW = font.widthOfTextAtSize(note, 7);
 	page.drawText(note, { x: cx - noteW / 2, y, size: 7, font, color: GUIDE_COLOR });
-}
-
-function addFinishingTipsPage(
-	pdfDoc: PDFDocument,
-	font: PDFFont,
-	fontBold: PDFFont,
-) {
-	const page = pdfDoc.addPage([LETTER_W, LETTER_H]);
-	const cx = LETTER_W / 2;
-	let y = LETTER_H - 72;
-
-	const title = "FINISHING YOUR DECK";
-	const titleW = fontBold.widthOfTextAtSize(title, 14);
-	page.drawText(title, { x: cx - titleW / 2, y, size: 14, font: fontBold, color: GUIDE_COLOR });
-
-	y -= 28;
-	const sections: { heading: string; lines: string[] }[] = [
-		{
-			heading: "CUTTING",
-			lines: [
-				"Use a paper trimmer or metal ruler + craft knife for clean edges.",
-				"Cut along the crop marks. A self-healing cutting mat protects your surface.",
-				"Cut all sheets before assembling — batch work is faster than per-sheet.",
-			],
-		},
-		{
-			heading: "PROTECTION",
-			lines: [
-				"Sleeve cards in standard poker sleeves (66 x 91 mm) for durability and shuffle feel.",
-				"For unsleeved decks: clear spray sealant (matte or gloss) on both sides after cutting.",
-				"Self-adhesive laminate sheets also work — apply before cutting for cleaner edges.",
-			],
-		},
-		{
-			heading: "STORAGE",
-			lines: [
-				"A standard tuck box fits 52-60 sleeved poker cards.",
-				"Rubber band + card divider works for playtesting and gifting.",
-			],
-		},
-	];
-
-	for (const section of sections) {
-		const headW = fontBold.widthOfTextAtSize(section.heading, 9);
-		page.drawText(section.heading, { x: cx - headW / 2, y, size: 9, font: fontBold, color: GUIDE_COLOR });
-		y -= 14;
-		for (const line of section.lines) {
-			const lineW = font.widthOfTextAtSize(line, 8);
-			page.drawText(line, { x: cx - lineW / 2, y, size: 8, font, color: GUIDE_COLOR });
-			y -= 12;
-		}
-		y -= 8;
-	}
-
-	y -= 8;
-	const footer = "tkaflowarts.com";
-	const footerW = font.widthOfTextAtSize(footer, 7);
-	page.drawText(footer, { x: cx - footerW / 2, y, size: 7, font, color: GUIDE_COLOR });
 }
 
 function canvasToPngBytes(canvas: HTMLCanvasElement): Uint8Array {

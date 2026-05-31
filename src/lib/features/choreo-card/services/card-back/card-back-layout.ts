@@ -118,7 +118,8 @@ const LOOP_DISPLAY_ORDER: LOOPComponent[] = [
  *
  * CRITICAL — the border frame: in CardBack.svelte, `container-type: inline-size`
  * is on `.border-frame`, which wraps `.back` with `padding: borderWidth cqi`
- * (proof mode = 3.5cqi). So every `cqi` inside the card resolves against the
+ * (proof mode = 8.759cqi — wide border for back-to-back cut symmetry). So every
+ * `cqi` inside the card resolves against the
  * border-frame CONTENT-box (≈93% of card width), and all element positions are
  * inset by the border padding. Computing cqi against the full card width
  * over-sizes everything ~7-8% and shifts it up. We therefore compute in the
@@ -128,7 +129,7 @@ const LOOP_DISPLAY_ORDER: LOOPComponent[] = [
  *
  * @param data    CardBackData for the sequence (used for loopComponents).
  * @param dims    Full card pixel size + the proof/theme `borderWidth` in cqi
- *                (from the card-back theme visuals; proof mode = 3.5).
+ *                (from the card-back theme visuals; proof mode = 8.759).
  */
 export function computeCardBackLayout(
   data: CardBackData,

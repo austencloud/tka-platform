@@ -16,7 +16,7 @@
  *
  * Paint order (mirrors CardBack.svelte stacking):
  *   1. border gradient — full canvas
- *   2. bg gradient     — inner rect (inside bleed)
+ *   2. bg gradient     — inner rect (inside the colored border)
  *   3. decorations     — drawImage of pre-decoded bitmap (optional)
  *   4. mandala         — drawImage of pre-decoded bitmap (optional)
  *   5. placed bitmaps  — one drawImage per PlacedBitmap
@@ -115,11 +115,13 @@ export function paintBackJob(
   ) as unknown as string;
   ctx.fillRect(0, 0, job.width, job.height);
 
-  // 2. Background gradient — fills the inner area (inside the bleed margin)
-  const ix = job.bleedPx;
-  const iy = job.bleedPx;
-  const iw = job.width - job.bleedPx * 2;
-  const ih = job.height - job.bleedPx * 2;
+  // 2. Background gradient — fills the inner area (inside the colored border).
+  //    Uses borderPx (NOT bleedPx) so the gradient border extends to the same
+  //    inset as the content, matching the card-front frame's colored border.
+  const ix = job.borderPx;
+  const iy = job.borderPx;
+  const iw = job.width - job.borderPx * 2;
+  const ih = job.height - job.borderPx * 2;
 
   ctx.fillStyle = applyLinearGradient(
     ctx,

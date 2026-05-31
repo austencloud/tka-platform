@@ -120,6 +120,7 @@ function makeMinimalJob(overrides: Partial<BackJob> = {}): BackJob {
     width: 1644,
     height: 2244,
     bleedPx: 72,
+    borderPx: 144, // wide colored border (≠ bleedPx) — raster fills the bg against this
     borderGradient: makeGrad(0),
     bgGradient: makeGrad(180),
     decorations: null,
@@ -261,11 +262,11 @@ describe("paintBackJob", () => {
     expect(fillRects[0]!.w).toBe(1644);
     expect(fillRects[0]!.h).toBe(2244);
 
-    // Second fillRect = inner rect (inside bleed)
-    expect(fillRects[1]!.x).toBe(72);
-    expect(fillRects[1]!.y).toBe(72);
-    expect(fillRects[1]!.w).toBe(1644 - 72 * 2);
-    expect(fillRects[1]!.h).toBe(2244 - 72 * 2);
+    // Second fillRect = inner rect (inside the colored border = borderPx)
+    expect(fillRects[1]!.x).toBe(144);
+    expect(fillRects[1]!.y).toBe(144);
+    expect(fillRects[1]!.w).toBe(1644 - 144 * 2);
+    expect(fillRects[1]!.h).toBe(2244 - 144 * 2);
   });
 
   it("does NOT drawImage for decorations when job.decorations is null", () => {
@@ -290,10 +291,10 @@ describe("paintBackJob", () => {
 
     const decDraw = drawImages.find((d) => d.img === decBitmap);
     expect(decDraw).toBeDefined();
-    expect(decDraw!.x).toBe(72);
-    expect(decDraw!.y).toBe(72);
-    expect(decDraw!.w).toBe(1644 - 72 * 2);
-    expect(decDraw!.h).toBe(2244 - 72 * 2);
+    expect(decDraw!.x).toBe(144);
+    expect(decDraw!.y).toBe(144);
+    expect(decDraw!.w).toBe(1644 - 144 * 2);
+    expect(decDraw!.h).toBe(2244 - 144 * 2);
   });
 
   it("wraps decorations drawImage in save/restore so opacity resets", () => {

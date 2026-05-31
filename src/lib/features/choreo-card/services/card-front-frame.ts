@@ -17,7 +17,7 @@ const MPC_BLEED = 36;
 // still lands on colored border instead of white content (cutting tolerance).
 // 1.3 = 30% thicker than the prior frame, which sat exactly on the 36px bleed.
 // Content (cells + header + footer) shrinks to fit the smaller inner area.
-const BORDER_SCALE = 1.3;
+const BORDER_SCALE = 2.0;
 
 const OUTER_RADIUS = 0;
 const INNER_RADIUS = 0;

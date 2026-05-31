@@ -167,7 +167,10 @@ export function getProofModeVisuals(backgroundType: string | undefined): CardBac
     ornamentLineColor: isRainbow ? "rgba(100, 100, 120, 0.45)" : `${accent}77`,
     accentColor: isRainbow ? "#cc0000" : accent,
     brandGlow: "none",
-    borderWidth: 3.5,
+    // Wide colored border for cutting tolerance — matches the card-front frame's
+    // 72px/822 (= 8.759% of width) so front and back show an equal border
+    // back-to-back. Content reflows inward + smaller (cqi basis shrinks).
+    borderWidth: 8.759,
     decorationOpacity: 0,
     textColor: "#111111",
     textMutedColor: "rgba(0, 0, 0, 0.55)",

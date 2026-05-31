@@ -426,6 +426,10 @@ export async function buildBackJob(
     width: opts.width,
     height: opts.height,
     bleedPx: opts.bleedPx ?? DEFAULT_BLEED_PX,
+    // Visible colored-border inset = the border-frame content-box origin from the
+    // layout (borderWidthCqi → px). The raster fills the light bg from here in, so
+    // the gradient border width tracks the content inset exactly (no drift).
+    borderPx: layout.anchors.ox,
     borderGradient,
     bgGradient,
     decorations,

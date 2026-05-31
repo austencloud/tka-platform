@@ -85,11 +85,20 @@
         addDifficultyLevel: false,
         addUserInfo: false,
         addReversalSymbols: true,
+        // Pass the full visibility set explicitly so the exported PNG matches
+        // the on-screen choreo card. Omitting these let image-composer's
+        // fallback inherit them from the global VisibilityStateManager (e.g.
+        // a stray non-radial / elemental toggle leaked onto clean cards).
         visibilityOverrides: {
           darkMode: false,
           printMode: true,
           showGrid,
           showTKA,
+          showReversals: true,
+          showNonRadialPoints: false,
+          showTnD: false,
+          showElemental: false,
+          showPositions: false,
         },
       };
 

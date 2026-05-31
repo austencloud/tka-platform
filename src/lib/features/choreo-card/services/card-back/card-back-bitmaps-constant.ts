@@ -53,7 +53,7 @@ export const CARD_RENDER_WIDTH = 1644;
  * as the live card / layout boxes.
  *
  * @param theme Theme name → getCardBackThemeVisuals(theme).borderWidth (proof
- *              mode = 3.5; default 2 if a theme omits it).
+ *              mode = 8.759; default 2 if a theme omits it).
  */
 function borderAwareBasis(theme: string): { innerWidth: number; cqiEff: number } {
   const borderWidth = getCardBackThemeVisuals(theme).borderWidth ?? 2;
