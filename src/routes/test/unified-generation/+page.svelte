@@ -217,8 +217,11 @@
         <ToggleCard title="Period" option1={{ value: "quartered", label: "Quartered" }} option2={{ value: "halved", label: "Halved" }} activeOption={period} onToggle={(v) => (period = v as typeof period)} color={c.period.color} shadowColor={c.period.shadowColor} gridColumnSpan={2} />
         </div>
 
-        <!-- Row 3 — Max Turns leads the style row. Always mounted; collapses its flex-basis to
-             0 at Level 1 so the row's real widths morph live (crisp) instead of remount+fade. -->
+      </div>
+
+      <!-- Style row in its OWN flex container so the Turns tile can never wrap onto the dials
+           rows (that caused the row-2 flash). The collapse morph stays inside this row. -->
+      <div class="card-grid style-row">
         <div class="tile turns" class:collapsed={level <= 1} aria-hidden={level <= 1}>
         <TurnIntensityCard currentIntensity={turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => (turnIntensity = v)} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
         </div>
@@ -226,19 +229,19 @@
         <div class="tile">
         <StepperCard title="Props" currentValue={TRI.indexOf(propRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i]} color={STYLE_COLORS.props.color} shadowColor={STYLE_COLORS.props.shadow} gridColumnSpan={2} onIncrement={() => (propRev = stepArr(TRI, propRev, 1))} onDecrement={() => (propRev = stepArr(TRI, propRev, -1))} />
         </div>
-        <div class="tile" style:view-transition-name="t-hands">
+        <div class="tile">
         <StepperCard title="Hands" currentValue={TRI.indexOf(handRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i]} color={STYLE_COLORS.hands.color} shadowColor={STYLE_COLORS.hands.shadow} gridColumnSpan={2} onIncrement={() => (handRev = stepArr(TRI, handRev, 1))} onDecrement={() => (handRev = stepArr(TRI, handRev, -1))} />
         </div>
-        <div class="tile" style:view-transition-name="t-dashes">
+        <div class="tile">
         <StepperCard title="Dashes" currentValue={DASH.indexOf(dashes)} minValue={0} maxValue={2} description="FREQUENCY" formatValue={(i: number) => DASH_LABEL[i]} color={STYLE_COLORS.dashes.color} shadowColor={STYLE_COLORS.dashes.shadow} gridColumnSpan={2} onIncrement={() => (dashes = stepArr(DASH, dashes, 1))} onDecrement={() => (dashes = stepArr(DASH, dashes, -1))} />
         </div>
-
-        <!-- Generate -->
-        <button class="generate" style:view-transition-name="t-generate" onclick={generate}>
-          <i class="fas fa-dice"></i>
-          <span>{wordMode ? `Generate ${drawCount} variations` : `Generate ${drawCount}`}</span>
-        </button>
       </div>
+
+      <!-- Generate — full width, its own row below both grids -->
+      <button class="generate" onclick={generate}>
+        <i class="fas fa-dice"></i>
+        <span>{wordMode ? `Generate ${drawCount} variations` : `Generate ${drawCount}`}</span>
+      </button>
         {#if showLoop}
           <LOOPExpandedOverlay
             currentType={loopType}
@@ -314,7 +317,7 @@
   @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
 
   .grid-pane { display: flex; flex-direction: column; gap: 14px; }
-  .grid-stage { position: relative; }
+  .grid-stage { position: relative; display: flex; flex-direction: column; gap: 10px; }
   /* Flex-wrap, not fixed grid: whatever lands on the last row stretches to fill the
      width equally (3-up stretched when Turns is hidden, 4-up when it appears) — no holes
      at any tile count, and the reflow is the thing that can animate on add/remove. */
@@ -326,8 +329,8 @@
     flex: 1 1 230px; min-width: 200px; height: 120px; min-height: 0;
   }
   .tile > :global(*) { width: 100%; height: 100%; }
-  /* Generate spans the full width on its own row. */
-  .card-grid > .generate { flex: 1 1 100%; height: auto; min-height: 92px; }
+  /* Generate spans the full width on its own row, below both grids. */
+  .grid-stage > .generate { width: 100%; height: auto; min-height: 92px; }
 
   @media (min-width: 1700px) { .layout { max-width: 1700px; } }
 
