@@ -22,6 +22,7 @@ export type CompositionWorkerInMessage =
       glyphs: ImageBitmap[];
       glyphMeta: GlyphTransferEntry[];
       bundle: import("./card-asset-bundle").AssetBundle;
+      overrideBundle: import("./override-placement-bundle").OverridePlacementBundle;
     }
   | {
       type: "compose";
@@ -81,6 +82,7 @@ export class CompositionDispatcher {
   private nextRequestId = 1;
   private pendingRequests = new Map<number, PendingRequest>();
   private pendingBundle: import("./card-asset-bundle").AssetBundle | null = null;
+  private pendingOverrideBundle: import("./override-placement-bundle").OverridePlacementBundle | null = null;
 
   private static workerSupport: boolean | null = null;
   private static probing: Promise<boolean> | null = null;
@@ -93,6 +95,11 @@ export class CompositionDispatcher {
   /** Set the AssetBundle seeded into each worker's SVG caches at init time. */
   setAssetBundle(bundle: import("./card-asset-bundle").AssetBundle): void {
     this.pendingBundle = bundle;
+  }
+
+  /** Set the override placement bundle seeded into each worker at init. */
+  setOverrideBundle(bundle: import("./override-placement-bundle").OverridePlacementBundle): void {
+    this.pendingOverrideBundle = bundle;
   }
 
   static canUseWorker(): boolean {
@@ -453,6 +460,7 @@ export class CompositionDispatcher {
           glyphs: clonedBitmaps,
           glyphMeta,
           bundle: bundleClone,
+          overrideBundle: this.pendingOverrideBundle ?? { default: [], special: [], global: [], propGeometry: [] },
         };
         worker.postMessage(initMessage, [
           ...clonedBitmaps,

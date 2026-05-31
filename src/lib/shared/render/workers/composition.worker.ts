@@ -89,6 +89,7 @@ async function handleInit(
   glyphs: ImageBitmap[],
   glyphMeta: GlyphTransferEntry[],
   bundle: import("../services/card-asset-bundle").AssetBundle,
+  overrideBundle: import("../services/override-placement-bundle").OverridePlacementBundle,
 ): Promise<void> {
   // Dynamic-import the pipeline classes.  If any import fails (e.g. because a
   // transitive dep references `document` or Svelte stores), the error
@@ -142,6 +143,8 @@ async function handleInit(
   // worker scope). Built on the main thread, index-aligned keys/bitmaps + grids.
   const { seedCachesFromBundle } = await import("../services/card-asset-bundle");
   seedCachesFromBundle(bundle);
+  const { seedOverrideResolvers } = await import("../services/seed-override-resolvers");
+  seedOverrideResolvers(overrideBundle);
   console.log("[composition.worker] seeded glyphs:", glyphMeta.length, "bundle keys:", bundle.keys.length, "grids:", Object.values(bundle.grids).filter(Boolean).length);
 
   // Attempt to register fonts in the worker context
@@ -262,7 +265,7 @@ self.onmessage = (event: MessageEvent<CompositionWorkerInMessage>) => {
 
   switch (msg.type) {
     case "init":
-      handleInit(msg.glyphs, msg.glyphMeta, msg.bundle).catch((err) => {
+      handleInit(msg.glyphs, msg.glyphMeta, msg.bundle, msg.overrideBundle).catch((err) => {
         console.error("[composition.worker] Init failed:", err);
         postResult({
           type: "error",
