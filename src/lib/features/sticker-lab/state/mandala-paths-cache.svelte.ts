@@ -1,10 +1,9 @@
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
-import { MandalaGeometryCalculator } from "$lib/shared/mandala/services/mandala-geometry-calculator";
+import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
 import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
 
 const cache = $state<Record<string, MandalaPaths>>({});
 const inFlight = new Map<string, Promise<MandalaPaths | null>>();
-const calculator = new MandalaGeometryCalculator();
 
 export function getPrimitivePaths(shapeHash: string): MandalaPaths | null {
   return cache[shapeHash] ?? null;
@@ -19,7 +18,7 @@ export async function loadPrimitivePaths(shapeHash: string): Promise<MandalaPath
     try {
       const seq = await getSequenceRepository().getSequence(shapeHash);
       if (!seq?.steps) return null;
-      const paths = calculator.calculate(seq.steps);
+      const paths = calculateMandalaGeometry(seq.steps);
       cache[shapeHash] = paths;
       return paths;
     } catch (err) {

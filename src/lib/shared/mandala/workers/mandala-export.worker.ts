@@ -24,7 +24,6 @@
  */
 
 import { Output, Mp4OutputFormat, BufferTarget, EncodedVideoPacketSource, EncodedPacket } from "mediabunny";
-import { MandalaGeometryCalculator } from "../services/mandala-geometry-calculator";
 import {
   deriveFrameMath,
   renderMandalaFrameToCanvas,
@@ -185,7 +184,6 @@ async function runExport(msg: StartMessage): Promise<void> {
   const ctx = canvas.getContext("2d", { alpha: false });
   if (!ctx) { running = false; post({ type: "error", error: "OffscreenCanvas 2D context unavailable" }); return; }
 
-  const calculator = new MandalaGeometryCalculator();
   // Geometry depends only on undulation phase → compute each of the
   // `framesPerCycle` phases once and reuse across reps. Mask scratch avoids two
   // full-res OffscreenCanvas allocations per frame.
@@ -265,7 +263,7 @@ async function runExport(msg: StartMessage): Promise<void> {
 
       if (i === 0) firstFrameMs = performance.now();
       const r0 = performance.now();
-      renderMandalaFrameToCanvas(ctx, calculator, spec, math, i, geoCache, scratch);
+      renderMandalaFrameToCanvas(ctx, spec, math, i, geoCache, scratch);
       renderMs += performance.now() - r0;
 
       if (hasWebCodecs) {

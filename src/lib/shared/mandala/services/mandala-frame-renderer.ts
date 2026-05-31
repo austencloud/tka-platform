@@ -7,7 +7,7 @@
  * the worker rasterizes the returned SVG string via `createImageBitmap`.
  */
 
-import type { MandalaGeometryCalculator } from "./mandala-geometry-calculator";
+import { calculate as calculateMandalaGeometry } from "./mandala-geometry-calculator";
 import { renderMandalaSVG, renderMandalaToCanvas } from "./mandala-renderer";
 import type { MandalaPathOptions } from "./types";
 import { DEFAULT_OVERLAP_CONFIG } from "../domain/mandala-types";
@@ -168,7 +168,6 @@ export interface MandalaFrameGeometry {
 export type MandalaGeometryCache = Map<number, MandalaFrameGeometry>;
 
 function computeFrameGeometry(
-  calculator: MandalaGeometryCalculator,
   spec: MandalaFrameSpec,
   math: MandalaFrameMath,
   i: number,
@@ -176,7 +175,7 @@ function computeFrameGeometry(
   const cyclePhase = (i % math.framesPerCycle) / math.framesPerCycle;
   const triangle = cyclePhase < 0.5 ? cyclePhase * 2 : 2 - cyclePhase * 2;
   const tipDx = spec.rangeMax * breatheEase(triangle);
-  const paths = calculator.calculate(
+  const paths = calculateMandalaGeometry(
     spec.steps as any,
     spec.bluePropType,
     spec.redPropType,
@@ -222,12 +221,11 @@ function computeFrameColor(
  * consumer) and the canvas path (the export worker — fully off main thread).
  */
 export function deriveFrameRender(
-  calculator: MandalaGeometryCalculator,
   spec: MandalaFrameSpec,
   math: MandalaFrameMath,
   i: number,
 ): MandalaFrameRender {
-  const { paths, tipDx } = computeFrameGeometry(calculator, spec, math, i);
+  const { paths, tipDx } = computeFrameGeometry(spec, math, i);
   const { palette, gradient } = computeFrameColor(spec, math, i);
   const rotDeg = math.turns * 360 * (i / math.totalFrames);
   // Solid mode: geometry depends only on undulation phase → cache per cycle.
@@ -254,7 +252,6 @@ export interface MandalaRenderScratch {
  */
 export function renderMandalaFrameToCanvas(
   ctx: OffscreenCanvasRenderingContext2D,
-  calculator: MandalaGeometryCalculator,
   spec: MandalaFrameSpec,
   math: MandalaFrameMath,
   i: number,
@@ -264,7 +261,7 @@ export function renderMandalaFrameToCanvas(
   const cycleKey = i % math.framesPerCycle;
   let geo = geoCache?.get(cycleKey);
   if (!geo) {
-    geo = computeFrameGeometry(calculator, spec, math, i);
+    geo = computeFrameGeometry(spec, math, i);
     geoCache?.set(cycleKey, geo);
   }
   const { palette, gradient } = computeFrameColor(spec, math, i);
@@ -311,12 +308,11 @@ export function renderMandalaFrameToCanvas(
  * DOM-side SVG consumer; the export worker uses {@link renderMandalaFrameToCanvas}.
  */
 export function renderMandalaFrameSVG(
-  calculator: MandalaGeometryCalculator,
   spec: MandalaFrameSpec,
   math: MandalaFrameMath,
   i: number,
 ): MandalaFrameOutput {
-  const { paths, palette, gradient, tipDx, rotDeg, cacheKey } = deriveFrameRender(calculator, spec, math, i);
+  const { paths, palette, gradient, tipDx, rotDeg, cacheKey } = deriveFrameRender(spec, math, i);
 
   const rawSvg = renderMandalaSVG(paths, {
     size: spec.resolution,

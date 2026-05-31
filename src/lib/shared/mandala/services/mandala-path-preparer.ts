@@ -19,7 +19,7 @@ import {
 import type { SVGPathData } from "../domain/mandala-types";
 import type { PreparedMandalaPath, PreparedMandalaPaths } from "./types";
 import type { StepLike } from "./types";
-import { MandalaGeometryCalculator } from "./mandala-geometry-calculator";
+import { calculate as calculateMandalaGeometry } from "./mandala-geometry-calculator";
 
 // ─── Path length measurement ───────────────────────────────────────────────
 
@@ -79,8 +79,6 @@ function preparePaths(
 // ─── Public class ──────────────────────────────────────────────────────────
 
 export class MandalaPathPreparer {
-	private readonly geometryCalculator = new MandalaGeometryCalculator();
-
 	// Simple cache: store the last computation and only recompute when inputs change
 	private cachedSteps: readonly StepLike[] | null = null;
 	private cachedCanvasSize: number = 0;
@@ -114,7 +112,7 @@ export class MandalaPathPreparer {
 		}
 
 		// Compute SVG path geometry from the sequence steps
-		const mandalaPaths = this.geometryCalculator.calculate(steps);
+		const mandalaPaths = calculateMandalaGeometry(steps);
 
 		// Convert SVG paths to canvas Path2D objects with measured lengths
 		const allPaths: PreparedMandalaPath[] = [];

@@ -6,7 +6,7 @@
  * rasterizes to a canvas for blob export.
  */
 
-import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
+import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
 import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
 import type { MandalaRenderOptions } from "$lib/shared/mandala/domain/mandala-types";
 import type { StepLike } from "$lib/shared/mandala/services/types";
@@ -30,8 +30,7 @@ export async function exportMandalaPNG(
 	options: Partial<ExportOptions> = {},
 ): Promise<Blob> {
 	const opts = { ...DEFAULT_EXPORT_OPTIONS, ...options };
-	const calculator = getMandalaGeometryCalculator();
-	const paths = calculator.calculate(steps, bluePropType, redPropType);
+	const paths = calculateMandalaGeometry(steps, bluePropType, redPropType);
 
 	const renderOptions: MandalaRenderOptions = {
 		size: opts.size,

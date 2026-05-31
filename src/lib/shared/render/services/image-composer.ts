@@ -33,7 +33,7 @@ import {
 import type { CardFrontLayout, CardFrontChromeDeps } from "./card-front-assembler";
 import type { LayerRenderOptions, LayerVisibility } from "./types";
 import { composeCardImage as composeCardImageFn } from "./card-composer";
-// getMandalaGeometryCalculator loaded dynamically to avoid pulling $app/environment into worker bundle
+// mandala geometry calculate() loaded dynamically to keep its dependency graph out of the worker bundle until needed
 import { renderMandalaToCanvas } from "../../mandala/services/mandala-renderer";
 import { getMandalaPlacements } from "../../sequence-viewer/services/getMandalaPlacements";
 import {
@@ -771,11 +771,10 @@ export class ImageComposer {
     redPropType?: PropType,
   ): Promise<void> {
     try {
-      const { getMandalaGeometryCalculator } = await import(
-        "../../mandala/getMandalaGeometryCalculator"
+      const { calculate: calculateMandalaGeometry } = await import(
+        "../../mandala/services/mandala-geometry-calculator"
       );
-      const calculator = getMandalaGeometryCalculator();
-      const paths = calculator.calculate(
+      const paths = calculateMandalaGeometry(
         sequence.steps ?? [],
         bluePropType,
         redPropType,

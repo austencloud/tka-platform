@@ -38,7 +38,7 @@ import {
   LIGHT_MOTION_PURPLE_STROKE,
   LIGHT_MOTION_PURPLE_FILL,
 } from "$lib/shared/mandala/domain/mandala-constants";
-import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
+import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
 import { renderMandalaToCanvas } from "$lib/shared/mandala/services/mandala-renderer";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
@@ -201,7 +201,7 @@ const realDeps: BuildBackJobDeps = {
   rasterizeStartPosPictograph,
   rasterizeDecorations,
   calculatePaths: (steps, blue, red, pathOptions, tipOverride) =>
-    getMandalaGeometryCalculator().calculate(
+    calculateMandalaGeometry(
       (steps ?? []) as never,
       blue,
       red,

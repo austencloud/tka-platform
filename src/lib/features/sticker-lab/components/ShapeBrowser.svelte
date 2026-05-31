@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
+  import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
   import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
   import { loadCatalogs, loadCatalogSequencesPage, getCachedCatalogs } from "$lib/features/choreo-card/services/catalog-loader";
   import { getStickerLabContext } from "../context/sticker-lab-context";
@@ -12,7 +12,6 @@
   import type { QueryDocumentSnapshot } from "firebase/firestore";
 
   const stickerState = getStickerLabContext();
-  const calc = getMandalaGeometryCalculator();
 
   const MONO_PALETTE: MandalaPalette = {
     blueStroke: "#c0b8e8",
@@ -159,7 +158,7 @@
       const page = await loadCatalogSequencesPage(deck.id, FETCH_PAGE, lastDoc ?? undefined);
       for (const seq of page.sequences) {
         if (!seq.steps || seq.steps.length === 0) continue;
-        const paths = calc.calculate(seq.steps, "staff", "staff");
+        const paths = calculateMandalaGeometry(seq.steps, "staff", "staff");
         const solos = extractSolos(seq, paths);
         for (const solo of solos) {
           const fp = soloFingerprint(solo);
@@ -205,11 +204,11 @@
     const key = `c_${seq.id}`;
     const cached = svgCache.get(key);
     if (cached) {
-      const paths = calc.calculate(seq.steps, "staff", "staff");
+      const paths = calculateMandalaGeometry(seq.steps, "staff", "staff");
       return { svg: cached, paths };
     }
     if (!seq.steps || seq.steps.length === 0) return null;
-    const paths = calc.calculate(seq.steps, "staff", "staff");
+    const paths = calculateMandalaGeometry(seq.steps, "staff", "staff");
     const svg = renderMandalaSVG(paths, {
       size: 300,
       style: "stroke",

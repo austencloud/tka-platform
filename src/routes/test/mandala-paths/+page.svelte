@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
 	import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
 	import { loadCatalogs, loadCatalogSequences } from "$lib/features/choreo-card/services/catalog-loader";
 	import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
@@ -18,7 +17,7 @@
 		DARK_MOTION_PURPLE_STROKE,
 		DARK_MOTION_PURPLE_FILL,
 	} from "$lib/shared/mandala/domain/mandala-constants";
-	import type { MandalaGeometryCalculator } from "$lib/shared/mandala/services/mandala-geometry-calculator";
+	import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
 	import type { MandalaPathOptions } from "$lib/shared/mandala/services/types";
 
 	const PALETTE: MandalaPalette = {
@@ -39,7 +38,7 @@
 		{ key: "hybrid", label: "Hybrid", options: { motionAware: true } },
 	];
 
-	let calculator: MandalaGeometryCalculator | null = $state(null);
+	let calcReady: boolean = $state(false);
 	let decks: Catalog[] = $state([]);
 	let selectedDeckId: string = $state("");
 	let deckSequences: any[] = $state([]);
@@ -70,13 +69,13 @@
 	const currentSeq = $derived(sequences[currentIndex] ?? null);
 
 	const comparePaths = $derived.by((): { mode: PathMode; label: string; paths: MandalaPaths | null }[] => {
-		if (!calculator || !currentSeq?.steps) return [];
+		if (!calcReady || !currentSeq?.steps) return [];
 		const blueProp = currentSeq.bluePropType ?? "staff";
 		const redProp = currentSeq.redPropType ?? "staff";
 		return PATH_MODES.map((m) => ({
 			mode: m.key,
 			label: m.label,
-			paths: calculator!.calculate(currentSeq.steps, blueProp, redProp, m.options),
+			paths: calculateMandalaGeometry(currentSeq.steps, blueProp, redProp, m.options),
 		}));
 	});
 
@@ -88,7 +87,7 @@
 	}
 
 	const gridEntries = $derived.by((): GridEntry[] => {
-		if (!calculator || sequences.length === 0) return [];
+		if (!calcReady || sequences.length === 0) return [];
 		const mode = PATH_MODES.find((m) => m.key === gridPathMode)!;
 		const opts: MandalaRenderOptions = {
 			size: mandalaSize,
@@ -100,7 +99,7 @@
 			id: seq.id,
 			word: seq.word ?? seq.name ?? seq.id,
 			svg: renderMandalaSVG(
-				calculator!.calculate(
+				calculateMandalaGeometry(
 					seq.steps,
 					seq.bluePropType ?? "staff",
 					seq.redPropType ?? "staff",
@@ -123,7 +122,7 @@
 	}
 
 	onMount(async () => {
-		calculator = getMandalaGeometryCalculator();
+		calcReady = true;
 		try {
 			decks = await loadCatalogs();
 			const first = decks[0];

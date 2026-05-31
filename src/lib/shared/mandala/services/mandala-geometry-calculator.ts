@@ -513,153 +513,151 @@ function generatePathPoints(
 	return points;
 }
 
-// ─── Public class ───────────────────────────────────────────────────────────
+// ─── Public module functions ────────────────────────────────────────────────
 
-export class MandalaGeometryCalculator {
-	private cache = new Map<string, MandalaPaths>();
-	private static MAX_CACHE_SIZE = 50;
+const cache = new Map<string, MandalaPaths>();
+const MAX_CACHE_SIZE = 50;
 
-	private buildCacheKey(
-		steps: readonly StepLike[],
-		bluePropType?: string,
-		redPropType?: string,
-		options?: MandalaPathOptions
-	): string {
-		const parts: string[] = [];
-		for (const step of steps) {
-			const b = step.motions?.blue;
-			const r = step.motions?.red;
-			if (b)
-				parts.push(
-					b.motionType +
-					b.rotationDirection +
-					b.startLocation +
-					b.endLocation +
-					(b.startOrientation ?? '') +
-					(b.endOrientation ?? '') +
-					(b.turns ?? 0)
-				);
-			if (r)
-				parts.push(
-					r.motionType +
-					r.rotationDirection +
-					r.startLocation +
-					r.endLocation +
-					(r.startOrientation ?? '') +
-					(r.endOrientation ?? '') +
-					(r.turns ?? 0)
-				);
-		}
-		parts.push(bluePropType ?? "staff", redPropType ?? "staff");
-		if (options?.pathShape) parts.push("ps:" + options.pathShape);
-		if (options?.motionAware) parts.push("ma:1");
-		return parts.join("|");
+function buildCacheKey(
+	steps: readonly StepLike[],
+	bluePropType?: string,
+	redPropType?: string,
+	options?: MandalaPathOptions
+): string {
+	const parts: string[] = [];
+	for (const step of steps) {
+		const b = step.motions?.blue;
+		const r = step.motions?.red;
+		if (b)
+			parts.push(
+				b.motionType +
+				b.rotationDirection +
+				b.startLocation +
+				b.endLocation +
+				(b.startOrientation ?? '') +
+				(b.endOrientation ?? '') +
+				(b.turns ?? 0)
+			);
+		if (r)
+			parts.push(
+				r.motionType +
+				r.rotationDirection +
+				r.startLocation +
+				r.endLocation +
+				(r.startOrientation ?? '') +
+				(r.endOrientation ?? '') +
+				(r.turns ?? 0)
+			);
+	}
+	parts.push(bluePropType ?? "staff", redPropType ?? "staff");
+	if (options?.pathShape) parts.push("ps:" + options.pathShape);
+	if (options?.motionAware) parts.push("ma:1");
+	return parts.join("|");
+}
+
+function computePointSets(
+	stepsWithMotions: readonly StepLike[],
+	options: MandalaPathOptions | undefined,
+	dx: number,
+	dy: number
+): { blue: MandalaPoint[][]; red: MandalaPoint[][] } {
+	const tips = [{ dx: -dx, dy }, { dx, dy }];
+	const gridRadius = MANDALA_GRID_RADIUS;
+	const samplesPerBeat = BASE_SAMPLES_PER_BEAT;
+
+	const blue: MandalaPoint[][] = [];
+	const red: MandalaPoint[][] = [];
+
+	for (const tip of tips) {
+		blue.push(generatePathPoints(stepsWithMotions, "blue", tip, gridRadius, samplesPerBeat, options));
+		red.push(generatePathPoints(stepsWithMotions, "red", tip, gridRadius, samplesPerBeat, options));
 	}
 
-	private computePointSets(
-		stepsWithMotions: readonly StepLike[],
-		options: MandalaPathOptions | undefined,
-		dx: number,
-		dy: number
-	): { blue: MandalaPoint[][]; red: MandalaPoint[][] } {
-		const tips = [{ dx: -dx, dy }, { dx, dy }];
-		const gridRadius = MANDALA_GRID_RADIUS;
-		const samplesPerBeat = BASE_SAMPLES_PER_BEAT;
+	return { blue, red };
+}
 
-		const blue: MandalaPoint[][] = [];
-		const red: MandalaPoint[][] = [];
-
-		for (const tip of tips) {
-			blue.push(generatePathPoints(stepsWithMotions, "blue", tip, gridRadius, samplesPerBeat, options));
-			red.push(generatePathPoints(stepsWithMotions, "red", tip, gridRadius, samplesPerBeat, options));
-		}
-
-		return { blue, red };
+// Path geometry interpolated between two shapes (optionsFrom → optionsTo) at
+// morph progress t∈[0,1]. Point sets share length/ordering across shapes, so
+// this is a per-point lerp. Used to morph shape transitions in place while the
+// breathing/rotation animation continues. Never cached (called per frame).
+export function calculateMorphed(
+	steps: readonly StepLike[],
+	_bluePropType: string | undefined,
+	_redPropType: string | undefined,
+	optionsFrom: MandalaPathOptions | undefined,
+	optionsTo: MandalaPathOptions | undefined,
+	t: number,
+	tipOverride?: { dx: number; dy: number }
+): MandalaPaths {
+	const stepsWithMotions = steps.filter(
+		(s) => s.motions?.blue || s.motions?.red
+	);
+	if (stepsWithMotions.length === 0) {
+		return { blue: [], red: [], purple: [] };
 	}
 
-	// Path geometry interpolated between two shapes (optionsFrom → optionsTo) at
-	// morph progress t∈[0,1]. Point sets share length/ordering across shapes, so
-	// this is a per-point lerp. Used to morph shape transitions in place while the
-	// breathing/rotation animation continues. Never cached (called per frame).
-	calculateMorphed(
-		steps: readonly StepLike[],
-		_bluePropType: string | undefined,
-		_redPropType: string | undefined,
-		optionsFrom: MandalaPathOptions | undefined,
-		optionsTo: MandalaPathOptions | undefined,
-		t: number,
-		tipOverride?: { dx: number; dy: number }
-	): MandalaPaths {
-		const stepsWithMotions = steps.filter(
-			(s) => s.motions?.blue || s.motions?.red
-		);
-		if (stepsWithMotions.length === 0) {
-			return { blue: [], red: [], purple: [] };
+	const dx = tipOverride?.dx ?? MANDALA_STANDARD_TIP_DX;
+	const dy = tipOverride?.dy ?? 0;
+
+	const from = computePointSets(stepsWithMotions, optionsFrom, dx, dy);
+	const to = computePointSets(stepsWithMotions, optionsTo, dx, dy);
+
+	const blueSets = from.blue.map((set, i) => lerpPointSet(set, to.blue[i] ?? set, t));
+	const redSets = from.red.map((set, i) => lerpPointSet(set, to.red[i] ?? set, t));
+
+	return {
+		blue: pointSetsToPaths(blueSets),
+		red: pointSetsToPaths(redSets),
+		purple: [],
+	};
+}
+
+export function calculate(
+	steps: readonly StepLike[],
+	_bluePropType?: string,
+	_redPropType?: string,
+	options?: MandalaPathOptions,
+	tipOverride?: { dx: number; dy: number }
+): MandalaPaths {
+	const skipCache = tipOverride !== undefined;
+
+	if (!skipCache) {
+		const key = buildCacheKey(steps, _bluePropType, _redPropType, options);
+		const cached = cache.get(key);
+		if (cached) {
+			cache.delete(key);
+			cache.set(key, cached);
+			return cached;
 		}
-
-		const dx = tipOverride?.dx ?? MANDALA_STANDARD_TIP_DX;
-		const dy = tipOverride?.dy ?? 0;
-
-		const from = this.computePointSets(stepsWithMotions, optionsFrom, dx, dy);
-		const to = this.computePointSets(stepsWithMotions, optionsTo, dx, dy);
-
-		const blueSets = from.blue.map((set, i) => lerpPointSet(set, to.blue[i] ?? set, t));
-		const redSets = from.red.map((set, i) => lerpPointSet(set, to.red[i] ?? set, t));
-
-		return {
-			blue: pointSetsToPaths(blueSets),
-			red: pointSetsToPaths(redSets),
-			purple: [],
-		};
 	}
 
-	calculate(
-		steps: readonly StepLike[],
-		_bluePropType?: string,
-		_redPropType?: string,
-		options?: MandalaPathOptions,
-		tipOverride?: { dx: number; dy: number }
-	): MandalaPaths {
-		const skipCache = tipOverride !== undefined;
+	// Filter to steps that have motions (skip start position / empty steps)
+	const stepsWithMotions = steps.filter(
+		(s) => s.motions?.blue || s.motions?.red
+	);
 
-		if (!skipCache) {
-			const key = this.buildCacheKey(steps, _bluePropType, _redPropType, options);
-			const cached = this.cache.get(key);
-			if (cached) {
-				this.cache.delete(key);
-				this.cache.set(key, cached);
-				return cached;
-			}
-		}
-
-		// Filter to steps that have motions (skip start position / empty steps)
-		const stepsWithMotions = steps.filter(
-			(s) => s.motions?.blue || s.motions?.red
-		);
-
-		if (stepsWithMotions.length === 0) {
-			return { blue: [], red: [], purple: [] };
-		}
-
-		const dx = tipOverride?.dx ?? MANDALA_STANDARD_TIP_DX;
-		const dy = tipOverride?.dy ?? 0;
-
-		const sets = this.computePointSets(stepsWithMotions, options, dx, dy);
-		const result: MandalaPaths = {
-			blue: pointSetsToPaths(sets.blue),
-			red: pointSetsToPaths(sets.red),
-			purple: [],
-		};
-
-		if (!skipCache) {
-			const key = this.buildCacheKey(steps, _bluePropType, _redPropType, options);
-			if (this.cache.size >= MandalaGeometryCalculator.MAX_CACHE_SIZE) {
-				const oldestKey = this.cache.keys().next().value;
-				if (oldestKey !== undefined) this.cache.delete(oldestKey);
-			}
-			this.cache.set(key, result);
-		}
-
-		return result;
+	if (stepsWithMotions.length === 0) {
+		return { blue: [], red: [], purple: [] };
 	}
+
+	const dx = tipOverride?.dx ?? MANDALA_STANDARD_TIP_DX;
+	const dy = tipOverride?.dy ?? 0;
+
+	const sets = computePointSets(stepsWithMotions, options, dx, dy);
+	const result: MandalaPaths = {
+		blue: pointSetsToPaths(sets.blue),
+		red: pointSetsToPaths(sets.red),
+		purple: [],
+	};
+
+	if (!skipCache) {
+		const key = buildCacheKey(steps, _bluePropType, _redPropType, options);
+		if (cache.size >= MAX_CACHE_SIZE) {
+			const oldestKey = cache.keys().next().value;
+			if (oldestKey !== undefined) cache.delete(oldestKey);
+		}
+		cache.set(key, result);
+	}
+
+	return result;
 }

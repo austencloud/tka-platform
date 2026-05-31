@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
 	import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
 	import { loadCatalogs, loadCatalogSequences } from "$lib/features/choreo-card/services/catalog-loader";
 	import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
@@ -14,7 +13,7 @@
 		DARK_MOTION_PURPLE_STROKE,
 		DARK_MOTION_PURPLE_FILL,
 	} from "$lib/shared/mandala/domain/mandala-constants";
-	import type { MandalaGeometryCalculator } from "$lib/shared/mandala/services/mandala-geometry-calculator";
+	import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
 
 	const PALETTE: MandalaPalette = {
 		blueStroke: DARK_MOTION_BLUE_STROKE,
@@ -42,7 +41,7 @@
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(tiers));
 	}
 
-	let calculator: MandalaGeometryCalculator | null = $state(null);
+	let calcReady: boolean = $state(false);
 	let decks: Catalog[] = $state([]);
 	let selectedDeckId: string = $state("");
 	let sequences: any[] = $state([]);
@@ -111,11 +110,11 @@
 	}
 
 	const allEntries = $derived.by((): MandalaEntry[] => {
-		if (!calculator || sequences.length === 0) return [];
+		if (!calcReady || sequences.length === 0) return [];
 		return sequences.map((seq) => ({
 			id: seq.id,
 			word: seq.word ?? seq.id,
-			paths: calculator!.calculate(seq.steps, "staff", "staff"),
+			paths: calculateMandalaGeometry(seq.steps, "staff", "staff"),
 		}));
 	});
 
@@ -190,7 +189,7 @@
 	const spotlightMandala = $derived(displayItems[spotlightIndex] ?? null);
 
 	onMount(async () => {
-		calculator = getMandalaGeometryCalculator();
+		calcReady = true;
 		try {
 			decks = await loadCatalogs();
 			const first = decks[0];

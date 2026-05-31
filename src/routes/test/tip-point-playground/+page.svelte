@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { cubicInOut } from "svelte/easing";
-	import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
 	import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
 	import { loadCatalogs, loadCatalogSequences } from "$lib/features/choreo-card/services/catalog-loader";
 	import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
@@ -18,7 +17,7 @@
 		DARK_MOTION_PURPLE_STROKE,
 		DARK_MOTION_PURPLE_FILL,
 	} from "$lib/shared/mandala/domain/mandala-constants";
-	import type { MandalaGeometryCalculator } from "$lib/shared/mandala/services/mandala-geometry-calculator";
+	import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
 
 	const PALETTE: MandalaPalette = {
 		blueStroke: DARK_MOTION_BLUE_STROKE,
@@ -100,7 +99,7 @@
 		{ id: "hybrid", label: "Hybrid", desc: "Pro=arc, Anti=concave" },
 	];
 
-	let calculator: MandalaGeometryCalculator | null = $state(null);
+	let calcReady: boolean = $state(false);
 	let decks: Catalog[] = $state([]);
 	let selectedDeckId: string = $state("");
 	let deckSequences: any[] = $state([]);
@@ -146,24 +145,24 @@
 	});
 
 	const currentPaths = $derived.by((): MandalaPaths | null => {
-		if (!calculator || !currentSeq?.steps) return null;
-		return calculator.calculate(
+		if (!calcReady || !currentSeq?.steps) return null;
+		return calculateMandalaGeometry(
 			currentSeq.steps, "staff", "staff", pathOptions,
 			{ dx: activeDx, dy: 0 }
 		);
 	});
 
 	const fanPaths = $derived.by((): MandalaPaths | null => {
-		if (!calculator || !currentSeq?.steps) return null;
-		return calculator.calculate(
+		if (!calcReady || !currentSeq?.steps) return null;
+		return calculateMandalaGeometry(
 			currentSeq.steps, "staff", "staff", pathOptions,
 			{ dx: 105, dy: 0 }
 		);
 	});
 
 	const staffPaths = $derived.by((): MandalaPaths | null => {
-		if (!calculator || !currentSeq?.steps) return null;
-		return calculator.calculate(
+		if (!calcReady || !currentSeq?.steps) return null;
+		return calculateMandalaGeometry(
 			currentSeq.steps, "staff", "staff", pathOptions,
 			{ dx: 135, dy: 0 }
 		);
@@ -211,7 +210,7 @@
 	}
 
 	onMount(() => {
-		calculator = getMandalaGeometryCalculator();
+		calcReady = true;
 		loadCatalogs()
 			.then((d) => {
 				decks = d;

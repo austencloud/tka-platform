@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { getMandalaGeometryCalculator } from "../getMandalaGeometryCalculator";
 	import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
 	import { onMount } from "svelte";
 	import { cubicInOut } from "svelte/easing";
@@ -28,7 +27,7 @@
 		LIGHT_MOTION_PURPLE_STROKE,
 		LIGHT_MOTION_PURPLE_FILL,
 	} from "../domain/mandala-constants";
-	import type { MandalaGeometryCalculator } from "../services/mandala-geometry-calculator";
+	import { calculate as calculateMandalaGeometry, calculateMorphed as calculateMandalaMorphed } from "../services/mandala-geometry-calculator";
 	import type { MandalaPathOptions } from "../services/types";
 
 	export type { MandalaPathShape, UndulationEasing } from "../domain/mandala-types";
@@ -152,7 +151,7 @@
 		purpleFill: LIGHT_MOTION_PURPLE_FILL,
 	};
 
-	let calculator: MandalaGeometryCalculator | null = $state(null);
+	let calcReady: boolean = $state(false);
 	let animatedDx: number = $state(MANDALA_STANDARD_TIP_DX);
 	let rotationDeg: number = $state(0);
 	let rafId: number = 0;
@@ -171,7 +170,7 @@
 	let activeMorph: { from: MandalaPathShape; t: number } | null = $state(null);
 
 	onMount(() => {
-		calculator = getMandalaGeometryCalculator();
+		calcReady = true;
 		return () => {
 			if (rafId) cancelAnimationFrame(rafId);
 			if (morphRafId) cancelAnimationFrame(morphRafId);
@@ -266,11 +265,11 @@
 	const pathOptions = $derived(optionsFor(pathShape));
 
 	const paths = $derived.by((): MandalaPaths | null => {
-		if (!calculator || !sequence?.steps) return null;
+		if (!calcReady || !sequence?.steps) return null;
 		const tip = { dx: effectiveDx, dy: 0 };
 		const morph = activeMorph;
 		if (morph) {
-			return calculator.calculateMorphed(
+			return calculateMandalaMorphed(
 				sequence.steps,
 				bluePropType,
 				redPropType,
@@ -280,7 +279,7 @@
 				tip
 			);
 		}
-		return calculator.calculate(
+		return calculateMandalaGeometry(
 			sequence.steps,
 			bluePropType,
 			redPropType,
