@@ -99,12 +99,20 @@
   let containerRef: HTMLElement | undefined = $state();
   let scrollContainerRef: HTMLElement | undefined = $state();
 
+  // Breathing room (px, each side) reserved around the grid so a selected or
+  // hovered cell's gold border + scale "pop" never reaches the hard clip on
+  // .scroll-wrapper (overflow-x: hidden) / .step-grid-container (overflow:
+  // hidden). MUST equal the .scroll-wrapper padding in WorkspaceGrid.svelte —
+  // that padding is where the pop renders, and reserving it here keeps cells
+  // sized to the wrapper's content box so they don't spill into it.
+  const POP_RESERVE = 16;
+
   // Computed grid layout - must use $derived.by for reactive recalculation
   const gridLayout = $derived.by(() => {
     const layout = calculateGridLayout(
       steps.length,
-      containerWidth,
-      containerHeight,
+      Math.max(0, containerWidth - 2 * POP_RESERVE),
+      Math.max(0, containerHeight - 2 * POP_RESERVE),
       deviceDetector,
       {
         isSideBySideLayout,
@@ -145,13 +153,20 @@
       ? Math.max(Math.min(actualCellCount, fullRowUnits), 2)
       : Math.max(fullRowUnits, 2);
 
-    const widthBased = calculateTimelineUnitSize(containerWidth, totalUnits);
+    // Reserve the .scroll-wrapper padding (POP_RESERVE each side) so cells are
+    // sized to the wrapper's CONTENT box, not its full width. This keeps edge
+    // cells off the scroll-wrapper/step-grid-container clip boundary, leaving
+    // that padding as guaranteed room for the selected/hovered cell's gold
+    // border + pop to render without being cut (horizontal AND vertical).
+    const sizingWidth = Math.max(0, containerWidth - 2 * POP_RESERVE);
+    const widthBased = calculateTimelineUnitSize(sizingWidth, totalUnits);
 
     // Constrain by available height so all rows fit without scrolling
     if (containerHeight > 0 && timelineRows.length > 0) {
       const gaps = (timelineRows.length - 1) * 1;
       const padding = 8;
-      const availableHeight = containerHeight - gaps - padding;
+      const availableHeight =
+        containerHeight - 2 * POP_RESERVE - gaps - padding;
       const heightBased = Math.floor(availableHeight / timelineRows.length);
       return Math.max(48, Math.min(widthBased, heightBased));
     }

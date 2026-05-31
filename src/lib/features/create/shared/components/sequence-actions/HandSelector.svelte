@@ -1,10 +1,13 @@
 <!--
   HandSelector.svelte
 
-  Global hand selector for the SequenceActionsPanel.
-  Allows selecting which hand(s) transforms apply to: Left, Right, or Both.
+  Global hand-target selector for the SequenceActionsPanel ("Apply To").
+  Selects which hand(s) transforms apply to: Left, Both, or Right.
 
-  Buttons are color-coded: Blue for Left, Red for Right, Purple for Both.
+  Segmented track with a sliding indicator that recolors per hand
+  (Left=blue, Both=purple, Right=red), matching the prop colors and the
+  turn/reversal strip editor's visual language. Single-select; the indicator
+  carries the active state so it never needs a checkbox or per-button border.
 -->
 <script lang="ts">
   import type { TargetHand } from "../../state/panel-coordination-state.svelte.ts";
@@ -15,158 +18,172 @@
   }
 
   let { value, onChange }: Props = $props();
+
+  // blue=Left, both=Both, red=Right — fixed order drives the indicator position.
+  const ORDER: TargetHand[] = ["blue", "both", "red"];
+  const index = $derived(Math.max(0, ORDER.indexOf(value)));
 </script>
 
 <div class="hand-selector-section">
-  <div class="section-header">
-    <span class="section-label">Apply To</span>
-  </div>
+  <span class="section-label" id="apply-to-label">Apply To</span>
 
-  <div class="hand-buttons">
+  <div
+    class="seg-track sel-{value}"
+    role="radiogroup"
+    aria-labelledby="apply-to-label"
+    style="--index: {index}"
+  >
+    <span class="indicator" aria-hidden="true"></span>
+
     <button
-      class="hand-btn blue-btn"
+      class="seg blue"
       class:active={value === "blue"}
+      role="radio"
+      aria-checked={value === "blue"}
       onclick={() => onChange("blue")}
-      aria-pressed={value === "blue"}
     >
-      <span class="hand-label">Left</span>
+      <span class="dot blue"></span>Left
     </button>
 
     <button
-      class="hand-btn both-btn"
+      class="seg both"
       class:active={value === "both"}
+      role="radio"
+      aria-checked={value === "both"}
       onclick={() => onChange("both")}
-      aria-pressed={value === "both"}
     >
-      <span class="hand-label">Both</span>
+      Both
     </button>
 
     <button
-      class="hand-btn red-btn"
+      class="seg red"
       class:active={value === "red"}
+      role="radio"
+      aria-checked={value === "red"}
       onclick={() => onChange("red")}
-      aria-pressed={value === "red"}
     >
-      <span class="hand-label">Right</span>
+      <span class="dot red"></span>Right
     </button>
   </div>
 </div>
 
 <style>
   .hand-selector-section {
-    padding: 16px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-  }
-
-  .section-header {
-    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .section-label {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted);
+    color: rgba(255, 255, 255, 0.55);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    font-weight: 600;
+    font-weight: 700;
   }
 
-  .hand-buttons {
+  /* Segmented track */
+  .seg-track {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .hand-btn {
+  /* Sliding indicator — one third wide, recolored per selection below. */
+  .indicator {
+    position: absolute;
+    z-index: 0;
+    top: 4px;
+    bottom: 4px;
+    left: calc(4px + (100% - 8px) / 3 * var(--index));
+    width: calc((100% - 8px) / 3);
+    border-radius: 9px;
+    transition:
+      left var(--duration-normal, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
+      background var(--duration-normal, 220ms) ease,
+      box-shadow var(--duration-normal, 220ms) ease;
+  }
+  .sel-blue .indicator {
+    background: linear-gradient(135deg, #6f9bff, #4b7bff);
+    box-shadow: 0 4px 16px -4px rgba(111, 155, 255, 0.6);
+  }
+  .sel-both .indicator {
+    background: linear-gradient(135deg, #a98bff, #7c5cff);
+    box-shadow: 0 4px 16px -4px rgba(124, 92, 255, 0.6);
+  }
+  .sel-red .indicator {
+    background: linear-gradient(135deg, #ff7a8a, #ff5068);
+    box-shadow: 0 4px 16px -4px rgba(255, 122, 138, 0.6);
+  }
+
+  .seg {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 14px 12px;
-    min-height: var(--min-touch-target, 48px); /* WCAG AAA touch target */
-    border-radius: 10px;
-    border: 1.5px solid transparent;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .hand-btn:hover {
-    transform: translateY(-2px);
-  }
-
-  /* Blue / Left button */
-  .blue-btn {
-    background: rgba(59, 130, 246, 0.15);
-    border-color: rgba(59, 130, 246, 0.25);
-    color: rgb(147, 197, 253);
-  }
-
-  .blue-btn:hover {
-    background: rgba(59, 130, 246, 0.25);
-    border-color: rgba(59, 130, 246, 0.4);
-  }
-
-  .blue-btn.active {
-    background: rgba(59, 130, 246, 0.35);
-    border-color: rgba(59, 130, 246, 0.6);
-    color: white;
-    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
-  }
-
-  /* Purple / Both button */
-  .both-btn {
-    background: rgba(168, 85, 247, 0.15);
-    border-color: rgba(168, 85, 247, 0.25);
-    color: rgb(216, 180, 254);
-  }
-
-  .both-btn:hover {
-    background: rgba(168, 85, 247, 0.25);
-    border-color: rgba(168, 85, 247, 0.4);
-  }
-
-  .both-btn.active {
-    background: rgba(168, 85, 247, 0.35);
-    border-color: rgba(168, 85, 247, 0.6);
-    color: white;
-    box-shadow: 0 4px 16px rgba(168, 85, 247, 0.3);
-  }
-
-  /* Red / Right button */
-  .red-btn {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.25);
-    color: rgb(252, 165, 165);
-  }
-
-  .red-btn:hover {
-    background: rgba(239, 68, 68, 0.25);
-    border-color: rgba(239, 68, 68, 0.4);
-  }
-
-  .red-btn.active {
-    background: rgba(239, 68, 68, 0.35);
-    border-color: rgba(239, 68, 68, 0.6);
-    color: white;
-    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
-  }
-
-  .hand-label {
+    gap: 7px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 10px;
+    border: none;
+    background: none;
+    border-radius: 9px;
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
+    cursor: pointer;
+    transition: color var(--duration-fast, 120ms) ease;
   }
 
-  .hand-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+  /* Inactive labels: tinted per hand but kept readable (AAA on the dark track). */
+  .seg.blue {
+    color: #93b4ff;
+  }
+  .seg.both {
+    color: #c9b3ff;
+  }
+  .seg.red {
+    color: #ffb3bd;
+  }
+  .seg:hover {
+    color: #fff;
+  }
+  .seg.active {
+    color: #fff;
+  }
+
+  /* Small hand dot on Left/Right reinforces the prop-color mapping. */
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot.blue {
+    background: #6f9bff;
+  }
+  .dot.red {
+    background: #ff7a8a;
+  }
+  .seg.active .dot {
+    background: #fff;
+  }
+
+  .seg:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.85));
     outline-offset: 2px;
   }
 
-  /* Accessibility: Respect user's motion preferences */
   @media (prefers-reduced-motion: reduce) {
-    .hand-btn {
+    .indicator,
+    .seg {
       transition: none;
-    }
-
-    .hand-btn:hover {
-      transform: none;
     }
   }
 </style>

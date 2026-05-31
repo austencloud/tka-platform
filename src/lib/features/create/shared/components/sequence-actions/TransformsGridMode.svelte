@@ -82,31 +82,10 @@
 
   const disabled = $derived(isTransforming || isExtending || !hasSequence);
 
-  // Calculate how many items are in each section for dynamic flex ratios
-  // Transform: always 6 items
-  const transformItemCount = 6;
-
-  // Patterns: Turn Pattern + Direction + Duration + Rewind (always) + Extend (conditional) + Shift Start (conditional)
-  const patternsItemCount = $derived(
-    4 + // Turn Pattern, Direction, Duration, Rewind (always present)
-      (onExtend && canExtend ? 1 : 0) +
-      (onShiftStart ? 1 : 0)
-  );
-
-  // Edit: Edit Turns (always) + Edit in Construct (conditional)
-  const editItemCount = $derived(1 + (showEditInConstructor ? 1 : 0));
-
-  // Calculate row counts based on grid columns
-  // Desktop: 2 columns, Mobile: 3 columns
-  const getRowCount = (items: number, cols: number) => Math.ceil(items / cols);
-
-  // Column count depends on mode (mobile=3, desktop=2)
-  const gridCols = $derived(isDesktopPanel ? 2 : 3);
-
-  // Dynamic flex values based on row counts
-  const transformFlex = $derived(getRowCount(transformItemCount, gridCols));
-  const patternsFlex = $derived(getRowCount(patternsItemCount, gridCols));
-  const editFlex = $derived(getRowCount(editItemCount, gridCols));
+  // Button height + icon + label all scale together off the panel's height via
+  // container-query units (see Approach A in the CSS). No row-stretching flex:
+  // that decoupling — elastic rows wrapping fixed-size content — was the bug
+  // that left giant buttons hugging tiny centered content on tall panels.
 </script>
 
 <div
@@ -118,7 +97,7 @@
   class:help-mode={helpMode}
 >
   <!-- TRANSFORM Section -->
-  <section class="section transform-section" style:flex={transformFlex}>
+  <section class="section transform-section">
     <span class="section-label">Transform</span>
     <div class="section-grid">
       <button
@@ -164,7 +143,7 @@
             : "Swap hands in sequence"}
       >
         <div class="btn-icon swap-icon-host">
-          <SwapIcon size="16px" />
+          <SwapIcon size="1em" />
         </div>
         <div class="btn-text">
           <span class="btn-label">Swap</span>
@@ -222,7 +201,7 @@
   </section>
 
   <!-- PATTERNS Section -->
-  <section class="section patterns-section" style:flex={patternsFlex}>
+  <section class="section patterns-section">
     <span class="section-label">Patterns</span>
     <div class="section-grid">
       <button
@@ -332,7 +311,7 @@
   </section>
 
   <!-- EDIT Section - dimmed in help mode since these don't have help content -->
-  <section class="section edit-section" class:help-dimmed={helpMode} style:flex={editFlex}>
+  <section class="section edit-section" class:help-dimmed={helpMode}>
     <span class="section-label">Edit</span>
     <div class="section-grid">
       <button
@@ -507,6 +486,159 @@
   }
   .actions-container.mobile .btn-label {
     font-size: var(--font-size-compact, 12px);
+  }
+
+  /* ===================================================================
+     APP-NATIVE TILES (desktop side panel)
+     Icon-over-label tile in the app's own mobile button language:
+       • chrome from MandalaControlDock .dock-btn (12px radius, translucent
+         resting bg, hover-lift, accent border)
+       • glyph from NavButton .nav-icon (per-color gradient clipped to the
+         icon text + active glow) — the color lives IN the glyph, no chip
+     Per-action color is the existing --btn-color triplet. Tint baked at the
+     "50" setting Austen approved (resting bg 0.08, border 0.225 of the
+     action color). Auto-fit columns: a wide panel gains columns instead of
+     stretching two fat rows; a max-height cap stops a sparse section (Edit)
+     from ballooning its tiles into a void.
+     =================================================================== */
+  .actions-container.desktop {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+    /* Center the whole stack in the scroll area so leftover height splits
+       evenly top/bottom (intentional) instead of dumping at the bottom. When
+       content is taller than the panel there's no free space, so this no-ops
+       and the parent scrolls from the top — no clipping. */
+    justify-content: center;
+    gap: clamp(12px, 2.4cqh, 24px);
+    /* Cap + center the stack so an ultra-wide panel (e.g. the fullscreen
+       modal) reads as an intentional centered block instead of sprawling six
+       thin tiles across one row with a vertical void below. Below the cap
+       (narrow side docks) this no-ops and the grid fills the panel. */
+    width: 100%;
+    max-width: clamp(480px, 78cqw, 880px);
+    margin-inline: auto;
+    /* Clear the drawer's left drag-handle (it overlays the panel edge and was
+       clipping the "Patterns" label) and keep symmetric breathing room. */
+    padding-inline: clamp(16px, 2.6cqw, 30px);
+  }
+  .actions-container.desktop .section {
+    gap: clamp(6px, 1.2cqh, 12px);
+  }
+  .actions-container.desktop .section-label {
+    font-size: clamp(0.62rem, 1.4cqh, 0.72rem);
+    opacity: 0.7;
+  }
+  /* Column count steps by panel width so a section of N actions wraps into a
+     balanced block rather than one thin row. 2 cols narrow → 3 cols once
+     there's room. With 6 transform/pattern actions that's 3 rows → 2 rows; a
+     7th+ action just adds a row (grid-auto-flow: row). The max-width cap above
+     keeps it at 3 cols + centered on ultra-wide panels (no 5–6 col sprawl). */
+  .actions-container.desktop .section-grid {
+    flex: none;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: auto;
+    gap: clamp(8px, 1.6cqh, 13px);
+  }
+  @container (min-width: 560px) {
+    .actions-container.desktop .section-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  .actions-container.desktop .grid-btn {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: clamp(7px, 1.5cqh, 12px);
+    height: auto;
+    aspect-ratio: 1 / 0.84;
+    min-height: 88px;
+    max-height: clamp(108px, 17cqh, 152px);
+    padding: clamp(8px, 1.6cqh, 14px);
+    border-radius: 12px;
+    background: color-mix(
+      in srgb,
+      rgba(var(--btn-color), 0.08) 100%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    border: 1px solid
+      color-mix(
+        in srgb,
+        rgba(var(--btn-color), 0.225) 100%,
+        var(--theme-stroke, rgba(255, 255, 255, 0.1))
+      );
+  }
+  .actions-container.desktop .grid-btn:hover:not(:disabled) {
+    background: color-mix(
+      in srgb,
+      rgba(var(--btn-color), 0.19) 100%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    border-color: color-mix(
+      in srgb,
+      rgba(var(--btn-color), 0.55) 100%,
+      var(--theme-stroke, rgba(255, 255, 255, 0.1))
+    );
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px -14px rgba(var(--btn-color), 0.9);
+  }
+  /* No icon chip on desktop — the glyph itself carries the color. */
+  .actions-container.desktop .grid-btn .btn-icon {
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    background: transparent;
+  }
+  /* NavButton glyph technique: gradient clipped to the icon text + glow. */
+  .actions-container.desktop .grid-btn .btn-icon i {
+    font-size: clamp(22px, 5.2cqh, 38px);
+    line-height: 1;
+    background: linear-gradient(
+      150deg,
+      rgb(var(--btn-color)),
+      color-mix(in srgb, rgb(var(--btn-color)) 55%, white)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 6px rgba(var(--btn-color), 0.35));
+    transition: filter 200ms ease;
+  }
+  .actions-container.desktop .grid-btn:hover:not(:disabled) .btn-icon i {
+    filter: drop-shadow(0 0 10px rgba(var(--btn-color), 0.6)) brightness(1.05);
+  }
+  /* Swap keeps its meaningful blue/red bicolor SVG — just scaled to match. */
+  .actions-container.desktop .swap-icon-host {
+    font-size: clamp(22px, 5.2cqh, 38px);
+  }
+  .actions-container.desktop .swap-icon-host :global(svg) {
+    width: 1em;
+    height: 1em;
+    filter: drop-shadow(0 0 5px rgba(var(--btn-color), 0.3));
+  }
+  .actions-container.desktop .btn-text {
+    align-items: center;
+    text-align: center;
+  }
+  .actions-container.desktop .btn-label {
+    font-size: clamp(11px, 1.7cqh, 13.5px);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+    white-space: normal;
+    overflow: visible;
+  }
+  /* Sparse Edit section (1–2 tiles): center them at tile width instead of
+     stretching across the panel, so the row reads intentional rather than a
+     lonely left-aligned tile with a wide gap. Transform/Patterns keep their
+     edge-to-edge auto-fit fill. */
+  .actions-container.desktop .edit-section .section-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .actions-container.desktop .edit-section .grid-btn {
+    flex: 0 1 clamp(140px, 30cqw, 264px);
   }
 
   /* ===== BUTTON COLORS - CSS custom properties for each button ===== */

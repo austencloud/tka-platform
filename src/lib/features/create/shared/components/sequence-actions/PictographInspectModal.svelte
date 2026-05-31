@@ -292,6 +292,35 @@
     }
   }
 
+  // The currently-selected arrow color, used to dim the non-selected motion
+  // so focus sits on the one being edited. Pure read — safe in a $derived
+  // (the warned-against case is reading selection inside an effect that writes).
+  const selectedColor = $derived(selectedArrowState.selectedArrow?.color ?? null);
+
+  // Select a motion by clicking anywhere in its column — easier than hitting the
+  // small arrow in the pictograph. Mirrors what an arrow-click selects (same
+  // motionData + pictographData), so isSelected() stays consistent.
+  function selectMotion(color: "blue" | "red") {
+    if (!stepData) return;
+    const motion = color === "blue" ? blueMotion : redMotion;
+    if (!motion) return;
+    const pictographData: PictographData = pictographDataState ?? {
+      id: stepData.id,
+      letter: stepData.letter,
+      startPosition: stepData.startPosition,
+      endPosition: stepData.endPosition,
+      motions: stepData.motions,
+    };
+    selectedArrowState.selectArrow(motion, color, pictographData);
+  }
+
+  function handleRailKeydown(e: KeyboardEvent, color: "blue" | "red") {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      selectMotion(color);
+    }
+  }
+
   // Derived display values
   const displayData = $derived(calculatedData ?? stepData);
   const blueMotion = $derived(displayData?.motions?.[MotionColor.BLUE]);
@@ -379,6 +408,33 @@
 
       <div class="modal-body">
         <div class="inspect-layout">
+          <!-- Blue left · pictograph center · red right. The non-selected
+               motion dims so the eye lands on the one being edited. Clicking
+               anywhere in a column selects that motion (no need to hit the
+               small arrow in the pictograph). -->
+          <div
+            class="motion-rail"
+            class:dimmed={selectedColor === "red"}
+            class:selected={selectedColor === "blue"}
+            role="button"
+            tabindex="0"
+            aria-pressed={selectedColor === "blue"}
+            aria-label="Select blue motion"
+            onclick={() => selectMotion("blue")}
+            onkeydown={(e) => handleRailKeydown(e, "blue")}
+          >
+            <MotionColumn
+              color="blue"
+              motion={blueMotion}
+              rotationOverride={blueRotationOverride}
+              diagnostics={blueDiagnostics}
+              {copiedSection}
+              onCopy={copyToClipboard}
+              open={blueOpen}
+              onToggle={(next) => (blueOpen = next)}
+            />
+          </div>
+
           <div class="pictograph-rail">
             {#if displayData}
               <div class="pictograph-frame">
@@ -391,18 +447,17 @@
             {/if}
           </div>
 
-          <div class="detail-column themed-scrollbar">
-            <MotionColumn
-              color="blue"
-              motion={blueMotion}
-              rotationOverride={blueRotationOverride}
-              diagnostics={blueDiagnostics}
-              {copiedSection}
-              onCopy={copyToClipboard}
-              open={blueOpen}
-              onToggle={(next) => (blueOpen = next)}
-            />
-
+          <div
+            class="motion-rail"
+            class:dimmed={selectedColor === "blue"}
+            class:selected={selectedColor === "red"}
+            role="button"
+            tabindex="0"
+            aria-pressed={selectedColor === "red"}
+            aria-label="Select red motion"
+            onclick={() => selectMotion("red")}
+            onkeydown={(e) => handleRailKeydown(e, "red")}
+          >
             <MotionColumn
               color="red"
               motion={redMotion}
@@ -467,15 +522,38 @@
     scrollbar-color: var(--theme-stroke, #30363d) transparent;
   }
 
+  /* Blue motion · pictograph · red motion. The pictograph sits centered
+     between its two flanking motion columns. */
   .inspect-layout {
     display: grid;
-    grid-template-columns: minmax(280px, 420px) 1fr;
+    grid-template-columns: minmax(300px, 1fr) minmax(280px, 420px) minmax(300px, 1fr);
     gap: 20px;
     align-items: start;
   }
-  /* Center the pictograph against the taller detail column so the focal
+  .motion-rail {
+    min-width: 0;
+    cursor: pointer;
+    border-radius: 16px;
+    /* Click anywhere in the column to select; ring marks the selected one. */
+    border: 1px solid transparent;
+    transition:
+      opacity var(--duration-normal, 0.3s) ease,
+      border-color var(--duration-fast, 0.15s) ease;
+  }
+  .motion-rail.selected {
+    border-color: color-mix(in srgb, var(--theme-accent, #58a6ff) 55%, transparent);
+  }
+  .motion-rail:focus-visible {
+    outline: 2px solid var(--theme-accent, #58a6ff);
+    outline-offset: 2px;
+  }
+  /* The motion not currently selected recedes so focus stays on the edited one. */
+  .motion-rail.dimmed {
+    opacity: 0.4;
+  }
+  /* Center the pictograph against the taller motion columns so the focal
      element sits balanced instead of pinned to the top with a void beneath.
-     Sticky keeps it in view if the detail side ever scrolls. */
+     Sticky keeps it in view if the sides ever scroll. */
   .pictograph-rail {
     position: sticky;
     top: 16px;
@@ -491,20 +569,13 @@
     align-items: center;
     justify-content: center;
   }
-  /* Sections pack side-by-side on wide screens, stack on narrow — keeps the
-     modal short on a 4K landscape display instead of one tall column. */
-  .detail-column {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    align-content: start;
-    align-items: start;
-    gap: 12px;
-    min-width: 0;
-  }
-  @media (max-width: 720px) {
+  /* Three columns need ~920px; below that, stack with the pictograph on top. */
+  @media (max-width: 1000px) {
     .inspect-layout { grid-template-columns: 1fr; }
-    .pictograph-rail { position: static; }
-    .detail-column { grid-template-columns: 1fr; }
+    .pictograph-rail { position: static; order: -1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .motion-rail { transition: none; }
   }
 
   @keyframes fadeIn {

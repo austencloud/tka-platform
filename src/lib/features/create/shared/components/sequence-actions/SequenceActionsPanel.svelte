@@ -79,6 +79,11 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   // Swap is disabled when only one hand is selected (swap requires both hands)
   const isSwapDisabled = $derived(panelState.targetHand !== "both");
 
+  // Rewind is a temporal whole-sequence op; it has no coherent single-hand form
+  // (reversing one hand's timeline desyncs the hands and breaks position
+  // continuity). Gate it to both hands, same as Swap.
+  const isRewindDisabled = $derived(panelState.targetHand !== "both");
+
   $effect(() => {
     if (typeof window === "undefined") return;
     viewportWidth = window.innerWidth; // Update on mount
@@ -984,6 +989,11 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    /* Query container for the action grid's proportional sizing (Approach A
+       in TransformsGridMode). cqh inside resolves against this box's height,
+       which flex:1 makes definite — so button/icon/label scale to the panel,
+       not to their own content. */
+    container-type: size;
   }
 
   @media (prefers-reduced-motion: reduce) {

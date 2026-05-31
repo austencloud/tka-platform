@@ -470,7 +470,9 @@
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
-    padding: 4px;
+    /* Breathing room so a selected/hovered cell's scaled gold border + glow
+       on the outer rows/columns isn't clipped at the wrapper edge. */
+    padding: 16px;
     box-sizing: border-box;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
@@ -518,7 +520,11 @@
     gap: 0;
     background: transparent;
     border-radius: 6px;
-    overflow: hidden;
+    /* Was overflow: hidden — clipped the gold selection border/glow of cells
+       on the grid's bottom/edge rows. Visible lets a selected cell pop forward.
+       Child step-containers are opaque squares that fill their cells, so the
+       6px corner radius still reads fine. */
+    overflow: visible;
     margin: auto;
     padding: 0;
     transition:
@@ -656,8 +662,45 @@
     transform: none;
   }
 
-  .grid-surface.standard :global(.step-cell:hover) {
-    transform: scale(1.02);
+  /* Hover pop: any non-selected cell lifts forward with a NEUTRAL (cool/white)
+     border + glow — a preview affordance, deliberately NOT gold. Gold is
+     reserved for the single committed selection so the two never compete.
+     The selected cell keeps its gold styling and sits above this (z 10 > 9).
+     Covers BOTH layout modes — standard selects via .step-cell.selected,
+     timeline selects via the parent .timeline-cell.cell-selected (the
+     step-cell itself never gets .selected in timeline mode). */
+  .grid-surface.standard :global(.step-cell:not(.selected):hover),
+  .grid-surface.timeline :global(.timeline-cell:not(.cell-selected) .step-cell:hover) {
+    /* Above the selected cell (z 10): the hovered cell is the one scaling
+       toward the user, so it must read as closest / in front. */
+    z-index: 11;
+    transform: scale(1.06);
+    opacity: 1;
+    border: 3px solid rgba(226, 232, 240, 0.85);
+    border-radius: 12px;
+    box-shadow:
+      0 0 16px rgba(226, 232, 240, 0.3),
+      0 8px 28px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Hovering the ALREADY-selected cell (timeline mode): intensify its gold +
+     lift instead of painting it white — selected stays gold, hover just makes
+     it pop. (Standard mode handles this via .step-cell.selected:hover.) */
+  .grid-surface.timeline :global(.timeline-cell.cell-selected:hover) {
+    z-index: 11;
+    transform: scale(1.07);
+    box-shadow:
+      0 0 30px rgba(251, 191, 36, 0.7),
+      0 12px 48px rgba(251, 191, 36, 0.4);
+  }
+
+  /* The gold border lives on the PARENT .timeline-cell, which scales on hover
+     (above) and carries the border with it. The inner .step-cell must NOT add
+     its own bare :hover scale (StepCell.svelte) on top — that grows the
+     pictograph past the gold border. Pin it so border + pictograph scale as one
+     and the gold frame stays hugging the pictograph. */
+  .grid-surface.timeline :global(.timeline-cell.cell-selected:hover .step-cell) {
+    transform: none;
   }
 
   /* ===== Pictograph border suppression ===== */

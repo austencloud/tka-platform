@@ -30,7 +30,7 @@ export const STEP_FRAME_LAYOUTS: Record<number, StepFrameLayout> = {
   1: { rows: 1, columns: 1 }, // Desktop: (1, 1)
   2: { rows: 1, columns: 2 }, // Desktop: (2, 1) -> 1 row, 2 columns
   3: { rows: 1, columns: 3 }, // Desktop: (3, 1) -> 1 row, 3 columns
-  4: { rows: 1, columns: 4 }, // Desktop: (4, 1) -> 1 row, 4 columns
+  4: { rows: 2, columns: 2 }, // 2x2 square: desktop side-by-side + narrow phones read better square than a 4-wide strip. Wide stacked (Z Fold) keeps 4 via BEAT_FRAME_LAYOUTS_WIDE.
   5: { rows: 2, columns: 4 }, // Desktop: (3, 2) -> 2 rows, 3 columns
   6: { rows: 2, columns: 4 }, // Desktop: (3, 2)
   7: { rows: 2, columns: 4 }, // Desktop: (4, 2) -> 2 rows, 4 columns

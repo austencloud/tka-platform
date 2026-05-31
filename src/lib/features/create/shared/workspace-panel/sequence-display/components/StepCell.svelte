@@ -578,6 +578,8 @@
   .step-cell.selected:hover {
     /* Keep fully opaque even on hover */
     opacity: 1;
+    /* Hovered cell reads as closest, matching the non-selected hover tier */
+    z-index: 11;
     transform: scale(1.12);
     box-shadow:
       0 0 30px rgba(251, 191, 36, 0.7),
