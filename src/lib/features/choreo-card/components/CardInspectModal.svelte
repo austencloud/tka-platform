@@ -73,9 +73,18 @@
     try { await onRerender(); } finally { rebaking = false; }
   }
 
-  async function closeEditor(): Promise<void> {
+  // Esc / backdrop out of the editor without finishing: just return to the grid
+  // so another pictograph can be picked. No re-bake (nothing was committed here).
+  function closeEditor(): void {
     selectedStep = null;
-    // Auto re-render the card front after each fix — no manual Done needed.
+  }
+
+  // The editor's "Done": the dock already persisted the edit, so go straight back
+  // to the side-by-side view (skip the grid — one pictograph is the common case)
+  // and re-bake the card front off the now-saved override.
+  async function handleEditorDone(): Promise<void> {
+    selectedStep = null;
+    mode = "preview";
     await rebakeFront();
   }
 
@@ -228,7 +237,7 @@
 </div>
 
 {#if selectedStep}
-  <PictographInspectModal show stepData={selectedStep} onClose={closeEditor} />
+  <PictographInspectModal show stepData={selectedStep} onClose={closeEditor} onDone={handleEditorDone} />
 {/if}
 
 
