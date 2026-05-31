@@ -27,7 +27,7 @@
   import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   const c = getCardColors(BackgroundType.COSMIC); // DEFAULT_COLORS gradients
   const LOOP_COLOR = "linear-gradient(135deg, #a3a32a 0%, #8a8a22 50%, #6b6b1a 100%)";
@@ -264,44 +264,6 @@
         <i class="fas fa-dice"></i>
         <span>{wordMode ? `Generate ${drawCount} variations` : `Generate ${drawCount}`}</span>
       </button>
-        {#if showLoop}
-          <LOOPExpandedOverlay
-            currentType={loopType}
-            selectedComponents={loopComponents}
-            onChange={(lt: LOOPType) => { loopType = lt; loopComponents = parseLoopComponents(lt); showLoop = false; }}
-            onClose={() => (showLoop = false)}
-          />
-        {/if}
-
-        {#if showPosOri}
-          <div class="picker-overlay" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
-            <div class="po-header">
-              <h3>Start Position &amp; Orientation</h3>
-              <button class="po-close" aria-label="Close" onclick={() => (showPosOri = false)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-            <div class="po-body">
-              <StartPositionPicker startPositionState={posOri} />
-            </div>
-            <button class="po-done" onclick={() => (showPosOri = false)}>Done</button>
-          </div>
-        {/if}
-
-        {#if showProp}
-          <div class="picker-overlay" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
-            <div class="po-header">
-              <h3>Deck Prop</h3>
-              <button class="po-close" aria-label="Close" onclick={() => (showProp = false)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-            <div class="po-body">
-              <BentoPropGrid selectedPropType={propType} variant="inline" title="Select Prop" onSelect={(p: PropType) => { propType = p; showProp = false; }} />
-            </div>
-            <button class="po-done" onclick={() => (showProp = false)}>Done</button>
-          </div>
-        {/if}
       </div>
     </section>
 
@@ -318,6 +280,54 @@
       <div class="draw-list">{#each drawPreview as id}<span class="draw-id">{id}</span>{/each}</div>
     </aside>
   </div>
+
+  <!-- Big centered modals (deck releaser owns the full viewport). -->
+  {#if showLoop}
+    <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showLoop = false; }}>
+      <div class="loop-panel" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+        <LOOPExpandedOverlay
+          currentType={loopType}
+          selectedComponents={loopComponents}
+          onChange={(lt: LOOPType) => { loopType = lt; loopComponents = parseLoopComponents(lt); showLoop = false; }}
+          onClose={() => (showLoop = false)}
+        />
+      </div>
+    </div>
+  {/if}
+
+  {#if showPosOri}
+    <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showPosOri = false; }}>
+      <div class="picker-overlay" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+        <div class="po-header">
+          <h3>Start Position &amp; Orientation</h3>
+          <button class="po-close" aria-label="Close" onclick={() => (showPosOri = false)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="po-body">
+          <StartPositionPicker startPositionState={posOri} />
+        </div>
+        <button class="po-done" onclick={() => (showPosOri = false)}>Done</button>
+      </div>
+    </div>
+  {/if}
+
+  {#if showProp}
+    <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showProp = false; }}>
+      <div class="picker-overlay" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+        <div class="po-header">
+          <h3>Deck Prop</h3>
+          <button class="po-close" aria-label="Close" onclick={() => (showProp = false)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="po-body">
+          <BentoPropGrid selectedPropType={propType} variant="inline" title="Select Prop" onSelect={(p: PropType) => { propType = p; showProp = false; }} />
+        </div>
+        <button class="po-done" onclick={() => (showProp = false)}>Done</button>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -423,17 +433,29 @@
   .generate:active { transform: scale(0.985); }
   .generate i { font-size: 22px; }
 
-  /* Full-stage picker overlay (Pos & Ori), styled to match LOOPExpandedOverlay. */
+  /* Deck releaser owns the full viewport (4K), so pickers are BIG centered modals,
+     not grid-confined overlays. Backdrop dims the page; panel centers and goes large. */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    padding: clamp(16px, 4vh, 48px);
+    background: rgba(4, 7, 14, 0.62); backdrop-filter: blur(5px);
+  }
+  /* Centered, large picker panel — matches LOOPExpandedOverlay's theme chrome. */
   .picker-overlay {
-    position: absolute; inset: 0; z-index: 100;
-    display: flex; flex-direction: column; gap: 10px; padding: 12px;
+    width: min(1080px, 94vw); max-height: min(880px, 90vh);
+    display: flex; flex-direction: column; gap: 12px; padding: 16px;
     background: linear-gradient(135deg,
       color-mix(in srgb, var(--theme-accent-strong, #6366f1) 25%, #1a1a2e) 0%,
       color-mix(in srgb, var(--theme-accent, #818cf8) 15%, #1a1a2e) 50%,
       color-mix(in srgb, var(--theme-accent-strong, #6366f1) 20%, #1a1a2e) 100%);
-    border-radius: 16px; border: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 24px color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border-radius: 18px; border: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 40px color-mix(in srgb, var(--theme-accent) 28%, transparent);
     overflow: hidden;
+  }
+  /* Panel that hosts the loop overlay (which positions itself absolute:inset:0). */
+  .loop-panel {
+    position: relative; width: min(1080px, 94vw); height: min(820px, 88vh);
   }
   .po-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .po-header h3 { margin: 0; font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 0.3px; }
