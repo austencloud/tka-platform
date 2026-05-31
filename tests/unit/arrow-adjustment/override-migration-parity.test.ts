@@ -77,3 +77,194 @@ describe("enumerateVariationArrows", () => {
     expect(result.some((e) => e.pictographData.letter === "P")).toBe(true);
   });
 });
+
+// ===========================================================================
+// Migration engine — parity-by-construction Global → Special.
+//
+// Uses vi.doMock + a fresh dynamic import so this block's dependency mocks are
+// scoped to it and do NOT collide with the enumerator-portion tests above
+// (which import the REAL enumerator).
+// ===========================================================================
+
+import { Point } from "fabric";
+import type { MigrationReport } from "../../../src/lib/features/admin/override-migration/services/override-migration";
+
+const ENGINE_PATH =
+  "../../../src/lib/features/admin/override-migration/services/override-migration";
+
+// Mutable per-test fixtures the doMock factories close over.
+const globalByLetter: Record<string, { x: number; y: number }> = {};
+const baseAdjustmentByLetter: Record<string, { x: number; y: number }> = {};
+const repoSpies = {
+  saveOverrideLocal: vi.fn(),
+  deleteOverrideLocal: vi.fn(),
+  saveOverride: vi.fn(async () => {}),
+};
+const setGlobalReadDisabledSpy = vi.fn();
+
+async function loadEngine(): Promise<
+  (opts: { dryRun: boolean }) => Promise<MigrationReport>
+> {
+  vi.resetModules();
+
+  // Firestore / auth chain pulled in transitively by the real domain helpers
+  // (parseSpecialOverrideKey lives in SpecialArrowPlacement which imports firestore).
+  vi.doMock("$lib/shared/auth/state/authState.svelte", () => ({
+    authState: { effectiveUserId: null, user: { email: "admin@test" } },
+  }));
+  vi.doMock("firebase/firestore", () => ({ collection: vi.fn(), doc: vi.fn() }));
+
+  // 3 fixture variation-arrows: A blue, B red, C blue.
+  vi.doMock(
+    "$lib/features/admin/override-migration/services/variation-enumerator",
+    () => ({
+      enumerateVariationArrows: vi.fn(async () => [
+        {
+          pictographData: {
+            letter: "A",
+            motions: { blue: { propType: "staff", color: "blue" } },
+          },
+          arrowColor: "blue",
+        },
+        {
+          pictographData: {
+            letter: "B",
+            motions: { red: { propType: "staff", color: "red" } },
+          },
+          arrowColor: "red",
+        },
+        {
+          pictographData: {
+            letter: "C",
+            motions: { blue: { propType: "staff", color: "blue" } },
+          },
+          arrowColor: "blue",
+        },
+      ]),
+    })
+  );
+
+  // Canonical key: stable per-letter so parseSpecialOverrideKey round-trips.
+  vi.doMock(
+    "$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-key",
+    () => ({
+      computeSpecialOverrideKey: vi.fn(
+        (pd: { letter: string }, _m: unknown, color: string) =>
+          `diamond|from_layer1|${pd.letter}|(0, 0)|pro|${color}|staff`
+      ),
+    })
+  );
+
+  vi.doMock(
+    "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator",
+    () => ({
+      arrowLocationCalculator: { calculateLocation: vi.fn(() => "n") },
+    })
+  );
+
+  vi.doMock(
+    "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton",
+    () => ({
+      setGlobalReadDisabled: (v: boolean) => setGlobalReadDisabledSpy(v),
+      isGlobalReadDisabled: vi.fn(() => false),
+    })
+  );
+
+  // A + B report global; C reports default (skipped). Verify-pass values come
+  // from baseAdjustmentByLetter so a single letter can be forced to mismatch.
+  vi.doMock(
+    "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-adjustment-calculator",
+    () => ({
+      arrowAdjustmentCalculator: {
+        getDiagnostics: vi.fn(async (pd: { letter: string }) => {
+          const g = globalByLetter[pd.letter];
+          return g
+            ? { activeTier: "global", global: { value: g }, specialJson: null }
+            : { activeTier: "default", global: null, specialJson: null };
+        }),
+        getBaseAdjustmentPublic: vi.fn(
+          async (pd: { letter: string }) =>
+            new Point(
+              baseAdjustmentByLetter[pd.letter]?.x ?? 0,
+              baseAdjustmentByLetter[pd.letter]?.y ?? 0
+            )
+        ),
+      },
+    })
+  );
+
+  vi.doMock(
+    "$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-singleton",
+    () => ({
+      getSpecialOverrideRepository: () => repoSpies,
+    })
+  );
+
+  const mod = await import(ENGINE_PATH);
+  return mod.runOverrideMigration;
+}
+
+describe("runOverrideMigration", () => {
+  beforeEach(() => {
+    repoSpies.saveOverrideLocal.mockClear();
+    repoSpies.deleteOverrideLocal.mockClear();
+    repoSpies.saveOverride.mockClear();
+    setGlobalReadDisabledSpy.mockClear();
+    globalByLetter.A = { x: 12, y: -8 };
+    globalByLetter.B = { x: 5, y: 5 };
+    delete globalByLetter.C;
+    baseAdjustmentByLetter.A = { x: 12, y: -8 };
+    baseAdjustmentByLetter.B = { x: 5, y: 5 };
+  });
+
+  it("stages only global-sourced arrows and passes parity (dryRun)", async () => {
+    const runOverrideMigration = await loadEngine();
+    const report = await runOverrideMigration({ dryRun: true });
+
+    expect(report.totalArrowsScanned).toBe(3);
+    expect(report.staged).toBe(2);
+    expect(report.pass).toBe(2);
+    expect(report.fail).toBe(0);
+
+    expect(repoSpies.saveOverrideLocal).toHaveBeenCalledTimes(2);
+    expect(repoSpies.saveOverride).not.toHaveBeenCalled();
+    expect(repoSpies.deleteOverrideLocal).toHaveBeenCalledTimes(2);
+    expect(setGlobalReadDisabledSpy).toHaveBeenCalledWith(true);
+    expect(setGlobalReadDisabledSpy).toHaveBeenLastCalledWith(false);
+  });
+
+  it("persists every row via saveOverride when parity is clean (dryRun=false)", async () => {
+    const runOverrideMigration = await loadEngine();
+    const report = await runOverrideMigration({ dryRun: false });
+
+    expect(report.staged).toBe(2);
+    expect(report.fail).toBe(0);
+    expect(repoSpies.saveOverride).toHaveBeenCalledTimes(2);
+    expect(repoSpies.deleteOverrideLocal).not.toHaveBeenCalled();
+  });
+
+  it("flags a parity failure and aborts the write (dryRun=false throws)", async () => {
+    baseAdjustmentByLetter.B = { x: 999, y: 999 };
+    const runOverrideMigration = await loadEngine();
+
+    await expect(runOverrideMigration({ dryRun: false })).rejects.toThrow(
+      "Parity failures present; aborting write"
+    );
+
+    expect(repoSpies.saveOverride).not.toHaveBeenCalled();
+    expect(repoSpies.deleteOverrideLocal).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports the parity failure count in dryRun without throwing", async () => {
+    baseAdjustmentByLetter.A = { x: 0, y: 0 };
+    const runOverrideMigration = await loadEngine();
+
+    const report = await runOverrideMigration({ dryRun: true });
+    expect(report.staged).toBe(2);
+    expect(report.fail).toBe(1);
+    expect(report.pass).toBe(1);
+    const failedRow = report.rows.find((r) => r.parity === "fail");
+    expect(failedRow?.letter).toBe("A");
+    expect(failedRow?.note).toContain("global=(12,-8)");
+  });
+});
