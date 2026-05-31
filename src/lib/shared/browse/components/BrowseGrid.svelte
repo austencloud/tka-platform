@@ -6,8 +6,8 @@
     type VirtualGridApi,
   } from "$lib/shared/browse/components/VirtualizedSequenceGrid.svelte";
   import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
-  import { getVariationGrouper } from "$lib/shared/browse/getVariationGrouper";
-  import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
+  import { buildVariationMap } from "$lib/shared/browse/services/VariationGrouper";
+  import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -39,11 +39,8 @@
       engine.sequences.length > 50
   );
 
-  // Variation grouper
-  const variationGrouper = getVariationGrouper();
-
   const variationMap = $derived.by(() => {
-    return variationGrouper.buildVariationMap(engine.sequences as SequenceData[]);
+    return buildVariationMap(engine.sequences as SequenceData[]);
   });
 
   function getVariationsForSequence(sequence: SequenceData): SequenceData[] {
@@ -97,10 +94,8 @@
   });
 
   // Hover prefetch
-  const sequenceDataProvider = getSequenceDataProvider();
-
   function handleSequenceHover(seq: SequenceData) {
-    sequenceDataProvider.prefetch(seq);
+    prefetchSequenceData(seq);
   }
 
   function handleSequenceAction(

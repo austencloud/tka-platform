@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
+import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import {
     createVirtualizer,
@@ -14,7 +14,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { getVariationGrouper } from "$lib/shared/browse/getVariationGrouper";
+  import { buildVariationMap } from "$lib/shared/browse/services/VariationGrouper";
   import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/cell-pre-warmer";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -60,12 +60,10 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     addDifficultyLevel?: boolean;
   }>();
 
-  const variationGrouper = getVariationGrouper();
-  const sequenceDataProvider = getSequenceDataProvider();
   const compositionManager = getImageCompositionManager();
 
   const variationMap = $derived.by(() => {
-    return variationGrouper.buildVariationMap(sequences);
+    return buildVariationMap(sequences);
   });
 
   function getVariationsForSequence(sequence: SequenceData): SequenceData[] {
@@ -162,7 +160,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
   function handleSequenceHover(seq: SequenceData) {
     cellPreWarmer.preWarmSequence(seq, "user-visible");
-    sequenceDataProvider.prefetch(seq);
+    prefetchSequenceData(seq);
   }
 
   // Single virtualizer instance - created once, recreated when deps change.

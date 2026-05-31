@@ -1,11 +1,10 @@
 <script lang="ts">
 
-import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
+import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { slide } from "svelte/transition";
   import { onMount, onDestroy } from "svelte";
   import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
-  import type { VariationGrouper } from "$lib/shared/browse/services/VariationGrouper";
   import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import SectionHeader from "$lib/shared/browse/components/SectionHeader.svelte";
   import VirtualizedSequenceGrid, {
@@ -14,7 +13,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { getVariationGrouper } from "$lib/shared/browse/getVariationGrouper";
+  import { buildVariationMap } from "$lib/shared/browse/services/VariationGrouper";
   import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";
 
   /**
@@ -63,12 +62,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       viewMode === "grid"
   );
 
-  // Variation grouper service for identifying sequences with same word
-  const variationGrouper = getVariationGrouper();
-
   // Build variation map when sequences change
   const variationMap = $derived.by(() => {
-    return variationGrouper.buildVariationMap(sequences);
+    return buildVariationMap(sequences);
   });
 
   // Get variations for a specific sequence
@@ -196,10 +192,8 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   }
 
   // Hover prefetch for non-virtualized cards
-  const sequenceDataProvider = getSequenceDataProvider();
-
   function handleSequenceHover(seq: SequenceData) {
-    sequenceDataProvider.prefetch(seq);
+    prefetchSequenceData(seq);
   }
 
 </script>
