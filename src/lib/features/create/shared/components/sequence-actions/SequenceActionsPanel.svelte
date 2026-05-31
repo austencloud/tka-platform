@@ -26,6 +26,11 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
   import { createSequenceActionsSubdrawerState } from "../../state/sequence-actions-subdrawer-state.svelte";
+  import {
+    flyTransition,
+    fadeTransition,
+  } from "$lib/shared/utils/transitions";
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
   import CreatePanelDrawer from "../CreatePanelDrawer.svelte";
   import SequencePreviewDialog from "./SequencePreviewDialog.svelte";
@@ -153,6 +158,23 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
       return "Extend with pattern";
     return "Extend your sequence";
   });
+
+  /**
+   * Shared-axis (X) drill-down transition. The sub-view conceptually sits to the
+   * right of the actions grid, so the sub-view layer always travels from/to +x
+   * and the grid from/to −x — symmetric for both push (enter) and pop (back).
+   * Honors prefers-reduced-motion with a quick fade fallback (WCAG AAA).
+   */
+  const prefersReducedMotion = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+  function sharedAxis(node: Element, { x = 0 }: { x?: number } = {}) {
+    if (prefersReducedMotion()) {
+      return fadeTransition(node, { duration: DURATION.fast });
+    }
+    return flyTransition(node, { x, duration: DURATION.emphasis });
+  }
   // Spotlight modal state (legacy - modal replaced with route navigation)
   let spotlightOpen = $state(false);
   let spotlightSequence = $state<SequenceData | null>(null);
@@ -665,6 +687,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   <div class="editor-panel" class:help-active={helpMode === "selecting"}>
     {#if subView}
       <!-- Inline drill-down: sub-view swaps the panel content in place -->
+      <div class="view-layer" transition:sharedAxis|local={{ x: 30 }}>
       <div class="compact-header sub">
         <button
           class="icon-btn back"
@@ -716,7 +739,9 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
           />
         {/if}
       </div>
+      </div>
     {:else}
+      <div class="view-layer" transition:sharedAxis|local={{ x: -30 }}>
     <!-- Simple header with title and actions -->
     <div class="compact-header" class:dimmed={helpMode === "selecting"}>
       <h2 class="panel-title">Sequence Actions</h2>
@@ -847,6 +872,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
         />
       </div>
     {/if}
+      </div>
     {/if}
   </div>
 </CreatePanelDrawer>
@@ -893,6 +919,17 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     height: 100%;
     overflow: hidden;
     position: relative;
+  }
+
+  /* Each navigation layer fills the panel and stacks, so the outgoing and
+     incoming views overlap during the shared-axis transition (no reflow jump). */
+  .view-layer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    will-change: transform, opacity;
   }
 
   /* Compact header */
