@@ -28,23 +28,20 @@
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getSpecialOverrideRepository } from "$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-singleton";
   import {
-    generateSpecialOverrideKey,
-    extractOriFolderFromPath,
+    parseSpecialOverrideKey,
     type SpecialArrowPlacementInput,
   } from "$lib/shared/pictograph/arrow/positioning/special-override/domain/SpecialArrowPlacement";
-  import {
-    generateOrientationKey,
-    resolveEffectiveOriKey,
-  } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/special-placement-ori-key-generator";
-  import { generateTurnsTuple } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/turns-tuple-key-generator";
-  import { getKeyFromArrow } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/attribute-key-generator";
-  import { deriveGridMode as _deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
   import { getPropGeometryRepository } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/services/prop-geometry-singleton";
   import { getDefaultOverrideRepository } from "$lib/shared/pictograph/arrow/positioning/default-override/services/default-override-singleton";
   import { livePipelineEdit } from "./live-pipeline-edit.svelte";
   import { derivePropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/prop-geometry-key-deriver";
   import type { PropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/PropGeometryAdjustment";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
+  import { Point } from "fabric";
+  import { screenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/screen-space-adjustment-transformer";
+  import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator";
+  import { computeSpecialOverrideKey } from "$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-key";
+  import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
   const logger = createComponentLogger("PipelineEditorDock");
 
@@ -62,7 +59,7 @@
   );
   const diagnostics = $derived(activeColor === "red" ? redDiagnostics : blueDiagnostics);
 
-  let editTarget = $state<"global" | "special-json" | "prop-geometry" | "default">("global");
+  let editTarget = $state<"global" | "special-json" | "prop-geometry" | "default">("special-json");
   let editX = $state(0);
   let editY = $state(0);
   let activeLayer = $state<1 | 2 | 3>(2);
@@ -110,6 +107,18 @@
     return { motionData: motion, color: activeColor, pictographData };
   });
 
+  // The arrow's calculated grid location — needed to invert the per-quadrant
+  // directional-tuple matrix so a pressed screen direction maps to the right
+  // reference-space delta (correct even for 90°/270° rotated quadrants).
+  const arrowLocation = $derived.by((): GridLocation | null => {
+    const c = activeColor;
+    if (!c) return null;
+    const motion = stepData.motions?.[c];
+    const pd = selectedArrowContext?.pictographData;
+    if (!motion || !pd) return null;
+    return arrowLocationCalculator.calculateLocation(motion, pd);
+  });
+
   const thisPropType = $derived.by(() => {
     const settings = getSettings();
     const c = activeColor ?? "blue";
@@ -127,61 +136,20 @@
     return (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff";
   });
 
-  // Per-arrow discriminator, identical to what the static special-placement
-  // lookup keys on. Without it both arrows of a same-motion-type letter share
-  // one override key and a nudge to one moves both.
-  const specialAttributeKey = $derived.by((): string => {
+  // THE canonical key, identical to what the renderer reads (write-key ===
+  // read-key by construction). Includes the prop-scoped propType segment.
+  const specialOverrideKey = $derived.by((): string | null => {
     const c = activeColor ?? "blue";
     const motion = stepData.motions?.[c];
-    if (!motion || !stepData.letter) return "";
-    const pictographData: PictographData = {
+    if (!motion || !stepData.letter) return null;
+    const pd: PictographData = selectedArrowContext?.pictographData ?? {
       id: stepData.id,
       letter: stepData.letter,
       startPosition: stepData.startPosition,
       endPosition: stepData.endPosition,
       motions: stepData.motions as PictographData["motions"],
     };
-    return getKeyFromArrow({} as never, pictographData, c);
-  });
-
-  const specialOverrideKey = $derived.by((): string | null => {
-    if (!diagnostics || !stepData.letter) return null;
-    const motion = stepData.motions?.[activeColor ?? "blue"];
-    if (!motion) return null;
-
-    if (diagnostics.specialJson) {
-      const oriFolder = extractOriFolderFromPath(diagnostics.specialJson.filePath);
-      const gridMode = motion.gridMode || "diamond";
-      return generateSpecialOverrideKey({
-        gridMode,
-        oriFolder,
-        letter: stepData.letter,
-        turnsTuple: diagnostics.specialJson.turnsTupleKey,
-        motionType: motion.motionType?.toLowerCase() || "",
-        attributeKey: specialAttributeKey,
-      });
-    }
-
-    const pictographData: PictographData = {
-      id: stepData.id,
-      letter: stepData.letter,
-      startPosition: stepData.startPosition,
-      endPosition: stepData.endPosition,
-      motions: stepData.motions as PictographData["motions"],
-    };
-    const rawOriKey = generateOrientationKey(motion, pictographData);
-    const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
-    const gridMode = motion.gridMode || (stepData.motions.blue && stepData.motions.red
-      ? _deriveGridMode(stepData.motions.blue, stepData.motions.red) : "diamond");
-    const turnsTupleArr = generateTurnsTuple(pictographData);
-    return generateSpecialOverrideKey({
-      gridMode,
-      oriFolder: oriKey,
-      letter: stepData.letter,
-      turnsTuple: turnsTupleArr.join(","),
-      motionType: motion.motionType?.toLowerCase() || "",
-      attributeKey: specialAttributeKey,
-    });
+    return computeSpecialOverrideKey(pd, motion, c);
   });
 
   const propGeometryKey = $derived.by((): PropGeometryKey | null => {
@@ -291,11 +259,8 @@
   }
 
   function defaultEditTargetForActiveTier(): "global" | "special-json" | "prop-geometry" | "default" {
-    const active = diagnostics?.activeTier;
-    if (active === "special-json") return "special-json";
-    if (active === "prop-geometry") return "prop-geometry";
-    if (active === "default") return "default";
-    return "global";
+    // Special is the canonical editable tier now — always default to it.
+    return "special-json";
   }
 
   // Re-bind on color switch (replaces old enterEditMode/toggleEditing).
@@ -417,8 +382,22 @@
       d: { dx: increment, dy: 0 },
     };
     const dir = directionMap[key]!;
-    editX += dir.dx;
-    editY += dir.dy;
+    const motion = stepData.motions?.[activeColor!];
+    if (motion && arrowLocation) {
+      // WASD is a SCREEN-space direction; tier values are REFERENCE-space.
+      // Invert the per-quadrant directional-tuple matrix so the pressed key
+      // moves the arrow in that screen direction (correct for 90°/270° too).
+      const refDelta = screenSpaceAdjustmentTransformer.transformToReference(
+        new Point(dir.dx, dir.dy),
+        motion,
+        arrowLocation,
+      );
+      editX += refDelta.x;
+      editY += refDelta.y;
+    } else {
+      editX += dir.dx;
+      editY += dir.dy;
+    }
 
     if (editTarget === "global") {
       handleGlobalNumericUpdate();
@@ -548,40 +527,30 @@
     x: number, y: number,
     original: { x: number; y: number } | null
   ): SpecialArrowPlacementInput | null {
-    const motion = stepData.motions?.[activeColor ?? "blue"];
+    const c = activeColor ?? "blue";
+    const motion = stepData.motions?.[c];
     if (!motion || !stepData.letter) return null;
 
-    let oriFolder: string;
-    let turnsTuple: string;
-    let gridMode: string;
-
-    if (diagnostics?.specialJson) {
-      oriFolder = extractOriFolderFromPath(diagnostics.specialJson.filePath);
-      turnsTuple = diagnostics.specialJson.turnsTupleKey;
-      gridMode = motion.gridMode || "diamond";
-    } else {
-      const pictographData: PictographData = {
-        id: stepData.id,
-        letter: stepData.letter,
-        startPosition: stepData.startPosition,
-        endPosition: stepData.endPosition,
-        motions: stepData.motions as PictographData["motions"],
-      };
-      const rawOriKey = generateOrientationKey(motion, pictographData);
-      oriFolder = resolveEffectiveOriKey(rawOriKey, pictographData);
-      const turnsTupleArr = generateTurnsTuple(pictographData);
-      turnsTuple = turnsTupleArr.join(",");
-      gridMode = motion.gridMode || (stepData.motions.blue && stepData.motions.red
-        ? _deriveGridMode(stepData.motions.blue, stepData.motions.red) : "diamond");
-    }
+    // Derive the 7 key fields by parsing THE canonical key, so the write
+    // input's identity equals the key the renderer reads (incl. propType).
+    const pd: PictographData = selectedArrowContext?.pictographData ?? {
+      id: stepData.id,
+      letter: stepData.letter,
+      startPosition: stepData.startPosition,
+      endPosition: stepData.endPosition,
+      motions: stepData.motions as PictographData["motions"],
+    };
+    const fields = parseSpecialOverrideKey(computeSpecialOverrideKey(pd, motion, c));
+    if (!fields) return null;
 
     return {
-      gridMode,
-      oriFolder,
-      letter: stepData.letter,
-      turnsTuple,
-      motionType: motion.motionType?.toLowerCase() || "",
-      attributeKey: specialAttributeKey,
+      gridMode: fields.gridMode,
+      oriFolder: fields.oriFolder,
+      letter: fields.letter,
+      turnsTuple: fields.turnsTuple,
+      motionType: fields.motionType,
+      attributeKey: fields.attributeKey,
+      propType: fields.propType,
       adjustmentX: x,
       adjustmentY: y,
       originalX: original?.x ?? 0,
