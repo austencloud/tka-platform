@@ -686,6 +686,30 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     // Execute LOOP on each seed to produce full circular sequences
     const { loopExecutorSelector } = require("../packages/sequence-engine/dist/loop/execution/LOOPExecutorSelector.js");
     const { calculateEndOrientation } = require("../packages/sequence-engine/dist/core/orientation/OrientationCalculator.js");
+    // Twin transform inputs: the engine's vertical-mirror location map and the
+    // rotation-flip fn (reused, not hand-rolled), plus a location->position
+    // table built from the same CSV the enumeration walks. The twin module is
+    // pure and takes these as parameters.
+    const {
+      VERTICAL_MIRROR_LOCATION_MAP,
+    } = require("../packages/sequence-engine/dist/loop/position-maps/strict-loop-position-maps.js");
+    const {
+      mirrorHandRotationDirection,
+    } = require("../packages/sequence-engine/dist/loop/position-maps/circular-position-maps.js");
+    const locToPos = twin ? buildLocationToPositionMap(edges) : null;
+    const twinDeps = twin
+      ? {
+          mirrorLocationMap: VERTICAL_MIRROR_LOCATION_MAP,
+          mirrorRotation: mirrorHandRotationDirection,
+          locToPos,
+        }
+      : null;
+    // Twin bookkeeping: family label -> Set of twin seq ids, plus guards.
+    const twinIdsByFamily = new Map();
+    const writtenSeqIds = new Set();
+    let selfTwinSkipped = 0;
+    let twinDupSkipped = 0;
+    let twinLetterMisses = 0;
     const executor = loopExecutorSelector.getExecutor(loopType);
 
     /**
@@ -1019,10 +1043,141 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       batch.set(seqRef, seqData);
       batchCount++;
       totalWritten++;
+      writtenSeqIds.add(seqId);
 
       // Track which family this sequence belongs to
       const familyIdx = seedToFamilyIdx.get(seqId);
       if (familyIdx !== undefined) writtenByFamily.get(familyIdx).add(seqId);
+
+      // ── Twin (mirror + color swap) ─────────────────────────────────────
+      if (twin) {
+        // Geometry from the pure module, applied to the FULL executed steps so
+        // the twin matches the rendered card exactly (not the pre-loop seed).
+        const twinSteps = twinSequence(fullSteps, twinDeps);
+
+        // Re-propagate orientations: the start step is static (in/in); the rest
+        // are recomputed from the swapped/mirrored motions.
+        const ts0 = twinSteps[0];
+        ts0.motions.blue.startOrientation = "in";
+        ts0.motions.blue.endOrientation = "in";
+        ts0.motions.red.startOrientation = "in";
+        ts0.motions.red.endOrientation = "in";
+        propagateOrientations(twinSteps);
+
+        // Re-derive letters for the beat steps from the transformed motions.
+        const twinBeatSteps = twinSteps.slice(1);
+        let twinPositionMiss = false;
+        for (const ts of twinBeatSteps) {
+          if (ts.startPosition === null || ts.endPosition === null) {
+            twinPositionMiss = true;
+            break;
+          }
+          const L = lookupLetterFromMotions(ts);
+          if (L) ts.letter = L;
+          else twinLetterMisses++;
+        }
+
+        // Skip if any beat's mirrored hand pair was absent from the CSV
+        // (physically invalid twin — should not occur for valid grid mirrors).
+        if (twinPositionMiss) {
+          // counted via guard below; treat like a dup-skip for reporting
+          twinDupSkipped++;
+        } else if (isSelfTwin(fullSteps, twinSteps)) {
+          // Self-twin: a card equal to its own mirror-swap. Excluded by design.
+          selfTwinSkipped++;
+        } else {
+          const twinStartPos = twinSteps[0].startPosition;
+          const twinWord = twinBeatSteps.map((s) => s.letter).join("");
+          const twinSeqId = `${twinStartPos}_${twinWord}`;
+
+          if (writtenSeqIds.has(twinSeqId)) {
+            // Cross-duplicate guard (expected count 0: twin starts are disjoint
+            // from generated starts under canonical start positions).
+            twinDupSkipped++;
+          } else {
+            // Build the twin start position doc in the same shape as the base.
+            const tsp = twinSteps[0];
+            const twinStartPosition = {
+              isStartPosition: true,
+              id: `start-${twinSeqId}`,
+              gridPosition: tsp.startPosition,
+              gridMode,
+              motions: {
+                blue: {
+                  motionType: tsp.motions.blue.motionType,
+                  rotationDirection: tsp.motions.blue.rotationDirection,
+                  startLocation: tsp.motions.blue.startLocation,
+                  endLocation: tsp.motions.blue.endLocation,
+                  turns: tsp.motions.blue.turns ?? 0,
+                  startOrientation: tsp.motions.blue.startOrientation ?? "in",
+                  endOrientation: tsp.motions.blue.endOrientation ?? "in",
+                  isVisible: true,
+                  propType: "staff",
+                  color: "blue",
+                  gridMode,
+                },
+                red: {
+                  motionType: tsp.motions.red.motionType,
+                  rotationDirection: tsp.motions.red.rotationDirection,
+                  startLocation: tsp.motions.red.startLocation,
+                  endLocation: tsp.motions.red.endLocation,
+                  turns: tsp.motions.red.turns ?? 0,
+                  startOrientation: tsp.motions.red.startOrientation ?? "in",
+                  endOrientation: tsp.motions.red.endOrientation ?? "in",
+                  isVisible: true,
+                  propType: "staff",
+                  color: "red",
+                  gridMode,
+                },
+              },
+            };
+
+            const twinFsSteps = twinBeatSteps.map((s, i) =>
+              engineStepToFirestore(s, i)
+            );
+
+            const twinSeqData = {
+              id: twinSeqId,
+              name: twinWord,
+              word: twinWord,
+              gridMode,
+              isCircular: true,
+              loopType: loopType,
+              orientationCycleCount: slice === "quartered" ? 4 : 2,
+              reversalPattern: reversalPattern || "continuous",
+              sequenceLength: twinFsSteps.length,
+              level,
+              isFavorite: false,
+              tags: [],
+              thumbnails: [],
+              steps: twinFsSteps,
+              startPosition: twinStartPosition,
+              metadata: {
+                seedWord: twinBeatSteps
+                  .slice(0, seedLength)
+                  .map((s) => s.letter)
+                  .join(""),
+                handPathFamily: twinBeatSteps
+                  .slice(0, seedLength)
+                  .map((s) => TYPE_NAMES[TYPES[s.letter] || 0] || "Unknown")
+                  .join("+"),
+              },
+              author: "TKA Enumerator",
+              notes: "",
+            };
+
+            const twinRef = db.doc(`decks/${deckId}/sequences/${twinSeqId}`);
+            batch.set(twinRef, twinSeqData);
+            batchCount++;
+            totalWritten++;
+            writtenSeqIds.add(twinSeqId);
+
+            const fam = twinSeqData.metadata.handPathFamily;
+            if (!twinIdsByFamily.has(fam)) twinIdsByFamily.set(fam, new Set());
+            twinIdsByFamily.get(fam).add(twinSeqId);
+          }
+        }
+      }
 
       if (batchCount >= BATCH_SIZE) {
         await batch.commit();
