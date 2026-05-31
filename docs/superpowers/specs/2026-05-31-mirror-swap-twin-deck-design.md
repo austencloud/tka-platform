@@ -28,20 +28,29 @@ sequences this design was derived from (full 8-beat X-LΘΛX-LΘΛ pairs).
 
 Per step (start position step included):
 
-1. **Color swap** — swap `motions.blue` ↔ `motions.red`.
+1. **Color swap** — `newBlue = {...oldRed, color:"blue"}`,
+   `newRed = {...oldBlue, color:"red"}` (the motion data travels with the swap).
 2. **Vertical mirror** — for each motion:
    - `startLocation`, `endLocation` → `VERTICAL_MIRROR_LOCATION_MAP`
      (`packages/sequence-engine/src/loop/position-maps/strict-loop-position-maps.ts:66`;
      e↔w, n/s/c fixed).
    - `rotationDirection` → `mirrorHandRotationDirection`
      (`circular-position-maps.ts:364`; cw↔ccw, dash/static unchanged).
-   - step `startPosition`, `endPosition` → `VERTICAL_MIRROR_POSITION_MAP`
-     (`strict-loop-position-maps.ts:32`; gamma cross-mirror, e.g.
-     `gamma13→gamma5`, `gamma11→gamma7`).
-3. **Re-derive letter** — `lookupLetterFromMotions(step)` (already in-script,
+3. **Derive positions from transformed locations** — a step's `startPosition` is
+   derived from its transformed `(blueStartLoc, redStartLoc)` pair and its
+   `endPosition` from `(blueEndLoc, redEndLoc)`, via a `(blueLoc|redLoc) →
+   position` lookup built once from the CSV `edges` array (the same data the
+   enumeration walks). A position IS the encoding of a hand-location pair, so the
+   pair determines the position uniquely. **`VERTICAL_MIRROR_POSITION_MAP` is NOT
+   used** — mapping the position directly is wrong (it yields `gamma13→gamma5`
+   where derivation from locations yields the correct `gamma11`). Verified
+   beat-by-beat against the two reference sequences.
+4. **Re-derive letter** — `lookupLetterFromMotions(step)` (already in-script,
    `enumerate-deck.cjs:820`) against the CSV after the swap+mirror.
-4. **Re-propagate orientations** — `propagateOrientations(twinSteps)` (already
-   in-script, `:727`), because swapped/mirrored motions change orientation flow.
+5. **Re-propagate orientations** — set the twin start step's orientations to
+   `in`/`in` (it's static), then `propagateOrientations(twinSteps)` (already
+   in-script, `:727`) recomputes the rest, because swapped/mirrored motions
+   change orientation flow.
 
 Color-swap and vertical-mirror act on independent axes (color vs geometry), so
 they commute; each is an involution, so the pair map is an involution (A's twin
@@ -53,12 +62,18 @@ QR-derived-field principle: don't bake derivable state.
 
 | Need | Source | Status |
 |------|--------|--------|
-| e↔w location mirror | `VERTICAL_MIRROR_LOCATION_MAP` | engine, imported |
-| position mirror (gamma cross) | `VERTICAL_MIRROR_POSITION_MAP` | engine, imported |
-| rot-dir flip | `mirrorHandRotationDirection` | engine, imported |
-| color swap | swap `motions.blue`/`red` object refs | trivial inline |
+| e↔w location mirror | `VERTICAL_MIRROR_LOCATION_MAP` | engine, `require`d |
+| rot-dir flip | `mirrorHandRotationDirection` | engine, `require`d |
+| position from locations | `(blueLoc\|redLoc)→pos` map built from `edges` | in-script (CSV) |
+| color swap | swap `motions.blue`/`red` (with `color` field) | trivial inline |
 | letter re-derive | `lookupLetterFromMotions` | in-script `:820` |
 | orientation propagation | `propagateOrientations` | in-script `:727` |
+
+`VERTICAL_MIRROR_POSITION_MAP` is deliberately NOT used (see Transform step 3).
+Both engine maps load via `require()` (Node 22.20 `require(esm)`, runtime-verified:
+`VERTICAL_MIRROR_LOCATION_MAP.e === "w"`, `mirrorHandRotationDirection("cw") ===
+"ccw"`) — the same mechanism the script already uses for the LOOP executor at
+`:680`.
 
 The enumerator already `require`s the ESM engine dist (`:680`), so the three
 maps import the same way. No transform logic is ported or hand-rolled.
