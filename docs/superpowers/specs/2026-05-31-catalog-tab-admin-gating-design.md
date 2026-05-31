@@ -1,121 +1,118 @@
-# Catalog Browse → Admin-Only, Releaser as Operator Home — Design
+# Gate the Choreo Card Module to Admin — Design
 
 **Date:** 2026-05-31
-**Status:** Approved (brainstorming complete, ready for implementation plan)
+**Status:** Approved (brainstorming complete, pending user spec review)
 
 ## Goal
 
-Make the **Deck Releaser** the operator's single home for catalog/deck work.
-Retire the redundant consumer-facing **Catalogs** browse tab by gating it to
-admin. Keep the catalog browse reachable for the rare verify-after-seed pass
-(admin only). Catalog DATA is untouched — the Releaser composes from it.
+Make the entire **Choreo Card** module admin-only. The Deck Releaser becomes the
+operator's home for catalog/deck work; the redundant consumer-facing Catalogs
+browse is gone for consumers by virtue of the whole module being gated. Catalog
+DATA is untouched — the Releaser composes from it.
 
-## Context
+## Why
 
-The Choreo Card module (`src/lib/features/choreo-card/`) has five tabs, wired in
-`CHOREO_CARD_TABS` (`src/lib/shared/navigation/config/tab-definitions.ts:656`)
-and rendered through `ChoreoCardTab.svelte` (`mode` switch):
+The user-facing Catalogs browse tab is redundant now that the Deck Releaser
+composes algorithmically from the same catalog data. The browse UI's only unique
+job — eyeballing the full enumeration to verify a newly seeded deck — is
+**rare / dev-only**, so it does not earn consumer surface but should stay
+reachable for admins. The Releaser composes + releases physical decks to
+Firestore, which is an operator action, not an end-user one. The Card Designer,
+Scan Activity, and Theme Lab tabs in this module are likewise operator/dev
+surfaces. Decision: **gate the whole module**, not individual tabs.
 
-| Tab id | Component | Role |
-|---|---|---|
-| `catalogs` | `CatalogBrowser.svelte` | Browse the full enumerated dataset (every sequence per family/position). Operator/QA surface. |
-| `designer` | `CardDesigner.svelte` | Design custom choreo cards. Consumer. |
-| `scan-activity` | `ScanActivityTab.svelte` | Live feed of card scans worldwide. Consumer. |
-| `theme-lab` | `CardBackThemeLab.svelte` | Compare card-back theme variations side by side. Dev/design tool. |
-| `releaser` | `DeckReleaserTab.svelte` | Compose + release physical decks to Firestore. Operator. |
+## Context (verified)
 
-**Key architectural fact:** "Catalog" means two distinct things.
-- **Catalog DATA** — Firestore `catalogs/` collection (enumerated source pools).
-  `deck-composer.ts` reads it (`buildSequencePool`, `composeDeck`,
-  `getTnDFamilyOptions`). Load-bearing infra for the Releaser. **Not touched.**
-- **Catalog BROWSE UI** — the `catalogs` tab / `CatalogBrowser.svelte`. A
-  user-facing window into the raw dataset. **This is what gets gated.**
+- Module def: `choreo_card` in
+  `src/lib/shared/navigation/config/module-definitions.ts:210` — currently has
+  **no** `adminOnly` flag (so it's consumer-visible). `sections: CHOREO_CARD_TABS`.
+- Tabs: `catalogs`, `designer`, `scan-activity`, `theme-lab`, `releaser`
+  (`tab-definitions.ts:656`), rendered via `ChoreoCardTab.svelte` `mode` switch.
+- `adminOnly?: boolean` exists on the module/section type
+  (`navigation/domain/types.ts:83`).
+- **Enforcement already exists and is honored** at
+  `src/lib/shared/navigation-coordinator/navigation-coordinator.svelte.ts:494`:
+  the module list filter drops any `module.adminOnly` when
+  `featureFlagService.effectiveRole !== "admin"` ("defense in depth … enforce
+  adminOnly directly from the module definition"). Three modules already use it:
+  `moderation` (`module-definitions.ts:253`), `admin` (`:266`), and one more
+  (`:366`). This is the proven pattern.
+- Catalog DATA lives in Firestore `catalogs/` and is read by `deck-composer.ts`
+  (`buildSequencePool`/`composeDeck`/`getTnDFamilyOptions`). Not touched.
 
-The browse UI's only unique job (the Releaser does not do it) is eyeballing the
-full enumeration to verify correctness after seeding a new deck (the deck skill's
-"anti motions must flip in→out" check). Decided value of that job going forward:
-**rare / dev-only** — so it does not earn a consumer tab, but is not deleted.
+## The change
 
-## Decisions
+### 1. Module flag
 
-1. **Audience split.**
-   - Consumer choreo tabs: **Scan Activity** (primary), **Card Designer** (kept
-     for now; may be dropped later).
-   - Operator/admin choreo tabs: **Catalogs**, **Deck Releaser**, **Theme Lab**.
-   - **Admin sees everything** (all five tabs).
+Add `adminOnly: true` to the `choreo_card` module definition
+(`module-definitions.ts`, the object opened at line 210). The coordinator filter
+(`:494`) then hides the module from every nav surface for non-admins, exactly as
+it already does for `moderation`/`admin`.
 
-2. **No deletion, no new view.** `CatalogBrowser.svelte` and its ~20
-   sub-components stay exactly as-is, reached via the now-admin-only Catalogs
-   tab. No new "enumeration view" is built inside the Releaser (YAGNI — verify is
-   rare/dev-only). The Releaser is unchanged (it reads catalog DATA directly).
+```ts
+{
+  id: "choreo_card",
+  // …existing fields…
+  sections: CHOREO_CARD_TABS,
+  adminOnly: true,   // ← added
+},
+```
 
-## Changes
+This drives every nav surface via the coordinator filter (`:494`). No tab-level
+flags, no tab-filter machinery, no default-tab retarget, no
+`ChoreoCardTab.svelte` change, no `CatalogBrowser` change, no Releaser change.
+(The path-init guard below is the second and final change.)
 
-### 1. Gate three tabs
+## Second change required (direct-URL guard — gap confirmed)
 
-In `CHOREO_CARD_TABS` (`tab-definitions.ts`), add `adminOnly: true` to the
-`catalogs`, `releaser`, and `theme-lab` Section entries. (`adminOnly?: boolean`
-already exists on the `Section` type — `domain/types.ts:83`.)
+The nav filter (`:494`) hides the module from every nav *surface*, but direct
+URL navigation to `/choreo_card` bypasses it. Verified:
 
-### 2. Wire tab-level `adminOnly` (currently a no-op)
+- `parsePathNavigation()`
+  (`navigation-coordinator.svelte.ts:553`) resolves the path segment against the
+  **unfiltered** `MODULE_DEFINITIONS` (`:591`) — no `adminOnly` / role check.
+- `initializeNavigationHistory()` (`:648`) then calls
+  `navigationState.setCurrentModule(pathNav.moduleId, …)` (`:671`) with no access
+  check (it special-cases only heavyweight 3D modules `museum`/`archive`).
 
-Tab-level `adminOnly` is typed but **not honored** anywhere — only *module*-level
-`adminOnly` is filtered (`ModuleList.svelte:51`:
-`MODULE_DEFINITIONS.filter((m) => !m.adminOnly || showAdmin)` with
-`showAdmin = $derived(isCurrentUserAdmin())`).
+So a non-admin hitting `/choreo_card` directly **would** mount the module. The
+one-line module flag is necessary but not sufficient.
 
-Apply the identical pattern at the **tab-render seam** so every renderer honors
-it consistently. The reactive admin signal is `isCurrentUserAdmin()` from
-`$lib/shared/auth/admin` (already proven reactive inside `$derived` in
-`ModuleList.svelte`).
+**Fix:** add an `adminOnly` guard at the path-init seam, mirroring the proven
+`:494` pattern and the init-timing guard already used by `handleSectionChange`
+(`:387`, which skips the gate until `featureFlagService.isInitialized`). When the
+parsed module is `adminOnly` and `featureFlagService.effectiveRole !== "admin"`
+(only enforced once flags are initialized), redirect to the default consumer
+module (`create`) instead of setting the gated module — exactly the existing
+heavyweight-module redirect shape at `:665-667`.
 
-Tab renderers to cover (each filters its sections list with
-`!tab.adminOnly || showAdmin`):
-- `SectionsList.svelte` (desktop sidebar)
-- `BottomNavigation.svelte` (mobile)
-- `MobileNavigation.svelte`
-- `TabOverflowSelector.svelte`
+Exact placement (inside `parsePathNavigation` returning null for a gated module,
+vs. inside `initializeNavigationHistory` before `setCurrentModule`) is a
+plan-level detail; the invariant is: a non-admin direct-URL hit on an `adminOnly`
+module lands on a consumer module, and admins are unaffected.
 
-(Exact file/line set to be confirmed during planning by grepping consumers of
-the per-module sections list; the single invariant is: no renderer shows an
-`adminOnly` tab to a non-admin.)
-
-### 3. Consumer default landing tab → Scan Activity
-
-`ChoreoCardTab.svelte` initializes `mode = $state<ChoreoCardMode>("catalogs")`
-and syncs from `navigationState.activeTab`. With `catalogs` now admin-gated, a
-consumer must not default into a hidden tab.
-
-- Consumer default resolves to **`scan-activity`**.
-- Admins land/navigate normally (they can still see and select any tab).
-- The default must come from the **filtered** (admin-aware) tab set, not a
-  hardcoded `"catalogs"`. Planning will confirm whether the default is driven by
-  the module's first *visible* tab or an explicit default constant (cf.
-  `DEFAULT_CREATE_TAB`), and set the consumer default to `scan-activity`
-  accordingly.
+This is the full scope: (1) module `adminOnly: true`, (2) path-init guard. No
+other files change.
 
 ## Out of scope
 
-- No changes to catalog DATA or the `catalogs/` Firestore collection.
-- No new enumeration view inside the Releaser.
-- No `CatalogBrowser` refactor.
-- No change to the Deck Releaser's compose/release behavior.
-- The broader deck → print → QR → payment business flow (separate question;
-  being documented separately, not part of this change).
+- Catalog DATA / the `catalogs/` Firestore collection.
+- Any change to Releaser compose/release behavior, `CatalogBrowser`, or the
+  individual choreo tabs.
+- The broader deck → print → QR → payment business flow (separate question).
 
 ## Testing / verification
 
-- Non-admin session: Choreo Card module shows only **Scan Activity** + **Card
-  Designer**; default lands on **Scan Activity**. Catalogs / Releaser / Theme Lab
-  are absent from every nav surface (desktop sidebar, mobile bottom nav,
-  overflow).
-- Admin session (`austencloud@gmail.com`): all five tabs visible; Catalogs opens
-  `CatalogBrowser` and loads catalogs from `catalogs/` as before.
-- Deck Releaser still composes/releases (admin) — unchanged.
+- **Non-admin session:** Choreo Card module is absent from the module switcher,
+  desktop sidebar, mobile bottom nav, and overflow. Direct URL `/choreo_card`
+  does not render the module (redirects to a consumer module).
+- **Admin session** (`austencloud@gmail.com`): Choreo Card visible with all five
+  tabs; Catalogs opens `CatalogBrowser` and loads from `catalogs/` as before;
+  Deck Releaser composes/releases unchanged.
 - `npm run check` clean for touched files.
 
 ## Risk
 
-Low. Additive gating + a default retarget. No data, no deletion, no Releaser
-logic touched. Worst case (filter misapplied) is a tab wrongly shown/hidden —
-caught immediately in the verification session.
+Low. An additive flag plus a small guard at one path-init seam, both mirroring
+patterns already in the file (`:494`, `:387`, `:665`). No data, no deletion, no
+Releaser logic touched.
