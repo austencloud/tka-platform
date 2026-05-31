@@ -29,12 +29,27 @@
   import { resolveDeckSequences, applyVariationDescriptor, rollVariation } from "../../services/deck-variation";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
   import { hashDeckContent } from "$lib/shared/foundation/services/content-hasher";
+  import { getPageLayout, type CardSizeId } from "../../domain/card-sizes";
+  import { getTnDElementByIconPath, TND_ELEMENTS, type TnDElement } from "../../domain/tnd-element";
+  import { suggestCopyCounts, copyWaste } from "../../services/print-copy-suggester";
+  import type { CardPair } from "../../services/types";
+  import type { PrintPDFMode } from "../../services/print-pdf-exporter";
+  import type { PrintSide } from "../print-preview/PrintPanel.svelte";
 
   interface Props {
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
 
   let { onContextMenu }: Props = $props();
+
+  // Captured synchronously at component init, BEFORE any $effect runs. The
+  // auto-persist effect below would otherwise fire first and overwrite the saved
+  // viewingDeckNumber with null (viewingRelease isn't restored until onMount),
+  // wiping the very value the restore needs to reopen a released deck.
+  const initialViewingDeckNumber = rs.savedViewingDeckNumber;
+  // Persist is gated until the mount-time restore finishes, so the effect can
+  // never clobber the saved session before restore reads it.
+  let persistReady = $state(false);
 
   let catalogs = $state<Catalog[]>([]);
   let pool = $state<Map<number, { sequenceId: string; sourceCatalogId: string; stepCount: number; word: string }[]>>(new Map());
@@ -73,6 +88,147 @@
     return f;
   }));
 
+  // ── Print state (lifted from ReviewStep so the sidebar PrintPanel and the
+  //    preview pane share one owner) ──────────────────────────────────────────
+  const PRINT_SETTINGS_KEY = "deckReleaser.printSettings";
+  interface PersistedPrintSettings { cardSize: CardSizeId; copies: number; groupByElement: boolean; }
+  function loadPrintSettings(): Partial<PersistedPrintSettings> {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = localStorage.getItem(PRINT_SETTINGS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  }
+  const savedPrint = loadPrintSettings();
+
+  let cardSize = $state<CardSizeId>(savedPrint.cardSize ?? "poker");
+  let copies = $state(savedPrint.copies ?? 1);
+  let groupByElement = $state(savedPrint.groupByElement ?? true);
+  let selectedSide = $state<PrintSide>("fronts");
+
+  $effect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(PRINT_SETTINGS_KEY,
+        JSON.stringify({ cardSize, copies, groupByElement } satisfies PersistedPrintSettings));
+    } catch { /* quota / private mode — non-fatal */ }
+  });
+
+  let renderedPairs = $state<CardPair[]>([]);
+  let isRendering = $state(false);
+  let renderProgress = $state(0);
+  let renderTotal = $state(0);
+  let isExporting = $state(false);
+  let isPrinting = $state(false);
+  let exportProgress = $state(0);
+  let exportTotal = $state(0);
+  let exportError = $state("");
+  let rerenderKey = $state(0);
+
+  // Element-sort: order cards by TnD element so the preview + PDF group cleanly.
+  // Reads `footers` (computed above) + rs.sequences — both tab-level.
+  const elementSorted = $derived.by(() => {
+    const rawElements = (footers ?? []).map((f) => getTnDElementByIconPath(f.iconPath ?? "") ?? undefined);
+    const elementOrder = TND_ELEMENTS.map((e) => e.element);
+    const indexed = rs.sequences.map((seq, i) => ({ seq, footer: footers?.[i], el: rawElements[i], origIndex: i }));
+    indexed.sort((a, b) => {
+      const ai = a.el ? elementOrder.indexOf(a.el.element) : 999;
+      const bi = b.el ? elementOrder.indexOf(b.el.element) : 999;
+      return ai !== bi ? ai - bi : a.origIndex - b.origIndex;
+    });
+    return {
+      sequences: indexed.map((r) => r.seq),
+      footers: indexed.map((r) => r.footer!).filter(Boolean),
+      tndElements: indexed.map((r) => r.el),
+    };
+  });
+  const sortedSequences = $derived(elementSorted.sequences);
+  const sortedFooters = $derived(elementSorted.footers);
+  const tndElements = $derived(elementSorted.tndElements);
+
+  const groupSizes = $derived.by(() => {
+    const counts = new Map<string, number>();
+    for (const el of tndElements) {
+      const key = el?.element ?? "__untagged__";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return [...counts.values()];
+  });
+  const cardsPerPage = $derived(getPageLayout(cardSize).cardsPerPage);
+  const copiesPresets = $derived(suggestCopyCounts(groupSizes, cardsPerPage).map((s) => s.copies));
+  function copiesAnnotate(n: number) {
+    const w = copyWaste(groupSizes, cardsPerPage, n);
+    return { blanks: w.blanks, perfect: w.blanks === 0 };
+  }
+
+  // 'fronts'/'backs' scope the preview to that side; combined/zip show all.
+  const previewSideFilter = $derived(
+    selectedSide === "fronts" ? "fronts" : selectedSide === "backs" ? "backs" : null,
+  );
+
+  function triggerDownload(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleExportPDF(mode: PrintPDFMode = "combined") {
+    if (renderedPairs.length === 0) return;
+    isExporting = true; exportError = ""; exportProgress = 0; exportTotal = 0;
+    try {
+      const { exportHomePrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-exporter");
+      const deckName = `Deck_${String(rs.nextDeckNumber).padStart(3, "0")}`;
+      const copiesSuffix = copies > 1 ? `_x${copies}` : "";
+      const suffix = (mode === "fronts" ? "_fronts" : mode === "backs" ? "_backs" : "_print") + copiesSuffix;
+      const blob = await exportHomePrintPDF(renderedPairs, deckName, cardSize, (current, total) => {
+        exportProgress = current; exportTotal = total;
+      }, mode, { copies, elements: tndElements, groupByElement });
+      triggerDownload(blob, `${deckName}${suffix}.pdf`);
+    } catch (e) {
+      exportError = `PDF export failed: ${e instanceof Error ? e.message : e}`;
+    } finally {
+      isExporting = false; exportProgress = 0; exportTotal = 0;
+    }
+  }
+
+  async function handlePrint(mode: PrintPDFMode) {
+    if (renderedPairs.length === 0 || isPrinting) return;
+    isPrinting = true; exportError = "";
+    try {
+      const { exportHomePrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-exporter");
+      const { printPdfBlob } = await import("$lib/features/choreo-card/services/print-blob");
+      const deckLabel = `Deck_${String(rs.nextDeckNumber).padStart(3, "0")}`;
+      const blob = await exportHomePrintPDF(renderedPairs, deckLabel, cardSize, undefined, mode, {
+        copies, elements: tndElements, groupByElement,
+      });
+      printPdfBlob(blob);
+    } catch (e) {
+      exportError = `Print failed: ${e instanceof Error ? e.message : e}`;
+    } finally {
+      isPrinting = false;
+    }
+  }
+
+  async function handleExportZIP() {
+    if (renderedPairs.length === 0) return;
+    isExporting = true; exportError = ""; exportProgress = 0; exportTotal = 0;
+    try {
+      const { exportDeckZIP } = await import("$lib/features/choreo-card/services/print-zip-exporter");
+      const deckName = `Deck_${String(rs.nextDeckNumber).padStart(3, "0")}`;
+      const blob = await exportDeckZIP(renderedPairs, deckName, (current, total) => {
+        exportProgress = current; exportTotal = total;
+      });
+      triggerDownload(blob, `${deckName}_cards.zip`);
+    } catch (e) {
+      exportError = `ZIP export failed: ${e instanceof Error ? e.message : e}`;
+    } finally {
+      isExporting = false; exportProgress = 0; exportTotal = 0;
+    }
+  }
+
   function rebuildPool() {
     const filter: CatalogPoolFilter = { sliceTypes: rs.selectedSliceTypes };
     pool = buildSequencePool(catalogs, filter);
@@ -94,6 +250,7 @@
   // selections, draft) — so any change to the catalog config is saved without
   // each handler having to remember to call persist().
   $effect(() => {
+    if (!persistReady) return;
     rs.persist();
   });
 
@@ -106,7 +263,7 @@
   }
 
   onMount(async () => {
-    const savedDeckNumber = rs.savedViewingDeckNumber;
+    const savedDeckNumber = initialViewingDeckNumber;
 
     const releasesPromise = getAllReleases().then(r => {
       releases = r;
@@ -119,6 +276,7 @@
       await releasesPromise;
       restoreViewedRelease(savedDeckNumber);
       await restoreDraftDeck(savedDeckNumber);
+      persistReady = true;
       return;
     }
 
@@ -153,6 +311,7 @@
 
     restoreViewedRelease(savedDeckNumber);
     await restoreDraftDeck(savedDeckNumber);
+    persistReady = true;
   });
 
   function restoreViewedRelease(deckNumber: number | null) {
@@ -523,6 +682,25 @@
         showRedraw={rs.deckMode === "loop"}
         {footers}
         {onContextMenu}
+        {cardSize}
+        {copies}
+        {groupByElement}
+        {sortedSequences}
+        {sortedFooters}
+        {tndElements}
+        {copiesPresets}
+        copiesAnnotate={copiesAnnotate}
+        {isRendering}
+        {renderProgress}
+        {renderTotal}
+        {rerenderKey}
+        sideFilter={previewSideFilter}
+        onCardSizeChange={(s) => { cardSize = s; }}
+        onCopiesChange={(n) => { copies = n; }}
+        onGroupByElementChange={(on) => { groupByElement = on; }}
+        onRerender={() => { rerenderKey++; }}
+        onPairsReady={(pairs) => { renderedPairs = pairs; }}
+        onRenderStateChange={(s) => { isRendering = s.isRendering; renderProgress = s.progress; renderTotal = s.total; }}
         onSwapCard={handleSwapCard}
         onRedraw={handleRedraw}
         onRelease={openReleaseModal}

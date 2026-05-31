@@ -2,14 +2,11 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CardFooter, DeckReleaseCard } from "../../domain/models/DeckRelease";
   import type { CardPair } from "../../services/types";
-  import type { PrintPDFMode } from "../../services/print-pdf-exporter";
-  import { getTnDElementByIconPath, TND_ELEMENTS } from "../../domain/tnd-element";
   import PrintPreviewPages from "../print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "../print-preview/PrintPreviewToolbar.svelte";
-  import PrintDialog from "../print-preview/PrintDialog.svelte";
   import CardInspectModal from "../CardInspectModal.svelte";
-  import { getPageLayout, type CardSizeId } from "../../domain/card-sizes";
-  import { suggestCopyCounts, copyWaste } from "../../services/print-copy-suggester";
+  import type { CardSizeId } from "../../domain/card-sizes";
+  import type { TnDElement } from "../../domain/tnd-element";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   interface Props {
@@ -34,6 +31,25 @@
     /** Reroll only makes sense for randomly-rolled decks (LOOP). TnD is a finite,
      *  deterministic enumeration, so the redraw button is hidden for it. */
     showRedraw?: boolean;
+    cardSize: CardSizeId;
+    copies: number;
+    groupByElement: boolean;
+    sortedSequences: SequenceData[];
+    sortedFooters: CardFooter[];
+    tndElements: (TnDElement | undefined)[];
+    copiesPresets: number[];
+    copiesAnnotate: (n: number) => { blanks: number; perfect: boolean } | null;
+    isRendering: boolean;
+    renderProgress: number;
+    renderTotal: number;
+    rerenderKey: number;
+    sideFilter: "fronts" | "backs" | null;
+    onCardSizeChange: (s: CardSizeId) => void;
+    onCopiesChange: (n: number) => void;
+    onGroupByElementChange: (on: boolean) => void;
+    onRerender: () => void;
+    onPairsReady: (pairs: CardPair[]) => void;
+    onRenderStateChange: (s: { isRendering: boolean; progress: number; total: number }) => void;
   }
 
   let {
@@ -55,6 +71,25 @@
     onContextMenu,
     brokenLoopCount = 0,
     showRedraw = true,
+    cardSize,
+    copies,
+    groupByElement,
+    sortedSequences,
+    sortedFooters,
+    tndElements,
+    copiesPresets,
+    copiesAnnotate,
+    isRendering,
+    renderProgress,
+    renderTotal,
+    rerenderKey,
+    sideFilter,
+    onCardSizeChange,
+    onCopiesChange,
+    onGroupByElementChange,
+    onRerender,
+    onPairsReady,
+    onRenderStateChange,
   }: Props = $props();
 
   let nameDraft = $state(deckName);
@@ -73,60 +108,6 @@
     if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
     else if (e.key === "Escape") { nameDraft = deckName; (e.currentTarget as HTMLInputElement).blur(); }
   }
-
-  let cardSize = $state<CardSizeId>("poker");
-  let copies = $state(1);
-  let renderedPairs = $state<CardPair[]>([]);
-  let isRendering = $state(false);
-  let renderProgress = $state(0);
-  let renderTotal = $state(0);
-  const elementSorted = $derived.by(() => {
-    const rawElements = (footers ?? []).map((f) => getTnDElementByIconPath(f.iconPath ?? "") ?? undefined);
-    const elementOrder = TND_ELEMENTS.map((e) => e.element);
-    const indexed = sequences.map((seq, i) => ({
-      seq,
-      footer: footers?.[i],
-      el: rawElements[i],
-      origIndex: i,
-    }));
-    indexed.sort((a, b) => {
-      const ai = a.el ? elementOrder.indexOf(a.el.element) : 999;
-      const bi = b.el ? elementOrder.indexOf(b.el.element) : 999;
-      return ai !== bi ? ai - bi : a.origIndex - b.origIndex;
-    });
-    return {
-      sequences: indexed.map((r) => r.seq),
-      footers: indexed.map((r) => r.footer!).filter(Boolean),
-      tndElements: indexed.map((r) => r.el),
-    };
-  });
-  const sortedSequences = $derived(elementSorted.sequences);
-  const sortedFooters = $derived(elementSorted.footers);
-  const tndElements = $derived(elementSorted.tndElements);
-
-  // Element group sizes drive the copy-count suggester: each group fills whole
-  // sheets, so suggested copy counts are the ones that leave the fewest blanks.
-  const groupSizes = $derived.by(() => {
-    const counts = new Map<string, number>();
-    for (const el of tndElements) {
-      const key = el?.element ?? "__untagged__";
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-    return [...counts.values()];
-  });
-  const cardsPerPage = $derived(getPageLayout(cardSize).cardsPerPage);
-  const copiesPresets = $derived(suggestCopyCounts(groupSizes, cardsPerPage).map((s) => s.copies));
-  function copiesAnnotate(n: number) {
-    const w = copyWaste(groupSizes, cardsPerPage, n);
-    return { blanks: w.blanks, perfect: w.blanks === 0 };
-  }
-
-  let showPrintDialog = $state(false);
-  let isExporting = $state(false);
-  let exportProgress = $state(0);
-  let exportTotal = $state(0);
-  let exportError = $state("");
-  let rerenderKey = $state(0);
 
   let inspectedSequence = $state<SequenceData | null>(null);
   let inspectedFrontImageUrl = $state<string | null>(null);
@@ -163,73 +144,6 @@
       onSwapCard(idx);
       inspectedSequence = null;
       inspectedFrontImageUrl = null;
-    }
-  }
-
-  function handlePairsReady(pairs: CardPair[]) {
-    renderedPairs = pairs;
-  }
-
-  function handleRenderState(state: { isRendering: boolean; progress: number; total: number }) {
-    isRendering = state.isRendering;
-    renderProgress = state.progress;
-    renderTotal = state.total;
-  }
-
-  function triggerDownload(blob: Blob, filename: string) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function handleExportPDF(mode: PrintPDFMode = 'combined') {
-    if (renderedPairs.length === 0) return;
-    isExporting = true;
-    exportError = "";
-    exportProgress = 0;
-    exportTotal = 0;
-    try {
-      const { exportHomePrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-exporter");
-      const deckName = `Deck_${String(nextDeckNumber).padStart(3, "0")}`;
-      const copiesSuffix = copies > 1 ? `_x${copies}` : "";
-      const suffix = (mode === "fronts" ? "_fronts" : mode === "backs" ? "_backs" : "_print") + copiesSuffix;
-      const blob = await exportHomePrintPDF(renderedPairs, deckName, cardSize, (current, total) => {
-        exportProgress = current;
-        exportTotal = total;
-      }, mode, { copies, elements: tndElements });
-      triggerDownload(blob, `${deckName}${suffix}.pdf`);
-    } catch (e) {
-      exportError = `PDF export failed: ${e instanceof Error ? e.message : e}`;
-    } finally {
-      isExporting = false;
-      exportProgress = 0;
-      exportTotal = 0;
-    }
-  }
-
-  async function handleExportZIP() {
-    if (renderedPairs.length === 0) return;
-    isExporting = true;
-    exportError = "";
-    exportProgress = 0;
-    exportTotal = 0;
-    try {
-      const { exportDeckZIP } = await import("$lib/features/choreo-card/services/print-zip-exporter");
-      const deckName = `Deck_${String(nextDeckNumber).padStart(3, "0")}`;
-      const blob = await exportDeckZIP(renderedPairs, deckName, (current, total) => {
-        exportProgress = current;
-        exportTotal = total;
-      });
-      triggerDownload(blob, `${deckName}_cards.zip`);
-    } catch (e) {
-      exportError = `ZIP export failed: ${e instanceof Error ? e.message : e}`;
-    } finally {
-      isExporting = false;
-      exportProgress = 0;
-      exportTotal = 0;
     }
   }
 </script>
@@ -299,13 +213,15 @@
     {isRendering}
     {renderProgress}
     {renderTotal}
-    onCardSizeChange={(s) => { cardSize = s; }}
-    onRerender={() => { rerenderKey++; }}
-    onPrint={() => { showPrintDialog = true; }}
+    onCardSizeChange={onCardSizeChange}
+    onRerender={onRerender}
+    onPrint={() => {}}
     {copies}
-    onCopiesChange={(n) => { copies = n; }}
+    onCopiesChange={onCopiesChange}
     {copiesPresets}
     {copiesAnnotate}
+    {groupByElement}
+    onGroupByElementChange={onGroupByElementChange}
   />
 
   <div class="preview-area">
@@ -317,6 +233,8 @@
       {redPropType}
       {rerenderKey}
       {copies}
+      {groupByElement}
+      {sideFilter}
       footers={sortedFooters}
       {tndElements}
       isLoading={false}
@@ -326,8 +244,9 @@
       deckId={String(nextDeckNumber).padStart(3, "0")}
       deckName={`LOOP Deck #${nextDeckNumber}`}
       onCardClick={handleCardClick}
-      onPairsReady={handlePairsReady}
-      onRenderStateChange={handleRenderState}
+      onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
+      onPairsReady={onPairsReady}
+      onRenderStateChange={onRenderStateChange}
     />
   </div>
 </div>
@@ -356,26 +275,6 @@
       {/if}
     {/snippet}
   </CardInspectModal>
-{/if}
-
-{#if showPrintDialog}
-  <PrintDialog
-    title="Print Deck #{String(nextDeckNumber).padStart(3, '0')}"
-    subtitle="Pre-release preview"
-    cardCount={cards.length}
-    {tndElements}
-    {cardSize}
-    {copies}
-    {theme}
-    {isExporting}
-    exportProgress={exportProgress}
-    exportTotal={exportTotal}
-    exportError={exportError}
-    onExportPDF={handleExportPDF}
-    onExportZIP={handleExportZIP}
-    onCardSizeChange={(s) => { cardSize = s; }}
-    onClose={() => { if (!isExporting) showPrintDialog = false; }}
-  />
 {/if}
 
 <style>
