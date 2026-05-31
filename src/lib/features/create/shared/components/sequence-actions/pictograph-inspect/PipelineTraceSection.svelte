@@ -61,9 +61,7 @@
   {#if diagnostics}
     <!-- Tier rows -->
     {@const tiers = [
-      { tier: "global" as const, info: diagnostics.global, detail: diagnostics.global ? `L${diagnostics.global.layer}` : null },
       { tier: "special-json" as const, info: diagnostics.specialJson, detail: diagnostics.specialJson?.filePath ?? null },
-      { tier: "prop-geometry" as const, info: diagnostics.propGeometry, detail: null },
       { tier: "default" as const, info: diagnostics.default, detail: null },
     ]}
 

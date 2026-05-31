@@ -7,21 +7,15 @@
   arrow; idle until an arrow is selected.
 -->
 <script lang="ts">
-  import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/get-arrow-adjustment-orchestrator";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type {
     PipelineDiagnostics,
     PipelineTier,
   } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type {
-    ArrowAdjustmentOrchestrator,
-    SelectedArrowContext,
-  } from "../../../services/arrow-adjustment-orchestrator";
+  import type { SelectedArrowContext } from "../../../services/arrow-adjustment-orchestrator";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import LayerTabBar from "../../arrow-adjustment/LayerTabBar.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
-  import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
@@ -31,11 +25,8 @@
     parseSpecialOverrideKey,
     type SpecialArrowPlacementInput,
   } from "$lib/shared/pictograph/arrow/positioning/special-override/domain/SpecialArrowPlacement";
-  import { getPropGeometryRepository } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/services/prop-geometry-singleton";
   import { getDefaultOverrideRepository } from "$lib/shared/pictograph/arrow/positioning/default-override/services/default-override-singleton";
   import { livePipelineEdit } from "./live-pipeline-edit.svelte";
-  import { derivePropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/prop-geometry-key-deriver";
-  import type { PropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/PropGeometryAdjustment";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
   import { Point } from "fabric";
   import { screenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/screen-space-adjustment-transformer";
@@ -59,13 +50,11 @@
   );
   const diagnostics = $derived(activeColor === "red" ? redDiagnostics : blueDiagnostics);
 
-  let editTarget = $state<"global" | "special-json" | "prop-geometry" | "default">("special-json");
+  let editTarget = $state<"special-json" | "default">("special-json");
   let editX = $state(0);
   let editY = $state(0);
-  let activeLayer = $state<1 | 2 | 3>(2);
   let hasLocalChanges = $state(false);
   let saveState = $state<"idle" | "saving" | "saved">("idle");
-  let orchestrator: ArrowAdjustmentOrchestrator | null = null;
 
   // Head identity derived
   const colorName = $derived(activeColor === "red" ? "Red" : "Blue");
@@ -87,9 +76,7 @@
   });
 
   const tierOptions = [
-    { value: "global" as const, label: "Global" },
     { value: "special-json" as const, label: "Special JSON" },
-    { value: "prop-geometry" as const, label: "Prop Geometry" },
     { value: "default" as const, label: "Default" },
   ];
 
@@ -127,15 +114,6 @@
     return (settingsPropType ?? motion?.propType)?.toLowerCase() || "staff";
   });
 
-  const otherPropType = $derived.by(() => {
-    const settings = getSettings();
-    const c = activeColor ?? "blue";
-    const otherColor = c === "blue" ? "red" : "blue";
-    const settingsPropType = otherColor === "blue" ? settings.bluePropType : settings.redPropType;
-    const otherMotion = stepData.motions?.[otherColor];
-    return (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff";
-  });
-
   // THE canonical key, identical to what the renderer reads (write-key ===
   // read-key by construction). Includes the prop-scoped propType segment.
   const specialOverrideKey = $derived.by((): string | null => {
@@ -150,27 +128,6 @@
       motions: stepData.motions as PictographData["motions"],
     };
     return computeSpecialOverrideKey(pd, motion, c);
-  });
-
-  const propGeometryKey = $derived.by((): PropGeometryKey | null => {
-    const c = activeColor ?? "blue";
-    const motion = stepData.motions?.[c];
-    if (!motion) return null;
-    const pictographData: PictographData = {
-      id: stepData.id,
-      letter: stepData.letter ?? null,
-      startPosition: stepData.startPosition,
-      endPosition: stepData.endPosition,
-      motions: stepData.motions as PictographData["motions"],
-    };
-    return derivePropGeometryKey(pictographData, motion, c);
-  });
-
-  // Reactive to in-memory edits (mirrors the global-tier *HasValue pattern).
-  const propGeometryHasValue = $derived.by(() => {
-    const _ = globalAdjustmentVersion.version;
-    if (!propGeometryKey) return false;
-    return getPropGeometryRepository()?.hasAdjustment(propGeometryKey) ?? false;
   });
 
   // The Default-tier lookup identity, surfaced by the diagnostics producer.
@@ -209,40 +166,6 @@
     );
   });
 
-  // Layer value checks for the tab bar dots
-  const layer1HasValue = $derived.by(() => {
-    const _ = globalAdjustmentVersion.version;
-    if (!orchestrator || !selectedArrowContext) return false;
-    const key = orchestrator.generateTargetKey(selectedArrowContext, 1, thisPropType, otherPropType);
-    if (!key) return false;
-    return getGlobalAdjustmentRepository()?.hasAdjustment(key) ?? false;
-  });
-
-  const layer2HasValue = $derived.by(() => {
-    const _ = globalAdjustmentVersion.version;
-    if (!orchestrator || !selectedArrowContext) return false;
-    const key = orchestrator.generateTargetKey(selectedArrowContext, 2, thisPropType, otherPropType);
-    if (!key) return false;
-    return getGlobalAdjustmentRepository()?.hasAdjustment(key) ?? false;
-  });
-
-  const layer3HasValue = $derived.by(() => {
-    const _ = globalAdjustmentVersion.version;
-    if (!orchestrator || !selectedArrowContext) return false;
-    const key = orchestrator.generateTargetKey(selectedArrowContext, 3, thisPropType, otherPropType);
-    if (!key) return false;
-    return getGlobalAdjustmentRepository()?.hasAdjustment(key) ?? false;
-  });
-
-  // Current value at the active editing layer
-  const currentLayerValue = $derived.by(() => {
-    const _ = globalAdjustmentVersion.version;
-    if (!orchestrator || !selectedArrowContext) return null;
-    const key = orchestrator.generateTargetKey(selectedArrowContext, activeLayer, thisPropType, otherPropType);
-    if (!key) return null;
-    return getGlobalAdjustmentRepository()?.getAdjustment(key) ?? null;
-  });
-
   const dockTitleText = $derived(
     editTarget === "default"
       ? `${colorName} · ${thisPropType} · Default`
@@ -258,7 +181,7 @@
     }
   }
 
-  function defaultEditTargetForActiveTier(): "global" | "special-json" | "prop-geometry" | "default" {
+  function defaultEditTargetForActiveTier(): "special-json" | "default" {
     // Special is the canonical editable tier now — always default to it.
     return "special-json";
   }
@@ -270,8 +193,6 @@
     if (c === lastBoundColor) return;
     lastBoundColor = c;
     if (!c) { saveState = "idle"; hasLocalChanges = false; return; }
-    if (!orchestrator) orchestrator = getArrowAdjustmentOrchestrator() as ArrowAdjustmentOrchestrator;
-    activeLayer = orchestrator.getDefaultSaveLayer(thisPropType, otherPropType);
     editTarget = defaultEditTargetForActiveTier();
     hasLocalChanges = false;
     saveState = "idle";
@@ -279,11 +200,7 @@
   });
 
   function syncNumericInputs() {
-    if (editTarget === "global") {
-      const val = currentLayerValue;
-      editX = val?.x ?? 0;
-      editY = val?.y ?? 0;
-    } else if (editTarget === "special-json") {
+    if (editTarget === "special-json") {
       const repo = getSpecialOverrideRepository();
       if (repo?.isInitialized && specialOverrideKey) {
         const override = repo.getOverride(specialOverrideKey);
@@ -301,19 +218,6 @@
         editX = diagnostics.specialJson.value.x;
         editY = diagnostics.specialJson.value.y;
       }
-    } else if (editTarget === "prop-geometry") {
-      const repo = getPropGeometryRepository();
-      const existing = repo && propGeometryKey ? repo.getAdjustment(propGeometryKey) : null;
-      if (existing) {
-        editX = existing.x;
-        editY = existing.y;
-      } else if (diagnostics?.propGeometry) {
-        editX = diagnostics.propGeometry.value.x;
-        editY = diagnostics.propGeometry.value.y;
-      } else {
-        editX = 0;
-        editY = 0;
-      }
     } else if (editTarget === "default") {
       // diagnostics.default.value is already Firestore-first (resolver-sourced),
       // so it reflects any existing override; seed the inputs from it.
@@ -327,15 +231,11 @@
     }
   }
 
-  function selectEditTarget(tier: "global" | "special-json" | "prop-geometry" | "default") {
+  function selectEditTarget(tier: "special-json" | "default") {
     editTarget = tier;
     hasLocalChanges = false;
     saveState = "idle";
     syncNumericInputs();
-  }
-
-  function handleLayerChange(layer: 1 | 2 | 3) {
-    activeLayer = layer;
   }
 
   function handleKeydown(event: KeyboardEvent): boolean {
@@ -368,9 +268,7 @@
       event.key === "Enter" && target?.tagName === "INPUT";
     if (!isSaveCombo && !isEnterInInput) return false;
     event.preventDefault();
-    const canSave =
-      hasLocalChanges || (editTarget === "global" && !!currentLayerValue);
-    if (canSave) handleSave();
+    if (hasLocalChanges) handleSave();
     return true;
   }
 
@@ -399,12 +297,8 @@
       editY += dir.dy;
     }
 
-    if (editTarget === "global") {
-      handleGlobalNumericUpdate();
-    } else if (editTarget === "special-json") {
+    if (editTarget === "special-json") {
       handleSpecialJsonNumericUpdate();
-    } else if (editTarget === "prop-geometry") {
-      handlePropGeometryNumericUpdate();
     } else {
       handleDefaultNumericUpdate();
     }
@@ -417,97 +311,22 @@
     if (editTarget === "special-json") {
       return handleSpecialJsonSave();
     }
-    if (editTarget === "prop-geometry") {
-      return handlePropGeometrySave();
-    }
-    if (editTarget === "default") {
-      return handleDefaultSave();
-    }
-    const repo = getGlobalAdjustmentRepository();
-    if (!repo || !orchestrator || !selectedArrowContext) return;
-    const targetKey = orchestrator.generateTargetKey(
-      selectedArrowContext, activeLayer, thisPropType, otherPropType
-    );
-    if (!targetKey) return;
-    const adj = repo.getAdjustment(targetKey);
-    if (!adj) return;
-    try {
-      saveState = "saving";
-      await repo.saveAdjustment({
-        ...targetKey,
-        adjustmentX: adj.x,
-        adjustmentY: adj.y,
-      });
-      saveState = "saved";
-      hasLocalChanges = false;
-      const haptic = getHapticFeedback();
-      haptic?.trigger("success");
-      onDiagnosticsChanged?.();
-      setTimeout(() => { saveState = "idle"; }, 2000);
-    } catch (error) {
-      logger.error("Save failed:", error);
-      saveState = "idle";
-    }
+    return handleDefaultSave();
   }
 
   async function handleDelete() {
     if (editTarget === "special-json") {
       return handleSpecialJsonDelete();
     }
-    if (editTarget === "prop-geometry") {
-      return handlePropGeometryDelete();
-    }
-    if (editTarget === "default") {
-      return handleDefaultDelete();
-    }
-    const repo = getGlobalAdjustmentRepository();
-    if (!repo || !orchestrator || !selectedArrowContext) return;
-    const targetKey = orchestrator.generateTargetKey(
-      selectedArrowContext, activeLayer, thisPropType, otherPropType
-    );
-    if (!targetKey) return;
-    try {
-      repo.deleteAdjustmentLocal(targetKey);
-      await repo.deleteAdjustment(targetKey);
-      pictographPreparer.clearCache();
-      globalAdjustmentVersion.increment();
-      hasLocalChanges = false;
-      const haptic = getHapticFeedback();
-      haptic?.trigger("warning");
-      onDiagnosticsChanged?.();
-    } catch (error) {
-      logger.error("Delete failed:", error);
-    }
+    return handleDefaultDelete();
   }
 
   function handleNumericChange() {
-    if (editTarget === "global") {
-      handleGlobalNumericUpdate();
-    } else if (editTarget === "special-json") {
+    if (editTarget === "special-json") {
       handleSpecialJsonNumericUpdate();
-    } else if (editTarget === "prop-geometry") {
-      handlePropGeometryNumericUpdate();
     } else {
       handleDefaultNumericUpdate();
     }
-  }
-
-  function handleGlobalNumericUpdate() {
-    if (!orchestrator || !selectedArrowContext) return;
-    const repo = getGlobalAdjustmentRepository();
-    if (!repo) return;
-    const targetKey = orchestrator.generateTargetKey(
-      selectedArrowContext, activeLayer, thisPropType, otherPropType
-    );
-    if (!targetKey) return;
-    repo.saveAdjustmentLocal({
-      ...targetKey,
-      adjustmentX: editX,
-      adjustmentY: editY,
-    });
-    pictographPreparer.clearCache();
-    globalAdjustmentVersion.increment();
-    hasLocalChanges = true;
   }
 
   function handleSpecialJsonNumericUpdate() {
@@ -598,55 +417,6 @@
     }
   }
 
-  function buildPropGeometryInput(x: number, y: number) {
-    if (!propGeometryKey) return null;
-    return { ...propGeometryKey, adjustmentX: x, adjustmentY: y };
-  }
-
-  function handlePropGeometryNumericUpdate() {
-    const repo = getPropGeometryRepository();
-    const input = buildPropGeometryInput(editX, editY);
-    if (!repo || !input) return;
-    repo.saveAdjustmentLocal(input);
-    pictographPreparer.clearCache();
-    globalAdjustmentVersion.increment();
-    hasLocalChanges = true;
-  }
-
-  async function handlePropGeometrySave() {
-    const repo = getPropGeometryRepository();
-    const input = buildPropGeometryInput(editX, editY);
-    if (!repo || !input) return;
-    try {
-      saveState = "saving";
-      await repo.saveAdjustment(input);
-      saveState = "saved";
-      hasLocalChanges = false;
-      getHapticFeedback()?.trigger("success");
-      onDiagnosticsChanged?.();
-      setTimeout(() => { saveState = "idle"; }, 2000);
-    } catch (error) {
-      logger.error("Prop geometry save failed:", error);
-      saveState = "idle";
-    }
-  }
-
-  async function handlePropGeometryDelete() {
-    const repo = getPropGeometryRepository();
-    if (!repo || !propGeometryKey) return;
-    try {
-      repo.deleteAdjustmentLocal(propGeometryKey);
-      await repo.deleteAdjustment(propGeometryKey);
-      pictographPreparer.clearCache();
-      globalAdjustmentVersion.increment();
-      hasLocalChanges = false;
-      getHapticFeedback()?.trigger("warning");
-      onDiagnosticsChanged?.();
-    } catch (error) {
-      logger.error("Prop geometry delete failed:", error);
-    }
-  }
-
   function handleDefaultNumericUpdate() {
     const repo = getDefaultOverrideRepository();
     const lk = defaultLookup;
@@ -715,10 +485,6 @@
       <SegmentedControl options={tierOptions} value={editTarget} onchange={selectEditTarget} color={segColor} size="sm" />
     </div>
 
-    {#if editTarget === "global"}
-      <LayerTabBar {activeLayer} onLayerChange={handleLayerChange} {layer1HasValue} {layer2HasValue} {layer3HasValue} {thisPropType} {otherPropType} />
-    {/if}
-
     <div class="dock-vals">
       <label class="dock-input-label">X<input type="number" class="dock-input" bind:value={editX} onchange={handleNumericChange} /></label>
       <label class="dock-input-label">Y<input type="number" class="dock-input" bind:value={editY} onchange={handleNumericChange} /></label>
@@ -731,14 +497,10 @@
     <div class="dock-actions">
       {#if editTarget === "special-json" && diagnostics?.specialJson?.firestoreOverride}
         <button class="btn btn-delete" onclick={handleDelete} title="Revert to original"><i class="fas fa-undo" aria-hidden="true"></i> Revert</button>
-      {:else if editTarget === "prop-geometry" && propGeometryHasValue}
-        <button class="btn btn-delete icon-only" onclick={handleDelete} aria-label="Delete prop geometry adjustment" title="Delete prop geometry adjustment"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
       {:else if editTarget === "default" && defaultHasValue}
         <button class="btn btn-delete" onclick={handleDelete} title="Revert to JSON baseline"><i class="fas fa-undo" aria-hidden="true"></i> Revert</button>
-      {:else if editTarget === "global" && (currentLayerValue || layer1HasValue || layer2HasValue || layer3HasValue)}
-        <button class="btn btn-delete icon-only" onclick={handleDelete} aria-label="Delete at this layer" title="Delete at this layer"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
       {/if}
-      <button class="btn btn-save" onclick={handleSave} disabled={!hasLocalChanges && !(editTarget === "global" && currentLayerValue)}>
+      <button class="btn btn-save" onclick={handleSave} disabled={!hasLocalChanges}>
         {#if saveState === "saving"}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>{:else if saveState === "saved"}<i class="fas fa-check" aria-hidden="true"></i>{:else}<i class="fas fa-save" aria-hidden="true"></i>{/if}
         Save
       </button>
@@ -770,7 +532,7 @@
   .dock-title-sizer { visibility: hidden; }
   .dock-title-live { font-variant-numeric: tabular-nums; }
   /* Wide enough that the equal-width segments fit their longest label
-     ("Special JSON" / "Prop Geometry") without clipping. Grows into spare
+     ("Special JSON") without clipping. Grows into spare
      dock space, wraps to its own full-width row when the dock is cramped. */
   .dock-tier { flex: 1 1 520px; min-width: 460px; max-width: 680px; }
   .dock-vals { display: flex; gap: 12px; }
@@ -791,8 +553,7 @@
     border: 1px solid var(--theme-stroke, rgba(255,255,255,0.15)); font-size: var(--font-size-min, 14px);
     font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit;
   }
-  .btn.icon-only { width: var(--min-touch-target, 44px); padding: 0; }
-  .btn-delete { background: transparent; color: var(--semantic-error, #f85149); border-color: color-mix(in srgb, var(--semantic-error, #f85149) 40%, transparent); }
+.btn-delete { background: transparent; color: var(--semantic-error, #f85149); border-color: color-mix(in srgb, var(--semantic-error, #f85149) 40%, transparent); }
   .btn-save { background: var(--semantic-success, #238636); color: #fff; border-color: var(--semantic-success, #238636); }
   .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
   @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
