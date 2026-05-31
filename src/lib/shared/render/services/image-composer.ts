@@ -465,6 +465,7 @@ export class ImageComposer {
             gridOffsetX,
             options.deckId,
             options.deckName,
+            options.qrImageBitmap,
           );
         }
       },
@@ -707,8 +708,11 @@ export class ImageComposer {
     horizontalOffset: number = 0,
     deckId?: string,
     deckName?: string,
+    preRenderedQR?: CanvasImageSource,
   ): Promise<void> {
-    if (!this.qrCodeGenerator) {
+    // Proceed if we have either a generator OR a pre-rendered image (the worker
+    // path supplies a main-rendered bitmap because it has no QR generator).
+    if (!this.qrCodeGenerator && !preRenderedQR) {
       return;
     }
 
@@ -717,19 +721,23 @@ export class ImageComposer {
       const qrSize = Math.floor(stepSize * getQRCellScale(stepCount));
       const padding = (stepSize - qrSize) / 2;
 
-      const qrImage = await this.qrCodeGenerator.generateAsImage(
-        sequence,
-        qrSize,
-        {
-          style: "modern",
-          margin: 1,
-          darkMode: isDarkMode,
-          bluePropType: bluePropType,
-          redPropType: redPropType,
-          deckId,
-          deckName,
-        }
-      );
+      // Pre-rendered QR is authored at a fixed resolution; drawImage scales it
+      // to the cell below. Generated QR is produced at qrSize directly.
+      const qrImage: CanvasImageSource = preRenderedQR
+        ? preRenderedQR
+        : await this.qrCodeGenerator!.generateAsImage(
+            sequence,
+            qrSize,
+            {
+              style: "modern",
+              margin: 1,
+              darkMode: isDarkMode,
+              bluePropType: bluePropType,
+              redPropType: redPropType,
+              deckId,
+              deckName,
+            }
+          );
 
       const x = cell.col * stepSize + horizontalOffset + padding;
       const y = cell.row * stepSize + headerHeight + padding;
