@@ -126,11 +126,22 @@
     closeModal("escape");
   }
 
+  // Track where the pointer went DOWN so a drag that starts inside the modal
+  // (e.g. selecting text) and releases over the backdrop is not mistaken for a
+  // backdrop click. A native `click` fires on the common ancestor of the down
+  // and up targets, which is the <dialog> itself when the up lands on the
+  // backdrop — so target-only checking falsely closes the modal.
+  let pointerDownOnBackdrop = false;
+
+  function handleBackdropPointerDown(event: PointerEvent) {
+    pointerDownOnBackdrop = event.target === dialogElement;
+  }
+
   function handleBackdropClick(event: MouseEvent) {
     if (!closeOnBackdrop) return;
 
-    // Check if click was on the backdrop (the dialog element itself, not its content)
-    if (event.target === dialogElement) {
+    // Require BOTH the press and the release to be on the backdrop itself.
+    if (event.target === dialogElement && pointerDownOnBackdrop) {
       closeModal("backdrop");
     }
   }
@@ -215,6 +226,7 @@
     data-closing={isClosing}
     aria-labelledby={labelledBy}
     aria-describedby={describedBy}
+    onpointerdown={handleBackdropPointerDown}
     onclick={handleBackdropClick}
     onclose={handleDialogClose}
     oncancel={handleDialogCancel}
