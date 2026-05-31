@@ -25,6 +25,20 @@
   const LOOP_COLOR = "linear-gradient(135deg, #a3a32a 0%, #8a8a22 50%, #6b6b1a 100%)";
   const LOOP_SHADOW = "60deg 55% 35%";
 
+  // Props/Hands/Dashes as 3-position steppers (Smooth→Mixed→Choppy).
+  const TRI = ["smooth", "mixed", "choppy"] as const;
+  const TRI_LABEL = ["Smooth", "Mixed", "Choppy"];
+  const DASH = ["low", "mixed", "high"] as const;
+  const DASH_LABEL = ["Low", "Mixed", "High"];
+  function stepArr<T extends string>(arr: readonly T[], cur: T, dir: number): T {
+    return arr[Math.max(0, Math.min(arr.length - 1, arr.indexOf(cur) + dir))]!;
+  }
+  const STYLE_COLORS = {
+    props: { color: c.continuity.color, shadow: c.continuity.shadowColor },
+    hands: { color: "linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%)", shadow: "245deg 70% 55%" },
+    dashes: { color: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)", shadow: "25deg 90% 55%" },
+  };
+
   // ---- seeding (spec's chosen algorithm, shown live) -------------------------
   function cyrb128(str: string): [number, number, number, number] {
     let h1 = 1779033703, h2 = 3144134277, h3 = 1013904242, h4 = 2773480762;
@@ -76,7 +90,6 @@
   let handRev = $state<"smooth" | "mixed" | "choppy">("mixed");
   let dashes = $state<"low" | "mixed" | "high">("mixed");
   let startMode = $state<"all" | "classic" | "specific">("all");
-  let showDetail = $state(false);
   let showOrient = $state(false);
   let seed = $state(mintSeed());
 
@@ -97,9 +110,6 @@
   // Rare: only when you ask for more UNIQUE cards than the entire variation space holds.
   const exhausted = $derived(requested > cardSpace);
 
-  const customizeSummary = $derived(
-    propRev === "smooth" && handRev === "mixed" && dashes === "mixed" ? "Default" : "Custom",
-  );
   const orientSummary = $derived(
     (orientation === "nonradial" ? "Non-radial" : cap(orientation)) +
     (startMode === "all" ? "" : ` · ${cap(startMode)}`),
@@ -186,13 +196,16 @@
         <BaseCard title="Orientation" currentValue={orientSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showOrient = !showOrient)} />
 
         <!-- Row 3 -->
-        <BaseCard title="Customize" currentValue={customizeSummary} color={c.customize.color} shadowColor={c.customize.shadowColor} gridColumnSpan={2} onClick={() => (showDetail = !showDetail)} />
-
         <BaseCard title="Loop" currentValue={LOOP_TYPE_LABELS[loopType]} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
 
         <ToggleCard title="Period" option1={{ value: "quartered", label: "Quartered" }} option2={{ value: "halved", label: "Halved" }} activeOption={period} onToggle={(v) => (period = v as typeof period)} color={c.period.color} shadowColor={c.period.shadowColor} gridColumnSpan={2} />
 
-        <!-- Row 4 -->
+        <!-- Row 4 — Style steppers (Smooth→Mixed→Choppy) -->
+        <StepperCard title="Props" currentValue={TRI.indexOf(propRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i]} color={STYLE_COLORS.props.color} shadowColor={STYLE_COLORS.props.shadow} gridColumnSpan={2} onIncrement={() => (propRev = stepArr(TRI, propRev, 1))} onDecrement={() => (propRev = stepArr(TRI, propRev, -1))} />
+        <StepperCard title="Hands" currentValue={TRI.indexOf(handRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i]} color={STYLE_COLORS.hands.color} shadowColor={STYLE_COLORS.hands.shadow} gridColumnSpan={2} onIncrement={() => (handRev = stepArr(TRI, handRev, 1))} onDecrement={() => (handRev = stepArr(TRI, handRev, -1))} />
+        <StepperCard title="Dashes" currentValue={DASH.indexOf(dashes)} minValue={0} maxValue={2} description="FREQUENCY" formatValue={(i: number) => DASH_LABEL[i]} color={STYLE_COLORS.dashes.color} shadowColor={STYLE_COLORS.dashes.shadow} gridColumnSpan={2} onIncrement={() => (dashes = stepArr(DASH, dashes, 1))} onDecrement={() => (dashes = stepArr(DASH, dashes, -1))} />
+
+        <!-- Generate -->
         <button class="generate" style:grid-column="span 6" onclick={generate}>
           <i class="fas fa-dice"></i>
           <span>{wordMode ? `Generate ${drawCount} variations` : `Generate ${drawCount}`}</span>
@@ -225,27 +238,6 @@
         </div>
       {/if}
 
-      {#if showDetail}
-        <div class="detail">
-          <span class="detail-title">Customize · Style</span>
-          <div class="brow"><span class="brow-label">Props</span><div class="opts">
-            {#each [["smooth", "Smooth"], ["mixed", "Mixed"], ["choppy", "Choppy"]] as [v, l]}
-              <button class="opt" class:on={propRev === v} onclick={() => (propRev = v as typeof propRev)}>{l}</button>
-            {/each}
-          </div></div>
-          <div class="brow"><span class="brow-label">Hands</span><div class="opts">
-            {#each [["smooth", "Smooth"], ["mixed", "Mixed"], ["choppy", "Choppy"]] as [v, l]}
-              <button class="opt" class:on={handRev === v} onclick={() => (handRev = v as typeof handRev)}>{l}</button>
-            {/each}
-          </div></div>
-          <div class="brow"><span class="brow-label">Dashes</span><div class="opts">
-            {#each [["low", "Low"], ["mixed", "Mixed"], ["high", "High"]] as [v, l]}
-              <button class="opt" class:on={dashes === v} onclick={() => (dashes = v as typeof dashes)}>{l}</button>
-            {/each}
-          </div></div>
-          <p class="detail-note">Turns aren't here — Max Turn Intensity is its own card that appears at Level 2+ (just like the generator). The per-step reversal editor is the deep tier (drill-in from here).</p>
-        </div>
-      {/if}
     </section>
 
     <aside class="rail">
@@ -300,6 +292,12 @@
     grid-auto-rows: 112px; gap: 10px; width: 100%; max-width: 760px; margin: 0 auto;
   }
   .card-grid > :global(*) { grid-column: span 2; min-width: 0; }
+
+  /* Wide screens (4K etc.) — expand to 4 tiles per row instead of 3. */
+  @media (min-width: 1700px) {
+    .layout { max-width: 1700px; }
+    .card-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); max-width: 1140px; }
+  }
 
   /* word edit tile mirrors the base-card look while typing */
   .word-edit {
