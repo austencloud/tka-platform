@@ -86,6 +86,10 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    /* One shared content column — see TurnPatternView for rationale. */
+    width: 100%;
+    max-width: 820px;
+    margin-inline: auto;
   }
 
   .apply-btn {

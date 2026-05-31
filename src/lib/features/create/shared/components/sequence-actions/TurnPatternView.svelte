@@ -93,6 +93,12 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    /* One shared content column: every row (Length/Rhythm/Amount/Result/Apply)
+       aligns to this width. Bounded so Result cells stay sane; centered so the
+       extra panel width reads as intentional margin, not a lopsided void. */
+    width: 100%;
+    max-width: 820px;
+    margin-inline: auto;
   }
 
   .apply-btn {
