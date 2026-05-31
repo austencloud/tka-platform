@@ -863,7 +863,10 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     }
 
     // Write sequence documents in batches of 500
-    const BATCH_SIZE = 500;
+    // 499 not 500: in --twin mode each iteration writes TWO docs (base + twin)
+    // before the flush check runs, so the batch can reach BATCH_SIZE + 1. Capping
+    // at 499 guarantees the committed batch never exceeds Firestore's 500-op limit.
+    const BATCH_SIZE = 499;
     let batch = db.batch();
     let batchCount = 0;
     let totalWritten = 0;
