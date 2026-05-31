@@ -1,0 +1,1001 @@
+[
+ {
+  "name": "LayoutDetector",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/create/construct/option-picker/services/layout-detector.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "PositionAnalyzer",
+  "cls": "stateless",
+  "path": "src/lib/features/create/construct/option-picker/services/position-analyzer.ts",
+  "consumers": 9,
+  "newC": 1,
+  "typeC": 5,
+  "tangled": true
+ },
+ {
+  "name": "MirroredInvertedLOOPExecutor",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/create/generate/circular/services/mirrored-inverted-loop-executor.ts",
+  "consumers": 3,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "MirroredSwappedInvertedLOOPExecutor",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/create/generate/circular/services/mirrored-swapped-inverted-loop-executor.ts",
+  "consumers": 3,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "MirroredSwappedLOOPExecutor",
+  "cls": "stateless",
+  "path": "src/lib/features/create/generate/circular/services/mirrored-swapped-loop-executor.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "OrientationCycleExtender",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/create/generate/circular/services/orientation-cycle-extender.ts",
+  "consumers": 5,
+  "newC": 1,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "RewoundLOOPExecutor",
+  "cls": "stateless",
+  "path": "src/lib/features/create/generate/circular/services/rewound-loop-executor.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "RotatedInvertedLOOPExecutor",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/create/generate/circular/services/rotated-inverted-loop-executor.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "RotatedSwappedLOOPExecutor",
+  "cls": "stateless",
+  "path": "src/lib/features/create/generate/circular/services/rotated-swapped-loop-executor.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "StrictFlippedLOOPExecutor",
+  "cls": "stateless",
+  "path": "src/lib/features/create/generate/circular/services/strict-flipped-loop-executor.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "StrictInvertedLOOPExecutor",
+  "cls": "stateless",
+  "path": "src/lib/features/create/generate/circular/services/strict-inverted-loop-executor.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "StrictMirroredLOOPExecutor",
+  "cls": "stateless",
+  "path": "src/lib/features/create/generate/circular/services/strict-mirrored-loop-executor.ts",
+  "consumers": 3,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "StrictRotatedLOOPExecutor",
+  "cls": "stateless",
+  "path": "src/lib/features/create/generate/circular/services/strict-rotated-loop-executor.ts",
+  "consumers": 5,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "StrictSwappedLOOPExecutor",
+  "cls": "stateless",
+  "path": "src/lib/features/create/generate/circular/services/strict-swapped-loop-executor.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "SwappedInvertedLOOPExecutor",
+  "cls": "stateless",
+  "path": "src/lib/features/create/generate/circular/services/swapped-complementary-loop-executor.ts",
+  "consumers": 0,
+  "newC": 2,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "SwappedInvertedLOOPExecutor",
+  "cls": "stateless",
+  "path": "src/lib/features/create/generate/circular/services/swapped-inverted-loop-executor.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "TurnAllocator",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/create/generate/shared/services/turn-allocator.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "CreateModuleLayoutManager",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/create/shared/layout/services/create-module-layout-manager.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "CreateModuleHandlers",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/create/shared/services/create-module-handlers.ts",
+  "consumers": 4,
+  "newC": 1,
+  "typeC": 3,
+  "tangled": true
+ },
+ {
+  "name": "LOOPValidator",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/create/shared/services/loop-validator.ts",
+  "consumers": 9,
+  "newC": 1,
+  "typeC": 3,
+  "tangled": true
+ },
+ {
+  "name": "PanelPersister",
+  "cls": "stateless",
+  "path": "src/lib/features/create/shared/services/panel-persister.svelte.ts",
+  "consumers": 0,
+  "newC": 1,
+  "typeC": 3,
+  "tangled": true
+ },
+ {
+  "name": "SequenceAnalyzer",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/create/shared/services/sequence-analyzer.ts",
+  "consumers": 8,
+  "newC": 1,
+  "typeC": 4,
+  "tangled": true
+ },
+ {
+  "name": "SequencePersister",
+  "cls": "stateless",
+  "path": "src/lib/features/create/shared/services/sequence-persister.ts",
+  "consumers": 13,
+  "newC": 1,
+  "typeC": 12,
+  "tangled": true
+ },
+ {
+  "name": "Workbench",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/create/shared/workspace-panel/shared/services/workbench.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "VariationExplorationOrchestrator",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/create/spell/services/variation-exploration-orchestrator.ts",
+  "consumers": 3,
+  "newC": 0,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "StepComparisonOrchestrator",
+  "cls": "stateless",
+  "path": "src/lib/features/loop-labeler/services/comparison/step-comparison-orchestrator.ts",
+  "consumers": 5,
+  "newC": 1,
+  "typeC": 4,
+  "tangled": true
+ },
+ {
+  "name": "TransformationAnalyzer",
+  "cls": "stateless",
+  "path": "src/lib/features/loop-labeler/services/transformation-analyzer.ts",
+  "consumers": 3,
+  "newC": 1,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "AsciiRenderer",
+  "cls": "stateless",
+  "path": "src/lib/features/retro/dos/services/ascii-renderer.ts",
+  "consumers": 0,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "SvgToBrailleConverter",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/retro/dos/services/svg-to-braille-converter.ts",
+  "consumers": 2,
+  "newC": 2,
+  "typeC": 0,
+  "tangled": true
+ },
+ {
+  "name": "EraRendererBase",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/retro/shared/services/era-renderer-base.ts",
+  "consumers": 2,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "PixelRenderer",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/retro/win95/services/pixel-renderer.ts",
+  "consumers": 3,
+  "newC": 3,
+  "typeC": 0,
+  "tangled": true
+ },
+ {
+  "name": "WindowManager",
+  "cls": "stateless-cache",
+  "path": "src/lib/features/retro/win95/services/window-manager.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "XPRenderer",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/retro/winxp/services/xp-renderer.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 0,
+  "tangled": true
+ },
+ {
+  "name": "VideoTipAdapter",
+  "cls": "stateless-cache",
+  "path": "src/lib/features/video/video-trails/services/video-tip-adapter.ts",
+  "consumers": 3,
+  "newC": 1,
+  "typeC": 3,
+  "tangled": true
+ },
+ {
+  "name": "FrameBuilderService",
+  "cls": "stateless",
+  "path": "src/lib/shared/animation-engine/services/frame-builder-service.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 0,
+  "tangled": true
+ },
+ {
+  "name": "RenderContextFactory",
+  "cls": "stateless",
+  "path": "src/lib/shared/animation-engine/services/render-context-factory.ts",
+  "consumers": 3,
+  "newC": 2,
+  "typeC": 0,
+  "tangled": true
+ },
+ {
+  "name": "RenderContextRegistry",
+  "cls": "stateless-cache",
+  "path": "src/lib/shared/animation-engine/services/render-context-registry.ts",
+  "consumers": 4,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "UserDocumentManager",
+  "cls": "stateless",
+  "path": "src/lib/shared/auth/services/user-document-manager.ts",
+  "consumers": 1,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "BrowseSectionManager",
+  "cls": "stateless",
+  "path": "src/lib/shared/browse/services/BrowseSectionManager.ts",
+  "consumers": 1,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "ClaudeCodeCopier",
+  "cls": "stateless-deps",
+  "path": "src/lib/shared/browse/services/ClaudeCodeCopier.ts",
+  "consumers": 3,
+  "newC": 0,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "MemoryUrlCache",
+  "cls": "stateless-cache",
+  "path": "src/lib/shared/browse/services/ThumbnailRenderOrchestrator.ts",
+  "consumers": 4,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "VariationGrouper",
+  "cls": "stateless-cache",
+  "path": "src/lib/shared/browse/services/VariationGrouper.ts",
+  "consumers": 2,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "VideoCountManager",
+  "cls": "stateless-cache",
+  "path": "src/lib/shared/browse/services/VideoCountManager.ts",
+  "consumers": 3,
+  "newC": 0,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "BrowseFilter",
+  "cls": "stateless",
+  "path": "src/lib/shared/browse/services/browse-filter.ts",
+  "consumers": 4,
+  "newC": 1,
+  "typeC": 3,
+  "tangled": true
+ },
+ {
+  "name": "LOOPDetector",
+  "cls": "stateless",
+  "path": "src/lib/shared/create/services/LOOPDetector.ts",
+  "consumers": 2,
+  "newC": 3,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "OrientationCycleDetector",
+  "cls": "stateless",
+  "path": "src/lib/shared/create/services/OrientationCycleDetector.ts",
+  "consumers": 6,
+  "newC": 0,
+  "typeC": 3,
+  "tangled": true
+ },
+ {
+  "name": "SequenceImporter",
+  "cls": "stateless-deps",
+  "path": "src/lib/shared/create/services/SequenceImporter.ts",
+  "consumers": 3,
+  "newC": 0,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "SequenceTransformer",
+  "cls": "stateless-deps",
+  "path": "src/lib/shared/create/services/SequenceTransformer.ts",
+  "consumers": 2,
+  "newC": 0,
+  "typeC": 12,
+  "tangled": true
+ },
+ {
+  "name": "StartPositionManager",
+  "cls": "stateless",
+  "path": "src/lib/shared/create/services/StartPositionManager.ts",
+  "consumers": 9,
+  "newC": 1,
+  "typeC": 5,
+  "tangled": true
+ },
+ {
+  "name": "FeedbackStatusService",
+  "cls": "stateless",
+  "path": "src/lib/shared/feedback/services/feedback-status-manager.ts",
+  "consumers": 1,
+  "newC": 0,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "CSVParser",
+  "cls": "stateless",
+  "path": "src/lib/shared/foundation/services/implementations/data/CsvParser.ts",
+  "consumers": 3,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "EnumMapper",
+  "cls": "stateless",
+  "path": "src/lib/shared/foundation/services/implementations/data/EnumMapper.ts",
+  "consumers": 4,
+  "newC": 0,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "HandPathRepository",
+  "cls": "stateless",
+  "path": "src/lib/shared/foundation/services/hand-path-repository-store.ts",
+  "consumers": 8,
+  "newC": 0,
+  "typeC": 4,
+  "tangled": true
+ },
+ {
+  "name": "SequenceDecomposer",
+  "cls": "stateless",
+  "path": "src/lib/shared/foundation/services/sequence-decomposer.ts",
+  "consumers": 2,
+  "newC": 0,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "SoloPropRepository",
+  "cls": "stateless",
+  "path": "src/lib/shared/foundation/services/solo-prop-repository-store.ts",
+  "consumers": 6,
+  "newC": 0,
+  "typeC": 3,
+  "tangled": true
+ },
+ {
+  "name": "SvgImageConverter",
+  "cls": "stateless-cache",
+  "path": "src/lib/shared/foundation/services/svg-image-converter.ts",
+  "consumers": 2,
+  "newC": 0,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "MandalaGeometryCalculator",
+  "cls": "stateless-cache",
+  "path": "src/lib/shared/mandala/services/mandala-geometry-calculator.ts",
+  "consumers": 9,
+  "newC": 3,
+  "typeC": 5,
+  "tangled": true
+ },
+ {
+  "name": "PositionDeriver",
+  "cls": "stateless",
+  "path": "src/lib/shared/navigation/services/position-deriver.ts",
+  "consumers": 3,
+  "newC": 0,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "SheetRouter",
+  "cls": "stateless",
+  "path": "src/lib/shared/navigation/services/sheet-router-service.ts",
+  "consumers": 1,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "DirectionalTupleCalculator",
+  "cls": "stateless",
+  "path": "src/lib/shared/pictograph/arrow/positioning/calculation/services/directional-tuple-processor.ts",
+  "consumers": 4,
+  "newC": 0,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "SpecialPlacementLookup",
+  "cls": "stateless",
+  "path": "src/lib/shared/pictograph/arrow/positioning/placement/services/special-placement-lookup.ts",
+  "consumers": 2,
+  "newC": 0,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "TurnsTupleGenerator",
+  "cls": "stateless",
+  "path": "src/lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator.ts",
+  "consumers": 19,
+  "newC": 1,
+  "typeC": 6,
+  "tangled": true
+ },
+ {
+  "name": "BetaDetector",
+  "cls": "stateless",
+  "path": "src/lib/shared/pictograph/prop/services/beta-detector.ts",
+  "consumers": 5,
+  "newC": 0,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "SimpleJsonCache",
+  "cls": "stateless-cache",
+  "path": "src/lib/shared/pictograph/shared/services/simple-json-cache.ts",
+  "consumers": 5,
+  "newC": 0,
+  "typeC": 3,
+  "tangled": true
+ },
+ {
+  "name": "StartPositionDeriver",
+  "cls": "stateless",
+  "path": "src/lib/shared/pictograph/shared/services/start-position-deriver.ts",
+  "consumers": 20,
+  "newC": 0,
+  "typeC": 6,
+  "tangled": true
+ },
+ {
+  "name": "ImageFormatConverter",
+  "cls": "stateless",
+  "path": "src/lib/shared/render/services/image-format-converter.ts",
+  "consumers": 4,
+  "newC": 1,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "SvgImageCache",
+  "cls": "stateless-cache",
+  "path": "src/lib/shared/render/services/svg-image-cache.ts",
+  "consumers": 12,
+  "newC": 2,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "CellCacheKeyDeriver",
+  "cls": "stateless-deps",
+  "path": "src/lib/shared/sequence-viewer/services/cell-cache-key-deriver.ts",
+  "consumers": 3,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "CellPreWarmer",
+  "cls": "stateless-cache",
+  "path": "src/lib/shared/sequence-viewer/services/cell-pre-warmer.ts",
+  "consumers": 4,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "PublicSequenceHashMatcher",
+  "cls": "stateless",
+  "path": "src/lib/shared/sequence-viewer/services/public-sequence-hash-matcher.ts",
+  "consumers": 2,
+  "newC": 0,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "SequenceMotionLoader",
+  "cls": "stateless-deps",
+  "path": "src/lib/shared/sequence-viewer/services/sequence-motion-loader.ts",
+  "consumers": 5,
+  "newC": 0,
+  "typeC": 4,
+  "tangled": true
+ },
+ {
+  "name": "SequenceViewer",
+  "cls": "stateless",
+  "path": "src/lib/shared/sequence-viewer/services/sequence-viewer.ts",
+  "consumers": 1,
+  "newC": 0,
+  "typeC": 3,
+  "tangled": true
+ },
+ {
+  "name": "CommandDispatcher",
+  "cls": "stateless-cache",
+  "path": "src/lib/shared/voice-control/services/command-dispatcher.ts",
+  "consumers": 4,
+  "newC": 2,
+  "typeC": 4,
+  "tangled": true
+ },
+ {
+  "name": "EventActivityAnalyzer",
+  "cls": "stateless",
+  "path": "src/lib/features/admin/services/event-activity-analyzer.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "UserActivityTracker",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/admin/services/user-activity-tracker.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "BrowseFilter",
+  "cls": "stateless",
+  "path": "src/lib/features/browse/sequences/display/services/browse-filter.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 3,
+  "tangled": true
+ },
+ {
+  "name": "BrowseMetadataExtractor",
+  "cls": "stateless",
+  "path": "src/lib/features/browse/sequences/display/services/browse-metadata-extractor.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "MultiFilter",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/browse/sequences/display/services/multi-filter.ts",
+  "consumers": 0,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "BrowseDataSource",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/browse/shared/services/browse-data-source.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "TunnelModeSequenceManager",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/compose/services/tunnel-mode-sequence-manager.ts",
+  "consumers": 0,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "ArchiveLoaderImpl",
+  "cls": "stateless",
+  "path": "src/lib/features/feedback/services/archive-loader.ts",
+  "consumers": 1,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "FeedbackTesterWorkflowService",
+  "cls": "stateless",
+  "path": "src/lib/features/feedback/services/feedback-tester-workflow.ts",
+  "consumers": 1,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "GalleryRenderer",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/gallery-generator/services/gallery-renderer.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "ScreenshotUploadOrchestrator",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/lab/services/screenshot-upload-orchestrator.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "PoiOptionFilterDecorator",
+  "cls": "stateless",
+  "path": "src/lib/features/levels/poi-lab/services/poi-option-filter-decorator.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "PoiSequenceValidator",
+  "cls": "stateless",
+  "path": "src/lib/features/levels/poi-lab/services/poi-sequence-validator.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "ArtifactExtractor",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/library/services/artifact-extractor.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "FavoritesManager",
+  "cls": "stateless",
+  "path": "src/lib/features/library/services/favorites-manager.ts",
+  "consumers": 0,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "HandPathSaveOrchestrator",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/library/services/hand-path-save-orchestrator.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "SoloPropSaveOrchestrator",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/library/services/solo-prop-save-orchestrator.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "LocalMandalaCollectionRepository",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/mandala/tabs/collection/services/local-mandala-collection-repository.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 0,
+  "tangled": true
+ },
+ {
+  "name": "ReportResolver",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/moderation/services/report-resolver.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "MuseumGridBuilder",
+  "cls": "stateless",
+  "path": "src/lib/features/museum/services/museum-grid-builder.ts",
+  "consumers": 1,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "StripPatternEngine",
+  "cls": "stateless-cache",
+  "path": "src/lib/features/poi/services/strip-pattern-engine.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "LocalStickerSheetRepository",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/sticker-lab/services/local-sticker-sheet-repository.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "StickerSheetPdfExporter",
+  "cls": "stateless",
+  "path": "src/lib/features/sticker-lab/services/sticker-sheet-pdf-exporter.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 0,
+  "tangled": true
+ },
+ {
+  "name": "ConversationMemoryRetriever",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/tika/services/conversation-memory-retriever.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 0,
+  "tangled": true
+ },
+ {
+  "name": "TikaInteractionTracker",
+  "cls": "stateless",
+  "path": "src/lib/features/tika/services/tika-interaction-tracker.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 0,
+  "tangled": true
+ },
+ {
+  "name": "LineageTracker",
+  "cls": "stateless-cache",
+  "path": "src/lib/features/village/services/lineage-tracker.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "VoiceSessionReplayer",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/voice-sessions/services/voice-session-replayer.ts",
+  "consumers": 5,
+  "newC": 2,
+  "typeC": 5,
+  "tangled": true
+ },
+ {
+  "name": "FeedLoader",
+  "cls": "stateless-deps",
+  "path": "src/lib/features/watch/services/feed-loader.ts",
+  "consumers": 2,
+  "newC": 1,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "DeepLinkResolver",
+  "cls": "stateless-deps",
+  "path": "src/lib/shared/application/services/deep-link-resolver.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "MotionSignatureGenerator",
+  "cls": "stateless",
+  "path": "src/lib/shared/comparison/services/motion-signature-generator.ts",
+  "consumers": 3,
+  "newC": 1,
+  "typeC": 2,
+  "tangled": true
+ },
+ {
+  "name": "SpatialTransformDetector",
+  "cls": "stateless",
+  "path": "src/lib/shared/comparison/services/spatial-transform-detector.ts",
+  "consumers": 5,
+  "newC": 1,
+  "typeC": 3,
+  "tangled": true
+ },
+ {
+  "name": "ShortcutRegistry",
+  "cls": "stateless-cache",
+  "path": "src/lib/shared/keyboard/services/shortcut-registry.ts",
+  "consumers": 3,
+  "newC": 1,
+  "typeC": 3,
+  "tangled": true
+ },
+ {
+  "name": "GestureHandler",
+  "cls": "stateless",
+  "path": "src/lib/shared/mobile/services/gesture-handler.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "TopologyBetaSeparator",
+  "cls": "stateless",
+  "path": "src/lib/shared/multi-grid/services/topology-beta-separator.ts",
+  "consumers": 0,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "TopologyPropLoader",
+  "cls": "stateless",
+  "path": "src/lib/shared/multi-grid/services/topology-prop-loader.ts",
+  "consumers": 0,
+  "newC": 0,
+  "typeC": 0,
+  "tangled": false
+ },
+ {
+  "name": "NativeInitializer",
+  "cls": "stateless",
+  "path": "src/lib/shared/platform/services/native-initializer.ts",
+  "consumers": 1,
+  "newC": 1,
+  "typeC": 1,
+  "tangled": true
+ },
+ {
+  "name": "R2VideoUploader",
+  "cls": "stateless",
+  "path": "src/lib/shared/share/services/r2-video-uploader.ts",
+  "consumers": 3,
+  "newC": 1,
+  "typeC": 3,
+  "tangled": true
+ },
+ {
+  "name": "SequenceImageSharer",
+  "cls": "stateless-deps",
+  "path": "src/lib/shared/share/services/sequence-image-sharer.ts",
+  "consumers": 3,
+  "newC": 1,
+  "typeC": 3,
+  "tangled": true
+ }
+]
