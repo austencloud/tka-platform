@@ -34,7 +34,10 @@
   let showGrid = $state(true);
   let showTKA = $state(true);
   let showTnD = $state(false);
-  let showElemental = $state(false);
+  let showElemental = $state(true);
+  // Diamond vs Box — flips which dataframe + which tnd-calculator lookup runs.
+  // The elemental glyph reclassifies opposite-direction families between modes.
+  let gridMode = $state<GridMode>(GridMode.DIAMOND);
   let showPositions = $state(false);
   let showReversals = $state(false);
   let showNonRadialPoints = $state(false);
@@ -48,7 +51,7 @@
       renderer = new Canvas2DDirectRenderer(pictographPreparer);
       await renderer.initialize();
 
-      allPictographs = await letterQueryHandler.getAllPictographVariations(GridMode.DIAMOND);
+      allPictographs = await letterQueryHandler.getAllPictographVariations(gridMode);
 
       isLoading = false;
       await tick();
@@ -122,6 +125,16 @@
     blueTurnsOverride = null;
     redTurnsOverride = null;
     tick().then(renderAll);
+  }
+
+  async function setGridMode(mode: GridMode) {
+    if (mode === gridMode) return;
+    gridMode = mode;
+    blueTurnsOverride = null;
+    redTurnsOverride = null;
+    allPictographs = await letterQueryHandler.getAllPictographVariations(gridMode);
+    await tick();
+    renderAll();
   }
 
   function adjustTurns(color: "blue" | "red", delta: number) {
@@ -212,6 +225,23 @@
             {/each}
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- Grid Mode — flips Diamond↔Box; elemental glyph reclassifies live -->
+    <section class="panel">
+      <h2>Grid Mode</h2>
+      <div class="toggle-grid">
+        <button
+          class="toggle-btn"
+          class:active={gridMode === GridMode.DIAMOND}
+          onclick={() => setGridMode(GridMode.DIAMOND)}
+        >Diamond</button>
+        <button
+          class="toggle-btn"
+          class:active={gridMode === GridMode.BOX}
+          onclick={() => setGridMode(GridMode.BOX)}
+        >Box</button>
       </div>
     </section>
 
