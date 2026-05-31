@@ -37,7 +37,7 @@ import {
 	getFilteredCount as getMultiFilteredCount,
 } from "$lib/shared/browse/services/multi-filter";
 import { sortSequences as browseSortSequences } from "$lib/shared/browse/services/browse-sorter";
-import { getBrowseSectionManager } from "$lib/shared/browse/getBrowseSectionManager";
+import { organizeSections as organizeBrowseSections } from "$lib/shared/browse/services/BrowseSectionManager";
 import { toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 
@@ -107,7 +107,6 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 	// --- Services (singleton factories) ---
 	const loaderService = getBrowseLoader();
 	const filterService = getBrowseFilter();
-	const sectionManager = getBrowseSectionManager();
 
 	// --- Resolve persisted state ---
 	const persisted = loadPersisted(config.persistKey);
@@ -219,7 +218,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			showEmptySections: false,
 			expandedSections: new Set<string>(),
 		};
-		return sectionManager.organizeSections(filteredAndSorted, sectionConfig);
+		return organizeBrowseSections(filteredAndSorted, sectionConfig);
 	});
 
 	// --- Derived: filter metadata ---
