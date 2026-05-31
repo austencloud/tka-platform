@@ -6,7 +6,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
-import type { BrowseFilter } from "$lib/shared/browse/services/browse-filter";
+import { applyFilter as applyBrowseFilter } from "$lib/shared/browse/services/browse-filter";
 import { sortSequences as browseSortSequences } from "$lib/shared/browse/services/browse-sorter";
 import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/filtering-types";
@@ -14,7 +14,6 @@ import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-paramet
 import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
 import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 import { getBrowseThumbnailProvider } from "$lib/shared/browse/getBrowseThumbnailProvider";
-import { getBrowseFilter } from "$lib/shared/browse/getBrowseFilter";
 
 const BATCH_SIZE = 24;
 
@@ -27,7 +26,6 @@ export function createMediaBrowserState() {
   // Services
   let loaderService = $state<PublicSequencesLoader | null>(null);
   let thumbnailService = $state<BrowseThumbnailProvider | null>(null);
-  let filterService = $state<BrowseFilter | null>(null);
   let servicesReady = $state(false);
 
   // Core state
@@ -76,8 +74,8 @@ export function createMediaBrowserState() {
   const allFilteredSequences = $derived.by(() => {
     let filtered = allSequences;
 
-    if (filterService && currentFilter.type !== "all") {
-      filtered = filterService.applyFilter(
+    if (currentFilter.type !== "all") {
+      filtered = applyBrowseFilter(
         allSequences,
         currentFilter.type as BrowseFilterType,
         currentFilter.value
@@ -112,7 +110,6 @@ export function createMediaBrowserState() {
     try {
       loaderService = getBrowseLoader();
       thumbnailService = getBrowseThumbnailProvider();
-      filterService = getBrowseFilter();
       servicesReady = !!(loaderService && thumbnailService);
       return servicesReady;
     } catch (err) {

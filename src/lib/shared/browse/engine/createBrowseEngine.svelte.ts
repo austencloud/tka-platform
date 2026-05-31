@@ -31,7 +31,7 @@ import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/c
 import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
 import { detectRotationPeriod } from "$lib/shared/create/domain/detect-rotation-period";
 import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-import { getBrowseFilter } from "$lib/shared/browse/getBrowseFilter";
+import { applyFilter as applyBrowseFilter } from "$lib/shared/browse/services/browse-filter";
 import {
 	applyFilters as applyMultiFilters,
 	getFilteredCount as getMultiFilteredCount,
@@ -106,7 +106,6 @@ function persist(key: string | null, state: PersistedEngineState): void {
 export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 	// --- Services (singleton factories) ---
 	const loaderService = getBrowseLoader();
-	const filterService = getBrowseFilter();
 
 	// --- Resolve persisted state ---
 	const persisted = loadPersisted(config.persistKey);
@@ -197,7 +196,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
 		// Apply search
 		if (_searchQuery.trim()) {
-			result = filterService.applyFilter(result, BrowseFilterType.CONTAINS_LETTERS, _searchQuery);
+			result = applyBrowseFilter(result, BrowseFilterType.CONTAINS_LETTERS, _searchQuery);
 		}
 
 		// Apply sorting
