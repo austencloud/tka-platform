@@ -256,7 +256,7 @@ async function writeCatalogWithSequences(
 
 /**
  * Firestore rejects `undefined` field values. The base catalog object may carry
- * undefined optional fields (e.g. `asymmetric`, `sourceDeck`); strip them.
+ * undefined optional fields (e.g. `asymmetric`, `sourceCatalog`); strip them.
  * Sequences are already deep-cloned via JSON so they have no undefined fields,
  * but this is cheap insurance and keeps both write paths uniform.
  */

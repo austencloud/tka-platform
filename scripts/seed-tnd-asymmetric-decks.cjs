@@ -281,7 +281,7 @@ async function writeDeck(variant, sourceSequences, sourceMeta) {
     blueTurns,
     redTurns,
     asymmetric: true,
-    sourceDeck: SOURCE_DECK_ID,
+    sourceCatalog: SOURCE_DECK_ID,
     collection: "TnD",
     turnPattern: tkaPipe,
   });

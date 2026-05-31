@@ -266,7 +266,7 @@ async function writeDeck(variant, sourceSequences, sourceMeta) {
     description: `The 19 TnD motion categories at ${ratio} ratio (${turns} turns).`,
     vtgRatio: ratio,
     turns,
-    sourceDeck: SOURCE_DECK_ID,
+    sourceCatalog: SOURCE_DECK_ID,
   });
   batchCount++;
 

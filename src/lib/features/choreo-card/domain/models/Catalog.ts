@@ -22,8 +22,8 @@ export interface Catalog {
   readonly stepCount: number;
   readonly turnPattern: string;
   readonly reversalPattern: string;
-  /** Asymmetric blue|red turn enumerations reference a base deck's sequences and store none of their own. */
+  /** Asymmetric blue|red turn enumerations reference a base catalog's sequences and store none of their own. */
   readonly asymmetric?: boolean;
-  /** Catalog id this deck derives its sequences from (set on asymmetric enumerations). */
-  readonly sourceDeck?: string;
+  /** Catalog id this catalog derives its sequences from (set on asymmetric enumerations). */
+  readonly sourceCatalog?: string;
 }
