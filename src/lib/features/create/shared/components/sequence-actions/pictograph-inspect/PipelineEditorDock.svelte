@@ -213,21 +213,26 @@
   function syncNumericInputs() {
     if (editTarget === "special-json") {
       const repo = getSpecialOverrideRepository();
-      if (repo?.isInitialized && specialOverrideKey) {
-        const override = repo.getOverride(specialOverrideKey);
-        if (override) {
-          editX = override.x;
-          editY = override.y;
-        } else if (diagnostics?.specialJson) {
-          editX = diagnostics.specialJson.value.x;
-          editY = diagnostics.specialJson.value.y;
-        } else {
-          editX = 0;
-          editY = 0;
-        }
-      } else if (diagnostics?.specialJson) {
-        editX = diagnostics.specialJson.value.x;
-        editY = diagnostics.specialJson.value.y;
+      const override =
+        repo?.isInitialized && specialOverrideKey
+          ? repo.getOverride(specialOverrideKey)
+          : null;
+      if (override) {
+        editX = override.x;
+        editY = override.y;
+      } else if (diagnostics) {
+        // No Special override yet — seed from the CURRENT effective base (the
+        // value the arrow renders from now, whatever tier wins). Seeding from 0
+        // instead would make the first nudge REPLACE a large baseline with a
+        // fresh (0,0)+delta override, snapping the arrow across the grid. Both
+        // editX/editY and baseAdjustment are reference-space (pre-tuple), so the
+        // seeded override reproduces the current position and the first nudge
+        // just adds the delta.
+        editX = diagnostics.baseAdjustment.x;
+        editY = diagnostics.baseAdjustment.y;
+      } else {
+        editX = 0;
+        editY = 0;
       }
     } else if (editTarget === "default") {
       // diagnostics.default.value is already Firestore-first (resolver-sourced),
@@ -313,6 +318,17 @@
       );
       editX += refDelta.x;
       editY += refDelta.y;
+      // TEMP DIAGNOSTIC — set window.__DBG_ARROW = true, then press a direction.
+      // Pairs with [XFORM] (transform internals) + [TUPLE] (render). Shows the
+      // screen delta we asked for vs the reference delta stored. Remove once fixed.
+      if (typeof globalThis !== "undefined" && (globalThis as { __DBG_ARROW?: boolean }).__DBG_ARROW) {
+        console.log(
+          `[WASD] key=${key} screenDelta=(${dir.dx},${dir.dy}) ${activeColor}` +
+            ` mt=${String(motion.motionType).toLowerCase()} rot=${String(motion.rotationDirection).toLowerCase()}` +
+            ` prop=${motion.propType?.toLowerCase() ?? "staff"} arrowLoc=${arrowLocation}` +
+            ` → refDelta=(${refDelta.x},${refDelta.y}) editXY=(${editX},${editY})`,
+        );
+      }
     } else {
       editX += dir.dx;
       editY += dir.dy;
