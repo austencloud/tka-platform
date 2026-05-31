@@ -27,7 +27,10 @@ import {
 import type { SpecialPlacementDataProvider } from "./special-placement-data-provider";
 import type { TurnsTupleGenerator } from "./turns-tuple-generator";
 import type { SpecialPlacementLookup } from "./special-placement-lookup";
-import { getGlobalAdjustmentRepository } from "../../global/services/global-adjustment-singleton";
+import {
+  getGlobalAdjustmentRepository,
+  isGlobalReadDisabled,
+} from "../../global/services/global-adjustment-singleton";
 
 export class SpecialPlacer {
   constructor(
@@ -99,7 +102,7 @@ export class SpecialPlacer {
     // as orientation separators, producing "from_layer2" (wrong layer entirely).
     const legacyOriKey = mapToLegacyBucket(rawOriKey);
     const globalAdjustmentRepo = getGlobalAdjustmentRepository();
-    if (globalAdjustmentRepo?.isInitialized) {
+    if (!isGlobalReadDisabled() && globalAdjustmentRepo?.isInitialized) {
       const baseKey = {
         gridMode,
         oriKey,

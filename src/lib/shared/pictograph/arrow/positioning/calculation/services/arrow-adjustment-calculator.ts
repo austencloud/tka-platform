@@ -42,6 +42,7 @@ import {
   generateSpecialOverrideKey,
   extractOriFolderFromPath,
 } from "../../special-override/domain/SpecialArrowPlacement";
+import { computeSpecialOverrideKey } from "../../special-override/services/special-override-key";
 
 export class ArrowAdjustmentCalculator {
   /**
@@ -584,6 +585,15 @@ export class ArrowAdjustmentCalculator {
     attributeKey?: string
   ): Promise<Point | null> {
     try {
+      // Prop-scoped special override, checked regardless of static-JSON presence.
+      const overrideRepo = getSpecialOverrideRepository();
+      if (overrideRepo?.isInitialized && pictographData.letter) {
+        const override = overrideRepo.getOverride(
+          computeSpecialOverrideKey(pictographData, motionData, arrowColor ?? motionData.color),
+        );
+        if (override) return override;
+      }
+
       // Check Firestore special overrides first
       const specialOverrideRepo = getSpecialOverrideRepository();
       if (specialOverrideRepo?.isInitialized && pictographData.letter) {

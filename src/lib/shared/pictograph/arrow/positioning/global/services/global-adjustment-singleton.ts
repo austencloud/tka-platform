@@ -17,6 +17,10 @@ const logger = createComponentLogger("GlobalAdjustmentSingleton");
 let repositoryInstance: GlobalArrowAdjustmentRepository | null = null;
 let initializationPromise: Promise<void> | null = null;
 
+let globalReadDisabled = false;
+export function setGlobalReadDisabled(v: boolean): void { globalReadDisabled = v; }
+export function isGlobalReadDisabled(): boolean { return globalReadDisabled; }
+
 /**
  * Get the global adjustment repository instance.
  * Returns null if not initialized yet.
