@@ -1,1 +1,1 @@
-export { SequenceTransformer, sequenceTransformer } from "$lib/shared/create/services/SequenceTransformer";
+export { sequenceTransformer, type SequenceTransformer } from "$lib/shared/create/services/SequenceTransformer";
