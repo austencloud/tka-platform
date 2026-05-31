@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { Bloom2DRenderer, type BloomTipInput } from "./Bloom2DRenderer";
+import { Bloom2DRenderer, type BloomTipInput } from "./bloom-2d-renderer";
 import type { Bloom2DParams } from "../translators/canvas2d-types";
 
 interface GradientStop {

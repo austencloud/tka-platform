@@ -18,7 +18,7 @@ import {
   resolvePulse2D,
 } from "$lib/shared/effects/translators/canvas2d-translator";
 
-import { Bloom2DRenderer, type BloomTipInput } from "$lib/shared/effects/renderers/Bloom2DRenderer";
+import { Bloom2DRenderer, type BloomTipInput } from "$lib/shared/effects/renderers/bloom-2d-renderer";
 import { Bubbles2DRenderer, type BubblesTipInput } from "$lib/shared/effects/renderers/bubbles-2d-renderer";
 import { Echo2DRenderer, type EchoTipInput } from "$lib/shared/effects/renderers/echo-2d-renderer";
 import { Frost2DRenderer, type FrostTipInput } from "$lib/shared/effects/renderers/frost-2d-renderer";

@@ -15,7 +15,7 @@ import type { Bloom2DParams } from "$lib/shared/effects/translators/canvas2d-typ
 import {
   Bloom2DRenderer,
   type BloomTipInput,
-} from "$lib/shared/effects/renderers/Bloom2DRenderer";
+} from "$lib/shared/effects/renderers/bloom-2d-renderer";
 import { EffectRenderer } from "./effects/effect-renderer";
 
 export class BloomOverlayRenderer extends EffectRenderer {

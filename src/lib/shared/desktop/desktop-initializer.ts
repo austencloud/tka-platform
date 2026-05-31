@@ -1,5 +1,5 @@
 import { isDesktop } from "./is-desktop";
-import { DesktopDataSeeder } from "./DesktopDataSeeder";
+import { DesktopDataSeeder } from "./desktop-data-seeder";
 
 export class DesktopInitializer {
 	private seeder = new DesktopDataSeeder();
