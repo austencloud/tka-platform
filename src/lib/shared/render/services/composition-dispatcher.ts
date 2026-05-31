@@ -375,9 +375,18 @@ export class CompositionDispatcher {
     );
     console.log("[CompositionDispatcher] initPool glyphEntries:", glyphEntries.length, "bundle keys:", this.pendingBundle?.keys.length ?? 0, "grids:", this.pendingBundle ? Object.values(this.pendingBundle.grids).filter(Boolean).length : 0);
 
-    const initPromises: Promise<void>[] = [];
+    const glyphMeta: GlyphTransferEntry[] = glyphEntries.map((e) => ({
+      letter: e.letter,
+      naturalWidth: e.naturalWidth,
+      naturalHeight: e.naturalHeight,
+      isDash: e.isDash,
+    }));
 
-    for (let i = 0; i < POOL_SIZE; i++) {
+    // Spawn + seed every worker concurrently. `transfer` detaches the source
+    // bitmaps, so each worker needs its own clone; running the N clone-sets in
+    // parallel (instead of awaiting each inside a serial loop) is what turns the
+    // ~3.7s seed into a sub-second one.
+    const spawnWorker = async (i: number): Promise<void> => {
       try {
         const worker = new Worker(
           new URL("../workers/composition.worker.ts", import.meta.url),
@@ -385,50 +394,34 @@ export class CompositionDispatcher {
         );
 
         const entry: WorkerEntry = { worker, ready: false, pendingCount: 0 };
-
         worker.onerror = (err) => {
           console.error(`[CompositionDispatcher] Worker ${i} error:`, err);
         };
-
         this.workers.push(entry);
 
-        const initPromise = new Promise<void>((resolve, reject) => {
+        const ready = new Promise<void>((resolve, reject) => {
           const timeout = setTimeout(
             () => reject(new Error(`Worker ${i} init timeout`)),
             INIT_TIMEOUT_MS,
           );
-
-          const initHandler = (event: MessageEvent<CompositionWorkerOutMessage>) => {
+          worker.onmessage = (event: MessageEvent<CompositionWorkerOutMessage>) => {
             if (event.data.type === "init-done") {
               clearTimeout(timeout);
               entry.ready = true;
-              // Switch to the normal message handler
-              worker.onmessage = (ev: MessageEvent<CompositionWorkerOutMessage>) => {
+              worker.onmessage = (ev: MessageEvent<CompositionWorkerOutMessage>) =>
                 this.handleWorkerMessage(ev.data);
-              };
               resolve();
             }
           };
-          worker.onmessage = initHandler;
         });
 
-        initPromises.push(initPromise);
-
-        // Clone glyph bitmaps for each worker (transfer consumes the original)
+        // Clone glyph bitmaps for this worker (transfer consumes the original).
         const clonedBitmaps = await Promise.all(
-          glyphEntries.map(async (e) => createImageBitmap(e.bitmap)),
+          glyphEntries.map((e) => createImageBitmap(e.bitmap)),
         );
 
-        const glyphMeta: GlyphTransferEntry[] = glyphEntries.map((e) => ({
-          letter: e.letter,
-          naturalWidth: e.naturalWidth,
-          naturalHeight: e.naturalHeight,
-          isDash: e.isDash,
-        }));
-
-        // Clone the AssetBundle per worker (transfer consumes the originals,
-        // same reason the glyphs are cloned per worker). Empty bundle when none
-        // was set — the worker simply seeds nothing.
+        // Clone the AssetBundle per worker. Empty bundle when none was set —
+        // the worker simply seeds nothing.
         const bundle = this.pendingBundle;
         let bundleClone: import("./card-asset-bundle").AssetBundle = {
           keys: [],
@@ -439,9 +432,6 @@ export class CompositionDispatcher {
           const clonedBmps = await Promise.all(
             bundle.bitmaps.map((b) => createImageBitmap(b)),
           );
-          // grids are typed DrawableImage | null (HTMLImageElement | ImageBitmap);
-          // createImageBitmap accepts both via ImageBitmapSource. The main-thread
-          // bundle builder only ever produces ImageBitmaps, but honor the type.
           type GridSlot = import("./card-asset-bundle").AssetBundle["grids"]["diamond"];
           const cloneGrid = async (g: GridSlot): Promise<ImageBitmap | null> =>
             g ? await createImageBitmap(g as ImageBitmapSource) : null;
@@ -456,8 +446,6 @@ export class CompositionDispatcher {
             },
           };
         }
-        // Reuse the exported helper instead of duplicating the transfer-list build.
-        const bundleTransfer = bundleTransferables(bundleClone);
 
         const initMessage: CompositionWorkerInMessage = {
           type: "init",
@@ -465,14 +453,18 @@ export class CompositionDispatcher {
           glyphMeta,
           bundle: bundleClone,
         };
+        worker.postMessage(initMessage, [
+          ...clonedBitmaps,
+          ...bundleTransferables(bundleClone),
+        ]);
 
-        worker.postMessage(initMessage, [...clonedBitmaps, ...bundleTransfer]);
+        await ready;
       } catch (err) {
         console.error(`[CompositionDispatcher] Failed to create worker ${i}:`, err);
       }
-    }
+    };
 
-    await Promise.allSettled(initPromises);
+    await Promise.all(Array.from({ length: POOL_SIZE }, (_, i) => spawnWorker(i)));
 
     // Close the source glyph bitmaps — workers have their own clones
     for (const entry of glyphEntries) {
