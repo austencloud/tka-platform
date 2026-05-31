@@ -122,13 +122,13 @@
   }
 
   type View =
-    | { kind: "decks" }
-    | { kind: "solos"; deck: Catalog }
-    | { kind: "members"; deck: Catalog; group: SoloGroup };
+    | { kind: "catalogs" }
+    | { kind: "solos"; catalog: Catalog }
+    | { kind: "members"; catalog: Catalog; group: SoloGroup };
 
-  let decks = $state<Catalog[]>([]);
+  let catalogs = $state<Catalog[]>([]);
   let loading = $state(true);
-  let view = $state<View>({ kind: "decks" });
+  let view = $state<View>({ kind: "catalogs" });
   let groups = $state<SoloGroup[]>([]);
   let scanProgress = $state("");
 
@@ -138,14 +138,14 @@
 
   onMount(async () => {
     const cached = getCachedCatalogs();
-    if (cached && cached.length > 0) decks = cached;
+    if (cached && cached.length > 0) catalogs = cached;
     const fresh = await loadCatalogs();
-    decks = fresh;
+    catalogs = fresh;
     loading = false;
   });
 
-  async function openDeck(deck: Catalog) {
-    view = { kind: "solos", deck };
+  async function openCatalog(catalog: Catalog) {
+    view = { kind: "solos", catalog };
     groups = [];
     scanProgress = "Loading...";
 
@@ -155,7 +155,7 @@
     let loaded = 0;
 
     while (hasMore) {
-      const page = await loadCatalogSequencesPage(deck.id, FETCH_PAGE, lastDoc ?? undefined);
+      const page = await loadCatalogSequencesPage(catalog.id, FETCH_PAGE, lastDoc ?? undefined);
       for (const seq of page.sequences) {
         if (!seq.steps || seq.steps.length === 0) continue;
         const paths = calculateMandalaGeometry(seq.steps, "staff", "staff");
@@ -180,8 +180,8 @@
     scanProgress = "";
   }
 
-  function openMembers(group: SoloGroup, deck: Catalog) {
-    view = { kind: "members", deck, group };
+  function openMembers(group: SoloGroup, catalog: Catalog) {
+    view = { kind: "members", catalog, group };
   }
 
   function addToSheet(seq: SequenceData, paths: MandalaPaths) {
@@ -220,8 +220,8 @@
     return { svg, paths };
   }
 
-  function deckLabel(deck: Catalog): string {
-    return deck.name ?? `${deck.turnPattern ?? ""}`.replace("uniform-", "").replace("t", " Turn");
+  function catalogLabel(catalog: Catalog): string {
+    return catalog.name ?? `${catalog.turnPattern ?? ""}`.replace("uniform-", "").replace("t", " Turn");
   }
 
   // --- Diagnostic ---
@@ -254,7 +254,7 @@
 <div class="shape-browser">
   {#if view.kind === "members"}
     <nav class="sb-nav">
-      <button class="back-btn" onclick={() => view = { kind: "solos", deck: view.kind === "members" ? view.deck : decks[0]! }}>
+      <button class="back-btn" onclick={() => view = { kind: "solos", catalog: view.kind === "members" ? view.catalog : catalogs[0]! }}>
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
         Solos
       </button>
@@ -283,12 +283,12 @@
 
   {:else if view.kind === "solos"}
     <nav class="sb-nav">
-      <button class="back-btn" onclick={() => { view = { kind: "decks" }; groups = []; }}>
+      <button class="back-btn" onclick={() => { view = { kind: "catalogs" }; groups = []; }}>
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        Decks
+        Catalogs
       </button>
       <span class="sep" aria-hidden="true">/</span>
-      <span class="current">{deckLabel(view.deck)}</span>
+      <span class="current">{catalogLabel(view.catalog)}</span>
       {#if scanProgress}
         <span class="status"><i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> {scanProgress}</span>
       {:else}
@@ -301,7 +301,7 @@
         <button
           class="tile"
           class:copied={copiedKey === `s_${group.fp}`}
-          onclick={() => { if (view.kind === "solos") openMembers(group, view.deck); }}
+          onclick={() => { if (view.kind === "solos") openMembers(group, view.catalog); }}
           oncontextmenu={(e) => { e.preventDefault(); copyDiagnostic(`s_${group.fp}`, group.repSolo); }}
         >
           <div class="art">{@html renderSolo(group.repSolo, group.fp)}</div>
@@ -311,7 +311,7 @@
       {/each}
 
       {#if groups.length === 0 && !scanProgress}
-        <p class="empty">No sequences in this deck</p>
+        <p class="empty">No sequences in this catalog</p>
       {/if}
     </div>
 
@@ -321,43 +321,43 @@
       {#if loading}
         <span class="status"><i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> Loading</span>
       {:else}
-        <span class="status">{decks.length} decks</span>
+        <span class="status">{catalogs.length} catalogs</span>
       {/if}
     </div>
 
-    {@const loopDecks = decks.filter(d => d.collection === 'LOOPs')}
-    {@const tndDecks = decks.filter(d => d.collection !== 'LOOPs')}
+    {@const loopCatalogs = catalogs.filter(d => d.collection === 'LOOPs')}
+    {@const tndCatalogs = catalogs.filter(d => d.collection !== 'LOOPs')}
 
-    <div class="deck-list">
-      {#if loopDecks.length > 0}
+    <div class="catalog-list">
+      {#if loopCatalogs.length > 0}
         <section>
-          <h3 class="section-label">LOOP Catalogs <span class="dim">({loopDecks.length})</span></h3>
-          <div class="deck-grid">
-            {#each loopDecks as deck (deck.id)}
-              <button class="deck-card" onclick={() => openDeck(deck)}>
-                <span class="deck-name">{deckLabel(deck)}</span>
-                <span class="deck-meta">{deck.totalSequences.toLocaleString()} seq</span>
+          <h3 class="section-label">LOOP Catalogs <span class="dim">({loopCatalogs.length})</span></h3>
+          <div class="catalog-grid">
+            {#each loopCatalogs as catalog (catalog.id)}
+              <button class="catalog-card" onclick={() => openCatalog(catalog)}>
+                <span class="catalog-name">{catalogLabel(catalog)}</span>
+                <span class="catalog-meta">{catalog.totalSequences.toLocaleString()} seq</span>
               </button>
             {/each}
           </div>
         </section>
       {/if}
-      {#if tndDecks.length > 0}
+      {#if tndCatalogs.length > 0}
         <section>
-          <h3 class="section-label">TnD Catalogs <span class="dim">({tndDecks.length})</span></h3>
-          <div class="deck-grid">
-            {#each tndDecks as deck (deck.id)}
-              <button class="deck-card" onclick={() => openDeck(deck)}>
-                <span class="deck-name">{deckLabel(deck)}</span>
-                <span class="deck-meta">{deck.totalSequences.toLocaleString()} seq</span>
+          <h3 class="section-label">TnD Catalogs <span class="dim">({tndCatalogs.length})</span></h3>
+          <div class="catalog-grid">
+            {#each tndCatalogs as catalog (catalog.id)}
+              <button class="catalog-card" onclick={() => openCatalog(catalog)}>
+                <span class="catalog-name">{catalogLabel(catalog)}</span>
+                <span class="catalog-meta">{catalog.totalSequences.toLocaleString()} seq</span>
               </button>
             {/each}
           </div>
         </section>
       {/if}
 
-      {#if !loading && decks.length === 0}
-        <p class="empty">No decks found</p>
+      {#if !loading && catalogs.length === 0}
+        <p class="empty">No catalogs found</p>
       {/if}
     </div>
   {/if}
@@ -413,7 +413,7 @@
   }
   .title { font-size: 14px; font-weight: 600; color: #fff; }
 
-  .deck-list {
+  .catalog-list {
     flex: 1;
     overflow-y: auto;
     padding: 16px;
@@ -434,13 +434,13 @@
   }
   .dim { font-weight: 400; }
 
-  .deck-grid {
+  .catalog-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 8px;
   }
 
-  .deck-card {
+  .catalog-card {
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -453,10 +453,10 @@
     text-align: left;
     font: inherit;
   }
-  .deck-card:hover { border-color: var(--accent, #63b7cd); }
-  .deck-card:focus-visible { outline: 2px solid var(--accent, #63b7cd); outline-offset: 2px; }
-  .deck-name { font-size: 13px; font-weight: 600; }
-  .deck-meta { font-size: 11px; color: rgba(255, 255, 255, 0.4); }
+  .catalog-card:hover { border-color: var(--accent, #63b7cd); }
+  .catalog-card:focus-visible { outline: 2px solid var(--accent, #63b7cd); outline-offset: 2px; }
+  .catalog-name { font-size: 13px; font-weight: 600; }
+  .catalog-meta { font-size: 11px; color: rgba(255, 255, 255, 0.4); }
 
   .grid {
     flex: 1;
@@ -539,13 +539,13 @@
   }
 
   @media (max-width: 768px) {
-    .deck-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .catalog-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
     .grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); padding: 12px; }
-    .deck-list { padding: 12px; gap: 16px; }
+    .catalog-list { padding: 12px; gap: 16px; }
     .sb-nav, .sb-header { padding: 10px 12px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .tile, .deck-card, .back-btn { transition: none; }
+    .tile, .catalog-card, .back-btn { transition: none; }
   }
 </style>
