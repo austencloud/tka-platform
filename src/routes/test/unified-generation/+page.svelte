@@ -15,6 +15,10 @@
   import StepperCard from "$lib/features/create/generate/components/cards/StepperCard/StepperCard.svelte";
   import { getCardColors } from "$lib/shared/create/domain/card-colors";
   import { BackgroundType } from "@austencloud/backgrounds";
+  import LOOPExpandedOverlay from "$lib/features/create/generate/components/cards/LOOPExpandedOverlay.svelte";
+  import { LOOPType, LOOP_TYPE_LABELS, ROTATED_LOOP_TYPES } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
+  import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
 
   const c = getCardColors(BackgroundType.COSMIC); // DEFAULT_COLORS gradients
   const LOOP_COLOR = "linear-gradient(135deg, #a3a32a 0%, #8a8a22 50%, #6b6b1a 100%)";
@@ -47,13 +51,11 @@
     return buf[0]!.toString(16).padStart(8, "0") + buf[1]!.toString(16).padStart(8, "0");
   }
 
-  const LOOP_TYPES = ["rotated", "mirrored", "swapped", "inverted", "flipped"] as const;
-  type LoopType = (typeof LOOP_TYPES)[number];
-  const LOOP_FACTOR: Record<LoopType, number> = { rotated: 1, mirrored: 0.55, swapped: 0.5, inverted: 0.6, flipped: 0.45 };
   // Base LOOP seeds that close for a (type, stepCount). Finite & computable, but nonzero for
   // every valid length — generation produces these FRESH; it never draws from a fixed store.
-  function baseLoops(step: number, lt: LoopType): number {
-    return Math.max(6, Math.round(Math.pow(step / 2, 3) * 4 * LOOP_FACTOR[lt]));
+  function loopFactor(lt: LOOPType): number { return ROTATED_LOOP_TYPES.has(lt) ? 1 : 0.6; }
+  function baseLoops(step: number, lt: LOOPType): number {
+    return Math.max(6, Math.round(Math.pow(step / 2, 3) * 4 * loopFactor(lt)));
   }
 
   // ---- state ------------------------------------------------------------------
@@ -64,7 +66,9 @@
   let level = $state(1);
   let grid = $state<"diamond" | "box">("diamond");
   let orientation = $state<"radial" | "nonradial" | "split">("radial");
-  let loopType = $state<LoopType>("rotated");
+  let loopType = $state<LOOPType>(LOOPType.ROTATED);
+  let loopComponents = $state<Set<LOOPComponent>>(parseLoopComponents(LOOPType.ROTATED));
+  let showLoop = $state(false);
   let period = $state<"quartered" | "halved">("quartered");
   let turns = $state<"none" | "light" | "medium" | "heavy">("light"); // turn intensity
   let turnVariation = $state<"clean" | "sprinkle" | "spicy">("sprinkle");
@@ -81,7 +85,6 @@
   function togglePattern(p: string) {
     const next = new Set(turnPatterns); next.has(p) ? next.delete(p) : next.add(p); turnPatterns = next;
   }
-  function cycleLoop() { loopType = LOOP_TYPES[(LOOP_TYPES.indexOf(loopType) + 1) % LOOP_TYPES.length]!; }
   function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
   // ---- derived ----------------------------------------------------------------
@@ -149,6 +152,7 @@
 
   <div class="layout">
     <section class="grid-pane">
+      <div class="grid-stage">
       <div class="card-grid">
         <!-- Row 1 -->
         {#if wordEditing}
@@ -185,7 +189,7 @@
         <!-- Row 3 -->
         <BaseCard title="Customize" currentValue={customizeSummary} color={c.customize.color} shadowColor={c.customize.shadowColor} gridColumnSpan={2} onClick={() => (showDetail = !showDetail)} />
 
-        <BaseCard title="Loop" currentValue={cap(loopType)} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={cycleLoop} />
+        <BaseCard title="Loop" currentValue={LOOP_TYPE_LABELS[loopType]} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
 
         <ToggleCard title="Period" option1={{ value: "quartered", label: "Quartered" }} option2={{ value: "halved", label: "Halved" }} activeOption={period} onToggle={(v) => (period = v as typeof period)} color={c.period.color} shadowColor={c.period.shadowColor} gridColumnSpan={2} />
 
@@ -194,6 +198,15 @@
           <i class="fas fa-dice"></i>
           <span>{wordMode ? `Generate ${drawCount} variations` : `Generate ${drawCount}`}</span>
         </button>
+      </div>
+        {#if showLoop}
+          <LOOPExpandedOverlay
+            currentType={loopType}
+            selectedComponents={loopComponents}
+            onChange={(lt: LOOPType) => { loopType = lt; loopComponents = parseLoopComponents(lt); showLoop = false; }}
+            onClose={() => (showLoop = false)}
+          />
+        {/if}
       </div>
 
       {#if showOrient}
@@ -298,6 +311,7 @@
   @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
 
   .grid-pane { display: flex; flex-direction: column; gap: 14px; }
+  .grid-stage { position: relative; }
   .card-grid {
     display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
     grid-auto-rows: 112px; gap: 10px; width: 100%; max-width: 760px; margin: 0 auto;
