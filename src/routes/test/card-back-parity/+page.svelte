@@ -108,6 +108,13 @@
   function frontOptions(): Partial<SequenceExportOptions> {
     return {
       deckCard: { contentWidth: OUT_W, contentHeight: OUT_H },
+      // Pin the prop type so BOTH paths render deterministically. Without this,
+      // main resolves prop type via getSettings (app default) while the worker's
+      // getSettings is unavailable and falls back to STAFF — a guaranteed
+      // mismatch. STAFF matches the asset bundle seeded below.
+      propTypeOverride: PropType.STAFF,
+      bluePropTypeOverride: PropType.STAFF,
+      redPropTypeOverride: PropType.STAFF,
       includeStartPosition: true,
       startPositionLayout: "row",
       addStepNumbers: true,

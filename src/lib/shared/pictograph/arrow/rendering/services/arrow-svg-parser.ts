@@ -10,15 +10,15 @@ import type { SVGDimensions } from "../../../shared/domain/models/svg-models";
  * Parse SVG to get proper dimensions and center point (extracted from Arrow.svelte)
  */
 export function parseArrowSvg(svgText: string): SVGDimensions {
-  const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
-  const svg = doc.documentElement;
-
-  const viewBoxValues = svg.getAttribute("viewBox")?.split(/\s+/) || [
-    "0",
-    "0",
-    "100",
-    "100",
-  ];
+  // Regex parse (no DOMParser): the composition worker has no DOM and DOMParser
+  // is undefined there. Reads the same `viewBox` attribute and `#centerPoint`
+  // cx/cy the DOM path used.
+  const vbMatch = svgText.match(
+    /<svg\b[^>]*\bviewBox\s*=\s*["']([^"']+)["']/i
+  );
+  const viewBoxValues = vbMatch
+    ? vbMatch[1]!.trim().split(/\s+/)
+    : ["0", "0", "100", "100"];
   let viewBox = {
     width: parseFloat(viewBoxValues[2] || "100") || 100,
     height: parseFloat(viewBoxValues[3] || "100") || 100,
@@ -39,31 +39,30 @@ export function parseArrowSvg(svgText: string): SVGDimensions {
 
   let center = { x: viewBox.width / 2, y: viewBox.height / 2 };
 
-  try {
-    const centerElement = doc.getElementById("centerPoint");
-    if (centerElement) {
-      const rawCenterX =
-        parseFloat(centerElement.getAttribute("cx") || "0") || center.x;
-      const rawCenterY =
-        parseFloat(centerElement.getAttribute("cy") || "0") || center.y;
+  // Find the centerPoint element (id="centerPoint") and read its cx/cy.
+  const cpTag = svgText.match(
+    /<[^>]*\bid\s*=\s*["']centerPoint["'][^>]*>/i
+  );
+  if (cpTag) {
+    const cxM = cpTag[0].match(/\bcx\s*=\s*["']([^"']+)["']/i);
+    const cyM = cpTag[0].match(/\bcy\s*=\s*["']([^"']+)["']/i);
+    const rawCenterX = cxM ? parseFloat(cxM[1]!) || center.x : center.x;
+    const rawCenterY = cyM ? parseFloat(cyM[1]!) || center.y : center.y;
 
-      if (isDashArrow) {
-        const targetSize = 250;
-        const originalSize = Math.max(
-          parseFloat(viewBoxValues[2] || "100"),
-          parseFloat(viewBoxValues[3] || "100")
-        );
-        const scaleFactor = targetSize / originalSize;
-        center = {
-          x: rawCenterX * scaleFactor,
-          y: rawCenterY * scaleFactor,
-        };
-      } else {
-        center = { x: rawCenterX, y: rawCenterY };
-      }
+    if (isDashArrow) {
+      const targetSize = 250;
+      const originalSize = Math.max(
+        parseFloat(viewBoxValues[2] || "100"),
+        parseFloat(viewBoxValues[3] || "100")
+      );
+      const scaleFactor = targetSize / originalSize;
+      center = {
+        x: rawCenterX * scaleFactor,
+        y: rawCenterY * scaleFactor,
+      };
+    } else {
+      center = { x: rawCenterX, y: rawCenterY };
     }
-  } catch {
-    // SVG center calculation failed, using default center
   }
 
   return {
