@@ -14,7 +14,7 @@
  * Direct TypeScript mirror of reference/modern/application/services/positioning/arrows/placement/special_placement_service.py
  */
 
-import type { Point as FabricPoint } from "fabric";
+import { Point as FabricPoint } from "fabric";
 import { deriveGridMode as _deriveGridMode } from "../../../../grid/services/grid-mode-deriver";
 import { GridMode } from "../../../../grid/domain/enums/grid-enums";
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
@@ -116,7 +116,7 @@ export class SpecialPlacer {
       );
 
       if (cascadingResult) {
-        return cascadingResult.adjustment;
+        return new FabricPoint(cascadingResult.adjustment.x, cascadingResult.adjustment.y);
       }
     }
 

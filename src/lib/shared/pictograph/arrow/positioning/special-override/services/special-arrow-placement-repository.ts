@@ -5,7 +5,6 @@
  * Provides the main interface for the rendering pipeline and UI.
  */
 
-import type { Point } from "fabric";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import {
   generateSpecialOverrideKey,
@@ -81,7 +80,7 @@ export class SpecialArrowPlacementRepository {
     }
   }
 
-  getOverride(key: string): Point | null {
+  getOverride(key: string): { x: number; y: number } | null {
     return this.state.getOverride(key);
   }
 
