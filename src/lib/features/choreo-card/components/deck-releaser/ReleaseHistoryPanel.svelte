@@ -6,9 +6,31 @@
     isLoading: boolean;
     activeDeckNumber: number | null;
     onSelectRelease: (release: DeckRelease) => void;
+    /** Permanently delete a deck. Omit to hide delete affordances. */
+    onDeleteRelease?: (deckNumber: number) => void;
   }
 
-  const { releases, isLoading, activeDeckNumber, onSelectRelease }: Props = $props();
+  const { releases, isLoading, activeDeckNumber, onSelectRelease, onDeleteRelease }: Props = $props();
+
+  // Deck number currently in the two-step confirm state (trash → ✓/✗). Only one
+  // row confirms at a time; selecting/confirming/cancelling clears it.
+  let confirmingDelete = $state<number | null>(null);
+
+  function startConfirm(e: MouseEvent, deckNumber: number) {
+    e.stopPropagation();
+    confirmingDelete = deckNumber;
+  }
+
+  function cancelConfirm(e: MouseEvent) {
+    e.stopPropagation();
+    confirmingDelete = null;
+  }
+
+  function confirmDelete(e: MouseEvent, deckNumber: number) {
+    e.stopPropagation();
+    confirmingDelete = null;
+    onDeleteRelease?.(deckNumber);
+  }
 
   function formatDate(iso: string): string {
     const d = new Date(iso);
@@ -49,24 +71,58 @@
   {:else}
     <div class="release-list">
       {#each releases as release (release.deckNumber)}
-        <button
-          type="button"
-          class="release-item"
-          class:active={activeDeckNumber === release.deckNumber}
-          onclick={() => onSelectRelease(release)}
-          aria-label="View Deck {release.deckNumber}: {displayName(release)}"
-          aria-pressed={activeDeckNumber === release.deckNumber}
-        >
-          <div class="release-header">
-            <span class="deck-badge">#{String(release.deckNumber).padStart(3, "0")}</span>
-            <span class="release-date">{formatDate(release.createdAt)}</span>
-          </div>
-          <div class="release-notes">{displayName(release)}</div>
-          <div class="release-meta">
-            <span class="card-count">{release.cardCount} cards</span>
-            <span class="distribution">{distributionSummary(release.stepCountDistribution)}</span>
-          </div>
-        </button>
+        <div class="release-row" class:active={activeDeckNumber === release.deckNumber}>
+          <button
+            type="button"
+            class="release-item"
+            onclick={() => onSelectRelease(release)}
+            aria-label="View Deck {release.deckNumber}: {displayName(release)}"
+            aria-pressed={activeDeckNumber === release.deckNumber}
+          >
+            <div class="release-header">
+              <span class="deck-badge">#{String(release.deckNumber).padStart(3, "0")}</span>
+              <span class="release-date">{formatDate(release.createdAt)}</span>
+            </div>
+            <div class="release-notes">{displayName(release)}</div>
+            <div class="release-meta">
+              <span class="card-count">{release.cardCount} cards</span>
+              <span class="distribution">{distributionSummary(release.stepCountDistribution)}</span>
+            </div>
+          </button>
+
+          {#if onDeleteRelease}
+            <div class="row-actions">
+              {#if confirmingDelete === release.deckNumber}
+                <button
+                  type="button"
+                  class="confirm-btn confirm-yes"
+                  onclick={(e) => confirmDelete(e, release.deckNumber)}
+                  aria-label="Confirm delete Deck {release.deckNumber}"
+                >
+                  <i class="fas fa-check" aria-hidden="true"></i> Delete
+                </button>
+                <button
+                  type="button"
+                  class="confirm-btn confirm-no"
+                  onclick={cancelConfirm}
+                  aria-label="Cancel delete"
+                >
+                  <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+              {:else}
+                <button
+                  type="button"
+                  class="trash-btn"
+                  onclick={(e) => startConfirm(e, release.deckNumber)}
+                  aria-label="Delete Deck {release.deckNumber}"
+                  title="Delete deck"
+                >
+                  <i class="fas fa-trash" aria-hidden="true"></i>
+                </button>
+              {/if}
+            </div>
+          {/if}
+        </div>
       {/each}
     </div>
   {/if}
@@ -132,34 +188,103 @@
     gap: 4px;
   }
 
+  .release-row {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    border-radius: 8px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    transition: border-color 0.15s ease;
+  }
+
+  .release-row:hover { border-color: rgba(255, 255, 255, 0.15); }
+
+  .release-row.active {
+    border-color: var(--theme-accent, rgba(139, 92, 246, 0.5));
+    background: rgba(139, 92, 246, 0.08);
+  }
+
   .release-item {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
     padding: 10px 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    background: transparent;
+    border: none;
     border-radius: 8px;
     cursor: pointer;
     text-align: left;
-    width: 100%;
     color: inherit;
     font: inherit;
-    transition: border-color 0.15s ease;
-  }
-
-  .release-item:hover {
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-
-  .release-item.active {
-    border-color: var(--theme-accent, rgba(139, 92, 246, 0.5));
-    background: rgba(139, 92, 246, 0.08);
   }
 
   .release-item:focus-visible {
     outline: 2px solid var(--theme-accent, #8b5cf6);
     outline-offset: 2px;
+  }
+
+  .row-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding-right: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Trash hidden until row hover/focus on pointer devices; always shown on touch. */
+  .trash-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s, background 0.15s;
+  }
+
+  .release-row:hover .trash-btn,
+  .release-row:focus-within .trash-btn { opacity: 1; }
+
+  .trash-btn:hover {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.12);
+  }
+
+  .confirm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 32px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: none;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .confirm-yes { background: #ef4444; color: #fff; }
+  .confirm-yes:hover { background: #dc2626; }
+
+  .confirm-no {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 4px 8px;
+  }
+
+  .confirm-no:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+
+  @media (hover: none) {
+    .trash-btn { opacity: 1; }
   }
 
   .release-header {
@@ -206,7 +331,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .release-item {
+    .release-row {
       transition: none;
     }
   }
