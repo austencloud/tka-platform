@@ -21,14 +21,12 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { LetterDeriver } from '$lib/shared/navigation/services/letter-deriver'
-import type { PositionDeriver } from '$lib/shared/navigation/services/position-deriver'
+import { deriveLettersForSequence } from "$lib/shared/navigation/services/letter-deriver";
+import { derivePositionsForSequence } from "$lib/shared/navigation/services/position-deriver";
 import type { ILOOPDetector } from "$lib/shared/create/services/ILOOPDetector";
 import { deriveGridMode } from "../../pictograph/grid/services/grid-mode-deriver";
 
 export interface SequenceHydratorDeps {
-  letterDeriver: LetterDeriver | null;
-  positionDeriver: PositionDeriver | null;
   loopDetector: ILOOPDetector | null;
 }
 
@@ -36,15 +34,11 @@ export async function hydrateSequence(
   sequence: SequenceData,
   deps: SequenceHydratorDeps
 ): Promise<SequenceData> {
-  const { letterDeriver, positionDeriver, loopDetector } = deps;
+  const { loopDetector } = deps;
 
   const [withLetters, withPositions] = await Promise.all([
-    letterDeriver
-      ? letterDeriver.deriveLettersForSequence(sequence)
-      : Promise.resolve(sequence),
-    positionDeriver
-      ? positionDeriver.derivePositionsForSequence(sequence)
-      : Promise.resolve(sequence),
+    deriveLettersForSequence(sequence),
+    derivePositionsForSequence(sequence),
   ]);
 
   // Merge: letters take precedence (they carry `word`), but fall back

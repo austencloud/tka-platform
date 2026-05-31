@@ -25,8 +25,8 @@ export interface DeepLinkLoadResult {
   source?: "deepLink" | "pendingEdit";
 }
 import type { DeepLinker } from "$lib/shared/navigation/services/deep-linker";
-import type { LetterDeriver } from '$lib/shared/navigation/services/letter-deriver'
-import type { PositionDeriver } from '$lib/shared/navigation/services/position-deriver'
+import { deriveLettersForSequence } from "$lib/shared/navigation/services/letter-deriver";
+import { derivePositionsForSequence } from "$lib/shared/navigation/services/position-deriver";
 
 const PENDING_EDIT_KEY = "tka-pending-edit-sequence";
 
@@ -38,11 +38,7 @@ const PENDING_EDIT_KEY = "tka-pending-edit-sequence";
 let pendingEditProcessedThisSession = false;
 
 export class DeepLinkSequenceHandler {
-  constructor(
-    private deepLinkService: DeepLinker | null,
-    private LetterDeriver: LetterDeriver | null,
-    private positionDeriverService: PositionDeriver | null
-  ) {}
+  constructor(private deepLinkService: DeepLinker | null) {}
 
   hasDeepLink(): boolean {
     return this.deepLinkService?.hasDataForModule("create") ?? false;
@@ -162,17 +158,9 @@ export class DeepLinkSequenceHandler {
     sequence: SequenceData,
     setSequence: (sequence: SequenceData) => void
   ): void {
-    // If services aren't available, skip enrichment
-    if (!this.positionDeriverService || !this.LetterDeriver) {
-      console.warn(
-        "Deriver services not available - sequence will not be enriched"
-      );
-      return;
-    }
-
     Promise.all([
-      this.positionDeriverService.derivePositionsForSequence(sequence),
-      this.LetterDeriver.deriveLettersForSequence(sequence),
+      derivePositionsForSequence(sequence),
+      deriveLettersForSequence(sequence),
     ])
       .then(([sequenceWithPositions, sequenceWithLetters]) => {
         const enrichedSequence = this.mergeEnrichedSequence(
@@ -240,8 +228,4 @@ export class DeepLinkSequenceHandler {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 // Dependencies are optional - pass null since they come from navigation layer
-export const deepLinkSequenceHandler = new DeepLinkSequenceHandler(
-  null,
-  null,
-  null
-);
+export const deepLinkSequenceHandler = new DeepLinkSequenceHandler(null);

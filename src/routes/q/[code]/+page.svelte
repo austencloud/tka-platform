@@ -23,8 +23,6 @@
   import { ShortCodeManager } from "$lib/shared/qr/services/short-code-manager";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
-  import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
-  import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
   import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -343,8 +341,6 @@
       trickleTo(96);
 
       seq = await hydrateSequence(seq, {
-        letterDeriver: getLetterDeriver(),
-        positionDeriver: getPositionDeriver(),
         loopDetector,
       });
 

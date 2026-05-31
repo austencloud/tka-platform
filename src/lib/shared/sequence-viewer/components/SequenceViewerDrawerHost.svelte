@@ -29,8 +29,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
   import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
   import { isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
-  import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
-  import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { getLoopDetector } from "$lib/shared/create/getLoopDetector";
@@ -242,8 +240,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
       if (!stillMatches) return;
 
       const hydrated = await hydrateSequence(resolved, {
-        letterDeriver: getLetterDeriver(),
-        positionDeriver: getPositionDeriver(),
         loopDetector: getLoopDetector(),
       });
 

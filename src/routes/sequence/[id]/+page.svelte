@@ -2,7 +2,7 @@
 
 import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
-import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
+import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { page } from "$app/state";
   import { goto, replaceState } from "$app/navigation";
   import { browser } from "$app/environment";
@@ -14,8 +14,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
   import { parsePropsFromURL, parseSequenceRouteId, decodeSequenceWithCompression, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
   import { decodeViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
-  import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
-  import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
   import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -300,8 +298,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
           let decoded = decodeSequenceWithCompression(parsed.encoded);
 
           decoded = await hydrateSequence(decoded, {
-            letterDeriver: getLetterDeriver(),
-            positionDeriver: getPositionDeriver(),
             loopDetector,
           });
 
@@ -352,8 +348,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
           const decoded = decodeSequenceWithCompression(decodeURIComponent(id));
           if (decoded) {
             sequence = await hydrateSequence(decoded, {
-              letterDeriver: getLetterDeriver(),
-              positionDeriver: getPositionDeriver(),
               loopDetector,
             });
             isLoading = false;
@@ -391,8 +385,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       }
 
       if (!resolvedSequence) {
-        const provider = getSequenceDataProvider();
-        resolvedSequence = await provider.loadByIdentifier(id);
+        resolvedSequence = await loadByIdentifier(id);
       }
 
       // Try user's Firestore library (e.g. sync room IDs are Firestore doc IDs)
@@ -412,8 +405,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       }
 
       sequence = await hydrateSequence(resolvedSequence, {
-        letterDeriver: getLetterDeriver(),
-        positionDeriver: getPositionDeriver(),
         loopDetector,
       });
       // Apply URL prop preferences (from QR codes with embedded prop info)
