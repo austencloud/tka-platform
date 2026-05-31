@@ -75,7 +75,7 @@
               role="switch"
               aria-checked={v !== base}
               aria-label="{lane.label} beat {bi + 1}"
-              onclick={() => onEdit(li, bi, (v === base ? lane.values.find(() => true) : base) as T)}
+              onclick={() => onEdit(li, bi, (v === base ? (valueList.find((x) => x !== base) ?? base) : base) as T)}
             >
               <i class="fa-solid fa-rotate"></i>
             </button>
