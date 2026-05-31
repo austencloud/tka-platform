@@ -38,6 +38,8 @@ import {
   invertBeat,
   rewindBeat,
 } from "$lib/shared/create/services/step-transforms";
+import { rewindMotion } from "$lib/shared/create/services/motion-transforms";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import {
   mirrorStartPosition,
   flipStartPosition,
@@ -274,9 +276,18 @@ export async function invertSequence(
 
 /**
  * Rewind sequence (play backwards).
- * Creates new start position from final beat, reverses and transforms steps.
- * @param targetHand - Which hand(s) to transform. Defaults to "both".
- * Note: Beat reordering only happens when both hands are selected.
+ *
+ * "both": the whole sequence plays in reverse — reverse beat ORDER and rewind
+ * each beat (both hands), with the new start position taken from the old final
+ * end.
+ *
+ * "blue"/"red": rewind ONE hand's path while the other hand plays forward. This
+ * is an independent, valid operation — the target hand retraces its own path and
+ * the other hand is untouched, so both hands stay continuous. The result is a
+ * legitimate sequence with new letters and a different feel. See
+ * {@link rewindSingleHand}.
+ *
+ * @param targetHand - Which hand(s) to rewind. Defaults to "both".
  */
 export async function rewindSequence(
   sequence: SequenceData,
@@ -287,42 +298,133 @@ export async function rewindSequence(
 
   const gridMode = sequence.gridMode ?? GridMode.DIAMOND;
 
-  // Only reverse beat order and create new start position when both hands selected
-  const shouldReverseOrder = targetHand === "both";
+  if (targetHand !== "both") {
+    return rewindSingleHand(sequence, targetHand, gridMode, motionQueryHandler);
+  }
 
-  // Create new start position from final beat's end state (only for both hands)
+  // Both hands: reverse beat order, rewind each beat, derive the new start
+  // position from the old final beat's end state.
   const finalStep = sequence.steps[sequence.steps.length - 1]!;
-  const newStartPosition = shouldReverseOrder
-    ? createStartPositionFromStepEnd(finalStep)
-    : sequence.startPosition;
+  const newStartPosition = createStartPositionFromStepEnd(finalStep);
 
-  // Rewind and transform each beat
+  const beatsToProcess = [...sequence.steps].reverse();
   const rewindBeats: StepData[] = [];
-  const beatsToProcess = shouldReverseOrder
-    ? [...sequence.steps].reverse()
-    : sequence.steps;
-
   for (let index = 0; index < beatsToProcess.length; index++) {
     const beat = beatsToProcess[index]!;
     const rewoundBeat = await rewindBeat(
       beat,
-      shouldReverseOrder ? index + 1 : beat.stepNumber,
+      index + 1,
       gridMode,
       motionQueryHandler,
-      targetHand
+      "both"
     );
     rewindBeats.push(rewoundBeat);
   }
 
   return updateSequenceData(sequence, {
     steps: rewindBeats,
-    ...(shouldReverseOrder && newStartPosition
-      ? {
-          startPosition: newStartPosition,
-          startingPosition: newStartPosition,
-          name: `${sequence.name} (Rewound)`,
-        }
+    startPosition: newStartPosition,
+    startingPosition: newStartPosition,
+    name: `${sequence.name} (Rewound)`,
+  });
+}
+
+/**
+ * Rewind a single hand's path while the other hand plays forward.
+ *
+ * The correctness point: reverse the target hand's BEAT ORDER, do not flip each
+ * beat in place. New beat i pairs the rewound (N-1-i)th target motion with the
+ * i-th forward other-hand motion. Because the target retraces its own contiguous
+ * path and the other hand keeps its own, both hands chain (each beat's start ==
+ * previous beat's end). Positions and letters are re-derived from the new
+ * hand-location pairs (they are genuinely new — neither the original start nor
+ * end labels apply). The new start position is just beat 1's start state: the
+ * target hand at its path end, the other hand at its original start.
+ */
+async function rewindSingleHand(
+  sequence: SequenceData,
+  targetHand: Exclude<TargetHand, "both">,
+  gridMode: GridMode,
+  motionQueryHandler: IMotionQueryHandler
+): Promise<SequenceData> {
+  const steps = sequence.steps;
+  const n = steps.length;
+  const targetColor =
+    targetHand === "blue" ? MotionColor.BLUE : MotionColor.RED;
+
+  const newSteps: StepData[] = [];
+  for (let i = 0; i < n; i++) {
+    const forwardStep = steps[i]!; // supplies the non-target hand (forward)
+    const targetSource = steps[n - 1 - i]!; // supplies the rewound target hand
+
+    const newMotions = { ...forwardStep.motions };
+    const targetSrcMotion = targetSource.motions[targetColor];
+    if (targetSrcMotion) {
+      newMotions[targetColor] = rewindMotion(targetSrcMotion);
+    }
+
+    const blueM = newMotions[MotionColor.BLUE];
+    const redM = newMotions[MotionColor.RED];
+
+    let startPosition: GridPosition | null = forwardStep.startPosition ?? null;
+    let endPosition: GridPosition | null = forwardStep.endPosition ?? null;
+    if (blueM && redM) {
+      try {
+        startPosition = getGridPositionFromLocations(
+          blueM.startLocation,
+          redM.startLocation
+        );
+        endPosition = getGridPositionFromLocations(
+          blueM.endLocation,
+          redM.endLocation
+        );
+      } catch (error) {
+        console.warn(
+          "Failed to derive positions for single-hand rewind beat:",
+          error
+        );
+      }
+    }
+
+    let letter: Letter | null = forwardStep.letter ?? null;
+    if (blueM && redM) {
+      try {
+        const found = await motionQueryHandler.findLetterByMotionConfiguration(
+          blueM,
+          redM,
+          gridMode
+        );
+        if (found) letter = found as Letter;
+      } catch (error) {
+        console.error("Error looking up letter for single-hand rewind:", error);
+      }
+    }
+
+    newSteps.push(
+      createStepData({
+        ...forwardStep,
+        stepNumber: i + 1,
+        motions: newMotions,
+        startPosition,
+        endPosition,
+        letter,
+        // Reversal flags must be recalculated for the new ordering.
+        blueReversal: false,
+        redReversal: false,
+      })
+    );
+  }
+
+  const newStartPosition = newSteps[0]
+    ? createStartPositionFromBeatStart(newSteps[0])
+    : sequence.startPosition;
+
+  return updateSequenceData(sequence, {
+    steps: newSteps,
+    ...(newStartPosition
+      ? { startPosition: newStartPosition, startingPosition: newStartPosition }
       : {}),
+    name: `${sequence.name} (Rewound)`,
   });
 }
 
