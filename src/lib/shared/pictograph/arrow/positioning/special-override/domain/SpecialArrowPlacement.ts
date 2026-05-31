@@ -13,6 +13,9 @@ export interface SpecialArrowPlacement {
   // JSON keys on — color for non-hybrid letters). Without this two arrows that
   // share motionType collapse to one key and an override bleeds across both.
   readonly attributeKey: string;
+  // Prop-type discriminator: a fan override and a staff override for the same
+  // arrow are distinct and must not bleed across prop types.
+  readonly propType: string;
   readonly adjustmentX: number;
   readonly adjustmentY: number;
   readonly originalX: number;
@@ -28,6 +31,7 @@ export interface SpecialArrowPlacementInput {
   readonly turnsTuple: string;
   readonly motionType: string;
   readonly attributeKey: string;
+  readonly propType: string;
   readonly adjustmentX: number;
   readonly adjustmentY: number;
   readonly originalX: number;
@@ -46,6 +50,9 @@ export const SpecialArrowPlacementSchema = z
     // become inert (an empty discriminator never matches a real 6-part key)
     // rather than incorrectly bleeding across both arrows.
     attributeKey: z.string().default(""),
+    // Legacy docs predate this field. Default to "staff" (canonical prop) so
+    // existing Firestore data continues to work without migration.
+    propType: z.string().default("staff"),
     adjustmentX: z.number(),
     adjustmentY: z.number(),
     originalX: z.number(),
@@ -62,8 +69,9 @@ export function generateSpecialOverrideKey(input: {
   turnsTuple: string;
   motionType: string;
   attributeKey: string;
+  propType: string;
 }): string {
-  return `${input.gridMode}|${input.oriFolder}|${input.letter}|${input.turnsTuple}|${input.motionType}|${input.attributeKey}`;
+  return `${input.gridMode}|${input.oriFolder}|${input.letter}|${input.turnsTuple}|${input.motionType}|${input.attributeKey}|${input.propType}`;
 }
 
 export function parseSpecialOverrideKey(key: string): {
@@ -73,12 +81,14 @@ export function parseSpecialOverrideKey(key: string): {
   turnsTuple: string;
   motionType: string;
   attributeKey: string;
+  propType: string;
 } | null {
   const parts = key.split("|");
-  if (parts.length !== 6) return null;
+  if (parts.length !== 6 && parts.length !== 7) return null;
   const [gridMode, oriFolder, letter, turnsTuple, motionType, attributeKey] = parts;
-  if (!gridMode || !oriFolder || !letter || !turnsTuple || !motionType || !attributeKey) return null;
-  return { gridMode, oriFolder, letter, turnsTuple, motionType, attributeKey };
+  const propType = parts.length === 7 ? parts[6] : "staff";
+  if (!gridMode || !oriFolder || !letter || !turnsTuple || !motionType || !attributeKey || !propType) return null;
+  return { gridMode, oriFolder, letter, turnsTuple, motionType, attributeKey, propType };
 }
 
 export function extractOriFolderFromPath(filePath: string): string {
