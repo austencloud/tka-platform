@@ -572,6 +572,13 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
   console.log("");
   console.log("═".repeat(62));
   console.log(`  TOTAL: ${deduped.length} unique sequences in the Level ${level} ${slice} ${loopType} Deck`);
+  if (twin) {
+    console.log(
+      `  TWIN: deck will seed up to ${deduped.length * 2} cards ` +
+        `(${deduped.length} generated + ${deduped.length} mirror-swap twins; ` +
+        `self-twins and any reversal-filtered cards are removed at seed time).`
+    );
+  }
   console.log("═".repeat(62));
 
   // Per-start-position summary
@@ -1242,6 +1249,14 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     console.log(`  Done! ${totalWritten} sequences written to decks/${deckId}/sequences/`);
     if (totalWritten < deduped.length) {
       console.log(`  Filtered out ${deduped.length - totalWritten} sequences with reversals (continuous deck)`);
+    }
+    if (twin) {
+      console.log(
+        `  Twin: ${twinIdsByFamily.size} twin family group(s); ` +
+          `${selfTwinSkipped} self-twin(s) excluded; ` +
+          `${twinDupSkipped} twin(s) skipped (duplicate or invalid mirror); ` +
+          `${twinLetterMisses} twin beat(s) kept an un-re-derived letter.`
+      );
     }
   }
 
