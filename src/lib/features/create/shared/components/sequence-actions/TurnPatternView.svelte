@@ -40,7 +40,9 @@
     base: 0,
     format: fmtTurn,
     laneColors: ["blue", "red"],
-    laneLabels: ["Blue", "Red"],
+    // Labels match the APPLY TO / HandSelector convention (blue=Left, red=Right);
+    // colour coding stays via laneColors.
+    laneLabels: ["Left", "Right"],
   };
 
   const seqLen = $derived(sequence?.steps.length ?? 8);
@@ -98,7 +100,7 @@
        extra panel width reads as intentional margin, not a lopsided void. */
     width: 100%;
     max-width: 820px;
-    margin-inline: auto;
+    align-self: center; /* center within the stretch-aligned sub-view body */
   }
 
   .apply-btn {

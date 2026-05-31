@@ -89,7 +89,7 @@
     /* One shared content column — see TurnPatternView for rationale. */
     width: 100%;
     max-width: 820px;
-    margin-inline: auto;
+    align-self: center; /* center within the stretch-aligned sub-view body */
   }
 
   .apply-btn {

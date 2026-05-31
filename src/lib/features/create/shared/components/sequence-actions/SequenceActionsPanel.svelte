@@ -955,6 +955,23 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     border-bottom: 1px solid var(--theme-stroke);
     height: var(--min-touch-target);
     flex-shrink: 0;
+    /* The header doubles as the drag region (swipe-to-dismiss attaches to the
+       whole panel); the decorative edge handle is hidden on desktop below. */
+    cursor: grab;
+  }
+
+  .compact-header:active {
+    cursor: grabbing;
+  }
+
+  /* Desktop side-by-side: drop the vertical edge handle — it overlaps the
+     left-hand lane labels on short panels. Back/X + header grab cover dismiss.
+     Mobile keeps its top pill (a useful bottom-sheet affordance). */
+  :global(
+    .sequence-actions-panel-container[data-placement="right"].side-by-side-layout
+      .drawer-handle
+  ) {
+    display: none;
   }
 
   .panel-title {
