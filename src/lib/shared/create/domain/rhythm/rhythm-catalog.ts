@@ -11,6 +11,13 @@ export interface RhythmDef {
   readonly label: string;
   /** One period unit; tiled across the pattern length. */
   readonly sym: string;
+  /**
+   * Optional fixed period. When set, the rhythm only stamps at exactly this
+   * period (the strip resizes to it on apply) and is only compatible with
+   * lengths divisible by it. When absent, the rhythm tiles to any chosen
+   * period (the default for the simple rhythms). `sym.length` must equal it.
+   */
+  readonly period?: number;
 }
 
 /** Per-hand catalog (Turns + Reversals). */
@@ -20,6 +27,9 @@ export const PER_HAND_RHYTHMS: readonly RhythmDef[] = [
   { id: "alternating", label: "Alternating", sym: "RB" },
   { id: "red-book", label: "Red Book", sym: "R" },
   { id: "blue-book", label: "Blue Book", sym: "B" },
+  // Solo family (canonical: choreo-card/domain/reversal-patterns.ts → solo-1).
+  // One hand per beat across an 8-beat cycle; never both, never neither.
+  { id: "solo-1", label: "Solo 1", sym: "RBBRBRRB", period: 8 },
 ];
 
 /** The "no rhythm" entry — all beats continuous / inactive. */

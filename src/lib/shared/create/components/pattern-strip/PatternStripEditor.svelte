@@ -41,20 +41,31 @@
     const next = value.map((l, idx) => (idx === li ? lane : l));
     onChange(next);
   }
-  function rhythmActive(sym: string): boolean {
-    if (binding.lanes === 2)
-      return perHandRhythmMatches(sym, value[0] ?? [], value[1] ?? [], binding.base);
-    return singleLaneRhythmMatches(sym, value[0] ?? [], binding.base);
+  type Rhythm = { id: string; label: string; sym: string; period?: number };
+  /** A fixed-period rhythm is incompatible when the sequence length can't host it. */
+  function rhythmDisabled(rhythm: Rhythm): boolean {
+    return rhythm.period != null && sequenceLength % rhythm.period !== 0;
   }
-  function applyRhythm(sym: string, rhythm: { id: string; label: string; sym: string }) {
+  function rhythmActive(rhythm: Rhythm): boolean {
+    // Fixed-period rhythms only light when the strip is at exactly that period.
+    if (rhythm.period != null && period !== rhythm.period) return false;
+    if (binding.lanes === 2)
+      return perHandRhythmMatches(rhythm.sym, value[0] ?? [], value[1] ?? [], binding.base);
+    return singleLaneRhythmMatches(rhythm.sym, value[0] ?? [], binding.base);
+  }
+  function applyRhythm(rhythm: Rhythm) {
+    if (rhythmDisabled(rhythm)) return;
+    // Fixed-period rhythms resize the strip to their period; tileable ones stamp
+    // at the user's current period (unchanged behavior).
+    const effPeriod = rhythm.period ?? period;
     if (binding.lanes === 2) {
       const bAmt = uniformActive(value[0] ?? [], binding.base) ?? (binding.amountList[0] as StripValue);
       const rAmt = uniformActive(value[1] ?? [], binding.base) ?? (binding.amountList[0] as StripValue);
-      const { blue, red } = stampPerHand(rhythm, period, bAmt, rAmt, binding.base);
+      const { blue, red } = stampPerHand(rhythm, effPeriod, bAmt, rAmt, binding.base);
       onChange([blue, red]);
     } else {
       const amt = uniformActive(value[0] ?? [], binding.base) ?? (binding.amountList[0] as StripValue);
-      onChange([stampSingle(rhythm, period, amt, binding.base)]);
+      onChange([stampSingle(rhythm, effPeriod, amt, binding.base)]);
     }
   }
   function editCell(li: number, bi: number, v: StripValue) {
@@ -93,8 +104,9 @@
     <div class="chips">
       {#each binding.rhythms as r}
         <FilterChipBase
-          label={r.label} mode="toggle" size="md" active={rhythmActive(r.sym)}
-          onclick={() => applyRhythm(r.sym, r)}
+          label={r.label} mode="toggle" size="md"
+          active={rhythmActive(r)} disabled={rhythmDisabled(r)}
+          onclick={() => applyRhythm(r)}
         >
           {#snippet iconSnippet()}<RhythmGlyph sym={r.sym} lanes={binding.lanes} />{/snippet}
         </FilterChipBase>
