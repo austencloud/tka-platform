@@ -186,22 +186,11 @@
       </div>
     </div>
 
-    {#if !readOnly}
+    {#if !readOnly && showRedraw}
       <div class="action-buttons">
-        {#if showRedraw}
-          <button type="button" class="redraw-btn" onclick={onRedraw} disabled={isReleasing}>
-            <i class="fas fa-dice" aria-hidden="true"></i>
-            Redraw
-          </button>
-        {/if}
-        <button type="button" class="release-btn" onclick={onRelease} disabled={isReleasing || isRendering}>
-          {#if isReleasing}
-            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            Releasing...
-          {:else}
-            <i class="fas fa-stamp" aria-hidden="true"></i>
-            Release Deck #{String(nextDeckNumber).padStart(3, "0")}
-          {/if}
+        <button type="button" class="redraw-btn" onclick={onRedraw} disabled={isReleasing}>
+          <i class="fas fa-dice" aria-hidden="true"></i>
+          Redraw
         </button>
       </div>
     {/if}
@@ -428,31 +417,6 @@
 
   .redraw-btn:disabled {
     opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .release-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    padding: 8px 20px;
-    background: #10b981;
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .release-btn:hover:not(:disabled) {
-    filter: brightness(1.1);
-  }
-
-  .release-btn:disabled {
-    opacity: 0.5;
     cursor: not-allowed;
   }
 

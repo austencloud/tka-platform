@@ -20,10 +20,12 @@
   } from "../../services/deck-composer";
   import type { DeckRelease, DeckReleaseCard } from "../../domain/models/DeckRelease";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { getNextDeckNumber, releaseDeck, getAllReleases, updateDeckMeta } from "../../services/deck-release-store";
+  import { getNextDeckNumber, releaseDeck, getAllReleases, updateDeckMeta, deleteDeck } from "../../services/deck-release-store";
   import ConfigureStep from "./ConfigureStep.svelte";
   import ReviewStep from "./ReviewStep.svelte";
   import ReleaseHistoryPanel from "./ReleaseHistoryPanel.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import PrintPanel from "../print-preview/PrintPanel.svelte";
   import DeckReleaseNameModal from "./DeckReleaseNameModal.svelte";
   import { releaserState as rs } from "./deck-releaser-state.svelte";
   import { resolveDeckSequences, applyVariationDescriptor, rollVariation } from "../../services/deck-variation";
@@ -260,6 +262,30 @@
       for (const card of r.sequences ?? []) ids.add(card.sequenceId);
     }
     return ids;
+  }
+
+  type SidebarMode = "browse" | "print";
+  let sidebarMode = $state<SidebarMode>("browse");
+
+  async function handleDeleteRelease(deckNumber: number) {
+    try {
+      await deleteDeck(deckNumber);
+      releases = releases.filter((r) => r.deckNumber !== deckNumber);
+      releasedIds = extractReleasedIds(releases);
+      if (rs.viewingRelease?.deckNumber === deckNumber) {
+        rs.viewingRelease = null;
+        rs.themeOverride = null;
+        rs.bluePropOverride = null;
+        rs.redPropOverride = null;
+        rs.step = "configure";
+        rs.persist();
+      }
+      toast.success(`Deck #${String(deckNumber).padStart(3, "0")} deleted`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Delete failed";
+      const isPermission = msg.includes("permission") || msg.includes("PERMISSION_DENIED");
+      toast.error(isPermission ? "Admin access required to delete decks." : `Delete failed: ${msg}`);
+    }
   }
 
   onMount(async () => {
@@ -739,13 +765,71 @@
     {/if}
   </div>
 
-  <div class="releaser-history">
-    <ReleaseHistoryPanel
-      {releases}
-      isLoading={isLoadingReleases}
-      activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
-      onSelectRelease={handleSelectRelease}
-    />
+  <div class="releaser-sidebar" class:print-mode={sidebarMode === "print"}>
+    <div class="sidebar-switch">
+      <SegmentedControl
+        options={[
+          { value: "browse", label: "Browse" },
+          { value: "print", label: "Print" },
+        ]}
+        value={sidebarMode}
+        onchange={(v) => { sidebarMode = v; }}
+        color="accent"
+        size="sm"
+      />
+    </div>
+
+    {#if sidebarMode === "browse"}
+      <div class="sidebar-body">
+        <ReleaseHistoryPanel
+          {releases}
+          isLoading={isLoadingReleases}
+          activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
+          onSelectRelease={handleSelectRelease}
+          onDeleteRelease={handleDeleteRelease}
+        />
+      </div>
+      {#if rs.step === "review" && rs.viewingRelease === null}
+        <div class="sidebar-footer">
+          <button type="button" class="release-btn" onclick={openReleaseModal} disabled={rs.isReleasing || isRendering}>
+            {#if rs.isReleasing}
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Releasing…
+            {:else}
+              <i class="fas fa-stamp" aria-hidden="true"></i>
+              Release Deck #{String(rs.nextDeckNumber).padStart(3, "0")}
+            {/if}
+          </button>
+        </div>
+      {/if}
+    {:else}
+      <div class="sidebar-body">
+        {#if rs.step === "review" && rs.cards.length > 0}
+          <PrintPanel
+            cardCount={rs.cards.length}
+            {tndElements}
+            {cardSize}
+            {copies}
+            {groupByElement}
+            theme={rs.theme}
+            {selectedSide}
+            onSideChange={(s) => { selectedSide = s; }}
+            {isExporting}
+            {isPrinting}
+            {exportProgress}
+            {exportTotal}
+            {exportError}
+            onPrint={handlePrint}
+            onExportPDF={handleExportPDF}
+            onExportZIP={handleExportZIP}
+          />
+        {:else}
+          <div class="sidebar-empty">
+            <i class="fas fa-print" aria-hidden="true"></i>
+            <span>Compose or open a deck to print.</span>
+          </div>
+        {/if}
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -772,11 +856,62 @@
     overflow: auto;
   }
 
-  .releaser-history {
-    width: 320px;
+  .releaser-sidebar {
+    width: clamp(300px, 22vw, 440px);
     flex-shrink: 0;
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
+
+  .sidebar-switch {
+    padding: 12px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    flex-shrink: 0;
+  }
+
+  .sidebar-body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+
+  .sidebar-footer {
+    padding: 12px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    flex-shrink: 0;
+  }
+
+  .sidebar-footer .release-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 16px;
+    background: #10b981;
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+
+  .sidebar-footer .release-btn:hover:not(:disabled) { filter: brightness(1.1); }
+  .sidebar-footer .release-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .sidebar-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 48px 20px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .sidebar-empty i { font-size: 24px; }
 
   .released-step {
     display: flex;
@@ -862,10 +997,12 @@
       flex-direction: column;
     }
 
-    .releaser-history {
+    .releaser-sidebar {
       width: 100%;
-      max-height: 280px;
       border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+      border-left: none;
+      max-height: 320px;
     }
+    .releaser-sidebar.print-mode { max-height: none; }
   }
 </style>
