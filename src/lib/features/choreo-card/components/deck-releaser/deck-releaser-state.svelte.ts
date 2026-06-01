@@ -5,6 +5,7 @@ import { settingsService } from "$lib/shared/settings/state/settings-state.svelt
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { DEFAULT_VARIATION_CONFIG, type VariationConfig, type StartOriMode } from "../../services/deck-variation";
 import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
+import { mintSeed, GENERATOR_VERSION } from "../../services/deck-recipe";
 
 type Step = "configure" | "review" | "released";
 
@@ -26,6 +27,14 @@ interface PersistedSession {
   reversalPattern?: ResolvedReversalPattern | null;
   /** LOOP pool slice filter. */
   sliceTypes?: ("halved" | "quartered")[];
+  /** Explicit draw seed (Reroll mints a new one). */
+  seed?: string;
+  /** LOOP loop-type axis. */
+  loopTypes?: string[];
+  /** LOOP level axis. */
+  levels?: number[];
+  /** LOOP start-position id subset (empty ⇒ any). */
+  startPositionIds?: string[];
   /** Selected TnD family ids. */
   tndFamilyIds?: string[];
   /** Selected TnD turn-pattern ids. */
@@ -99,6 +108,14 @@ class DeckReleaserState {
   releasedNumber = $state<number | null>(null);
   sourceSummaries = $state<CatalogSourceSummary[]>([]);
   selectedSliceTypes = $state<Set<"halved" | "quartered">>(new Set(["quartered"]));
+  /** Explicit draw seed. Reroll mints a new one; reproduce reuses it. */
+  seed = $state<string>(mintSeed());
+  /** LOOP loop-type axis (multi-select; draws from any selected type). */
+  selectedLoopTypes = $state<Set<string>>(new Set(["rotated"]));
+  /** LOOP level axis (multi-select). */
+  selectedLevels = $state<Set<number>>(new Set([1]));
+  /** LOOP start-position id subset. Empty ⇒ any start position. */
+  selectedStartPositionIds = $state<Set<string>>(new Set());
   /** Per-seed grid-correct TnD classification (selection-independent). */
   tndSeedClasses = $state<TnDSeedClass[]>([]);
   tndFamilies = $state<TnDFamilyOption[]>([]);
@@ -136,6 +153,10 @@ class DeckReleaserState {
       // Configure-step dials: restore the user's last selections so going Back to
       // the catalog (or refreshing) shows what they had set, not defaults.
       if (saved.sliceTypes?.length) this.selectedSliceTypes = new Set(saved.sliceTypes);
+      if (saved.seed) this.seed = saved.seed;
+      if (saved.loopTypes?.length) this.selectedLoopTypes = new Set(saved.loopTypes);
+      if (saved.levels?.length) this.selectedLevels = new Set(saved.levels);
+      if (saved.startPositionIds?.length) this.selectedStartPositionIds = new Set(saved.startPositionIds);
       if (saved.tndFamilyIds?.length) this.selectedTnDFamilies = new Set(saved.tndFamilyIds);
       if (saved.tndTurnPatternIds?.length) this.selectedTnDTurnPatterns = new Set(saved.tndTurnPatternIds);
       if (saved.weights?.length) this.weights = saved.weights;
@@ -162,6 +183,10 @@ class DeckReleaserState {
       gridModes: [...this.selectedGridModes],
       reversalPattern: this.reversalPattern,
       sliceTypes: [...this.selectedSliceTypes],
+      seed: this.seed,
+      loopTypes: [...this.selectedLoopTypes],
+      levels: [...this.selectedLevels],
+      startPositionIds: [...this.selectedStartPositionIds],
       tndFamilyIds: [...this.selectedTnDFamilies],
       tndTurnPatternIds: [...this.selectedTnDTurnPatterns],
       weights: this.weights,
@@ -218,6 +243,12 @@ class DeckReleaserState {
       recipe.totalCards = this.totalCards;
       recipe.sliceTypes = [...this.selectedSliceTypes];
       recipe.variationConfig = this.variationConfig;
+      recipe.seed = this.seed;
+      recipe.generatorVersion = GENERATOR_VERSION;
+      recipe.schemaVersion = 1;
+      recipe.loopTypes = [...this.selectedLoopTypes];
+      recipe.levels = [...this.selectedLevels];
+      if (this.selectedStartPositionIds.size > 0) recipe.startPositionIds = [...this.selectedStartPositionIds];
     } else {
       recipe.tndFamilyIds = [...this.selectedTnDFamilies];
       recipe.tndTurnPatternIds = [...this.selectedTnDTurnPatterns];
@@ -258,12 +289,27 @@ class DeckReleaserState {
       if (recipe.totalCards != null) this.totalCards = recipe.totalCards;
       if (recipe.sliceTypes?.length) this.selectedSliceTypes = new Set(recipe.sliceTypes);
       if (recipe.variationConfig) this.variationConfig = recipe.variationConfig;
+      // Seed + new axes: reproduce a stamped deck exactly. Legacy recipes (no seed)
+      // mint a fresh one so they still draw; loop-type defaults to rotated (legacy pool).
+      this.seed = recipe.seed ?? mintSeed();
+      this.selectedLoopTypes = new Set(recipe.loopTypes?.length ? recipe.loopTypes : ["rotated"]);
+      this.selectedLevels = new Set(recipe.levels?.length ? recipe.levels : [1]);
+      this.selectedStartPositionIds = new Set(recipe.startPositionIds ?? []);
     } else {
       this.selectedTnDFamilies = new Set(recipe.tndFamilyIds ?? []);
       this.selectedTnDTurnPatterns = new Set(recipe.tndTurnPatternIds ?? []);
     }
 
     this.step = "configure";
+    this.persist();
+  }
+
+  /** New draw, same dials: mint a fresh seed and clear the composed draft so the
+   *  next compose draws afresh. Dials (loop type, level, weights, …) untouched. */
+  reroll() {
+    this.seed = mintSeed();
+    this.cards = [];
+    this.sequences = [];
     this.persist();
   }
 
@@ -278,6 +324,10 @@ class DeckReleaserState {
     this.bluePropOverride = null;
     this.redPropOverride = null;
     this.brokenLoopCount = 0;
+    this.seed = mintSeed();
+    this.selectedLoopTypes = new Set(["rotated"]);
+    this.selectedLevels = new Set([1]);
+    this.selectedStartPositionIds = new Set();
     this.step = "configure";
     this.persist();
   }
