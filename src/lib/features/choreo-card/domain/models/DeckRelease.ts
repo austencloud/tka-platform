@@ -51,6 +51,13 @@ export interface DeckReleaseCard {
  * (`StepCountWeight.available`). Absent on legacy manifests → no reuse affordance.
  */
 export interface DeckRecipe {
+  /** Shape version of THIS object — migrate-on-read. Absent ⇒ legacy (treat as 0). */
+  schemaVersion?: number;
+  /** Generation logic pin. Absent ⇒ legacy pool draw (pre-seeding). */
+  generatorVersion?: string;
+  /** Explicit draw seed. Reroll mints a new one; reproduce reuses it. Absent ⇒ legacy. */
+  seed?: string;
+
   deckMode: "loop" | "tnd";
   /** Shared transform dials (both modes). */
   startOriModes: ("radial" | "nonradial" | "split")[];
@@ -61,6 +68,12 @@ export interface DeckRecipe {
   totalCards?: number;
   sliceTypes?: ("halved" | "quartered")[];
   variationConfig?: VariationConfig;
+  /** New LOOP axis: which loop type(s) the deck draws from. Absent ⇒ all enumerated (legacy = rotated only). */
+  loopTypes?: string[];
+  /** New LOOP axis: which level(s). Absent ⇒ all available. */
+  levels?: number[];
+  /** New LOOP axis: start-position id subset. Absent/empty ⇒ any. */
+  startPositionIds?: string[];
   /** TnD-only. */
   tndFamilyIds?: string[];
   tndTurnPatternIds?: string[];
