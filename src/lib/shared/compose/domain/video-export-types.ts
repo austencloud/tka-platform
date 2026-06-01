@@ -39,6 +39,16 @@ export interface VideoExportOrchestratorOptions {
   includeStartPosition?: boolean;
   includeAnimationStartPosition?: boolean;
   includeEndHold?: boolean;
+  /** Prop type strings (e.g. "staff"). Drive the prop BODY textures the offscreen
+   *  export engine loads — without them the export falls back to global settings
+   *  (default "staff") and on the QR landing page (no DI bootstrap) renders the
+   *  wrong/blank prop. */
+  bluePropType?: string | null;
+  redPropType?: string | null;
+  /** Preview dark-mode override matching the live view's prop colors. */
+  previewDarkMode?: boolean | null;
+  /** Whether non-radial grid points are shown (matches the live grid). */
+  showNonRadialPoints?: boolean;
   onCleanup?: () => void;
 }
 

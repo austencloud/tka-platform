@@ -252,6 +252,12 @@
           resolution: opts.resolution,
           includeAnimationStartPosition: opts.includeStartPosition,
           includeEndHold: opts.includeEndHold,
+          // The QR landing page has no DI/settings bootstrap, so the user's chosen
+          // prop lives only in selectedProp — thread it through so the offscreen
+          // export engine loads the matching prop textures. The player mounts dark.
+          bluePropType: selectedProp,
+          redPropType: selectedProp,
+          previewDarkMode: true,
         }
       );
 

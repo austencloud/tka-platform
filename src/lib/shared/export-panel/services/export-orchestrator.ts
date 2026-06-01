@@ -17,6 +17,7 @@ import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/share-opt
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import { VIDEO_EXPORT_SUCCESS_DELAY_MS } from "$lib/shared/animation-engine/domain/constants/timing";
 import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 
 export class ExportOrchestrator {
   private exporting = false;
@@ -175,6 +176,10 @@ export class ExportOrchestrator {
         includeEndHold: exportOpts.includeEndHold,
         effectOverrides: exportOpts.effectOverrides ?? undefined,
         format: "mp4",
+        // App mode: thread the user's chosen prop so the offscreen export engine
+        // loads the matching textures instead of falling back to default "staff".
+        bluePropType: settingsService.settings.bluePropType ?? "staff",
+        redPropType: settingsService.settings.redPropType ?? "staff",
       }
     );
 

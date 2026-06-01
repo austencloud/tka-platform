@@ -403,11 +403,17 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           outputCanvasSize,
           fps,
           needsFluidWarmup,
-          // The orchestrator resolves no prop-type string (neither options nor
-          // panelState expose one), so pass null — the capturer config tolerates
-          // null and the live geometry is driven by panelState prop states.
-          bluePropType: null,
-          redPropType: null,
+          // Forward the caller's resolved prop types so the offscreen engine loads
+          // the right prop BODY textures in initialize() (without them the renderer
+          // boot-loads global settings → wrong/blank prop on the QR landing page,
+          // which has no DI/settings bootstrap). null falls back to "staff".
+          bluePropType: options.bluePropType ?? null,
+          redPropType: options.redPropType ?? null,
+          // Match the live theme + grid. previewDarkMode falls back to the export's
+          // resolved isDarkMode; the visibility manager exposes no non-radial-points
+          // key, so default to true (the prior hardcoded value) for unchanged behavior.
+          previewDarkMode: options.previewDarkMode ?? isDarkMode,
+          showNonRadialPoints: options.showNonRadialPoints ?? true,
         });
       }
 

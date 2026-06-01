@@ -12,6 +12,7 @@ import type { AnimationPanelState } from "$lib/shared/animation-engine/state/ani
 
 import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
 import { getOffline3DExporter } from "$lib/shared/3d/get-offline-3d-exporter";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import type { CameraKeyframeBuffer } from '$lib/shared/video-export/domain/camera-keyframe';
 
 export interface VideoExportEffectOverrides {
@@ -202,6 +203,11 @@ export class SequenceModalExporter {
           effectOverrides: options.effectOverrides,
           includeAnimationStartPosition: options.includeStartPosition,
           includeEndHold: options.includeEndHold,
+          // App mode: the offscreen export engine has no settings wiring, so pass
+          // the user's chosen prop explicitly. Without it the export renders the
+          // default "staff" instead of the live prop.
+          bluePropType: settingsService.settings.bluePropType ?? "staff",
+          redPropType: settingsService.settings.redPropType ?? "staff",
         }
       );
 

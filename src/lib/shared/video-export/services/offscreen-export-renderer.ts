@@ -50,6 +50,10 @@ export interface OffscreenExportInit {
   /** Resolved prop types (e.g. "staff"). Thread into frame ctx + trail capture config. */
   bluePropType: string | null;
   redPropType: string | null;
+  /** Dark-mode override for prop colors + grid tint. null → engine boot value. */
+  previewDarkMode: boolean | null;
+  /** Whether to draw non-radial grid points (matches the live grid). */
+  showNonRadialPoints: boolean;
 }
 
 /** Synchronous render passes to converge the fluid sim before capture starts. */
@@ -111,7 +115,17 @@ export class OffscreenExportRenderer {
     // texture and a box-mode sequence exports with a diamond grid.
     const gridMode =
       this.panelState.sequenceData?.gridMode ?? GridMode.DIAMOND;
-    await this.handle.context.renderer.loadGridTexture(gridMode, true);
+    await this.handle.context.renderer.loadGridTexture(gridMode, init.showNonRadialPoints);
+
+    // Load the prop BODY textures for the resolved prop types. The renderer skips
+    // drawing a prop whose image is null (canvas-2d-animation-renderer getBluePropImage),
+    // so without this the offscreen engine — driven only through renderFrame, which
+    // bypasses PlaybackSync's prop-texture path — renders no staves. Mirrors the
+    // grid-texture load above. "staff" is the floor so a missing type still draws.
+    const darkMode = init.previewDarkMode ?? vm.isDarkMode();
+    const blue = init.bluePropType ?? "staff";
+    const red = init.redPropType ?? "staff";
+    await this.handle.context.renderer.loadPerColorPropTextures(blue, red, darkMode);
 
     if (init.needsFluidWarmup) {
       // Deterministic warmup: render the start position repeatedly so the fluid
@@ -203,11 +217,11 @@ export class OffscreenExportRenderer {
       virtualTime: clockMs,
       isSeamlesslyLoopable: this.playback.isSeamlesslyLoopable,
       backgroundAlpha: 1,
-      showNonRadialPoints: true,
+      showNonRadialPoints: this.init.showNonRadialPoints,
       trailSettings: animationSettings.trail,
       bluePropType: this.init.bluePropType,
       redPropType: this.init.redPropType,
-      previewDarkMode: null,
+      previewDarkMode: this.init.previewDarkMode,
     };
     const props = assembleExportEngineProps(this.panelState, frameCtx);
 

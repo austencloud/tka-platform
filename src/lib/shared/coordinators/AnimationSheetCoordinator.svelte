@@ -23,6 +23,7 @@
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
 import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
 import { getVideoExporter } from "$lib/shared/animation-engine/get-video-exporter";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { replaceState } from "$app/navigation";
   import AnimationShareDrawer from "../animation-engine/components/AnimationShareDrawer.svelte";
@@ -637,7 +638,13 @@ import type { AnimationPanelState } from "../navigation/services/types";
         (progress) => {
           _exportProgress = progress;
         },
-        { format }
+        {
+          format,
+          // App mode: thread the user's chosen prop so the offscreen export engine
+          // loads the matching textures instead of falling back to default "staff".
+          bluePropType: settingsService.settings.bluePropType ?? "staff",
+          redPropType: settingsService.settings.redPropType ?? "staff",
+        }
       );
 
       // Close dialog after delay
