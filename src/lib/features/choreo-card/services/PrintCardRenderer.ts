@@ -129,6 +129,8 @@ export class PrintCardRenderer {
         height: canvasHeight * scale,
         bleedPx: bleedPx * scale,
         theme,
+        bluePropType: options.bluePropType,
+        redPropType: options.redPropType,
       });
       const off = paintBackJob(job);
       // Convert OffscreenCanvas → HTMLCanvasElement for the CardPair seam.

@@ -21,6 +21,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { MandalaPaths, MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
 import type { MandalaPathOptions } from "$lib/shared/mandala/services/types";
 import {
@@ -149,6 +150,10 @@ export interface BuildBackJobOptions {
   height: number;
   bleedPx: number;
   theme: string;
+  /** Deck prop types, so the back's mini start-position pictograph draws the
+   *  real prop (fan/club/triad) instead of the renderer's staff default. */
+  bluePropType?: PropType;
+  redPropType?: PropType;
 }
 
 /**
@@ -377,7 +382,13 @@ export async function buildBackJob(
     d.rasterizeReversalGlyph(data.reversalSequence, data.reversalPeriod, perCardCtx),
     d.rasterizeStepCount(data.stepCount, perCardCtx),
     hasStartPos
-      ? d.rasterizeStartPosPictograph(sequence.startPosition, darkMode, perCardCtx)
+      ? d.rasterizeStartPosPictograph(
+          sequence.startPosition,
+          darkMode,
+          perCardCtx,
+          opts.bluePropType,
+          opts.redPropType,
+        )
       : Promise.resolve(null),
     loopCols.length > 0
       ? d.rasterizeLoopRow(loopCols, perCardCtx, opts.theme)

@@ -23,7 +23,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   // Bump when rendered pixels change for reasons NOT captured by the keyed
   // options below — e.g. the canonical profile changes. Rotates all keys so
   // stale persisted renders self-invalidate.
-  const CARD_RENDER_SCHEMA = "v4";
+  const CARD_RENDER_SCHEMA = "v5";
 
   interface Props {
     sequences: SequenceData[];
