@@ -26,6 +26,8 @@
   import ConfigureStep from "./ConfigureStep.svelte";
   import ReviewStep from "./ReviewStep.svelte";
   import ReleaseHistoryPanel from "./ReleaseHistoryPanel.svelte";
+  import GeneratedArchivePanel from "./GeneratedArchivePanel.svelte";
+  import { archiveDeck, listArchivedDecks, getArchivedDeck, deleteArchivedDeck, type ArchivedDeckMeta } from "../../services/deck-archive-store";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import PrintPanel from "../print-preview/PrintPanel.svelte";
   import DeckReleaseNameModal from "./DeckReleaseNameModal.svelte";
@@ -73,6 +75,8 @@
   let pool = $state<Map<number, PoolEntry[]>>(new Map());
   let releasedIds = $state<Set<string>>(new Set());
   let releases = $state<DeckRelease[]>([]);
+  let archivedDecks = $state<ArchivedDeckMeta[]>([]);
+  let isLoadingArchive = $state(true);
   let isLoadingReleases = $state(true);
   let showNameModal = $state(false);
 
@@ -279,6 +283,70 @@
     };
   }
 
+  // ── Generated-deck archive (local IndexedDB) ───────────────────────────────
+  async function refreshArchive() {
+    archivedDecks = await listArchivedDecks();
+    isLoadingArchive = false;
+  }
+
+  function buildArchiveMeta(): ArchivedDeckMeta {
+    return {
+      refNumber: rs.referenceNumber,
+      createdAt: new Date().toISOString(),
+      deckMode: rs.deckMode,
+      loopType: [...rs.selectedLoopTypes][0],
+      length: rs.selectedLength,
+      level: [...rs.selectedLevels][0],
+      period: [...rs.selectedSliceTypes][0],
+      prop: String(rs.bluePropType),
+      cardCount: rs.cards.length,
+      words: buildDeckMeta().keywords,
+    };
+  }
+
+  /** Persist the just-generated deck to the local archive (every generation, no
+   *  cap). Best-effort + fire-and-forget — never blocks the draw. Skips released
+   *  views and empty/unnumbered decks. */
+  function archiveCurrentDeck() {
+    if (rs.viewingRelease || rs.cards.length === 0 || rs.referenceNumber <= 0) return;
+    const meta = buildArchiveMeta();
+    const payload = {
+      refNumber: rs.referenceNumber,
+      // Snapshot out of the rune proxies so IndexedDB structured-clone is clean.
+      cards: $state.snapshot(rs.cards) as DeckReleaseCard[],
+      sequences: $state.snapshot(rs.sequences) as SequenceData[],
+    };
+    void archiveDeck(meta, payload).then(refreshArchive);
+  }
+
+  /** Re-open an archived deck: load its exact cards/sequences back into Review so
+   *  its backs can be recovered (re-rendered, printed, exported, released). */
+  async function openArchivedDeck(refNumber: number) {
+    const payload = await getArchivedDeck(refNumber);
+    if (!payload) { toast.info("Couldn't load that archived deck."); return; }
+    ++rs.drawGeneration; // cancel any in-flight draw
+    const meta = archivedDecks.find((d) => d.refNumber === refNumber);
+    rs.viewingRelease = null;
+    rs.referenceNumber = refNumber;
+    rs.sequences = payload.sequences;
+    rs.cards = payload.cards;
+    if (meta) {
+      rs.deckMode = meta.deckMode;
+      if (meta.loopType) rs.selectedLoopTypes = new Set([meta.loopType]);
+      if (meta.length) rs.selectedLength = meta.length;
+      if (meta.level) rs.selectedLevels = new Set([meta.level]);
+      if (meta.period) rs.selectedSliceTypes = new Set([meta.period as "halved" | "quartered"]);
+      if (meta.prop) rs.selectedPropType = meta.prop as PropType;
+    }
+    rs.step = "review";
+    rs.persist();
+  }
+
+  async function handleDeleteArchived(refNumber: number) {
+    await deleteArchivedDeck(refNumber);
+    await refreshArchive();
+  }
+
   // 'fronts'/'backs' scope the preview to that side; combined/zip show all.
   const previewSideFilter = $derived(
     selectedSide === "fronts" ? "fronts" : selectedSide === "backs" ? "backs" : null,
@@ -434,6 +502,7 @@
 
   onMount(async () => {
     const savedDeckNumber = initialViewingDeckNumber;
+    void refreshArchive();
 
     const releasesPromise = getAllReleases().then(r => {
       releases = r;
@@ -815,6 +884,7 @@
       await loadSelectedSequences(gen);
       if (gen !== rs.drawGeneration) return;
     }
+    archiveCurrentDeck();
     rs.step = "review";
     rs.persist();
   }
@@ -832,6 +902,7 @@
       await loadSelectedSequences(gen);
       if (gen !== rs.drawGeneration) return;
     }
+    archiveCurrentDeck();
     rs.persist();
   }
 
@@ -1138,6 +1209,13 @@
 
     {#if sidebarMode === "browse"}
       <div class="sidebar-body">
+        <GeneratedArchivePanel
+          decks={archivedDecks}
+          isLoading={isLoadingArchive}
+          activeRefNumber={rs.viewingRelease === null && rs.step === "review" ? rs.referenceNumber : null}
+          onOpen={openArchivedDeck}
+          onDelete={handleDeleteArchived}
+        />
         <ReleaseHistoryPanel
           {releases}
           isLoading={isLoadingReleases}
@@ -1232,6 +1310,10 @@
   }
 
   .sidebar-body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+  /* Browse = two stacked sections (Generated · Released), each scrolls its own list. */
+  .sidebar-body > :global(.archive-panel),
+  .sidebar-body > :global(.release-history) { flex: 1 1 0; min-height: 0; }
+  .sidebar-body > :global(.archive-panel) { border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08)); }
 
   .sidebar-footer {
     padding: 12px;
