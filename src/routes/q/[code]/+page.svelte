@@ -25,6 +25,7 @@
   import { browser } from "$app/environment";
   import { isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
   import { ShortCodeManager } from "$lib/shared/qr/services/short-code-manager";
+  import { configureShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
@@ -37,12 +38,18 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
-  import type { SplitConfig } from "$lib/shared/sequence-viewer/services/viewer-state-persistence";
+  import {
+    COMPARISON_MODE_LAYOUTS,
+    splitConfigToMode,
+    type SplitConfig,
+    type ComparisonMode,
+  } from "$lib/shared/sequence-viewer/services/viewer-state-persistence";
   import type { OrchestratorContext } from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
   import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
+  import ComparisonModeBar from "$lib/shared/sequence-viewer/components/ComparisonModeBar.svelte";
   import ToastContainer from "$lib/shared/toast/components/ToastContainer.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
   import type { ExportPhase } from "$lib/shared/video-export/components/ExportTakeover.svelte";
@@ -130,6 +137,9 @@
   // animation/card side-by-side; the in-pane ComparisonModeBar (desktop) and
   // the mobile switcher let the user move between animation / card / mandala.
   let qrSplitConfig = $state<SplitConfig>({ leftPane: "animation", rightPane: "card" });
+  // Non-3D comparison modes offered on the scan page (Three.js never loads).
+  const QR_MODES: ComparisonMode[] = ["2d-card", "2d-mandala"];
+  const qrComparisonMode = $derived(splitConfigToMode(qrSplitConfig));
 
   // ── Export state (drives the QR ExportTakeover overlay + native share) ──
   let isExporting = $state(false);
@@ -291,6 +301,11 @@
       checkViewport();
       window.addEventListener("resize", checkViewport);
       onDestroy(() => window.removeEventListener("resize", checkViewport));
+
+      // The bare /q layout skips the root-layout bootstrap, so the short-code
+      // manager (used by ChoreoCard's QR generator) is never configured. Wire
+      // the stub loader so getShortCodeManager() resolves instead of throwing.
+      configureShortCodeManager(stubBrowseLoader);
     }
 
     if (!shortCode) {
@@ -456,6 +471,11 @@
       {#snippet children(ctx)}
         <div class="player-layout" class:sidebar-mode={isSidebarLayout}>
           <div class="canvas-area">
+            <ComparisonModeBar
+              current={qrComparisonMode}
+              allowed={QR_MODES}
+              onSelect={(m) => (qrSplitConfig = COMPARISON_MODE_LAYOUTS[m])}
+            />
             {#if ctx.effectiveSequence && ViewerSplitPaneComponent}
             <ViewerSplitPaneComponent
               sequence={ctx.effectiveSequence}
@@ -474,7 +494,6 @@
                 suppressCloseButton: ctx.editingPane !== null,
               }}
               splitConfig={qrSplitConfig}
-              onSplitConfigReplace={(c) => (qrSplitConfig = c)}
               onFocusPane={ctx.enterEditMode}
               onUnfocusPane={ctx.exitEditMode}
               onStepClick={ctx.handleStepClick}

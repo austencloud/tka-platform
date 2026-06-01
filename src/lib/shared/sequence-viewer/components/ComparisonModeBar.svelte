@@ -4,16 +4,22 @@
   interface Props {
     current: ComparisonMode;
     onSelect: (mode: ComparisonMode) => void;
+    /** Restrict which modes are offered. Defaults to all four. The QR landing
+     *  page passes the non-3D subset so Three.js never loads there. */
+    allowed?: ComparisonMode[];
   }
 
-  let { current, onSelect }: Props = $props();
+  let { current, onSelect, allowed }: Props = $props();
 
-  const modes: { id: ComparisonMode; label: string }[] = [
+  const ALL_MODES: { id: ComparisonMode; label: string }[] = [
     { id: '2d-card', label: '2D + Card' },
     { id: '3d-card', label: '3D + Card' },
     { id: '2d-3d', label: '2D + 3D' },
     { id: '2d-mandala', label: '2D + Mandala' }
   ];
+  const modes = $derived(
+    allowed ? ALL_MODES.filter((m) => allowed.includes(m.id)) : ALL_MODES
+  );
 
   function handleSelect(id: ComparisonMode) {
     if (id !== current) onSelect(id);
