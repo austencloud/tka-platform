@@ -82,8 +82,8 @@ const H = Math.round(IN_H_PT * SCALE); // 4248
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
   <rect width="${W}" height="${H}" fill="#ffffff"/>
-  <text x="${cx}" y="${titleY1}" font-family="${TITLE_FONT}" font-size="${titleSize}" fill="#101010" text-anchor="middle">Support The Kinetic</text>
-  <text x="${cx}" y="${titleY2}" font-family="${TITLE_FONT}" font-size="${titleSize}" fill="#101010" text-anchor="middle">Alphabet</text>
+  <text x="${cx}" y="${titleY1}" font-family="${TITLE_FONT}" font-size="${titleSize}" fill="#101010" text-anchor="middle">Support</text>
+  <text x="${cx}" y="${titleY2}" font-family="${TITLE_FONT}" font-size="${titleSize}" fill="#101010" text-anchor="middle">The Kinetic Alphabet</text>
   <text x="${cx}" y="${subY}" font-family="${TITLE_FONT}" font-size="${subSize}" fill="#222" text-anchor="middle">$20 – $30 Suggested Donation</text>
   ${bodyLines}
   <text x="${cx}" y="${sigY}" font-family="${BODY_FONT}" font-size="${sigSize}" font-style="italic" fill="#1a1a1a" text-anchor="middle">— Austen Cloud</text>
