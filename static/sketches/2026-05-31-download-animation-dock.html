@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Download Animation — Mandala Dock Redesign</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<style>
+  :root {
+    --bg: #0b0b12;
+    --panel: rgba(18, 18, 28, 0.96);
+    --panel-blur: rgba(18, 18, 28, 0.82);
+    --stroke: rgba(255, 255, 255, 0.1);
+    --stroke-soft: rgba(255, 255, 255, 0.06);
+    --text: #f2f2f7;
+    --dim: rgba(255, 255, 255, 0.6);
+    --dimmer: rgba(255, 255, 255, 0.4);
+    --accent: #6366f1;
+    --dl1: #4a9eff;
+    --dl2: #2b6fd4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(1200px 800px at 50% -10%, #15152400, #07070c 70%), #07070c;
+    color: var(--text);
+    font: 14px/1.4 -apple-system, "Segoe UI", system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 28px 16px 60px;
+  }
+  h1 { font-size: 20px; font-weight: 800; text-align: center; margin: 0 0 4px; }
+  .sub { text-align: center; color: var(--dim); margin: 0 0 24px; font-size: 13px; }
+
+  .stage {
+    display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; align-items: flex-start;
+  }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .col-label { font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; }
+  .col-label.bad { color: #ff6b6b; }
+  .col-label.good { color: #51e08a; }
+  .col-note { color: var(--dimmer); font-size: 11px; max-width: 300px; text-align: center; }
+
+  /* phone */
+  .phone {
+    width: 300px; height: 620px; border-radius: 34px; padding: 10px;
+    background: #1c1c22; border: 1px solid #2a2a34;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6); position: relative;
+  }
+  .screen {
+    position: relative; width: 100%; height: 100%; border-radius: 26px; overflow: hidden;
+    background: radial-gradient(120% 90% at 50% 18%, #1a1a2e 0%, #0c0c14 60%, #08080e 100%);
+    display: flex; flex-direction: column;
+  }
+  .notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 90px; height: 18px; background:#000; border-radius: 10px; z-index: 30; }
+
+  /* hero */
+  .hero { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; }
+  .hero .ring {
+    width: 150px; height: 150px; border-radius: 50%;
+    border: 2px solid rgba(99,102,241,0.35);
+    box-shadow: 0 0 60px 10px rgba(99,102,241,0.25), inset 0 0 40px rgba(99,102,241,0.18);
+    position: relative; animation: spin 9s linear infinite;
+  }
+  .hero .ring::before, .hero .ring::after {
+    content:""; position:absolute; inset: 22px; border-radius: 50%;
+    border: 2px solid rgba(120,200,255,0.3);
+  }
+  .hero .ring::after { inset: 48px; border-color: rgba(255,140,180,0.35); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hero-tag { position:absolute; bottom: 10px; left:50%; transform: translateX(-50%); color: var(--dimmer); font-size: 10px; letter-spacing:.08em; text-transform: uppercase; }
+  .hero-measure { position:absolute; top:8px; right:10px; font-size:10px; color: var(--dimmer); background: rgba(0,0,0,.4); padding:2px 6px; border-radius:6px; }
+
+  /* ---------- CURRENT (3-band) ---------- */
+  .current-chrome { flex-shrink: 0; }
+  .pill-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+    padding: 8px 10px 0;
+  }
+  .pill {
+    min-height: 56px; border-radius: 12px; border: 1px solid var(--stroke);
+    background: rgba(255,255,255,0.04); color: var(--text);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    font-size: 10px;
+  }
+  .pill i { font-size: 14px; color: var(--dim); }
+  .pill .plabel { font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size:9px; }
+  .pill .psum { font-size: 8px; color: var(--dimmer); }
+  .action-row { padding: 8px 10px 12px; }
+  .rt-download {
+    width:100%; min-height: 52px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--dl1), var(--dl2));
+    border: 1px solid rgba(122,180,255,.5); color:#fff; font-weight: 700; font-size: 14px;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    box-shadow: 0 4px 20px rgba(74,158,255,.35);
+  }
+
+  /* ---------- PROPOSED (mandala dock) ---------- */
+  .dock { flex-shrink: 0; position: relative; container-type: inline-size; }
+  /* labels only when the dock is wide enough — tight phone = icon-only */
+  .cat .clabel { display: none; }
+  @container (min-width: 460px) { .cat .clabel { display: block; } }
+  .tray {
+    background: var(--panel-blur); backdrop-filter: blur(16px);
+    border-top: 1px solid var(--stroke); padding: 12px 12px 10px;
+    display: none;
+  }
+  .tray.open { display: block; animation: trayIn .26s cubic-bezier(.2,.8,.2,1); }
+  @keyframes trayIn { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform:none; } }
+  .tray-title { font-size: 10px; letter-spacing:.08em; text-transform: uppercase; color: var(--dimmer); margin-bottom: 10px; }
+  .tray-slider { display:flex; align-items:center; gap: 12px; }
+  .tray-slider input { flex:1; accent-color: var(--accent); }
+  .tray-slider .val { font-variant-numeric: tabular-nums; color: var(--dim); font-size: 12px; min-width: 42px; text-align:right; }
+  .tray-chips { display:flex; gap:6px; flex-wrap: wrap; }
+  .chip {
+    border:1px solid var(--stroke); background: rgba(255,255,255,.04); color: var(--text);
+    padding: 8px 12px; border-radius: 10px; font-size: 12px;
+  }
+  .chip.active { background: var(--accent); border-color: var(--accent); }
+  .tile-grid { display:grid; grid-template-columns: repeat(3,1fr); gap:6px; max-height: 180px; overflow:auto; }
+  .tile { border:1px solid var(--stroke); background: rgba(255,255,255,.04); border-radius:10px; aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:9px; color: var(--dim); }
+  .tile i { font-size: 16px; }
+
+  .cat-bar {
+    display:flex; gap: 6px; padding: 8px 6px;
+    background: var(--panel); border-top: 1px solid var(--stroke);
+  }
+  .cat-scroll { display:flex; flex:1; gap:4px; overflow-x:auto; }
+  .cat {
+    flex: 1 1 0; min-width: 0; min-height: 52px; border-radius: 10px;
+    border:1px solid var(--stroke); background: color-mix(in srgb, var(--panel) 70%, transparent);
+    color: var(--text); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    font-size: 9px; cursor: pointer; transition: transform .14s, background .14s;
+  }
+  .cat i { font-size: 13px; color: var(--dim); }
+  .cat .clabel { font-weight: 600; letter-spacing:.02em; }
+  .cat.active { background: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
+  .cat.active i { color:#fff; }
+  .cat:active { transform: scale(.92); }
+  .dock-dl {
+    flex: 0 0 auto; width: 46px; min-height: 52px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--dl1), var(--dl2));
+    border:1px solid rgba(122,180,255,.5); color:#fff; font-size: 16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    box-shadow: 0 4px 16px rgba(74,158,255,.3);
+  }
+  .dock-dl:active { transform: scale(.92); }
+
+  .toggle-hint { text-align:center; color: var(--dimmer); font-size: 11px; margin-top: 6px; }
+</style>
+</head>
+<body>
+  <h1>Download Animation — Mandala Dock Redesign</h1>
+  <p class="sub">Sketch · phone width · tap the tabs on the right phone</p>
+
+  <div class="stage">
+    <!-- CURRENT -->
+    <div class="col">
+      <div class="col-label bad">Current — 3 bands of chrome</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="hero">
+            <div class="ring"></div>
+            <div class="hero-measure">hero ≈ 58%</div>
+            <div class="hero-tag">the animation (squashed)</div>
+          </div>
+          <div class="current-chrome">
+            <div class="pill-grid">
+              <div class="pill"><i class="fas fa-wand-magic-sparkles"></i><span class="plabel">Effects</span><span class="psum">Trails</span></div>
+              <div class="pill"><i class="fas fa-shapes"></i><span class="plabel">Props</span><span class="psum">Staff</span></div>
+              <div class="pill"><i class="fas fa-bolt"></i><span class="plabel">Effort</span><span class="psum">Linear</span></div>
+              <div class="pill"><i class="fas fa-gauge"></i><span class="plabel">Playback</span><span class="psum">120 BPM</span></div>
+              <div class="pill"><i class="fas fa-eye"></i><span class="plabel">Display</span><span class="psum">Glyph</span></div>
+              <div class="pill"><i class="fas fa-film"></i><span class="plabel">Export</span><span class="psum">1080·60</span></div>
+            </div>
+            <div class="action-row">
+              <div class="rt-download"><i class="fas fa-download"></i> Download Animation</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-note">2-row pill grid + full-width gradient CTA. Three stacked bands eat the hero on small screens.</div>
+    </div>
+
+    <!-- PROPOSED -->
+    <div class="col">
+      <div class="col-label good">Proposed — 1 mandala dock band</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="hero">
+            <div class="ring"></div>
+            <div class="hero-measure">hero ≈ 82%</div>
+            <div class="hero-tag">the animation (hero)</div>
+          </div>
+          <div class="dock">
+            <div class="tray" id="tray">
+              <div class="tray-title" id="trayTitle">Effects</div>
+              <div id="trayBody"></div>
+            </div>
+            <div class="cat-bar">
+              <div class="cat-scroll" id="catScroll"></div>
+              <div class="dock-dl" title="Download Animation"><i class="fas fa-download"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-note">One row: equal-width tabs + compact 46px download trigger. Tap a tab → tray slides up. Export config lives in its own tab. Hero stays dominant.</div>
+    </div>
+  </div>
+  <p class="toggle-hint">Same nav-by-category you liked in the mandala viewer, applied to export.</p>
+
+  <div style="max-width:600px;margin:36px auto 0;">
+    <div class="col-label good" style="text-align:center;margin-bottom:10px">Wide (≥460px) — labels appear</div>
+    <div class="dock" style="border-radius:18px;overflow:hidden;border:1px solid var(--stroke);box-shadow:0 18px 50px rgba(0,0,0,.45)">
+      <div class="cat-bar">
+        <div class="cat-scroll">
+          <button class="cat active"><i class="fas fa-wand-magic-sparkles"></i><span class="clabel">Effects</span></button>
+          <button class="cat"><i class="fas fa-shapes"></i><span class="clabel">Props</span></button>
+          <button class="cat"><i class="fas fa-bolt"></i><span class="clabel">Effort</span></button>
+          <button class="cat"><i class="fas fa-gauge"></i><span class="clabel">Playback</span></button>
+          <button class="cat"><i class="fas fa-eye"></i><span class="clabel">Display</span></button>
+          <button class="cat"><i class="fas fa-film"></i><span class="clabel">Export</span></button>
+        </div>
+        <div class="dock-dl"><i class="fas fa-download"></i></div>
+      </div>
+    </div>
+    <p class="col-note" style="text-align:center;margin:10px auto 0">Same dock, wider container. Container query reveals labels; tight phone keeps icon-only. No collision either way.</p>
+  </div>
+
+<script>
+  const TABS = [
+    { id:'effects', icon:'fa-wand-magic-sparkles', label:'Effects' },
+    { id:'props', icon:'fa-shapes', label:'Props' },
+    { id:'effort', icon:'fa-bolt', label:'Effort' },
+    { id:'playback', icon:'fa-gauge', label:'Playback' },
+    { id:'display', icon:'fa-eye', label:'Display' },
+    { id:'export', icon:'fa-film', label:'Export' },
+  ];
+  const BODIES = {
+    effects: `<div class="tile-grid">
+        <div class="tile"><i class="fas fa-minus"></i>None</div>
+        <div class="tile" style="border-color:var(--accent)"><i class="fas fa-wind"></i>Trails</div>
+        <div class="tile"><i class="fas fa-fire"></i>Comet</div>
+        <div class="tile"><i class="fas fa-star"></i>Sparkle</div>
+        <div class="tile"><i class="fas fa-water"></i>Ribbon</div>
+        <div class="tile"><i class="fas fa-bolt"></i>Echo</div>
+      </div>`,
+    props: `<div class="tile-grid">
+        <div class="tile" style="border-color:var(--accent)"><i class="fas fa-grip-lines-vertical"></i>Staff</div>
+        <div class="tile"><i class="fas fa-circle-notch"></i>Hoop</div>
+        <div class="tile"><i class="fas fa-fan"></i>Fan</div>
+        <div class="tile"><i class="fas fa-flag"></i>Flag</div>
+        <div class="tile"><i class="fas fa-club"></i>Club</div>
+        <div class="tile"><i class="fas fa-infinity"></i>Buugeng</div>
+      </div>`,
+    effort: `<div class="tray-chips">
+        <button class="chip active">Linear</button>
+        <button class="chip">Eased</button>
+        <button class="chip">Snap</button>
+        <button class="chip">Float</button>
+      </div>`,
+    playback: `<div class="tray-slider"><span style="color:var(--dim);font-size:12px">BPM</span><input type="range" min="40" max="200" value="120"><span class="val">120</span></div>
+      <div class="tray-chips" style="margin-top:10px"><button class="chip active">Loop</button><button class="chip">Once</button><button class="chip">Bounce</button></div>`,
+    display: `<div class="tray-chips">
+        <button class="chip active">TKA Glyph</button>
+        <button class="chip">Step #</button>
+        <button class="chip active">Reversals</button>
+        <button class="chip">Beat dots</button>
+      </div>`,
+    export: `<div class="tray-title" style="margin:0 0 8px">Resolution</div>
+      <div class="tray-chips"><button class="chip">720p</button><button class="chip active">1080p</button><button class="chip">4K</button></div>
+      <div class="tray-title" style="margin:12px 0 8px">FPS</div>
+      <div class="tray-chips"><button class="chip">30</button><button class="chip active">60</button></div>
+      <div class="tray-slider" style="margin-top:12px"><span style="color:var(--dim);font-size:12px">Loops</span><input type="range" min="1" max="8" value="3"><span class="val">3</span></div>`,
+  };
+
+  const scroll = document.getElementById('catScroll');
+  const tray = document.getElementById('tray');
+  const trayTitle = document.getElementById('trayTitle');
+  const trayBody = document.getElementById('trayBody');
+  let active = null;
+
+  function render() {
+    scroll.innerHTML = '';
+    TABS.forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'cat' + (active === t.id ? ' active' : '');
+      b.innerHTML = `<i class="fas ${t.icon}"></i><span class="clabel">${t.label}</span>`;
+      b.onclick = () => { active = active === t.id ? null : t.id; render(); };
+      scroll.appendChild(b);
+    });
+    if (active) {
+      tray.classList.add('open');
+      trayTitle.textContent = TABS.find(t => t.id === active).label;
+      trayBody.innerHTML = BODIES[active] || '';
+    } else {
+      tray.classList.remove('open');
+    }
+  }
+  render();
+</script>
+</body>
+</html>

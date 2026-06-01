@@ -173,10 +173,15 @@
     if (_2dLeftActive) _2dLeftMounted = true;
   });
 
-  // Portrait-mobile split relocates the 2D canvas transport to a full-width bar
-  // below the card (above the bottom nav), freeing the canvas to fill its row.
+  // Portrait-mobile relocates the 2D canvas transport to a full-width bar above
+  // the bottom nav, freeing the canvas to fill its row. Applies to split AND to
+  // the single-animation (focused 2D) view — the canvas-attached scrubber is
+  // suppressed in both via hideProgressBar={showMobileTransport}.
   const showMobileTransport = $derived(
-    layout.isMobile && !layout.isLandscapeMobile && !layout.focusedPane && _2dLeftActive
+    layout.isMobile &&
+      !layout.isLandscapeMobile &&
+      _2dLeftActive &&
+      (!layout.focusedPane || layout.focusedPane === "animation")
   );
   const mobileTransportAdapter = createAnimatorPlaybackAdapter({
     getCurrentStep: () => playback.currentStep,
@@ -434,6 +439,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
               focused={layout.focusedPane === "animation"}
               suppress2DOverlays={false}
               hideProgressBar={showMobileTransport}
+              hideHeader={showMobileTransport}
               tapToToggle={showMobileTransport}
             />
           </div>
@@ -671,6 +677,11 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
      pins to a full-width auto row below the card. */
   .split-view[data-mobile-transport] {
     grid-template-rows: 1fr 1fr auto;
+  }
+  /* Single-animation (focused 2D) portrait: collapse the image row so the
+     canvas fills, and give the relocated transport bar its own auto row. */
+  .split-view[data-focused="animation"][data-mobile-transport] {
+    grid-template-rows: 1fr 0% auto;
   }
 
   .mobile-transport-bar {

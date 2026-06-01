@@ -70,6 +70,7 @@ Last audit: 2025-12-27
     hideTkaGlyph = false,
     hideStepNumbers = false,
     hideProgressBar = false,
+    hideHeader = false,
     isSeamlesslyLoopable = undefined,
     progressBarVariant = "gradient",
     onProgressBarSeek = null,
@@ -117,6 +118,8 @@ Last audit: 2025-12-27
     hideTkaGlyph?: boolean;
     hideStepNumbers?: boolean;
     hideProgressBar?: boolean;
+    /** Hide the WordHeader slot (portrait-mobile reclaims this vertical space). */
+    hideHeader?: boolean;
     isSeamlesslyLoopable?: boolean;
     progressBarVariant?: "minimal" | "raised" | "rounded" | "neon" | "gradient" | "labeled" | "gradient-labeled";
     onProgressBarSeek?: ((targetStep: number) => void) | null;
@@ -393,6 +396,7 @@ Last audit: 2025-12-27
   data-focused={focused || undefined}
   data-fill={fillContainer || undefined}
   data-no-progress={hideProgressBar || undefined}
+  data-hide-header={hideHeader || undefined}
   data-view={viewState}
   oncontextmenu={handleContextMenu}
   onpointerdown={handlePointerDown}
@@ -693,6 +697,23 @@ Last audit: 2025-12-27
   .animation-container[data-focused] .header-slot {
     max-height: 100px !important;
     opacity: 1 !important;
+  }
+
+  /* Explicit hide wins over the focused force-show (higher specificity). Used in
+     portrait-mobile to reclaim the word-header band for the canvas. */
+  .animation-container[data-hide-header] .header-slot,
+  .animation-container[data-focused][data-hide-header] .header-slot {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none;
+  }
+
+  /* Header hidden AND transport relocated: let the square canvas claim almost
+     the whole pane height. */
+  .animation-container[data-focused][data-hide-header][data-no-progress] .content-wrapper {
+    width: min(calc(100cqw - 12px), calc(100cqh - 1rem));
+    max-width: calc(100cqh - 1rem);
+    max-height: calc(100cqh - 4px);
   }
 
   .animation-container[data-focused] :global(.canvas-wrapper) {
