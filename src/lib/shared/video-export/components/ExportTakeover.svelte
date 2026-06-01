@@ -33,7 +33,11 @@
     diag,
   }: Props = $props();
 
-  let reduceMotion = $state(false);
+  let reduceMotion = $state(
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false,
+  );
   $effect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     reduceMotion = mq.matches;
@@ -62,6 +66,20 @@
   const ringStyle = $derived(
     `background: conic-gradient(from -90deg, ${RING_FROM} 0%, ${RING_TO} ${pct}%, var(--theme-stroke, rgba(255,255,255,0.12)) ${pct}%);`,
   );
+
+  const dialogLabel = $derived(phase === "error" ? "Export failed" : "Exporting video");
+
+  let panelEl = $state<HTMLDivElement | null>(null);
+  let returnFocusEl: HTMLElement | null = null;
+  $effect(() => {
+    if (phase !== "idle") {
+      if (!returnFocusEl) returnFocusEl = document.activeElement as HTMLElement | null;
+      panelEl?.focus();
+    } else if (returnFocusEl) {
+      returnFocusEl.focus();
+      returnFocusEl = null;
+    }
+  });
 </script>
 
 {#if phase !== "idle"}
@@ -70,9 +88,17 @@
       <div class="takeover-stage">{@render centerpiece()}</div>
     {/if}
 
-    <div class="takeover-panel" transition:fly={{ y: 28, duration: dur(340), easing: cubicOut }}>
+    <div
+      class="takeover-panel"
+      bind:this={panelEl}
+      role="dialog"
+      aria-modal="true"
+      aria-label={dialogLabel}
+      tabindex="-1"
+      transition:fly={{ y: 28, duration: dur(340), easing: cubicOut }}
+    >
       {#if phase === "error"}
-        <p class="takeover-msg error"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Export failed</p>
+        <p class="takeover-msg error" role="alert"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Export failed</p>
         <p class="takeover-sub">{error}</p>
         <div class="takeover-actions">
           {#if onCancel}<button class="takeover-btn ghost" onclick={onCancel}>Close</button>{/if}
@@ -92,7 +118,7 @@
             <span class="ring-pct">{pct}<small>%</small></span>
           </div>
         </div>
-        <p class="takeover-phase">{phaseLabel}</p>
+        <p class="takeover-phase" aria-live="polite" aria-atomic="true">{phaseLabel}</p>
         <p class="takeover-msg">Please don't navigate away.</p>
         {#if phase !== "complete" && onCancel}
           <button class="takeover-btn ghost" onclick={onCancel}>Cancel</button>
@@ -169,7 +195,7 @@
     font-variant-numeric: tabular-nums;
     line-height: 1;
   }
-  .ring-pct small { font-size: 13px; font-weight: 600; opacity: 0.6; margin-left: 1px; }
+  .ring-pct small { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.65); margin-left: 1px; }
   .takeover-phase {
     margin: 0;
     font-size: 15px;
@@ -189,12 +215,13 @@
   .takeover-sub {
     margin: 0;
     font-size: 12px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
     word-break: break-word;
   }
   .takeover-actions { display: flex; gap: 10px; }
   .takeover-btn {
     min-height: 44px;
+    min-width: 48px;
     padding: 8px 20px;
     border-radius: 12px;
     font-size: 14px;
