@@ -43,7 +43,7 @@
 </script>
 
 <script lang="ts">
-  import { slide } from "svelte/transition";
+  import { slide, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import type { Snippet } from "svelte";
 
@@ -129,7 +129,16 @@
   });
 </script>
 
-<div class="dock" class:overlay class:wide={overlay && wide} class:compact data-swipe-block bind:this={dockEl}>
+<div
+  class="dock"
+  class:overlay
+  class:wide={overlay && wide}
+  class:compact
+  data-swipe-block
+  bind:this={dockEl}
+  in:fly={{ y: 80, duration: dur(250), easing: cubicOut }}
+  out:fly={{ y: 80, duration: dur(200), easing: cubicOut }}
+>
   {#if activeTab && tray}
     <div class="tray" transition:slide={{ duration: dur(260), easing: cubicOut }}>
       {@render tray()}
@@ -138,11 +147,12 @@
 
   <div class="cat-bar">
     <div class="cat-scroll">
-      {#each tabs as t (t.id)}
+      {#each tabs as t, i (t.id)}
         <button
           class="dock-btn cat"
           class:active={activeTab === t.id}
           style:--cat-accent={t.accentColor ?? null}
+          style:--btn-i={i}
           onclick={() => onTabSelect(t.id)}
           aria-pressed={activeTab === t.id}
         >
@@ -163,13 +173,14 @@
 
     {#if secondaryAction}
       {#if secondaryIsLink}
-        <a class="dock-btn trailing-link" href={(secondaryAction as ControlDockLink).href} aria-label={secondaryAction.label}>
+        <a class="dock-btn trailing-link" style:--btn-i={tabs.length} href={(secondaryAction as ControlDockLink).href} aria-label={secondaryAction.label}>
           {#if secondaryAction.icon}<i class="fas {secondaryAction.icon}" aria-hidden="true"></i>{/if}
           <span class="trailing-label">{secondaryAction.label}</span>
         </a>
       {:else}
         <button
           class="dock-btn trailing-link"
+          style:--btn-i={tabs.length}
           onclick={(secondaryAction as ControlDockAction).onClick}
           disabled={(secondaryAction as ControlDockAction).disabled}
           aria-label={secondaryAction.label}
@@ -187,6 +198,7 @@
     {#if trailingAction}
       <button
         class="dock-btn download"
+        style:--btn-i={tabs.length + 1}
         onclick={trailingAction.onClick}
         disabled={trailingAction.disabled}
         aria-label={trailingAction.label}
@@ -202,6 +214,14 @@
 </div>
 
 <style>
+  /* Each button rises + fades on dock mount, staggered by --btn-i, so every
+     dock (download / mandala / choreo / scan / transforms) gets a little
+     entrance flourish layered over the root slide-up. */
+  @keyframes dockBtnIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
   .dock {
     display: flex;
     flex-direction: column;
@@ -266,6 +286,8 @@
     -webkit-tap-highlight-color: transparent;
     transition: background 220ms ease, border-color 220ms ease, color 220ms ease,
       transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 220ms ease;
+    animation: dockBtnIn 360ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    animation-delay: calc(var(--btn-i, 0) * 45ms + 90ms);
   }
   .dock-btn:active { transform: scale(0.92); }
   .dock-btn:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -350,5 +372,6 @@
 
   @media (prefers-reduced-motion: reduce) {
     .dock-btn:active { transform: none; }
+    .dock-btn { animation: none; }
   }
 </style>

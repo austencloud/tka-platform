@@ -2,9 +2,7 @@
 import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { onMount } from "svelte";
   import { goto, replaceState } from "$app/navigation";
-  import { fly } from "svelte/transition";
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
-  import { cubicOut } from "svelte/easing";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequenceViewerOrchestrator from "./SequenceViewerOrchestrator.svelte";
   import {
@@ -628,11 +626,9 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                   {/if}
                 </div>
                 {#if isMobileWidth && isImageExportActive && ctx.effectiveSequence}
-                  <div
-                    class="export-footer-overlay"
-                    in:fly={{ y: 80, duration: 250, easing: cubicOut }}
-                    out:fly={{ y: 80, duration: 200, easing: cubicOut }}
-                  >
+                  <!-- Entrance/exit fly now lives on ControlDock's root
+                       (shared by every dock); this wrapper only positions. -->
+                  <div class="export-footer-overlay">
                     <ExportImagePanel
                       exportOptions={ctx.exportOptions}
                       isExporting={ctx.isExporting}

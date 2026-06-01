@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { slide } from "svelte/transition";
+  import { slide, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import type { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
   import type { MandalaPathShape, MandalaPresetId } from "$lib/shared/mandala/domain/mandala-types";
@@ -108,7 +108,14 @@
   });
 </script>
 
-<div class="dock" class:wide data-swipe-block bind:this={dockEl}>
+<div
+  class="dock"
+  class:wide
+  data-swipe-block
+  bind:this={dockEl}
+  in:fly={{ y: 80, duration: dur(250), easing: cubicOut }}
+  out:fly={{ y: 80, duration: dur(200), easing: cubicOut }}
+>
   {#if activeCat}
     <div class="tray" transition:slide={{ duration: dur(260), easing: cubicOut }}>
       {#if activeCat === "speed"}
@@ -234,8 +241,8 @@
 
   <div class="cat-bar">
     <div class="cat-scroll">
-      {#each CATS as c}
-        <button class="dock-btn cat" class:active={activeCat === c.id} onclick={() => toggleCat(c.id)} aria-pressed={activeCat === c.id}>
+      {#each CATS as c, i}
+        <button class="dock-btn cat" class:active={activeCat === c.id} style:--btn-i={i} onclick={() => toggleCat(c.id)} aria-pressed={activeCat === c.id}>
           {#if c.id === "colors"}
             <span class="cat-dots">
               <span class="dot" style:background={ctrl.accentPair[0]}></span>
@@ -252,6 +259,7 @@
     <button
       class="dock-btn download"
       class:active={downloadOpen}
+      style:--btn-i={CATS.length}
       onclick={toggleDownload}
       aria-pressed={downloadOpen}
       aria-label="Download options"
@@ -489,6 +497,9 @@
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     transition: background 220ms ease, border-color 220ms ease, color 220ms ease, transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 220ms ease;
+    /* Staggered entrance, matching the shared ControlDock. */
+    animation: popIn 360ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    animation-delay: calc(var(--btn-i, 0) * 45ms + 90ms);
   }
   .dock-btn:active { transform: scale(0.92); }
   .dock-btn i { font-size: 16px; transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
@@ -613,6 +624,7 @@
     .mode-toggle > *,
     .custom-flow > * { animation: none !important; }
     .chip:active, .swatch:active .swatch-fill, .dock-btn:active { transform: none; }
+    .dock-btn { animation: none !important; }
     .dl-export:active { transform: none; }
   }
 </style>
