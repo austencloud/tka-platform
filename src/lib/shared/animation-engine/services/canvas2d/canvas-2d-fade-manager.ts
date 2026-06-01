@@ -28,19 +28,32 @@ export class Canvas2DFadeManager {
   startFadeTransition(): void {
     this.isFading = true;
     this.fadeProgress = 0;
-    this.fadeStartTime = performance.now();
+    // Stamp the start lazily on the next updateFadeProgress, using the SAME clock
+    // the caller drives us with. The live path drives rAF performance.now(); the
+    // offscreen video-export path drives a virtual clock that starts at 0.
+    // Stamping performance.now() here and subtracting the virtual clock in
+    // updateFadeProgress yielded a negative elapsed in export, so the glyph
+    // cross-fade never advanced (new glyph pinned invisible, old glyph stuck).
+    // Same bug class as the visibility/grid fade managers. Defer to the caller's clock.
+    this.fadeStartTime = null;
   }
 
   /**
    * Update fade progress and return alpha values for rendering
    */
   updateFadeProgress(currentTime: number): FadeState {
-    if (!this.isFading || this.fadeStartTime === null) {
+    if (!this.isFading) {
       return {
         currentAlpha: 1,
         previousAlpha: 0,
         isComplete: true,
       };
+    }
+
+    // Lazily stamp the transition start with the caller's clock (see
+    // startFadeTransition), so the start and the elapsed share one time source.
+    if (this.fadeStartTime === null) {
+      this.fadeStartTime = currentTime;
     }
 
     const elapsed = currentTime - this.fadeStartTime;

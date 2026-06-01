@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Canvas2DVisibilityFadeManager } from "../canvas-2d-visibility-fade-manager";
 import { Canvas2DGridFadeManager } from "../canvas-2d-grid-fade-manager";
+import { Canvas2DFadeManager } from "../canvas-2d-fade-manager";
 
 /**
  * Regression guard for the "props invisible in exported video" bug.
@@ -67,6 +68,20 @@ describe("fade managers are clock-agnostic (virtual-clock export path)", () => {
     const done = m.updateProgress(450);
     expect(done.alpha).toBeCloseTo(1, 5);
     expect(done.isTransitioning).toBe(false);
+  });
+
+  it("Canvas2DFadeManager (glyph cross-fade) completes on a virtual clock from 0", () => {
+    const m = new Canvas2DFadeManager();
+    m.startFadeTransition();
+    const mid = m.updateFadeProgress(0); // lazy-stamp start = 0
+    expect(mid.currentAlpha).toBeGreaterThanOrEqual(0);
+    expect(mid.currentAlpha).toBeLessThan(1);
+    expect(mid.isComplete).toBe(false);
+
+    const done = m.updateFadeProgress(300); // FADE_DURATION_MS elapsed
+    expect(done.currentAlpha).toBe(1);
+    expect(done.previousAlpha).toBe(0);
+    expect(done.isComplete).toBe(true);
   });
 
   it("steady state with no transition returns the target alpha regardless of clock", () => {
