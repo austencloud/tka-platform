@@ -153,9 +153,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     }
   }
 
-  function togglePractice(ctx: OrchestratorContext) {
-    ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart();
-  }
 
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
@@ -325,8 +322,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
             onRemix={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
             onCopyData={authState.isAdmin ? handleCopyForClaude : undefined}
             copyDataFeedback={copyClaudeFeedback}
-            practiceActive={ctx.practiceActive}
-            onPracticeToggle={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
             onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
             isPublished={ctx.isPublished}
             onPublish={ctx.isOwned && ctx.isSaved ? () => ctx.invokeGatedAction("publish", ctx.handlePublishAction) : undefined}
@@ -475,8 +470,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                     <ViewerContentRail
                       activeMode={ctx.viewerState.viewerMode}
                       webgl2Available={ctx.viewer3DState.webgl2Available}
-                      practiceActive={ctx.practiceActive}
-                      onPracticeToggle={() => togglePractice(ctx)}
                       onSelectSplit={() => selectSplitMode(ctx)}
                       onSelectMode={(mode) => selectViewerMode(ctx, mode)}
                     />
@@ -656,8 +649,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
               <ViewerModeBottomBar
                 activeMode={ctx.viewerState.viewerMode}
                 webgl2Available={ctx.viewer3DState.webgl2Available}
-                practiceActive={ctx.practiceActive}
-                onPracticeToggle={() => togglePractice(ctx)}
                 onSelectSplit={() => selectSplitMode(ctx)}
                 onSelectMode={(mode) => selectViewerMode(ctx, mode)}
               />
