@@ -83,6 +83,8 @@ export class CompositionDispatcher {
   private pendingRequests = new Map<number, PendingRequest>();
   private pendingBundle: import("./card-asset-bundle").AssetBundle | null = null;
   private pendingOverrideBundle: import("./override-placement-bundle").OverridePlacementBundle | null = null;
+  private pendingSignature: string | null = null;
+  private seededSignature: string | null = null;
 
   private static workerSupport: boolean | null = null;
   private static probing: Promise<boolean> | null = null;
@@ -100,6 +102,16 @@ export class CompositionDispatcher {
   /** Set the override placement bundle seeded into each worker at init. */
   setOverrideBundle(bundle: import("./override-placement-bundle").OverridePlacementBundle): void {
     this.pendingOverrideBundle = bundle;
+  }
+
+  /** Record the bundle signature that the next initPool will mark as seeded. */
+  setPendingSignature(signature: string): void {
+    this.pendingSignature = signature;
+  }
+
+  /** The signature of the bundle the pool is currently seeded with (null if unseeded). */
+  getSeededSignature(): string | null {
+    return this.seededSignature;
   }
 
   static canUseWorker(): boolean {
@@ -369,7 +381,7 @@ export class CompositionDispatcher {
 
   // ---- Pool lifecycle ----
 
-  private async ensureInitialized(): Promise<void> {
+  async ensureInitialized(): Promise<void> {
     if (this.initialized) return;
     if (this.initializing) return this.initializing;
     this.initializing = this.initPool();
@@ -491,6 +503,7 @@ export class CompositionDispatcher {
 
     this.initialized = true;
     this.initializing = null;
+    this.seededSignature = this.pendingSignature;
   }
 
   private pickWorker(): WorkerEntry {
@@ -510,6 +523,7 @@ export class CompositionDispatcher {
     this.workers = [];
     this.initialized = false;
     this.initializing = null;
+    this.seededSignature = null;
 
     for (const [, pending] of this.pendingRequests) {
       pending.reject(new Error("Dispatcher terminated"));
