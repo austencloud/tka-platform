@@ -117,15 +117,24 @@ export class OffscreenExportRenderer {
       this.panelState.sequenceData?.gridMode ?? GridMode.DIAMOND;
     await this.handle.context.renderer.loadGridTexture(gridMode, init.showNonRadialPoints);
 
-    // Load the prop BODY textures for the resolved prop types. The renderer skips
-    // drawing a prop whose image is null (canvas-2d-animation-renderer getBluePropImage),
-    // so without this the offscreen engine — driven only through renderFrame, which
-    // bypasses PlaybackSync's prop-texture path — renders no staves. Mirrors the
-    // grid-texture load above. "staff" is the floor so a missing type still draws.
+    // Thread the resolved prop types into the offscreen engine's STATE before the
+    // frame loop. The renderer skips drawing a prop whose image is null
+    // (canvas-2d-animation-renderer getBluePropImage), so the prop image must be
+    // loaded — but loading the image alone is not enough: frame-parameter-builder
+    // reads the prop TYPE from state.currentBluePropType/RedPropType
+    // (frame-parameter-builder.ts:227-228,244-245) and the prop DIMENSIONS from
+    // state.bluePropDimensions/redPropDimensions (frame-parameter-builder.ts:209-210).
+    // The offscreen engine is driven only through renderFrame(), which bypasses
+    // PlaybackSync — so those state fields are never synced and stay at the boot
+    // default ("staff", staff dimensions). A bare renderer.loadPerColorPropTextures()
+    // loaded the image but left the type/dimension desync, so a non-staff export
+    // drew the staff body at staff size. prepareExportPropTypes runs the canonical
+    // override path (sets state types + loads textures + syncs dimensions to state).
+    // "staff" is the floor so a missing type still draws.
     const darkMode = init.previewDarkMode ?? vm.isDarkMode();
     const blue = init.bluePropType ?? "staff";
     const red = init.redPropType ?? "staff";
-    await this.handle.context.renderer.loadPerColorPropTextures(blue, red, darkMode);
+    await this.handle.engine.prepareExportPropTypes(blue, red, darkMode);
 
     if (init.needsFluidWarmup) {
       // Deterministic warmup: render the start position repeatedly so the fluid
