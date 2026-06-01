@@ -45,7 +45,7 @@
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
   import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
   import { warmCardBackCaches } from "../../services/card-back/warm-card-back-caches";
-  import { hashDeckContent, hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
+  import { hashDeckContent, hashSequenceContent, hashSequenceSkeleton } from "$lib/shared/foundation/services/content-hasher";
   import { getPageLayout, type CardSizeId } from "../../domain/card-sizes";
   import { getTnDElementByIconPath, TND_ELEMENTS, type TnDElement } from "../../domain/tnd-element";
   import { suggestCopyCounts, copyWaste } from "../../services/print-copy-suggester";
@@ -702,7 +702,13 @@
     // different sequences (different turns/reversals/path) sharing a title.
     const MAX_PER_WORD = 3;
     const seqs: SequenceData[] = [];
-    const seenContent = new Set<string>();       // byte-identical guard
+    // Dedup on the location-arrangement SKELETON (word + per-step locations,
+    // motion type, rotation direction — NOT turns/orientations/reversal flags).
+    // So a card the engine produces as "same path, different turn pattern" is
+    // rejected; a repeated word title is only allowed when the path itself
+    // differs. (Content-only dedup let zero-turn vs one-turn copies of an
+    // identical path both through — exactly what we don't want.)
+    const seenSkeleton = new Set<string>();
     const wordCount = new Map<string, number>(); // simplified word → accepted copies
     rs.isLoadingSequences = true;
     rs.drawProgress = 0;
@@ -727,12 +733,12 @@
           console.warn("Live deck: a generation attempt failed", e);
           continue;
         }
-        const content = hashSequenceContent(s);
-        if (!seenContent.has(content)) {
-          const word = simplifyRepeatedWord(s.word ?? "") || content;
+        const skeleton = hashSequenceSkeleton(s);
+        if (!seenSkeleton.has(skeleton)) {
+          const word = simplifyRepeatedWord(s.word ?? "") || skeleton;
           const count = wordCount.get(word) ?? 0;
           if (count < maxPerWord) {
-            seenContent.add(content);
+            seenSkeleton.add(skeleton);
             wordCount.set(word, count + 1);
             seqs.push(s);
             rs.drawProgress = seqs.length;
