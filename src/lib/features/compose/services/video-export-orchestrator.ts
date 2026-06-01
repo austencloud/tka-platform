@@ -541,6 +541,10 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         //    panel state and let the live render loop paint the new beat.
         if (!isCompositeMode) {
           offscreen!.renderFrame(playbackPosition, virtualTimeMs);
+          // Yield to the event loop so the browser repaints (the live canvas keeps
+          // animating under the takeover) and the Svelte progress update flushes.
+          // The offscreen engine is deterministic and unaffected by the yield.
+          await this.waitForAnimationFrame();
         } else {
           playbackController.calculateStateForStep(playbackPosition);
           // Wait for the live render loop to paint the new beat. Single rAF:
