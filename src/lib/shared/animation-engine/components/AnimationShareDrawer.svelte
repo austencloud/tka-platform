@@ -20,6 +20,8 @@
   import AnimationCanvas from "$lib/shared/animation-engine/components/canvas/AnimationCanvas.svelte";
   import AnimationControlsPanel from "$lib/shared/animation-engine/components/canvas/AnimationControlsPanel.svelte";
   import AnimationViewerHelpSheet from "./AnimationViewerHelpSheet.svelte";
+  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
+  import type { ExportPhase } from "$lib/shared/video-export/components/ExportTakeover.svelte";
 
   // Lazy-loaded to avoid shared/ → features/ static import
   let CreatePanelDrawer = $state<typeof import("$lib/features/create/shared/components/CreatePanelDrawer.svelte").default | null>(null);
@@ -37,6 +39,7 @@
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
@@ -187,7 +190,7 @@
     stepData?: StartPositionData | StepData | null;
     sequenceData?: SequenceData | null;
     isExporting?: boolean;
-    exportProgress?: { progress: number; stage: string } | null;
+    exportProgress?: VideoExportProgress | null;
     onClose?: () => void;
     onSpeedChange?: (newSpeed: number) => void;
     onPlaybackStart?: () => void;
@@ -319,6 +322,20 @@
   // Trail settings from global animation settings (derived for reactivity)
   let trailSettings = $derived(animationSettings.settings.trail);
 
+  // ── Export takeover overlay (dim scrim + progress ring over the live canvas) ──
+  const takeoverPhase = $derived<ExportPhase>(
+    !isExporting ? "idle"
+    : exportProgress?.stage === "error" ? "error"
+    : exportProgress?.stage === "encoding" ? "encoding"
+    : exportProgress?.stage === "complete" ? "complete"
+    : "capturing",
+  );
+  const takeoverLabel = $derived(
+    takeoverPhase === "encoding" ? "Encoding…"
+    : takeoverPhase === "complete" ? "Done"
+    : "Rendering",
+  );
+
   // ============================================================================
   // EVENT HANDLERS
   // ============================================================================
@@ -375,22 +392,32 @@
           class:mobile-expanded={!isSideBySideLayout}
           class:settings-open={isSettingsOpen && !isSideBySideLayout}
         >
-          <!-- Canvas Area -->
-          <AnimationCanvas
-            {blueProp}
-            {redProp}
-            {gridVisible}
-            {gridMode}
-            {letter}
-            {stepData}
-            {sequenceData}
-            {isPlaying}
-            {speed}
-            {onCanvasReady}
-            {onVideoStepChange}
-            {onPlaybackToggle}
-            {trailSettings}
-          />
+          <!-- Canvas Area (position:relative host so the export takeover scrims only the canvas) -->
+          <div class="canvas-overlay-host">
+            <AnimationCanvas
+              {blueProp}
+              {redProp}
+              {gridVisible}
+              {gridMode}
+              {letter}
+              {stepData}
+              {sequenceData}
+              {isPlaying}
+              {speed}
+              {onCanvasReady}
+              {onVideoStepChange}
+              {onPlaybackToggle}
+              {trailSettings}
+            />
+            <ExportTakeover
+              phase={takeoverPhase}
+              progress={exportProgress?.progress ?? 0}
+              phaseLabel={takeoverLabel}
+              error={exportProgress?.error ?? null}
+              onCancel={onCancelExport}
+              onRetry={onExportVideo}
+            />
+          </div>
 
           <!-- Unified Controls Panel -->
           <AnimationControlsPanel
@@ -496,6 +523,24 @@
     flex: 1;
     gap: 10px;
     min-height: 0;
+  }
+
+  /* position:relative host so ExportTakeover scrims only the canvas, not the
+     controls. It carries the flex-child sizing while the inner .canvas-area
+     (whose responsive flex rules live below) stretches to fill it. */
+  .canvas-overlay-host {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .canvas-overlay-host :global(.canvas-area) {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
   }
 
   /* Mobile Expanded: Responsive layout that adapts to viewport size */
@@ -618,6 +663,13 @@
       flex-direction: row;
       gap: 1.5cqw;
       align-items: stretch;
+    }
+
+    .content-wrapper .canvas-overlay-host {
+      flex: 1 1 50%;
+      min-width: 0;
+      width: auto;
+      height: 100%;
     }
 
     .content-wrapper :global(.canvas-area) {
