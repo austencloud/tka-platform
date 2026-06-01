@@ -34,6 +34,7 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
   import { type VariationConfig, type StartOriMode } from "../../services/deck-variation";
   import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
   import type { StepCountWeight } from "../../domain/models/DeckRelease";
@@ -85,6 +86,8 @@
   const SIZE_SHADOW = "345deg 80% 45%";
   const PROP_TILE_COLOR = "linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%)";
   const PROP_TILE_SHADOW = "275deg 70% 50%";
+  const GRID_COLOR = "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #0284c7 100%)";
+  const GRID_SHADOW = "200deg 80% 50%";
 
   // Deck size is user-set (1–500). 54 fills a print page neatly (6 sheets × 9);
   // larger values generate that many unique sequences. Clamp + persist on change.
@@ -134,6 +137,10 @@
   // ── derived labels ─────────────────────────────────────────────────────────
   const currentLoop = $derived(([...rs.selectedLoopTypes][0] as LOOPType) ?? LOOPType.ROTATED);
   const currentLevel = $derived([...rs.selectedLevels][0] ?? 1);
+  // Level tile colors per level (baby-blue / silver / gold …), same source the
+  // Generate panel's LevelCard uses.
+  const levelColor = $derived(DIFFICULTY_LEVELS[currentLevel]?.cssBg ?? c.level.color);
+  const levelTextColor = $derived(DIFFICULTY_LEVELS[currentLevel]?.text ?? "white");
   let loopComponents = $state<Set<LOOPComponent>>(parseLoopComponents(LOOPType.ROTATED));
   $effect(() => { loopComponents = parseLoopComponents(currentLoop); });
 
@@ -213,9 +220,18 @@
       : new Set(["quartered"]);
     rs.persist();
   }
+  // Grid mode toggle (Diamond ↔ Box). Single value drives live-gen + the
+  // start-position picker; sets selectedGridModes to a one-element set.
+  const gridLabel = $derived(([...rs.selectedGridModes][0] ?? "diamond") === "box" ? "Box" : "Diamond");
+  function cycleGrid() {
+    const cur = [...rs.selectedGridModes][0] ?? "diamond";
+    rs.selectedGridModes = new Set([cur === "diamond" ? "box" : "diamond"]);
+    rs.persist();
+  }
 </script>
 
 <div class="bento-stage">
+  <!-- Row 1: core dials -->
   <div class="card-grid">
     <div class="tile">
       <BaseCard title="Loop Type" currentValue={LOOP_TYPE_LABELS[currentLoop]} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
@@ -224,15 +240,24 @@
       <StepperCard title="Length" currentValue={rs.selectedLength} minValue={4} maxValue={16} description="STEP COUNT" color={c.length.color} shadowColor={c.length.shadowColor} gridColumnSpan={2} onIncrement={() => stepLength(1)} onDecrement={() => stepLength(-1)} />
     </div>
     <div class="tile">
-      <StepperCard title="Level" currentValue={currentLevel} minValue={1} maxValue={3} description="BASE MOTIONS" color={c.level.color} shadowColor={c.level.shadowColor} gridColumnSpan={2} onIncrement={() => setLevel(currentLevel + 1)} onDecrement={() => setLevel(currentLevel - 1)} />
+      <StepperCard title="Level" currentValue={currentLevel} minValue={1} maxValue={3} description="BASE MOTIONS" color={levelColor} textColor={levelTextColor} shadowColor="0deg 0% 0%" gridColumnSpan={2} onIncrement={() => setLevel(currentLevel + 1)} onDecrement={() => setLevel(currentLevel - 1)} />
     </div>
     <div class="tile">
       <BaseCard title="Period" currentValue={periodLabel} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} gridColumnSpan={2} onClick={cyclePeriod} />
     </div>
     <div class="tile">
-      <BaseCard title="Prop" currentValue={propLabel} color={PROP_TILE_COLOR} shadowColor={PROP_TILE_SHADOW} gridColumnSpan={2} onClick={() => (showProp = true)} />
+      <BaseCard title="Grid" currentValue={gridLabel} color={GRID_COLOR} shadowColor={GRID_SHADOW} gridColumnSpan={2} onClick={cycleGrid} />
     </div>
     <div class="tile">
+      <BaseCard title="Prop" currentValue={propLabel} color={PROP_TILE_COLOR} shadowColor={PROP_TILE_SHADOW} gridColumnSpan={2} onClick={() => (showProp = true)} />
+    </div>
+  </div>
+
+  <!-- Row 2: motion style — Turns morphs in from the left at Level 2+, pushing
+       the style steppers right; collapses to zero-width at Level 1. Own flex row
+       so the reflow stays contained. -->
+  <div class="card-grid style-row">
+    <div class="tile turns" class:collapsed={currentLevel <= 1} aria-hidden={currentLevel <= 1}>
       <TurnIntensityCard currentIntensity={rs.turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => { rs.turnIntensity = v; rs.persist(); }} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
     </div>
     <div class="tile">
@@ -244,6 +269,10 @@
     <div class="tile">
       <StepperCard title="Dashes" currentValue={dashIdx} minValue={0} maxValue={2} description="FREQUENCY" formatValue={(i: number) => DASH_LABELS[i] ?? ""} color={STYLE_COLORS.dashes.color} shadowColor={STYLE_COLORS.dashes.shadow} gridColumnSpan={2} onIncrement={() => stepDash(1)} onDecrement={() => stepDash(-1)} />
     </div>
+  </div>
+
+  <!-- Row 3: deck-level -->
+  <div class="card-grid">
     <div class="tile size-tile">
       <BaseCard title="Deck Size" currentValue="" clickable={false} color={SIZE_COLOR} shadowColor={SIZE_SHADOW} gridColumnSpan={2}>
         <div class="size-row">
@@ -279,6 +308,7 @@
       <div class="recipe-row"><dt>Length</dt><dd>{rs.selectedLength} steps</dd></div>
       <div class="recipe-row"><dt>Level</dt><dd>{currentLevel}</dd></div>
       <div class="recipe-row"><dt>Period</dt><dd>{periodLabel}</dd></div>
+      <div class="recipe-row"><dt>Grid</dt><dd>{gridLabel}</dd></div>
       <div class="recipe-row"><dt>Prop</dt><dd>{propLabel}</dd></div>
       <div class="recipe-row"><dt>Max Turns</dt><dd>{rs.turnIntensity}</dd></div>
       <div class="recipe-row"><dt>Style</dt><dd>{PROP_LABELS[propIdx]} · {PROP_LABELS[handIdx]} · {DASH_LABELS[dashIdx]}</dd></div>
@@ -404,6 +434,28 @@
   }
   .card-grid > .tile.wide {
     flex: 1 1 360px;
+  }
+  /* Turn Intensity morph: at Level 1 it collapses to zero width and the style
+     steppers fill the row; at Level 2+ it slides back in from the left edge,
+     pushing them right. Animated flex-basis/grow (not an {#if}) so the row
+     re-flows every frame. margin cancels the 12px grid gap of the empty tile. */
+  .card-grid > .tile.turns {
+    min-width: 0;
+    overflow: hidden;
+    transition:
+      flex-basis 340ms cubic-bezier(0.4, 0, 0.2, 1),
+      flex-grow 340ms cubic-bezier(0.4, 0, 0.2, 1),
+      margin-right 340ms cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 240ms ease;
+  }
+  .card-grid > .tile.turns.collapsed {
+    flex: 0 0 0;
+    opacity: 0;
+    pointer-events: none;
+    margin-right: -12px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card-grid > .tile.turns { transition-duration: 0.001ms; }
   }
   .tile > :global(*) {
     width: 100%;
