@@ -453,7 +453,10 @@
   }
   .pos-cell:hover { background: rgba(255, 255, 255, 0.08); transform: translateY(-1px); }
   .pos-cell.on { border-color: #14b8a6; background: color-mix(in srgb, #14b8a6 18%, transparent); }
-  .pos-cell :global(*) { width: 100%; height: 100%; }
+  /* Scope to the pictograph wrapper + its SVG only — NOT every descendant.
+     `:global(*) { width/height: 100% }` blows up the prop groups inside the SVG. */
+  .pos-cell :global(.pictograph),
+  .pos-cell :global(.pictograph svg) { width: 100%; height: 100%; display: block; }
   .pos-check {
     position: absolute;
     top: 4px;
