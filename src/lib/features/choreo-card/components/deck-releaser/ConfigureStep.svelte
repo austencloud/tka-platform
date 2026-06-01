@@ -6,6 +6,7 @@
   import TnDFamilyCards from "./TnDFamilyCards.svelte";
   import TransformPanel from "./TransformPanel.svelte";
   import LoopBentoBoard from "./LoopBentoBoard.svelte";
+  import DeckPropSwitcher from "./DeckPropSwitcher.svelte";
   import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
   import type { VariationConfig, StartOriMode } from "../../services/deck-variation";
 
@@ -142,6 +143,14 @@
         oninput={(e) => onNotesChange((e.target as HTMLInputElement).value)}
       />
     </div>
+    {#if deckMode === "tnd"}
+      <!-- LOOP decks pick the prop via the bento Prop tile; TnD has no such tile,
+           so surface the switcher in the header. -->
+      <div class="prop-field">
+        <span class="control-label">Prop</span>
+        <DeckPropSwitcher />
+      </div>
+    {/if}
   </div>
 
   {#if deckMode === "tnd"}
@@ -266,6 +275,21 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+
+  .prop-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .control-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   /* TnD board: Families | hero Turn-Pattern matrix | Transform rail.
