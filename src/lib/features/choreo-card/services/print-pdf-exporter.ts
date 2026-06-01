@@ -10,6 +10,10 @@ const GUIDE_COLOR = rgb(0.65, 0.65, 0.65);
 const CROP_COLOR = rgb(0.4, 0.4, 0.4);
 const CROP_LEN = 8;
 const CROP_OFFSET = 2;
+// Inset for corner labels/hints so they clear the printer's non-printable
+// margin (~0.25"). Horizontal has slack; vertical band is only marginYPt tall.
+const LABEL_EDGE_X = 24;
+const LABEL_EDGE_Y = 8;
 
 /** One card per page, alternating front/back. For MPC/print service upload. */
 export async function exportDeckPDF(
@@ -237,8 +241,8 @@ function drawSheetLabel(
 	const label = `${side}  ·  Sheet ${sheetNum} of ${totalSheets}`;
 	const labelWidth = fontBold.widthOfTextAtSize(label, 7);
 	page.drawText(label, {
-		x: LETTER_W - labelWidth - 8,
-		y: LETTER_H - 10,
+		x: LETTER_W - labelWidth - LABEL_EDGE_X,
+		y: LETTER_H - LABEL_EDGE_Y - 7,
 		size: 7,
 		font: fontBold,
 		color: GUIDE_COLOR,
@@ -246,8 +250,8 @@ function drawSheetLabel(
 
 	if (deckName) {
 		page.drawText(deckName, {
-			x: 8,
-			y: LETTER_H - 10,
+			x: LABEL_EDGE_X,
+			y: LETTER_H - LABEL_EDGE_Y - 6,
 			size: 6,
 			font,
 			color: GUIDE_COLOR,
@@ -261,19 +265,19 @@ function drawFlipHint(
 	hint: string,
 ) {
 	page.drawText(hint, {
-		x: 8,
-		y: 6,
+		x: LABEL_EDGE_X,
+		y: LABEL_EDGE_Y,
 		size: 6,
 		font,
 		color: GUIDE_COLOR,
 	});
 
 	// Arrow in bottom-right indicating long-edge flip direction
-	const arrowX = LETTER_W - 30;
-	const arrowY = 10;
-	page.drawText(">> LONG EDGE", {
-		x: arrowX - 30,
-		y: arrowY - 4,
+	const flipText = ">> LONG EDGE";
+	const flipWidth = font.widthOfTextAtSize(flipText, 6);
+	page.drawText(flipText, {
+		x: LETTER_W - LABEL_EDGE_X - flipWidth,
+		y: LABEL_EDGE_Y,
 		size: 6,
 		font,
 		color: GUIDE_COLOR,
