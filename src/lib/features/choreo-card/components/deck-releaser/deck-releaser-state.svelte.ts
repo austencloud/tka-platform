@@ -33,8 +33,12 @@ interface PersistedSession {
   loopTypes?: string[];
   /** LOOP level axis. */
   levels?: number[];
-  /** LOOP start-position id subset (empty ⇒ any). */
+  /** LOOP start-position subset — GridPosition strings ("alpha1", "beta5", …).
+   *  Empty ⇒ any start position. */
   startPositionIds?: string[];
+  /** Start-orientation per hand ("in"|"out"|"clock"|"counter") for live gen. */
+  startOriBlue?: string;
+  startOriRed?: string;
   /** Style axes (Smooth/Mixed/Choppy · Low/Mixed/High). */
   propStyle?: "smooth" | "mixed" | "choppy";
   handStyle?: "smooth" | "mixed" | "choppy";
@@ -122,8 +126,13 @@ class DeckReleaserState {
   selectedLoopTypes = $state<Set<string>>(new Set(["rotated"]));
   /** LOOP level axis (multi-select). */
   selectedLevels = $state<Set<number>>(new Set([1]));
-  /** LOOP start-position id subset. Empty ⇒ any start position. */
+  /** LOOP start-position subset — GridPosition strings ("alpha1", "beta5", …).
+   *  Empty ⇒ any start position. Each live-gen card draws one from this set. */
   selectedStartPositionIds = $state<Set<string>>(new Set());
+  /** Start orientation per hand for live generation. Baked into each generated
+   *  sequence's beat 0 via GenerationOptions.blue/redStartOrientation. */
+  startOriBlue = $state<string>("in");
+  startOriRed = $state<string>("in");
   /** Style axes (Smooth/Mixed/Choppy). Props drives per-card prop-reversal density
    *  (→ variationConfig.reversalFrequency, live). Hands + Dashes are stamped into
    *  the recipe as intent — the enumerated pool can't vary them yet (live-gen phase). */
@@ -177,6 +186,8 @@ class DeckReleaserState {
       if (saved.loopTypes?.length) this.selectedLoopTypes = new Set(saved.loopTypes);
       if (saved.levels?.length) this.selectedLevels = new Set(saved.levels);
       if (saved.startPositionIds?.length) this.selectedStartPositionIds = new Set(saved.startPositionIds);
+      if (saved.startOriBlue) this.startOriBlue = saved.startOriBlue;
+      if (saved.startOriRed) this.startOriRed = saved.startOriRed;
       if (saved.propStyle) this.propStyle = saved.propStyle;
       if (saved.handStyle) this.handStyle = saved.handStyle;
       if (saved.dashStyle) this.dashStyle = saved.dashStyle;
@@ -212,6 +223,8 @@ class DeckReleaserState {
       loopTypes: [...this.selectedLoopTypes],
       levels: [...this.selectedLevels],
       startPositionIds: [...this.selectedStartPositionIds],
+      startOriBlue: this.startOriBlue,
+      startOriRed: this.startOriRed,
       propStyle: this.propStyle,
       handStyle: this.handStyle,
       dashStyle: this.dashStyle,
@@ -279,6 +292,8 @@ class DeckReleaserState {
       recipe.loopTypes = [...this.selectedLoopTypes];
       recipe.levels = [...this.selectedLevels];
       if (this.selectedStartPositionIds.size > 0) recipe.startPositionIds = [...this.selectedStartPositionIds];
+      recipe.startOriBlue = this.startOriBlue;
+      recipe.startOriRed = this.startOriRed;
       recipe.propStyle = this.propStyle;
       recipe.handStyle = this.handStyle;
       recipe.dashStyle = this.dashStyle;
@@ -330,6 +345,8 @@ class DeckReleaserState {
       this.selectedLoopTypes = new Set(recipe.loopTypes?.length ? recipe.loopTypes : ["rotated"]);
       this.selectedLevels = new Set(recipe.levels?.length ? recipe.levels : [1]);
       this.selectedStartPositionIds = new Set(recipe.startPositionIds ?? []);
+      if (recipe.startOriBlue) this.startOriBlue = recipe.startOriBlue;
+      if (recipe.startOriRed) this.startOriRed = recipe.startOriRed;
       if (recipe.propStyle) this.propStyle = recipe.propStyle;
       if (recipe.handStyle) this.handStyle = recipe.handStyle;
       if (recipe.dashStyle) this.dashStyle = recipe.dashStyle;
@@ -368,6 +385,8 @@ class DeckReleaserState {
     this.selectedLoopTypes = new Set(["rotated"]);
     this.selectedLevels = new Set([1]);
     this.selectedStartPositionIds = new Set();
+    this.startOriBlue = "in";
+    this.startOriRed = "in";
     this.step = "configure";
     this.persist();
   }

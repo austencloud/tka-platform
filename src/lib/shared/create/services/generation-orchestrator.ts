@@ -97,6 +97,8 @@ export class GenerationOrchestrator {
         : undefined,
       blockedStartPositions: options.blockedStartPositions?.map(String),
       maxTurnIntensity: options.turnIntensity,
+      blueStartOrientation: options.blueStartOrientation,
+      redStartOrientation: options.redStartOrientation,
     });
 
     return this.transformer.convertToSequenceData(result, options);
@@ -142,6 +144,8 @@ export class GenerationOrchestrator {
         : undefined,
       blockedStartPositions: options.blockedStartPositions?.map(String),
       maxTurnIntensity: options.turnIntensity,
+      blueStartOrientation: options.blueStartOrientation,
+      redStartOrientation: options.redStartOrientation,
       loop: {
         type: engineLoopType,
         period,

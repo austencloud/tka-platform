@@ -26,6 +26,12 @@
   import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import TransformPanel from "./TransformPanel.svelte";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import OrientationCycler from "$lib/features/create/construct/start-position-picker/components/OrientationCycler.svelte";
+  import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
+  import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { type VariationConfig, type StartOriMode } from "../../services/deck-variation";
   import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
   import type { StepCountWeight } from "../../domain/models/DeckRelease";
@@ -71,6 +77,8 @@
   const c = getCardColors(BackgroundType.COSMIC);
   const LOOP_COLOR = "linear-gradient(135deg, #a3a32a 0%, #8a8a22 50%, #6b6b1a 100%)";
   const LOOP_SHADOW = "60deg 55% 35%";
+  const POS_COLOR = "linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #0f766e 100%)";
+  const POS_SHADOW = "175deg 65% 40%";
 
   // Deck size is fixed at 52 (a standard deck). Force it on mount so a persisted
   // 26/36 can't linger now that the size tile is gone.
@@ -143,6 +151,33 @@
   // ── modals ───────────────────────────────────────────────────────────────
   let showLoop = $state(false);
   let showTransform = $state(false);
+  let showPosOri = $state(false);
+
+  // ── start position + orientation (ported from the unified-generation prototype)
+  // Positions follow the deck's active grid mode (set in Transform). Selection is
+  // stored as GridPosition strings; empty ⇒ any. Orientation is per-hand and
+  // baked into every generated card's beat 0 via blue/redStartOrientation.
+  let posShowAll = $state(false);
+  const posGridMode = $derived(([...rs.selectedGridModes][0] ?? "diamond") as GridMode);
+  const posList = $derived<PictographData[]>(
+    posShowAll
+      ? startPositionManager.getAllStartPositionVariations(posGridMode, rs.startOriBlue as Orientation, rs.startOriRed as Orientation)
+      : startPositionManager.getDefaultStartPositions(posGridMode, rs.startOriBlue as Orientation, rs.startOriRed as Orientation),
+  );
+  function togglePos(pos: string) {
+    const next = new Set(rs.selectedStartPositionIds);
+    if (next.has(pos)) next.delete(pos);
+    else next.add(pos);
+    rs.selectedStartPositionIds = next;
+    rs.persist();
+  }
+  function clearPos() { rs.selectedStartPositionIds = new Set(); rs.persist(); }
+  function allPos() { rs.selectedStartPositionIds = new Set(posList.map((p) => String(p.startPosition))); rs.persist(); }
+  const ORI_SHORT: Record<string, string> = { in: "In", out: "Out", clock: "Clock", counter: "Counter" };
+  const oriLabel = (o: string) => ORI_SHORT[o] ?? o;
+  const posSummary = $derived(
+    `${rs.selectedStartPositionIds.size === 0 ? "Any" : `${rs.selectedStartPositionIds.size} pos`} · ${oriLabel(rs.startOriBlue)}/${oriLabel(rs.startOriRed)}`,
+  );
 
   // ── actions ────────────────────────────────────────────────────────────────
   function pickLoop(lt: LOOPType) {
@@ -190,6 +225,9 @@
     <div class="tile">
       <StepperCard title="Dashes" currentValue={dashIdx} minValue={0} maxValue={2} description="FREQUENCY" formatValue={(i: number) => DASH_LABELS[i] ?? ""} color={STYLE_COLORS.dashes.color} shadowColor={STYLE_COLORS.dashes.shadow} gridColumnSpan={2} onIncrement={() => stepDash(1)} onDecrement={() => stepDash(-1)} />
     </div>
+    <div class="tile">
+      <BaseCard title="Start · Ori" currentValue={posSummary} color={POS_COLOR} shadowColor={POS_SHADOW} gridColumnSpan={2} onClick={() => (showPosOri = true)} />
+    </div>
     <div class="tile wide">
       <BaseCard title="Transform" currentValue={transformSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showTransform = true)} />
     </div>
@@ -205,6 +243,7 @@
       <div class="recipe-row"><dt>Period</dt><dd>{periodLabel}</dd></div>
       <div class="recipe-row"><dt>Max Turns</dt><dd>{rs.turnIntensity}</dd></div>
       <div class="recipe-row"><dt>Style</dt><dd>{PROP_LABELS[propIdx]} · {PROP_LABELS[handIdx]} · {DASH_LABELS[dashIdx]}</dd></div>
+      <div class="recipe-row"><dt>Start · Ori</dt><dd>{posSummary}</dd></div>
       <div class="recipe-row"><dt>Transform</dt><dd>{transformSummary}</dd></div>
       <div class="recipe-row"><dt>Reversal</dt><dd>{reversalPattern?.label ?? "Continuous"}</dd></div>
     </dl>
@@ -234,6 +273,43 @@
         <TransformPanel {startOriModes} {onToggleStartOriMode} {gridModes} {onToggleGridMode} {reversalPattern} onReversalChange={(p) => onReversalChange?.(p)} reversalCustomDefault={false} />
       </div>
       <button class="po-done" onclick={() => (showTransform = false)}>Done</button>
+    </div>
+  </div>
+{/if}
+
+{#if showPosOri}
+  <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showPosOri = false; }}>
+    <div class="picker-overlay posori" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+      <div class="po-header">
+        <h3>Start Position &amp; Orientation</h3>
+        <button class="po-close" aria-label="Close" onclick={() => (showPosOri = false)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="po-body">
+        <div class="pos-controls">
+          <button class="pc-btn" onclick={allPos}>All</button>
+          <button class="pc-btn" onclick={clearPos}>Clear</button>
+          <button class="pc-btn pc-scope" class:active={posShowAll} onclick={() => (posShowAll = !posShowAll)}>
+            {posShowAll ? "Simple (3)" : "All Variations"}
+          </button>
+        </div>
+        <div class="pos-grid" class:all={posShowAll}>
+          {#each posList as p (p.id)}
+            {@const sel = rs.selectedStartPositionIds.has(String(p.startPosition))}
+            <button class="pos-cell" class:on={sel} aria-pressed={sel} onclick={() => togglePos(String(p.startPosition))}>
+              <PictographContainer pictographData={p} />
+              {#if sel}<span class="pos-check">✓</span>{/if}
+            </button>
+          {/each}
+        </div>
+        <div class="pos-ori-row">
+          <OrientationCycler orientation={rs.startOriBlue as Orientation} onOrientationChange={(o: Orientation) => { rs.startOriBlue = o; rs.persist(); }} color="blue" />
+          <OrientationCycler orientation={rs.startOriRed as Orientation} onOrientationChange={(o: Orientation) => { rs.startOriRed = o; rs.persist(); }} color="red" />
+        </div>
+        <p class="pos-hint">No selection = any start position. Orientation applies to every card in the deck.</p>
+      </div>
+      <button class="po-done" onclick={() => (showPosOri = false)}>Done</button>
     </div>
   </div>
 {/if}
@@ -340,4 +416,60 @@
   .po-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
   .po-done { flex-shrink: 0; width: 100%; padding: 12px 20px; min-height: 44px; background: color-mix(in srgb, var(--theme-accent) 30%, transparent); border: 2px solid var(--theme-accent); border-radius: 10px; color: #fff; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; }
   .po-done:hover { background: color-mix(in srgb, var(--theme-accent) 45%, transparent); }
+
+  /* ── start position + orientation picker ── */
+  /* Definite height so the 4×4 "All Variations" grid doesn't collapse. */
+  .picker-overlay.posori { height: min(740px, 90vh); }
+  .pos-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .pc-btn {
+    min-height: 36px;
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .pc-btn:hover { background: rgba(255, 255, 255, 0.14); }
+  .pc-scope { margin-left: auto; }
+  .pc-scope.active { background: color-mix(in srgb, var(--theme-accent) 35%, transparent); border-color: var(--theme-accent); }
+  .pos-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .pos-grid.all { grid-template-columns: repeat(4, 1fr); }
+  .pos-cell {
+    position: relative;
+    aspect-ratio: 1;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  }
+  .pos-cell:hover { background: rgba(255, 255, 255, 0.08); transform: translateY(-1px); }
+  .pos-cell.on { border-color: #14b8a6; background: color-mix(in srgb, #14b8a6 18%, transparent); }
+  .pos-cell :global(*) { width: 100%; height: 100%; }
+  .pos-check {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #14b8a6;
+    color: #042f2a;
+    font-size: 13px;
+    font-weight: 900;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  }
+  .pos-ori-row { display: flex; gap: 16px; justify-content: center; margin-top: 16px; }
+  .pos-hint { margin: 12px 2px 0; font-size: 12px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.5)); text-align: center; }
 </style>

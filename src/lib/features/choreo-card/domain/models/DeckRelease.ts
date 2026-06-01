@@ -72,8 +72,11 @@ export interface DeckRecipe {
   loopTypes?: string[];
   /** New LOOP axis: which level(s). Absent ⇒ all available. */
   levels?: number[];
-  /** New LOOP axis: start-position id subset. Absent/empty ⇒ any. */
+  /** New LOOP axis: start-position subset as GridPosition strings ("alpha1", …). Absent/empty ⇒ any. */
   startPositionIds?: string[];
+  /** Start orientation per hand ("in"|"out"|"clock"|"counter") for live generation. */
+  startOriBlue?: string;
+  startOriRed?: string;
   /** Style axes (Smooth/Mixed/Choppy). Props drives prop-reversal density (live);
    *  hands + dashes are stamped intent for the live-generation phase. */
   propStyle?: "smooth" | "mixed" | "choppy";

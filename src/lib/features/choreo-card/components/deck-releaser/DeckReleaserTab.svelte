@@ -38,6 +38,10 @@
   import type { GenerationOptions } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { LOOPType, Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { levelToDifficulty } from "$lib/shared/create/utils/config-mapper";
+  import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
+  import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
   import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
   import { warmCardBackCaches } from "../../services/card-back/warm-card-back-caches";
@@ -629,6 +633,22 @@
     const loopType = ([...rs.selectedLoopTypes][0] ?? "rotated") as LOOPType;
     const turnIntensity = rs.turnIntensity; // generator max-intensity model (0–3 scalar)
     const motionTypeFilter = rs.dashStyle === "low" ? "no-dash" : rs.dashStyle === "high" ? "prefer-dash" : null;
+
+    // Selected start positions (GridPosition strings). Empty ⇒ engine picks any.
+    // Build the position pictographs for the active grid mode so each card can be
+    // seeded from one of the chosen positions; orientation is passed explicitly
+    // (blue/redStartOrientation) so the engine bakes it into every beat 0.
+    const startPosPics =
+      rs.selectedStartPositionIds.size > 0
+        ? startPositionManager
+            .getAllStartPositionVariations(
+              gridMode as GridMode,
+              rs.startOriBlue as Orientation,
+              rs.startOriRed as Orientation,
+            )
+            .filter((p) => rs.selectedStartPositionIds.has(String(p.startPosition)))
+        : [];
+
     const options: GenerationOptions = {
       mode: GenerationMode.CIRCULAR,
       length,
@@ -641,6 +661,8 @@
       handPathMode: rs.handStyle,
       motionTypeFilter,
       turnIntensity,
+      blueStartOrientation: rs.startOriBlue,
+      redStartOrientation: rs.startOriRed,
     };
 
     const target = rs.totalCards || 52;
@@ -649,16 +671,26 @@
     rs.isLoadingSequences = true;
     rs.drawProgress = 0;
     let attempts = 0;
-    const maxAttempts = target * 4; // headroom for dedup collisions / occasional failures
+    // Word-dedup is stricter than content-dedup (many distinct sequences share a
+    // simplified word), so give the loop more headroom before settling for fewer.
+    const maxAttempts = target * 8;
     try {
       while (seqs.length < target && attempts < maxAttempts) {
         attempts++;
         if (generation !== rs.drawGeneration) return false;
+        // Seed this card from a randomly-chosen selected start position (even
+        // coverage across the set; engine picks any when none selected).
+        if (startPosPics.length) {
+          options.startPosition = startPosPics[Math.floor(Math.random() * startPosPics.length)];
+        }
         try {
           const s = await generationOrchestrator.generateSequence(options);
-          const h = hashSequenceContent(s);
-          if (seen.has(h)) continue; // content dedup — no two identical cards
-          seen.add(h);
+          // Dedup by SIMPLIFIED WORD: two cards may never share the same seed
+          // letter-combination (e.g. "ABCABC" → "ABC"). Falls back to a content
+          // hash only for the degenerate empty-word case.
+          const key = simplifyRepeatedWord(s.word ?? "") || hashSequenceContent(s);
+          if (seen.has(key)) continue;
+          seen.add(key);
           seqs.push(s);
           rs.drawProgress = seqs.length;
         } catch (e) {

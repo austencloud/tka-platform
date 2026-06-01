@@ -59,6 +59,15 @@ export interface GenerationOptions {
 
   // Multi-select start position constraints (blocklist approach)
   blockedStartPositions?: GridPosition[]; // Positions that should NOT be used
+
+  /**
+   * Override the start orientation per hand ("in" | "out" | "clock" | "counter").
+   * The engine rewrites beat 0 and reseeds orientation propagation from these.
+   * Absent ⇒ the engine keeps the randomly-selected start variation's orientation
+   * (default "in"). Threaded straight through to the engine's BuildOptions.
+   */
+  blueStartOrientation?: string;
+  redStartOrientation?: string;
 }
 
 export interface LetterDerivationResult {
