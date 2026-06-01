@@ -19,8 +19,10 @@
   import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
   import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
-  import StartPositionPicker from "$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte";
-  import { createSimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
+  import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import OrientationCycler from "$lib/features/create/construct/start-position-picker/components/OrientationCycler.svelte";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { scale } from "svelte/transition";
@@ -101,19 +103,43 @@
   let dashes = $state<"low" | "mixed" | "high">("mixed");
   let seed = $state(mintSeed());
 
-  // Start Position & Orientation: reuse the REAL picker (3 positions / 16 variations grid,
-  // Diamond/Box toggle, per-hand orientation cyclers). Grid mode now lives in here, so the
-  // standalone Grid toggle tile is gone.
-  const posOri = createSimplifiedStartPositionState();
+  // Start Position & Orientation — deck wants a SUBSET (a deck draws from many start
+  // positions), so this is MULTI-select, unlike Construct's single-pick. Content-driven grid
+  // reusing PictographContainer + OrientationCycler + startPositionManager (the same data).
+  // Grid mode lives here too, so the standalone Grid toggle tile is gone.
   let showPosOri = $state(false);
+  let posGridMode = $state<GridMode>(GridMode.DIAMOND);
+  let posBlueOri = $state<Orientation>(Orientation.IN);
+  let posRedOri = $state<Orientation>(Orientation.IN);
+  let posShowAll = $state(false); // false = Classic 3, true = all 16 variations
+  let selectedPositions = $state<Set<string>>(new Set());
+  const oriShort = (o: Orientation): string =>
+    ({ [Orientation.IN]: "In", [Orientation.OUT]: "Out", [Orientation.CLOCK]: "Clock", [Orientation.COUNTER]: "Counter" } as Record<string, string>)[o] ?? String(o);
+
+  const posList = $derived<PictographData[]>(
+    posShowAll
+      ? startPositionManager.getAllStartPositionVariations(posGridMode, posBlueOri, posRedOri)
+      : startPositionManager.getDefaultStartPositions(posGridMode, posBlueOri, posRedOri),
+  );
+  function togglePosition(id: string) {
+    const next = new Set(selectedPositions);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    selectedPositions = next;
+  }
+  function selectAllPositions() { selectedPositions = new Set(posList.map((p) => p.id)); }
+  function clearPositions() { selectedPositions = new Set(); }
+  function pickClassic3() {
+    posShowAll = false;
+    selectedPositions = new Set(
+      startPositionManager.getDefaultStartPositions(posGridMode, posBlueOri, posRedOri).map((p) => p.id),
+    );
+  }
 
   // Deck Prop: reuse the real BentoPropGrid (props by family). The deck's prop is part of the
   // recipe — it overrides the user's saved global prop setting at generation time.
   let propType = $state<PropType>(PropType.STAFF);
   let showProp = $state(false);
   const propLabel = $derived(propType.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()));
-  const oriShort = (o: Orientation): string =>
-    ({ [Orientation.IN]: "In", [Orientation.OUT]: "Out", [Orientation.CLOCK]: "Clock", [Orientation.COUNTER]: "Counter" } as Record<string, string>)[o] ?? String(o);
 
   // ---- derived ----------------------------------------------------------------
   const wordMode = $derived(word.trim().length > 0);
@@ -131,12 +157,12 @@
   const exhausted = $derived(requested > cardSpace);
 
   const periodLabel = $derived(period === "quartered" ? "Quartered" : "Halved");
-  const gridLabel = $derived(posOri.currentGridMode === GridMode.DIAMOND ? "Diamond" : "Box");
+  const gridLabel = $derived(posGridMode === GridMode.DIAMOND ? "Diamond" : "Box");
   const posOriSummary = $derived.by(() => {
-    const b = posOri.blueOrientation, r = posOri.redOrientation;
-    const ori = b === r ? oriShort(b) : `${oriShort(b)}/${oriShort(r)}`;
-    const pos = posOri.selectedPosition?.startPosition;
-    return pos ? `${pos} · ${gridLabel}` : `${gridLabel} · ${ori}`;
+    const ori = posBlueOri === posRedOri ? oriShort(posBlueOri) : `${oriShort(posBlueOri)}/${oriShort(posRedOri)}`;
+    const n = selectedPositions.size;
+    const posPart = n === 0 ? "Any pos" : `${n} pos`;
+    return `${posPart} · ${gridLabel} · ${ori}`;
   });
 
   const recipe = $derived({
@@ -144,9 +170,9 @@
     params: {
       ...(wordMode ? { word: word.trim().toUpperCase(), deck: "all-variations" } : { deckSize }),
       loopType, stepCount, level, period, prop: propType,
-      grid: posOri.currentGridMode === GridMode.DIAMOND ? "diamond" : "box",
-      startPosition: posOri.selectedPosition?.startPosition ?? "any",
-      blueOrientation: posOri.blueOrientation, redOrientation: posOri.redOrientation,
+      grid: posGridMode === GridMode.DIAMOND ? "diamond" : "box",
+      startPositions: selectedPositions.size === 0 ? "any" : Array.from(selectedPositions),
+      blueOrientation: posBlueOri, redOrientation: posRedOri,
       propReversals: propRev, handReversals: handRev, dashes,
       ...(level > 1 ? { turnIntensity } : {}),
     },
@@ -308,15 +334,56 @@
     <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showPosOri = false; }}>
       <div class="picker-overlay posori" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
         <div class="po-header">
-          <h3>Start Position &amp; Orientation</h3>
+          <h3>Start Positions &amp; Orientation</h3>
           <button class="po-close" aria-label="Close" onclick={() => (showPosOri = false)}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
-        <div class="po-body">
-          <StartPositionPicker startPositionState={posOri} />
+
+        <!-- Presets + grid mode -->
+        <div class="pos-controls">
+          <div class="pos-presets">
+            <button class="pc-btn" onclick={() => { posShowAll = true; selectAllPositions(); }}>All</button>
+            <button class="pc-btn" onclick={pickClassic3}>Classic 3</button>
+            <button class="pc-btn" onclick={clearPositions}>Clear</button>
+          </div>
+          <SegmentedControl
+            options={[{ value: GridMode.DIAMOND, label: "Diamond" }, { value: GridMode.BOX, label: "Box" }]}
+            value={posGridMode}
+            onchange={(v: GridMode) => { posGridMode = v; }}
+            color="accent"
+          />
+          <button class="pc-btn" onclick={() => (posShowAll = !posShowAll)}>
+            {posShowAll ? "Simple (3)" : "All Variations (16)"}
+          </button>
         </div>
-        <button class="po-done" onclick={() => (showPosOri = false)}>Done</button>
+
+        <!-- Multi-select position grid (tap to toggle which positions the deck draws from) -->
+        <div class="po-body">
+          <div class="pos-grid">
+            {#each posList as p (p.id)}
+              <button
+                class="pos-cell"
+                class:on={selectedPositions.has(p.id)}
+                aria-pressed={selectedPositions.has(p.id)}
+                onclick={() => togglePosition(p.id)}
+              >
+                <PictographContainer pictographData={p} />
+                {#if selectedPositions.has(p.id)}<span class="pos-check">✓</span>{/if}
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <!-- Per-hand orientation -->
+        <div class="pos-ori-row">
+          <OrientationCycler orientation={posBlueOri} onOrientationChange={(o: Orientation) => (posBlueOri = o)} color="blue" />
+          <OrientationCycler orientation={posRedOri} onOrientationChange={(o: Orientation) => (posRedOri = o)} color="red" />
+        </div>
+
+        <button class="po-done" onclick={() => (showPosOri = false)}>
+          Done{#if selectedPositions.size > 0} · {selectedPositions.size} selected{/if}
+        </button>
       </div>
     </div>
   {/if}
@@ -462,10 +529,40 @@
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 40px color-mix(in srgb, var(--theme-accent) 28%, transparent);
     overflow: hidden;
   }
-  /* Pos & Ori: narrower + near-square so the picker sizes pictographs large
-     (PictographGrid scales to ~28cqmin of its container and picks columns by aspect). */
-  .picker-overlay.posori { width: min(760px, 92vw); }
-  .posori .po-body { min-height: 56vh; }
+  /* Pos & Ori: CONTENT-driven. Our own grid sets a comfortable cell size; the modal sizes to
+     content (height auto), scrolling the grid only if it exceeds the viewport. */
+  .picker-overlay.posori { width: min(960px, 94vw); }
+  .pos-controls {
+    flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px;
+  }
+  .pos-presets { display: flex; gap: 6px; }
+  .pc-btn {
+    min-height: 40px; padding: 8px 16px; border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08); border: 1.5px solid rgba(255, 255, 255, 0.18);
+    color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 150ms;
+  }
+  .pc-btn:hover { background: rgba(255, 255, 255, 0.16); }
+  .pos-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px; align-content: start;
+  }
+  .pos-cell {
+    position: relative; aspect-ratio: 1 / 1; padding: 6px; cursor: pointer;
+    background: rgba(0, 0, 0, 0.25); border: 2.5px solid transparent; border-radius: 12px;
+    transition: border-color 150ms, transform 120ms; min-width: 0;
+  }
+  .pos-cell:hover { border-color: rgba(255, 255, 255, 0.3); }
+  .pos-cell:active { transform: scale(0.97); }
+  .pos-cell.on { border-color: var(--theme-accent, #6366f1); box-shadow: 0 0 16px color-mix(in srgb, var(--theme-accent) 40%, transparent); }
+  .pos-cell :global(.pictograph),
+  .pos-cell :global(.pictograph svg) { width: 100%; height: 100%; display: block; }
+  .pos-check {
+    position: absolute; top: 4px; right: 6px; width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800;
+    color: #06121a; background: var(--theme-accent, #6366f1);
+  }
+  .pos-ori-row { flex-shrink: 0; display: flex; gap: 12px; }
+  .pos-ori-row :global(.orientation-cycler) { flex: 1; }
 
   /* Loop modal: let the overlay flow (not absolute) so the panel sizes to content —
      no dead space below the cards. Period footer sits beneath it. */
