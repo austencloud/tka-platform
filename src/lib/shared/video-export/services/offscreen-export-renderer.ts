@@ -96,6 +96,19 @@ export class OffscreenExportRenderer {
       { visibilityManager: vm, effectsConfigState: vm.effectsConfigState },
     );
 
+    // Stop the engine's free-running rAF loop. The export drives every frame
+    // deterministically through renderFrame() → renderSync(). If the loop keeps
+    // running, it repaints the canvas from the engine's OWN internal state — which
+    // never receives per-frame prop positions (those arrive only as renderFrame
+    // args) — so its bluePropState/redPropState stay at the boot default. During
+    // the orchestrator's `await waitForAnimationFrame()` between renderFrame() and
+    // the canvas capture, one of those rAF renders fires and overwrites the correct
+    // frame with a propless one. The grid (static texture) and the WebGL trail
+    // overlay (separate canvas) survive; the canvas2D props do not — exactly the
+    // "grid + trails but no props" export bug. Mirrors the deterministic-pass
+    // pattern in the trail-export-parity harness (renderLoop.stop()).
+    this.handle.context.renderLoop.stop();
+
     // Prime the capturer config so the FIRST sub-step capture lands at the right
     // resolution + prop geometry. (The WebGL2 overlay keeps its own ring; this
     // feeds the canvas2D fallback path consistently.)
