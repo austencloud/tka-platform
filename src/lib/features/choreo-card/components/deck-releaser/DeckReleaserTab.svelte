@@ -1007,6 +1007,22 @@
     rs.persist();
   }
 
+  /** Remove a card from the current LOOP deck. Resolved by sequence identity so
+   *  the correct card goes regardless of the active sort; positions re-number,
+   *  and the archived copy is kept in sync. TnD decks don't allow this. */
+  function handleRemoveCard(seq: SequenceData) {
+    if (rs.deckMode !== "loop") return;
+    let i = rs.sequences.indexOf(seq);
+    if (i < 0) i = rs.sequences.findIndex((s) => s.id === seq.id);
+    if (i < 0) return;
+    rs.sequences = rs.sequences.filter((_, idx) => idx !== i);
+    rs.cards = rs.cards
+      .filter((_, idx) => idx !== i)
+      .map((c, idx) => ({ ...c, position: idx + 1 }));
+    rs.persist();
+    archiveCurrentDeck(); // re-archive the trimmed deck under the same ref number
+  }
+
   function openReleaseModal() {
     showNameModal = true;
   }
@@ -1170,6 +1186,8 @@
         onPairsReady={(pairs) => { renderedPairs = pairs; }}
         onRenderStateChange={(s) => { isRendering = s.isRendering; renderProgress = s.progress; }}
         onSwapCard={handleSwapCard}
+        onRemoveCard={handleRemoveCard}
+        allowRemove={rs.deckMode === "loop"}
         onRedraw={handleRedraw}
         onRelease={openReleaseModal}
         onRename={rs.viewingRelease !== null ? handleRenameDeck : undefined}

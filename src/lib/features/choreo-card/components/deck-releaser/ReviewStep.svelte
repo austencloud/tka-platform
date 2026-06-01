@@ -22,6 +22,11 @@
     refNumber?: number;
     deckName?: string;
     onSwapCard: (index: number) => void;
+    /** Remove a card from the deck (LOOP decks only). Passed the sequence so the
+     *  tab can resolve its real index regardless of the current sort. */
+    onRemoveCard?: (sequence: SequenceData) => void;
+    /** Show the Remove action in the card inspect modal (LOOP decks). */
+    allowRemove?: boolean;
     onRedraw: () => void;
     onRelease: () => void;
     onBack: () => void;
@@ -70,6 +75,8 @@
     refNumber = 0,
     deckName = "",
     onSwapCard,
+    onRemoveCard,
+    allowRemove = false,
     onRedraw,
     onRelease,
     onBack,
@@ -157,6 +164,14 @@
       inspectedSequence = null;
       inspectedFrontImageUrl = null;
     }
+  }
+
+  function handleRemoveInspected() {
+    if (!inspectedSequence || !onRemoveCard) return;
+    onRemoveCard(inspectedSequence);
+    inspectedSequence = null;
+    inspectedFrontImageUrl = null;
+    inspectedRerender = null;
   }
 </script>
 
@@ -282,6 +297,11 @@
       {#if !readOnly}
         <button class="copy-btn swap-btn" onclick={handleSwapInspected} aria-label="Swap card">
           <i class="fas fa-random"></i> Swap Card
+        </button>
+      {/if}
+      {#if allowRemove}
+        <button class="copy-btn remove-btn" onclick={handleRemoveInspected} aria-label="Remove this card from the deck">
+          <i class="fas fa-trash"></i> Remove
         </button>
       {/if}
     {/snippet}
@@ -458,6 +478,18 @@
   .swap-btn:hover {
     background: rgba(139, 92, 246, 0.25);
     border-color: rgba(139, 92, 246, 0.5);
+    color: #fff;
+  }
+
+  .remove-btn {
+    background: rgba(248, 113, 113, 0.14);
+    border-color: rgba(248, 113, 113, 0.32);
+    color: #f87171;
+  }
+
+  .remove-btn:hover {
+    background: rgba(248, 113, 113, 0.26);
+    border-color: rgba(248, 113, 113, 0.55);
     color: #fff;
   }
 
