@@ -56,6 +56,7 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 		onControllerReady,
 		hideProgressBar = false,
 		hideWordHeader = false,
+		tapToToggle = false,
 	}: {
 		sequence: SequenceData;
 		autoPlay?: boolean;
@@ -75,6 +76,8 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 		onControllerReady?: (ctrl: AnimationPlaybackController, state: AnimationPanelState) => void;
 		hideProgressBar?: boolean;
 		hideWordHeader?: boolean;
+		/** When true, a quick tap on the canvas body toggles play/pause (forwarded to AnimatorCanvas). */
+		tapToToggle?: boolean;
 	} = $props();
 
 	// Context for external control mode
@@ -296,6 +299,7 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 						{redPropType}
 						progressBarVariant="minimal"
 						{hideProgressBar}
+						{tapToToggle}
 					/>
 
 					{#if isExporting && exportProgress}
@@ -349,6 +353,7 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 					{redPropType}
 					progressBarVariant="minimal"
 					{hideProgressBar}
+					{tapToToggle}
 				/>
 
 				{#if isExporting && exportProgress}
