@@ -24,3 +24,23 @@ export function mintSeed(): string {
   crypto.getRandomValues(buf);
   return buf[0]!.toString(16).padStart(8, "0") + buf[1]!.toString(16).padStart(8, "0");
 }
+
+const REF_COUNTER_KEY = "deckReleaser.refCounter";
+
+/**
+ * Local monotonic deck REFERENCE number — distinct from the Firestore release
+ * counter. Increments on every generation (most numbers are thrown away, which
+ * is fine: it's an internal index so printed/downloaded decks can be referenced
+ * and sorted later). Persists across sessions in localStorage.
+ */
+export function nextReferenceNumber(): number {
+  if (typeof window === "undefined") return 1;
+  let n = 0;
+  try {
+    const raw = localStorage.getItem(REF_COUNTER_KEY);
+    n = raw ? parseInt(raw, 10) || 0 : 0;
+  } catch {}
+  n += 1;
+  try { localStorage.setItem(REF_COUNTER_KEY, String(n)); } catch {}
+  return n;
+}

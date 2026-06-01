@@ -65,6 +65,9 @@ export interface HomePrintOptions {
 	/** When false, relax the one-color-per-sheet rule: cards fill sheets in order
 	 *  with blanks only on the final sheet (no inter-color gaps). Default true. */
 	groupByElement?: boolean;
+	/** Document metadata embedded in the PDF (title / subject / keywords) so a
+	 *  downloaded file is indexable by deck reference + contents without opening. */
+	meta?: { title?: string; subject?: string; keywords?: string[] };
 }
 
 /** Capitalize an element key for sheet labels: "fire" → "Fire". */
@@ -180,6 +183,15 @@ export async function exportHomePrintPDF(
 			onProgress?.(++progressCount, progressTotal);
 		}
 	}
+
+	// Embed deck metadata so the downloaded file is indexable by reference number
+	// and word list. pdf-lib writes these into the PDF Info dictionary.
+	const meta = options.meta;
+	if (meta?.title) pdfDoc.setTitle(meta.title);
+	if (meta?.subject) pdfDoc.setSubject(meta.subject);
+	if (meta?.keywords?.length) pdfDoc.setKeywords(meta.keywords);
+	pdfDoc.setCreator('TKA Composer');
+	pdfDoc.setProducer('TKA Composer');
 
 	const pdfBytes = await pdfDoc.save();
 	return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });

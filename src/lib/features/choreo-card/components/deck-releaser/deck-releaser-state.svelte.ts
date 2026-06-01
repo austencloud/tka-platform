@@ -5,7 +5,7 @@ import { settingsService } from "$lib/shared/settings/state/settings-state.svelt
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { DEFAULT_VARIATION_CONFIG, type VariationConfig, type StartOriMode } from "../../services/deck-variation";
 import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
-import { mintSeed, GENERATOR_VERSION } from "../../services/deck-recipe";
+import { mintSeed, nextReferenceNumber, GENERATOR_VERSION } from "../../services/deck-recipe";
 
 type Step = "configure" | "review" | "released";
 
@@ -47,6 +47,8 @@ interface PersistedSession {
   selectedLength?: number;
   /** Max turn intensity (0–3). */
   turnIntensity?: number;
+  /** Internal reference number for the persisted draft. */
+  referenceNumber?: number;
   /** Selected TnD family ids. */
   tndFamilyIds?: string[];
   /** Selected TnD turn-pattern ids. */
@@ -145,6 +147,10 @@ class DeckReleaserState {
   turnIntensity = $state<number>(1);
   /** Live-generation progress (cards generated so far this draw). */
   drawProgress = $state(0);
+  /** Internal monotonic reference number for THIS draw — drives export filenames,
+   *  the cache key, the on-card label and PDF metadata. Independent of the
+   *  Firestore release counter (`nextDeckNumber`); bumped every generation. */
+  referenceNumber = $state(0);
   /** Per-seed grid-correct TnD classification (selection-independent). */
   tndSeedClasses = $state<TnDSeedClass[]>([]);
   tndFamilies = $state<TnDFamilyOption[]>([]);
@@ -193,6 +199,7 @@ class DeckReleaserState {
       if (saved.dashStyle) this.dashStyle = saved.dashStyle;
       if (saved.selectedLength) this.selectedLength = saved.selectedLength;
       if (saved.turnIntensity != null) this.turnIntensity = saved.turnIntensity;
+      if (saved.referenceNumber != null) this.referenceNumber = saved.referenceNumber;
       if (saved.tndFamilyIds?.length) this.selectedTnDFamilies = new Set(saved.tndFamilyIds);
       if (saved.tndTurnPatternIds?.length) this.selectedTnDTurnPatterns = new Set(saved.tndTurnPatternIds);
       if (saved.weights?.length) this.weights = saved.weights;
@@ -230,6 +237,7 @@ class DeckReleaserState {
       dashStyle: this.dashStyle,
       selectedLength: this.selectedLength,
       turnIntensity: this.turnIntensity,
+      referenceNumber: this.referenceNumber,
       tndFamilyIds: [...this.selectedTnDFamilies],
       tndTurnPatternIds: [...this.selectedTnDTurnPatterns],
       weights: this.weights,
@@ -359,6 +367,12 @@ class DeckReleaserState {
 
     this.step = "configure";
     this.persist();
+  }
+
+  /** Assign a fresh internal reference number for a new generation. Throwaway
+   *  numbers are expected — it's a monotonic index, not a release number. */
+  bumpReference() {
+    this.referenceNumber = nextReferenceNumber();
   }
 
   /** New draw, same dials: mint a fresh seed and clear the composed draft so the

@@ -189,6 +189,11 @@
   // renderer — a stale render run (deck size changed mid-render) can't leave the
   // old count lingering. Declared after sortedSequences (its dependency).
   const renderTotal = $derived(sortedSequences.length);
+  // Deck reference number for filenames / cache key / on-card label / PDF meta.
+  // Viewing a released deck → its permanent number; otherwise the per-generation
+  // internal reference number (NOT the Firestore release counter).
+  const deckRefNumber = $derived(rs.viewingRelease?.deckNumber ?? rs.referenceNumber);
+  const deckRefPadded = $derived(String(deckRefNumber).padStart(3, "0"));
 
   const groupSizes = $derived.by(() => {
     const counts = new Map<string, number>();
@@ -251,8 +256,27 @@
   });
 
   function buildPrintKey(mode: PrintPDFMode): string {
-    const deckName = `Deck_${String(rs.nextDeckNumber).padStart(3, "0")}`;
+    const deckName = `Deck_${deckRefPadded}`;
     return [deckName, mode, copies, groupByElement, printDeckSig].join("§");
+  }
+
+  /** Deck contents → PDF document metadata, so a downloaded file is indexable
+   *  by its reference number and its word list without opening it. */
+  function buildDeckMeta() {
+    const loop = [...rs.selectedLoopTypes][0] ?? "rotated";
+    const level = [...rs.selectedLevels][0] ?? 1;
+    const period = [...rs.selectedSliceTypes][0] ?? "";
+    const words = [
+      ...new Set(sortedSequences.map((s) => simplifyRepeatedWord(s.word ?? "")).filter(Boolean)),
+    ];
+    const count = sortedSequences.length;
+    return {
+      title: `Deck ${deckRefPadded} — ${count} cards`,
+      subject:
+        `LOOP ${loop} · ${rs.selectedLength}-step · L${level}` +
+        `${period ? ` · ${period}` : ""} · ${count} cards. Words: ${words.join(", ")}`,
+      keywords: words,
+    };
   }
 
   // 'fronts'/'backs' scope the preview to that side; combined/zip show all.
@@ -274,11 +298,11 @@
     isExporting = true; exportError = ""; exportProgress = 0; exportTotal = 0;
     try {
       const { getOrBuildPrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-cache");
-      const deckName = `Deck_${String(rs.nextDeckNumber).padStart(3, "0")}`;
+      const deckName = `Deck_${deckRefPadded}`;
       const copiesSuffix = copies > 1 ? `_x${copies}` : "";
       const suffix = (mode === "fronts" ? "_fronts" : mode === "backs" ? "_backs" : "_print") + copiesSuffix;
       const blob = await getOrBuildPrintPDF(buildPrintKey(mode), renderedPairs, deckName, cardSize, mode,
-        { copies, elements: tndElements, groupByElement }, (current, total) => {
+        { copies, elements: tndElements, groupByElement, meta: buildDeckMeta() }, (current, total) => {
           exportProgress = current; exportTotal = total;
         });
       triggerDownload(blob, `${deckName}${suffix}.pdf`);
@@ -295,9 +319,9 @@
     try {
       const { getOrBuildPrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-cache");
       const { printPdfBlob } = await import("$lib/features/choreo-card/services/print-blob");
-      const deckLabel = `Deck_${String(rs.nextDeckNumber).padStart(3, "0")}`;
+      const deckLabel = `Deck_${deckRefPadded}`;
       const blob = await getOrBuildPrintPDF(buildPrintKey(mode), renderedPairs, deckLabel, cardSize, mode,
-        { copies, elements: tndElements, groupByElement });
+        { copies, elements: tndElements, groupByElement, meta: buildDeckMeta() });
       printPdfBlob(blob);
     } catch (e) {
       exportError = `Print failed: ${e instanceof Error ? e.message : e}`;
@@ -311,7 +335,7 @@
     isExporting = true; exportError = ""; exportProgress = 0; exportTotal = 0;
     try {
       const { exportDeckZIP } = await import("$lib/features/choreo-card/services/print-zip-exporter");
-      const deckName = `Deck_${String(rs.nextDeckNumber).padStart(3, "0")}`;
+      const deckName = `Deck_${deckRefPadded}`;
       const blob = await exportDeckZIP(renderedPairs, deckName, (current, total) => {
         exportProgress = current; exportTotal = total;
       });
@@ -765,6 +789,7 @@
     // Fresh draw = a new, not-yet-named deck. Clear any leftover name.
     rs.name = "";
     rs.seed = mintSeed();
+    rs.bumpReference();
     if (rs.deckMode === "loop") {
       const ok = await generateLiveDeck(gen);
       if (!ok || gen !== rs.drawGeneration) return;
@@ -781,6 +806,7 @@
   async function handleRedraw() {
     const gen = ++rs.drawGeneration;
     rs.reroll();
+    rs.bumpReference();
     if (rs.deckMode === "loop") {
       const ok = await generateLiveDeck(gen);
       if (!ok || gen !== rs.drawGeneration) return;
