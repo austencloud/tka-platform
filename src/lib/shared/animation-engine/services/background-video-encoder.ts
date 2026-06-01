@@ -231,12 +231,19 @@ export class BackgroundVideoEncoder {
     this.worker?.postMessage(message);
   }
 
+  private clearInitTimer(): void {
+    if (this.initTimer) {
+      clearTimeout(this.initTimer);
+      this.initTimer = null;
+    }
+  }
+
   private handleMessage = (event: MessageEvent<ExportWorkerResponse>): void => {
     const response = event.data;
 
     switch (response.type) {
       case "ready":
-        if (this.initTimer) { clearTimeout(this.initTimer); this.initTimer = null; }
+        this.clearInitTimer();
         this.initResolve?.();
         this.initResolve = null;
         this.initReject = null;
@@ -267,7 +274,7 @@ export class BackgroundVideoEncoder {
           this.firstError = new Error(response.error);
         }
 
-        if (this.initTimer) { clearTimeout(this.initTimer); this.initTimer = null; }
+        this.clearInitTimer();
 
         // Route the first/root-cause error to whichever promise is
         // currently in flight. If no promise is in flight (frame capture
@@ -301,7 +308,7 @@ export class BackgroundVideoEncoder {
   // ---------------------------------------------------------------------------
 
   private rejectPending(error: Error): void {
-    if (this.initTimer) { clearTimeout(this.initTimer); this.initTimer = null; }
+    this.clearInitTimer();
     if (this.initReject) {
       this.initReject(error);
       this.initResolve = null;
@@ -315,6 +322,7 @@ export class BackgroundVideoEncoder {
   }
 
   private terminateWorker(): void {
+    this.clearInitTimer();
     if (this.worker) {
       this.worker.onmessage = null;
       this.worker.onerror = null;
