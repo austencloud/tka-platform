@@ -41,6 +41,7 @@
   import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
   import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
   import { warmCardBackCaches } from "../../services/card-back/warm-card-back-caches";
@@ -668,14 +669,24 @@
     };
 
     const target = rs.totalCards || 52;
+    // Breadth before depth. Fill the deck with as many DISTINCT word titles as
+    // exist before any title gets a 2nd (then 3rd) variation. `maxPerWord` rises
+    // a tier only when the current tier stops yielding new titles (a long
+    // fruitless streak), so a draw does "one pass without duplication" first,
+    // then a second, then a third — capped at 3 copies per title. Content still
+    // never repeats byte-for-byte; the repeats that ARE allowed are genuinely
+    // different sequences (different turns/reversals/path) sharing a title.
+    const MAX_PER_WORD = 3;
     const seqs: SequenceData[] = [];
-    const seen = new Set<string>();
+    const seenContent = new Set<string>();       // byte-identical guard
+    const wordCount = new Map<string, number>(); // simplified word → accepted copies
     rs.isLoadingSequences = true;
     rs.drawProgress = 0;
     let attempts = 0;
-    // Word-dedup is stricter than content-dedup (many distinct sequences share a
-    // simplified word), so give the loop more headroom before settling for fewer.
-    const maxAttempts = target * 8;
+    let sinceAccept = 0;
+    let maxPerWord = 1;
+    const promoteAfter = Math.max(60, Math.round(target / 3));
+    const maxAttempts = target * 12;
     try {
       while (seqs.length < target && attempts < maxAttempts) {
         attempts++;
@@ -685,21 +696,35 @@
         if (startPosPics.length) {
           options.startPosition = startPosPics[Math.floor(Math.random() * startPosPics.length)];
         }
+        let s: SequenceData;
         try {
-          const s = await generationOrchestrator.generateSequence(options);
-          // Dedup by CONTENT, not word. Two cards may share a word title as long
-          // as they're sufficiently different — hashSequenceContent folds in every
-          // step's motion type, rotation, start/end locations, turns, orientations
-          // and reversal flags, so a different turn/reversal/path → different hash
-          // → kept. Only byte-identical cards collide. (Word-only dedup starved
-          // large decks: a 300-card draw capped at ~108 distinct words.)
-          const key = hashSequenceContent(s);
-          if (seen.has(key)) continue;
-          seen.add(key);
-          seqs.push(s);
-          rs.drawProgress = seqs.length;
+          s = await generationOrchestrator.generateSequence(options);
         } catch (e) {
           console.warn("Live deck: a generation attempt failed", e);
+          continue;
+        }
+        const content = hashSequenceContent(s);
+        if (!seenContent.has(content)) {
+          const word = simplifyRepeatedWord(s.word ?? "") || content;
+          const count = wordCount.get(word) ?? 0;
+          if (count < maxPerWord) {
+            seenContent.add(content);
+            wordCount.set(word, count + 1);
+            seqs.push(s);
+            rs.drawProgress = seqs.length;
+            sinceAccept = 0;
+            continue;
+          }
+        }
+        // Rejected (duplicate content, or this title already at the tier cap).
+        sinceAccept++;
+        if (sinceAccept >= promoteAfter) {
+          if (maxPerWord < MAX_PER_WORD) {
+            maxPerWord++;          // open up a 2nd, then 3rd copy per title
+            sinceAccept = 0;
+          } else {
+            break;                // every title at 3 copies, nothing new → done
+          }
         }
       }
     } finally {
@@ -709,6 +734,11 @@
     if (seqs.length === 0) {
       toast.info("Couldn't generate sequences for these settings — try a different loop type or length.");
       return false;
+    }
+    if (seqs.length < target) {
+      // Expected when the distinct-word space (× up to 3 copies each) is smaller
+      // than the requested size — not an error, just the honest ceiling.
+      toast.info(`Generated ${seqs.length} of ${target} — these settings yield ${wordCount.size} distinct words (max 3 copies each).`);
     }
 
     rs.sequences = seqs;
