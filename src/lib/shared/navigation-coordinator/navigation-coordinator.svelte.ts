@@ -662,8 +662,23 @@ export function initializeNavigationHistory() {
     const isHeavyweight =
       pathNav.moduleId === "museum" || pathNav.moduleId === "archive";
 
+    // Block direct-URL access to adminOnly modules for non-admins. The nav-surface
+    // filter (getModuleDefinitions) hides them, but parsePathNavigation resolves
+    // against the unfiltered MODULE_DEFINITIONS, so a direct hit would otherwise
+    // mount a gated module. Skip the gate until feature flags initialize — role
+    // defaults to "user" pre-auth and would wrongly block admins on page restore
+    // (same timing guard as handleSectionChange).
+    const targetModuleDef = MODULE_DEFINITIONS.find((m) => m.id === pathNav.moduleId);
+    const isGatedForNonAdmin =
+      targetModuleDef?.adminOnly === true &&
+      featureFlagService.isInitialized &&
+      featureFlagService.effectiveRole !== "admin";
+
     if (!isHmrRemount && isHeavyweight) {
       // Redirect to default module instead of re-mounting heavy 3D content
+      navigationState.setCurrentModule("create");
+    } else if (isGatedForNonAdmin) {
+      // Non-admin hit a gated module URL directly — land on the default consumer module
       navigationState.setCurrentModule("create");
     } else {
       // URL has a valid module/section - navigate to it (overrides localStorage)
