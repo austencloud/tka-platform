@@ -385,8 +385,18 @@
       resolvedSeq = seq;
       const word = seq.word || seq.name || "Sequence";
       seqWord = word;
+      // Printed cards encode their prop in the QR URL (?bp=<type>&rp=<type>,
+      // set by buildUrlWithOptions). Honor that first so a scanned triad/fan
+      // card plays with its real prop instead of the staff default. Validate
+      // against the enum so a junk param can't poison the player.
+      const propValues = Object.values(PropType) as string[];
+      const urlProp = page.url.searchParams.get("bp");
+      const urlPropType =
+        urlProp && propValues.includes(urlProp) ? (urlProp as PropType) : null;
       selectedProp =
-        (seq.intendedProp?.bluePropType as PropType) ?? PropType.STAFF;
+        urlPropType ??
+        (seq.intendedProp?.bluePropType as PropType) ??
+        PropType.STAFF;
 
       AnimationPlayerComponent = PlayerModule.default;
 

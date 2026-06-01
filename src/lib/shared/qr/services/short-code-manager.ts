@@ -361,6 +361,11 @@ export class ShortCodeManager {
     if (encoderHash) record.encoderHash = encoderHash;
     if (options?.deckId) record.deckId = options.deckId;
     if (options?.deckName) record.deckName = options.deckName;
+    // Persist the deck's prop so the doc is self-describing (the scan URL also
+    // carries ?bp/?rp, but storing it lets resolution recover the prop even
+    // when a URL is reconstructed without params).
+    if (options?.bluePropType) record.bluePropType = options.bluePropType;
+    if (options?.redPropType) record.redPropType = options.redPropType;
 
     const shouldEmbed = options?.embedSequenceData || !sequence.ownerId;
     if (shouldEmbed && sequence.steps && sequence.steps.length > 0) {
