@@ -42,8 +42,4 @@ export interface RenderSceneParams {
   redPropType?: string;
   qualityHints?: QualityHints;
   skipTrailRendering?: boolean;
-  /** Virtual time for this frame (ms). Set only on the video-export path
-   *  (animation-engine renderFrame); undefined for live RAF rendering.
-   *  Used as an export-only discriminator for one-time export diagnostics. */
-  virtualTime?: number;
 }
