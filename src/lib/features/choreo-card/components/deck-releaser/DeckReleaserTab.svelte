@@ -41,7 +41,6 @@
   import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
   import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
   import { warmCardBackCaches } from "../../services/card-back/warm-card-back-caches";
@@ -688,10 +687,13 @@
         }
         try {
           const s = await generationOrchestrator.generateSequence(options);
-          // Dedup by SIMPLIFIED WORD: two cards may never share the same seed
-          // letter-combination (e.g. "ABCABC" → "ABC"). Falls back to a content
-          // hash only for the degenerate empty-word case.
-          const key = simplifyRepeatedWord(s.word ?? "") || hashSequenceContent(s);
+          // Dedup by CONTENT, not word. Two cards may share a word title as long
+          // as they're sufficiently different — hashSequenceContent folds in every
+          // step's motion type, rotation, start/end locations, turns, orientations
+          // and reversal flags, so a different turn/reversal/path → different hash
+          // → kept. Only byte-identical cards collide. (Word-only dedup starved
+          // large decks: a 300-card draw capped at ~108 distinct words.)
+          const key = hashSequenceContent(s);
           if (seen.has(key)) continue;
           seen.add(key);
           seqs.push(s);
