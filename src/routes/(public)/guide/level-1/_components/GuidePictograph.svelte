@@ -14,6 +14,8 @@
     showGrid = true,
     showArrows = true,
     propType,
+    printMode = false,
+    darkMode,
   }: {
     data?: PictographData | null;
     pngFallback?: string;
@@ -23,6 +25,8 @@
     showGrid?: boolean;
     showArrows?: boolean;
     propType?: PropType;
+    printMode?: boolean;
+    darkMode?: boolean;
   } = $props();
 
   let prepared: PreparedPictographData | null = $state(null);
@@ -92,6 +96,8 @@
       <PictographRenderer
         pictograph={prepared}
         {showGrid}
+        {printMode}
+        {darkMode}
         showTKA={true}
         showReversals={false}
         showTnD={false}

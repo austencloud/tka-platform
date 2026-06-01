@@ -25,6 +25,7 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
   import ScanActivityTab from "./scan-activity/ScanActivityTab.svelte";
   import CardBackThemeLab from "./card-back/CardBackThemeLab.svelte";
   import DeckReleaserTab from "./deck-releaser/DeckReleaserTab.svelte";
+  import CodexPrintPage from "./CodexPrintPage.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
@@ -139,7 +140,7 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
   );
 
   // Mode state - synced with global navigation
-  type ChoreoCardMode = "catalogs" | "designer" | "scan-activity" | "theme-lab" | "releaser";
+  type ChoreoCardMode = "catalogs" | "designer" | "scan-activity" | "theme-lab" | "releaser" | "codex";
   let mode = $state<ChoreoCardMode>("catalogs");
 
   let browseSequencesLoaded = false;
@@ -147,7 +148,7 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
   // Sync with navigation state (sidebar tab selection)
   $effect(() => {
     const navTab = navigationState.activeTab;
-    if (navTab === "catalogs" || navTab === "designer" || navTab === "scan-activity" || navTab === "theme-lab" || navTab === "releaser") {
+    if (navTab === "catalogs" || navTab === "designer" || navTab === "scan-activity" || navTab === "theme-lab" || navTab === "releaser" || navTab === "codex") {
       const newMode = navTab as ChoreoCardMode;
       if (newMode !== mode) {
         mode = newMode;
@@ -606,6 +607,10 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
     {:else if mode === "releaser"}
       <main class="content-area">
         <DeckReleaserTab onContextMenu={openCardContextMenu} />
+      </main>
+    {:else if mode === "codex"}
+      <main class="content-area">
+        <CodexPrintPage />
       </main>
     {/if}
   </div>
