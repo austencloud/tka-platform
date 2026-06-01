@@ -1,4 +1,4 @@
-import type { DeckRelease, DeckReleaseCard, DeckRecipe, StepCountWeight } from "../../domain/models/DeckRelease";
+import type { DeckRelease, DeckReleaseCard, DeckRecipe, StepCountWeight, GalleryFilters } from "../../domain/models/DeckRelease";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { CatalogSourceSummary, TnDFamilyOption, TnDTurnPatternOption, TnDSeedClass } from "../../services/deck-composer";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
@@ -14,7 +14,7 @@ const STORAGE_KEY = "deckReleaser.session";
 interface PersistedSession {
   step: Step;
   viewingDeckNumber: number | null;
-  deckMode: "loop" | "tnd";
+  deckMode: "loop" | "tnd" | "gallery";
   totalCards: number;
   notes: string;
   name: string;
@@ -55,6 +55,8 @@ interface PersistedSession {
   tndFamilyIds?: string[];
   /** Selected TnD turn-pattern ids. */
   tndTurnPatternIds?: string[];
+  /** Gallery deck filter axes. */
+  galleryFilters?: GalleryFilters;
   /** LOOP step-count weights (the per-count weight values; `available` is
    *  re-derived from the live pool on load). */
   weights?: StepCountWeight[];
@@ -163,7 +165,8 @@ class DeckReleaserState {
   tndSeedClasses = $state<TnDSeedClass[]>([]);
   tndFamilies = $state<TnDFamilyOption[]>([]);
   tndTurnPatterns = $state<TnDTurnPatternOption[]>([]);
-  deckMode = $state<"loop" | "tnd">("loop");
+  deckMode = $state<"loop" | "tnd" | "gallery">("loop");
+  galleryFilters = $state<GalleryFilters>({});
   selectedTnDFamilies = $state<Set<string>>(new Set());
   selectedTnDTurnPatterns = $state<Set<string>>(new Set());
   viewingRelease = $state<DeckRelease | null>(null);
@@ -211,6 +214,7 @@ class DeckReleaserState {
       if (saved.selectedPropType) this.selectedPropType = saved.selectedPropType as PropType;
       if (saved.tndFamilyIds?.length) this.selectedTnDFamilies = new Set(saved.tndFamilyIds);
       if (saved.tndTurnPatternIds?.length) this.selectedTnDTurnPatterns = new Set(saved.tndTurnPatternIds);
+      if (saved.galleryFilters) this.galleryFilters = saved.galleryFilters;
       if (saved.weights?.length) this.weights = saved.weights;
       // Restore a composed draft so an HMR re-eval / refresh / tab reopen lands
       // back on the deck. Sequences re-derive in the tab's onMount. Skip when
@@ -250,6 +254,7 @@ class DeckReleaserState {
       selectedPropType: this.selectedPropType ?? undefined,
       tndFamilyIds: [...this.selectedTnDFamilies],
       tndTurnPatternIds: [...this.selectedTnDTurnPatterns],
+      galleryFilters: this.galleryFilters,
       weights: this.weights,
       // Persist the draft only while composing fresh. Released-deck views re-load
       // from Firestore, so storing their cards would bloat localStorage for free.
@@ -317,6 +322,9 @@ class DeckReleaserState {
       recipe.dashStyle = this.dashStyle;
       recipe.length = this.selectedLength;
       recipe.turnIntensity = this.turnIntensity;
+    } else if (this.deckMode === "gallery") {
+      recipe.galleryFilters = { ...this.galleryFilters };
+      recipe.totalCards = this.totalCards; // the size cap, for Refresh re-query
     } else {
       recipe.tndFamilyIds = [...this.selectedTnDFamilies];
       recipe.tndTurnPatternIds = [...this.selectedTnDTurnPatterns];
@@ -370,6 +378,8 @@ class DeckReleaserState {
       if (recipe.dashStyle) this.dashStyle = recipe.dashStyle;
       if (recipe.length) this.selectedLength = recipe.length;
       if (recipe.turnIntensity != null) this.turnIntensity = recipe.turnIntensity;
+    } else if (recipe.deckMode === "gallery") {
+      this.galleryFilters = recipe.galleryFilters ?? {};
     } else {
       this.selectedTnDFamilies = new Set(recipe.tndFamilyIds ?? []);
       this.selectedTnDTurnPatterns = new Set(recipe.tndTurnPatternIds ?? []);

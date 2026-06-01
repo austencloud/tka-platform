@@ -6,11 +6,12 @@
   import TnDFamilyCards from "./TnDFamilyCards.svelte";
   import TransformPanel from "./TransformPanel.svelte";
   import LoopBentoBoard from "./LoopBentoBoard.svelte";
+  import GalleryComposeBoard from "./GalleryComposeBoard.svelte";
   import DeckPropSwitcher from "./DeckPropSwitcher.svelte";
   import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
   import type { VariationConfig, StartOriMode } from "../../services/deck-variation";
 
-  type DeckMode = "loop" | "tnd";
+  type DeckMode = "loop" | "tnd" | "gallery";
 
   interface Props {
     deckMode: DeckMode;
@@ -97,6 +98,7 @@
   );
 
   // LOOP draws live (generate 52 fresh) — always drawable. TnD needs ≥1 card.
+  // Gallery draws from the library — always attemptable (empty result toasts).
   const canDraw = $derived(
     deckMode === "tnd" ? tndCardCount > 0 : true
   );
@@ -104,7 +106,9 @@
   const drawLabel = $derived(
     deckMode === "tnd"
       ? `Draw ${tndCardCount} TnD Cards`
-      : `Generate ${totalCards} Cards`
+      : deckMode === "gallery"
+        ? `Draw from Gallery (up to ${totalCards})`
+        : `Generate ${totalCards} Cards`
   );
 
   // Live-generation progress for the spinner label.
@@ -125,6 +129,7 @@
         options={[
           { value: "loop", label: "LOOP" },
           { value: "tnd", label: "TnD" },
+          { value: "gallery", label: "Gallery" },
         ]}
         value={deckMode}
         onchange={(v) => onModeChange(v)}
@@ -143,9 +148,9 @@
         oninput={(e) => onNotesChange((e.target as HTMLInputElement).value)}
       />
     </div>
-    {#if deckMode === "tnd"}
-      <!-- LOOP decks pick the prop via the bento Prop tile; TnD has no such tile,
-           so surface the switcher in the header. -->
+    {#if deckMode !== "loop"}
+      <!-- LOOP decks pick the prop via the bento Prop tile; TnD + Gallery have no
+           such tile, so surface the switcher in the header. -->
       <div class="prop-field">
         <span class="control-label">Prop</span>
         <DeckPropSwitcher />
@@ -189,6 +194,8 @@
         />
       </section>
     </div>
+  {:else if deckMode === "gallery"}
+    <GalleryComposeBoard />
   {:else}
     <LoopBentoBoard
       {weights}

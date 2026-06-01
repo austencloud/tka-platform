@@ -23,7 +23,7 @@ const DECKS_STORE = "decks";
 export interface ArchivedDeckMeta {
   refNumber: number; // primary key
   createdAt: string; // ISO; list sorts by this, descending
-  deckMode: "loop" | "tnd";
+  deckMode: "loop" | "tnd" | "gallery";
   loopType?: string;
   length?: number;
   level?: number;

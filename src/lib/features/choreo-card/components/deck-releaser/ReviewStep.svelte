@@ -29,6 +29,8 @@
     /** Show the Remove action in the card inspect modal (LOOP decks). */
     allowRemove?: boolean;
     onRedraw: () => void;
+    /** Re-query the gallery and replace the on-screen deck (gallery decks). */
+    onRefresh?: () => void;
     onRelease: () => void;
     onBack: () => void;
     /** Provided when viewing a released deck: commit an inline name edit. */
@@ -41,9 +43,11 @@
     /** Reroll only makes sense for randomly-rolled decks (LOOP). TnD is a finite,
      *  deterministic enumeration, so the redraw button is hidden for it. */
     showRedraw?: boolean;
-    /** Show the deck prop switcher in the header (TnD decks — they have no
+    /** Show the deck prop switcher in the header (TnD/Gallery decks — they have no
      *  canonical prop; the switcher sets the live prop and re-renders). */
     showPropSwitcher?: boolean;
+    /** Show the Refresh-from-gallery action (gallery decks). */
+    showRefresh?: boolean;
     cardSize: CardSizeId;
     copies: number;
     groupByElement: boolean;
@@ -82,6 +86,7 @@
     onRemoveCard,
     allowRemove = false,
     onRedraw,
+    onRefresh,
     onRelease,
     onBack,
     onRename,
@@ -92,6 +97,7 @@
     brokenLoopCount = 0,
     showRedraw = true,
     showPropSwitcher = false,
+    showRefresh = false,
     cardSize,
     copies,
     groupByElement,
@@ -235,6 +241,12 @@
         <button type="button" class="redraw-btn" onclick={onRedraw} disabled={isReleasing}>
           <i class="fas fa-dice" aria-hidden="true"></i>
           Redraw
+        </button>
+      {/if}
+      {#if showRefresh && onRefresh}
+        <button type="button" class="redraw-btn" onclick={onRefresh} disabled={isReleasing} title="Re-query your gallery for current matches">
+          <i class="fas fa-rotate" aria-hidden="true"></i>
+          Refresh
         </button>
       {/if}
     </div>

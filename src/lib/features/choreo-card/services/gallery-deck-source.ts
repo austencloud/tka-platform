@@ -11,8 +11,10 @@
  * level, length) are applied client-side over the small result set.
  */
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { DeckReleaseCard } from "../domain/models/DeckRelease";
+import type { DeckReleaseCard, GalleryFilters } from "../domain/models/DeckRelease";
 import type { LibraryQueryOptions } from "$lib/shared/library/domain/library-contract-types";
+
+export type { GalleryFilters };
 // NOTE: the library repository + firebase are lazy-imported inside defaultLoaders
 // (not at module scope) so this module imports clean under vitest — the static
 // Firestore/protobufjs chain crashes the test runner. Tests inject loaders and
@@ -21,23 +23,6 @@ import type { LibraryQueryOptions } from "$lib/shared/library/domain/library-con
 /** The pseudo-catalog id stamped on gallery cards so loadSelectedSequences knows
  *  to resolve them via the library loader instead of the catalog loader. */
 export const GALLERY_SOURCE_ID = "gallery";
-
-export interface GalleryFilters {
-  /** users/{uid}/collections/{id} — draw only from this collection. */
-  collectionId?: string;
-  /** users/{uid}/tags/{id} — draw only sequences carrying this tag. */
-  tagId?: string;
-  /** Loop type names (e.g. "rotated"); empty/absent ⇒ any. */
-  loopTypes?: string[];
-  /** Period bucket; absent ⇒ any. */
-  period?: "halved" | "quartered";
-  /** Difficulty levels; empty/absent ⇒ any. */
-  levels?: number[];
-  /** Step counts; empty/absent ⇒ any. */
-  lengths?: number[];
-  /** Word/name substring; absent ⇒ any. */
-  wordQuery?: string;
-}
 
 /** PeriodCard semantics: quartered = 4, halved = 2 (orientation-cycle count). */
 const PERIOD_VALUE: Record<"halved" | "quartered", number> = { halved: 2, quartered: 4 };

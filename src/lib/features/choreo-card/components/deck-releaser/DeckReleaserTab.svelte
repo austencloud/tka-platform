@@ -79,12 +79,22 @@
   // path and always stamps recipe.deckMode "loop". So "not explicitly loop"
   // (incl. legacy releases with no recipe) groups under the TnD subsection;
   // future loop releases fall to the general "Released Decks" section.
-  const isTnDRelease = (r: DeckRelease) => r.recipe?.deckMode !== "loop";
+  // Three Released subsections, classified by recipe.deckMode. Gallery is explicit;
+  // legacy releases (no recipe) read as TnD (all pre-recipe releases were TnD).
+  const isGalleryRelease = (r: DeckRelease) => r.recipe?.deckMode === "gallery";
+  const isLoopRelease = (r: DeckRelease) => r.recipe?.deckMode === "loop";
+  const isTnDRelease = (r: DeckRelease) => !isGalleryRelease(r) && !isLoopRelease(r);
   const tndReleases = $derived(releases.filter(isTnDRelease));
-  const loopReleases = $derived(releases.filter((r) => !isTnDRelease(r)));
-  // The deck on screen is TnD when composing TnD, or when viewing a TnD release.
-  const viewingTnD = $derived(
-    rs.viewingRelease ? isTnDRelease(rs.viewingRelease) : rs.deckMode === "tnd",
+  const galleryReleases = $derived(releases.filter(isGalleryRelease));
+  const loopReleases = $derived(releases.filter(isLoopRelease));
+  // Decks that follow the live prop setting (no pinned canonical prop): TnD +
+  // Gallery, composed or released. Drives the in-deck prop switcher + prop unpin.
+  const deckFollowsLiveProp = $derived(
+    rs.viewingRelease ? !isLoopRelease(rs.viewingRelease) : rs.deckMode !== "loop",
+  );
+  // Gallery deck currently on screen (drives the Refresh-from-gallery action).
+  const viewingGallery = $derived(
+    rs.viewingRelease ? isGalleryRelease(rs.viewingRelease) : rs.deckMode === "gallery",
   );
   let archivedDecks = $state<ArchivedDeckMeta[]>([]);
   let isLoadingArchive = $state(true);
@@ -641,7 +651,7 @@
     rebuildPool();
   }
 
-  function handleModeChange(mode: 'loop' | 'tnd') {
+  function handleModeChange(mode: 'loop' | 'tnd' | 'gallery') {
     rs.deckMode = mode;
     if (mode === 'tnd' && rs.selectedTnDFamilies.size === 0) {
       rs.selectedTnDFamilies = new Set(rs.tndFamilies.map(f => f.familyId));
@@ -928,6 +938,38 @@
     return true;
   }
 
+  /** Draw a deck from the operator's library by filter-query. Sets cards +
+   *  sequences directly (the query already returns full SequenceData), mirroring
+   *  the LOOP live-draw path. Returns false on empty result / failure. */
+  async function composeGalleryDeck(gen: number): Promise<boolean> {
+    rs.isLoadingSequences = true;
+    try {
+      const { queryGalleryDeck } = await import("../../services/gallery-deck-source");
+      const { cards, sequences } = await queryGalleryDeck(rs.galleryFilters, rs.totalCards, rs.notes);
+      if (gen !== rs.drawGeneration) return false;
+      if (sequences.length === 0) {
+        toast.info("No library sequences match these filters.");
+        return false;
+      }
+      rs.sequences = sequences;
+      rs.cards = cards;
+      prewarmCardPool({
+        sequences,
+        bluePropType: rs.bluePropType,
+        redPropType: rs.redPropType,
+        theme: rs.theme,
+        iconPaths: [],
+      });
+      return true;
+    } catch (e) {
+      console.warn("Gallery draw failed:", e);
+      toast.error("Gallery draw failed — check you're signed in.");
+      return false;
+    } finally {
+      rs.isLoadingSequences = false;
+    }
+  }
+
   async function handleDraw() {
     const gen = ++rs.drawGeneration;
     // Fresh draw = a new, not-yet-named deck. Clear any leftover name.
@@ -936,6 +978,9 @@
     rs.bumpReference();
     if (rs.deckMode === "loop") {
       const ok = await generateLiveDeck(gen);
+      if (!ok || gen !== rs.drawGeneration) return;
+    } else if (rs.deckMode === "gallery") {
+      const ok = await composeGalleryDeck(gen);
       if (!ok || gen !== rs.drawGeneration) return;
     } else {
       rs.cards = composeFullDeck();
@@ -966,6 +1011,33 @@
     rs.persist();
   }
 
+  /** Re-run the gallery filter against the live library and replace the on-screen
+   *  deck with the current matches. Works while composing (uses live filters) or
+   *  viewing a released gallery deck (uses the release's stamped filters). */
+  async function handleRefreshGallery() {
+    const filters = rs.viewingRelease?.recipe?.galleryFilters ?? rs.galleryFilters;
+    const cap = rs.viewingRelease?.recipe?.totalCards ?? rs.totalCards;
+    const gen = ++rs.drawGeneration;
+    rs.isLoadingSequences = true;
+    try {
+      const { queryGalleryDeck } = await import("../../services/gallery-deck-source");
+      const { cards, sequences } = await queryGalleryDeck(filters, cap, rs.notes);
+      if (gen !== rs.drawGeneration) return;
+      if (sequences.length === 0) { toast.info("No library sequences match these filters."); return; }
+      rs.sequences = sequences;
+      rs.cards = cards;
+      prewarmCardPool({ sequences, bluePropType: rs.bluePropType, redPropType: rs.redPropType, theme: rs.theme, iconPaths: [] });
+      rs.persist();
+      if (!rs.viewingRelease) archiveCurrentDeck();
+      toast.success(`Refreshed — ${sequences.length} sequences from your gallery.`);
+    } catch (e) {
+      console.warn("Gallery refresh failed:", e);
+      toast.error("Gallery refresh failed.");
+    } finally {
+      rs.isLoadingSequences = false;
+    }
+  }
+
   async function loadSelectedSequences(generation: number) {
     rs.isLoadingSequences = true;
     try {
@@ -983,7 +1055,14 @@
 
       const baseByKey = new Map<string, SequenceData>();
       for (const [catalogId, seqIds] of byCatalog) {
-        const loaded = await loadSequencesByIds(catalogId, seqIds);
+        // Gallery cards aren't in any catalog — resolve them from the library.
+        let loaded: SequenceData[];
+        if (catalogId === "gallery") {
+          const { resolveGalleryCards } = await import("../../services/gallery-deck-source");
+          loaded = await resolveGalleryCards(seqIds);
+        } else {
+          loaded = await loadSequencesByIds(catalogId, seqIds);
+        }
         for (const s of loaded) baseByKey.set(`${catalogId}::${s.id}`, s);
       }
       if (generation !== rs.drawGeneration) return;
@@ -1137,10 +1216,10 @@
     // key matches what was stored (otherwise live setting changes force a
     // full re-render every view). Older decks have no prop snapshot → staff.
     rs.themeOverride = release.theme ?? null;
-    // TnD decks have no canonical prop — they follow the current prop setting so
-    // the in-deck switcher can change it. LOOP releases stay pinned to their
-    // release-time prop (their cached render matches the stored snapshot).
-    if (isTnDRelease(release)) {
+    // TnD + Gallery decks have no canonical prop — they follow the current prop
+    // setting so the in-deck switcher can change it. LOOP releases stay pinned to
+    // their release-time prop (their cached render matches the stored snapshot).
+    if (!isLoopRelease(release)) {
       rs.bluePropOverride = null;
       rs.redPropOverride = null;
     } else {
@@ -1208,7 +1287,8 @@
         readOnly={rs.viewingRelease !== null}
         brokenLoopCount={rs.brokenLoopCount}
         showRedraw={rs.deckMode === "loop"}
-        showPropSwitcher={viewingTnD}
+        showPropSwitcher={deckFollowsLiveProp}
+        showRefresh={viewingGallery}
         {footers}
         {onContextMenu}
         {cardSize}
@@ -1245,6 +1325,7 @@
         onRemoveCard={handleRemoveCard}
         allowRemove={rs.deckMode === "loop"}
         onRedraw={handleRedraw}
+        onRefresh={handleRefreshGallery}
         onRelease={openReleaseModal}
         onRename={rs.viewingRelease !== null ? handleRenameDeck : undefined}
         onBack={() => {
@@ -1313,6 +1394,17 @@
           onDeleteRelease={handleDeleteRelease}
           onReuseRecipe={handleReuseRecipe}
         />
+        {#if galleryReleases.length > 0}
+          <ReleaseHistoryPanel
+            title="Gallery Decks"
+            releases={galleryReleases}
+            isLoading={isLoadingReleases}
+            activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
+            onSelectRelease={handleSelectRelease}
+            onDeleteRelease={handleDeleteRelease}
+            onReuseRecipe={handleReuseRecipe}
+          />
+        {/if}
         {#if loopReleases.length > 0}
           <ReleaseHistoryPanel
             title="Released Decks"

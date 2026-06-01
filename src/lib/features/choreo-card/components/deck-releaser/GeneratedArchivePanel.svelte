@@ -46,6 +46,7 @@
   function summary(d: ArchivedDeckMeta): string {
     const parts: string[] = [];
     if (d.deckMode === "tnd") parts.push("TnD");
+    else if (d.deckMode === "gallery") parts.push("Gallery");
     else {
       if (d.loopType) parts.push(cap(d.loopType));
       if (d.length) parts.push(`${d.length}-step`);

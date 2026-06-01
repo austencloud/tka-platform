@@ -50,6 +50,24 @@ export interface DeckReleaseCard {
  * per-deck instance metadata (name/notes/description) or re-derivable pool counts
  * (`StepCountWeight.available`). Absent on legacy manifests → no reuse affordance.
  */
+/** Filter axes for a gallery-sourced deck (draws from the operator's library). */
+export interface GalleryFilters {
+  /** users/{uid}/collections/{id} — draw only from this collection. */
+  collectionId?: string;
+  /** users/{uid}/tags/{id} — draw only sequences carrying this tag. */
+  tagId?: string;
+  /** Loop type names (e.g. "rotated"); empty/absent ⇒ any. */
+  loopTypes?: string[];
+  /** Period bucket; absent ⇒ any. */
+  period?: "halved" | "quartered";
+  /** Difficulty levels; empty/absent ⇒ any. */
+  levels?: number[];
+  /** Step counts; empty/absent ⇒ any. */
+  lengths?: number[];
+  /** Word/name substring; absent ⇒ any. */
+  wordQuery?: string;
+}
+
 export interface DeckRecipe {
   /** Shape version of THIS object — migrate-on-read. Absent ⇒ legacy (treat as 0). */
   schemaVersion?: number;
@@ -58,7 +76,7 @@ export interface DeckRecipe {
   /** Explicit draw seed. Reroll mints a new one; reproduce reuses it. Absent ⇒ legacy. */
   seed?: string;
 
-  deckMode: "loop" | "tnd";
+  deckMode: "loop" | "tnd" | "gallery";
   /** Shared transform dials (both modes). */
   startOriModes: ("radial" | "nonradial" | "split")[];
   gridModes: ("diamond" | "box")[];
@@ -89,6 +107,8 @@ export interface DeckRecipe {
   /** TnD-only. */
   tndFamilyIds?: string[];
   tndTurnPatternIds?: string[];
+  /** Gallery-only: the filter that produced (and can Refresh) this deck. */
+  galleryFilters?: GalleryFilters;
 }
 
 export interface DeckRelease {
