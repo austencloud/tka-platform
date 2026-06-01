@@ -206,8 +206,8 @@ export class SequenceModalExporter {
           // App mode: the offscreen export engine has no settings wiring, so pass
           // the user's chosen prop explicitly. Without it the export renders the
           // default "staff" instead of the live prop.
-          bluePropType: settingsService.settings.bluePropType ?? "staff",
-          redPropType: settingsService.settings.redPropType ?? "staff",
+          bluePropType: settingsService.settings.bluePropType ?? settingsService.settings.propType ?? "staff",
+          redPropType: settingsService.settings.redPropType ?? settingsService.settings.propType ?? "staff",
         }
       );
 
