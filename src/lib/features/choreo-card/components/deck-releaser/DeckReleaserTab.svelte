@@ -35,6 +35,7 @@
   import { hashRecipe, mintSeed } from "../../services/deck-recipe";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
   import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
+  import { warmCardBackCaches } from "../../services/card-back/warm-card-back-caches";
   import { hashDeckContent, hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
   import { getPageLayout, type CardSizeId } from "../../domain/card-sizes";
   import { getTnDElementByIconPath, TND_ELEMENTS, type TnDElement } from "../../domain/tnd-element";
@@ -680,6 +681,13 @@
           .map((c) => c.footer?.iconPath)
           .filter((p): p is string => !!p),
       });
+
+      // Pre-warm the card-BACK constant rasterizer caches off the critical path.
+      // buildBackJob's first call mounts+rasterizes the theme-constant elements
+      // (~340ms); doing it here (beside the front pool seed) relocates that freeze
+      // into the step→review transition so the first card render doesn't block.
+      const warmSeq = rs.sequences[0];
+      if (warmSeq) warmCardBackCaches(warmSeq, rs.theme);
     } catch (err) {
       console.warn("Failed to load sequences:", err);
     } finally {
@@ -831,6 +839,7 @@
         onToggleGridMode={(m) => rs.toggleGridMode(m)}
         reversalPattern={rs.reversalPattern}
         onReversalChange={(p) => { rs.reversalPattern = p; rs.persist(); }}
+        onRebuildPool={rebuildPool}
       />
     {:else if rs.step === "review"}
       <ReviewStep

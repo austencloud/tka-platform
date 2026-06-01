@@ -1,0 +1,369 @@
+<!--
+  LoopBentoBoard — the LOOP "Compose Your Catalog" surface as a bento card grid,
+  matching the unified-generation prototype (src/routes/test/unified-generation).
+  Every deck control is a real generate card (BaseCard / StepperCard) or opens a
+  centered modal; the gorgeous gradient tiles replace the old three-column board.
+
+  Wired to the seeded generation engine + recipe axes:
+    Deck Size · Loop Type (modal) · Level · Period · Step Mix · Turns · Transform (modal)
+  Loop type / level / period change the pool → onRebuildPool. The rest shape the
+  draw/variation, not the pool. Reuses real primitives: BaseCard, StepperCard,
+  LOOPExpandedOverlay, TransformPanel, SegmentedControl.
+-->
+<script lang="ts">
+  import BaseCard from "$lib/features/create/generate/components/cards/BaseCard.svelte";
+  import StepperCard from "$lib/features/create/generate/components/cards/StepperCard/StepperCard.svelte";
+  import { getCardColors } from "$lib/shared/create/domain/card-colors";
+  import { BackgroundType } from "@austencloud/backgrounds";
+  import LOOPExpandedOverlay from "$lib/features/create/generate/components/cards/LOOPExpandedOverlay.svelte";
+  import {
+    LOOPType,
+    LOOP_TYPE_LABELS,
+  } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
+  import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
+  import { scale } from "svelte/transition";
+  import { quintOut } from "svelte/easing";
+  import TransformPanel from "./TransformPanel.svelte";
+  import { loopDrawCounts } from "../../services/deck-composer";
+  import { type VariationConfig, type StartOriMode } from "../../services/deck-variation";
+  import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
+  import type { StepCountWeight } from "../../domain/models/DeckRelease";
+  import type { CatalogSourceSummary } from "../../services/deck-composer";
+  import { releaserState as rs } from "./deck-releaser-state.svelte";
+
+  interface Props {
+    weights: StepCountWeight[];
+    totalCards: number;
+    sourceSummaries: CatalogSourceSummary[];
+    selectedSliceTypes: Set<"halved" | "quartered">;
+    variationConfig: VariationConfig;
+    startOriModes: Set<StartOriMode>;
+    gridModes: Set<"diamond" | "box">;
+    reversalPattern?: ResolvedReversalPattern | null;
+    onWeightChange: (stepCount: number, weight: number) => void;
+    onTotalCardsChange: (total: number) => void;
+    onSliceTypeToggle: (sliceType: "halved" | "quartered") => void;
+    onVariationConfigChange: (config: VariationConfig) => void;
+    onToggleStartOriMode: (mode: StartOriMode) => void;
+    onToggleGridMode: (mode: "diamond" | "box") => void;
+    onReversalChange?: (pattern: ResolvedReversalPattern) => void;
+    /** Rebuild the LOOP pool from current dials (loop type / level / period). */
+    onRebuildPool: () => void;
+  }
+
+  let {
+    weights,
+    totalCards,
+    sourceSummaries,
+    selectedSliceTypes,
+    variationConfig,
+    startOriModes,
+    gridModes,
+    reversalPattern = null,
+    onWeightChange,
+    onTotalCardsChange,
+    onSliceTypeToggle,
+    onVariationConfigChange,
+    onToggleStartOriMode,
+    onToggleGridMode,
+    onReversalChange,
+    onRebuildPool,
+  }: Props = $props();
+
+  const c = getCardColors(BackgroundType.COSMIC);
+  const LOOP_COLOR = "linear-gradient(135deg, #a3a32a 0%, #8a8a22 50%, #6b6b1a 100%)";
+  const LOOP_SHADOW = "60deg 55% 35%";
+  const TURN_COLOR = "linear-gradient(135deg, #16a34a 0%, #15803d 50%, #166534 100%)";
+  const TURN_SHADOW = "140deg 60% 40%";
+
+  const DECK_PRESETS = [26, 36, 52];
+  const STEP_PRESETS: Record<string, Record<number, number>> = {
+    beginner: { 16: 10, 12: 20, 8: 30, 4: 40 },
+    balanced: { 16: 25, 12: 25, 8: 25, 4: 25 },
+    advanced: { 16: 40, 12: 30, 8: 20, 4: 10 },
+  };
+  const STEP_ORDER = ["beginner", "balanced", "advanced"];
+  const STEP_LABEL: Record<string, string> = { beginner: "Beginner", balanced: "Balanced", advanced: "Advanced" };
+  const TURN_PRESETS: Record<string, number> = { clean: 0, sprinkle: 0.4, spicy: 0.7 };
+  const TURN_ORDER = ["clean", "sprinkle", "spicy"];
+  const TURN_LABEL: Record<string, string> = { clean: "Clean", sprinkle: "Sprinkle", spicy: "Spicy" };
+
+  let stepPreset = $state<string>("balanced");
+
+  // ── derived labels ─────────────────────────────────────────────────────────
+  const currentLoop = $derived(([...rs.selectedLoopTypes][0] as LOOPType) ?? LOOPType.ROTATED);
+  const currentLevel = $derived([...rs.selectedLevels][0] ?? 1);
+  let loopComponents = $state<Set<LOOPComponent>>(parseLoopComponents(LOOPType.ROTATED));
+  $effect(() => { loopComponents = parseLoopComponents(currentLoop); });
+
+  const periodLabel = $derived(
+    selectedSliceTypes.size === 2
+      ? "Q + H"
+      : selectedSliceTypes.has("quartered")
+        ? "Quartered"
+        : selectedSliceTypes.has("halved")
+          ? "Halved"
+          : "—",
+  );
+  const turnLabel = $derived.by(() => {
+    const f = variationConfig.turnFrequency;
+    if (f === 0) return "Clean";
+    if (Math.abs(f - 0.4) < 0.001) return "Sprinkle";
+    if (Math.abs(f - 0.7) < 0.001) return "Spicy";
+    return `${Math.round(f * 100)}%`;
+  });
+  const ORI_LABEL: Record<string, string> = { radial: "Radial", nonradial: "Nonradial", split: "Mixed" };
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const transformSummary = $derived(
+    `${[...startOriModes].map((m) => ORI_LABEL[m] ?? m).join(", ")} · ${[...gridModes].map(cap).join("/")}`,
+  );
+
+  const effectiveTotal = $derived(
+    loopDrawCounts(totalCards, startOriModes.size, gridModes.size).effective,
+  );
+  const available = $derived(rs.weights.reduce((s, w) => s + w.available, 0));
+  const showCoverageHint = $derived(!rs.isLoadingPools && available === 0);
+
+  // ── modals ───────────────────────────────────────────────────────────────
+  let showLoop = $state(false);
+  let showTransform = $state(false);
+
+  // ── actions ────────────────────────────────────────────────────────────────
+  function cycleDeck() {
+    const i = DECK_PRESETS.indexOf(totalCards);
+    onTotalCardsChange(DECK_PRESETS[(i + 1) % DECK_PRESETS.length] ?? 52);
+  }
+  function pickLoop(lt: LOOPType) {
+    rs.selectedLoopTypes = new Set([lt]);
+    loopComponents = parseLoopComponents(lt);
+    showLoop = false;
+    rs.persist();
+    onRebuildPool();
+  }
+  function setLevel(n: number) {
+    rs.selectedLevels = new Set([Math.max(1, Math.min(3, n))]);
+    rs.persist();
+    onRebuildPool();
+  }
+  // Period cycles Quartered → Halved → Both → Quartered (the deck's slice axis).
+  function cyclePeriod() {
+    const hasQ = selectedSliceTypes.has("quartered");
+    const hasH = selectedSliceTypes.has("halved");
+    let next: Set<"halved" | "quartered">;
+    if (hasQ && !hasH) next = new Set(["halved"]);
+    else if (hasH && !hasQ) next = new Set(["quartered", "halved"]);
+    else next = new Set(["quartered"]);
+    rs.selectedSliceTypes = next;
+    rs.persist();
+    onRebuildPool();
+  }
+  function cycleStepMix() {
+    const i = STEP_ORDER.indexOf(stepPreset);
+    stepPreset = STEP_ORDER[(i + 1) % STEP_ORDER.length]!;
+    const preset = STEP_PRESETS[stepPreset]!;
+    for (const w of weights) {
+      const target = preset[w.stepCount];
+      if (target !== undefined) onWeightChange(w.stepCount, target);
+    }
+  }
+  function cycleTurns() {
+    // Resolve current preset from frequency, advance to the next.
+    const cur = TURN_ORDER.find((id) => Math.abs(TURN_PRESETS[id]! - variationConfig.turnFrequency) < 0.001) ?? "sprinkle";
+    const next = TURN_ORDER[(TURN_ORDER.indexOf(cur) + 1) % TURN_ORDER.length]!;
+    onVariationConfigChange({ ...variationConfig, turnFrequency: TURN_PRESETS[next]! });
+  }
+</script>
+
+<div class="bento-stage">
+  <div class="card-grid">
+    <div class="tile">
+      <BaseCard title="Deck Size" currentValue={`${totalCards}`} color={c.favorite.color} shadowColor={c.favorite.shadowColor} gridColumnSpan={2} onClick={cycleDeck} />
+    </div>
+    <div class="tile">
+      <BaseCard title="Loop Type" currentValue={LOOP_TYPE_LABELS[currentLoop]} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
+    </div>
+    <div class="tile">
+      <StepperCard title="Level" currentValue={currentLevel} minValue={1} maxValue={3} description="BASE MOTIONS" color={c.level.color} shadowColor={c.level.shadowColor} gridColumnSpan={2} onIncrement={() => setLevel(currentLevel + 1)} onDecrement={() => setLevel(currentLevel - 1)} />
+    </div>
+    <div class="tile">
+      <BaseCard title="Period" currentValue={periodLabel} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} gridColumnSpan={2} onClick={cyclePeriod} />
+    </div>
+    <div class="tile">
+      <BaseCard title="Step Mix" currentValue={STEP_LABEL[stepPreset] ?? "Balanced"} color={c.length.color} shadowColor={c.length.shadowColor} gridColumnSpan={2} onClick={cycleStepMix} />
+    </div>
+    <div class="tile">
+      <BaseCard title="Turns" currentValue={turnLabel} color={TURN_COLOR} shadowColor={TURN_SHADOW} gridColumnSpan={2} onClick={cycleTurns} />
+    </div>
+    <div class="tile wide">
+      <BaseCard title="Transform" currentValue={transformSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showTransform = true)} />
+    </div>
+  </div>
+
+  {#if showCoverageHint}
+    <p class="coverage-hint">
+      <i class="fas fa-circle-info" aria-hidden="true"></i>
+      No <strong>{LOOP_TYPE_LABELS[currentLoop]}</strong> seeds enumerated at level {currentLevel}
+      for {periodLabel}. Pick another type/level/period, or run <code>scripts/enumerate-deck.cjs</code>.
+    </p>
+  {/if}
+
+  <section class="recipe">
+    <span class="recipe-title">This Deck</span>
+    <dl class="recipe-list">
+      <div class="recipe-row"><dt>Cards</dt><dd>{effectiveTotal}</dd></div>
+      <div class="recipe-row"><dt>Loop</dt><dd>{LOOP_TYPE_LABELS[currentLoop]}</dd></div>
+      <div class="recipe-row"><dt>Level</dt><dd>{currentLevel}</dd></div>
+      <div class="recipe-row"><dt>Period</dt><dd>{periodLabel}</dd></div>
+      <div class="recipe-row"><dt>Turns</dt><dd>{turnLabel}</dd></div>
+      <div class="recipe-row"><dt>Transform</dt><dd>{transformSummary}</dd></div>
+      <div class="recipe-row"><dt>Reversal</dt><dd>{reversalPattern?.label ?? "Continuous"}</dd></div>
+    </dl>
+  </section>
+</div>
+
+{#if showLoop}
+  <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showLoop = false; }}>
+    <div class="loop-col" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+      <div class="loop-host">
+        <LOOPExpandedOverlay currentType={currentLoop} selectedComponents={loopComponents} onChange={(lt: LOOPType) => pickLoop(lt)} onClose={() => (showLoop = false)} />
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if showTransform}
+  <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showTransform = false; }}>
+    <div class="picker-overlay" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+      <div class="po-header">
+        <h3>Transform</h3>
+        <button class="po-close" aria-label="Close" onclick={() => (showTransform = false)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="po-body">
+        <TransformPanel {startOriModes} {onToggleStartOriMode} {gridModes} {onToggleGridMode} {reversalPattern} onReversalChange={(p) => onReversalChange?.(p)} reversalCustomDefault={false} />
+      </div>
+      <button class="po-done" onclick={() => (showTransform = false)}>Done</button>
+    </div>
+  </div>
+{/if}
+
+<style>
+  .bento-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 1180px;
+    margin-inline: auto;
+    /* theme vars the real generate cards read */
+    --card-text-size: 22px;
+    --card-text-weight: 800;
+    --card-text-spacing: 0.3px;
+    --card-text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+    --element-spacing: 10px;
+  }
+  .card-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 12px;
+    width: 100%;
+  }
+  .card-grid > .tile {
+    flex: 1 1 230px;
+    min-width: 200px;
+    height: 120px;
+  }
+  .card-grid > .tile.wide {
+    flex: 1 1 360px;
+  }
+  .tile > :global(*) {
+    width: 100%;
+    height: 100%;
+  }
+  /* Unify type scale across the cards (matches the prototype). */
+  .card-grid :global(.value-number),
+  .card-grid :global(.base-card .card-value) { font-size: 24px !important; line-height: 1.15 !important; }
+  .card-grid :global(.card-title) { font-size: 11px !important; letter-spacing: 0.8px !important; }
+
+  .coverage-hint {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--semantic-warning, #f59e0b);
+  }
+  .coverage-hint code {
+    font-size: 11.5px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1px 6px;
+    border-radius: 5px;
+  }
+
+  .recipe {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px 22px;
+    padding: 16px 18px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 14px;
+  }
+  .recipe-title {
+    grid-column: 1 / -1;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--theme-text, #fff);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .recipe-list { display: contents; }
+  .recipe-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .recipe-row dt { font-size: 12px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.45)); }
+  .recipe-row dd { margin: 0; font-size: 13px; font-weight: 600; color: var(--theme-text, #fff); text-align: right; }
+
+  /* ── modals (match the prototype chrome) ── */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(16px, 4vh, 48px);
+    background: rgba(4, 7, 14, 0.62);
+    backdrop-filter: blur(5px);
+  }
+  .loop-col { width: min(1000px, 94vw); max-height: 92vh; display: flex; flex-direction: column; gap: 12px; }
+  .loop-host { position: relative; min-height: 0; overflow: hidden; border-radius: 18px; }
+  .loop-host :global(.loop-expanded-overlay) { position: relative !important; inset: auto !important; width: 100%; max-height: 82vh; }
+  .loop-host :global(.grid-container) { flex: 0 0 auto; }
+
+  .picker-overlay {
+    width: min(880px, 94vw);
+    max-height: min(840px, 90vh);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: linear-gradient(135deg,
+      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 25%, #1a1a2e) 0%,
+      color-mix(in srgb, var(--theme-accent, #818cf8) 15%, #1a1a2e) 50%,
+      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 20%, #1a1a2e) 100%);
+    border-radius: 18px;
+    border: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+  }
+  .po-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .po-header h3 { margin: 0; font-size: 18px; font-weight: 700; color: #fff; }
+  .po-close { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 8px; }
+  .po-close svg { width: 20px; height: 20px; }
+  .po-close:hover { background: rgba(255, 255, 255, 0.15); }
+  .po-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+  .po-done { flex-shrink: 0; width: 100%; padding: 12px 20px; min-height: 44px; background: color-mix(in srgb, var(--theme-accent) 30%, transparent); border: 2px solid var(--theme-accent); border-radius: 10px; color: #fff; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; }
+  .po-done:hover { background: color-mix(in srgb, var(--theme-accent) 45%, transparent); }
+</style>

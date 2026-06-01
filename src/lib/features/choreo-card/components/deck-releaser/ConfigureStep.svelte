@@ -5,7 +5,7 @@
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import TnDFamilyCards from "./TnDFamilyCards.svelte";
   import TransformPanel from "./TransformPanel.svelte";
-  import LoopComposeBoard from "./LoopComposeBoard.svelte";
+  import LoopBentoBoard from "./LoopBentoBoard.svelte";
   import { loopDrawCounts } from "../../services/deck-composer";
   import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
   import type { VariationConfig, StartOriMode } from "../../services/deck-variation";
@@ -46,6 +46,8 @@
     /** Deck-wide reversal pattern (built in the strip). Absent → no reversal. */
     reversalPattern?: ResolvedReversalPattern | null;
     onReversalChange?: (pattern: ResolvedReversalPattern) => void;
+    /** Rebuild the LOOP pool from current dials (loop type / level / slice). */
+    onRebuildPool: () => void;
   }
 
   let {
@@ -81,6 +83,7 @@
     onToggleGridMode,
     reversalPattern = null,
     onReversalChange,
+    onRebuildPool,
   }: Props = $props();
 
   // Per-family card projection mirrors buildTnDCards' enumeration: each family's
@@ -180,7 +183,7 @@
       </section>
     </div>
   {:else}
-    <LoopComposeBoard
+    <LoopBentoBoard
       {weights}
       {totalCards}
       {sourceSummaries}
@@ -196,6 +199,7 @@
       {onToggleStartOriMode}
       {onToggleGridMode}
       {onReversalChange}
+      {onRebuildPool}
     />
   {/if}
 
