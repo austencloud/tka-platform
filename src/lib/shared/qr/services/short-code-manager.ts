@@ -243,7 +243,8 @@ export class ShortCodeManager {
    */
   async resolveCodesForDeck(
     sequences: SequenceData[],
-    options?: ShortCodeURLOptions
+    options?: ShortCodeURLOptions,
+    onProgress?: (done: number, total: number) => void
   ): Promise<void> {
     if (sequences.length === 0) return;
 
@@ -272,6 +273,7 @@ export class ShortCodeManager {
       ];
       if (missHashes.length === 0) return;
 
+      onProgress?.(0, missHashes.length);
       const firestore = await this.ensureFirestore();
       const hashToCode = new Map<string, string>();
 
@@ -289,6 +291,7 @@ export class ShortCodeManager {
           // First write wins; a hash should map to one code, but guard anyway.
           if (hash && !hashToCode.has(hash)) hashToCode.set(hash, docSnap.id);
         }
+        onProgress?.(Math.min(i + FIRESTORE_IN_LIMIT, missHashes.length), missHashes.length);
       }
 
       // 5. Populate the cache for every miss whose code already exists.

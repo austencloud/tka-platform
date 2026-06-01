@@ -114,6 +114,12 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   // A stale render run (e.g. deck size 100 → 90) can't leave 100 lingering here.
   const renderTotal = $derived(sequences.length);
   let isRendering = $state(false);
+  // Pre-render setup feedback so "0 / N" never looks frozen. "preparing" =
+  // resolving short codes / cold Firestore init; "rendering" = lanes running
+  // (first card still warms the worker, shown as indeterminate until progress>0).
+  let renderStage = $state<"preparing" | "rendering">("rendering");
+  let prepDone = $state(0);
+  let prepTotal = $state(0);
 
   let layout = $derived(getPageLayout(cardSize));
   let sizeSpec = $derived(CARD_SIZES[cardSize]);
@@ -357,6 +363,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     // completion; holes show as blank cells until filled.
     isRendering = true;
     renderProgress = 0;
+    renderStage = "preparing";
+    prepDone = 0;
+    prepTotal = 0;
     renderedCards = [];
     onRenderStateChange?.({ isRendering: true, progress: 0, total: seqs.length });
 
@@ -366,14 +375,20 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     // render lanes fan out. Without this, each lane's first render does a
     // serial ~380ms Firestore round-trip (the cold-deck bottleneck) which
     // also pegs the main thread and freezes the Print Deck modal. Best-effort:
-    // any miss falls through to per-card resolution at render time.
-    await getShortCodeManager().resolveCodesForDeck(seqs, {
-      bluePropType: resolvedBlueProp,
-      redPropType: resolvedRedProp,
-      deckId,
-      deckName,
-    });
+    // any miss falls through to per-card resolution at render time. Reports
+    // chunk progress so the bar moves during the otherwise-silent cold start.
+    await getShortCodeManager().resolveCodesForDeck(
+      seqs,
+      { bluePropType: resolvedBlueProp, redPropType: resolvedRedProp, deckId, deckName },
+      (done, total) => {
+        if (generation === renderGeneration) { prepDone = done; prepTotal = total; }
+      },
+    );
     if (generation !== renderGeneration) return;
+
+    // Codes resolved — lanes start. First card still warms the worker, so the
+    // bar stays indeterminate until renderProgress ticks past 0.
+    renderStage = "rendering";
 
     const cards: RenderedCard[] = new Array(seqs.length);
     const pairs: (CardPair | null)[] = new Array(seqs.length).fill(null);
@@ -554,9 +569,29 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     </div>
   {:else}
     {#if isRendering}
-      <div class="progress-bar-container" role="progressbar" aria-valuenow={renderProgress} aria-valuemin={0} aria-valuemax={renderTotal}>
-        <div class="progress-bar-fill" style:width="{(renderProgress / renderTotal) * 100}%"></div>
-        <span class="progress-label">Rendering {renderProgress} / {renderTotal}</span>
+      {@const setup = renderProgress === 0}
+      <div
+        class="progress-bar-container"
+        class:indeterminate={setup}
+        role="progressbar"
+        aria-valuenow={setup ? undefined : renderProgress}
+        aria-valuemin={0}
+        aria-valuemax={renderTotal}
+        aria-busy={setup}
+      >
+        {#if setup}
+          <div class="progress-bar-fill indeterminate-fill"></div>
+          <span class="progress-label">
+            {#if renderStage === "preparing"}
+              {prepTotal > 0 ? `Preparing — resolving codes ${prepDone} / ${prepTotal}…` : "Preparing renderer…"}
+            {:else}
+              Warming renderer…
+            {/if}
+          </span>
+        {:else}
+          <div class="progress-bar-fill" style:width="{(renderProgress / renderTotal) * 100}%"></div>
+          <span class="progress-label">Rendering {renderProgress} / {renderTotal}</span>
+        {/if}
       </div>
     {/if}
 
@@ -869,6 +904,26 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     height: 100%;
     background: var(--theme-accent-bg, rgba(100, 180, 255, 0.3));
     transition: width 0.2s ease;
+  }
+
+  /* Indeterminate sweep for the setup phase (code resolution + worker warm),
+     where there's no card count yet — proves the deck isn't frozen. */
+  .progress-bar-fill.indeterminate-fill {
+    width: 35%;
+    transition: none;
+    animation: indeterminate-slide 1.15s ease-in-out infinite;
+  }
+  @keyframes indeterminate-slide {
+    0% { left: -35%; }
+    100% { left: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .progress-bar-fill.indeterminate-fill {
+      animation: none;
+      left: 0;
+      width: 100%;
+      opacity: 0.35;
+    }
   }
 
   .progress-label {
