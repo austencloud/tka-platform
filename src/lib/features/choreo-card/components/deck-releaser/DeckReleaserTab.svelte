@@ -693,14 +693,14 @@
     };
 
     const target = rs.totalCards || 52;
-    // Breadth before depth. Fill the deck with as many DISTINCT word titles as
-    // exist before any title gets a 2nd (then 3rd) variation. `maxPerWord` rises
-    // a tier only when the current tier stops yielding new titles (a long
-    // fruitless streak), so a draw does "one pass without duplication" first,
-    // then a second, then a third — capped at 3 copies per title. Content still
-    // never repeats byte-for-byte; the repeats that ARE allowed are genuinely
-    // different sequences (different turns/reversals/path) sharing a title.
-    const MAX_PER_WORD = 3;
+    // Variety pack: distinct word titles are the priority. Fill EVERY distinct
+    // title first (one pass, no repeats); only once the title space is exhausted
+    // does any title get a single 2nd (path-distinct) copy — "a couple
+    // duplicates is fine", never more. So a deck is mostly-unique words, and is
+    // honestly smaller than the requested size when the config's word space is
+    // small (e.g. 8-step QUARTERED → a 2-step seed → only a few dozen words;
+    // halved seeds or longer lengths open up far more).
+    const MAX_PER_WORD = 2;
     const seqs: SequenceData[] = [];
     // Dedup on the location-arrangement SKELETON (word + per-step locations,
     // motion type, rotation direction — NOT turns/orientations/reversal flags).
@@ -766,9 +766,11 @@
       return false;
     }
     if (seqs.length < target) {
-      // Expected when the distinct-word space (× up to 3 copies each) is smaller
-      // than the requested size — not an error, just the honest ceiling.
-      toast.info(`Generated ${seqs.length} of ${target} — these settings yield ${wordCount.size} distinct words (max 3 copies each).`);
+      // Expected when the distinct-word space is smaller than the requested size.
+      // Prioritizing variety (≤2 copies per word) over hitting the number. The
+      // lever for more cards is a bigger word space: halved period or a longer
+      // length give longer seeds = many more distinct words.
+      toast.info(`Generated ${seqs.length} of ${target} — only ${wordCount.size} distinct words exist for these settings. For more variety try Halved period or a longer length.`);
     }
 
     rs.sequences = seqs;
