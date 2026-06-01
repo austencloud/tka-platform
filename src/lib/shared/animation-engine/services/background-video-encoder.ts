@@ -53,6 +53,13 @@ export class BackgroundVideoEncoder {
 
   onProgress: ((frameIndex: number, totalFrames: number) => void) | null = null;
 
+  /** Max wait for the worker to report "ready". A stalled VideoEncoder.configure()
+   *  posts neither "ready" nor an error, so without this the init promise hangs
+   *  forever and the export UI freezes at 0%. */
+  private static readonly READY_TIMEOUT_MS = 15_000;
+
+  private initTimer: ReturnType<typeof setTimeout> | null = null;
+
   // ---------------------------------------------------------------------------
   // Public API
   // ---------------------------------------------------------------------------
@@ -74,10 +81,24 @@ export class BackgroundVideoEncoder {
     this.worker.onmessage = this.handleMessage;
     this.worker.onerror = this.handleWorkerError;
 
-    // Wait for the worker to finish configuring the encoder
+    // Wait for the worker to finish configuring the encoder, with a timeout so a
+    // stalled configure() can't hang the export at 0% forever.
     return new Promise<void>((resolve, reject) => {
       this.initResolve = resolve;
       this.initReject = reject;
+
+      this.initTimer = setTimeout(() => {
+        if (this.initReject) {
+          const err = new Error(
+            "Encoder initialization timed out — the codec configuration did not " +
+            "complete (try a lower resolution/fps, or a different browser)."
+          );
+          this.initReject(err);
+          this.initResolve = null;
+          this.initReject = null;
+        }
+        this.terminateWorker();
+      }, BackgroundVideoEncoder.READY_TIMEOUT_MS);
 
       this.postToWorker({
         type: "config",
@@ -215,6 +236,7 @@ export class BackgroundVideoEncoder {
 
     switch (response.type) {
       case "ready":
+        if (this.initTimer) { clearTimeout(this.initTimer); this.initTimer = null; }
         this.initResolve?.();
         this.initResolve = null;
         this.initReject = null;
@@ -244,6 +266,8 @@ export class BackgroundVideoEncoder {
         if (this.firstError === null) {
           this.firstError = new Error(response.error);
         }
+
+        if (this.initTimer) { clearTimeout(this.initTimer); this.initTimer = null; }
 
         // Route the first/root-cause error to whichever promise is
         // currently in flight. If no promise is in flight (frame capture
@@ -277,6 +301,7 @@ export class BackgroundVideoEncoder {
   // ---------------------------------------------------------------------------
 
   private rejectPending(error: Error): void {
+    if (this.initTimer) { clearTimeout(this.initTimer); this.initTimer = null; }
     if (this.initReject) {
       this.initReject(error);
       this.initResolve = null;
