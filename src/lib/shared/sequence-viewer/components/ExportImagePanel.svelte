@@ -12,9 +12,9 @@
   import type { ExportOptionsStateManager } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
-  import RailBentoSheet from "$lib/shared/animation-panel/bento/RailBentoSheet.svelte";
   import "$lib/shared/animation-panel/bento/rail-tile.css";
-  import { nextColumnValue, prevColumnValue, columnOptionsFor } from "./bento/columns-stepper";
+  import { columnOptionsFor } from "./bento/columns-stepper";
+  import ControlDock, { type ControlDockTab } from "./ControlDock.svelte";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -143,217 +143,99 @@
     }
   });
 
-  // ── Mobile bento state ───────────────────────────────────────────────
-  let openSheet = $state<"content" | null>(null);
-  function toggleContentSheet(): void {
-    openSheet = openSheet === "content" ? null : "content";
-  }
-  function closeSheet(): void {
-    openSheet = null;
-  }
+  // ── Mobile ControlDock state ─────────────────────────────────────────
+  const DISPLAY_TABS: ControlDockTab[] = [
+    { id: "labels", label: "Labels", icon: "fa-font" },
+    { id: "pictograph", label: "Pictograph", icon: "fa-shapes" },
+    { id: "columns", label: "Columns", icon: "fa-table-columns" },
+    { id: "theme", label: "Theme", icon: "fa-circle-half-stroke" },
+  ];
+  let activeTab = $state<string | null>(null);
 
-  // Count of all visibility toggles currently ON, for the Content tile badge.
-  const contentOnCount = $derived.by(() => {
-    void compositionVersion;
-    void vmVersion;
-    let n = 0;
-    if (showWord) n++;
-    if (showDifficulty) n++;
-    if (showLoopGlyph) n++;
-    if (showCreatorName) n++;
-    if (showNotes) n++;
-    if (showBirthday) n++;
-    if (showGrid) n++;
-    if (tkaGlyph) n++;
-    if (tndGlyph) n++;
-    if (positionsGlyph) n++;
-    if (nonRadial) n++;
-    if (showQRCode) n++;
-    if (showMandala) n++;
-    return n;
+  // Touch devices share; desktop downloads. Icon/label reflect the intent;
+  // the consumer's onExport branches (navigator.share with the PNG vs download).
+  let coarsePointer = $state(false);
+  $effect(() => {
+    const mq = window.matchMedia("(pointer: coarse)");
+    coarsePointer = mq.matches;
+    const h = () => (coarsePointer = mq.matches);
+    mq.addEventListener("change", h);
+    return () => mq.removeEventListener("change", h);
   });
-  const CONTENT_TOTAL = 13;
-
-  const columnsLabel = $derived(
-    currentColumnCount === null ? "Auto" : String(currentColumnCount)
-  );
+  const dockTrailing = $derived({
+    icon: coarsePointer ? "fa-share-nodes" : "fa-download",
+    label: coarsePointer ? "Share card" : "Download card",
+    onClick: onExport,
+    busy: isExporting,
+  });
 </script>
 
 {#if layout === "bottom"}
   <!-- ============================================================
-       MOBILE: Bento grid. Card preview stays visible.
-       Content opens a fixed-position sub-sheet with all visibility
-       toggles. Columns + Theme use inline controls.
+       MOBILE: ControlDock. Card preview stays the hero. Display
+       controls collapse into Content / Columns / Theme tabs with a
+       compact Share/Download trailing trigger.
        ============================================================ -->
-  <div
-    class="mobile-export"
-    transition:fade={{ duration: 200 }}
-    role="region"
-    aria-label="Card export"
+  <ControlDock
+    tabs={DISPLAY_TABS}
+    activeTab={activeTab}
+    onTabSelect={(id) => (activeTab = activeTab === id ? null : id)}
+    trailingAction={dockTrailing}
   >
-    {#if openSheet === "content"}
-      <RailBentoSheet title="Content" onClose={closeSheet}>
-        <div class="rt-section">
-          <span class="rt-section-label">Header</span>
+    {#snippet tray()}
+      <div class="dock-dense">
+        {#if activeTab === "labels"}
+          <div class="field">
+            <span class="field-label">Header</span>
+            <div class="rt-chip-row">
+              <button type="button" class="rt-chip" aria-pressed={showWord} onclick={() => imageComposition.setAddWord(!showWord)}>Word</button>
+              <button type="button" class="rt-chip" aria-pressed={showDifficulty} onclick={() => imageComposition.setAddDifficultyLevel(!showDifficulty)}>Level</button>
+              <button type="button" class="rt-chip" aria-pressed={showLoopGlyph} onclick={() => imageComposition.setShowLoopGlyph(!showLoopGlyph)}>LOOP</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="field-label">Footer</span>
+            <div class="rt-chip-row">
+              <button type="button" class="rt-chip" aria-pressed={showCreatorName} onclick={() => imageComposition.setShowCreatorName(!showCreatorName)}>Name</button>
+              <button type="button" class="rt-chip" aria-pressed={showNotes} onclick={() => imageComposition.setShowNotes(!showNotes)}>Notes</button>
+              <button type="button" class="rt-chip" aria-pressed={showBirthday} onclick={() => imageComposition.setShowBirthday(!showBirthday)}>Date</button>
+            </div>
+          </div>
+        {:else if activeTab === "pictograph"}
+          <div class="field">
+            <span class="field-label">Glyphs</span>
+            <div class="rt-chip-row">
+              <button type="button" class="rt-chip" aria-pressed={showGrid} onclick={() => vm.setGridVisibility(!showGrid)}>Grid</button>
+              <button type="button" class="rt-chip" aria-pressed={tkaGlyph} onclick={() => vm.setGlyphVisibility("tkaGlyph", !tkaGlyph)}>TKA</button>
+              <button type="button" class="rt-chip" aria-pressed={tndGlyph} onclick={toggleTnD}>TnD</button>
+              <button type="button" class="rt-chip" aria-pressed={positionsGlyph} onclick={() => vm.setGlyphVisibility("positionsGlyph", !positionsGlyph)}>Positions</button>
+              <button type="button" class="rt-chip" aria-pressed={nonRadial} onclick={() => vm.setNonRadialVisibility(!nonRadial)}>Non-radial</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="field-label">Info</span>
+            <div class="rt-chip-row">
+              <button type="button" class="rt-chip" aria-pressed={showQRCode} onclick={() => imageComposition.setShowQRCode(!showQRCode)}><i class="fas fa-qrcode" aria-hidden="true"></i> QR</button>
+              <button type="button" class="rt-chip" aria-pressed={showMandala} onclick={() => imageComposition.setShowMandala(!showMandala)}><i class="fas fa-asterisk" aria-hidden="true"></i> Mandala</button>
+              <button type="button" class="rt-chip" aria-pressed={startPosLayout === "row"} onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "row")}>Top Row</button>
+              <button type="button" class="rt-chip" aria-pressed={startPosLayout === "column"} onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "column")}>Left Column</button>
+            </div>
+          </div>
+        {:else if activeTab === "columns"}
           <div class="rt-chip-row">
-            <button type="button" class="rt-chip"
-              aria-pressed={showWord}
-              onclick={() => imageComposition.setAddWord(!showWord)}
-            >Word</button>
-            <button type="button" class="rt-chip"
-              aria-pressed={showDifficulty}
-              onclick={() => imageComposition.setAddDifficultyLevel(!showDifficulty)}
-            >Level</button>
-            <button type="button" class="rt-chip"
-              aria-pressed={showLoopGlyph}
-              onclick={() => imageComposition.setShowLoopGlyph(!showLoopGlyph)}
-            >LOOP</button>
+            {#each columnOptions as option}
+              <button type="button" class="rt-chip" aria-pressed={currentColumnCount === option.value} onclick={() => setColumns(option.value)}>{option.label}</button>
+            {/each}
           </div>
-        </div>
-
-        <div class="rt-section">
-          <span class="rt-section-label">Footer</span>
+        {:else if activeTab === "theme"}
           <div class="rt-chip-row">
-            <button type="button" class="rt-chip"
-              aria-pressed={showCreatorName}
-              onclick={() => imageComposition.setShowCreatorName(!showCreatorName)}
-            >Name</button>
-            <button type="button" class="rt-chip"
-              aria-pressed={showNotes}
-              onclick={() => imageComposition.setShowNotes(!showNotes)}
-            >Notes</button>
-            <button type="button" class="rt-chip"
-              aria-pressed={showBirthday}
-              onclick={() => imageComposition.setShowBirthday(!showBirthday)}
-            >Date</button>
+            <button type="button" class="rt-chip" aria-pressed={!exportOptions.imageDarkMode} onclick={() => exportOptions.setImageDarkMode(false)}><i class="fas fa-sun" aria-hidden="true"></i> Light</button>
+            <button type="button" class="rt-chip" aria-pressed={exportOptions.imageDarkMode} onclick={() => exportOptions.setImageDarkMode(true)}><i class="fas fa-moon" aria-hidden="true"></i> Dark</button>
           </div>
-        </div>
-
-        <div class="rt-section">
-          <span class="rt-section-label">Pictograph</span>
-          <div class="rt-chip-row">
-            <button type="button" class="rt-chip"
-              aria-pressed={showGrid}
-              onclick={() => vm.setGridVisibility(!showGrid)}
-            >Grid</button>
-            <button type="button" class="rt-chip"
-              aria-pressed={tkaGlyph}
-              onclick={() => vm.setGlyphVisibility("tkaGlyph", !tkaGlyph)}
-            >TKA</button>
-            <button type="button" class="rt-chip"
-              aria-pressed={tndGlyph}
-              onclick={toggleTnD}
-            >TnD</button>
-            <button type="button" class="rt-chip"
-              aria-pressed={positionsGlyph}
-              onclick={() => vm.setGlyphVisibility("positionsGlyph", !positionsGlyph)}
-            >Positions</button>
-            <button type="button" class="rt-chip"
-              aria-pressed={nonRadial}
-              onclick={() => vm.setNonRadialVisibility(!nonRadial)}
-            >Non-radial</button>
-          </div>
-        </div>
-
-        <div class="rt-section">
-          <span class="rt-section-label">Extras</span>
-          <div class="rt-chip-row">
-            <button type="button" class="rt-chip"
-              aria-pressed={showQRCode}
-              onclick={() => imageComposition.setShowQRCode(!showQRCode)}
-            >
-              <i class="fas fa-qrcode" aria-hidden="true"></i> QR
-            </button>
-            <button type="button" class="rt-chip"
-              aria-pressed={showMandala}
-              onclick={() => imageComposition.setShowMandala(!showMandala)}
-            >
-              <i class="fas fa-asterisk" aria-hidden="true"></i> Mandala
-            </button>
-          </div>
-        </div>
-
-        <div class="rt-section">
-          <span class="rt-section-label">Info</span>
-          <div class="rt-chip-row">
-            <button type="button" class="rt-chip"
-              aria-pressed={startPosLayout === "row"}
-              onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "row")}
-            >Top Row</button>
-            <button type="button" class="rt-chip"
-              aria-pressed={startPosLayout === "column"}
-              onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "column")}
-            >Left Column</button>
-          </div>
-        </div>
-      </RailBentoSheet>
-    {/if}
-
-    <div class="rt-zone" role="group" aria-label="Card export settings">
-      <div class="rt-row-3">
-        <!-- Content tile - opens sub-sheet -->
-        <button
-          type="button"
-          class="rt-tile"
-          aria-pressed={openSheet === "content"}
-          onclick={toggleContentSheet}
-        >
-          <i class="fas fa-layer-group rt-icon" aria-hidden="true"></i>
-          <span class="rt-lbl">Content</span>
-          <span class="rt-count">{contentOnCount}/{CONTENT_TOTAL}</span>
-        </button>
-
-        <!-- Columns tile - inline stepper -->
-        <div class="rt-tile" role="group" aria-label="Card columns">
-          <div class="rt-stepper">
-            <button type="button" class="rt-step-btn"
-              onclick={() => setColumns(prevColumnValue(currentColumnCount, stepCount))}
-              aria-label="Previous column value"
-            ><i class="fas fa-minus" aria-hidden="true"></i></button>
-            <span class="rt-val">{columnsLabel}</span>
-            <button type="button" class="rt-step-btn"
-              onclick={() => setColumns(nextColumnValue(currentColumnCount, stepCount))}
-              aria-label="Next column value"
-            ><i class="fas fa-plus" aria-hidden="true"></i></button>
-          </div>
-          <span class="rt-lbl">Columns</span>
-        </div>
-
-        <!-- Theme tile - inline split-pill -->
-        <div class="rt-tile" role="group" aria-label="Card theme" style="padding: 8px;">
-          <div class="rt-split">
-            <button type="button" class="rt-split-opt"
-              aria-pressed={!exportOptions.imageDarkMode}
-              onclick={() => exportOptions.setImageDarkMode(false)}
-              aria-label="Light theme"
-            ><i class="fas fa-sun" aria-hidden="true"></i> Light</button>
-            <button type="button" class="rt-split-opt"
-              aria-pressed={exportOptions.imageDarkMode}
-              onclick={() => exportOptions.setImageDarkMode(true)}
-              aria-label="Dark theme"
-            ><i class="fas fa-moon" aria-hidden="true"></i> Dark</button>
-          </div>
-          <span class="rt-lbl">Theme</span>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="rt-download"
-        onclick={onExport}
-        disabled={isExporting}
-        aria-label="Download card"
-      >
-        {#if isExporting}
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Exporting...
-        {:else}
-          <i class="fas fa-download" aria-hidden="true"></i>
-          Download Card
         {/if}
-      </button>
-    </div>
-  </div>
+      </div>
+    {/snippet}
+  </ControlDock>
 {:else}
   <!-- ============================================================
        DESKTOP SIDEBAR: All settings visible (unchanged)
@@ -552,14 +434,32 @@
    * MOBILE BOTTOM BAR
    * ============================================================ */
 
-  .mobile-export {
-    position: relative;
-    flex-shrink: 0;
-    /* Cap total height so choreo card preview keeps breathing room */
-    max-height: 45vh;
-    overflow-y: auto;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+  /* Mobile dock tray density (mirrors AnimationPanel .dock-dense). */
+  .dock-dense { display: flex; flex-direction: column; gap: 8px; }
+  /* Inline label-left rows: each section is one row, not a label line + chips line. */
+  .dock-dense .field {
+    display: grid;
+    grid-template-columns: 58px 1fr;
+    align-items: center;
+    gap: 10px;
+  }
+  .dock-dense .field-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+  }
+  .dock-dense :global(.rt-chip-row) { gap: 6px; flex-wrap: wrap; }
+  /* Size chips to their label (override rail-tile's flex:1 + min-width:44 that
+     squeezed long labels like "Non-radial" until they clipped) and let the row
+     wrap. Each chip stays one unbroken line at >=44px tap height. */
+  .dock-dense :global(.rt-chip) {
+    flex: 0 1 auto;
+    min-width: 0;
+    min-height: 44px;
+    padding: 6px 12px;
+    white-space: nowrap;
   }
 
   /* ============================================================

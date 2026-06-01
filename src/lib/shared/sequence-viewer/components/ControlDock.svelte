@@ -56,8 +56,9 @@
     tray?: Snippet;
     /** Compact trailing trigger (download / record). */
     trailingAction?: ControlDockAction;
-    /** Optional secondary trailing link (e.g. scan-landing "Open TKA"). */
-    secondaryAction?: ControlDockLink;
+    /** Optional secondary trailing slot: a link (e.g. scan-landing "Open TKA")
+     *  or an action button (e.g. choreo-card "Print"). */
+    secondaryAction?: ControlDockLink | ControlDockAction;
     /** Reports the dock's measured height so the stage can reserve room. */
     onHeightChange?: (px: number) => void;
     /** Bar width (px) below which tab labels hide and tabs go icon-only. */
@@ -93,6 +94,9 @@
     return () => mq.removeEventListener("change", onChange);
   });
   const dur = (ms: number) => (reduceMotion ? 0 : ms);
+
+  // Secondary slot is a link if it carries an href, else an action button.
+  const secondaryIsLink = $derived(!!secondaryAction && "href" in secondaryAction);
 
   // Measure: own height (-> stage padding) and own width (-> label-hide).
   // Parent width drives the desktop floating layout (measuring the parent
@@ -158,10 +162,26 @@
     </div>
 
     {#if secondaryAction}
-      <a class="dock-btn trailing-link" href={secondaryAction.href} aria-label={secondaryAction.label}>
-        {#if secondaryAction.icon}<i class="fas {secondaryAction.icon}" aria-hidden="true"></i>{/if}
-        <span class="trailing-label">{secondaryAction.label}</span>
-      </a>
+      {#if secondaryIsLink}
+        <a class="dock-btn trailing-link" href={(secondaryAction as ControlDockLink).href} aria-label={secondaryAction.label}>
+          {#if secondaryAction.icon}<i class="fas {secondaryAction.icon}" aria-hidden="true"></i>{/if}
+          <span class="trailing-label">{secondaryAction.label}</span>
+        </a>
+      {:else}
+        <button
+          class="dock-btn trailing-link"
+          onclick={(secondaryAction as ControlDockAction).onClick}
+          disabled={(secondaryAction as ControlDockAction).disabled}
+          aria-label={secondaryAction.label}
+        >
+          {#if (secondaryAction as ControlDockAction).busy}
+            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          {:else if secondaryAction.icon}
+            <i class="fas {secondaryAction.icon}" aria-hidden="true"></i>
+          {/if}
+          <span class="trailing-label">{secondaryAction.label}</span>
+        </button>
+      {/if}
     {/if}
 
     {#if trailingAction}

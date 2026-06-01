@@ -334,17 +334,48 @@ export class SequenceModalExporter {
         seq.displayName || seq.intendedWord || seq.word || "sequence";
       const simplified = greekToAscii(simplifyRepeatedWord(rawName));
       const safeName = sanitizeFilename(simplified) || "sequence";
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${safeName}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const filename = `${safeName}.png`;
+
+      // Touch devices open the native share sheet; desktop does a plain download.
+      // Gated on a coarse pointer so desktop Chrome (which also exposes the Web
+      // Share API) still downloads rather than popping a share dialog.
+      const coarsePointer =
+        typeof window !== "undefined" &&
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(pointer: coarse)").matches;
+
+      let shared = false;
+      if (
+        coarsePointer &&
+        typeof navigator.share === "function" &&
+        typeof navigator.canShare === "function"
+      ) {
+        try {
+          const file = new File([blob], filename, { type: blob.type || "image/png" });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: "TKA Sequence", text: rawName });
+            shared = true;
+          }
+        } catch (err) {
+          // Dismissing the share sheet is not a failure; anything else falls
+          // through to a regular download.
+          if (err instanceof DOMException && err.name === "AbortError") shared = true;
+        }
+      }
+
+      if (!shared) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
 
       callbacks.onHaptic("success");
-      callbacks.onSuccess("Image exported!");
+      callbacks.onSuccess(shared ? "Card shared!" : "Image exported!");
     } catch (error) {
       console.error("[SequenceModalExporter] Image export failed:", error);
       callbacks.onHaptic("error");
