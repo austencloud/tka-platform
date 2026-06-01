@@ -10,9 +10,11 @@
     onDeleteRelease?: (deckNumber: number) => void;
     /** Load a deck's stamped recipe back into Configure. Omit to hide reuse. */
     onReuseRecipe?: (recipe: DeckRecipe) => void;
+    /** Section heading. Defaults to "Released Decks". */
+    title?: string;
   }
 
-  const { releases, isLoading, activeDeckNumber, onSelectRelease, onDeleteRelease, onReuseRecipe }: Props = $props();
+  const { releases, isLoading, activeDeckNumber, onSelectRelease, onDeleteRelease, onReuseRecipe, title = "Released Decks" }: Props = $props();
 
   function reuse(e: MouseEvent, recipe: DeckRecipe) {
     e.stopPropagation();
@@ -61,7 +63,7 @@
 <div class="release-history">
   <h3 class="panel-title">
     <i class="fas fa-archive" aria-hidden="true"></i>
-    Released Decks
+    {title}
     {#if releases.length > 0}
       <span class="release-count">{releases.length}</span>
     {/if}

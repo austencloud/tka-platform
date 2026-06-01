@@ -6,6 +6,7 @@
   import PrintPreviewToolbar from "../print-preview/PrintPreviewToolbar.svelte";
   import CardInspectModal from "../CardInspectModal.svelte";
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
+  import DeckPropSwitcher from "./DeckPropSwitcher.svelte";
   import type { CardSizeId } from "../../domain/card-sizes";
   import type { TnDElement } from "../../domain/tnd-element";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -40,6 +41,9 @@
     /** Reroll only makes sense for randomly-rolled decks (LOOP). TnD is a finite,
      *  deterministic enumeration, so the redraw button is hidden for it. */
     showRedraw?: boolean;
+    /** Show the deck prop switcher in the header (TnD decks — they have no
+     *  canonical prop; the switcher sets the live prop and re-renders). */
+    showPropSwitcher?: boolean;
     cardSize: CardSizeId;
     copies: number;
     groupByElement: boolean;
@@ -87,6 +91,7 @@
     onContextMenu,
     brokenLoopCount = 0,
     showRedraw = true,
+    showPropSwitcher = false,
     cardSize,
     copies,
     groupByElement,
@@ -214,6 +219,9 @@
     </div>
 
     <div class="action-buttons">
+      {#if showPropSwitcher}
+        <DeckPropSwitcher />
+      {/if}
       <CopyForAIButton
         getData={getAiSummary}
         variant="icon-text"

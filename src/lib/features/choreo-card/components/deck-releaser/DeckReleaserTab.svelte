@@ -75,6 +75,17 @@
   let pool = $state<Map<number, PoolEntry[]>>(new Map());
   let releasedIds = $state<Set<string>>(new Set());
   let releases = $state<DeckRelease[]>([]);
+  // All current releases are Timing & Direction decks; loop releasing is the new
+  // path and always stamps recipe.deckMode "loop". So "not explicitly loop"
+  // (incl. legacy releases with no recipe) groups under the TnD subsection;
+  // future loop releases fall to the general "Released Decks" section.
+  const isTnDRelease = (r: DeckRelease) => r.recipe?.deckMode !== "loop";
+  const tndReleases = $derived(releases.filter(isTnDRelease));
+  const loopReleases = $derived(releases.filter((r) => !isTnDRelease(r)));
+  // The deck on screen is TnD when composing TnD, or when viewing a TnD release.
+  const viewingTnD = $derived(
+    rs.viewingRelease ? isTnDRelease(rs.viewingRelease) : rs.deckMode === "tnd",
+  );
   let archivedDecks = $state<ArchivedDeckMeta[]>([]);
   let isLoadingArchive = $state(true);
   let isLoadingReleases = $state(true);
@@ -1126,8 +1137,16 @@
     // key matches what was stored (otherwise live setting changes force a
     // full re-render every view). Older decks have no prop snapshot → staff.
     rs.themeOverride = release.theme ?? null;
-    rs.bluePropOverride = (release.bluePropType as PropType | undefined) ?? null;
-    rs.redPropOverride = (release.redPropType as PropType | undefined) ?? null;
+    // TnD decks have no canonical prop — they follow the current prop setting so
+    // the in-deck switcher can change it. LOOP releases stay pinned to their
+    // release-time prop (their cached render matches the stored snapshot).
+    if (isTnDRelease(release)) {
+      rs.bluePropOverride = null;
+      rs.redPropOverride = null;
+    } else {
+      rs.bluePropOverride = (release.bluePropType as PropType | undefined) ?? null;
+      rs.redPropOverride = (release.redPropType as PropType | undefined) ?? null;
+    }
     rs.step = "review";
     rs.persist();
 
@@ -1189,6 +1208,7 @@
         readOnly={rs.viewingRelease !== null}
         brokenLoopCount={rs.brokenLoopCount}
         showRedraw={rs.deckMode === "loop"}
+        showPropSwitcher={viewingTnD}
         {footers}
         {onContextMenu}
         {cardSize}
@@ -1285,13 +1305,25 @@
           onDelete={handleDeleteArchived}
         />
         <ReleaseHistoryPanel
-          {releases}
+          title="Timing &amp; Direction Decks"
+          releases={tndReleases}
           isLoading={isLoadingReleases}
           activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
           onSelectRelease={handleSelectRelease}
           onDeleteRelease={handleDeleteRelease}
           onReuseRecipe={handleReuseRecipe}
         />
+        {#if loopReleases.length > 0}
+          <ReleaseHistoryPanel
+            title="Released Decks"
+            releases={loopReleases}
+            isLoading={isLoadingReleases}
+            activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
+            onSelectRelease={handleSelectRelease}
+            onDeleteRelease={handleDeleteRelease}
+            onReuseRecipe={handleReuseRecipe}
+          />
+        {/if}
       </div>
       {#if rs.step === "review" && rs.viewingRelease === null}
         <div class="sidebar-footer">
