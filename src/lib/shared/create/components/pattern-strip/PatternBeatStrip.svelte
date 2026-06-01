@@ -9,6 +9,9 @@
     label: string;
     color: "blue" | "red" | "hold";
     values: T[];
+    /** Per-cell "this cell can't take effect" mask (reversals: beat isn't
+     *  spinning). Aligned to `values`. Renders the cell dimmed + dashed. */
+    inert?: boolean[];
   }
   interface Props {
     lanes: Lane[];
@@ -72,12 +75,16 @@
             <button
               class="pbs-cell toggle {lane.color}"
               class:on={v !== base}
+              class:inert={lane.inert?.[bi]}
               role="switch"
               aria-checked={v !== base}
-              aria-label="{lane.label} beat {bi + 1}"
+              aria-label="{lane.label} beat {bi + 1}{lane.inert?.[bi] ? ' (no spin — reversal has no effect)' : ''}"
+              title={lane.inert?.[bi]
+                ? "This beat isn't spinning, so a reversal here has no effect"
+                : undefined}
               onclick={() => onEdit(li, bi, (v === base ? (valueList.find((x) => x !== base) ?? base) : base) as T)}
             >
-              <i class="fa-solid fa-rotate"></i>
+              <i class="fa-solid {lane.inert?.[bi] ? 'fa-ban' : 'fa-rotate'}"></i>
             </button>
           {/if}
         {/each}
@@ -125,6 +132,12 @@
   .pbs-cell.toggle.on { background: color-mix(in srgb, var(--theme-blue, #6f9bff) 30%, var(--theme-card-bg)); color: #fff; }
   .pbs-cell.toggle.on.red { background: color-mix(in srgb, var(--theme-red, #ff7a8a) 30%, var(--theme-card-bg)); }
   .pbs-cell.toggle:not(.on) i { opacity: .32; }
+
+  /* Inert: this beat doesn't spin, so a reversal here can't act. Dashed + dim,
+     and an "on" toggle here drops its bright fill to read as having no effect. */
+  .pbs-cell.inert { border-style: dashed; opacity: .55; }
+  .pbs-cell.toggle.on.inert { background: var(--theme-card-bg); color: var(--theme-text-dim); }
+  .pbs-cell.inert i { opacity: .5; }
   .pbs-pop {
     position: fixed; z-index: 50; display: grid; grid-template-columns: repeat(4, 54px); gap: 7px;
     background: var(--theme-panel-bg); border: 1px solid var(--theme-stroke); border-radius: 14px; padding: 10px;
