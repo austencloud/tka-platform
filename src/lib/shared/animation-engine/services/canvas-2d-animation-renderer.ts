@@ -148,6 +148,9 @@ export class Canvas2DAnimationRenderer {
   private lastBlueTransform: RenderedPropTransform | null = null;
   private lastRedTransform: RenderedPropTransform | null = null;
 
+  // One-time export-only prop-draw diagnostic flag (see renderScene).
+  private exportPropDiagLogged = false;
+
   // Track current grid mode for resize operations
   private currentGridMode: string = "diamond";
 
@@ -497,6 +500,41 @@ export class Canvas2DAnimationRenderer {
       }
 
       ctx.restore();
+    }
+
+    // One-time export-only diagnostic: we know the prop image/state/type/dims are
+    // all present, yet props don't appear in the exported video. Log the exact
+    // gate values (fade alphas + visibility flags) and the computed blue transform
+    // so we can see whether props are being alpha-gated to 0, visibility-gated, or
+    // drawn off-canvas. Gated on virtualTime (export path) + once per renderer.
+    if (params.virtualTime != null && !this.exportPropDiagLogged) {
+      this.exportPropDiagLogged = true;
+      let diagBlueTransform: unknown = null;
+      try {
+        if (params.blueProp) {
+          diagBlueTransform = this.calculatePropTransform(
+            params.blueProp,
+            params.bluePropDimensions,
+            canvasSize
+          );
+        }
+      } catch (e) {
+        diagBlueTransform = "calc-failed:" + String(e);
+      }
+      console.log("[export-prop-diag] draw", {
+        canvasSize,
+        currentTime: params.currentTime,
+        propsVisible: params.visibility?.propsVisible,
+        blueMotionVisible: params.visibility?.blueMotionVisible,
+        redMotionVisible: params.visibility?.redMotionVisible,
+        hideProps: params.trailSettings?.hideProps,
+        propsFadeAlpha: propsFadeState.alpha,
+        blueFadeAlpha: blueFadeState.alpha,
+        redFadeAlpha: redFadeState.alpha,
+        blueAlpha,
+        redAlpha,
+        blueTransform: diagBlueTransform,
+      });
     }
 
     // 5. Draw glyph (with fade transition)

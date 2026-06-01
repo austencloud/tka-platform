@@ -1017,6 +1017,9 @@ export class AnimationRenderLoop {
       bluePropType: params.bluePropType,
       redPropType: params.redPropType,
       qualityHints: this.frameBudgetMonitor?.getQualityHints(),
+      // Export-only discriminator: set on the renderFrame export path, undefined
+      // for live RAF rendering. Powers the one-time prop-draw export diagnostic.
+      virtualTime: params.virtualTime,
     });
 
     // Read prop transforms from Canvas2D renderer for fire coherence
