@@ -300,9 +300,14 @@
     const turns = `${rs.turnIntensity} turn${rs.turnIntensity === 1 ? "" : "s"}`;
     const gridMode = [...rs.selectedGridModes][0] ?? "diamond";
     const prop = pretty(String(rs.bluePropType));
-    // Concise recipe printed centered in each sheet's top margin. Mirrors the
-    // compose board: loop type, period, length, level, turns, grid, prop.
+    // The specific deck this card belongs to (released name, else its number),
+    // so a printed sheet names its deck alongside the recipe it was built from.
+    const deckLabel = rs.name?.trim() || `Deck #${deckRefPadded}`;
+    // Concise recipe printed centered in each sheet's top margin: the deck it
+    // belongs to, then the compose recipe (loop, period, length, level, turns,
+    // grid, prop).
     const deckSummary = [
+      deckLabel,
       cap(loop),
       period ? cap(period) : null,
       `${rs.selectedLength}-step`,
