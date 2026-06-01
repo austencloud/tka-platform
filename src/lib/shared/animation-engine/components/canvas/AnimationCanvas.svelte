@@ -1,4 +1,4 @@
-it's probably like the rules of like you know maintaining the size and transforming them into ways yeah you do code right yeah yeah I mean I have the code right here I can look at it right away but I mean<!--
+<!--
   AnimationCanvas.svelte
 
   Wraps AnimatorCanvas with styling container.

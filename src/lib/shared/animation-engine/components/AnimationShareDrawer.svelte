@@ -563,6 +563,10 @@
     display: none; /* Hide controls when settings sheet is open */
   }
 
+  .content-wrapper.settings-open .canvas-overlay-host {
+    flex: 0 0 auto;
+  }
+
   /* Small devices (iPhone SE, small phones): Canvas expands to fill space */
   @media (max-width: 430px) and (max-height: 752px) {
     .canvas-container {
