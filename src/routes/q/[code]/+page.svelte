@@ -456,9 +456,6 @@
     </div>
   {:else if pageState.kind === "playing" && AnimationPlayerComponent && resolvedSeq}
     <div class="player-layout" class:sidebar-mode={isSidebarLayout}>
-      <div class="word-title">
-        <TKAWordGlyph word={rawWord} height={28} darkMode />
-      </div>
       <div class="canvas-area">
         <AnimationPlayerComponent
           sequence={resolvedSeq}
@@ -480,7 +477,11 @@
           error={exportProgress?.error ?? null}
           onCancel={() => { isExporting = false; }}
           onRetry={handleDownload}
-        />
+        >
+          {#snippet title()}
+            <TKAWordGlyph word={rawWord} height={28} darkMode />
+          {/snippet}
+        </ExportTakeover>
       </div>
 
       <div class="controls-column">
@@ -496,6 +497,7 @@
               isPlaying={isPlaying}
               bpm={selectedBpm}
               renderMode="2d"
+              showInlineExportProgress={false}
               playbackMode={playbackModeLocal}
               selectedPropType={selectedProp}
               onPropChange={handlePropChange}
@@ -553,13 +555,6 @@
     max-width: 400px;
     width: 100%;
     padding: 1rem;
-  }
-
-  .word-title {
-    display: flex;
-    justify-content: center;
-    margin: 0;
-    flex-shrink: 0;
   }
 
   .status-text {
@@ -690,26 +685,22 @@
   .player-layout.sidebar-mode {
     display: grid;
     grid-template-columns: 1fr 260px;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: 1fr;
     align-items: stretch;
     padding: 8px 12px;
     gap: 8px;
   }
 
-  .sidebar-mode .word-title {
-    grid-column: 1 / -1;
-  }
-
   .sidebar-mode .canvas-area {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 1;
     max-width: none;
     min-height: 0;
   }
 
   .sidebar-mode .controls-column {
     grid-column: 2;
-    grid-row: 2;
+    grid-row: 1;
     max-width: none;
     overflow: hidden;
   }

@@ -19,6 +19,10 @@
     centerpiece?: Snippet;
     /** Optional floating diagnostics card. */
     diag?: Snippet;
+    /** Optional header inside the panel, above the ring — e.g. the sequence word.
+     *  The live canvas (and its own word header) is hidden behind the scrim during
+     *  export, so consumers can surface the word here next to the progress ring. */
+    title?: Snippet;
   }
 
   let {
@@ -31,6 +35,7 @@
     opaque = false,
     centerpiece,
     diag,
+    title,
   }: Props = $props();
 
   let reduceMotion = $state(
@@ -97,6 +102,9 @@
       tabindex="-1"
       transition:fly={{ y: 28, duration: dur(340), easing: cubicOut }}
     >
+      {#if title}
+        <div class="takeover-title">{@render title()}</div>
+      {/if}
       {#if phase === "error"}
         <p class="takeover-msg error" role="alert"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Export failed</p>
         <p class="takeover-sub">{error}</p>
@@ -154,6 +162,13 @@
     -webkit-backdrop-filter: none;
   }
   .takeover-stage { display: flex; align-items: center; justify-content: center; }
+  .takeover-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 2px;
+  }
   .takeover-panel {
     display: flex;
     flex-direction: column;

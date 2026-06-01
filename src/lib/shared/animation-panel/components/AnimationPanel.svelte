@@ -64,6 +64,11 @@
     onExport: () => void;
     onCancel?: () => void;
     secondaryAction?: { label: string; href: string; icon?: string };
+    /** Render the panel's own inline export progress bar while exporting. Set
+     *  false when the parent shows a full ExportTakeover over the canvas — the
+     *  panel sits outside the takeover scrim, so its inline bar would be a second,
+     *  redundant progress UI. Default true preserves standalone consumers. */
+    showInlineExportProgress?: boolean;
   }
 
   let {
@@ -85,6 +90,7 @@
     onExport,
     onCancel,
     secondaryAction,
+    showInlineExportProgress = true,
   }: Props = $props();
 
   const exportButtonLabel = $derived(renderMode === '3d' ? 'Record Scene' : 'Download Animation');
@@ -487,7 +493,7 @@
     role="region"
     aria-label="Animation export"
   >
-    {#if isExporting}
+    {#if isExporting && showInlineExportProgress}
       <div class="mobile-progress" role="status" aria-live="polite">
         <div class="progress-info">
           <span class="progress-stage">
@@ -571,7 +577,7 @@
         </div>
 
         <div class="panel-footer">
-          {#if isExporting}
+          {#if isExporting && showInlineExportProgress}
             <div class="export-progress-row" role="status" aria-live="polite">
               <div class="progress-info">
                 <span class="progress-stage">
