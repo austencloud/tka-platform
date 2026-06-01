@@ -329,6 +329,22 @@ self.onmessage = (event: MessageEvent<CompositionWorkerInMessage>) => {
       })();
       break;
 
+    case "update-overrides":
+      // Re-seed the override resolver seam in place (arrow placements changed via
+      // Fix Arrows). Cheap: rebuilds the four *State instances from the new bundle
+      // and re-registers resolvers — the asset/SVG caches are untouched.
+      (async () => {
+        try {
+          const { seedOverrideResolvers } = await import(
+            "../services/seed-override-resolvers"
+          );
+          seedOverrideResolvers(msg.overrideBundle);
+        } catch (err) {
+          console.error("[composition.worker] update-overrides failed:", err);
+        }
+      })();
+      break;
+
     case "compose":
       handleCompose(msg).catch((err) => {
         console.error("[composition.worker] Compose failed:", err);

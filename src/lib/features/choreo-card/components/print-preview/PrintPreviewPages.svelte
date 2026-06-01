@@ -17,6 +17,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import { deckCardBlobCache, blobToDataUrl, canvasToBlob } from "../../services/DeckCardBlobCache";
   import { hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
+  import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
+  import { buildOverridePlacementBundle } from "$lib/shared/render/services/override-placement-bundle";
   import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
 
   // Render-schema version baked into every card cache key (memory + IndexedDB).
@@ -172,6 +174,20 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   function capitalize(s: string | null): string {
     return s ? s[0]!.toUpperCase() + s.slice(1) : "";
+  }
+
+  // Push the latest arrow-placement overrides (special/default/global/prop-geom)
+  // into the warm worker pool before composing. The seeded worker bundle is set
+  // once at pool init, so a Fix-Arrows save made afterward would otherwise never
+  // reach the worker — the re-rendered card would show the OLD arrow position.
+  // Cheap (re-seeds resolver state only, not the asset/SVG caches); call once per
+  // render run, not per card.
+  function refreshOverrideBundle(): void {
+    try {
+      getCompositionDispatcher().updateOverrideBundle(buildOverridePlacementBundle());
+    } catch (err) {
+      console.warn("[PrintPreview] override bundle refresh failed:", err);
+    }
   }
 
   interface SheetSlot {
@@ -378,6 +394,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     prepDone = 0;
     prepTotal = 0;
     renderedCards = [];
+    // Sync the worker pool with any arrow overrides saved since it was seeded, so
+    // freshly-edited placements render (not the stale init-time bundle).
+    refreshOverrideBundle();
     // Per-card piece budgets (one piece per beat). Cached/fast cards count as
     // instantly placed; live renders fill in via per-beat progress callbacks.
     const perCardPieces = seqs.map((s) => Math.max(1, s.steps?.length ?? 1));
@@ -550,6 +569,10 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     const cacheKey = buildCacheKey(seq, stepCount, index);
     cardCache.delete(cacheKey);
     deckCardBlobCache.delete(cacheKey).catch(() => {});
+
+    // A single-card refresh is the explicit "I just fixed this card's arrows"
+    // path — push the saved overrides to the worker before recomposing.
+    refreshOverrideBundle();
 
     const frontCanvas = await renderer.renderFront(seq, options);
     const backCanvas = await renderer.renderBack(seq, options);

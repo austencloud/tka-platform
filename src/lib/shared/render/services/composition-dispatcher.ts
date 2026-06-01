@@ -32,6 +32,13 @@ export type CompositionWorkerInMessage =
       qrBitmap: ImageBitmap | null;
     }
   | { type: "cancel"; id: number }
+  | {
+      // Re-seed ONLY the override resolver seam (arrow placements) on a warm
+      // worker, without tearing down the expensive asset/SVG caches. Sent after
+      // the user saves a Fix-Arrows adjustment so the next compose reflects it.
+      type: "update-overrides";
+      overrideBundle: import("./override-placement-bundle").OverridePlacementBundle;
+    }
   | { type: "probe" };
 
 export type CompositionWorkerOutMessage =
@@ -105,6 +112,24 @@ export class CompositionDispatcher {
   /** Set the override placement bundle seeded into each worker at init. */
   setOverrideBundle(bundle: import("./override-placement-bundle").OverridePlacementBundle): void {
     this.pendingOverrideBundle = bundle;
+  }
+
+  /**
+   * Push a fresh override bundle to a WARM pool without re-seeding its (expensive)
+   * asset caches. Updates the pending bundle so any worker initialized later seeds
+   * fresh, and posts `update-overrides` to every live worker so the NEXT compose
+   * reflects the change. Per-worker message order is FIFO, so a compose posted
+   * after this call is processed by the re-seeded worker. No-op-safe before init
+   * (pending bundle alone suffices — init will seed it).
+   */
+  updateOverrideBundle(bundle: import("./override-placement-bundle").OverridePlacementBundle): void {
+    this.pendingOverrideBundle = bundle;
+    for (const entry of this.workers) {
+      entry.worker.postMessage({
+        type: "update-overrides",
+        overrideBundle: bundle,
+      } satisfies CompositionWorkerInMessage);
+    }
   }
 
   /** Record the bundle signature that the next initPool will mark as seeded. */
