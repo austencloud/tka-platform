@@ -43,7 +43,6 @@
   import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
-  import ViewerSplitPane from "$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte";
   import ToastContainer from "$lib/shared/toast/components/ToastContainer.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
   import type { ExportPhase } from "$lib/shared/video-export/components/ExportTakeover.svelte";
@@ -120,6 +119,11 @@
   // first paint (the word-glyph loader) isn't blocked by the viewer chunk.
   let OrchestratorComponent:
     | typeof import("$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte").default
+    | null = $state(null);
+  // ViewerSplitPane lazy-loads alongside the orchestrator (it pulls the 2D pane
+  // components), so the word-glyph loader paints before the viewer chunk lands.
+  let ViewerSplitPaneComponent:
+    | typeof import("$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte").default
     | null = $state(null);
 
   // Comparison-mode layout for the embedded split pane. Defaults to the
@@ -315,11 +319,12 @@
       setProgress(35);
       trickleTo(85);
 
-      const [seq_, OrchestratorModule] = await Promise.all([
+      const [seq_, OrchestratorModule, SplitPaneModule] = await Promise.all([
         shortCodeManager.resolveShortCode(shortCode),
         getGlyphCache().initialize().then(() =>
           import("$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte")
         ),
+        import("$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte"),
       ]);
 
       let seq = seq_;
@@ -358,6 +363,7 @@
       }
 
       OrchestratorComponent = OrchestratorModule.default;
+      ViewerSplitPaneComponent = SplitPaneModule.default;
 
       if (!isInlineEncoded(shortCode) && isGenuineScan(shortCode)) {
         captureEvent("card_scanned", {
@@ -450,8 +456,8 @@
       {#snippet children(ctx)}
         <div class="player-layout" class:sidebar-mode={isSidebarLayout}>
           <div class="canvas-area">
-            {#if ctx.effectiveSequence}
-            <ViewerSplitPane
+            {#if ctx.effectiveSequence && ViewerSplitPaneComponent}
+            <ViewerSplitPaneComponent
               sequence={ctx.effectiveSequence}
               renderMode="2d"
               bpm={ctx.bpmLocal}
