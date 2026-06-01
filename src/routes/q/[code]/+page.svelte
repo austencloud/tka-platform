@@ -35,6 +35,7 @@
   import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { createExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
+  import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
@@ -43,6 +44,8 @@
   import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
   import type { ExportPhase } from "$lib/shared/video-export/components/ExportTakeover.svelte";
+  import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
+  import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
 
   const BASE_BPM = 60;
 
@@ -167,6 +170,20 @@
   );
   const drawerLayout = $derived<"sidebar" | "bottom">(isSidebarLayout ? "sidebar" : "bottom");
 
+  // ── Mobile-portrait transport relocation ──
+  // Mirror the sequence viewer: in portrait mobile, strip the canvas-attached
+  // scrubber, let a tap on the canvas toggle play/pause, and relocate the shared
+  // UnifiedTimeline scrubber to a full-width bar below the canvas (down south).
+  // Header stays. Landscape/desktop keep the canvas-attached bar.
+  const showMobileTransport = $derived(!isSidebarLayout && !!playbackController);
+  const mobileTransportAdapter = createAnimatorPlaybackAdapter({
+    getCurrentStep: () => animPanelState?.currentStep ?? 0,
+    getSteps: () => animPanelState?.sequenceData?.steps ?? resolvedSeq?.steps ?? [],
+    getIsPlaying: () => animPanelState?.isPlaying ?? false,
+    onSeek: (target) => playbackController?.seekToStep(target),
+    onTogglePlay: () => playbackController?.togglePlayback(),
+  });
+
   // ── OG metadata ──
   const rawWord = $derived(
     (pageState.kind === "playing"
@@ -277,12 +294,11 @@
         }
       );
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${seqWord}.mp4`;
-      a.click();
-      URL.revokeObjectURL(url);
+      // Mobile: open the native share sheet so the user picks where the MP4 goes
+      // (Files, Photos, a message…) instead of a blind background download.
+      // Desktop: straight to disk. Gate is device-based — desktop Chrome supports
+      // navigator.share too, but the user wants the sheet only on mobile.
+      await shareOrDownloadBlob(blob, `${seqWord}.mp4`, { title: seqWord });
     } catch (err) {
       console.error("[QR] Download failed:", err);
     } finally {
@@ -464,6 +480,8 @@
           bluePropType={selectedProp}
           redPropType={selectedProp}
           previewDarkMode={true}
+          hideProgressBar={showMobileTransport}
+          tapToToggle={showMobileTransport}
           onControllerReady={(ctrl, state) => {
             playbackController = ctrl;
             animPanelState = state;
@@ -483,6 +501,12 @@
           {/snippet}
         </ExportTakeover>
       </div>
+
+      {#if showMobileTransport}
+        <div class="mobile-transport-bar" data-swipe-block>
+          <UnifiedTimeline playback={mobileTransportAdapter} hidePlay />
+        </div>
+      {/if}
 
       <div class="controls-column">
         <div class="drawer-host">
@@ -678,6 +702,27 @@
 
   .drawer-host {
     width: 100%;
+  }
+
+  /* ── Relocated mobile-portrait transport (matches sequence viewer) ── */
+
+  .mobile-transport-bar {
+    width: 100%;
+    max-width: 480px;
+    min-width: 0;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  /* Match the page's solid dark panel surface instead of the floating-overlay
+     glass the pill wears inside a canvas, and shave vertical padding so the bar
+     stays compact on short phones. */
+  .mobile-transport-bar :global(.transport-pill) {
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    backdrop-filter: none;
+    border-top-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    padding-top: 4px;
+    padding-bottom: 4px;
   }
 
   /* ── Sidebar mode (landscape + desktop) ── */
