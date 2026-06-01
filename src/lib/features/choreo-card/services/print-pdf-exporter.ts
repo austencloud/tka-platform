@@ -68,7 +68,7 @@ export interface HomePrintOptions {
 	/** Document metadata embedded in the PDF (title / subject / keywords) so a
 	 *  downloaded file is indexable by deck reference + contents without opening.
 	 *  `deckSummary` also prints centered in each sheet's top margin (the recipe:
-	 *  e.g. "Rotated · Quartered · 1 turn · L1"). */
+	 *  e.g. "Rotated · Quartered · 8-step · L1 · 1 turn · Diamond · Staff"). */
 	meta?: { title?: string; subject?: string; keywords?: string[]; deckSummary?: string };
 }
 

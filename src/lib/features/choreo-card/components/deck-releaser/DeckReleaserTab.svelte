@@ -275,20 +275,27 @@
     ];
     const count = sortedSequences.length;
     const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
+    const pretty = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
     const turns = `${rs.turnIntensity} turn${rs.turnIntensity === 1 ? "" : "s"}`;
-    // Concise recipe printed centered in each sheet's top margin.
+    const gridMode = [...rs.selectedGridModes][0] ?? "diamond";
+    const prop = pretty(String(rs.bluePropType));
+    // Concise recipe printed centered in each sheet's top margin. Mirrors the
+    // compose board: loop type, period, length, level, turns, grid, prop.
     const deckSummary = [
       cap(loop),
       period ? cap(period) : null,
       `${rs.selectedLength}-step`,
       `L${level}`,
       turns,
+      cap(gridMode),
+      prop,
     ].filter(Boolean).join("  ·  ");
     return {
       title: `Deck ${deckRefPadded} — ${count} cards`,
       subject:
         `LOOP ${loop} · ${rs.selectedLength}-step · L${level}` +
-        `${period ? ` · ${period}` : ""} · ${count} cards. Words: ${words.join(", ")}`,
+        `${period ? ` · ${period}` : ""} · ${cap(gridMode)} · ${prop} · ${count} cards.` +
+        ` Words: ${words.join(", ")}`,
       keywords: words,
       deckSummary,
     };
@@ -579,6 +586,35 @@
     if (savedDeckNumber || rs.viewingRelease) return;
     if (rs.step !== "review" || rs.cards.length === 0) return;
     if (rs.sequences.length === rs.cards.length) return;
+
+    // Live-generated decks can't be re-derived from a catalog — their cards
+    // carry sourceCatalogId "live-gen" with synthetic ids, so loadSequencesByIds
+    // returns nothing. Restore their exact sequences/cards from the IndexedDB
+    // archive instead, keyed by the persisted reference number.
+    const isLiveGen = rs.cards.some((c) => c.sourceCatalogId === "live-gen");
+    if (isLiveGen) {
+      if (rs.referenceNumber > 0) {
+        const payload = await getArchivedDeck(rs.referenceNumber);
+        if (payload?.sequences.length) {
+          rs.sequences = payload.sequences;
+          rs.cards = payload.cards;
+          prewarmCardPool({
+            sequences: rs.sequences,
+            bluePropType: rs.bluePropType,
+            redPropType: rs.redPropType,
+            theme: rs.theme,
+            iconPaths: rs.cards.map((c) => c.footer?.iconPath).filter((p): p is string => !!p),
+          });
+          const warmSeq = rs.sequences[0];
+          if (warmSeq) warmCardBackCaches(warmSeq, rs.theme);
+          return;
+        }
+      }
+      // No archived payload to recover from — can't rebuild a live-gen deck.
+      toast.info("This generated deck's cards couldn't be restored. Redraw to rebuild it.");
+      return;
+    }
+
     const gen = ++rs.drawGeneration;
     await loadSelectedSequences(gen);
   }
