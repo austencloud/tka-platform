@@ -84,30 +84,38 @@
   // 26/36 can't linger now that the size tile is gone.
   $effect(() => { if (rs.totalCards !== 52) rs.totalCards = 52; });
 
-  // Length: one fixed step count, every card that length. Replaces the old
-  // weighted step-mix — picking a length puts ALL weight on that one bucket.
-  const LENGTHS = [4, 8, 12, 16];
-  function deriveLength(ws: StepCountWeight[]): number {
-    const top = ws.filter((w) => w.weight > 0).sort((a, b) => b.weight - a.weight)[0];
-    return top?.stepCount ?? 8;
-  }
+  // Length: one fixed step count, every card that length. Only the lengths
+  // ACTUALLY enumerated for the current loop/level/period are offered — picking a
+  // length with no catalog would zero every weight and make Draw impossible.
+  const availableLengths = $derived(
+    weights.filter((w) => w.available > 0).map((w) => w.stepCount).sort((a, b) => a - b),
+  );
   let selectedLength = $state<number>(8);
   function applyLength(n: number) {
     for (const w of weights) onWeightChange(w.stepCount, w.stepCount === n ? 100 : 0);
   }
+  function nearest(ls: number[], n: number): number {
+    return ls.reduce((best, l) => (Math.abs(l - n) < Math.abs(best - n) ? l : best), ls[0]!);
+  }
   function stepLength(dir: number) {
-    const i = LENGTHS.indexOf(selectedLength);
-    selectedLength = LENGTHS[Math.max(0, Math.min(LENGTHS.length - 1, i + dir))]!;
+    const ls = availableLengths;
+    if (!ls.length) return;
+    const i = ls.indexOf(selectedLength);
+    selectedLength = ls[Math.max(0, Math.min(ls.length - 1, (i < 0 ? 0 : i) + dir))]!;
     applyLength(selectedLength);
   }
-  // First time the pool's weights are known, collapse them to a single length so
-  // the deck is single-length from the start (the new model — no weighted mix).
-  let lengthInit = false;
+  // When the pool shape changes (level / period / loop-type change), keep the deck
+  // a single AVAILABLE length: snap to the nearest enumerated length and collapse
+  // weights onto it, so Draw is never stuck with all-zero weights.
+  let lastShape = "";
   $effect(() => {
-    if (!lengthInit && weights.length > 0) {
-      lengthInit = true;
-      selectedLength = deriveLength(weights);
-      applyLength(selectedLength);
+    const shape = availableLengths.join(",");
+    if (shape !== lastShape) {
+      lastShape = shape;
+      if (availableLengths.length > 0) {
+        if (!availableLengths.includes(selectedLength)) selectedLength = nearest(availableLengths, selectedLength);
+        applyLength(selectedLength);
+      }
     }
   });
 
@@ -173,8 +181,7 @@
   const effectiveTotal = $derived(
     loopDrawCounts(totalCards, startOriModes.size, gridModes.size).effective,
   );
-  const available = $derived(rs.weights.reduce((s, w) => s + w.available, 0));
-  const showCoverageHint = $derived(!rs.isLoadingPools && available === 0);
+  const showCoverageHint = $derived(!rs.isLoadingPools && availableLengths.length === 0);
 
   // ── modals ───────────────────────────────────────────────────────────────
   let showLoop = $state(false);
@@ -219,7 +226,7 @@
       <BaseCard title="Loop Type" currentValue={LOOP_TYPE_LABELS[currentLoop]} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
     </div>
     <div class="tile">
-      <StepperCard title="Length" currentValue={selectedLength} minValue={4} maxValue={16} description="STEP COUNT" color={c.length.color} shadowColor={c.length.shadowColor} gridColumnSpan={2} onIncrement={() => stepLength(1)} onDecrement={() => stepLength(-1)} />
+      <StepperCard title="Length" currentValue={selectedLength} minValue={availableLengths[0] ?? 4} maxValue={availableLengths.at(-1) ?? 16} description="STEP COUNT" color={c.length.color} shadowColor={c.length.shadowColor} gridColumnSpan={2} onIncrement={() => stepLength(1)} onDecrement={() => stepLength(-1)} />
     </div>
     <div class="tile">
       <StepperCard title="Level" currentValue={currentLevel} minValue={1} maxValue={3} description="BASE MOTIONS" color={c.level.color} shadowColor={c.level.shadowColor} gridColumnSpan={2} onIncrement={() => setLevel(currentLevel + 1)} onDecrement={() => setLevel(currentLevel - 1)} />
