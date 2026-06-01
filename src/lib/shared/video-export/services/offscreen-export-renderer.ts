@@ -79,6 +79,11 @@ export class OffscreenExportRenderer {
   private prevBeatPos: number | null = null;
   private prevTargetMs = 0;
 
+  // One-time export diagnostic guard — logs the first sub-step's prop state once
+  // per export, reset in resetClock() so a second export in the same session logs
+  // again. See the [export-prop-diag] logs in initialize()/renderSubStep().
+  private firstFrameDiagLogged = false;
+
   constructor(
     private readonly playback: AnimationPlaybackController,
     private readonly panelState: AnimationPanelState,
@@ -136,6 +141,40 @@ export class OffscreenExportRenderer {
     const red = init.redPropType ?? "staff";
     await this.handle.engine.prepareExportPropTypes(blue, red, darkMode);
 
+    // One-time export diagnostic — confirms the three facts that decide whether
+    // props render in the export: the resolved prop image is present, the engine
+    // state carries the right prop type, and the prop dimensions are non-default.
+    // Logged once per export (not per frame) so it's low-noise; helps diagnose
+    // "props missing in export" reports from production without a rebuild.
+    // The renderer (IAnimationRenderer) exposes getBlue/RedPropDimensions()
+    // publicly, but the prop IMAGE getters live on its private imageLoader
+    // (Canvas2DImageLoader.getBlue/RedPropImage); reach them via an unknown cast
+    // since this is a read-only diagnostic with no behavior change.
+    try {
+      const renderer = this.handle.context.renderer;
+      const loader = (renderer as unknown as {
+        imageLoader?: {
+          getBluePropImage?: () => unknown;
+          getRedPropImage?: () => unknown;
+        };
+      }).imageLoader;
+      const blueImg = loader?.getBluePropImage?.() ?? null;
+      const redImg = loader?.getRedPropImage?.() ?? null;
+      const blueDims = renderer.getBluePropDimensions?.() ?? null;
+      const redDims = renderer.getRedPropDimensions?.() ?? null;
+      console.log("[export-prop-diag] init", {
+        requestedBlue: blue,
+        requestedRed: red,
+        darkMode,
+        bluePropImagePresent: !!blueImg,
+        redPropImagePresent: !!redImg,
+        bluePropDimensions: blueDims,
+        redPropDimensions: redDims,
+      });
+    } catch (e) {
+      console.warn("[export-prop-diag] init failed", e);
+    }
+
     if (init.needsFluidWarmup) {
       // Deterministic warmup: render the start position repeatedly so the fluid
       // sim reaches steady state, then discard the warmup trail so it doesn't
@@ -167,6 +206,10 @@ export class OffscreenExportRenderer {
     this.accumulatorMs = 0;
     this.prevBeatPos = null;
     this.prevTargetMs = 0;
+    // Re-arm the first-frame diagnostic so a second export in the same session
+    // logs again (warmup calls resetClock(), so this stays armed through warmup
+    // until the first real captured sub-step).
+    this.firstFrameDiagLogged = false;
   }
 
   /**
@@ -233,6 +276,21 @@ export class OffscreenExportRenderer {
       previewDarkMode: this.init.previewDarkMode,
     };
     const props = assembleExportEngineProps(this.panelState, frameCtx);
+
+    // One-time first-frame diagnostic — logs whether the prop POSITION state is
+    // non-null and what TYPE resolved, exactly once per export (guarded by the
+    // flag, reset in resetClock()). Pairs with the init-time image/dimension log:
+    // together they pinpoint "props missing in export" (image not loaded vs. null
+    // position state vs. wrong resolved type) without a rebuild.
+    if (!this.firstFrameDiagLogged) {
+      this.firstFrameDiagLogged = true;
+      console.log("[export-prop-diag] frame0", {
+        bluePropPresent: !!props.blueProp,
+        redPropPresent: !!props.redProp,
+        bluePropType: props.bluePropType,
+        redPropType: props.redPropType,
+      });
+    }
 
     // Feed the capturer at the same cadence the WebGL2 overlay captures its own
     // ring, so the canvas2D fallback path (if ever active) stays consistent.
