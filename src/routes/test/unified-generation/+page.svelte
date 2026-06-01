@@ -319,12 +319,15 @@
         <!-- Period chosen alongside the loop; it shows on the Loop card. -->
         <div class="loop-period">
           <span class="lp-label">Period</span>
-          <SegmentedControl
-            options={[{ value: "quartered", label: "Quartered" }, { value: "halved", label: "Halved" }]}
-            value={period}
-            onchange={(v: "quartered" | "halved") => (period = v)}
-            color="accent"
-          />
+          <div class="lp-seg">
+            <SegmentedControl
+              options={[{ value: "quartered", label: "Quartered" }, { value: "halved", label: "Halved" }]}
+              value={period}
+              onchange={(v: "quartered" | "halved") => (period = v)}
+              color="accent"
+              size="sm"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -629,13 +632,16 @@
     position: relative !important; inset: auto !important;
     width: 100%; max-height: 82vh;
   }
-  .loop-host :global(.grid-container) { min-height: 260px; }
+  /* Let the loop grid size to its cards — no forced min-height (was 260px → dead space). */
+  .loop-host :global(.grid-container) { flex: 0 0 auto; }
   .loop-period {
-    flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 16px;
-    padding: 12px 16px; background: rgba(0, 0, 0, 0.28);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 14px;
+    padding: 10px 16px; background: rgba(0, 0, 0, 0.28);
     border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px;
   }
-  .lp-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255, 255, 255, 0.72); }
+  .lp-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255, 255, 255, 0.72); }
+  /* Compact period toggle (mirrors .pos-gridmode): capped width, smaller touch floor. */
+  .lp-seg { width: clamp(220px, 46%, 340px); --min-touch-target: 34px; }
   .po-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .po-header h3 { margin: 0; font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 0.3px; }
   .po-close {
