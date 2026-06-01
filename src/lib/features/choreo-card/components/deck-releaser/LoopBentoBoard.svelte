@@ -25,7 +25,6 @@
   import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import TransformPanel from "./TransformPanel.svelte";
-  import { loopDrawCounts } from "../../services/deck-composer";
   import { type VariationConfig, type StartOriMode } from "../../services/deck-variation";
   import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
   import type { StepCountWeight } from "../../domain/models/DeckRelease";
@@ -48,8 +47,6 @@
     onToggleStartOriMode: (mode: StartOriMode) => void;
     onToggleGridMode: (mode: "diamond" | "box") => void;
     onReversalChange?: (pattern: ResolvedReversalPattern) => void;
-    /** Rebuild the LOOP pool from current dials (loop type / level / period). */
-    onRebuildPool: () => void;
   }
 
   let {
@@ -68,7 +65,6 @@
     onToggleStartOriMode,
     onToggleGridMode,
     onReversalChange,
-    onRebuildPool,
   }: Props = $props();
 
   const c = getCardColors(BackgroundType.COSMIC);
@@ -84,49 +80,22 @@
   // 26/36 can't linger now that the size tile is gone.
   $effect(() => { if (rs.totalCards !== 52) rs.totalCards = 52; });
 
-  // Length: one fixed step count, every card that length. Only the lengths
-  // ACTUALLY enumerated for the current loop/level/period are offered — picking a
-  // length with no catalog would zero every weight and make Draw impossible.
-  const availableLengths = $derived(
-    weights.filter((w) => w.available > 0).map((w) => w.stepCount).sort((a, b) => a - b),
-  );
-  let selectedLength = $state<number>(8);
-  function applyLength(n: number) {
-    for (const w of weights) onWeightChange(w.stepCount, w.stepCount === n ? 100 : 0);
-  }
-  function nearest(ls: number[], n: number): number {
-    return ls.reduce((best, l) => (Math.abs(l - n) < Math.abs(best - n) ? l : best), ls[0]!);
-  }
+  // Length: one fixed step count — every card is GENERATED live at this length.
+  // Live generation makes any length at any level, so the full range is open (no
+  // enumerated-pool restriction). Multiples of 4 keep halved + quartered seeds whole.
+  const LENGTHS = [4, 8, 12, 16];
   function stepLength(dir: number) {
-    const ls = availableLengths;
-    if (!ls.length) return;
-    const i = ls.indexOf(selectedLength);
-    selectedLength = ls[Math.max(0, Math.min(ls.length - 1, (i < 0 ? 0 : i) + dir))]!;
-    applyLength(selectedLength);
+    const i = LENGTHS.indexOf(rs.selectedLength);
+    rs.selectedLength = LENGTHS[Math.max(0, Math.min(LENGTHS.length - 1, (i < 0 ? 1 : i) + dir))]!;
+    rs.persist();
   }
-  // When the pool shape changes (level / period / loop-type change), keep the deck
-  // a single AVAILABLE length: snap to the nearest enumerated length and collapse
-  // weights onto it, so Draw is never stuck with all-zero weights.
-  let lastShape = "";
-  $effect(() => {
-    const shape = availableLengths.join(",");
-    if (shape !== lastShape) {
-      lastShape = shape;
-      if (availableLengths.length > 0) {
-        if (!availableLengths.includes(selectedLength)) selectedLength = nearest(availableLengths, selectedLength);
-        applyLength(selectedLength);
-      }
-    }
-  });
 
-  // Style axes (match the prototype's Smooth/Mixed/Choppy steppers). Props drives
-  // per-card prop-reversal density (live, → reversalFrequency); Hands + Dashes are
-  // recorded into the recipe as intent for the live-generation phase.
+  // Style axes (the prototype's Smooth/Mixed/Choppy steppers) — all LIVE generation
+  // constraints: Props → constraintPreset, Hands → handPathMode, Dashes → motionTypeFilter.
   const PROP_STYLES = ["smooth", "mixed", "choppy"] as const;
   const PROP_LABELS = ["Smooth", "Mixed", "Choppy"];
   const DASH_STYLES = ["low", "mixed", "high"] as const;
   const DASH_LABELS = ["Low", "Mixed", "High"];
-  const PROP_FREQ: Record<string, number> = { smooth: 0, mixed: 0.4, choppy: 0.7 };
   const STYLE_COLORS = {
     props: { color: c.continuity.color, shadow: c.continuity.shadowColor },
     hands: { color: "linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%)", shadow: "245deg 70% 55%" },
@@ -136,9 +105,7 @@
   const handIdx = $derived(PROP_STYLES.indexOf(rs.handStyle));
   const dashIdx = $derived(DASH_STYLES.indexOf(rs.dashStyle));
   function stepProp(dir: number) {
-    const next = PROP_STYLES[Math.max(0, Math.min(2, propIdx + dir))]!;
-    rs.propStyle = next;
-    onVariationConfigChange({ ...variationConfig, reversalFrequency: PROP_FREQ[next]! });
+    rs.propStyle = PROP_STYLES[Math.max(0, Math.min(2, propIdx + dir))]!;
     rs.persist();
   }
   function stepHand(dir: number) {
@@ -178,10 +145,8 @@
     `${[...startOriModes].map((m) => ORI_LABEL[m] ?? m).join(", ")} · ${[...gridModes].map(cap).join("/")}`,
   );
 
-  const effectiveTotal = $derived(
-    loopDrawCounts(totalCards, startOriModes.size, gridModes.size).effective,
-  );
-  const showCoverageHint = $derived(!rs.isLoadingPools && availableLengths.length === 0);
+  // Total cards is fixed at 52.
+  const effectiveTotal = 52;
 
   // ── modals ───────────────────────────────────────────────────────────────
   let showLoop = $state(false);
@@ -193,24 +158,17 @@
     loopComponents = parseLoopComponents(lt);
     showLoop = false;
     rs.persist();
-    onRebuildPool();
   }
   function setLevel(n: number) {
     rs.selectedLevels = new Set([Math.max(1, Math.min(3, n))]);
     rs.persist();
-    onRebuildPool();
   }
-  // Period cycles Quartered → Halved → Both → Quartered (the deck's slice axis).
+  // Period cycles Quartered → Halved (live gen uses one period per card).
   function cyclePeriod() {
-    const hasQ = selectedSliceTypes.has("quartered");
-    const hasH = selectedSliceTypes.has("halved");
-    let next: Set<"halved" | "quartered">;
-    if (hasQ && !hasH) next = new Set(["halved"]);
-    else if (hasH && !hasQ) next = new Set(["quartered", "halved"]);
-    else next = new Set(["quartered"]);
-    rs.selectedSliceTypes = next;
+    rs.selectedSliceTypes = rs.selectedSliceTypes.has("quartered")
+      ? new Set(["halved"])
+      : new Set(["quartered"]);
     rs.persist();
-    onRebuildPool();
   }
   function cycleTurns() {
     // Resolve current preset from frequency, advance to the next.
@@ -226,7 +184,7 @@
       <BaseCard title="Loop Type" currentValue={LOOP_TYPE_LABELS[currentLoop]} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
     </div>
     <div class="tile">
-      <StepperCard title="Length" currentValue={selectedLength} minValue={availableLengths[0] ?? 4} maxValue={availableLengths.at(-1) ?? 16} description="STEP COUNT" color={c.length.color} shadowColor={c.length.shadowColor} gridColumnSpan={2} onIncrement={() => stepLength(1)} onDecrement={() => stepLength(-1)} />
+      <StepperCard title="Length" currentValue={rs.selectedLength} minValue={4} maxValue={16} description="STEP COUNT" color={c.length.color} shadowColor={c.length.shadowColor} gridColumnSpan={2} onIncrement={() => stepLength(1)} onDecrement={() => stepLength(-1)} />
     </div>
     <div class="tile">
       <StepperCard title="Level" currentValue={currentLevel} minValue={1} maxValue={3} description="BASE MOTIONS" color={c.level.color} shadowColor={c.level.shadowColor} gridColumnSpan={2} onIncrement={() => setLevel(currentLevel + 1)} onDecrement={() => setLevel(currentLevel - 1)} />
@@ -251,20 +209,12 @@
     </div>
   </div>
 
-  {#if showCoverageHint}
-    <p class="coverage-hint">
-      <i class="fas fa-circle-info" aria-hidden="true"></i>
-      No <strong>{LOOP_TYPE_LABELS[currentLoop]}</strong> seeds enumerated at level {currentLevel}
-      for {periodLabel}. Pick another type/level/period, or run <code>scripts/enumerate-deck.cjs</code>.
-    </p>
-  {/if}
-
   <section class="recipe">
     <span class="recipe-title">This Deck</span>
     <dl class="recipe-list">
       <div class="recipe-row"><dt>Cards</dt><dd>{effectiveTotal}</dd></div>
       <div class="recipe-row"><dt>Loop</dt><dd>{LOOP_TYPE_LABELS[currentLoop]}</dd></div>
-      <div class="recipe-row"><dt>Length</dt><dd>{selectedLength} steps</dd></div>
+      <div class="recipe-row"><dt>Length</dt><dd>{rs.selectedLength} steps</dd></div>
       <div class="recipe-row"><dt>Level</dt><dd>{currentLevel}</dd></div>
       <div class="recipe-row"><dt>Period</dt><dd>{periodLabel}</dd></div>
       <div class="recipe-row"><dt>Turns</dt><dd>{turnLabel}</dd></div>
@@ -340,21 +290,6 @@
   .card-grid :global(.value-number),
   .card-grid :global(.base-card .card-value) { font-size: 24px !important; line-height: 1.15 !important; }
   .card-grid :global(.card-title) { font-size: 11px !important; letter-spacing: 0.8px !important; }
-
-  .coverage-hint {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12.5px;
-    color: var(--semantic-warning, #f59e0b);
-  }
-  .coverage-hint code {
-    font-size: 11.5px;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 1px 6px;
-    border-radius: 5px;
-  }
 
   .recipe {
     display: grid;

@@ -33,6 +33,11 @@
   import { resolveDeckSequences, applyVariationDescriptor, rollVariation } from "../../services/deck-variation";
   import { makeRng, childSeed } from "$lib/shared/foundation/utils/seeded-rng";
   import { hashRecipe, mintSeed } from "../../services/deck-recipe";
+  import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
+  import { GenerationMode } from "$lib/shared/foundation/domain/models/generation/generate-models";
+  import type { GenerationOptions } from "$lib/shared/foundation/domain/models/generation/generate-models";
+  import { LOOPType, Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+  import { levelToDifficulty } from "$lib/shared/create/utils/config-mapper";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
   import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
   import { warmCardBackCaches } from "../../services/card-back/warm-card-back-caches";
@@ -610,31 +615,115 @@
     return out;
   }
 
+  /**
+   * LOOP deck = live generation. Runs the same engine the Generate panel uses,
+   * once per card, with the bento dials mapped to GenerationOptions. No Firestore
+   * pool — every card is generated fresh, deduped by content. The engine is
+   * unseeded, so each call yields a distinct sequence (fresh 52 every draw).
+   * Returns false if the draw was superseded or produced nothing.
+   */
+  async function generateLiveDeck(generation: number): Promise<boolean> {
+    const length = rs.selectedLength || 8;
+    const gridMode = ([...rs.selectedGridModes][0] ?? "diamond") as "diamond" | "box";
+    const period = rs.selectedSliceTypes.has("quartered") ? Period.QUARTERED : Period.HALVED;
+    const loopType = ([...rs.selectedLoopTypes][0] ?? "rotated") as LOOPType;
+    const tf = rs.variationConfig.turnFrequency;
+    const turnIntensity = tf === 0 ? 0 : tf < 0.5 ? 1 : 2; // Clean/Sprinkle/Spicy → max turns
+    const motionTypeFilter = rs.dashStyle === "low" ? "no-dash" : rs.dashStyle === "high" ? "prefer-dash" : null;
+    const options: GenerationOptions = {
+      mode: GenerationMode.CIRCULAR,
+      length,
+      gridMode,
+      propType: rs.bluePropType,
+      difficulty: levelToDifficulty([...rs.selectedLevels][0] ?? 1),
+      loopType,
+      period,
+      constraintPreset: rs.propStyle,
+      handPathMode: rs.handStyle,
+      motionTypeFilter,
+      turnIntensity,
+    };
+
+    const target = rs.totalCards || 52;
+    const seqs: SequenceData[] = [];
+    const seen = new Set<string>();
+    rs.isLoadingSequences = true;
+    rs.drawProgress = 0;
+    let attempts = 0;
+    const maxAttempts = target * 4; // headroom for dedup collisions / occasional failures
+    try {
+      while (seqs.length < target && attempts < maxAttempts) {
+        attempts++;
+        if (generation !== rs.drawGeneration) return false;
+        try {
+          const s = await generationOrchestrator.generateSequence(options);
+          const h = hashSequenceContent(s);
+          if (seen.has(h)) continue; // content dedup — no two identical cards
+          seen.add(h);
+          seqs.push(s);
+          rs.drawProgress = seqs.length;
+        } catch (e) {
+          console.warn("Live deck: a generation attempt failed", e);
+        }
+      }
+    } finally {
+      rs.isLoadingSequences = false;
+    }
+    if (generation !== rs.drawGeneration) return false;
+    if (seqs.length === 0) {
+      toast.info("Couldn't generate sequences for these settings — try a different loop type or length.");
+      return false;
+    }
+
+    rs.sequences = seqs;
+    rs.cards = seqs.map((s, i) => ({
+      sequenceId: `${(s.word ?? "loop").slice(0, 16)}-${i}`,
+      sourceCatalogId: "live-gen",
+      stepCount: s.steps?.length ?? length,
+      word: s.word ?? "",
+      position: i + 1,
+      footer: { center: rs.notes },
+    }));
+    prewarmCardPool({
+      sequences: rs.sequences,
+      bluePropType: rs.bluePropType,
+      redPropType: rs.redPropType,
+      theme: rs.theme,
+      iconPaths: [],
+    });
+    return true;
+  }
+
   async function handleDraw() {
     const gen = ++rs.drawGeneration;
-    // Fresh draw = a new, not-yet-named deck. Clear any name left over from a
-    // previously composed/released deck so the header shows the placeholder, not
-    // the last deck's title.
+    // Fresh draw = a new, not-yet-named deck. Clear any leftover name.
     rs.name = "";
-    // A brand-new deck = a fresh draw: mint a new seed so two consecutive Draws
-    // with identical dials still differ (the "fresh 52 each time" requirement).
     rs.seed = mintSeed();
-    rs.cards = composeFullDeck();
-    if (await bounceIfDuplicate()) return;
-    await loadSelectedSequences(gen);
-    if (gen !== rs.drawGeneration) return;
+    if (rs.deckMode === "loop") {
+      const ok = await generateLiveDeck(gen);
+      if (!ok || gen !== rs.drawGeneration) return;
+    } else {
+      rs.cards = composeFullDeck();
+      if (await bounceIfDuplicate()) return;
+      await loadSelectedSequences(gen);
+      if (gen !== rs.drawGeneration) return;
+    }
     rs.step = "review";
     rs.persist();
   }
 
   async function handleRedraw() {
     const gen = ++rs.drawGeneration;
-    // Reroll: new seed, same dials.
     rs.reroll();
-    rs.cards = composeFullDeck();
-    if (await bounceIfDuplicate()) return;
-    await loadSelectedSequences(gen);
-    if (gen !== rs.drawGeneration) return;
+    if (rs.deckMode === "loop") {
+      const ok = await generateLiveDeck(gen);
+      if (!ok || gen !== rs.drawGeneration) return;
+    } else {
+      rs.cards = composeFullDeck();
+      if (await bounceIfDuplicate()) return;
+      await loadSelectedSequences(gen);
+      if (gen !== rs.drawGeneration) return;
+    }
     rs.persist();
   }
 
@@ -839,7 +928,8 @@
         onToggleGridMode={(m) => rs.toggleGridMode(m)}
         reversalPattern={rs.reversalPattern}
         onReversalChange={(p) => { rs.reversalPattern = p; rs.persist(); }}
-        onRebuildPool={rebuildPool}
+        isGenerating={rs.isLoadingSequences}
+        genProgress={rs.drawProgress}
       />
     {:else if rs.step === "review"}
       <ReviewStep

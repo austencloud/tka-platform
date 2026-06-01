@@ -79,6 +79,8 @@ export interface DeckRecipe {
   propStyle?: "smooth" | "mixed" | "choppy";
   handStyle?: "smooth" | "mixed" | "choppy";
   dashStyle?: "low" | "mixed" | "high";
+  /** Fixed sequence length — every LOOP card generated at this step count. */
+  length?: number;
   /** TnD-only. */
   tndFamilyIds?: string[];
   tndTurnPatternIds?: string[];

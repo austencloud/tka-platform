@@ -6,7 +6,6 @@
   import TnDFamilyCards from "./TnDFamilyCards.svelte";
   import TransformPanel from "./TransformPanel.svelte";
   import LoopBentoBoard from "./LoopBentoBoard.svelte";
-  import { loopDrawCounts } from "../../services/deck-composer";
   import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
   import type { VariationConfig, StartOriMode } from "../../services/deck-variation";
 
@@ -46,8 +45,9 @@
     /** Deck-wide reversal pattern (built in the strip). Absent → no reversal. */
     reversalPattern?: ResolvedReversalPattern | null;
     onReversalChange?: (pattern: ResolvedReversalPattern) => void;
-    /** Rebuild the LOOP pool from current dials (loop type / level / slice). */
-    onRebuildPool: () => void;
+    /** Live-generation in progress + count (LOOP mode). */
+    isGenerating?: boolean;
+    genProgress?: number;
   }
 
   let {
@@ -83,7 +83,8 @@
     onToggleGridMode,
     reversalPattern = null,
     onReversalChange,
-    onRebuildPool,
+    isGenerating = false,
+    genProgress = 0,
   }: Props = $props();
 
   // Per-family card projection mirrors buildTnDCards' enumeration: each family's
@@ -94,23 +95,20 @@
     selectedTurnPatternCount * Math.max(1, startOriModes.size),
   );
 
-  // LOOP enable gate: at least one step-count weight is non-zero.
-  const totalWeight = $derived(weights.reduce((s, w) => s + w.weight, 0));
-
+  // LOOP draws live (generate 52 fresh) — always drawable. TnD needs ≥1 card.
   const canDraw = $derived(
-    deckMode === "tnd" ? tndCardCount > 0 : totalWeight > 0
-  );
-
-  // LOOP target = final deck size; orientation/grid axes fan a smaller base back
-  // up to it (loopDrawCounts), so the label shows the true emitted count.
-  const loopEffective = $derived(
-    loopDrawCounts(totalCards, startOriModes.size, gridModes.size).effective
+    deckMode === "tnd" ? tndCardCount > 0 : true
   );
 
   const drawLabel = $derived(
     deckMode === "tnd"
       ? `Draw ${tndCardCount} TnD Cards`
-      : `Draw ${loopEffective} Cards`
+      : `Generate ${totalCards} Cards`
+  );
+
+  // Live-generation progress for the spinner label.
+  const loadingLabel = $derived(
+    isGenerating ? `Generating ${genProgress}/${totalCards}…` : "Loading Pools..."
   );
 </script>
 
@@ -199,19 +197,18 @@
       {onToggleStartOriMode}
       {onToggleGridMode}
       {onReversalChange}
-      {onRebuildPool}
     />
   {/if}
 
   <button
     type="button"
     class="draw-btn"
-    disabled={isLoading || !canDraw}
+    disabled={isLoading || isGenerating || !canDraw}
     onclick={onDraw}
   >
-    {#if isLoading}
+    {#if isLoading || isGenerating}
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      Loading Pools...
+      {loadingLabel}
     {:else}
       <i class="fas fa-dice" aria-hidden="true"></i>
       {drawLabel}
