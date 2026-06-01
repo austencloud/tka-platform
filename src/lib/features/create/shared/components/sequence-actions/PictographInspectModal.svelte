@@ -445,6 +445,8 @@
                   pictographData={displayData}
                   arrowsClickable={true}
                   disableTransitions={true}
+                  bluePropTypeOverride={stepData?.motions?.blue?.propType}
+                  redPropTypeOverride={stepData?.motions?.red?.propType}
                 />
               </div>
             {/if}

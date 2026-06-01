@@ -281,6 +281,8 @@
   <CardInspectModal
     sequence={inspectedSequence}
     frontImageUrl={inspectedFrontImageUrl}
+    {bluePropType}
+    {redPropType}
     includeStartPosition={true}
     onContextMenu={onContextMenu ? (x, y, _rerender) => {
       onContextMenu(x, y, () => {

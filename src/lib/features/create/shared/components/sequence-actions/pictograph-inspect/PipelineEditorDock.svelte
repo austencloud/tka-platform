@@ -112,11 +112,15 @@
   });
 
   const thisPropType = $derived.by(() => {
-    const settings = getSettings();
+    // The step's stamped motion.propType (the deck's effective prop, injected by
+    // withEffectivePropTypes) wins over global settings — so fixing arrows on a
+    // fan/club deck card shows the right prop and the Default-tier label matches
+    // the key computeSpecialOverrideKey writes (which reads motion.propType).
     const c = activeColor ?? "blue";
-    const settingsPropType = c === "blue" ? settings.bluePropType : settings.redPropType;
     const motion = stepData.motions?.[c];
-    return (settingsPropType ?? motion?.propType)?.toLowerCase() || "staff";
+    const settings = getSettings();
+    const settingsPropType = c === "blue" ? settings.bluePropType : settings.redPropType;
+    return (motion?.propType ?? settingsPropType)?.toLowerCase() || "staff";
   });
 
   // THE canonical key, identical to what the renderer reads (write-key ===
