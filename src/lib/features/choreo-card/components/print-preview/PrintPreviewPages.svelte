@@ -120,6 +120,12 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   let renderStage = $state<"preparing" | "rendering">("rendering");
   let prepDone = $state(0);
   let prepTotal = $state(0);
+  // Piece-level progress: each card's front render places one SVG pictograph per
+  // beat and reports per-beat progress. We sum the per-card fractions into a
+  // deck-wide "pieces placed" count so the bar advances smoothly within every
+  // card (not just one tick per finished card). Driven by the render lanes below.
+  let piecesDone = $state(0);
+  let piecesTotal = $state(0);
 
   let layout = $derived(getPageLayout(cardSize));
   let sizeSpec = $derived(CARD_SIZES[cardSize]);
@@ -367,6 +373,12 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     prepDone = 0;
     prepTotal = 0;
     renderedCards = [];
+    // Per-card piece budgets (one piece per beat). Cached/fast cards count as
+    // instantly placed; live renders fill in via per-beat progress callbacks.
+    const perCardPieces = seqs.map((s) => Math.max(1, s.steps?.length ?? 1));
+    const cardPieceDone = new Array(seqs.length).fill(0);
+    piecesTotal = perCardPieces.reduce((a, b) => a + b, 0);
+    piecesDone = 0;
     onRenderStateChange?.({ isRendering: true, progress: 0, total: seqs.length });
 
     const renderer = getPrintCardRenderer();
@@ -402,6 +414,16 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       const cacheKey = buildCacheKey(seq, stepCount, i);
       const cached = cardCache.get(cacheKey);
 
+      // Surface this card's per-beat placement into the deck-wide piece count.
+      // Each beat is one SVG pictograph; current/total are the beats of THIS
+      // card, normalized to its budget so the global bar stays proportional
+      // even if the render reports a different beat count than steps.length.
+      const reportPieces = (current: number, total: number) => {
+        if (generation !== renderGeneration || total <= 0) return;
+        cardPieceDone[i] = Math.min(1, current / total) * perCardPieces[i]!;
+        piecesDone = cardPieceDone.reduce((a, b) => a + b, 0);
+      };
+
       try {
         if (cached) {
           cards[i] = cached.rendered;
@@ -413,7 +435,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
           // independent and each allocate their own canvas/container, so render
           // them together rather than front-then-back.
           const [frontCanvas, backCanvas] = await Promise.all([
-            renderer.renderFront(seq, options),
+            renderer.renderFront(seq, options, (p) => reportPieces(p.current, p.total)),
             renderer.renderBack(seq, options),
           ]);
 
@@ -440,6 +462,10 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
       completed++;
       if (generation === renderGeneration) {
+        // This card is done — count all its pieces (covers cache hits, which
+        // never fire per-beat progress, and rounds the live count up to full).
+        cardPieceDone[i] = perCardPieces[i]!;
+        piecesDone = cardPieceDone.reduce((a, b) => a + b, 0);
         renderProgress = completed;
         // `cards` is a sparse array (assigned by index); Array.from visits every
         // slot — including not-yet-rendered holes — so the result is dense and
@@ -569,28 +595,38 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     </div>
   {:else}
     {#if isRendering}
-      {@const setup = renderProgress === 0}
+      {@const preparing = renderStage === "preparing"}
+      {@const prepFraction = prepTotal > 0 ? prepDone / prepTotal : 0}
+      {@const pieceFraction = piecesTotal > 0 ? piecesDone / piecesTotal : 0}
+      <!-- Determinate whenever we have a real count to show: short-code resolve
+           progress while preparing, then per-piece (per-beat) placement while
+           rendering. Only the brief cold worker-warm before any data is shown
+           stays indeterminate. -->
+      {@const determinate = preparing ? prepTotal > 0 : piecesTotal > 0}
+      {@const fraction = preparing ? prepFraction : pieceFraction}
       <div
         class="progress-bar-container"
-        class:indeterminate={setup}
+        class:indeterminate={!determinate}
         role="progressbar"
-        aria-valuenow={setup ? undefined : renderProgress}
+        aria-valuenow={determinate ? Math.round(fraction * 100) : undefined}
         aria-valuemin={0}
-        aria-valuemax={renderTotal}
-        aria-busy={setup}
+        aria-valuemax={100}
+        aria-busy={!determinate}
       >
-        {#if setup}
+        {#if !determinate}
           <div class="progress-bar-fill indeterminate-fill"></div>
           <span class="progress-label">
-            {#if renderStage === "preparing"}
-              {prepTotal > 0 ? `Preparing — resolving codes ${prepDone} / ${prepTotal}…` : "Preparing renderer…"}
-            {:else}
-              Warming renderer…
-            {/if}
+            {preparing ? "Preparing renderer…" : "Warming renderer…"}
           </span>
         {:else}
-          <div class="progress-bar-fill" style:width="{(renderProgress / renderTotal) * 100}%"></div>
-          <span class="progress-label">Rendering {renderProgress} / {renderTotal}</span>
+          <div class="progress-bar-fill" style:width="{fraction * 100}%"></div>
+          <span class="progress-label">
+            {#if preparing}
+              Preparing — resolving codes {prepDone} / {prepTotal}…
+            {:else}
+              Placing pictographs — {Math.floor(piecesDone)} / {piecesTotal} ({renderProgress} / {renderTotal} cards)
+            {/if}
+          </span>
         {/if}
       </div>
     {/if}

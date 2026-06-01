@@ -291,6 +291,7 @@ export class CompositionDispatcher {
     options: Partial<SequenceExportOptions>,
     qrBitmap: ImageBitmap | null = null,
     signal?: AbortSignal,
+    onProgress?: CompositionProgressCallback,
   ): Promise<ImageBitmap> {
     await this.ensureInitialized();
 
@@ -304,6 +305,7 @@ export class CompositionDispatcher {
       const pending: PendingRequest = {
         resolve: () => {}, // unused for the bitmap path
         reject,
+        onProgress,
         signal,
         workerEntry: worker,
         resolveBitmap: resolve,

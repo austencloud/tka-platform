@@ -21,6 +21,7 @@ import { wrapContentInCardFrame } from "./card-front-frame";
 import { CompositionDispatcher } from "$lib/shared/render/services/composition-dispatcher";
 import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
+import type { CompositionProgressCallback } from "$lib/shared/render/services/types";
 
 
 // MPC poker card defaults
@@ -36,7 +37,8 @@ export class PrintCardRenderer {
 
   async renderFront(
     sequence: SequenceData,
-    options: PrintRenderOptions
+    options: PrintRenderOptions,
+    onProgress?: CompositionProgressCallback,
   ): Promise<HTMLCanvasElement> {
     // Single shared builder — same options the worker/parity path consumes, so
     // the two renders stay identical by construction (no hand-mirrored copy).
@@ -60,6 +62,8 @@ export class PrintCardRenderer {
           sequence,
           composeOptions,
           qrBitmap,
+          undefined,
+          onProgress,
         );
         const framed = wrapContentInCardFrame(inner, frame, htmlFactory) as HTMLCanvasElement;
         inner.close();
@@ -72,7 +76,7 @@ export class PrintCardRenderer {
 
     // Main-thread render (worker unavailable or per-card fallback). QR is
     // generated internally by composeSequenceImage as today.
-    const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
+    const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions, onProgress);
     return wrapContentInCardFrame(sequenceCanvas, frame, htmlFactory) as HTMLCanvasElement;
   }
 
