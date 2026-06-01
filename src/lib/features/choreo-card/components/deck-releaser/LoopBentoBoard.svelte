@@ -79,10 +79,16 @@
   const LOOP_SHADOW = "60deg 55% 35%";
   const POS_COLOR = "linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #0f766e 100%)";
   const POS_SHADOW = "175deg 65% 40%";
+  const SIZE_COLOR = "linear-gradient(135deg, #e11d48 0%, #be123c 50%, #9f1239 100%)";
+  const SIZE_SHADOW = "345deg 80% 45%";
 
-  // Deck size is fixed at 52 (a standard deck). Force it on mount so a persisted
-  // 26/36 can't linger now that the size tile is gone.
-  $effect(() => { if (rs.totalCards !== 52) rs.totalCards = 52; });
+  // Deck size is user-set (1–500). 54 fills a print page neatly (6 sheets × 9);
+  // larger values generate that many unique sequences. Clamp + persist on change.
+  function setTotal(n: number) {
+    if (!Number.isFinite(n)) return;
+    rs.totalCards = Math.max(1, Math.min(500, Math.round(n)));
+    rs.persist();
+  }
 
   // Length: one fixed step count — every card is GENERATED live at this length.
   // Live generation makes any length at any level, so the full range is open (no
@@ -145,8 +151,8 @@
     `${[...startOriModes].map((m) => ORI_LABEL[m] ?? m).join(", ")} · ${[...gridModes].map(cap).join("/")}`,
   );
 
-  // Total cards is fixed at 52.
-  const effectiveTotal = 52;
+  // User-set deck size (read live).
+  const effectiveTotal = $derived(rs.totalCards);
 
   // ── modals ───────────────────────────────────────────────────────────────
   let showLoop = $state(false);
@@ -224,6 +230,25 @@
     </div>
     <div class="tile">
       <StepperCard title="Dashes" currentValue={dashIdx} minValue={0} maxValue={2} description="FREQUENCY" formatValue={(i: number) => DASH_LABELS[i] ?? ""} color={STYLE_COLORS.dashes.color} shadowColor={STYLE_COLORS.dashes.shadow} gridColumnSpan={2} onIncrement={() => stepDash(1)} onDecrement={() => stepDash(-1)} />
+    </div>
+    <div class="tile size-tile">
+      <BaseCard title="Deck Size" currentValue="" clickable={false} color={SIZE_COLOR} shadowColor={SIZE_SHADOW} gridColumnSpan={2}>
+        <div class="size-row">
+          <button class="size-step" aria-label="Fewer cards" onclick={() => setTotal(rs.totalCards - 1)}>−</button>
+          <input
+            class="size-input"
+            type="number"
+            min="1"
+            max="500"
+            inputmode="numeric"
+            aria-label="Number of cards"
+            value={rs.totalCards}
+            onchange={(e) => setTotal(parseInt(e.currentTarget.value, 10))}
+          />
+          <button class="size-step" aria-label="More cards" onclick={() => setTotal(rs.totalCards + 1)}>+</button>
+        </div>
+        <span class="size-desc">CARDS</span>
+      </BaseCard>
     </div>
     <div class="tile">
       <BaseCard title="Start · Ori" currentValue={posSummary} color={POS_COLOR} shadowColor={POS_SHADOW} gridColumnSpan={2} onClick={() => (showPosOri = true)} />
@@ -475,4 +500,57 @@
   }
   .pos-ori-row { display: flex; gap: 16px; justify-content: center; margin-top: 16px; }
   .pos-hint { margin: 12px 2px 0; font-size: 12px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.5)); text-align: center; }
+
+  /* ── deck size tile: reuse BaseCard's frame, repurpose its content slot for a
+        numeric input. Collapse the (empty) value div; center the input column. */
+  .size-tile :global(.card-value) { display: none; }
+  .size-tile :global(.card-content) {
+    margin-top: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+  .size-row { display: flex; align-items: center; gap: 8px; }
+  .size-step {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .size-step:hover { background: rgba(255, 255, 255, 0.26); }
+  .size-input {
+    width: 74px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 32px;
+    font-weight: 800;
+    text-align: center;
+    text-shadow: var(--card-text-shadow);
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .size-input::-webkit-outer-spin-button,
+  .size-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .size-input:focus { outline: none; }
+  .size-desc {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: rgba(255, 255, 255, 0.75);
+    text-transform: uppercase;
+  }
 </style>

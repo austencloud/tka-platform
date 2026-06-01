@@ -80,7 +80,7 @@ class DeckReleaserState {
   cards = $state<DeckReleaseCard[]>([]);
   sequences = $state<SequenceData[]>([]);
   weights = $state<StepCountWeight[]>([]);
-  totalCards = $state(52);
+  totalCards = $state(54);
   notes = $state("Fire Drums 2026");
   name = $state("");
   description = $state("");
