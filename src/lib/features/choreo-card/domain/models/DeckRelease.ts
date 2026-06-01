@@ -81,6 +81,8 @@ export interface DeckRecipe {
   dashStyle?: "low" | "mixed" | "high";
   /** Fixed sequence length — every LOOP card generated at this step count. */
   length?: number;
+  /** Max turn intensity (0–3) for live generation. */
+  turnIntensity?: number;
   /** TnD-only. */
   tndFamilyIds?: string[];
   tndTurnPatternIds?: string[];

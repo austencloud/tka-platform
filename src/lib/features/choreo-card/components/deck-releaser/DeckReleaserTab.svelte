@@ -627,8 +627,7 @@
     const gridMode = ([...rs.selectedGridModes][0] ?? "diamond") as "diamond" | "box";
     const period = rs.selectedSliceTypes.has("quartered") ? Period.QUARTERED : Period.HALVED;
     const loopType = ([...rs.selectedLoopTypes][0] ?? "rotated") as LOOPType;
-    const tf = rs.variationConfig.turnFrequency;
-    const turnIntensity = tf === 0 ? 0 : tf < 0.5 ? 1 : 2; // Clean/Sprinkle/Spicy → max turns
+    const turnIntensity = rs.turnIntensity; // generator max-intensity model (0–3 scalar)
     const motionTypeFilter = rs.dashStyle === "low" ? "no-dash" : rs.dashStyle === "high" ? "prefer-dash" : null;
     const options: GenerationOptions = {
       mode: GenerationMode.CIRCULAR,

@@ -41,6 +41,8 @@ interface PersistedSession {
   dashStyle?: "low" | "mixed" | "high";
   /** Fixed sequence length. */
   selectedLength?: number;
+  /** Max turn intensity (0–3). */
+  turnIntensity?: number;
   /** Selected TnD family ids. */
   tndFamilyIds?: string[];
   /** Selected TnD turn-pattern ids. */
@@ -130,6 +132,8 @@ class DeckReleaserState {
   dashStyle = $state<"low" | "mixed" | "high">("mixed");
   /** Fixed sequence length — every LOOP card is generated at this step count. */
   selectedLength = $state<number>(8);
+  /** Max turn intensity for live generation (generator model: 0–3 scalar). */
+  turnIntensity = $state<number>(1);
   /** Live-generation progress (cards generated so far this draw). */
   drawProgress = $state(0);
   /** Per-seed grid-correct TnD classification (selection-independent). */
@@ -177,6 +181,7 @@ class DeckReleaserState {
       if (saved.handStyle) this.handStyle = saved.handStyle;
       if (saved.dashStyle) this.dashStyle = saved.dashStyle;
       if (saved.selectedLength) this.selectedLength = saved.selectedLength;
+      if (saved.turnIntensity != null) this.turnIntensity = saved.turnIntensity;
       if (saved.tndFamilyIds?.length) this.selectedTnDFamilies = new Set(saved.tndFamilyIds);
       if (saved.tndTurnPatternIds?.length) this.selectedTnDTurnPatterns = new Set(saved.tndTurnPatternIds);
       if (saved.weights?.length) this.weights = saved.weights;
@@ -211,6 +216,7 @@ class DeckReleaserState {
       handStyle: this.handStyle,
       dashStyle: this.dashStyle,
       selectedLength: this.selectedLength,
+      turnIntensity: this.turnIntensity,
       tndFamilyIds: [...this.selectedTnDFamilies],
       tndTurnPatternIds: [...this.selectedTnDTurnPatterns],
       weights: this.weights,
@@ -277,6 +283,7 @@ class DeckReleaserState {
       recipe.handStyle = this.handStyle;
       recipe.dashStyle = this.dashStyle;
       recipe.length = this.selectedLength;
+      recipe.turnIntensity = this.turnIntensity;
     } else {
       recipe.tndFamilyIds = [...this.selectedTnDFamilies];
       recipe.tndTurnPatternIds = [...this.selectedTnDTurnPatterns];
@@ -327,6 +334,7 @@ class DeckReleaserState {
       if (recipe.handStyle) this.handStyle = recipe.handStyle;
       if (recipe.dashStyle) this.dashStyle = recipe.dashStyle;
       if (recipe.length) this.selectedLength = recipe.length;
+      if (recipe.turnIntensity != null) this.turnIntensity = recipe.turnIntensity;
     } else {
       this.selectedTnDFamilies = new Set(recipe.tndFamilyIds ?? []);
       this.selectedTnDTurnPatterns = new Set(recipe.tndTurnPatternIds ?? []);

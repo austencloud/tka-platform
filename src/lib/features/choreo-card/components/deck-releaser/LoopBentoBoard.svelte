@@ -13,6 +13,7 @@
 <script lang="ts">
   import BaseCard from "$lib/features/create/generate/components/cards/BaseCard.svelte";
   import StepperCard from "$lib/features/create/generate/components/cards/StepperCard/StepperCard.svelte";
+  import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
   import { getCardColors } from "$lib/shared/create/domain/card-colors";
   import { BackgroundType } from "@austencloud/backgrounds";
   import LOOPExpandedOverlay from "$lib/features/create/generate/components/cards/LOOPExpandedOverlay.svelte";
@@ -70,11 +71,6 @@
   const c = getCardColors(BackgroundType.COSMIC);
   const LOOP_COLOR = "linear-gradient(135deg, #a3a32a 0%, #8a8a22 50%, #6b6b1a 100%)";
   const LOOP_SHADOW = "60deg 55% 35%";
-  const TURN_COLOR = "linear-gradient(135deg, #16a34a 0%, #15803d 50%, #166534 100%)";
-  const TURN_SHADOW = "140deg 60% 40%";
-
-  const TURN_PRESETS: Record<string, number> = { clean: 0, sprinkle: 0.4, spicy: 0.7 };
-  const TURN_ORDER = ["clean", "sprinkle", "spicy"];
 
   // Deck size is fixed at 52 (a standard deck). Force it on mount so a persisted
   // 26/36 can't linger now that the size tile is gone.
@@ -132,13 +128,9 @@
           ? "Halved"
           : "—",
   );
-  const turnLabel = $derived.by(() => {
-    const f = variationConfig.turnFrequency;
-    if (f === 0) return "Clean";
-    if (Math.abs(f - 0.4) < 0.001) return "Sprinkle";
-    if (Math.abs(f - 0.7) < 0.001) return "Spicy";
-    return `${Math.round(f * 100)}%`;
-  });
+  // Max turn intensity follows the generator model (single scalar). Half-turns
+  // unlock at Level 3, mirroring the Generate panel.
+  const turnAllowed = $derived(currentLevel >= 3 ? [0, 0.5, 1, 1.5, 2, 2.5, 3] : [0, 1, 2, 3]);
   const ORI_LABEL: Record<string, string> = { radial: "Radial", nonradial: "Nonradial", split: "Mixed" };
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const transformSummary = $derived(
@@ -170,12 +162,6 @@
       : new Set(["quartered"]);
     rs.persist();
   }
-  function cycleTurns() {
-    // Resolve current preset from frequency, advance to the next.
-    const cur = TURN_ORDER.find((id) => Math.abs(TURN_PRESETS[id]! - variationConfig.turnFrequency) < 0.001) ?? "sprinkle";
-    const next = TURN_ORDER[(TURN_ORDER.indexOf(cur) + 1) % TURN_ORDER.length]!;
-    onVariationConfigChange({ ...variationConfig, turnFrequency: TURN_PRESETS[next]! });
-  }
 </script>
 
 <div class="bento-stage">
@@ -193,7 +179,7 @@
       <BaseCard title="Period" currentValue={periodLabel} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} gridColumnSpan={2} onClick={cyclePeriod} />
     </div>
     <div class="tile">
-      <BaseCard title="Turns" currentValue={turnLabel} color={TURN_COLOR} shadowColor={TURN_SHADOW} gridColumnSpan={2} onClick={cycleTurns} />
+      <TurnIntensityCard currentIntensity={rs.turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => { rs.turnIntensity = v; rs.persist(); }} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
     </div>
     <div class="tile">
       <StepperCard title="Props" currentValue={propIdx} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => PROP_LABELS[i] ?? ""} color={STYLE_COLORS.props.color} shadowColor={STYLE_COLORS.props.shadow} gridColumnSpan={2} onIncrement={() => stepProp(1)} onDecrement={() => stepProp(-1)} />
@@ -217,7 +203,7 @@
       <div class="recipe-row"><dt>Length</dt><dd>{rs.selectedLength} steps</dd></div>
       <div class="recipe-row"><dt>Level</dt><dd>{currentLevel}</dd></div>
       <div class="recipe-row"><dt>Period</dt><dd>{periodLabel}</dd></div>
-      <div class="recipe-row"><dt>Turns</dt><dd>{turnLabel}</dd></div>
+      <div class="recipe-row"><dt>Max Turns</dt><dd>{rs.turnIntensity}</dd></div>
       <div class="recipe-row"><dt>Style</dt><dd>{PROP_LABELS[propIdx]} · {PROP_LABELS[handIdx]} · {DASH_LABELS[dashIdx]}</dd></div>
       <div class="recipe-row"><dt>Transform</dt><dd>{transformSummary}</dd></div>
       <div class="recipe-row"><dt>Reversal</dt><dd>{reversalPattern?.label ?? "Continuous"}</dd></div>
