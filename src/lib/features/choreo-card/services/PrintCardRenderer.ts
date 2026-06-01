@@ -18,6 +18,9 @@ import { buildBackJob } from "./card-back/card-back-job-builder";
 import { paintBackJob } from "./card-back/card-back-raster";
 import { buildFrontComposeOptions } from "./build-front-compose-options";
 import { wrapContentInCardFrame } from "./card-front-frame";
+import { CompositionDispatcher } from "$lib/shared/render/services/composition-dispatcher";
+import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
+import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 
 
 // MPC poker card defaults
@@ -39,19 +42,68 @@ export class PrintCardRenderer {
     // the two renders stay identical by construction (no hand-mirrored copy).
     const { composeOptions, frame } = buildFrontComposeOptions(sequence, options);
 
-    // Main-thread render. The worker-pool path is exercised + proven in the
-    // parity harness before being wired into this production path.
-    const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
-
-    // Wrap the content in the MPC card frame (stripe border + edge glow + white
-    // inner area inset by the colored border). Pass a main-thread HTMLCanvas
-    // factory so the print/CardPair seam keeps receiving an HTMLCanvasElement.
-    return wrapContentInCardFrame(sequenceCanvas, frame, (w, h) => {
+    const htmlFactory = (w: number, h: number): HTMLCanvasElement => {
       const c = document.createElement("canvas");
       c.width = w;
       c.height = h;
       return c;
-    }) as HTMLCanvasElement;
+    };
+
+    // Worker path: render the inner composite off-thread, keep the cheap,
+    // deterministic stripe/bleed frame wrap on the main thread. The QR is
+    // generated on the main thread (the worker has no Firebase / new Image())
+    // and composited inside the worker from the supplied bitmap.
+    if (CompositionDispatcher.canUseWorker()) {
+      try {
+        const qrBitmap = await this.prerenderQr(sequence, options, composeOptions);
+        const inner = await getCompositionDispatcher().composeFrontBitmap(
+          sequence,
+          composeOptions,
+          qrBitmap,
+        );
+        const framed = wrapContentInCardFrame(inner, frame, htmlFactory) as HTMLCanvasElement;
+        inner.close();
+        return framed;
+      } catch (err) {
+        console.warn("[PrintCardRenderer] worker front render failed, main-thread fallback:", err);
+        // fall through to the main-thread path below
+      }
+    }
+
+    // Main-thread render (worker unavailable or per-card fallback). QR is
+    // generated internally by composeSequenceImage as today.
+    const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
+    return wrapContentInCardFrame(sequenceCanvas, frame, htmlFactory) as HTMLCanvasElement;
+  }
+
+  /**
+   * Pre-render the card's QR code on the MAIN thread (the worker has no Firebase
+   * and no `new Image()`), returning a transferable ImageBitmap, or null when the
+   * card has no QR cell or no generator is wired. Mirrors the parity harness so
+   * worker output matches the proven render.
+   */
+  private async prerenderQr(
+    sequence: SequenceData,
+    options: PrintRenderOptions,
+    composeOptions: Partial<SequenceExportOptions>,
+  ): Promise<ImageBitmap | null> {
+    if (!composeOptions.visibilityOverrides?.showQRCode) return null;
+    const qrGen = this.imageComposer.qrGenerator;
+    if (!qrGen) return null;
+    try {
+      const img = await qrGen.generateAsImage(sequence, 600, {
+        style: "modern",
+        margin: 1,
+        darkMode: false,
+        bluePropType: options.bluePropType,
+        redPropType: options.redPropType,
+        deckName: options.deckName,
+      });
+      return await createImageBitmap(img);
+    } catch (err) {
+      console.warn("[PrintCardRenderer] QR pre-render failed:", err);
+      return null;
+    }
   }
 
   async renderBack(
