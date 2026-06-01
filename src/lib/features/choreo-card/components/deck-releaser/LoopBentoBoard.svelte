@@ -14,6 +14,8 @@
   import BaseCard from "$lib/features/create/generate/components/cards/BaseCard.svelte";
   import StepperCard from "$lib/features/create/generate/components/cards/StepperCard/StepperCard.svelte";
   import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
+  import GridModeCard from "$lib/features/create/generate/components/cards/GridModeCard.svelte";
+  import PeriodCard from "$lib/features/create/generate/components/cards/PeriodCard.svelte";
   import { getCardColors } from "$lib/shared/create/domain/card-colors";
   import { BackgroundType } from "@austencloud/backgrounds";
   import LOOPExpandedOverlay from "$lib/features/create/generate/components/cards/LOOPExpandedOverlay.svelte";
@@ -213,21 +215,9 @@
     rs.selectedLevels = new Set([Math.max(1, Math.min(3, n))]);
     rs.persist();
   }
-  // Period cycles Quartered → Halved (live gen uses one period per card).
-  function cyclePeriod() {
-    rs.selectedSliceTypes = rs.selectedSliceTypes.has("quartered")
-      ? new Set(["halved"])
-      : new Set(["quartered"]);
-    rs.persist();
-  }
-  // Grid mode toggle (Diamond ↔ Box). Single value drives live-gen + the
-  // start-position picker; sets selectedGridModes to a one-element set.
+  // Period + Grid are toggled by PeriodCard / GridModeCard (two-option toggles).
+  // These labels feed the "This Deck" recipe readout only.
   const gridLabel = $derived(([...rs.selectedGridModes][0] ?? "diamond") === "box" ? "Box" : "Diamond");
-  function cycleGrid() {
-    const cur = [...rs.selectedGridModes][0] ?? "diamond";
-    rs.selectedGridModes = new Set([cur === "diamond" ? "box" : "diamond"]);
-    rs.persist();
-  }
 </script>
 
 <div class="bento-stage">
@@ -243,23 +233,27 @@
       <StepperCard title="Level" currentValue={currentLevel} minValue={1} maxValue={3} description="BASE MOTIONS" color={levelColor} textColor={levelTextColor} shadowColor="0deg 0% 0%" gridColumnSpan={2} onIncrement={() => setLevel(currentLevel + 1)} onDecrement={() => setLevel(currentLevel - 1)} />
     </div>
     <div class="tile">
-      <BaseCard title="Period" currentValue={periodLabel} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} gridColumnSpan={2} onClick={cyclePeriod} />
+      <PeriodCard currentPeriod={rs.selectedSliceTypes.has("quartered") ? 4 : 2} onPeriodChange={(p: number) => { rs.selectedSliceTypes = new Set([p === 4 ? "quartered" : "halved"]); rs.persist(); }} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} />
+    </div>
+  </div>
+
+  <!-- Row 2: Grid + Prop, with Turns morphing in from the left at Level 2+
+       (joining the pair to make three) and collapsing to zero-width at Level 1.
+       Own flex row so the reflow stays contained. -->
+  <div class="card-grid">
+    <div class="tile turns" class:collapsed={currentLevel <= 1} aria-hidden={currentLevel <= 1}>
+      <TurnIntensityCard currentIntensity={rs.turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => { rs.turnIntensity = v; rs.persist(); }} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
     </div>
     <div class="tile">
-      <BaseCard title="Grid" currentValue={gridLabel} color={GRID_COLOR} shadowColor={GRID_SHADOW} gridColumnSpan={2} onClick={cycleGrid} />
+      <GridModeCard currentMode={([...rs.selectedGridModes][0] ?? "diamond") as GridMode} onModeChange={(m: GridMode) => { rs.selectedGridModes = new Set([m as "diamond" | "box"]); rs.persist(); }} color={GRID_COLOR} shadowColor={GRID_SHADOW} />
     </div>
     <div class="tile">
       <BaseCard title="Prop" currentValue={propLabel} color={PROP_TILE_COLOR} shadowColor={PROP_TILE_SHADOW} gridColumnSpan={2} onClick={() => (showProp = true)} />
     </div>
   </div>
 
-  <!-- Row 2: motion style — Turns morphs in from the left at Level 2+, pushing
-       the style steppers right; collapses to zero-width at Level 1. Own flex row
-       so the reflow stays contained. -->
-  <div class="card-grid style-row">
-    <div class="tile turns" class:collapsed={currentLevel <= 1} aria-hidden={currentLevel <= 1}>
-      <TurnIntensityCard currentIntensity={rs.turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => { rs.turnIntensity = v; rs.persist(); }} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
-    </div>
+  <!-- Row 3: motion style steppers -->
+  <div class="card-grid">
     <div class="tile">
       <StepperCard title="Props" currentValue={propIdx} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => PROP_LABELS[i] ?? ""} color={STYLE_COLORS.props.color} shadowColor={STYLE_COLORS.props.shadow} gridColumnSpan={2} onIncrement={() => stepProp(1)} onDecrement={() => stepProp(-1)} />
     </div>
@@ -271,8 +265,8 @@
     </div>
   </div>
 
-  <!-- Row 3: deck-level -->
-  <div class="card-grid">
+  <!-- Row 4: deck-level — equal-width cards -->
+  <div class="card-grid row-equal">
     <div class="tile size-tile">
       <BaseCard title="Deck Size" currentValue="" clickable={false} color={SIZE_COLOR} shadowColor={SIZE_SHADOW} gridColumnSpan={2}>
         <div class="size-row">
@@ -295,7 +289,7 @@
     <div class="tile">
       <BaseCard title="Start · Ori" currentValue={posSummary} color={POS_COLOR} shadowColor={POS_SHADOW} gridColumnSpan={2} onClick={() => (showPosOri = true)} />
     </div>
-    <div class="tile wide">
+    <div class="tile">
       <BaseCard title="Transform" currentValue={transformSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showTransform = true)} />
     </div>
   </div>
@@ -432,8 +426,10 @@
     min-width: 200px;
     height: 120px;
   }
-  .card-grid > .tile.wide {
-    flex: 1 1 360px;
+  /* Row 4: force equal widths regardless of content (Deck Size / Start·Ori /
+     Transform all share the row evenly). */
+  .card-grid.row-equal > .tile {
+    flex: 1 1 0;
   }
   /* Turn Intensity morph: at Level 1 it collapses to zero width and the style
      steppers fill the row; at Level 2+ it slides back in from the left edge,
