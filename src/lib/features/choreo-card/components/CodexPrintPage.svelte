@@ -1,42 +1,98 @@
 <script lang="ts">
-  import { downloadCodexSheetPDF, buildCodexSheetPDF } from "../services/codex-sheet-pdf";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import CopiesSelect from "./print-preview/CopiesSelect.svelte";
+  import { printPdfBlob } from "../services/print-blob";
+  import {
+    buildCodexSheetPDF,
+    downloadCodexSheetPDF,
+    codexSheetCount,
+    type CodexPrintMode,
+  } from "../services/codex-sheet-pdf";
 
-  let busy = $state(false);
+  const PER_PAGE = 4;
+  const COLS = 2;
+  const FRONT_IMG = "/codex/front.png";
+  const BACK_IMG = "/codex/back.png";
+
+  let side = $state<CodexPrintMode>("combined");
+  let copies = $state(PER_PAGE); // total identical cards; 4 = one full sheet
+  let isPrinting = $state(false);
+  let isExporting = $state(false);
   let error = $state<string | null>(null);
 
-  // Two printed sheets, mirroring what the PDF lays out: 4-up, portrait.
-  const sheets = [
-    { side: "FRONT SIDE", title: "Front · Types 1–2", img: "/codex/front.png", mirror: false },
-    { side: "BACK SIDE — columns mirrored for long-edge flip", title: "Back · Types 3–6", img: "/codex/back.png", mirror: true },
+  const SIDE_OPTIONS: { value: CodexPrintMode; label: string; icon: string }[] = [
+    { value: "fronts", label: "Fronts", icon: "fas fa-layer-group" },
+    { value: "backs", label: "Backs", icon: "fas fa-rotate" },
+    { value: "combined", label: "Combined", icon: "fas fa-book-open" },
   ];
-  const CELLS = [0, 1, 2, 3]; // 2×2
 
-  async function download() {
-    if (busy) return;
-    busy = true;
+  const sheetCount = $derived(codexSheetCount(copies));
+  const blanks = $derived(sheetCount * PER_PAGE - copies);
+
+  // Per-count waste readout for the CopiesSelect chip badges ("fits" / N blanks).
+  function annotate(n: number) {
+    const b = codexSheetCount(n) * PER_PAGE - n;
+    return { blanks: b, perfect: b === 0 };
+  }
+
+  // Each sheet is a fixed 4-cell grid; cells beyond `copies` on the final sheet
+  // render blank (matches the PDF, which leaves them empty).
+  type Cell = { filled: boolean; index: number };
+  function buildSheets(): Cell[][] {
+    const sheets: Cell[][] = [];
+    for (let s = 0; s < sheetCount; s++) {
+      const remaining = copies - s * PER_PAGE;
+      sheets.push(
+        Array.from({ length: PER_PAGE }, (_, i) => ({ filled: i < remaining, index: i })),
+      );
+    }
+    return sheets;
+  }
+  const sheets = $derived(buildSheets());
+
+  // Back pages mirror columns for the long-edge duplex flip (same as the deck).
+  const mirroredCol = (i: number) => COLS - 1 - (i % COLS);
+  const rowOf = (i: number) => Math.floor(i / COLS);
+
+  const printLabel = $derived(
+    isPrinting
+      ? "Preparing…"
+      : side === "fronts" ? "Print Fronts"
+      : side === "backs" ? "Print Backs"
+      : "Print Combined",
+  );
+  const downloadLabel = $derived(
+    isExporting
+      ? "Preparing…"
+      : side === "fronts" ? "Download Fronts"
+      : side === "backs" ? "Download Backs"
+      : "Download Combined",
+  );
+
+  async function handlePrint() {
+    if (isPrinting || isExporting) return;
+    isPrinting = true;
     error = null;
     try {
-      await downloadCodexSheetPDF();
+      const blob = await buildCodexSheetPDF({ mode: side, copies });
+      printPdfBlob(blob);
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
     } finally {
-      busy = false;
+      isPrinting = false;
     }
   }
 
-  async function openInTab() {
-    if (busy) return;
-    busy = true;
+  async function handleDownload() {
+    if (isPrinting || isExporting) return;
+    isExporting = true;
     error = null;
     try {
-      const blob = await buildCodexSheetPDF();
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      await downloadCodexSheetPDF({ mode: side, copies }, `codex-${side}-${copies}.pdf`);
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
     } finally {
-      busy = false;
+      isExporting = false;
     }
   }
 </script>
@@ -50,125 +106,170 @@
     </p>
   </header>
 
-  <div class="actions">
-    <button type="button" class="btn primary" onclick={download} disabled={busy}>
-      {#if busy}
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Building…
-      {:else}
-        <i class="fas fa-file-arrow-down" aria-hidden="true"></i> Download Print Sheet (PDF)
-      {/if}
-    </button>
-    <button type="button" class="btn ghost" onclick={openInTab} disabled={busy}>
-      <i class="fas fa-up-right-from-square" aria-hidden="true"></i> Open in Tab
-    </button>
-  </div>
-
-  {#if error}
-    <p class="error" role="alert">{error}</p>
-  {/if}
-
-  <!-- Laid-out print preview, like the deck releaser -->
-  <div class="pages-scroll">
-    {#each sheets as sheet, i (i)}
-      <span class="page-label">{sheet.title} · Sheet {i + 1} of {sheets.length}</span>
-      <div class="page">
-        <div class="page-grid" class:mirror={sheet.mirror}>
-          {#each CELLS as cell (cell)}
-            <div class="cell">
-              <img src={sheet.img} alt="{sheet.title} card" loading="lazy" />
+  <div class="layout">
+    <!-- ── Laid-out print preview, scoped by the selected side ── -->
+    <div class="preview-pane">
+      {#if side !== "backs"}
+        {#each sheets as sheet, sheetIndex (sheetIndex)}
+          <span class="page-label">Fronts · Types&nbsp;1–2 · Sheet {sheetIndex + 1} of {sheetCount}</span>
+          <div class="page">
+            <div class="page-guide page-guide-top">
+              <span class="guide-text guide-bold">FRONTS · Sheet {sheetIndex + 1} of {sheetCount}</span>
             </div>
-          {/each}
-        </div>
-        <div class="page-guide page-guide-bottom">
-          <span class="guide-text">{sheet.side}</span>
-          <span class="guide-text">Sheet {i + 1} of {sheets.length}</span>
-        </div>
-      </div>
-    {/each}
-  </div>
+            <div class="page-grid">
+              {#each sheet as cell (cell.index)}
+                {#if cell.filled}
+                  <div class="card-cell"><img src={FRONT_IMG} alt="Types 1–2 card front" /></div>
+                {:else}
+                  <div class="card-cell blank"></div>
+                {/if}
+              {/each}
+            </div>
+            <div class="page-guide page-guide-bottom">
+              <span class="guide-text">FRONT SIDE</span>
+              <span class="guide-text">Sheet {sheetIndex + 1} of {sheetCount}</span>
+            </div>
+          </div>
+        {/each}
+      {/if}
 
-  <section class="howto">
-    <h2>How to print</h2>
-    <ol>
-      <li>Print <strong>double-sided</strong>, flip on the <strong>long edge</strong>.</li>
-      <li>Set scale to <strong>Actual Size / 100%</strong> — not "Fit to page".</li>
-      <li>Use <strong>portrait</strong> US&nbsp;Letter.</li>
-      <li>Cut along the shared rainbow seams. Each card = Type&nbsp;1–2 front, Type&nbsp;3–6 back.</li>
-    </ol>
-    <p class="size-note">Finished card size: 4.25 × 5.5 in.</p>
-  </section>
+      {#if side !== "fronts"}
+        {#each sheets as sheet, sheetIndex (sheetIndex)}
+          <span class="page-label">Backs · Types&nbsp;3–6 · Sheet {sheetIndex + 1} of {sheetCount}</span>
+          <div class="page">
+            <div class="page-guide page-guide-top">
+              <span class="guide-text guide-bold">BACKS · Sheet {sheetIndex + 1} of {sheetCount}</span>
+            </div>
+            <div class="page-grid">
+              {#each sheet as cell (cell.index)}
+                {#if cell.filled}
+                  <div
+                    class="card-cell"
+                    style:grid-column={mirroredCol(cell.index) + 1}
+                    style:grid-row={rowOf(cell.index) + 1}
+                  ><img src={BACK_IMG} alt="Types 3–6 card back" /></div>
+                {:else}
+                  <div
+                    class="card-cell blank"
+                    style:grid-column={mirroredCol(cell.index) + 1}
+                    style:grid-row={rowOf(cell.index) + 1}
+                  ></div>
+                {/if}
+              {/each}
+            </div>
+            <div class="page-guide page-guide-bottom">
+              <span class="guide-text">BACK SIDE — columns mirrored for long-edge flip</span>
+              <span class="guide-text">↻ LONG EDGE</span>
+            </div>
+          </div>
+        {/each}
+      {/if}
+    </div>
+
+    <!-- ── Print sidebar (same controls as the deck releaser) ── -->
+    <aside class="control-sidebar">
+      <h3 class="section-label">Choose a side</h3>
+      <SegmentedControl
+        options={SIDE_OPTIONS}
+        value={side}
+        onchange={(v) => (side = v)}
+        color="accent"
+        size="sm"
+      />
+      <p class="side-hint">
+        {#if side === "fronts"}Print these first, then flip the stack for the backs.
+        {:else if side === "backs"}Print after the fronts. Columns mirrored for the long-edge flip.
+        {:else}Fronts + flip instructions + backs, in one file.{/if}
+      </p>
+
+      <h3 class="section-label">Copies</h3>
+      <CopiesSelect
+        value={copies}
+        onchange={(n) => (copies = n)}
+        presets={[4, 8, 12, 24, 48]}
+        perPage={PER_PAGE}
+        {annotate}
+      />
+      <p class="sheet-readout">
+        <strong>{sheetCount}</strong> sheet{sheetCount === 1 ? "" : "s"}
+        {#if side === "combined"} of fronts + {sheetCount} of backs{/if}
+        {#if blanks > 0}<span class="blanks"> · {blanks} blank cell{blanks === 1 ? "" : "s"} on the last sheet</span>{/if}
+      </p>
+
+      {#if error}
+        <div class="error" role="alert">
+          <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> {error}
+        </div>
+      {/if}
+
+      <div class="actions">
+        <button class="action print-action" disabled={isPrinting || isExporting} onclick={handlePrint}>
+          {#if isPrinting}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          {:else}<i class="fas fa-print" aria-hidden="true"></i>{/if}
+          <span>{printLabel}</span>
+        </button>
+        <button class="action download-action" disabled={isPrinting || isExporting} onclick={handleDownload}>
+          {#if isExporting}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          {:else}<i class="fas fa-download" aria-hidden="true"></i>{/if}
+          <span>{downloadLabel}</span>
+        </button>
+      </div>
+
+      <p class="workflow-tip">
+        Print the fronts, flip your paper stack on the <strong>long edge</strong>, then print the backs.
+        Set scale to <strong>Actual Size / 100%</strong>. Finished card: 4 × 5.25 in.
+      </p>
+    </aside>
+  </div>
 </div>
 
 <style>
   .codex-print {
-    max-width: 760px;
-    margin: 0 auto;
-    padding: clamp(16px, 3vw, 32px);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     color: var(--theme-text, #fff);
+    padding: clamp(12px, 2vw, 24px);
+    box-sizing: border-box;
+    overflow: hidden;
   }
+
+  .head { flex-shrink: 0; }
 
   .head h1 {
     margin: 0 0 6px;
-    font-size: clamp(1.4rem, 3vw, 2rem);
+    font-size: clamp(1.3rem, 3vw, 1.9rem);
     font-weight: 700;
   }
 
   .lede {
-    margin: 0 0 20px;
-    max-width: 64ch;
+    margin: 0 0 16px;
+    max-width: 70ch;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    line-height: 1.55;
+    line-height: 1.5;
   }
 
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 20px;
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr minmax(280px, 340px);
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
   }
 
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    padding: 0 20px;
-    border-radius: 999px;
-    border: 1px solid transparent;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: filter 0.15s ease, background 0.15s ease;
-  }
-
-  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-  .btn.primary {
-    color: #fff;
-    background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #06b6d4 100%);
-  }
-  .btn.primary:not(:disabled):hover { filter: brightness(1.08); }
-
-  .btn.ghost {
-    color: var(--theme-text, #fff);
-    background: var(--theme-surface, rgba(255, 255, 255, 0.06));
-    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
-  }
-  .btn.ghost:not(:disabled):hover { background: var(--theme-surface-hover, rgba(255, 255, 255, 0.12)); }
-
-  .error { color: var(--semantic-error-text, #ff6b6b); font-size: 0.85rem; margin: 0 0 16px; }
-
-  /* ── Print preview (page sheets, mirroring the deck releaser) ── */
-  .pages-scroll {
+  /* ── Preview (page sheets, matching the deck releaser) ── */
+  .preview-pane {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 22px;
-    margin-bottom: 28px;
+    overflow-y: auto;
+    padding: 4px 8px 24px;
+    min-height: 0;
   }
 
   .page-label {
-    font-size: 12px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     text-align: center;
     margin-top: 4px;
@@ -179,11 +280,11 @@
     width: 100%;
     max-width: 560px;
     aspect-ratio: 8.5 / 11; /* US Letter portrait */
-    background: #fff;
+    background: var(--print-bg, #ffffff);
     border-radius: 4px;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-card, 0 6px 24px rgba(0, 0, 0, 0.4));
     box-sizing: border-box;
-    padding: calc(18 / 612 * 100%); /* MARGIN/PAGE_W */
+    padding: calc(18 / 612 * 100%); /* MARGIN / PAGE_W */
   }
 
   .page-grid {
@@ -196,7 +297,7 @@
   }
 
   /* Choreo Cards rainbow frame; white content inset; image centered. */
-  .cell {
+  .card-cell {
     padding: 4.5%;
     background: linear-gradient(
       to top,
@@ -204,9 +305,15 @@
       #00cc66 56%, #0066cc 70%, #0033cc 82%, #6600cc 100%
     );
     box-sizing: border-box;
+    overflow: hidden;
   }
 
-  .cell img {
+  .card-cell.blank {
+    background: transparent;
+    border: 1px dashed rgba(0, 0, 0, 0.12);
+  }
+
+  .card-cell img {
     display: block;
     width: 100%;
     height: 100%;
@@ -214,15 +321,17 @@
     background: #fff;
   }
 
-  .page-guide-bottom {
+  .page-guide {
     position: absolute;
     left: 6px;
     right: 6px;
-    bottom: 3px;
     display: flex;
     justify-content: space-between;
     pointer-events: none;
   }
+
+  .page-guide-top { top: 3px; }
+  .page-guide-bottom { bottom: 3px; }
 
   .guide-text {
     font-size: 7px;
@@ -231,26 +340,114 @@
     letter-spacing: 0.02em;
     white-space: nowrap;
   }
+  .guide-bold { font-weight: 600; }
 
-  .howto {
-    padding: 16px 20px;
-    border-radius: 12px;
-    background: var(--theme-panel-bg, rgba(255, 255, 255, 0.04));
+  /* ── Sidebar ── */
+  .control-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 14px;
+    overflow-y: auto;
+    min-height: 0;
+    align-self: start;
   }
 
-  .howto h2 { margin: 0 0 10px; font-size: 1rem; font-weight: 700; }
+  .section-label {
+    margin: 4px 0 0;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.3);
+  }
 
-  .howto ol {
+  .side-hint {
     margin: 0;
-    padding-left: 20px;
-    line-height: 1.7;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.8));
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+    min-height: 30px;
   }
 
-  .size-note {
-    margin: 10px 0 0;
-    font-size: 0.82rem;
+  .sheet-readout {
+    margin: 2px 0 0;
+    font-size: 12px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-variant-numeric: tabular-nums;
+  }
+  .sheet-readout strong { color: var(--theme-text, #fff); }
+  .blanks { color: rgba(255, 255, 255, 0.4); }
+
+  .error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(248, 113, 113, 0.08);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    border-radius: 8px;
+    font-size: 13px;
+    color: #f87171;
+  }
+
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 20px;
+    min-height: 52px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .action:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .print-action { background: linear-gradient(135deg, #10b981, #059669); }
+  .print-action:hover:not(:disabled) {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+  }
+
+  .download-action {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .download-action:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+
+  .workflow-tip {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.3);
+    line-height: 1.5;
+  }
+  .workflow-tip strong { color: rgba(255, 255, 255, 0.6); }
+
+  @media (max-width: 860px) {
+    .codex-print { overflow-y: auto; }
+    .layout { grid-template-columns: 1fr; }
+    .preview-pane { overflow: visible; }
+    .control-sidebar { overflow: visible; }
   }
 </style>
