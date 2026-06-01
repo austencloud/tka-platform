@@ -12,9 +12,13 @@
      *  badge ("fit" for zero-blank, else the blank count) and the custom field
      *  shows the live blanks for whatever is typed. */
     annotate?: (n: number) => Annotation | null;
+    /** Cards-per-sheet for the current card size. The chip at this count is the
+     *  "one card per page" default — the primary, most-used option — so it gets
+     *  a distinct highlighted treatment and a "1 / page" label. */
+    perPage?: number;
   }
 
-  let { value, onchange, presets = [1, 3, 6, 9, 12], annotate }: Props = $props();
+  let { value, onchange, presets = [1, 3, 6, 9, 12], annotate, perPage }: Props = $props();
 
   const isCustom = $derived(!presets.includes(value));
 
@@ -49,19 +53,22 @@
 <div class="copies-select" role="radiogroup" aria-label="Copies per card">
   {#each presets as p (p)}
     {@const a = annotate?.(p)}
+    {@const isPerPage = p === perPage}
     <button
       type="button"
       class="copies-option"
       class:active={value === p}
       class:perfect={p === bestFit}
+      class:per-page={isPerPage}
       role="radio"
       aria-checked={value === p}
-      aria-label="{p} {p === 1 ? 'copy' : 'copies'} per card{a ? (a.perfect ? ', fills every sheet' : `, ${a.blanks} blank cells`) : ''}"
-      title={a ? (a.perfect ? "Fills every sheet — no wasted cards" : `${a.blanks} blank cells`) : undefined}
+      aria-label="{p} {p === 1 ? 'copy' : 'copies'} per card{isPerPage ? ', one card per page (recommended)' : a ? (a.perfect ? ', fills every sheet' : `, ${a.blanks} blank cells`) : ''}"
+      title={isPerPage ? "One card per page — a full sheet of this card, cut into identical copies. The default." : a ? (a.perfect ? "Fills every sheet — no wasted cards" : `${a.blanks} blank cells`) : undefined}
       onclick={() => onchange(p)}
     >
       <span class="copies-num">{p}</span>
-      {#if p === bestFit}<span class="copies-badge">fits</span>{/if}
+      {#if isPerPage}<span class="copies-badge">1 / page</span>
+      {:else if p === bestFit}<span class="copies-badge">fits</span>{/if}
     </button>
   {/each}
   <div class="copies-custom-wrap" class:active={isCustom}>
@@ -134,6 +141,35 @@
   .copies-option.perfect:not(.active) .copies-badge {
     color: #4ade80;
     opacity: 1;
+  }
+
+  /* The one-card-per-page chip is the primary, most-used option. Give it a
+     persistent accent treatment so it stands apart from the plain counts even
+     before it's selected. (per-page wins over perfect for the badge color.) */
+  .copies-option.per-page:not(.active) {
+    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 16%, transparent);
+    color: var(--theme-accent, #4a9eff);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--theme-accent, #4a9eff) 55%, transparent);
+  }
+
+  .copies-option.per-page:not(.active) .copies-num {
+    font-weight: 700;
+  }
+
+  .copies-option.per-page .copies-badge {
+    color: var(--theme-accent, #4a9eff);
+    opacity: 1;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .copies-option.per-page.active .copies-badge {
+    color: var(--theme-text, #fff);
+  }
+
+  .copies-option.per-page:hover:not(.active) {
+    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 26%, transparent);
+    color: var(--theme-accent, #4a9eff);
   }
 
   .copies-option:hover:not(.active) {
