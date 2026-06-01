@@ -4,15 +4,18 @@
   const DASH_HEIGHT = 20;
   const DASH_GAP = 10; // Gap between letter and dash
 
-  // Dash fill color - always black like letter SVGs
-  // TKAGlyph's filter: invert(0.9) handles dark mode inversion
-  const DASH_FILL = "#231f20";
+  // Dash fill: black on light, off-white on dark. TKAGlyph no longer applies an
+  // inversion filter to the glyph group (it recolors the letter at the source to
+  // dodge iOS WebKit bug 184601), so the dash must carry its own dark-mode color.
+  const DASH_FILL_LIGHT = "#231f20";
+  const DASH_FILL_DARK = "#d9d9d9";
 
   let {
     letterWidth = 100,
     letterHeight = 100,
     visible = true,
     previewMode = false,
+    darkMode = false,
   } = $props<{
     /** Width of the letter this dash follows */
     letterWidth: number;
@@ -22,7 +25,11 @@
     visible?: boolean;
     /** Show at reduced opacity when not visible */
     previewMode?: boolean;
+    /** Dark mode: render the dash off-white instead of black. */
+    darkMode?: boolean;
   }>();
+
+  const dashFill = $derived(darkMode ? DASH_FILL_DARK : DASH_FILL_LIGHT);
 
   // Position dash to the right of the letter, vertically centered
   const dashX = $derived(letterWidth + DASH_GAP);
@@ -57,7 +64,7 @@
     class:preview-mode={previewMode}
     transform="translate({dashX}, {dashY})"
   >
-    <!-- Always black fill - TKAGlyph's filter handles dark mode inversion -->
+    <!-- Off-white in dark mode, black otherwise (TKAGlyph no longer filters). -->
     <rect
       class="dash-rect"
       class:animating={isAnimating}
@@ -67,7 +74,7 @@
       height={DASH_HEIGHT}
       rx="9.5"
       ry="9.5"
-      fill={DASH_FILL}
+      fill={dashFill}
       style="transform-origin: {DASH_WIDTH / 2}px {DASH_HEIGHT / 2}px"
     />
   </g>
