@@ -41,13 +41,18 @@
 
   const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
 
+  const prettyProp = (p: string) => p.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+
   function summary(d: ArchivedDeckMeta): string {
-    if (d.deckMode === "tnd") return "TnD";
     const parts: string[] = [];
-    if (d.loopType) parts.push(cap(d.loopType));
-    if (d.length) parts.push(`${d.length}-step`);
-    if (d.level) parts.push(`L${d.level}`);
-    if (d.period) parts.push(cap(d.period));
+    if (d.deckMode === "tnd") parts.push("TnD");
+    else {
+      if (d.loopType) parts.push(cap(d.loopType));
+      if (d.length) parts.push(`${d.length}-step`);
+      if (d.level) parts.push(`L${d.level}`);
+      if (d.period) parts.push(cap(d.period));
+    }
+    if (d.prop) parts.push(prettyProp(d.prop));
     return parts.join(" · ");
   }
 </script>

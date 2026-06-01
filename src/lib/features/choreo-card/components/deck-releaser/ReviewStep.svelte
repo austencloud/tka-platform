@@ -17,6 +17,9 @@
     bluePropType?: PropType;
     redPropType?: PropType;
     nextDeckNumber: number;
+    /** The deck's own number (reference # for generated, release # for released).
+     *  Titles an unnamed deck so it reads "Deck #007", never a stale name. */
+    refNumber?: number;
     deckName?: string;
     onSwapCard: (index: number) => void;
     onRedraw: () => void;
@@ -64,6 +67,7 @@
     bluePropType,
     redPropType,
     nextDeckNumber,
+    refNumber = 0,
     deckName = "",
     onSwapCard,
     onRedraw,
@@ -176,7 +180,7 @@
           title="Click to rename"
         />
       {:else}
-        <h2 class="deck-number" class:placeholder={!deckName}>{deckName || "Untitled Deck"}</h2>
+        <h2 class="deck-number" class:placeholder={!deckName}>{deckName || `Deck #${String(refNumber).padStart(3, "0")}`}</h2>
       {/if}
       <div class="deck-meta">
         <span class="meta-cards">{cards.length} cards</span>

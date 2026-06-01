@@ -54,6 +54,8 @@
   function displayName(r: DeckRelease): string {
     return r.name?.trim() || r.notes?.trim() || `Deck #${String(r.deckNumber).padStart(3, "0")}`;
   }
+
+  const prettyProp = (p?: string) => (p ? p.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()) : "");
 </script>
 
 <div class="release-history">
@@ -93,6 +95,9 @@
             <div class="release-notes">{displayName(release)}</div>
             <div class="release-meta">
               <span class="card-count">{release.cardCount} cards</span>
+              {#if release.bluePropType}
+                <span class="prop">{prettyProp(release.bluePropType)}</span>
+              {/if}
               <span class="distribution">{distributionSummary(release.stepCountDistribution)}</span>
             </div>
           </button>

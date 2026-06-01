@@ -338,6 +338,7 @@
     ++rs.drawGeneration; // cancel any in-flight draw
     const meta = archivedDecks.find((d) => d.refNumber === refNumber);
     rs.viewingRelease = null;
+    rs.name = ""; // generated decks are titled by number, not a stale release name
     rs.referenceNumber = refNumber;
     rs.sequences = payload.sequences;
     rs.cards = payload.cards;
@@ -902,6 +903,7 @@
 
   async function handleRedraw() {
     const gen = ++rs.drawGeneration;
+    rs.name = ""; // fresh draw = not-yet-named; title falls back to the deck number
     rs.reroll();
     rs.bumpReference();
     if (rs.deckMode === "loop") {
@@ -1129,6 +1131,7 @@
         bluePropType={rs.bluePropType}
         redPropType={rs.redPropType}
         nextDeckNumber={rs.nextDeckNumber}
+        refNumber={deckRefNumber}
         deckName={rs.name}
         isReleasing={rs.isReleasing}
         readOnly={rs.viewingRelease !== null}
