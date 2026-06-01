@@ -6,7 +6,6 @@
   Supports focus mode (tap to expand one pane).
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type {
     ViewerPlaybackState,
@@ -17,12 +16,10 @@
   import type { SplitConfig } from '../services/viewer-state-persistence';
   import { COMPARISON_MODE_LAYOUTS, splitConfigToMode, type ComparisonMode } from '../services/viewer-state-persistence';
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
   import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import RightRail from "./RightRail.svelte";
-  import PerformerHub from "$lib/shared/3d/components/controls/PerformerHub.svelte";
   import ComparisonModeBar from './ComparisonModeBar.svelte';
   import VideoGallery from './VideoGallery.svelte';
   import MandalaPane from './MandalaPane.svelte';
@@ -145,8 +142,36 @@
     onVideoUpload,
   }: Props = $props();
 
-  onMount(() => {
-    startSceneAssetPreload();
+  // Three.js / Threlte is multi-MB. The 3D canvas + performer hub are only
+  // imported once a 3D pane is actually activated, so any chunk that touches
+  // ViewerSplitPane (e.g. the lightweight QR landing page, which never sets a
+  // 3D pane) stays Three-free until/unless the user opens a 3D view.
+  let Viewer3DCanvas = $state<
+    typeof import("$lib/shared/3d/components/Viewer3DCanvas.svelte").default | null
+  >(null);
+  let PerformerHub = $state<
+    typeof import("$lib/shared/3d/components/controls/PerformerHub.svelte").default | null
+  >(null);
+  const needs3D = $derived(
+    splitConfig.leftPane === "animation-3d" ||
+      splitConfig.rightPane === "animation-3d",
+  );
+  $effect(() => {
+    if (needs3D && !Viewer3DCanvas) {
+      void Promise.all([
+        import("$lib/shared/3d/components/Viewer3DCanvas.svelte"),
+        import("$lib/shared/3d/components/controls/PerformerHub.svelte"),
+      ]).then(([canvas, hub]) => {
+        Viewer3DCanvas = canvas.default;
+        PerformerHub = hub.default;
+      });
+    }
+  });
+
+  // Preload heavy 3D scene assets only when a 3D pane is in play — keeps the
+  // 3D asset-loader import path off 2D-only pages.
+  $effect(() => {
+    if (needs3D) startSceneAssetPreload();
   });
 
   const comparisonMode = $derived(splitConfigToMode(splitConfig));
@@ -364,22 +389,24 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
           class="canvas-layer canvas-3d-layer"
           style="opacity:1;pointer-events:auto;"
         >
-          <Viewer3DCanvas
-            sequenceData={playback.animationState.sequenceData}
-            currentStep={playback.currentStep}
-            isPlaying={playback.isPlaying}
-            {bpm}
-            {onBpmChange}
-            bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
-            redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
-            hideOverlays={false}
-            fullScreen={layout.focusedPane === "animation"}
-            onExitFullScreen={onUnfocusPane}
-            {onPlaybackToggle}
-            {onProgressBarSeek}
-            {playbackMode}
-            {onPlaybackModeChange}
-          />
+          {#if Viewer3DCanvas}
+            <Viewer3DCanvas
+              sequenceData={playback.animationState.sequenceData}
+              currentStep={playback.currentStep}
+              isPlaying={playback.isPlaying}
+              {bpm}
+              {onBpmChange}
+              bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
+              redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
+              hideOverlays={false}
+              fullScreen={layout.focusedPane === "animation"}
+              onExitFullScreen={onUnfocusPane}
+              {onPlaybackToggle}
+              {onProgressBarSeek}
+              {playbackMode}
+              {onPlaybackModeChange}
+            />
+          {/if}
         </div>
       </div>
     {/if}
@@ -456,7 +483,9 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     {#if _3dLeftMounted}
       <div bind:this={_rail3d} class="persistent-rail" class:persistent-rail-hidden={!_3dLeftActive}>
         <RightRail renderMode="3d" />
-        <PerformerHub />
+        {#if PerformerHub}
+          <PerformerHub />
+        {/if}
       </div>
     {/if}
 
@@ -602,22 +631,24 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
             class="canvas-layer canvas-3d-layer"
             style="opacity:1;pointer-events:auto;"
           >
-            <Viewer3DCanvas
-              sequenceData={playback.animationState.sequenceData}
-              currentStep={playback.currentStep}
-              isPlaying={playback.isPlaying}
-              {bpm}
-              {onBpmChange}
-              bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
-              redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
-              hideOverlays={false}
-              fullScreen={false}
-              onExitFullScreen={onUnfocusPane}
-              {onPlaybackToggle}
-              {onProgressBarSeek}
-              {playbackMode}
-              {onPlaybackModeChange}
-            />
+            {#if Viewer3DCanvas}
+              <Viewer3DCanvas
+                sequenceData={playback.animationState.sequenceData}
+                currentStep={playback.currentStep}
+                isPlaying={playback.isPlaying}
+                {bpm}
+                {onBpmChange}
+                bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
+                redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
+                hideOverlays={false}
+                fullScreen={false}
+                onExitFullScreen={onUnfocusPane}
+                {onPlaybackToggle}
+                {onProgressBarSeek}
+                {playbackMode}
+                {onPlaybackModeChange}
+              />
+            {/if}
           </div>
         </div>
       {/if}
