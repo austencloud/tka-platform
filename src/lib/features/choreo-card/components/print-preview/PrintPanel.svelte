@@ -27,6 +27,8 @@
     onPrint: (mode: PrintPDFMode) => void;
     onExportPDF: (mode: PrintPDFMode, copies: number) => void;
     onExportZIP: () => void;
+    /** Download fronts + backs as two separate PDF files at once. */
+    onExportBoth?: () => void;
   }
 
   let {
@@ -47,6 +49,7 @@
     onPrint,
     onExportPDF,
     onExportZIP,
+    onExportBoth,
   }: Props = $props();
 
   const busy = $derived(isExporting || isPrinting || isRendering);
@@ -187,6 +190,14 @@
       {:else}<i class="fas fa-download" aria-hidden="true"></i>{/if}
       <span>{downloadLabel}</span>
     </button>
+    {#if onExportBoth}
+      <button class="action download-action both-action" disabled={busy}
+        onclick={() => { if (!busy) onExportBoth?.(); }}
+        title="Download the fronts and the backs as two separate PDF files">
+        <i class="fas fa-clone" aria-hidden="true"></i>
+        <span>Fronts + Backs</span>
+      </button>
+    {/if}
   </div>
 
   <p class="workflow-tip">

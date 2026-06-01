@@ -313,6 +313,14 @@
     }
   }
 
+  /** Download fronts + backs as TWO separate PDF files in one click (no combined
+   *  page, no per-side clicking). Sequential so each finishes before the next. */
+  async function handleExportFrontsAndBacks() {
+    if (renderedPairs.length === 0 || isExporting) return;
+    await handleExportPDF("fronts");
+    await handleExportPDF("backs");
+  }
+
   async function handlePrint(mode: PrintPDFMode) {
     if (renderedPairs.length === 0 || isPrinting) return;
     isPrinting = true; exportError = "";
@@ -1172,6 +1180,7 @@
             onPrint={handlePrint}
             onExportPDF={handleExportPDF}
             onExportZIP={handleExportZIP}
+            onExportBoth={handleExportFrontsAndBacks}
           />
         {:else}
           <div class="sidebar-empty">
