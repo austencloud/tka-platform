@@ -274,12 +274,23 @@
       ...new Set(sortedSequences.map((s) => simplifyRepeatedWord(s.word ?? "")).filter(Boolean)),
     ];
     const count = sortedSequences.length;
+    const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
+    const turns = `${rs.turnIntensity} turn${rs.turnIntensity === 1 ? "" : "s"}`;
+    // Concise recipe printed centered in each sheet's top margin.
+    const deckSummary = [
+      cap(loop),
+      period ? cap(period) : null,
+      `${rs.selectedLength}-step`,
+      `L${level}`,
+      turns,
+    ].filter(Boolean).join("  ·  ");
     return {
       title: `Deck ${deckRefPadded} — ${count} cards`,
       subject:
         `LOOP ${loop} · ${rs.selectedLength}-step · L${level}` +
         `${period ? ` · ${period}` : ""} · ${count} cards. Words: ${words.join(", ")}`,
       keywords: words,
+      deckSummary,
     };
   }
 

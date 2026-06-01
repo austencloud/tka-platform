@@ -66,8 +66,10 @@ export interface HomePrintOptions {
 	 *  with blanks only on the final sheet (no inter-color gaps). Default true. */
 	groupByElement?: boolean;
 	/** Document metadata embedded in the PDF (title / subject / keywords) so a
-	 *  downloaded file is indexable by deck reference + contents without opening. */
-	meta?: { title?: string; subject?: string; keywords?: string[] };
+	 *  downloaded file is indexable by deck reference + contents without opening.
+	 *  `deckSummary` also prints centered in each sheet's top margin (the recipe:
+	 *  e.g. "Rotated · Quartered · 1 turn · L1"). */
+	meta?: { title?: string; subject?: string; keywords?: string[]; deckSummary?: string };
 }
 
 /** Capitalize an element key for sheet labels: "fire" → "Fire". */
@@ -149,7 +151,7 @@ export async function exportHomePrintPDF(
 			}
 
 			drawCropMarks(frontsPage, layout);
-			drawSheetLabel(frontsPage, font, fontBold, sheetSide('FRONTS', sheetSlots), sheet + 1, totalSheets, deckName);
+			drawSheetLabel(frontsPage, font, fontBold, sheetSide('FRONTS', sheetSlots), sheet + 1, totalSheets, deckName, options.meta?.deckSummary);
 			drawFlipHint(frontsPage, font, "FRONT SIDE");
 			onProgress?.(++progressCount, progressTotal);
 		}
@@ -178,7 +180,7 @@ export async function exportHomePrintPDF(
 			}
 
 			drawCropMarks(backsPage, layout);
-			drawSheetLabel(backsPage, font, fontBold, sheetSide('BACKS', sheetSlots), sheet + 1, totalSheets, deckName);
+			drawSheetLabel(backsPage, font, fontBold, sheetSide('BACKS', sheetSlots), sheet + 1, totalSheets, deckName, options.meta?.deckSummary);
 			drawFlipHint(backsPage, font, "BACK SIDE — columns mirrored for long-edge flip");
 			onProgress?.(++progressCount, progressTotal);
 		}
@@ -249,6 +251,7 @@ function drawSheetLabel(
 	sheetNum: number,
 	totalSheets: number,
 	deckName: string,
+	deckSummary = "",
 ) {
 	const label = `${side}  ·  Sheet ${sheetNum} of ${totalSheets}`;
 	const labelWidth = fontBold.widthOfTextAtSize(label, 7);
@@ -259,6 +262,18 @@ function drawSheetLabel(
 		font: fontBold,
 		color: GUIDE_COLOR,
 	});
+
+	// Recipe params, centered in the top margin (may overlap the flip guide — fine).
+	if (deckSummary) {
+		const sumWidth = font.widthOfTextAtSize(deckSummary, 7);
+		page.drawText(deckSummary, {
+			x: (LETTER_W - sumWidth) / 2,
+			y: LETTER_H - LABEL_EDGE_Y - 7,
+			size: 7,
+			font: fontBold,
+			color: GUIDE_COLOR,
+		});
+	}
 
 	if (deckName) {
 		page.drawText(deckName, {
