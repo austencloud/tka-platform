@@ -340,27 +340,31 @@
           </button>
         </div>
 
-        <!-- Presets + grid mode -->
+        <!-- Controls: presets, scope toggle (Simple/All), grid mode — one tidy row -->
         <div class="pos-controls">
           <div class="pos-presets">
             <button class="pc-btn" onclick={() => { posShowAll = true; selectAllPositions(); }}>All</button>
             <button class="pc-btn" onclick={pickClassic3}>Classic 3</button>
             <button class="pc-btn" onclick={clearPositions}>Clear</button>
           </div>
-          <SegmentedControl
-            options={[{ value: GridMode.DIAMOND, label: "Diamond" }, { value: GridMode.BOX, label: "Box" }]}
-            value={posGridMode}
-            onchange={(v: GridMode) => { posGridMode = v; }}
-            color="accent"
-          />
-          <button class="pc-btn" onclick={() => (posShowAll = !posShowAll)}>
+          <button class="pc-btn pc-scope" class:active={posShowAll} onclick={() => (posShowAll = !posShowAll)}>
             {posShowAll ? "Simple (3)" : "All Variations (16)"}
           </button>
+          <div class="pos-gridmode">
+            <SegmentedControl
+              options={[{ value: GridMode.DIAMOND, label: "Diamond" }, { value: GridMode.BOX, label: "Box" }]}
+              value={posGridMode}
+              onchange={(v: GridMode) => { posGridMode = v; }}
+              color="accent"
+              size="sm"
+            />
+          </div>
         </div>
 
-        <!-- Multi-select position grid (tap to toggle which positions the deck draws from) -->
-        <div class="po-body">
-          <div class="pos-grid">
+        <!-- Multi-select position grid (tap to toggle which positions the deck draws from).
+             Advanced (16) view is locked to a 4×4 grid sized to fit without scrolling. -->
+        <div class="po-body" class:all={posShowAll}>
+          <div class="pos-grid" class:all={posShowAll}>
             {#each posList as p (p.id)}
               <button
                 class="pos-cell"
@@ -529,40 +533,90 @@
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 40px color-mix(in srgb, var(--theme-accent) 28%, transparent);
     overflow: hidden;
   }
-  /* Pos & Ori: CONTENT-driven. Our own grid sets a comfortable cell size; the modal sizes to
-     content (height auto), scrolling the grid only if it exceeds the viewport. */
-  .picker-overlay.posori { width: min(960px, 94vw); }
+  /* Pos & Ori: DEFINITE-height modal (not just max-height) so the advanced 4×4 grid never
+     scrolls. The grid's width is capped to the body's container height (100cqh), so the body
+     MUST have a definite height that doesn't itself depend on the grid — otherwise width and
+     height chase each other in a circle and the grid collapses. A fixed modal height makes
+     .po-body's flex:1 height a stable external budget that 100cqh resolves against.
+     Budget: header ~34 + controls ~38 + ori row ~38 + done ~46, four 14px gaps (56) and
+     16px×2 padding (32) ≈ 244px of chrome. At 720px tall that leaves ~476px for .po-body,
+     and a square 4×4 grid capped to (476 − 30) = 446px fits inside it with room to spare. */
+  .picker-overlay.posori { width: min(720px, 94vw); height: min(720px, 90vh); gap: 14px; }
   .pos-controls {
-    flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px;
+    flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
   }
   .pos-presets { display: flex; gap: 6px; }
   .pc-btn {
-    min-height: 40px; padding: 8px 16px; border-radius: 10px;
-    background: rgba(255, 255, 255, 0.08); border: 1.5px solid rgba(255, 255, 255, 0.18);
-    color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 150ms;
+    height: 36px; padding: 0 14px; border-radius: 9px;
+    background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.16);
+    color: var(--theme-text, #fff); font-size: 12.5px; font-weight: 600; line-height: 1; cursor: pointer;
+    transition: background 150ms, border-color 150ms;
+    display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;
   }
   .pc-btn:hover { background: rgba(255, 255, 255, 0.16); }
+  .pc-scope {
+    border-color: color-mix(in srgb, var(--theme-accent) 45%, transparent);
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+  }
+  .pc-scope.active {
+    border-color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 28%, transparent);
+  }
+  .pc-scope:hover { background: color-mix(in srgb, var(--theme-accent) 36%, transparent); }
+  /* Diamond/Box: cap its width so the segmented control isn't a full-width bar, and lower the
+     local touch-target floor so size="sm" reads as a compact pill, not a chunky 44px bar. */
+  .pos-gridmode { width: clamp(150px, 38%, 200px); --min-touch-target: 34px; }
+
+  /* The body is the flex remainder; the grid lives inside it, centered. Advanced view never
+     scrolls — overflow hidden plus a height-capped grid guarantees 4×4 fits. */
+  .po-body.all {
+    overflow: hidden; display: flex; align-items: center; justify-content: center;
+    container-type: size; /* establishes the cqh budget the advanced grid caps its width to */
+  }
+
   .pos-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px; align-content: start;
+    display: grid; gap: 10px; align-content: center; justify-content: center;
+    width: 100%; margin: 0 auto;
+  }
+  /* Simple (3): three across. */
+  .pos-grid:not(.all) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: 480px;
+  }
+  /* Advanced (16): exactly 4 columns × 4 rows, all visible, no scroll. Each cell is square
+     (aspect-ratio 1/1), columns and rows both gap 10px. With 4 columns + 3 col-gaps,
+     one cell = (W − 30) / 4, so the grid HEIGHT = 4·cell + 3·10 = (W − 30) + 30 = W — the
+     equal col/row gaps cancel, so a square-celled 4×4 grid is exactly as tall as it is wide.
+     Capping width at min(100%, body-height − 30) therefore caps height ≤ body height, so it
+     never overflows at any viewport; on tall viewports it caps at 460px for sane cell size. */
+  .pos-grid.all {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: min(100%, calc(100cqh - 30px), 460px);
   }
   .pos-cell {
-    position: relative; aspect-ratio: 1 / 1; padding: 6px; cursor: pointer;
-    background: rgba(0, 0, 0, 0.25); border: 2.5px solid transparent; border-radius: 12px;
+    position: relative; aspect-ratio: 1 / 1; padding: 5px; cursor: pointer;
+    background: rgba(0, 0, 0, 0.25); border: 2px solid transparent; border-radius: 12px;
     transition: border-color 150ms, transform 120ms; min-width: 0;
   }
   .pos-cell:hover { border-color: rgba(255, 255, 255, 0.3); }
   .pos-cell:active { transform: scale(0.97); }
-  .pos-cell.on { border-color: var(--theme-accent, #6366f1); box-shadow: 0 0 16px color-mix(in srgb, var(--theme-accent) 40%, transparent); }
+  .pos-cell.on { border-color: var(--theme-accent, #6366f1); box-shadow: 0 0 14px color-mix(in srgb, var(--theme-accent) 40%, transparent); }
   .pos-cell :global(.pictograph),
   .pos-cell :global(.pictograph svg) { width: 100%; height: 100%; display: block; }
   .pos-check {
-    position: absolute; top: 4px; right: 6px; width: 22px; height: 22px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800;
+    position: absolute; top: 4px; right: 5px; width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;
     color: #06121a; background: var(--theme-accent, #6366f1);
   }
-  .pos-ori-row { flex-shrink: 0; display: flex; gap: 12px; }
-  .pos-ori-row :global(.orientation-cycler) { flex: 1; }
+  /* Orientation cyclers: compact, side by side. Lower the local touch-target floor so they
+     read as tidy ~38px pills rather than the default 44–48px bars, and cap their height. */
+  .pos-ori-row {
+    flex-shrink: 0; display: flex; gap: 12px; justify-content: center;
+    --min-touch-target: 38px;
+  }
+  .pos-ori-row :global(.orientation-cycler) {
+    flex: 0 1 200px; min-height: 38px; border-radius: 10px;
+  }
 
   /* Loop modal: let the overlay flow (not absolute) so the panel sizes to content —
      no dead space below the cards. Period footer sits beneath it. */
