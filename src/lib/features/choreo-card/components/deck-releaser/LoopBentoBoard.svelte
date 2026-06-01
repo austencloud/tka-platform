@@ -32,6 +32,8 @@
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { type VariationConfig, type StartOriMode } from "../../services/deck-variation";
   import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
   import type { StepCountWeight } from "../../domain/models/DeckRelease";
@@ -81,6 +83,8 @@
   const POS_SHADOW = "175deg 65% 40%";
   const SIZE_COLOR = "linear-gradient(135deg, #e11d48 0%, #be123c 50%, #9f1239 100%)";
   const SIZE_SHADOW = "345deg 80% 45%";
+  const PROP_TILE_COLOR = "linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%)";
+  const PROP_TILE_SHADOW = "275deg 70% 50%";
 
   // Deck size is user-set (1–500). 54 fills a print page neatly (6 sheets × 9);
   // larger values generate that many unique sequences. Clamp + persist on change.
@@ -158,6 +162,12 @@
   let showLoop = $state(false);
   let showTransform = $state(false);
   let showPosOri = $state(false);
+  let showProp = $state(false);
+
+  // Deck prop. Shows the effective prop (chosen, else the global default).
+  const propLabel = $derived(
+    String(rs.bluePropType).replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()),
+  );
 
   // ── start position + orientation (ported from the unified-generation prototype)
   // Positions follow the deck's active grid mode (set in Transform). Selection is
@@ -220,6 +230,9 @@
       <BaseCard title="Period" currentValue={periodLabel} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} gridColumnSpan={2} onClick={cyclePeriod} />
     </div>
     <div class="tile">
+      <BaseCard title="Prop" currentValue={propLabel} color={PROP_TILE_COLOR} shadowColor={PROP_TILE_SHADOW} gridColumnSpan={2} onClick={() => (showProp = true)} />
+    </div>
+    <div class="tile">
       <TurnIntensityCard currentIntensity={rs.turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => { rs.turnIntensity = v; rs.persist(); }} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
     </div>
     <div class="tile">
@@ -266,6 +279,7 @@
       <div class="recipe-row"><dt>Length</dt><dd>{rs.selectedLength} steps</dd></div>
       <div class="recipe-row"><dt>Level</dt><dd>{currentLevel}</dd></div>
       <div class="recipe-row"><dt>Period</dt><dd>{periodLabel}</dd></div>
+      <div class="recipe-row"><dt>Prop</dt><dd>{propLabel}</dd></div>
       <div class="recipe-row"><dt>Max Turns</dt><dd>{rs.turnIntensity}</dd></div>
       <div class="recipe-row"><dt>Style</dt><dd>{PROP_LABELS[propIdx]} · {PROP_LABELS[handIdx]} · {DASH_LABELS[dashIdx]}</dd></div>
       <div class="recipe-row"><dt>Start · Ori</dt><dd>{posSummary}</dd></div>
@@ -298,6 +312,28 @@
         <TransformPanel {startOriModes} {onToggleStartOriMode} {gridModes} {onToggleGridMode} {reversalPattern} onReversalChange={(p) => onReversalChange?.(p)} reversalCustomDefault={false} />
       </div>
       <button class="po-done" onclick={() => (showTransform = false)}>Done</button>
+    </div>
+  </div>
+{/if}
+
+{#if showProp}
+  <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showProp = false; }}>
+    <div class="picker-overlay" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+      <div class="po-header">
+        <h3>Deck Prop</h3>
+        <button class="po-close" aria-label="Close" onclick={() => (showProp = false)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="po-body">
+        <BentoPropGrid
+          selectedPropType={rs.bluePropType}
+          variant="inline"
+          title="Select Prop"
+          onSelect={(p: PropType) => { rs.selectedPropType = p; rs.persist(); showProp = false; }}
+        />
+      </div>
+      <button class="po-done" onclick={() => (showProp = false)}>Done</button>
     </div>
   </div>
 {/if}

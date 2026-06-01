@@ -49,6 +49,8 @@ interface PersistedSession {
   turnIntensity?: number;
   /** Internal reference number for the persisted draft. */
   referenceNumber?: number;
+  /** Deck-wide prop choice (null ⇒ follow global setting). */
+  selectedPropType?: string;
   /** Selected TnD family ids. */
   tndFamilyIds?: string[];
   /** Selected TnD turn-pattern ids. */
@@ -112,11 +114,17 @@ class DeckReleaserState {
     // cache key, forcing stale (blue, pre-fix) cached backs to re-render fresh.
     return "rainbow";
   }
+  /** Deck-wide prop choice (Prop bento tile). Null ⇒ follow the user's global
+   *  prop setting. Set ⇒ overrides the global for BOTH hands at generation +
+   *  render time, so a deck's prop is part of how it draws regardless of the
+   *  app's current prop. A released deck's `bluePropOverride` still wins (it pins
+   *  the render to release-time settings). */
+  selectedPropType = $state<PropType | null>(null);
   get bluePropType(): PropType {
-    return this.bluePropOverride ?? settingsService.settings.bluePropType ?? PropType.STAFF;
+    return this.bluePropOverride ?? this.selectedPropType ?? settingsService.settings.bluePropType ?? PropType.STAFF;
   }
   get redPropType(): PropType {
-    return this.redPropOverride ?? settingsService.settings.redPropType ?? PropType.STAFF;
+    return this.redPropOverride ?? this.selectedPropType ?? settingsService.settings.redPropType ?? PropType.STAFF;
   }
   nextDeckNumber = $state(1);
   releasedNumber = $state<number | null>(null);
@@ -200,6 +208,7 @@ class DeckReleaserState {
       if (saved.selectedLength) this.selectedLength = saved.selectedLength;
       if (saved.turnIntensity != null) this.turnIntensity = saved.turnIntensity;
       if (saved.referenceNumber != null) this.referenceNumber = saved.referenceNumber;
+      if (saved.selectedPropType) this.selectedPropType = saved.selectedPropType as PropType;
       if (saved.tndFamilyIds?.length) this.selectedTnDFamilies = new Set(saved.tndFamilyIds);
       if (saved.tndTurnPatternIds?.length) this.selectedTnDTurnPatterns = new Set(saved.tndTurnPatternIds);
       if (saved.weights?.length) this.weights = saved.weights;
@@ -238,6 +247,7 @@ class DeckReleaserState {
       selectedLength: this.selectedLength,
       turnIntensity: this.turnIntensity,
       referenceNumber: this.referenceNumber,
+      selectedPropType: this.selectedPropType ?? undefined,
       tndFamilyIds: [...this.selectedTnDFamilies],
       tndTurnPatternIds: [...this.selectedTnDTurnPatterns],
       weights: this.weights,
