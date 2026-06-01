@@ -77,19 +77,39 @@
   const TURN_COLOR = "linear-gradient(135deg, #16a34a 0%, #15803d 50%, #166534 100%)";
   const TURN_SHADOW = "140deg 60% 40%";
 
-  const DECK_PRESETS = [26, 36, 52];
-  const STEP_PRESETS: Record<string, Record<number, number>> = {
-    beginner: { 16: 10, 12: 20, 8: 30, 4: 40 },
-    balanced: { 16: 25, 12: 25, 8: 25, 4: 25 },
-    advanced: { 16: 40, 12: 30, 8: 20, 4: 10 },
-  };
-  const STEP_ORDER = ["beginner", "balanced", "advanced"];
-  const STEP_LABEL: Record<string, string> = { beginner: "Beginner", balanced: "Balanced", advanced: "Advanced" };
   const TURN_PRESETS: Record<string, number> = { clean: 0, sprinkle: 0.4, spicy: 0.7 };
   const TURN_ORDER = ["clean", "sprinkle", "spicy"];
-  const TURN_LABEL: Record<string, string> = { clean: "Clean", sprinkle: "Sprinkle", spicy: "Spicy" };
 
-  let stepPreset = $state<string>("balanced");
+  // Deck size is fixed at 52 (a standard deck). Force it on mount so a persisted
+  // 26/36 can't linger now that the size tile is gone.
+  $effect(() => { if (rs.totalCards !== 52) rs.totalCards = 52; });
+
+  // Length: one fixed step count, every card that length. Replaces the old
+  // weighted step-mix — picking a length puts ALL weight on that one bucket.
+  const LENGTHS = [4, 8, 12, 16];
+  function deriveLength(ws: StepCountWeight[]): number {
+    const top = ws.filter((w) => w.weight > 0).sort((a, b) => b.weight - a.weight)[0];
+    return top?.stepCount ?? 8;
+  }
+  let selectedLength = $state<number>(8);
+  function applyLength(n: number) {
+    for (const w of weights) onWeightChange(w.stepCount, w.stepCount === n ? 100 : 0);
+  }
+  function stepLength(dir: number) {
+    const i = LENGTHS.indexOf(selectedLength);
+    selectedLength = LENGTHS[Math.max(0, Math.min(LENGTHS.length - 1, i + dir))]!;
+    applyLength(selectedLength);
+  }
+  // First time the pool's weights are known, collapse them to a single length so
+  // the deck is single-length from the start (the new model — no weighted mix).
+  let lengthInit = false;
+  $effect(() => {
+    if (!lengthInit && weights.length > 0) {
+      lengthInit = true;
+      selectedLength = deriveLength(weights);
+      applyLength(selectedLength);
+    }
+  });
 
   // Style axes (match the prototype's Smooth/Mixed/Choppy steppers). Props drives
   // per-card prop-reversal density (live, → reversalFrequency); Hands + Dashes are
@@ -161,10 +181,6 @@
   let showTransform = $state(false);
 
   // ── actions ────────────────────────────────────────────────────────────────
-  function cycleDeck() {
-    const i = DECK_PRESETS.indexOf(totalCards);
-    onTotalCardsChange(DECK_PRESETS[(i + 1) % DECK_PRESETS.length] ?? 52);
-  }
   function pickLoop(lt: LOOPType) {
     rs.selectedLoopTypes = new Set([lt]);
     loopComponents = parseLoopComponents(lt);
@@ -189,15 +205,6 @@
     rs.persist();
     onRebuildPool();
   }
-  function cycleStepMix() {
-    const i = STEP_ORDER.indexOf(stepPreset);
-    stepPreset = STEP_ORDER[(i + 1) % STEP_ORDER.length]!;
-    const preset = STEP_PRESETS[stepPreset]!;
-    for (const w of weights) {
-      const target = preset[w.stepCount];
-      if (target !== undefined) onWeightChange(w.stepCount, target);
-    }
-  }
   function cycleTurns() {
     // Resolve current preset from frequency, advance to the next.
     const cur = TURN_ORDER.find((id) => Math.abs(TURN_PRESETS[id]! - variationConfig.turnFrequency) < 0.001) ?? "sprinkle";
@@ -209,19 +216,16 @@
 <div class="bento-stage">
   <div class="card-grid">
     <div class="tile">
-      <BaseCard title="Deck Size" currentValue={`${totalCards}`} color={c.favorite.color} shadowColor={c.favorite.shadowColor} gridColumnSpan={2} onClick={cycleDeck} />
+      <BaseCard title="Loop Type" currentValue={LOOP_TYPE_LABELS[currentLoop]} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
     </div>
     <div class="tile">
-      <BaseCard title="Loop Type" currentValue={LOOP_TYPE_LABELS[currentLoop]} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
+      <StepperCard title="Length" currentValue={selectedLength} minValue={4} maxValue={16} description="STEP COUNT" color={c.length.color} shadowColor={c.length.shadowColor} gridColumnSpan={2} onIncrement={() => stepLength(1)} onDecrement={() => stepLength(-1)} />
     </div>
     <div class="tile">
       <StepperCard title="Level" currentValue={currentLevel} minValue={1} maxValue={3} description="BASE MOTIONS" color={c.level.color} shadowColor={c.level.shadowColor} gridColumnSpan={2} onIncrement={() => setLevel(currentLevel + 1)} onDecrement={() => setLevel(currentLevel - 1)} />
     </div>
     <div class="tile">
       <BaseCard title="Period" currentValue={periodLabel} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} gridColumnSpan={2} onClick={cyclePeriod} />
-    </div>
-    <div class="tile">
-      <BaseCard title="Step Mix" currentValue={STEP_LABEL[stepPreset] ?? "Balanced"} color={c.length.color} shadowColor={c.length.shadowColor} gridColumnSpan={2} onClick={cycleStepMix} />
     </div>
     <div class="tile">
       <BaseCard title="Turns" currentValue={turnLabel} color={TURN_COLOR} shadowColor={TURN_SHADOW} gridColumnSpan={2} onClick={cycleTurns} />
@@ -253,6 +257,7 @@
     <dl class="recipe-list">
       <div class="recipe-row"><dt>Cards</dt><dd>{effectiveTotal}</dd></div>
       <div class="recipe-row"><dt>Loop</dt><dd>{LOOP_TYPE_LABELS[currentLoop]}</dd></div>
+      <div class="recipe-row"><dt>Length</dt><dd>{selectedLength} steps</dd></div>
       <div class="recipe-row"><dt>Level</dt><dd>{currentLevel}</dd></div>
       <div class="recipe-row"><dt>Period</dt><dd>{periodLabel}</dd></div>
       <div class="recipe-row"><dt>Turns</dt><dd>{turnLabel}</dd></div>
