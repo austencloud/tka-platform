@@ -110,7 +110,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   let renderedCards: RenderedCard[] = $state([]);
   let renderProgress = $state(0);
-  let renderTotal = $state(0);
+  // Denominator anchored to the live sequence count, never a mutable snapshot.
+  // A stale render run (e.g. deck size 100 → 90) can't leave 100 lingering here.
+  const renderTotal = $derived(sequences.length);
   let isRendering = $state(false);
 
   let layout = $derived(getPageLayout(cardSize));
@@ -289,7 +291,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     if (seqs.length === 0) {
       renderedCards = [];
       renderProgress = 0;
-      renderTotal = 0;
       isRendering = false;
       return;
     }
@@ -298,8 +299,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   });
 
   async function renderAll(seqs: SequenceData[], generation: number) {
-
-    renderTotal = seqs.length;
+    // renderTotal is derived from `sequences` — no assignment needed here.
 
     // Phase 1: Hydrate in-memory cache from IndexedDB for any misses
     const missKeys: string[] = [];

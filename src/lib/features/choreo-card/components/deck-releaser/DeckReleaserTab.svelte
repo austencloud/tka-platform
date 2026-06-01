@@ -138,7 +138,6 @@
   let renderedPairs = $state<CardPair[]>([]);
   let isRendering = $state(false);
   let renderProgress = $state(0);
-  let renderTotal = $state(0);
   let isExporting = $state(false);
   let isPrinting = $state(false);
   let exportProgress = $state(0);
@@ -186,6 +185,10 @@
   const sortedSequences = $derived(elementSorted.sequences);
   const sortedFooters = $derived(elementSorted.footers);
   const tndElements = $derived(elementSorted.tndElements);
+  // Render denominator = live deck size, not a value echoed back from the
+  // renderer — a stale render run (deck size changed mid-render) can't leave the
+  // old count lingering. Declared after sortedSequences (its dependency).
+  const renderTotal = $derived(sortedSequences.length);
 
   const groupSizes = $derived.by(() => {
     const counts = new Map<string, number>();
@@ -1006,7 +1009,7 @@
         onGroupByLetterChange={(on) => { groupByLetter = on; }}
         onRerender={() => { rerenderKey++; }}
         onPairsReady={(pairs) => { renderedPairs = pairs; }}
-        onRenderStateChange={(s) => { isRendering = s.isRendering; renderProgress = s.progress; renderTotal = s.total; }}
+        onRenderStateChange={(s) => { isRendering = s.isRendering; renderProgress = s.progress; }}
         onSwapCard={handleSwapCard}
         onRedraw={handleRedraw}
         onRelease={openReleaseModal}
