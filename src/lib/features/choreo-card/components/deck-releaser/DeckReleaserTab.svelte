@@ -31,6 +31,7 @@
   import { releaserState as rs } from "./deck-releaser-state.svelte";
   import { resolveDeckSequences, applyVariationDescriptor, rollVariation } from "../../services/deck-variation";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
+  import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
   import { hashDeckContent, hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
   import { getPageLayout, type CardSizeId } from "../../domain/card-sizes";
   import { getTnDElementByIconPath, TND_ELEMENTS, type TnDElement } from "../../domain/tnd-element";
@@ -106,7 +107,9 @@
   const savedPrint = loadPrintSettings();
 
   let cardSize = $state<CardSizeId>(savedPrint.cardSize ?? "poker");
-  let copies = $state(savedPrint.copies ?? 1);
+  // Default to one card per page (9 poker / 6 tarot) — a full sheet of one card,
+  // cut into identical copies. The most-used layout; returning users keep theirs.
+  let copies = $state(savedPrint.copies ?? getPageLayout(cardSize).cardsPerPage);
   let groupByElement = $state(savedPrint.groupByElement ?? true);
   let groupByLetter = $state(savedPrint.groupByLetter ?? false);
   let selectedSide = $state<PrintSide>("fronts");
@@ -184,7 +187,7 @@
     const ladder = suggestCopyCounts(groupSizes, cardsPerPage).map((s) => s.copies);
     // copies === cardsPerPage fills exactly one sheet per card (one card repeated
     // a full sheet, cut into N identical copies) — always zero-waste, max cut
-    // consistency. Always offer it (9 for poker, 4 for tarot) even when the waste
+    // consistency. Always offer it (9 for poker, 6 for tarot) even when the waste
     // ladder wouldn't surface it on its own.
     const withSheet = ladder.includes(cardsPerPage) ? ladder : [...ladder, cardsPerPage];
     return withSheet.sort((a, b) => a - b);
@@ -639,6 +642,20 @@
       const resolved = resolveDeckSequences(rs.cards, baseByKey, edges);
       rs.sequences = resolved.map((r) => r.sequence);
       rs.brokenLoopCount = resolved.filter((r) => !r.turnLoopClosed).length;
+
+      // Pre-warm the worker pool now — both Draw and view-release funnel through
+      // here, so the ~5s asset-bundle seed overlaps the step→review transition and
+      // the review render hits the warm path. Fire-and-forget; failure is a no-op
+      // (render falls back to the main thread).
+      prewarmCardPool({
+        sequences: rs.sequences,
+        bluePropType: rs.bluePropType,
+        redPropType: rs.redPropType,
+        theme: rs.theme,
+        iconPaths: rs.cards
+          .map((c) => c.footer?.iconPath)
+          .filter((p): p is string => !!p),
+      });
     } catch (err) {
       console.warn("Failed to load sequences:", err);
     } finally {
@@ -821,7 +838,15 @@
         {renderTotal}
         {rerenderKey}
         sideFilter={previewSideFilter}
-        onCardSizeChange={(s) => { cardSize = s; }}
+        onCardSizeChange={(s) => {
+          // Keep "one card per page" sticky across size switches: if copies is the
+          // current size's per-page count, retarget it to the new size's (9 poker
+          // ↔ 6 tarot) instead of stranding the old number.
+          if (copies === getPageLayout(cardSize).cardsPerPage) {
+            copies = getPageLayout(s).cardsPerPage;
+          }
+          cardSize = s;
+        }}
         onCopiesChange={(n) => { copies = n; }}
         onGroupByElementChange={(on) => { groupByElement = on; }}
         onGroupByLetterChange={(on) => { groupByLetter = on; }}
