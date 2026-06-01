@@ -51,32 +51,37 @@ export function computeBundleSignature(opts: {
  * throws (errors are swallowed → main-thread fallback).
  */
 export function prewarmCardPool(opts: PrewarmOptions): void {
+  if (opts.sequences.length === 0) return;
+
+  const dispatcher = getCompositionDispatcher();
+  const signature = computeBundleSignature(opts);
+  if (dispatcher.getSeededSignature() === signature) return; // already hot
+
+  // Reserve the seed SYNCHRONOUSLY — raise the gate (and tear down a stale-deck
+  // pool) the instant prewarm is called, BEFORE any await. This guarantees a
+  // composeFrontBitmap that races in (e.g. the preview mounting) waits for this
+  // bundle via the gate in ensureInitialized instead of seeding the pool empty.
+  const finishSeed = dispatcher.beginSeed(signature);
+
   void (async () => {
+    let seeded = false;
     try {
-      if (opts.sequences.length === 0) return;
       const ok = await CompositionDispatcher.probeWorkerSupport();
-      if (!ok) return;
-
-      const dispatcher = getCompositionDispatcher();
-      const signature = computeBundleSignature(opts);
-      if (dispatcher.getSeededSignature() === signature) return; // already hot
-
+      if (!ok) return; // worker unusable → main-thread fallback (finally opens gate)
       const bundle = await getCardAssetBundle(opts.sequences, {
         bluePropType: opts.bluePropType,
         redPropType: opts.redPropType,
         theme: opts.theme,
         iconPaths: opts.iconPaths,
       });
-
-      // Different deck already seeded → tear down so re-init reseeds cleanly.
-      if (dispatcher.getSeededSignature() !== null) dispatcher.terminate();
-
       dispatcher.setAssetBundle(bundle);
       dispatcher.setOverrideBundle(buildOverridePlacementBundle());
-      dispatcher.setPendingSignature(signature);
-      await dispatcher.ensureInitialized();
+      seeded = true;
     } catch (err) {
       console.warn("[prewarmCardPool] pre-warm failed (main-thread fallback stays):", err);
+    } finally {
+      finishSeed(); // open the gate so neither prewarm nor a racer hangs
     }
+    if (seeded) await dispatcher.ensureInitialized();
   })();
 }

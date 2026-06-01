@@ -85,6 +85,9 @@ export class CompositionDispatcher {
   private pendingOverrideBundle: import("./override-placement-bundle").OverridePlacementBundle | null = null;
   private pendingSignature: string | null = null;
   private seededSignature: string | null = null;
+  // Open while a pre-warm builds its asset bundle. ensureInitialized awaits it so
+  // a composeFrontBitmap that races in during the build can't seed the pool empty.
+  private seedGate: Promise<void> | null = null;
 
   private static workerSupport: boolean | null = null;
   private static probing: Promise<boolean> | null = null;
@@ -112,6 +115,31 @@ export class CompositionDispatcher {
   /** The signature of the bundle the pool is currently seeded with (null if unseeded). */
   getSeededSignature(): string | null {
     return this.seededSignature;
+  }
+
+  /**
+   * Reserve an upcoming seed. Called SYNCHRONOUSLY by prewarmCardPool BEFORE its
+   * async asset-bundle build, so any composeFrontBitmap that races in during the
+   * build waits (via the seed gate in ensureInitialized) for the real bundle
+   * instead of seeding the pool empty. A signature change tears down the stale
+   * pool. Returns a resolver to call once the bundle has been set (or the build
+   * failed) — it opens the gate so waiters proceed.
+   */
+  beginSeed(signature: string): () => void {
+    this.pendingSignature = signature;
+    if (this.seededSignature !== null && this.seededSignature !== signature) {
+      this.terminate();
+    }
+    let resolve!: () => void;
+    const gate = new Promise<void>((r) => {
+      resolve = r;
+    });
+    this.seedGate = gate;
+    return () => {
+      resolve();
+      // Only clear if still our gate — a later beginSeed may have replaced it.
+      if (this.seedGate === gate) this.seedGate = null;
+    };
   }
 
   static canUseWorker(): boolean {
@@ -382,6 +410,10 @@ export class CompositionDispatcher {
   // ---- Pool lifecycle ----
 
   async ensureInitialized(): Promise<void> {
+    // If a pre-warm is mid-flight (building its bundle), wait for it to set the
+    // bundle before seeding — otherwise this call would seed the pool empty and
+    // cache asset-less renders. The gate opens once prewarm has set the bundle.
+    if (this.seedGate) await this.seedGate;
     if (this.initialized) return;
     if (this.initializing) return this.initializing;
     this.initializing = this.initPool();
