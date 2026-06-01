@@ -18,6 +18,7 @@
     prunePool,
     TND_BASE_CATALOG_ID,
     type CatalogPoolFilter,
+    type PoolEntry,
   } from "../../services/deck-composer";
   import type { DeckRelease, DeckReleaseCard, DeckRecipe } from "../../domain/models/DeckRelease";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -30,6 +31,8 @@
   import DeckReleaseNameModal from "./DeckReleaseNameModal.svelte";
   import { releaserState as rs } from "./deck-releaser-state.svelte";
   import { resolveDeckSequences, applyVariationDescriptor, rollVariation } from "../../services/deck-variation";
+  import { makeRng, childSeed } from "$lib/shared/foundation/utils/seeded-rng";
+  import { hashRecipe, mintSeed } from "../../services/deck-recipe";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
   import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
   import { hashDeckContent, hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
@@ -57,7 +60,7 @@
   let persistReady = $state(false);
 
   let catalogs = $state<Catalog[]>([]);
-  let pool = $state<Map<number, { sequenceId: string; sourceCatalogId: string; stepCount: number; word: string }[]>>(new Map());
+  let pool = $state<Map<number, PoolEntry[]>>(new Map());
   let releasedIds = $state<Set<string>>(new Set());
   let releases = $state<DeckRelease[]>([]);
   let isLoadingReleases = $state(true);
@@ -308,7 +311,12 @@
   }
 
   function rebuildPool() {
-    const filter: CatalogPoolFilter = { sliceTypes: rs.selectedSliceTypes };
+    const filter: CatalogPoolFilter = {
+      sliceTypes: rs.selectedSliceTypes,
+      loopTypes: rs.selectedLoopTypes,
+      levels: rs.selectedLevels,
+      startPositionIds: rs.selectedStartPositionIds.size > 0 ? rs.selectedStartPositionIds : undefined,
+    };
     pool = buildSequencePool(catalogs, filter);
     if (releasedIds.size > 0) {
       prunePool(pool, releasedIds, new Set([4]));
@@ -560,18 +568,29 @@
         };
       });
     }
+    // Rebuild the pool so the draw always reflects the current loop-type / level /
+    // start-position dials, not just whatever the last slice toggle left in `pool`.
+    rebuildPool();
+    // Seeded draw: the recipe (dials + seed) is the durable truth. Same (recipe,
+    // seed) → byte-identical deck (reproduce); Reroll mints a new seed → fresh draw.
+    const recipe = rs.toRecipe();
+    const masterKey = `${recipe.seed}:${hashRecipe(recipe)}`;
+    const rng = makeRng(masterKey);
     // Target deck size is the FINAL count. Registers × grid modes each duplicate
     // every base card, so compose `base = target / multiplier` and let the
     // enumeration below fan it back up to ~target (e.g. 52 target + radial &
     // nonradial → 26 base × 2 = 52 out, not 104).
     const { base } = loopDrawCounts(rs.totalCards, registers.length, grids.length);
-    const cards = composeDeck(pool, rs.weights, base, { center: rs.notes });
+    const cards = composeDeck(pool, rs.weights, base, { center: rs.notes }, rng);
     // Full enumeration: each composed card is emitted once per (register × grid
     // mode), sharing the same rolled reversal/turn so register/grid are pure axes.
+    // Per-slot sub-stream: each base card's variation is a pure function of
+    // (recipe, slot index), so adding/removing one card never reshuffles the rest.
     const out: DeckReleaseCard[] = [];
     let position = 1;
+    let baseIndex = 0;
     for (const c of cards) {
-      const rolled = rollVariation(c.stepCount, rs.variationConfig, Math.random);
+      const rolled = rollVariation(c.stepCount, rs.variationConfig, makeRng(childSeed(masterKey, baseIndex++)));
       for (const mode of registers) {
         for (const grid of grids) {
           const variation = {
@@ -596,6 +615,9 @@
     // previously composed/released deck so the header shows the placeholder, not
     // the last deck's title.
     rs.name = "";
+    // A brand-new deck = a fresh draw: mint a new seed so two consecutive Draws
+    // with identical dials still differ (the "fresh 52 each time" requirement).
+    rs.seed = mintSeed();
     rs.cards = composeFullDeck();
     if (await bounceIfDuplicate()) return;
     await loadSelectedSequences(gen);
@@ -606,6 +628,8 @@
 
   async function handleRedraw() {
     const gen = ++rs.drawGeneration;
+    // Reroll: new seed, same dials.
+    rs.reroll();
     rs.cards = composeFullDeck();
     if (await bounceIfDuplicate()) return;
     await loadSelectedSequences(gen);
