@@ -138,6 +138,11 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handleRetryExport: () => void;
     dismissPreview: () => void;
 
+    /** The live playback controller (null until animation services load).
+     *  Exposed so lightweight hosts (QR landing page) can drive their own
+     *  video export off the same controller the canvas is using. */
+    playbackController: AnimationPlaybackController | null;
+
     splitPanePlayback: ViewerPlaybackState;
     splitPaneImageComposition: ImageCompositionProps;
     splitPanePropRendering: PropRenderingProps;
@@ -217,6 +222,9 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     initialRenderMode?: '2d' | '3d';
     initialBlueVisible?: boolean;
     initialRedVisible?: boolean;
+    /** Effect to activate on mount (e.g. "trails" for the QR scan landing page).
+     *  Defaults to the stored/none config when omitted. */
+    initialActiveEffect?: string;
     children: Snippet<[OrchestratorContext]>;
   }
 
@@ -235,6 +243,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     initialRenderMode,
     initialBlueVisible = true,
     initialRedVisible = true,
+    initialActiveEffect,
     children,
   }: Props = $props();
 
@@ -329,6 +338,9 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
   const effectsConfigState = createEffectsConfigState();
   setEffectsConfigContext(effectsConfigState);
+  // Activate a requested effect on mount (QR scan page asks for "trails").
+  // setActiveEffect keeps tipEffectMap in sync so the renderer doesn't filter tips.
+  if (initialActiveEffect) effectsConfigState.setActiveEffect(initialActiveEffect);
 
   const scene3DRenderState = createScene3DRenderState();
   setScene3DRenderContext(scene3DRenderState);
@@ -1088,6 +1100,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handleCancelExport: exportCoord.handleCancelExport,
     handleRetryExport: () => exportCoord.handleRetryExport(handleExport),
     dismissPreview: exportCoord.dismissPreview,
+
+    playbackController: playbackControllerRef,
 
     splitPanePlayback: {
       animationState: modalAnimationState,
