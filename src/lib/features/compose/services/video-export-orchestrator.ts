@@ -204,11 +204,12 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         fps,
         bitrate,
         totalFrames: totalFramesEstimate,
-        // Default to AV1 for max fidelity: 4:4:4 (no chroma bleed on saturated
-        // prop edges) + 10-bit depth (no banding/noise on the dark gradient),
-        // resolved in the worker. Callers can still force "h264" for max
-        // device compatibility.
-        codec: options.codec ?? "av1",
+        // Default to platform-aware H.264 (the codec hardware-encoders
+        // accelerate on essentially every device of the last decade). AV1
+        // remains available via an explicit codec:"av1" option but is no
+        // longer the default — 10-bit AV1 encode is unsupported on most
+        // mobile/Safari, where configure() could stall and hang the export.
+        codec: options.codec ?? "h264",
       });
     } else {
       // Legacy inline exporter for WebM
