@@ -41,6 +41,8 @@
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
+  import type { ExportPhase } from "$lib/shared/video-export/components/ExportTakeover.svelte";
 
   const BASE_BPM = 60;
 
@@ -129,6 +131,20 @@
   const exportOptions = createExportOptionsState();
   let isExporting = $state(false);
   let exportProgress = $state<VideoExportProgress | null>(null);
+
+  // ── Export takeover overlay (dim scrim + progress ring over the live canvas) ──
+  const takeoverPhase = $derived<ExportPhase>(
+    !isExporting ? "idle"
+    : exportProgress?.stage === "error" ? "error"
+    : exportProgress?.stage === "encoding" ? "encoding"
+    : exportProgress?.stage === "complete" ? "complete"
+    : "capturing",
+  );
+  const takeoverLabel = $derived(
+    takeoverPhase === "encoding" ? "Encoding…"
+    : takeoverPhase === "complete" ? "Done"
+    : "Rendering",
+  );
 
   // ── Derived from AnimationPanelState ──
   const isPlaying = $derived(animPanelState?.isPlaying ?? false);
@@ -456,6 +472,14 @@
             animPanelState = state;
           }}
           onStepChange={() => {}}
+        />
+        <ExportTakeover
+          phase={takeoverPhase}
+          progress={exportProgress?.progress ?? 0}
+          phaseLabel={takeoverLabel}
+          error={exportProgress?.error ?? null}
+          onCancel={() => { isExporting = false; }}
+          onRetry={handleDownload}
         />
       </div>
 
