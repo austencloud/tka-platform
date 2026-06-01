@@ -54,14 +54,27 @@ if (browser && dev && "serviceWorker" in navigator) {
       }
 
       if (navigator.serviceWorker.controller) {
-        // A stale SW is still controlling this page. Reload once to escape it.
+        // A stale SW is still controlling this page. A plain reload is not
+        // enough: the SW may serve a CACHED HTML shell that points at old chunk
+        // hashes, so the reload just re-loads stale code (e.g. an old renderer
+        // bundle over the dev.tkaflowarts.com tunnel). Cache-bust the navigation
+        // with a unique query so the HTML — and thus the fresh chunk hashes — is
+        // refetched from the network. Same trick as forceFreshReload().
         if (!sessionStorage.getItem(SW_ESCAPE_KEY)) {
           sessionStorage.setItem(SW_ESCAPE_KEY, "1");
-          location.reload();
+          const url = new URL(window.location.href);
+          url.searchParams.set("fresh", String(Date.now()));
+          window.location.replace(url.toString());
         }
       } else {
-        // Clean (no controller) — re-arm the escape for any future stale SW.
+        // Clean (no controller) — re-arm the escape for any future stale SW and
+        // strip the one-shot cache-bust param so the URL stays tidy.
         sessionStorage.removeItem(SW_ESCAPE_KEY);
+        const url = new URL(window.location.href);
+        if (url.searchParams.has("fresh")) {
+          url.searchParams.delete("fresh");
+          window.history.replaceState(null, "", url.toString());
+        }
       }
     } catch {
       // Best-effort cleanup; never block app boot on SW teardown.
