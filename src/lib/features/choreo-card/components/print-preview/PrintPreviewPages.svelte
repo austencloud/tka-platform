@@ -60,6 +60,10 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     deckId?: string;
     /** Deck name for QR attribution tracking */
     deckName?: string;
+    /** Concise recipe line (deck label · loop · period · length · level · turns ·
+     *  grid · prop). Printed centered in each sheet's top margin by the PDF
+     *  exporter; the preview mirrors it in the same spot so screen == print. */
+    deckSummary?: string;
     /**
      * Pin prop types for the render instead of reading live settings. Set when
      * viewing a released deck so cached card renders stay valid across setting
@@ -96,6 +100,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     showBacks = false,
     deckId,
     deckName,
+    deckSummary,
     bluePropType,
     redPropType,
     sideFilter = null,
@@ -684,6 +689,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
           <div class="page">
             <div class="page-guide page-guide-top">
               {#if deckName}<span class="guide-text">{deckName}</span>{/if}
+              {#if deckSummary}<span class="guide-text guide-bold guide-recipe">{deckSummary}</span>{/if}
               <span class="guide-text guide-bold">FRONTS{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span>
             </div>
             <div
@@ -743,6 +749,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
           <div class="page">
             <div class="page-guide page-guide-top">
               {#if deckName}<span class="guide-text">{deckName}</span>{/if}
+              {#if deckSummary}<span class="guide-text guide-bold guide-recipe">{deckSummary}</span>{/if}
               <span class="guide-text guide-bold">BACKS{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span>
             </div>
             <div
@@ -1017,5 +1024,17 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   .guide-bold {
     font-weight: 600;
+  }
+
+  /* Recipe line: absolutely centered in the top margin, mirroring the PDF
+     exporter (deckSummary drawn at page-center) so screen == print. Sits above
+     the left deckName + right sheet label without shifting them. */
+  .guide-recipe {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 70%;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>

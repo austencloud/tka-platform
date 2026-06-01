@@ -22,6 +22,9 @@
      *  Titles an unnamed deck so it reads "Deck #007", never a stale name. */
     refNumber?: number;
     deckName?: string;
+    /** Concise recipe line shown centered in the preview's top margin, mirroring
+     *  the exported PDF sheet. */
+    deckSummary?: string;
     onSwapCard: (index: number) => void;
     /** Remove a card from the deck (LOOP decks only). Passed the sequence so the
      *  tab can resolve its real index regardless of the current sort. */
@@ -82,6 +85,7 @@
     nextDeckNumber,
     refNumber = 0,
     deckName = "",
+    deckSummary = "",
     onSwapCard,
     onRemoveCard,
     allowRemove = false,
@@ -289,6 +293,7 @@
       displayMode="sheets"
       deckId={String(nextDeckNumber).padStart(3, "0")}
       deckName={`LOOP Deck #${nextDeckNumber}`}
+      {deckSummary}
       onCardClick={handleCardClick}
       onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
       onPairsReady={onPairsReady}

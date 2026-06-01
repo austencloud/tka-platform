@@ -327,6 +327,10 @@
     };
   }
 
+  // Recipe line shown both centered on each exported PDF sheet AND in the print
+  // preview's top margin, so screen matches print. Same source as the PDF meta.
+  const deckSummaryLine = $derived(buildDeckMeta().deckSummary);
+
   // ── Generated-deck archive (local IndexedDB) ───────────────────────────────
   async function refreshArchive() {
     archivedDecks = await listArchivedDecks();
@@ -1288,6 +1292,7 @@
         nextDeckNumber={rs.nextDeckNumber}
         refNumber={deckRefNumber}
         deckName={rs.name}
+        deckSummary={deckSummaryLine}
         isReleasing={rs.isReleasing}
         readOnly={rs.viewingRelease !== null}
         brokenLoopCount={rs.brokenLoopCount}
