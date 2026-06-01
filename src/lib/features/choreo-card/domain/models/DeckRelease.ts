@@ -74,6 +74,11 @@ export interface DeckRecipe {
   levels?: number[];
   /** New LOOP axis: start-position id subset. Absent/empty ⇒ any. */
   startPositionIds?: string[];
+  /** Style axes (Smooth/Mixed/Choppy). Props drives prop-reversal density (live);
+   *  hands + dashes are stamped intent for the live-generation phase. */
+  propStyle?: "smooth" | "mixed" | "choppy";
+  handStyle?: "smooth" | "mixed" | "choppy";
+  dashStyle?: "low" | "mixed" | "high";
   /** TnD-only. */
   tndFamilyIds?: string[];
   tndTurnPatternIds?: string[];

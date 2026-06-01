@@ -91,6 +91,37 @@
 
   let stepPreset = $state<string>("balanced");
 
+  // Style axes (match the prototype's Smooth/Mixed/Choppy steppers). Props drives
+  // per-card prop-reversal density (live, → reversalFrequency); Hands + Dashes are
+  // recorded into the recipe as intent for the live-generation phase.
+  const PROP_STYLES = ["smooth", "mixed", "choppy"] as const;
+  const PROP_LABELS = ["Smooth", "Mixed", "Choppy"];
+  const DASH_STYLES = ["low", "mixed", "high"] as const;
+  const DASH_LABELS = ["Low", "Mixed", "High"];
+  const PROP_FREQ: Record<string, number> = { smooth: 0, mixed: 0.4, choppy: 0.7 };
+  const STYLE_COLORS = {
+    props: { color: c.continuity.color, shadow: c.continuity.shadowColor },
+    hands: { color: "linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%)", shadow: "245deg 70% 55%" },
+    dashes: { color: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)", shadow: "25deg 90% 55%" },
+  };
+  const propIdx = $derived(PROP_STYLES.indexOf(rs.propStyle));
+  const handIdx = $derived(PROP_STYLES.indexOf(rs.handStyle));
+  const dashIdx = $derived(DASH_STYLES.indexOf(rs.dashStyle));
+  function stepProp(dir: number) {
+    const next = PROP_STYLES[Math.max(0, Math.min(2, propIdx + dir))]!;
+    rs.propStyle = next;
+    onVariationConfigChange({ ...variationConfig, reversalFrequency: PROP_FREQ[next]! });
+    rs.persist();
+  }
+  function stepHand(dir: number) {
+    rs.handStyle = PROP_STYLES[Math.max(0, Math.min(2, handIdx + dir))]!;
+    rs.persist();
+  }
+  function stepDash(dir: number) {
+    rs.dashStyle = DASH_STYLES[Math.max(0, Math.min(2, dashIdx + dir))]!;
+    rs.persist();
+  }
+
   // ── derived labels ─────────────────────────────────────────────────────────
   const currentLoop = $derived(([...rs.selectedLoopTypes][0] as LOOPType) ?? LOOPType.ROTATED);
   const currentLevel = $derived([...rs.selectedLevels][0] ?? 1);
@@ -195,6 +226,15 @@
     <div class="tile">
       <BaseCard title="Turns" currentValue={turnLabel} color={TURN_COLOR} shadowColor={TURN_SHADOW} gridColumnSpan={2} onClick={cycleTurns} />
     </div>
+    <div class="tile">
+      <StepperCard title="Props" currentValue={propIdx} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => PROP_LABELS[i] ?? ""} color={STYLE_COLORS.props.color} shadowColor={STYLE_COLORS.props.shadow} gridColumnSpan={2} onIncrement={() => stepProp(1)} onDecrement={() => stepProp(-1)} />
+    </div>
+    <div class="tile">
+      <StepperCard title="Hands" currentValue={handIdx} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => PROP_LABELS[i] ?? ""} color={STYLE_COLORS.hands.color} shadowColor={STYLE_COLORS.hands.shadow} gridColumnSpan={2} onIncrement={() => stepHand(1)} onDecrement={() => stepHand(-1)} />
+    </div>
+    <div class="tile">
+      <StepperCard title="Dashes" currentValue={dashIdx} minValue={0} maxValue={2} description="FREQUENCY" formatValue={(i: number) => DASH_LABELS[i] ?? ""} color={STYLE_COLORS.dashes.color} shadowColor={STYLE_COLORS.dashes.shadow} gridColumnSpan={2} onIncrement={() => stepDash(1)} onDecrement={() => stepDash(-1)} />
+    </div>
     <div class="tile wide">
       <BaseCard title="Transform" currentValue={transformSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showTransform = true)} />
     </div>
@@ -216,6 +256,7 @@
       <div class="recipe-row"><dt>Level</dt><dd>{currentLevel}</dd></div>
       <div class="recipe-row"><dt>Period</dt><dd>{periodLabel}</dd></div>
       <div class="recipe-row"><dt>Turns</dt><dd>{turnLabel}</dd></div>
+      <div class="recipe-row"><dt>Style</dt><dd>{PROP_LABELS[propIdx]} · {PROP_LABELS[handIdx]} · {DASH_LABELS[dashIdx]}</dd></div>
       <div class="recipe-row"><dt>Transform</dt><dd>{transformSummary}</dd></div>
       <div class="recipe-row"><dt>Reversal</dt><dd>{reversalPattern?.label ?? "Continuous"}</dd></div>
     </dl>
