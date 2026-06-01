@@ -253,6 +253,7 @@
     closeOnBackdrop={false}
     backdropClass={!isMobile ? "transparent-backdrop" : isMobile && isNavVisible ? "nav-offset-backdrop" : ""}
     trapFocus={isMobile && !isNavVisible}
+    focusContainerOnOpen
     setInertOnSiblings={isMobile && !isNavVisible}
     onOpenChange={handleOpenChange}
   >

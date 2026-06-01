@@ -26,6 +26,13 @@ export const DEFAULT_INERT_EXCLUSIONS = [
 export interface FocusTrapOptions {
   /** Element to focus when trap activates. Defaults to first focusable element. */
   initialFocus?: HTMLElement | null;
+  /**
+   * When true (and no explicit `initialFocus` is given), move focus to the
+   * container itself rather than its first focusable control. Keeps the WAI-ARIA
+   * dialog contract (focus enters the dialog, Tab is trapped) without lighting up
+   * a `:focus-visible` ring on a header button the moment the dialog opens.
+   */
+  focusContainerOnInitial?: boolean;
   /** Whether to return focus to trigger element on deactivate. Default: true */
   returnFocusOnDeactivate?: boolean;
   /** Whether to set inert on sibling elements. Default: true */
@@ -179,6 +186,15 @@ export class FocusTrap {
       this.container?.contains(this.options.initialFocus)
     ) {
       this.options.initialFocus.focus();
+      return;
+    }
+
+    // Prefer focusing the container itself (no visible focus ring on a control)
+    if (this.options.focusContainerOnInitial && this.container) {
+      if (!this.container.hasAttribute("tabindex")) {
+        this.container.setAttribute("tabindex", "-1");
+      }
+      this.container.focus();
       return;
     }
 
