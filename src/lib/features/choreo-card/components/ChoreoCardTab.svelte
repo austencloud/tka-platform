@@ -7,6 +7,11 @@
 
 import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences, loadSequencesByIds } from "$lib/features/choreo-card/services/catalog-loader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import {
+    encodeNavHash,
+    decodeNavHash,
+    type CatalogNavState,
+  } from "$lib/features/choreo-card/services/catalog-nav-hash";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
@@ -185,37 +190,11 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
   // Prevents re-pushing state when we're already restoring from a popstate event.
   let isRestoringFromHistory = false;
 
-  interface CatalogNavState {
-    catalogId: string | null;
-    tndFamily: string | null;
-  }
-
   function buildCurrentNavState(): CatalogNavState {
     return {
       catalogId: selectedCatalogId,
       tndFamily: selectedTnDFamily,
     };
-  }
-
-  function encodeNavHash(state: CatalogNavState): string {
-    const params = new URLSearchParams();
-    if (state.catalogId) params.set("catalog", state.catalogId);
-    if (state.tndFamily) params.set("tndFamily", state.tndFamily);
-    const str = params.toString();
-    return str ? `catalog-nav:${str}` : "";
-  }
-
-  function decodeNavHash(hash: string): CatalogNavState | null {
-    if (!hash.startsWith("#catalog-nav:")) return null;
-    try {
-      const params = new URLSearchParams(hash.slice("#catalog-nav:".length));
-      return {
-        catalogId: params.get("catalog"),
-        tndFamily: params.get("tndFamily"),
-      };
-    } catch {
-      return null;
-    }
   }
 
   function pushNavState() {
