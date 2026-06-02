@@ -1,184 +1,195 @@
 # God Component Decomposition (Ceremony Refactor v2.0)
 
 Date: 2026-05-31
-Status: Draft — pending brainstorming pass
-Scope: Codebase-wide decomposition of oversized `.svelte` components into focused
-subcomponents + extracted `*.svelte.ts` state factories, gated by a ratcheting
-line-count lint rule.
+Status: Draft v2 — brainstormed 2026-06-02 against the live tree, reframed around
+evidence. Pending final ratification of the three open decisions at the bottom.
+Scope: Reduce the cognitive + agent-context cost of the codebase's most tangled
+`.svelte` components by extracting logic into `*.svelte.ts` factories and plain
+modules, and (secondarily) splitting markup-heavy layout shells, gated by a
+ratcheting complexity rule. NOT a blanket "split every long file" mandate.
 
-## Why this is "v2.0"
+## The reframe (why v1 of this spec was wrong, in one paragraph)
 
-The enterprise-ceremony retirement (v1) made **services** legible to AI agents:
-the killer metric was "3 files to understand a service (contract + impl + getter)
-→ 1." It paid compounding rent because every future edit and every parallel agent
-loads less and risks less.
+v1 proposed gating on total line count (800 → 600 → 400). Measuring the 62
+production `.svelte` files over 800 lines proved line count is the wrong metric.
+It **over-flags**: 35 of the 62 (56%) are big because of `<style>`, not logic, and
+splitting a cohesive presentational component to satisfy a line budget produces
+prop-drilling and worse readability, not better. It **under-flags**: genuine logic
+monsters hide under 800 total lines (`SequenceDrawerHost` 761, `AnimationSheetCoordinator`
+716, `Drawer.svelte` 611) because their bulk is tangled script. The disease is
+**script complexity**, not file size. This spec gates on that.
 
-God components are the inverse problem at the **component** layer. A 1,654-line
-single-file Svelte component owns its template, its state, its data fetching, its
-derived logic, and its inline `<style>` all at once. Any edit has the whole file
-as its blast radius. No agent (and no human) can hold it in working memory, so
-every change is slower, riskier, and more expensive than it should be.
+## Evidence (measured 2026-06-02)
 
-This is also the truest *architectural* tell of AI-authored code. Verbose JSDoc
-says "an AI typed this." A 1,600-line component says something worse: *nobody
-decided where the boundaries go.* That is a planning failure, not a typing habit,
-and it is the thing a senior reviewer forgives last.
+Across the 62 production `.svelte` over 800 lines, classified by which block
+dominates the file:
 
-Distinct from the comment-noise retirement (which is textual and cosmetic) and
-from the ceremony retirement (which was service-layer structural). This is
-component-layer structural.
+| Species | Count | What's big | Right treatment |
+|---|---|---|---|
+| **Logic monster** (`<script>`-dominant) | 22 | reactive state + helpers + pipelines fused in one file | extract script → `*.svelte.ts` factory + plain modules. **PRIMARY.** |
+| **Style monster** (`<style>`-dominant) | 35 | cohesive CSS on a presentational component | **mostly KEEP.** Svelte colocates CSS by design; a 700-line `<style>` is not a defect. |
+| **Template monster** (markup-dominant) | 5 | a layout shell wiring many children | break markup into sub-layout children. **SECONDARY.** |
 
-## Problem (measured 2026-05-31, against the live tree)
+The worst logic monster, `ChoreoCard.svelte` (1,655 lines): the template is only
+149 lines and fine. The disease is a **1,433-line `<script>`** holding 57 `$derived`,
+9 `$effect`, and a single `renderAllCells()` function spanning **317 lines**
+(630–947), fused with layout math, crossfade animation, context-menu handling, and
+dimension tracking. The fix is not "split the component." It is "extract the
+script." For the majority of real targets, this project is **God *Script*
+Extraction**, not god *component* splitting.
 
-| Threshold | `.svelte` files over it |
-|---|---|
-| > 400 lines | 441 |
-| > 600 lines | 187 |
-| > 800 lines | 66 (62 in production, 4 in `routes/test` scratch) |
+### The disease-score (the metric this spec gates on)
 
-Top offenders (production, excluding `routes/test`):
+```
+score = scriptLines + 4·($derived count) + 8·($effect count) + 3·(function count)
+```
 
-| Lines | File |
-|---|---|
-| 1654 | `src/lib/shared/sequence-viewer/components/ChoreoCard.svelte` |
-| 1322 | `src/lib/features/lab/tabs/PathMandalaLab.svelte` |
-| 1262 | `src/lib/features/museum/components/game/Museum3DScene.svelte` |
-| 1193 | `src/lib/features/create/shared/components/sequence-actions/SequenceActionsPanel.svelte` |
-| 1187 | `src/lib/features/tika/components/TikaReviewPanel.svelte` |
-| 1179 | `src/lib/features/background-builder/components/OceanLab.svelte` |
-| 1178 | `src/lib/shared/navigation/components/desktop-sidebar/ModuleQuickToggle.svelte` |
-| 1157 | `src/lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte` |
-| 1153 | `src/lib/shared/3d/components/controls/PerformerHubDetail.svelte` |
-| 1140 | `src/lib/features/choreo-card/components/CatalogBrowser.svelte` |
-| 1127 | `src/lib/features/mandala/MandalaModule.svelte` |
-| 1114 | `src/lib/features/browse/creators/components/profile/ProfileAdminSection.svelte` |
-| 1111 | `src/lib/features/choreo-card/components/deck-releaser/DeckReleaserTab.svelte` |
+`$effect` is weighted highest: it is the hardest reactivity to reason about and the
+riskiest to relocate (cleanup + ordering). The top targets by score:
 
-(Full >800 list lives in the inventory script output, Phase 0.)
+| score | total | script | $derived | $effect | fn | file |
+|---|---|---|---|---|---|---|
+| 1790 | 1655 | 1433 | 57 | 9 | 19 | `shared/sequence-viewer/components/ChoreoCard.svelte` |
+| 1016 | 978 | 856 | 76 | 6 | 16 | `shared/3d/camera/UnifiedCameraController.svelte` |
+| 957 | 1112 | 755 | 13 | 6 | 34 | `features/choreo-card/components/deck-releaser/DeckReleaserTab.svelte` |
+| 891 | 1194 | 678 | 18 | 6 | 31 | `features/create/shared/components/sequence-actions/SequenceActionsPanel.svelte` |
+| 871 | 761 | 708 | 6 | 8 | 25 | `features/create/shared/components/coordinators/SequenceDrawerHost.svelte` |
+| 845 | 852 | 703 | 9 | 5 | 22 | `features/tika/TikaModule.svelte` |
+| 800 | 883 | 714 | 2 | 3 | 18 | `features/create/shared/components/CreateModule.svelte` |
+| 779 | 716 | 656 | 5 | 8 | 13 | `shared/coordinators/AnimationSheetCoordinator.svelte` |
+| 709 | 810 | 538 | 21 | 3 | 21 | `features/loop-labeler/components/LOOPLabelerModule.svelte` |
+| 689 | 680 | 563 | 5 | 2 | 30 | `features/choreo-card/components/ChoreoCardTab.svelte` |
 
-These are precisely the files that predate the state-management factory rule and
-the primitive-discovery / never-hand-roll rules. The patterns to decompose *onto*
-already exist and are enforced everywhere else.
+(`Museum3DScene`, `RainbowScene`, `EffectOrchestrator3D` score high but are
+declarative 3D scene graphs — candidate keepers, see classification.)
 
 ## The target pattern already exists
 
-This is not inventing new architecture. It is pushing the monoliths onto patterns
-the codebase already establishes and enforces:
+300 `*.svelte.ts` state-factory modules already exist (`state-management` skill:
+factory + context). This is not new architecture. It is pushing the 22 logic
+monsters onto the pattern the other ~300 components already follow. The primitive
+library (`never-hand-roll`, chip consolidation) is the target for any template
+extraction. No new patterns get invented.
 
-- **State extraction:** 300 `*.svelte.ts` state-factory modules already exist
-  (`state-management` skill: factory + context). A god component's `$state` /
-  `$derived` / `$effect` blocks move into a colocated `*.svelte.ts` factory.
-- **Subcomponent extraction:** the primitive library is deep
-  (`never-hand-roll.md`, chip consolidation, `FilterChipBase`,
-  `SegmentedControl`). Repeated template regions become focused children, reusing
-  existing primitives rather than re-inlining markup.
-- **No new interaction patterns.** Decomposition is structural; it must not change
-  rendered output or behavior.
+## The split-must-earn-itself gate (the anti-cargo-cult guard)
+
+This is the load-bearing rule. A split that scatters one cohesive flow across five
+files, or introduces prop-drilling, is a **regression** even if it satisfies a line
+budget. Mirroring `never-hand-roll.md`'s justification gate: before extracting
+anything, state ONE of:
+
+1. **Cohesive responsibility** — this block is a self-contained job (a render
+   pipeline, a parse step, a layout calculation) that can be named and lifted whole.
+2. **Reused elsewhere** — another component already needs this; extraction dedups.
+3. **Independently testable** — pulled into a pure module, it becomes unit-testable
+   in a way it can't be while fused into a component.
+
+If the only reason is "the file is long," **do not split.** Long-but-cohesive beats
+short-but-scattered.
 
 ## Goals
 
-1. No production `.svelte` component over a target line budget (final target TBD in
-   brainstorming; candidate ratchet 800 → 600 → 400).
-2. State logic lives in `*.svelte.ts` factories, not inline in 1,000-line templates.
-3. Repeated template regions become focused subcomponents that reuse existing
-   primitives.
-4. A lint gate that ratchets the ceiling down and never regresses (the
-   `import-case-scan.cjs` / `worker-url-scan.cjs` guard model).
-5. Zero behavior or visual change — pure structural decomposition.
+1. No production `.svelte` above a target **disease-score** (final number in the
+   open decisions; the lint gate ratchets down from a baseline that captures the 22).
+2. Logic monsters: reactive state in `*.svelte.ts` factories, pure helpers in plain
+   modules, leaving a thin component (script proportional to its actual UI).
+3. Template monsters: markup split into focused sub-layout children reusing primitives.
+4. Style monsters: KEPT unless they also carry a logic problem.
+5. A ratcheting complexity-lint gate with an enumerated keeper allowlist (the
+   `import-case-scan.cjs` / `worker-url-scan.cjs` lock-in model).
+6. Zero behavior or visual change. Pure structural extraction.
 
 ## Non-Goals
 
-- Rewriting component logic or changing rendered output.
-- Touching inherently-complex components that are large for a real reason (3D
-  scene graphs, shader hosts, full-canvas labs) without a decomposition that
-  genuinely improves them — these get classified "keeper" with a stated reason,
-  not force-split.
-- Decomposing `routes/test/*` scratch/prototype pages (exempt; they are throwaway
-  harnesses).
-- The comment-noise retirement (separate, already specced) or any naming work.
+- Splitting cohesive components to hit a line number (explicitly forbidden by the
+  earn-itself gate).
+- Touching the 35 style-dominant components solely for their size.
+- Force-decomposing declarative 3D scene graphs / shader hosts.
+- Decomposing `routes/test/*` scratch harnesses (exempt).
+- Comment-noise retirement or naming work (separate specs).
 
 ## Phases
 
-### Phase 0: Inventory + auto-classification (script)
+### Phase 0: Disease-score inventory + species classification (script)
 
-Write `scripts/component-inventory.mjs` that, per `.svelte` file over the
-threshold, reports:
-- line count, and the split across `<script>` / template / `<style>`
-- responsibility signals: count of `$state` / `$derived` / `$effect`, number of
-  data-fetch calls (repository/getter calls), number of distinct top-level
-  template regions, inline `<style>` line count
-- a proposed classification:
-  - **decompose** — mixed responsibilities, extractable state + repeated regions
-  - **state-extract-only** — logic-heavy, template is already lean
-  - **keeper** — inherently complex (3D/shader/canvas), large for a real reason
+`scripts/component-inventory.mjs` computes, per `.svelte`: total / script / template
+/ style line splits, `$state`/`$derived`/`$effect`/function counts, the disease-score,
+and a proposed species (logic / style / template) + classification
+(extract / split / keeper-with-reason). Output: `scripts/component-manifest.json`
++ a human-readable dry-run, and the **keeper allowlist seed** (3D scenes, shader
+hosts, cohesive style-dominant components — each with a one-line reason). Drives
+every later phase, exactly as `ceremony-manifest.json` drove v1.
 
-Deliverable: `scripts/component-manifest.json` + a human-readable dry-run list.
-This manifest drives every subsequent phase, exactly as `ceremony-manifest.json`
-drove v1.
+### Phase 1: Pure-helper extraction (lowest risk, do first)
 
-### Phase 1: State extraction (lowest risk)
+For each logic monster, lift functions with **no reactivity** (`renderAllCells`,
+formatters, layout math, parsers) into plain colocated modules. No `$state`/`$effect`
+moves. Immediate script shrink, near-zero risk, builds the pattern. Smallest-score
+monster first.
 
-For "state-extract-only" + the state portion of "decompose": move `$state` /
-`$derived` / `$effect` and their helpers into a colocated `*.svelte.ts` factory
-per the `state-management` skill. Template keeps referencing the same names via
-the factory's returned API. No template changes.
+### Phase 2: Reactive-state extraction → `*.svelte.ts` factories
 
-### Phase 2: Subcomponent extraction
+Move `$state`/`$derived`/`$effect` and their helpers into a colocated factory per the
+`state-management` skill (the 300 existing factories are the reference). Highest care
+on `$effect` (cleanup + ordering). Per-component visual spot-check: must render
+identically. Revert any extraction that changes output; reclassify and note it.
 
-For "decompose": pull repeated / self-contained template regions into focused
-child components, reusing existing primitives (`primitive-discovery` first —
-grep before creating). Smallest-blast-radius components first to build the
-patterns, exactly like v1's smallest-module-first ordering.
+### Phase 3: Template decomposition (the 5 template monsters + over-big templates)
 
-### Phase 3: The ratcheting lint gate
+Break layout-shell markup into focused children, reusing existing primitives
+(`primitive-discovery` first — grep before creating). Apply the earn-itself gate per
+child.
 
-Add an ESLint / custom check that fails CI when a production `.svelte` exceeds the
-current ceiling (with an enumerated keeper allowlist). Ratchet: land at 800, then
-lower to 600, then 400 as phases complete. Never regress — same lock-in model as
-the v1 case-sensitivity guards.
+### Phase 4: Ratcheting complexity-lint gate
 
-### Phase 4: Validation
+Custom lint check failing CI when a production `.svelte` exceeds the current
+disease-score ceiling, minus the enumerated keeper allowlist. Land at a baseline that
+captures the 22, ratchet down as phases complete, never regress.
 
-Per-batch: `npm run check` error count == baseline, scoped tests green, and a
-visual spot-check on the decomposed component (it must render identically).
-Final: full check + test suite + the gate passing at its target ceiling.
+### Phase 5: Validation
+
+Per-batch: `npm run check` error count == baseline, scoped tests green, visual
+spot-check. Final: full check + suite + gate passing at target.
 
 ## Execution strategy
 
-Parallel-agentic, same as v1: the work is mechanical-with-judgment and has clear
-success criteria (renders identically, check stays green, gate passes). Each
-component is independent. Smallest-first per phase. Per-batch rebase onto moving
-`main`. Commit with explicit pathspec (shared-index safety rule).
+Isolated clone + rebase-often + smallest-first + explicit-pathspec commits, identical
+to the v1 ceremony model. Each component is independent. The logic monsters cluster
+in `sequence-viewer`, `create`, and `choreo-card` — the same hottest, most actively
+developed subtrees v1's progress note flagged for collision. Sequence accordingly.
 
 ## Expected outcomes
 
 | Metric | Before | After (target) |
 |---|---|---|
-| `.svelte` > 800 lines (production) | 62 | 0 |
-| `.svelte` > 600 lines | 187 | enumerated keepers only |
-| `.svelte` > 400 lines | 441 | enumerated keepers only |
-| Inline state in 1k-line templates | widespread | extracted to `*.svelte.ts` |
-| Largest editable blast radius | 1,654 lines | bounded by the gate |
-| Agent context cost per component edit | whole monolith | one focused file |
+| Logic monsters (script-dominant, high disease-score) | 22 | 0 outside keeper allowlist |
+| Largest single function in a component | 317 lines (`renderAllCells`) | bounded; pure modules unit-tested |
+| Reactive state living inline in 1k-line scripts | widespread | extracted to `*.svelte.ts` |
+| Agent context cost to edit a logic monster | whole 1,400+ line file | one focused module |
+| Style-dominant components churned for size | (v1 would have forced 35) | 0 (correctly left alone) |
+| Complexity-lint gate | none | ratcheting, with keeper allowlist |
 
 ## Risks
 
-1. **Forced-splitting an inherently-complex component** produces worse code than
-   leaving it. Mitigated by the "keeper" classification with a stated reason.
+1. **Cargo-cult splitting** producing prop-drilling / scattered flows. Mitigated by
+   the earn-itself gate. This is the primary risk and the reason the gate exists.
 2. **Behavior/visual drift** during extraction. Mitigated by zero-logic-change
-   discipline + visual spot-check per batch.
-3. **Prop-drilling explosion** if state is pushed down naively instead of into a
-   context-provided factory. Mitigated by following the `state-management`
-   factory + context pattern, not raw props.
-4. **Reactivity subtleties** moving `$effect` out of a component into a
-   `*.svelte.ts` module (cleanup, ordering). Needs care; the 300 existing
-   factories are the reference.
+   discipline + per-component visual spot-check + revert-on-test-flip.
+3. **`$effect` relocation subtleties** (cleanup, ordering, run timing). Highest-care
+   item; the 300 existing factories are the reference; Phase 1 (no-reactivity
+   helpers) deliberately precedes Phase 2 to de-risk.
+4. **Misclassifying a declarative scene graph as a logic monster.** Mitigated by the
+   keeper allowlist with stated reasons in Phase 0.
 
-## Open questions for brainstorming
+## Open decisions (ratify when back at a computer)
 
-- Final line ceiling: 400, 600, or a per-area budget?
-- Does the gate apply to `routes/` page components or only `lib/` components?
-- Keeper criteria: is "3D/shader/canvas" the only exemption, or are large
-  data/config components (e.g. `tab-definitions.ts`-style) also exempt?
-- Sequencing against in-flight feature work (the sequence-viewer + create
-  subtrees have the most god components AND the most active development).
+1. **The ceiling number.** Recommendation: gate on **disease-score, not total
+   lines**, at a baseline that flags exactly the current 22 (so day-one CI is green
+   on the allowlist), then ratchet. Open: the exact ratchet stops.
+2. **Routes coverage.** Recommendation: `lib/` components first; `routes/` pages
+   judged by the same disease-score (`routes/sequence/[id]` scores 611 and is a real
+   target); `routes/test/*` exempt. Open: whether `routes/` is in-scope for v2.0 or a
+   follow-up.
+3. **Keeper criteria breadth.** Recommendation: keep = style-dominant + lean script,
+   OR declarative 3D scene graph / shader host. Open: whether large pure-config
+   components (data tables, `tab-definitions`-style) also get a blanket exemption.
