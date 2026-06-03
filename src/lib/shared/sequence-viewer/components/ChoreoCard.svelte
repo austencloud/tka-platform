@@ -59,6 +59,11 @@
     detectMixedDurations,
     buildRenderOptions,
   } from "$lib/shared/choreo-card/services/choreo-card-cell-pipeline";
+  import {
+    formatSoloTurns,
+    shortOrientation,
+    formatDuration,
+  } from "$lib/shared/choreo-card/services/choreo-card-label-format";
   import { createChoreoCardLayoutState } from "$lib/shared/choreo-card/state/choreo-card-layout-state.svelte";
   import { createCrossfaderState } from "$lib/shared/choreo-card/state/crossfader-state.svelte";
   import { buildChoreoCardContextMenu } from "$lib/shared/choreo-card/services/choreo-card-context-menu";
@@ -553,40 +558,9 @@
     return sequence.steps?.[cellIndex]?.motions?.[color] ?? undefined;
   }
 
-  /** Format turns for the solo-mode bottom-left badge. "fl" stays "fl".
-   *  Returns empty string for 0 turns so the overlay stays hidden. */
-  function formatSoloTurns(turns: number | "fl" | undefined | null): string {
-    if (turns === undefined || turns === null) return "";
-    if (turns === "fl") return "fl";
-    if (turns === 0) return "";
-    return turns.toString();
-  }
-
-  /** Short-form orientation label. Level 1-3 are "in", "out", "cl", "cn".
-   *  Level 6 interradials collapse to 2-char forms. Returns null if unknown. */
-  function shortOrientation(ori: string | undefined | null): string | null {
-    if (!ori) return null;
-    switch (ori) {
-      case "in": return "in";
-      case "out": return "out";
-      case "clock": return "cl";
-      case "counter": return "cn";
-      case "clock_in": return "cli";
-      case "clock_out": return "clo";
-      case "counter_in": return "cni";
-      case "counter_out": return "cno";
-      default: return ori.length <= 3 ? ori : ori.slice(0, 3);
-    }
-  }
-
   /** Thin wrapper over extracted calculateGridPosition with component-scoped closure values */
   function calcGridPos(stepIndex: number, cols: number): { gridColumn: number; gridRow: number } {
     return calculateGridPosition(stepIndex, cols, includeStartPosition, startPositionLayout, mandalaLayoutOverride);
-  }
-
-  /** Format duration for badge display (e.g., 2 → "2×", 1.25 → "1.25×") */
-  function formatDuration(d: number): string {
-    return Number.isInteger(d) ? `${d}×` : `${d}×`;
   }
 
   /**
