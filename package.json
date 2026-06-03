@@ -14,8 +14,6 @@
     "dev:turbo": "vite --host 0.0.0.0 --force",
     "dev:kill": "npm run dev",
     "dev:mobile": "vite --host 0.0.0.0",
-    "adb:connect": "node scripts/adb-connect.js",
-    "adb:watch": "node scripts/adb-connect.js --watch",
     "build:native": "npm run build && npx cap sync",
     "cap:sync": "npx cap sync",
     "cap:android": "npx cap open android",
