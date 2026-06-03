@@ -4,7 +4,7 @@
  * so each visual variant doesn't duplicate this logic.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { explainLOOP } from "../../services/loop-explainer";
 import type { LOOPExplanation } from "../../services/types";
 import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";

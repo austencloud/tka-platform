@@ -17,7 +17,7 @@
   import { createMockPictographData } from "../../../../shared/data/mock-pictograph-data";
   import type { RetroPictographData } from "../../../../shared/domain/pictograph-types";
   import { generateRetroSequence } from "../../../adapters/notation-adapter";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   let {
     onstatuschange,

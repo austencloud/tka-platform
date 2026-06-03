@@ -11,8 +11,8 @@
  * Ported from legacy TurnsTupleInterpreter logic.
  */
 
-import type { PictographData } from "../../shared/domain/models/PictographData";
-import type { MotionData } from "../../shared/domain/models/MotionData";
+import type { PictographData } from "../../shared/domain/models/pictograph-data";
+import type { MotionData } from "../../shared/domain/models/motion-data";
 import { getMotionColor } from "../../../utils/svg-color-utils";
 import { MotionColor } from "../../shared/domain/enums/pictograph-enums";
 

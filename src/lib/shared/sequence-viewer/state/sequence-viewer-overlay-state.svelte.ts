@@ -1,8 +1,8 @@
 import { pushState, replaceState } from '$app/navigation';
-import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
+import type { SequenceData } from '$lib/shared/foundation/domain/models/sequence-data';
 import type { ViewingContext } from "../services/presentation-resolver";
-import { getShortCodeManager } from '$lib/shared/qr/getShortCodeManager';
-import { authState } from '$lib/shared/auth/state/authState.svelte';
+import { getShortCodeManager } from '$lib/shared/qr/get-short-code-manager';
+import { authState } from '$lib/shared/auth/state/auth-state.svelte';
 
 let _isOpen = $state(false);
 let _sequence = $state<SequenceData | null>(null);

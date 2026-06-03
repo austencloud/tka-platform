@@ -1,8 +1,8 @@
 import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 import type { ExtensionFlowCoordinator } from "./extension-flow-coordinator";
 import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { UndoOperationType } from "./undo-manager";
 
 export interface SequenceActionsOrchestratorDeps {

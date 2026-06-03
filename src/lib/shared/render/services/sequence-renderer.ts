@@ -1,4 +1,4 @@
-import type { SequenceData } from "../../foundation/domain/models/SequenceData";
+import type { SequenceData } from "../../foundation/domain/models/sequence-data";
 import { getBaseBeatSize } from "./layout-calculator";
 import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
 import { ImageComposer } from "./image-composer";

@@ -18,7 +18,7 @@ export function renderStepNumber(
   const offset = cellSize * STEP_NUMBER_OFFSET_RATIO;
 
   ctx.save();
-  ctx.font = `bold ${fontSize}px Georgia, serif`;
+  ctx.font = `bold ${fontSize}px Gelasio, Georgia, serif`;
   ctx.fillStyle = darkMode ? "#ffffff" : "#231f20";
   ctx.textAlign = "start";
   ctx.textBaseline = "hanging";

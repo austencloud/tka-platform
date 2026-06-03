@@ -1,6 +1,6 @@
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { BetaDetector } from "$lib/shared/pictograph/prop/services/beta-detector";
 
 /**

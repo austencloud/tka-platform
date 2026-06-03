@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { authState } from '$lib/shared/auth/state/authState.svelte';
+	import { authState } from '$lib/shared/auth/state/auth-state.svelte';
 	import ReportsDashboard from './components/ReportsDashboard.svelte';
 	import { t } from '$lib/shared/i18n/i18n.svelte';
 </script>

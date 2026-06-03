@@ -5,7 +5,7 @@
  * Analyzes pictograph candidates and determines available LOOP patterns.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type {
   GridPosition} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
@@ -14,7 +14,7 @@ import {
 import type { CircularizationOption } from "./sequence-extender";
 import type { OrientationAlignment } from "./orientation-alignment-calculator";
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { PositionAnalyzer } from "../../construct/option-picker/services/position-analyzer";
 import type { LOOPValidator } from "./loop-validator";
@@ -23,7 +23,7 @@ type OrientationAlignmentCalculator = {
   calculateOrientationAlignment: (sequence: SequenceData, bridgePictograph: PictographData) => OrientationAlignment | null;
   calculateResultingLength: (currentLength: number, rotationRelation: "exact" | "half" | "quarter" | null, repetitionsNeeded?: 1 | 2 | 4) => number;
 };
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   LOOPType,
   Period,

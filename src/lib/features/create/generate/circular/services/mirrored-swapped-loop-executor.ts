@@ -16,7 +16,7 @@
  * IMPORTANT: End position must be vertical mirror of start position
  */
 
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   RotationDirection,
   MotionColor,
@@ -37,7 +37,7 @@ import {
   MIRRORED_SWAPPED_VALIDATION_SET,
 } from "../domain/constants/strict-loop-position-maps";
 import type { Period } from "../domain/models/circular-models";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 export class MirroredSwappedLOOPExecutor {
   constructor() {}

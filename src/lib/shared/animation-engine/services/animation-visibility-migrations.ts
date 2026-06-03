@@ -1,5 +1,5 @@
-import { DEFAULT_CHARCOAL_PARAMS } from "../domain/types/CharcoalSparkTypes";
-import { validatePreset } from "../domain/types/LedColorPresets";
+import { DEFAULT_CHARCOAL_PARAMS } from "../domain/types/charcoal-spark-types";
+import { validatePreset } from "../domain/types/led-color-presets";
 
 export function migrateStoredSettings(parsed: Record<string, unknown>): Record<string, unknown> {
   if (parsed.propGlow !== undefined) {

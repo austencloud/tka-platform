@@ -4,7 +4,7 @@ import {
   moduleIdToFeatureId,
   tabIdToFeatureId,
   getDefaultFeatureRole,
-} from "./models/FeatureFlag";
+} from "./models/feature-flag";
 import { MODULE_DEFINITIONS } from "../../navigation/config/module-definitions";
 import { PREMIUM_CAPABILITY_CONFIGS } from "$lib/shared/subscription/domain/capability-flag-configs";
 

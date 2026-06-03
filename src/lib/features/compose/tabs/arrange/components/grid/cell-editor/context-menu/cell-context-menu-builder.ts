@@ -12,7 +12,7 @@ import type {
 } from "$lib/shared/components/context-menu/context-menu-types";
 import type { GridCell } from "../../../../state/arrange-grid-state.svelte";
 import type { TransformType, CellEffect } from "$lib/shared/animation-engine/domain/compose-types";
-import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+import { TrailMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
 
 // ============================================================================

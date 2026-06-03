@@ -13,7 +13,7 @@ Props:
 - x, y: Base position (matches TKAGlyph positioning)
 -->
 <script lang="ts">
-  import type { PictographData } from "../../shared/domain/models/PictographData";
+  import type { PictographData } from "../../shared/domain/models/pictograph-data";
   import type { Dimensions } from "../utils/turn-position-calculator";
   import {
     parseTurnsTuple,

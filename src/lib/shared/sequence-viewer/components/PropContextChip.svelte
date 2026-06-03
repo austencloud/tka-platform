@@ -6,7 +6,7 @@ Shows nothing when:
 - Creator's props match the viewer's props
 -->
 <script lang="ts">
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   const {
     creatorDisplayName,

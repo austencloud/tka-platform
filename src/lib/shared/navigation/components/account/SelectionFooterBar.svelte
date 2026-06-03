@@ -4,8 +4,8 @@
   Hidden when 0 props selected.
 -->
 <script lang="ts">
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 
   interface Props {
     selectedProps: PropType[];

@@ -6,8 +6,8 @@
     CellEffect,
     PropColors,
   } from "$lib/shared/animation-engine/domain/compose-types";
-  import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
-  import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+  import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+  import { TrailMode } from "$lib/shared/animation-engine/domain/types/trail-types";
   import type { PillId } from "$lib/shared/animation-panel/pill-nav/pill-types";
   import { buildPillSpecs } from "$lib/shared/animation-panel/pill-nav/pill-types";
   import IconRailNav from "$lib/shared/animation-panel/pill-nav/IconRailNav.svelte";

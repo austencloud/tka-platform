@@ -1,4 +1,4 @@
-import type { SequenceData } from "../../foundation/domain/models/SequenceData";
+import type { SequenceData } from "../../foundation/domain/models/sequence-data";
 import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
 
 export function drawSmartCellBorders(

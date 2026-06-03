@@ -5,10 +5,10 @@
  * with proper error handling and type safety.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   GridLocation,
   GridPosition,
@@ -20,7 +20,7 @@ import {
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { extractMetadata as extractUniversalMetadata } from "$lib/shared/services/universal-metadata-extractor";
 import * as difficultyCalculator from "$lib/shared/browse/services/sequence-difficulty-calculator";
 

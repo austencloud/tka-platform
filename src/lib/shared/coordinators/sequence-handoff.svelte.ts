@@ -8,7 +8,7 @@
  * Uses sessionStorage to persist handoff data across navigation.
  */
 
-import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
+import type { SequenceData } from '$lib/shared/foundation/domain/models/sequence-data';
 import { navigationState } from '$lib/shared/navigation/state/navigation-state.svelte';
 
 const HANDOFF_STORAGE_KEY = 'tka_sequence_handoff';

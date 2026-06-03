@@ -5,7 +5,7 @@
    * The live animation demo with notation alongside it.
    * Framed educationally, not as a feature pitch.
    */
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import LazyLandingDemo from "./LazyLandingDemo.svelte";
 
   interface Props {

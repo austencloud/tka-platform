@@ -5,17 +5,17 @@
  * Follows the same simplification pattern as OptionPickerService.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/createPictographData";
-import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { createStepData } from "$lib/shared/create/factories/createStepData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
+import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/create-pictograph-data";
+import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { createStepData } from "$lib/shared/create/factories/create-step-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import {
   saveSequence as persistSaveSequence,
 } from "$lib/shared/persistence/services/dexie-persistence-service";
-import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
 export class Workbench {
   constructor(
     private sequenceService: SequenceRepository,
@@ -153,6 +153,6 @@ export class Workbench {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { sequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+import { sequenceRepository } from "$lib/shared/create/services/sequence-repository";
 
 export const workbench = new Workbench(sequenceRepository);

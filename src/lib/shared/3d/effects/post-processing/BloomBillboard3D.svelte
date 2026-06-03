@@ -18,7 +18,7 @@
 
   import { T, useTask } from "@threlte/core";
   import { Vector3, CanvasTexture, AdditiveBlending, SRGBColorSpace } from "three";
-  import type { BloomIntent } from "$lib/shared/effects/domain/EffectsConfig";
+  import type { BloomIntent } from "$lib/shared/effects/domain/effects-config";
 
   interface Props {
     /** World-space position of this tip. null = hidden. */

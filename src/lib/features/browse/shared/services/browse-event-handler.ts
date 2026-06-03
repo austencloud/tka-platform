@@ -5,19 +5,19 @@
  * following the service-based architecture pattern.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type {
   BrowseEventHandlerParams } from "./types";
 import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-state.svelte";
-import { browseScrollState } from "$lib/shared/browse/state/BrowseScrollState.svelte";
-import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
+import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
 import { handleModuleChange } from "../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
 import { openSequenceViewer } from "../../../../shared/sequence-viewer/services/sequence-viewer-navigator";
 import { openVariationPicker } from "../state/variation-picker-state.svelte";
-import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 
-import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 export class BrowseEventHandler {
   private params: BrowseEventHandlerParams | null = null;
 

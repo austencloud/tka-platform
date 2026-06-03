@@ -4,8 +4,8 @@
  * Generates attribute keys for arrow positioning using modern data structures.
  */
 
-import type { ArrowPlacementData } from "../../placement/domain/ArrowPlacementData";
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
+import type { ArrowPlacementData } from "../../placement/domain/arrow-placement-data";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 
 function hasHybridMotions(pictographData: PictographData): boolean {
   try {

@@ -19,7 +19,7 @@ Usage:
 -->
 
 <script lang="ts">
-  import type { PreparedPictographData } from "../domain/models/PreparedPictographData";
+  import type { PreparedPictographData } from "../domain/models/prepared-pictograph-data";
   import GridSvg from "../../grid/components/GridSvg.svelte";
   import PropSvg from "../../prop/components/PropSvg.svelte";
   import ArrowSvg from "../../arrow/rendering/components/ArrowSvg.svelte";

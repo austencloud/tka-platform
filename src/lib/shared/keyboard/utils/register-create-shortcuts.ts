@@ -11,13 +11,13 @@ import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyb
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 import { getCreateModuleRef } from "$lib/shared/create/state/create-module-state-ref.svelte";
 import { getAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
-import { executeClearSequenceWorkflow } from "$lib/shared/create/utils/clearSequenceWorkflow";
+import { executeClearSequenceWorkflow } from "$lib/shared/create/utils/clear-sequence-workflow";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
 import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
 import { shiftStartPosition } from "$lib/shared/create/services/sequence-transforms";
-import { getAllPropTypes } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { getAllPropTypes } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const debug = createComponentLogger("CreateShortcuts");
 

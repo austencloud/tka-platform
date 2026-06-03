@@ -8,7 +8,7 @@
   import type {
     CollaborativeVideo,
     VideoCollaborator,
-  } from "../domain/CollaborativeVideo";
+  } from "../domain/collaborative-video";
   import { getAuthSync } from "$lib/shared/auth/firebase";
 
   const {

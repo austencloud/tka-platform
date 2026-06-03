@@ -6,22 +6,22 @@ import {
   staticNonRadialCounterClockwiseMap,
   staticRadialOverrideMap,
   staticNonRadialOverrideMap,
-} from "../config/StaticRotationMaps";
+} from "../config/static-rotation-maps";
 import {
   proClockwiseMap,
   proCounterClockwiseMap,
   antiClockwiseMap,
   antiCounterClockwiseMap,
-} from "../config/ProAntiRotationMaps";
+} from "../config/pro-anti-rotation-maps";
 import {
   dashClockwiseMap,
   dashCounterClockwiseMap,
-} from "../config/DashRotationMaps";
+} from "../config/dash-rotation-maps";
 import {
   floatClockwiseHandpathMap,
   floatCounterClockwiseHandpathMap,
-} from "../config/FloatRotationMaps";
-import { isClockwise } from "./RotationDirectionUtils";
+} from "../config/float-rotation-maps";
+import { isClockwise } from "./rotation-direction-utils";
 
 export function selectStaticMap(
   isRadial: boolean,

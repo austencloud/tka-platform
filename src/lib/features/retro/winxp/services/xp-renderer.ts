@@ -17,7 +17,7 @@
 
 import type { RetroPictographData } from "../../shared/domain/pictograph-types";
 import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
-import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
+import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/prepared-pictograph-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { EraRendererBase } from "../../shared/services/era-renderer-base";
 import type { DrawableImage } from '$lib/shared/render/services/svg-image-cache';

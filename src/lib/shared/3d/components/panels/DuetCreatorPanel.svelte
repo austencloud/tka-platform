@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { getDuetPersister } from "$lib/shared/3d/getDuetPersister";
+import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
   /**
    * DuetCreatorPanel
    *
@@ -10,10 +10,10 @@ import { getDuetPersister } from "$lib/shared/3d/getDuetPersister";
 
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import type { DuetPersister } from "../../services/duet-persister";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type {
     DuetPositioning,
     CreateDuetInput,

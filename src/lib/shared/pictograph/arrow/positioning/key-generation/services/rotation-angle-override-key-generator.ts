@@ -4,8 +4,8 @@
  * Generates keys for looking up rotation angle overrides in special placement JSON data.
  */
 
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import { Orientation } from "../../../../shared/domain/enums/pictograph-enums";
 
 export interface IRotationAngleOverrideKeyGenerator {

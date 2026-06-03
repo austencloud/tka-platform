@@ -1,10 +1,10 @@
 import { MotionColor } from "../domain/enums/pictograph-enums";
 import { GridMode } from "../../grid/domain/enums/grid-enums";
-import type { MotionData } from "../domain/models/MotionData";
-import { createMotionData } from "../domain/models/MotionData";
-import type { PictographData } from "../domain/models/PictographData";
+import type { MotionData } from "../domain/models/motion-data";
+import { createMotionData } from "../domain/models/motion-data";
+import type { PictographData } from "../domain/models/pictograph-data";
 import type { CSVPictographParser, CSVRow } from "./csv-pictograph-parser";
-import type { ParsedCsvRow } from "$lib/shared/foundation/domain/models/CsvModels";
+import type { ParsedCsvRow } from "$lib/shared/foundation/domain/models/csv-models";
 import type { CsvLoader } from "../../../foundation/services/data/csv-loader";
 import type { IMotionQueryHandler } from "../../../foundation/services/data/data-contracts";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
@@ -433,7 +433,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
 }
 
 import { csvLoader } from "../../../foundation/services/data/csv-loader";
-import { csvParser } from "../../../foundation/services/implementations/data/CsvParser";
+import { csvParser } from "../../../foundation/services/implementations/data/csv-parser";
 import { csvPictographParser } from "./csv-pictograph-parser";
 
 export const motionQueryHandler = new MotionQueryHandler(

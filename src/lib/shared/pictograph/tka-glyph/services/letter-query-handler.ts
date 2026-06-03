@@ -6,12 +6,12 @@
  */
 
 import type { CodexLetterMapping } from "$lib/shared/learn/domain/codex-models";
-import type { CodexLetterMappingRepo } from "$lib/shared/learn/services/CodexLetterMappingRepo";
+import type { CodexLetterMappingRepo } from "$lib/shared/learn/services/codex-letter-mapping-repo";
 import type { MotionType } from "../../shared/domain/enums/pictograph-enums";
-import type { PictographData } from "../../shared/domain/models/PictographData";
-import type { ParsedCsvRow } from "$lib/shared/foundation/domain/models/CsvModels";
+import type { PictographData } from "../../shared/domain/models/pictograph-data";
+import type { ParsedCsvRow } from "$lib/shared/foundation/domain/models/csv-models";
 
-import type { Letter } from "../../../foundation/domain/models/Letter";
+import type { Letter } from "../../../foundation/domain/models/letter";
 import type {
   CSVRow,
   CSVPictographParser,
@@ -391,7 +391,7 @@ export class LetterQueryHandler implements ILetterQueryHandler {
 
 // Direct singleton export for HMR-friendly imports
 import { csvLoader } from "../../../foundation/services/data/csv-loader";
-import { csvParser } from "../../../foundation/services/implementations/data/CsvParser";
+import { csvParser } from "../../../foundation/services/implementations/data/csv-parser";
 import { csvPictographParser } from "../../shared/services/csv-pictograph-parser";
 
 export const letterQueryHandler = new LetterQueryHandler(

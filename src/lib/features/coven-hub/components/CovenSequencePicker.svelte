@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
-  import { createBrowseEngine } from "$lib/shared/browse/engine/createBrowseEngine.svelte";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   interface Props {
     onSelect: (seq: SequenceData) => void;

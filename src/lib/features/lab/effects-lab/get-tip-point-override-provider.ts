@@ -1,9 +1,9 @@
 import { browser } from '$app/environment';
 import { TipPointOverrideProvider } from './services/tip-point-override-provider';
 import { getEffectPointsPersister } from './get-effect-points-persister';
-import { getFireDefaultsLoader } from '$lib/shared/animation-engine/getFireDefaultsLoader';
-import { setTipPointOverrideProvider } from '$lib/shared/animation-engine/domain/types/PropTipPoints';
-import { setTrailPointOverrideProvider } from '$lib/shared/animation-engine/domain/types/TrailPointTypes';
+import { getFireDefaultsLoader } from '$lib/shared/animation-engine/get-fire-defaults-loader';
+import { setTipPointOverrideProvider } from '$lib/shared/animation-engine/domain/types/prop-tip-points';
+import { setTrailPointOverrideProvider } from '$lib/shared/animation-engine/domain/types/trail-point-types';
 
 let instance: TipPointOverrideProvider | null = null;
 

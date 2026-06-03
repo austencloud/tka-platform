@@ -18,9 +18,9 @@
     userPreviewState,
     getEffectiveUserId,
   } from "$lib/shared/debug/state/user-preview-state.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { feedScrollState } from "../../state/feed-scroll-state.svelte";
 
   // Feed components

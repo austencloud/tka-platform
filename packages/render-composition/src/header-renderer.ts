@@ -286,7 +286,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
   const finalFontSize = Math.max(10, Math.floor(headerHeight * HEADER_WORD_FONT_SCALE));
   const textColor = darkMode ? "#ffffff" : "#1f2937";
   const dimmedColor = darkMode ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)";
-  ctx.font = `700 ${finalFontSize}px Georgia, serif`;
+  ctx.font = `700 ${finalFontSize}px Gelasio, Georgia, serif`;
   ctx.textBaseline = "middle";
 
   // Word: compressed glyphs → flat glyphs → styled text → plain text

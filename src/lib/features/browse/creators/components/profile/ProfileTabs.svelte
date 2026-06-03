@@ -5,7 +5,7 @@
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import PanelTabs from "$lib/shared/components/panel/PanelTabs.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
-  import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
+  import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 

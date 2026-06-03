@@ -5,12 +5,13 @@
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import TnDFamilyCards from "./TnDFamilyCards.svelte";
   import TransformPanel from "./TransformPanel.svelte";
-  import LoopComposeBoard from "./LoopComposeBoard.svelte";
-  import { loopDrawCounts } from "../../services/deck-composer";
+  import LoopBentoBoard from "./LoopBentoBoard.svelte";
+  import GalleryComposeBoard from "./GalleryComposeBoard.svelte";
+  import DeckPropSwitcher from "./DeckPropSwitcher.svelte";
   import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
   import type { VariationConfig, StartOriMode } from "../../services/deck-variation";
 
-  type DeckMode = "loop" | "tnd";
+  type DeckMode = "loop" | "tnd" | "gallery";
 
   interface Props {
     deckMode: DeckMode;
@@ -46,6 +47,9 @@
     /** Deck-wide reversal pattern (built in the strip). Absent → no reversal. */
     reversalPattern?: ResolvedReversalPattern | null;
     onReversalChange?: (pattern: ResolvedReversalPattern) => void;
+    /** Live-generation in progress + count (LOOP mode). */
+    isGenerating?: boolean;
+    genProgress?: number;
   }
 
   let {
@@ -81,6 +85,8 @@
     onToggleGridMode,
     reversalPattern = null,
     onReversalChange,
+    isGenerating = false,
+    genProgress = 0,
   }: Props = $props();
 
   // Per-family card projection mirrors buildTnDCards' enumeration: each family's
@@ -91,23 +97,23 @@
     selectedTurnPatternCount * Math.max(1, startOriModes.size),
   );
 
-  // LOOP enable gate: at least one step-count weight is non-zero.
-  const totalWeight = $derived(weights.reduce((s, w) => s + w.weight, 0));
-
+  // LOOP draws live (generate 52 fresh) — always drawable. TnD needs ≥1 card.
+  // Gallery draws from the library — always attemptable (empty result toasts).
   const canDraw = $derived(
-    deckMode === "tnd" ? tndCardCount > 0 : totalWeight > 0
-  );
-
-  // LOOP target = final deck size; orientation/grid axes fan a smaller base back
-  // up to it (loopDrawCounts), so the label shows the true emitted count.
-  const loopEffective = $derived(
-    loopDrawCounts(totalCards, startOriModes.size, gridModes.size).effective
+    deckMode === "tnd" ? tndCardCount > 0 : true
   );
 
   const drawLabel = $derived(
     deckMode === "tnd"
       ? `Draw ${tndCardCount} TnD Cards`
-      : `Draw ${loopEffective} Cards`
+      : deckMode === "gallery"
+        ? `Draw from Gallery (up to ${totalCards})`
+        : `Generate ${totalCards} Cards`
+  );
+
+  // Live-generation progress for the spinner label.
+  const loadingLabel = $derived(
+    isGenerating ? `Generating ${genProgress}/${totalCards}…` : "Loading Pools..."
   );
 </script>
 
@@ -123,6 +129,7 @@
         options={[
           { value: "loop", label: "LOOP" },
           { value: "tnd", label: "TnD" },
+          { value: "gallery", label: "Gallery" },
         ]}
         value={deckMode}
         onchange={(v) => onModeChange(v)}
@@ -141,6 +148,14 @@
         oninput={(e) => onNotesChange((e.target as HTMLInputElement).value)}
       />
     </div>
+    {#if deckMode !== "loop"}
+      <!-- LOOP decks pick the prop via the bento Prop tile; TnD + Gallery have no
+           such tile, so surface the switcher in the header. -->
+      <div class="prop-field">
+        <span class="control-label">Prop</span>
+        <DeckPropSwitcher />
+      </div>
+    {/if}
   </div>
 
   {#if deckMode === "tnd"}
@@ -179,8 +194,10 @@
         />
       </section>
     </div>
+  {:else if deckMode === "gallery"}
+    <GalleryComposeBoard />
   {:else}
-    <LoopComposeBoard
+    <LoopBentoBoard
       {weights}
       {totalCards}
       {sourceSummaries}
@@ -202,12 +219,12 @@
   <button
     type="button"
     class="draw-btn"
-    disabled={isLoading || !canDraw}
+    disabled={isLoading || isGenerating || !canDraw}
     onclick={onDraw}
   >
-    {#if isLoading}
+    {#if isLoading || isGenerating}
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      Loading Pools...
+      {loadingLabel}
     {:else}
       <i class="fas fa-dice" aria-hidden="true"></i>
       {drawLabel}
@@ -265,6 +282,21 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+
+  .prop-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .control-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   /* TnD board: Families | hero Turn-Pattern matrix | Transform rail.

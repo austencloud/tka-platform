@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import CardBack from "$lib/features/choreo-card/components/card-back/CardBack.svelte";
   import { getDarkThemeVisuals, getProofModeVisuals } from "$lib/features/choreo-card/components/card-back/card-back-theme-visuals";
-  import { createBrowseEngine } from "$lib/shared/browse/engine/createBrowseEngine.svelte";
+  import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import { onMount, onDestroy } from "svelte";
 
   const engine = createBrowseEngine({ persistKey: null, minColumns: 2, initialColumns: 3 });

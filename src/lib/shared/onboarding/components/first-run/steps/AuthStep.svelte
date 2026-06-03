@@ -9,7 +9,7 @@
   import { fly, fade } from "svelte/transition";
   import SocialAuthCompact from "$lib/shared/auth/components/SocialAuthCompact.svelte";
   import EmailAuthTabs from "$lib/shared/auth/components/EmailAuthTabs.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { onMount } from "svelte";
 
   interface Props {

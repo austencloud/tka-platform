@@ -5,11 +5,11 @@
  * Reverse-engineers the letter from motion parameters.
  */
 
-import { Letter } from "../../../foundation/domain/models/Letter";
+import { Letter } from "../../../foundation/domain/models/letter";
 import { GridMode } from "../../grid/domain/enums/grid-enums";
 import { MotionType } from "../../shared/domain/enums/pictograph-enums";
-import type { MotionData } from "../../shared/domain/models/MotionData";
-import type { PictographData } from "../../shared/domain/models/PictographData";
+import type { MotionData } from "../../shared/domain/models/motion-data";
+import type { PictographData } from "../../shared/domain/models/pictograph-data";
 
 interface LetterDerivationResult {
   letter: Letter | null;

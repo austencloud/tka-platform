@@ -5,8 +5,8 @@
  * Handles all 6 letter types with exact logic from legacy desktop app.
  */
 
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 import {
   getBlueState,
   getRedState,

@@ -4,7 +4,7 @@
  * Determines letter types and orientation characteristics for special placement logic.
  */
 
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 
 const HYBRID_LETTERS = [
   "C",

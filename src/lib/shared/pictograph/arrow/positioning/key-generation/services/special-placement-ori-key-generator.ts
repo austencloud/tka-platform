@@ -3,8 +3,8 @@
  * Generates ori_key matching SpecialPlacer's internal logic.
  */
 
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 
 export function generateOrientationKey(
   _motionData: MotionData,

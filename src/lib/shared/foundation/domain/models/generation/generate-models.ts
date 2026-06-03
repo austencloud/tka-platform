@@ -7,7 +7,7 @@
 // ============================================================================
 // GENERATION OPTIONS
 // ============================================================================
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type {
   LOOPType,
   Period,
@@ -20,8 +20,8 @@ import type {
   GridMode,
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 // ============================================================================
 // DATA CONTRACTS (Domain Models)
@@ -59,6 +59,15 @@ export interface GenerationOptions {
 
   // Multi-select start position constraints (blocklist approach)
   blockedStartPositions?: GridPosition[]; // Positions that should NOT be used
+
+  /**
+   * Override the start orientation per hand ("in" | "out" | "clock" | "counter").
+   * The engine rewrites beat 0 and reseeds orientation propagation from these.
+   * Absent ⇒ the engine keeps the randomly-selected start variation's orientation
+   * (default "in"). Threaded straight through to the engine's BuildOptions.
+   */
+  blueStartOrientation?: string;
+  redStartOrientation?: string;
 }
 
 export interface LetterDerivationResult {

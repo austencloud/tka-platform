@@ -13,7 +13,7 @@ import type { IGlyphTextureLoader } from "$lib/shared/animation-engine/services/
 import type { IPropTextureLoader } from "$lib/shared/animation-engine/services/IPropTextureLoader";
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
 import type { ISVGGenerator as SVGGenerator } from "$lib/shared/animation-engine/services/ISVGGenerator";
-import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
+import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 import type { SequenceAnimationOrchestrator } from "./sequence-animation-orchestrator";
 import type { AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
@@ -408,7 +408,7 @@ export class CanvasLifecycleManager {
 
     erm.trailOverlay = erm.createTrailOverlay();
     erm.trailOverlay.initialize(containerElement, canvasSize, canvasSize);
-    renderLoop.updateConfig({ renderers: { trails: erm.trailOverlay as unknown as import("./effects/EffectRenderer").EffectRendererLike } });
+    renderLoop.updateConfig({ renderers: { trails: erm.trailOverlay as unknown as import("./effects/effect-renderer").EffectRendererLike } });
     erm.syncEffectLayers();
   }
 

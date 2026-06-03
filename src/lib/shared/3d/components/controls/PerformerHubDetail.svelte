@@ -23,9 +23,9 @@
     isPropActive,
     getBasePropsByCategory,
     PROP_CATEGORIES,
-  } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 
   const viewer = getViewer3DContext();

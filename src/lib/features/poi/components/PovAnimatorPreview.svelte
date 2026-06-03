@@ -19,9 +19,9 @@
   import { onMount } from "svelte";
   import { getPoiContext } from "../context/poi-context";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { Letter } from "$lib/shared/foundation/domain/models/letter";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
   import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";

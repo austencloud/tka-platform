@@ -5,8 +5,8 @@
  * All functions are pure - no side effects, just computations.
  */
 
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 /**
  * Interface describing the shape of the sequence stats calculator module.

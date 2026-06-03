@@ -3,44 +3,55 @@
 
   QR Scan Landing Page
 
-  Minimal page that plays a live 2D Canvas animation of the scanned sequence.
-  Uses shared ExportVideoDrawer for all controls (effects, effort, playback,
-  display, export) — same components as the sequence viewer's Download Animation.
+  Plays the scanned sequence in the full sequence-viewer experience MINUS 3D:
+  2D animation, choreo card, mandala (with undulation), and side-by-side — all
+  with the redesigned ControlDock controls. Reuses SequenceViewerOrchestrator
+  (forceGuest) so there's no duplicated viewer brain; Three.js is lazy-loaded
+  out of ViewerSplitPane, so the scan page stays lightweight and chrome-free
+  (this route breaks out of the root layout via +layout@.svelte).
 
   URL format: /q/{shortCode}
 
   Flow:
   1. Resolve short code -> SequenceData
-  2. Lazy-load AnimationPlayer + GlyphCache (parallel with step 1)
-  3. Mount AnimationPlayer -> live 2D playback
-  4. Lazy-load ExportVideoDrawer for shared controls
+  2. Lazy-load SequenceViewerOrchestrator + GlyphCache (parallel with step 1)
+  3. Mount orchestrator -> ViewerSplitPane (2D panes) + control drawer
+  4. Lazy-load AnimationPanel drawer for shared controls
 -->
 <script lang="ts">
   import { page } from "$app/state";
+  import { goto } from "$app/navigation";
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
   import { isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
   import { ShortCodeManager } from "$lib/shared/qr/services/short-code-manager";
+  import { configureShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
+  import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
+  import { registerLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
+  import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
   import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
-  import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { updateSettings } from "$lib/shared/application/state/app-state.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
-  import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import { createExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
+  import type { SplitConfig } from "$lib/shared/sequence-viewer/services/viewer-state-persistence";
+  import type { ContentType, ViewerMode } from "$lib/shared/sequence-viewer/state/viewer-state.svelte";
+  import type { OrchestratorContext } from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
+  import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
-  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-  import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
-  import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+  import ViewerContentRail from "$lib/shared/sequence-viewer/components/ViewerContentRail.svelte";
+  import ViewerModeBottomBar from "$lib/shared/sequence-viewer/components/ViewerModeBottomBar.svelte";
+  import ToastContainer from "$lib/shared/toast/components/ToastContainer.svelte";
+  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
+  import type { ExportPhase } from "$lib/shared/video-export/components/ExportTakeover.svelte";
 
   const BASE_BPM = 60;
 
@@ -109,37 +120,59 @@
   let resolvedSeq: SequenceData | null = $state(null);
   let seqWord = $state("");
 
-  let selectedProp = $state(PropType.STAFF);
+  // ── Viewer ──
+  // The orchestrator is the full viewer brain; lazy-loaded so the scan page's
+  // first paint (the word-glyph loader) isn't blocked by the viewer chunk.
+  let OrchestratorComponent:
+    | typeof import("$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte").default
+    | null = $state(null);
+  // ViewerSplitPane lazy-loads alongside the orchestrator (it pulls the 2D pane
+  // components), so the word-glyph loader paints before the viewer chunk lands.
+  let ViewerSplitPaneComponent:
+    | typeof import("$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte").default
+    | null = $state(null);
 
-  function handlePropChange(propType: PropType) {
-    if (propType === selectedProp) return;
-    selectedProp = propType;
+  // View mode for the embedded viewer — the single source of truth that the
+  // ViewerContentRail (landscape side rail) and ViewerModeBottomBar (portrait
+  // bottom bar) drive, mirroring SequenceViewerDrawerHost. No 3D mode is offered
+  // on the scan page: webgl2Available={false} filters 'animation-3d' out of both
+  // switchers, so the only modes are split / animation / card / mandala.
+  let qrViewerMode = $state<ViewerMode>("split");
+  // Pane layout derived from the mode: mandala swaps the left pane; every other
+  // mode is the 2D-animation + choreo-card pairing. Single-view modes focus one
+  // pane (DrawerHost convention: 'image' = right/card, 'animation' = left).
+  const qrSplitConfig = $derived<SplitConfig>(
+    qrViewerMode === "mandala"
+      ? { leftPane: "mandala", rightPane: "card" }
+      : { leftPane: "animation", rightPane: "card" }
+  );
+  const qrFocusedPane = $derived<"animation" | "image" | null>(
+    qrViewerMode === "split" ? null : qrViewerMode === "card" ? "image" : "animation"
+  );
+  function selectQrMode(mode: ContentType) {
+    qrViewerMode = mode as ViewerMode;
+  }
+  function selectQrSplit() {
+    qrViewerMode = "split";
   }
 
-  // ── Playback state ──
-  let selectedBpm = $state(BASE_BPM);
-  let AnimationPlayerComponent: typeof import("$lib/shared/sequence-viewer/components/AnimationPlayer.svelte").default | null = $state(null);
-  let playbackController = $state<AnimationPlaybackController | null>(null);
-  let animPanelState = $state<AnimationPanelState | null>(null);
-
-  // ── Effects + export state ──
-  const effectsConfig = createEffectsConfigState();
-  setEffectsConfigContext(effectsConfig);
-
-  const exportOptions = createExportOptionsState();
+  // ── Export state (drives the QR ExportTakeover overlay + native share) ──
   let isExporting = $state(false);
   let exportProgress = $state<VideoExportProgress | null>(null);
 
-  // ── Derived from AnimationPanelState ──
-  const isPlaying = $derived(animPanelState?.isPlaying ?? false);
-  const playbackModeLocal = $derived<PlaybackMode>(animPanelState?.playbackMode ?? "continuous");
-
-  const singlePlayDuration = $derived.by(() => {
-    if (!resolvedSeq?.steps?.length || selectedBpm <= 0) return 0;
-    const totalDurationUnits = resolvedSeq.steps.reduce((sum, s) => sum + (s.duration ?? 1), 0);
-    const speed = selectedBpm / 60;
-    return totalDurationUnits / speed;
-  });
+  // ── Export takeover overlay (dim scrim + progress ring over the live canvas) ──
+  const takeoverPhase = $derived<ExportPhase>(
+    !isExporting ? "idle"
+    : exportProgress?.stage === "error" ? "error"
+    : exportProgress?.stage === "encoding" ? "encoding"
+    : exportProgress?.stage === "complete" ? "complete"
+    : "capturing",
+  );
+  const takeoverLabel = $derived(
+    takeoverPhase === "encoding" ? "Encoding…"
+    : takeoverPhase === "complete" ? "Done"
+    : "Rendering",
+  );
 
   // ── Layout detection ──
   let viewportWidth = $state(0);
@@ -157,9 +190,12 @@
       ? pageState.word
       : data?.meta?.word) || "Sequence"
   );
+  // Browser-tab title + OG/Twitter meta are all UTF-8, so keep the real Greek
+  // glyphs (Σ, Δ, Λ…) here. greekToAscii ("sig", "del") is for filenames/URLs
+  // only — using it for display turned the tab title into mojibake-looking ASCII.
   const displayWord = $derived(
     rawWord !== "Sequence"
-      ? greekToAscii(simplifyRepeatedWord(rawWord))
+      ? simplifyRepeatedWord(rawWord)
       : "Sequence"
   );
   const ogDesc = $derived(
@@ -182,24 +218,12 @@
 
   const shortCodeManager = new ShortCodeManager(stubBrowseLoader);
 
-  // ── Playback callbacks for ExportVideoDrawer ──
-  function handlePlaybackToggle() {
-    playbackController?.togglePlayback();
-  }
-
-  function handlePlaybackModeChange(mode: PlaybackMode) {
-    animPanelState?.setPlaybackMode(mode);
-  }
-
-  function handleBpmChange(newBpm: number) {
-    selectedBpm = newBpm;
-    const speed = newBpm / BASE_BPM;
-    playbackController?.setSpeed(speed);
-  }
-
-  // ── Download (uses export options from ExportVideoDrawer) ──
-  async function handleDownload() {
-    if (!resolvedSeq || !playbackController || !animPanelState) return;
+  // ── Download (reuses the orchestrator's live controller + the QR share UX) ──
+  // The orchestrator owns the playback controller driving the canvas; we grab it
+  // from the children-snippet context to feed the offscreen export engine, then
+  // deliver via the native share sheet (mobile) or disk (desktop).
+  async function handleExport(ctx: OrchestratorContext) {
+    if (!resolvedSeq || !ctx.playbackController || !ctx.modalAnimationState) return;
 
     const canvasEl = document.querySelector<HTMLCanvasElement>(".canvas-area canvas");
     if (!canvasEl) return;
@@ -211,7 +235,7 @@
       let orchestrator;
       try {
         const { getVideoExportOrchestrator } = await import(
-          "$lib/shared/animation-engine/getVideoExportOrchestrator"
+          "$lib/shared/animation-engine/get-video-export-orchestrator"
         );
         orchestrator = getVideoExportOrchestrator();
       } catch {
@@ -223,10 +247,10 @@
           { getBackgroundVideoEncoder },
         ] = await Promise.all([
           import("$lib/features/compose/services/video-export-orchestrator"),
-          import("$lib/shared/animation-engine/getVideoExporter"),
-          import("$lib/shared/animation-engine/getCompositeVideoRenderer"),
-          import("$lib/shared/animation-engine/getExportGlyphPrerenderer"),
-          import("$lib/shared/animation-engine/getBackgroundVideoEncoder"),
+          import("$lib/shared/animation-engine/get-video-exporter"),
+          import("$lib/shared/animation-engine/get-composite-video-renderer"),
+          import("$lib/shared/animation-engine/get-export-glyph-prerenderer"),
+          import("$lib/shared/animation-engine/get-background-video-encoder"),
         ]);
         orchestrator = new VideoExportOrchestrator(
           getVideoExporter(),
@@ -236,12 +260,12 @@
         );
       }
 
-      const opts = exportOptions.getVideoOptions();
+      const opts = ctx.exportOptions.getVideoOptions();
 
       const blob = await orchestrator.executeExport(
         canvasEl,
-        playbackController,
-        animPanelState,
+        ctx.playbackController,
+        ctx.modalAnimationState,
         (progress) => {
           exportProgress = progress;
         },
@@ -252,15 +276,18 @@
           resolution: opts.resolution,
           includeAnimationStartPosition: opts.includeStartPosition,
           includeEndHold: opts.includeEndHold,
+          // Thread the orchestrator's resolved prop so the offscreen export
+          // engine loads matching textures. The player mounts dark.
+          bluePropType: ctx.bluePropType,
+          redPropType: ctx.redPropType,
+          previewDarkMode: true,
         }
       );
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${seqWord}.mp4`;
-      a.click();
-      URL.revokeObjectURL(url);
+      // Mobile: open the native share sheet so the user picks where the MP4 goes
+      // (Files, Photos, a message…) instead of a blind background download.
+      // Desktop: straight to disk.
+      await shareOrDownloadBlob(blob, `${seqWord}.mp4`, { title: seqWord });
     } catch (err) {
       console.error("[QR] Download failed:", err);
     } finally {
@@ -291,10 +318,20 @@
       };
       checkViewport();
       window.addEventListener("resize", checkViewport);
+      onDestroy(() => window.removeEventListener("resize", checkViewport));
 
-      // Cleanup handled by onDestroy below
-      const cleanup = () => window.removeEventListener("resize", checkViewport);
-      onDestroy(cleanup);
+      // The bare /q layout skips the root-layout bootstrap (composition-root),
+      // so the critical registrations never fire on this route. Wire the three
+      // the scan viewer actually consumes:
+      //  - short-code manager: getShortCodeManager() (ChoreoCard's QR generator)
+      //  - LOOP detector: getLoopDetector() throws otherwise, so the
+      //    compositional QR encoder errors and every code falls back to flat
+      //    (bigger codes + a console warning on every generation).
+      //  - loop display resolver: tryGet…() degrades silently, dropping the
+      //    LOOP component labels on the scanned ChoreoCard.
+      configureShortCodeManager(stubBrowseLoader);
+      registerLoopDetector(loopDetector);
+      registerLoopDisplayResolver(resolveLoopDisplay);
     }
 
     if (!shortCode) {
@@ -318,16 +355,17 @@
         }
       }
 
-      // Heaviest phase: short-code resolve + full glyph cache + player chunk.
+      // Heaviest phase: short-code resolve + full glyph cache + viewer chunk.
       // No sub-progress available, so trickle toward 85 until it completes.
       setProgress(35);
       trickleTo(85);
 
-      const [seq_, PlayerModule] = await Promise.all([
+      const [seq_, OrchestratorModule, SplitPaneModule] = await Promise.all([
         shortCodeManager.resolveShortCode(shortCode),
         getGlyphCache().initialize().then(() =>
-          import("$lib/shared/sequence-viewer/components/AnimationPlayer.svelte")
+          import("$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte")
         ),
+        import("$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte"),
       ]);
 
       let seq = seq_;
@@ -347,10 +385,26 @@
       resolvedSeq = seq;
       const word = seq.word || seq.name || "Sequence";
       seqWord = word;
-      selectedProp =
-        (seq.intendedProp?.bluePropType as PropType) ?? PropType.STAFF;
 
-      AnimationPlayerComponent = PlayerModule.default;
+      // Printed cards encode their prop in the QR URL (?bp=<type>), and the
+      // sequence itself carries intendedProp. Seed the app settings so the
+      // orchestrator's prop resolver renders the scanned card's real prop
+      // (triad/fan/etc.) instead of the staff default. Validate against the
+      // enum so a junk param can't poison the player.
+      const propValues = Object.values(PropType) as string[];
+      const urlProp = page.url.searchParams.get("bp");
+      const urlPropType =
+        urlProp && propValues.includes(urlProp) ? (urlProp as PropType) : null;
+      const seedProp =
+        urlPropType ??
+        (seq.intendedProp?.bluePropType as PropType | undefined) ??
+        null;
+      if (seedProp) {
+        updateSettings({ bluePropType: seedProp, redPropType: seedProp });
+      }
+
+      OrchestratorComponent = OrchestratorModule.default;
+      ViewerSplitPaneComponent = SplitPaneModule.default;
 
       if (!isInlineEncoded(shortCode) && isGenuineScan(shortCode)) {
         captureEvent("card_scanned", {
@@ -362,8 +416,6 @@
           city: data?.geo?.city || null,
         });
       }
-
-      effectsConfig.setActiveEffect("trails");
 
       stopTrickle();
       setProgress(100);
@@ -432,53 +484,114 @@
       <p class="status-text">{pageState.message}</p>
       <a href="/browse/gallery" class="cta-button">Browse Sequences</a>
     </div>
-  {:else if pageState.kind === "playing" && AnimationPlayerComponent && resolvedSeq}
-    <div class="player-layout" class:sidebar-mode={isSidebarLayout}>
-      <div class="word-title">
-        <TKAWordGlyph word={rawWord} height={28} darkMode />
-      </div>
-      <div class="canvas-area">
-        <AnimationPlayerComponent
-          sequence={resolvedSeq}
-          autoPlay={true}
-          showControls={false}
-          bluePropType={selectedProp}
-          redPropType={selectedProp}
-          previewDarkMode={true}
-          onControllerReady={(ctrl, state) => {
-            playbackController = ctrl;
-            animPanelState = state;
-          }}
-          onStepChange={() => {}}
-        />
-      </div>
-
-      <div class="controls-column">
-        <div class="drawer-host">
-          {#await import("$lib/shared/animation-panel/components/AnimationPanel.svelte") then mod}
-            <mod.default
-              {exportOptions}
-              {isExporting}
-              {exportProgress}
-              canvasReady={!!playbackController}
-              layout={drawerLayout}
-              {singlePlayDuration}
-              isPlaying={isPlaying}
-              bpm={selectedBpm}
-              renderMode="2d"
-              playbackMode={playbackModeLocal}
-              selectedPropType={selectedProp}
-              onPropChange={handlePropChange}
-              onPlaybackToggle={handlePlaybackToggle}
-              onPlaybackModeChange={handlePlaybackModeChange}
-              onBpmChange={handleBpmChange}
-              onExport={handleDownload}
-              secondaryAction={{ label: "Open TKA", href: `/browse/gallery?from=scan&code=${shortCode}`, icon: "fa-compass" }}
+  {:else if pageState.kind === "playing" && OrchestratorComponent && resolvedSeq}
+    <OrchestratorComponent
+      sequence={resolvedSeq}
+      isMobile={!isSidebarLayout}
+      forceGuest={true}
+      initialRenderMode="2d"
+      initialBpm={BASE_BPM}
+      initialActiveEffect="trails"
+      onClose={() => goto(`/browse/gallery?from=scan&code=${shortCode}`)}
+    >
+      {#snippet children(ctx)}
+        <div class="player-layout" class:sidebar-mode={isSidebarLayout}>
+          {#if isSidebarLayout}
+            <!-- Landscape / large: vertical side rail to switch views — the same
+                 ViewerContentRail the desktop viewer uses. webgl2Available={false}
+                 drops the 3D option (no Three.js on the scan page). -->
+            <ViewerContentRail
+              activeMode={qrViewerMode}
+              webgl2Available={false}
+              onSelectMode={selectQrMode}
+              onSelectSplit={selectQrSplit}
             />
-          {/await}
+          {/if}
+          <div class="canvas-area">
+            {#if ctx.effectiveSequence && ViewerSplitPaneComponent}
+            <ViewerSplitPaneComponent
+              sequence={ctx.effectiveSequence}
+              renderMode="2d"
+              bpm={ctx.bpmLocal}
+              onBpmChange={ctx.handleBpmChange}
+              playback={ctx.splitPanePlayback}
+              imageComposition={ctx.splitPaneImageComposition}
+              propRendering={ctx.splitPanePropRendering}
+              layout={{
+                isFullscreen: false,
+                fullscreenStackVertical: false,
+                isMobile: !isSidebarLayout,
+                isLandscapeMobile: false,
+                focusedPane: qrFocusedPane ?? ctx.editingPane,
+                suppressCloseButton: qrViewerMode !== "split" || ctx.editingPane !== null,
+              }}
+              splitConfig={qrSplitConfig}
+              onFocusPane={ctx.enterEditMode}
+              onUnfocusPane={ctx.exitEditMode}
+              onStepClick={ctx.handleStepClick}
+              onCanvasReady={ctx.handleCanvasReady}
+              onPlaybackToggle={ctx.handlePlaybackToggle}
+              onProgressBarSeek={ctx.handleProgressBarSeek}
+              onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
+              onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
+              playbackMode={ctx.playbackMode}
+              onPlaybackModeChange={ctx.handlePlaybackModeChange}
+            />
+            {/if}
+            <ExportTakeover
+              phase={takeoverPhase}
+              progress={exportProgress?.progress ?? 0}
+              phaseLabel={takeoverLabel}
+              error={exportProgress?.error ?? null}
+              onCancel={() => { isExporting = false; }}
+              onRetry={() => handleExport(ctx)}
+            >
+              {#snippet title()}
+                <TKAWordGlyph word={rawWord} height={28} darkMode />
+              {/snippet}
+            </ExportTakeover>
+          </div>
+
+          <div class="controls-column">
+            <div class="drawer-host">
+              {#await import("$lib/shared/animation-panel/components/AnimationPanel.svelte") then mod}
+                <mod.default
+                  exportOptions={ctx.exportOptions}
+                  {isExporting}
+                  {exportProgress}
+                  canvasReady={!!ctx.playbackController}
+                  layout={drawerLayout}
+                  singlePlayDuration={ctx.singlePlayDuration}
+                  isPlaying={ctx.isPlayingLocal}
+                  bpm={ctx.bpmLocal}
+                  renderMode="2d"
+                  showInlineExportProgress={false}
+                  playbackMode={ctx.playbackMode}
+                  selectedPropType={ctx.bluePropType}
+                  onPropChange={ctx.handlePropTypeChange}
+                  onPlaybackToggle={ctx.handlePlaybackToggle}
+                  onPlaybackModeChange={ctx.handlePlaybackModeChange}
+                  onBpmChange={ctx.handleBpmChange}
+                  onExport={() => handleExport(ctx)}
+                  secondaryAction={{ label: "Open TKA", href: `/browse/gallery?from=scan&code=${shortCode}`, icon: "fa-compass" }}
+                />
+              {/await}
+            </div>
+          </div>
+          {#if !isSidebarLayout}
+            <!-- Portrait: bottom bar to switch views — the same ViewerModeBottomBar
+                 the mobile viewer uses. webgl2Available={false} drops 3D. -->
+            <ViewerModeBottomBar
+              activeMode={qrViewerMode}
+              webgl2Available={false}
+              onSelectMode={selectQrMode}
+              onSelectSplit={selectQrSplit}
+            />
+          {/if}
         </div>
-      </div>
-    </div>
+      {/snippet}
+    </OrchestratorComponent>
+    <ToastContainer />
   {/if}
 </div>
 
@@ -523,13 +636,6 @@
     max-width: 400px;
     width: 100%;
     padding: 1rem;
-  }
-
-  .word-title {
-    display: flex;
-    justify-content: center;
-    margin: 0;
-    flex-shrink: 0;
   }
 
   .status-text {
@@ -659,27 +765,30 @@
 
   .player-layout.sidebar-mode {
     display: grid;
-    grid-template-columns: 1fr 260px;
-    grid-template-rows: auto 1fr;
+    /* rail (auto) | canvas (flex) | controls (fixed) */
+    grid-template-columns: auto 1fr 260px;
+    grid-template-rows: 1fr;
     align-items: stretch;
     padding: 8px 12px;
     gap: 8px;
   }
 
-  .sidebar-mode .word-title {
-    grid-column: 1 / -1;
+  /* The view-switcher rail owns the first column at landscape/desktop widths. */
+  .sidebar-mode :global(.content-rail) {
+    grid-column: 1;
+    grid-row: 1;
   }
 
   .sidebar-mode .canvas-area {
-    grid-column: 1;
-    grid-row: 2;
+    grid-column: 2;
+    grid-row: 1;
     max-width: none;
     min-height: 0;
   }
 
   .sidebar-mode .controls-column {
-    grid-column: 2;
-    grid-row: 2;
+    grid-column: 3;
+    grid-row: 1;
     max-width: none;
     overflow: hidden;
   }
@@ -712,7 +821,7 @@
 
   @media (min-width: 960px) {
     .player-layout.sidebar-mode {
-      grid-template-columns: 1fr 340px;
+      grid-template-columns: auto 1fr 340px;
       max-width: 1000px;
       margin: 0 auto;
       padding: 16px 24px;
@@ -724,7 +833,7 @@
   @media (min-width: 1440px) {
     .player-layout.sidebar-mode {
       max-width: 1200px;
-      grid-template-columns: 1fr 380px;
+      grid-template-columns: auto 1fr 380px;
     }
   }
 </style>

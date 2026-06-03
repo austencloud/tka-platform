@@ -16,7 +16,7 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
   import Scene3D from "$lib/shared/3d/components/Scene3D.svelte";
   import { Avatar3D } from "@austencloud/scene-3d";
   import { Prop3D } from "@austencloud/scene-3d";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // ── State ────────────────────────────────────────────────────────────
 

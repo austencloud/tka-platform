@@ -6,12 +6,12 @@
  * Falls back to rotating circular sequences or generating bridges when no direct match.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
-import type { GenerationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
+import type { GenerationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
 import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
@@ -32,8 +32,8 @@ import {
   DifficultyLevel,
   PropContinuity,
 } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
 } from "$lib/shared/create/services/sequence-transforms";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";

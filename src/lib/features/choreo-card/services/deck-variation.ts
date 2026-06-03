@@ -32,17 +32,17 @@ import { resolvePattern, type ResolvedReversalPattern } from "../domain/reversal
 import { transformSequence } from "./reversal-seed-service";
 import type { CsvEdge } from "./pictograph-letter-lookup";
 import { applyPattern } from "$lib/shared/create/services/turn-pattern-manager";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type {
   TurnPattern,
   TurnPatternEntry,
   TurnValue,
-} from "$lib/shared/create/domain/TurnPatternData";
+} from "$lib/shared/create/domain/turn-pattern-data";
 import type { CardVariation } from "../domain/models/DeckRelease";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
 import { rotateSequenceGeometry } from "$lib/shared/create/services/sequence-derived-fields";
 import {

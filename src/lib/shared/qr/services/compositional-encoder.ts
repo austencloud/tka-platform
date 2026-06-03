@@ -15,10 +15,10 @@
  * Domain: QR - Compositional Encoding
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import { createStartPositionData } from "$lib/shared/foundation/domain/factories/createStartPositionData";
-import { getLoopDetector } from "$lib/shared/create/getLoopDetector";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { createStartPositionData } from "$lib/shared/foundation/domain/factories/create-start-position-data";
+import { getLoopDetector } from "$lib/shared/create/get-loop-detector";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { LOOP_TYPE_TAGS, RECIPE_PREFIX } from "./types";
 import {

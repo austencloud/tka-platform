@@ -1,12 +1,21 @@
 <script lang="ts" module>
   import { getLetterImagePath as getPath } from "../utils/letter-image-getter";
-  import { Letter as LetterType } from "$lib/shared/foundation/domain/models/Letter";
+  import { Letter as LetterType } from "$lib/shared/foundation/domain/models/letter";
 
   // Restore caches from HMR data if available, otherwise create fresh
   const globalDimensionsCache: Map<string, { width: number; height: number }> =
     import.meta.hot?.data?.dimensionsCache ?? new Map();
   const globalSvgDataUrlCache: Map<string, string> =
     import.meta.hot?.data?.svgDataUrlCache ?? new Map();
+  // Parallel cache of dark-mode (white-recolored) letter data URLs. Dark mode
+  // recolors the letter AT THE SOURCE (swap black fills → off-white in the SVG
+  // markup) instead of applying an SVG/CSS filter to the rendered <image>.
+  // iOS WebKit (bug 184601) defers filter rasterization on a <g> containing an
+  // <image>, so the glyph rendered black when static and only inverted while
+  // animating. A pre-recolored source has no filter, so it is white in every
+  // state and also serializes correctly for the image-export pipeline.
+  const globalWhiteSvgDataUrlCache: Map<string, string> =
+    import.meta.hot?.data?.whiteSvgDataUrlCache ?? new Map();
   const globalLoadingPromises = new Map<
     string,
     Promise<{ width: number; height: number }>
@@ -17,7 +26,38 @@
     import.meta.hot.dispose((data) => {
       data.dimensionsCache = globalDimensionsCache;
       data.svgDataUrlCache = globalSvgDataUrlCache;
+      data.whiteSvgDataUrlCache = globalWhiteSvgDataUrlCache;
     });
+  }
+
+  /** Off-white used for dark-mode glyphs (matches the grid + old invert look). */
+  const DARK_GLYPH_COLOR = "#d9d9d9";
+
+  /**
+   * Recolor a letter SVG's black ink to off-white for dark mode. Letter SVGs
+   * use explicit black fills (`fill="#000000"`, occasionally `#000`/`black`/
+   * `#231f20`); swap those to off-white and inject a default fill on the root so
+   * any unfilled path (which would default to black) is covered too.
+   */
+  function recolorSvgToWhite(svgText: string): string {
+    const recolored = svgText.replace(
+      /fill\s*=\s*(["'])\s*(#000000|#000|black|#231f20)\s*\1/gi,
+      `fill="${DARK_GLYPH_COLOR}"`
+    );
+    // Inject a default fill on the <svg> root so any path lacking an explicit
+    // fill (browser default = black) also renders off-white.
+    return recolored.replace(
+      /<svg\b([^>]*)>/i,
+      (match, attrs) =>
+        /\bfill\s*=/.test(attrs)
+          ? match
+          : `<svg${attrs} fill="${DARK_GLYPH_COLOR}">`
+    );
+  }
+
+  /** Build a base64 data URL from SVG markup. */
+  function svgToDataUrl(svgText: string): string {
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgText)))}`;
   }
 
   /**
@@ -92,8 +132,12 @@
             globalDimensionsCache.set(letter, dims);
 
             // Cache SVG as data URL for instant rendering (no network request needed)
-            const dataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgText)))}`;
-            globalSvgDataUrlCache.set(letter, dataUrl);
+            globalSvgDataUrlCache.set(letter, svgToDataUrl(svgText));
+            // Cache the dark-mode (white-recolored) variant alongside it.
+            globalWhiteSvgDataUrlCache.set(
+              letter,
+              svgToDataUrl(recolorSvgToWhite(svgText))
+            );
 
             return dims;
           } catch (error) {
@@ -115,8 +159,8 @@
 </script>
 
 <script lang="ts">
-  import type { PictographData } from "../../shared/domain/models/PictographData";
-  import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import type { PictographData } from "../../shared/domain/models/pictograph-data";
+  import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import {
     getLetterImagePath,
     isDashLetter,
@@ -200,12 +244,22 @@
   // CRITICAL: localSvgDataUrl is $state updated by $effect (runs AFTER render),
   // so it's stale for one frame when letter changes. Reading from globalSvgDataUrlCache
   // keyed by the current letter avoids showing the old letter's image.
+  //
+  // Dark mode uses the white-recolored variant (no filter — see recolorSvgToWhite
+  // for the iOS WebKit reason). It's cached in lockstep with the normal URL, so
+  // whenever the normal one is available the white one is too.
   const imageSrc = $derived.by(() => {
     if (!letter) return "";
     // Sync lookup for current letter - no $effect delay
+    if (effectiveDarkMode) {
+      const whiteUrl = globalWhiteSvgDataUrlCache.get(letter);
+      if (whiteUrl) return whiteUrl;
+    }
     const cachedUrl = globalSvgDataUrlCache.get(letter);
     if (cachedUrl) return cachedUrl;
-    // Fall back to file path (will be replaced when $effect loads data)
+    // Fall back to file path (will be replaced when $effect loads data).
+    // The raw file is black; it shows for at most one frame before the
+    // recolored data URL lands, then the $derived re-runs with the white URL.
     return localSvgDataUrl ?? getLetterImagePath(letter as Letter);
   });
 
@@ -269,8 +323,12 @@
         globalDimensionsCache.set(cacheKey, dims);
 
         // Cache SVG as data URL for instant rendering
-        const dataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgText)))}`;
-        globalSvgDataUrlCache.set(cacheKey, dataUrl);
+        globalSvgDataUrlCache.set(cacheKey, svgToDataUrl(svgText));
+        // Cache the dark-mode (white-recolored) variant alongside it.
+        globalWhiteSvgDataUrlCache.set(
+          cacheKey,
+          svgToDataUrl(recolorSvgToWhite(svgText))
+        );
 
         return dims;
       } catch (error) {
@@ -339,7 +397,6 @@
     class:interactive={onToggle !== undefined}
     data-letter={letter}
     transform="translate({x}, {y}) scale({scale})"
-    filter={effectiveDarkMode ? "url(#tka-glyph-invert)" : undefined}
     onclick={onToggle}
     {...onToggle
       ? {
@@ -349,26 +406,13 @@
         }
       : {}}
   >
-      {#if effectiveDarkMode}
-        <!-- Recolor the black letter art to near-white via an SVG filter
-             primitive. iOS Safari (PWA) silently drops a CSS `filter: invert()`
-             set on this <g> (whether via class cascade or inline style), leaving
-             the glyph black against the dark canvas. The SVG-native filter
-             attribute + inline <filter> is honored on iOS - the same primitive
-             approach TurnsColumn uses - and, unlike CSS filter, survives the
-             outerHTML serialization the export pipeline relies on.
-             feColorMatrix replicates CSS invert(0.9) in sRGB: out = 0.9 - 0.8*in.
-             Duplicate ids across glyph instances are harmless: every definition
-             is identical, so url(#tka-glyph-invert) always resolves the same. -->
-        <filter id="tka-glyph-invert" color-interpolation-filters="sRGB">
-          <feColorMatrix
-            type="matrix"
-            values="-0.8 0 0 0 0.9  0 -0.8 0 0 0.9  0 0 -0.8 0 0.9  0 0 0 1 0"
-          />
-        </filter>
-      {/if}
-      <!-- Main letter with exact legacy dimensions -->
-      <!-- Uses cached data URL if available for instant rendering, otherwise falls back to file path -->
+      <!-- Main letter with exact legacy dimensions.
+           Dark mode swaps `imageSrc` to a white-recolored data URL (see
+           recolorSvgToWhite) rather than applying an SVG/CSS filter — iOS WebKit
+           (bug 184601) defers filter rasterization on a <g> with an <image>, so
+           a filtered glyph rendered black when static and only inverted while
+           animating. A recolored source is white in every state and serializes
+           correctly for export. -->
       <image
         x="0"
         y="0"
@@ -379,14 +423,16 @@
         class="letter-image"
       />
 
-      <!-- Dash for Type3/Type5 letters (rendered separately for dot centering) -->
-      <!-- Note: Dash is inside this TKAGlyph group, so the filter: invert() handles dark mode -->
+      <!-- Dash for Type3/Type5 letters (rendered separately for dot centering).
+           Recolored to off-white in dark mode to match the source-recolored
+           letter (no filter on the parent group anymore). -->
       {#if showDash}
         <Dash
           letterWidth={effectiveDimensions.width}
           letterHeight={effectiveDimensions.height}
           {visible}
           {previewMode}
+          darkMode={effectiveDarkMode}
         />
       {/if}
   </g>
@@ -430,9 +476,10 @@
     image-rendering: optimizeQuality;
   }
 
-  /* Dark mode recoloring is handled by the SVG <filter> primitive applied via
-     the `filter` attribute on the .tka-glyph group above (see the markup
-     comment). CSS `filter: invert()` was dropped because iOS Safari PWA does
-     not apply it to this <g>, and it is not captured by outerHTML during
-     export serialization. */
+  /* Dark mode recoloring is done at the SOURCE: `imageSrc` points at a
+     white-recolored data URL of the letter SVG (see recolorSvgToWhite in the
+     module script). No SVG/CSS filter is applied to the rendered glyph, which
+     sidesteps iOS WebKit bug 184601 (deferred filter rasterization on a <g>
+     containing an <image> — the glyph stayed black when static, only inverting
+     while animating). A recolored source is white in every state. */
 </style>

@@ -7,9 +7,9 @@
 
 import { GridMode } from "../../../../grid/domain/enums/grid-enums";
 import { deriveGridMode as _deriveGridMode } from "../../../../grid/services/grid-mode-deriver";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
-import type { GlobalAdjustmentKey } from "../domain/GlobalArrowAdjustment";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
+import type { GlobalAdjustmentKey } from "../domain/global-arrow-adjustment";
 import type { KeyGeneratorPropOptions } from "./types";
 import type { TurnsTupleGenerator } from "../../placement/services/turns-tuple-generator";
 import {

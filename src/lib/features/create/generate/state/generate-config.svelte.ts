@@ -14,7 +14,7 @@ import {
 } from "../shared/domain/models/generate-models";
 import type { UIGenerationConfig } from "../shared/utils/config-mapper";
 import { getTemplateById } from "../../shared/domain/templates/duration-templates";
-import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
 // Re-export for convenience
 export type { UIGenerationConfig };

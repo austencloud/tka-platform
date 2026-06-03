@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { WaterAbsorptionEffect, type WaterAbsorptionOptions } from "./WaterAbsorptionEffect";
+  import { WaterAbsorptionEffect, type WaterAbsorptionOptions } from "./water-absorption-effect";
   import { getEffectComposerContext } from "threlte-postprocessing";
   import { onMount, tick } from "svelte";
   import { Vector3 } from "three";

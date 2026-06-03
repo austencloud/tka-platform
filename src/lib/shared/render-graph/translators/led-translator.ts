@@ -7,7 +7,7 @@
  * renders the resulting segment array.
  */
 
-import type { LedIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import type { LedIntent } from "$lib/shared/effects/domain/effects-config";
 import type { LedPassPayload, LedTipState, LedSegment } from "../domain/led-pass";
 
 export interface LedTranslationContext {

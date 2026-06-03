@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualityTierDetector";
+import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quality-tier-detector";
   /**
    * Central coordinator that reads TipEffectMap assignments and routes each
    * prop tip to the correct 3D renderer. Sits between the animation system
@@ -23,18 +23,18 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
   import { tryGetViewer3DContext } from "../context/viewer-3d-context";
   import { Vector3, Color, Object3D, Quaternion, Euler } from "three";
   import Trail3D from "./trails/Trail3D.svelte";
-  import { LedRenderer3D, type LedTipInput } from "./led/LedRenderer3D";
-  import { CharcoalRenderer3D, type CharcoalTipInput } from "./charcoal/CharcoalRenderer3D";
-  import { FireRenderer3D, type FireTipInput } from "./fire/FireRenderer3D";
-  import { DynamicLightManager, type LightHandle } from "./lighting/DynamicLightManager";
-  import { TipPositionBridge3D } from "./TipPositionBridge3D";
-  import { PovStripRenderer3D } from "./poi/PovStripRenderer3D";
-  import type { StripPattern } from "$lib/shared/poi/domain/StripPattern";
+  import { LedRenderer3D, type LedTipInput } from "./led/led-renderer-3d";
+  import { CharcoalRenderer3D, type CharcoalTipInput } from "./charcoal/charcoal-renderer-3d";
+  import { FireRenderer3D, type FireTipInput } from "./fire/fire-renderer-3d";
+  import { DynamicLightManager, type LightHandle } from "./lighting/dynamic-light-manager";
+  import { TipPositionBridge3D } from "./tip-position-bridge-3d";
+  import { PovStripRenderer3D } from "./poi/pov-strip-renderer-3d";
+  import type { StripPattern } from "$lib/shared/poi/domain/strip-pattern";
   import {
     resolveEffect,
     type TipEffectMap,
     type EffectType,
-  } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
+  } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import { TIER_CONFIGS, type QualityTierConfig } from "./types";
   import type { PropState3D } from "@austencloud/scene-3d";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
@@ -45,7 +45,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
   } from "$lib/shared/effects/translators/webgl3d-translator";
   import { evaluatePattern } from "$lib/shared/animation-engine/domain/patterns/evaluator";
   import { createReusableContext } from "$lib/shared/animation-engine/domain/patterns/context";
-  import { ledBrightnessToFloat } from "$lib/shared/animation-engine/domain/types/LedTypes";
+  import { ledBrightnessToFloat } from "$lib/shared/animation-engine/domain/types/led-types";
   import { PROP_COLORS } from "@austencloud/scene-3d";
 
   interface TipDatum {

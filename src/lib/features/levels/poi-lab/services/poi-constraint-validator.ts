@@ -9,7 +9,7 @@ import {
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { getGravityOrientation } from "./poi-gravity-orientation-deriver";
 import { PoiMotionValidity } from "../domain/poi-enums";
 import type { PoiValidationResult, PoiConstraintViolation } from "../domain/poi-models";

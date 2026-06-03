@@ -6,7 +6,7 @@
    * Extracted from the 3D viewer to reduce complexity.
    */
 
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { DuetSequenceWithData } from "../domain/duet-sequence";
   import type { PerformerManager } from "../state/performer-manager.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";

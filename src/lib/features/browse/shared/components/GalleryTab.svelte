@@ -1,8 +1,8 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { BrowseEngine } from "$lib/shared/browse/engine/types";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import { BrowseSortMethod } from "../domain/enums/browse-enums";
@@ -21,7 +21,7 @@
     closeVariationPicker,
   } from "../state/variation-picker-state.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
-  import { browseScrollState } from "$lib/shared/browse/state/BrowseScrollState.svelte";
+  import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import VirtualKeyboard from "$lib/shared/components/touch/VirtualKeyboard.svelte";
 

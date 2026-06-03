@@ -7,7 +7,7 @@ import type {
   TurnPattern,
   TurnPatternEntry,
   TurnValue,
-} from "$lib/shared/create/domain/TurnPatternData";
+} from "$lib/shared/create/domain/turn-pattern-data";
 import type {
   DurationPattern,
   DurationPatternEntry,

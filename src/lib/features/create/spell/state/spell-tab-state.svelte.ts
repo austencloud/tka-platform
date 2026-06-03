@@ -11,7 +11,7 @@
  * ✅ Each tab maintains its own independent sequence state
  */
 
-import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
 import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";

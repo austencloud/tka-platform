@@ -9,8 +9,8 @@
 
 import type { SoloPropRepository } from "$lib/shared/foundation/services/solo-prop-repository-store";
 import type { HandPathRepository } from "$lib/shared/foundation/services/hand-path-repository-store";
-import type { SoloPropData } from "$lib/shared/foundation/domain/models/SoloPropData";
-import type { ArtifactProvenance } from "$lib/shared/foundation/domain/models/ArtifactProvenance";
+import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-prop-data";
+import type { ArtifactProvenance } from "$lib/shared/foundation/domain/models/artifact-provenance";
 
 export class SoloPropSaveOrchestrator {
   constructor(

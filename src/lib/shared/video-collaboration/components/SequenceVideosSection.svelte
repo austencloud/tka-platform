@@ -8,7 +8,7 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
+  import type { CollaborativeVideo } from "../domain/collaborative-video";
   import { onMount } from "svelte";
   import CollaboratorAvatars from "./CollaboratorAvatars.svelte";
 

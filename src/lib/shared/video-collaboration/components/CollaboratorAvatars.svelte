@@ -5,7 +5,7 @@
   Shows overlapping avatars with a "+N" indicator for overflow.
 -->
 <script lang="ts">
-  import type { VideoCollaborator } from "../domain/CollaborativeVideo";
+  import type { VideoCollaborator } from "../domain/collaborative-video";
 
   const {
     collaborators,

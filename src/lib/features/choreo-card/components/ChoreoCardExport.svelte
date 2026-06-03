@@ -6,11 +6,11 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
   import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
   import { onMount } from "svelte";
   import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";

@@ -14,7 +14,7 @@
     StatsOverview,
     PersonalBest,
   } from "../../services/performance-history-tracker";
-  import type { StoredPerformance } from "$lib/shared/train/domain/TrainDatabaseModels";
+  import type { StoredPerformance } from "$lib/shared/train/domain/train-database-models";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import StatsOverviewComponent from "./StatsOverview.svelte";

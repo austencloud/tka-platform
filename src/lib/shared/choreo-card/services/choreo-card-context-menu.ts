@@ -7,7 +7,7 @@
  */
 
 import type { ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 export interface ChoreoCardContextMenuHandlers {
   /** Force re-render: clear all caches and re-render cells */
@@ -77,7 +77,7 @@ export function buildChoreoCardContextMenu(
         async action() {
           try {
             const { toast } = await import("$lib/shared/toast/state/toast-state.svelte");
-            const { getClaudeCodeCopier } = await import("$lib/shared/browse/getClaudeCodeCopier");
+            const { getClaudeCodeCopier } = await import("$lib/shared/browse/get-claude-code-copier");
             const copier = getClaudeCodeCopier();
             const result = await copier.copyForClaude(sequence);
             if (result.success) {

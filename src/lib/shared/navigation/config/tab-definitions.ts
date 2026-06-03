@@ -704,6 +704,16 @@ export const CHOREO_CARD_TABS: Section[] = [
     color: "#10b981",
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
   },
+  {
+    id: "codex",
+    labelKey: "tab_choreo_card_codex",
+    descKey: "tab_desc_choreo_card_codex",
+    label: "Codex Print",
+    icon: '<i class="fas fa-book-open" aria-hidden="true"></i>',
+    description: "Print the Double-Staff codex as cut-out reference cards",
+    color: "#8b5cf6",
+    gradient: "linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #06b6d4 100%)",
+  },
 ];
 
 // Festival Hub tabs configuration

@@ -11,7 +11,7 @@
 import { browser } from "$app/environment";
 import { goto, replaceState } from "$app/navigation";
 import { navigationState } from "../state/navigation-state.svelte";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { DeepLinkResult, DeepLinkData, ModuleMapping } from "./types";
 import { parseDeepLink } from "./sequence-encoder";
 

@@ -23,7 +23,7 @@ import type {
   CollaborationInvite,
   VideoVisibility,
   StepMap,
-} from "../domain/CollaborativeVideo";
+} from "../domain/collaborative-video";
 import type { UserVideoLibrary } from "./types";
 
 const VIDEOS_COLLECTION = "videos";

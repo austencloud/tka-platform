@@ -7,7 +7,7 @@
  * not sequences directly.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 // ---------------------------------------------------------------------------
 // Entry Abstraction (polymorphic: sequences now, compositions later)

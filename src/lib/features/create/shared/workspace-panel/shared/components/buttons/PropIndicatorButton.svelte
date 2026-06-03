@@ -7,8 +7,8 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { getPropTypeDisplayInfo, getAllPropTypes } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { getPropTypeDisplayInfo, getAllPropTypes } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { propDrawerState } from "$lib/shared/settings/state/prop-drawer-state.svelte";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
 

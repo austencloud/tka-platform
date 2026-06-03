@@ -5,7 +5,7 @@
  * Queries activity logs and favorites from followed users to build a personalized feed.
  */
 
-import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { getFollowing } from "$lib/shared/community/services/user-repository";
 import { queryEvents } from "$lib/shared/analytics/services/posthog-activity-logger";
 import type {

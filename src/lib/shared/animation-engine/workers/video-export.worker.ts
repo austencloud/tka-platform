@@ -26,6 +26,24 @@ import type { CapturedFrame } from "$lib/shared/video-export/domain/captured-fra
 
 const hasWebCodecs = typeof VideoEncoder !== "undefined";
 
+// Mobile GPUs (Qualcomm/Mali/Apple) reliably silicon-accelerate H.264
+// Constrained Baseline; many do NOT accelerate High and silently fall back to
+// a software path, which on phones encodes at ~0.5fps. Desktop Windows Media
+// Foundation is the opposite — it accelerates Main/High, not Baseline. So pick
+// the profile by platform.
+const IS_MOBILE = (() => {
+  try {
+    const nav = (self as unknown as { navigator?: Navigator & { userAgentData?: { mobile?: boolean; platform?: string } } }).navigator;
+    const ua = nav?.userAgent ?? "";
+    const platform = nav?.userAgentData?.platform ?? "";
+    const isAndroid = /Android/i.test(ua) || platform === "Android";
+    const isApple = /iPhone|iPad|iPod/i.test(ua) || platform === "iOS";
+    return isAndroid || isApple || nav?.userAgentData?.mobile === true;
+  } catch {
+    return false;
+  }
+})();
+
 // ---------------------------------------------------------------------------
 // h264-mp4-encoder type (mirrors WasmVideoEncoder.ts)
 // ---------------------------------------------------------------------------
@@ -165,25 +183,21 @@ let sourceHeight = 0; // eslint-disable-line @typescript-eslint/no-unused-vars
 // ---------------------------------------------------------------------------
 
 /**
- * Choose H.264 codec string based on pixel area.
- *
- * Uses Baseline Profile (42) which has the widest hardware support.
+ * H.264 codec string. Profile prefix tracks the platform's HW path:
+ * mobile GPUs accelerate Constrained Baseline (0x42e0), desktop Media
+ * Foundation accelerates High (0x6400). Level byte tracks resolution.
  *   - Level 3.1 (0x1f): up to 921,600 px (e.g. 1280x720)
  *   - Level 4.0 (0x28): up to 2,073,600 px (e.g. 1920x1080)
  *   - Level 5.1 (0x33): up to 8,912,896 px (e.g. 4096x2160)
  *   - Level 6.0 (0x3c): up to 35,651,584 px (e.g. 8192x4320)
  */
-function selectCodec(width: number, height: number): string {
-  // High profile (0x64), not Baseline (0x42). Baseline only has the 4x4
-  // integer transform and no CABAC, which blocks/stipples smooth gradients —
-  // exactly the trail-on-black artifact. High adds the 8x8 transform + CABAC,
-  // producing clean gradients. Middle byte 00 = no constraint flags; trailing
-  // byte is the level (3.1 / 4.0 / 5.1 / 6.0).
+export function selectCodec(width: number, height: number, isMobile: boolean = IS_MOBILE): string {
   const pixelArea = width * height;
-  if (pixelArea <= 921_600) return "avc1.64001f";
-  if (pixelArea <= 2_073_600) return "avc1.640028";
-  if (pixelArea <= 8_912_896) return "avc1.640033";
-  return "avc1.64003c";
+  const level = pixelArea <= 921_600 ? "1f"
+    : pixelArea <= 2_073_600 ? "28"
+    : pixelArea <= 8_912_896 ? "33"
+    : "3c";
+  return isMobile ? `avc1.42e0${level}` : `avc1.6400${level}`;
 }
 
 /**

@@ -14,8 +14,8 @@
   import { collection, getDocs, query, orderBy, limit, startAfter, type DocumentSnapshot } from "firebase/firestore";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
-  import type { UserFeatureOverrides } from "$lib/shared/auth/domain/models/FeatureFlag";
-  import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
+  import type { UserFeatureOverrides } from "$lib/shared/auth/domain/models/feature-flag";
+  import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
   import PanelSearch from "$lib/shared/components/panel/PanelSearch.svelte";
   import RoleFilterButtons from "$lib/shared/community/components/RoleFilterButtons.svelte";

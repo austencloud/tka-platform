@@ -14,14 +14,14 @@
  * with optional per-cell beat offsets.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
   type TunnelLayerConfig, type TransformType, type AppliedTransform, type CellEffect, getTunnelLayerColors, } from "$lib/shared/animation-engine/domain/compose-types";
 
 import type { CellMediaType, PropColors } from "$lib/shared/animation-engine/domain/compose-types";
 import type { Composition } from "$lib/shared/animation-engine/domain/compose-types";
-import type { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
+import type { TrailMode } from "$lib/shared/animation-engine/domain/types/trail-types";
+import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 // compose-arrange-container dissolved - services accessed via module singleton getters
 import type {
   ArrangeUndoOperationType, ArrangeGridSnapshot } from "../services/types";

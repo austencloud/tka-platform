@@ -16,7 +16,7 @@ import type { ShortcutWithBinding } from "../../services/types";
   } from "../../domain/types/keyboard-types";
   import ShortcutContextSection from "./ShortcutContextSection.svelte";
   import ShortcutKeyCapture from "./ShortcutKeyCapture.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
   // Services
   let customizationService: ShortcutCustomizer | null = $state(null);

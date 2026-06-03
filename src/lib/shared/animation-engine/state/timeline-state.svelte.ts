@@ -7,8 +7,8 @@
  * Decomposed from 908 lines to ~550 lines + 5 action modules.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/TimeSignature";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/time-signature";
 import type {
   TimelineProject, TimelineTrack, TimelineClip, PlayheadState, SelectionState, ViewportState, SnapSettings, TimeSeconds, } from "../domain/timeline-types";
 import {
@@ -16,12 +16,12 @@ import {
 
 import {
   loadFromStorage, saveToStorage, TIMELINE_STORAGE_KEYS, } from "$lib/shared/animation-engine/timeline/state/timeline-storage";
-import { getStepTimes } from "$lib/shared/animation-engine/timeline/services/StepGridCalculator";
+import { getStepTimes } from "$lib/shared/animation-engine/timeline/services/step-grid-calculator";
 import { createPlayheadActions } from "$lib/shared/animation-engine/timeline/state/actions/playhead-actions";
 import { createSelectionActions } from "$lib/shared/animation-engine/timeline/state/actions/selection-actions";
 import { createViewportActions } from "$lib/shared/animation-engine/timeline/state/actions/viewport-actions";
 import { createUIStateActions } from "$lib/shared/animation-engine/timeline/state/actions/ui-state-actions";
-import { getTimelineUndoManager } from "$lib/shared/animation-engine/timeline/services/TimelineUndoManager";
+import { getTimelineUndoManager } from "$lib/shared/animation-engine/timeline/services/timeline-undo-manager";
 import type { TimelineUndoOperationType } from "$lib/shared/animation-engine/timeline/domain/types";
 
 // ============================================================================

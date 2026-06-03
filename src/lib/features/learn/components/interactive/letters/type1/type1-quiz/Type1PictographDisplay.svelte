@@ -3,7 +3,7 @@ Type1PictographDisplay - Pictograph visualizer with loading state
 -->
 <script lang="ts">
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   let {

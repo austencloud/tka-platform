@@ -9,11 +9,11 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { linkGoogleAccount, linkFacebookAccount, unlinkProvider } from "$lib/shared/auth/services/authenticator";
-  import { authState } from "../../../auth/state/authState.svelte";
+  import { authState } from "../../../auth/state/auth-state.svelte";
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import { onMount } from "svelte";
   import EmailLinkingDrawer from "../../../auth/components/EmailLinkingDrawer.svelte";
-  import { PROVIDERS, type ProviderId } from "./connectedAccounts.providers";
+  import { PROVIDERS, type ProviderId } from "./connected-accounts.providers";
   import ConfirmDialog from "../../../foundation/ui/ConfirmDialog.svelte";
 
   // Services

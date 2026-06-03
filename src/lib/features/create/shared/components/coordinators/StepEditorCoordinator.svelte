@@ -28,7 +28,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PathShapeValue } from "../../services/step-operations/path-shape-handler";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     getSettings,
     updateSettings,

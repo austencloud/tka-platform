@@ -1,7 +1,7 @@
 import type { EffectPresetGroup } from "./types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-import type { SilkIntent } from "$lib/shared/effects/domain/EffectsConfig";
-import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
+import type { SilkIntent } from "$lib/shared/effects/domain/effects-config";
+import type { EffectsPreset } from "$lib/shared/effects/domain/effects-preset";
 
 function applySilk(
   state: EffectsConfigState,

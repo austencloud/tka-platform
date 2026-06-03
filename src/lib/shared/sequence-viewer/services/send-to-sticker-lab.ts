@@ -1,4 +1,4 @@
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { MandalaPrimitiveRef } from "$lib/features/sticker-lab/domain/sticker-types";
 import { createDefaultStickerUnit, createDefaultStickerSheet } from "$lib/features/sticker-lab/domain/sticker-types";
 import { STORAGE_KEY_ACTIVE_SHEET, STORAGE_SCHEMA_VERSION, MAX_COPIES_PER_STICKER } from "$lib/features/sticker-lab/domain/sticker-constants";

@@ -10,7 +10,7 @@
   - "inline": no border/background, used inside drawers that already provide a container
 -->
 <script lang="ts">
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     PROP_CATEGORIES,
     getBasePropType,
@@ -18,7 +18,7 @@
     getPropTypeDisplayInfo,
     isPropActive,
     getBasePropsByCategory,
-  } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { Popover } from "bits-ui";
   import { scale } from "svelte/transition";
   import { backOut, cubicOut } from "svelte/easing";
@@ -30,12 +30,19 @@
     title = "Select Prop",
     onSelect,
     variant = "panel",
+    flat = false,
   } = $props<{
     selectedPropType: PropType;
     color?: "blue" | "red" | (string & {});
     title?: string;
     onSelect: (propType: PropType) => void;
     variant?: "panel" | "inline";
+    /**
+     * Flat mode: drop the category sections/labels and pack every base prop
+     * into one dense auto-fill grid. For tight contexts (the mobile dock)
+     * where maximizing visible count beats grouping.
+     */
+    flat?: boolean;
   }>();
 
   const basePropsByCategory = $derived(getBasePropsByCategory());
@@ -48,6 +55,7 @@
   );
 
   const selectedBase = $derived(getBasePropType(selectedPropType));
+  const allBases = $derived(sections.flatMap((s) => s.bases));
 
   function variantCount(base: PropType): number | undefined {
     const count = getAllVariations(base).filter(isPropActive).length;
@@ -74,85 +82,87 @@
     </header>
   {/if}
 
-  <div class="grid-scroll themed-scrollbar">
-    <div class="grid-content">
-      {#each sections as section, i}
-        <div class="section-label" class:first={i === 0}>{section.label}</div>
-        <div class="section-buttons">
-          {#each section.bases as base}
-            {#if isSingleVariant(base)}
-              <!-- Single-variant: select immediately -->
+  {#snippet tile(base: PropType)}
+    {#if isSingleVariant(base)}
+      <!-- Single-variant: select immediately -->
+      <PropTypeButton
+        propType={base}
+        selected={selectedBase === base}
+        {color}
+        onSelect={() => onSelect(base)}
+      />
+    {:else}
+      <!-- Multi-variant: open popover -->
+      <Popover.Root>
+        <Popover.Trigger>
+          {#snippet child({ props })}
+            <div {...props} class="popover-trigger-wrap">
               <PropTypeButton
                 propType={base}
                 selected={selectedBase === base}
+                badge={variantCount(base)}
                 {color}
-                onSelect={() => onSelect(base)}
               />
-            {:else}
-              <!-- Multi-variant: open popover -->
-              <Popover.Root>
-                <Popover.Trigger>
-                  {#snippet child({ props })}
-                    <div {...props} class="popover-trigger-wrap">
-                      <PropTypeButton
-                        propType={base}
-                        selected={selectedBase === base}
-                        badge={variantCount(base)}
-                        {color}
-                      />
-                    </div>
-                  {/snippet}
-                </Popover.Trigger>
-                <Popover.Content
-                  side="bottom"
-                  sideOffset={6}
-                  avoidCollisions={true}
-                  collisionPadding={12}
-                  forceMount
+            </div>
+          {/snippet}
+        </Popover.Trigger>
+        <Popover.Content
+          side="bottom"
+          sideOffset={6}
+          avoidCollisions={true}
+          collisionPadding={12}
+          forceMount
+        >
+          {#snippet child({ open, wrapperProps, props })}
+            <div {...wrapperProps}>
+              {#if open}
+                <div
+                  {...props}
+                  class="variant-popover"
+                  in:scale={{ duration: 200, start: 0.92, opacity: 0, easing: backOut }}
+                  out:scale={{ duration: 140, start: 0.95, opacity: 0, easing: cubicOut }}
                 >
-                  {#snippet child({ open, wrapperProps, props })}
-                    <div {...wrapperProps}>
-                      {#if open}
-                        <div
-                          {...props}
-                          class="variant-popover"
-                          in:scale={{
-                            duration: 200,
-                            start: 0.92,
-                            opacity: 0,
-                            easing: backOut,
-                          }}
-                          out:scale={{
-                            duration: 140,
-                            start: 0.95,
-                            opacity: 0,
-                            easing: cubicOut,
-                          }}
-                        >
-                          <span class="variant-popover-label">
-                            {getPropTypeDisplayInfo(base).label} Variants
-                          </span>
-                          <div class="variant-popover-buttons">
-                            {#each getActiveVariants(base) as variantProp}
-                              <PropTypeButton
-                                propType={variantProp}
-                                selected={selectedPropType === variantProp}
-                                {color}
-                                onSelect={() => onSelect(variantProp)}
-                              />
-                            {/each}
-                          </div>
-                        </div>
-                      {/if}
-                    </div>
-                  {/snippet}
-                </Popover.Content>
-              </Popover.Root>
-            {/if}
-          {/each}
-        </div>
-      {/each}
-    </div>
+                  <span class="variant-popover-label">
+                    {getPropTypeDisplayInfo(base).label} Variants
+                  </span>
+                  <div class="variant-popover-buttons">
+                    {#each getActiveVariants(base) as variantProp}
+                      <PropTypeButton
+                        propType={variantProp}
+                        selected={selectedPropType === variantProp}
+                        {color}
+                        onSelect={() => onSelect(variantProp)}
+                      />
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+            </div>
+          {/snippet}
+        </Popover.Content>
+      </Popover.Root>
+    {/if}
+  {/snippet}
+
+  <div class="grid-scroll themed-scrollbar">
+    {#if flat}
+      <div class="flat-grid">
+        {#each allBases as base (base)}
+          {@render tile(base)}
+        {/each}
+      </div>
+    {:else}
+      <div class="grid-content">
+        {#each sections as section, i}
+          <div class="section-label" class:first={i === 0}>{section.label}</div>
+          <div class="section-buttons">
+            {#each section.bases as base}
+              {@render tile(base)}
+            {/each}
+          </div>
+        {/each}
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -211,6 +221,18 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+  }
+
+  /* Flat mode: one dense grid, no sections — maximize visible prop count. */
+  .flat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+    gap: 6px;
+    padding: 0 2px;
+  }
+  .flat-grid :global(.prop-button),
+  .flat-grid :global(.popover-trigger-wrap) {
+    width: 100%;
   }
 
   .section-label {

@@ -1,5 +1,5 @@
 import { getLetterImagePath } from "../../pictograph/tka-glyph/utils/letter-image-getter";
-import { Letter } from "../../foundation/domain/models/Letter";
+import { Letter } from "../../foundation/domain/models/letter";
 import { getElementImagePath } from "../../pictograph/shared/domain/enums/pictograph-enums";
 import { sanitizeSvgForBitmap } from "./svg-bitmap-sanitize";
 

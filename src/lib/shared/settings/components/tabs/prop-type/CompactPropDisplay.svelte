@@ -7,8 +7,8 @@
   Tapping the prop opens the selection sheet where all variations are visible.
 -->
 <script lang="ts">
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { getPropTypeDisplayInfo } from "./PropTypeRegistry";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { getPropTypeDisplayInfo } from "./prop-type-registry";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Buugeng family - asymmetric props that can be flipped

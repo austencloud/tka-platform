@@ -1,9 +1,9 @@
 import { compressForURL, decompressFromURL, compressForQR, decompressFromQR } from "./sequence-codec";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import { createStartPositionData } from "$lib/shared/foundation/domain/factories/createStartPositionData";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import { createStartPositionData } from "$lib/shared/foundation/domain/factories/create-start-position-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type {
@@ -13,9 +13,9 @@ import {
   RotationDirection,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { ArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/ArrowPlacementData";
-import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/PropPlacementData";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { ArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/arrow-placement-data";
+import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/prop-placement-data";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { CompressionResult, ShareURLResult, ShareURLMetadata, DeepLinkParseResult, QRSizeEstimate, SequenceRouteIdParseResult, URLPropOptions } from "./types";
 import {
   calculateEndOrientation,

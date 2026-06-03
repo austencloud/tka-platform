@@ -1,7 +1,7 @@
 /**
  * Type 1 Letter Questions - Motion pattern data for Type 1 (Dual-Shift) letters
  */
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export type MotionPattern = "pro-pro" | "anti-anti" | "hybrid";

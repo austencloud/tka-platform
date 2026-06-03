@@ -1,4 +1,4 @@
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { Period } from "../domain/models/circular-models";
 
 /**

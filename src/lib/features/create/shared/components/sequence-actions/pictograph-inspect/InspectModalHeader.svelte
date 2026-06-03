@@ -4,7 +4,7 @@
    *
    * Header with title, badges, and copy buttons for the pictograph inspector.
    */
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
 
   interface Props {

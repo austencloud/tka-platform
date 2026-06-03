@@ -12,11 +12,11 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
 
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PoiValidationResult } from "../domain/poi-models";
   import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 
   // State
   let allSequences: SequenceData[] = $state([]);

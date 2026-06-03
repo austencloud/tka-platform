@@ -1,13 +1,13 @@
 import type { EffectConfig } from "../domain/types";
-import type { FireOverlayConfig } from "$lib/shared/animation-engine/domain/types/FireTypes";
-import type { LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/LedTypes";
+import type { FireOverlayConfig } from "$lib/shared/animation-engine/domain/types/fire-types";
+import type { LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/led-types";
 import type {
-  TrailMode} from "$lib/shared/animation-engine/domain/types/TrailTypes";
+  TrailMode} from "$lib/shared/animation-engine/domain/types/trail-types";
 import {
   TrailEffect,
   TrackingMode,
   type TrailSettings,
-} from "$lib/shared/animation-engine/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-types";
 
 export function toFireConfig(effect: EffectConfig["fire"]): FireOverlayConfig {
   return {

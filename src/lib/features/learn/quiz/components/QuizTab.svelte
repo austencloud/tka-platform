@@ -17,7 +17,7 @@ Provides quiz functionality for learning TKA notation:
   import type { QuizRepoManager } from "../services/quiz-repo-manager";
   import type { QuizSessionManager } from "../services/quiz-session-manager";
   import type { DetectedGap } from "../../services/types";
-  import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
+  import { getEffectiveUserId } from "$lib/shared/auth/state/auth-state.svelte";
   import * as QuestionGenerator from "../services/question-generator";
   import QuizResultsView from "./QuizResultsView.svelte";
   import QuizSelectorView from "./QuizSelectorView.svelte";

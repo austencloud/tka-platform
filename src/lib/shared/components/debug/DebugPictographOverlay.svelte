@@ -22,7 +22,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
     RotationDirection,
@@ -33,8 +33,8 @@
     GridLocation,
     GridMode,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
   let visible = $state(false);
   let stepData: StepData | null = $state(null);

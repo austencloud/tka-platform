@@ -12,7 +12,7 @@
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import ReversalPatternView from "./ReversalPatternView.svelte";
   import RotationDirectionView from "./RotationDirectionView.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { TargetHand } from "../../state/panel-coordination-state.svelte";
 
   interface Props {

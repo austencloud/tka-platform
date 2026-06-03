@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { StepDataSchema } from "$lib/shared/foundation/domain/schemas";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 export interface CollectedMandala {
 	id: string;

@@ -43,7 +43,7 @@ import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-dis
 import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-import type { TipEffectMap } from '$lib/shared/animation-engine/domain/types/TipEffectTypes';
+import type { TipEffectMap } from '$lib/shared/animation-engine/domain/types/tip-effect-types';
 
 export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   private _isExporting = false;
@@ -204,11 +204,12 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         fps,
         bitrate,
         totalFrames: totalFramesEstimate,
-        // Default to AV1 for max fidelity: 4:4:4 (no chroma bleed on saturated
-        // prop edges) + 10-bit depth (no banding/noise on the dark gradient),
-        // resolved in the worker. Callers can still force "h264" for max
-        // device compatibility.
-        codec: options.codec ?? "av1",
+        // Default to platform-aware H.264 (the codec hardware-encoders
+        // accelerate on essentially every device of the last decade). AV1
+        // remains available via an explicit codec:"av1" option but is no
+        // longer the default — 10-bit AV1 encode is unsupported on most
+        // mobile/Safari, where configure() could stall and hang the export.
+        codec: options.codec ?? "h264",
       });
     } else {
       // Legacy inline exporter for WebM
@@ -402,11 +403,17 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           outputCanvasSize,
           fps,
           needsFluidWarmup,
-          // The orchestrator resolves no prop-type string (neither options nor
-          // panelState expose one), so pass null — the capturer config tolerates
-          // null and the live geometry is driven by panelState prop states.
-          bluePropType: null,
-          redPropType: null,
+          // Forward the caller's resolved prop types so the offscreen engine loads
+          // the right prop BODY textures in initialize() (without them the renderer
+          // boot-loads global settings → wrong/blank prop on the QR landing page,
+          // which has no DI/settings bootstrap). null falls back to "staff".
+          bluePropType: options.bluePropType ?? null,
+          redPropType: options.redPropType ?? null,
+          // Match the live theme + grid. previewDarkMode falls back to the export's
+          // resolved isDarkMode; the visibility manager exposes no non-radial-points
+          // key, so default to true (the prior hardcoded value) for unchanged behavior.
+          previewDarkMode: options.previewDarkMode ?? isDarkMode,
+          showNonRadialPoints: options.showNonRadialPoints ?? true,
         });
       }
 
@@ -534,6 +541,10 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         //    panel state and let the live render loop paint the new beat.
         if (!isCompositeMode) {
           offscreen!.renderFrame(playbackPosition, virtualTimeMs);
+          // Yield to the event loop so the browser repaints (the live canvas keeps
+          // animating under the takeover) and the Svelte progress update flushes.
+          // The offscreen engine is deterministic and unaffected by the yield.
+          await this.waitForAnimationFrame();
         } else {
           playbackController.calculateStateForStep(playbackPosition);
           // Wait for the live render loop to paint the new beat. Single rAF:

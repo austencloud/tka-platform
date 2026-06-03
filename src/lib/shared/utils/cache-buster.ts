@@ -3,7 +3,7 @@
  * Use this when the app gets stuck on white screen
  */
 
-import { nuclearCacheClear } from "../auth/utils/nuclearCacheClear";
+import { nuclearCacheClear } from "../auth/utils/nuclear-cache-clear";
 
 export async function clearAllCaches(): Promise<void> {
   if (typeof window === "undefined") return;

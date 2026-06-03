@@ -11,7 +11,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { FeedItem, FeedContentType } from "../../domain/models/feed-models";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import FeedCardMedia from "./FeedCardMedia.svelte";
   import MediaTypeSwitcher from "./MediaTypeSwitcher.svelte";
   import ContentTypeBadge from "./ContentTypeBadge.svelte";

@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { withEffectivePropTypes } from "../with-effective-prop-types";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 function makeStep(): StepData {
   return {

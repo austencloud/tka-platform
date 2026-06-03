@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
   import UserVideoLibraryView from "$lib/shared/video-collaboration/components/UserVideoLibraryView.svelte";
-  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
 
   interface Props {
     onVideoClick?: (video: CollaborativeVideo) => void;

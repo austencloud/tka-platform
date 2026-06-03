@@ -2,9 +2,7 @@
 import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { onMount } from "svelte";
   import { goto, replaceState } from "$app/navigation";
-  import { fly } from "svelte/transition";
-  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
-  import { cubicOut } from "svelte/easing";
+  import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequenceViewerOrchestrator from "./SequenceViewerOrchestrator.svelte";
   import {
@@ -26,12 +24,12 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import Recording3DOverlay from "./Recording3DOverlay.svelte";
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
-  import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
-  import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
+  import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
+  import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
-  import { getLoopDetector } from "$lib/shared/create/getLoopDetector";
+  import { getLoopDetector } from "$lib/shared/create/get-loop-detector";
   import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
@@ -43,7 +41,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     buildSequenceSharePayload,
     buildThumbnailUrl,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
   import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -153,9 +151,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     }
   }
 
-  function togglePractice(ctx: OrchestratorContext) {
-    ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart();
-  }
 
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
@@ -325,8 +320,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
             onRemix={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
             onCopyData={authState.isAdmin ? handleCopyForClaude : undefined}
             copyDataFeedback={copyClaudeFeedback}
-            practiceActive={ctx.practiceActive}
-            onPracticeToggle={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
             onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
             isPublished={ctx.isPublished}
             onPublish={ctx.isOwned && ctx.isSaved ? () => ctx.invokeGatedAction("publish", ctx.handlePublishAction) : undefined}
@@ -475,8 +468,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                     <ViewerContentRail
                       activeMode={ctx.viewerState.viewerMode}
                       webgl2Available={ctx.viewer3DState.webgl2Available}
-                      practiceActive={ctx.practiceActive}
-                      onPracticeToggle={() => togglePractice(ctx)}
                       onSelectSplit={() => selectSplitMode(ctx)}
                       onSelectMode={(mode) => selectViewerMode(ctx, mode)}
                     />
@@ -635,11 +626,9 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                   {/if}
                 </div>
                 {#if isMobileWidth && isImageExportActive && ctx.effectiveSequence}
-                  <div
-                    class="export-footer-overlay"
-                    in:fly={{ y: 80, duration: 250, easing: cubicOut }}
-                    out:fly={{ y: 80, duration: 200, easing: cubicOut }}
-                  >
+                  <!-- Entrance/exit fly now lives on ControlDock's root
+                       (shared by every dock); this wrapper only positions. -->
+                  <div class="export-footer-overlay">
                     <ExportImagePanel
                       exportOptions={ctx.exportOptions}
                       isExporting={ctx.isExporting}
@@ -656,8 +645,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
               <ViewerModeBottomBar
                 activeMode={ctx.viewerState.viewerMode}
                 webgl2Available={ctx.viewer3DState.webgl2Available}
-                practiceActive={ctx.practiceActive}
-                onPracticeToggle={() => togglePractice(ctx)}
                 onSelectSplit={() => selectSplitMode(ctx)}
                 onSelectMode={(mode) => selectViewerMode(ctx, mode)}
               />

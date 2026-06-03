@@ -11,8 +11,8 @@ Features:
 - Touch-friendly tap targets
 -->
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 

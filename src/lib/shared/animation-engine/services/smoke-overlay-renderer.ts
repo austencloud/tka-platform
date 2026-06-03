@@ -16,8 +16,8 @@ import type { Smoke2DParams } from "$lib/shared/effects/translators/canvas2d-typ
 import {
   Smoke2DRenderer,
   type SmokeTipInput,
-} from "$lib/shared/effects/renderers/Smoke2DRenderer";
-import { EffectRenderer } from "./effects/EffectRenderer";
+} from "$lib/shared/effects/renderers/smoke-2d-renderer";
+import { EffectRenderer } from "./effects/effect-renderer";
 
 export class SmokeOverlayRenderer extends EffectRenderer {
   private renderer = new Smoke2DRenderer();
@@ -39,8 +39,8 @@ export class SmokeOverlayRenderer extends EffectRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "./effects/EffectPlugin";
-import type { SmokeIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import type { EffectPlugin } from "./effects/effect-plugin";
+import type { SmokeIntent } from "$lib/shared/effects/domain/effects-config";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 
 export const smokeEffectPlugin: EffectPlugin<SmokeIntent> = {

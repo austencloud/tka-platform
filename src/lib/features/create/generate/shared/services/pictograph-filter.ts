@@ -3,13 +3,13 @@
  * sequence generation.
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { FilteringError } from "../domain/errors/generation-errors";
-import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
-import { LetterType } from "$lib/shared/foundation/domain/models/LetterType";
+import { getLetterType } from "$lib/shared/foundation/domain/models/letter";
+import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
 
 // Legacy constants for rotation directions
 const ROTATION_DIRS = {

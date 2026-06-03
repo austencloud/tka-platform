@@ -17,7 +17,7 @@
   import { stampSingle } from "$lib/shared/create/domain/rhythm/rhythm-mask";
   import { stripToDurationPattern } from "../../domain/pattern-strip-apply";
   import * as durationPatternManager from "$lib/features/create/shared/services/duration-pattern-manager";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   interface Props {
     sequence: SequenceData | null;

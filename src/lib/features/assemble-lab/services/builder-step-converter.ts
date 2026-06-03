@@ -14,10 +14,10 @@ import {
   RotationDirection,
   HandMotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { calculateMotionType, calculateRotationDirection } from "$lib/features/create/assemble/services/hand-path-motion-calculator";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 import type { BuilderStep } from "../state/assemble-state.svelte";

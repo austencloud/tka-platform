@@ -22,7 +22,7 @@
     showHeader: boolean;
     isBrowseSoloMode: boolean;
     soloColor: "blue" | "red" | undefined;
-    browseViewMode?: import("$lib/shared/browse/domain/BrowseViewMode").BrowseViewMode;
+    browseViewMode?: import("$lib/shared/browse/domain/browse-view-mode").BrowseViewMode;
     showDifficultyLevel: boolean;
     difficultyLevel: number;
     currentLevelStyle: { bg: string; border: string; text: string };

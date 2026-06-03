@@ -13,7 +13,7 @@ import {
   TrackingMode,
   TrailMode,
   TrailEffect,
-} from "$lib/shared/animation-engine/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-types";
 
 const COLLAPSE_STATE_KEY = "tka_animation_collapse_states";
 

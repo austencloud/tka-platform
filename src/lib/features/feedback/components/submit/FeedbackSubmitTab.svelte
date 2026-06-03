@@ -1,6 +1,6 @@
 <!-- FeedbackSubmitTab - Fluid container-query based layout -->
 <script lang="ts">
-  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { onMount } from "svelte";
   import FeedbackForm from "./FeedbackForm.svelte";
   import { getSharedFeedbackSubmitState } from "../../state/feedback-submit-state.svelte";

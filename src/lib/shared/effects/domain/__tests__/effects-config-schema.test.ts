@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { DEFAULT_EFFECTS_CONFIG } from "../defaults";
-import type { EffectsConfig } from "../EffectsConfig";
+import type { EffectsConfig } from "../effects-config";
 
 describe("EffectsConfig schema", () => {
   it("has activeEffect field defaulting to 'none'", () => {

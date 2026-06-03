@@ -4,7 +4,7 @@
  * Constants for the word-to-sequence generation feature.
  */
 
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { LetterAlias, SpellPreferences } from "./spell-models";
 
 /**

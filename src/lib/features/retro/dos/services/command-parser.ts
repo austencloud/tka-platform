@@ -15,7 +15,7 @@ import type { DosFileSystem } from "./dos-file-system";
 import type { DosFile } from "../domain/dos-types";
 import { terminalState } from "../state/terminal-state.svelte";
 import { signInWithEmail } from "$lib/shared/auth/services/authenticator";
-import { signOut } from "$lib/shared/auth/state/authState.svelte";
+import { signOut } from "$lib/shared/auth/state/auth-state.svelte";
 import { auth } from "$lib/shared/auth/firebase";
 
 export class CommandParser {

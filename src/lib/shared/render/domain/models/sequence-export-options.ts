@@ -1,5 +1,5 @@
 import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
+import type { PropType } from "../../../pictograph/prop/domain/enums/prop-type";
 
 export interface SequenceExportOptions {
   includeStartPosition: boolean;

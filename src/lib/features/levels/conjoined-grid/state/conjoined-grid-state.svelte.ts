@@ -10,8 +10,8 @@
  */
 
 import type { GridTopology, PointRef } from "$lib/shared/multi-grid/domain/models/grid-topology";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/prepared-pictograph-data";
 import type { GridMode } from "$lib/shared/render/core/types";
 import type { PrepareOptions } from "$lib/shared/pictograph/shared/services/types";
 import type { PositionPair } from "$lib/shared/multi-grid/services/types";

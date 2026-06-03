@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { getPendingInvites } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
-  import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
+  import type { CollaborativeVideo } from "../domain/collaborative-video";
   import { onMount } from "svelte";
   import PendingInviteCard from "./PendingInviteCard.svelte";
 

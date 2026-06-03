@@ -4,9 +4,9 @@
  * Centralized state management for the gallery generator feature.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { RenderedImage, FailedSequence } from "../domain/gallery-models";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 /** Core prop types for gallery generation (excludes "big" variants) */
 export const CORE_PROP_TYPES = [

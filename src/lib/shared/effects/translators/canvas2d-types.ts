@@ -24,15 +24,15 @@ import type {
   FrostIntent,
   SilkIntent,
   PulseIntent,
-} from "../domain/EffectsConfig";
-import type { WaterPalette } from "../domain/WaterPalettes";
-import type { BubblePalette } from "../domain/BubblePalettes";
-import type { PetalPalette } from "../domain/PetalPalettes";
-import type { SmokePalette } from "../domain/SmokePalettes";
-import type { InkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
-import type { FrostPalette } from "../domain/FrostPalettes";
-import type { SilkPalette } from "../domain/SilkPalettes";
-import type { PulsePalette } from "../domain/PulsePalettes";
+} from "../domain/effects-config";
+import type { WaterPalette } from "../domain/water-palettes";
+import type { BubblePalette } from "../domain/bubble-palettes";
+import type { PetalPalette } from "../domain/petal-palettes";
+import type { SmokePalette } from "../domain/smoke-palettes";
+import type { InkPalette } from "$lib/shared/3d/effects/ink/ink-palettes";
+import type { FrostPalette } from "../domain/frost-palettes";
+import type { SilkPalette } from "../domain/silk-palettes";
+import type { PulsePalette } from "../domain/pulse-palettes";
 
 export interface Trails2DParams extends TrailsIntent {
   /** px value for ctx.lineWidth. Derived from thickness. */

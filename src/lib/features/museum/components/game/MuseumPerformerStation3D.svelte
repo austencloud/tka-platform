@@ -8,19 +8,19 @@
    * with spinning staves. Uses PerformerRig for the unified transform hierarchy
    * - no manual STAGE_LIFT math, no sibling Avatar3D/Prop3D/Grid3D calls.
    */
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { untrack } from "svelte";
   import { T } from "@threlte/core";
   import { Color } from "three";
   import { PerformerRig } from "@austencloud/scene-3d";
   import { Plane } from "@austencloud/scene-3d";
   import { PlaneMode } from "@austencloud/scene-3d";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { createAvatarInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { GridMode } from "@austencloud/scene-3d";
   import { MUSEUM_EXHIBIT_SEQUENCES, type MuseumSequenceData } from "../../data/museum-exhibit-sequences";
 

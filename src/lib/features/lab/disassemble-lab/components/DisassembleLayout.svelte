@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import SegmentedSequenceProgressBar from "$lib/shared/animation-engine/components/layers/SegmentedSequenceProgressBar.svelte";
 
   interface Props {

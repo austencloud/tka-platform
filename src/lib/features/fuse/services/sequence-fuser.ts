@@ -1,14 +1,14 @@
-import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
-import type { SoloPropData } from "$lib/shared/foundation/domain/models/SoloPropData";
-import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/SoloPropStepData";
-import type { StepPairingData } from "$lib/shared/foundation/domain/models/StepPairingData";
-import { createSequenceData, type SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { HandPathData } from "$lib/shared/foundation/domain/models/hand-path-data";
+import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-prop-data";
+import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/solo-prop-step-data";
+import type { StepPairingData } from "$lib/shared/foundation/domain/models/step-pairing-data";
+import { createSequenceData, type SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { MotionType, RotationDirection, Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { FuseOptions } from "./types";
 
 const DEFAULT_MAX_BEATS = 64;

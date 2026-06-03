@@ -19,7 +19,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/is-permission-denied-error";
 
 import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
 import * as feedbackDocumentMapper from "$lib/shared/feedback/services/feedback-document-mapper";

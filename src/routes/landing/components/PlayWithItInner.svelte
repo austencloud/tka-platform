@@ -9,17 +9,17 @@
 <script lang="ts">
 
 import { createAnimationPlaybackController } from "$lib/features/compose/services/animation-playback-controller-factory";
-import { sequenceTransformer } from "$lib/shared/create/services/SequenceTransformer";
+import { sequenceTransformer } from "$lib/shared/create/services/sequence-transformer";
   import { onMount, onDestroy } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import { createEndlessPlayback, type EndlessPlaybackState } from "$lib/shared/animation-engine/state/endless-playback-state.svelte";
   import * as propTypeApplier from "$lib/shared/landing/services/prop-type-applier";
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/endless-spinner-orchestrator";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
   import { startPositionDeriver as startPositionDeriverInstance } from "$lib/shared/pictograph/shared/services/start-position-deriver";
-  import { generationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
+  import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
   import {
     animationSettings,
     TrackingMode,
@@ -30,7 +30,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/SequenceTransfo
   import { RANDOM_PROPS } from "../landing-content";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { EFFORTS, type EffortId as EffortPresetId } from "$lib/shared/effort/domain/effort-types";
 
   // ── Effect definitions ──────────────────────────────────────────────────────

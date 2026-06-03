@@ -5,13 +5,13 @@
  * grid position calculation, duration detection, and preview caching.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { PreviewCellRenderOptions } from "$lib/shared/sequence-viewer/services/preview-cell-renderer";
 import type { TimelineRow } from "$lib/shared/create/utils/grid-calculations";
-import type { MandalaLayoutOverride } from "$lib/shared/sequence-viewer/services/getMandalaPlacements";
+import type { MandalaLayoutOverride } from "$lib/shared/sequence-viewer/services/get-mandala-placements";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-import type { PropType } from '$lib/shared/pictograph/prop/domain/enums/PropType';
-import type { BrowseViewMode } from '$lib/shared/browse/domain/BrowseViewMode';
+import type { PropType } from '$lib/shared/pictograph/prop/domain/enums/prop-type';
+import type { BrowseViewMode } from '$lib/shared/browse/domain/browse-view-mode';
 
 // ============================================================================
 // GLOBAL CELL URL CACHE

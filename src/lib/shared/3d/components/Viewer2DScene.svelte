@@ -14,7 +14,7 @@
   import { T } from "@threlte/core";
   import Grid2DOverlay from "./Grid2DOverlay.svelte";
   import PropPlane2D from "./PropPlane2D.svelte";
-  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
+  import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import { getPropDimensions } from "$lib/shared/animation-engine/services/IPropTextureLoader";
   import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";

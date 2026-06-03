@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { Snippet } from "svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
@@ -9,11 +9,12 @@
   import { getCatalogLayoutPolicy } from "../domain/catalog-layout-policy";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { initializeSpecialOverrides } from "$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-singleton";
   import { initializeDefaultOverrides } from "$lib/shared/pictograph/arrow/positioning/default-override/services/default-override-singleton";
+  import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
 
   interface Props {
     sequence: SequenceData;
@@ -94,12 +95,15 @@
 
   let stackEl: HTMLDivElement | undefined = $state();
   let copyImageState = $state<"idle" | "copying" | "success" | "error">("idle");
+  let copyDataState = $state<"idle" | "copying" | "success" | "error">("idle");
 
   let imageResetTimer: ReturnType<typeof setTimeout>;
   let imageErrorTimer: ReturnType<typeof setTimeout>;
+  let dataResetTimer: ReturnType<typeof setTimeout>;
   onDestroy(() => {
     clearTimeout(imageResetTimer);
     clearTimeout(imageErrorTimer);
+    clearTimeout(dataResetTimer);
   });
 
 
@@ -136,6 +140,24 @@
       copyImageState = "error";
       clearTimeout(imageErrorTimer);
       imageErrorTimer = setTimeout(() => { copyImageState = "idle"; }, 2000);
+    }
+  }
+
+  // Copy this card's sequence as the compact, AI-friendly text the sequence
+  // viewer uses (ClaudeCodeCopier) — letters, motions, turns, locations,
+  // orientations, reversals. Lets two side-by-side cards be pasted for comparison.
+  async function copyCardData() {
+    if (copyDataState === "copying") return;
+    copyDataState = "copying";
+    try {
+      const result = await getClaudeCodeCopier().copyForClaude(sequence);
+      if (!result?.success) throw new Error("copy failed");
+      copyDataState = "success";
+    } catch {
+      copyDataState = "error";
+    } finally {
+      clearTimeout(dataResetTimer);
+      dataResetTimer = setTimeout(() => { copyDataState = "idle"; }, 2000);
     }
   }
 
@@ -196,6 +218,17 @@
             <i class="fas fa-times"></i> Failed
           {:else}
             <i class="fas fa-image"></i> Copy Image
+          {/if}
+        </button>
+        <button class="action-btn" onclick={copyCardData} disabled={copyDataState === "copying"} aria-label="Copy sequence data in AI-friendly text">
+          {#if copyDataState === "copying"}
+            <i class="fas fa-spinner fa-spin"></i> Copying...
+          {:else if copyDataState === "success"}
+            <i class="fas fa-check"></i> Copied!
+          {:else if copyDataState === "error"}
+            <i class="fas fa-times"></i> Failed
+          {:else}
+            <i class="fas fa-terminal"></i> Copy Data
           {/if}
         </button>
         {#if mode === "preview"}

@@ -10,10 +10,10 @@
  * - Velocity clamping for physics stability
  */
 
-import type { LedTipData, LedOverlayConfig } from "../domain/types/LedTypes";
-import { hexToLedColor, resolveHandColor } from "../domain/types/LedTypes";
-import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-import { getTipPoints } from "../domain/types/PropTipPoints";
+import type { LedTipData, LedOverlayConfig } from "../domain/types/led-types";
+import { hexToLedColor, resolveHandColor } from "../domain/types/led-types";
+import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+import { getTipPoints } from "../domain/types/prop-tip-points";
 import { evaluatePattern as evaluatePatternNew } from "../domain/patterns/evaluator";
 import {
 	createReusableContext,

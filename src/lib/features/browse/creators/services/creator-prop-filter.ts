@@ -1,6 +1,6 @@
 import { collection, query, where, orderBy, limit as firestoreLimit, getDocs } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 
 export async function queryByProp(prop: PropType, maxResults: number): Promise<UserProfile[]> {

@@ -1,0 +1,179 @@
+// Declarative structure for the printable Double-Staff Codex sheets.
+//
+// Cell pictograph data comes from the same dataset the in-app guide Codex uses
+// (`guide/level-1/_data/letters.json`, keyed `"A-0"`). Transition labels
+// (α→α, Γ→β…) are DERIVED from each pictograph's start/end position so a box's
+// header can never drift from the letters rendered inside it. Box arrangement,
+// OPEN/CLOSE tags, and Greek names are design choices matched to the reference
+// artboards (`1.1 - Base Letters - Double Staff`).
+
+import lettersData from "../../level-1/_data/letters.json";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+
+const pictographs = (
+  lettersData as unknown as { pictographs: Record<string, PictographData> }
+).pictographs;
+
+const POS_GLYPH: Record<string, string> = { alpha: "α", beta: "β", gamma: "Γ" };
+
+function posBase(p: unknown): string {
+  const s = String(p ?? "");
+  return POS_GLYPH[s.replace(/[0-9]/g, "")] ?? s;
+}
+
+/** "α→α" derived from the pictograph's own start/end position. */
+export function transitionFor(id: string): string {
+  const d = pictographs[id];
+  if (!d?.startPosition || !d?.endPosition) return "";
+  return `${posBase(d.startPosition)}→${posBase(d.endPosition)}`;
+}
+
+/** Clone with turns zeroed — base letters render clean (no turn-count glyphs). */
+export function codexData(id: string): PictographData | null {
+  const d = pictographs[id];
+  if (!d) return null;
+  const { blue, red } = d.motions;
+  if (!blue || !red) return d;
+  return {
+    ...d,
+    motions: { blue: { ...blue, turns: 0 }, red: { ...red, turns: 0 } },
+  };
+}
+
+export type CellMode = "OPEN" | "CLOSE";
+
+export interface CodexCellDef {
+  id: string;
+  label: string;
+  name?: string; // Greek/position name shown under the letter (Sigma, Alpha…)
+  top?: string; // per-cell transition header (Type 4/5/6)
+}
+
+export interface CodexBoxDef {
+  header?: string; // shared box transition header (Type 1/2/3)
+  mode?: CellMode; // OPEN / CLOSE tag
+  full?: boolean; // span both columns, centered (S-T-U-V row, Types 4/5/6)
+  cells: CodexCellDef[];
+}
+
+export interface TypeSeg {
+  t: string;
+  c: string;
+}
+
+export interface CodexTypeDef {
+  n: number;
+  word: string; // plain leading word, e.g. "Static"
+  segs: TypeSeg[]; // colored emphasis segments
+  boxes: CodexBoxDef[];
+  divider?: boolean; // hairline rule above this type
+}
+
+export interface CodexSheetDef {
+  title?: string;
+  types: CodexTypeDef[];
+}
+
+// Type-name accent colors (matched to the reference artboards).
+const TEAL = "#22b8cf";
+const NAVY = "#1c3f8f";
+const GREEN = "#2f9e44";
+const PURPLE = "#7048b6";
+const ORANGE = "#e8590c";
+
+/** Grouped box: one shared header derived from the first cell's transition. */
+function gbox(cells: CodexCellDef[], mode?: CellMode, full?: boolean): CodexBoxDef {
+  return { header: transitionFor(cells[0]!.id), mode, full, cells };
+}
+
+/** Per-cell box: each cell carries its own derived transition header. */
+function cbox(cells: CodexCellDef[], full?: boolean): CodexBoxDef {
+  return { full, cells: cells.map((c) => ({ ...c, top: transitionFor(c.id) })) };
+}
+
+const c = (id: string, label: string, name?: string): CodexCellDef => ({ id, label, name });
+
+export const SHEET1: CodexSheetDef = {
+  title: "Double Staff",
+  types: [
+    {
+      n: 1,
+      word: "Type 1 — ",
+      segs: [
+        { t: "Dual", c: TEAL },
+        { t: "-Shift", c: NAVY },
+      ],
+      boxes: [
+        gbox([c("A-0", "A"), c("B-0", "B"), c("C-0", "C")]),
+        gbox([c("D-0", "D"), c("E-0", "E"), c("F-0", "F")]),
+        gbox([c("G-0", "G"), c("H-0", "H"), c("I-0", "I")]),
+        gbox([c("J-0", "J"), c("K-0", "K"), c("L-0", "L")]),
+        gbox([c("M-0", "M"), c("N-0", "N"), c("O-0", "O")]),
+        gbox([c("P-0", "P"), c("Q-0", "Q"), c("R-0", "R")]),
+        gbox([c("S-0", "S"), c("T-0", "T"), c("U-0", "U"), c("V-0", "V")], undefined, true),
+      ],
+    },
+    {
+      n: 2,
+      word: "Type 2 — ",
+      segs: [{ t: "Shift", c: NAVY }],
+      divider: true,
+      boxes: [
+        gbox([c("W-0", "W"), c("X-0", "X")], "OPEN"),
+        gbox([c("Y-0", "Y"), c("Z-0", "Z")], "CLOSE"),
+        gbox([c("Σ-0", "Σ", "Sigma"), c("Δ-0", "Δ", "Delta")], "CLOSE"),
+        gbox([c("Θ-0", "θ", "Theta"), c("Ω-0", "Ω", "Omega")], "OPEN"),
+      ],
+    },
+  ],
+};
+
+export const SHEET2: CodexSheetDef = {
+  types: [
+    {
+      n: 3,
+      word: "Type 3 — ",
+      segs: [
+        { t: "Cross", c: GREEN },
+        { t: "-Shift", c: PURPLE },
+      ],
+      boxes: [
+        gbox([c("W--0", "W-"), c("X--0", "X-")]),
+        gbox([c("Y--0", "Y-"), c("Z--0", "Z-")]),
+        gbox([c("Θ--0", "θ-"), c("Ω--0", "Ω-")]),
+        gbox([c("Σ--0", "Σ-"), c("Δ--0", "Δ-")]),
+      ],
+    },
+    {
+      n: 4,
+      word: "Type 4 — ",
+      segs: [{ t: "Dash", c: GREEN }],
+      divider: true,
+      boxes: [cbox([c("Φ-0", "Φ"), c("Ψ-0", "Ψ"), c("Λ-0", "Λ")], true)],
+    },
+    {
+      n: 5,
+      word: "Type 5 — ",
+      segs: [
+        { t: "Dual", c: TEAL },
+        { t: "-Dash", c: GREEN },
+      ],
+      divider: true,
+      boxes: [cbox([c("Φ--0", "Φ-"), c("Ψ--0", "Ψ-"), c("Λ--0", "Λ-")], true)],
+    },
+    {
+      n: 6,
+      word: "Type 6 — ",
+      segs: [{ t: "Static", c: ORANGE }],
+      divider: true,
+      boxes: [
+        cbox(
+          [c("α-0", "α", "Alpha"), c("β-0", "β", "Beta"), c("γ-0", "Γ", "Gamma")],
+          true,
+        ),
+      ],
+    },
+  ],
+};
+
+export const SHEETS: CodexSheetDef[] = [SHEET1, SHEET2];

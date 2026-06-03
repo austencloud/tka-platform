@@ -5,8 +5,8 @@
  * Each avatar has independent sequence loading, playback, and locomotion.
  */
 
-import type { MotionConfig3D } from "../domain/models/MotionData3D";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { MotionConfig3D } from "../domain/models/motion-data-3d";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { Plane } from "@austencloud/scene-3d";
 import { PlaneMode } from "@austencloud/scene-3d";
 import { PLANE_MODE_CONFIGS, type PlaneModeConfig } from "@austencloud/scene-3d";
@@ -31,9 +31,9 @@ import {
   type DefaultPerformerSettings,
   type OverrideState,
 } from "./performer-settings-types";
-import type { EffectType } from "$lib/shared/effects/domain/EffectsConfig";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { getSceneUndoManager } from "../undo/getSceneUndoManager";
+import type { EffectType } from "$lib/shared/effects/domain/effects-config";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
 import type { PerformerDomainSnapshot } from "../undo/scene-undo-types";
 
 // ============================================

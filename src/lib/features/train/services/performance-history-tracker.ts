@@ -6,8 +6,8 @@
  */
 
 import { db } from "$lib/shared/persistence/database/tka-database";
-import type { StoredPerformance } from "$lib/shared/train/domain/TrainDatabaseModels";
-import type { PerformanceScore } from "$lib/shared/train/domain/PerformanceData";
+import type { StoredPerformance } from "$lib/shared/train/domain/train-database-models";
+import type { PerformanceScore } from "$lib/shared/train/domain/performance-data";
 
 export interface PersonalBest {
   sequenceId: string;

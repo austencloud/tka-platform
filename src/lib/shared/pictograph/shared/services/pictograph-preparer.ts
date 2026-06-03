@@ -1,18 +1,18 @@
-import type { PictographData } from "../domain/models/PictographData";
-import type { MotionData } from "../domain/models/MotionData";
+import type { PictographData } from "../domain/models/pictograph-data";
+import type { MotionData } from "../domain/models/motion-data";
 import type {
   PreparedPictographData,
   PreparedRenderData,
-} from "../domain/models/PreparedPictographData";
+} from "../domain/models/prepared-pictograph-data";
 import type { PrepareOptions } from "./types";
 import type { ArrowLifecycleManager } from "../../arrow/orchestration/services/arrow-lifecycle-manager";
 import type { PropSvgLoader } from "../../prop/services/prop-svg-loader";
 import type { PropPlacer } from "../../prop/services/prop-placer";
 import { deriveGridMode as _deriveGridMode } from "../../grid/services/grid-mode-deriver";
-import type { PropPosition } from "../../prop/domain/models/PropPosition";
-import type { PropAssets } from "../../prop/domain/models/PropAssets";
+import type { PropPosition } from "../../prop/domain/models/prop-position";
+import type { PropAssets } from "../../prop/domain/models/prop-assets";
 import { GridMode } from "../../grid/domain/enums/grid-enums";
-import { PropType } from "../../prop/domain/enums/PropType";
+import { PropType } from "../../prop/domain/enums/prop-type";
 import { MotionType, HandPath, RotationDirection, type Orientation } from "../domain/enums/pictograph-enums";
 // Prop-type defaults used when callers don't pass explicit options.
 // Formerly imported getSettings() from app-state.svelte, but that module chain

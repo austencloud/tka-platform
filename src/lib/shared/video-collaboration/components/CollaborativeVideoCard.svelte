@@ -5,7 +5,7 @@
   Shows thumbnail, sequence info, and collaborator avatars.
 -->
 <script lang="ts">
-  import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
+  import type { CollaborativeVideo } from "../domain/collaborative-video";
   import CollaboratorAvatars from "./CollaboratorAvatars.svelte";
 
   const {

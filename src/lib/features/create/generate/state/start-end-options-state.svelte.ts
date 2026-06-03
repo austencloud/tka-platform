@@ -12,12 +12,12 @@
  * Other options are session-specific and stored in localStorage.
  */
 
-import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
-import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
+import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 
 // ===== Session-local Persistence (localStorage) =====
 const SESSION_STORAGE_KEY = "tka-start-end-session-options";

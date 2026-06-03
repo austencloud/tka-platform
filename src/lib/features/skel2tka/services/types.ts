@@ -1,4 +1,4 @@
-import type { DetectionFrame } from "$lib/shared/train/domain/DetectionFrame";
+import type { DetectionFrame } from "$lib/shared/train/domain/detection-frame";
 import type { DetectedBeat } from "../domain/models";
 
 /**

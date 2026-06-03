@@ -69,7 +69,7 @@ export interface SoloPropFilters {
 }
 
 // --- From StepDeriver ---
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export interface ViewerPreferences {
   readonly bluePropType: PropType;

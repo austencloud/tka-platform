@@ -1,10 +1,10 @@
-import { authState } from "$lib/shared/auth/state/authState.svelte";
-import type { DefaultArrowPlacementDoc, PlacementValue } from "../domain/DefaultArrowPlacement";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import type { DefaultArrowPlacementDoc, PlacementValue } from "../domain/default-arrow-placement";
 import type { DefaultArrowPlacementPersister } from "./default-arrow-placement-persister";
 import {
   createDefaultArrowPlacementState,
   type DefaultArrowPlacementState,
-} from "../state/DefaultArrowPlacementState.svelte";
+} from "../state/default-arrow-placement-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { globalAdjustmentVersion } from "../../global/state/global-adjustment-version.svelte";
 

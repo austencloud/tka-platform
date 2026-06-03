@@ -8,8 +8,8 @@
   import type {
     FeatureFlagConfig,
     FeatureId,
-  } from "$lib/shared/auth/domain/models/FeatureFlag";
-  import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
+  } from "$lib/shared/auth/domain/models/feature-flag";
+  import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
   import {
     type OverrideState,
     calculateEffectiveAccess,

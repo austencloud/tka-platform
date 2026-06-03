@@ -6,9 +6,9 @@
  * and how they're indexed for fast queries.
  */
 
-import type { AppSettings } from "../../settings/domain/AppSettings";
-import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
-import type { SequenceData } from "../../foundation/domain/models/SequenceData";
+import type { AppSettings } from "../../settings/domain/app-settings";
+import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
+import type { SequenceData } from "../../foundation/domain/models/sequence-data";
 import Dexie, { type EntityTable } from "dexie";
 import type {
   AchievementNotification,
@@ -28,7 +28,7 @@ import type {
 import type {
   StoredPerformance,
   StoredCalibrationProfile,
-} from "$lib/shared/train/domain/TrainDatabaseModels";
+} from "$lib/shared/train/domain/train-database-models";
 import type { Composition } from "$lib/shared/animation-engine/domain/compose-types";
 import type {
   GalleryCacheEntry,
@@ -39,7 +39,7 @@ import {
   DATABASE_VERSION,
   DEFAULT_USER_WORK_VERSION,
   TABLE_INDEXES,
-} from "../domain/constants/DATABASE_CONSTANTS";
+} from "../domain/constants/database_constants";
 import type { UserProject } from "../domain/models/user-project";
 import type { UserWorkData } from "../domain/models/user-work-data";
 

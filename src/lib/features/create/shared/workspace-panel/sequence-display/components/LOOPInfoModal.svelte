@@ -3,8 +3,8 @@
   import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import LOOPComponentRow from "./LOOPComponentRow.svelte";
   import { generateLoopStructuralCopy } from "../services/loop-structural-copy";
 

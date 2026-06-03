@@ -1,5 +1,5 @@
 import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { getCachedCatalogs, loadCatalogs, loadCatalogSequencesPage } from "$lib/features/choreo-card/services/catalog-loader";
 import { QuizAnswerFormat, QuizQuestionFormat, QuizType } from "../domain/enums/quiz-enums";
 import type { QuizAnswerOption, QuizQuestionData } from "../domain/models/quiz-models";

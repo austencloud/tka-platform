@@ -11,7 +11,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { firestoreList } from "$lib/shared/firestore";
-import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
 import type { FeedbackItem, AdminResponse, TesterConfirmation, TesterConfirmationStatus, FeedbackStatus, } from "$lib/shared/feedback/domain/models/feedback-models";
 import { FeedbackItemSchema } from "$lib/shared/feedback/domain/models/feedback-schemas";

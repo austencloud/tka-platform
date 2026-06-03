@@ -2,9 +2,9 @@
   import { T, useTask, useThrelte } from "@threlte/core";
   import { Vector3, Color } from "three";
   import { onDestroy, untrack } from "svelte";
-  import { TrailRenderer3D } from "./TrailRenderer3D";
-  import type { TrailMode } from "./TrailRenderer3D";
-  import type { DynamicLightManager, LightHandle } from "../lighting/DynamicLightManager";
+  import { TrailRenderer3D } from "./trail-renderer-3d";
+  import type { TrailMode } from "./trail-renderer-3d";
+  import type { DynamicLightManager, LightHandle } from "../lighting/dynamic-light-manager";
   import type { QualityTier } from "../types";
 
   interface Props {

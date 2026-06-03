@@ -18,7 +18,7 @@
 -->
 <script lang="ts">
 
-import { getVoiceSessionRepository } from "$lib/shared/voice-sessions/getVoiceSessionRepository";
+import { getVoiceSessionRepository } from "$lib/shared/voice-sessions/get-voice-session-repository";
 import { getCommandDispatcher } from "$lib/shared/voice-control/get-command-dispatcher";
 import { getCommandInterpreter } from "$lib/shared/voice-control/get-command-interpreter";
 import { resolveIntent } from "$lib/shared/voice-control/services/llm-intent-resolver";

@@ -9,18 +9,18 @@
 <script lang="ts">
 
 import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/get-generation-orchestrator";
-import { sequenceTransformer } from "$lib/shared/create/services/SequenceTransformer";
+import { sequenceTransformer } from "$lib/shared/create/services/sequence-transformer";
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-  import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+  import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-  import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import { getSequenceRepository } from "$lib/shared/create/get-sequence-repository";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+  import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
@@ -45,7 +45,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/SequenceTransfo
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import SourceControls from "$lib/shared/animation-engine/components/SourceControls.svelte";
   import SequenceHistoryPanel from "./SequenceHistoryPanel.svelte";
-  import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
+  import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
   import { saveSequence as persistSaveSequence } from "$lib/shared/persistence/services/dexie-persistence-service";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";

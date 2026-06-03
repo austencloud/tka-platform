@@ -12,7 +12,7 @@
     type RecentSequence,
   } from "../../state/train-practice-state.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 

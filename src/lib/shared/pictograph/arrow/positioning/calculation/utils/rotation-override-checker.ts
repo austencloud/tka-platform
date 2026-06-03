@@ -1,10 +1,10 @@
 import type { GridLocation } from "../../../../grid/domain/enums/grid-enums";
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import type { SpecialPlacer } from "../../placement/services/special-placer";
 import type { IRotationAngleOverrideKeyGenerator } from "../../key-generation/services/rotation-angle-override-key-generator";
 import { selectStaticOverrideMap } from "./rotation-map-selector";
-import { normalizeRotationDirection } from "./RotationDirectionUtils";
+import { normalizeRotationDirection } from "./rotation-direction-utils";
 
 export async function checkAndApplyOverride(
   motion: MotionData,

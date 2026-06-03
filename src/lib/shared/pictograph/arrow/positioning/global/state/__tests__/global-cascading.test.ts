@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { createGlobalArrowAdjustmentState } from "../GlobalArrowAdjustmentState.svelte";
-import type { GlobalArrowAdjustment } from "../../domain/GlobalArrowAdjustment";
+import { createGlobalArrowAdjustmentState } from "../global-arrow-adjustment-state.svelte";
+import type { GlobalArrowAdjustment } from "../../domain/global-arrow-adjustment";
 import type { Timestamp } from "firebase/firestore";
 
 function fakeTimestamp(): Timestamp {

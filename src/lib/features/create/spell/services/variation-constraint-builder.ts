@@ -8,7 +8,7 @@
 
 
 import type { LetterTypeClassifier } from "./letter-type-classifier";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type {
   SpellPreferences,
   VariationConstraints,

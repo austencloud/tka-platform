@@ -1,7 +1,7 @@
 import type { EffectPresetGroup } from "./types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-import type { FrostIntent } from "$lib/shared/effects/domain/EffectsConfig";
-import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
+import type { FrostIntent } from "$lib/shared/effects/domain/effects-config";
+import type { EffectsPreset } from "$lib/shared/effects/domain/effects-preset";
 
 function applyFrost(
   state: EffectsConfigState,

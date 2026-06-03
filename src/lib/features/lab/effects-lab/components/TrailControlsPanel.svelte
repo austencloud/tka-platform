@@ -7,8 +7,8 @@
 -->
 <script lang="ts">
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-  import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
+  import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
+  import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
 
   let trail = $derived(animationSettings.trail);
   let propType = $derived(animationSettings.currentPropType);

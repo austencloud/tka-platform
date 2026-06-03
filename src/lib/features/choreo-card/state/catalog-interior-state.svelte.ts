@@ -1,8 +1,8 @@
 import type { Catalog } from "../domain/models/Catalog";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { CardSizeId } from "../domain/card-sizes";
 import type { CardPair } from "../services/types";
-import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 
 type ViewMode = "grid" | "print";
 

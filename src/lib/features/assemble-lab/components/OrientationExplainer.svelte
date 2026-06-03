@@ -9,8 +9,8 @@
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import GridModePicker from "./GridModePicker.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
     Orientation,

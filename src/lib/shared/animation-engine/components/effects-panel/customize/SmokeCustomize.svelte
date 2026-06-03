@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import type { SmokeIntent } from "$lib/shared/effects/domain/EffectsConfig";
+  import type { SmokeIntent } from "$lib/shared/effects/domain/effects-config";
 
   interface Props {
     onBack: () => void;

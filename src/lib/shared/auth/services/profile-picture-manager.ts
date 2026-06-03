@@ -7,7 +7,7 @@
 import { updateProfile, type User } from "firebase/auth";
 import type { GeneratedAvatarData } from "./types";
 import { getStorageInstance } from "$lib/shared/auth/firebase";
-import { PROP_TYPE_DISPLAY_REGISTRY } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+import { PROP_TYPE_DISPLAY_REGISTRY } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 
 /**
  * Update Facebook profile picture to high resolution if needed.

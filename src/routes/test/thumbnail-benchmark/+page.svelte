@@ -18,17 +18,17 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/state';
-  import { getThumbnailRenderOrchestrator } from '$lib/shared/browse/getThumbnailRenderOrchestrator';
+  import { getThumbnailRenderOrchestrator } from '$lib/shared/browse/get-thumbnail-render-orchestrator';
   import { deriveKey as deriveThumbnailKey } from '$lib/shared/browse/services/thumbnail-key-deriver';
-  import { getThumbnailMetricsCollector } from '$lib/shared/browse/getThumbnailMetricsCollector';
-  import { getThumbnailLocalCache } from '$lib/shared/browse/getThumbnailLocalCache';
-  import { PublicSequencesLoader } from '$lib/shared/browse/services/PublicSequencesLoader';
-  import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
-  import type { ThumbnailRenderOrchestrator } from '$lib/shared/browse/services/ThumbnailRenderOrchestrator';
+  import { getThumbnailMetricsCollector } from '$lib/shared/browse/get-thumbnail-metrics-collector';
+  import { getThumbnailLocalCache } from '$lib/shared/browse/get-thumbnail-local-cache';
+  import { PublicSequencesLoader } from '$lib/shared/browse/services/public-sequences-loader';
+  import type { SequenceData } from '$lib/shared/foundation/domain/models/sequence-data';
+  import type { ThumbnailRenderOrchestrator } from '$lib/shared/browse/services/thumbnail-render-orchestrator';
   import type { ThumbnailRenderInput } from '$lib/shared/browse/services/thumbnail-key-deriver';
-  import type { ThumbnailMetricsSummary } from '$lib/shared/browse/services/ThumbnailMetricsCollector';
-  import type { ThumbnailMetricsCollector } from '$lib/shared/browse/services/ThumbnailMetricsCollector';
-  import type { ThumbnailLocalCache } from '$lib/shared/browse/services/ThumbnailLocalCache';
+  import type { ThumbnailMetricsSummary } from '$lib/shared/browse/services/thumbnail-metrics-collector';
+  import type { ThumbnailMetricsCollector } from '$lib/shared/browse/services/thumbnail-metrics-collector';
+  import type { ThumbnailLocalCache } from '$lib/shared/browse/services/thumbnail-local-cache';
 
   // Configuration
   const DEFAULT_SEQUENCE_COUNT = 50;

@@ -6,10 +6,10 @@
   import ModuleButton from "./ModuleButton.svelte";
   import SectionsList from "./SectionsList.svelte";
   import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { resolveAccessTier } from "$lib/shared/auth/domain/AccessTier";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { resolveAccessTier } from "$lib/shared/auth/domain/access-tier";
   import { getAccessibleTabs } from "$lib/shared/auth/domain/guest-access-config";
-  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
+  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
 
   let {
     module,

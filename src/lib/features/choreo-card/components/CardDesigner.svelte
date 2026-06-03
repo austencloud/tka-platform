@@ -9,14 +9,14 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
   import { onMount, onDestroy } from "svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { buildCanonicalCardVisibility } from "../domain/canonical-card-visibility";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
-  import { createBrowseEngine } from "$lib/shared/browse/engine/createBrowseEngine.svelte";
+  import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
   import DesignerSettingsSidebar from "./designer/DesignerSettingsSidebar.svelte";

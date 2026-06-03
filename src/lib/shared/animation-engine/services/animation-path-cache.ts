@@ -10,8 +10,8 @@
  * - Performance: One-time computation, reused for entire playback
  */
 
-import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/trail-types";
 import {
   calculatePropEndpoints,
   type PropEndpointConfig,

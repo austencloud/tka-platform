@@ -31,7 +31,7 @@
   import SourcePreview from "./SourcePreview.svelte";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
   import { timeToPixels, type TimelineTrack, type TimelineClip } from "$lib/shared/animation-engine/domain/timeline-types";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { untrack } from "svelte";
 
   // Extracted components

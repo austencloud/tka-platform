@@ -11,9 +11,9 @@
  * - Half Choo Choo: 2 steps (half orbit S→W→N)
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import {
   GridLocation,
   GridMode,
@@ -25,9 +25,9 @@ import {
   Orientation,
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 
 // Orbit path for floating prop (cardinal directions clockwise)

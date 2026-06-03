@@ -14,13 +14,13 @@
  */
 
 // ── Critical: needed before first Browse/Create render ──
-import { configureShortCodeManager } from "../qr/getShortCodeManager";
-import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+import { configureShortCodeManager } from "../qr/get-short-code-manager";
+import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
 
-import { registerLoopDetector } from "../create/getLoopDetector";
+import { registerLoopDetector } from "../create/get-loop-detector";
 import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
 
-import { registerLoopDisplayResolver } from "../loop-labeler/getLoopDisplayResolver";
+import { registerLoopDisplayResolver } from "../loop-labeler/get-loop-display-resolver";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 
 import { isBootProfileVerbose } from "../analytics/boot-profiler";

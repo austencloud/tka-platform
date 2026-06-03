@@ -1,6 +1,6 @@
 import { browser } from "$app/environment";
-import type { FeatureId, FeatureFlagConfig, UserFeatureOverrides } from "../domain/models/FeatureFlag";
-import { type UserRole, hasRolePrivilege } from "../domain/models/UserRole";
+import type { FeatureId, FeatureFlagConfig, UserFeatureOverrides } from "../domain/models/feature-flag";
+import { type UserRole, hasRolePrivilege } from "../domain/models/user-role";
 import { auth } from "../firebase";
 import { reloadFeatureFlags, setUserProperties } from "../../analytics/services/posthog";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";

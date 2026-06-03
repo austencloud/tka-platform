@@ -5,7 +5,7 @@
   Only shows for email/password users who haven't verified their email.
 -->
 <script lang="ts">
-  import { authState } from "../state/authState.svelte";
+  import { authState } from "../state/auth-state.svelte";
   import { sendEmailVerification } from "firebase/auth";
   import { auth } from "../firebase";
   import { slide } from "svelte/transition";

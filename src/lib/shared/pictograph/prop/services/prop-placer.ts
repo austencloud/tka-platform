@@ -9,9 +9,9 @@
 import { GridMode } from "../../grid/domain/enums/grid-enums";
 import { deriveGridMode as _deriveGridMode } from "../../grid/services/grid-mode-deriver";
 import { MotionColor } from "../../shared/domain/enums/pictograph-enums";
-import type { MotionData } from "../../shared/domain/models/MotionData";
-import type { PictographData } from "../../shared/domain/models/PictographData";
-import { pictographRequiresStrictHandpoints } from "../domain/enums/PropClassification";
+import type { MotionData } from "../../shared/domain/models/motion-data";
+import type { PictographData } from "../../shared/domain/models/pictograph-data";
+import { pictographRequiresStrictHandpoints } from "../domain/enums/prop-classification";
 
 // Settings interface for Node.js contexts where getSettings() isn't available
 interface PropPlacerSettings {
@@ -21,11 +21,11 @@ interface PropPlacerSettings {
   redBuugengFlipped?: boolean;
 }
 
-import { createPropPlacementFromPosition } from "../domain/factories/createPropPlacementData";
+import { createPropPlacementFromPosition } from "../domain/factories/create-prop-placement-data";
 // Removed: import { getSettings } from app-state.svelte
 // That import chain pulls in Firebase auth → window access → crashes in Web Workers.
 // Callers pass settings via constructor or motion data; STAFF is the safe default.
-import type { PropPlacementData } from "../domain/models/PropPlacementData";
+import type { PropPlacementData } from "../domain/models/prop-placement-data";
 import type { BetaDetector } from "./beta-detector";
 import type { PropPlacementVisibility } from "./types";
 import DefaultPropPositioner from "./default-prop-positioner";

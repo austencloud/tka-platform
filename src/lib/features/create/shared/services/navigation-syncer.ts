@@ -10,7 +10,7 @@
  */
 
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
+import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
 
 export type CreateTab = "construct" | "generate";
 

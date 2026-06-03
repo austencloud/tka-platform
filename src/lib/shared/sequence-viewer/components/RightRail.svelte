@@ -6,9 +6,9 @@
   import CameraPopover from "$lib/shared/3d/components/CameraPopover.svelte";
   import SceneSelectorPopover from "$lib/shared/3d/components/SceneSelectorPopover.svelte";
   import FormationPopover from "$lib/shared/3d/components/controls/FormationPopover.svelte";
-  import { createViewer3DKeyboardHandler } from "$lib/shared/3d/keyboard/Viewer3DKeyboardHandler";
+  import { createViewer3DKeyboardHandler } from "$lib/shared/3d/keyboard/viewer-3d-keyboard-handler";
   import DevToolsPopover from "$lib/shared/3d/components/controls/DevToolsPopover.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
   const viewer = getViewer3DContext();
 

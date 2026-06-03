@@ -18,8 +18,8 @@
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/services/trail-capturer";
-  import type { FireOverlayConfig } from "$lib/shared/animation-engine/domain/types/FireTypes";
-  import type { LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/LedTypes";
+  import type { FireOverlayConfig } from "$lib/shared/animation-engine/domain/types/fire-types";
+  import type { LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/led-types";
 
   let {
     cell,

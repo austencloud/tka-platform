@@ -5,10 +5,10 @@
  * Single responsibility: Motion interpolation between keyframes.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/models/MotionEndpoints";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/models/motion-endpoints";
 import type { InterpolationResult } from "./animation-state-manager";
 import { lerpAngle, normalizeAnglePositive } from "./angle-calculator";
 import { calculateMotionEndpoints } from "./endpoint-calculator";

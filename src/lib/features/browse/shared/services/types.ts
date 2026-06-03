@@ -2,9 +2,9 @@
  * Co-exported types from retired interface contracts.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SoloPropData } from "$lib/shared/foundation/domain/models/SoloPropData";
-import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-prop-data";
+import type { HandPathData } from "$lib/shared/foundation/domain/models/hand-path-data";
 import type { BrowseEngine } from "$lib/shared/browse/engine/types";
 
 // === From IBrowseDataSource ===

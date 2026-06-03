@@ -1,8 +1,8 @@
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
-import type { SequenceData } from "../../foundation/domain/models/SequenceData";
-import { PropType } from "../../pictograph/prop/domain/enums/PropType";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
+import type { SequenceData } from "../../foundation/domain/models/sequence-data";
+import { PropType } from "../../pictograph/prop/domain/enums/prop-type";
 import type { PictographVisibilityOptions } from "../utils/pictograph-to-svg";
 import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
 // These 5 imports are loaded dynamically at usage sites to avoid pulling
@@ -33,9 +33,10 @@ import {
 import type { CardFrontLayout, CardFrontChromeDeps } from "./card-front-assembler";
 import type { LayerRenderOptions, LayerVisibility } from "./types";
 import { composeCardImage as composeCardImageFn } from "./card-composer";
+import { ensureCardFonts } from "./gelasio-fonts";
 // mandala geometry calculate() loaded dynamically to keep its dependency graph out of the worker bundle until needed
 import { renderMandalaToCanvas } from "../../mandala/services/mandala-renderer";
-import { getMandalaPlacements } from "../../sequence-viewer/services/getMandalaPlacements";
+import { getMandalaPlacements } from "../../sequence-viewer/services/get-mandala-placements";
 import {
   LIGHT_MOTION_BLUE_STROKE,
   LIGHT_MOTION_RED_STROKE,
@@ -50,7 +51,7 @@ import {
   DARK_MOTION_PURPLE_STROKE,
   DARK_MOTION_PURPLE_FILL,
 } from "../../mandala/domain/mandala-constants";
-import type { PreparedPictographData } from '../../pictograph/shared/domain/models/PreparedPictographData';
+import type { PreparedPictographData } from '../../pictograph/shared/domain/models/prepared-pictograph-data';
 
 const yieldToEventLoop: () => Promise<void> =
   (globalThis as unknown as Record<string, Record<string, () => Promise<void>>>).scheduler?.yield?.bind((globalThis as unknown as Record<string, unknown>).scheduler) ??
@@ -268,6 +269,9 @@ export class ImageComposer {
     }
 
     await (this.TextRenderer as TextRenderer).preloadGlyphImages();
+    // Ensure Gelasio is loaded into document.fonts before any canvas text draw
+    // (no-op in the worker, which seeds self.fonts at init). Cached after first.
+    await ensureCardFonts();
 
     this.compositionL2Hits = 0;
     this.compositionL1Hits = 0;

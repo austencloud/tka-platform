@@ -8,7 +8,7 @@
 import type {
   PropState,
   PropStates,
-} from "$lib/shared/foundation/domain/types/PropState";
+} from "$lib/shared/foundation/domain/types/prop-state";
 
 export interface InterpolationResult {
   blueAngles: {

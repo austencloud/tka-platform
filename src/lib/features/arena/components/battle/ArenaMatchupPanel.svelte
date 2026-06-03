@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
   import type { ArenaEntry, ArenaRating } from "../../domain/models/arena-models";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import InlineAnimationPlayer from "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 

@@ -17,7 +17,7 @@ import { getTypeNodeId } from "./letter-to-concept-mapper";
 import {
   tkaKnowledgeGraph,
 } from "$lib/features/tika/knowledge/semantic-graph";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { getHistory } from "./quiz-history-recorder";
 
 export function detectSingleError(event: QuizAnswerEvent): DetectedGap | null {

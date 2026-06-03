@@ -22,7 +22,8 @@
 
 	const railItems = $derived([
 		...viewerModeOptions(webgl2Available).map((m) => ({ id: m.id, icon: m.icon, label: m.label })),
-		{ id: 'practice' as const, icon: PRACTICE_OPTION.icon, label: PRACTICE_OPTION.label }
+		// Practice is only listed when a toggle handler is wired (feature not ready — entry point withheld).
+		...(onPracticeToggle ? [{ id: 'practice' as const, icon: PRACTICE_OPTION.icon, label: PRACTICE_OPTION.label }] : [])
 	]);
 
 	let navEl: HTMLElement | undefined = $state();

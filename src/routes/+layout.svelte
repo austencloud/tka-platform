@@ -98,7 +98,7 @@
       bootProfiler: import("$lib/shared/analytics/boot-profiler"),
       di: import("$lib/shared/composition-root"),
       firebase: import("$lib/shared/auth/firebase"),
-      authState: import("$lib/shared/auth/state/authState.svelte"),
+      authState: import("$lib/shared/auth/state/auth-state.svelte"),
       i18n: import("$lib/shared/i18n/i18n.svelte.js"),
       posthog: import("$lib/shared/analytics/services/posthog"),
       modalUrlState: import("$lib/shared/application/state/ui/modal-url-state.svelte"),
@@ -226,7 +226,7 @@
 
     // Initialize desktop Tauri features (window state, updater).
     // No-op on web/mobile - the isDesktop check inside returns immediately.
-    const { getDesktopInitializer } = await import("$lib/shared/desktop/getDesktopInitializer");
+    const { getDesktopInitializer } = await import("$lib/shared/desktop/get-desktop-initializer");
     getDesktopInitializer().initialize().catch((err: unknown) =>
       console.warn("[Layout] Desktop init skipped:", err)
     );

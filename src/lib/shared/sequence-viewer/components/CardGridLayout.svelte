@@ -31,13 +31,13 @@
     return flip(node, animation, params);
   }
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { TimelineRow } from "$lib/shared/create/utils/grid-calculations";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import CellRenderer from "./CellRenderer.svelte";
-  import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+  import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { getQRCellScale } from "$lib/shared/qr/qr-cell-scale";
 
   interface CellData {

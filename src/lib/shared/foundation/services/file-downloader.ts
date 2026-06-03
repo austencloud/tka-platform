@@ -1,4 +1,25 @@
 import type { DownloadOptions, BatchDownloadOptions, DownloadResult } from "./types";
+import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
+
+/** Anchor (<a download>) to disk. The terminal fallback for every path here. */
+function anchorDownload(blob: Blob, filename: string): Promise<DownloadResult> {
+  return new Promise((resolve) => {
+    try {
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.style.display = "none";
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+      resolve({ success: true, filename });
+    } catch (error) {
+      resolve({ success: false, filename, error: error as Error });
+    }
+  });
+}
 
 export async function downloadBlob(
   blob: Blob,
@@ -22,23 +43,47 @@ export async function downloadBlob(
     }
   }
 
-  // Fallback: anchor download
-  return new Promise((resolve) => {
+  return anchorDownload(blob, filename);
+}
+
+/**
+ * Share-first on mobile, download on desktop.
+ *
+ * On a mobile platform (`detectPlatform() !== "desktop"`) this opens the native
+ * share sheet so the user chooses where the file lands (Files, Photos, AirDrop,
+ * a message…) instead of a blind background download. On desktop the share sheet
+ * is intrusive and the download location is known, so it goes straight to disk.
+ *
+ * The platform gate is deliberate: desktop Chrome DOES implement
+ * `navigator.share`/`canShare`, so feature detection alone would pop the share
+ * sheet on desktop too. Gate on the device, not the capability.
+ *
+ * Falls back to anchor download when share is unavailable, the file isn't
+ * shareable, or share fails for any reason other than the user dismissing it
+ * (e.g. transient-activation loss after a long export → just download).
+ */
+export async function shareOrDownloadBlob(
+  blob: Blob,
+  filename: string,
+  options: { title?: string; text?: string } = {}
+): Promise<DownloadResult> {
+  const isMobile = detectPlatform() !== "desktop";
+  if (isMobile && navigator.share && navigator.canShare) {
     try {
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = filename;
-      anchor.style.display = "none";
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-      URL.revokeObjectURL(url);
-      resolve({ success: true, filename });
+      const file = new File([blob], filename, { type: blob.type });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: options.title, text: options.text });
+        return { success: true, filename };
+      }
     } catch (error) {
-      resolve({ success: false, filename, error: error as Error });
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return { success: true, filename };
+      }
+      // fall through to anchor download
     }
-  });
+  }
+
+  return anchorDownload(blob, filename);
 }
 
 /**

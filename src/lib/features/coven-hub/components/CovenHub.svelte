@@ -8,7 +8,7 @@
   import { computeCovenLayout } from "$lib/features/coven-hub/domain/coven-hub-layout";
   import { computeCovenLods, type LodBand } from "$lib/features/coven-hub/domain/coven-lod";
   import CovenStation from "./CovenStation.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   interface Props { sequence: SequenceData | null; }
   const props: Props = $props();

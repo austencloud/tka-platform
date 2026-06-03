@@ -15,7 +15,7 @@ import {
   groupByConfidenceLevel,
 } from "../domain/models/suggested-tag";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 /**
  * Suggest all applicable tags for a sequence

@@ -7,7 +7,7 @@
 	 * toward center so the two panels' content hugs the center gap.
 	 */
 
-	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 	import FuseSequenceBrowser from "./FuseSequenceBrowser.svelte";
 	import FuseAnimationPreview from "./FuseAnimationPreview.svelte";

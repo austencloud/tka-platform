@@ -1,5 +1,5 @@
 import { hashHandPath } from "$lib/shared/foundation/services/content-hasher";
-import type { HandPathData } from "../domain/models/HandPathData";
+import type { HandPathData } from "../domain/models/hand-path-data";
 import {
   GridLocation,
   GridMode,

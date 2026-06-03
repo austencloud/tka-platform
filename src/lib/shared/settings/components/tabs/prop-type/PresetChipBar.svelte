@@ -5,7 +5,7 @@
   Shows keyboard shortcut badges on desktop when keyboard detected.
 -->
 <script lang="ts">
-  import type { PropPreset } from "../../../domain/AppSettings";
+  import type { PropPreset } from "../../../domain/app-settings";
   import PresetChip from "./PresetChip.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 

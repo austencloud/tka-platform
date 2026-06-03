@@ -30,8 +30,8 @@ import {
 	type Unsubscribe,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { FirePhysicsParams } from "../domain/types/FireTypes";
-import type { PropTipConfig, TipPoint } from "../domain/types/PropTipPoints";
+import type { FirePhysicsParams } from "../domain/types/fire-types";
+import type { PropTipConfig, TipPoint } from "../domain/types/prop-tip-points";
 const LOG_PREFIX = "[FireDefaultsLoader]";
 const FIRESTORE_DOC_PATH = "config/fireDefaults";
 const LOCAL_CACHE_KEY = "tka-fire-defaults-cache";

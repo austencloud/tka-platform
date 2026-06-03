@@ -15,7 +15,7 @@ import {
   parseDefaultDocId,
   type DefaultArrowPlacementDoc,
   type PlacementValue,
-} from "../domain/DefaultArrowPlacement";
+} from "../domain/default-arrow-placement";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("DefaultArrowPlacementPersister");

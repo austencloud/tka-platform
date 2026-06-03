@@ -5,7 +5,7 @@
  * Composes motion signatures with position group and hand angle information.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { MotionSignatureGenerator } from "./motion-signature-generator";
 import type {
   StepSignature,

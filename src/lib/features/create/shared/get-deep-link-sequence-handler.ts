@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
 import { DeepLinkSequenceHandler } from './services/deep-link-sequence-handler';
-import { getDeepLinker } from '$lib/shared/navigation/getDeepLinker';
+import { getDeepLinker } from '$lib/shared/navigation/get-deep-linker';
 
 let instance: DeepLinkSequenceHandler | null = null;
 

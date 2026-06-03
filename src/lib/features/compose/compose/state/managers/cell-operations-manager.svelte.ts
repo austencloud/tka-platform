@@ -5,8 +5,8 @@
  * Extracted from composition-state.svelte.ts for single responsibility.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
 import type { Composition, CellConfig, CellType } from "$lib/shared/animation-engine/domain/compose-types";
 
 export type CellOperationsManager = ReturnType<

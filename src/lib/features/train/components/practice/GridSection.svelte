@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {

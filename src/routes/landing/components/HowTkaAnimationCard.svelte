@@ -12,7 +12,7 @@
 import { createAnimationPlaybackController } from "$lib/features/compose/services/animation-playback-controller-factory";
   import { onMount, onDestroy, tick } from "svelte";
   import type { Component } from "svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
@@ -22,7 +22,7 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   interface Props {
     sequence: SequenceData;

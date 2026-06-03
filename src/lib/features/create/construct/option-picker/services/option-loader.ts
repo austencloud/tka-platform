@@ -6,7 +6,7 @@
  */
 
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { PositionAnalyzer } from "./position-analyzer";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";

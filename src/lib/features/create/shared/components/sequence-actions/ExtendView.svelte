@@ -15,7 +15,7 @@
 <script lang="ts">
   import LOOPPicker from "$lib/shared/components/loop-picker/LOOPPicker.svelte";
   import BridgePictographGrid from "$lib/shared/components/loop-picker/BridgePictographGrid.svelte";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import type { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type {
     ExtensionAnalysis,
     CircularizationOption,

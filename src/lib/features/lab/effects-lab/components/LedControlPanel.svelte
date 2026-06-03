@@ -10,8 +10,8 @@
   from the parent's .tuning-tab element.
 -->
 <script lang="ts">
-  import { LED_PATTERNS } from "$lib/shared/animation-engine/domain/types/LedPatterns";
-  import type { LedColorMode } from "$lib/shared/animation-engine/domain/types/LedTypes";
+  import { LED_PATTERNS } from "$lib/shared/animation-engine/domain/types/led-patterns";
+  import type { LedColorMode } from "$lib/shared/animation-engine/domain/types/led-types";
 
   interface Props {
     brightness: number;

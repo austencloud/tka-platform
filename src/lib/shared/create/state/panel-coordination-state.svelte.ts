@@ -19,12 +19,12 @@
  * Extracted from CreateModule.svelte monolith to follow runes state management pattern.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   GridMode,
   type GridPosition,

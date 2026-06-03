@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { getBrowseThumbnailProvider } from "$lib/shared/browse/getBrowseThumbnailProvider";
-  import { PinchZoomGridController } from "$lib/shared/browse/services/PinchZoomGridController";
+  import { getBrowseThumbnailProvider } from "$lib/shared/browse/get-browse-thumbnail-provider";
+  import { PinchZoomGridController } from "$lib/shared/browse/services/pinch-zoom-grid-controller";
   import { getSequenceOverlayState } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
-  import { browseScrollState } from "$lib/shared/browse/state/BrowseScrollState.svelte";
+  import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
   import BrowseThumbnailSkeleton from "$lib/shared/browse/components/BrowseThumbnailSkeleton.svelte";
-  import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/browse-thumbnail-provider";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { BrowseEngine } from "../engine/types";
   import BrowseToolbar from "./BrowseToolbar.svelte";
   import BrowseFilterBar from "./BrowseFilterBar.svelte";

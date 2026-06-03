@@ -2,7 +2,7 @@
 	import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
 	import { onMount } from "svelte";
 	import { cubicInOut } from "svelte/easing";
-	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+	import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 	import type {
 		MandalaMode,
 		MandalaRenderOptions,

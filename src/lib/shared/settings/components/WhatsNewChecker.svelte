@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { whatsNewState } from "../state/whats-new-state.svelte";
   import * as versionService from "$lib/shared/feedback/services/version-service";
   import WhatsNewModal from "./WhatsNewModal.svelte";

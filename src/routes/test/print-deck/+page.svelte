@@ -2,7 +2,7 @@
   import { getAllReleases } from "$lib/features/choreo-card/services/deck-release-store";
   import { loadSequencesByIds } from "$lib/features/choreo-card/services/catalog-loader";
   import type { DeckRelease, CardFooter } from "$lib/features/choreo-card/domain/models/DeckRelease";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { resolveDeckSequences } from "$lib/features/choreo-card/services/deck-variation";
   import { loadDiamondEdges } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
   import type { CardPair } from "$lib/features/choreo-card/services/types";

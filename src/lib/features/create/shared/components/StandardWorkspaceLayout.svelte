@@ -9,7 +9,7 @@
    */
 
 
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import ButtonPanel from "../workspace-panel/shared/components/ButtonPanel.svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   // CreationWorkspaceArea (85-file subtree) only renders once a sequence exists,

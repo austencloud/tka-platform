@@ -4,7 +4,7 @@
   Modern chip-based form with solid gradients and vibrant colors.
 -->
 <script lang="ts">
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import {
     createAnnouncement,
     updateAnnouncement,

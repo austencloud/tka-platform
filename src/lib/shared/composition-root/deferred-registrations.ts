@@ -11,23 +11,23 @@
  * - TagMigrator pulls tag-manager
  */
 
-import { registerPublicIndexSyncerFactory } from "$lib/shared/library/getLibraryRepository";
+import { registerPublicIndexSyncerFactory } from "$lib/shared/library/get-library-repository";
 import { getPublicIndexSyncer } from "$lib/features/library/get-public-index-syncer";
 
-import { registerTagMigrator } from "$lib/shared/library/getTagMigrator";
+import { registerTagMigrator } from "$lib/shared/library/get-tag-migrator";
 import { migrateSequenceTags } from "$lib/features/library/services/migrations/tag-migration";
 
 import { registerFeedbackTesterWorkflow } from "$lib/shared/feedback/services/IFeedbackTesterWorkflow";
 import { feedbackTesterWorkflowService } from "$lib/features/feedback/services/feedback-tester-workflow";
 
-import { registerVideoExportOrchestratorFactory } from "../animation-engine/getVideoExportOrchestrator";
-import { getVideoExporter } from "../animation-engine/getVideoExporter";
-import { getCompositeVideoRenderer } from "../animation-engine/getCompositeVideoRenderer";
-import { getExportGlyphPrerenderer } from "../animation-engine/getExportGlyphPrerenderer";
-import { getBackgroundVideoEncoder } from "../animation-engine/getBackgroundVideoEncoder";
+import { registerVideoExportOrchestratorFactory } from "../animation-engine/get-video-export-orchestrator";
+import { getVideoExporter } from "../animation-engine/get-video-exporter";
+import { getCompositeVideoRenderer } from "../animation-engine/get-composite-video-renderer";
+import { getExportGlyphPrerenderer } from "../animation-engine/get-export-glyph-prerenderer";
+import { getBackgroundVideoEncoder } from "../animation-engine/get-background-video-encoder";
 import { VideoExportOrchestrator } from "$lib/features/compose/services/video-export-orchestrator";
 
-import { getQRCodeGenerator } from "../qr/getQRCodeGenerator";
+import { getQRCodeGenerator } from "../qr/get-qr-code-generator";
 import { getImageComposer } from "../render/get-image-composer";
 
 registerPublicIndexSyncerFactory(getPublicIndexSyncer);

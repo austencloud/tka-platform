@@ -8,7 +8,7 @@
  * Domain: QR - Compositional Encoding
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";

@@ -19,7 +19,7 @@
   import ContributorBadge from "./ContributorBadge.svelte";
   import { getContributorLoader } from "$lib/shared/feedback/get-contributor-loader";
   import type { Contributor } from "$lib/shared/versioning/domain/models/contributor-models";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { changelogEditState } from "./state/changelog-edit-state.svelte";
   import * as versionService from "$lib/shared/feedback/services/version-service";
 

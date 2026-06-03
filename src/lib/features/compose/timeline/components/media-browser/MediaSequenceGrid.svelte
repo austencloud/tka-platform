@@ -3,7 +3,7 @@
 -->
 <script lang="ts">
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import MediaSequenceCard from "./MediaSequenceCard.svelte";
 
   interface Props {

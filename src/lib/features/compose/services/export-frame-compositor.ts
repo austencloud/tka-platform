@@ -9,12 +9,12 @@ import type { GlyphAsset } from "$lib/shared/animation-engine/services/export-gl
 import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/services/export-glyph-prerenderer";
 import type { CompositeVideoRenderer } from "$lib/shared/animation-engine/services/composite-video-renderer";
 import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getPathPoints } from "$lib/features/hand-paths/hand-path-builder/services/hand-path-animator";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 export interface FrameCompositorConfig {
   outputWidth: number;

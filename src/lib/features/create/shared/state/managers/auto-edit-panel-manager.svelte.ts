@@ -8,7 +8,7 @@
  */
 
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PanelCoordinationState } from "../panel-coordination-state.svelte";
 import type { createCreateModuleState as CreateModuleStateType } from "../create-module-state.svelte";
 

@@ -14,16 +14,16 @@
  */
 
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-import { type TrailSettings } from "../domain/types/TrailTypes";
-import type { AdditionalLayerProps } from "../domain/types/TrailCaptureTypes";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+import { type TrailSettings } from "../domain/types/trail-types";
+import type { AdditionalLayerProps } from "../domain/types/trail-capture-types";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
-import type { TipEffortMap } from "../domain/types/TipEffectTypes";
+import type { TipEffortMap } from "../domain/types/tip-effect-types";
 
 // Services
 import {
@@ -32,9 +32,9 @@ import {
 import { FrameBudgetMonitor } from "./frame-budget-monitor";
 import { detectDeviceTier } from "./device-tier-detector";
 import { AnimatorCanvasInitializer } from "./animator-canvas-initializer";
-import type { FireOverlayConfig } from "../domain/types/FireTypes";
+import type { FireOverlayConfig } from "../domain/types/fire-types";
 import type { FireDefaultsLoader } from "./fire-defaults-loader";
-import type { LedOverlayConfig } from "../domain/types/LedTypes";
+import type { LedOverlayConfig } from "../domain/types/led-types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 import { LiveRenderContext } from "./render-context";
@@ -46,7 +46,7 @@ import { PropSystem } from "./managers/prop-system";
 import { FrameSystem } from "./managers/frame-system";
 import { EffectSystem } from "./managers/effect-system";
 import { PlaybackSync } from "./managers/playback-sync";
-import type { EffectType, TipEffectMap } from '../domain/types/TipEffectTypes';
+import type { EffectType, TipEffectMap } from '../domain/types/tip-effect-types';
 import { createAnimatorState, type AnimatorState } from '../state/animator-state.svelte';
 
 // ── Effects helper utility (used by initialize + hasEffectInMap) ────────────
@@ -292,7 +292,7 @@ export class AnimationEngine {
 
     // fireDefaultsLoader - load on demand via getter
     try {
-      const { getFireDefaultsLoader } = await import("$lib/shared/animation-engine/getFireDefaultsLoader");
+      const { getFireDefaultsLoader } = await import("$lib/shared/animation-engine/get-fire-defaults-loader");
       this.fireDefaultsLoader = getFireDefaultsLoader();
     } catch {
       console.warn("[AnimationEngine] Fire defaults loader not available");
@@ -354,6 +354,52 @@ export class AnimationEngine {
    */
   update(props: AnimationEngineProps): void {
     this.playbackSync.update(props);
+  }
+
+  /**
+   * Prepare the export prop types BEFORE the frame loop starts. Mirrors the
+   * canonical override path (PropTypeManager.handleOverrides → loadPropTextures)
+   * that the live engine runs through PlaybackSync.update — but the offscreen
+   * export engine is driven only through renderFrame(), which never touches
+   * PlaybackSync, so that sync never happens. Without this the engine state
+   * stays at the boot default ("staff", staff dimensions) and:
+   *   - frame-parameter-builder reads the prop TYPE from state.currentBluePropType
+   *     /currentRedPropType (frame-parameter-builder.ts:227-228,244-245), so a
+   *     non-staff export drew the staff body.
+   *   - it reads prop DIMENSIONS from state.bluePropDimensions/redPropDimensions
+   *     (frame-parameter-builder.ts:209-210), so a non-staff prop drew at staff
+   *     size.
+   * A bare renderer.loadPerColorPropTextures() (the prior partial fix) loaded
+   * the image but updated NEITHER state field, leaving the type/dimension desync.
+   *
+   * This reuses the existing canonical prop path: it registers the overrides on
+   * the PropTypeManager (so loadPropTextures bypasses settings and uses these
+   * exact types), writes the types into AnimatorState, then runs the manager's
+   * loadPropTextures — which loads the per-color textures via the prop texture
+   * service AND syncs the resolved dimensions back into state (prop-type-manager.ts
+   * :305-308). End state after this resolves: state.currentBluePropType/RedPropType
+   * === the resolved types, state.bluePropDimensions/redPropDimensions === the
+   * loaded prop's real dimensions, and the image is present in the image loader.
+   *
+   * `darkMode` selects the prop color set (matches the renderer.setDarkMode that
+   * initialize already applied). Types are stored as-is (e.g. "staff"); the frame
+   * builder lowercases them when comparing, so the PropType value is fine.
+   */
+  async prepareExportPropTypes(
+    blue: string,
+    red: string,
+    darkMode: boolean,
+  ): Promise<void> {
+    const ptm = this.propSystem.propTypeManager;
+    // Register overrides so loadPropTextures uses these exact types (not settings).
+    ptm.propTypeOverrideBlue = blue;
+    ptm.propTypeOverrideRed = red;
+    // Carry the type into engine state so frame-parameter-builder reads it.
+    this.state.setBluePropType(blue);
+    this.state.setRedPropType(red);
+    this.state.setLegacyPropType(blue);
+    // Load textures + sync dimensions into state via the canonical manager path.
+    await this.propSystem.propPipeline.loadTextures(this.state, darkMode);
   }
 
   /** Render one export frame synchronously and deterministically. `timeMs` is

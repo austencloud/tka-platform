@@ -1,4 +1,4 @@
-import type { EffectType } from "$lib/shared/effects/domain/EffectsConfig";
+import type { EffectType } from "$lib/shared/effects/domain/effects-config";
 import type { FramePropState } from "../domain/qr-video-types";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
@@ -18,30 +18,30 @@ import {
   resolvePulse2D,
 } from "$lib/shared/effects/translators/canvas2d-translator";
 
-import { Bloom2DRenderer, type BloomTipInput } from "$lib/shared/effects/renderers/Bloom2DRenderer";
-import { Bubbles2DRenderer, type BubblesTipInput } from "$lib/shared/effects/renderers/Bubbles2DRenderer";
-import { Echo2DRenderer, type EchoTipInput } from "$lib/shared/effects/renderers/Echo2DRenderer";
-import { Frost2DRenderer, type FrostTipInput } from "$lib/shared/effects/renderers/Frost2DRenderer";
-import { Ink2DRenderer, type InkTipInput } from "$lib/shared/effects/renderers/Ink2DRenderer";
-import { Petals2DRenderer, type PetalsTipInput } from "$lib/shared/effects/renderers/Petals2DRenderer";
-import { Pulse2DRenderer, type PulseTipInput } from "$lib/shared/effects/renderers/Pulse2DRenderer";
-import { Silk2DRenderer, type SilkTipInput } from "$lib/shared/effects/renderers/Silk2DRenderer";
-import { Smoke2DRenderer, type SmokeTipInput } from "$lib/shared/effects/renderers/Smoke2DRenderer";
-import { Sparkles2DRenderer, type SparklesTipInput } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
-import { Water2DRenderer, type WaterTipInput } from "$lib/shared/effects/renderers/Water2DRenderer";
-import { Zap2DRenderer, type ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
+import { Bloom2DRenderer, type BloomTipInput } from "$lib/shared/effects/renderers/bloom-2d-renderer";
+import { Bubbles2DRenderer, type BubblesTipInput } from "$lib/shared/effects/renderers/bubbles-2d-renderer";
+import { Echo2DRenderer, type EchoTipInput } from "$lib/shared/effects/renderers/echo-2d-renderer";
+import { Frost2DRenderer, type FrostTipInput } from "$lib/shared/effects/renderers/frost-2d-renderer";
+import { Ink2DRenderer, type InkTipInput } from "$lib/shared/effects/renderers/ink-2d-renderer";
+import { Petals2DRenderer, type PetalsTipInput } from "$lib/shared/effects/renderers/petals-2d-renderer";
+import { Pulse2DRenderer, type PulseTipInput } from "$lib/shared/effects/renderers/pulse-2d-renderer";
+import { Silk2DRenderer, type SilkTipInput } from "$lib/shared/effects/renderers/silk-2d-renderer";
+import { Smoke2DRenderer, type SmokeTipInput } from "$lib/shared/effects/renderers/smoke-2d-renderer";
+import { Sparkles2DRenderer, type SparklesTipInput } from "$lib/shared/effects/renderers/sparkles-2d-renderer";
+import { Water2DRenderer, type WaterTipInput } from "$lib/shared/effects/renderers/water-2d-renderer";
+import { Zap2DRenderer, type ZapTipInput } from "$lib/shared/effects/renderers/zap-2d-renderer";
 
 import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-trail-renderer";
-import { DEFAULT_TRAIL_SETTINGS, TrailMode, TrailEffect } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-import type { TrailPoint, TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+import { DEFAULT_TRAIL_SETTINGS, TrailMode, TrailEffect } from "$lib/shared/animation-engine/domain/types/trail-types";
+import type { TrailPoint, TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
 
 import { WebGLFireRenderer } from "$lib/shared/animation-engine/services/fire/web-gl-fire-renderer";
 import { WebGLLedRenderer } from "$lib/shared/animation-engine/services/led/web-gl-led-renderer";
 import { CharcoalSparkRenderer } from "$lib/shared/animation-engine/services/charcoal/charcoal-spark-renderer";
-import type { FireFrameInput, PropTipData } from "$lib/shared/animation-engine/domain/types/FireTypes";
-import { DEFAULT_FIRE_CONFIG } from "$lib/shared/animation-engine/domain/types/FireTypes";
-import type { LedFrameInput, LedTipData } from "$lib/shared/animation-engine/domain/types/LedTypes";
-import { DEFAULT_LED_CONFIG, PROP_BLUE, PROP_RED } from "$lib/shared/animation-engine/domain/types/LedTypes";
+import type { FireFrameInput, PropTipData } from "$lib/shared/animation-engine/domain/types/fire-types";
+import { DEFAULT_FIRE_CONFIG } from "$lib/shared/animation-engine/domain/types/fire-types";
+import type { LedFrameInput, LedTipData } from "$lib/shared/animation-engine/domain/types/led-types";
+import { DEFAULT_LED_CONFIG, PROP_BLUE, PROP_RED } from "$lib/shared/animation-engine/domain/types/led-types";
 
 const VIEWBOX_SIZE = 950;
 const BLUE_COLOR = "#3575E2";

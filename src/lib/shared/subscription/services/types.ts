@@ -1,5 +1,5 @@
 // --- From PremiumGateChecker ---
-import type { CapabilityFeatureId } from "$lib/shared/auth/domain/models/FeatureFlag";
+import type { CapabilityFeatureId } from "$lib/shared/auth/domain/models/feature-flag";
 export interface NudgeConfig {
 	capability: CapabilityFeatureId;
 	description: string;

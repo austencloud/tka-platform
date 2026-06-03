@@ -4,11 +4,11 @@
  * Service contracts for data handling, CSV parsing, and query operations.
  */
 
-import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
-import type { MotionData } from "../../../pictograph/shared/domain/models/MotionData";
+import type { PictographData } from "../../../pictograph/shared/domain/models/pictograph-data";
+import type { MotionData } from "../../../pictograph/shared/domain/models/motion-data";
 import type { GridMode } from "../../../pictograph/grid/domain/enums/grid-enums";
-import type { Letter } from "../../domain/models/Letter";
-import type { CodexLetterMappingRepo } from "$lib/shared/learn/services/CodexLetterMappingRepo";
+import type { Letter } from "../../domain/models/letter";
+import type { CodexLetterMappingRepo } from "$lib/shared/learn/services/codex-letter-mapping-repo";
 
 // ============================================================================
 // DATA CONTRACTS - MOVED TO DOMAIN

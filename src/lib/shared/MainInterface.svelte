@@ -12,8 +12,8 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
   import { onMount } from "svelte";
   import { getActiveTab } from "./application/state/ui/ui-state.svelte";
   import { handleHMRInit } from "./hmr-helper";
-  import { getDeviceDetector } from "./device/getDeviceDetector";
-  import { getViewportManager } from "./device/getViewportManager";
+  import { getDeviceDetector } from "./device/get-device-detector";
+  import { getViewportManager } from "./device/get-viewport-manager";
   import {
     layoutState,
     moduleHasPrimaryNav,
@@ -53,11 +53,11 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
 
   import { deepLinker } from "./navigation/services/deep-linker";
   import { useDesktopSidebarVisibility } from "./navigation/services/desktop-sidebar-visibility.svelte";
-  import { browseScrollState } from "$lib/shared/browse/state/BrowseScrollState.svelte";
+  import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
   import { fuseTourState } from "./onboarding/state/fuse-tour-state.svelte";
   import type { ModuleId } from "./navigation/domain/types";
   import { navigationState } from "./navigation/state/navigation-state.svelte";
-  import { hasOpenDrawers } from "./foundation/ui/drawer/DrawerStack";
+  import { hasOpenDrawers } from "./foundation/ui/drawer/drawer-stack";
   import { keyboardShortcutState } from "./keyboard/state/keyboard-shortcut-state.svelte";
   import CommandPalette from "./keyboard/components/CommandPalette.svelte";
   import ShortcutsHelp from "./keyboard/components/ShortcutsHelp.svelte";
@@ -83,7 +83,7 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
     clearUserPreview,
   } from "./debug/state/user-preview-state.svelte";
   import { adminToolbarState } from "./debug/state/admin-toolbar-state.svelte";
-  import { featureFlagService } from "./auth/services/PostHogFeatureFlagService.svelte";
+  import { featureFlagService } from "./auth/services/post-hog-feature-flag-service.svelte";
   import ToastContainer from "./toast/components/ToastContainer.svelte";
 
   // LAN Sync

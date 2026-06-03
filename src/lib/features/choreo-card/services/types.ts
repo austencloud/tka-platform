@@ -1,8 +1,8 @@
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SkewDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { TnDElement } from "../domain/tnd-element";
 
 export interface CardBackDomRenderOptions {

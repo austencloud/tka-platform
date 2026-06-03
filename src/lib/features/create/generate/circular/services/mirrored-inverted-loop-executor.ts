@@ -15,9 +15,9 @@
  * IMPORTANT: End position must be vertical mirror of start position
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   MotionType,
   MotionColor,

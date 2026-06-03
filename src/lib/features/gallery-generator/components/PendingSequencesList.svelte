@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { galleryGeneratorState } from "../state/gallery-generator-state.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 

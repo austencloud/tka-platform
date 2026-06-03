@@ -1,4 +1,4 @@
-import { LetterType } from "../../../../foundation/domain/models/LetterType";
+import { LetterType } from "../../../../foundation/domain/models/letter-type";
 
 export const LETTER_TYPE_COLORS = {
   [LetterType.TYPE1]: ["#36c3ff", "#6F2DA8"], // Dual-Shift: Cyan, Purple

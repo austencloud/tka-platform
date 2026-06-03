@@ -2,7 +2,7 @@
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import MandalaControlDock from "./MandalaControlDock.svelte";
   import MandalaExportTakeover from "./MandalaExportTakeover.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
 
   interface Props {

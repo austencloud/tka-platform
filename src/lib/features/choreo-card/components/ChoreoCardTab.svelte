@@ -6,34 +6,35 @@
 <script lang="ts">
 
 import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences, loadSequencesByIds } from "$lib/features/choreo-card/services/catalog-loader";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
     encodeNavHash,
     decodeNavHash,
     type CatalogNavState,
   } from "$lib/features/choreo-card/services/catalog-nav-hash";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-  import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+  import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/get-thumbnail-render-orchestrator";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
   import { pushState, replaceState } from "$app/navigation";
   import { onMount, onDestroy } from "svelte";
-  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
   import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
   import ChoreoCardNavigation from "./Navigation.svelte";
   import ChoreoCardFilters from "./ChoreoCardFilters.svelte";
   import PageDisplay from "./PageDisplay.svelte";
   import type { Catalog } from "../domain/models/Catalog";
-  import type { ThumbnailRenderOrchestrator } from "$lib/shared/browse/services/ThumbnailRenderOrchestrator";
+  import type { ThumbnailRenderOrchestrator } from "$lib/shared/browse/services/thumbnail-render-orchestrator";
   import CatalogBrowser from "./CatalogBrowser.svelte";
   import CardDesigner from "./CardDesigner.svelte";
   import ScanActivityTab from "./scan-activity/ScanActivityTab.svelte";
   import CardBackThemeLab from "./card-back/CardBackThemeLab.svelte";
   import DeckReleaserTab from "./deck-releaser/DeckReleaserTab.svelte";
+  import CodexPrintPage from "./CodexPrintPage.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
-  import { buildChoreoCardContextMenuItems } from "$lib/shared/choreo-card/services/CardDesignerContextMenuBuilder";
+  import { buildChoreoCardContextMenuItems } from "$lib/shared/choreo-card/services/card-designer-context-menu-builder";
 
 
   // Services
@@ -144,7 +145,7 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
   );
 
   // Mode state - synced with global navigation
-  type ChoreoCardMode = "catalogs" | "designer" | "scan-activity" | "theme-lab" | "releaser";
+  type ChoreoCardMode = "catalogs" | "designer" | "scan-activity" | "theme-lab" | "releaser" | "codex";
   let mode = $state<ChoreoCardMode>("catalogs");
 
   let browseSequencesLoaded = false;
@@ -152,7 +153,7 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
   // Sync with navigation state (sidebar tab selection)
   $effect(() => {
     const navTab = navigationState.activeTab;
-    if (navTab === "catalogs" || navTab === "designer" || navTab === "scan-activity" || navTab === "theme-lab" || navTab === "releaser") {
+    if (navTab === "catalogs" || navTab === "designer" || navTab === "scan-activity" || navTab === "theme-lab" || navTab === "releaser" || navTab === "codex") {
       const newMode = navTab as ChoreoCardMode;
       if (newMode !== mode) {
         mode = newMode;
@@ -585,6 +586,10 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
     {:else if mode === "releaser"}
       <main class="content-area">
         <DeckReleaserTab onContextMenu={openCardContextMenu} />
+      </main>
+    {:else if mode === "codex"}
+      <main class="content-area">
+        <CodexPrintPage />
       </main>
     {/if}
   </div>

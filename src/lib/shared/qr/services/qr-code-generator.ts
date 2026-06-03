@@ -9,7 +9,7 @@
  */
 
 import QRCodeStyling from "qr-code-styling";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ShortCodeManager } from "./short-code-manager";
 import type { QRCodeOptions, QRCodeResult, QRCodeStyle, QRStylePreset } from "./types";
 import {

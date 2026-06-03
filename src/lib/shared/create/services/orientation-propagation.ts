@@ -5,10 +5,10 @@
  * Ensures orientation chain integrity after transforms.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type {
   Orientation} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {

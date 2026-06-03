@@ -7,7 +7,7 @@
 
 import { browser } from "$app/environment";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import { getAuthSync } from "$lib/shared/auth/firebase";
 
 const STORAGE_KEY = "tka-image-composition-settings";

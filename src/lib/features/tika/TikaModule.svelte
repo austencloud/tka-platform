@@ -21,7 +21,7 @@
   import TikaReviewPanel from "./components/TikaReviewPanel.svelte";
   import TikaCompareView from "./components/TikaCompareView.svelte";
   import TikaHistoryDrawer from "./components/TikaHistoryDrawer.svelte";
-  import { getEffectiveUserId, authState } from "$lib/shared/auth/state/authState.svelte";
+  import { getEffectiveUserId, authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { auth } from "$lib/shared/auth/firebase";
   import type { ConceptProgressTracker } from "$lib/features/learn/services/concept-progress-tracker";
   import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";

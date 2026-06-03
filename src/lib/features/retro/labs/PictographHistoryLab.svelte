@@ -22,7 +22,7 @@
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
   import { getCanvas2DRenderer } from "$lib/shared/render/get-canvas-2d-renderer";
 

@@ -4,8 +4,8 @@
  * Filters pictograph options to only include poi-legal moves.
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { validateMotion, validateTransition } from "./poi-constraint-validator";
 
 export class PoiOptionFilterDecorator {

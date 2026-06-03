@@ -23,7 +23,7 @@
     applySwap,
     applyRewind,
   } from "../../domain/transforms/transform-functions";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import TransformVisualMapping from "./TransformVisualMapping.svelte";
 

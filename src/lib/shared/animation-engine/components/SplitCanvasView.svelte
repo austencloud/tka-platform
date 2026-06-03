@@ -38,13 +38,13 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
 -->
 <script lang="ts">
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-  import type { FireOverlayConfig } from "../domain/types/FireTypes";
-  import type { LedOverlayConfig } from "../domain/types/LedTypes";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+  import type { FireOverlayConfig } from "../domain/types/fire-types";
+  import type { LedOverlayConfig } from "../domain/types/led-types";
   import CanvasSurface from "./CanvasSurface.svelte";
   import { untrack } from "svelte";
 

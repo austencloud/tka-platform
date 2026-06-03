@@ -5,9 +5,9 @@
  * Extracted from OptionPickerService for better separation of concerns.
  */
 
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import { getLetterType } from "$lib/shared/foundation/domain/models/letter";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type {
   EndPositionFilter,
@@ -16,7 +16,7 @@ import type {
 } from "../domain/option-picker-types";
 import type { PositionAnalyzer } from "./position-analyzer";
 import { getReversalCount } from "./reversal-checker";
-import { LetterType } from "../../../../../shared/foundation/domain/models/LetterType";
+import { LetterType } from "../../../../../shared/foundation/domain/models/letter-type";
 
 export class OptionFilter {
   constructor(

@@ -7,7 +7,7 @@ Provides access to the complete TKA letter codex with drill-down detail view:
 - Smooth slide animation between grid and detail views
 -->
 <script lang="ts">
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import CodexComponent from "./CodexComponent.svelte";

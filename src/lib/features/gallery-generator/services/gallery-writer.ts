@@ -5,7 +5,7 @@
  * Supports prop-specific subfolders: /gallery/{propType}/{sequence}.webp
  */
 
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 /**
  * Write image to gallery, optionally in a prop-specific subfolder.

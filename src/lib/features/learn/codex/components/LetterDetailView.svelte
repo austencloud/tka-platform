@@ -8,7 +8,7 @@ Shows all pictographs for a selected letter with:
 - Back button to return to codex grid
 -->
 <script lang="ts">
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import SimpleGlassScroll from "../../../../shared/foundation/ui/SimpleGlassScroll.svelte";
   import PictographContainer from "../../../../shared/pictograph/shared/components/PictographContainer.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";

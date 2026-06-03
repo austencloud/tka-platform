@@ -59,9 +59,9 @@ export interface TransitionResult {
 
 // --- From IDataTransformer ---
 
-import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
 import type { MotionColor } from "../../pictograph/shared/domain/enums/pictograph-enums";
-import type { MotionData } from "../../pictograph/shared/domain/models/MotionData";
+import type { MotionData } from "../../pictograph/shared/domain/models/motion-data";
 
 export interface MotionRenderData {
   color: MotionColor;
@@ -81,7 +81,7 @@ export interface PictographDisplayData {
 
 // --- From IDeepLinkResolver ---
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 export type DeepLinkSource = "cache" | "local" | "public" | null;
 export type DeepLinkError = "not_found" | "network" | null;

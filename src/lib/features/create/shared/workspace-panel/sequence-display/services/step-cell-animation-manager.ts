@@ -8,7 +8,7 @@
  * spread across multiple $effect blocks and state variables in StepCell.svelte.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StepCellAnimationState, StepCellAnimationConfig } from "./types";
 
 /**

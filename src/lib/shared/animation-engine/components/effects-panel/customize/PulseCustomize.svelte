@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import type { PulseIntent } from "$lib/shared/effects/domain/EffectsConfig";
+  import type { PulseIntent } from "$lib/shared/effects/domain/effects-config";
 
   interface Props {
     onBack: () => void;

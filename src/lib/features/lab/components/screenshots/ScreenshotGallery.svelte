@@ -20,7 +20,7 @@
   import { getScreenshotLoader } from "../../get-screenshot-loader";
   import { toMediaItems } from "../../services/gallery-item-adapter";
   import { onMount } from "svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { MediaSpotlight, type MediaItem as SpotlightMediaItem, type SpotlightConfig } from "@austencloud/media-spotlight";
   import { TagCreatorModal, TagPickerPanel } from "@austencloud/media-tagging-ui";
   import GalleryGrid from "./GalleryGrid.svelte";

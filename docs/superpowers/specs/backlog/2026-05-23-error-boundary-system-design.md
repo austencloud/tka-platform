@@ -1,14 +1,32 @@
 ---
 status: backlog
-value: 5
-effort: M
-remaining: "All four phases unstarted. Root +error.svelte, handleError in hooks.server.ts, unhandledrejection telemetry in hooks.client.ts, Firestore call coverage expansion."
+value: 2
+effort: XS
+remaining: "Core shipped (Phases 1-3, 4.1, Firestore rule). Residual: shame-queue-manager admin writes log to console with no user toast (P3); collection-manager P0 write paths now guarded (2026-05-31). Phase 4 step 3 (2-week errorTelemetry monitoring → promote count>10 to showUserError) is a runtime activity, not code."
 depends_on: ""
 plan_path: ""
 tags: ["error-handling", "telemetry", "infrastructure", "reliability"]
-last_triaged: 2026-05-23
+last_triaged: 2026-05-31
 ---
 # Error Boundary System — Design Spec
+
+> **Implementation status (2026-05-31):** The original `remaining` ("all four phases
+> unstarted") was stale. Verification against the tree found the core already shipped:
+> - **Phase 1** — `src/routes/+error.svelte` exists, reuses `ErrorScreen` exactly as specced.
+> - **Phase 2** — `handleError` in `src/hooks.server.ts:112` (with hardened URL extraction).
+> - **Phase 3** — production `unhandledrejection` telemetry in `src/hooks.client.ts:124`.
+> - **Phase 4 step 1** — `onError` callback + `handleCrudError` (auto-telemetry default) on every
+>   function in `src/lib/shared/firestore/firestore-crud.ts`.
+> - **Firestore rule** — `errorTelemetry` block in `firestore.rules:1326`.
+> - **Phase 4 step 2 (P0)** — `recording-persister.ts` was already fully guarded (try/catch +
+>   `toast.error`). `collection-manager.ts` had five unguarded user-facing write paths
+>   (`createUserCollection`, `updateCollection`, `addSequenceToCollection`,
+>   `removeSequenceFromCollection`, `reorderSequences`) — now guarded with the file's own
+>   `toast.error` + `throw CollectionError(..., "NETWORK", ...)` pattern.
+>
+> Residual (low priority): `shame-queue-manager.ts` admin moderation writes catch + `console.error`
+> but show no user toast — defensible as P3 (admin/internal) per the framework below. Phase 4 step 3
+> is the monitoring loop, which is inherently a future runtime activity.
 
 **Date:** 2026-05-23
 **Status:** Backlog

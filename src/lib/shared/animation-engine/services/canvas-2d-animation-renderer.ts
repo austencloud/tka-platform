@@ -26,18 +26,18 @@
  * - Canvas2DVisibilityFadeManager: Props and trails visibility transitions
  */
 
-import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/FireTypes";
+import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/fire-types";
 import type {
-} from "$lib/shared/animation-engine/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-types";
 import type {
   RenderSceneParams,
-} from "$lib/shared/animation-engine/domain/types/AnimationRenderTypes";
+} from "$lib/shared/animation-engine/domain/types/animation-render-types";
 
 export type {
   AdditionalLayerRenderData,
   AnimationVisibilitySettings,
   RenderSceneParams,
-} from "$lib/shared/animation-engine/domain/types/AnimationRenderTypes";
+} from "$lib/shared/animation-engine/domain/types/animation-render-types";
 import { Canvas2DApplicationManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-application-manager";
 import { Canvas2DImageLoader } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-image-loader";
 import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-trail-renderer";
@@ -160,17 +160,6 @@ export class Canvas2DAnimationRenderer {
   private tintedGridImageRef: HTMLImageElement | null = null;
   private tintedGridSize = 0;
 
-  // Cached inverted glyph copies for dark mode. The bottom-left glyph is drawn
-  // from a serialized SVG whose dark-mode inversion came from an SVG filter that
-  // iOS Safari drops when the SVG is rasterized as an <img>, leaving the glyph
-  // black (invisible). We invert per-pixel on an offscreen canvas instead
-  // (replicates invert(0.85), preserves any colored sub-glyph elements). Keyed
-  // by source image; rebuilt only when the glyph image or size changes.
-  private invertedGlyphCache = new Map<
-    HTMLImageElement,
-    { canvas: HTMLCanvasElement; size: number }
-  >();
-
   constructor() {
     this.appManager = new Canvas2DApplicationManager();
     this.imageLoader = new Canvas2DImageLoader();
@@ -223,52 +212,6 @@ export class Canvas2DAnimationRenderer {
     this.tintedGridCanvas = offscreen;
     this.tintedGridImageRef = gridImage;
     this.tintedGridSize = canvasSize;
-    return offscreen;
-  }
-
-  /**
-   * Return an off-white tinted copy of a glyph image for dark mode.
-   *
-   * The glyph's dark-mode inversion normally came from an SVG filter, which iOS
-   * Safari ignores when the SVG is rasterized as an <img> (glyph stayed black /
-   * invisible). We recolor on an offscreen canvas with "source-in" — the SAME
-   * compositing the grid uses, which is confirmed working on iPhone. We do NOT
-   * use getImageData here: on iOS, drawing an SVG data-URL image taints the
-   * canvas, so getImageData throws a SecurityError and the glyph draw aborts.
-   * #d9d9d9 matches the grid and the old invert(0.85). The glyph is black
-   * line-art, so flattening reads the same as inverting. Cached per source
-   * image; rebuilt only when the image or size change.
-   */
-  private getTintedGlyph(
-    image: HTMLImageElement,
-    canvasSize: number
-  ): HTMLCanvasElement | null {
-    const cached = this.invertedGlyphCache.get(image);
-    if (cached && cached.size === canvasSize) {
-      return cached.canvas;
-    }
-
-    const offscreen = cached?.canvas ?? document.createElement("canvas");
-    offscreen.width = canvasSize;
-    offscreen.height = canvasSize;
-    const offCtx = offscreen.getContext("2d");
-    if (!offCtx) return null;
-
-    offCtx.clearRect(0, 0, canvasSize, canvasSize);
-    // 1. Draw the glyph (black ink) as an alpha mask.
-    offCtx.drawImage(image, 0, 0, canvasSize, canvasSize);
-    // 2. Recolor only the drawn pixels to off-white.
-    offCtx.globalCompositeOperation = "source-in";
-    offCtx.fillStyle = "#d9d9d9";
-    offCtx.fillRect(0, 0, canvasSize, canvasSize);
-    offCtx.globalCompositeOperation = "source-over";
-
-    // Bound the cache (current + previous glyph during a crossfade + slack).
-    if (this.invertedGlyphCache.size > 8) {
-      const oldest = this.invertedGlyphCache.keys().next().value;
-      if (oldest !== undefined) this.invertedGlyphCache.delete(oldest);
-    }
-    this.invertedGlyphCache.set(image, { canvas: offscreen, size: canvasSize });
     return offscreen;
   }
 
@@ -777,29 +720,23 @@ export class Canvas2DAnimationRenderer {
     // Get fade state
     const fadeState = this.fadeManager.updateFadeProgress(currentTime);
 
-    // In dark mode draw a per-pixel-inverted copy (iOS ignores the glyph's SVG
-    // invert filter when rasterized, leaving it black/invisible on the dark canvas).
-    const isDarkMode = this.appManager.isDarkModeEnabled();
+    // Dark-mode glyph recoloring is baked into the serialized glyph SVG itself
+    // (TKAGlyph swaps the letter <image> to a white-recolored source), so the
+    // canvas draws the image as-is. The live viewer's glyph is the DOM overlay.
 
     // Draw previous glyph (fading out)
     if (previousImage && !fadeState.isComplete) {
-      const img = isDarkMode
-        ? (this.getTintedGlyph(previousImage, canvasSize) ?? previousImage)
-        : previousImage;
       ctx.save();
       ctx.globalAlpha = fadeState.previousAlpha;
-      ctx.drawImage(img, 0, 0, canvasSize, canvasSize);
+      ctx.drawImage(previousImage, 0, 0, canvasSize, canvasSize);
       ctx.restore();
     }
 
     // Draw current glyph
     if (currentImage) {
-      const img = isDarkMode
-        ? (this.getTintedGlyph(currentImage, canvasSize) ?? currentImage)
-        : currentImage;
       ctx.save();
       ctx.globalAlpha = fadeState.isComplete ? 1 : fadeState.currentAlpha;
-      ctx.drawImage(img, 0, 0, canvasSize, canvasSize);
+      ctx.drawImage(currentImage, 0, 0, canvasSize, canvasSize);
       ctx.restore();
     }
 
@@ -834,7 +771,6 @@ export class Canvas2DAnimationRenderer {
     this.trailsFadeManager.reset();
     this.imageLoader.destroy();
     this.appManager.destroy();
-    this.invertedGlyphCache.clear();
     this.tintedGridCanvas = null;
     this.tintedGridImageRef = null;
   }

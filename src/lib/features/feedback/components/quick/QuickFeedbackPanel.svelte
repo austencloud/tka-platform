@@ -7,7 +7,7 @@
   Shares state with FeedbackSubmitTab so drafts persist between panel and tab.
 -->
 <script lang="ts">
-  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import { quickFeedbackState } from "$lib/shared/feedback/state/quick-feedback-state.svelte";

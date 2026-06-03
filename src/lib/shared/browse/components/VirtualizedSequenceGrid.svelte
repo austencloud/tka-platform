@@ -1,7 +1,7 @@
 <script lang="ts">
 
 import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
     createVirtualizer,
     type VirtualItem,
@@ -9,12 +9,12 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
   } from "@tanstack/svelte-virtual";
   import type { Readable } from "svelte/store";
   import { onMount, onDestroy, untrack } from "svelte";
-  import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
+  import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/browse-thumbnail-provider";
   import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { buildVariationMap } from "$lib/shared/browse/services/VariationGrouper";
+  import { buildVariationMap } from "$lib/shared/browse/services/variation-grouper";
   import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/cell-pre-warmer";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";

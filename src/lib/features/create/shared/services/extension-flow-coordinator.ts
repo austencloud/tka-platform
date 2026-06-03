@@ -5,8 +5,8 @@
  * with SequenceExtender for the actual operations.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { ExtensionFlowStart, BridgeAppendResult, ExtensionApplyResult } from "./sequence-extender";
 import type { SequenceExtender } from "./sequence-extender";
 import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";

@@ -15,7 +15,7 @@ import {
   getStorageInstance,
 } from "$lib/shared/auth/firebase";
 import { trackXP } from "$lib/shared/gamification/init/gamification-initializer";
-import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 

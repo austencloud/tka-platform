@@ -11,7 +11,7 @@
 <script lang="ts">
   import { getUserVideoLibrary } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import type { UserVideoLibrary } from "../services/types";
-  import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
+  import type { CollaborativeVideo } from "../domain/collaborative-video";
   import { onMount } from "svelte";
   import CollaborativeVideoCard from "./CollaborativeVideoCard.svelte";
   import PendingInviteCard from "./PendingInviteCard.svelte";

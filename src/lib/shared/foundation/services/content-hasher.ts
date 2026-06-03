@@ -1,8 +1,8 @@
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { SoloPropData } from "../domain/models/SoloPropData";
-import type { SoloPropStepData } from "../domain/models/SoloPropStepData";
-import type { SequenceData } from "../domain/models/SequenceData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { SoloPropData } from "../domain/models/solo-prop-data";
+import type { SoloPropStepData } from "../domain/models/solo-prop-step-data";
+import type { SequenceData } from "../domain/models/sequence-data";
 
 const BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
@@ -144,6 +144,46 @@ export function hashSequenceContent(
   }
   for (const step of seq.steps ?? []) {
     parts.push(serializeChoreoNode(step as HashableNode));
+  }
+  return hash128(parts.join("~"));
+}
+
+/** Motion path only: type, rotation direction, start/end locations. Turns,
+ *  orientations and reversal flags are intentionally dropped. */
+function serializeMotionSkeleton(m?: MotionData): string {
+  if (!m) return "-";
+  return `${m.motionType}:${m.rotationDirection}:${m.startLocation}:${m.endLocation}`;
+}
+
+function serializeSkeletonNode(node: HashableNode): string {
+  return [
+    node.letter ?? "",
+    node.startPosition ?? node.gridPosition ?? "",
+    node.endPosition ?? "",
+    serializeMotionSkeleton(node.motions?.blue),
+    serializeMotionSkeleton(node.motions?.red),
+  ].join(":");
+}
+
+/**
+ * Location-arrangement fingerprint: word + each step's letter, positions, motion
+ * type, rotation direction and start/end locations — but NOT turns, orientations
+ * or reversal flags. Two sequences that follow the exact same path and differ
+ * only by turns applied on top hash identically.
+ *
+ * Use to decide whether two cards are "sufficiently different": within one deck
+ * a word title may repeat only when the skeleton differs (different locations),
+ * never as the same path re-spun with a different turn pattern.
+ */
+export function hashSequenceSkeleton(
+  seq: Pick<SequenceData, "word" | "steps" | "startPosition">,
+): string {
+  const parts: string[] = [String(seq.word ?? "")];
+  if (seq.startPosition) {
+    parts.push("sp|" + serializeSkeletonNode(seq.startPosition as HashableNode));
+  }
+  for (const step of seq.steps ?? []) {
+    parts.push(serializeSkeletonNode(step as HashableNode));
   }
   return hash128(parts.join("~"));
 }

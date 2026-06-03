@@ -5,7 +5,7 @@
  * Does NOT modify SequenceData - references existing library sequences by ID.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 /**
  * Avatar positioning hint for duet performance

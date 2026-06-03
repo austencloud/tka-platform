@@ -1,5 +1,5 @@
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { PreviewCellRenderOptions } from "./preview-cell-renderer";
 import type { LayerRenderOptions, LayerVisibility } from "../../render/services/types";
 
@@ -9,7 +9,7 @@ import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 import { getWorkerRenderPool } from "$lib/shared/render/services/worker-render-pool";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
 import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
 import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";

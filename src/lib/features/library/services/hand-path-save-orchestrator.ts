@@ -8,8 +8,8 @@
  */
 
 import type { HandPathRepository } from "$lib/shared/foundation/services/hand-path-repository-store";
-import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
-import type { ArtifactProvenance } from "$lib/shared/foundation/domain/models/ArtifactProvenance";
+import type { HandPathData } from "$lib/shared/foundation/domain/models/hand-path-data";
+import type { ArtifactProvenance } from "$lib/shared/foundation/domain/models/artifact-provenance";
 
 export class HandPathSaveOrchestrator {
   constructor(

@@ -1,4 +1,4 @@
-import type { CapabilityFeatureId } from "$lib/shared/auth/domain/models/FeatureFlag";
+import type { CapabilityFeatureId } from "$lib/shared/auth/domain/models/feature-flag";
 import type { NudgeConfig } from "../services/types";
 
 export const CAPABILITY_NUDGES: Record<CapabilityFeatureId, NudgeConfig> = {

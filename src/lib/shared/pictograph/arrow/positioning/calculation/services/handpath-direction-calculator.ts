@@ -11,7 +11,7 @@ import type { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import {
   allClockwisePairs,
   allCounterClockwisePairs,
-} from "../config/HandpathDirectionMaps";
+} from "../config/handpath-direction-maps";
 import type { HandpathDirection } from "./types";
 
 export function calculateHandpathDirection(

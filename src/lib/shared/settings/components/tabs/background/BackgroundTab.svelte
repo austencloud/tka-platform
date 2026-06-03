@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { AppSettings } from "../../../domain/AppSettings";
+  import type { AppSettings } from "../../../domain/app-settings";
   import { BackgroundType } from "@austencloud/backgrounds";
   import {
     registerBackgroundCard,

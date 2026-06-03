@@ -8,10 +8,10 @@
   - Keyboard shortcuts (1-9, 0) for presets
 -->
 <script lang="ts">
-  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { AppSettings, PropPreset } from "../../domain/AppSettings";
-  import { PropType } from "../../../pictograph/prop/domain/enums/PropType";
+  import type { AppSettings, PropPreset } from "../../domain/app-settings";
+  import { PropType } from "../../../pictograph/prop/domain/enums/prop-type";
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import { onMount, onDestroy } from "svelte";

@@ -7,12 +7,12 @@
 -->
 <script lang="ts">
 
-import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
 import { getWordSequenceGenerator } from "$lib/features/create/spell/get-word-sequence-generator";
 import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
   import { onMount, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import type { WordSequenceGenerator } from "$lib/features/create/spell/services/word-sequence-generator";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";

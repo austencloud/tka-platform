@@ -31,7 +31,7 @@
     disposePlayerController,
     teleportPlayer,
   } from "$lib/shared/3d/physics/player-controller";
-  import { createRapierPhysicsProvider, RapierPhysicsProvider } from "$lib/shared/3d/physics/RapierPhysicsProvider";
+  import { createRapierPhysicsProvider, RapierPhysicsProvider } from "$lib/shared/3d/physics/rapier-physics-provider";
   import type { PhysicsProvider, AvatarState } from "$lib/shared/3d/camera/types";
 
   // Unified camera system
@@ -42,7 +42,7 @@
   // Avatar components
   import { Avatar3D } from "@austencloud/scene-3d";
   import { Prop3D } from "@austencloud/scene-3d";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import Grid3D from "$lib/shared/3d/components/Grid3D.svelte";
   import { Plane } from "@austencloud/scene-3d";
 

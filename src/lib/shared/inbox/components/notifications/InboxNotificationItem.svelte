@@ -14,7 +14,7 @@
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { setNotificationTargetFeedback } from "$lib/shared/feedback/state/notification-action-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
   interface Props {
     notification: UserNotification;

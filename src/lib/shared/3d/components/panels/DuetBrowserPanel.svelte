@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { getDuetPersister } from "$lib/shared/3d/getDuetPersister";
+import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
   /**
    * DuetBrowserPanel
    *

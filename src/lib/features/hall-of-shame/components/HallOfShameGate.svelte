@@ -12,7 +12,7 @@ import { getAgeVerifier } from "$lib/features/hall-of-shame/get-age-verifier";
 	import BaseModal from '$lib/shared/foundation/ui/modal/BaseModal.svelte';
 	import ModalHeader from '$lib/shared/foundation/ui/modal/ModalHeader.svelte';
 	import ModalFooter from '$lib/shared/foundation/ui/modal/ModalFooter.svelte';
-	import { authState } from '$lib/shared/auth/state/authState.svelte';
+	import { authState } from '$lib/shared/auth/state/auth-state.svelte';
 
 	interface Props {
 		/** Called when user successfully verifies age */

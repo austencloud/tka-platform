@@ -14,7 +14,7 @@
     composeDeck,
   } from "$lib/features/choreo-card/services/deck-composer";
   import type { DeckReleaseCard } from "$lib/features/choreo-card/domain/models/DeckRelease";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
     applyVariation,
     BOOK_PATTERNS,

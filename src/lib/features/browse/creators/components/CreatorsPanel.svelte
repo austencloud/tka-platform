@@ -17,7 +17,7 @@
   import { followUser, unfollowUser } from "$lib/shared/community/services/user-repository";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import { authState, isEffectiveAdmin } from "$lib/shared/auth/state/authState.svelte.ts";
+  import { authState, isEffectiveAdmin } from "$lib/shared/auth/state/auth-state.svelte";
   import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
   import { creatorsDataState } from "../state/creators-data-state.svelte";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";

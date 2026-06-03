@@ -1,14 +1,14 @@
 import type { Catalog } from "../domain/models/Catalog";
 import type { CardFooter, DeckReleaseCard, StepCountWeight } from "../domain/models/DeckRelease";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { applyBoxMode, type StartOriMode } from "./deck-variation";
 import { TND_BY_FAMILY } from "../domain/tnd-element";
 import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
 import { TnDMode } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
-import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import { LetterType } from "$lib/shared/foundation/domain/models/LetterType";
+import { getLetterType } from "$lib/shared/foundation/domain/models/letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
+import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
 import { TURN_VALUES } from "../domain/turn-pattern-parser";
 
 type GridModeKey = "diamond" | "box";
@@ -16,15 +16,23 @@ type GridModeKey = "diamond" | "box";
 /** Canonical zero-turn TnD base catalog; all turn-grid cells derive from it. */
 export const TND_BASE_CATALOG_ID = "l1-tnd-motions";
 
-interface PoolEntry {
+export interface PoolEntry {
   sequenceId: string;
   sourceCatalogId: string;
   stepCount: number;
   word: string;
+  /** Start-position id parsed from the enumerated seqId prefix (`${startPos}_${seedWord}`). */
+  startPosition: string;
 }
 
 export interface CatalogPoolFilter {
   sliceTypes: Set<'halved' | 'quartered'>;
+  /** Optional loop-type narrowing. Absent ⇒ all loop types in the catalog set. */
+  loopTypes?: Set<string>;
+  /** Optional level narrowing. Absent ⇒ all levels. */
+  levels?: Set<number>;
+  /** Optional start-position id subset (applied per pool entry). Absent/empty ⇒ any. */
+  startPositionIds?: Set<string>;
 }
 
 function isZeroTurnCatalog(catalog: Catalog): boolean {
@@ -47,9 +55,13 @@ function containsType6(word: string): boolean {
 export function buildSequencePool(catalogs: Catalog[], filter?: CatalogPoolFilter): Map<number, PoolEntry[]> {
   const pool = new Map<number, PoolEntry[]>();
 
+  const posFilter = filter?.startPositionIds && filter.startPositionIds.size > 0 ? filter.startPositionIds : null;
+
   for (const catalog of catalogs) {
     if (catalog.collection !== "LOOPs") continue;
     if (filter?.sliceTypes && !filter.sliceTypes.has(catalog.sliceType)) continue;
+    if (filter?.loopTypes && !filter.loopTypes.has(catalog.loopType)) continue;
+    if (filter?.levels && !filter.levels.has(catalog.level)) continue;
     const stepCount = catalog.stepCount;
     const zeroTurn = isZeroTurnCatalog(catalog);
     if (!pool.has(stepCount)) pool.set(stepCount, []);
@@ -58,11 +70,14 @@ export function buildSequencePool(catalogs: Catalog[], filter?: CatalogPoolFilte
     for (const family of catalog.families) {
       for (const seqId of family.sequenceIds) {
         if (zeroTurn && containsType6(seqId)) continue;
+        const startPosition = seqId.split("_")[0] ?? "";
+        if (posFilter && !posFilter.has(startPosition)) continue;
         bucket.push({
           sequenceId: seqId,
           sourceCatalogId: catalog.id,
           stepCount,
           word: seqId,
+          startPosition,
         });
       }
     }
@@ -132,6 +147,7 @@ export function composeDeck(
   weights: StepCountWeight[],
   totalCards: number,
   footer: CardFooter = { center: "The Kinetic Alphabet" },
+  rng: () => number = Math.random,
 ): DeckReleaseCard[] {
   const totalWeight = weights.reduce((sum, w) => sum + w.weight, 0);
   if (totalWeight === 0) return [];
@@ -177,10 +193,10 @@ export function composeDeck(
   for (const [stepCount, count] of targets) {
     const bucket = pool.get(stepCount);
     if (!bucket || count === 0) continue;
-    selected.push(...fisherYatesSample(bucket, count));
+    selected.push(...fisherYatesSample(bucket, count, rng));
   }
 
-  shuffle(selected);
+  shuffle(selected, rng);
 
   return selected.map((entry, i) => ({
     sequenceId: entry.sequenceId,
@@ -196,6 +212,7 @@ export function swapCard(
   cards: DeckReleaseCard[],
   index: number,
   pool: Map<number, PoolEntry[]>,
+  rng: () => number = Math.random,
 ): DeckReleaseCard[] {
   const card = cards[index];
   if (!card) return cards;
@@ -207,7 +224,7 @@ export function swapCard(
   const available = bucket.filter((e) => !usedIds.has(e.sequenceId));
   if (available.length === 0) return cards;
 
-  const replacement = available[Math.floor(Math.random() * available.length)]!;
+  const replacement = available[Math.floor(rng() * available.length)]!;
   const updated = [...cards];
   updated[index] = {
     sequenceId: replacement.sequenceId,
@@ -220,19 +237,19 @@ export function swapCard(
   return updated;
 }
 
-function fisherYatesSample<T>(arr: T[], count: number): T[] {
+function fisherYatesSample<T>(arr: T[], count: number, rng: () => number = Math.random): T[] {
   const copy = [...arr];
   const n = Math.min(count, copy.length);
   for (let i = 0; i < n; i++) {
-    const j = i + Math.floor(Math.random() * (copy.length - i));
+    const j = i + Math.floor(rng() * (copy.length - i));
     [copy[i], copy[j]] = [copy[j]!, copy[i]!];
   }
   return copy.slice(0, n);
 }
 
-function shuffle<T>(arr: T[]): void {
+function shuffle<T>(arr: T[], rng: () => number = Math.random): void {
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     [arr[i], arr[j]] = [arr[j]!, arr[i]!];
   }
 }

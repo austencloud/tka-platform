@@ -10,8 +10,8 @@ import type {
   VoiceCommandCategory,
   CommandResult,
 } from "../../domain/voice-command-types";
-import { settingsService } from "../../../settings/state/SettingsState.svelte";
-import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
+import { settingsService } from "../../../settings/state/settings-state.svelte";
+import type { PropType } from "../../../pictograph/prop/domain/enums/prop-type";
 import type { IVoiceCommandHandler } from "../types";
 
 export class PropCommandHandler implements IVoiceCommandHandler {

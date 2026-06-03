@@ -19,7 +19,7 @@
  * Pure. No Firestore, no fetch. Motion primitives carry everything.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { deriveLettersForSequence } from "$lib/shared/navigation/services/letter-deriver";
 import { derivePositionsForSequence } from "$lib/shared/navigation/services/position-deriver";

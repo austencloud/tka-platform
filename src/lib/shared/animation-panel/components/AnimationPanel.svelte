@@ -28,12 +28,10 @@
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
   import DisplayPanel from "$lib/shared/animation-engine/components/settings-panels/DisplayPanel.svelte";
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
-  import RailBentoSheet from "../bento/RailBentoSheet.svelte";
-  import DownloadPillNav from "../pill-nav/DownloadPillNav.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import IconRailNav from "../pill-nav/IconRailNav.svelte";
-  import PillBody from "../pill-nav/PillBody.svelte";
+  import ControlDock, { type ControlDockTab } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import { buildPillSpecs, type PillId } from "../pill-nav/pill-types";
   import { loadActivePill, saveActivePill } from "../state/active-pill-persistence";
   import {
@@ -66,6 +64,11 @@
     onExport: () => void;
     onCancel?: () => void;
     secondaryAction?: { label: string; href: string; icon?: string };
+    /** Render the panel's own inline export progress bar while exporting. Set
+     *  false when the parent shows a full ExportTakeover over the canvas — the
+     *  panel sits outside the takeover scrim, so its inline bar would be a second,
+     *  redundant progress UI. Default true preserves standalone consumers. */
+    showInlineExportProgress?: boolean;
   }
 
   let {
@@ -87,6 +90,7 @@
     onExport,
     onCancel,
     secondaryAction,
+    showInlineExportProgress = true,
   }: Props = $props();
 
   const exportButtonLabel = $derived(renderMode === '3d' ? 'Record Scene' : 'Download Animation');
@@ -114,11 +118,6 @@
 
   let pillNavEl = $state<HTMLElement | null>(null);
   let panelScrollEl = $state<HTMLElement | null>(null);
-  let mobileBarEl = $state<HTMLElement | null>(null);
-
-  function findPillButton(id: PillId): HTMLElement | null {
-    return pillNavEl?.querySelector<HTMLElement>(`[data-pill-id="${id}"]`) ?? null;
-  }
 
   // Honor prefers-reduced-motion
   let reduceMotion = $state(
@@ -140,7 +139,6 @@
     return () => el.removeEventListener("keydown", preventSpaceActivation);
   }
   $effect(() => attachSpaceGuard(panelScrollEl));
-  $effect(() => attachSpaceGuard(mobileBarEl));
 
   function preventSpaceActivation(event: KeyboardEvent) {
     if (event.key !== " " && event.code !== "Space") return;
@@ -290,6 +288,20 @@
     pillSpecs.find((p) => p.id === activePill)?.label ?? "",
   );
 
+  // ── Mobile ControlDock wiring ──
+  // The pill specs become dock tabs; Export's trigger is the compact trailing
+  // download icon, mirroring the mandala dock.
+  const dockTabs = $derived<ControlDockTab[]>(
+    pillSpecs.map((p) => ({ id: p.id, label: p.label, icon: p.icon, accentColor: p.accentColor })),
+  );
+  const dockTrailing = $derived({
+    icon: renderMode === "3d" ? "fa-circle" : "fa-download",
+    label: exportButtonLabel,
+    onClick: onExport,
+    disabled: exportDisabled,
+    busy: !canvasReady,
+  });
+
   // ── SR announcer ──
   let lastAnnouncement = $state("");
   $effect(() => {
@@ -306,6 +318,7 @@
         selectedPropType={selectedPropType}
         onSelect={onPropChange}
         variant="inline"
+        flat={layout === "bottom"}
       />
     {/await}
   {:else if activePill === "effects"}
@@ -362,9 +375,9 @@
       </div>
     </div>
   {:else if activePill === "export"}
-    <div class="section-pad">
-      <div class="rt-section">
-        <span class="rt-section-label">Frame rate</span>
+    <div class="section-pad export-fields">
+      <div class="field">
+        <span class="field-label">FPS</span>
         <div class="rt-chip-row">
           <button type="button" class="rt-chip"
             aria-pressed={exportOptions.videoFps === 30}
@@ -381,9 +394,9 @@
         </div>
       </div>
 
-      <div class="rt-section">
-        <span class="rt-section-label">Resolution</span>
-        <div class="rt-chip-row resolution-grid">
+      <div class="field">
+        <span class="field-label">Res</span>
+        <div class="rt-chip-row res-row">
           <button type="button" class="rt-chip"
             aria-pressed={exportOptions.videoResolution === 720}
             onclick={() => exportOptions.setVideoResolution(720)}
@@ -404,8 +417,8 @@
       </div>
 
       {#if renderMode === '3d'}
-        <div class="rt-section">
-          <span class="rt-section-label">Quality</span>
+        <div class="field">
+          <span class="field-label">Quality</span>
           <div class="rt-chip-row">
             <button type="button" class="rt-chip"
               aria-pressed={exportOptions.videoQuality === 'standard'}
@@ -419,8 +432,8 @@
         </div>
       {/if}
 
-      <div class="rt-section">
-        <span class="rt-section-label">Timing</span>
+      <div class="field">
+        <span class="field-label">Timing</span>
         <div class="rt-chip-row">
           <button type="button" class="rt-chip"
             aria-pressed={exportOptions.videoIncludeStartPosition}
@@ -437,8 +450,8 @@
         </div>
       </div>
 
-      <div class="rt-row">
-        <span class="rt-row-label">Loops</span>
+      <div class="field">
+        <span class="field-label">Loops</span>
         <div class="rt-stepper">
           <button type="button" class="rt-step-btn"
             onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
@@ -455,19 +468,9 @@
       </div>
 
       {#if timeEstimateLabel || totalVideoDuration}
-        <div class="export-summary-card">
-          {#if totalVideoDuration}
-            <div class="video-duration-line">
-              <i class="fas fa-film" aria-hidden="true"></i>
-              Video length: {totalVideoDuration}
-            </div>
-          {/if}
-          {#if timeEstimateLabel}
-            <div class="video-duration-line">
-              <i class="fas fa-clock" aria-hidden="true"></i>
-              Export time: {timeEstimateLabel}
-            </div>
-          {/if}
+        <div class="export-meta">
+          {#if totalVideoDuration}<span><i class="fas fa-film" aria-hidden="true"></i> {totalVideoDuration}</span>{/if}
+          {#if timeEstimateLabel}<span><i class="fas fa-clock" aria-hidden="true"></i> {timeEstimateLabel}</span>{/if}
         </div>
       {/if}
     </div>
@@ -490,7 +493,7 @@
     role="region"
     aria-label="Animation export"
   >
-    {#if isExporting}
+    {#if isExporting && showInlineExportProgress}
       <div class="mobile-progress" role="status" aria-live="polite">
         <div class="progress-info">
           <span class="progress-stage">
@@ -516,50 +519,19 @@
         {/if}
       </div>
     {:else}
-      {#if activePill}
-        <PillBody
-          title="{activePillLabel} Settings"
-          variant="mobile"
-          onClose={() => { activePill = null; }}
-          returnFocusTo={findPillButton(activePill)}
-        >
-          {@render pillBody()}
-        </PillBody>
-      {/if}
-
-      <div class="mobile-bar" bind:this={mobileBarEl}>
-        <DownloadPillNav
-          pills={pillSpecs}
-          activeId={activePill}
-          onSelect={handlePillSelect}
-          variant="mobile"
-          onNavMount={(el) => { pillNavEl = el; }}
-        />
-
-        <div class="action-row">
-          {#if secondaryAction}
-            <a href={secondaryAction.href} class="rt-download rt-secondary">
-              {#if secondaryAction.icon}<i class="fas {secondaryAction.icon}" aria-hidden="true"></i>{/if}
-              {secondaryAction.label}
-            </a>
-          {/if}
-          <button
-            type="button"
-            class="rt-download"
-            onclick={onExport}
-            disabled={exportDisabled}
-            aria-label={exportButtonLabel}
-          >
-            {#if !canvasReady}
-              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-              Preparing...
-            {:else}
-              <i class="fas {renderMode === '3d' ? 'fa-circle' : 'fa-download'}" aria-hidden="true"></i>
-              {exportButtonLabel}
-            {/if}
-          </button>
-        </div>
-      </div>
+      <ControlDock
+        tabs={dockTabs}
+        activeTab={activePill}
+        onTabSelect={(id) => handlePillSelect(id as PillId)}
+        trailingAction={dockTrailing}
+        {secondaryAction}
+      >
+        {#snippet tray()}
+          <div class="dock-dense">
+            {@render pillBody()}
+          </div>
+        {/snippet}
+      </ControlDock>
     {/if}
   </div>
 {:else}
@@ -605,7 +577,7 @@
         </div>
 
         <div class="panel-footer">
-          {#if isExporting}
+          {#if isExporting && showInlineExportProgress}
             <div class="export-progress-row" role="status" aria-live="polite">
               <div class="progress-info">
                 <span class="progress-stage">
@@ -689,10 +661,71 @@
     padding: 8px 16px 20px;
   }
 
-  .sidebar .resolution-grid {
+  /* Compact Export body: label-left rows instead of stacked sections. */
+  .export-fields .field {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 52px 1fr;
+    align-items: center;
+    gap: 10px;
   }
+  .export-fields .field-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+  }
+  .export-fields .rt-chip-row {
+    display: flex;
+    flex: 1;
+    gap: 6px;
+  }
+  .export-fields .rt-chip-row.res-row { flex-wrap: wrap; }
+  .export-fields .export-meta {
+    display: flex;
+    gap: 16px;
+    padding-left: 62px;
+    font-size: 11px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-variant-numeric: tabular-nums;
+  }
+  .export-fields .export-meta i { opacity: 0.6; margin-right: 2px; }
+
+  /* ============================================================
+   * Dock-tray densification (mobile). Scoped to .dock-dense so these
+   * shared panels stay full-size in their other usages. Touch targets
+   * stay >=44px — we only collapse gaps, paddings, and >44px tiles.
+   * ============================================================ */
+  .dock-dense :global(.section-pad) { gap: 8px; padding: 4px 12px 10px; }
+  /* EffectsPanel strip */
+  .dock-dense :global(.mep) { gap: 6px; }
+  .dock-dense :global(.fx-tile) { width: 52px; height: 52px; }
+  .dock-dense :global(.slider-row) { padding: 6px 10px; gap: 8px; }
+  /* BentoPropGrid */
+  .dock-dense :global(.grid-scroll) { padding: 6px 12px; }
+  .dock-dense :global(.section-label) { padding: 4px 4px 2px; }
+  .dock-dense :global(.section-buttons) { gap: 4px; }
+  .dock-dense :global(.grid-content) { gap: 2px; }
+  /* Shrink prop tiles ~79->60px (square) so more fit per row + shorter rows.
+     Higher specificity than BentoPropGrid's own width + container-query rules. */
+  .dock-dense :global(.section-buttons .prop-button),
+  .dock-dense :global(.popover-trigger-wrap .prop-button),
+  .dock-dense :global(.popover-trigger-wrap) { width: 60px; }
+  .dock-dense :global(.prop-button) { aspect-ratio: 1 / 1; padding: 5px 3px 4px; gap: 2px; }
+  .dock-dense :global(.prop-label) { font-size: 9px; }
+  /* EffortPanel (56px tile -> 48, still >=44) */
+  .dock-dense :global(.effort-btn) { min-height: 48px; padding: 10px 6px; }
+  .dock-dense :global(.effort-grid) { gap: 4px; }
+  /* PathShapePanel */
+  .dock-dense :global(.path-shape-grid) { gap: 4px; }
+  .dock-dense :global(.path-btn) { padding: 6px; }
+  .dock-dense :global(.hybrid-btn) { padding: 6px 10px; margin-top: 4px; }
+  .dock-dense :global(.motion-hint) { margin-top: 2px; }
+  /* DisplayPanel */
+  .dock-dense :global(.display-chips) { gap: 4px; }
+  /* TempoControl popover */
+  .dock-dense :global(.bpm-popover) { padding: 10px; gap: 8px; }
+  .dock-dense :global(.bpm-popover-presets) { gap: 6px; }
 
   /* ============================================================
    * MOBILE BOTTOM CONTAINER
@@ -711,13 +744,6 @@
     flex-direction: column;
     gap: 8px;
     padding: 10px 16px 12px;
-  }
-
-  .mobile-bar {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 8px 10px 10px;
   }
 
   /* ============================================================
@@ -809,33 +835,6 @@
   /* ============================================================
    * Shared: duration lines, footer, export button, progress
    * ============================================================ */
-
-  .export-summary-card {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-  }
-
-  .video-duration-line {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
-    padding: 2px 0;
-  }
-
-  .video-duration-line i {
-    font-size: 11px;
-    opacity: 0.6;
-    width: 14px;
-    text-align: center;
-  }
 
   .panel-footer {
     padding: 12px 16px 16px;

@@ -9,7 +9,7 @@
  */
 
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { DetectionFrame } from "$lib/shared/train/domain/DetectionFrame";
+import type { DetectionFrame } from "$lib/shared/train/domain/detection-frame";
 import type { UserCorrection } from "./verification-models";
 
 /** Reference to the source video */

@@ -16,8 +16,8 @@
   import type { CellConfig } from "$lib/shared/animation-engine/domain/compose-types";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { createPlaybackControllerFactory } from "$lib/shared/animation-engine/createPlaybackControllerFactory";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { createPlaybackControllerFactory } from "$lib/shared/animation-engine/create-playback-controller-factory";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/services/trail-capturer";
   interface Props {
     cell: CellConfig;

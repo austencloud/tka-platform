@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PrintRenderOptions } from "$lib/features/choreo-card/services/types";
   import { renderCardBack } from "$lib/features/choreo-card/services/card-back-dom-renderer";
   import { buildBackJob } from "$lib/features/choreo-card/services/card-back/card-back-job-builder";
@@ -172,8 +172,11 @@
         let worstMaxDelta = 0;
         const summaryRows: Record<string, unknown>[] = [];
 
-        for (const card of deck.cards) {
+        for (const [idx, card] of deck.cards.entries()) {
           if (ctx.signal.aborted) break;
+          // TnD decks repeat a base sequence id across variations, so the row key
+          // must include the position to stay unique.
+          const rowId = `${card.sequence.id}:${idx}:${runMode}`;
           const label = card.word || card.sequence.word || card.sequence.id;
           ctx.onProgress({ phase: "rendering", current: ++done, total, detail: `${label} (${deck.name})` });
           try {
@@ -192,7 +195,7 @@
             worst = Math.max(worst, d.diffPct);
             worstMaxDelta = Math.max(worstMaxDelta, d.maxDelta);
             const row: ParityRow = {
-              id: `${card.sequence.id}:${runMode}`,
+              id: rowId,
               title: `${label}${card.tndElement ? ` — ${card.tndElement.name}` : ""}`,
               metrics: { "% diff": d.diffPct, "max Δ": d.maxDelta },
               bad: d.diffPct > 1,
@@ -209,7 +212,7 @@
             const blank = document.createElement("canvas");
             blank.width = OUT_W;
             blank.height = OUT_H;
-            ctx.addRow({ id: `${card.sequence.id}:${runMode}`, title: label, metrics: {}, error: msg, cells: [{ label: "ERROR", canvas: blank }] });
+            ctx.addRow({ id: rowId, title: label, metrics: {}, error: msg, cells: [{ label: "ERROR", canvas: blank }] });
             summaryRows.push({ label, seqId: card.sequence.id, error: msg });
           }
         }

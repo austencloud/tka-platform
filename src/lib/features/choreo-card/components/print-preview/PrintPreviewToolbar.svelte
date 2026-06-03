@@ -2,7 +2,7 @@
   import CardSizeToggle from "../card-preview/CardSizeToggle.svelte";
   import CopiesSelect from "./CopiesSelect.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
-  import type { CardSizeId } from "../../domain/card-sizes";
+  import { getPageLayout, type CardSizeId } from "../../domain/card-sizes";
 
   interface Props {
     cardSize: CardSizeId;
@@ -50,6 +50,10 @@
     onPrint,
   }: Props = $props();
 
+  // The "one card per page" count for the current size (9 poker / 6 tarot) —
+  // marks the primary copies chip.
+  const perPage = $derived(getPageLayout(cardSize).cardsPerPage);
+
   const progressText = $derived(
     renderTotal > 0
       ? `Rendering ${renderProgress} / ${renderTotal}...`
@@ -70,6 +74,7 @@
         onchange={onCopiesChange}
         presets={copiesPresets}
         annotate={copiesAnnotate}
+        {perPage}
       />
     {/if}
 

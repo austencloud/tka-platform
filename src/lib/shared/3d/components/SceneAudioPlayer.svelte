@@ -2,7 +2,7 @@
   import { sceneAudioState } from "../state/scene-audio-state.svelte";
   import { getTracksForVariant, getTrackById, getDefaultTrackForVariant, type AudioTrack } from "../audio/ocean-audio-tracks";
   import type { OceanVariant } from "../environments/domain/enums/environment-enums";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { getViewer3DContext } from "../context/viewer-3d-context";
 

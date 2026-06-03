@@ -1,7 +1,7 @@
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { PropSvgData } from "$lib/shared/animation-engine/domain/types/SvgTypes";
+import type { PropSvgData } from "$lib/shared/animation-engine/domain/types/svg-types";
 
-export type { PropSvgData } from "$lib/shared/animation-engine/domain/types/SvgTypes";
+export type { PropSvgData } from "$lib/shared/animation-engine/domain/types/svg-types";
 import {
   applyColorToSvg,
   SELECTIVE_COLOR_PROP_TYPES,

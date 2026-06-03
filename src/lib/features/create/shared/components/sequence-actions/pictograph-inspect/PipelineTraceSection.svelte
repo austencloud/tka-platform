@@ -9,7 +9,7 @@
   import type {
     PipelineDiagnostics,
     PipelineTier,
-  } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
+  } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/pipeline-diagnostics";
   import { livePipelineEdit } from "./live-pipeline-edit.svelte";
 
   interface Props {

@@ -22,7 +22,7 @@
    * </AdminTwoPanelLayout>
    */
 
-  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { onMount } from "svelte";
   import type { Snippet } from "svelte";
   import type { DeviceDetector } from '$lib/shared/device/services/device-detector'

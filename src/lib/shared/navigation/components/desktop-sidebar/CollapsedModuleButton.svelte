@@ -2,7 +2,7 @@
 <!-- Icon-only module button for collapsed sidebar activity bar (VS Code style) -->
 <script lang="ts">
   import type { ModuleDefinition } from "../../domain/types";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import NotificationBadge from "../NotificationBadge.svelte";
   import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";

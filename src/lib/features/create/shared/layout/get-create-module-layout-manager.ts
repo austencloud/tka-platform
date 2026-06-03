@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { CreateModuleLayoutManager } from './services/create-module-layout-manager';
-import { getDeviceDetector } from '$lib/shared/device/getDeviceDetector';
-import { getViewportManager } from '$lib/shared/device/getViewportManager';
+import { getDeviceDetector } from '$lib/shared/device/get-device-detector';
+import { getViewportManager } from '$lib/shared/device/get-viewport-manager';
 
 let instance: CreateModuleLayoutManager | null = null;
 

@@ -10,14 +10,14 @@
    * Designed as a composition, not assembled from parts.
    */
   import { onMount } from "svelte";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
   let heroStep = $state<StepData | null>(null);
   let heroPictographData = $state<PictographData | null>(null);

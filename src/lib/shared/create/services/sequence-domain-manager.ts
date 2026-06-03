@@ -7,12 +7,12 @@
  * and desktop.modern.domain.models for actual validation and business rules.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type {
   ValidationErrorInfo,
   ValidationResult,
-} from "$lib/shared/validation/ValidationResult";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+} from "$lib/shared/validation/validation-result";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 import type { SequenceCreateRequest } from "$lib/shared/create/domain/sequence-models";

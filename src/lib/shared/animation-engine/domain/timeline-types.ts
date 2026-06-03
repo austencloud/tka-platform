@@ -6,15 +6,15 @@
  * familiar to users of Premiere Pro, DaVinci Resolve, and Audition.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
   type TrailSettings,
   DEFAULT_TRAIL_SETTINGS,
-} from "$lib/shared/animation-engine/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-types";
 import {
   type TimeSignatureKey,
   DEFAULT_TIME_SIGNATURE,
-} from "$lib/shared/foundation/domain/models/TimeSignature";
+} from "$lib/shared/foundation/domain/models/time-signature";
 
 // ============================================================================
 // Time Units

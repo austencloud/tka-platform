@@ -9,9 +9,9 @@
 import { doc, getDoc } from "firebase/firestore";
 import { getFirestoreInstance } from "../firebase";
 import type { ImpersonatedUser } from "./types";
-import type { UserRole } from "../domain/models/UserRole";
-import { isAdmin } from "../state/authState.svelte";
-import { featureFlagService } from "./PostHogFeatureFlagService.svelte";
+import type { UserRole } from "../domain/models/user-role";
+import { isAdmin } from "../state/auth-state.svelte";
+import { featureFlagService } from "./post-hog-feature-flag-service.svelte";
 
 export class Impersonator {
   private _impersonatedUser: ImpersonatedUser | null = null;

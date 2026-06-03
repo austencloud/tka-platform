@@ -4,7 +4,7 @@
  * Per-hand, not per-step — blue and red can have different overrides.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ICreateModuleState } from "../../types/create-module-types";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { getStepDataFromState, START_POSITION_BEAT_NUMBER } from "./step-data-helpers";

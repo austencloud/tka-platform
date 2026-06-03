@@ -8,7 +8,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { fade } from "svelte/transition";
-  import type { StepMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import { generateEvenBeatTimestamps } from "$lib/shared/video-collaboration/utils/step-map-utils";
   import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
   import StepMapTimeline from "./StepMapTimeline.svelte";

@@ -8,7 +8,7 @@
  * Returns a plain object with getter accessors, matching the Factory + Context pattern.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { fuseSequences } from "../services/sequence-fuser";
 export type FusePhase =

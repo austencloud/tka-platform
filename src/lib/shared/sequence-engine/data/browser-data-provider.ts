@@ -8,7 +8,7 @@
 import type { LetterVariationData } from "./types";
 import type { LetterMappingsJson } from "../domain/models/sequence-engine-types";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 /**

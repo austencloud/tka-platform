@@ -24,7 +24,7 @@ import {
 import type { SceneId } from "../domain/scene-lab-types";
 import type { CosmicVariant } from "../services/scene-lab-persistence";
 import { loadSceneLabState } from "../services/scene-lab-persistence";
-import { getSceneUndoManager } from "$lib/shared/3d/undo/getSceneUndoManager";
+import { getSceneUndoManager } from "$lib/shared/3d/undo/get-scene-undo-manager";
 
 export function createSceneLabState() {
   const persisted = loadSceneLabState();

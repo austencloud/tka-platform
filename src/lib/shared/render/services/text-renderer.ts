@@ -15,7 +15,7 @@ import {
   type GlyphImageData,
   type CompressedSegment,
 } from "@tka/render-composition";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 // getGlyphCache loaded dynamically to avoid pulling $app/environment into worker bundle
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
 import { compressWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -58,7 +58,7 @@ export interface UserInfoFooterOptions {
 }
 
 export class TextRenderer {
-  private readonly titleFontFamily = "Georgia, serif";
+  private readonly titleFontFamily = "Gelasio, Georgia, serif";
   private readonly titleFontWeight = "600";
   private readonly fallbackFontFamily =
     "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";

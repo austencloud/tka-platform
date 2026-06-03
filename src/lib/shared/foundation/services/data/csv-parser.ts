@@ -1,7 +1,7 @@
 import type {
   CSVParseResult as CsvParseResult,
   ParsedCsvRow,
-} from "$lib/shared/foundation/domain/models/CsvModels";
+} from "$lib/shared/foundation/domain/models/csv-models";
 
 interface CsvParseError {
   error: string;

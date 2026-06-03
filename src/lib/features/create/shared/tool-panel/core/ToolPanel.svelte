@@ -17,7 +17,7 @@
 	✅ No TODOs (all implemented or documented)
 -->
 <script lang="ts">
-  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";

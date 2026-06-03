@@ -5,7 +5,7 @@
  * Uses Svelte 5 runes for reactive state management.
  */
 
-import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
 
 /**
  * Feed loading status

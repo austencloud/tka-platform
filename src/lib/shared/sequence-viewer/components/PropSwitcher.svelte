@@ -5,8 +5,8 @@
   Lets the viewer switch between creator's intended prop and their own settings.
 -->
 <script lang="ts">
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 
   interface Props {
     propSource: "intended" | "creator-favorite" | "viewer-settings" | "quick-switch";

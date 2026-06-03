@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
 import { findPreviousRotationDirection, updateStepTurns } from "./turns-handler";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionColor,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { ICreateModuleState } from "../../types/create-module-types";
 
 vi.mock(

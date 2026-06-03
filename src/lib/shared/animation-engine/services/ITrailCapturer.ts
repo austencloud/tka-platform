@@ -12,13 +12,13 @@
 import type {
   TrailPoint,
   TrailSettings,
-} from "$lib/shared/animation-engine/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-types";
 import type {
   TrailCapturePropStates,
   TrailCaptureConfig,
   IAnimationCacheService,
   IPerformanceMonitorService,
-} from "$lib/shared/animation-engine/domain/types/TrailCaptureTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-capture-types";
 
 export type {
   AdditionalLayerProps,
@@ -27,7 +27,7 @@ export type {
   TrailCaptureConfig,
   IAnimationCacheService,
   IPerformanceMonitorService,
-} from "$lib/shared/animation-engine/domain/types/TrailCaptureTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-capture-types";
 
 /**
  * Service for capturing trail points during animation

@@ -12,11 +12,11 @@ import {
 import {
   getLetterType,
   Letter,
-} from "../../../../../foundation/domain/models/Letter";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
+} from "../../../../../foundation/domain/models/letter";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 import { calculateShiftLocation } from "./shift-location-calculator";
-import { LetterType } from "../../../../../foundation/domain/models/LetterType";
+import { LetterType } from "../../../../../foundation/domain/models/letter-type";
 
 export interface IDashLocationCalculator {
   calculateDashLocationFromPictographData(

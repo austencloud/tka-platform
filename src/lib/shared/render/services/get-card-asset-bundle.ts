@@ -7,8 +7,8 @@
 // svgCache keys are content-hashed (independent of canvas size), so a tiny render
 // populates EXACTLY the keys the full-size worker renders will request.
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
 import { buildAssetBundle, type AssetBundle } from "./card-asset-bundle";
 import { getImageComposer } from "../get-image-composer";

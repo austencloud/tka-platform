@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import GuidePictograph from "./GuidePictograph.svelte";
 
   let {

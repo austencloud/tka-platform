@@ -8,9 +8,9 @@
  * Zero-alloc hot path: reuses StoredTip and output arrays each frame.
  */
 
-import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-import type { PropTipData, RenderedPropTransform } from "../domain/types/FireTypes";
-import { getTipPoints, type TipPoint } from "../domain/types/PropTipPoints";
+import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+import type { PropTipData, RenderedPropTransform } from "../domain/types/fire-types";
+import { getTipPoints, type TipPoint } from "../domain/types/prop-tip-points";
 import {
   calculatePropCenter,
   type PropEndpointConfig,

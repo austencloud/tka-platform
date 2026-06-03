@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { migrateEffectsConfig } from "./migrations";
-import { EFFECTS_CONFIG_VERSION } from "./EffectsConfig";
+import { EFFECTS_CONFIG_VERSION } from "./effects-config";
 
 describe("migrateEffectsConfig", () => {
   it("migrates v1 → current with default zap colors", () => {

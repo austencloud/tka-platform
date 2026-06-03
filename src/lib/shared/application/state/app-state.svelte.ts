@@ -8,10 +8,10 @@
  */
 
 import { BackgroundType } from "@austencloud/backgrounds";
-import type { PerformanceSnapshot } from "../../foundation/ui/UITypes";
+import type { PerformanceSnapshot } from "../../foundation/ui/ui-types";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
-import { PropType } from "../../pictograph/prop/domain/enums/PropType";
-import type { AppSettings, PropPreset } from "../../settings/domain/AppSettings";
+import { PropType } from "../../pictograph/prop/domain/enums/prop-type";
+import type { AppSettings, PropPreset } from "../../settings/domain/app-settings";
 import {
   getIsInitialized,
   getIsInitializing,

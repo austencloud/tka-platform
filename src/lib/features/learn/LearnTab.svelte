@@ -34,7 +34,7 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
   import { setDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
   import ConfettiBurst from "$lib/shared/delight/components/ConfettiBurst.svelte";
   import AchievementToast from "$lib/shared/delight/components/AchievementToast.svelte";
-  import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
+  import { getEffectiveUserId } from "$lib/shared/auth/state/auth-state.svelte";
 
   type LearnMode = "concepts" | "play" | "codex" | "tika" | "guide";
 

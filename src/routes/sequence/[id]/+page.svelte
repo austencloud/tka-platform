@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { page } from "$app/state";
@@ -8,17 +8,17 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
   import { browser } from "$app/environment";
   import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
-  import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
   import { parsePropsFromURL, parseSequenceRouteId, decodeSequenceWithCompression, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
-  import { decodeViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
-  import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";
+  import { decodeViewMode } from "$lib/shared/browse/domain/browse-view-mode";
+  import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/get-public-sequence-hash-matcher";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { setSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
-  import { registerDrawer, unregisterDrawer, generateDrawerId } from "$lib/shared/foundation/ui/drawer/DrawerStack";
+  import { registerDrawer, unregisterDrawer, generateDrawerId } from "$lib/shared/foundation/ui/drawer/drawer-stack";
   import { createModalSwipeDismiss } from "$lib/shared/sequence-viewer/services/modal-swipe-dismiss";
   import {
     consumeSequenceRouteHandoff,
@@ -39,7 +39,7 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
 
   import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
   import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import {
@@ -47,7 +47,7 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
     buildSequenceSharePayload,
     buildThumbnailUrl,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { sendToStickerLab } from "$lib/shared/sequence-viewer/services/send-to-sticker-lab";
 
   interface Props {

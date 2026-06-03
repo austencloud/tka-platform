@@ -16,7 +16,7 @@
 
 import { goto, replaceState } from "$app/navigation";
 import { page } from "$app/state";
-import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
+import type { SequenceData } from "../../../foundation/domain/models/sequence-data";
 
 // ============================================================================
 // TYPES

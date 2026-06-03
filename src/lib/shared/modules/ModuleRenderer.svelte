@@ -17,12 +17,12 @@
   import type { Component } from "svelte";
   import { onMount, onDestroy } from "svelte";
   import IndeterminateBar from "$lib/shared/components/loading/IndeterminateBar.svelte";
-  import { authState } from "../auth/state/authState.svelte";
-  import { resolveAccessTier } from "../auth/domain/AccessTier";
+  import { authState } from "../auth/state/auth-state.svelte";
+  import { resolveAccessTier } from "../auth/domain/access-tier";
   import { isModuleAccessible } from "../auth/domain/guest-access-config";
-  import { isPremiumOrAbove } from "../auth/domain/models/UserRole";
+  import { isPremiumOrAbove } from "../auth/domain/models/user-role";
   import AuthNudge from "../auth/components/AuthNudge.svelte";
-  import type { AuthNudgeTrigger } from "../auth/domain/AuthNudgeTrigger";
+  import type { AuthNudgeTrigger } from "../auth/domain/auth-nudge-trigger";
   import { authDrawerState } from "../auth/state/auth-drawer-state.svelte";
   import { switchModule } from "../application/state/ui/module-state";
   import { MODULE_DEFINITIONS } from "../navigation/config/module-definitions";

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getViewer3DContext } from "../../context/viewer-3d-context";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     getBasePropType,
     getAllVariations,
@@ -8,7 +8,7 @@
     isPropActive,
     getBasePropsByCategory,
     PROP_CATEGORIES,
-  } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
   import { getPerformerColor } from "../../constants/performer-colors";
   import { slide } from "svelte/transition";

@@ -10,11 +10,11 @@
  * - "both": Transform both motions (default, original behavior)
  */
 
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import { createStartPositionData } from "$lib/shared/create/factories/createStartPositionData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import {
@@ -30,7 +30,7 @@ import {
 } from "$lib/shared/create/services/motion-transforms";
 import { invertMotionType, reverseRotationDirection } from "$lib/shared/create/services/rotation-helpers";
 import type { TargetHand } from "$lib/shared/create/state/panel-coordination-state.svelte";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 
 /**
  * Derive the static letter (α, β, γ) from a grid position.

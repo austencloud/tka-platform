@@ -8,8 +8,8 @@
  */
 
 import { browser } from "$app/environment";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { ActiveCreateModule } from "$lib/shared/foundation/ui/ui-types";
 
 /**
  * Types of undoable operations in the Create module

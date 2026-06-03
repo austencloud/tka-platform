@@ -3,7 +3,7 @@ LetterConstraintsSection.svelte - Section for letter must-contain/must-not-conta
 50px touch targets, modern Material 2026 design
 -->
 <script lang="ts">
-  import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import LetterChip from "./LetterChip.svelte";
 
   let {

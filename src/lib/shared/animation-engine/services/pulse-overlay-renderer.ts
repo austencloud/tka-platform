@@ -2,8 +2,8 @@ import type { Pulse2DParams } from "$lib/shared/effects/translators/canvas2d-typ
 import {
   Pulse2DRenderer,
   type PulseTipInput,
-} from "$lib/shared/effects/renderers/Pulse2DRenderer";
-import { EffectRenderer } from "./effects/EffectRenderer";
+} from "$lib/shared/effects/renderers/pulse-2d-renderer";
+import { EffectRenderer } from "./effects/effect-renderer";
 
 export class PulseOverlayRenderer extends EffectRenderer {
   private renderer = new Pulse2DRenderer();
@@ -21,8 +21,8 @@ export class PulseOverlayRenderer extends EffectRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "./effects/EffectPlugin";
-import type { PulseIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import type { EffectPlugin } from "./effects/effect-plugin";
+import type { PulseIntent } from "$lib/shared/effects/domain/effects-config";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 
 export const pulseEffectPlugin: EffectPlugin<PulseIntent> = {

@@ -6,10 +6,10 @@
  * 2. WorkerRenderPool / LayerCompositor - off-thread rendering
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { LayerRenderOptions, LayerVisibility } from "../../render/services/types";
-import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
+import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
 
 /**
  * Options for rendering a preview cell.

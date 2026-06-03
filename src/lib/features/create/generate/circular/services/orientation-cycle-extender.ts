@@ -3,16 +3,16 @@
  * Atomic closure ensures the user never sees an open-orientation sequence.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import { detectOrientationCycle } from "$lib/shared/create/services/OrientationCycleDetector";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { detectOrientationCycle } from "$lib/shared/create/services/orientation-cycle-detector";
 import {
   updateStartOrientations,
   updateEndOrientations,
 } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import {
   updateSequenceData,
-} from "$lib/shared/foundation/domain/models/SequenceData";
+} from "$lib/shared/foundation/domain/models/sequence-data";
 
 export class OrientationCycleExtender {
   extendIfNeeded(sequence: SequenceData): SequenceData {

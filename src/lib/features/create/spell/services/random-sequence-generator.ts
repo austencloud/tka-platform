@@ -5,11 +5,11 @@
  * Fast alternative to exhaustive exploration.
  */
 
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { VariationConstraints } from "../domain/models/spell-models";
 import type { RandomSequenceGenerationOptions } from "./types";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
@@ -24,7 +24,7 @@ import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circul
 import { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { ConstraintSet, ConstraintStep, ConstraintPictographData } from "$lib/shared/sequence-engine/constraints/types";
 import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
 
 interface RandomWalkState {

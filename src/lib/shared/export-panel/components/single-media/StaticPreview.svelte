@@ -17,8 +17,8 @@
   import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
   import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { onMount } from "svelte";
 
   const hubState = getExportPanelState();

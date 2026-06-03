@@ -20,10 +20,10 @@ even when Svelte recreates the component instance.
     MotionColor,
     RotationDirection,
   } from "../../shared/domain/enums/pictograph-enums";
-  import { PropType } from "../domain/enums/PropType";
-  import type { MotionData } from "../../shared/domain/models/MotionData";
-  import type { PropAssets } from "../domain/models/PropAssets";
-  import type { PropPosition } from "../domain/models/PropPosition";
+  import { PropType } from "../domain/enums/prop-type";
+  import type { MotionData } from "../../shared/domain/models/motion-data";
+  import type { PropAssets } from "../domain/models/prop-assets";
+  import type { PropPosition } from "../domain/models/prop-position";
   import { getSettings } from "../../../application/state/app-state.svelte";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 

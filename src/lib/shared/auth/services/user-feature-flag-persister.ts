@@ -35,8 +35,8 @@ import {
 } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import { isValidFeatureId } from "../domain/models/FeatureFlag";
-import type { FeatureId, UserFeatureOverrides } from "../domain/models/FeatureFlag";
+import { isValidFeatureId } from "../domain/models/feature-flag";
+import type { FeatureId, UserFeatureOverrides } from "../domain/models/feature-flag";
 const LOG_PREFIX = "[UserFeatureFlagPersister]";
 const LOCAL_STORAGE_PREFIX = "tka_feature_overrides_";
 

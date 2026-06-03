@@ -8,8 +8,8 @@
 
 import type { EffectPreset, EffectPresetGroup } from "./types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-import type { TrailsIntent } from "$lib/shared/effects/domain/EffectsConfig";
-import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
+import type { TrailsIntent } from "$lib/shared/effects/domain/effects-config";
+import type { EffectsPreset } from "$lib/shared/effects/domain/effects-preset";
 import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 

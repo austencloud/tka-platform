@@ -19,12 +19,12 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   import type { ExtensionFlowCoordinator } from "../../services/extension-flow-coordinator";
   import type { SubDrawerType } from "../../services/sub-drawer-state-persister";
   type FirstStepAnalyzer = typeof firstStepAnalyzerModule;
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import type { Letter } from "$lib/shared/foundation/domain/models/letter";
   import { UndoOperationType } from "../../services/undo-manager";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
+  import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
   import { createSequenceActionsSubdrawerState } from "../../state/sequence-actions-subdrawer-state.svelte";
   import {
     flyTransition,
@@ -46,7 +46,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   import DurationPatternView from "./DurationPatternView.svelte";
   import ExtendView from "./ExtendView.svelte";
   import StepGridSection from "./StepGridSection.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import FirstStepConfirmDialog from "./FirstStepConfirmDialog.svelte";
   import HandSelector from "./HandSelector.svelte";
   import MobileHandSelector from "./MobileHandSelector.svelte";

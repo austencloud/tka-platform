@@ -6,7 +6,7 @@ import type {
   InkIntent,
   FrostIntent,
   SilkIntent,
-} from "$lib/shared/effects/domain/EffectsConfig";
+} from "$lib/shared/effects/domain/effects-config";
 import type {
   EchoPassPayload,
   EchoPhantom,

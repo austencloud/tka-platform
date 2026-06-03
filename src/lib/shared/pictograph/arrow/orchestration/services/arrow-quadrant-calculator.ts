@@ -10,7 +10,7 @@ import {
   GridMode,
 } from "../../../grid/domain/enums/grid-enums";
 import { MotionType } from "../../../shared/domain/enums/pictograph-enums";
-import type { MotionData } from "../../../shared/domain/models/MotionData";
+import type { MotionData } from "../../../shared/domain/models/motion-data";
 
 export function calculateQuadrantIndex(
   motion: MotionData,

@@ -20,7 +20,7 @@
  */
 
 import { Point } from "fabric";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import type { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import type { DirectionalTupleCalculator } from "./directional-tuple-processor";
 import { calculateQuadrantIndex } from "../../../orchestration/services/arrow-quadrant-calculator";

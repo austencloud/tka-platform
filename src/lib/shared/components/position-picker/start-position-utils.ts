@@ -3,22 +3,22 @@
  * Used as a fallback when StartPositionManager is not available
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import {
   GridMode,
   GridLocation,
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   MotionType,
   MotionColor,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/createPictographData";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/create-pictograph-data";
 
 // Position to hand location mapping
 // Format: [blueLocation (left hand), redLocation (right hand)]

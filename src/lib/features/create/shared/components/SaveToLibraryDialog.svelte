@@ -5,7 +5,7 @@ Dialog for configuring sequence metadata before saving to library.
 Allows user to set name, visibility, tags, collections, and notes.
 -->
 <script lang="ts" module>
-  import type { SequenceVisibility } from "$lib/shared/library/domain/models/LibrarySequence";
+  import type { SequenceVisibility } from "$lib/shared/library/domain/models/library-sequence";
 
   export interface SaveMetadata {
     name: string;
@@ -19,8 +19,8 @@ Allows user to set name, visibility, tags, collections, and notes.
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   let {
     isOpen = false,

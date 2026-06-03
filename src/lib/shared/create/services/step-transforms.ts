@@ -14,11 +14,11 @@
  * reconciled asynchronously by the calling sequence-transform operation.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import { createStepData } from "$lib/shared/create/factories/createStepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { createStepData } from "$lib/shared/create/factories/create-step-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { reconcileStepDerived } from "$lib/shared/create/services/sequence-derived-fields";

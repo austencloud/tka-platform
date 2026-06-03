@@ -1,5 +1,5 @@
 import type { Catalog } from "../domain/models/Catalog";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { loadCatalogSequences, loadSequencesByIds } from "../services/catalog-loader";
 import type { PrintRenderOptions } from "../services/types";
 import { CARD_SIZES, type CardSizeId } from "../domain/card-sizes";

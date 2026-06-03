@@ -5,7 +5,7 @@
   for blue and red props. Uses PropControlPair for consistent layout.
 -->
 <script lang="ts">
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import PropControlPair from "./PropControlPair.svelte";
   import PropOrientationControl from "./PropOrientationControl.svelte";

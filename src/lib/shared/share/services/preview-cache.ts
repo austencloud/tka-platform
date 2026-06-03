@@ -6,7 +6,7 @@
  */
 
 import { browser } from "$app/environment";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ShareOptions } from "../domain/models/share-options";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 

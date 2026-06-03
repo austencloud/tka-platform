@@ -6,10 +6,10 @@
   import type { SourceMode, PlaybackHistoryEntry } from "$lib/shared/animation-engine/domain/chaining-types";
   import type { SpinnerStats } from '$lib/shared/landing/domain/types';
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/endless-spinner-orchestrator";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-  import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+  import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
   import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/get-generation-orchestrator";
-  import { sequenceTransformer } from "$lib/shared/create/services/SequenceTransformer";
+  import { sequenceTransformer } from "$lib/shared/create/services/sequence-transformer";
 
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
   import {
@@ -18,7 +18,7 @@
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // Mode toggle and infinite generation
   import type { SpinnerMode, SpinnerMetrics, GeneratedSequenceInfo } from "$lib/features/landing/domain/models/spinner-models";

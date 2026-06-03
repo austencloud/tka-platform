@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { PropType } from "../../../../pictograph/prop/domain/enums/PropType";
-  import { getPropTypeDisplayInfo } from "./PropTypeRegistry";
+  import { PropType } from "../../../../pictograph/prop/domain/enums/prop-type";
+  import { getPropTypeDisplayInfo } from "./prop-type-registry";
   import PropCompositionPreview from "../../../../pictograph/prop/components/PropCompositionPreview.svelte";
 
   let {

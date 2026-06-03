@@ -44,7 +44,7 @@
  *   blobs once the cache grew past ~46K entries.
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { PictographVisibilityOptions } from "$lib/shared/render/utils/pictograph-to-svg";
 import type { PreviewCellRenderOptions } from "./preview-cell-renderer";
 import { pictographKeyHasher } from "$lib/shared/render/services/pictograph-key-hasher";

@@ -11,16 +11,16 @@
 -->
 <script lang="ts">
 
-import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/getSequenceAnimationOrchestrator";
+import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/get-sequence-animation-orchestrator";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getTimelinePlayer } from "../services/timeline-playback-service";
   import type { TimelineClip } from "$lib/shared/animation-engine/domain/timeline-types";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
-  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
+  import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
   import { startPositionDeriver as startPositionDeriverSingleton } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 

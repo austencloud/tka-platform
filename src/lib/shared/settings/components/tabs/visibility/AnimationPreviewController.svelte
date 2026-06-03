@@ -6,15 +6,15 @@
 -->
 <script lang="ts">
   import { onMount, untrack } from "svelte";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
   import * as turnPatternManager from "$lib/shared/create/services/turn-pattern-manager";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
-  import { createPlaybackControllerFactory } from "$lib/shared/animation-engine/createPlaybackControllerFactory";
+  import { createPlaybackControllerFactory } from "$lib/shared/animation-engine/create-playback-controller-factory";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import type { TurnPattern } from "$lib/shared/create/domain/TurnPatternData";
+  import type { TurnPattern } from "$lib/shared/create/domain/turn-pattern-data";
   import { Timestamp } from "firebase/firestore";
   import AnimationPreviewCanvas from "./AnimationPreviewCanvas.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";

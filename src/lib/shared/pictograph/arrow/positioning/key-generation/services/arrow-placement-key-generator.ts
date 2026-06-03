@@ -5,8 +5,8 @@
  */
 
 import { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 
 const DASH_LETTER_CONDITIONS = {
   TYPE3: ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-"],

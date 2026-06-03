@@ -5,7 +5,7 @@
  * Helps developers understand the user's environment when debugging issues.
  */
 
-import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
 import type { DeviceContext } from "$lib/shared/feedback/domain/models/feedback-models";
 
 /**

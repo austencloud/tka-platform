@@ -5,7 +5,7 @@
 	 */
 
 	import { VTG_MODE_INFO } from "$lib/features/learn/domain/constants/vtg-experience-data";
-	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 	import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 	import type { VtgModeGroup } from "../domain/vtg-lab-types";
 	import { getModeChains, expandChain, type ChainDef } from "../domain/vtg-sequence-data";

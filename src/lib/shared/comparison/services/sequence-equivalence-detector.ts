@@ -9,7 +9,7 @@
  * Detects when two sequences are equivalent despite transforms.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceCanonicalizer } from "./sequence-canonicalizer";
 
 /**

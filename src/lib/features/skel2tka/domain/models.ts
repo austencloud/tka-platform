@@ -5,7 +5,7 @@
  * Phase 1 focuses on hand tracking and beat extraction from uploaded video.
  */
 
-import type { DetectionFrame } from "$lib/shared/train/domain/DetectionFrame";
+import type { DetectionFrame } from "$lib/shared/train/domain/detection-frame";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 /** A single video frame extracted as ImageData for processing */

@@ -4,7 +4,7 @@
  * Types specific to the Watch module for video browsing.
  */
 
-import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
 
 /**
  * Tab identifiers for the Watch module

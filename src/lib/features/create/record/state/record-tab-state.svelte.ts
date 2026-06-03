@@ -5,7 +5,7 @@
  * Follows TKA patterns: factory function returning state with getters/setters.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 /**
  * Creates record tab state for practice and recording functionality

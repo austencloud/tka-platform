@@ -7,8 +7,8 @@
  * FIXED: Added proper state synchronization to resolve start position selection getting stuck
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 
 // Note: This service will need to be updated to use the new DI pattern

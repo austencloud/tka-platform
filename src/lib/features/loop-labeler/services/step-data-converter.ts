@@ -1,6 +1,6 @@
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   GridLocation,
   GridPosition,
@@ -12,8 +12,8 @@ import {
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { RawStepData, SequenceEntry } from "./types";
 
 /**

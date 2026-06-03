@@ -7,7 +7,7 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { cachePrimitivePaths } from "../state/mandala-paths-cache.svelte";
   import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { MandalaPaths, MandalaPalette, SVGPathData } from "$lib/shared/mandala/domain/mandala-types";
   import type { QueryDocumentSnapshot } from "firebase/firestore";
 

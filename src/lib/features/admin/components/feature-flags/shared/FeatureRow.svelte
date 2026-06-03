@@ -5,7 +5,7 @@
    * Used in both global settings and user overrides
    */
 
-  import type { FeatureFlagConfig } from "$lib/shared/auth/domain/models/FeatureFlag";
+  import type { FeatureFlagConfig } from "$lib/shared/auth/domain/models/feature-flag";
   import { getFeatureIconAndColor } from "./feature-utils";
   import PermissionBadge from "./PermissionBadge.svelte";
 

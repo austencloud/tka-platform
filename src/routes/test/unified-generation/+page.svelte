@@ -11,7 +11,6 @@
 -->
 <script lang="ts">
   import BaseCard from "$lib/features/create/generate/components/cards/BaseCard.svelte";
-  import ToggleCard from "$lib/features/create/generate/components/cards/ToggleCard.svelte";
   import StepperCard from "$lib/features/create/generate/components/cards/StepperCard/StepperCard.svelte";
   import { getCardColors } from "$lib/shared/create/domain/card-colors";
   import { BackgroundType } from "@austencloud/backgrounds";
@@ -20,6 +19,17 @@
   import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
   import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
+  import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import OrientationCycler from "$lib/features/create/construct/start-position-picker/components/OrientationCycler.svelte";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { scale } from "svelte/transition";
+  import { quintOut } from "svelte/easing";
+  import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
 
   const c = getCardColors(BackgroundType.COSMIC); // DEFAULT_COLORS gradients
   const LOOP_COLOR = "linear-gradient(135deg, #a3a32a 0%, #8a8a22 50%, #6b6b1a 100%)";
@@ -83,8 +93,6 @@
   let deckSize = $state(52);
   let stepCount = $state(8);
   let level = $state(1);
-  let grid = $state<"diamond" | "box">("diamond");
-  let orientation = $state<"radial" | "nonradial" | "split">("radial");
   let loopType = $state<LOOPType>(LOOPType.ROTATED);
   let loopComponents = $state<Set<LOOPComponent>>(parseLoopComponents(LOOPType.ROTATED));
   let showLoop = $state(false);
@@ -93,11 +101,45 @@
   let propRev = $state<"smooth" | "mixed" | "choppy">("smooth");
   let handRev = $state<"smooth" | "mixed" | "choppy">("mixed");
   let dashes = $state<"low" | "mixed" | "high">("mixed");
-  let startMode = $state<"all" | "classic" | "specific">("all");
-  let showOrient = $state(false);
   let seed = $state(mintSeed());
 
-  function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  // Start Position & Orientation — deck wants a SUBSET (a deck draws from many start
+  // positions), so this is MULTI-select, unlike Construct's single-pick. Content-driven grid
+  // reusing PictographContainer + OrientationCycler + startPositionManager (the same data).
+  // Grid mode lives here too, so the standalone Grid toggle tile is gone.
+  let showPosOri = $state(false);
+  let posGridMode = $state<GridMode>(GridMode.DIAMOND);
+  let posBlueOri = $state<Orientation>(Orientation.IN);
+  let posRedOri = $state<Orientation>(Orientation.IN);
+  let posShowAll = $state(false); // false = Classic 3, true = all 16 variations
+  let selectedPositions = $state<Set<string>>(new Set());
+  const oriShort = (o: Orientation): string =>
+    ({ [Orientation.IN]: "In", [Orientation.OUT]: "Out", [Orientation.CLOCK]: "Clock", [Orientation.COUNTER]: "Counter" } as Record<string, string>)[o] ?? String(o);
+
+  const posList = $derived<PictographData[]>(
+    posShowAll
+      ? startPositionManager.getAllStartPositionVariations(posGridMode, posBlueOri, posRedOri)
+      : startPositionManager.getDefaultStartPositions(posGridMode, posBlueOri, posRedOri),
+  );
+  function togglePosition(id: string) {
+    const next = new Set(selectedPositions);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    selectedPositions = next;
+  }
+  function selectAllPositions() { selectedPositions = new Set(posList.map((p) => p.id)); }
+  function clearPositions() { selectedPositions = new Set(); }
+  function pickClassic3() {
+    posShowAll = false;
+    selectedPositions = new Set(
+      startPositionManager.getDefaultStartPositions(posGridMode, posBlueOri, posRedOri).map((p) => p.id),
+    );
+  }
+
+  // Deck Prop: reuse the real BentoPropGrid (props by family). The deck's prop is part of the
+  // recipe — it overrides the user's saved global prop setting at generation time.
+  let propType = $state<PropType>(PropType.STAFF);
+  let showProp = $state(false);
+  const propLabel = $derived(propType.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()));
 
   // ---- derived ----------------------------------------------------------------
   const wordMode = $derived(word.trim().length > 0);
@@ -114,16 +156,23 @@
   // Rare: only when you ask for more UNIQUE cards than the entire variation space holds.
   const exhausted = $derived(requested > cardSpace);
 
-  const orientSummary = $derived(
-    (orientation === "nonradial" ? "Non-radial" : cap(orientation)) +
-    (startMode === "all" ? "" : ` · ${cap(startMode)}`),
-  );
+  const periodLabel = $derived(period === "quartered" ? "Quartered" : "Halved");
+  const gridLabel = $derived(posGridMode === GridMode.DIAMOND ? "Diamond" : "Box");
+  const posOriSummary = $derived.by(() => {
+    const ori = posBlueOri === posRedOri ? oriShort(posBlueOri) : `${oriShort(posBlueOri)}/${oriShort(posRedOri)}`;
+    const n = selectedPositions.size;
+    const posPart = n === 0 ? "Any pos" : `${n} pos`;
+    return `${posPart} · ${gridLabel} · ${ori}`;
+  });
 
   const recipe = $derived({
     schemaVersion: 1, generatorVersion: "loop-gen@0.1.0", seed,
     params: {
       ...(wordMode ? { word: word.trim().toUpperCase(), deck: "all-variations" } : { deckSize }),
-      loopType, stepCount, level, grid, orientation, startMode, period,
+      loopType, stepCount, level, period, prop: propType,
+      grid: posGridMode === GridMode.DIAMOND ? "diamond" : "box",
+      startPositions: selectedPositions.size === 0 ? "any" : Array.from(selectedPositions),
+      blueOrientation: posBlueOri, redOrientation: posRedOri,
       propReversals: propRev, handReversals: handRev, dashes,
       ...(level > 1 ? { turnIntensity } : {}),
     },
@@ -200,72 +249,45 @@
         <StepperCard title="Level" currentValue={level} minValue={1} maxValue={4} description="BASE MOTIONS" color={c.level.color} shadowColor={c.level.shadowColor} gridColumnSpan={2} onIncrement={() => (level = clamp(level + 1, 1, 4))} onDecrement={() => (level = clamp(level - 1, 1, 4))} />
         </div>
 
-        <div class="tile" style:view-transition-name="t-grid">
-        <ToggleCard title="Grid" option1={{ value: "diamond", label: "Diamond" }} option2={{ value: "box", label: "Box" }} activeOption={grid} onToggle={(v) => (grid = v as typeof grid)} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} gridColumnSpan={2} />
+        <div class="tile">
+        <BaseCard title="Prop" currentValue={propLabel} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} gridColumnSpan={2} onClick={() => (showProp = true)} />
         </div>
 
-        <div class="tile" style:view-transition-name="t-posori">
-        <BaseCard title="Pos & Ori" currentValue={orientSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showOrient = !showOrient)} />
+        <div class="tile">
+        <BaseCard title="Pos & Ori" currentValue={posOriSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showPosOri = true)} />
         </div>
 
-        <!-- Row 3 -->
-        <div class="tile" style:view-transition-name="t-loop">
-        <BaseCard title="Loop" currentValue={LOOP_TYPE_LABELS[loopType]} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
+        <!-- Loop now also carries Period (chosen together in the loop modal). -->
+        <div class="tile">
+        <BaseCard title="Loop" currentValue={`${LOOP_TYPE_LABELS[loopType]} · ${periodLabel}`} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
         </div>
 
-        <div class="tile" style:view-transition-name="t-period">
-        <ToggleCard title="Period" option1={{ value: "quartered", label: "Quartered" }} option2={{ value: "halved", label: "Halved" }} activeOption={period} onToggle={(v) => (period = v as typeof period)} color={c.period.color} shadowColor={c.period.shadowColor} gridColumnSpan={2} />
-        </div>
+      </div>
 
-        <!-- Row 3 — Max Turns leads the style row. Always mounted; collapses its flex-basis to
-             0 at Level 1 so the row's real widths morph live (crisp) instead of remount+fade. -->
+      <!-- Style row in its OWN flex container so the Turns tile can never wrap onto the dials
+           rows (that caused the row-2 flash). The collapse morph stays inside this row. -->
+      <div class="card-grid style-row">
         <div class="tile turns" class:collapsed={level <= 1} aria-hidden={level <= 1}>
         <TurnIntensityCard currentIntensity={turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => (turnIntensity = v)} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
         </div>
 
         <div class="tile">
-        <StepperCard title="Props" currentValue={TRI.indexOf(propRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i]} color={STYLE_COLORS.props.color} shadowColor={STYLE_COLORS.props.shadow} gridColumnSpan={2} onIncrement={() => (propRev = stepArr(TRI, propRev, 1))} onDecrement={() => (propRev = stepArr(TRI, propRev, -1))} />
+        <StepperCard title="Props" currentValue={TRI.indexOf(propRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i] ?? ""} color={STYLE_COLORS.props.color} shadowColor={STYLE_COLORS.props.shadow} gridColumnSpan={2} onIncrement={() => (propRev = stepArr(TRI, propRev, 1))} onDecrement={() => (propRev = stepArr(TRI, propRev, -1))} />
         </div>
-        <div class="tile" style:view-transition-name="t-hands">
-        <StepperCard title="Hands" currentValue={TRI.indexOf(handRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i]} color={STYLE_COLORS.hands.color} shadowColor={STYLE_COLORS.hands.shadow} gridColumnSpan={2} onIncrement={() => (handRev = stepArr(TRI, handRev, 1))} onDecrement={() => (handRev = stepArr(TRI, handRev, -1))} />
+        <div class="tile">
+        <StepperCard title="Hands" currentValue={TRI.indexOf(handRev)} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => TRI_LABEL[i] ?? ""} color={STYLE_COLORS.hands.color} shadowColor={STYLE_COLORS.hands.shadow} gridColumnSpan={2} onIncrement={() => (handRev = stepArr(TRI, handRev, 1))} onDecrement={() => (handRev = stepArr(TRI, handRev, -1))} />
         </div>
-        <div class="tile" style:view-transition-name="t-dashes">
-        <StepperCard title="Dashes" currentValue={DASH.indexOf(dashes)} minValue={0} maxValue={2} description="FREQUENCY" formatValue={(i: number) => DASH_LABEL[i]} color={STYLE_COLORS.dashes.color} shadowColor={STYLE_COLORS.dashes.shadow} gridColumnSpan={2} onIncrement={() => (dashes = stepArr(DASH, dashes, 1))} onDecrement={() => (dashes = stepArr(DASH, dashes, -1))} />
+        <div class="tile">
+        <StepperCard title="Dashes" currentValue={DASH.indexOf(dashes)} minValue={0} maxValue={2} description="FREQUENCY" formatValue={(i: number) => DASH_LABEL[i] ?? ""} color={STYLE_COLORS.dashes.color} shadowColor={STYLE_COLORS.dashes.shadow} gridColumnSpan={2} onIncrement={() => (dashes = stepArr(DASH, dashes, 1))} onDecrement={() => (dashes = stepArr(DASH, dashes, -1))} />
         </div>
-
-        <!-- Generate -->
-        <button class="generate" style:view-transition-name="t-generate" onclick={generate}>
-          <i class="fas fa-dice"></i>
-          <span>{wordMode ? `Generate ${drawCount} variations` : `Generate ${drawCount}`}</span>
-        </button>
-      </div>
-        {#if showLoop}
-          <LOOPExpandedOverlay
-            currentType={loopType}
-            selectedComponents={loopComponents}
-            onChange={(lt: LOOPType) => { loopType = lt; loopComponents = parseLoopComponents(lt); showLoop = false; }}
-            onClose={() => (showLoop = false)}
-          />
-        {/if}
       </div>
 
-      {#if showOrient}
-        <div class="detail">
-          <span class="detail-title">Orientation &amp; Start</span>
-          <div class="brow"><span class="brow-label">Orientation</span><div class="opts">
-            {#each [["radial", "Radial"], ["nonradial", "Non-radial"], ["split", "Split"]] as [v, l]}
-              <button class="opt" class:on={orientation === v} onclick={() => (orientation = v as typeof orientation)}>{l}</button>
-            {/each}
-          </div></div>
-          <div class="brow"><span class="brow-label">Start</span><div class="opts">
-            {#each [["all", "All"], ["classic", "Classic 3"], ["specific", "Specific"]] as [v, l]}
-              <button class="opt" class:on={startMode === v} onclick={() => (startMode = v as typeof startMode)}>{l}</button>
-            {/each}
-          </div></div>
-          <p class="detail-note">Start position folds in here. “Specific” reveals the position grid (deep tier).</p>
-        </div>
-      {/if}
-
+      <!-- Generate — full width, its own row below both grids -->
+      <button class="generate" onclick={generate}>
+        <i class="fas fa-dice"></i>
+        <span>{wordMode ? `Generate ${drawCount} variations` : `Generate ${drawCount}`}</span>
+      </button>
+      </div>
     </section>
 
     <aside class="rail">
@@ -281,6 +303,114 @@
       <div class="draw-list">{#each drawPreview as id}<span class="draw-id">{id}</span>{/each}</div>
     </aside>
   </div>
+
+  <!-- Big centered modals (deck releaser owns the full viewport). -->
+  {#if showLoop}
+    <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showLoop = false; }}>
+      <div class="loop-col" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+        <div class="loop-host">
+          <LOOPExpandedOverlay
+            currentType={loopType}
+            selectedComponents={loopComponents}
+            onChange={(lt: LOOPType) => { loopType = lt; loopComponents = parseLoopComponents(lt); showLoop = false; }}
+            onClose={() => (showLoop = false)}
+          />
+        </div>
+        <!-- Period chosen alongside the loop; it shows on the Loop card. -->
+        <div class="loop-period">
+          <span class="lp-label">Period</span>
+          <div class="lp-seg">
+            <SegmentedControl
+              options={[{ value: "quartered", label: "Quartered" }, { value: "halved", label: "Halved" }]}
+              value={period}
+              onchange={(v: "quartered" | "halved") => (period = v)}
+              color="accent"
+              size="sm"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if showPosOri}
+    <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showPosOri = false; }}>
+      <div class="picker-overlay posori" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+        <div class="po-header">
+          <h3>Start Positions &amp; Orientation</h3>
+          <button class="po-close" aria-label="Close" onclick={() => (showPosOri = false)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Controls: presets, scope toggle (Simple/All), grid mode — one tidy row -->
+        <div class="pos-controls">
+          <div class="pos-presets">
+            <button class="pc-btn" onclick={() => { posShowAll = true; selectAllPositions(); }}>All</button>
+            <button class="pc-btn" onclick={pickClassic3}>Classic 3</button>
+            <button class="pc-btn" onclick={clearPositions}>Clear</button>
+          </div>
+          <button class="pc-btn pc-scope" class:active={posShowAll} onclick={() => (posShowAll = !posShowAll)}>
+            {posShowAll ? "Simple (3)" : "All Variations (16)"}
+          </button>
+          <div class="pos-gridmode">
+            <SegmentedControl
+              options={[{ value: GridMode.DIAMOND, label: "Diamond" }, { value: GridMode.BOX, label: "Box" }]}
+              value={posGridMode}
+              onchange={(v: GridMode) => { posGridMode = v; }}
+              color="accent"
+              size="sm"
+            />
+          </div>
+        </div>
+
+        <!-- Multi-select position grid (tap to toggle which positions the deck draws from).
+             Advanced (16) view is locked to a 4×4 grid sized to fit without scrolling. -->
+        <div class="po-body" class:all={posShowAll}>
+          <div class="pos-grid" class:all={posShowAll}>
+            {#each posList as p (p.id)}
+              <button
+                class="pos-cell"
+                class:on={selectedPositions.has(p.id)}
+                aria-pressed={selectedPositions.has(p.id)}
+                onclick={() => togglePosition(p.id)}
+              >
+                <PictographContainer pictographData={p} />
+                {#if selectedPositions.has(p.id)}<span class="pos-check">✓</span>{/if}
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <!-- Per-hand orientation -->
+        <div class="pos-ori-row">
+          <OrientationCycler orientation={posBlueOri} onOrientationChange={(o: Orientation) => (posBlueOri = o)} color="blue" />
+          <OrientationCycler orientation={posRedOri} onOrientationChange={(o: Orientation) => (posRedOri = o)} color="red" />
+        </div>
+
+        <button class="po-done" onclick={() => (showPosOri = false)}>
+          Done{#if selectedPositions.size > 0} · {selectedPositions.size} selected{/if}
+        </button>
+      </div>
+    </div>
+  {/if}
+
+  {#if showProp}
+    <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showProp = false; }}>
+      <div class="picker-overlay" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+        <div class="po-header">
+          <h3>Deck Prop</h3>
+          <button class="po-close" aria-label="Close" onclick={() => (showProp = false)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="po-body">
+          <BentoPropGrid selectedPropType={propType} variant="inline" title="Select Prop" onSelect={(p: PropType) => { propType = p; showProp = false; }} />
+        </div>
+        <button class="po-done" onclick={() => (showProp = false)}>Done</button>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -314,7 +444,7 @@
   @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
 
   .grid-pane { display: flex; flex-direction: column; gap: 14px; }
-  .grid-stage { position: relative; }
+  .grid-stage { position: relative; display: flex; flex-direction: column; gap: 10px; }
   /* Flex-wrap, not fixed grid: whatever lands on the last row stretches to fill the
      width equally (3-up stretched when Turns is hidden, 4-up when it appears) — no holes
      at any tile count, and the reflow is the thing that can animate on add/remove. */
@@ -326,8 +456,8 @@
     flex: 1 1 230px; min-width: 200px; height: 120px; min-height: 0;
   }
   .tile > :global(*) { width: 100%; height: 100%; }
-  /* Generate spans the full width on its own row. */
-  .card-grid > .generate { flex: 1 1 100%; height: auto; min-height: 92px; }
+  /* Generate spans the full width on its own row, below both grids. */
+  .grid-stage > .generate { width: 100%; height: auto; min-height: 92px; }
 
   @media (min-width: 1700px) { .layout { max-width: 1700px; } }
 
@@ -386,29 +516,155 @@
   .generate:active { transform: scale(0.985); }
   .generate i { font-size: 22px; }
 
-  .detail {
-    width: 100%;
-    background: rgba(6, 182, 212, 0.1); border: 1.5px solid rgba(6, 182, 212, 0.3);
-    border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
+  /* Deck releaser owns the full viewport (4K), so pickers are BIG centered modals,
+     not grid-confined overlays. Backdrop dims the page; panel centers and goes large. */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    padding: clamp(16px, 4vh, 48px);
+    background: rgba(4, 7, 14, 0.62); backdrop-filter: blur(5px);
   }
-  .detail-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255, 255, 255, 0.6); }
-  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
-  .brow { display: flex; align-items: center; gap: 12px; }
-  .brow-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.5); min-width: 72px; flex-shrink: 0; }
-  .opts { display: flex; gap: 4px; flex: 1; }
-  .opt { flex: 1; min-height: 40px; background: rgba(0, 0, 0, 0.25); border: 1.5px solid rgba(255, 255, 255, 0.15); border-radius: 10px; color: rgba(255, 255, 255, 0.7); cursor: pointer; font-weight: 600; font-size: 12px; padding: 4px 6px; transition: all 150ms; }
-  .opt:active { transform: scale(0.96); }
-  .opt.on { background: rgba(6, 182, 212, 0.28); border-color: rgba(6, 182, 212, 0.7); color: #fff; box-shadow: 0 0 12px rgba(6, 182, 212, 0.2); }
-  .pill { padding: 8px 16px; border-radius: 999px; border: 1.5px solid rgba(255, 255, 255, 0.18); background: rgba(0, 0, 0, 0.25); color: rgba(255, 255, 255, 0.75); font-size: 13px; font-weight: 600; cursor: pointer; }
-  .pill.on { background: rgba(6, 182, 212, 0.25); border-color: rgba(6, 182, 212, 0.7); color: #fff; }
-  .detail-note { margin: 0; font-size: 12px; color: rgba(255, 255, 255, 0.45); }
+  /* Centered, large picker panel — matches LOOPExpandedOverlay's theme chrome. */
+  .picker-overlay {
+    width: min(1080px, 94vw); max-height: min(880px, 90vh);
+    display: flex; flex-direction: column; gap: 12px; padding: 16px;
+    background: linear-gradient(135deg,
+      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 25%, #1a1a2e) 0%,
+      color-mix(in srgb, var(--theme-accent, #818cf8) 15%, #1a1a2e) 50%,
+      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 20%, #1a1a2e) 100%);
+    border-radius: 18px; border: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 40px color-mix(in srgb, var(--theme-accent) 28%, transparent);
+    overflow: hidden;
+  }
+  /* Pos & Ori: DEFINITE-height modal (not just max-height) so the advanced 4×4 grid never
+     scrolls. The grid's width is capped to the body's container height (100cqh), so the body
+     MUST have a definite height that doesn't itself depend on the grid — otherwise width and
+     height chase each other in a circle and the grid collapses. A fixed modal height makes
+     .po-body's flex:1 height a stable external budget that 100cqh resolves against.
+     Budget: header ~34 + controls ~38 + ori row ~38 + done ~46, four 14px gaps (56) and
+     16px×2 padding (32) ≈ 244px of chrome. At 720px tall that leaves ~476px for .po-body,
+     and a square 4×4 grid capped to (476 − 30) = 446px fits inside it with room to spare. */
+  .picker-overlay.posori { width: min(720px, 94vw); height: min(720px, 90vh); gap: 14px; }
+  .pos-controls {
+    flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
+  }
+  .pos-presets { display: flex; gap: 6px; }
+  .pc-btn {
+    height: 36px; padding: 0 14px; border-radius: 9px;
+    background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.16);
+    color: var(--theme-text, #fff); font-size: 12.5px; font-weight: 600; line-height: 1; cursor: pointer;
+    transition: background 150ms, border-color 150ms;
+    display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;
+  }
+  .pc-btn:hover { background: rgba(255, 255, 255, 0.16); }
+  .pc-scope {
+    border-color: color-mix(in srgb, var(--theme-accent) 45%, transparent);
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+  }
+  .pc-scope.active {
+    border-color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 28%, transparent);
+  }
+  .pc-scope:hover { background: color-mix(in srgb, var(--theme-accent) 36%, transparent); }
+  /* Diamond/Box: cap its width so the segmented control isn't a full-width bar, and lower the
+     local touch-target floor so size="sm" reads as a compact pill, not a chunky 44px bar. */
+  .pos-gridmode { width: clamp(150px, 38%, 200px); --min-touch-target: 34px; }
+
+  /* The body is the flex remainder; the grid lives inside it, centered. Advanced view never
+     scrolls — overflow hidden plus a height-capped grid guarantees 4×4 fits. */
+  .po-body.all {
+    overflow: hidden; display: flex; align-items: center; justify-content: center;
+    container-type: size; /* establishes the cqh budget the advanced grid caps its width to */
+  }
+
+  .pos-grid {
+    display: grid; gap: 10px; align-content: center; justify-content: center;
+    width: 100%; margin: 0 auto;
+  }
+  /* Simple (3): three across. */
+  .pos-grid:not(.all) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: 480px;
+  }
+  /* Advanced (16): exactly 4 columns × 4 rows, all visible, no scroll. Each cell is square
+     (aspect-ratio 1/1), columns and rows both gap 10px. With 4 columns + 3 col-gaps,
+     one cell = (W − 30) / 4, so the grid HEIGHT = 4·cell + 3·10 = (W − 30) + 30 = W — the
+     equal col/row gaps cancel, so a square-celled 4×4 grid is exactly as tall as it is wide.
+     Capping width at min(100%, body-height − 30) therefore caps height ≤ body height, so it
+     never overflows at any viewport; on tall viewports it caps at 460px for sane cell size. */
+  .pos-grid.all {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: min(100%, calc(100cqh - 30px), 460px);
+  }
+  .pos-cell {
+    position: relative; aspect-ratio: 1 / 1; padding: 5px; cursor: pointer;
+    background: rgba(0, 0, 0, 0.25); border: 2px solid transparent; border-radius: 12px;
+    transition: border-color 150ms, transform 120ms; min-width: 0;
+  }
+  .pos-cell:hover { border-color: rgba(255, 255, 255, 0.3); }
+  .pos-cell:active { transform: scale(0.97); }
+  .pos-cell.on { border-color: var(--theme-accent, #6366f1); box-shadow: 0 0 14px color-mix(in srgb, var(--theme-accent) 40%, transparent); }
+  .pos-cell :global(.pictograph),
+  .pos-cell :global(.pictograph svg) { width: 100%; height: 100%; display: block; }
+  .pos-check {
+    position: absolute; top: 4px; right: 5px; width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;
+    color: #06121a; background: var(--theme-accent, #6366f1);
+  }
+  /* Orientation cyclers: compact, side by side. Lower the local touch-target floor so they
+     read as tidy ~38px pills rather than the default 44–48px bars, and cap their height. */
+  .pos-ori-row {
+    flex-shrink: 0; display: flex; gap: 12px; justify-content: center;
+    --min-touch-target: 38px;
+  }
+  .pos-ori-row :global(.orientation-cycler) {
+    flex: 0 1 200px; min-height: 38px; border-radius: 10px;
+  }
+
+  /* Loop modal: let the overlay flow (not absolute) so the panel sizes to content —
+     no dead space below the cards. Period footer sits beneath it. */
+  .loop-col {
+    width: min(1000px, 94vw); max-height: 92vh;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .loop-host { position: relative; min-height: 0; overflow: hidden; border-radius: 18px; }
+  .loop-host :global(.loop-expanded-overlay) {
+    position: relative !important; inset: auto !important;
+    width: 100%; max-height: 82vh;
+  }
+  /* Let the loop grid size to its cards — no forced min-height (was 260px → dead space). */
+  .loop-host :global(.grid-container) { flex: 0 0 auto; }
+  .loop-period {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 14px;
+    padding: 10px 16px; background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px;
+  }
+  .lp-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255, 255, 255, 0.72); }
+  /* Compact period toggle (mirrors .pos-gridmode): capped width, smaller touch floor. */
+  .lp-seg { width: clamp(220px, 46%, 340px); --min-touch-target: 34px; }
+  .po-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .po-header h3 { margin: 0; font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 0.3px; }
+  .po-close {
+    background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px;
+    color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; padding: 8px;
+  }
+  .po-close svg { width: 20px; height: 20px; }
+  .po-close:hover { background: rgba(255, 255, 255, 0.15); }
+  .po-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+  .po-done {
+    flex-shrink: 0; width: 100%; padding: 12px 20px; min-height: 44px;
+    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border: 2px solid var(--theme-accent); border-radius: 10px; color: #fff;
+    font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer;
+  }
+  .po-done:hover { background: color-mix(in srgb, var(--theme-accent) 45%, transparent); }
 
   .rail { display: flex; flex-direction: column; gap: 14px; }
   .stat { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 18px; text-align: center; }
   .stat-big { font-size: 44px; font-weight: 800; color: #22c55e; font-variant-numeric: tabular-nums; line-height: 1; }
   .stat-big.warn { color: #fbbf24; }
   .stat-sub { margin-top: 8px; font-size: 12px; color: rgba(255, 255, 255, 0.55); display: flex; flex-direction: column; gap: 2px; }
-  .cap { color: #fbbf24; } .ok { color: rgba(255, 255, 255, 0.4); }
   .recipe-head, .draw-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255, 255, 255, 0.5); }
   .copy { padding: 4px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: none; color: #fff; font-size: 12px; cursor: pointer; }
   .recipe { margin: 0; max-height: 300px; overflow: auto; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 14px; font-size: 12px; line-height: 1.5; color: #cbd5e1; }

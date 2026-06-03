@@ -7,7 +7,7 @@
  * so this translator stays format-neutral.
  */
 
-import type { FireIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import type { FireIntent } from "$lib/shared/effects/domain/effects-config";
 import type {
   FirePassPayload,
   FireSourcePoint,

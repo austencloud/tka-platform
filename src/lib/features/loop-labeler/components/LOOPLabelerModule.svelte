@@ -21,8 +21,8 @@
   import { createSectionModeState } from "../state/section-mode-state.svelte";
   import { createBeatPairModeState } from "../state/steppair-mode-state.svelte";
   import { createWholeModeState } from "../state/whole-mode-state.svelte";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import type { FilterMode } from "../domain/models/label-models";
   import { SECTION_COLORS } from "../domain/constants/section-colors";
 

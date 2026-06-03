@@ -1,9 +1,9 @@
 <!-- StartTile.svelte - Reusable start position tile for all grid modes -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-  import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+  import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import StepCell from "./StepCell.svelte";
 

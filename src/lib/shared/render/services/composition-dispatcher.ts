@@ -1,5 +1,5 @@
 // src/lib/shared/render/services/implementations/CompositionDispatcher.ts
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
 import type { CompositionProgressCallback, RenderCanvas } from "./types";
 import type { ImageComposer } from "./image-composer";
@@ -32,6 +32,13 @@ export type CompositionWorkerInMessage =
       qrBitmap: ImageBitmap | null;
     }
   | { type: "cancel"; id: number }
+  | {
+      // Re-seed ONLY the override resolver seam (arrow placements) on a warm
+      // worker, without tearing down the expensive asset/SVG caches. Sent after
+      // the user saves a Fix-Arrows adjustment so the next compose reflects it.
+      type: "update-overrides";
+      overrideBundle: import("./override-placement-bundle").OverridePlacementBundle;
+    }
   | { type: "probe" };
 
 export type CompositionWorkerOutMessage =
@@ -83,6 +90,11 @@ export class CompositionDispatcher {
   private pendingRequests = new Map<number, PendingRequest>();
   private pendingBundle: import("./card-asset-bundle").AssetBundle | null = null;
   private pendingOverrideBundle: import("./override-placement-bundle").OverridePlacementBundle | null = null;
+  private pendingSignature: string | null = null;
+  private seededSignature: string | null = null;
+  // Open while a pre-warm builds its asset bundle. ensureInitialized awaits it so
+  // a composeFrontBitmap that races in during the build can't seed the pool empty.
+  private seedGate: Promise<void> | null = null;
 
   private static workerSupport: boolean | null = null;
   private static probing: Promise<boolean> | null = null;
@@ -100,6 +112,59 @@ export class CompositionDispatcher {
   /** Set the override placement bundle seeded into each worker at init. */
   setOverrideBundle(bundle: import("./override-placement-bundle").OverridePlacementBundle): void {
     this.pendingOverrideBundle = bundle;
+  }
+
+  /**
+   * Push a fresh override bundle to a WARM pool without re-seeding its (expensive)
+   * asset caches. Updates the pending bundle so any worker initialized later seeds
+   * fresh, and posts `update-overrides` to every live worker so the NEXT compose
+   * reflects the change. Per-worker message order is FIFO, so a compose posted
+   * after this call is processed by the re-seeded worker. No-op-safe before init
+   * (pending bundle alone suffices — init will seed it).
+   */
+  updateOverrideBundle(bundle: import("./override-placement-bundle").OverridePlacementBundle): void {
+    this.pendingOverrideBundle = bundle;
+    for (const entry of this.workers) {
+      entry.worker.postMessage({
+        type: "update-overrides",
+        overrideBundle: bundle,
+      } satisfies CompositionWorkerInMessage);
+    }
+  }
+
+  /** Record the bundle signature that the next initPool will mark as seeded. */
+  setPendingSignature(signature: string): void {
+    this.pendingSignature = signature;
+  }
+
+  /** The signature of the bundle the pool is currently seeded with (null if unseeded). */
+  getSeededSignature(): string | null {
+    return this.seededSignature;
+  }
+
+  /**
+   * Reserve an upcoming seed. Called SYNCHRONOUSLY by prewarmCardPool BEFORE its
+   * async asset-bundle build, so any composeFrontBitmap that races in during the
+   * build waits (via the seed gate in ensureInitialized) for the real bundle
+   * instead of seeding the pool empty. A signature change tears down the stale
+   * pool. Returns a resolver to call once the bundle has been set (or the build
+   * failed) — it opens the gate so waiters proceed.
+   */
+  beginSeed(signature: string): () => void {
+    this.pendingSignature = signature;
+    if (this.seededSignature !== null && this.seededSignature !== signature) {
+      this.terminate();
+    }
+    let resolve!: () => void;
+    const gate = new Promise<void>((r) => {
+      resolve = r;
+    });
+    this.seedGate = gate;
+    return () => {
+      resolve();
+      // Only clear if still our gate — a later beginSeed may have replaced it.
+      if (this.seedGate === gate) this.seedGate = null;
+    };
   }
 
   static canUseWorker(): boolean {
@@ -251,6 +316,7 @@ export class CompositionDispatcher {
     options: Partial<SequenceExportOptions>,
     qrBitmap: ImageBitmap | null = null,
     signal?: AbortSignal,
+    onProgress?: CompositionProgressCallback,
   ): Promise<ImageBitmap> {
     await this.ensureInitialized();
 
@@ -264,6 +330,7 @@ export class CompositionDispatcher {
       const pending: PendingRequest = {
         resolve: () => {}, // unused for the bitmap path
         reject,
+        onProgress,
         signal,
         workerEntry: worker,
         resolveBitmap: resolve,
@@ -369,7 +436,11 @@ export class CompositionDispatcher {
 
   // ---- Pool lifecycle ----
 
-  private async ensureInitialized(): Promise<void> {
+  async ensureInitialized(): Promise<void> {
+    // If a pre-warm is mid-flight (building its bundle), wait for it to set the
+    // bundle before seeding — otherwise this call would seed the pool empty and
+    // cache asset-less renders. The gate opens once prewarm has set the bundle.
+    if (this.seedGate) await this.seedGate;
     if (this.initialized) return;
     if (this.initializing) return this.initializing;
     this.initializing = this.initPool();
@@ -491,6 +562,7 @@ export class CompositionDispatcher {
 
     this.initialized = true;
     this.initializing = null;
+    this.seededSignature = this.pendingSignature;
   }
 
   private pickWorker(): WorkerEntry {
@@ -510,6 +582,7 @@ export class CompositionDispatcher {
     this.workers = [];
     this.initialized = false;
     this.initializing = null;
+    this.seededSignature = null;
 
     for (const [, pending] of this.pendingRequests) {
       pending.reject(new Error("Dispatcher terminated"));

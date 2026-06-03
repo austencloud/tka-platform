@@ -1,5 +1,5 @@
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { VariationConstraints } from "../domain/models/spell-models";
 import type { ConstraintSet } from "$lib/shared/sequence-engine/constraints/types";

@@ -8,7 +8,7 @@
 import {
   getLetterType,
   type Letter,
-} from "../../../foundation/domain/models/Letter";
+} from "../../../foundation/domain/models/letter";
 import { LETTER_TYPE_COLORS } from "../domain/constants/pictograph-constants";
 
 /**

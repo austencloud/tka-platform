@@ -16,8 +16,8 @@ import type { Ink2DParams } from "$lib/shared/effects/translators/canvas2d-types
 import {
   Ink2DRenderer,
   type InkTipInput,
-} from "$lib/shared/effects/renderers/Ink2DRenderer";
-import { EffectRenderer } from "./effects/EffectRenderer";
+} from "$lib/shared/effects/renderers/ink-2d-renderer";
+import { EffectRenderer } from "./effects/effect-renderer";
 
 export class InkOverlayRenderer extends EffectRenderer {
   private renderer = new Ink2DRenderer();
@@ -39,8 +39,8 @@ export class InkOverlayRenderer extends EffectRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "./effects/EffectPlugin";
-import type { InkIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import type { EffectPlugin } from "./effects/effect-plugin";
+import type { InkIntent } from "$lib/shared/effects/domain/effects-config";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 
 export const inkEffectPlugin: EffectPlugin<InkIntent> = {

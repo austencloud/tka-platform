@@ -22,13 +22,13 @@ import type {
   SmokeIntent,
   InkIntent,
   FrostIntent,
-} from "../domain/EffectsConfig";
-import type { WaterPalette } from "../domain/WaterPalettes";
-import type { BubblePalette } from "../domain/BubblePalettes";
-import type { PetalPalette } from "../domain/PetalPalettes";
-import type { SmokePalette } from "../domain/SmokePalettes";
-import type { InkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
-import type { FrostPalette } from "../domain/FrostPalettes";
+} from "../domain/effects-config";
+import type { WaterPalette } from "../domain/water-palettes";
+import type { BubblePalette } from "../domain/bubble-palettes";
+import type { PetalPalette } from "../domain/petal-palettes";
+import type { SmokePalette } from "../domain/smoke-palettes";
+import type { InkPalette } from "$lib/shared/3d/effects/ink/ink-palettes";
+import type { FrostPalette } from "../domain/frost-palettes";
 
 export interface Trails3DParams extends TrailsIntent {
   /** World-space tube radius, meters. Derived from thickness. */

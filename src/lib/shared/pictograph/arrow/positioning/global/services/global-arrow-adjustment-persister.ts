@@ -24,7 +24,7 @@ import {
   generateAdjustmentKeyString,
   type GlobalArrowAdjustment,
   type GlobalArrowAdjustmentInput,
-} from "../domain/GlobalArrowAdjustment";
+} from "../domain/global-arrow-adjustment";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("GlobalArrowAdjustmentPersister");

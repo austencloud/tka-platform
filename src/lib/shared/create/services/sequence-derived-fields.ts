@@ -8,9 +8,9 @@
  * never trusted — only recomputed. Letter is async and handled separately
  * (deriveSequenceLetters / recalculateLetterForBeat).
  */
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";

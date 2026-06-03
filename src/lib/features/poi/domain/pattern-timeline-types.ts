@@ -9,7 +9,7 @@
  * later if the UX stabilizes.
  */
 
-import type { StripPattern } from "$lib/shared/poi/domain/StripPattern";
+import type { StripPattern } from "$lib/shared/poi/domain/strip-pattern";
 
 export interface PatternClip {
   readonly id: string;

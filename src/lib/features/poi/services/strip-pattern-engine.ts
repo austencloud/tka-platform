@@ -1,5 +1,5 @@
 import { fromImageData } from "./image-pattern-loader";
-import type { StripPattern, PatternParams, StripFrame } from "$lib/shared/poi/domain/StripPattern";
+import type { StripPattern, PatternParams, StripFrame } from "$lib/shared/poi/domain/strip-pattern";
 import type { IPatternPreset } from "../domain/pattern-preset";
 import { BUILT_IN_PRESETS } from "../domain/pattern-preset";
 

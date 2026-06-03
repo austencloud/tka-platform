@@ -23,9 +23,9 @@
     HandMotionType,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode, type GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import type { Letter } from "$lib/shared/foundation/domain/models/letter";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { calculateMotionType, calculateRotationDirection } from "$lib/features/create/assemble/services/hand-path-motion-calculator";
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";

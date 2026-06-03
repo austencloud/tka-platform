@@ -13,10 +13,10 @@
   import { useTask, useThrelte } from "@threlte/core";
   import { Vector3, Color } from "three";
   import { onDestroy, untrack } from "svelte";
-  import { LedRenderer3D, type LedTipInput } from "./LedRenderer3D";
-  import type { DynamicLightManager, LightHandle } from "../lighting/DynamicLightManager";
+  import { LedRenderer3D, type LedTipInput } from "./led-renderer-3d";
+  import type { DynamicLightManager, LightHandle } from "../lighting/dynamic-light-manager";
   import type { QualityTier } from "../types";
-  import type { LedMaterialOptions } from "./LedMaterial3D";
+  import type { LedMaterialOptions } from "./led-material-3d";
 
   interface Props {
     /** Active LED tip positions and colors for this frame */

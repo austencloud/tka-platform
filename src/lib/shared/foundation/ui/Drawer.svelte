@@ -17,17 +17,17 @@
 <script lang="ts">
   import "./drawer/Drawer.css";
   import { onMount, onDestroy, untrack, type Snippet } from "svelte";
-  import { responsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
-  import { SwipeToDismiss } from "./drawer/SwipeToDismiss";
-  import { FocusTrap } from "./drawer/FocusTrap";
-  import { SnapPoints, type SnapPointValue } from "./drawer/SnapPoints";
-  import { DrawerEffects } from "./drawer/DrawerEffects";
+  import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
+  import { SwipeToDismiss } from "./drawer/swipe-to-dismiss";
+  import { FocusTrap } from "./drawer/focus-trap";
+  import { SnapPoints, type SnapPointValue } from "./drawer/snap-points";
+  import { DrawerEffects } from "./drawer/drawer-effects";
   import {
     generateDrawerId,
     registerDrawer,
     unregisterDrawer,
     isTopDrawer,
-  } from "./drawer/DrawerStack";
+  } from "./drawer/drawer-stack";
 
   type CloseReason = "backdrop" | "escape" | "programmatic";
 
@@ -48,6 +48,7 @@
     // Focus trap options
     trapFocus = true,
     initialFocusElement = null,
+    focusContainerOnOpen = false,
     returnFocusOnClose = true,
     setInertOnSiblings = true,
     // Snap points options
@@ -85,6 +86,12 @@
     trapFocus?: boolean;
     /** Element to focus when drawer opens. Default: first focusable element */
     initialFocusElement?: HTMLElement | null;
+    /**
+     * Focus the drawer container itself on open instead of its first focusable
+     * control. Avoids a stray `:focus-visible` ring on a header button when the
+     * drawer opens. Default: false
+     */
+    focusContainerOnOpen?: boolean;
     /** Return focus to trigger element when drawer closes. Default: true */
     returnFocusOnClose?: boolean;
     /** Set inert attribute on sibling elements when open. Default: true */
@@ -238,6 +245,7 @@
     // Create FocusTrap
     focusTrap = new FocusTrap({
       initialFocus: initialFocusElement ?? undefined,
+      focusContainerOnInitial: focusContainerOnOpen,
       returnFocusOnDeactivate: returnFocusOnClose,
       setInertOnSiblings: setInertOnSiblings,
     });
@@ -525,6 +533,7 @@
     if (!focusTrap) return;
     focusTrap.updateOptions({
       initialFocus: initialFocusElement,
+      focusContainerOnInitial: focusContainerOnOpen,
       returnFocusOnDeactivate: returnFocusOnClose,
       setInertOnSiblings: setInertOnSiblings,
     });
@@ -608,3 +617,17 @@
     </div>
   </dialog>
 {/if}
+
+<style>
+  /*
+   * The <dialog> is a non-interactive focus entry point: focus lands here on
+   * open (see FocusTrap.focusContainerOnInitial) so no header control lights up
+   * a :focus-visible ring. Suppress the container's own ring — the global
+   * `*:focus-visible` rule would otherwise outline the whole drawer. Real
+   * controls inside still show focus rings when the user Tabs to them.
+   */
+  dialog.drawer-content:focus,
+  dialog.drawer-content:focus-visible {
+    outline: none;
+  }
+</style>

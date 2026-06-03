@@ -9,8 +9,8 @@
  * This is the web equivalent of the desktop app's special placement JSON modification.
  */
 
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import type { TurnsTupleGenerator } from "./turns-tuple-generator";
 import {
   generateOrientationKey,

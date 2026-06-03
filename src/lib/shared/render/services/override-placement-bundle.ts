@@ -8,10 +8,10 @@ import { getDefaultOverrideRepository } from "$lib/shared/pictograph/arrow/posit
 import { getSpecialOverrideRepository } from "$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-singleton";
 import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
 import { getPropGeometryRepository } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/services/prop-geometry-singleton";
-import type { DefaultArrowPlacementDoc } from "$lib/shared/pictograph/arrow/positioning/default-override/domain/DefaultArrowPlacement";
-import type { SpecialArrowPlacement } from "$lib/shared/pictograph/arrow/positioning/special-override/domain/SpecialArrowPlacement";
-import type { GlobalArrowAdjustment } from "$lib/shared/pictograph/arrow/positioning/global/domain/GlobalArrowAdjustment";
-import type { PropGeometryAdjustment } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/PropGeometryAdjustment";
+import type { DefaultArrowPlacementDoc } from "$lib/shared/pictograph/arrow/positioning/default-override/domain/default-arrow-placement";
+import type { SpecialArrowPlacement } from "$lib/shared/pictograph/arrow/positioning/special-override/domain/special-arrow-placement";
+import type { GlobalArrowAdjustment } from "$lib/shared/pictograph/arrow/positioning/global/domain/global-arrow-adjustment";
+import type { PropGeometryAdjustment } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/prop-geometry-adjustment";
 
 export interface OverridePlacementBundle {
   default: DefaultArrowPlacementDoc[];

@@ -16,7 +16,7 @@
   } from "../state/train-practice-state.svelte";
   import ResultsScreen from "./ResultsScreen.svelte";
   import type { MediaPipeDetector } from "../services/media-pipe-detector";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { getSessionCompletionProcessor } from "$lib/features/train/get-session-completion-processor";
   import { getPositionDetector } from "$lib/features/train/get-position-detector";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";

@@ -20,7 +20,7 @@ import {
 import { getAuth } from "firebase/auth";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/is-permission-denied-error";
 import type {
   LeaderboardCategory,
   LeaderboardData,

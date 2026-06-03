@@ -32,7 +32,14 @@ export class Canvas2DGridFadeManager {
     if (visible !== this.previousVisible) {
       this.targetVisible = visible;
       this.isTransitioning = true;
-      this.transitionStartTime = performance.now();
+      // Stamp the start lazily on the next updateProgress, using the SAME clock
+      // the caller drives us with — never wall time. The live path drives rAF
+      // `performance.now()`, the offscreen export path drives a virtual clock from
+      // 0; stamping `performance.now()` here and subtracting the virtual clock in
+      // updateProgress produced a massively negative elapsed in export, clamping
+      // alpha to 0. (Grid never flips mid-export today, so this never bit the grid
+      // — but it shares the manager's contract; keep both managers clock-agnostic.)
+      this.transitionStartTime = null;
       this.previousVisible = visible;
     }
   }
@@ -41,13 +48,19 @@ export class Canvas2DGridFadeManager {
    * Update transition progress and return current alpha
    */
   updateProgress(currentTime: number): GridFadeState {
-    if (!this.isTransitioning || this.transitionStartTime === null) {
+    if (!this.isTransitioning) {
       this.currentAlpha = this.targetVisible ? 1 : 0;
       return {
         alpha: this.currentAlpha,
         isTransitioning: false,
         targetVisible: this.targetVisible,
       };
+    }
+
+    // Lazily stamp the transition start with the caller's clock (see setVisible),
+    // so the start time and the elapsed measurement always share one time source.
+    if (this.transitionStartTime === null) {
+      this.transitionStartTime = currentTime;
     }
 
     const elapsed = currentTime - this.transitionStartTime;

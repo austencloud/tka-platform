@@ -1,29 +1,31 @@
 <script lang="ts">
 
 import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRenderer";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CardFooter } from "../../domain/models/DeckRelease";
   import type { CardSizeId } from "../../domain/card-sizes";
   import type { CardPair } from "../../services/types";
   import type { PrintRenderOptions } from "../../services/types";
   import type { TnDElement } from "../../domain/tnd-element";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
   import { planPrintSlots } from "../../services/print-slot-planner";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getCatalogLayoutPolicy } from "../../domain/catalog-layout-policy";
   import { cardCache, type RenderedCard, type CachedCard } from "./print-preview-cache";
   import { deckCardBlobCache, blobToDataUrl, canvasToBlob } from "../../services/DeckCardBlobCache";
   import { hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
-  import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
+  import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
+  import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
+  import { buildOverridePlacementBundle } from "$lib/shared/render/services/override-placement-bundle";
   import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
 
   // Render-schema version baked into every card cache key (memory + IndexedDB).
   // Bump when rendered pixels change for reasons NOT captured by the keyed
   // options below — e.g. the canonical profile changes. Rotates all keys so
   // stale persisted renders self-invalidate.
-  const CARD_RENDER_SCHEMA = "v4";
+  const CARD_RENDER_SCHEMA = "v5";
 
   interface Props {
     sequences: SequenceData[];
@@ -60,6 +62,10 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     deckId?: string;
     /** Deck name for QR attribution tracking */
     deckName?: string;
+    /** Concise recipe line (deck label · loop · period · length · level · turns ·
+     *  grid · prop). Printed centered in each sheet's top margin by the PDF
+     *  exporter; the preview mirrors it in the same spot so screen == print. */
+    deckSummary?: string;
     /**
      * Pin prop types for the render instead of reading live settings. Set when
      * viewing a released deck so cached card renders stay valid across setting
@@ -96,6 +102,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     showBacks = false,
     deckId,
     deckName,
+    deckSummary,
     bluePropType,
     redPropType,
     sideFilter = null,
@@ -110,8 +117,22 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   let renderedCards: RenderedCard[] = $state([]);
   let renderProgress = $state(0);
-  let renderTotal = $state(0);
+  // Denominator anchored to the live sequence count, never a mutable snapshot.
+  // A stale render run (e.g. deck size 100 → 90) can't leave 100 lingering here.
+  const renderTotal = $derived(sequences.length);
   let isRendering = $state(false);
+  // Pre-render setup feedback so "0 / N" never looks frozen. "preparing" =
+  // resolving short codes / cold Firestore init; "rendering" = lanes running
+  // (first card still warms the worker, shown as indeterminate until progress>0).
+  let renderStage = $state<"preparing" | "rendering">("rendering");
+  let prepDone = $state(0);
+  let prepTotal = $state(0);
+  // Piece-level progress: each card's front render places one SVG pictograph per
+  // beat and reports per-beat progress. We sum the per-card fractions into a
+  // deck-wide "pieces placed" count so the bar advances smoothly within every
+  // card (not just one tick per finished card). Driven by the render lanes below.
+  let piecesDone = $state(0);
+  let piecesTotal = $state(0);
 
   let layout = $derived(getPageLayout(cardSize));
   let sizeSpec = $derived(CARD_SIZES[cardSize]);
@@ -153,6 +174,20 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   function capitalize(s: string | null): string {
     return s ? s[0]!.toUpperCase() + s.slice(1) : "";
+  }
+
+  // Push the latest arrow-placement overrides (special/default/global/prop-geom)
+  // into the warm worker pool before composing. The seeded worker bundle is set
+  // once at pool init, so a Fix-Arrows save made afterward would otherwise never
+  // reach the worker — the re-rendered card would show the OLD arrow position.
+  // Cheap (re-seeds resolver state only, not the asset/SVG caches); call once per
+  // render run, not per card.
+  function refreshOverrideBundle(): void {
+    try {
+      getCompositionDispatcher().updateOverrideBundle(buildOverridePlacementBundle());
+    } catch (err) {
+      console.warn("[PrintPreview] override bundle refresh failed:", err);
+    }
   }
 
   interface SheetSlot {
@@ -289,7 +324,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     if (seqs.length === 0) {
       renderedCards = [];
       renderProgress = 0;
-      renderTotal = 0;
       isRendering = false;
       return;
     }
@@ -298,8 +332,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   });
 
   async function renderAll(seqs: SequenceData[], generation: number) {
-
-    renderTotal = seqs.length;
+    // renderTotal is derived from `sequences` — no assignment needed here.
 
     // Phase 1: Hydrate in-memory cache from IndexedDB for any misses
     const missKeys: string[] = [];
@@ -357,7 +390,19 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     // completion; holes show as blank cells until filled.
     isRendering = true;
     renderProgress = 0;
+    renderStage = "preparing";
+    prepDone = 0;
+    prepTotal = 0;
     renderedCards = [];
+    // Sync the worker pool with any arrow overrides saved since it was seeded, so
+    // freshly-edited placements render (not the stale init-time bundle).
+    refreshOverrideBundle();
+    // Per-card piece budgets (one piece per beat). Cached/fast cards count as
+    // instantly placed; live renders fill in via per-beat progress callbacks.
+    const perCardPieces = seqs.map((s) => Math.max(1, s.steps?.length ?? 1));
+    const cardPieceDone = new Array(seqs.length).fill(0);
+    piecesTotal = perCardPieces.reduce((a, b) => a + b, 0);
+    piecesDone = 0;
     onRenderStateChange?.({ isRendering: true, progress: 0, total: seqs.length });
 
     const renderer = getPrintCardRenderer();
@@ -366,14 +411,20 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     // render lanes fan out. Without this, each lane's first render does a
     // serial ~380ms Firestore round-trip (the cold-deck bottleneck) which
     // also pegs the main thread and freezes the Print Deck modal. Best-effort:
-    // any miss falls through to per-card resolution at render time.
-    await getShortCodeManager().resolveCodesForDeck(seqs, {
-      bluePropType: resolvedBlueProp,
-      redPropType: resolvedRedProp,
-      deckId,
-      deckName,
-    });
+    // any miss falls through to per-card resolution at render time. Reports
+    // chunk progress so the bar moves during the otherwise-silent cold start.
+    await getShortCodeManager().resolveCodesForDeck(
+      seqs,
+      { bluePropType: resolvedBlueProp, redPropType: resolvedRedProp, deckId, deckName },
+      (done, total) => {
+        if (generation === renderGeneration) { prepDone = done; prepTotal = total; }
+      },
+    );
     if (generation !== renderGeneration) return;
+
+    // Codes resolved — lanes start. First card still warms the worker, so the
+    // bar stays indeterminate until renderProgress ticks past 0.
+    renderStage = "rendering";
 
     const cards: RenderedCard[] = new Array(seqs.length);
     const pairs: (CardPair | null)[] = new Array(seqs.length).fill(null);
@@ -387,6 +438,16 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       const cacheKey = buildCacheKey(seq, stepCount, i);
       const cached = cardCache.get(cacheKey);
 
+      // Surface this card's per-beat placement into the deck-wide piece count.
+      // Each beat is one SVG pictograph; current/total are the beats of THIS
+      // card, normalized to its budget so the global bar stays proportional
+      // even if the render reports a different beat count than steps.length.
+      const reportPieces = (current: number, total: number) => {
+        if (generation !== renderGeneration || total <= 0) return;
+        cardPieceDone[i] = Math.min(1, current / total) * perCardPieces[i]!;
+        piecesDone = cardPieceDone.reduce((a, b) => a + b, 0);
+      };
+
       try {
         if (cached) {
           cards[i] = cached.rendered;
@@ -398,7 +459,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
           // independent and each allocate their own canvas/container, so render
           // them together rather than front-then-back.
           const [frontCanvas, backCanvas] = await Promise.all([
-            renderer.renderFront(seq, options),
+            renderer.renderFront(seq, options, (p) => reportPieces(p.current, p.total)),
             renderer.renderBack(seq, options),
           ]);
 
@@ -425,6 +486,10 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
       completed++;
       if (generation === renderGeneration) {
+        // This card is done — count all its pieces (covers cache hits, which
+        // never fire per-beat progress, and rounds the live count up to full).
+        cardPieceDone[i] = perCardPieces[i]!;
+        piecesDone = cardPieceDone.reduce((a, b) => a + b, 0);
         renderProgress = completed;
         // `cards` is a sparse array (assigned by index); Array.from visits every
         // slot — including not-yet-rendered holes — so the result is dense and
@@ -505,6 +570,10 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     cardCache.delete(cacheKey);
     deckCardBlobCache.delete(cacheKey).catch(() => {});
 
+    // A single-card refresh is the explicit "I just fixed this card's arrows"
+    // path — push the saved overrides to the worker before recomposing.
+    refreshOverrideBundle();
+
     const frontCanvas = await renderer.renderFront(seq, options);
     const backCanvas = await renderer.renderBack(seq, options);
 
@@ -554,9 +623,39 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     </div>
   {:else}
     {#if isRendering}
-      <div class="progress-bar-container" role="progressbar" aria-valuenow={renderProgress} aria-valuemin={0} aria-valuemax={renderTotal}>
-        <div class="progress-bar-fill" style:width="{(renderProgress / renderTotal) * 100}%"></div>
-        <span class="progress-label">Rendering {renderProgress} / {renderTotal}</span>
+      {@const preparing = renderStage === "preparing"}
+      {@const prepFraction = prepTotal > 0 ? prepDone / prepTotal : 0}
+      {@const pieceFraction = piecesTotal > 0 ? piecesDone / piecesTotal : 0}
+      <!-- Determinate whenever we have a real count to show: short-code resolve
+           progress while preparing, then per-piece (per-beat) placement while
+           rendering. Only the brief cold worker-warm before any data is shown
+           stays indeterminate. -->
+      {@const determinate = preparing ? prepTotal > 0 : piecesTotal > 0}
+      {@const fraction = preparing ? prepFraction : pieceFraction}
+      <div
+        class="progress-bar-container"
+        class:indeterminate={!determinate}
+        role="progressbar"
+        aria-valuenow={determinate ? Math.round(fraction * 100) : undefined}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-busy={!determinate}
+      >
+        {#if !determinate}
+          <div class="progress-bar-fill indeterminate-fill"></div>
+          <span class="progress-label">
+            {preparing ? "Preparing renderer…" : "Warming renderer…"}
+          </span>
+        {:else}
+          <div class="progress-bar-fill" style:width="{fraction * 100}%"></div>
+          <span class="progress-label">
+            {#if preparing}
+              Preparing — resolving codes {prepDone} / {prepTotal}…
+            {:else}
+              Placing pictographs — {Math.floor(piecesDone)} / {piecesTotal} ({renderProgress} / {renderTotal} cards)
+            {/if}
+          </span>
+        {/if}
       </div>
     {/if}
 
@@ -613,6 +712,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
           <div class="page">
             <div class="page-guide page-guide-top">
               {#if deckName}<span class="guide-text">{deckName}</span>{/if}
+              {#if deckSummary}<span class="guide-text guide-bold guide-recipe">{deckSummary}</span>{/if}
               <span class="guide-text guide-bold">FRONTS{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span>
             </div>
             <div
@@ -672,6 +772,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
           <div class="page">
             <div class="page-guide page-guide-top">
               {#if deckName}<span class="guide-text">{deckName}</span>{/if}
+              {#if deckSummary}<span class="guide-text guide-bold guide-recipe">{deckSummary}</span>{/if}
               <span class="guide-text guide-bold">BACKS{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span>
             </div>
             <div
@@ -871,6 +972,26 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     transition: width 0.2s ease;
   }
 
+  /* Indeterminate sweep for the setup phase (code resolution + worker warm),
+     where there's no card count yet — proves the deck isn't frozen. */
+  .progress-bar-fill.indeterminate-fill {
+    width: 35%;
+    transition: none;
+    animation: indeterminate-slide 1.15s ease-in-out infinite;
+  }
+  @keyframes indeterminate-slide {
+    0% { left: -35%; }
+    100% { left: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .progress-bar-fill.indeterminate-fill {
+      animation: none;
+      left: 0;
+      width: 100%;
+      opacity: 0.35;
+    }
+  }
+
   .progress-label {
     position: relative;
     z-index: 1;
@@ -926,5 +1047,17 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   .guide-bold {
     font-weight: 600;
+  }
+
+  /* Recipe line: absolutely centered in the top margin, mirroring the PDF
+     exporter (deckSummary drawn at page-center) so screen == print. Sits above
+     the left deckName + right sheet label without shifting them. */
+  .guide-recipe {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 70%;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>

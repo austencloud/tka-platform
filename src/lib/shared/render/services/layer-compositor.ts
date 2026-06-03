@@ -1,9 +1,9 @@
 import type { LayerType, LayerRenderOptions, LayerVisibility, LayerRenderResult, CompositionResult, LayerCacheStats, RenderCanvas, RenderContext2D } from "./types";
-import type { PreparedPictographData } from "../../pictograph/shared/domain/models/PreparedPictographData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { PreparedPictographData } from "../../pictograph/shared/domain/models/prepared-pictograph-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { deriveBaseLayerKey, deriveGridPointsLayerKey, deriveTKALayerKey, deriveReversalLayerKey } from "./layer-key-deriver";
 import { turnsTupleGenerator } from "../../pictograph/arrow/positioning/placement/services/turns-tuple-generator";
-import type { Letter } from "../../foundation/domain/models/Letter";
+import type { Letter } from "../../foundation/domain/models/letter";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { interpretTurnColors, BLUE_HEX, RED_HEX } from "../../pictograph/tka-glyph/services/turn-color-interpreter";
 import {

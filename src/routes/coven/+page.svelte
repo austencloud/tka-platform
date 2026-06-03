@@ -9,7 +9,7 @@
   import { createCovenHubState } from "$lib/features/coven-hub/state/coven-hub-state.svelte";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
 
   const hub = createCovenHubState();
 

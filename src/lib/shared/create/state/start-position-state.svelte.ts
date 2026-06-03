@@ -5,12 +5,12 @@
  * No over-engineering, just the core functionality needed.
  */
 
-import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
+import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/settings-state.svelte";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { startPositionManager } from "$lib/shared/create/services/StartPositionManager";
+import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
 
 export function createSimplifiedStartPositionState() {
   let settingsService: SettingsState | null = null;

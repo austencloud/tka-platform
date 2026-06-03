@@ -15,7 +15,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 	import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 	import type { ControlsLevel, MediaType } from "../domain/types";
 	import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
@@ -23,10 +23,10 @@
 	import AnimationPlayer from "./AnimationPlayer.svelte";
 	import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
 	import ChoreoCard from "./ChoreoCard.svelte";
-	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+	import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 	import { tryGetAnimationExportContext } from "$lib/shared/export-panel/context/animation-export-context.svelte";
 	import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-	import { authState } from "$lib/shared/auth/state/authState.svelte";
+	import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 	import { browser } from "$app/environment";
 
 	const MEDIA_TYPE_STORAGE_KEY = "sequence-viewer-media-type";

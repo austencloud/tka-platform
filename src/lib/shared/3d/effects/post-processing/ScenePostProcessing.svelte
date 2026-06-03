@@ -12,14 +12,14 @@
     VignetteEffect,
   } from "postprocessing";
   // import { GodraysPass } from "three-good-godrays"; // re-enable after depth-copy fix
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
-  import { WaterAbsorptionEffect } from "./ocean/WaterAbsorptionEffect";
-  import { UnderwaterDistortionEffect } from "./ocean/UnderwaterDistortionEffect";
-  import { RefractionCausticsEffect } from "./ocean/RefractionCausticsEffect";
+  import { WaterAbsorptionEffect } from "./ocean/water-absorption-effect";
+  import { UnderwaterDistortionEffect } from "./ocean/underwater-distortion-effect";
+  import { RefractionCausticsEffect } from "./ocean/refraction-caustics-effect";
   import { godraysLightStore } from "./godrays-light-store.svelte";
-  import { getQualityTierDetector } from "../quality/getQualityTierDetector";
+  import { getQualityTierDetector } from "../quality/get-quality-tier-detector";
 
   interface Props {
     children: Snippet;

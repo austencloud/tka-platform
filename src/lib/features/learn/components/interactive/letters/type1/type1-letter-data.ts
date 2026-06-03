@@ -3,7 +3,7 @@
  * Uses existing TKA enums for type safety
  */
 
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 

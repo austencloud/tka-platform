@@ -15,14 +15,14 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
   import { onMount, onDestroy } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { connectState } from '../../state/connect-state.svelte';
-	import { getBrowseLoader } from '$lib/shared/browse/getBrowseLoader';
+	import { getBrowseLoader } from '$lib/shared/browse/get-browse-loader';
 	import { t } from '$lib/shared/i18n/i18n.svelte';
 	import { lanSyncState } from '$lib/shared/lan-sync/state/lan-sync-state.svelte';
 	import type { DisplayPreference, SyncSession } from '../../domain/models/connect-models';
 	import {
 		createSequenceData,
 		type SequenceData
-	} from '$lib/shared/foundation/domain/models/SequenceData';
+	} from '$lib/shared/foundation/domain/models/sequence-data';
 	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 	import type { AnimationPanelState } from '$lib/shared/animation-engine/state/animation-panel-state.svelte';
 	import SessionControls from './SessionControls.svelte';

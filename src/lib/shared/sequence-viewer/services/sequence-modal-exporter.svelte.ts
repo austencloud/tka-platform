@@ -6,12 +6,13 @@ import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloade
 import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { recordExportThroughput } from "$lib/shared/animation-panel/state/export-timing-tracker";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { AnimationPlaybackController } from '$lib/shared/animation-engine/services/animation-playback-controller';
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
-import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/getVideoExportOrchestrator";
-import { getOffline3DExporter } from "$lib/shared/3d/getOffline3DExporter";
+import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
+import { getOffline3DExporter } from "$lib/shared/3d/get-offline-3d-exporter";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import type { CameraKeyframeBuffer } from '$lib/shared/video-export/domain/camera-keyframe';
 
 export interface VideoExportEffectOverrides {
@@ -202,6 +203,11 @@ export class SequenceModalExporter {
           effectOverrides: options.effectOverrides,
           includeAnimationStartPosition: options.includeStartPosition,
           includeEndHold: options.includeEndHold,
+          // App mode: the offscreen export engine has no settings wiring, so pass
+          // the user's chosen prop explicitly. Without it the export renders the
+          // default "staff" instead of the live prop.
+          bluePropType: settingsService.settings.bluePropType ?? settingsService.settings.propType ?? "staff",
+          redPropType: settingsService.settings.redPropType ?? settingsService.settings.propType ?? "staff",
         }
       );
 
@@ -328,17 +334,48 @@ export class SequenceModalExporter {
         seq.displayName || seq.intendedWord || seq.word || "sequence";
       const simplified = greekToAscii(simplifyRepeatedWord(rawName));
       const safeName = sanitizeFilename(simplified) || "sequence";
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${safeName}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const filename = `${safeName}.png`;
+
+      // Touch devices open the native share sheet; desktop does a plain download.
+      // Gated on a coarse pointer so desktop Chrome (which also exposes the Web
+      // Share API) still downloads rather than popping a share dialog.
+      const coarsePointer =
+        typeof window !== "undefined" &&
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(pointer: coarse)").matches;
+
+      let shared = false;
+      if (
+        coarsePointer &&
+        typeof navigator.share === "function" &&
+        typeof navigator.canShare === "function"
+      ) {
+        try {
+          const file = new File([blob], filename, { type: blob.type || "image/png" });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: "TKA Sequence", text: rawName });
+            shared = true;
+          }
+        } catch (err) {
+          // Dismissing the share sheet is not a failure; anything else falls
+          // through to a regular download.
+          if (err instanceof DOMException && err.name === "AbortError") shared = true;
+        }
+      }
+
+      if (!shared) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
 
       callbacks.onHaptic("success");
-      callbacks.onSuccess("Image exported!");
+      callbacks.onSuccess(shared ? "Card shared!" : "Image exported!");
     } catch (error) {
       console.error("[SequenceModalExporter] Image export failed:", error);
       callbacks.onHaptic("error");

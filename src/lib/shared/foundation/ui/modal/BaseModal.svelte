@@ -18,11 +18,11 @@
     unregisterModal,
     isTopModal,
     generateModalId,
-  } from "./ModalStack";
+  } from "./modal-stack";
   import {
     FocusRestore,
     focusFirstOrContainer,
-  } from "./helpers/FocusRestore";
+  } from "./helpers/focus-restore";
   import "./modal-tokens.css";
 
   // ===== Types =====

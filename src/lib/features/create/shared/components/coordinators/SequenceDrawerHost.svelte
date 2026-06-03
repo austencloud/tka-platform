@@ -1,7 +1,7 @@
 <script lang="ts">
 
-import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
-import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/getVideoExportOrchestrator";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
+import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
 import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orchestrator";
   /**
    * SequenceDrawerHost
@@ -32,22 +32,20 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { ExportOrchestrator } from "$lib/shared/export-panel/services/export-orchestrator";
 
-  import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
+  import { getSequenceRepository } from "$lib/shared/create/get-sequence-repository";
   import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
-  import { responsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
+  import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
-  import { getReturnContext } from "$lib/shared/coordinators/sequence-handoff.svelte";
 
   // Animation imports
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import type { IVideoExportOrchestrator, VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
-  import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+  import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
   import { ExportUrlManager } from "$lib/shared/export-panel/services/export-url-manager";
-  import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
+  import type { ResponsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import {
     createAnimationPanelState,
     type PlaybackMode,
@@ -56,7 +54,7 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
   } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { ANIMATION_AUTO_START_DELAY_MS } from "$lib/shared/animation-engine/domain/constants/timing";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
   // Get context
@@ -258,27 +256,9 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
     }
   }
 
-  // When panelState.isSequenceViewerOpen becomes true, open the sequence viewer
-  $effect(() => {
-    if (panelState.isSequenceViewerOpen && currentSequence) {
-      // Clear the flag immediately
-      panelState.closeSequenceViewer();
-
-      // Stamp ownership on the sequence so the viewer shows Save/Edit/Delete actions.
-      // Sequences built in the create module don't have ownerId since they haven't
-      // been persisted to Firestore yet.
-      const sequenceWithOwner = currentSequence.ownerId
-        ? currentSequence
-        : {
-            ...currentSequence,
-            ownerId: authState.user?.uid ?? undefined,
-            ownerDisplayName: authState.user?.displayName ?? undefined,
-          };
-
-      const { returnPath, returnLabel } = getReturnContext();
-      openSequenceViewer(sequenceWithOwner, { returnPath, returnLabel });
-    }
-  });
+  // View-sequence redirect (panelState.isSequenceViewerOpen → openSequenceViewer)
+  // lives in SequenceDrawerLauncher.svelte so the heavy navigator subtree loads
+  // on-demand and stays out of the Create module's eager graph.
 
   // Initialize animation when services ready and sequence available
   // Check requestedExportFormat to avoid initializing when user explicitly requested static format
@@ -757,4 +737,4 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
   {/key}
 {/if}
 
-<!-- Sequence Details Modal removed - $effect intercept at line 314 redirects to /sequence/[id] route -->
+<!-- View-sequence redirect moved to SequenceDrawerLauncher.svelte (on-demand navigator import). -->

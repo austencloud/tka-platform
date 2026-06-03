@@ -7,7 +7,7 @@
   - Ends selector (One End/Both Ends) - for bilateral props
 -->
 <script lang="ts">
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { onMount } from "svelte";
   import {
     getAnimationVisibilityManager,
@@ -19,8 +19,8 @@
     TrailMode,
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { isBilateralProp, getBilateralEndLabels } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { isBilateralProp, getBilateralEndLabels } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   let {
     propType = null,

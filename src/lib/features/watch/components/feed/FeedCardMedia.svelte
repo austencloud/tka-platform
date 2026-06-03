@@ -15,7 +15,7 @@ import { getVideoPlaybackController } from "$lib/features/watch/get-video-playba
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { FeedContentType, FeedItem } from "../../domain/models/feed-models";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import type { VideoPlaybackController } from "../../services/video-playback-controller";
 

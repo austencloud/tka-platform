@@ -6,10 +6,10 @@
  * Eliminates code duplication by using a single organization method.
  */
 
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
-import { LetterType } from "$lib/shared/foundation/domain/models/LetterType";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import { getLetterType } from "$lib/shared/foundation/domain/models/letter";
+import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type {
   OrganizedSection,
   SortMethod,

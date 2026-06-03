@@ -6,8 +6,8 @@
  * Uses unified persistence utility for localStorage auto-save.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
 
 // ============================================================================

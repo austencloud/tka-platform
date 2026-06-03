@@ -10,6 +10,10 @@ const GUIDE_COLOR = rgb(0.65, 0.65, 0.65);
 const CROP_COLOR = rgb(0.4, 0.4, 0.4);
 const CROP_LEN = 8;
 const CROP_OFFSET = 2;
+// Inset for corner labels/hints so they clear the printer's non-printable
+// margin (~0.25"). Horizontal has slack; vertical band is only marginYPt tall.
+const LABEL_EDGE_X = 24;
+const LABEL_EDGE_Y = 8;
 
 /** One card per page, alternating front/back. For MPC/print service upload. */
 export async function exportDeckPDF(
@@ -61,6 +65,11 @@ export interface HomePrintOptions {
 	/** When false, relax the one-color-per-sheet rule: cards fill sheets in order
 	 *  with blanks only on the final sheet (no inter-color gaps). Default true. */
 	groupByElement?: boolean;
+	/** Document metadata embedded in the PDF (title / subject / keywords) so a
+	 *  downloaded file is indexable by deck reference + contents without opening.
+	 *  `deckSummary` also prints centered in each sheet's top margin (the recipe:
+	 *  e.g. "Rotated · Quartered · 8-step · L1 · 1 turn · Diamond · Staff"). */
+	meta?: { title?: string; subject?: string; keywords?: string[]; deckSummary?: string };
 }
 
 /** Capitalize an element key for sheet labels: "fire" → "Fire". */
@@ -142,7 +151,7 @@ export async function exportHomePrintPDF(
 			}
 
 			drawCropMarks(frontsPage, layout);
-			drawSheetLabel(frontsPage, font, fontBold, sheetSide('FRONTS', sheetSlots), sheet + 1, totalSheets, deckName);
+			drawSheetLabel(frontsPage, font, fontBold, sheetSide('FRONTS', sheetSlots), sheet + 1, totalSheets, deckName, options.meta?.deckSummary);
 			drawFlipHint(frontsPage, font, "FRONT SIDE");
 			onProgress?.(++progressCount, progressTotal);
 		}
@@ -171,11 +180,20 @@ export async function exportHomePrintPDF(
 			}
 
 			drawCropMarks(backsPage, layout);
-			drawSheetLabel(backsPage, font, fontBold, sheetSide('BACKS', sheetSlots), sheet + 1, totalSheets, deckName);
+			drawSheetLabel(backsPage, font, fontBold, sheetSide('BACKS', sheetSlots), sheet + 1, totalSheets, deckName, options.meta?.deckSummary);
 			drawFlipHint(backsPage, font, "BACK SIDE — columns mirrored for long-edge flip");
 			onProgress?.(++progressCount, progressTotal);
 		}
 	}
+
+	// Embed deck metadata so the downloaded file is indexable by reference number
+	// and word list. pdf-lib writes these into the PDF Info dictionary.
+	const meta = options.meta;
+	if (meta?.title) pdfDoc.setTitle(meta.title);
+	if (meta?.subject) pdfDoc.setSubject(meta.subject);
+	if (meta?.keywords?.length) pdfDoc.setKeywords(meta.keywords);
+	pdfDoc.setCreator('TKA Composer');
+	pdfDoc.setProducer('TKA Composer');
 
 	const pdfBytes = await pdfDoc.save();
 	return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
@@ -233,21 +251,34 @@ function drawSheetLabel(
 	sheetNum: number,
 	totalSheets: number,
 	deckName: string,
+	deckSummary = "",
 ) {
 	const label = `${side}  ·  Sheet ${sheetNum} of ${totalSheets}`;
 	const labelWidth = fontBold.widthOfTextAtSize(label, 7);
 	page.drawText(label, {
-		x: LETTER_W - labelWidth - 8,
-		y: LETTER_H - 10,
+		x: LETTER_W - labelWidth - LABEL_EDGE_X,
+		y: LETTER_H - LABEL_EDGE_Y - 7,
 		size: 7,
 		font: fontBold,
 		color: GUIDE_COLOR,
 	});
 
+	// Recipe params, centered in the top margin (may overlap the flip guide — fine).
+	if (deckSummary) {
+		const sumWidth = font.widthOfTextAtSize(deckSummary, 7);
+		page.drawText(deckSummary, {
+			x: (LETTER_W - sumWidth) / 2,
+			y: LETTER_H - LABEL_EDGE_Y - 7,
+			size: 7,
+			font: fontBold,
+			color: GUIDE_COLOR,
+		});
+	}
+
 	if (deckName) {
 		page.drawText(deckName, {
-			x: 8,
-			y: LETTER_H - 10,
+			x: LABEL_EDGE_X,
+			y: LETTER_H - LABEL_EDGE_Y - 6,
 			size: 6,
 			font,
 			color: GUIDE_COLOR,
@@ -261,19 +292,19 @@ function drawFlipHint(
 	hint: string,
 ) {
 	page.drawText(hint, {
-		x: 8,
-		y: 6,
+		x: LABEL_EDGE_X,
+		y: LABEL_EDGE_Y,
 		size: 6,
 		font,
 		color: GUIDE_COLOR,
 	});
 
 	// Arrow in bottom-right indicating long-edge flip direction
-	const arrowX = LETTER_W - 30;
-	const arrowY = 10;
-	page.drawText(">> LONG EDGE", {
-		x: arrowX - 30,
-		y: arrowY - 4,
+	const flipText = ">> LONG EDGE";
+	const flipWidth = font.widthOfTextAtSize(flipText, 6);
+	page.drawText(flipText, {
+		x: LETTER_W - LABEL_EDGE_X - flipWidth,
+		y: LABEL_EDGE_Y,
 		size: 6,
 		font,
 		color: GUIDE_COLOR,

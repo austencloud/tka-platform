@@ -5,7 +5,7 @@
   Shows a preview grid of the current pattern and a save form.
 -->
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { formatRotationValue } from "../../../domain/models/rotation-direction-pattern-data";
 
   interface Props {

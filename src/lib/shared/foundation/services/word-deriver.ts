@@ -1,5 +1,5 @@
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { SequenceData } from "../domain/models/SequenceData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { SequenceData } from "../domain/models/sequence-data";
 
 export function deriveWordFromBeats(steps: readonly StepData[]): string {
   if (!steps || steps.length === 0) return "";

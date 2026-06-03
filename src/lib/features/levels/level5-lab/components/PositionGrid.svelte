@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PositionSection, CardOrientations } from "../domain/level5-lab-types";
   import PositionCard from "./PositionCard.svelte";
 

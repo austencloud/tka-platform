@@ -11,7 +11,7 @@
  * Note: Uses ArrowQuadrantCalculator for quadrant index calculations to avoid duplication.
  */
 
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import { Point } from "fabric";
 export class DirectionalTupleCalculator {

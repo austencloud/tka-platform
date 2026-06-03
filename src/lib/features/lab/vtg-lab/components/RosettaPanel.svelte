@@ -7,7 +7,7 @@
 	import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";
 	import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
 	import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 	import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 	import { getModeChains, expandChain } from "../domain/vtg-sequence-data";
 	import { TURN_RATIO_MAPPINGS } from "../domain/vtg-pattern-data";

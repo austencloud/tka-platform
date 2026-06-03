@@ -1,7 +1,7 @@
 import { browser } from "$app/environment";
 import { replaceState } from "$app/navigation";
 import type { ModuleId } from "../../../navigation/domain/types";
-import { featureFlagService } from "../../../auth/services/PostHogFeatureFlagService.svelte";
+import { featureFlagService } from "../../../auth/services/post-hog-feature-flag-service.svelte";
 import { navigationState } from "../../../navigation/state/navigation-state.svelte";
 import { normalizeModuleId } from "../../../navigation/config/module-definitions";
 import {

@@ -11,7 +11,7 @@
   - Last deactivated -> reactivate both (combined)
 -->
 <script lang="ts">
-  import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
+  import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
   import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
 
   interface Props {

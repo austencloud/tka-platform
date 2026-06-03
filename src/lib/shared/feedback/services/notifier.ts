@@ -21,7 +21,7 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { firestoreList, firestoreDelete } from "$lib/shared/firestore";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/is-permission-denied-error";
 import type { UserNotification } from "$lib/shared/feedback/domain/models/notification-models";
 import { UserNotificationSchema } from "$lib/shared/feedback/domain/models/feedback-schemas";
 

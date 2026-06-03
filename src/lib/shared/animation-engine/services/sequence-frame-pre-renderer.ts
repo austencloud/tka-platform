@@ -11,12 +11,12 @@
  * which is immune to device stutters and provides perfect trail loops.
  */
 
-import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
-import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { getLetterImagePath } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
 /**
  * Pre-rendered frame data

@@ -11,7 +11,7 @@
  * into StepData[] (what SequenceState/StepGrid needs), keeping both in sync.
  */
 
-import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
 import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
@@ -28,9 +28,9 @@ import {
   lookupLetter,
 } from "$lib/features/assemble-lab/services/builder-step-converter";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { createStepData } from "$lib/shared/create/factories/createStepData";
-import { createStartPositionData } from "$lib/shared/create/factories/createStartPositionData";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { createStepData } from "$lib/shared/create/factories/create-step-data";
+import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 
 export function createAssembleTabState(
   sequenceService?: SequenceRepository,

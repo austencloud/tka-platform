@@ -20,15 +20,15 @@
   import ArrowAdjustmentHistory from "./ArrowAdjustmentHistory.svelte";
   import StepEditorTour from "$lib/shared/onboarding/components/step-editor-tour/StepEditorTour.svelte";
   import { stepEditorTourState } from "$lib/shared/onboarding/state/step-editor-tour-state.svelte";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
     MotionColor,
     MotionType,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PathShapeValue } from "../../services/step-operations/path-shape-handler";
-  import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
+  import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
   import { onMount } from "svelte";

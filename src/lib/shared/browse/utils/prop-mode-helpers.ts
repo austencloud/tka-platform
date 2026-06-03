@@ -5,7 +5,7 @@
  * Used throughout the thumbnail rendering pipeline.
  */
 
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 /**
  * Check if user is in cat-dog mode (different props for each hand)

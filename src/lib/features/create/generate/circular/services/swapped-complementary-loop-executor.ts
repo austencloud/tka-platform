@@ -16,14 +16,14 @@
  * IMPORTANT: End position must equal start position (returns to start)
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   MotionType,
   MotionColor,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   updateStartOrientations,
   updateEndOrientations,

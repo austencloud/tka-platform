@@ -14,7 +14,7 @@ import {
 	Timestamp
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
-import { authState } from '$lib/shared/auth/state/authState.svelte';
+import { authState } from '$lib/shared/auth/state/auth-state.svelte';
 import type { CreateReportInput, UserReport } from '../domain/models/report-models';
 
 const REPORTS_COLLECTION = 'userReports';

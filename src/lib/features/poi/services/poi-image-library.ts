@@ -9,7 +9,7 @@
  */
 
 import type { PoiImageLibraryEntry } from "../domain/poi-image-library-entry";
-import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
+import { getEffectiveUserId } from "$lib/shared/auth/state/auth-state.svelte";
 import {
   getStorageInstance,
   getFirestoreInstance,

@@ -7,7 +7,7 @@
 
 import { GridLocation } from "../../../grid/domain/enums/grid-enums";
 import { GridMode } from "../../../grid/domain/enums/grid-enums";
-import type { MotionData } from "../../../shared/domain/models/MotionData";
+import type { MotionData } from "../../../shared/domain/models/motion-data";
 import { Point } from "fabric";
 import { createGridPointData } from "../../../grid/utils/grid-coordinate-utils";
 

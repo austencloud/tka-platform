@@ -5,9 +5,9 @@
  * These enable TypeScript to narrow union types and enforce type safety.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 /**
  * Union type for all pictograph-based data structures

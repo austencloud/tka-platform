@@ -5,13 +5,13 @@
   import VirtualizedSequenceGrid, {
     type VirtualGridApi,
   } from "$lib/shared/browse/components/VirtualizedSequenceGrid.svelte";
-  import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
-  import { buildVariationMap } from "$lib/shared/browse/services/VariationGrouper";
+  import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/browse-thumbnail-provider";
+  import { buildVariationMap } from "$lib/shared/browse/services/variation-grouper";
   import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { BrowseEngine } from "../engine/types";
 
   interface Props {

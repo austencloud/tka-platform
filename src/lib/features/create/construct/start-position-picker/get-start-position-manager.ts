@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { StartPositionManager } from '$lib/shared/create/services/StartPositionManager';
+import { StartPositionManager } from '$lib/shared/create/services/start-position-manager';
 
 let instance: StartPositionManager | null = null;
 

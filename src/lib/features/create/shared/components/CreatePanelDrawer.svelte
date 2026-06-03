@@ -16,8 +16,8 @@
   import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { tryGetCreateModuleContext } from "../context/create-module-context";
-  import { responsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
-  import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
+  import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
+  import type { ResponsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import type { Snippet } from "svelte";
 
   let {

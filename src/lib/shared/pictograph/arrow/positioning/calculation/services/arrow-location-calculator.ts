@@ -12,10 +12,10 @@
  * No UI dependencies, completely testable in isolation.
  */
 
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 import { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import { calculateDashLocationFromPictographData } from "./dash-location-calculator";
 
 

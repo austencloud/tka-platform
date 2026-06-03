@@ -50,6 +50,10 @@ export interface OffscreenExportInit {
   /** Resolved prop types (e.g. "staff"). Thread into frame ctx + trail capture config. */
   bluePropType: string | null;
   redPropType: string | null;
+  /** Dark-mode override for prop colors + grid tint. null → engine boot value. */
+  previewDarkMode: boolean | null;
+  /** Whether to draw non-radial grid points (matches the live grid). */
+  showNonRadialPoints: boolean;
 }
 
 /** Synchronous render passes to converge the fluid sim before capture starts. */
@@ -92,6 +96,19 @@ export class OffscreenExportRenderer {
       { visibilityManager: vm, effectsConfigState: vm.effectsConfigState },
     );
 
+    // Stop the engine's free-running rAF loop. The export drives every frame
+    // deterministically through renderFrame() → renderSync(). If the loop keeps
+    // running, it repaints the canvas from the engine's OWN internal state — which
+    // never receives per-frame prop positions (those arrive only as renderFrame
+    // args) — so its bluePropState/redPropState stay at the boot default. During
+    // the orchestrator's `await waitForAnimationFrame()` between renderFrame() and
+    // the canvas capture, one of those rAF renders fires and overwrites the correct
+    // frame with a propless one. The grid (static texture) and the WebGL trail
+    // overlay (separate canvas) survive; the canvas2D props do not — exactly the
+    // "grid + trails but no props" export bug. Mirrors the deterministic-pass
+    // pattern in the trail-export-parity harness (renderLoop.stop()).
+    this.handle.context.renderLoop.stop();
+
     // Prime the capturer config so the FIRST sub-step capture lands at the right
     // resolution + prop geometry. (The WebGL2 overlay keeps its own ring; this
     // feeds the canvas2D fallback path consistently.)
@@ -111,7 +128,26 @@ export class OffscreenExportRenderer {
     // texture and a box-mode sequence exports with a diamond grid.
     const gridMode =
       this.panelState.sequenceData?.gridMode ?? GridMode.DIAMOND;
-    await this.handle.context.renderer.loadGridTexture(gridMode, true);
+    await this.handle.context.renderer.loadGridTexture(gridMode, init.showNonRadialPoints);
+
+    // Thread the resolved prop types into the offscreen engine's STATE before the
+    // frame loop. The renderer skips drawing a prop whose image is null
+    // (canvas-2d-animation-renderer getBluePropImage), so the prop image must be
+    // loaded — but loading the image alone is not enough: frame-parameter-builder
+    // reads the prop TYPE from state.currentBluePropType/RedPropType
+    // (frame-parameter-builder.ts:227-228,244-245) and the prop DIMENSIONS from
+    // state.bluePropDimensions/redPropDimensions (frame-parameter-builder.ts:209-210).
+    // The offscreen engine is driven only through renderFrame(), which bypasses
+    // PlaybackSync — so those state fields are never synced and stay at the boot
+    // default ("staff", staff dimensions). A bare renderer.loadPerColorPropTextures()
+    // loaded the image but left the type/dimension desync, so a non-staff export
+    // drew the staff body at staff size. prepareExportPropTypes runs the canonical
+    // override path (sets state types + loads textures + syncs dimensions to state).
+    // "staff" is the floor so a missing type still draws.
+    const darkMode = init.previewDarkMode ?? vm.isDarkMode();
+    const blue = init.bluePropType ?? "staff";
+    const red = init.redPropType ?? "staff";
+    await this.handle.engine.prepareExportPropTypes(blue, red, darkMode);
 
     if (init.needsFluidWarmup) {
       // Deterministic warmup: render the start position repeatedly so the fluid
@@ -203,11 +239,11 @@ export class OffscreenExportRenderer {
       virtualTime: clockMs,
       isSeamlesslyLoopable: this.playback.isSeamlesslyLoopable,
       backgroundAlpha: 1,
-      showNonRadialPoints: true,
+      showNonRadialPoints: this.init.showNonRadialPoints,
       trailSettings: animationSettings.trail,
       bluePropType: this.init.bluePropType,
       redPropType: this.init.redPropType,
-      previewDarkMode: null,
+      previewDarkMode: this.init.previewDarkMode,
     };
     const props = assembleExportEngineProps(this.panelState, frameCtx);
 

@@ -26,7 +26,7 @@
 
 import { TnDMode, MotionColor } from "../enums/pictograph-enums";
 import type { GridLocation } from "../../../grid/domain/enums/grid-enums";
-import type { PictographData } from "../models/PictographData";
+import type { PictographData } from "../models/pictograph-data";
 import { deriveHandOrbitalDirection } from "../../../../render/core/calculations/orientation";
 import { TND_TO_ELEMENTAL, type TnDCalculationResult } from "./tnd-calculator";
 

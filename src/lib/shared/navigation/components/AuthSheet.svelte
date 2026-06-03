@@ -14,7 +14,7 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
   import AuthHeader from "../../auth/components/AuthHeader.svelte";
   import EmailAuthTabs from "../../auth/components/EmailAuthTabs.svelte";
   import SocialAuthCompact from "../../auth/components/SocialAuthCompact.svelte";
-  import { authState } from "../../auth/state/authState.svelte";
+  import { authState } from "../../auth/state/auth-state.svelte";
 
   // Props
   let { isOpen = false, onClose } = $props<{

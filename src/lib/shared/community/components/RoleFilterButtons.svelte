@@ -3,8 +3,8 @@
    * RoleFilterButtons - Admin filter for user roles
    */
 
-  import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
-  import { ROLE_DISPLAY } from "$lib/shared/auth/domain/models/UserRole";
+  import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
+  import { ROLE_DISPLAY } from "$lib/shared/auth/domain/models/user-role";
 
   type FilterValue = UserRole | "all";
 

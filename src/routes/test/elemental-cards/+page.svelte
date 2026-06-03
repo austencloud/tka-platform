@@ -3,7 +3,7 @@
   import { TND_ELEMENTS, type TnDElement } from "$lib/features/choreo-card/domain/tnd-element";
   import { loadCatalogs, loadSequencesByIds } from "$lib/features/choreo-card/services/catalog-loader";
   import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PrintRenderOptions } from "$lib/features/choreo-card/services/types";
 
   interface ElementCard {

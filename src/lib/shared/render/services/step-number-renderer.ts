@@ -44,7 +44,7 @@ export function drawStepNumber(
   const textY = y + STEP_NUMBER_Y * scale;
 
   ctx.save();
-  ctx.font = `bold ${fontSize}px Georgia, serif`;
+  ctx.font = `bold ${fontSize}px Gelasio, Georgia, serif`;
   ctx.fillStyle = isDarkMode ? DARK_MODE_COLOR : LIGHT_MODE_COLOR;
   ctx.textAlign = "start";
   ctx.textBaseline = "hanging";

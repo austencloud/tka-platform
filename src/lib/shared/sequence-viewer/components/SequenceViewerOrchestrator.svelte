@@ -1,19 +1,19 @@
 <script lang="ts" module>
-import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
-import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/getSequenceAnimationOrchestrator";
-import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
+import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/get-sequence-animation-orchestrator";
+import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 // propInterpolator and sequenceConverter are now module-level functions injected directly
 import { getLanSyncCoordinator } from "$lib/shared/lan-sync/get-lan-sync-coordinator";
 import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type {
     ViewerPlaybackState, ImageCompositionProps, PropRenderingProps, } from "../domain/viewer-prop-groups";
   import type { ResolvedPresentation, ViewingContext } from "../services/presentation-resolver";
@@ -138,6 +138,11 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handleRetryExport: () => void;
     dismissPreview: () => void;
 
+    /** The live playback controller (null until animation services load).
+     *  Exposed so lightweight hosts (QR landing page) can drive their own
+     *  video export off the same controller the canvas is using. */
+    playbackController: AnimationPlaybackController | null;
+
     splitPanePlayback: ViewerPlaybackState;
     splitPaneImageComposition: ImageCompositionProps;
     splitPanePropRendering: PropRenderingProps;
@@ -160,7 +165,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
   import { generateViewerURL, encodePropForURL } from "$lib/shared/navigation/services/sequence-encoder";
-  import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
@@ -172,7 +177,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
@@ -184,7 +189,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/types";
   import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
-  import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
+  import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { SequenceViewerVisibilityState } from "../state/viewer-visibility-state.svelte";
@@ -193,11 +198,11 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import SignInSheet from "./SignInSheet.svelte";
   import GoogleOneTap from "$lib/shared/auth/components/GoogleOneTap.svelte";
 
-  import { createPlaybackController } from "./PlaybackController.svelte";
-  import { createExportCoordinator } from "./ExportCoordinator.svelte";
-  import { createPropContextResolver } from "./PropContextResolver.svelte";
-  import { createImageCompositionSync } from "./ImageCompositionSync.svelte";
-  import { createAuthActionQueue } from "./AuthActionQueue.svelte";
+  import { createPlaybackController } from "./playback-controller.svelte";
+  import { createExportCoordinator } from "./export-coordinator.svelte";
+  import { createPropContextResolver } from "./prop-context-resolver.svelte";
+  import { createImageCompositionSync } from "./image-composition-sync.svelte";
+  import { createAuthActionQueue } from "./auth-action-queue.svelte";
   import { createFullscreenController } from "../state/fullscreen-controller.svelte";
   import { createLibraryActionHandler } from "../state/library-action-handler.svelte";
   import { createViewerState } from "../state/viewer-state.svelte";
@@ -217,6 +222,9 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     initialRenderMode?: '2d' | '3d';
     initialBlueVisible?: boolean;
     initialRedVisible?: boolean;
+    /** Effect to activate on mount (e.g. "trails" for the QR scan landing page).
+     *  Defaults to the stored/none config when omitted. */
+    initialActiveEffect?: string;
     children: Snippet<[OrchestratorContext]>;
   }
 
@@ -235,6 +243,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     initialRenderMode,
     initialBlueVisible = true,
     initialRedVisible = true,
+    initialActiveEffect,
     children,
   }: Props = $props();
 
@@ -329,6 +338,9 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
   const effectsConfigState = createEffectsConfigState();
   setEffectsConfigContext(effectsConfigState);
+  // Activate a requested effect on mount (QR scan page asks for "trails").
+  // setActiveEffect keeps tipEffectMap in sync so the renderer doesn't filter tips.
+  if (initialActiveEffect) effectsConfigState.setActiveEffect(initialActiveEffect);
 
   const scene3DRenderState = createScene3DRenderState();
   setScene3DRenderContext(scene3DRenderState);
@@ -1088,6 +1100,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handleCancelExport: exportCoord.handleCancelExport,
     handleRetryExport: () => exportCoord.handleRetryExport(handleExport),
     dismissPreview: exportCoord.dismissPreview,
+
+    playbackController: playbackControllerRef,
 
     splitPanePlayback: {
       animationState: modalAnimationState,

@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
   import { getCardBackThemeVisuals } from "./card-back-theme-visuals";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 
   const theme = $derived(getCardBackThemeVisuals(settingsService.settings.backgroundType));
 

@@ -12,12 +12,12 @@
  * dryRun=false → after a 100%-parity staging, persist every row via saveOverride.
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { enumerateVariationArrows } from "./variation-enumerator";
 import { computeSpecialOverrideKey } from "$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-key";
-import { parseSpecialOverrideKey } from "$lib/shared/pictograph/arrow/positioning/special-override/domain/SpecialArrowPlacement";
-import type { SpecialArrowPlacementInput } from "$lib/shared/pictograph/arrow/positioning/special-override/domain/SpecialArrowPlacement";
+import { parseSpecialOverrideKey } from "$lib/shared/pictograph/arrow/positioning/special-override/domain/special-arrow-placement";
+import type { SpecialArrowPlacementInput } from "$lib/shared/pictograph/arrow/positioning/special-override/domain/special-arrow-placement";
 import { arrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-adjustment-calculator";
 import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator";
 import { setGlobalReadDisabled } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";

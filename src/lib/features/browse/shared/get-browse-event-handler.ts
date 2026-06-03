@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
 import { BrowseEventHandler } from './services/browse-event-handler';
-import { getBrowseLoader } from '$lib/shared/browse/getBrowseLoader';
+import { getBrowseLoader } from '$lib/shared/browse/get-browse-loader';
 
 let instance: BrowseEventHandler | null = null;
 

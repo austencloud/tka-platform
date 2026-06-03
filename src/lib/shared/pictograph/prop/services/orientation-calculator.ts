@@ -19,11 +19,11 @@ import {
 import {
   createMotionData,
   type MotionData,
-} from "../../shared/domain/models/MotionData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+} from "../../shared/domain/models/motion-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import { GridLocation } from "../../grid/domain/enums/grid-enums";
-import { PropType } from "../domain/enums/PropType";
+import { PropType } from "../domain/enums/prop-type";
 
 /**
  * Calculate end orientation by delegating to the canonical calculator.

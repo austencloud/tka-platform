@@ -1,11 +1,11 @@
-import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { getSvgImageCache, type DrawableImage } from "./svg-image-cache";
 import { getSvgAssetLoader } from "./svg-asset-loader";
 import { getLetterImagePath, isDashLetter } from "../../pictograph/tka-glyph/utils/letter-image-getter";
-import { Letter, getLetterType } from "../../foundation/domain/models/Letter";
-import { LetterType } from "../../foundation/domain/models/LetterType";
+import { Letter, getLetterType } from "../../foundation/domain/models/letter";
+import { LetterType } from "../../foundation/domain/models/letter-type";
 import { parseTurnsTuple, shouldDisplayTurn, getTurnNumberImagePath, getTurnNumberWidth } from "../../pictograph/tka-glyph/utils/turn-tuple-parser";
 import { interpretTurnColors, BLUE_HEX, RED_HEX } from "../../pictograph/tka-glyph/services/turn-color-interpreter";
 import { calculateTurnPositions } from "../../pictograph/tka-glyph/utils/turn-position-calculator";
@@ -13,7 +13,7 @@ import { deriveTnDFromPictograph } from "../../pictograph/shared/domain/utils/tn
 import { calculateReversalPositions } from "../core";
 import type { TurnsTupleGenerator } from "../../pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 import type { GridPosition } from "../../pictograph/grid/domain/enums/grid-enums";
-import type { MotionData } from "../../pictograph/shared/domain/models/MotionData";
+import type { MotionData } from "../../pictograph/shared/domain/models/motion-data";
 import { MotionColor, getElementImagePath } from "../../pictograph/shared/domain/enums/pictograph-enums";
 import { getMotionColor } from "../../utils/svg-color-utils";
 

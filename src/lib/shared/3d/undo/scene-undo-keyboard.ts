@@ -1,4 +1,4 @@
-import type { SceneUndoManager } from "./SceneUndoManager";
+import type { SceneUndoManager } from "./scene-undo-manager";
 
 const TEXT_INPUT_TAGS = new Set(["INPUT", "TEXTAREA", "SELECT"]);
 

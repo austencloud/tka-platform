@@ -5,7 +5,7 @@
  * Uses actual TKA concepts and domain models.
  */
 
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionType,
@@ -14,9 +14,9 @@ import {
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 export interface PositionGroupData {
   name: string;

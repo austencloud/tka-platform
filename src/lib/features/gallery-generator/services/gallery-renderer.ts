@@ -8,13 +8,13 @@
  * beat of each sequence, rather than relying on stored start position data.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
-import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
 import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { BatchRenderResult } from "../domain/gallery-models";
 
 export interface RenderOptions {

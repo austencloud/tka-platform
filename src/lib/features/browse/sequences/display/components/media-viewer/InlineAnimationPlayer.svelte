@@ -12,12 +12,12 @@
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
+  import { getSequenceRepository } from "$lib/shared/create/get-sequence-repository";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import { Letter } from "$lib/shared/foundation/domain/models/letter";
 
   // Per-instance playback stack imports (avoid shared singleton)
   import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";

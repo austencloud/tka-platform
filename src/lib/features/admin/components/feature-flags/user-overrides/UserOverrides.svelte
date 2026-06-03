@@ -11,8 +11,8 @@
    * - Impact summary before save
    */
 
-  import { featureFlagService, featureFlagState } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
-  import type { FeatureId, UserFeatureOverrides } from "$lib/shared/auth/domain/models/FeatureFlag";
+  import { featureFlagService, featureFlagState } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
+  import type { FeatureId, UserFeatureOverrides } from "$lib/shared/auth/domain/models/feature-flag";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import AdminTwoPanelLayout from "$lib/shared/admin/components/AdminTwoPanelLayout.svelte";
   import AdminModal from "$lib/shared/admin/components/AdminModal.svelte";

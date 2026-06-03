@@ -7,10 +7,10 @@
 <script lang="ts">
   import type {
     TipEffortMap,
-  } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
+  } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import type { EffortId } from "$lib/shared/effort/domain/effort-types";
   import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
-  import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
+  import { getTipPoints } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 
   type Scope = "cell" | "hand" | "tip";
 

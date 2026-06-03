@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { getPathD } from "$lib/features/hand-paths/hand-path-builder/services/hand-path-animator";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";

@@ -1,4 +1,4 @@
-it's probably like the rules of like you know maintaining the size and transforming them into ways yeah you do code right yeah yeah I mean I have the code right here I can look at it right away but I mean<!--
+<!--
   AnimationCanvas.svelte
 
   Wraps AnimatorCanvas with styling container.
@@ -8,14 +8,14 @@ it's probably like the rules of like you know maintaining the size and transform
 -->
 <script lang="ts">
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-  import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+  import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
   import type { VideoRenderResult } from "$lib/shared/animation-engine/services/video-pre-renderer";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
   let {
     blueProp = null,

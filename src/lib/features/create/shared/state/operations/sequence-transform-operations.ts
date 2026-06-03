@@ -12,15 +12,15 @@
  * RESPONSIBILITY: Transform operations coordinator, orchestrates state + services
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
 import type { SequenceCoreState } from "../core/sequence-core-state.svelte";
 import type { SequenceSelectionState } from "../selection/sequence-selection-state.svelte";
-import type { ValidationResult } from "$lib/shared/validation/ValidationResult";
+import type { ValidationResult } from "$lib/shared/validation/validation-result";
 import type { TargetHand } from "../panel-coordination-state.svelte";
 
 export interface TransformOperationsConfig {

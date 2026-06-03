@@ -5,14 +5,14 @@
  * Replaces PixiJS WebGL rendering with simpler, leak-free Canvas2D.
  */
 
-import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/FireTypes";
-import type { RenderSceneParams } from "$lib/shared/animation-engine/domain/types/AnimationRenderTypes";
+import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/fire-types";
+import type { RenderSceneParams } from "$lib/shared/animation-engine/domain/types/animation-render-types";
 
 export type {
   AdditionalLayerRenderData,
   AnimationVisibilitySettings,
   RenderSceneParams,
-} from "$lib/shared/animation-engine/domain/types/AnimationRenderTypes";
+} from "$lib/shared/animation-engine/domain/types/animation-render-types";
 
 export interface IAnimationRenderer {
   /**

@@ -6,8 +6,8 @@
  * to return to their starting state after LOOP application.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 /**
  * Describes orientation alignment status for exact position matches.

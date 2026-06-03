@@ -6,7 +6,7 @@
   import { onMount } from "svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
-  import { buildPictographContextMenuItems } from "./PictographContextMenuBuilder";
+  import { buildPictographContextMenuItems } from "./pictograph-context-menu-builder";
   import { getVisibilityStateManager } from "../../state/visibility-state.svelte";
 
   interface Props {

@@ -1,5 +1,5 @@
-import { hslToRgb } from "../types/LedPatterns";
-import type { LedColor } from "../types/LedPatterns";
+import { hslToRgb } from "../types/led-patterns";
+import type { LedColor } from "../types/led-patterns";
 import type { TipEvaluationContext } from "./context";
 import { simplex2d } from "./noise";
 

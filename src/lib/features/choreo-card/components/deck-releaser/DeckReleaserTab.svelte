@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { Catalog } from "../../domain/models/Catalog";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { loadCatalogs, loadSequencesByIds } from "../../services/catalog-loader";
   import {
     buildSequencePool,
@@ -18,20 +18,36 @@
     prunePool,
     TND_BASE_CATALOG_ID,
     type CatalogPoolFilter,
+    type PoolEntry,
   } from "../../services/deck-composer";
   import type { DeckRelease, DeckReleaseCard, DeckRecipe } from "../../domain/models/DeckRelease";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getNextDeckNumber, releaseDeck, getAllReleases, updateDeckMeta, deleteDeck } from "../../services/deck-release-store";
   import ConfigureStep from "./ConfigureStep.svelte";
   import ReviewStep from "./ReviewStep.svelte";
   import ReleaseHistoryPanel from "./ReleaseHistoryPanel.svelte";
+  import GeneratedArchivePanel from "./GeneratedArchivePanel.svelte";
+  import { archiveDeck, listArchivedDecks, getArchivedDeck, deleteArchivedDeck, type ArchivedDeckMeta } from "../../services/deck-archive-store";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import PrintPanel from "../print-preview/PrintPanel.svelte";
   import DeckReleaseNameModal from "./DeckReleaseNameModal.svelte";
   import { releaserState as rs } from "./deck-releaser-state.svelte";
   import { resolveDeckSequences, applyVariationDescriptor, rollVariation } from "../../services/deck-variation";
+  import { makeRng, childSeed } from "$lib/shared/foundation/utils/seeded-rng";
+  import { hashRecipe, mintSeed } from "../../services/deck-recipe";
+  import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
+  import { GenerationMode } from "$lib/shared/foundation/domain/models/generation/generate-models";
+  import type { GenerationOptions } from "$lib/shared/foundation/domain/models/generation/generate-models";
+  import { LOOPType, Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+  import { levelToDifficulty } from "$lib/shared/create/utils/config-mapper";
+  import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
+  import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
-  import { hashDeckContent, hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
+  import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
+  import { warmCardBackCaches } from "../../services/card-back/warm-card-back-caches";
+  import { hashDeckContent, hashSequenceContent, hashSequenceSkeleton } from "$lib/shared/foundation/services/content-hasher";
   import { getPageLayout, type CardSizeId } from "../../domain/card-sizes";
   import { getTnDElementByIconPath, TND_ELEMENTS, type TnDElement } from "../../domain/tnd-element";
   import { suggestCopyCounts, copyWaste } from "../../services/print-copy-suggester";
@@ -56,9 +72,32 @@
   let persistReady = $state(false);
 
   let catalogs = $state<Catalog[]>([]);
-  let pool = $state<Map<number, { sequenceId: string; sourceCatalogId: string; stepCount: number; word: string }[]>>(new Map());
+  let pool = $state<Map<number, PoolEntry[]>>(new Map());
   let releasedIds = $state<Set<string>>(new Set());
   let releases = $state<DeckRelease[]>([]);
+  // All current releases are Timing & Direction decks; loop releasing is the new
+  // path and always stamps recipe.deckMode "loop". So "not explicitly loop"
+  // (incl. legacy releases with no recipe) groups under the TnD subsection;
+  // future loop releases fall to the general "Released Decks" section.
+  // Three Released subsections, classified by recipe.deckMode. Gallery is explicit;
+  // legacy releases (no recipe) read as TnD (all pre-recipe releases were TnD).
+  const isGalleryRelease = (r: DeckRelease) => r.recipe?.deckMode === "gallery";
+  const isLoopRelease = (r: DeckRelease) => r.recipe?.deckMode === "loop";
+  const isTnDRelease = (r: DeckRelease) => !isGalleryRelease(r) && !isLoopRelease(r);
+  const tndReleases = $derived(releases.filter(isTnDRelease));
+  const galleryReleases = $derived(releases.filter(isGalleryRelease));
+  const loopReleases = $derived(releases.filter(isLoopRelease));
+  // Decks that follow the live prop setting (no pinned canonical prop): TnD +
+  // Gallery, composed or released. Drives the in-deck prop switcher + prop unpin.
+  const deckFollowsLiveProp = $derived(
+    rs.viewingRelease ? !isLoopRelease(rs.viewingRelease) : rs.deckMode !== "loop",
+  );
+  // Gallery deck currently on screen (drives the Refresh-from-gallery action).
+  const viewingGallery = $derived(
+    rs.viewingRelease ? isGalleryRelease(rs.viewingRelease) : rs.deckMode === "gallery",
+  );
+  let archivedDecks = $state<ArchivedDeckMeta[]>([]);
+  let isLoadingArchive = $state(true);
   let isLoadingReleases = $state(true);
   let showNameModal = $state(false);
 
@@ -106,7 +145,9 @@
   const savedPrint = loadPrintSettings();
 
   let cardSize = $state<CardSizeId>(savedPrint.cardSize ?? "poker");
-  let copies = $state(savedPrint.copies ?? 1);
+  // Default to one card per page (9 poker / 6 tarot) — a full sheet of one card,
+  // cut into identical copies. The most-used layout; returning users keep theirs.
+  let copies = $state(savedPrint.copies ?? getPageLayout(cardSize).cardsPerPage);
   let groupByElement = $state(savedPrint.groupByElement ?? true);
   let groupByLetter = $state(savedPrint.groupByLetter ?? false);
   let selectedSide = $state<PrintSide>("fronts");
@@ -122,7 +163,6 @@
   let renderedPairs = $state<CardPair[]>([]);
   let isRendering = $state(false);
   let renderProgress = $state(0);
-  let renderTotal = $state(0);
   let isExporting = $state(false);
   let isPrinting = $state(false);
   let exportProgress = $state(0);
@@ -170,6 +210,15 @@
   const sortedSequences = $derived(elementSorted.sequences);
   const sortedFooters = $derived(elementSorted.footers);
   const tndElements = $derived(elementSorted.tndElements);
+  // Render denominator = live deck size, not a value echoed back from the
+  // renderer — a stale render run (deck size changed mid-render) can't leave the
+  // old count lingering. Declared after sortedSequences (its dependency).
+  const renderTotal = $derived(sortedSequences.length);
+  // Deck reference number for filenames / cache key / on-card label / PDF meta.
+  // Viewing a released deck → its permanent number; otherwise the per-generation
+  // internal reference number (NOT the Firestore release counter).
+  const deckRefNumber = $derived(rs.viewingRelease?.deckNumber ?? rs.referenceNumber);
+  const deckRefPadded = $derived(String(deckRefNumber).padStart(3, "0"));
 
   const groupSizes = $derived.by(() => {
     const counts = new Map<string, number>();
@@ -184,7 +233,7 @@
     const ladder = suggestCopyCounts(groupSizes, cardsPerPage).map((s) => s.copies);
     // copies === cardsPerPage fills exactly one sheet per card (one card repeated
     // a full sheet, cut into N identical copies) — always zero-waste, max cut
-    // consistency. Always offer it (9 for poker, 4 for tarot) even when the waste
+    // consistency. Always offer it (9 for poker, 6 for tarot) even when the waste
     // ladder wouldn't surface it on its own.
     const withSheet = ladder.includes(cardsPerPage) ? ladder : [...ladder, cardsPerPage];
     return withSheet.sort((a, b) => a - b);
@@ -232,8 +281,119 @@
   });
 
   function buildPrintKey(mode: PrintPDFMode): string {
-    const deckName = `Deck_${String(rs.nextDeckNumber).padStart(3, "0")}`;
+    const deckName = `Deck_${deckRefPadded}`;
     return [deckName, mode, copies, groupByElement, printDeckSig].join("§");
+  }
+
+  /** Deck contents → PDF document metadata, so a downloaded file is indexable
+   *  by its reference number and its word list without opening it. */
+  function buildDeckMeta() {
+    const loop = [...rs.selectedLoopTypes][0] ?? "rotated";
+    const level = [...rs.selectedLevels][0] ?? 1;
+    const period = [...rs.selectedSliceTypes][0] ?? "";
+    const words = [
+      ...new Set(sortedSequences.map((s) => simplifyRepeatedWord(s.word ?? "")).filter(Boolean)),
+    ];
+    const count = sortedSequences.length;
+    const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
+    const pretty = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+    const turns = `${rs.turnIntensity} turn${rs.turnIntensity === 1 ? "" : "s"}`;
+    const gridMode = [...rs.selectedGridModes][0] ?? "diamond";
+    const prop = pretty(String(rs.bluePropType));
+    // The specific deck this card belongs to (released name, else its number),
+    // so a printed sheet names its deck alongside the recipe it was built from.
+    const deckLabel = rs.name?.trim() || `Deck #${deckRefPadded}`;
+    // Concise recipe printed centered in each sheet's top margin: the deck it
+    // belongs to, then the compose recipe (loop, period, length, level, turns,
+    // grid, prop).
+    const deckSummary = [
+      deckLabel,
+      cap(loop),
+      period ? cap(period) : null,
+      `${rs.selectedLength}-step`,
+      `L${level}`,
+      turns,
+      cap(gridMode),
+      prop,
+    ].filter(Boolean).join("  ·  ");
+    return {
+      title: `Deck ${deckRefPadded} — ${count} cards`,
+      subject:
+        `LOOP ${loop} · ${rs.selectedLength}-step · L${level}` +
+        `${period ? ` · ${period}` : ""} · ${cap(gridMode)} · ${prop} · ${count} cards.` +
+        ` Words: ${words.join(", ")}`,
+      keywords: words,
+      deckSummary,
+    };
+  }
+
+  // Recipe line shown both centered on each exported PDF sheet AND in the print
+  // preview's top margin, so screen matches print. Same source as the PDF meta.
+  const deckSummaryLine = $derived(buildDeckMeta().deckSummary);
+
+  // ── Generated-deck archive (local IndexedDB) ───────────────────────────────
+  async function refreshArchive() {
+    archivedDecks = await listArchivedDecks();
+    isLoadingArchive = false;
+  }
+
+  function buildArchiveMeta(): ArchivedDeckMeta {
+    return {
+      refNumber: rs.referenceNumber,
+      createdAt: new Date().toISOString(),
+      deckMode: rs.deckMode,
+      loopType: [...rs.selectedLoopTypes][0],
+      length: rs.selectedLength,
+      level: [...rs.selectedLevels][0],
+      period: [...rs.selectedSliceTypes][0],
+      prop: String(rs.bluePropType),
+      cardCount: rs.cards.length,
+      words: buildDeckMeta().keywords,
+    };
+  }
+
+  /** Persist the just-generated deck to the local archive (every generation, no
+   *  cap). Best-effort + fire-and-forget — never blocks the draw. Skips released
+   *  views and empty/unnumbered decks. */
+  function archiveCurrentDeck() {
+    if (rs.viewingRelease || rs.cards.length === 0 || rs.referenceNumber <= 0) return;
+    const meta = buildArchiveMeta();
+    const payload = {
+      refNumber: rs.referenceNumber,
+      // Snapshot out of the rune proxies so IndexedDB structured-clone is clean.
+      cards: $state.snapshot(rs.cards) as DeckReleaseCard[],
+      sequences: $state.snapshot(rs.sequences) as SequenceData[],
+    };
+    void archiveDeck(meta, payload).then(refreshArchive);
+  }
+
+  /** Re-open an archived deck: load its exact cards/sequences back into Review so
+   *  its backs can be recovered (re-rendered, printed, exported, released). */
+  async function openArchivedDeck(refNumber: number) {
+    const payload = await getArchivedDeck(refNumber);
+    if (!payload) { toast.info("Couldn't load that archived deck."); return; }
+    ++rs.drawGeneration; // cancel any in-flight draw
+    const meta = archivedDecks.find((d) => d.refNumber === refNumber);
+    rs.viewingRelease = null;
+    rs.name = ""; // generated decks are titled by number, not a stale release name
+    rs.referenceNumber = refNumber;
+    rs.sequences = payload.sequences;
+    rs.cards = payload.cards;
+    if (meta) {
+      rs.deckMode = meta.deckMode;
+      if (meta.loopType) rs.selectedLoopTypes = new Set([meta.loopType]);
+      if (meta.length) rs.selectedLength = meta.length;
+      if (meta.level) rs.selectedLevels = new Set([meta.level]);
+      if (meta.period) rs.selectedSliceTypes = new Set([meta.period as "halved" | "quartered"]);
+      if (meta.prop) rs.selectedPropType = meta.prop as PropType;
+    }
+    rs.step = "review";
+    rs.persist();
+  }
+
+  async function handleDeleteArchived(refNumber: number) {
+    await deleteArchivedDeck(refNumber);
+    await refreshArchive();
   }
 
   // 'fronts'/'backs' scope the preview to that side; combined/zip show all.
@@ -255,11 +415,11 @@
     isExporting = true; exportError = ""; exportProgress = 0; exportTotal = 0;
     try {
       const { getOrBuildPrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-cache");
-      const deckName = `Deck_${String(rs.nextDeckNumber).padStart(3, "0")}`;
+      const deckName = `Deck_${deckRefPadded}`;
       const copiesSuffix = copies > 1 ? `_x${copies}` : "";
       const suffix = (mode === "fronts" ? "_fronts" : mode === "backs" ? "_backs" : "_print") + copiesSuffix;
       const blob = await getOrBuildPrintPDF(buildPrintKey(mode), renderedPairs, deckName, cardSize, mode,
-        { copies, elements: tndElements, groupByElement }, (current, total) => {
+        { copies, elements: tndElements, groupByElement, meta: buildDeckMeta() }, (current, total) => {
           exportProgress = current; exportTotal = total;
         });
       triggerDownload(blob, `${deckName}${suffix}.pdf`);
@@ -270,15 +430,23 @@
     }
   }
 
+  /** Download fronts + backs as TWO separate PDF files in one click (no combined
+   *  page, no per-side clicking). Sequential so each finishes before the next. */
+  async function handleExportFrontsAndBacks() {
+    if (renderedPairs.length === 0 || isExporting) return;
+    await handleExportPDF("fronts");
+    await handleExportPDF("backs");
+  }
+
   async function handlePrint(mode: PrintPDFMode) {
     if (renderedPairs.length === 0 || isPrinting) return;
     isPrinting = true; exportError = "";
     try {
       const { getOrBuildPrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-cache");
       const { printPdfBlob } = await import("$lib/features/choreo-card/services/print-blob");
-      const deckLabel = `Deck_${String(rs.nextDeckNumber).padStart(3, "0")}`;
+      const deckLabel = `Deck_${deckRefPadded}`;
       const blob = await getOrBuildPrintPDF(buildPrintKey(mode), renderedPairs, deckLabel, cardSize, mode,
-        { copies, elements: tndElements, groupByElement });
+        { copies, elements: tndElements, groupByElement, meta: buildDeckMeta() });
       printPdfBlob(blob);
     } catch (e) {
       exportError = `Print failed: ${e instanceof Error ? e.message : e}`;
@@ -292,7 +460,7 @@
     isExporting = true; exportError = ""; exportProgress = 0; exportTotal = 0;
     try {
       const { exportDeckZIP } = await import("$lib/features/choreo-card/services/print-zip-exporter");
-      const deckName = `Deck_${String(rs.nextDeckNumber).padStart(3, "0")}`;
+      const deckName = `Deck_${deckRefPadded}`;
       const blob = await exportDeckZIP(renderedPairs, deckName, (current, total) => {
         exportProgress = current; exportTotal = total;
       });
@@ -305,7 +473,12 @@
   }
 
   function rebuildPool() {
-    const filter: CatalogPoolFilter = { sliceTypes: rs.selectedSliceTypes };
+    const filter: CatalogPoolFilter = {
+      sliceTypes: rs.selectedSliceTypes,
+      loopTypes: rs.selectedLoopTypes,
+      levels: rs.selectedLevels,
+      startPositionIds: rs.selectedStartPositionIds.size > 0 ? rs.selectedStartPositionIds : undefined,
+    };
     pool = buildSequencePool(catalogs, filter);
     if (releasedIds.size > 0) {
       prunePool(pool, releasedIds, new Set([4]));
@@ -378,6 +551,7 @@
 
   onMount(async () => {
     const savedDeckNumber = initialViewingDeckNumber;
+    void refreshArchive();
 
     const releasesPromise = getAllReleases().then(r => {
       releases = r;
@@ -442,6 +616,35 @@
     if (savedDeckNumber || rs.viewingRelease) return;
     if (rs.step !== "review" || rs.cards.length === 0) return;
     if (rs.sequences.length === rs.cards.length) return;
+
+    // Live-generated decks can't be re-derived from a catalog — their cards
+    // carry sourceCatalogId "live-gen" with synthetic ids, so loadSequencesByIds
+    // returns nothing. Restore their exact sequences/cards from the IndexedDB
+    // archive instead, keyed by the persisted reference number.
+    const isLiveGen = rs.cards.some((c) => c.sourceCatalogId === "live-gen");
+    if (isLiveGen) {
+      if (rs.referenceNumber > 0) {
+        const payload = await getArchivedDeck(rs.referenceNumber);
+        if (payload?.sequences.length) {
+          rs.sequences = payload.sequences;
+          rs.cards = payload.cards;
+          prewarmCardPool({
+            sequences: rs.sequences,
+            bluePropType: rs.bluePropType,
+            redPropType: rs.redPropType,
+            theme: rs.theme,
+            iconPaths: rs.cards.map((c) => c.footer?.iconPath).filter((p): p is string => !!p),
+          });
+          const warmSeq = rs.sequences[0];
+          if (warmSeq) warmCardBackCaches(warmSeq, rs.theme);
+          return;
+        }
+      }
+      // No archived payload to recover from — can't rebuild a live-gen deck.
+      toast.info("This generated deck's cards couldn't be restored. Redraw to rebuild it.");
+      return;
+    }
+
     const gen = ++rs.drawGeneration;
     await loadSelectedSequences(gen);
   }
@@ -457,7 +660,7 @@
     rebuildPool();
   }
 
-  function handleModeChange(mode: 'loop' | 'tnd') {
+  function handleModeChange(mode: 'loop' | 'tnd' | 'gallery') {
     rs.deckMode = mode;
     if (mode === 'tnd' && rs.selectedTnDFamilies.size === 0) {
       rs.selectedTnDFamilies = new Set(rs.tndFamilies.map(f => f.familyId));
@@ -557,18 +760,29 @@
         };
       });
     }
+    // Rebuild the pool so the draw always reflects the current loop-type / level /
+    // start-position dials, not just whatever the last slice toggle left in `pool`.
+    rebuildPool();
+    // Seeded draw: the recipe (dials + seed) is the durable truth. Same (recipe,
+    // seed) → byte-identical deck (reproduce); Reroll mints a new seed → fresh draw.
+    const recipe = rs.toRecipe();
+    const masterKey = `${recipe.seed}:${hashRecipe(recipe)}`;
+    const rng = makeRng(masterKey);
     // Target deck size is the FINAL count. Registers × grid modes each duplicate
     // every base card, so compose `base = target / multiplier` and let the
     // enumeration below fan it back up to ~target (e.g. 52 target + radial &
     // nonradial → 26 base × 2 = 52 out, not 104).
     const { base } = loopDrawCounts(rs.totalCards, registers.length, grids.length);
-    const cards = composeDeck(pool, rs.weights, base, { center: rs.notes });
+    const cards = composeDeck(pool, rs.weights, base, { center: rs.notes }, rng);
     // Full enumeration: each composed card is emitted once per (register × grid
     // mode), sharing the same rolled reversal/turn so register/grid are pure axes.
+    // Per-slot sub-stream: each base card's variation is a pure function of
+    // (recipe, slot index), so adding/removing one card never reshuffles the rest.
     const out: DeckReleaseCard[] = [];
     let position = 1;
+    let baseIndex = 0;
     for (const c of cards) {
-      const rolled = rollVariation(c.stepCount, rs.variationConfig, Math.random);
+      const rolled = rollVariation(c.stepCount, rs.variationConfig, makeRng(childSeed(masterKey, baseIndex++)));
       for (const mode of registers) {
         for (const grid of grids) {
           const variation = {
@@ -587,27 +801,250 @@
     return out;
   }
 
+  /**
+   * LOOP deck = live generation. Runs the same engine the Generate panel uses,
+   * once per card, with the bento dials mapped to GenerationOptions. No Firestore
+   * pool — every card is generated fresh, deduped by content. The engine is
+   * unseeded, so each call yields a distinct sequence (fresh 52 every draw).
+   * Returns false if the draw was superseded or produced nothing.
+   */
+  async function generateLiveDeck(generation: number): Promise<boolean> {
+    const length = rs.selectedLength || 8;
+    const gridMode = ([...rs.selectedGridModes][0] ?? "diamond") as "diamond" | "box";
+    const period = rs.selectedSliceTypes.has("quartered") ? Period.QUARTERED : Period.HALVED;
+    const loopType = ([...rs.selectedLoopTypes][0] ?? "rotated") as LOOPType;
+    const turnIntensity = rs.turnIntensity; // generator max-intensity model (0–3 scalar)
+    const motionTypeFilter = rs.dashStyle === "low" ? "no-dash" : rs.dashStyle === "high" ? "prefer-dash" : null;
+
+    // Selected start positions (GridPosition strings). Empty ⇒ engine picks any.
+    // Build the position pictographs for the active grid mode so each card can be
+    // seeded from one of the chosen positions; orientation is passed explicitly
+    // (blue/redStartOrientation) so the engine bakes it into every beat 0.
+    const startPosPics =
+      rs.selectedStartPositionIds.size > 0
+        ? startPositionManager
+            .getAllStartPositionVariations(
+              gridMode as GridMode,
+              rs.startOriBlue as Orientation,
+              rs.startOriRed as Orientation,
+            )
+            .filter((p) => rs.selectedStartPositionIds.has(String(p.startPosition)))
+        : [];
+
+    const options: GenerationOptions = {
+      mode: GenerationMode.CIRCULAR,
+      length,
+      gridMode,
+      propType: rs.bluePropType,
+      difficulty: levelToDifficulty([...rs.selectedLevels][0] ?? 1),
+      loopType,
+      period,
+      constraintPreset: rs.propStyle,
+      handPathMode: rs.handStyle,
+      motionTypeFilter,
+      turnIntensity,
+      blueStartOrientation: rs.startOriBlue,
+      redStartOrientation: rs.startOriRed,
+    };
+
+    const target = rs.totalCards || 52;
+    // Variety pack: distinct word titles are the priority. Fill EVERY distinct
+    // title first (one pass, no repeats); only once the title space is exhausted
+    // does any title get a single 2nd (path-distinct) copy — "a couple
+    // duplicates is fine", never more. So a deck is mostly-unique words, and is
+    // honestly smaller than the requested size when the config's word space is
+    // small (e.g. 8-step QUARTERED → a 2-step seed → only a few dozen words;
+    // halved seeds or longer lengths open up far more).
+    const MAX_PER_WORD = 2;
+    const seqs: SequenceData[] = [];
+    // Dedup on the location-arrangement SKELETON (word + per-step locations,
+    // motion type, rotation direction — NOT turns/orientations/reversal flags).
+    // So a card the engine produces as "same path, different turn pattern" is
+    // rejected; a repeated word title is only allowed when the path itself
+    // differs. (Content-only dedup let zero-turn vs one-turn copies of an
+    // identical path both through — exactly what we don't want.)
+    const seenSkeleton = new Set<string>();
+    const wordCount = new Map<string, number>(); // simplified word → accepted copies
+    rs.isLoadingSequences = true;
+    rs.drawProgress = 0;
+    let attempts = 0;
+    let sinceAccept = 0;
+    let maxPerWord = 1;
+    const promoteAfter = Math.max(60, Math.round(target / 3));
+    const maxAttempts = target * 12;
+    try {
+      while (seqs.length < target && attempts < maxAttempts) {
+        attempts++;
+        if (generation !== rs.drawGeneration) return false;
+        // Seed this card from a randomly-chosen selected start position (even
+        // coverage across the set; engine picks any when none selected).
+        if (startPosPics.length) {
+          options.startPosition = startPosPics[Math.floor(Math.random() * startPosPics.length)];
+        }
+        let s: SequenceData;
+        try {
+          s = await generationOrchestrator.generateSequence(options);
+        } catch (e) {
+          console.warn("Live deck: a generation attempt failed", e);
+          continue;
+        }
+        const skeleton = hashSequenceSkeleton(s);
+        if (!seenSkeleton.has(skeleton)) {
+          const word = simplifyRepeatedWord(s.word ?? "") || skeleton;
+          const count = wordCount.get(word) ?? 0;
+          if (count < maxPerWord) {
+            seenSkeleton.add(skeleton);
+            wordCount.set(word, count + 1);
+            seqs.push(s);
+            rs.drawProgress = seqs.length;
+            sinceAccept = 0;
+            continue;
+          }
+        }
+        // Rejected (duplicate content, or this title already at the tier cap).
+        sinceAccept++;
+        if (sinceAccept >= promoteAfter) {
+          if (maxPerWord < MAX_PER_WORD) {
+            maxPerWord++;          // open up a 2nd, then 3rd copy per title
+            sinceAccept = 0;
+          } else {
+            break;                // every title at 3 copies, nothing new → done
+          }
+        }
+      }
+    } finally {
+      rs.isLoadingSequences = false;
+    }
+    if (generation !== rs.drawGeneration) return false;
+    if (seqs.length === 0) {
+      toast.info("Couldn't generate sequences for these settings — try a different loop type or length.");
+      return false;
+    }
+    if (seqs.length < target) {
+      // Expected when the distinct-word space is smaller than the requested size.
+      // Prioritizing variety (≤2 copies per word) over hitting the number. The
+      // lever for more cards is a bigger word space: halved period or a longer
+      // length give longer seeds = many more distinct words.
+      toast.info(`Generated ${seqs.length} of ${target} — only ${wordCount.size} distinct words exist for these settings. For more variety try Halved period or a longer length.`);
+    }
+
+    rs.sequences = seqs;
+    rs.cards = seqs.map((s, i) => ({
+      sequenceId: `${(s.word ?? "loop").slice(0, 16)}-${i}`,
+      sourceCatalogId: "live-gen",
+      stepCount: s.steps?.length ?? length,
+      word: s.word ?? "",
+      position: i + 1,
+      footer: { center: rs.notes },
+    }));
+    prewarmCardPool({
+      sequences: rs.sequences,
+      bluePropType: rs.bluePropType,
+      redPropType: rs.redPropType,
+      theme: rs.theme,
+      iconPaths: [],
+    });
+    return true;
+  }
+
+  /** Draw a deck from the operator's library by filter-query. Sets cards +
+   *  sequences directly (the query already returns full SequenceData), mirroring
+   *  the LOOP live-draw path. Returns false on empty result / failure. */
+  async function composeGalleryDeck(gen: number): Promise<boolean> {
+    rs.isLoadingSequences = true;
+    try {
+      const { queryGalleryDeck } = await import("../../services/gallery-deck-source");
+      const { cards, sequences } = await queryGalleryDeck(rs.galleryFilters, rs.totalCards, rs.notes);
+      if (gen !== rs.drawGeneration) return false;
+      if (sequences.length === 0) {
+        toast.info("No library sequences match these filters.");
+        return false;
+      }
+      rs.sequences = sequences;
+      rs.cards = cards;
+      prewarmCardPool({
+        sequences,
+        bluePropType: rs.bluePropType,
+        redPropType: rs.redPropType,
+        theme: rs.theme,
+        iconPaths: [],
+      });
+      return true;
+    } catch (e) {
+      console.warn("Gallery draw failed:", e);
+      toast.error("Gallery draw failed — check you're signed in.");
+      return false;
+    } finally {
+      rs.isLoadingSequences = false;
+    }
+  }
+
   async function handleDraw() {
     const gen = ++rs.drawGeneration;
-    // Fresh draw = a new, not-yet-named deck. Clear any name left over from a
-    // previously composed/released deck so the header shows the placeholder, not
-    // the last deck's title.
+    // Fresh draw = a new, not-yet-named deck. Clear any leftover name.
     rs.name = "";
-    rs.cards = composeFullDeck();
-    if (await bounceIfDuplicate()) return;
-    await loadSelectedSequences(gen);
-    if (gen !== rs.drawGeneration) return;
+    rs.seed = mintSeed();
+    rs.bumpReference();
+    if (rs.deckMode === "loop") {
+      const ok = await generateLiveDeck(gen);
+      if (!ok || gen !== rs.drawGeneration) return;
+    } else if (rs.deckMode === "gallery") {
+      const ok = await composeGalleryDeck(gen);
+      if (!ok || gen !== rs.drawGeneration) return;
+    } else {
+      rs.cards = composeFullDeck();
+      if (await bounceIfDuplicate()) return;
+      await loadSelectedSequences(gen);
+      if (gen !== rs.drawGeneration) return;
+    }
+    archiveCurrentDeck();
     rs.step = "review";
     rs.persist();
   }
 
   async function handleRedraw() {
     const gen = ++rs.drawGeneration;
-    rs.cards = composeFullDeck();
-    if (await bounceIfDuplicate()) return;
-    await loadSelectedSequences(gen);
-    if (gen !== rs.drawGeneration) return;
+    rs.name = ""; // fresh draw = not-yet-named; title falls back to the deck number
+    rs.reroll();
+    rs.bumpReference();
+    if (rs.deckMode === "loop") {
+      const ok = await generateLiveDeck(gen);
+      if (!ok || gen !== rs.drawGeneration) return;
+    } else {
+      rs.cards = composeFullDeck();
+      if (await bounceIfDuplicate()) return;
+      await loadSelectedSequences(gen);
+      if (gen !== rs.drawGeneration) return;
+    }
+    archiveCurrentDeck();
     rs.persist();
+  }
+
+  /** Re-run the gallery filter against the live library and replace the on-screen
+   *  deck with the current matches. Works while composing (uses live filters) or
+   *  viewing a released gallery deck (uses the release's stamped filters). */
+  async function handleRefreshGallery() {
+    const filters = rs.viewingRelease?.recipe?.galleryFilters ?? rs.galleryFilters;
+    const cap = rs.viewingRelease?.recipe?.totalCards ?? rs.totalCards;
+    const gen = ++rs.drawGeneration;
+    rs.isLoadingSequences = true;
+    try {
+      const { queryGalleryDeck } = await import("../../services/gallery-deck-source");
+      const { cards, sequences } = await queryGalleryDeck(filters, cap, rs.notes);
+      if (gen !== rs.drawGeneration) return;
+      if (sequences.length === 0) { toast.info("No library sequences match these filters."); return; }
+      rs.sequences = sequences;
+      rs.cards = cards;
+      prewarmCardPool({ sequences, bluePropType: rs.bluePropType, redPropType: rs.redPropType, theme: rs.theme, iconPaths: [] });
+      rs.persist();
+      if (!rs.viewingRelease) archiveCurrentDeck();
+      toast.success(`Refreshed — ${sequences.length} sequences from your gallery.`);
+    } catch (e) {
+      console.warn("Gallery refresh failed:", e);
+      toast.error("Gallery refresh failed.");
+    } finally {
+      rs.isLoadingSequences = false;
+    }
   }
 
   async function loadSelectedSequences(generation: number) {
@@ -627,7 +1064,14 @@
 
       const baseByKey = new Map<string, SequenceData>();
       for (const [catalogId, seqIds] of byCatalog) {
-        const loaded = await loadSequencesByIds(catalogId, seqIds);
+        // Gallery cards aren't in any catalog — resolve them from the library.
+        let loaded: SequenceData[];
+        if (catalogId === "gallery") {
+          const { resolveGalleryCards } = await import("../../services/gallery-deck-source");
+          loaded = await resolveGalleryCards(seqIds);
+        } else {
+          loaded = await loadSequencesByIds(catalogId, seqIds);
+        }
         for (const s of loaded) baseByKey.set(`${catalogId}::${s.id}`, s);
       }
       if (generation !== rs.drawGeneration) return;
@@ -639,6 +1083,27 @@
       const resolved = resolveDeckSequences(rs.cards, baseByKey, edges);
       rs.sequences = resolved.map((r) => r.sequence);
       rs.brokenLoopCount = resolved.filter((r) => !r.turnLoopClosed).length;
+
+      // Pre-warm the worker pool now — both Draw and view-release funnel through
+      // here, so the ~5s asset-bundle seed overlaps the step→review transition and
+      // the review render hits the warm path. Fire-and-forget; failure is a no-op
+      // (render falls back to the main thread).
+      prewarmCardPool({
+        sequences: rs.sequences,
+        bluePropType: rs.bluePropType,
+        redPropType: rs.redPropType,
+        theme: rs.theme,
+        iconPaths: rs.cards
+          .map((c) => c.footer?.iconPath)
+          .filter((p): p is string => !!p),
+      });
+
+      // Pre-warm the card-BACK constant rasterizer caches off the critical path.
+      // buildBackJob's first call mounts+rasterizes the theme-constant elements
+      // (~340ms); doing it here (beside the front pool seed) relocates that freeze
+      // into the step→review transition so the first card render doesn't block.
+      const warmSeq = rs.sequences[0];
+      if (warmSeq) warmCardBackCaches(warmSeq, rs.theme);
     } catch (err) {
       console.warn("Failed to load sequences:", err);
     } finally {
@@ -675,6 +1140,22 @@
     }
     // Persist the post-swap deck so the manual edit survives reload/HMR too.
     rs.persist();
+  }
+
+  /** Remove a card from the current LOOP deck. Resolved by sequence identity so
+   *  the correct card goes regardless of the active sort; positions re-number,
+   *  and the archived copy is kept in sync. TnD decks don't allow this. */
+  function handleRemoveCard(seq: SequenceData) {
+    if (rs.deckMode !== "loop") return;
+    let i = rs.sequences.indexOf(seq);
+    if (i < 0) i = rs.sequences.findIndex((s) => s.id === seq.id);
+    if (i < 0) return;
+    rs.sequences = rs.sequences.filter((_, idx) => idx !== i);
+    rs.cards = rs.cards
+      .filter((_, idx) => idx !== i)
+      .map((c, idx) => ({ ...c, position: idx + 1 }));
+    rs.persist();
+    archiveCurrentDeck(); // re-archive the trimmed deck under the same ref number
   }
 
   function openReleaseModal() {
@@ -744,8 +1225,16 @@
     // key matches what was stored (otherwise live setting changes force a
     // full re-render every view). Older decks have no prop snapshot → staff.
     rs.themeOverride = release.theme ?? null;
-    rs.bluePropOverride = (release.bluePropType as PropType | undefined) ?? null;
-    rs.redPropOverride = (release.redPropType as PropType | undefined) ?? null;
+    // TnD + Gallery decks have no canonical prop — they follow the current prop
+    // setting so the in-deck switcher can change it. LOOP releases stay pinned to
+    // their release-time prop (their cached render matches the stored snapshot).
+    if (!isLoopRelease(release)) {
+      rs.bluePropOverride = null;
+      rs.redPropOverride = null;
+    } else {
+      rs.bluePropOverride = (release.bluePropType as PropType | undefined) ?? null;
+      rs.redPropOverride = (release.redPropType as PropType | undefined) ?? null;
+    }
     rs.step = "review";
     rs.persist();
 
@@ -790,6 +1279,8 @@
         onToggleGridMode={(m) => rs.toggleGridMode(m)}
         reversalPattern={rs.reversalPattern}
         onReversalChange={(p) => { rs.reversalPattern = p; rs.persist(); }}
+        isGenerating={rs.isLoadingSequences}
+        genProgress={rs.drawProgress}
       />
     {:else if rs.step === "review"}
       <ReviewStep
@@ -799,11 +1290,15 @@
         bluePropType={rs.bluePropType}
         redPropType={rs.redPropType}
         nextDeckNumber={rs.nextDeckNumber}
+        refNumber={deckRefNumber}
         deckName={rs.name}
+        deckSummary={deckSummaryLine}
         isReleasing={rs.isReleasing}
         readOnly={rs.viewingRelease !== null}
         brokenLoopCount={rs.brokenLoopCount}
         showRedraw={rs.deckMode === "loop"}
+        showPropSwitcher={deckFollowsLiveProp}
+        showRefresh={viewingGallery}
         {footers}
         {onContextMenu}
         {cardSize}
@@ -821,15 +1316,26 @@
         {renderTotal}
         {rerenderKey}
         sideFilter={previewSideFilter}
-        onCardSizeChange={(s) => { cardSize = s; }}
+        onCardSizeChange={(s) => {
+          // Keep "one card per page" sticky across size switches: if copies is the
+          // current size's per-page count, retarget it to the new size's (9 poker
+          // ↔ 6 tarot) instead of stranding the old number.
+          if (copies === getPageLayout(cardSize).cardsPerPage) {
+            copies = getPageLayout(s).cardsPerPage;
+          }
+          cardSize = s;
+        }}
         onCopiesChange={(n) => { copies = n; }}
         onGroupByElementChange={(on) => { groupByElement = on; }}
         onGroupByLetterChange={(on) => { groupByLetter = on; }}
         onRerender={() => { rerenderKey++; }}
         onPairsReady={(pairs) => { renderedPairs = pairs; }}
-        onRenderStateChange={(s) => { isRendering = s.isRendering; renderProgress = s.progress; renderTotal = s.total; }}
+        onRenderStateChange={(s) => { isRendering = s.isRendering; renderProgress = s.progress; }}
         onSwapCard={handleSwapCard}
+        onRemoveCard={handleRemoveCard}
+        allowRemove={rs.deckMode === "loop"}
         onRedraw={handleRedraw}
+        onRefresh={handleRefreshGallery}
         onRelease={openReleaseModal}
         onRename={rs.viewingRelease !== null ? handleRenameDeck : undefined}
         onBack={() => {
@@ -882,14 +1388,44 @@
 
     {#if sidebarMode === "browse"}
       <div class="sidebar-body">
+        <GeneratedArchivePanel
+          decks={archivedDecks}
+          isLoading={isLoadingArchive}
+          activeRefNumber={rs.viewingRelease === null && rs.step === "review" ? rs.referenceNumber : null}
+          onOpen={openArchivedDeck}
+          onDelete={handleDeleteArchived}
+        />
         <ReleaseHistoryPanel
-          {releases}
+          title="Timing &amp; Direction Decks"
+          releases={tndReleases}
           isLoading={isLoadingReleases}
           activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
           onSelectRelease={handleSelectRelease}
           onDeleteRelease={handleDeleteRelease}
           onReuseRecipe={handleReuseRecipe}
         />
+        {#if galleryReleases.length > 0}
+          <ReleaseHistoryPanel
+            title="Gallery Decks"
+            releases={galleryReleases}
+            isLoading={isLoadingReleases}
+            activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
+            onSelectRelease={handleSelectRelease}
+            onDeleteRelease={handleDeleteRelease}
+            onReuseRecipe={handleReuseRecipe}
+          />
+        {/if}
+        {#if loopReleases.length > 0}
+          <ReleaseHistoryPanel
+            title="Released Decks"
+            releases={loopReleases}
+            isLoading={isLoadingReleases}
+            activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
+            onSelectRelease={handleSelectRelease}
+            onDeleteRelease={handleDeleteRelease}
+            onReuseRecipe={handleReuseRecipe}
+          />
+        {/if}
       </div>
       {#if rs.step === "review" && rs.viewingRelease === null}
         <div class="sidebar-footer">
@@ -924,6 +1460,7 @@
             onPrint={handlePrint}
             onExportPDF={handleExportPDF}
             onExportZIP={handleExportZIP}
+            onExportBoth={handleExportFrontsAndBacks}
           />
         {:else}
           <div class="sidebar-empty">
@@ -975,6 +1512,10 @@
   }
 
   .sidebar-body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+  /* Browse = two stacked sections (Generated · Released), each scrolls its own list. */
+  .sidebar-body > :global(.archive-panel),
+  .sidebar-body > :global(.release-history) { flex: 1 1 0; min-height: 0; }
+  .sidebar-body > :global(.archive-panel) { border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08)); }
 
   .sidebar-footer {
     padding: 12px;

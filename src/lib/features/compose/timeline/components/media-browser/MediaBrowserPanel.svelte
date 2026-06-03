@@ -9,7 +9,7 @@
 </script>
 
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { onMount } from "svelte";
   import { createMediaBrowserState } from "./state/media-browser-state.svelte";
   import MediaSearchBar from "./MediaSearchBar.svelte";

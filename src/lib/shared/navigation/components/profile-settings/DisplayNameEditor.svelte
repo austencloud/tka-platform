@@ -7,7 +7,7 @@
 <script lang="ts">
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import type { User } from "firebase/auth";
-  import { authState } from "../../../auth/state/authState.svelte";
+  import { authState } from "../../../auth/state/auth-state.svelte";
 
   interface Props {
     user: User;

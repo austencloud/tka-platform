@@ -4,7 +4,7 @@
    * Horizontal scrollable bar of module toggle chips for quick enable/disable
    */
 
-  import type { FeatureFlagConfig } from "$lib/shared/auth/domain/models/FeatureFlag";
+  import type { FeatureFlagConfig } from "$lib/shared/auth/domain/models/feature-flag";
   import { getFeatureIconAndColor } from "../shared/feature-utils";
 
   interface Props {

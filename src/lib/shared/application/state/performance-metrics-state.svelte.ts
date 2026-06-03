@@ -5,7 +5,7 @@
  * Clean separation of performance tracking from other concerns.
  */
 
-import type { UIPerformanceMetrics } from "../../foundation/ui/UITypes";
+import type { UIPerformanceMetrics } from "../../foundation/ui/ui-types";
 
 interface PerformanceMetricsState {
   // State getters

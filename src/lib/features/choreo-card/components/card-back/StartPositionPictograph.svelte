@@ -10,8 +10,8 @@
   so it works both in live Svelte rendering and offscreen DOM capture.
 -->
 <script lang="ts">
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/prepared-pictograph-data";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
   import PictographRenderer from "$lib/shared/pictograph/shared/components/PictographRenderer.svelte";
 

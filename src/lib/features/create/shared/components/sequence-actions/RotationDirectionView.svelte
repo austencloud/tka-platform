@@ -10,9 +10,9 @@
   import { onMount } from "svelte";
   import * as rotationDirectionPatternManagerModule from "$lib/features/create/shared/services/rotation-direction-pattern-manager";
   import { rotationDirectionPatternState } from "../../state/rotation-direction-pattern-state.svelte.ts";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { layoutState } from "$lib/shared/layout/layout-state.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { RotationDirectionPattern } from "../../domain/models/rotation-direction-pattern-data";
   import {
     templateToPattern,

@@ -35,7 +35,7 @@ import { buildBackJob, type BuildBackJobDeps } from "../card-back-job-builder";
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 import { computeCardBackLayout } from "../card-back-layout";
 import { deriveCardBackData } from "../../../components/card-back/card-back-data";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 const WIDTH = 1644;
 const HEIGHT = 2244;

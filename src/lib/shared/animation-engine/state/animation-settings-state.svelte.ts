@@ -25,7 +25,7 @@ import {
   DEFAULT_TRAIL_SETTINGS as MODULE_DEFAULT_TRAIL_SETTINGS,
   TAIL_LENGTH_MIN,
   TAIL_LENGTH_MAX,
-} from "../domain/types/TrailTypes";
+} from "../domain/types/trail-types";
 
 // Re-export for convenience
 export { TrailMode, TrackingMode, TrailEffect };

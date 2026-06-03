@@ -8,7 +8,7 @@
    * bundle. A lightweight placeholder is shown until the real component loads.
    */
   import type { Component } from "svelte";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
+  import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import { doc, setDoc } from "firebase/firestore";
@@ -7,8 +7,8 @@
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
-  import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import { creatorsViewState } from "../state/creators-view-state.svelte";
@@ -22,7 +22,7 @@
   import ProfileConnectionSection from "./profile/ProfileConnectionSection.svelte";
   import FollowersModal from "./profile/FollowersModal.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
-import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
+import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
 
   interface Props {
     userId: string;

@@ -35,7 +35,16 @@ export class Canvas2DVisibilityFadeManager {
     if (visible !== this.previousVisible) {
       this.targetVisible = visible;
       this.isTransitioning = true;
-      this.transitionStartTime = performance.now();
+      // Stamp the start lazily on the next updateProgress, using the SAME clock
+      // the caller drives us with. setVisible has no access to the render clock,
+      // and that clock is not always wall time: the live path drives us with rAF
+      // `performance.now()`, but the offscreen export path drives us with a
+      // virtual clock that starts at 0. Stamping `performance.now()` here and then
+      // subtracting the virtual clock in updateProgress yielded a massively
+      // NEGATIVE elapsed in the export path, so progress was negative, alpha
+      // clamped to 0, and the transition never completed — props were pinned
+      // invisible in every exported frame. Defer the stamp to the clock we're given.
+      this.transitionStartTime = null;
       this.previousVisible = visible;
     }
   }
@@ -44,13 +53,19 @@ export class Canvas2DVisibilityFadeManager {
    * Update transition progress and return current alpha
    */
   updateProgress(currentTime: number): VisibilityFadeState {
-    if (!this.isTransitioning || this.transitionStartTime === null) {
+    if (!this.isTransitioning) {
       this.currentAlpha = this.targetVisible ? 1 : 0;
       return {
         alpha: this.currentAlpha,
         isTransitioning: false,
         targetVisible: this.targetVisible,
       };
+    }
+
+    // Lazily stamp the transition start with the caller's clock (see setVisible),
+    // so the start time and the elapsed measurement always share one time source.
+    if (this.transitionStartTime === null) {
+      this.transitionStartTime = currentTime;
     }
 
     const elapsed = currentTime - this.transitionStartTime;

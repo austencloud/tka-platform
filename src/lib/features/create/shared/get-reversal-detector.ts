@@ -1,1 +1,1 @@
-export { getReversalDetector } from '$lib/shared/create/getReversalDetector';
+export { getReversalDetector } from '$lib/shared/create/get-reversal-detector';

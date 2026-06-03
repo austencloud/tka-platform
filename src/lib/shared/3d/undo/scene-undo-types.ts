@@ -1,10 +1,10 @@
-import type { EffectsConfig } from "$lib/shared/effects/domain/EffectsConfig";
+import type { EffectsConfig } from "$lib/shared/effects/domain/effects-config";
 import type { Scene3DRenderConfig } from "../scene-features/state/scene-3d-render-state.svelte";
 import type { FormationPreset } from "@austencloud/scene-3d";
 import type { Plane } from "@austencloud/scene-3d";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
-import type { EffectType } from "$lib/shared/effects/domain/EffectsConfig";
+import type { EffectType } from "$lib/shared/effects/domain/effects-config";
 import type { BackgroundType } from "@austencloud/backgrounds";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SceneId } from "$lib/features/lab/tabs/scene-lab/domain/scene-lab-types";

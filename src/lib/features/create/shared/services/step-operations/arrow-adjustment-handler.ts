@@ -3,8 +3,8 @@
  * Persists manual arrow position adjustments to the sequence state.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import { createStartPositionData } from "$lib/shared/create/factories/createStartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import type { ICreateModuleState } from "../../types/create-module-types";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";

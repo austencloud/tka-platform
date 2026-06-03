@@ -13,7 +13,7 @@
   import { untrack } from "svelte";
   import type { InlineStepGrid } from "../types";
   import { dev } from "$app/environment";
-  import { tikaPictographCache } from "$lib/shared/tika/services/TikaPictographCache";
+  import { tikaPictographCache } from "$lib/shared/tika/services/tika-pictograph-cache";
   import {
     getStaticPictographPath,
     saveStaticPictograph,

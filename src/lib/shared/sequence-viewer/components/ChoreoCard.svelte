@@ -15,26 +15,26 @@
   import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
   // Note: transition/animation imports (fade, fly, scale, flip, cubicOut) moved to
   // extracted sub-components (CardHeader, CardFooter, CardGridLayout, CellRenderer).
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PreviewCellRenderOptions } from "../services/preview-cell-renderer";
   import { onMount, onDestroy, untrack } from "svelte";
   import { calculateLayout } from "$lib/shared/render/services/layout-calculator";
   import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { tryGetLoopDisplayResolver, type LoopDisplay } from "$lib/shared/loop-labeler/getLoopDisplayResolver";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { tryGetLoopDisplayResolver, type LoopDisplay } from "$lib/shared/loop-labeler/get-loop-display-resolver";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
-  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
-  import { getQRCodeGenerator } from "$lib/shared/qr/getQRCodeGenerator";
-  import { encodeViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
+  import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
+  import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
+  import { encodeViewMode } from "$lib/shared/browse/domain/browse-view-mode";
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
   import { renderCell, deleteCellCache } from "../services/preview-cell-renderer";
   import { compositeStepNumberOnBlob } from "../services/step-number-compositor";
   import { deriveCacheKey } from "../services/cell-cache-key-deriver";
   import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
@@ -89,7 +89,7 @@
     /** Render as hand path visualization (HAND props, float arrows, no TKA) */
     handPathMode?: boolean;
     /** Browse view mode for solo prop/hand filtering */
-    browseViewMode?: import("$lib/shared/browse/domain/BrowseViewMode").BrowseViewMode;
+    browseViewMode?: import("$lib/shared/browse/domain/browse-view-mode").BrowseViewMode;
     // Settings
     darkMode?: boolean;
     userName?: string;
@@ -546,7 +546,7 @@
    * Returns undefined when not in motion-solo or data is missing.
    */
   function getMotionSoloMotion(cellIndex: number):
-    | import("$lib/shared/pictograph/shared/domain/models/MotionData").MotionData
+    | import("$lib/shared/pictograph/shared/domain/models/motion-data").MotionData
     | undefined {
     if (!isMotionSoloMode) return undefined;
     const color = showBlueMotion ? "blue" : "red";

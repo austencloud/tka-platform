@@ -1,5 +1,5 @@
 import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
-import type { SequenceData } from "../../foundation/domain/models/SequenceData";
+import type { SequenceData } from "../../foundation/domain/models/sequence-data";
 import type { ShareOptions } from "../domain/models/share-options";
 import { PreviewCache } from "./preview-cache";
 

@@ -10,7 +10,7 @@
     setNotificationTargetFeedback,
   } from "$lib/shared/feedback/state/notification-action-state.svelte";
   import { useUserPreview } from "$lib/shared/debug/context/user-preview-context";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import MyFeedbackList from "./MyFeedbackList.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 

@@ -17,7 +17,7 @@ import { getFeedSnapDetector } from "$lib/features/watch/get-feed-snap-detector"
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { FeedItem } from "../../domain/models/feed-models";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { FeedSnapDetector } from "../../services/feed-snap-detector";
   import type { FeedPreloader } from "../../services/feed-preloader";

@@ -9,13 +9,13 @@
  * Minimum 2 seconds between changes to prevent thrashing.
  */
 
-import type { QualityAdaptationConfig } from "../domain/types/QualityTypes";
+import type { QualityAdaptationConfig } from "../domain/types/quality-types";
 import {
   QualityTier,
   DeviceTier,
   QUALITY_TIER_PARAMS,
   type QualityHints,
-} from "../domain/types/QualityTypes";
+} from "../domain/types/quality-types";
 
 const DEFAULT_CONFIG: QualityAdaptationConfig = {
   targetFrameTimeMs: 16.67,

@@ -6,4 +6,4 @@ export {
   ThumbnailRenderer,
   type RenderOptions,
   type RenderProgressCallback,
-} from "$lib/shared/browse/services/ThumbnailRenderer";
+} from "$lib/shared/browse/services/thumbnail-renderer";

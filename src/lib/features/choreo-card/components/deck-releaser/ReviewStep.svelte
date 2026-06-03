@@ -1,14 +1,15 @@
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CardFooter, DeckReleaseCard } from "../../domain/models/DeckRelease";
   import type { CardPair } from "../../services/types";
   import PrintPreviewPages from "../print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "../print-preview/PrintPreviewToolbar.svelte";
   import CardInspectModal from "../CardInspectModal.svelte";
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
+  import DeckPropSwitcher from "./DeckPropSwitcher.svelte";
   import type { CardSizeId } from "../../domain/card-sizes";
   import type { TnDElement } from "../../domain/tnd-element";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   interface Props {
     cards: DeckReleaseCard[];
@@ -17,9 +18,22 @@
     bluePropType?: PropType;
     redPropType?: PropType;
     nextDeckNumber: number;
+    /** The deck's own number (reference # for generated, release # for released).
+     *  Titles an unnamed deck so it reads "Deck #007", never a stale name. */
+    refNumber?: number;
     deckName?: string;
+    /** Concise recipe line shown centered in the preview's top margin, mirroring
+     *  the exported PDF sheet. */
+    deckSummary?: string;
     onSwapCard: (index: number) => void;
+    /** Remove a card from the deck (LOOP decks only). Passed the sequence so the
+     *  tab can resolve its real index regardless of the current sort. */
+    onRemoveCard?: (sequence: SequenceData) => void;
+    /** Show the Remove action in the card inspect modal (LOOP decks). */
+    allowRemove?: boolean;
     onRedraw: () => void;
+    /** Re-query the gallery and replace the on-screen deck (gallery decks). */
+    onRefresh?: () => void;
     onRelease: () => void;
     onBack: () => void;
     /** Provided when viewing a released deck: commit an inline name edit. */
@@ -32,6 +46,11 @@
     /** Reroll only makes sense for randomly-rolled decks (LOOP). TnD is a finite,
      *  deterministic enumeration, so the redraw button is hidden for it. */
     showRedraw?: boolean;
+    /** Show the deck prop switcher in the header (TnD/Gallery decks — they have no
+     *  canonical prop; the switcher sets the live prop and re-renders). */
+    showPropSwitcher?: boolean;
+    /** Show the Refresh-from-gallery action (gallery decks). */
+    showRefresh?: boolean;
     cardSize: CardSizeId;
     copies: number;
     groupByElement: boolean;
@@ -64,9 +83,14 @@
     bluePropType,
     redPropType,
     nextDeckNumber,
+    refNumber = 0,
     deckName = "",
+    deckSummary = "",
     onSwapCard,
+    onRemoveCard,
+    allowRemove = false,
     onRedraw,
+    onRefresh,
     onRelease,
     onBack,
     onRename,
@@ -76,6 +100,8 @@
     onContextMenu,
     brokenLoopCount = 0,
     showRedraw = true,
+    showPropSwitcher = false,
+    showRefresh = false,
     cardSize,
     copies,
     groupByElement,
@@ -154,6 +180,14 @@
       inspectedFrontImageUrl = null;
     }
   }
+
+  function handleRemoveInspected() {
+    if (!inspectedSequence || !onRemoveCard) return;
+    onRemoveCard(inspectedSequence);
+    inspectedSequence = null;
+    inspectedFrontImageUrl = null;
+    inspectedRerender = null;
+  }
 </script>
 
 <div class="review-step">
@@ -176,7 +210,7 @@
           title="Click to rename"
         />
       {:else}
-        <h2 class="deck-number" class:placeholder={!deckName}>{deckName || "Untitled Deck"}</h2>
+        <h2 class="deck-number" class:placeholder={!deckName}>{deckName || `Deck #${String(refNumber).padStart(3, "0")}`}</h2>
       {/if}
       <div class="deck-meta">
         <span class="meta-cards">{cards.length} cards</span>
@@ -195,6 +229,9 @@
     </div>
 
     <div class="action-buttons">
+      {#if showPropSwitcher}
+        <DeckPropSwitcher />
+      {/if}
       <CopyForAIButton
         getData={getAiSummary}
         variant="icon-text"
@@ -208,6 +245,12 @@
         <button type="button" class="redraw-btn" onclick={onRedraw} disabled={isReleasing}>
           <i class="fas fa-dice" aria-hidden="true"></i>
           Redraw
+        </button>
+      {/if}
+      {#if showRefresh && onRefresh}
+        <button type="button" class="redraw-btn" onclick={onRefresh} disabled={isReleasing} title="Re-query your gallery for current matches">
+          <i class="fas fa-rotate" aria-hidden="true"></i>
+          Refresh
         </button>
       {/if}
     </div>
@@ -250,6 +293,7 @@
       displayMode="sheets"
       deckId={String(nextDeckNumber).padStart(3, "0")}
       deckName={`LOOP Deck #${nextDeckNumber}`}
+      {deckSummary}
       onCardClick={handleCardClick}
       onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
       onPairsReady={onPairsReady}
@@ -262,6 +306,8 @@
   <CardInspectModal
     sequence={inspectedSequence}
     frontImageUrl={inspectedFrontImageUrl}
+    {bluePropType}
+    {redPropType}
     includeStartPosition={true}
     onContextMenu={onContextMenu ? (x, y, _rerender) => {
       onContextMenu(x, y, () => {
@@ -278,6 +324,11 @@
       {#if !readOnly}
         <button class="copy-btn swap-btn" onclick={handleSwapInspected} aria-label="Swap card">
           <i class="fas fa-random"></i> Swap Card
+        </button>
+      {/if}
+      {#if allowRemove}
+        <button class="copy-btn remove-btn" onclick={handleRemoveInspected} aria-label="Remove this card from the deck">
+          <i class="fas fa-trash"></i> Remove
         </button>
       {/if}
     {/snippet}
@@ -454,6 +505,18 @@
   .swap-btn:hover {
     background: rgba(139, 92, 246, 0.25);
     border-color: rgba(139, 92, 246, 0.5);
+    color: #fff;
+  }
+
+  .remove-btn {
+    background: rgba(248, 113, 113, 0.14);
+    border-color: rgba(248, 113, 113, 0.32);
+    color: #f87171;
+  }
+
+  .remove-btn:hover {
+    background: rgba(248, 113, 113, 0.26);
+    border-color: rgba(248, 113, 113, 0.55);
     color: #fff;
   }
 

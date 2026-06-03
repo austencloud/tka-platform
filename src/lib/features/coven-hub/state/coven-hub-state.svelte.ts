@@ -1,4 +1,4 @@
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ViewerNavMode } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 
 const SEQ_KEY = "coven-hub:last-sequence-id";

@@ -5,10 +5,10 @@
  * Extracted from inline types in ToolPanel.svelte for better maintainability.
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
 import type { SimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
 import type { createCreateModuleState } from "../state/create-module-state.svelte";
 import type { SequenceState } from "../state/sequence-state-orchestrator.svelte";

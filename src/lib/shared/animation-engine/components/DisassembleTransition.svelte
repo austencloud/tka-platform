@@ -15,14 +15,14 @@
   When direction is "idle", just renders the static disassembled layout.
 -->
 <script lang="ts">
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+  import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { FireOverlayConfig } from "../domain/types/FireTypes";
-  import type { LedOverlayConfig } from "../domain/types/LedTypes";
+  import type { FireOverlayConfig } from "../domain/types/fire-types";
+  import type { LedOverlayConfig } from "../domain/types/led-types";
   import CanvasSurface from "./CanvasSurface.svelte";
   import SegmentedSequenceProgressBar from "./layers/SegmentedSequenceProgressBar.svelte";
   import { untrack } from "svelte";

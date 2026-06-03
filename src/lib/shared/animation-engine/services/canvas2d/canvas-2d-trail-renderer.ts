@@ -13,12 +13,12 @@
 import type {
   TrailPoint,
   TrailSettings,
-} from "$lib/shared/animation-engine/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-types";
 import {
   TrailMode,
   TrailEffect,
-} from "$lib/shared/animation-engine/domain/types/TrailTypes";
-import type { QualityHints } from "$lib/shared/animation-engine/domain/types/QualityTypes";
+} from "$lib/shared/animation-engine/domain/types/trail-types";
+import type { QualityHints } from "$lib/shared/animation-engine/domain/types/quality-types";
 import type { AdditionalLayerRenderData } from "$lib/shared/animation-engine/services/canvas-2d-animation-renderer";
 import { DEFAULT_CANVAS_SIZE } from "$lib/shared/animation-engine/services/canvas-resizer.svelte";
 

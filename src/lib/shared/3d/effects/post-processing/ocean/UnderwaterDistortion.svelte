@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { UnderwaterDistortionEffect, type UnderwaterDistortionOptions } from "./UnderwaterDistortionEffect";
+  import { UnderwaterDistortionEffect, type UnderwaterDistortionOptions } from "./underwater-distortion-effect";
   import { getEffectComposerContext } from "threlte-postprocessing";
   import { onMount, tick } from "svelte";
 

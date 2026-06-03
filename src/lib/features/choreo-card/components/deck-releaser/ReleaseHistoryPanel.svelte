@@ -10,9 +10,11 @@
     onDeleteRelease?: (deckNumber: number) => void;
     /** Load a deck's stamped recipe back into Configure. Omit to hide reuse. */
     onReuseRecipe?: (recipe: DeckRecipe) => void;
+    /** Section heading. Defaults to "Released Decks". */
+    title?: string;
   }
 
-  const { releases, isLoading, activeDeckNumber, onSelectRelease, onDeleteRelease, onReuseRecipe }: Props = $props();
+  const { releases, isLoading, activeDeckNumber, onSelectRelease, onDeleteRelease, onReuseRecipe, title = "Released Decks" }: Props = $props();
 
   function reuse(e: MouseEvent, recipe: DeckRecipe) {
     e.stopPropagation();
@@ -54,12 +56,14 @@
   function displayName(r: DeckRelease): string {
     return r.name?.trim() || r.notes?.trim() || `Deck #${String(r.deckNumber).padStart(3, "0")}`;
   }
+
+  const prettyProp = (p?: string) => (p ? p.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()) : "");
 </script>
 
 <div class="release-history">
   <h3 class="panel-title">
     <i class="fas fa-archive" aria-hidden="true"></i>
-    Released Decks
+    {title}
     {#if releases.length > 0}
       <span class="release-count">{releases.length}</span>
     {/if}
@@ -93,6 +97,9 @@
             <div class="release-notes">{displayName(release)}</div>
             <div class="release-meta">
               <span class="card-count">{release.cardCount} cards</span>
+              {#if release.bluePropType}
+                <span class="prop">{prettyProp(release.bluePropType)}</span>
+              {/if}
               <span class="distribution">{distributionSummary(release.stepCountDistribution)}</span>
             </div>
           </button>

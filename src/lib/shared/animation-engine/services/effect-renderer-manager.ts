@@ -17,18 +17,18 @@ import type { FireTipTracker } from "./fire-tip-tracker";
 import type { LedTipTracker } from "./led-tip-tracker";
 import type { ITrailOverlayCanvas } from "./ITrailOverlayCanvas";
 import type { IAnimationRenderLoop } from "./IAnimationRenderLoop";
-import type { EffectType, TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
-import type { FireOverlayConfig } from "../domain/types/FireTypes";
-import { DEFAULT_FIRE_CONFIG } from "../domain/types/FireTypes";
-import type { LedOverlayConfig } from "../domain/types/LedTypes";
-import { DEFAULT_LED_CONFIG, ledBrightnessToFloat } from "../domain/types/LedTypes";
+import type { EffectType, TipEffectMap, TipEffortMap } from "../domain/types/tip-effect-types";
+import type { FireOverlayConfig } from "../domain/types/fire-types";
+import { DEFAULT_FIRE_CONFIG } from "../domain/types/fire-types";
+import type { LedOverlayConfig } from "../domain/types/led-types";
+import { DEFAULT_LED_CONFIG, ledBrightnessToFloat } from "../domain/types/led-types";
 import { resolveEffectZ } from "./effect-layer";
 import type { AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
-import type { CharcoalSparkParams } from "../domain/types/CharcoalSparkTypes";
-import { semanticToCharcoalParams } from "../domain/types/CharcoalSparkTypes";
+import type { CharcoalSparkParams } from "../domain/types/charcoal-spark-types";
+import { semanticToCharcoalParams } from "../domain/types/charcoal-spark-types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import type { RenderFrameParams, RenderLoopConfig } from "./IAnimationRenderLoop";
-import type { EffectRendererLike } from "./effects/EffectRenderer";
+import type { EffectRendererLike } from "./effects/effect-renderer";
 import { EFFECT_PLUGINS, EFFECT_PLUGIN_BY_ID } from "./effects/registry";
 // WebGLLedRenderer imported as value — syncLedOverlay uses deferred requestAnimationFrame init.
 // LED is special-cased: instantiation deferred, then stored in renderers Map via `set("led", ...)`.

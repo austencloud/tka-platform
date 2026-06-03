@@ -4,9 +4,9 @@
    * A single row in the permission matrix (for tabs)
    */
 
-  import type { FeatureFlagConfig } from "$lib/shared/auth/domain/models/FeatureFlag";
-  import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
-  import { ROLE_HIERARCHY, hasRolePrivilege } from "$lib/shared/auth/domain/models/UserRole";
+  import type { FeatureFlagConfig } from "$lib/shared/auth/domain/models/feature-flag";
+  import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
+  import { ROLE_HIERARCHY, hasRolePrivilege } from "$lib/shared/auth/domain/models/user-role";
   import { getFeatureIconAndColor, getRoleColor } from "../shared/feature-utils";
 
   interface Props {

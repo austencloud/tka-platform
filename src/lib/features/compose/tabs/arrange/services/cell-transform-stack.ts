@@ -8,7 +8,7 @@
  * the best available result rather than losing all transforms.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { AppliedTransform } from "$lib/shared/animation-engine/domain/compose-types";
 import { applyTransform } from "./arrange-layer-transformer";
 

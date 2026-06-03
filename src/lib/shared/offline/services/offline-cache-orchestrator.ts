@@ -2,8 +2,8 @@
 import type { NetworkStatusMonitor } from "$lib/shared/sync/services/network-status-monitor";
 import type { GalleryOfflineCache } from "./gallery-offline-cache";
 import type { OfflineCacheStats } from "../domain/offline-cache-types";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ThumbnailLocalCache } from "$lib/shared/browse/services/ThumbnailLocalCache";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { ThumbnailLocalCache } from "$lib/shared/browse/services/thumbnail-local-cache";
 
 export class OfflineCacheOrchestrator {
   private cancelled = false;

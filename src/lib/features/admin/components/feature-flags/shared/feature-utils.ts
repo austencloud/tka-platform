@@ -7,12 +7,12 @@ import type {
   FeatureId,
   FeatureFlagConfig,
   UserFeatureOverrides,
-} from "$lib/shared/auth/domain/models/FeatureFlag";
-import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
+} from "$lib/shared/auth/domain/models/feature-flag";
+import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
 import {
   ROLE_DISPLAY,
   hasRolePrivilege,
-} from "$lib/shared/auth/domain/models/UserRole";
+} from "$lib/shared/auth/domain/models/user-role";
 import { MODULE_DEFINITIONS } from "$lib/shared/navigation/config/module-definitions";
 
 /**

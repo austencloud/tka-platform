@@ -9,7 +9,7 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+  import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
   interface CellData {
     index: number;

@@ -12,7 +12,7 @@
   import type {
     FeatureFlagConfig,
     FeatureId,
-  } from "$lib/shared/auth/domain/models/FeatureFlag";
+  } from "$lib/shared/auth/domain/models/feature-flag";
   import AdminDetailPanel from "$lib/shared/admin/components/AdminDetailPanel.svelte";
   import AdminActionButton from "$lib/shared/admin/components/AdminActionButton.svelte";
   import RoleBadge from "../shared/RoleBadge.svelte";

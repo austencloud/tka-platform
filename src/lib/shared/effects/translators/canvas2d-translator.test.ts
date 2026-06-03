@@ -14,8 +14,8 @@ import type {
   SmokeIntent,
   SparklesIntent,
   ZapIntent,
-} from "../domain/EffectsConfig";
-import { SMOKE_PALETTES } from "../domain/SmokePalettes";
+} from "../domain/effects-config";
+import { SMOKE_PALETTES } from "../domain/smoke-palettes";
 
 describe("resolveZap2D - per-hand color", () => {
   it("preserves leftColor and rightColor in the output params", () => {

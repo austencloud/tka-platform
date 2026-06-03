@@ -5,7 +5,7 @@
  * The signature captures the geometric essence independent of grid position.
  */
 
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type {
   MotionSignature,
   MotionComparisonResult,

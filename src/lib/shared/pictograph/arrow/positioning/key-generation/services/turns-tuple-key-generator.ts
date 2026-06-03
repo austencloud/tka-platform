@@ -3,7 +3,7 @@
  * Generates turns tuple array matching advanced lookup expectations.
  */
 
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
+import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 
 function getTurns(value: unknown): number {
   if (typeof value === "number") return value;

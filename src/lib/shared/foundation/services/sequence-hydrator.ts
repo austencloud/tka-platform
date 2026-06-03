@@ -4,9 +4,9 @@ import {
 	extractRedSoloProp,
 	extractStepPairings,
 } from "./sequence-decomposer";
-import type { SequenceData } from "../domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { SequenceData } from "../domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { MotionColor, MotionType, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { calculateHandpathDirection } from "$lib/shared/pictograph/arrow/positioning/calculation/services/handpath-direction-calculator";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";

@@ -12,7 +12,7 @@ import {
 	MotionColor,
 	RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 
 // Re-export for convenience - consumers can import from here
 export { GridLocation, GridMode, MotionType, Orientation, MotionColor, RotationDirection };

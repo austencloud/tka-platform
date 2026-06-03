@@ -14,8 +14,8 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
 <script lang="ts">
   import { fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import TKAGlyph from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
   import TurnsColumn from "$lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte";
   import StepNumber from "$lib/shared/pictograph/shared/components/StepNumber.svelte";
@@ -193,16 +193,11 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     transition: filter var(--duration-fast) ease-out !important;
   }
 
-  /* Dark Mode via prop (preview isolation) */
-  .glyph-overlay.dark-mode :global(.tka-glyph) {
-    filter: invert(0.9);
-  }
-
-  /* Fallback: Global .dark class only applies when NOT controlled by prop */
-  /* data-controlled attribute marks prop-controlled instances */
-  :global(:root.dark) .glyph-overlay:not([data-controlled]) :global(.tka-glyph) {
-    filter: invert(0.9);
-  }
+  /* Dark-mode glyph recoloring is handled INSIDE TKAGlyph by swapping the
+     letter's <image> source to a white-recolored SVG data URL (driven by its
+     darkMode prop) — no filter. A CSS `filter: invert()` here is both
+     unnecessary and harmful: iOS Safari drops CSS filters on SVG content (it
+     left the glyph black on iPhone), so the CSS invert is removed. */
 
   /* Accessibility: reduced motion users get instant transitions */
   @media (prefers-reduced-motion: reduce) {

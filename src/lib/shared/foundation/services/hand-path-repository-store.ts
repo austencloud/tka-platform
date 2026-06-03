@@ -13,9 +13,9 @@ import {
   type WhereClause,
 } from "$lib/shared/firestore";
 import { HandPathDataSchema } from "../domain/models/hand-path-schemas";
-import type { HandPathData } from "../domain/models/HandPathData";
+import type { HandPathData } from "../domain/models/hand-path-data";
 import type { HandPathFilters } from "./types";
-import type { ArtifactProvenance } from "../domain/models/ArtifactProvenance";
+import type { ArtifactProvenance } from "../domain/models/artifact-provenance";
 
 function handPathToDoc(path: HandPathData): Record<string, unknown> {
   const raw: Record<string, unknown> = {

@@ -5,9 +5,9 @@
   Similar to ViewerHeader but with route-aware back navigation instead of modal close.
 -->
 <script lang="ts">
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
   import ViewerOverflowMenu from "./ViewerOverflowMenu.svelte";
 
@@ -175,8 +175,6 @@
     <ViewerOverflowMenu
       variant="header"
       sequenceId={sequence?.id}
-      {practiceActive}
-      {onPracticeToggle}
       onVideoUpload={isLoggedIn ? onVideoUpload : undefined}
       {isPublished}
       onPublish={isOwned && isSaved ? onPublish : undefined}

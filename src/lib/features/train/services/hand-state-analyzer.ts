@@ -7,7 +7,7 @@
  */
 
 import type { HandLandmark } from "./hand-landmarker";
-import type { HandState } from "$lib/shared/train/domain/DetectionFrame";
+import type { HandState } from "$lib/shared/train/domain/detection-frame";
 
 export interface HandStateAnalysisResult {
   state: HandState;
