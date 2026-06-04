@@ -495,7 +495,11 @@
       onClose={() => goto(`/browse/gallery?from=scan&code=${shortCode}`)}
     >
       {#snippet children(ctx)}
-        <div class="player-layout" class:sidebar-mode={isSidebarLayout}>
+        <div
+          class="player-layout"
+          class:sidebar-mode={isSidebarLayout}
+          class:with-panel={isSidebarLayout && qrViewerMode === "animation"}
+        >
           {#if isSidebarLayout}
             <!-- Landscape / large: vertical side rail to switch views — the same
                  ViewerContentRail the desktop viewer uses. webgl2Available={false}
@@ -552,6 +556,12 @@
             </ExportTakeover>
           </div>
 
+          <!-- Desktop matches the viewer: Side-by-Side / Card / Mandala fill the
+               width with no permanent right panel (mandala brings its own dock);
+               the Effects/BPM panel appears only in 2D Animation mode — the same
+               behavior as DrawerHost's animation-export sidebar. Portrait keeps
+               the always-on control drawer. -->
+          {#if !isSidebarLayout || qrViewerMode === "animation"}
           <div class="controls-column">
             <div class="drawer-host">
               {#await import("$lib/shared/animation-panel/components/AnimationPanel.svelte") then mod}
@@ -578,6 +588,7 @@
               {/await}
             </div>
           </div>
+          {/if}
           {#if !isSidebarLayout}
             <!-- Portrait: bottom bar to switch views — the same ViewerModeBottomBar
                  the mobile viewer uses. webgl2Available={false} drops 3D. -->
@@ -765,12 +776,19 @@
 
   .player-layout.sidebar-mode {
     display: grid;
-    /* rail (auto) | canvas (flex) | controls (fixed) */
-    grid-template-columns: auto 1fr 260px;
+    /* rail (auto) | canvas (flex). Mirrors the desktop viewer: no permanent
+       right panel — Side-by-Side / Card / Mandala fill the full width. */
+    grid-template-columns: auto 1fr;
     grid-template-rows: 1fr;
     align-items: stretch;
     padding: 8px 12px;
     gap: 8px;
+  }
+
+  /* 2D Animation mode opens the Effects/BPM panel as a right sidebar — the
+     viewer's animation-export sidebar behavior. */
+  .player-layout.sidebar-mode.with-panel {
+    grid-template-columns: auto 1fr 300px;
   }
 
   /* The view-switcher rail owns the first column at landscape/desktop widths. */
@@ -821,18 +839,18 @@
 
   @media (min-width: 960px) {
     .player-layout.sidebar-mode {
-      grid-template-columns: auto 1fr 340px;
-      max-width: 1000px;
-      margin: 0 auto;
       padding: 16px 24px;
       gap: 16px;
+    }
+
+    .player-layout.sidebar-mode.with-panel {
+      grid-template-columns: auto 1fr 340px;
     }
 
   }
 
   @media (min-width: 1440px) {
-    .player-layout.sidebar-mode {
-      max-width: 1200px;
+    .player-layout.sidebar-mode.with-panel {
       grid-template-columns: auto 1fr 380px;
     }
   }
