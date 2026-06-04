@@ -22,6 +22,7 @@
   import "../pill-nav/pill-nav.css";
   import TempoControl from "./TempoControl.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { getAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
   import { EFFECT_LABELS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
@@ -31,7 +32,11 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import IconRailNav from "../pill-nav/IconRailNav.svelte";
-  import ControlDock, { type ControlDockTab } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
+  import ControlDock, {
+    type ControlDockTab,
+    type ControlDockAction,
+    type ControlDockLink,
+  } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import { buildPillSpecs, type PillId } from "../pill-nav/pill-types";
   import { loadActivePill, saveActivePill } from "../state/active-pill-persistence";
   import {
@@ -46,7 +51,9 @@
   type PanelLayout = "sidebar" | "bottom";
 
   interface Props {
-    exportOptions: ExportOptionsStateManager;
+    /** Export state. Omit (with onExport) for hosts without an export pipeline
+     *  (e.g. the landing demo) — the Export pill and footer button disappear. */
+    exportOptions?: ExportOptionsStateManager;
     isExporting: boolean;
     exportProgress?: VideoExportProgress | null;
     canvasReady?: boolean;
@@ -61,9 +68,9 @@
     onBpmChange?: (bpm: number) => void;
     selectedPropType?: PropType;
     onPropChange?: (propType: PropType) => void;
-    onExport: () => void;
+    onExport?: () => void;
     onCancel?: () => void;
-    secondaryAction?: { label: string; href: string; icon?: string };
+    secondaryActions?: (ControlDockLink | ControlDockAction)[];
     /** Render the panel's own inline export progress bar while exporting. Set
      *  false when the parent shows a full ExportTakeover over the canvas — the
      *  panel sits outside the takeover scrim, so its inline bar would be a second,
@@ -89,11 +96,15 @@
     onPropChange,
     onExport,
     onCancel,
-    secondaryAction,
+    secondaryActions = [],
     showInlineExportProgress = true,
   }: Props = $props();
 
   const exportButtonLabel = $derived(renderMode === '3d' ? 'Record Scene' : 'Download Animation');
+
+  // Export is host-optional: both the state manager and the handler must be
+  // wired for the Export pill, footer button, and dock trailing icon to render.
+  const exportEnabled = $derived(!!exportOptions && !!onExport);
 
   // ── Active pill state ──
   // Desktop sidebar reopens to the last section (default Effects) for proper
@@ -151,7 +162,9 @@
   }
 
   // ── Reactive bridge to animation visibility manager ──
-  const vm = getAnimationVisibilityManager();
+  // Context-first so hosts with an ephemeral per-canvas manager (landing demo)
+  // drive THAT instance; everywhere else falls through to the global singleton.
+  const vm = getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
   let effectsConfigState: ReturnType<typeof getEffectsConfigContext> | null = null;
   try {
     effectsConfigState = getEffectsConfigContext();
@@ -209,12 +222,14 @@
   );
 
   const exportSummary = $derived(
-    computeExportSummary({
-      resolution: exportOptions.videoResolution,
-      fps: exportOptions.videoFps,
-      loopCount: exportOptions.videoLoopCount,
-      renderMode: renderMode === "3d" ? "3d" : "2d",
-    }),
+    exportOptions
+      ? computeExportSummary({
+          resolution: exportOptions.videoResolution,
+          fps: exportOptions.videoFps,
+          loopCount: exportOptions.videoLoopCount,
+          renderMode: renderMode === "3d" ? "3d" : "2d",
+        })
+      : "",
   );
 
   const exportDisabled = $derived(isExporting || !canvasReady);
@@ -228,7 +243,7 @@
   }
 
   const estimatedTime = $derived.by(() => {
-    if (singlePlayDuration <= 0) return null;
+    if (singlePlayDuration <= 0 || !exportOptions) return null;
     return estimateExportTime(
       exportOptions.videoResolution,
       exportOptions.videoFps,
@@ -238,7 +253,7 @@
   });
 
   const timeEstimateLabel = $derived.by(() => {
-    if (estimatedTime === null) return "";
+    if (estimatedTime === null || !exportOptions) return "";
     const label = formatDuration(estimatedTime);
     if (!label) return "";
     const isEstimate = !hasDeviceMetrics(exportOptions.videoResolution);
@@ -246,7 +261,7 @@
   });
 
   const totalVideoDuration = $derived.by(() => {
-    if (singlePlayDuration <= 0) return "";
+    if (singlePlayDuration <= 0 || !exportOptions) return "";
     const unitSeconds = bpm > 0 ? 60 / bpm : 0;
     const startHold = exportOptions.videoIncludeStartPosition ? unitSeconds : 0;
     const endHold = exportOptions.videoIncludeEndHold ? unitSeconds : 0;
@@ -267,7 +282,7 @@
       effort:   { label: "Effort",   summary: effortSummary, accentColor: effortAccent },
       playback: { icon: "fa-play",      label: "Playback", summary: playbackSummary },
       display:  { icon: "fa-eye",       label: "Display",  summary: displaySummary },
-      export:   { icon: "fa-sliders",   label: "Export",   summary: exportSummary },
+      ...(exportEnabled ? { export: { icon: "fa-sliders", label: "Export", summary: exportSummary } } : {}),
     }, ANIMATION_PILL_ORDER),
   );
 
@@ -294,13 +309,17 @@
   const dockTabs = $derived<ControlDockTab[]>(
     pillSpecs.map((p) => ({ id: p.id, label: p.label, icon: p.icon, accentColor: p.accentColor })),
   );
-  const dockTrailing = $derived({
-    icon: renderMode === "3d" ? "fa-circle" : "fa-download",
-    label: exportButtonLabel,
-    onClick: onExport,
-    disabled: exportDisabled,
-    busy: !canvasReady,
-  });
+  const dockTrailing = $derived<ControlDockAction | undefined>(
+    exportEnabled && onExport
+      ? {
+          icon: renderMode === "3d" ? "fa-circle" : "fa-download",
+          label: exportButtonLabel,
+          onClick: onExport,
+          disabled: exportDisabled,
+          busy: !canvasReady,
+        }
+      : undefined,
+  );
 
   // ── SR announcer ──
   let lastAnnouncement = $state("");
@@ -374,7 +393,7 @@
         <PathShapePanel />
       </div>
     </div>
-  {:else if activePill === "export"}
+  {:else if activePill === "export" && exportOptions}
     <div class="section-pad export-fields">
       <div class="field">
         <span class="field-label">FPS</span>
@@ -524,7 +543,7 @@
         activeTab={activePill}
         onTabSelect={(id) => handlePillSelect(id as PillId)}
         trailingAction={dockTrailing}
-        {secondaryAction}
+        {secondaryActions}
       >
         {#snippet tray()}
           <div class="dock-dense">
@@ -576,6 +595,7 @@
           </div>
         </div>
 
+        {#if exportEnabled}
         <div class="panel-footer">
           {#if isExporting && showInlineExportProgress}
             <div class="export-progress-row" role="status" aria-live="polite">
@@ -625,6 +645,7 @@
             </div>
           {/if}
         </div>
+        {/if}
       </div>
     </div>
   </div>

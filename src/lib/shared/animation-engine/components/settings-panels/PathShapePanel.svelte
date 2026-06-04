@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+  import { getAnimationVisibilityContext } from "../../state/animation-visibility-context";
 
-  const vm = getAnimationVisibilityManager();
+  const vm = getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
 
   let pathShape = $state(vm.getPathShape());
   let motionAware = $state(vm.getMotionAwarePaths());

@@ -10,7 +10,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { AnimationPlaybackController } from '$lib/shared/animation-engine/services/animation-playback-controller';
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
-import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
+import { tryGetVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
 import { getOffline3DExporter } from "$lib/shared/3d/get-offline-3d-exporter";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import type { CameraKeyframeBuffer } from '$lib/shared/video-export/domain/camera-keyframe';
@@ -137,7 +137,9 @@ export class SequenceModalExporter {
 
   private get videoExportOrchestrator(): IVideoExportOrchestrator | null {
     if (!this._videoExportOrchestrator) {
-      this._videoExportOrchestrator = getVideoExportOrchestrator();
+      // Registration happens in deferred-registrations.ts via idle callback,
+      // so this can legitimately be null early in the app's life.
+      this._videoExportOrchestrator = tryGetVideoExportOrchestrator();
     }
     return this._videoExportOrchestrator;
   }
@@ -387,7 +389,10 @@ export class SequenceModalExporter {
   }
 
   cancel(): void {
-    this.videoExportOrchestrator?.cancelExport();
+    // Raw field, not the lazy getter — never instantiate the orchestrator
+    // just to cancel an export that was never started (dispose() runs this
+    // on unmount, possibly before deferred registrations have loaded).
+    this._videoExportOrchestrator?.cancelExport();
     this._activeExporter?.cancel();
     this._activeExporter = null;
     this._isExporting = false;

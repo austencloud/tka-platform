@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy } from "svelte";
 	import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+	import { getAnimationVisibilityContext } from "../../state/animation-visibility-context";
 
 	let {
 		variant = "chips",
@@ -8,7 +9,7 @@
 		variant?: "chips" | "rows";
 	} = $props();
 
-	const vm = getAnimationVisibilityManager();
+	const vm = getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
 
 	let gridVisible = $state(vm.isGridVisible());
 	let tkaGlyph = $state(vm.getVisibility("tkaGlyph"));

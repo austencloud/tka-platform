@@ -1,10 +1,9 @@
 <!--
   PlayWithItSection.svelte
 
-  Interactive effects showcase for the landing page. Lazy-loads the animation
-  engine when scrolled into view, then renders an endless spinner with effect
-  chips (Clean, Trails, Fire, LEDs) and a prop switcher. Desktop shows a
-  beat-grid side panel; mobile shows a horizontal beat strip below the canvas.
+  Infinite spinner showcase for the landing page. Lazy-loads the animation
+  engine when scrolled into view, then renders an endless spinner driven by
+  the app's real AnimationPanel (effects, props, effort, display, tempo).
 -->
 <script lang="ts">
   import type { Component } from "svelte";
@@ -43,25 +42,15 @@
 </script>
 
 <section class="play-section" bind:this={sectionEl} id="play-with-it">
-  <h2>Play with it</h2>
-  <p class="subtitle">Toggle effects, swap props, watch the notation update in real time.</p>
+  <h2>Infinite spinner</h2>
+  <p class="subtitle">Switch effects, props, effort, and tempo with the same controls you get in the app.</p>
 
   {#if InnerComponent}
     <InnerComponent />
-  {:else if loadFailed}
-    <div class="showcase skeleton-showcase" aria-hidden="true">
-      <div class="sk-toolbar"></div>
-      <div class="sk-canvas"></div>
-      <div class="sk-beat-strip">
-        {#each { length: 5 } as _}
-          <div class="sk-beat-cell"></div>
-        {/each}
-      </div>
-    </div>
   {:else}
-    <!-- Structural skeleton - same showcase proportions as PlayWithItInner -->
-    <div class="showcase skeleton-showcase" aria-hidden="true">
-      <div class="sk-toolbar"></div>
+    <!-- Structural skeleton - same showcase proportions as PlayWithItInner.
+         Stops pulsing if the lazy import failed (nothing is coming). -->
+    <div class="showcase skeleton-showcase" class:load-failed={loadFailed} aria-hidden="true">
       <div class="sk-canvas"></div>
       <div class="sk-beat-strip">
         {#each { length: 5 } as _}
@@ -74,7 +63,7 @@
 
 <style>
   .play-section {
-    max-width: 1100px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 80px 24px;
     text-align: center;
@@ -115,14 +104,6 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   }
 
-  /* Toolbar band - same height as the real toolbar (~62px with padding) */
-  .sk-toolbar {
-    height: 62px;
-    background: rgba(255, 255, 255, 0.03);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    flex-shrink: 0;
-  }
-
   /* Canvas - square aspect-ratio matching .canvas-area */
   .sk-canvas {
     width: 100%;
@@ -160,6 +141,10 @@
 
   .skeleton-showcase {
     animation: skeleton-pulse 1.8s ease-in-out infinite;
+  }
+
+  .skeleton-showcase.load-failed {
+    animation: none;
   }
 
   @media (max-width: 600px) {

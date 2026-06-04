@@ -15,13 +15,22 @@ export function registerVideoExportOrchestratorFactory(
 }
 
 export function getVideoExportOrchestrator(): IVideoExportOrchestrator {
-  if (!instance) {
-    if (!factory) {
-      throw new Error(
-        "VideoExportOrchestrator factory not registered. " +
-        "Ensure registerVideoExportOrchestratorFactory() is called at app startup."
-      );
-    }
+  const orchestrator = tryGetVideoExportOrchestrator();
+  if (!orchestrator) {
+    throw new Error(
+      "VideoExportOrchestrator factory not registered. " +
+      "Ensure registerVideoExportOrchestratorFactory() is called at app startup."
+    );
+  }
+  return orchestrator;
+}
+
+/**
+ * Non-throwing variant for callers that can degrade gracefully when the
+ * deferred registration hasn't run yet (it loads via requestIdleCallback).
+ */
+export function tryGetVideoExportOrchestrator(): IVideoExportOrchestrator | null {
+  if (!instance && factory) {
     instance = factory();
   }
   return instance;
