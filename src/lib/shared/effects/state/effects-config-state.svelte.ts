@@ -134,10 +134,18 @@ function loadStoredConfig(): EffectsConfig | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<EffectsConfig>;
-    const merged = parsed.version !== EFFECTS_CONFIG_VERSION
-      ? mergeConfig(DEFAULT_EFFECTS_CONFIG, parsed)
-      : mergeConfig(DEFAULT_EFFECTS_CONFIG, parsed);
-    return migrateFromVmStorageOnce(merged);
+    const storedVersion = parsed.version ?? 0;
+    const merged = migrateFromVmStorageOnce(mergeConfig(DEFAULT_EFFECTS_CONFIG, parsed));
+    // v16: default LED brightness dropped 5 → 3. A persisted 5 on a pre-16
+    // config is the stale old default getting echoed back, not a user choice —
+    // remap it. Users who picked 1-4 keep their setting.
+    if (storedVersion < 16 && merged.led.brightness === 5) {
+      merged.led = { ...merged.led, brightness: 3 };
+    }
+    // Stamp the current version so the next save persists it and migrations
+    // don't re-run against a user's post-migration choices.
+    merged.version = EFFECTS_CONFIG_VERSION;
+    return merged;
   } catch {
     return null;
   }

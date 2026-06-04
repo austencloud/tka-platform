@@ -16,7 +16,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 15;
+export const EFFECTS_CONFIG_VERSION = 16;
 
 export type EffectType =
   | "none"

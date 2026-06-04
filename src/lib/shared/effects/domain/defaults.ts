@@ -26,7 +26,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   },
 
   led: {
-    brightness: 5,
+    brightness: 3,
     patternId: "solid",
     patternSpeed: 1.0,
     primaryColor: "#00ff88",

@@ -14,7 +14,7 @@
   let colorInputRef: HTMLInputElement | null = $state(null);
 
   const activePatternId = $derived(effectsConfig?.led.patternId ?? "solid");
-  const brightness = $derived(effectsConfig?.led.brightness ?? 5);
+  const brightness = $derived(effectsConfig?.led.brightness ?? 3);
   const patternSpeed = $derived(effectsConfig?.led.patternSpeed ?? 1.0);
   const primaryColor = $derived(effectsConfig?.led.primaryColor ?? "#00ff88");
   const activePresetId = $derived(effectsConfig?.activePresets.led ?? null);
