@@ -296,6 +296,30 @@
     }
   }
 
+  // ── Open in Composer (festival signup funnel) ──
+  // Stores the scanned sequence as a pending edit (the exact handoff the
+  // viewer's Remix uses; the create module consumes it on init) and heads to
+  // the construct tab. ?sheet=auth opens the sign-up sheet on arrival for
+  // signed-out scanners — auth isn't initialized on this bare route, so
+  // MainApplication makes that call and drops the sheet for signed-in users.
+  function openInComposer() {
+    if (!resolvedSeq) return;
+    try {
+      localStorage.setItem(
+        "tka-pending-edit-sequence",
+        JSON.stringify(resolvedSeq)
+      );
+    } catch {
+      // Storage unavailable (private mode) — still navigate; the composer
+      // just starts empty.
+    }
+    captureEvent("qr_open_composer", {
+      short_code: shortCode,
+      sequence_word: seqWord,
+    });
+    void goto("/create/construct?sheet=auth");
+  }
+
   // Unique base letters for a word, reusing the renderer's own tokenization so
   // the priority-loaded glyphs exactly match what TKAWordGlyph will request.
   function wordBaseLetters(word: string): string[] {
@@ -509,6 +533,11 @@
               webgl2Available={false}
               onSelectMode={selectQrMode}
               onSelectSplit={selectQrSplit}
+              footerAction={{
+                label: "Open TKA",
+                icon: "fa-compass",
+                href: `/browse/gallery?from=scan&code=${shortCode}`,
+              }}
             />
           {/if}
           <div class="canvas-area">
@@ -541,6 +570,20 @@
               playbackMode={ctx.playbackMode}
               onPlaybackModeChange={ctx.handlePlaybackModeChange}
             />
+            {/if}
+            {#if isSidebarLayout}
+              <!-- Landscape/desktop has no bottom dock outside animation mode,
+                   so the scan page's two exits float over the stage. -->
+              <div class="scan-cta-cluster">
+                <button class="cta-button" onclick={openInComposer}>
+                  <i class="fas fa-pen" aria-hidden="true"></i>
+                  Open in Composer
+                </button>
+                <a class="cta-button ghost" href={`/browse/gallery?from=scan&code=${shortCode}`}>
+                  <i class="fas fa-compass" aria-hidden="true"></i>
+                  Open TKA
+                </a>
+              </div>
             {/if}
             <ExportTakeover
               phase={takeoverPhase}
@@ -583,7 +626,10 @@
                   onPlaybackModeChange={ctx.handlePlaybackModeChange}
                   onBpmChange={ctx.handleBpmChange}
                   onExport={() => handleExport(ctx)}
-                  secondaryAction={{ label: "Open TKA", href: `/browse/gallery?from=scan&code=${shortCode}`, icon: "fa-compass" }}
+                  secondaryActions={[
+                    { label: "Remix", icon: "fa-pen", onClick: openInComposer, accent: true },
+                    { label: "Open TKA", href: `/browse/gallery?from=scan&code=${shortCode}`, icon: "fa-compass" },
+                  ]}
                 />
               {/await}
             </div>
@@ -670,6 +716,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0.5rem;
     min-height: var(--min-touch-target);
     padding: 0.75rem 1.5rem;
     background: var(--theme-accent);
@@ -680,6 +727,23 @@
     font-size: 0.875rem;
     cursor: pointer;
     text-decoration: none;
+  }
+
+  .cta-button.ghost {
+    background: rgba(18, 18, 28, 0.85);
+    border: 1px solid var(--theme-stroke-strong);
+    color: var(--theme-text);
+  }
+
+  /* Floating exits over the stage (sidebar/landscape only — portrait gets
+     the same two actions in the bottom ControlDock). */
+  .scan-cta-cluster {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+    display: flex;
+    gap: 8px;
   }
 
   .word-loader {

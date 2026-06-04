@@ -24,12 +24,9 @@
     <button class="auth-nudge-primary" onclick={onCreateAccount}>
       {buttonText}
     </button>
-    <button class="auth-nudge-dismiss" onclick={onDismiss}>Not now</button>
+    <button class="auth-nudge-login-btn" onclick={onLogin}>Log in</button>
   </div>
-  <div class="auth-nudge-login">
-    <span class="login-text">Already have an account?</span>
-    <button class="login-link" onclick={onLogin}>Log in</button>
-  </div>
+  <button class="auth-nudge-dismiss" onclick={onDismiss}>Not now</button>
 </div>
 
 <style>
@@ -52,65 +49,72 @@
 
   .auth-nudge-actions {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
+  }
+
+  /* Equal-width pair so the row reads as two peer choices. */
+  .auth-nudge-primary,
+  .auth-nudge-login-btn {
+    flex: 1 1 0;
+    min-height: var(--min-touch-target, 44px);
+    border-radius: var(--radius-md, 8px);
+    padding: 10px 16px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      border-color 0.15s,
+      opacity 0.15s;
   }
 
   .auth-nudge-primary {
     background: var(--theme-accent, #3b82f6);
     color: #ffffff;
     border: none;
-    border-radius: var(--radius-md, 8px);
-    padding: 10px 20px;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.15s;
   }
 
   .auth-nudge-primary:hover {
     opacity: 0.9;
   }
 
+  .auth-nudge-login-btn {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #3b82f6) 12%,
+      transparent
+    );
+    color: var(--theme-text, #ffffff);
+    border: 1.5px solid
+      color-mix(in srgb, var(--theme-accent, #3b82f6) 45%, transparent);
+  }
+
+  .auth-nudge-login-btn:hover {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #3b82f6) 22%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #3b82f6) 70%,
+      transparent
+    );
+  }
+
   .auth-nudge-dismiss {
     background: transparent;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     border: none;
-    padding: 10px 12px;
-    font-size: var(--font-size-min, 14px);
+    margin-top: 10px;
+    padding: 6px 12px;
+    font-size: var(--font-size-compact, 12px);
     cursor: pointer;
   }
 
   .auth-nudge-dismiss:hover {
     color: var(--theme-text, #ffffff);
-  }
-
-  .auth-nudge-login {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    margin-top: 8px;
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .login-text {
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
-  }
-
-  .login-link {
-    background: none;
-    border: none;
-    color: var(--theme-accent, #3b82f6);
-    cursor: pointer;
-    font-size: var(--font-size-compact, 12px);
-    padding: 0;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-
-  .login-link:hover {
-    opacity: 0.8;
   }
 </style>

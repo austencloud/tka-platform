@@ -35,7 +35,6 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
   } from "../../navigation/services/sheet-router";
 import type { SheetType } from "../../navigation/services/types";
   import { authState } from "../../auth/state/auth-state.svelte";
-  import LandingPage from "../../auth/components/LandingPage.svelte";
   import { authDrawerState } from "../../auth/state/auth-drawer-state.svelte";
   import ErrorScreen from "../../foundation/ui/ErrorScreen.svelte";
   import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
@@ -250,6 +249,15 @@ import type { SheetType } from "../../navigation/services/types";
           await handleModuleChange("settings" as ModuleId);
         }
 
+        // A ?sheet=auth deep link means "sign in if needed" (the QR scan
+        // funnel arrives this way). Drop it when the user is already signed
+        // in so the sheet doesn't flash open. If auth hasn't restored yet,
+        // AuthSheet's own auto-close-when-authenticated effect covers it.
+        if (currentSheetType === "auth" && authState.isAuthenticated) {
+          closeSheet();
+          currentSheetType = null;
+        }
+
         cleanupSheetListener = onRouteChange(
           async (state) => {
             // Redirect legacy ?sheet=settings to settings module
@@ -379,8 +387,8 @@ import type { SheetType } from "../../navigation/services/types";
     return () => document.removeEventListener("keydown", handleKeydown);
   });
 
-  // Note: First-run wizard is now shown based on simple state checks in the template:
-  // - !isAuthenticated → LandingPage
+  // Note: First-run wizard is shown based on simple state checks in the template:
+  // - !isAuthenticated → guest mode (MainInterface with guest restrictions)
   // - isAuthenticated && !firstRunState.isDone() → FirstRunWizard
   // No need for triggerIfFirstTime() calls since we check isDone() directly
 

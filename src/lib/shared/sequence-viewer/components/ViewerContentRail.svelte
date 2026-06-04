@@ -16,9 +16,12 @@
 		onSelectMode: (mode: ContentType) => void;
 		onSelectSplit: () => void;
 		onPracticeToggle?: () => void;
+		/** Optional accent CTA pinned to the rail's bottom (e.g. the QR landing
+		 *  page's "Open TKA" entry point). Hosts that omit it get the plain rail. */
+		footerAction?: { label: string; icon: string; href: string };
 	}
 
-	let { activeMode, webgl2Available = true, practiceActive = false, onSelectMode, onSelectSplit, onPracticeToggle }: Props = $props();
+	let { activeMode, webgl2Available = true, practiceActive = false, onSelectMode, onSelectSplit, onPracticeToggle, footerAction }: Props = $props();
 
 	const railItems = $derived([
 		...viewerModeOptions(webgl2Available).map((m) => ({ id: m.id, icon: m.icon, label: m.label })),
@@ -130,6 +133,15 @@
 			</button>
 		{/each}
 	</div>
+
+	{#if footerAction}
+		<a class="rail-footer-action" href={footerAction.href} aria-label={footerAction.label}>
+			<i class="fas {footerAction.icon}" aria-hidden="true"></i>
+			{#if !collapsed}
+				<span class="rail-mode-label">{footerAction.label}</span>
+			{/if}
+		</a>
+	{/if}
 
 	<div
 		class="resize-handle"
@@ -261,6 +273,39 @@
 	}
 
 	.rail-mode-btn i {
+		font-size: 20px;
+	}
+
+	.rail-footer-action {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		flex-shrink: 0;
+		min-height: var(--min-touch-target, 44px);
+		padding: 14px 8px;
+		padding-bottom: calc(14px + env(safe-area-inset-bottom));
+		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+		background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
+		color: var(--theme-accent, #818cf8);
+		text-decoration: none;
+		transition:
+			background 120ms cubic-bezier(0.2, 0, 0, 1),
+			color 120ms cubic-bezier(0.2, 0, 0, 1);
+	}
+
+	.rail-footer-action:hover {
+		background: color-mix(in srgb, var(--theme-accent, #6366f1) 22%, transparent);
+		color: var(--theme-text, #ffffff);
+	}
+
+	.rail-footer-action:focus-visible {
+		outline: 2px solid var(--theme-accent, #6366f1);
+		outline-offset: -2px;
+	}
+
+	.rail-footer-action i {
 		font-size: 20px;
 	}
 
