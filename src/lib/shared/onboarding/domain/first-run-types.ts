@@ -3,19 +3,19 @@
  *
  * Types for the initial onboarding wizard shown to new users
  * before they start using the app.
+ *
+ * The wizard is deliberately minimal (beta notice → welcome → name) so a
+ * festival scanner gets from sign-up to the composer in seconds. Theme,
+ * favorite prop, and pictograph mode were cut on 2026-06-04 — they all have
+ * sensible defaults and live in Settings.
  */
-
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import type { BackgroundType } from "@austencloud/backgrounds";
 
 /**
  * Data collected during first-run onboarding
  */
 export interface FirstRunData {
   displayName: string;
-  theme: BackgroundType;
-  favoriteProp: PropType;
-  pictographMode: "light" | "dark";
+  pronouns: string;
 }
 
 /**
@@ -25,9 +25,6 @@ export type FirstRunStep =
   | "betaDiscovery"
   | "welcome"
   | "displayName"
-  | "theme"
-  | "favoriteProp"
-  | "pictographMode"
   | "auth";
 
 /**
@@ -60,24 +57,6 @@ export const FIRST_RUN_STEPS: FirstRunStepConfig[] = [
     id: "displayName",
     title: "What should we call you?",
     subtitle: "This is how you'll appear in the community",
-    canSkip: true,
-  },
-  {
-    id: "theme",
-    title: "Choose your vibe",
-    subtitle: "Pick a background that inspires you",
-    canSkip: true,
-  },
-  {
-    id: "favoriteProp",
-    title: "What's your favorite prop?",
-    subtitle: "We'll set this as your default",
-    canSkip: true,
-  },
-  {
-    id: "pictographMode",
-    title: "How do you like your pictographs?",
-    subtitle: "Choose your visual style",
     canSkip: true,
   },
   {

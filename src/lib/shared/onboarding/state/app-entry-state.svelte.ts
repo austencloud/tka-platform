@@ -12,6 +12,8 @@
  * Persisted to localStorage + Firebase (same pattern as first-run-state).
  */
 
+import { AUTO_TOURS_ENABLED } from "../domain/onboarding-flags";
+
 export type AppEntryPhase =
   | "wizard-active"
   | "wizard-exiting"
@@ -37,13 +39,16 @@ function createAppEntryState() {
   // If first-run is done but entry isn't, skip straight to create-tutorial.
   // Otherwise the "wizard-active" phase falls through to main app and the
   // tutorial is never shown for returning users who missed it.
+  // With auto-tours disabled, first-run-done users land straight on the app.
   const firstRunDone =
     isBrowser &&
     localStorage.getItem("tka-first-run-completed") === "true";
   const initialPhase: AppEntryPhase = completed
     ? "complete"
     : firstRunDone
-      ? "tutorial-prompt"
+      ? AUTO_TOURS_ENABLED
+        ? "tutorial-prompt"
+        : "complete"
       : "wizard-active";
 
   const state = $state<AppEntryState>({
@@ -90,6 +95,13 @@ function createAppEntryState() {
     startEntrySequence(force = false) {
       if (state.hasCompleted && !force) {
         state.phase = "complete";
+        return;
+      }
+
+      // Auto-tours are deactivated: skip the tutorial prompt entirely and
+      // drop the user straight into the app after the first-run wizard.
+      if (!AUTO_TOURS_ENABLED) {
+        this.completeEntry();
         return;
       }
 

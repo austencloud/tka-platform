@@ -5,6 +5,8 @@
  * Triggers automatically on first visit.
  */
 
+import { AUTO_TOURS_ENABLED } from "../domain/onboarding-flags";
+
 const TOUR_COMPLETED_KEY = "tka-fuse-tour-completed";
 
 export type FuseTourStop =
@@ -69,7 +71,9 @@ function createFuseTourState() {
       data.actionCompleted = true;
     },
 
+    /** No-op while auto-tours are deactivated; restart() is not gated. */
     triggerIfFirstTime(): boolean {
+      if (!AUTO_TOURS_ENABLED) return false;
       if (data.hasCompleted) return false;
       data.isActive = true;
       data.currentStopIndex = 0;
