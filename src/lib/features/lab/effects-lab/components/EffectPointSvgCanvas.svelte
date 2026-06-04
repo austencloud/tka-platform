@@ -99,13 +99,32 @@
           el.style.removeProperty("stroke-width");
         }
       }
-      // Move child nodes into the prop shape group.
+      // Normalize the source viewBox to PROP_DIMENSIONS. Tip points live in
+      // prop-dimension units, but some assets (e.g. simple_staff at 300x92.33
+      // vs dims 270x83.1) carry a different coordinate scale. Without this,
+      // the ghost renders off-center and tip markers drift off the prop ends.
+      const propDims = PROP_DIMENSIONS[propType.toLowerCase()] ?? DEFAULT_PROP_DIMENSIONS;
+      const vb = (svgRoot.getAttribute("viewBox") ?? "").trim().split(/[\s,]+/).map(Number);
+      let target: Element = propShapeGroup;
+      if (
+        vb.length === 4 && vb.every(Number.isFinite) && vb[2]! > 0 && vb[3]! > 0 &&
+        (vb[2] !== propDims.width || vb[3] !== propDims.height || vb[0] !== 0 || vb[1] !== 0)
+      ) {
+        const sx = propDims.width / vb[2]!;
+        const sy = propDims.height / vb[3]!;
+        const wrapper = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        wrapper.setAttribute("transform", `scale(${sx} ${sy}) translate(${-vb[0]!} ${-vb[1]!})`);
+        propShapeGroup.replaceChildren(wrapper);
+        target = wrapper;
+      } else {
+        propShapeGroup.replaceChildren();
+      }
+      // Move child nodes into the target group.
       // NOTE: Use Array.from snapshot, NOT while(firstChild) + importNode.
       // importNode creates a COPY without removing the source node,
       // so while(firstChild) would loop forever.
-      propShapeGroup.replaceChildren();
       for (const child of Array.from(svgRoot.childNodes)) {
-        propShapeGroup.appendChild(document.importNode(child, true));
+        target.appendChild(document.importNode(child, true));
       }
     } catch {
       propShapeGroup?.replaceChildren();
