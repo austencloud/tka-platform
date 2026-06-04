@@ -30,6 +30,17 @@ import { VideoExportOrchestrator } from "$lib/features/compose/services/video-ex
 import { getQRCodeGenerator } from "../qr/get-qr-code-generator";
 import { getImageComposer } from "../render/get-image-composer";
 
+import { getTipPointOverrideProvider } from "$lib/features/lab/effects-lab/get-tip-point-override-provider";
+
+// Register tip-point + trail-point override providers globally so tip-lab
+// assignments (e.g. fan trails emit from tip 3) apply in the sequence viewer,
+// not just while the effects-lab editor tab is mounted.
+try {
+  getTipPointOverrideProvider();
+} catch (error) {
+  console.warn("[DeferredRegistrations] Tip point override provider init failed:", error);
+}
+
 registerPublicIndexSyncerFactory(getPublicIndexSyncer);
 registerTagMigrator(migrateSequenceTags);
 registerFeedbackTesterWorkflow(feedbackTesterWorkflowService);
