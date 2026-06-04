@@ -37,8 +37,6 @@ Used in:
      */
     rotationPeriod?: Period;
     inversionPeriod?: Period;
-    /** Integer LOOP period (2 = halved, 4 = quartered, 8 = eighths). Shown as centered number badge. */
-    period?: number;
     size?: number;
     darkMode?: boolean;
     showFreeformWhenEmpty?: boolean;
@@ -48,14 +46,10 @@ Used in:
     activeComponents,
     rotationPeriod,
     inversionPeriod,
-    period,
     size = 16,
     darkMode = true,
     showFreeformWhenEmpty = true,
   }: Props = $props();
-
-  const periodBadge = $derived(period != null && period >= 2 ? String(period) : null);
-  const badgeFontSize = $derived(Math.max(7, Math.round(size * 0.55)));
 
   // Icon configuration - matches Design Lab choices.
   // Rotated's icon + label gets overridden at render time based on
@@ -211,12 +205,6 @@ Used in:
               aria-hidden="true"
             ></i>
           {/if}
-          {#if periodBadge}
-            <span
-              class="period-badge"
-              style="font-size: {badgeFontSize}px;"
-            >{periodBadge}</span>
-          {/if}
         </span>
       {/if}
     {/each}
@@ -251,20 +239,5 @@ Used in:
     display: inline-flex;
     align-items: center;
     justify-content: center;
-  }
-
-  .period-badge {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-weight: 900;
-    color: #fff;
-    line-height: 1;
-    pointer-events: none;
-    text-shadow:
-      0 0 3px rgba(0, 0, 0, 0.9),
-      0 0 6px rgba(0, 0, 0, 0.7),
-      0 1px 1px rgba(0, 0, 0, 0.8);
   }
 </style>

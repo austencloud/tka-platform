@@ -228,7 +228,6 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
                   {activeComponents}
                   {rotationPeriod}
                   {inversionPeriod}
-                  period={loopPeriod}
                   size={22}
                   darkMode={true}
                   showFreeformWhenEmpty={false}

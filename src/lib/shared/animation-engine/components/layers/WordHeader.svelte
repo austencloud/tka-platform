@@ -42,7 +42,6 @@ Supports letter highlighting during animation playback.
     loopComponents = null,
     rotationPeriod,
     inversionPeriod,
-    loopPeriod,
   }: {
     word?: string | null;
     visible?: boolean;
@@ -52,7 +51,6 @@ Supports letter highlighting during animation playback.
     loopComponents?: Set<LOOPComponent> | null;
     rotationPeriod?: Period;
     inversionPeriod?: Period;
-    loopPeriod?: number;
   } = $props();
 
   // Animation state machine: "idle" | "exiting" | "entering"
@@ -235,7 +233,6 @@ Supports letter highlighting during animation playback.
           activeComponents={loopComponents}
           {rotationPeriod}
           {inversionPeriod}
-          period={loopPeriod}
           size={20}
           darkMode={darkMode}
           showFreeformWhenEmpty={false}

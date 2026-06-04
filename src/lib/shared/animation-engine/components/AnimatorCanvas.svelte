@@ -382,7 +382,6 @@ Last audit: 2025-12-27
   );
   const computedRotationPeriod = $derived(loopDisplay.rotationPeriod);
   const computedInversionPeriod = $derived(loopDisplay.inversionPeriod);
-  const computedLoopPeriod = $derived(loopDisplay.period);
 
   function handleContextMenu(e: MouseEvent) {
     e.preventDefault();
@@ -416,7 +415,6 @@ Last audit: 2025-12-27
         loopComponents={computedLoopComponents}
         rotationPeriod={computedRotationPeriod}
         inversionPeriod={computedInversionPeriod}
-        loopPeriod={computedLoopPeriod}
       />
     </div>
 

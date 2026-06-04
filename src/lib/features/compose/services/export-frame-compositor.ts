@@ -36,7 +36,6 @@ export interface FrameCompositorConfig {
   loopComponents: Set<string> | null;
   rotationPeriod: Period | undefined;
   inversionPeriod: Period | undefined;
-  loopPeriod: number | undefined;
   showPathLines: boolean;
   sequenceSteps: readonly StepData[];
 }
@@ -128,7 +127,6 @@ export class ExportFrameCompositor {
       loopComponents,
       rotationPeriod,
       inversionPeriod,
-      loopPeriod,
     } = this.config;
 
     const actualCanvasSize = outputCanvasSize;
@@ -215,8 +213,7 @@ export class ExportFrameCompositor {
         difficultyLevel,
         loopComponents,
         rotationPeriod,
-        inversionPeriod,
-        loopPeriod
+        inversionPeriod
       );
     }
 

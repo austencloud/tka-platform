@@ -259,8 +259,7 @@ export async function renderSequenceToImage(
       opts.showDifficulty ?? true,
       opts.darkMode,
       letterStyles.length > 0 ? letterStyles : undefined,
-      opts.loopComponents,
-      opts.period
+      opts.loopComponents
     );
   }
 
