@@ -67,7 +67,6 @@
   {:else}
     <!-- Structural skeleton - visible pulsing cards while loading -->
     <div class="how-section-skeleton skeleton-pulse" aria-hidden="true">
-      <div class="sk-heading"></div>
       <div class="sk-grid">
         {#each { length: 6 } as _}
           <div class="sk-card"></div>
@@ -90,27 +89,16 @@
   }
 
   .how-section-skeleton {
-    max-width: 1100px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 80px 24px;
   }
 
-  /* Heading placeholder - matches "How TKA works" h2 height */
-  .sk-heading {
-    height: 48px;
-    width: 300px;
-    max-width: 80%;
-    margin: 0 auto 16px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  /* 3-column grid matching the real card layout */
+  /* Single 6-column row matching the real card layout */
   .sk-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-top: 48px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
   }
 
   /* Each card: visible enough that users know content is loading */
@@ -165,28 +153,29 @@
     background: rgba(255, 255, 255, 0.15);
   }
 
+  @media (max-width: 1100px) {
+    .sk-grid {
+      display: flex;
+      overflow: hidden;
+      gap: 14px;
+    }
+
+    .sk-card {
+      flex: 0 0 220px;
+    }
+  }
+
   @media (max-width: 768px) {
     .how-section-skeleton {
       padding: 48px 16px;
     }
 
-    .sk-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-    }
-
-    .sk-heading {
-      height: 36px;
+    .sk-card {
+      flex-basis: 200px;
     }
 
     .how-section-placeholder {
       padding: 48px 16px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .sk-grid {
-      grid-template-columns: 1fr 1fr;
     }
   }
 
