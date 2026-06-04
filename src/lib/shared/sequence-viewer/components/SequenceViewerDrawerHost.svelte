@@ -128,12 +128,10 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   // context (not script-scoped), so it is passed in at the call site.
   function selectSplitMode(ctx: OrchestratorContext) {
     ctx.viewerState.exitExport();
-    // Mobile has no comparison-mode bar, so the only split pairing it can show
-    // is 2D + Card. Force it here (and via the effect below) so a pairing
-    // persisted from desktop (e.g. 2D + 3D) can't strand a mobile user.
-    if (isMobileWidth) {
-      ctx.viewerState.setSplitConfig({ leftPane: 'animation', rightPane: 'card' });
-    }
+    // Side-by-side is hard-coded to 2D + Card on every width — the comparison
+    // pairing bar was retired, so force the pairing here in case a different
+    // one (e.g. 2D + 3D) was persisted before the bar went away.
+    ctx.viewerState.setSplitConfig({ leftPane: 'animation', rightPane: 'card' });
     ctx.viewerState.setViewerMode('split');
     setTimeout(() => rerenderTrigger++, 280);
   }
@@ -517,14 +515,13 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
                       playbackMode={ctx.playbackMode}
                       onPlaybackModeChange={ctx.handlePlaybackModeChange}
-                      splitConfig={isMobileWidth && ctx.viewerState.viewerMode === 'split'
+                      splitConfig={ctx.viewerState.viewerMode === 'split'
                         ? { leftPane: 'animation', rightPane: 'card' }
                         : (ctx.viewerState.viewerMode === 'card'
                         ? { ...ctx.viewerState.splitConfig, rightPane: 'card' }
                         : (ctx.viewerState.viewerMode !== 'split' && (ctx.viewerState.viewerMode === 'animation' || ctx.viewerState.viewerMode === 'animation-3d' || ctx.viewerState.viewerMode === 'mandala')
                           ? { ...ctx.viewerState.splitConfig, leftPane: ctx.viewerState.viewerMode }
                           : ctx.viewerState.splitConfig))}
-                      onSplitConfigReplace={(config) => ctx.viewerState.setSplitConfig(config)}
                       isLoggedIn={ctx.isLoggedIn}
                       onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
                     />
@@ -707,7 +704,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   .drawer-header-title-group {
     position: absolute;
     left: 50%;
-    transform: translateX(-50%);
+    top: 50%;
+    transform: translate(-50%, -50%);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -717,17 +715,12 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   }
 
   .drawer-header-title {
-    font-size: var(--font-size-sm, 14px);
+    font-size: var(--font-size-base, 16px);
     font-weight: 600;
+    line-height: 1.2;
     color: var(--theme-text, #ffffff);
     white-space: nowrap;
     pointer-events: none;
-  }
-
-  .drawer-header-title-group > .drawer-header-title {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
   }
 
   .drawer-close-button {
