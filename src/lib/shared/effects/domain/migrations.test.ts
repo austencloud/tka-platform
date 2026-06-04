@@ -411,4 +411,56 @@ describe("migrateEffectsConfig", () => {
     expect(out.tipEffectMap["*"]?.effect).toBe("smoke");
     expect(out.tipEffectMap["0-0"]?.effect).toBe("petals");
   });
+
+  it("migrates pre-v16 led.brightness 5 (stale old default) to 3", () => {
+    const v15 = {
+      version: 15,
+      led: {
+        brightness: 5, patternId: "rainbow", patternSpeed: 2.0,
+        primaryColor: "#ff0000", secondaryColor: "#00ff00", colorMode: "unified" as const,
+      },
+    };
+    const out = migrateEffectsConfig(v15);
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.led.brightness).toBe(3);
+    // Only brightness remaps - the rest of the user's led settings survive.
+    expect(out.led.patternId).toBe("rainbow");
+    expect(out.led.patternSpeed).toBe(2.0);
+  });
+
+  it("preserves a deliberate pre-v16 led.brightness 1-4", () => {
+    const v15 = {
+      version: 15,
+      led: {
+        brightness: 2, patternId: "solid", patternSpeed: 1.0,
+        primaryColor: "#00ff88", secondaryColor: "#ffffff", colorMode: "unified" as const,
+      },
+    };
+    const out = migrateEffectsConfig(v15);
+    expect(out.led.brightness).toBe(2);
+  });
+
+  it("preserves a deliberate post-v16 led.brightness 5", () => {
+    const current = {
+      version: EFFECTS_CONFIG_VERSION,
+      led: {
+        brightness: 5, patternId: "solid", patternSpeed: 1.0,
+        primaryColor: "#00ff88", secondaryColor: "#ffffff", colorMode: "unified" as const,
+      },
+    };
+    const out = migrateEffectsConfig(current);
+    expect(out.led.brightness).toBe(5);
+  });
+
+  it("deep-merges a partial pulse block over defaults", () => {
+    const v15 = {
+      version: 15,
+      pulse: { intensity: 0.9 },
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const out = migrateEffectsConfig(v15 as any);
+    expect(out.pulse.intensity).toBe(0.9);
+    expect(out.pulse.trigger).toBe("beat");
+    expect(out.pulse.palette).toBe("sonar");
+  });
 });

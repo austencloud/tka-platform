@@ -164,6 +164,17 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // (16th chip including "none"). No field migration - absent silk resolves
   // to DEFAULT_EFFECTS_CONFIG.silk via the merge below.
 
+  // v14 → v15: add pulse intent + activePresets.pulse. Net-new 16th effect
+  // (17th chip including "none"). No field migration - absent pulse resolves
+  // to DEFAULT_EFFECTS_CONFIG.pulse via the merge below.
+
+  // v15 → v16: default LED brightness dropped 5 → 3. A persisted 5 on a
+  // pre-16 config is the old default echoing back, not a user choice -
+  // remap it. Users who picked 1-4 keep their setting.
+  if (version < 16 && input.led && input.led.brightness === 5) {
+    input.led = { ...input.led, brightness: 3 };
+  }
+
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,
@@ -182,6 +193,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     ink: { ...DEFAULT_EFFECTS_CONFIG.ink, ...(input.ink ?? {}) },
     frost: { ...DEFAULT_EFFECTS_CONFIG.frost, ...(input.frost ?? {}) },
     silk: { ...DEFAULT_EFFECTS_CONFIG.silk, ...(input.silk ?? {}) },
+    pulse: { ...DEFAULT_EFFECTS_CONFIG.pulse, ...(input.pulse ?? {}) },
     activePresets: {
       ...DEFAULT_EFFECTS_CONFIG.activePresets,
       ...(input.activePresets ?? {}),

@@ -48,7 +48,7 @@ export interface EffectConfigMap {
 import type { EffectsPreset } from "../domain/effects-preset";
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 import { DEFAULT_EFFECTS_CONFIG } from "../domain/defaults";
-import { EFFECTS_CONFIG_VERSION } from "../domain/effects-config";
+import { migrateEffectsConfig } from "../domain/migrations";
 import { getSceneUndoManager } from "$lib/shared/3d/undo/get-scene-undo-manager";
 import { charcoalParamsToSemantic } from "$lib/shared/animation-engine/domain/types/charcoal-spark-types";
 
@@ -61,10 +61,25 @@ const EFFECT_IDS = [
 ] as const;
 
 /**
+ * Legacy effect keys the VM overlay consumes. Stripped from the VM entry
+ * after migration — the visibility manager re-serializes unknown keys
+ * (`{...defaults, ...parsed}` then full-object save), so without stripping
+ * these never age out and the overlay re-imposes stale values on EVERY
+ * load, silently clobbering the user's effects-config changes.
+ */
+const LEGACY_VM_EFFECT_KEYS = [
+  "fireIntensity", "fireColorBlend", "fireTurbulence", "fireColorCurve", "firePropColors",
+  "ledBrightness", "ledPatternId", "ledPatternSpeed", "ledPrimaryColor", "ledSecondaryColor",
+  "ledColorMode", "ledActivePresetId", "ledUserPresets",
+  "charcoalParams", "tipEffectMap", "effectLayerOverrides",
+] as const;
+
+/**
  * One-time migration from the old VM localStorage key.
  * If the user has non-default fire/LED/charcoal/tipEffectMap/effectLayerOverrides
  * persisted under the VM key but missing from the new EffectsConfig key, snapshot
- * them into the config once.
+ * them into the config once, then strip the consumed keys from the VM entry
+ * so this genuinely runs once.
  */
 function migrateFromVmStorageOnce(config: EffectsConfig): EffectsConfig {
   if (typeof window === "undefined") return config;
@@ -121,6 +136,21 @@ function migrateFromVmStorageOnce(config: EffectsConfig): EffectsConfig {
       migrated.activeEffect = wildcard.effect as typeof migrated.activeEffect;
     }
 
+    // Strip the consumed legacy keys so the overlay can't re-impose stale
+    // values on future loads. The effects-config key is canonical from here.
+    let stripped = false;
+    for (const key of LEGACY_VM_EFFECT_KEYS) {
+      if (key in vm) {
+        delete vm[key];
+        stripped = true;
+      }
+    }
+    if (stripped) {
+      try {
+        localStorage.setItem(VM_STORAGE_KEY, JSON.stringify(vm));
+      } catch { /* quota exceeded or private browsing */ }
+    }
+
     return migrated;
   } catch {
     return config;
@@ -133,18 +163,20 @@ function loadStoredConfig(): EffectsConfig | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<EffectsConfig>;
-    const storedVersion = parsed.version ?? 0;
-    const merged = migrateFromVmStorageOnce(mergeConfig(DEFAULT_EFFECTS_CONFIG, parsed));
-    // v16: default LED brightness dropped 5 → 3. A persisted 5 on a pre-16
-    // config is the stale old default getting echoed back, not a user choice —
-    // remap it. Users who picked 1-4 keep their setting.
-    if (storedVersion < 16 && merged.led.brightness === 5) {
-      merged.led = { ...merged.led, brightness: 3 };
+    const storedVersion = typeof parsed.version === "number" ? parsed.version : 1;
+    // Versioned migration chain FIRST — it needs the raw legacy field shapes
+    // (e.g. v2 zap.color) before any default-merge injects current-shape
+    // fields. It also merges defaults and stamps the current version.
+    const migrated = migrateEffectsConfig(parsed);
+    // Then the one-time legacy VM-key overlay (strips the keys it consumes).
+    const withVm = migrateFromVmStorageOnce(migrated);
+    // The VM key predates config versioning entirely, so a VM-supplied
+    // brightness 5 is the same stale pre-v16 default — apply the v16 remap
+    // to the overlaid value too.
+    if (storedVersion < 16 && withVm.led.brightness === 5) {
+      withVm.led = { ...withVm.led, brightness: 3 };
     }
-    // Stamp the current version so the next save persists it and migrations
-    // don't re-run against a user's post-migration choices.
-    merged.version = EFFECTS_CONFIG_VERSION;
-    return merged;
+    return withVm;
   } catch {
     return null;
   }

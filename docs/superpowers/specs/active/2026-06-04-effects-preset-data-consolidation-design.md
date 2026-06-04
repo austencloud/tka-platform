@@ -191,9 +191,42 @@ as-is (dynamic `resolvePatch` presets are built-in-only and never persisted).
 
 ## Verification
 
-1. `npm run check` clean (one cold run).
-2. In-browser: for at least trails, fire (incl. Custom), LED, charcoal —
-   click each chip → effect visibly changes, chip highlights, summary line
-   updates, ONE Ctrl+Z fully reverts, reload restores the highlighted chip.
-3. Grep-proof: `as unknown as EffectsPreset` → 0 matches;
-   `effects-preset` imports → 0 matches.
+### Mandatory unit tests (write these as part of the refactor)
+
+The existing `effects-config-state.test.ts` proves the state factory runs
+headless in vitest (sceneUndo mocked). Extend it and add a preset-data test
+so an agent can verify this refactor without a browser:
+
+> **Known trap:** `effects-config-state.test.ts:4` mocks
+> `$lib/shared/3d/undo/getSceneUndoManager`, but the real module is
+> `get-scene-undo-manager` (Phase C kebab rename) — the mock silently never
+> attaches and the real singleton runs. Fix the mock path FIRST or the undo
+> call-count assertions below will count against the wrong object.
+
+1. **`applyPreset` behavior** (extend `effects-config-state.test.ts`):
+   - merges the patch into the right effect's intent
+   - sets `activePresets[effectType]` to the preset id
+   - preserves untouched fields of that intent
+   - a subsequent `updateEffect` on the same effect nulls the active preset
+   - undo: exactly ONE `captureState`/`commitState` pair per apply (assert
+     on the mock's call counts — this pins the double-undo fix)
+2. **Preset data invariants** (new `presets/preset-data.test.ts`, iterate
+   all 16 groups via the registry's `presetGroups` map or direct imports):
+   - preset ids unique across all groups
+   - every preset has exactly one of `patch` / `resolvePatch`
+   - every static `patch`'s keys are a subset of the corresponding
+     `DEFAULT_EFFECTS_CONFIG[effectType]` keys (catches typo'd fields that
+     `Partial<Intent>` would also catch, but this guards `resolvePatch`
+     returns too — call them with localStorage mocked)
+3. `npm run check` clean + full `npx vitest run` clean (one cold run each).
+4. Grep-proof: `as unknown as EffectsPreset` → 0 matches;
+   `effects-preset` imports → 0 matches; `\.apply\(` on presets → 0 matches.
+
+### Deferred to PR review (human, in-browser)
+
+For at least trails, fire (incl. Custom), LED, charcoal: click each chip →
+effect visibly changes, chip highlights, summary line updates, ONE Ctrl+Z
+fully reverts, reload restores the highlighted chip. List this checklist in
+the PR description. Worst-case failure mode if the agent gets the chip
+plumbing subtly wrong is cosmetic (highlight/summary), not data loss — the
+intent merge path is unit-covered.
