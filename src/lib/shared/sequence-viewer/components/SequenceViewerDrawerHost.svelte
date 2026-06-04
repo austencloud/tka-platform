@@ -519,7 +519,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                         ? { leftPane: 'animation', rightPane: 'card' }
                         : (ctx.viewerState.viewerMode === 'card'
                         ? { ...ctx.viewerState.splitConfig, rightPane: 'card' }
-                        : (ctx.viewerState.viewerMode !== 'split' && (ctx.viewerState.viewerMode === 'animation' || ctx.viewerState.viewerMode === 'animation-3d' || ctx.viewerState.viewerMode === 'mandala')
+                        : (ctx.viewerState.viewerMode === 'animation' || ctx.viewerState.viewerMode === 'animation-3d' || ctx.viewerState.viewerMode === 'mandala'
                           ? { ...ctx.viewerState.splitConfig, leftPane: ctx.viewerState.viewerMode }
                           : ctx.viewerState.splitConfig))}
                       isLoggedIn={ctx.isLoggedIn}
