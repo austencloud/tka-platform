@@ -2,9 +2,8 @@
  * Canvas 2D backend parameter interfaces.
  *
  * Each extends the intent layer with 2D-specific extras that have
- * no clean 3D analog (shadow blur, canvas blend modes, etc.). These
- * extras populate `EffectsConfig.overrides.*2D` when the user has
- * opened an Advanced panel (Phase D). Core users never see them.
+ * no clean 3D analog (shadow blur, canvas blend modes, etc.). The
+ * translator derives them from the intent; users never see them.
  */
 
 import type {
@@ -211,8 +210,8 @@ export interface Ink2DParams extends InkIntent {
    *     pigment - THE #1 differentiator from trails).
    *   - `lighter` when palette.emissive is true (neon only).
    * Sprint 1 renderer computes the final composite from palette.emissive
-   * rather than honoring this field, but the field is surfaced for
-   * overrides / advanced panel work.
+   * rather than honoring this field; kept for documentation of the
+   * intended mapping.
    */
   blendMode?: GlobalCompositeOperation;
   /**

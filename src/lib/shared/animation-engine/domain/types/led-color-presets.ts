@@ -17,10 +17,6 @@ export const BUILT_IN_COLOR_PRESETS: readonly LedColorPreset[] = [
   { id: "cyan", name: "Cyan", primaryColor: "#00ffff", builtIn: true },
 ];
 
-export function findPreset(id: string, userPresets: LedColorPreset[]): LedColorPreset | undefined {
-  return BUILT_IN_COLOR_PRESETS.find((p) => p.id === id) ?? userPresets.find((p) => p.id === id);
-}
-
 export function validatePreset(p: unknown): p is LedColorPreset {
   if (!p || typeof p !== "object") return false;
   const obj = p as Record<string, unknown>;

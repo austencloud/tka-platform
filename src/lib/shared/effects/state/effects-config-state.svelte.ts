@@ -9,7 +9,6 @@
 
 import type {
   EffectsConfig,
-  EffectsOverrides,
   TrailsIntent,
   FireIntent,
   LedIntent,
@@ -180,7 +179,6 @@ function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): Effect
     effectLayerOverrides: patch.effectLayerOverrides
       ? { ...base.effectLayerOverrides, ...patch.effectLayerOverrides }
       : base.effectLayerOverrides,
-    overrides: patch.overrides ?? base.overrides,
   };
 }
 
@@ -274,16 +272,6 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     sceneUndo.commitState();
   }
 
-  function updateOverride<K extends keyof EffectsOverrides>(
-    key: K,
-    patch: NonNullable<EffectsOverrides[K]>,
-  ) {
-    const next: EffectsOverrides = { ...(config.overrides ?? {}) };
-    next[key] = { ...(next[key] ?? {}), ...patch };
-    config.overrides = next;
-    scheduleSave();
-  }
-
   function replace(next: EffectsConfig) {
     try {
       config = structuredClone(next);
@@ -312,7 +300,6 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     get frost() { return config.frost; },
     get silk() { return config.silk; },
     get pulse() { return config.pulse; },
-    get overrides() { return config.overrides; },
     get activePresets() { return config.activePresets; },
     get activeEffect() { return config.activeEffect; },
     get effectLayerOverrides() { return config.effectLayerOverrides; },
@@ -328,7 +315,6 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     setEffectLayer,
     setTipEffectMap,
     applyPreset,
-    updateOverride,
     replace,
   };
 }

@@ -247,10 +247,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
       return;
     }
 
-    const resolvedLed = resolveLed3D(
-      effectsState.led,
-      effectsState.overrides?.led3D as Partial<Parameters<typeof resolveLed3D>[1]> | undefined,
-    );
+    const resolvedLed = resolveLed3D(effectsState.led);
     // Pattern evaluator needs both colors in normalized LedColor form - it
     // decides internally whether to interpolate between them or ignore them
     // entirely (e.g. rainbow ignores both).
@@ -695,7 +692,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
 </script>
 
 {#each blueTrailTips as tip, i (i)}
-  {@const resolvedTrails = resolveTrails3D(effectsState.trails, effectsState.overrides?.trails3D as Partial<Parameters<typeof resolveTrails3D>[1]> | undefined)}
+  {@const resolvedTrails = resolveTrails3D(effectsState.trails)}
   <Trail3D
     tipPosition={tip.position}
     color={resolvedTrails.rainbow ? "rainbow" : resolvedTrails.blueColor}
@@ -712,7 +709,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
 {/each}
 
 {#each redTrailTips as tip, i (i)}
-  {@const resolvedTrails = resolveTrails3D(effectsState.trails, effectsState.overrides?.trails3D as Partial<Parameters<typeof resolveTrails3D>[1]> | undefined)}
+  {@const resolvedTrails = resolveTrails3D(effectsState.trails)}
   <Trail3D
     tipPosition={tip.position}
     color={resolvedTrails.rainbow ? "rainbow" : resolvedTrails.redColor}

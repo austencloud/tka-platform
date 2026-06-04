@@ -5,9 +5,7 @@
  * pure functions in src/lib/shared/effects/translators/.
  *
  * The intent layer describes what the user meant (fire intensity,
- * trail brightness, LED color) independent of any backend. Per-backend
- * overrides live in the optional `overrides` field and let 2D/3D
- * grow independently where their physics genuinely diverge.
+ * trail brightness, LED color) independent of any backend.
  */
 
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
@@ -360,47 +358,6 @@ export interface PulseIntent {
   trackingMode: "left_end" | "right_end" | "both_ends";
 }
 
-/**
- * Backend-specific override storage. Populated only when the user
- * has explicitly edited a backend-only parameter via an Advanced
- * panel (Phase D). Intentionally untyped here - concrete shapes
- * live with the translators.
- */
-export interface EffectsOverrides {
-  trails2D?: Record<string, unknown>;
-  trails3D?: Record<string, unknown>;
-  fire2D?: Record<string, unknown>;
-  fire3D?: Record<string, unknown>;
-  led2D?: Record<string, unknown>;
-  led3D?: Record<string, unknown>;
-  charcoal2D?: Record<string, unknown>;
-  charcoal3D?: Record<string, unknown>;
-  zap2D?: Record<string, unknown>;
-  zap3D?: Record<string, unknown>;
-  sparkles2D?: Record<string, unknown>;
-  sparkles3D?: Record<string, unknown>;
-  echo2D?: Record<string, unknown>;
-  echo3D?: Record<string, unknown>;
-  bloom2D?: Record<string, unknown>;
-  bloom3D?: Record<string, unknown>;
-  water2D?: Record<string, unknown>;
-  water3D?: Record<string, unknown>;
-  bubbles2D?: Record<string, unknown>;
-  bubbles3D?: Record<string, unknown>;
-  petals2D?: Record<string, unknown>;
-  petals3D?: Record<string, unknown>;
-  smoke2D?: Record<string, unknown>;
-  smoke3D?: Record<string, unknown>;
-  ink2D?: Record<string, unknown>;
-  ink3D?: Record<string, unknown>;
-  frost2D?: Record<string, unknown>;
-  frost3D?: Record<string, unknown>;
-  silk2D?: Record<string, unknown>;
-  silk3D?: Record<string, unknown>;
-  pulse2D?: Record<string, unknown>;
-  pulse3D?: Record<string, unknown>;
-}
-
 export interface EffectsConfig {
   version: number;
   tipEffectMap: TipEffectMap;
@@ -442,5 +399,4 @@ export interface EffectsConfig {
   activeEffect: EffectType;
   /** Per-effect render-layer override. Missing key = default ("behind"). */
   effectLayerOverrides: Record<string, "behind" | "front">;
-  overrides?: EffectsOverrides;
 }

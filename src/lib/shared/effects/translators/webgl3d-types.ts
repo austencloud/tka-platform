@@ -3,8 +3,8 @@
  *
  * Each extends the intent layer with 3D-specific extras that have
  * no 2D analog (volumetric density, bloom contribution, tube radius,
- * etc.). These populate `EffectsConfig.overrides.*3D` when the user
- * has opened a 3D Advanced panel. Core users never see them.
+ * etc.). The translator derives them from the intent; users never
+ * see them.
  */
 
 import type {
