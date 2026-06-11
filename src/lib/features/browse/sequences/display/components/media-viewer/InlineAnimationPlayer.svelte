@@ -397,10 +397,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
     border-radius: 50%;
-    color: white;
+    color: var(--theme-text);
     cursor: pointer;
     transition: all var(--duration-normal) ease;
     flex-shrink: 0;
@@ -412,7 +412,7 @@
   }
 
   .control-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-hover-bg);
   }
 
   .control-btn:active {
@@ -422,12 +422,20 @@
   .play-btn {
     width: var(--min-touch-target);
     height: var(--min-touch-target);
-    background: linear-gradient(135deg, var(--semantic-info) 0%, #2563eb 100%);
+    background: linear-gradient(
+      135deg,
+      var(--semantic-info) 0%,
+      color-mix(in srgb, var(--semantic-info) 80%, black) 100%
+    );
     border-color: transparent;
   }
 
   .play-btn:hover {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--semantic-info) 80%, black) 0%,
+      color-mix(in srgb, var(--semantic-info) 65%, black) 100%
+    );
   }
 
   .bpm-controls {
@@ -513,22 +521,22 @@
   }
 
   .error-state {
-    color: rgba(252, 165, 165, 1);
+    color: color-mix(in srgb, var(--semantic-error) 50%, white);
   }
 
   .retry-btn {
     padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
     border-radius: 6px;
-    color: white;
+    color: var(--theme-text);
     font-size: var(--font-size-compact);
     cursor: pointer;
     transition: all var(--duration-normal) ease;
   }
 
   .retry-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-hover-bg);
   }
 
   /* Reduce motion */
