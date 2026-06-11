@@ -199,44 +199,62 @@ export function firestoreListen<T>(
   onError?: (error: Error) => void,
 ): () => void {
   let unsubscribe: (() => void) | null = null;
+  // The listener attaches asynchronously. If the consumer unsubscribes before
+  // getFirestoreInstance resolves, this flag stops the attachment (or detaches
+  // immediately if the snapshot listener won the race).
+  let disposed = false;
 
-  getFirestoreInstance().then((db) => {
-    const q = buildQuery(collectionPath, db, options);
-    unsubscribe = onSnapshot(
+  getFirestoreInstance()
+    .then((db) => {
+      if (disposed) return;
+      const q = buildQuery(collectionPath, db, options);
+      unsubscribe = onSnapshot(
       q,
-      (snap) => {
-        const items: T[] = [];
-        for (const d of snap.docs) {
-          const parsed = parseDoc(
-            schema,
-            d.id,
-            d.data() as Record<string, unknown>,
-            collectionPath,
-          );
-          if (parsed !== null) items.push(parsed);
-        }
-        callback(items);
-      },
-      (error) => {
-        if (onError) {
-          onError(error);
-        } else {
-          reportErrorTelemetry({
-            message: `Firestore listen failed: ${error.message.slice(0, 200)}`,
-            severity: "warning",
-            context: {
-              module: "firestore",
-              action: "listen",
-              additionalData: { path: collectionPath },
-            },
-            error,
-          });
-        }
-      },
-    );
-  });
+        (snap) => {
+          const items: T[] = [];
+          for (const d of snap.docs) {
+            const parsed = parseDoc(
+              schema,
+              d.id,
+              d.data() as Record<string, unknown>,
+              collectionPath,
+            );
+            if (parsed !== null) items.push(parsed);
+          }
+          callback(items);
+        },
+        (error) => {
+          if (onError) {
+            onError(error);
+          } else {
+            reportErrorTelemetry({
+              message: `Firestore listen failed: ${error.message.slice(0, 200)}`,
+              severity: "warning",
+              context: {
+                module: "firestore",
+                action: "listen",
+                additionalData: { path: collectionPath },
+              },
+              error,
+            });
+          }
+        },
+      );
+    })
+    .catch((err) => {
+      // Same onError/telemetry routing as the other CRUD functions. The rethrow
+      // is swallowed because nothing awaits this chain — letting it propagate
+      // would just recreate the unhandled rejection this catch exists to fix.
+      try {
+        handleCrudError(err, "listen", collectionPath, onError);
+      } catch {
+        // already reported
+      }
+    });
 
   return () => {
+    disposed = true;
     unsubscribe?.();
+    unsubscribe = null;
   };
 }
