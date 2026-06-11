@@ -580,12 +580,12 @@
   }
 
   .action-btn.danger {
-    border-color: #ef4444;
-    color: #ef4444;
+    border-color: var(--semantic-error, #ef4444);
+    color: var(--semantic-error, #ef4444);
   }
 
   .action-btn.danger:hover {
-    background: rgba(239, 68, 68, 0.1);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
   }
 
   .detail-info-note {

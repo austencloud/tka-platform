@@ -336,7 +336,7 @@
   }
 
   .count-dot.detected {
-    background: #22c55e;
+    background: var(--semantic-success, #22c55e);
   }
 
   .count-dot.corrected {

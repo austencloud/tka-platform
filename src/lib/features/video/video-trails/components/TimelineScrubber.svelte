@@ -127,14 +127,14 @@
   }
 
   .legend-dot.green {
-    background: #22c55e;
+    background: var(--semantic-success, #22c55e);
   }
 
   .legend-dot.yellow {
-    background: #eab308;
+    background: var(--semantic-warning, #eab308);
   }
 
   .legend-dot.red {
-    background: #ef4444;
+    background: var(--semantic-error, #ef4444);
   }
 </style>
