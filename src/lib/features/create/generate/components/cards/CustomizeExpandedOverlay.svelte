@@ -36,6 +36,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
 </script>
 
 <script lang="ts">
+  import "../customize-accent.css";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { scale, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
@@ -250,7 +251,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
 </script>
 
 <div
-  class="customize-expanded-overlay"
+  class="customize-expanded-overlay customize-accent-scope"
   transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
 >
   <!-- Header -->
@@ -460,17 +461,13 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     gap: 8px;
     padding: 16px;
 
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, #06b6d4 20%, #1a1a2e) 0%,
-      color-mix(in srgb, #0891b2 12%, #1a1a2e) 50%,
-      color-mix(in srgb, #06b6d4 16%, #1a1a2e) 100%
-    );
+    /* Palette hoisted to ../customize-accent.css (shared with CustomizeDrawer) */
+    background: var(--customize-surface-gradient);
     border-radius: 16px;
-    border: 2px solid color-mix(in srgb, #06b6d4 40%, transparent);
+    border: 2px solid color-mix(in srgb, var(--customize-accent) 40%, transparent);
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.4),
-      0 0 24px color-mix(in srgb, #06b6d4 20%, transparent);
+      0 0 24px color-mix(in srgb, var(--customize-accent) 20%, transparent);
 
     overflow: hidden;
   }

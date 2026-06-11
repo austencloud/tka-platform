@@ -6,9 +6,12 @@ Delegates ALL logic to services (SRP compliant)
 
 import { buildCardDescriptors } from "$lib/features/create/generate/shared/services/card-configurator";
 import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/get-loop-parameter-provider";
-  import { onMount, getContext } from "svelte";
+  import { onMount, getContext, type ComponentProps } from "svelte";
   import { flip } from "svelte/animate";
-  import type { PanelCoordinationState } from "$lib/shared/create/state/panel-coordination-state.svelte";
+  import type {
+    PanelCoordinationState,
+    StartEndOptions,
+  } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import { quintOut } from "svelte/easing";
 
   import type { CardDescriptor } from "$lib/shared/create/domain/generator-contract-types";
@@ -18,6 +21,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   import type { StartEndOptionsState } from "../state/start-end-options-state.svelte";
   import type {
     DifficultyLevel,
+    GenerationOptions,
     PropContinuity,
   } from "../shared/domain/models/generate-models";
   import {
@@ -68,7 +72,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
     isFreeformMode: boolean;
     updateConfig: (updates: Partial<UIGenerationConfig>) => void;
     isGenerating: boolean;
-    onGenerateClicked: (options: any) => Promise<void>;
+    onGenerateClicked: (options: GenerationOptions) => Promise<void>;
     startEndState?: StartEndOptionsState;
     hasSettingsChanged?: boolean;
     wordInputValue?: string;
@@ -360,7 +364,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   }
 
   // Start/End options handler
-  function handleStartEndChange(options: any) {
+  function handleStartEndChange(options: StartEndOptions) {
     startEndState?.setOptions(options);
   }
 
@@ -405,7 +409,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
         handleGridModeChange: withFavoriteDeselect(handleGridModeChange),
         handleGenerationModeChange: () => {}, // No-op: mode is now derived from word presence
         handleLOOPTypeChange: withFavoriteDeselect(handleLOOPTypeChange),
-        handlePeriodChange: withFavoriteDeselect((period: any) => updateConfig({ period })),
+        handlePeriodChange: withFavoriteDeselect((period: Period) => updateConfig({ period })),
         handleConstraintPresetChange: withFavoriteDeselect(handleConstraintPresetChange),
         handleHandPathModeChange: withFavoriteDeselect(handleHandPathModeChange),
         handleMotionTypeFilterChange: withFavoriteDeselect(handleMotionTypeFilterChange),
@@ -456,35 +460,39 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
       animate:flip={{ duration: 300, easing: quintOut }}
     >
       {#if card.id === "level"}
-        <LevelCard {...card.props as any} color={cardColors.level.color} shadowColor={cardColors.level.shadowColor} />
+        <!-- LevelCard declares no color/shadowColor props (it derives its own
+             palette from difficulty-styles); the values previously passed here
+             were silently discarded under the `as any` spread. -->
+        <LevelCard {...card.props as ComponentProps<typeof LevelCard>} />
       {:else if card.id === "length"}
-        <LengthCard {...card.props as any} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} onStepCapExceeded={() => { showBeatCapNudge = true; }} />
+        <LengthCard {...card.props as ComponentProps<typeof LengthCard>} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} onStepCapExceeded={() => { showBeatCapNudge = true; }} />
       {:else if card.id === "word-input"}
         <WordInputCard
-          {...card.props as any}
+          {...card.props as ComponentProps<typeof WordInputCard>}
           color={cardColors.mode.color}
           shadowColor={cardColors.mode.shadowColor}
           {isMobile}
           onOpenOverlay={onOpenWordInput}
         />
       {:else if card.id === "grid-mode"}
-        <GridModeCard {...card.props as any} color={cardColors.gridMode.color} shadowColor={cardColors.gridMode.shadowColor} />
+        <GridModeCard {...card.props as ComponentProps<typeof GridModeCard>} color={cardColors.gridMode.color} shadowColor={cardColors.gridMode.shadowColor} />
       {:else if card.id === "turn-intensity"}
-        <TurnIntensityCard {...card.props as any} color={cardColors.turnIntensity.color} shadowColor={cardColors.turnIntensity.shadowColor} />
+        <!-- TurnIntensityCard declares shadowColor but no color prop. -->
+        <TurnIntensityCard {...card.props as ComponentProps<typeof TurnIntensityCard>} shadowColor={cardColors.turnIntensity.shadowColor} />
       {:else if card.id === "customize"}
-        <CustomizeCard {...card.props as any} color={cardColors.customize.color} shadowColor={cardColors.customize.shadowColor} />
+        <CustomizeCard {...card.props as ComponentProps<typeof CustomizeCard>} color={cardColors.customize.color} shadowColor={cardColors.customize.shadowColor} />
       {:else if card.id === "loop"}
-        <ConsolidatedLOOPCard {...card.props as any} />
+        <ConsolidatedLOOPCard {...card.props as ComponentProps<typeof ConsolidatedLOOPCard>} />
       {:else if card.id === "period"}
-        <PeriodCard {...card.props as any} color={cardColors.period.color} shadowColor={cardColors.period.shadowColor} />
+        <PeriodCard {...card.props as ComponentProps<typeof PeriodCard>} color={cardColors.period.color} shadowColor={cardColors.period.shadowColor} />
       {:else if card.id === "preset"}
         <PresetCard
-          {...card.props as any}
+          {...card.props as ComponentProps<typeof PresetCard>}
           color={cardColors.favorite.color}
           shadowColor={cardColors.favorite.shadowColor}
         />
       {:else if card.id === "generate-button"}
-        <GenerateButtonCard {...card.props as any} />
+        <GenerateButtonCard {...card.props as ComponentProps<typeof GenerateButtonCard>} />
       {/if}
     </div>
   {/each}

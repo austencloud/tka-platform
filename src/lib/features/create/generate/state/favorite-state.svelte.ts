@@ -12,6 +12,7 @@ import {
   getCommunityFavorites,
 } from "../services/favorite-config-repository";
 import { getEffectiveUserId } from "$lib/shared/auth/state/auth-state.svelte";
+import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 import type { FavoriteConfig, CommunityFavorite } from "../domain/models/favorite-config";
 import type { UIGenerationConfig } from "./generate-config.svelte";
 import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
@@ -71,6 +72,17 @@ export function createFavoriteState() {
       myFavorite = { config, startEndOptions: startEndOptions ?? null, setAt: new Date() };
     } catch (error) {
       console.error("[FavoriteState] Error saving favorite:", error);
+      getErrorHandler().showUserError({
+        message: "Couldn't save your favorite",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "create",
+          tab: "generate",
+          action: "saveMyFavorite",
+        },
+      });
     }
   }
 
@@ -86,6 +98,17 @@ export function createFavoriteState() {
       }
     } catch (error) {
       console.error("[FavoriteState] Error clearing favorite:", error);
+      getErrorHandler().showUserError({
+        message: "Couldn't remove your favorite",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "create",
+          tab: "generate",
+          action: "clearMyFavorite",
+        },
+      });
     }
   }
 

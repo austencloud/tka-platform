@@ -5,6 +5,7 @@
   Follows DurationRhythmSheet pattern: portal + Drawer always in DOM.
 -->
 <script lang="ts">
+  import "../customize-accent.css";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { portal } from "./portal";
   import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
@@ -33,7 +34,7 @@
     class="customize-drawer-sheet"
     onclose={onClose}
   >
-    <div class="customize-drawer-content">
+    <div class="customize-drawer-content customize-accent-scope">
       <SheetDragHandle />
       {#if overlayProps}
         <CustomizeExpandedOverlay
@@ -78,12 +79,8 @@
     flex-direction: column;
     height: 100%;
     padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, #06b6d4 20%, #1a1a2e) 0%,
-      color-mix(in srgb, #0891b2 12%, #1a1a2e) 50%,
-      color-mix(in srgb, #06b6d4 16%, #1a1a2e) 100%
-    );
+    /* Palette hoisted to ../customize-accent.css (shared with CustomizeExpandedOverlay) */
+    background: var(--customize-surface-gradient);
     border-radius: 0;
     border-top: none;
   }
