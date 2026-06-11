@@ -52,45 +52,125 @@ export const FEATURES: FeatureDefinition[] = [
     modulePaths: ["features/feedback/"],
   },
 
-  // ── Shipped (on by default, can be disabled) ──────────────────────────────
-  // (empty for now — add here when a dev feature graduates to shipped)
-
-  // ── Dev (off in production unless explicitly enabled) ─────────────────────
+  // ── Shipped (user-facing modules, on by default in every build) ───────────
+  // These reach real users on production (tkaflowarts.com). They MUST be in the
+  // production bundle — if left in the `dev` tier the feature-gate plugin stubs
+  // their entry component to `export default null`, which makes ModuleRenderer
+  // render "Module \"<id>\" failed to load". (Regression fixed 2026-06-10: every
+  // one of these was wrongly tier:"dev", so Cloudflare's NODE_ENV=production
+  // build stubbed them all — settings, learn, compose, train, … were broken.)
   {
     id: "social",
-    tier: "dev",
+    tier: "shipped",
     modulePaths: ["features/social/"],
   },
   {
     id: "learn",
-    tier: "dev",
+    tier: "shipped",
     modulePaths: ["features/learn/"],
   },
   {
     id: "premium",
-    tier: "dev",
+    tier: "shipped",
     modulePaths: ["features/premium/"],
   },
   {
     id: "compose",
-    tier: "dev",
+    tier: "shipped",
     modulePaths: ["features/compose/"],
   },
   {
     id: "train",
-    tier: "dev",
+    tier: "shipped",
     modulePaths: ["features/train/"],
   },
   {
     id: "choreo-card",
-    tier: "dev",
+    tier: "shipped",
     modulePaths: ["features/choreo-card/"],
   },
   {
     id: "write",
-    tier: "dev",
+    tier: "shipped",
     modulePaths: ["features/write/"],
   },
+  {
+    id: "arena",
+    tier: "shipped",
+    modulePaths: ["features/arena/"],
+  },
+  {
+    id: "watch",
+    tier: "shipped",
+    modulePaths: ["features/watch/"],
+  },
+  {
+    id: "museum",
+    tier: "shipped",
+    modulePaths: ["features/museum/"],
+  },
+  {
+    id: "archive",
+    tier: "shipped",
+    modulePaths: ["features/archive/"],
+  },
+  {
+    id: "festivals",
+    tier: "shipped",
+    modulePaths: ["features/festivals/"],
+  },
+  {
+    id: "levels",
+    tier: "shipped",
+    modulePaths: ["features/levels/"],
+  },
+  {
+    id: "hand-paths",
+    tier: "shipped",
+    modulePaths: ["features/hand-paths/"],
+  },
+  {
+    id: "video",
+    tier: "shipped",
+    modulePaths: ["features/video/"],
+  },
+  {
+    id: "stage",
+    tier: "shipped",
+    modulePaths: ["features/stage/"],
+  },
+  {
+    id: "lab",
+    tier: "shipped",
+    modulePaths: ["features/lab/"],
+  },
+  {
+    id: "tika",
+    tier: "shipped",
+    modulePaths: ["features/tika/"],
+  },
+  {
+    id: "settings",
+    tier: "shipped",
+    modulePaths: ["features/settings/"],
+  },
+  {
+    id: "connect",
+    tier: "shipped",
+    modulePaths: ["features/connect/"],
+  },
+  {
+    id: "fuse",
+    tier: "shipped",
+    modulePaths: ["features/fuse/"],
+  },
+  {
+    id: "assemble-lab",
+    tier: "shipped",
+    modulePaths: ["features/assemble-lab/"],
+  },
+
+  // ── Dev (internal tools / experiments / admin — off in prod unless opted in) ─
   {
     id: "admin",
     tier: "dev",
@@ -98,14 +178,9 @@ export const FEATURES: FeatureDefinition[] = [
     routePatterns: ["src/routes/admin/"],
   },
   {
-    id: "arena",
+    id: "moderation",
     tier: "dev",
-    modulePaths: ["features/arena/"],
-  },
-  {
-    id: "watch",
-    tier: "dev",
-    modulePaths: ["features/watch/"],
+    modulePaths: ["features/moderation/"],
   },
   {
     id: "retro",
@@ -117,76 +192,6 @@ export const FEATURES: FeatureDefinition[] = [
       "src/routes/1998/",
       "src/routes/2003/",
     ],
-  },
-  {
-    id: "museum",
-    tier: "dev",
-    modulePaths: ["features/museum/"],
-  },
-  {
-    id: "archive",
-    tier: "dev",
-    modulePaths: ["features/archive/"],
-  },
-  {
-    id: "moderation",
-    tier: "dev",
-    modulePaths: ["features/moderation/"],
-  },
-  {
-    id: "festivals",
-    tier: "dev",
-    modulePaths: ["features/festivals/"],
-  },
-  {
-    id: "levels",
-    tier: "dev",
-    modulePaths: ["features/levels/"],
-  },
-  {
-    id: "hand-paths",
-    tier: "dev",
-    modulePaths: ["features/hand-paths/"],
-  },
-  {
-    id: "video",
-    tier: "dev",
-    modulePaths: ["features/video/"],
-  },
-  {
-    id: "stage",
-    tier: "dev",
-    modulePaths: ["features/stage/"],
-  },
-  {
-    id: "lab",
-    tier: "dev",
-    modulePaths: ["features/lab/"],
-  },
-  {
-    id: "tika",
-    tier: "dev",
-    modulePaths: ["features/tika/"],
-  },
-  {
-    id: "settings",
-    tier: "dev",
-    modulePaths: ["features/settings/"],
-  },
-  {
-    id: "connect",
-    tier: "dev",
-    modulePaths: ["features/connect/"],
-  },
-  {
-    id: "fuse",
-    tier: "dev",
-    modulePaths: ["features/fuse/"],
-  },
-  {
-    id: "assemble-lab",
-    tier: "shipped",
-    modulePaths: ["features/assemble-lab/"],
   },
   {
     id: "loop-labeler",
