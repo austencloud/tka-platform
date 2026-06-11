@@ -295,6 +295,28 @@ export function getDisabledFeatureModulePaths(): string[] {
 }
 
 /**
+ * Module path prefixes to stub in the SSR / server (Cloudflare Pages Functions)
+ * build.
+ *
+ * The app shell (`/[...appPath]`, `/app`) is CSR-only (`ssr = false`), so NO
+ * feature module is ever rendered on the server — yet Vite still bundles every
+ * dynamic-import target into `_worker.js`, which has a hard 25 MiB limit on
+ * Cloudflare Pages. Shipping all user-facing modules to the client (correct)
+ * pushed the server bundle past that limit and failed the deploy.
+ *
+ * Since these modules never execute server-side, we stub every non-core feature
+ * module in the SSR build while keeping them real in the client build. This
+ * returns the server bundle to its known-good (core-only) size AND reclaims the
+ * entire server-side compile of those modules — the only legitimate build-time
+ * win available, since a module that ships to users must still compile for the
+ * client. Core (create/browse/feedback) stays real in SSR to match the prior
+ * proven-good server bundle.
+ */
+export function getSsrStubbedModulePaths(): string[] {
+  return FEATURES.filter((f) => f.tier !== "core").flatMap((f) => f.modulePaths);
+}
+
+/**
  * Returns the list of route directory patterns for disabled features, plus
  * dev-only route patterns when building for production.
  *
