@@ -450,7 +450,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
   .time-display {
     font-family: "SF Mono", monospace;
     color: var(--theme-accent);
-    background: rgba(74, 158, 255, 0.1);
+    background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
     padding: 2px 8px;
     border-radius: 4px;
   }
@@ -622,13 +622,13 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
   .transport-btn.play-btn {
     width: 52px; /* WCAG AAA touch target - slightly larger for primary */
     height: 52px;
-    background: rgba(74, 158, 255, 0.2);
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
     color: var(--theme-accent);
     font-size: var(--font-size-sm);
   }
 
   .transport-btn.play-btn:hover {
-    background: rgba(74, 158, 255, 0.3);
+    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */

@@ -213,8 +213,8 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    background: rgba(74, 158, 255, 0.2);
-    border: 1px solid rgba(74, 158, 255, 0.5);
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
     border-radius: 2px;
     cursor: grab;
     transition:
@@ -224,14 +224,14 @@
   }
 
   .viewport-indicator:hover {
-    background: rgba(74, 158, 255, 0.3);
-    border-color: rgba(74, 158, 255, 0.7);
+    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 70%, transparent);
   }
 
   .viewport-indicator.dragging {
     cursor: grabbing;
-    background: rgba(74, 158, 255, 0.35);
-    border-color: rgba(74, 158, 255, 0.9);
+    background: color-mix(in srgb, var(--theme-accent) 35%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 90%, transparent);
   }
 
   .viewport-edge {
@@ -239,7 +239,7 @@
     top: 2px;
     bottom: 2px;
     width: 3px;
-    background: rgba(74, 158, 255, 0.6);
+    background: color-mix(in srgb, var(--theme-accent) 60%, transparent);
     border-radius: 1px;
     opacity: 0;
     transition: opacity var(--duration-fast) ease;

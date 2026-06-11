@@ -309,8 +309,8 @@
   }
 
   .snap-chip.active {
-    background: rgba(74, 158, 255, 0.15);
-    border-color: rgba(74, 158, 255, 0.4);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
     color: var(--theme-accent);
   }
 
@@ -476,8 +476,8 @@
   }
 
   .master-row.active {
-    background: rgba(74, 158, 255, 0.15);
-    border-color: rgba(74, 158, 255, 0.3);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
 
   .setting-icon {
@@ -558,8 +558,8 @@
   }
 
   .snap-option-card.active {
-    background: rgba(74, 158, 255, 0.15);
-    border-color: rgba(74, 158, 255, 0.4);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
   }
 
   .snap-option-card.disabled {

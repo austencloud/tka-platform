@@ -423,6 +423,11 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
 
 <style>
   .source-preview {
+    /* Source-monitor identity accent — yellow distinguishes Source from the
+       Program monitor (which uses the theme accent). Component-scoped: this is
+       a monitor identity color, not a warning state, so it doesn't map to
+       --semantic-warning. */
+    --source-monitor-accent: #ffd43b;
     display: flex;
     flex-direction: column;
     background: #0e0e12;
@@ -444,7 +449,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
 
   .preview-label {
     font-weight: 600;
-    color: #ffd43b; /* Yellow to distinguish from Program monitor */
+    color: var(--source-monitor-accent);
   }
 
   .sequence-info {
@@ -514,10 +519,10 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
     justify-content: center;
     width: 28px;
     height: 28px;
-    background: rgba(255, 212, 59, 0.2);
+    background: color-mix(in srgb, var(--source-monitor-accent) 20%, transparent);
     border-radius: 50%;
     backdrop-filter: blur(4px);
-    color: #ffd43b;
+    color: var(--source-monitor-accent);
     font-size: var(--font-size-compact);
     animation: pulse 1.5s ease-in-out infinite;
   }
@@ -563,7 +568,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: #ffd43b;
+    background: var(--source-monitor-accent);
     cursor: pointer;
     transition: transform var(--duration-instant) ease;
   }
@@ -623,13 +628,13 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
   .transport-btn.play-btn {
     width: 52px; /* WCAG AAA touch target - slightly larger for primary */
     height: 52px;
-    background: rgba(255, 212, 59, 0.2);
-    color: #ffd43b;
+    background: color-mix(in srgb, var(--source-monitor-accent) 20%, transparent);
+    color: var(--source-monitor-accent);
     font-size: var(--font-size-sm);
   }
 
   .transport-btn.play-btn:hover:not(:disabled) {
-    background: rgba(255, 212, 59, 0.3);
+    background: color-mix(in srgb, var(--source-monitor-accent) 30%, transparent);
   }
 
   .add-btn {
