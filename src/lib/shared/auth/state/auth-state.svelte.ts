@@ -56,6 +56,12 @@ interface AuthState {
   role: UserRole;
 }
 
+/**
+ * Result shape returned by the profile-field-updater operations
+ * (changeEmail, updateDisplayName, updateUsername, etc.)
+ */
+type ProfileFieldUpdateResult = { success: true; message: string };
+
 // ============================================================================
 // HMR STATE PRESERVATION
 // ============================================================================
@@ -176,7 +182,7 @@ export function getRole(): UserRole {
  * Initialize subscription status listener
  * Watches Firestore for subscription changes and syncs role to auth state
  */
-async function initializeSubscriptionListener(user: User) {
+async function initializeSubscriptionListener(user: User): Promise<void> {
   // Clean up existing listener if any
   if (cleanupSubscriptionListener) {
     cleanupSubscriptionListener();
@@ -239,7 +245,7 @@ async function initializeSubscriptionListener(user: User) {
  * Initialize the auth state listener
  * Sets up Firebase onAuthStateChanged and orchestrates auth flows
  */
-export async function initializeAuthListener() {
+export async function initializeAuthListener(): Promise<void> {
   if (cleanupAuthListener) {
     console.warn("⚠️ [authState] Auth listener already initialized");
     return;
@@ -484,7 +490,7 @@ export async function initializeAuthListener() {
  * Sign out the current user
  * Clears all sensitive data from client-side storage
  */
-export async function signOut() {
+export async function signOut(): Promise<void> {
   try {
     // Close any open auth drawer synchronously. This prevents the "sign up"
     // sheet from flashing back into view the moment Firebase's auth state
@@ -589,7 +595,7 @@ export async function signOut() {
   }
 }
 
-export async function changeEmail(newEmail: string, currentPassword: string) {
+export async function changeEmail(newEmail: string, currentPassword: string): Promise<ProfileFieldUpdateResult> {
   const user = _state.user;
   if (!user) throw new Error("No authenticated user");
   return doChangeEmail(user, newEmail, currentPassword);
@@ -627,7 +633,7 @@ export async function refreshUser(): Promise<void> {
   }
 }
 
-export async function updateDisplayName(displayName: string) {
+export async function updateDisplayName(displayName: string): Promise<ProfileFieldUpdateResult> {
   const user = _state.user;
   if (!user) throw new Error("No authenticated user");
   const result = await doUpdateDisplayName(user, displayName);
@@ -635,19 +641,19 @@ export async function updateDisplayName(displayName: string) {
   return result;
 }
 
-export async function updateUsername(newUsername: string) {
+export async function updateUsername(newUsername: string): Promise<ProfileFieldUpdateResult> {
   const user = _state.user;
   if (!user) throw new Error("No authenticated user");
   return doUpdateUsername(user, newUsername);
 }
 
-export async function updateInstagramUsername(username: string) {
+export async function updateInstagramUsername(username: string): Promise<ProfileFieldUpdateResult> {
   const user = _state.user;
   if (!user) throw new Error("No authenticated user");
   return doUpdateInstagramUsername(user, username);
 }
 
-export async function updatePronouns(pronouns: string) {
+export async function updatePronouns(pronouns: string): Promise<ProfileFieldUpdateResult> {
   const user = _state.user;
   if (!user) throw new Error("No authenticated user");
   return doUpdatePronouns(user, pronouns);
@@ -657,7 +663,7 @@ export async function updatePronouns(pronouns: string) {
  * Clean up the auth listener
  * Call this when your app unmounts (if ever)
  */
-export function cleanup() {
+export function cleanup(): void {
   if (cleanupAuthListener) {
     cleanupAuthListener();
     cleanupAuthListener = null;
@@ -669,9 +675,49 @@ export function cleanup() {
 }
 
 /**
+ * Reactive handle for the auth state: reactive getters backed by the
+ * module-level $state rune, plus the auth operations.
+ */
+export interface AuthStateHandle {
+  // Direct state access (for Svelte 5 reactivity)
+  readonly user: User | null;
+  readonly loading: boolean;
+  readonly initialized: boolean;
+  readonly isAdmin: boolean;
+  readonly role: UserRole;
+  readonly isAuthenticated: boolean;
+
+  // Effective user helpers (as properties)
+  readonly effectiveUserId: string | null;
+  readonly effectiveRole: UserRole;
+  readonly isEffectiveAdmin: boolean;
+
+  // Function-style getters (for explicit calls)
+  getUserState(): Readonly<AuthState>;
+  getUser(): User | null;
+  isLoading(): boolean;
+  isInitialized(): boolean;
+  getRole(): UserRole;
+  getEffectiveUserId(): string | null;
+  getEffectiveRole(): UserRole;
+
+  // Auth operations
+  initialize(): Promise<void>;
+  initializeAuthListener(): Promise<void>;
+  signOut(): Promise<void>;
+  changeEmail(newEmail: string, currentPassword: string): Promise<ProfileFieldUpdateResult>;
+  updateDisplayName(displayName: string): Promise<ProfileFieldUpdateResult>;
+  updateUsername(newUsername: string): Promise<ProfileFieldUpdateResult>;
+  updateInstagramUsername(username: string): Promise<ProfileFieldUpdateResult>;
+  updatePronouns(pronouns: string): Promise<ProfileFieldUpdateResult>;
+  refreshUser(): Promise<void>;
+  cleanup(): void;
+}
+
+/**
  * Default export with all methods (for backward compatibility during migration)
  */
-export const authState = {
+export const authState: AuthStateHandle = {
   // Direct state access (for Svelte 5 reactivity)
   get user() {
     return _state.user;

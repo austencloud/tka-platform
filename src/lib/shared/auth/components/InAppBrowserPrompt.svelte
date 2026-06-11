@@ -169,8 +169,8 @@
     align-items: center;
     justify-content: center;
     padding: 1rem;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(4px);
+    background: var(--backdrop-opaque, rgba(0, 0, 0, 0.85));
+    backdrop-filter: var(--backdrop-blur-medium, blur(4px));
   }
 
   .prompt-content {
@@ -178,7 +178,7 @@
     max-width: 360px;
     width: 100%;
     padding: 2rem 1.5rem;
-    background: var(--theme-panel-bg, #1a1a2e);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
     text-align: center;
@@ -195,14 +195,14 @@
     justify-content: center;
     background: transparent;
     border: none;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     cursor: pointer;
     border-radius: 50%;
     transition: background 0.15s;
   }
 
   .dismiss-button:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-hover-bg, rgba(255, 255, 255, 0.1));
   }
 
   .icon-container {
@@ -229,7 +229,7 @@
     margin: 0 0 1.5rem;
     font-size: 0.9375rem;
     line-height: 1.5;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
 
   .actions {
@@ -275,7 +275,7 @@
   }
 
   .secondary-button:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
   }
 
   .ios-instructions {
@@ -305,7 +305,7 @@
   }
 
   .instruction-step i {
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   .step-number {
@@ -314,7 +314,7 @@
     justify-content: center;
     width: 24px;
     height: 24px;
-    background: var(--theme-accent, #4285f4);
+    background: var(--theme-accent, #6366f1);
     border-radius: 50%;
     font-size: 0.75rem;
     font-weight: 600;
@@ -327,7 +327,7 @@
     padding: 0.5rem;
     background: transparent;
     border: none;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    color: var(--theme-text-tertiary, rgba(255, 255, 255, 0.4));
     font-size: 0.8125rem;
     cursor: pointer;
     text-decoration: underline;
@@ -353,7 +353,7 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1rem;
-    background: rgba(18, 18, 28, 0.95);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.95));
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     animation: banner-slide-up 300ms ease-out;
   }
@@ -408,7 +408,7 @@
 
   .banner-signup-hint {
     font-size: 11px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   .banner-open {
@@ -442,7 +442,7 @@
     justify-content: center;
     background: transparent;
     border: none;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     cursor: pointer;
     border-radius: 50%;
     font-size: 0.875rem;
@@ -450,7 +450,7 @@
   }
 
   .banner-dismiss:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-hover-bg, rgba(255, 255, 255, 0.1));
     color: var(--theme-text, rgba(255, 255, 255, 0.7));
   }
 
