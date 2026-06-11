@@ -18,6 +18,7 @@
   let filteredSequences = $state<SequenceData[]>([]);
   let searchQuery = $state("");
   let isLoading = $state(false);
+  let loadFailed = $state(false);
   let browseLoader: PublicSequencesLoader | null = $state(null);
   let thumbnailProvider: BrowseThumbnailProvider | null = $state(null);
   let searchInput: HTMLInputElement | null = $state(null);
@@ -29,7 +30,7 @@
 
   // Load sequences when overlay becomes visible
   $effect(() => {
-    if (visible && browseLoader && sequences.length === 0) {
+    if (visible && browseLoader && sequences.length === 0 && !loadFailed) {
       loadSequences();
     }
   });
@@ -59,10 +60,12 @@
   async function loadSequences() {
     if (!browseLoader) return;
     isLoading = true;
+    loadFailed = false;
     try {
       sequences = await browseLoader.loadSequenceMetadata();
     } catch {
       sequences = [];
+      loadFailed = true;
     } finally {
       isLoading = false;
     }
@@ -114,6 +117,11 @@
       <div class="sequence-grid">
         {#if isLoading}
           <div class="loading-state">Loading sequences...</div>
+        {:else if loadFailed}
+          <div class="error-state">
+            <span>Couldn't load sequences. Check your connection.</span>
+            <button class="retry-btn" onclick={loadSequences}>Retry</button>
+          </div>
         {:else if filteredSequences.length === 0}
           <div class="empty-state">
             {searchQuery ? "No sequences match your search" : "No sequences available"}
@@ -226,12 +234,35 @@
   }
 
   .loading-state,
-  .empty-state {
+  .empty-state,
+  .error-state {
     grid-column: 1 / -1;
     text-align: center;
     padding: 40px 20px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
     font-size: var(--font-size-min, 14px);
+  }
+
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .retry-btn {
+    padding: 8px 20px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .retry-btn:hover {
+    border-color: rgba(167, 139, 250, 0.5);
   }
 
   .sequence-card {
