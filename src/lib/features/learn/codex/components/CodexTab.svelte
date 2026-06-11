@@ -15,6 +15,7 @@ Provides access to the complete TKA letter codex with drill-down detail view:
   import { createCodexState } from "../state/codex-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // Codex state for fetching letter details
   const codexState = createCodexState();
@@ -39,9 +40,10 @@ Provides access to the complete TKA letter codex with drill-down detail view:
       selectedLetter = letter;
     } catch (error) {
       console.error("Failed to load letter details:", error);
-      // Reset on error
+      // Reset on error and tell the user — otherwise the spinner clears and nothing happens
       selectedLetter = null;
       letterPictographs = [];
+      toast.error("Failed to load letter details. Please try again.");
     } finally {
       isLoadingDetails = false;
     }
