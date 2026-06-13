@@ -19,6 +19,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { firestoreList, firestoreSet } from "$lib/shared/firestore";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/is-permission-denied-error";
 import { GlobalArrowAdjustmentSchema } from "../domain/arrow-adjustment-schemas";
 import {
   generateAdjustmentKeyString,
@@ -263,6 +264,12 @@ export class GlobalArrowAdjustmentPersister {
             });
           },
           (subscriptionError: unknown) => {
+            if (isPermissionDeniedError(subscriptionError)) {
+              // Auth token gone mid-stream (sign-out race) — the repository
+              // resubscribes on next sign-in; cached adjustments keep serving.
+              logger.warn("Subscription permission-denied — paused until next sign-in");
+              return;
+            }
             logger.error("Subscription error:", subscriptionError);
           },
         );

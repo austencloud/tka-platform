@@ -54,16 +54,12 @@ export class SpecialArrowPlacementRepository {
         globalAdjustmentVersion.increment();
       }
 
-      this.unsubscribe = this.persister.subscribe(
-        (override: SpecialArrowPlacement) => {
-          this.state.setOverride(override);
-          logger.info(`Real-time update: ${override.key}`);
-        },
-        (key: string) => {
-          this.state.removeOverride(key);
-          logger.info(`Real-time removal: ${key}`);
-        },
-      );
+      // The collection requires auth to read — a listener opened while signed
+      // out just gets permission-killed. resumeSubscription() picks it up
+      // once the boot orchestrator re-initializes after sign-in.
+      if (authState.isAuthenticated) {
+        this.startSubscription();
+      }
 
       logger.success(
         `Initialized with ${this.state.count} special placement overrides`,
@@ -78,6 +74,43 @@ export class SpecialArrowPlacementRepository {
       this.state.setLoading(false);
       this.initializePromise = null;
     }
+  }
+
+  private startSubscription(): void {
+    this.unsubscribe = this.persister.subscribe(
+      (override: SpecialArrowPlacement) => {
+        this.state.setOverride(override);
+        logger.info(`Real-time update: ${override.key}`);
+      },
+      (key: string) => {
+        this.state.removeOverride(key);
+        logger.info(`Real-time removal: ${key}`);
+      },
+    );
+  }
+
+  /**
+   * Stop the Firestore listener but keep loaded overrides in memory.
+   * Called before sign-out so the listener isn't permission-killed when
+   * the auth token is invalidated.
+   */
+  pauseSubscription(): void {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+      logger.info("Subscription paused");
+    }
+  }
+
+  /**
+   * Start the Firestore listener if it isn't running and the user is
+   * authenticated. The initial snapshot redelivers every doc, so state
+   * catches up on anything missed while paused.
+   */
+  resumeSubscription(): void {
+    if (this.unsubscribe || !authState.isAuthenticated) return;
+    this.startSubscription();
+    logger.info("Subscription resumed");
   }
 
   getOverride(key: string): { x: number; y: number } | null {

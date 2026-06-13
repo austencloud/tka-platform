@@ -40,13 +40,23 @@ export async function initializeGlobalAdjustments(): Promise<void> {
     return initializationPromise;
   }
 
-  // Return immediately if already initialized
+  // Already built — just make sure the listener is live (it's paused
+  // across sign-out and skipped when the first init ran signed-out).
   if (repositoryInstance?.isInitialized) {
+    repositoryInstance.resumeSubscription();
     return;
   }
 
   initializationPromise = doInitialize();
   return initializationPromise;
+}
+
+/**
+ * Stop the Firestore listener (keeping cached adjustments) before sign-out,
+ * so it isn't permission-killed when the auth token is invalidated.
+ */
+export function pauseGlobalAdjustmentSubscription(): void {
+  repositoryInstance?.pauseSubscription();
 }
 
 async function doInitialize(): Promise<void> {

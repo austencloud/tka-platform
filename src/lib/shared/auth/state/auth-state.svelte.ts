@@ -578,6 +578,20 @@ export async function signOut(): Promise<void> {
       // Settings service may not be loaded - that's ok
     }
 
+    // Pause arrow-override listeners too — their collections require auth to
+    // read, so a live listener gets permission-killed at sign-out and stays
+    // dead. Cached data keeps serving; next sign-in resumes the listeners.
+    try {
+      const [special, global] = await Promise.all([
+        import("$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-singleton"),
+        import("$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton"),
+      ]);
+      special.pauseSpecialOverrideSubscription();
+      global.pauseGlobalAdjustmentSubscription();
+    } catch {
+      // Singletons may not be loaded - nothing to pause
+    }
+
     try {
       const { mandalaCollectionState } =
         await import("$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte");

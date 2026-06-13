@@ -7,6 +7,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { firestoreList, firestoreSet } from "$lib/shared/firestore";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/is-permission-denied-error";
 import {
   SpecialArrowPlacementSchema,
   generateSpecialOverrideKey,
@@ -131,6 +132,12 @@ export class SpecialArrowPlacementPersister {
             });
           },
           (error: unknown) => {
+            if (isPermissionDeniedError(error)) {
+              // Auth token gone mid-stream (sign-out race) — the repository
+              // resubscribes on next sign-in; cached overrides keep serving.
+              logger.warn("Subscription permission-denied — paused until next sign-in");
+              return;
+            }
             logger.error("Subscription error:", error);
           },
         );

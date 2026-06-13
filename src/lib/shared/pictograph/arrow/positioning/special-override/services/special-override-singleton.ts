@@ -31,9 +31,23 @@ export function getSpecialOverrideRepository(): SpecialArrowPlacementRepository 
  */
 export async function initializeSpecialOverrides(): Promise<void> {
   if (initializationPromise) return initializationPromise;
-  if (repositoryInstance?.isInitialized) return;
+  if (repositoryInstance?.isInitialized) {
+    // Already built — just make sure the listener is live. It's paused
+    // across sign-out, and skipped entirely when the first init ran
+    // signed-out (e.g. a guest opening CardInspectModal).
+    repositoryInstance.resumeSubscription();
+    return;
+  }
   initializationPromise = doInitialize();
   return initializationPromise;
+}
+
+/**
+ * Stop the Firestore listener (keeping cached overrides) before sign-out,
+ * so it isn't permission-killed when the auth token is invalidated.
+ */
+export function pauseSpecialOverrideSubscription(): void {
+  repositoryInstance?.pauseSubscription();
 }
 
 async function doInitialize(): Promise<void> {
