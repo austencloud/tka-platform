@@ -694,7 +694,7 @@
       gap: 4px;
     }
     .loading-status {
-      font-size: 10px;
+      font-size: 12px;
     }
     .progress-bar {
       height: 3px;

@@ -70,7 +70,7 @@ Shows available lengths with contextual counts.
     {label}
     icon="fas fa-ruler-horizontal"
     active={isActive}
-    chipColor="#f59e0b"
+    chipColor="var(--length-chip-color)"
     mode="dropdown"
     expanded={isOpen}
     {disabled}
@@ -118,6 +118,9 @@ Shows available lengths with contextual counts.
 
 <style>
   .length-chip-wrapper {
+    /* Single source for this chip's accent — consumed both by FilterChipBase
+       (via the chipColor prop) and by the selected-option color below. */
+    --length-chip-color: #f59e0b;
     position: relative;
   }
 
@@ -144,7 +147,7 @@ Shows available lengths with contextual counts.
   }
 
   .popover-option.selected {
-    color: #f59e0b;
+    color: var(--length-chip-color);
     font-weight: 600;
   }
 

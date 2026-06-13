@@ -177,12 +177,12 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
     background: color-mix(in srgb, var(--chip-color) 25%, transparent);
     border-radius: 100px;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     color: var(--theme-text);
