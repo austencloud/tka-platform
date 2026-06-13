@@ -52,8 +52,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.75rem 1rem;
-    background: rgba(0, 0, 0, 0.5);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-panel-bg);
+    border-bottom: 1px solid var(--theme-stroke);
   }
 
   .toolbar-left,
@@ -90,11 +90,11 @@
     border-radius: 50%;
     background: linear-gradient(
       135deg,
-      rgba(139, 92, 246, 0.3) 0%,
-      rgba(124, 58, 237, 0.25) 100%
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent-strong, #7c3aed) 25%, transparent) 100%
     );
-    border: 2px solid rgba(139, 92, 246, 0.5);
-    color: rgba(196, 181, 253, 1);
+    border: 2px solid color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
+    color: var(--theme-accent, #c4b5fd);
     font-size: 1.25rem;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
@@ -104,10 +104,10 @@
   .play-btn:hover {
     background: linear-gradient(
       135deg,
-      rgba(139, 92, 246, 0.4) 0%,
-      rgba(124, 58, 237, 0.35) 100%
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 40%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent-strong, #7c3aed) 35%, transparent) 100%
     );
-    border-color: rgba(139, 92, 246, 0.7);
+    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 70%, transparent);
     transform: scale(1.05);
   }
 
@@ -118,11 +118,11 @@
   .play-btn.playing {
     background: linear-gradient(
       135deg,
-      rgba(34, 197, 94, 0.3) 0%,
-      rgba(22, 163, 74, 0.25) 100%
+      color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-success, #16a34a) 25%, transparent) 100%
     );
-    border-color: rgba(34, 197, 94, 0.6);
-    color: rgba(134, 239, 172, 1);
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 60%, transparent);
+    color: var(--semantic-success, #86efac);
   }
 
   .close-btn {
@@ -142,8 +142,8 @@
   }
 
   .close-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: color-mix(in srgb, var(--theme-text, #ffffff) 12%, transparent);
+    border-color: var(--theme-stroke-strong);
     color: var(--theme-text);
     transform: scale(1.05);
   }

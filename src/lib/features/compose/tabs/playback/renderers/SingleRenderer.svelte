@@ -61,6 +61,10 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   // Track last loaded sequence ID to prevent unnecessary remounts during prop type changes
   let lastLoadedSequenceId: string | null = null;
 
+  // Auto-start timer id - cleared on unmount so a pending setIsPlaying(true)
+  // can't fire after the component is gone
+  let autoStartTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
   // Trail settings - derive directly from animationSettings for proper reactivity
   // This ensures changes to trail effect settings are picked up
   let trailSettings = $derived(animationSettings.trail);
@@ -89,6 +93,10 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
     }
 
     return () => {
+      if (autoStartTimeoutId !== null) {
+        clearTimeout(autoStartTimeoutId);
+        autoStartTimeoutId = null;
+      }
       animationState.dispose();
     };
   });
@@ -139,7 +147,9 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
 
       // Auto-start animation if playing
       if (isPlaying) {
-        setTimeout(() => {
+        if (autoStartTimeoutId !== null) clearTimeout(autoStartTimeoutId);
+        autoStartTimeoutId = setTimeout(() => {
+          autoStartTimeoutId = null;
           animationState.setIsPlaying(true);
         }, ANIMATION_AUTO_START_DELAY_MS);
       }
@@ -312,7 +322,7 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   }
 
   .error-message {
-    color: rgba(239, 68, 68, 0.9);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 90%, transparent);
   }
 
   .error-message i {

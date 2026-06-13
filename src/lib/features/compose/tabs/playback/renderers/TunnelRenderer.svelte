@@ -7,7 +7,6 @@
 <script lang="ts">
 
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
-  import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/settings-state.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
@@ -17,7 +16,6 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
-  import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/services/trail-capturer";
   import {
@@ -77,7 +75,6 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   // Services
   let primaryPlaybackController: AnimationPlaybackController | null = null;
   let secondaryPlaybackController: AnimationPlaybackController | null = null;
-  let settingsService: SettingsState | null = null;
 
   // Animation states (one for each sequence)
   const primaryAnimationState = createAnimationPanelState();
@@ -89,6 +86,10 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   // Track last loaded sequence IDs to prevent unnecessary remounts during prop type changes
   let lastLoadedPrimarySequenceId: string | null = null;
   let lastLoadedSecondarySequenceId: string | null = null;
+
+  // Auto-start timer id - cleared on unmount so a pending setIsPlaying(true)
+  // can't fire after the component is gone
+  let autoStartTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   // Trail settings - derive directly from animationSettings for proper reactivity
   // This ensures changes to trail effect settings are picked up
@@ -115,13 +116,16 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
       primaryPlaybackController = getAnimationPlaybackController();
       // Create a new instance for secondary controller (tunnel mode needs two)
       secondaryPlaybackController = getAnimationPlaybackController();
-      settingsService = settingsServiceSingleton;
     } catch (err) {
       console.error("Failed to initialize tunnel renderer:", err);
       error = "Failed to initialize animation services";
     }
 
     return () => {
+      if (autoStartTimeoutId !== null) {
+        clearTimeout(autoStartTimeoutId);
+        autoStartTimeoutId = null;
+      }
       primaryAnimationState.dispose();
       secondaryAnimationState.dispose();
     };
@@ -221,7 +225,9 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
 
       // Auto-start animations if playing
       if (isPlaying) {
-        setTimeout(() => {
+        if (autoStartTimeoutId !== null) clearTimeout(autoStartTimeoutId);
+        autoStartTimeoutId = setTimeout(() => {
+          autoStartTimeoutId = null;
           primaryAnimationState.setIsPlaying(true);
           secondaryAnimationState.setIsPlaying(true);
         }, ANIMATION_AUTO_START_DELAY_MS);
@@ -457,7 +463,7 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   }
 
   .error-message {
-    color: rgba(239, 68, 68, 0.9);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 90%, transparent);
   }
 
   .error-message i {

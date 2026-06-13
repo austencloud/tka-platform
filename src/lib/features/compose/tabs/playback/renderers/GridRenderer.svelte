@@ -42,7 +42,7 @@
       label: "Top-Left",
       shortLabel: "TL",
       rotation: 0,
-      color: "#ec4899",
+      color: "var(--accent-pink, #ec4899)",
     },
     {
       index: 1 as const,
@@ -56,7 +56,7 @@
       label: "Bottom-Left",
       shortLabel: "BL",
       rotation: 180,
-      color: "#06b6d4",
+      color: "var(--feature-view, #06b6d4)",
     },
     {
       index: 3 as const,
@@ -220,8 +220,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(239, 68, 68, 0.2);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
     border-radius: 6px;
     color: var(--semantic-error);
     cursor: pointer;
@@ -245,8 +245,8 @@
   }
 
   .remove-btn:hover {
-    background: rgba(239, 68, 68, 0.4);
-    border-color: rgba(239, 68, 68, 0.6);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
   }
 
   .cell-content {
