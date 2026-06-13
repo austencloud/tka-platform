@@ -504,6 +504,7 @@ export async function getFeaturedCreators(
     return users;
   } catch (error) {
     console.error("[UserRepository] Error fetching featured creators:", error);
+    toast.error("Failed to load featured creators.");
     return [];
   }
 }

@@ -184,8 +184,8 @@
   }
 
   .weekly-challenge-card.complete {
-    border-color: rgba(34, 197, 94, 0.3);
-    background: rgba(34, 197, 94, 0.08);
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 8%, transparent);
   }
 
   .card-header {
@@ -200,7 +200,7 @@
     justify-content: center;
     width: 36px;
     height: 36px;
-    background: linear-gradient(135deg, var(--theme-accent-strong), #7c3aed);
+    background: linear-gradient(135deg, var(--theme-accent-strong, #8b5cf6), color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 70%, #000));
     border-radius: 10px;
     color: white;
     font-size: var(--font-size-sm);
@@ -262,8 +262,8 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     border-radius: 3px;
-    background: rgba(139, 92, 246, 0.2);
-    color: #a78bfa;
+    background: color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 20%, transparent);
+    color: var(--theme-accent-strong, #8b5cf6);
   }
 
   .xp-rewards {
@@ -279,9 +279,9 @@
     align-items: center;
     gap: 4px;
     padding: 4px 8px;
-    background: rgba(139, 92, 246, 0.15);
+    background: color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 15%, transparent);
     border-radius: 16px;
-    color: #a78bfa;
+    color: var(--theme-accent-strong, #8b5cf6);
     font-size: var(--font-size-compact);
     font-weight: 600;
   }
@@ -291,9 +291,9 @@
     align-items: center;
     gap: 3px;
     padding: 3px 6px;
-    background: rgba(245, 158, 11, 0.15);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 15%, transparent);
     border-radius: 16px;
-    color: var(--semantic-warning);
+    color: var(--semantic-warning, #f59e0b);
     font-size: var(--font-size-compact);
     font-weight: 600;
   }
@@ -335,13 +335,13 @@
 
   .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--theme-accent-strong), #7c3aed);
+    background: linear-gradient(90deg, var(--theme-accent-strong, #8b5cf6), color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 80%, #000));
     border-radius: 3px;
     transition: width var(--duration-emphasis) ease;
   }
 
   .progress-fill.complete {
-    background: linear-gradient(90deg, var(--semantic-success), #16a34a);
+    background: linear-gradient(90deg, var(--semantic-success, #22c55e), color-mix(in srgb, var(--semantic-success, #22c55e) 80%, #000));
   }
 
   .progress-text {
@@ -366,9 +366,9 @@
 
   .bonus-badge {
     padding: 1px 6px;
-    background: rgba(245, 158, 11, 0.2);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 20%, transparent);
     border-radius: 3px;
-    color: var(--semantic-warning);
+    color: var(--semantic-warning, #f59e0b);
     font-size: var(--font-size-compact);
     font-weight: 600;
   }

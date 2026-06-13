@@ -7,6 +7,7 @@
 
   import { onMount } from "svelte";
   import { getChallengeCoordinator } from "$lib/shared/gamification/get-challenge-coordinator";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { ChallengeDashboard } from "$lib/shared/gamification/domain/models/challenge-models";
   import PanelHeader from "$lib/shared/components/panel/PanelHeader.svelte";
   import PanelContent from "$lib/shared/components/panel/PanelContent.svelte";
@@ -54,6 +55,7 @@
       dashboard = await coordinator.getDashboard();
     } catch (err) {
       console.error("[ChallengesPanel] Error refreshing:", err);
+      toast.error("Failed to refresh challenges. Please try again.");
     }
   }
 </script>

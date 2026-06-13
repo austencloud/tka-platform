@@ -1,2 +1,2 @@
 import * as leaderboardManager from './services/leaderboard-manager';
-export function getLeaderboardManager() { return leaderboardManager; }
+export function getLeaderboardManager(): typeof leaderboardManager { return leaderboardManager; }

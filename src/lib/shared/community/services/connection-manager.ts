@@ -21,6 +21,7 @@ import {
 import type { Timestamp, DocumentData } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type {
   ConnectionInfo,
   MutualFollowInfo,
@@ -73,6 +74,7 @@ async function getNotesMetadata(
     };
   } catch (error) {
     console.error("[connection-manager] Error getting notes metadata:", error);
+    toast.error("Failed to load connection info. Please try again.");
     return null;
   }
 }
@@ -170,6 +172,7 @@ export async function getMutualFollowInfo(targetUserId: string): Promise<MutualF
     return { isMutual, iFollowThem, theyFollowMe, mutualSince, iFollowedAt, theyFollowedAt };
   } catch (error) {
     console.error("[connection-manager] Error getting follow info:", error);
+    toast.error("Failed to load follow info. Please try again.");
     return { isMutual: false, iFollowThem: false, theyFollowMe: false };
   }
 }
@@ -252,6 +255,7 @@ export async function getSharedSequences(
     return sharedSequences;
   } catch (error) {
     console.error("[connection-manager] Error getting shared sequences:", error);
+    toast.error("Failed to load shared sequences. Please try again.");
     return [];
   }
 }
