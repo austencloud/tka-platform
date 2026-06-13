@@ -6,7 +6,7 @@
    * Only visible to the current user viewing another profile.
    */
 
-  import { saveNotes as saveNotesService } from "$lib/shared/community/services/connection-manager";
+  import { saveNotes as saveConnectionNotes } from "$lib/shared/community/services/connection-manager";
   import { onDestroy } from "svelte";
 
   interface Props {
@@ -41,7 +41,7 @@
     saveStatus = "saving";
 
     try {
-      await saveNotesService(targetUserId, notes);
+      await saveConnectionNotes(targetUserId, notes);
       onNotesChange?.(notes);
       saveStatus = "saved";
       if (statusResetTimer) clearTimeout(statusResetTimer);

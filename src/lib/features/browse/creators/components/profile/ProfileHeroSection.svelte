@@ -122,7 +122,7 @@
           class:loading={followInProgress}
           disabled={followInProgress}
           onclick={onFollowToggle}
-          aria-label={userProfile.isFollowing ? "Unfollow {userProfile.displayName}" : "Follow {userProfile.displayName}"}
+          aria-label={userProfile.isFollowing ? `Unfollow ${userProfile.displayName}` : `Follow ${userProfile.displayName}`}
         >
           {#if followInProgress}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -408,7 +408,7 @@
     bottom: -4px;
     right: -4px;
     font-size: 0.65rem;
-    color: gold;
+    color: var(--semantic-warning, #f59e0b);
   }
 
   /* ═══ Mobile: collapse to centered vertical stack ═══ */

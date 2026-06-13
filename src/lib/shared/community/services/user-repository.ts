@@ -763,6 +763,7 @@ export async function getFollowing(
     return batchFetchUserProfiles(firestore, userIds);
   } catch (error) {
     console.error(`[UserRepository] Error getting following list:`, error);
+    toast.error("Failed to load following list.");
     return [];
   }
 }
@@ -788,6 +789,7 @@ export async function getFollowers(
     return batchFetchUserProfiles(firestore, userIds);
   } catch (error) {
     console.error(`[UserRepository] Error getting followers list:`, error);
+    toast.error("Failed to load followers.");
     return [];
   }
 }

@@ -211,7 +211,7 @@
 
   .star-icon {
     font-size: 0.7rem;
-    color: #f59e0b;
+    color: var(--semantic-warning, #f59e0b);
   }
 
   .star-count {

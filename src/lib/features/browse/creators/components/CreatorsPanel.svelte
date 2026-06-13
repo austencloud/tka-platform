@@ -167,7 +167,11 @@
         creatorsDataState.updateUserFollowStatus(user.id, true, 1);
       }
     } catch (err) {
-      // Revert on error
+      console.error("[CreatorsPanel] Follow toggle failed, reverting:", err);
+      // Revert the optimistic update. The failure is already surfaced to the
+      // user: followUser/unfollowUser in user-repository toast
+      // "Failed to follow/unfollow user. Please try again." before throwing,
+      // so a second toast here would duplicate it.
       if (user.isFollowing) {
         creatorsDataState.updateUserFollowStatus(user.id, true, 1);
       } else {
