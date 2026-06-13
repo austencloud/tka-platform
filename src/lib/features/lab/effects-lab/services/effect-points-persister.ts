@@ -21,6 +21,7 @@ import {
 } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { EffectPoint } from "./types";
 import type { TrailPointConfig, TrailPointSource } from "$lib/shared/animation-engine/domain/types/trail-point-types";
 
@@ -41,6 +42,8 @@ export class EffectPointsPersister {
 	private debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	private pendingWrites: Set<string> = new Set();
 	private loaded = false;
+	// One toast per failure burst - reset on the next successful write
+	private writeFailureNotified = false;
 
 	// ------------------------------------------------------------------
 	// load()
@@ -234,8 +237,13 @@ export class EffectPointsPersister {
 			}
 
 			await trackWrite(() => setDoc(docRef, update, { merge: true }));
+			this.writeFailureNotified = false;
 		} catch (error) {
 			console.error(`${LOG_PREFIX} Firestore write failed:`, error);
+			if (!this.writeFailureNotified) {
+				this.writeFailureNotified = true;
+				toast.error("Effect point edits aren't syncing - changes are saved locally only");
+			}
 			// Re-queue failed keys for next attempt
 			for (const key of keysToWrite) {
 				this.pendingWrites.add(key);

@@ -170,6 +170,7 @@
       aria-checked={mode === "custom"}
       onclick={() => selectMode("custom")}
       title="Custom dx/dy offset"
+      aria-label="Custom dx/dy offset"
     >
       <i class="fas fa-pen" aria-hidden="true"></i>
     </button>
@@ -181,6 +182,7 @@
       aria-checked={mode === "off"}
       onclick={() => selectMode("off")}
       title="No trails"
+      aria-label="No trails"
     >
       <i class="fas fa-ban" aria-hidden="true"></i>
     </button>
