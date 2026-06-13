@@ -13,6 +13,28 @@ import type {
 } from "$lib/shared/learn/domain/codex-models";
 import { createLetterMapping } from "$lib/shared/learn/domain/codex-models";
 
+/**
+ * Raw shape of /data/learn/letter-mappings.json.
+ *
+ * Motion values arrive as strings ("pro", "anti", ...) and row/category names
+ * use the JSON file's own vocabulary (e.g. "dual-shift", "cross-shift"), which
+ * is wider than the LetterCategory union — so both are converted/narrowed
+ * before entering CodexConfig.
+ */
+interface LetterMappingsJson {
+  letters: Record<
+    string,
+    {
+      startPosition: string;
+      endPosition: string;
+      blueMotion: string;
+      redMotion: string;
+    }
+  >;
+  rows: Array<{ index: number; category: string; letters: string[] }>;
+  categories: Record<string, string[]>;
+}
+
 export class CodexLetterMappingRepo {
   private configuration: CodexConfig | null = null;
   private initialized = false;
@@ -88,30 +110,27 @@ export class CodexLetterMappingRepo {
         throw new Error(`Failed to fetch letter mappings: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as LetterMappingsJson;
 
       // Convert the JSON data to our internal format
       const letters: Record<string, CodexLetterMapping> = {};
       for (const [letter, mapping] of Object.entries(data.letters)) {
-        const letterData = mapping as {
-          startPosition: string;
-          endPosition: string;
-          blueMotion: string;
-          redMotion: string;
-        };
         letters[letter] = createLetterMapping({
-          startPosition: letterData.startPosition,
-          endPosition: letterData.endPosition,
-          blueMotionType: this.mapMotionString(letterData.blueMotion),
-          redMotionType: this.mapMotionString(letterData.redMotion),
+          startPosition: mapping.startPosition,
+          endPosition: mapping.endPosition,
+          blueMotionType: this.mapMotionString(mapping.blueMotion),
+          redMotionType: this.mapMotionString(mapping.redMotion),
         });
       }
 
       this.configuration = {
         version: "1.0.0",
         letters,
-        rows: data.rows,
-        categories: data.categories,
+        // Known divergence: the JSON's category vocabulary is wider than the
+        // LetterCategory union (e.g. "dual-shift"). Narrowed here at the
+        // boundary, matching the pre-existing runtime behavior.
+        rows: data.rows as CodexConfig["rows"],
+        categories: data.categories as CodexConfig["categories"],
       };
     } catch (error) {
       console.error("Failed to load codex configuration:", error);
@@ -135,47 +154,5 @@ export class CodexLetterMappingRepo {
         console.warn(`Unknown motion type: ${motionStr}, defaulting to PRO`);
         return MotionType.PRO;
     }
-  }
-
-  /**
-   * Get all letter mappings
-   */
-  getAllMappings(): CodexLetterMapping[] {
-    if (!this.configuration) {
-      console.warn("Codex configuration not loaded");
-      return [];
-    }
-
-    return Object.values(this.configuration.letters || {});
-  }
-
-  /**
-   * Search letter mappings by query
-   */
-  searchMappings(query: string): CodexLetterMapping[] {
-    if (!this.configuration) {
-      console.warn("Codex configuration not loaded");
-      return [];
-    }
-
-    const lowerQuery = query.toLowerCase();
-    const results: CodexLetterMapping[] = [];
-
-    // Search through letters by key (letter name) and mapping properties
-    for (const [letterKey, mapping] of Object.entries(
-      this.configuration.letters || {}
-    )) {
-      if (
-        letterKey.toLowerCase().includes(lowerQuery) ||
-        mapping.startPosition.toLowerCase().includes(lowerQuery) ||
-        mapping.endPosition.toLowerCase().includes(lowerQuery) ||
-        mapping.blueMotionType.toString().toLowerCase().includes(lowerQuery) ||
-        mapping.redMotionType.toString().toLowerCase().includes(lowerQuery)
-      ) {
-        results.push(mapping);
-      }
-    }
-
-    return results;
   }
 }

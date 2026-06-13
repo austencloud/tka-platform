@@ -75,7 +75,6 @@ Creates a persistence helper for a specific state type.
 
 - `key` - localStorage key (string)
 - `defaultValue` - Default value (type T, used for type inference)
-- `version` - (Optional) For future migration support
 
 **Returns:** Object with methods:
 
