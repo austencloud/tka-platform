@@ -82,6 +82,7 @@
   let isClosing = $state(false);
   let wasOpen = $state(false);
   let modalId = $state(generateModalId());
+  let exitTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ===== Helpers =====
   let focusRestore: FocusRestore | null = null;
@@ -158,7 +159,14 @@
     });
 
     if (currentOpen) {
-      // Opening
+      // Opening — cancel any in-flight exit animation from a prior close
+      if (exitTimer !== null) {
+        clearTimeout(exitTimer);
+        exitTimer = null;
+        // Reset exit state in case we're reopening mid-animation
+        isClosing = false;
+      }
+
       initializeHandlers();
       focusRestore?.capture();
       shouldRender = true;
@@ -187,9 +195,11 @@
       // Unregister from stack immediately (so escape key goes to next modal)
       unregisterModal(modalId);
 
-      // Wait for exit animation to complete, then actually close the dialog
+      // Wait for exit animation to complete, then actually close the dialog.
+      // Track the timer so a reopen within the animation window can cancel it.
       const exitDuration = animation === "none" ? 0 : 200;
-      setTimeout(() => {
+      exitTimer = setTimeout(() => {
+        exitTimer = null;
         if (dialogElement?.open) {
           dialogElement.close();
         }
@@ -208,6 +218,10 @@
   // ===== Cleanup on unmount =====
   onMount(() => {
     return () => {
+      if (exitTimer !== null) {
+        clearTimeout(exitTimer);
+        exitTimer = null;
+      }
       unregisterModal(modalId);
       focusRestore?.restore();
     };

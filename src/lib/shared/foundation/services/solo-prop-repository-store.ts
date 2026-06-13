@@ -48,6 +48,8 @@ function collectionPath(): string {
 
 export class SoloPropRepository {
   async get(id: string): Promise<SoloPropData | null> {
+    // Schema uses z.string() for enum fields (GridLocation, Orientation, GridMode) to avoid
+    // coupling Zod to domain union types. The values are runtime-valid strings; the cast is safe.
     return firestoreGet(collectionPath(), id, SoloPropDataSchema) as unknown as Promise<SoloPropData | null>;
   }
 
@@ -56,6 +58,7 @@ export class SoloPropRepository {
       where: [{ field: "contentHash", op: "==", value: contentHash }],
       limit: 1,
     });
+    // Same schema/domain divergence as get() — string-typed schema fields bridge to enum-typed domain fields.
     return (results[0] as unknown as SoloPropData | undefined) ?? null;
   }
 
@@ -84,6 +87,7 @@ export class SoloPropRepository {
       clauses.push({ field: "length", op: "<=", value: filters.maxLength });
     }
 
+    // Same schema/domain divergence as get() — string-typed schema fields bridge to enum-typed domain fields.
     return firestoreList(collectionPath(), SoloPropDataSchema, {
       where: clauses.length > 0 ? clauses : undefined,
       limit: filters?.limit,

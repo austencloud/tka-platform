@@ -12,7 +12,7 @@
     height?: string;
     width?: string;
     onPanelChange?: (panelIndex: number) => void;
-    onContentAreaChange?: (bounds: any) => void; // For compatibility
+    onContentAreaChange?: (bounds: { left: number; right: number; width: number; top: number; bottom: number; height: number }) => void;
     initialPanelIndex?: number;
     freezeNavigation?: boolean; // Prevent navigation button recreation during transitions
     loop?: boolean; // Enable infinite scrolling - wraps from last to first and vice versa

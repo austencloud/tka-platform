@@ -227,15 +227,15 @@ import { onMount } from "svelte";
   }
 
   :global(.dialog-container.warning) {
-    border-color: rgba(255, 193, 7, 0.3);
+    border-color: color-mix(in srgb, var(--semantic-warning, #f59e0b) 30%, transparent);
   }
 
   :global(.dialog-container.danger) {
-    border-color: rgba(244, 67, 54, 0.3);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
   }
 
   :global(.dialog-container.info) {
-    border-color: rgba(33, 150, 243, 0.3);
+    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 30%, transparent);
   }
 
   .dialog-icon {
@@ -402,35 +402,35 @@ import { onMount } from "svelte";
   :global(.dialog-container.warning) .confirm-button {
     background: linear-gradient(
       135deg,
-      var(--semantic-warning) 0%,
-      #d97706 100%
+      var(--semantic-warning, #f59e0b) 0%,
+      color-mix(in srgb, var(--semantic-warning, #f59e0b) 80%, #000) 100%
     );
   }
 
   :global(.dialog-container.warning) .confirm-button:hover {
     background: linear-gradient(
       135deg,
-      var(--semantic-warning) 0%,
-      var(--semantic-warning) 100%
+      var(--semantic-warning, #f59e0b) 0%,
+      var(--semantic-warning, #f59e0b) 100%
     );
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--semantic-warning, #f59e0b) 40%, transparent);
   }
 
   :global(.dialog-container.danger) .confirm-button {
     background: linear-gradient(
       135deg,
-      var(--semantic-error) 0%,
-      var(--semantic-error) 100%
+      var(--semantic-error, #ef4444) 0%,
+      var(--semantic-error, #ef4444) 100%
     );
   }
 
   :global(.dialog-container.danger) .confirm-button:hover {
     background: linear-gradient(
       135deg,
-      var(--semantic-error) 0%,
-      var(--semantic-error) 100%
+      var(--semantic-error, #ef4444) 0%,
+      var(--semantic-error, #ef4444) 100%
     );
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
   }
 
   /* Delayed confirm button - visually distinct waiting state */

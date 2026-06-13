@@ -221,14 +221,22 @@
     flex-shrink: 0;
 
     /* Amber/orange gradient for image/camera action */
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9));
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--semantic-warning, #f59e0b) 90%, transparent),
+      color-mix(in srgb, var(--semantic-warning, #f59e0b) 70%, #000)
+    );
+    border: 1px solid color-mix(in srgb, var(--semantic-warning, #f59e0b) 30%, transparent);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--semantic-warning, #f59e0b) 25%, transparent);
   }
 
   .capture-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 1), rgba(217, 119, 6, 1));
-    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+    background: linear-gradient(
+      135deg,
+      var(--semantic-warning, #f59e0b),
+      color-mix(in srgb, var(--semantic-warning, #f59e0b) 80%, #000)
+    );
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--semantic-warning, #f59e0b) 40%, transparent);
     transform: scale(1.05);
   }
 
@@ -244,9 +252,13 @@
 
   /* Success state */
   .capture-btn.success {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(22, 163, 74, 0.9));
-    border-color: rgba(34, 197, 94, 0.3);
-    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--semantic-success, #22c55e) 90%, transparent),
+      color-mix(in srgb, var(--semantic-success, #22c55e) 70%, #000)
+    );
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--semantic-success, #22c55e) 25%, transparent);
     animation: success-pulse var(--duration-normal, 0.3s) ease-out;
   }
 
@@ -258,9 +270,13 @@
 
   /* Error state */
   .capture-btn.error {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
-    border-color: rgba(239, 68, 68, 0.3);
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--semantic-error, #ef4444) 90%, transparent),
+      color-mix(in srgb, var(--semantic-error, #ef4444) 70%, #000)
+    );
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
   }
 
   .capture-btn:disabled {
@@ -274,6 +290,20 @@
     width: 36px;
     height: 36px;
     font-size: 14px;
+    /* Expand hit area to 44px minimum without growing the visual */
+    position: relative;
+  }
+
+  .size-sm::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 44px;
+    min-height: 44px;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
   }
 
   .size-lg {
