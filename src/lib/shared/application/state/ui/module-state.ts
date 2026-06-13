@@ -1,5 +1,6 @@
 import { browser } from "$app/environment";
 import { replaceState } from "$app/navigation";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { ModuleId } from "../../../navigation/domain/types";
 import { featureFlagService } from "../../../auth/services/post-hog-feature-flag-service.svelte";
 import { navigationState } from "../../../navigation/state/navigation-state.svelte";
@@ -381,6 +382,11 @@ export async function initializeModulePersistence(): Promise<void> {
         "❌ Failed to load fallback create module:",
         _fallbackError
       );
+      // Surface the failure — both persistence init and fallback module load have failed.
+      // Show an error toast so the user knows the app is in a degraded state.
+      if (browser) {
+        toast.error("App failed to load. Please refresh the page.", 0);
+      }
     }
   }
 }

@@ -5,6 +5,14 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
   // Module-level: survives component remounts so we never show the auth
   // spinner again after the app has loaded once in this session.
   let _mainInterfaceShown = false;
+
+  // Teach TypeScript about the boot-script progress hook injected in app.html.
+  // Signature: __tkaLoadProgress(percent: number, message: string) => void
+  declare global {
+    interface Window {
+      __tkaLoadProgress?: (percent: number, message: string) => void;
+    }
+  }
 </script>
 
 <script lang="ts">
@@ -238,7 +246,7 @@ import type { SheetType } from "../../navigation/services/types";
         }
 
         // Progress: Services are resolved from DI container
-        (window as any).__tkaLoadProgress?.(88, "Loading settings...");
+        window.__tkaLoadProgress?.(88, "Loading settings...");
 
         // Initialize sheet router state (now that service is resolved)
         currentSheetType = getCurrentSheet();
@@ -275,7 +283,7 @@ import type { SheetType } from "../../navigation/services/types";
         await restoreApplicationState();
         await initService.initialize();
         bootProfiler.end("app:restore-workspace");
-        (window as any).__tkaLoadProgress?.(92, "Restoring workspace...");
+        window.__tkaLoadProgress?.(92, "Restoring workspace...");
 
         bootProfiler.mark("app:load-settings+theme");
         await settingsService.loadSettings();
@@ -283,7 +291,7 @@ import type { SheetType } from "../../navigation/services/types";
         initializeTheme();
 
         // Progress: Settings loaded, applying theme
-        (window as any).__tkaLoadProgress?.(95, "Applying your theme...");
+        window.__tkaLoadProgress?.(95, "Applying your theme...");
 
         // Apply background-based theme colors on startup
         const { applyThemeForBackground } =
@@ -297,7 +305,7 @@ import type { SheetType } from "../../navigation/services/types";
 
         // Initialize gamification system (authenticated users only - requires Firestore)
         if (authState.isAuthenticated) {
-          (window as any).__tkaLoadProgress?.(98, "Initializing achievements...");
+          window.__tkaLoadProgress?.(98, "Initializing achievements...");
           bootProfiler.mark("app:gamification");
           try {
             const { initializeGamification } =
@@ -315,7 +323,7 @@ import type { SheetType } from "../../navigation/services/types";
         setInitializationState(true, false, null, 0);
 
         // Progress: Fully ready - triggers loading screen fade out with random ready message
-        (window as any).__tkaLoadProgress?.(100, "Ready");
+        window.__tkaLoadProgress?.(100, "Ready");
         detectAndCaptureScanEntry();
 
       } catch (error) {
@@ -688,7 +696,7 @@ import type { SheetType } from "../../navigation/services/types";
     position: fixed;
     inset: 0;
     z-index: 900;
-    background: rgb(18, 18, 28);
+    background: var(--theme-panel-bg, rgb(18, 18, 28));
   }
 
   /* Wizard exit animation - fades out + slight scale down */
