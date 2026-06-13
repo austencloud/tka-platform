@@ -1,8 +1,27 @@
 # Bundle Optimization: Three.js Leak + Conditional UI Lazy-Loading
 
 **Date:** 2026-05-23
-**Status:** Backlog
+**Status:** CLOSED 2026-06-13 — all four fixes verified shipped.
 **Impact:** ~600-800KB removed from initial MainApplication chunk
+
+> **CLOSED 2026-06-13 (verified done).** Current-code sweep:
+> - **Fix 1** — `SequenceViewerDrawerHost` is now a `{#await import(...)}` dynamic
+>   import (MainApplication.svelte:646). ✅
+> - **Fix 2** — none of the conditional components (FirstRunWizard, AuthDrawer,
+>   voice-control trio, etc.) are statically imported any more; MainApplication
+>   now has 14 `{#await import}` blocks. ✅
+> - **Fix 3** — `import * as THREE` is down to 2 files across all of `src/`
+>   (from 18). `shots.ts` uses `import { Vector3 }`. The 2 remainders are
+>   `ThreeVolumetricFire.js` (explicitly exempted here — ported lib) and
+>   `stage/locomotion/locomotion-controller.ts` (lazy stage chunk, off the
+>   critical path — matches this spec's "deprioritize" bucket). ✅
+> - **Fix 4** — both barrels (`sequence-engine/index.ts`, `render/core/index.ts`)
+>   carry the exact `// @deprecated — all consumers use deep imports` comment
+>   this spec recommended. ✅
+>
+> Optional future cleanup (not blocking, ~0 KB off initial payload): convert
+> `locomotion-controller.ts` to named THREE imports for consistency. Original
+> spec retained below for history.
 
 ---
 
