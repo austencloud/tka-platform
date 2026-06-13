@@ -24,6 +24,7 @@
 
   let playbackController: AnimationPlaybackController | null = null;
   let browseLoader: PublicSequencesLoader | null = null;
+  let playbackStartTimer: ReturnType<typeof setTimeout> | null = null;
 
   let loading = $state(true);
   let error = $state<string | null>(null);
@@ -110,7 +111,7 @@
       animationState.setShouldLoop(true);
       loading = false;
 
-      setTimeout(() => {
+      playbackStartTimer = setTimeout(() => {
         if (playbackController && animationState.sequenceData) {
           playbackController.togglePlayback();
         }
@@ -151,6 +152,7 @@
     initializeAnimation();
 
     return () => {
+      if (playbackStartTimer !== null) clearTimeout(playbackStartTimer);
       visibilityManager.unregisterObserver(visibilityObserver);
       playbackController?.dispose();
     };

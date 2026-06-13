@@ -29,6 +29,7 @@
   import AuthPrompt from "./profile/AuthPrompt.svelte";
   import ProfilePhotoPicker from "../ProfilePhotoPicker.svelte";
   import type { PhotoSelection } from "../../domain/photo-picker-types";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { updateProfile } from "firebase/auth";
   import { doc, getDoc } from "firebase/firestore";
   import { getFirestoreInstance } from "../../../auth/firebase";
@@ -155,6 +156,7 @@
       await authState.signOut();
     } catch (error) {
       console.error("Sign out failed:", error);
+      toast.error("Sign out failed. Please try again.");
     }
   }
 
@@ -223,6 +225,7 @@
 
   async function handleColorChange(color: string) {
     // Optimistic update so the ring color changes instantly
+    const previousColor = profileColor;
     profileColor = color;
 
     const user = authState.user;
@@ -233,6 +236,9 @@
       await userDocumentManager.updateProfileColor(user.uid, color);
     } catch (err) {
       console.error("Failed to save profile color:", err);
+      // Revert the optimistic update — the new color never persisted
+      profileColor = previousColor;
+      toast.error("Couldn't save profile color. Reverted to your previous color.");
     }
   }
 
@@ -608,7 +614,7 @@
   }
 
   :global(.danger-card .card-icon) {
-    background: rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
     color: var(--semantic-error);
   }
 
@@ -669,7 +675,7 @@
 
   .password-status i {
     font-size: var(--font-size-base);
-    color: #4ade80;
+    color: var(--semantic-success, #4ade80);
   }
 
   .email-unverified-note {

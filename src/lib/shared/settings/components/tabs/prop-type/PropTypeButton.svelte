@@ -187,7 +187,7 @@
     text-overflow: ellipsis;
     max-width: 100%;
     width: 100%;
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     letter-spacing: -0.1px;
     line-height: 1.2;

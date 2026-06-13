@@ -1,5 +1,7 @@
 <!-- GlassCard.svelte - Reusable glassmorphism card with optional header -->
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   interface Props {
     /** Optional icon class (e.g., 'fas fa-link') */
     icon?: string;
@@ -11,7 +13,7 @@
     class?: string;
     /** Additional CSS classes for the icon */
     iconClass?: string;
-    children?: any;
+    children?: Snippet;
   }
 
   let {

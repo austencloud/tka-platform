@@ -214,7 +214,7 @@
       box-shadow 0.15s ease;
     padding: 0;
     color: white;
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .color-swatch:hover:not(:disabled) {
@@ -256,7 +256,7 @@
   }
 
   .custom-swatch i {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   /* Hidden native input - only used to trigger the OS picker dialog */

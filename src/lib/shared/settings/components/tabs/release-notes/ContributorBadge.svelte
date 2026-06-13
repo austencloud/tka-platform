@@ -62,7 +62,7 @@
     justify-content: center;
     background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
     color: var(--theme-accent);
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     line-height: 1;
   }

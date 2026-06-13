@@ -105,7 +105,7 @@
   /* High contrast mode */
   @media (prefers-contrast: high) {
     .toast {
-      background: rgba(34, 197, 94, 0.98);
+      background: color-mix(in srgb, var(--semantic-success, #22c55e) 98%, transparent);
       border: 1px solid rgba(255, 255, 255, 0.3);
     }
   }

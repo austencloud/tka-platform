@@ -1,5 +1,6 @@
 <!-- ContributorPicker - Search existing user accounts to tag as contributors on changelog entries -->
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import type { Contributor } from '$lib/shared/versioning/domain/models/contributor-models';
 	import ContributorBadge from './ContributorBadge.svelte';
 
@@ -40,9 +41,16 @@
 		isOpen = true;
 	}
 
+	let blurTimer: ReturnType<typeof setTimeout> | null = null;
+
 	function handleInputBlur() {
-		setTimeout(() => (isOpen = false), 200);
+		if (blurTimer !== null) clearTimeout(blurTimer);
+		blurTimer = setTimeout(() => (isOpen = false), 200);
 	}
+
+	onDestroy(() => {
+		if (blurTimer !== null) clearTimeout(blurTimer);
+	});
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') {

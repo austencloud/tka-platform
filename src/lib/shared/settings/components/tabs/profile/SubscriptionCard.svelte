@@ -246,9 +246,9 @@
     justify-content: center;
     width: 28px;
     height: 28px;
-    background: rgba(34, 197, 94, 0.15);
+    background: var(--semantic-success-dim, rgba(34, 197, 94, 0.15));
     border-radius: 50%;
-    color: #4ade80;
+    color: var(--semantic-success, #4ade80);
     font-size: var(--font-size-sm);
     flex-shrink: 0;
   }

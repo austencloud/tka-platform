@@ -217,8 +217,9 @@
     gap: 8px;
     min-height: var(--min-touch-target);
     padding: 12px 20px;
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.4);
+    background: var(--semantic-error-dim, rgba(239, 68, 68, 0.15));
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
     border-radius: 12px;
     color: #fca5a5;
     font-size: var(--font-size-sm);
@@ -229,11 +230,12 @@
   }
 
   .sign-out-btn:hover {
-    background: rgba(239, 68, 68, 0.25);
-    border-color: rgba(239, 68, 68, 0.6);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
     color: #fecaca;
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.2);
+    box-shadow: 0 8px 24px
+      color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
   }
 
   .sign-out-btn:active {

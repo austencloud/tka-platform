@@ -186,8 +186,9 @@
     gap: var(--spacing-sm, 10px);
     padding: var(--spacing-sm, 12px) var(--spacing-md, 16px);
     margin-bottom: var(--spacing-md, 16px);
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: var(--semantic-error-dim, rgba(239, 68, 68, 0.15));
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
     border-radius: var(--radius-md, 10px);
     color: var(--semantic-error, #ef4444);
     font-size: var(--font-size-sm, 14px);
