@@ -6,11 +6,12 @@
    *
    * Accessible from the museum mode bar as a developer tool.
    */
+  import "../museum-theme.css";
   import { Canvas } from "@threlte/core";
   import ShowroomScene from "./ShowroomScene.svelte";
 </script>
 
-<div class="showroom-container">
+<div class="showroom-container museum-gold-scope">
   <div class="showroom-header">
     <h2>Props Showroom</h2>
     <p>Walk around to preview all available 3D models. Click to enter FPS mode, WASD to move.</p>
@@ -42,7 +43,7 @@
     margin: 0;
     font-family: Georgia, "Times New Roman", serif;
     font-size: 16px;
-    color: rgba(200, 180, 140, 0.9);
+    color: var(--museum-gold-90);
     font-weight: 400;
   }
 

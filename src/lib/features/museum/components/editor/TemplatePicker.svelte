@@ -36,8 +36,8 @@
 <div class="template-picker">
 	<div class="picker-header">
 		<span class="picker-title">Wing Templates</span>
-		<button type="button" class="close-btn" onclick={onclose} title="Close">
-			<i class="fa-solid fa-xmark"></i>
+		<button type="button" class="close-btn" onclick={onclose} title="Close" aria-label="Close template picker">
+			<i class="fa-solid fa-xmark" aria-hidden="true"></i>
 		</button>
 	</div>
 

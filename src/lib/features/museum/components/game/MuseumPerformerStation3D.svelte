@@ -123,15 +123,13 @@
   const bluePropType = $derived.by((): PropType => {
     if (resolvedSequence?.intendedProp?.bluePropType) return resolvedSequence.intendedProp.bluePropType;
     try {
-      const settings = settingsService;
-      return (settings as any)?.settings?.bluePropType ?? PropType.STAFF;
+      return settingsService.settings.bluePropType ?? PropType.STAFF;
     } catch { return PropType.STAFF; }
   });
   const redPropType = $derived.by((): PropType => {
     if (resolvedSequence?.intendedProp?.redPropType) return resolvedSequence.intendedProp.redPropType;
     try {
-      const settings = settingsService;
-      return (settings as any)?.settings?.redPropType ?? PropType.STAFF;
+      return settingsService.settings.redPropType ?? PropType.STAFF;
     } catch { return PropType.STAFF; }
   });
 

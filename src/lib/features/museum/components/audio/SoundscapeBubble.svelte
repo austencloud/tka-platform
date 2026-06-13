@@ -4,13 +4,14 @@
   Expanded: panel listing candidate tracks for the current wing.
 -->
 <script lang="ts">
+  import "../museum-theme.css";
   import { getSoundscapeContext } from "../../audio/soundscape-context";
   import SoundscapePanel from "./SoundscapePanel.svelte";
 
   const player = getSoundscapeContext();
 </script>
 
-<div class="soundscape-root">
+<div class="soundscape-root museum-gold-scope">
   {#if player.panelOpen}
     <SoundscapePanel />
   {/if}
@@ -57,7 +58,7 @@
     width: 52px;
     height: 52px;
     border-radius: 50%;
-    border: 1px solid rgba(200, 180, 140, 0.25);
+    border: 1px solid var(--museum-gold-25);
     background: rgba(18, 15, 12, 0.82);
     backdrop-filter: blur(8px);
     color: rgba(220, 200, 160, 0.85);

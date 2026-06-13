@@ -106,8 +106,9 @@
 					class:active={editor.drawMode === mode.id}
 					onclick={() => editor.setDrawMode(mode.id)}
 					title={mode.label}
+					aria-label={mode.label}
 				>
-					<i class={mode.icon}></i>
+					<i class={mode.icon} aria-hidden="true"></i>
 				</button>
 			{/each}
 		</div>

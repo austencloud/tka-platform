@@ -1,4 +1,5 @@
 <script lang="ts">
+  import "../museum-theme.css";
   import { getMuseumContext } from "../../state/museum-context";
   import { tileKey } from "../../domain/museum-grid-types";
   import { isInteractable } from "../../domain/tile-registry";
@@ -23,7 +24,7 @@
 </script>
 
 {#if hasInteractable}
-  <div class="interaction-prompt" role="status" aria-live="polite">
+  <div class="interaction-prompt museum-gold-scope" role="status" aria-live="polite">
     <kbd>E</kbd>
     <span>Examine</span>
   </div>
@@ -40,7 +41,7 @@
     gap: 8px;
     padding: 6px 14px;
     background: rgba(0, 0, 0, 0.8);
-    border: 1px solid rgba(200, 180, 140, 0.3);
+    border: 1px solid var(--museum-gold-30);
     border-radius: 6px;
     z-index: 30;
     animation: prompt-fade-in 0.2s ease;
@@ -54,8 +55,8 @@
     min-width: 24px;
     height: 24px;
     padding: 0 6px;
-    background: rgba(200, 180, 140, 0.15);
-    border: 1px solid rgba(200, 180, 140, 0.4);
+    background: var(--museum-gold-15);
+    border: 1px solid var(--museum-gold-40);
     border-radius: 4px;
     color: #c8b890;
     font-family: monospace;
@@ -64,7 +65,7 @@
   }
 
   span {
-    color: rgba(200, 180, 140, 0.8);
+    color: var(--museum-gold-80);
     font-size: var(--font-size-min, 14px);
   }
 
