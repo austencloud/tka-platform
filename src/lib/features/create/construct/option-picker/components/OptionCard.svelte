@@ -78,9 +78,7 @@ Receives pre-calculated data, just renders it.
     position: relative;
     box-sizing: border-box;
     overflow: hidden;
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.1),
-      0 2px 4px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--option-card-shadow);
     transition:
       transform 0.3s ease,
       filter 0.3s ease,
@@ -96,10 +94,7 @@ Receives pre-calculated data, just renders it.
     .option-card:hover {
       transform: scale(1.05);
       filter: brightness(1.05);
-      box-shadow:
-        0 2px 4px rgba(0, 0, 0, 0.12),
-        0 4px 8px rgba(0, 0, 0, 0.08),
-        0 8px 16px rgba(0, 0, 0, 0.06);
+      box-shadow: var(--option-card-shadow-hover);
     }
   }
 
@@ -118,8 +113,7 @@ Receives pre-calculated data, just renders it.
   .option-card.continuation {
     box-shadow:
       0 0 0 2px var(--theme-accent, #3b82f6),
-      0 1px 2px rgba(0, 0, 0, 0.1),
-      0 2px 4px rgba(0, 0, 0, 0.06);
+      var(--option-card-shadow);
   }
 
   /* Accessibility: Respect user's motion preferences */

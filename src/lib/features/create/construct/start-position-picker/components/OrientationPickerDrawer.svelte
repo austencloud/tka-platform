@@ -103,11 +103,13 @@
   }
 
   :global(.orientation-drawer-blue) {
-    border-top: 2px solid rgba(59, 130, 246, 0.5);
+    border-top: 2px solid
+      color-mix(in srgb, var(--prop-blue, #3b82f6) 50%, transparent);
   }
 
   :global(.orientation-drawer-red) {
-    border-top: 2px solid rgba(239, 68, 68, 0.5);
+    border-top: 2px solid
+      color-mix(in srgb, var(--prop-red, #ef4444) 50%, transparent);
   }
 
   /* ============================================
@@ -175,13 +177,13 @@
 
   /* Selected state */
   .orientation-option.selected.color-blue {
-    border-color: rgba(59, 130, 246, 0.6);
-    background: rgba(59, 130, 246, 0.15);
+    border-color: color-mix(in srgb, var(--prop-blue, #3b82f6) 60%, transparent);
+    background: var(--prop-blue-bg, rgba(59, 130, 246, 0.15));
   }
 
   .orientation-option.selected.color-red {
-    border-color: rgba(239, 68, 68, 0.6);
-    background: rgba(239, 68, 68, 0.15);
+    border-color: color-mix(in srgb, var(--prop-red, #ef4444) 60%, transparent);
+    background: var(--prop-red-bg, rgba(239, 68, 68, 0.15));
   }
 
   @media (hover: hover) {

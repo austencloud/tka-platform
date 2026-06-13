@@ -387,16 +387,13 @@ Renders a section with:
     position: relative;
     box-sizing: border-box;
     overflow: hidden;
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.1),
-      0 2px 4px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--option-card-shadow);
   }
 
   .pictograph-option.continuation {
     box-shadow:
       0 0 0 2px var(--theme-accent, #3b82f6),
-      0 1px 2px rgba(0, 0, 0, 0.1),
-      0 2px 4px rgba(0, 0, 0, 0.06);
+      var(--option-card-shadow);
   }
 
   .pictograph-option:disabled {
@@ -409,10 +406,7 @@ Renders a section with:
     .pictograph-option:hover {
       transform: scale(1.05);
       filter: brightness(1.05);
-      box-shadow:
-        0 2px 4px rgba(0, 0, 0, 0.12),
-        0 4px 8px rgba(0, 0, 0, 0.08),
-        0 8px 16px rgba(0, 0, 0, 0.06);
+      box-shadow: var(--option-card-shadow-hover);
     }
   }
 

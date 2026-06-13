@@ -103,13 +103,13 @@ Three touch targets: left arrow cycles back, center label opens drawer, right ar
   }
 
   .orientation-cycler.color-blue {
-    border-color: rgba(59, 130, 246, 0.4);
-    background: rgba(59, 130, 246, 0.08);
+    border-color: var(--prop-blue-border, rgba(59, 130, 246, 0.4));
+    background: color-mix(in srgb, var(--prop-blue, #3b82f6) 8%, transparent);
   }
 
   .orientation-cycler.color-red {
-    border-color: rgba(239, 68, 68, 0.4);
-    background: rgba(239, 68, 68, 0.08);
+    border-color: var(--prop-red-border, rgba(239, 68, 68, 0.4));
+    background: color-mix(in srgb, var(--prop-red, #ef4444) 8%, transparent);
   }
 
   /* Shared button reset */
