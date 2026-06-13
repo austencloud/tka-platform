@@ -830,11 +830,11 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   }
 
   .header-action-btn.save {
-    color: #22c55e;
+    color: var(--semantic-success, #22c55e);
   }
 
   .header-action-btn.remix {
-    color: #f59e0b;
+    color: var(--semantic-warning, #f59e0b);
   }
 
   .header-action-divider {

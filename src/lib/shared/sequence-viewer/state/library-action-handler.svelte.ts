@@ -71,14 +71,20 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
       await repo.publishSequence(sequence.id);
     } catch (e) {
       console.error("[Orchestrator] publishSequence FAILED:", e);
+      showToast("Failed to publish sequence", "error");
     }
   }
 
   async function handleUnpublishAction() {
     const sequence = deps.getSequence();
     if (!sequence) return;
-    const repo = getLibraryRepository() as LibraryRepository;
-    await repo.unpublishSequence(sequence.id);
+    try {
+      const repo = getLibraryRepository() as LibraryRepository;
+      await repo.unpublishSequence(sequence.id);
+    } catch (e) {
+      console.error("[Orchestrator] unpublishSequence FAILED:", e);
+      showToast("Failed to unpublish sequence", "error");
+    }
   }
 
   async function handleSave() {

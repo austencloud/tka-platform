@@ -168,13 +168,13 @@
   }
 
   .mid-action-btn.save {
-    border-color: rgba(34, 197, 94, 0.25);
-    color: #22c55e;
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 25%, transparent);
+    color: var(--semantic-success, #22c55e);
   }
 
   .mid-action-btn.edit {
-    border-color: rgba(245, 158, 11, 0.25);
-    color: #f59e0b;
+    border-color: color-mix(in srgb, var(--semantic-warning, #f59e0b) 25%, transparent);
+    color: var(--semantic-warning, #f59e0b);
   }
 
   .mid-action-btn.favorited {
@@ -183,10 +183,10 @@
   }
 
   .mid-action-btn.practice-active {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.4);
-    color: #f87171;
-    box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+    color: var(--semantic-error, #f87171);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
   }
 
   .mid-action-btn.video {
