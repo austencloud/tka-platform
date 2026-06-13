@@ -419,8 +419,8 @@
   }
 
   .shuffle-button.active {
-    background: rgba(139, 92, 246, 0.25);
-    border-color: rgba(139, 92, 246, 0.5);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
     color: #fff;
   }
 

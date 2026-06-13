@@ -52,7 +52,7 @@ function buildEffectChildren(
   active: ActiveEffect,
   ecs?: EffectsConfigState | null,
 ): ContextMenuItem[] {
-  const setEffect = (effect: string) => {
+  const setEffect = (effect: ActiveEffect) => {
     ecs?.setActiveEffect(effect);
   };
   return [

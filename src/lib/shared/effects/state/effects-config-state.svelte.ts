@@ -9,6 +9,7 @@
 
 import type {
   EffectsConfig,
+  EffectType,
   TrailsIntent,
   FireIntent,
   LedIntent,
@@ -58,6 +59,14 @@ const EFFECT_IDS = [
   "trails", "fire", "led", "charcoal", "zap", "sparkles", "echo", "bloom",
   "water", "bubbles", "petals", "smoke", "ink", "frost", "silk", "pulse",
 ] as const;
+
+/** One of the 16 concrete effect ids — `EffectType` minus "none". */
+export type EffectId = (typeof EFFECT_IDS)[number];
+
+/** Narrows an arbitrary string to a known effect id (the const-tuple union). */
+export function isEffectId(value: string): value is EffectId {
+  return (EFFECT_IDS as readonly string[]).includes(value);
+}
 
 /**
  * Legacy effect keys the VM overlay consumes. Stripped from the VM entry
@@ -216,24 +225,30 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     effectId: K,
     patch: Partial<EffectConfigMap[K]>,
   ) {
-    if (!EFFECT_IDS.includes(effectId as any)) {
+    if (!isEffectId(effectId)) {
       throw new Error(`Unknown effect id: "${effectId}"`);
     }
     sceneUndo.captureState("update-effect-config", `Update ${effectId}`);
-    (config as any)[effectId] = { ...(config as any)[effectId], ...patch };
+    // The keyed config write is a genuine TS mapped-type limitation: indexing
+    // config by the generic K and merging Partial<EffectConfigMap[K]> can't be
+    // expressed without widening, so the cast stays here (and at applyPreset).
+    (config as unknown as Record<string, unknown>)[effectId] = {
+      ...(config as unknown as Record<string, EffectConfigMap[K]>)[effectId],
+      ...patch,
+    };
     config.activePresets[effectId as keyof typeof config.activePresets] = null;
     scheduleSave();
     sceneUndo.commitStateCoalescing(`effects-${effectId}`);
   }
 
-  function setActiveEffect(effect: string) {
+  function setActiveEffect(effect: EffectType) {
     sceneUndo.captureState("set-active-effect", "Set active effect");
     if (effect === "none") {
-      config.activeEffect = "none" as any;
+      config.activeEffect = "none";
       config.tipEffectMap = {};
     } else {
-      config.activeEffect = effect as any;
-      config.tipEffectMap = { "*": { effect: effect as any } };
+      config.activeEffect = effect;
+      config.tipEffectMap = { "*": { effect } };
     }
     scheduleSave();
     sceneUndo.commitState();
@@ -276,7 +291,11 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     patch: Partial<EffectConfigMap[K]>,
   ) {
     sceneUndo.captureState("apply-effect-preset", `Apply ${effectType} preset`);
-    (config as any)[effectType] = { ...(config as any)[effectType], ...patch };
+    // Same generic mapped-type limitation as updateEffect — see comment there.
+    (config as unknown as Record<string, unknown>)[effectType] = {
+      ...(config as unknown as Record<string, EffectConfigMap[K]>)[effectType],
+      ...patch,
+    };
     config.activePresets[effectType as keyof typeof config.activePresets] = presetId;
     scheduleSave();
     sceneUndo.commitState();

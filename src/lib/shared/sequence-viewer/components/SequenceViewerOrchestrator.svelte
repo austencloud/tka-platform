@@ -174,6 +174,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import type { EffectType } from "$lib/shared/effects/domain/effects-config";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
@@ -224,7 +225,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     initialRedVisible?: boolean;
     /** Effect to activate on mount (e.g. "trails" for the QR scan landing page).
      *  Defaults to the stored/none config when omitted. */
-    initialActiveEffect?: string;
+    initialActiveEffect?: EffectType;
     children: Snippet<[OrchestratorContext]>;
   }
 

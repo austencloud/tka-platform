@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet, Component } from "svelte";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { isEffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
   import EffectSelector from "./EffectSelector.svelte";
   import EffectPresetsSection from "./EffectPresetsSection.svelte";
   import { EFFECT_COLORS, EFFECT_LABELS, EFFECTS, getRegistration } from "./effect-registry";
@@ -78,7 +79,7 @@
       effectsConfigState.setActiveEffect("none");
       return;
     }
-    effectsConfigState.setActiveEffect(effectId);
+    if (isEffectId(effectId)) effectsConfigState.setActiveEffect(effectId);
   }
 
   function handlePresetSelect(presetId: string): void {

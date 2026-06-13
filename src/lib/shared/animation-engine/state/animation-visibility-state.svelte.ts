@@ -500,7 +500,7 @@ export class AnimationVisibilityStateManager {
    * Fallback for UI contexts that don't have the effects-config-context provider.
    */
   setActiveEffect(effect: EffectType): void {
-    this.effectsConfigState?.setActiveEffect(effect as string);
+    this.effectsConfigState?.setActiveEffect(effect);
     this.notifyObservers();
   }
 
