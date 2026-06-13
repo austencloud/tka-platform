@@ -434,6 +434,9 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
             velocityY: tip.velocity.y,
             velocityZ: tip.velocity.z,
             speed: tip.speed,
+            jerk: Math.sqrt(
+              tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z,
+            ),
           });
         }
 
@@ -503,6 +506,9 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
             velocityY: tip.velocity.y,
             velocityZ: tip.velocity.z,
             speed: tip.speed,
+            jerk: Math.sqrt(
+              tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z,
+            ),
           });
         }
 
