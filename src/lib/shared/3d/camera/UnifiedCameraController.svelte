@@ -428,8 +428,11 @@
       // Defer attachment to next microtask so the Svelte effect cascade
       // (ceiling toggle, Avatar3D visibility, etc.) completes first.
       // This prevents event listener setup from blocking the flip animation frame.
+      let cancelled = false;
+      let pendingTimeout: ReturnType<typeof setTimeout> | null = null;
+
       queueMicrotask(() => {
-        if (!enabled || attached) return; // guard: state may have changed
+        if (cancelled || !enabled || attached) return; // guard: state may have changed
         const canvas = findCanvas();
         if (canvas) {
           attachToCanvas(canvas);
@@ -438,14 +441,26 @@
           let attempts = 0;
           const maxAttempts = 50;
           function tryAttach() {
+            if (cancelled || !enabled || attached) return;
             const c = findCanvas();
             if (c) { attachToCanvas(c); attached = true; return; }
-            if (++attempts < maxAttempts) setTimeout(tryAttach, 100);
-            else console.warn(`[CameraCtrl] ENABLE FAILED: no canvas after ${maxAttempts} attempts`);
+            if (++attempts < maxAttempts) {
+              pendingTimeout = setTimeout(tryAttach, 100);
+            } else {
+              console.warn(`[CameraCtrl] ENABLE FAILED: no canvas after ${maxAttempts} attempts`);
+            }
           }
-          setTimeout(tryAttach, 100);
+          pendingTimeout = setTimeout(tryAttach, 100);
         }
       });
+
+      return () => {
+        cancelled = true;
+        if (pendingTimeout !== null) {
+          clearTimeout(pendingTimeout);
+          pendingTimeout = null;
+        }
+      };
     } else if (!enabled && attached) {
       detachFromCanvas();
     }

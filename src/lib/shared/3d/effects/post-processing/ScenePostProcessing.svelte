@@ -47,7 +47,7 @@
 
   const isOcean = $derived.by(() => {
     try {
-      return (settingsService as any)?.settings?.backgroundType === BackgroundType.OCEAN;
+      return settingsService.settings?.backgroundType === BackgroundType.OCEAN;
     } catch {
       return false;
     }
