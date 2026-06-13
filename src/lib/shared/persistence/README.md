@@ -142,14 +142,13 @@ Add this to your main app initialization:
 
 ```typescript
 // In your main app component or initialization
-import { resolve, TYPES } from "$shared/inversify";
-import type { IPersistenceInitializationService } from "$shared/persistence/services/contracts/IPersistenceInitializationService";
+import { getPersistenceInitializer } from "$lib/shared/persistence/get-persistence-initializer";
 
-const initService = resolve(TYPES.IPersistenceInitializationService);
+const initializer = getPersistenceInitializer();
 
 onMount(async () => {
   try {
-    await initService.initialize();
+    await initializer.initialize();
     console.log("✅ Persistence ready");
   } catch (error) {
     console.error("❌ Persistence failed:", error);

@@ -1,8 +1,8 @@
 /**
- * Persistence Initialization Service
+ * Persistence Initializer
  *
- * This service handles the initialization of your persistence layer.
- * Call this when your app starts up to ensure the database is ready.
+ * Handles the initialization of the persistence layer.
+ * Call this when the app starts up to ensure the database is ready.
  */
 
 import {
@@ -12,7 +12,7 @@ import {
   getStorageInfo,
 } from "./dexie-persistence-service";
 
-export class PersistenceInitializationService {
+export class PersistenceInitializer {
   private isInitialized = false;
   private initializationError?: string;
 
