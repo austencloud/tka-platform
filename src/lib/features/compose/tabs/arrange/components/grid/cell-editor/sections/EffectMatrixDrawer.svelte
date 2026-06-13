@@ -254,6 +254,7 @@
                 class="effect-btn {eff.cssClass}"
                 class:active={getEffectForKey(ch.key) === eff.value}
                 title={eff.label}
+                aria-label="Apply {eff.label} effect to {ch.label}"
                 onclick={() => setEffect(ch.key, eff.value)}
               >
                 <i class="fas {eff.icon}" aria-hidden="true"></i>
@@ -284,6 +285,18 @@
 
 <style>
   .matrix-overlay {
+    /* Effect-identity palette - deliberately component-scoped, not global
+       tokens. Each effect keeps its own recognizable hue (fire orange,
+       charcoal violet, LED green, trails blue); mapping these to semantic
+       status tokens would conflate effect identity with status meaning. */
+    --effect-fire: #f97316;
+    --effect-fire-bright: #fb923c;
+    --effect-charcoal: #a855f7;
+    --effect-charcoal-bright: #a78bfa;
+    --effect-led: #22c55e;
+    --effect-led-bright: #4ade80;
+    --effect-trails: #60a5fa;
+
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -358,7 +371,7 @@
   }
 
   .scope-label {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     text-transform: uppercase;
     letter-spacing: 1px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.2));
@@ -403,9 +416,9 @@
   }
 
   .scope-seg.active {
-    background: rgba(139, 92, 246, 0.15);
-    color: #c084fc;
-    box-shadow: inset 0 -2px 0 #a855f7;
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
+    color: var(--theme-accent-light, #c084fc);
+    box-shadow: inset 0 -2px 0 var(--theme-accent-strong, #a855f7);
   }
 
   .scope-seg i {
@@ -453,7 +466,7 @@
   }
 
   .channel-label {
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: rgba(255, 255, 255, 0.3);
@@ -506,35 +519,35 @@
   }
 
   .effect-btn.active.eff-fire {
-    background: rgba(249, 115, 22, 0.15);
-    border-color: rgba(249, 115, 22, 0.4);
+    background: color-mix(in srgb, var(--effect-fire) 15%, transparent);
+    border-color: color-mix(in srgb, var(--effect-fire) 40%, transparent);
   }
   .effect-btn.active.eff-fire i {
-    color: #fb923c;
+    color: var(--effect-fire-bright);
   }
 
   .effect-btn.active.eff-charcoal {
-    background: rgba(168, 85, 247, 0.15);
-    border-color: rgba(168, 85, 247, 0.4);
+    background: color-mix(in srgb, var(--effect-charcoal) 15%, transparent);
+    border-color: color-mix(in srgb, var(--effect-charcoal) 40%, transparent);
   }
   .effect-btn.active.eff-charcoal i {
-    color: #a78bfa;
+    color: var(--effect-charcoal-bright);
   }
 
   .effect-btn.active.eff-led {
-    background: rgba(34, 197, 94, 0.15);
-    border-color: rgba(34, 197, 94, 0.4);
+    background: color-mix(in srgb, var(--effect-led) 15%, transparent);
+    border-color: color-mix(in srgb, var(--effect-led) 40%, transparent);
   }
   .effect-btn.active.eff-led i {
-    color: #4ade80;
+    color: var(--effect-led-bright);
   }
 
   .effect-btn.active.eff-trails {
-    background: rgba(96, 165, 250, 0.15);
-    border-color: rgba(96, 165, 250, 0.4);
+    background: color-mix(in srgb, var(--effect-trails) 15%, transparent);
+    border-color: color-mix(in srgb, var(--effect-trails) 40%, transparent);
   }
   .effect-btn.active.eff-trails i {
-    color: #60a5fa;
+    color: var(--effect-trails);
   }
 
   /* Quick-apply bar */
@@ -550,7 +563,7 @@
   }
 
   .quick-apply-label {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.3);
     flex-shrink: 0;
   }
@@ -569,7 +582,7 @@
     padding: 8px 10px;
     min-height: 44px;
     border-radius: 6px;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);

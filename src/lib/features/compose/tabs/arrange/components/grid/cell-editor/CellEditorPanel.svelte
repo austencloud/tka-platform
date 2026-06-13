@@ -290,7 +290,7 @@
                     type="button"
                     class="vis-btn"
                     class:active={blueVisible}
-                    style:--vis-color="#60a5fa"
+                    style:--vis-color="var(--semantic-info, #60a5fa)"
                     aria-pressed={blueVisible}
                     onclick={handleToggleBlueVisibility}
                   >
@@ -300,7 +300,7 @@
                     type="button"
                     class="vis-btn"
                     class:active={redVisible}
-                    style:--vis-color="#dc2626"
+                    style:--vis-color="var(--semantic-error, #dc2626)"
                     aria-pressed={redVisible}
                     onclick={handleToggleRedVisibility}
                   >
@@ -476,7 +476,7 @@
     width: 100%;
     padding: 11px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    background: linear-gradient(135deg, var(--theme-accent, #8b5cf6), var(--theme-accent-strong, #6d28d9));
     color: white;
     font-size: 13px;
     font-weight: 600;
@@ -516,9 +516,9 @@
     margin-top: 4px;
     padding: 8px 16px;
     border-radius: 8px;
-    background: rgba(139, 92, 246, 0.12);
-    border: 1px solid rgba(139, 92, 246, 0.25);
-    color: rgba(139, 92, 246, 0.9);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #8b5cf6) 25%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 90%, transparent);
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
@@ -526,7 +526,7 @@
   }
 
   .go-layers-btn:hover {
-    background: rgba(139, 92, 246, 0.2);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent);
   }
 
   .panel-footer {
@@ -564,14 +564,14 @@
   }
 
   .clear-all-btn {
-    background: color-mix(in srgb, #ef4444 6%, transparent);
-    border: 1px solid color-mix(in srgb, #ef4444 10%, transparent);
-    color: rgba(239, 68, 68, 0.6);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
   }
 
   .clear-all-btn:hover {
-    background: color-mix(in srgb, #ef4444 var(--surface-active-pct), transparent);
-    border-color: color-mix(in srgb, #ef4444 20%, transparent);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) var(--surface-active-pct), transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
   }
 
   @media (prefers-reduced-motion: reduce) {

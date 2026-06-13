@@ -83,7 +83,7 @@
   }
 
   .bc-current {
-    color: #d4b4ff;
+    color: var(--theme-accent-light, #d4b4ff);
     font-weight: 600;
     padding: 2px 4px;
   }

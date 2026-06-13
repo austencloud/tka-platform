@@ -19,6 +19,7 @@
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/services/trail-capturer";
   import type { FireOverlayConfig } from "$lib/shared/animation-engine/domain/types/fire-types";
+  import { DEFAULT_CHARCOAL_PARAMS } from "$lib/shared/animation-engine/domain/types/charcoal-spark-types";
   import type { LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/led-types";
 
   let {
@@ -55,6 +56,12 @@
 
   // Local state
   let initialized = $state(false);
+  // User-visible init failure (orchestrator construction or sequence load).
+  // When set, the cell shows an error overlay with a retry button instead of
+  // silently rendering blank.
+  let initError = $state<string | null>(null);
+  // Bumped by the retry button so the init $effects re-run after a failure.
+  let initAttempt = $state(0);
 
   // Derived: Get layer data
   const primaryLayer = $derived(cell.layers[0] || null);
@@ -91,7 +98,7 @@
   const cellFireConfig = $derived.by((): Partial<FireOverlayConfig> | undefined => {
     const effect = cell.effect;
     if (effect === 'fire' || tipMapHasEffect('fire')) return {};
-    if (effect === 'charcoal' || tipMapHasEffect('charcoal')) return { charcoalParams: {} as any };
+    if (effect === 'charcoal' || tipMapHasEffect('charcoal')) return { charcoalParams: { ...DEFAULT_CHARCOAL_PARAMS } };
     if (effect && effect !== 'none') return undefined;
     if (cell.tipEffectMap && Object.keys(cell.tipEffectMap).length > 0) return undefined;
     return undefined; // No per-cell override - global setting applies
@@ -172,9 +179,18 @@
     });
   });
 
-  // Initialize services - create per-cell orchestrators
-  onMount(() => {
+  // Create per-cell orchestrators. Extracted from onMount so the error
+  // overlay's retry button can re-attempt after a failure.
+  function initializeOrchestrators() {
     try {
+      // Dispose any partial state left by a previous failed attempt
+      primaryOrchestrator?.dispose();
+      for (const orch of additionalOrchestrators) orch.dispose();
+      for (const state of additionalAnimationStates) state.dispose();
+      primaryOrchestrator = null;
+      additionalOrchestrators = [];
+      additionalAnimationStates = [];
+
       // Each orchestrator gets its own AnimationStateManager so they don't
       // overwrite each other's prop state through the shared singleton.
       primaryOrchestrator = new SequenceAnimationOrchestrator(
@@ -192,9 +208,16 @@
       }
 
       initialized = true;
+      initError = null;
     } catch (err) {
       console.error(`[CellCanvas ${cellIndex}] Failed to initialize:`, err);
+      initError = "Preview engine failed to start";
     }
+  }
+
+  // Initialize services - create per-cell orchestrators
+  onMount(() => {
+    initializeOrchestrators();
   });
 
   onDestroy(() => {
@@ -206,6 +229,7 @@
 
   // Initialize primary orchestrator when layer changes
   $effect(() => {
+    void initAttempt; // retry trigger
     if (initialized && primaryLayer && primaryOrchestrator) {
       try {
         primaryOrchestrator.initializeWithDomainData(primaryLayer.sequence);
@@ -213,6 +237,7 @@
         primaryAnimationState.setTotalSteps(primaryLayer.sequence.steps?.length || 0);
       } catch (err) {
         console.error(`[CellCanvas ${cellIndex}] Primary init failed:`, err);
+        initError = "Sequence failed to load";
       }
     } else {
       // Init skipped - waiting for dependencies
@@ -223,6 +248,7 @@
   // NOTE: Additional layer prop textures are loaded automatically by AnimationEngine
   // inside AnimatorCanvas when it receives non-empty additionalLayers.
   $effect(() => {
+    void initAttempt; // retry trigger
     if (initialized) {
       for (let i = 0; i < extraLayers.length; i++) {
         const layer = extraLayers[i]!;
@@ -235,6 +261,7 @@
             animState.setTotalSteps(layer.sequence.steps?.length || 0);
           } catch (err) {
             console.error(`[CellCanvas ${cellIndex}] Layer ${i + 1} init failed:`, err);
+            initError = `Layer ${i + 1} failed to load`;
           }
         } else {
           console.warn(`[CELL-DIAG ${cellIndex}] Layer ${i + 1}: MISSING orch=${!!orch} animState=${!!animState}`);
@@ -281,6 +308,15 @@
   function handleClick() {
     if (isDragging) return;
     onSelect();
+  }
+
+  // Retry after an init failure. Stops propagation so the click doesn't
+  // also select the cell.
+  function handleRetry(e: Event) {
+    e.stopPropagation();
+    initError = null;
+    if (!initialized) initializeOrchestrators();
+    initAttempt++;
   }
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -350,6 +386,23 @@
     </div>
   {/if}
 
+  <!-- Init failure overlay: visible error state instead of a silently blank cell -->
+  {#if initError}
+    <div class="cell-error" role="alert">
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+      <span class="cell-error-message">{initError}</span>
+      <button
+        type="button"
+        class="cell-error-retry"
+        onclick={handleRetry}
+        onkeydown={(e) => e.stopPropagation()}
+      >
+        <i class="fas fa-rotate-right" aria-hidden="true"></i>
+        Retry
+      </button>
+    </div>
+  {/if}
+
   <!-- Cell index badge -->
   <span class="cell-index">{cellIndex + 1}</span>
 
@@ -401,8 +454,8 @@
   .cell-canvas.selected {
     border-color: var(--theme-accent, #8b5cf6);
     box-shadow:
-      0 0 0 3px rgba(139, 92, 246, 0.45),
-      0 0 16px rgba(139, 92, 246, 0.3);
+      0 0 0 3px color-mix(in srgb, var(--theme-accent, #8b5cf6) 45%, transparent),
+      0 0 16px color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
   }
 
   .cell-canvas.empty {
@@ -497,6 +550,55 @@
     padding: 2px 6px;
     border-radius: var(--border-radius-sm);
     pointer-events: none;
+  }
+
+  /* Init failure overlay */
+  .cell-error {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs, 4px);
+    padding: var(--spacing-sm, 8px);
+    text-align: center;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .cell-error i {
+    font-size: clamp(14px, 12cqw, 24px);
+  }
+
+  .cell-error-message {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+  }
+
+  .cell-error-retry {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 32px;
+    padding: 4px 10px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--semantic-error, #ef4444);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 35%, transparent);
+    border-radius: var(--border-radius-sm, 6px);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .cell-error-retry:hover {
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 22%, transparent);
+  }
+
+  .cell-error-retry:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
   }
 
   /* Choreo Card container - allows sequence preview to fit within cell */

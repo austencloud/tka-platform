@@ -403,7 +403,7 @@
   }
 
   .scope-label {
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     text-transform: uppercase;
     letter-spacing: 1px;
     color: rgba(255, 255, 255, 0.2);
@@ -440,7 +440,11 @@
 
   .scope-seg:last-child { border-right: none; }
   .scope-seg:hover { background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.7); }
-  .scope-seg.active { background: rgba(139, 92, 246, 0.15); color: #c084fc; box-shadow: inset 0 -2px 0 #a855f7; }
+  .scope-seg.active {
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
+    color: var(--theme-accent-light, #c084fc);
+    box-shadow: inset 0 -2px 0 var(--theme-accent-strong, #a855f7);
+  }
   .scope-seg i { font-size: 14px; }
 
   /* ── Channel matrix ──────────────────────────────────── */
@@ -469,7 +473,8 @@
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    min-width: 36px;
+    /* Wide enough for the 12px channel name to wrap cleanly ("Blue thumb") */
+    min-width: 48px;
     padding-top: 8px;
   }
 
@@ -481,7 +486,7 @@
   }
 
   .channel-name {
-    font-size: 8px;
+    font-size: var(--font-size-compact, 12px);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: rgba(255, 255, 255, 0.25);
@@ -528,9 +533,15 @@
   }
 
   .effort-btn .effort-label {
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.4);
     font-weight: 500;
+    /* Long names ("Anticipation") truncate instead of overflowing the dense
+       4-column grid; the button's title attribute carries the full label */
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .effort-btn.active .effort-label {

@@ -233,7 +233,7 @@
     border-radius: 10px;
     color: rgba(255, 255, 255, 0.4);
     cursor: pointer;
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     transition: background 100ms ease, color 100ms ease;
   }
 
@@ -243,14 +243,14 @@
   }
 
   .dim-step:active:not(:disabled) {
-    background: rgba(139, 92, 246, 0.15);
-    color: #a78bfa;
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
+    color: var(--theme-accent-light, #a78bfa);
   }
 
   .dim-step:disabled { opacity: 0.2; cursor: default; }
 
   .dim-step:focus-visible {
-    outline: 2px solid #8b5cf6;
+    outline: 2px solid var(--theme-accent, #8b5cf6);
     outline-offset: -2px;
   }
 
@@ -273,8 +273,10 @@
   .dim-labels {
     display: flex;
     justify-content: center;
-    gap: 62px;
-    font-size: 9px;
+    /* Gap tuned so the 12px labels keep the same center positions under the
+       two stepper pairs that the 9px labels had at 62px */
+    gap: 52px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     color: rgba(255, 255, 255, 0.22);
     text-transform: uppercase;
@@ -288,20 +290,28 @@
     align-items: center;
     gap: 6px;
     padding: 6px 8px;
-    background: rgba(239, 68, 68, 0.06);
-    border: 1px solid rgba(239, 68, 68, 0.18);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 18%, transparent);
     border-radius: 8px;
   }
 
-  .confirm-warn { color: rgba(239, 68, 68, 0.7); font-size: 11px; flex-shrink: 0; }
-  .confirm-text { font-size: 11px; color: rgba(255, 255, 255, 0.55); flex: 1; }
+  .confirm-warn {
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, transparent);
+    font-size: var(--font-size-compact, 12px);
+    flex-shrink: 0;
+  }
+  .confirm-text {
+    font-size: var(--font-size-compact, 12px);
+    color: rgba(255, 255, 255, 0.55);
+    flex: 1;
+  }
 
   .confirm-btn {
     flex-shrink: 0;
     padding: 5px 10px;
     border: none;
     border-radius: 6px;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
     transition: background 100ms ease;
@@ -313,14 +323,19 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  .confirm-btn.apply { background: rgba(239, 68, 68, 0.55); color: white; }
+  .confirm-btn.apply {
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 55%, transparent);
+    color: white;
+  }
 
   @media (hover: hover) {
     .confirm-btn.cancel:hover { background: rgba(255, 255, 255, 0.1); }
-    .confirm-btn.apply:hover { background: rgba(239, 68, 68, 0.75); }
+    .confirm-btn.apply:hover {
+      background: color-mix(in srgb, var(--semantic-error, #ef4444) 75%, transparent);
+    }
   }
 
-  .confirm-btn:focus-visible { outline: 2px solid #8b5cf6; outline-offset: 2px; }
+  .confirm-btn:focus-visible { outline: 2px solid var(--theme-accent, #8b5cf6); outline-offset: 2px; }
 
   /* ── Preset cards ── */
   .preset-grid {
@@ -345,10 +360,10 @@
   }
 
   .preset-card.active {
-    background: color-mix(in srgb, #8b5cf6 12%, transparent);
-    border-color: color-mix(in srgb, #8b5cf6 40%, transparent);
-    box-shadow: 0 0 12px -2px rgba(139, 92, 246, 0.25),
-                inset 0 1px 0 rgba(139, 92, 246, 0.1);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 12%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 40%, transparent);
+    box-shadow: 0 0 12px -2px color-mix(in srgb, var(--theme-accent, #8b5cf6) 25%, transparent),
+                inset 0 1px 0 color-mix(in srgb, var(--theme-accent, #8b5cf6) 10%, transparent);
   }
 
   @media (hover: hover) {
@@ -360,7 +375,7 @@
 
   .preset-card:active { transform: scale(0.95); }
 
-  .preset-card:focus-visible { outline: 2px solid #8b5cf6; outline-offset: 2px; }
+  .preset-card:focus-visible { outline: 2px solid var(--theme-accent, #8b5cf6); outline-offset: 2px; }
 
   /* Thumbnails */
   .preset-thumb {
@@ -375,28 +390,28 @@
   }
 
   .thumb-cell {
-    background: rgba(139, 92, 246, 0.18);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 18%, transparent);
     border-radius: 3px;
     min-width: 0;
     min-height: 0;
   }
 
   .preset-card.active .thumb-cell {
-    background: rgba(139, 92, 246, 0.5);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
   }
 
   .preset-card.active .thumb-cell.hero {
-    background: rgba(139, 92, 246, 0.65);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 65%, transparent);
   }
 
   @media (hover: hover) {
     .preset-card:not(.active):hover .thumb-cell {
-      background: rgba(139, 92, 246, 0.28);
+      background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 28%, transparent);
     }
   }
 
   .preset-name {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: rgba(255, 255, 255, 0.55);
     line-height: 1;
@@ -407,7 +422,7 @@
   }
 
   .preset-dims {
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     color: rgba(255, 255, 255, 0.22);
     line-height: 1;
@@ -415,7 +430,7 @@
   }
 
   .preset-card.active .preset-dims {
-    color: rgba(139, 92, 246, 0.7);
+    color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 70%, transparent);
   }
 
   @media (prefers-reduced-motion: reduce) {

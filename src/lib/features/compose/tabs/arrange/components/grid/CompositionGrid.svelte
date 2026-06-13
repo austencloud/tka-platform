@@ -732,13 +732,13 @@
 
   @keyframes long-press-glow {
     0% {
-      box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--theme-accent, #8b5cf6) 0%, transparent);
     }
     40% {
-      box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3), 0 0 8px rgba(139, 92, 246, 0.15);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent), 0 0 8px color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
     }
     100% {
-      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.7), 0 0 20px rgba(139, 92, 246, 0.35);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--theme-accent, #8b5cf6) 70%, transparent), 0 0 20px color-mix(in srgb, var(--theme-accent, #8b5cf6) 35%, transparent);
     }
   }
 
@@ -788,16 +788,16 @@
 
   /* Drop zone highlighting: subtle glow on valid positions while dragging */
   .cell-placeholder.drop-target {
-    border: 2px dashed rgba(139, 92, 246, 0.25);
+    border: 2px dashed color-mix(in srgb, var(--theme-accent, #8b5cf6) 25%, transparent);
     border-radius: var(--border-radius-md, 8px);
-    background: rgba(139, 92, 246, 0.06);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 6%, transparent);
     transition: background 0.2s ease, border-color 0.2s ease;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .cell-wrapper.is-pressing {
       animation: none;
-      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.5);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
     }
 
     .cell-wrapper.is-dragging {

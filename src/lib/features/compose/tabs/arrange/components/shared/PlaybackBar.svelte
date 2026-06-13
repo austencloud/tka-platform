@@ -179,14 +179,14 @@
   }
 
   .loop-btn.active {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: rgba(16, 185, 129, 0.4);
-    color: rgba(16, 185, 129, 1);
+    background: color-mix(in srgb, var(--semantic-success, #10b981) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success, #10b981) 40%, transparent);
+    color: var(--semantic-success, #10b981);
   }
 
   .loop-btn.active:hover {
-    background: rgba(16, 185, 129, 0.3);
-    border-color: rgba(16, 185, 129, 0.5);
+    background: color-mix(in srgb, var(--semantic-success, #10b981) 30%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success, #10b981) 50%, transparent);
   }
 
   .loop-btn:focus-visible {

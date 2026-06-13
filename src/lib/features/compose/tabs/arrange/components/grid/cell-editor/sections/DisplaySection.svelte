@@ -97,9 +97,9 @@
   }
 
   .chip.active {
-    background: color-mix(in srgb, #60a5fa var(--surface-active-pct, 12%), transparent);
-    border-color: color-mix(in srgb, #60a5fa var(--stroke-active-pct, 35%), transparent);
-    color: #60a5fa;
+    background: color-mix(in srgb, var(--theme-accent, #60a5fa) var(--surface-active-pct, 12%), transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #60a5fa) var(--stroke-active-pct, 35%), transparent);
+    color: var(--theme-accent, #60a5fa);
   }
 
   .chip.disabled {

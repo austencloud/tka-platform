@@ -395,9 +395,9 @@
   }
 
   .scope-seg.active {
-    background: rgba(139, 92, 246, 0.15);
-    color: #d4b4ff;
-    box-shadow: inset 0 -2px 0 #a855f7;
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
+    color: var(--theme-accent-light, #d4b4ff);
+    box-shadow: inset 0 -2px 0 var(--theme-accent-strong, #a855f7);
   }
 
   .scope-seg i { font-size: 11px; }
@@ -435,9 +435,9 @@
   }
 
   .ch-row.target {
-    border-color: rgba(139, 92, 246, 0.4);
-    background: rgba(139, 92, 246, 0.06);
-    box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.15);
+    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 40%, transparent);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 6%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
   }
 
   .ch-dot {
@@ -482,7 +482,7 @@
 
   .grid-hint {
     font-size: 12px;
-    color: rgba(167, 139, 250, 0.9);
+    color: color-mix(in srgb, var(--theme-accent-light, #a78bfa) 90%, transparent);
     text-align: center;
     padding: 2px 0;
     font-weight: 500;
@@ -535,7 +535,7 @@
   }
 
   .sub-label {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     text-transform: uppercase;
     letter-spacing: 1px;
     color: rgba(255, 255, 255, 0.4);
@@ -570,9 +570,9 @@
   }
 
   .trail-chip.active {
-    background: color-mix(in srgb, #60a5fa 14%, transparent);
-    border-color: color-mix(in srgb, #60a5fa 35%, transparent);
-    color: #60a5fa;
+    background: color-mix(in srgb, var(--theme-accent, #60a5fa) 14%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #60a5fa) 35%, transparent);
+    color: var(--theme-accent, #60a5fa);
   }
 
   /* ── Accordion ────────────────────────────────────────────── */
