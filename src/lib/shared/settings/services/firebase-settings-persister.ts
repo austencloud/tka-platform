@@ -25,6 +25,10 @@ import type { AppSettings } from "../domain/app-settings";
 export class FirebaseSettingsPersister {
   private unsubscribe: Unsubscribe | null = null;
 
+  // Last activeProp mirrored to the user doc this session — skips redundant
+  // writes when a settings save didn't change the prop.
+  private lastMirroredActiveProp: string | null = null;
+
   /**
    * Get the Firestore document reference for user settings
    * Note: Uses actual user ID, not effective (preview) user ID
@@ -100,6 +104,40 @@ export class FirebaseSettingsPersister {
       );
       toast.error("Failed to save settings.");
       throw error;
+    }
+
+    await this.mirrorActiveProp(settings);
+  }
+
+  /**
+   * Mirror the selected prop onto users/{uid}.activeProp so the publicly
+   * readable user doc carries the creator's prop identity (browse creators
+   * queries can't reach the settings subcollection). Blue hand is the
+   * tiebreaker; in practice both hands match. Non-fatal: a failed mirror
+   * leaves a stale badge, not broken settings.
+   */
+  private async mirrorActiveProp(settings: AppSettings): Promise<void> {
+    const activeProp = settings.bluePropType;
+    if (!activeProp || activeProp === this.lastMirroredActiveProp) return;
+
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+
+    try {
+      const firestore = await getFirestoreInstance();
+      await trackWrite(() =>
+        setDoc(
+          doc(firestore, `users/${userId}`),
+          { activeProp },
+          { merge: true }
+        )
+      );
+      this.lastMirroredActiveProp = activeProp;
+    } catch (error) {
+      console.error(
+        "❌ [FirebaseSettingsPersister] Failed to mirror activeProp:",
+        error
+      );
     }
   }
 

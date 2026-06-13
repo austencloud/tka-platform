@@ -4,6 +4,7 @@
   import AvatarImage from "$lib/shared/browse/components/AvatarImage.svelte";
   import { reportModalState } from "$lib/features/moderation/state/report-modal-state.svelte";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import { getEffectiveProp } from "$lib/shared/community/domain/get-effective-prop";
 
   let {
     userProfile,
@@ -24,6 +25,11 @@
   } = $props();
 
   const accentColor = $derived(userProfile.profileColor || "var(--theme-accent)");
+
+  // Settings-derived prop shown when the user never curated a props list
+  const fallbackProp = $derived(
+    !userProfile.propsISpinWith?.length ? getEffectiveProp(userProfile) : null
+  );
 
   function handleReportUser() {
     reportModalState.open({
@@ -73,6 +79,18 @@
                 {/if}
               </div>
             {/each}
+          </div>
+        {:else if fallbackProp}
+          <div class="props-row">
+            <div
+              class="profile-prop-icon"
+              title="Spins with {getPropTypeDisplayInfo(fallbackProp).label}"
+            >
+              <img
+                src={getPropTypeDisplayInfo(fallbackProp).image}
+                alt="Spins with {getPropTypeDisplayInfo(fallbackProp).label}"
+              />
+            </div>
           </div>
         {/if}
       </div>

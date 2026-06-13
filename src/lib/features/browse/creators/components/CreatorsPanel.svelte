@@ -31,7 +31,6 @@
   import VirtualizedCreatorGrid from "./VirtualizedCreatorGrid.svelte";
   import FeaturedCreatorsSection from "./FeaturedCreatorsSection.svelte";
   import CreatorsSortBar from "./CreatorsSortBar.svelte";
-  import PropFilterChips from "./PropFilterChips.svelte";
 
   let searchQuery = $state("");
   let followingInProgress = $state<Set<string>>(new Set());
@@ -237,16 +236,6 @@
       {/if}
     </div>
 
-    <!-- Prop filter chips (hidden during search) -->
-    {#if !searchResults}
-      <div class="prop-filter-row-container">
-        <PropFilterChips
-          selectedProps={creatorsDataState.selectedPropFilters}
-          onToggle={creatorsDataState.togglePropFilter}
-        />
-      </div>
-    {/if}
-
     <PanelContent>
       {#if initError}
         <PanelState type="error" title="Initialization Error" message={initError} />
@@ -348,11 +337,6 @@
     color: var(--theme-text-dim);
   }
 
-  /* Prop filter chips row - same horizontal alignment as search-sort-row */
-  .prop-filter-row-container {
-    padding: 0 32px 0 24px;
-  }
-
   /* Search + Sort row - aligned with grid cards */
   .search-sort-row {
     display: flex;
@@ -386,22 +370,16 @@
       gap: 12px;
     }
 
+    /* The bottom-nav tab already labels this view "Creators" - the title
+       row is pure redundancy on mobile, where vertical space is tightest */
     .creators-topbar {
-      padding: 12px 0 4px;
-    }
-
-    .panel-title {
-      font-size: var(--font-size-base);
+      display: none;
     }
 
     .search-sort-row {
       flex-direction: column;
       gap: 8px;
-      padding: 0 16px;
-    }
-
-    .prop-filter-row-container {
-      padding: 0 16px;
+      padding: 12px 16px 0;
     }
 
     .search-sort-row :global(.panel-search) {

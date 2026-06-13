@@ -15,6 +15,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { isGoogleAvatarUrl } from "$lib/shared/foundation/utils/google-avatar";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import { getEffectiveProp } from "$lib/shared/community/domain/get-effective-prop";
 
   interface Props {
     user: EnhancedUserProfile;
@@ -53,6 +54,9 @@
   const isRecentlyActive = $derived(
     user.lastActiveAt && (Date.now() - user.lastActiveAt.getTime()) < 86400000
   );
+
+  // Prop identity badge: explicit favorite wins, else the settings-derived prop
+  const effectiveProp = $derived(getEffectiveProp(user));
 
   /**
    * Handle successful avatar image load - extract color
@@ -137,26 +141,30 @@
     {/if}
     <p class="username">@{user.username}</p>
 
-    {#if user.favoriteProp}
-      <div class="favorite-prop-badge" title={getPropTypeDisplayInfo(user.favoriteProp).label}>
+    {#if effectiveProp}
+      <div class="favorite-prop-badge" title="Spins with {getPropTypeDisplayInfo(effectiveProp).label}">
         <img
-          src={getPropTypeDisplayInfo(user.favoriteProp).image}
-          alt={getPropTypeDisplayInfo(user.favoriteProp).label}
+          src={getPropTypeDisplayInfo(effectiveProp).image}
+          alt="Spins with {getPropTypeDisplayInfo(effectiveProp).label}"
           class="prop-icon"
         />
       </div>
     {/if}
 
-    <!-- Stats -->
+    <!-- Stats (zero counts hidden - zeros across the grid read as emptiness) -->
     <div class="user-stats">
-      <div class="stat">
-        <i class="fas fa-list" aria-hidden="true"></i>
-        <span>{Math.max(0, user.sequenceCount)}</span>
-      </div>
-      <div class="stat">
-        <i class="fas fa-folder" aria-hidden="true"></i>
-        <span>{user.collectionCount}</span>
-      </div>
+      {#if user.sequenceCount > 0}
+        <div class="stat">
+          <i class="fas fa-list" aria-hidden="true"></i>
+          <span>{user.sequenceCount}</span>
+        </div>
+      {/if}
+      {#if user.collectionCount > 0}
+        <div class="stat">
+          <i class="fas fa-folder" aria-hidden="true"></i>
+          <span>{user.collectionCount}</span>
+        </div>
+      {/if}
     </div>
 
     <!-- Activity / Join date (context-dependent on sort) -->
