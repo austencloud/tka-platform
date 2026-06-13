@@ -30,6 +30,7 @@
   let previewError = $state<string | null>(null);
   let renderService = $state<SequenceRenderer | null>(null);
   let renderVersion = $state(0); // Increment to trigger re-render
+  let rendererAttempt = $state(0); // Increment to retry renderer acquisition
 
   // Local reactive copies of settings (for UI)
   let addWord = $state(imageSettings.addWord);
@@ -39,17 +40,27 @@
   let addUserInfo = $state(imageSettings.addUserInfo);
   let darkMode = $state(imageSettings.darkMode);
 
-  // Load render service on mount
+  // Load render service on mount (re-runs when rendererAttempt changes for retry)
   $effect(() => {
+    const _attempt = rendererAttempt;
     try {
       renderService = getSequenceRenderer();
       if (!renderService) {
         console.warn("⚠️ SequenceRenderer not available in container");
+        previewError = "Preview renderer is unavailable";
       }
     } catch (error) {
       console.error("Failed to get sequenceRenderer from container:", error);
+      renderService = null;
+      previewError = "Preview renderer is unavailable";
     }
   });
+
+  function retryPreview() {
+    previewError = null;
+    rendererAttempt++; // Re-attempt renderer acquisition
+    renderVersion++; // Re-trigger preview generation
+  }
 
   // Sync settings from manager and listen for changes
   onMount(() => {
@@ -161,15 +172,18 @@
         <i class="fas fa-image" aria-hidden="true"></i>
         <p>No sequence loaded</p>
       </div>
-    {:else if isLoading || !renderService}
-      <div class="loading-state">
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        <p>Generating preview...</p>
-      </div>
     {:else if previewError}
       <div class="error-state">
         <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         <p>{previewError}</p>
+        <button class="retry-button" onclick={retryPreview}>
+          <i class="fas fa-redo" aria-hidden="true"></i> Retry
+        </button>
+      </div>
+    {:else if isLoading || !renderService}
+      <div class="loading-state">
+        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        <p>Generating preview...</p>
       </div>
     {:else if previewDataUrl}
       <img src={previewDataUrl} alt="Sequence preview" class="preview-image" />
@@ -294,6 +308,31 @@
     text-align: center;
   }
 
+  .retry-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    min-height: var(--min-touch-target); /* WCAG 2.1 AA touch target */
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min);
+    cursor: pointer;
+    transition: all var(--duration-fast) ease;
+  }
+
+  .retry-button:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+  }
+
+  .retry-button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
   /* Settings Chips */
   .settings-chips {
     display: flex;
@@ -365,7 +404,8 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .chip {
+    .chip,
+    .retry-button {
       transition: none;
     }
   }

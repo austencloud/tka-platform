@@ -23,20 +23,48 @@
     onModeChange?: (mode: ShareMode) => void;
   } = $props();
 
+  let singleButton = $state<HTMLButtonElement | null>(null);
+  let compositeButton = $state<HTMLButtonElement | null>(null);
+
   function handleModeChange(newMode: ShareMode) {
     onModeChange?.(newMode);
   }
 
+  // WAI-ARIA tabs pattern: for a small tablist, arrow keys move focus AND
+  // selection together (selection follows focus), with wraparound.
+  function selectAndFocus(target: ShareMode) {
+    handleModeChange(target);
+    (target === "single" ? singleButton : compositeButton)?.focus();
+  }
+
   function handleKeydown(event: KeyboardEvent, targetMode: ShareMode) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      handleModeChange(targetMode);
+    switch (event.key) {
+      case "Enter":
+      case " ":
+        event.preventDefault();
+        handleModeChange(targetMode);
+        break;
+      case "ArrowLeft":
+      case "ArrowRight":
+        // Two tabs with wraparound: either arrow moves to the other tab
+        event.preventDefault();
+        selectAndFocus(targetMode === "single" ? "composite" : "single");
+        break;
+      case "Home":
+        event.preventDefault();
+        selectAndFocus("single");
+        break;
+      case "End":
+        event.preventDefault();
+        selectAndFocus("composite");
+        break;
     }
   }
 </script>
 
 <div class="mode-toggle" role="tablist" aria-label="Export mode selection">
   <button
+    bind:this={singleButton}
     id="tab-single-media"
     class="mode-option"
     class:active={mode === "single"}
@@ -52,6 +80,7 @@
   </button>
 
   <button
+    bind:this={compositeButton}
     id="tab-composite"
     class="mode-option"
     class:active={mode === "composite"}

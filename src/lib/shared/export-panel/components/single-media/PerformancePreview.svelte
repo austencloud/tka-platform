@@ -107,6 +107,8 @@
       recordingState = "recording";
     } catch (err) {
       console.error("Failed to start recording:", err);
+      error =
+        err instanceof Error ? err.message : "Failed to start recording";
     }
   }
 
@@ -119,9 +121,18 @@
         recordedVideo = result;
         recordingState = "stopped";
         if (videoElement) videoElement.pause();
+      } else {
+        error = result.error ?? "Recording failed";
+        recordingId = null;
+        recordingState = "idle";
+        recordingDuration = 0;
       }
     } catch (err) {
       console.error("Failed to stop recording:", err);
+      error = err instanceof Error ? err.message : "Failed to stop recording";
+      recordingId = null;
+      recordingState = "idle";
+      recordingDuration = 0;
     }
   }
 
@@ -448,7 +459,11 @@
     align-items: center;
     gap: 8px;
     padding: 8px 16px;
-    background: rgba(220, 38, 38, 0.9);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 90%,
+      transparent
+    );
     border-radius: 20px;
     font-size: var(--font-size-compact);
     font-weight: 600;
@@ -480,8 +495,16 @@
   }
 
   .clear-upload:hover {
-    background: rgba(220, 38, 38, 0.8);
-    border-color: rgba(220, 38, 38, 0.8);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 80%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 80%,
+      transparent
+    );
   }
 
   /* Upload dropzone */
@@ -587,16 +610,20 @@
     align-items: center;
     gap: 6px;
     padding: 8px 12px;
-    background: rgba(220, 38, 38, 0.2);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 20%,
+      transparent
+    );
     border-radius: 8px;
     font-size: var(--font-size-min);
     font-weight: 600;
-    color: rgb(252, 165, 165);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 55%, white);
   }
 
   .duration-badge i.pulse {
     animation: blink 1s ease-in-out infinite;
-    color: rgb(220, 38, 38);
+    color: var(--semantic-error, #ef4444);
   }
 
   .control-button {
@@ -645,25 +672,41 @@
   }
 
   .record-button {
-    background: rgba(220, 38, 38, 0.2);
-    border-color: rgba(220, 38, 38, 0.5);
-    color: rgb(252, 165, 165);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 20%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 50%,
+      transparent
+    );
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 55%, white);
   }
 
   .record-button:hover:not(:disabled) {
-    background: rgba(220, 38, 38, 0.3);
-    border-color: rgba(220, 38, 38, 0.7);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 30%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 70%,
+      transparent
+    );
   }
 
   .stop-button {
-    background: rgb(220, 38, 38);
-    border-color: rgb(220, 38, 38);
+    background: var(--semantic-error, #ef4444);
+    border-color: var(--semantic-error, #ef4444);
     color: white;
     padding: 8px 12px;
   }
 
   .stop-button:hover {
-    background: rgb(185, 28, 28);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 80%, black);
   }
 
   .cancel-button {
