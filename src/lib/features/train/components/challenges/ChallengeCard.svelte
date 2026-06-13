@@ -239,8 +239,8 @@
 
   /* Completed state */
   .challenge-card.complete {
-    background: rgba(34, 197, 94, 0.08);
-    border-color: rgba(34, 197, 94, 0.2);
+    background: color-mix(in srgb, var(--semantic-success) 8%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success) 20%, transparent);
     opacity: 0.9;
   }
 
@@ -248,7 +248,7 @@
     background: linear-gradient(
       90deg,
       var(--semantic-success) 0%,
-      #4ade80 100%
+      color-mix(in srgb, var(--semantic-success) 70%, white) 100%
     );
   }
 
@@ -310,10 +310,10 @@
     padding: 8px 12px;
     background: linear-gradient(
       135deg,
-      rgba(251, 191, 36, 0.15) 0%,
-      rgba(245, 158, 11, 0.1) 100%
+      color-mix(in srgb, var(--semantic-warning) 15%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-warning) 10%, transparent) 100%
     );
-    border: 1px solid rgba(251, 191, 36, 0.25);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning) 25%, transparent);
     border-radius: 12px;
     flex-shrink: 0;
   }
@@ -326,7 +326,7 @@
   .xp-value {
     font-size: var(--font-size-sm);
     font-weight: 700;
-    color: #fcd34d;
+    color: color-mix(in srgb, var(--semantic-warning) 75%, white);
   }
 
   .xp-badge .bonus {
@@ -359,7 +359,7 @@
 
   .tag.mode {
     background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
-    color: #a5b4fc;
+    color: color-mix(in srgb, var(--theme-accent) 70%, white);
     border: 1px solid color-mix(in srgb, var(--theme-accent) 20%, transparent);
   }
 
@@ -392,7 +392,7 @@
     background: linear-gradient(
       90deg,
       var(--semantic-success),
-      #4ade80
+      color-mix(in srgb, var(--semantic-success) 70%, white)
     ) !important;
   }
 
@@ -405,7 +405,7 @@
   }
 
   .progress-text i {
-    color: #4ade80;
+    color: color-mix(in srgb, var(--semantic-success) 70%, white);
   }
 
   /* Footer */
@@ -459,9 +459,9 @@
   }
 
   .status-badge.complete {
-    background: rgba(34, 197, 94, 0.12);
-    color: #4ade80;
-    border: 1px solid rgba(34, 197, 94, 0.2);
+    background: color-mix(in srgb, var(--semantic-success) 12%, transparent);
+    color: color-mix(in srgb, var(--semantic-success) 70%, white);
+    border: 1px solid color-mix(in srgb, var(--semantic-success) 20%, transparent);
   }
 
   .status-badge i {

@@ -201,7 +201,7 @@
   }
 
   .btn-label {
-    font-size: 0.625rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;

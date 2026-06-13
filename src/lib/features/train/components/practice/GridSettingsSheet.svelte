@@ -354,7 +354,7 @@
 
   .section-label {
     display: block;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim, var(--theme-text-dim));
     text-transform: uppercase;
@@ -410,7 +410,7 @@
 
   .mode-hint {
     margin: 0;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     color: color-mix(in srgb, var(--theme-text-dim) 80%, transparent);
     line-height: 1.3;
     text-align: center;
@@ -510,7 +510,7 @@
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 6px;
     color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-normal);

@@ -147,7 +147,7 @@
       background var(--duration-2026-fast, 150ms)
         var(--ease-2026-out, cubic-bezier(0.33, 1, 0.68, 1));
     color: color-mix(in srgb, var(--theme-text, white) 90%, transparent);
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     cursor: pointer;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
@@ -194,7 +194,7 @@
     background: color-mix(in srgb, var(--theme-shadow) 20%, transparent);
     border-radius: var(--radius-2026-sm, 10px);
     font-family: "Courier New", monospace;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     line-height: 1.3;
   }
 

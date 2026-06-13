@@ -369,7 +369,7 @@
   }
 
   .toggle-icon {
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     transition: transform var(--duration-normal);
   }
 
