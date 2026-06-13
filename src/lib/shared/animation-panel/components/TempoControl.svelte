@@ -478,10 +478,10 @@
   }
 
   .preset-btn.active {
-    background: rgba(139, 92, 246, 0.15);
-    border-color: rgba(139, 92, 246, 0.4);
-    color: #a78bfa;
-    box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 40%, transparent);
+    color: var(--theme-accent, #a78bfa);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -493,8 +493,8 @@
     }
 
     .preset-btn.active:hover {
-      background: rgba(139, 92, 246, 0.2);
-      border-color: rgba(139, 92, 246, 0.5);
+      background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent);
+      border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
     }
   }
 
@@ -533,16 +533,16 @@
   }
 
   .practice-btn.active {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.4);
-    color: #f87171;
-    box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+    background: var(--semantic-error-dim, rgba(239, 68, 68, 0.15));
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, white);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
     animation: practice-pulse 2s ease-in-out infinite;
   }
 
   @keyframes practice-pulse {
-    0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.2); }
-    50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.35); }
+    0%, 100% { box-shadow: 0 0 12px color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent); }
+    50% { box-shadow: 0 0 20px color-mix(in srgb, var(--semantic-error, #ef4444) 35%, transparent); }
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -554,8 +554,8 @@
     }
 
     .practice-btn.active:hover {
-      background: rgba(239, 68, 68, 0.2);
-      border-color: rgba(239, 68, 68, 0.5);
+      background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+      border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 50%, transparent);
     }
   }
 

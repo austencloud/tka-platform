@@ -21,6 +21,7 @@
   import "../bento/rail-tile.css";
   import "../pill-nav/pill-nav.css";
   import TempoControl from "./TempoControl.svelte";
+  import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
@@ -332,7 +333,13 @@
 
 {#snippet pillBody()}
   {#if activePill === "props" && onPropChange && selectedPropType !== undefined}
-    {#await import("$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte") then mod}
+    {#await import("$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte")}
+      <!-- Reserve space while the chunk loads so the body doesn't render
+           as a blank slot and then jump when the grid arrives. -->
+      <div class="pill-pending">
+        <PanelSpinner />
+      </div>
+    {:then mod}
       <mod.default
         selectedPropType={selectedPropType}
         onSelect={onPropChange}
@@ -682,15 +689,27 @@
     padding: 8px 16px 20px;
   }
 
+  /* Pending state for the lazy-loaded BentoPropGrid chunk. Fills the
+     available body height (fixed in the dock tray) and reserves roughly a
+     label + tile row otherwise, so the loaded grid doesn't shove siblings. */
+  .pill-pending {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+  }
+
   /* Compact Export body: label-left rows instead of stacked sections. */
   .export-fields .field {
     display: grid;
-    grid-template-columns: 52px 1fr;
+    /* 64px fits the widest label ("QUALITY") at the 12px floor. */
+    grid-template-columns: 64px 1fr;
     align-items: center;
     gap: 10px;
   }
   .export-fields .field-label {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -705,8 +724,10 @@
   .export-fields .export-meta {
     display: flex;
     gap: 16px;
-    padding-left: 62px;
-    font-size: 11px;
+    /* Label column (64px) + grid gap (10px) keeps the meta row aligned
+       with the chip column above it. */
+    padding-left: 74px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-variant-numeric: tabular-nums;
   }
@@ -733,7 +754,8 @@
   .dock-dense :global(.popover-trigger-wrap .prop-button),
   .dock-dense :global(.popover-trigger-wrap) { width: 60px; }
   .dock-dense :global(.prop-button) { aspect-ratio: 1 / 1; padding: 5px 3px 4px; gap: 2px; }
-  .dock-dense :global(.prop-label) { font-size: 9px; }
+  /* .prop-label keeps its base var(--font-size-compact, 12px); it ellipsizes
+     (nowrap + hidden overflow) inside the 60px tile, so no sub-floor override. */
   /* EffortPanel (56px tile -> 48, still >=44) */
   .dock-dense :global(.effort-btn) { min-height: 48px; padding: 10px 6px; }
   .dock-dense :global(.effort-grid) { gap: 4px; }
