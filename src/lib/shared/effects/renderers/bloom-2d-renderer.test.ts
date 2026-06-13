@@ -61,6 +61,10 @@ function makeParams(overrides: Partial<Bloom2DParams> = {}): Bloom2DParams {
     pulse: 0,
     pulseRate: 1,
     blendMode: "lighter",
+    streak: 0.55,
+    spikes: 0.6,
+    chromatic: 0.35,
+    afterglow: 0.5,
     ...overrides,
   };
 }
