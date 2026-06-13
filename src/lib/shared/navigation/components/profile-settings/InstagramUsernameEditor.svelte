@@ -291,21 +291,21 @@
   }
 
   .icon-btn.save {
-    background: rgba(34, 197, 94, 0.15);
-    color: #4ade80;
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+    color: color-mix(in srgb, var(--semantic-success, #22c55e) 75%, white);
   }
 
   .icon-btn.save:hover:not(:disabled) {
-    background: rgba(34, 197, 94, 0.25);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 25%, transparent);
   }
 
   .icon-btn.cancel {
-    background: rgba(239, 68, 68, 0.15);
-    color: #f87171;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 75%, white);
   }
 
   .icon-btn.cancel:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.25);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
   }
 
   .icon-btn:disabled {
@@ -358,7 +358,7 @@
   }
 
   .instagram-input-wrapper.error {
-    border-color: rgba(239, 68, 68, 0.6);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
   }
 
   .instagram-input-wrapper.success {
@@ -388,7 +388,7 @@
   }
 
   .hint-message.error {
-    color: rgba(239, 68, 68, 0.9);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 90%, transparent);
   }
 
   /* Accessibility */

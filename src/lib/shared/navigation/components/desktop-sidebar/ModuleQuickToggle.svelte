@@ -135,7 +135,7 @@
   // Transformer to prevent dragging core modules
   function transformDraggedElement(
     element?: HTMLElement,
-    data?: any,
+    data?: unknown,
     index?: number
   ): void {
     if (!element || !data) return;
@@ -802,7 +802,7 @@
   }
 
   .cell-label {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text);
     line-height: 1.2;
@@ -888,7 +888,7 @@
     background: rgba(0, 0, 0, 0.4);
     border: none;
     border-radius: 6px;
-    color: rgba(239, 68, 68, 0.8);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 80%, transparent);
     font-size: 14px;
     cursor: pointer;
     opacity: 0;
@@ -897,8 +897,8 @@
   }
 
   .remove-button:hover {
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    color: var(--semantic-error, #ef4444);
   }
 
   .visible-module-cell:hover .remove-button {
@@ -935,7 +935,7 @@
     top: 6px;
     right: 6px;
     color: rgba(255, 255, 255, 0.4);
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   /* ============================================================================
@@ -1135,7 +1135,7 @@
     }
 
     .cell-label {
-      font-size: 10px;
+      font-size: var(--font-size-compact, 12px);
     }
 
     .modal-header {

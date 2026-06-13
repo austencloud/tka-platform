@@ -28,6 +28,10 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
   // Track auth mode to update UI accordingly
   let authMode = $state<"signin" | "signup">("signin");
 
+  // Facebook sign-in failure surfaced inline, mirroring the Google error
+  // handling inside SocialAuthCompact.
+  let facebookError = $state<string | null>(null);
+
   onMount(async () => {
     try {
       hapticService = getHapticFeedback();
@@ -38,11 +42,11 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
 
   // Auto-close when user becomes authenticated
   $effect(() => {
-    if (authState.isAuthenticated && isOpen) {
-      setTimeout(() => {
-        onClose();
-      }, 300);
-    }
+    if (!authState.isAuthenticated || !isOpen) return;
+    const closeTimer = setTimeout(() => {
+      onClose();
+    }, 300);
+    return () => clearTimeout(closeTimer);
   });
 
   function handleClose() {
@@ -52,11 +56,31 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
 
   async function handleFacebookAuth() {
     hapticService?.trigger("selection");
+    facebookError = null;
     try {
       await signInWithFacebook();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("❌ Facebook auth failed:", error);
       hapticService?.trigger("error");
+
+      const errorCode = (error as { code?: string })?.code;
+      if (errorCode === "auth/popup-blocked") {
+        facebookError = "Popup was blocked. Please allow popups for this site.";
+      } else if (errorCode === "auth/popup-closed-by-user") {
+        facebookError = "Sign-in cancelled. Please try again.";
+      } else if (errorCode === "auth/cancelled-popup-request") {
+        facebookError = null; // Silent - user just clicked away
+      } else if (
+        errorCode === "auth/account-exists-with-different-credential"
+      ) {
+        facebookError =
+          "An account already exists with this email using a different sign-in method.";
+      } else {
+        facebookError =
+          error instanceof Error
+            ? error.message
+            : "Facebook sign-in failed. Please try again.";
+      }
     }
   }
 </script>
@@ -76,6 +100,10 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     <div class="auth-sheet__content themed-scrollbar">
       <!-- Social Auth Buttons - Compact side-by-side layout -->
       <SocialAuthCompact mode={authMode} onFacebookAuth={handleFacebookAuth} />
+
+      {#if facebookError}
+        <p class="auth-sheet__error" role="alert">{facebookError}</p>
+      {/if}
 
       <!-- Divider -->
       <div class="auth-sheet__divider">
@@ -159,6 +187,13 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
 
   .auth-sheet__email {
     width: 100%;
+  }
+
+  .auth-sheet__error {
+    margin: 8px 0 0;
+    font-size: var(--font-size-compact);
+    color: var(--semantic-error, #ef4444);
+    text-align: center;
   }
 
   /* ============================================================================

@@ -134,7 +134,7 @@
   }
 
   .cta-arrow {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   @media (prefers-reduced-motion: reduce) {

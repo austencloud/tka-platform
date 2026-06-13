@@ -342,15 +342,15 @@
     position: absolute;
     top: -6px;
     right: -6px;
-    min-width: 16px;
-    height: 16px;
+    min-width: 18px;
+    height: 18px;
     padding: 0 4px;
     background: var(--semantic-error, #ef4444);
-    border-radius: 8px;
+    border-radius: 9px;
     color: white;
-    font-size: 0.625rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
-    line-height: 16px;
+    line-height: 18px;
     text-align: center;
     pointer-events: none;
     animation: badgePop var(--duration-emphasis, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -363,7 +363,7 @@
     background: var(--semantic-error, #ef4444);
     border-radius: 10px;
     color: white;
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     line-height: 20px;
     text-align: center;
@@ -434,21 +434,21 @@
 
   /* Command mode: glowing green */
   .mic-button.command-mode {
-    background: rgba(34, 197, 94, 0.15);
-    color: #22c55e;
-    box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+    color: var(--semantic-success, #22c55e);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
   }
 
   .mic-button.command-mode:hover {
-    background: rgba(34, 197, 94, 0.25);
-    box-shadow: 0 0 16px rgba(34, 197, 94, 0.4);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 25%, transparent);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
   }
 
   .mic-glow-ring {
     position: absolute;
     inset: -3px;
     border-radius: 50%;
-    border: 2px solid rgba(34, 197, 94, 0.4);
+    border: 2px solid color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
     animation: mic-glow-pulse 2s ease-out infinite;
   }
 
@@ -459,8 +459,8 @@
 
   /* Error state */
   .mic-button.error {
-    background: rgba(239, 68, 68, 0.1);
-    color: rgba(239, 68, 68, 0.6);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
   }
 
   @media (prefers-reduced-motion: reduce) {

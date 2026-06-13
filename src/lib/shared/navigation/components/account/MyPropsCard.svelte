@@ -114,7 +114,7 @@
   }
 
   .props-arrow {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
     flex-shrink: 0;
   }

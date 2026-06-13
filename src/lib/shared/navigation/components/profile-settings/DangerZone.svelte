@@ -180,10 +180,10 @@
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    background: rgba(239, 68, 68, 0.05);
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 5%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
     border-radius: 10px;
-    color: rgba(239, 68, 68, 0.8);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 80%, transparent);
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
@@ -191,15 +191,15 @@
   }
 
   .disclosure-button:hover {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: rgba(239, 68, 68, 0.95);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 95%, transparent);
   }
 
   .disclosure-button i {
     font-size: var(--font-size-compact);
     transition: transform var(--duration-normal) ease;
-    color: rgba(239, 68, 68, 0.7);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, transparent);
   }
 
   .disclosure-button i.expanded {
@@ -210,8 +210,8 @@
   .danger-content {
     margin-top: 16px;
     padding: 20px;
-    background: rgba(239, 68, 68, 0.04);
-    border: 1px solid rgba(239, 68, 68, 0.15);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 4%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
     border-radius: 12px;
   }
 
@@ -227,7 +227,7 @@
 
   .warning-text i {
     font-size: var(--font-size-base);
-    color: rgba(239, 68, 68, 0.7);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, transparent);
     margin-top: 2px;
     flex-shrink: 0;
   }
@@ -272,7 +272,7 @@
     color: var(--semantic-error);
     font-family:
       ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    background: rgba(239, 68, 68, 0.15);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
     padding: 2px 6px;
     border-radius: 4px;
     font-size: var(--font-size-compact);
@@ -287,7 +287,7 @@
       ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
     letter-spacing: 0.5px;
     background: rgba(0, 0, 0, 0.3);
-    border: 2px solid rgba(239, 68, 68, 0.25);
+    border: 2px solid color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
     border-radius: 8px;
     color: var(--theme-text);
     outline: none;
@@ -300,13 +300,13 @@
   }
 
   .confirmation-input:focus {
-    border-color: rgba(239, 68, 68, 0.5);
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 50%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
   }
 
   .confirmation-input.valid {
-    border-color: rgba(239, 68, 68, 0.6);
-    background: rgba(239, 68, 68, 0.08);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 8%, transparent);
   }
 
   /* Buttons */
@@ -342,25 +342,25 @@
   }
 
   .button--danger {
-    background: rgba(239, 68, 68, 0.1);
-    color: rgba(239, 68, 68, 0.9);
-    border: 1px solid rgba(239, 68, 68, 0.25);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 90%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
   }
 
   .button--danger:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.4);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
   }
 
   .button--danger-confirm {
-    background: rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
     color: var(--semantic-error);
-    border: 2px solid rgba(239, 68, 68, 0.4);
+    border: 2px solid color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
   }
 
   .button--danger-confirm:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.3);
-    border-color: rgba(239, 68, 68, 0.6);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
   }
 
   .button:active:not(:disabled) {
@@ -410,7 +410,7 @@
 
   .button--danger:focus-visible,
   .button--danger-confirm:focus-visible {
-    outline: 3px solid rgba(239, 68, 68, 0.9);
+    outline: 3px solid color-mix(in srgb, var(--semantic-error, #ef4444) 90%, transparent);
     outline-offset: 2px;
   }
 
@@ -442,7 +442,7 @@
     margin: 0 0 12px 0;
     padding: 10px 14px;
     border-radius: 8px;
-    background: rgba(239, 68, 68, 0.12);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 12%, transparent);
     color: var(--semantic-error);
     font-size: var(--font-size-compact);
   }

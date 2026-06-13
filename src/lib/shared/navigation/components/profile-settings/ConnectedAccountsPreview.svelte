@@ -205,11 +205,11 @@
     align-items: center;
     gap: 6px;
     padding: 6px 10px;
-    background: rgba(34, 197, 94, 0.15);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
     border-radius: 20px;
     font-size: var(--font-size-compact);
     font-weight: 500;
-    color: #4ade80;
+    color: color-mix(in srgb, var(--semantic-success, #22c55e) 75%, white);
   }
 
   .connected-badge i {

@@ -3,7 +3,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { Section } from '../domain/types';
+import type { ModuleId, Section } from '../domain/types';
 
 // === From ISheetRouter ===
 
@@ -30,9 +30,15 @@ export interface RouteState {
 // === From IDeepLinker ===
 
 export interface ModuleMapping {
-  moduleId: string;
+  /**
+   * Module that consumes the deep-link payload. "share" and "view" are
+   * pseudo-modules: "view" redirects to the standalone /sequence route and
+   * "share" always navigates via navigateToModule, so neither is ever passed
+   * to setCurrentModule.
+   */
+  moduleId: ModuleId | "share" | "view";
   tabId?: string;
-  navigateToModule?: string;
+  navigateToModule?: ModuleId;
 }
 export interface DeepLinkResult {
   moduleId: string;
