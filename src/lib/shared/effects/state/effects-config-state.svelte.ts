@@ -45,7 +45,6 @@ export interface EffectConfigMap {
   silk: SilkIntent;
   pulse: PulseIntent;
 }
-import type { EffectsPreset } from "../domain/effects-preset";
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 import { DEFAULT_EFFECTS_CONFIG } from "../domain/defaults";
 import { migrateEffectsConfig } from "../domain/migrations";
@@ -182,38 +181,6 @@ function loadStoredConfig(): EffectsConfig | null {
   }
 }
 
-/** Shallow-in-depth deep merge used for preset application. */
-function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): EffectsConfig {
-  return {
-    ...base,
-    ...patch,
-    trails: patch.trails ? { ...base.trails, ...patch.trails } : base.trails,
-    fire: patch.fire ? { ...base.fire, ...patch.fire } : base.fire,
-    led: patch.led ? { ...base.led, ...patch.led } : base.led,
-    charcoal: patch.charcoal ? { ...base.charcoal, ...patch.charcoal } : base.charcoal,
-    zap: patch.zap ? { ...base.zap, ...patch.zap } : base.zap,
-    sparkles: patch.sparkles ? { ...base.sparkles, ...patch.sparkles } : base.sparkles,
-    echo: patch.echo ? { ...base.echo, ...patch.echo } : base.echo,
-    bloom: patch.bloom ? { ...base.bloom, ...patch.bloom } : base.bloom,
-    water: patch.water ? { ...base.water, ...patch.water } : base.water,
-    bubbles: patch.bubbles ? { ...base.bubbles, ...patch.bubbles } : base.bubbles,
-    petals: patch.petals ? { ...base.petals, ...patch.petals } : base.petals,
-    smoke: patch.smoke ? { ...base.smoke, ...patch.smoke } : base.smoke,
-    ink: patch.ink ? { ...base.ink, ...patch.ink } : base.ink,
-    frost: patch.frost ? { ...base.frost, ...patch.frost } : base.frost,
-    silk: patch.silk ? { ...base.silk, ...patch.silk } : base.silk,
-    pulse: patch.pulse ? { ...base.pulse, ...patch.pulse } : base.pulse,
-    activePresets: patch.activePresets
-      ? { ...base.activePresets, ...patch.activePresets }
-      : base.activePresets,
-    tipEffectMap: patch.tipEffectMap ?? base.tipEffectMap,
-    activeEffect: patch.activeEffect ?? base.activeEffect,
-    effectLayerOverrides: patch.effectLayerOverrides
-      ? { ...base.effectLayerOverrides, ...patch.effectLayerOverrides }
-      : base.effectLayerOverrides,
-  };
-}
-
 export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECTS_CONFIG) {
   const stored = loadStoredConfig();
   let config = $state<EffectsConfig>(stored ?? migrateFromVmStorageOnce(structuredClone(initial)));
@@ -296,10 +263,21 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     sceneUndo.commitState();
   }
 
-  function applyPreset(preset: EffectsPreset) {
-    sceneUndo.captureState("apply-effect-preset", `Apply ${preset.effectType} preset`);
-    config = mergeConfig(config, preset.patch as Partial<EffectsConfig>);
-    config.activePresets[preset.effectType] = preset.id;
+  /**
+   * Apply a named preset: shallow-merge its intent patch over the one effect
+   * it targets, mark the chip active, and record exactly ONE undo entry. The
+   * patch only ever touches a single effect's intent (presets never span
+   * effects), so a per-effect shallow merge is the correct depth — same as
+   * updateEffect.
+   */
+  function applyPreset<K extends keyof EffectConfigMap>(
+    effectType: K,
+    presetId: string,
+    patch: Partial<EffectConfigMap[K]>,
+  ) {
+    sceneUndo.captureState("apply-effect-preset", `Apply ${effectType} preset`);
+    (config as any)[effectType] = { ...(config as any)[effectType], ...patch };
+    config.activePresets[effectType as keyof typeof config.activePresets] = presetId;
     scheduleSave();
     sceneUndo.commitState();
   }

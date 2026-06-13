@@ -1,7 +1,7 @@
 # Effects Preset Data Consolidation — Design
 
 **Date:** 2026-06-04
-**Status:** Specced, not started
+**Status:** Implemented 2026-06-12. Presets are data-first (`patch`/`resolvePatch`), `applyPreset(effectType, presetId, patch)` is single-undo, `effects-preset.ts` deleted, one shared chip handler in EffectsPanel. Unit-verified (50 tests: state `applyPreset` incl. single-undo assertion + preset-data invariants); svelte-check clean for the touched files. In-browser checklist below still owed at PR review.
 **Prerequisite:** Dead-code removal (shipped 2026-06-04): `effects/domain/presets/` built-ins, `led-settings-section.ts`, `EffectsOverrides` layer, `findPreset`. This spec covers the follow-up refactor only.
 
 ## Problem

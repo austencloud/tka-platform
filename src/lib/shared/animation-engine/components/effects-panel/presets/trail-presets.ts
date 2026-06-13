@@ -1,15 +1,14 @@
 /**
  * Trail effect presets.
  *
- * Each preset sets trail appearance via EffectsConfigState.updateTrails().
- * The 4th preset ("Custom") lets users pick their own colors. Those
- * choices persist in localStorage so the custom preset survives reloads.
+ * Each preset sets trail appearance. The 4th preset ("Custom") reads
+ * user-picked colors from localStorage at apply time via `resolvePatch`;
+ * those choices persist so the custom preset survives reloads. The
+ * Customize panel reads/writes them through the exported helpers below.
  */
 
 import type { EffectPreset, EffectPresetGroup } from "./types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-import type { TrailsIntent } from "$lib/shared/effects/domain/effects-config";
-import type { EffectsPreset } from "$lib/shared/effects/domain/effects-preset";
 import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -56,71 +55,37 @@ export function applyCustomTrailColors(state: EffectsConfigState, colors: Custom
   });
 }
 
-function applyTrail(
-  state: EffectsConfigState,
-  presetId: string,
-  patch: Partial<TrailsIntent>,
-): void {
-  state.updateEffect("trails", patch);
-  // updateTrails nulls activePresets.trails; restore it so the chip stays highlighted.
-  state.applyPreset({
-    id: presetId,
-    effectType: "trails",
-    patch: { activePresets: { ...state.activePresets, trails: presetId } },
-  } as unknown as EffectsPreset);
-}
-
 // ── Presets ─────────────────────────────────────────────────────────────
 
-export const TRAIL_PRESETS: EffectPreset[] = [
+export const TRAIL_PRESETS: EffectPreset<"trails">[] = [
   {
     id: "trail-default",
     name: "Default",
     previewColor: DEFAULT_BLUE,
     previewColor2: DEFAULT_RED,
-    apply: (state) => applyTrail(state, "trail-default", {
-      thickness: 5,
-      brightness: 1.0,
-      blueColor: DEFAULT_BLUE,
-      redColor: DEFAULT_RED,
-    }),
+    patch: { thickness: 5, brightness: 1.0, blueColor: DEFAULT_BLUE, redColor: DEFAULT_RED },
   },
   {
     id: "trail-neon",
     name: "Neon",
     previewColor: "#00ffcc",
     previewColor2: "#ff00ff",
-    apply: (state) => applyTrail(state, "trail-neon", {
-      thickness: 4,
-      brightness: 1.0,
-      blueColor: "#00ffcc",
-      redColor: "#ff00ff",
-    }),
+    patch: { thickness: 4, brightness: 1.0, blueColor: "#00ffcc", redColor: "#ff00ff" },
   },
   {
     id: "trail-ember",
     name: "Ember Trail",
     previewColor: "#f97316",
     previewColor2: "#fbbf24",
-    apply: (state) => applyTrail(state, "trail-ember", {
-      thickness: 6,
-      brightness: 0.9,
-      blueColor: "#f97316",
-      redColor: "#fbbf24",
-    }),
+    patch: { thickness: 6, brightness: 0.9, blueColor: "#f97316", redColor: "#fbbf24" },
   },
   {
     id: "trail-custom",
     name: "Custom",
     previewColor: "custom",
-    apply: (state) => {
+    resolvePatch: () => {
       const colors = loadCustomTrailColors();
-      applyTrail(state, "trail-custom", {
-        thickness: 5,
-        brightness: 1.0,
-        blueColor: colors.blue,
-        redColor: colors.red,
-      });
+      return { thickness: 5, brightness: 1.0, blueColor: colors.blue, redColor: colors.red };
     },
   },
 ];

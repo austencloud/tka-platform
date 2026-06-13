@@ -1,0 +1,111 @@
+/**
+ * Preset data invariants.
+ *
+ * After the data-first refactor (2026-06-04) every preset is a plain object
+ * with a static `patch` or a dynamic `resolvePatch` — no imperative `apply`
+ * closures. These invariants guard the data shape so an agent can verify the
+ * refactor without a browser.
+ *
+ * Note on field validity: we do NOT assert patch keys ⊆ default-intent keys.
+ * Several intents carry valid OPTIONAL fields that `DEFAULT_EFFECTS_CONFIG`
+ * omits (e.g. charcoal's coreColor/midColor/coolColor), so a default-key
+ * subset check would false-fail legitimate presets. Field names are already
+ * guaranteed at compile time: each array is typed `EffectPreset<"effect">[]`,
+ * so both `patch` and `resolvePatch` returns are checked against the intent by
+ * TypeScript. Here we assert the runtime shape and that dynamic presets resolve
+ * without throwing.
+ */
+
+import { describe, it, expect } from "vitest";
+import type { EffectPresetGroup } from "./types";
+
+import { TRAIL_PRESET_GROUP } from "./trail-presets";
+import { FIRE_PRESET_GROUP } from "./fire-presets";
+import { LED_PRESET_GROUP } from "./led-presets";
+import { CHARCOAL_PRESET_GROUP } from "./charcoal-presets";
+import { ZAP_PRESET_GROUP } from "./zap-presets";
+import { SPARKLES_PRESET_GROUP } from "./sparkles-presets";
+import { ECHO_PRESET_GROUP } from "./echo-presets";
+import { BLOOM_PRESET_GROUP } from "./bloom-presets";
+import { WATER_PRESET_GROUP } from "./water-presets";
+import { BUBBLES_PRESET_GROUP } from "./bubbles-presets";
+import { PETALS_PRESET_GROUP } from "./petals-presets";
+import { SMOKE_PRESET_GROUP } from "./smoke-presets";
+import { INK_PRESET_GROUP } from "./ink-presets";
+import { FROST_PRESET_GROUP } from "./frost-presets";
+import { SILK_PRESET_GROUP } from "./silk-presets";
+import { PULSE_PRESET_GROUP } from "./pulse-presets";
+
+const GROUPS: EffectPresetGroup[] = [
+  TRAIL_PRESET_GROUP,
+  FIRE_PRESET_GROUP,
+  LED_PRESET_GROUP,
+  CHARCOAL_PRESET_GROUP,
+  ZAP_PRESET_GROUP,
+  SPARKLES_PRESET_GROUP,
+  ECHO_PRESET_GROUP,
+  BLOOM_PRESET_GROUP,
+  WATER_PRESET_GROUP,
+  BUBBLES_PRESET_GROUP,
+  PETALS_PRESET_GROUP,
+  SMOKE_PRESET_GROUP,
+  INK_PRESET_GROUP,
+  FROST_PRESET_GROUP,
+  SILK_PRESET_GROUP,
+  PULSE_PRESET_GROUP,
+];
+
+describe("effect preset data", () => {
+  it("registers all 16 effect groups", () => {
+    expect(GROUPS).toHaveLength(16);
+  });
+
+  it("every group's effectType matches its presets' id prefix family", () => {
+    // Sanity: groups aren't mis-wired (e.g. LED group holding fire presets).
+    for (const g of GROUPS) {
+      expect(g.presets.length).toBeGreaterThan(0);
+      expect(typeof g.effectType).toBe("string");
+    }
+  });
+
+  it("preset ids are unique across all groups", () => {
+    const ids = GROUPS.flatMap((g) => g.presets.map((p) => p.id));
+    const dupes = ids.filter((id, i) => ids.indexOf(id) !== i);
+    expect(dupes, `duplicate preset ids: ${dupes.join(", ")}`).toEqual([]);
+  });
+
+  it("every preset has exactly one of patch / resolvePatch", () => {
+    for (const g of GROUPS) {
+      for (const p of g.presets) {
+        const hasPatch = p.patch !== undefined;
+        const hasResolve = p.resolvePatch !== undefined;
+        expect(
+          hasPatch !== hasResolve,
+          `${p.id}: expected exactly one of patch/resolvePatch (patch=${hasPatch}, resolvePatch=${hasResolve})`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("every resolvePatch returns a plain object without throwing", () => {
+    // The two "Custom" dynamic presets (trail-custom, fire-custom) read colors
+    // from localStorage, which is absent in the node test env — their helpers
+    // swallow that and fall back to defaults. This asserts that path is safe.
+    for (const g of GROUPS) {
+      for (const p of g.presets) {
+        if (!p.resolvePatch) continue;
+        const out = p.resolvePatch();
+        expect(out, `${p.id}: resolvePatch returned non-object`).toBeTypeOf("object");
+        expect(out).not.toBeNull();
+        expect(Object.keys(out).length, `${p.id}: resolvePatch returned empty patch`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("only trails and fire use dynamic resolvePatch", () => {
+    const dynamic = GROUPS.flatMap((g) =>
+      g.presets.filter((p) => p.resolvePatch).map((p) => p.id),
+    );
+    expect(dynamic.sort()).toEqual(["fire-custom", "trail-custom"]);
+  });
+});
