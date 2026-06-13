@@ -9,7 +9,7 @@
 
 let bannerVisible = $state(false);
 
-export function setIabBannerVisible(visible: boolean) {
+export function setIabBannerVisible(visible: boolean): void {
   bannerVisible = visible;
 }
 
