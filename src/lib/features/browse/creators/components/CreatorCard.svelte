@@ -142,12 +142,10 @@
     <p class="username">@{user.username}</p>
 
     {#if effectiveProp}
-      <div class="favorite-prop-badge" title="Spins with {getPropTypeDisplayInfo(effectiveProp).label}">
-        <img
-          src={getPropTypeDisplayInfo(effectiveProp).image}
-          alt="Spins with {getPropTypeDisplayInfo(effectiveProp).label}"
-          class="prop-icon"
-        />
+      {@const propInfo = getPropTypeDisplayInfo(effectiveProp)}
+      <div class="prop-tag" title="Spins with {propInfo.label}">
+        <img src={propInfo.image} alt="" class="prop-tag-icon" aria-hidden="true" />
+        <span class="prop-tag-label">{propInfo.label}</span>
       </div>
     {/if}
 
@@ -500,22 +498,42 @@
     }
   }
 
-  /* Favorite prop badge */
-  .favorite-prop-badge {
-    display: flex;
+  /* Prop identity tag — labeled pill so the glyph isn't the sole signal.
+     The prop SVGs are a dark brand-indigo silhouette that collapses to a
+     faint line at icon size on dark cards (staff is the worst, and it's the
+     most common prop). The white-recolored glyph + text label make every
+     prop read uniformly regardless of the card's extracted accent. */
+  .prop-tag {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    margin: 2px auto 0;
+    gap: 5px;
+    align-self: center;
+    max-width: 100%;
+    margin: 4px auto 0;
+    padding: 3px 9px 3px 7px;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid color-mix(in srgb, var(--card-accent) 35%, transparent);
+    border-radius: 999px;
   }
 
-  .prop-icon {
-    width: 20px;
-    height: 20px;
+  .prop-tag-icon {
+    width: 15px;
+    height: 15px;
     object-fit: contain;
-    opacity: 0.8;
+    flex-shrink: 0;
+    /* Force the single-fill prop silhouette to white so it reads on the
+       dark pill no matter its native fill color. */
+    filter: brightness(0) invert(1);
+    opacity: 0.9;
+  }
+
+  .prop-tag-label {
+    font-size: var(--font-size-compact);
+    font-weight: 600;
+    color: var(--theme-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* ============================================================================

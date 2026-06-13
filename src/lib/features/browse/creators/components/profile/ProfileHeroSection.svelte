@@ -419,6 +419,10 @@
     width: 22px;
     height: 22px;
     object-fit: contain;
+    /* The prop SVGs are a dark brand-indigo silhouette that washes out at
+       this size; recolor to white so they read against the hero (staff is
+       the worst case and the most common prop). */
+    filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
   }
 
   .favorite-star {
