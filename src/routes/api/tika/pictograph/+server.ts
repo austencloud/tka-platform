@@ -115,7 +115,7 @@ export const POST: RequestHandler = async (event) => {
 		return json({ error: 'Pictograph API is only available in development mode' }, { status: 503 })
 	}
 
-	const blocked = withRateLimit(event, RATE_LIMITS.AI_RENDER, 'ip')
+	const blocked = await withRateLimit(event, RATE_LIMITS.AI_RENDER, 'ip')
 	if (blocked) return blocked
 
 	const { request } = event
@@ -261,7 +261,7 @@ export const GET: RequestHandler = async (event) => {
 		return json({ error: 'Pictograph API is only available in development mode' }, { status: 503 })
 	}
 
-	const blocked = withRateLimit(event, RATE_LIMITS.AI_RENDER, 'ip')
+	const blocked = await withRateLimit(event, RATE_LIMITS.AI_RENDER, 'ip')
 	if (blocked) return blocked
 
 	const { url } = event

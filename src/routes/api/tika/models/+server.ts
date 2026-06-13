@@ -24,7 +24,7 @@ export const GET: RequestHandler = async (event) => {
   // Leaks which API keys are configured - require auth
   const caller = await requireFirebaseUser(event)
 
-  const blocked = withRateLimit(event, RATE_LIMITS.GENERAL, 'user', caller.uid)
+  const blocked = await withRateLimit(event, RATE_LIMITS.GENERAL, 'user', caller.uid)
   if (blocked) return blocked
 
   const models: ModelOption[] = []

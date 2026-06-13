@@ -13,7 +13,7 @@ import { withRateLimit } from '$lib/server/security/withRateLimit';
 export const GET: RequestHandler = async (event) => {
   if (!dev) { return new Response('This endpoint is only available in development', { status: 404 }); }
 
-  const blocked = withRateLimit(event, RATE_LIMITS.AI_RENDER, 'ip');
+  const blocked = await withRateLimit(event, RATE_LIMITS.AI_RENDER, 'ip');
   if (blocked) return blocked;
 
   const { url } = event;

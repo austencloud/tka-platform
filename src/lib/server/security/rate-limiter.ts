@@ -1,10 +1,27 @@
 /**
- * Simple in-memory rate limiter for API endpoints
+ * Rate limiter for API endpoints.
  *
- * Tracks request counts per IP/user with sliding window.
- * Note: This is reset on server restart. For production at scale,
- * consider using Redis or a dedicated rate limiting service.
+ * Two backends:
+ * - **Native Cloudflare ratelimit binding** (cross-isolate, memcached-backed,
+ *   GA 2025-09). Used for the short-window presets that carry a `binding` field
+ *   (GENERAL/AI_CHAT/AI_RENDER/ADMIN — all 60s). `withRateLimit` calls
+ *   `env[binding].limit({ key })`. This is the durable enforcement that fixes
+ *   the per-isolate-reset bypass (security-hardening F6).
+ * - **In-memory sliding window** (this file). Used as the fallback when the
+ *   native binding is absent (local `vite dev`, or any preset without a
+ *   `binding`), and as the only backend for the 15-minute auth presets
+ *   (ACCOUNT_SENSITIVE/AUTH_ATTEMPTS/FEEDBACK_INGEST) — the native binding only
+ *   supports 10s/60s periods. Resets on isolate restart.
+ *
+ * Follow-up (tracked in 2026-05-23-security-hardening-design.md F6): migrate the
+ * 15-minute auth presets to a Durable Object for strong cross-isolate
+ * consistency. The native binding can't express their window.
  */
+
+/** Minimal shape of the Cloudflare Workers native ratelimit binding. */
+export interface CfRateLimiter {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
 
 interface RateLimitEntry {
   count: number;
@@ -32,6 +49,14 @@ export interface RateLimitConfig {
   maxRequests: number;
   /** Window duration in milliseconds */
   windowMs: number;
+  /**
+   * Name of the native Cloudflare ratelimit binding on `platform.env` that
+   * enforces this preset cross-isolate. When present at runtime it takes
+   * precedence over the in-memory window; absent (e.g. `vite dev`), the
+   * in-memory window is used. Only set for 10s/60s-window presets — the native
+   * binding cannot express longer windows.
+   */
+  binding?: string;
 }
 
 export interface RateLimitResult {
@@ -125,21 +150,25 @@ export const RATE_LIMITS = {
   GENERAL: {
     maxRequests: 100,
     windowMs: 60 * 1000, // 1 minute
+    binding: "RL_GENERAL",
   },
   /** AI chat endpoints (tika/ask, tika/voice-command): 30 requests per minute per user */
   AI_CHAT: {
     maxRequests: 30,
     windowMs: 60 * 1000, // 1 minute
+    binding: "RL_AI_CHAT",
   },
   /** AI render endpoints (batch-render, render-pictograph, test-render): 20 requests per minute per IP */
   AI_RENDER: {
     maxRequests: 20,
     windowMs: 60 * 1000, // 1 minute
+    binding: "RL_AI_RENDER",
   },
   /** Admin endpoints: 30 requests per minute per user */
   ADMIN: {
     maxRequests: 30,
     windowMs: 60 * 1000, // 1 minute
+    binding: "RL_ADMIN",
   },
   /** Agent feedback ingest: 20 requests per 15 minutes */
   FEEDBACK_INGEST: {

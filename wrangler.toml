@@ -9,3 +9,41 @@ PUBLIC_ENVIRONMENT = "production"
 [[r2_buckets]]
 binding = "QR_VIDEOS"
 bucket_name = "qr-videos"
+
+# Native rate limiting (GA 2025-09, memcached-backed, shared across isolates).
+# Fixes security-hardening F6 (in-memory limiter reset per Worker isolate).
+# One binding per short-window preset in RATE_LIMITS; period must be 10 or 60.
+# Counters are keyed per-request by withRateLimit (path + ip/uid). Provisioned
+# automatically on deploy — no manual dashboard step. namespace_id is any unique
+# positive integer string.
+[[ratelimits]]
+name = "RL_GENERAL"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 100
+  period = 60
+
+[[ratelimits]]
+name = "RL_AI_CHAT"
+namespace_id = "1002"
+
+  [ratelimits.simple]
+  limit = 30
+  period = 60
+
+[[ratelimits]]
+name = "RL_AI_RENDER"
+namespace_id = "1003"
+
+  [ratelimits.simple]
+  limit = 20
+  period = 60
+
+[[ratelimits]]
+name = "RL_ADMIN"
+namespace_id = "1004"
+
+  [ratelimits.simple]
+  limit = 30
+  period = 60

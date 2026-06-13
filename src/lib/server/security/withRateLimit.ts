@@ -4,8 +4,13 @@
  * Call at the top of a request handler. Returns null if allowed,
  * or a 429 Response if the caller has exceeded the limit.
  *
+ * Async because the durable backend (Cloudflare's native ratelimit binding) is
+ * async. When the preset names a `binding` and that binding is present on
+ * `platform.env`, it enforces the limit cross-isolate; otherwise the call falls
+ * back to the in-memory sliding window (see rate-limiter.ts).
+ *
  * Usage:
- *   const blocked = withRateLimit(event, RATE_LIMITS.AI_CHAT, 'user');
+ *   const blocked = await withRateLimit(event, RATE_LIMITS.AI_CHAT, 'user', uid);
  *   if (blocked) return blocked;
  */
 
@@ -14,6 +19,7 @@ import {
   checkRateLimit,
   rateLimitResponse,
   type RateLimitConfig,
+  type CfRateLimiter,
 } from "./rate-limiter";
 
 /**
@@ -29,25 +35,39 @@ export function withRateLimit(
   event: RequestEvent,
   config: RateLimitConfig,
   keyType: "ip",
-): Response | null;
+): Promise<Response | null>;
 export function withRateLimit(
   event: RequestEvent,
   config: RateLimitConfig,
   keyType: "user",
   uid: string,
-): Response | null;
-export function withRateLimit(
+): Promise<Response | null>;
+export async function withRateLimit(
   event: RequestEvent,
   config: RateLimitConfig,
   keyType: "ip" | "user",
   uid?: string,
-): Response | null {
+): Promise<Response | null> {
   const prefix = event.url.pathname;
   const identifier =
     keyType === "user" && uid
       ? `${prefix}:user:${uid}`
       : `${prefix}:ip:${event.getClientAddress()}`;
 
+  // Prefer the native Cloudflare ratelimit binding (cross-isolate) when this
+  // preset declares one and it's wired on platform.env at runtime.
+  const env = event.platform?.env as Record<string, unknown> | undefined;
+  const limiter =
+    config.binding && env
+      ? (env[config.binding] as CfRateLimiter | undefined)
+      : undefined;
+  if (limiter?.limit) {
+    const { success } = await limiter.limit({ key: identifier });
+    // The binding doesn't expose resetAt; approximate Retry-After from the window.
+    return success ? null : rateLimitResponse(Date.now() + config.windowMs);
+  }
+
+  // Fallback: in-memory window (dev, or presets without a binding).
   const result = checkRateLimit(identifier, config);
   if (!result.allowed) {
     return rateLimitResponse(result.resetAt);

@@ -23,7 +23,7 @@ function isMP4(buf: ArrayBuffer): boolean {
 }
 
 export const PUT: RequestHandler = async (event) => {
-  const blocked = withRateLimit(event, RATE_LIMITS.GENERAL, "ip");
+  const blocked = await withRateLimit(event, RATE_LIMITS.GENERAL, "ip");
   if (blocked) return blocked;
 
   const origin = event.request.headers.get("origin");

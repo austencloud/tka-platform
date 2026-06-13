@@ -127,7 +127,7 @@ export const POST: RequestHandler = async (event) => {
   const caller = await requireFirebaseUser(event);
 
   // Rate limit to prevent resource exhaustion (rendering is CPU-intensive)
-  const blocked = withRateLimit(event, RATE_LIMITS.AI_RENDER, "user", caller.uid);
+  const blocked = await withRateLimit(event, RATE_LIMITS.AI_RENDER, "user", caller.uid);
   if (blocked) return blocked;
 
   const { request } = event;

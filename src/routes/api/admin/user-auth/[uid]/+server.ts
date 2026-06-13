@@ -45,7 +45,7 @@ export const GET: RequestHandler = async (event) => {
   try {
     const caller = await requireAdmin(event);
 
-    const blocked = withRateLimit(event, RATE_LIMITS.ADMIN, "user", caller.uid);
+    const blocked = await withRateLimit(event, RATE_LIMITS.ADMIN, "user", caller.uid);
     if (blocked) return blocked;
 
     const targetUid = event.params.uid;

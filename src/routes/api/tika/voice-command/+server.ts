@@ -65,7 +65,7 @@ export const POST: RequestHandler = async (event) => {
     // Require authenticated user - prevents unauthorized AI API usage
     const caller = await requireFirebaseUser(event);
 
-    const blocked = withRateLimit(event, RATE_LIMITS.AI_CHAT, "user", caller.uid);
+    const blocked = await withRateLimit(event, RATE_LIMITS.AI_CHAT, "user", caller.uid);
     if (blocked) return blocked;
 
     const body: VoiceCommandRequest = await event.request.json();
