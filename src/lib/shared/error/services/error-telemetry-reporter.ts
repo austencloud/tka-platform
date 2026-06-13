@@ -2,17 +2,15 @@
  * Error Telemetry Reporter
  *
  * Silently logs non-blocking errors to the Firestore `errorTelemetry` collection.
- * When the same error occurs multiple times within 24 hours (matched by message +
- * module + action), it increments the count on the existing document rather than
- * creating duplicates.
+ * The collection is write-only from the client (rules deny reads), so dedup can't
+ * query for an existing doc — instead the doc ID is deterministic: the same error
+ * on the same UTC day always writes to the same document. Recurrences increment
+ * the count via updateDoc; the first occurrence falls through to setDoc.
  */
 
 import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
+  doc,
+  setDoc,
   updateDoc,
   serverTimestamp,
   increment,
@@ -21,7 +19,26 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { ShowErrorOptions } from "$lib/shared/error/domain/error-models";
 
 const COLLECTION = "errorTelemetry";
-const DEDUP_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+// FNV-1a 32-bit — keeps arbitrary error messages (slashes and all) out of the doc ID.
+function fnv1aHash(input: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+// An update against a missing doc surfaces as "permission-denied", not
+// "not-found", when security rules are in play: the rules can't evaluate
+// resource.data, and Firestore masks the error to avoid leaking whether the
+// doc exists. Our update payload never touches a rules-restricted field, so
+// either code can only mean "no doc yet — create it".
+function isMissingDocError(err: unknown): boolean {
+  const code = (err as { code?: string } | null)?.code;
+  return code === "not-found" || code === "permission-denied";
+}
 
 export async function reportErrorTelemetry(options: ShowErrorOptions): Promise<void> {
   try {
@@ -32,31 +49,25 @@ export async function reportErrorTelemetry(options: ShowErrorOptions): Promise<v
     const action = options.context?.action ?? "unknown";
     const key = `${message}::${module}::${action}`;
 
-    const cutoff = new Date(Date.now() - DEDUP_WINDOW_MS);
-
-    const col = collection(db, COLLECTION);
-    const q = query(
-      col,
-      where("key", "==", key),
-      where("lastSeen", ">=", cutoff)
-    );
-
-    const snapshot = await getDocs(q);
+    const utcDay = new Date().toISOString().slice(0, 10);
+    const docRef = doc(db, COLLECTION, `${utcDay}_${fnv1aHash(key)}`);
 
     const lastStack = options.error?.stack ?? null;
     const lastAdditionalData =
       (options.context?.additionalData as object | undefined) ?? null;
 
-    if (!snapshot.empty) {
-      const existingDoc = snapshot.docs[0]!;
-      await updateDoc(existingDoc.ref, {
+    try {
+      // updateDoc requires the doc to exist — that's the dedup check.
+      await updateDoc(docRef, {
         count: increment(1),
         lastSeen: serverTimestamp(),
         lastStack,
         lastAdditionalData,
       });
-    } else {
-      await addDoc(col, {
+    } catch (err) {
+      if (!isMissingDocError(err)) throw err;
+
+      await setDoc(docRef, {
         key,
         message,
         technicalDetails: options.technicalDetails ?? null,
