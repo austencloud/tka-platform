@@ -700,6 +700,16 @@ export default defineConfig(({ mode }) => ({
               id.includes("@mediapipe") ||
               id.includes("peerjs") ||
               id.includes("protobufjs") ||
+              // Rapier ships its wasm inlined as ~4MB base64. It is already
+              // dynamic-imported (rapier-world.ts), but a string return here
+              // overrides Rollup's split and forces it eager into vendor.
+              // Let Rollup honor the dynamic boundary so physics loads on demand.
+              id.includes("rapier3d") ||
+              // globe.gl drags its own three copy (three-globe) + d3. Used in a
+              // single tab, lazy-imported in ScanActivityTab — keep it out of
+              // vendor so the dynamic boundary holds.
+              id.includes("globe.gl") ||
+              id.includes("three-globe") ||
               // JSZip uses new Function for its worker pipeline
               id.includes("jszip") ||
               // Vercel AI SDK uses new Function for JSON schema compilation.
@@ -712,6 +722,34 @@ export default defineConfig(({ mode }) => ({
             ) {
               // Returning undefined → Rollup decides (usually its own chunk
               // based on dynamic import boundaries). Never lands in vendor.
+              return undefined;
+            }
+            // Three.js ecosystem — keep it OUT of the shared `vendor` chunk so
+            // it stops riding boot alongside small boot-critical libs (zod,
+            // posthog, date-fns). We must NOT force it into a named chunk: a
+            // dedicated `vendor-three` creates a circular chunk cycle with
+            // `vendor` (threlte ↔ vendor helpers) → "Cannot access X before
+            // initialization" TDZ crashes at runtime. Returning undefined lets
+            // Rollup's own splitter place three by its real import graph and
+            // resolve init order correctly. Three is reached almost entirely
+            // through dynamic imports (BackgroundFactory dynamic-imports each
+            // background system; feature modules dynamic-import via
+            // ModuleRenderer), so Rollup emits it as async chunks off the boot
+            // path — same approach as mediapipe/rapier above.
+            if (
+              id.includes("node_modules/three/") ||
+              id.includes("node_modules/three-mesh-bvh") ||
+              id.includes("node_modules/three-stdlib") ||
+              id.includes("node_modules/three-good-godrays") ||
+              id.includes("node_modules/three-viewport-gizmo") ||
+              id.includes("node_modules/troika") ||
+              id.includes("@threlte") ||
+              id.includes("node_modules/postprocessing") ||
+              id.includes("camera-controls") ||
+              id.includes("node_modules/draco") ||
+              id.includes("basis_universal") ||
+              id.includes("meshoptimizer")
+            ) {
               return undefined;
             }
             if (id.includes("firebase")) return "vendor-firebase";
