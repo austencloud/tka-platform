@@ -139,6 +139,13 @@ Supports letter highlighting during animation playback.
     lastWord = currentWord;
   });
 
+  // Unmount-only timer cleanup. The effect above intentionally does NOT return
+  // a cleanup (it would clear timers on every re-run - the race documented
+  // there), so this dependency-free effect handles destroy instead.
+  $effect(() => {
+    return clearAnimationTimers;
+  });
+
   // Derive display text from displayedWord (the word currently showing)
   // Uses simplifyAndTruncate to match the workspace WordLabel's shortened display
   const displayText = $derived(

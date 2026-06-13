@@ -47,10 +47,11 @@
         class:active={activePresetId === preset.id}
         style:background={preset.primaryColor}
         title={preset.name}
+        aria-label={preset.name}
         onclick={() => selectPreset(preset)}
       ></button>
     {/each}
-    <button type="button" class="swatch add-swatch" title="Custom color" onclick={() => colorInputRef?.click()}>+</button>
+    <button type="button" class="swatch add-swatch" title="Custom color" aria-label="Custom color" onclick={() => colorInputRef?.click()}>+</button>
     <input
       bind:this={colorInputRef}
       type="color"
@@ -191,13 +192,13 @@
   }
 
   .pattern-category {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
     margin-left: auto;
   }
 
   .selector-chevron {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
     transition: transform 150ms ease;
   }
@@ -217,7 +218,7 @@
   }
 
   .picker-category-label {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -238,7 +239,7 @@
     border-radius: 6px;
     background: transparent;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     cursor: pointer;
     transition: all 100ms ease;
   }
@@ -293,10 +294,11 @@
   }
 
   .speed-label {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    min-width: 26px;
+    /* Widened from 26px so "5.0x" fits at the 12px floor without clipping */
+    min-width: 32px;
     text-align: right;
     flex-shrink: 0;
   }
@@ -308,7 +310,7 @@
     border-radius: 4px;
     background: transparent;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
     padding: 0;

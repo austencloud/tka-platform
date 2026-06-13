@@ -299,6 +299,18 @@ Last audit: 2025-12-27
     }
   }
 
+  // Unmount cleanup so the long-press and tap-feedback timeouts can't fire
+  // (and touch state or the context-menu host) after the component is gone.
+  $effect(() => {
+    return () => {
+      cancelLongPress();
+      if (tapFeedbackTimer !== null) {
+        clearTimeout(tapFeedbackTimer);
+        tapFeedbackTimer = null;
+      }
+    };
+  });
+
   let contextMenuHost: CanvasContextMenuHost | undefined = $state();
 
   // Engine instance - created and owned by the CanvasSurface leaf, bound back

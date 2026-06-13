@@ -14,6 +14,7 @@ import type { IInfiniteSequenceGenerator, IEndlessSpinnerOrchestrator, IBroadcas
 // re-export for existing consumers
 export type { SourceMode };
 
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import * as propTypeApplierModule from "$lib/shared/landing/services/prop-type-applier";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -129,7 +130,7 @@ export class SequenceChainingOrchestrator {
       if (generated) this.doHotSwap(generated.sequence);
     } catch (err) {
       console.error("SequenceChainingOrchestrator: shuffle failed:", err);
-      this.errorCallback?.("Shuffle failed - could not generate a new sequence");
+      this.notifyError("Shuffle failed - could not generate a new sequence");
     } finally {
       this._isChainingNow = false;
     }
@@ -206,6 +207,15 @@ export class SequenceChainingOrchestrator {
   }
 
   // --- Private helpers ---
+
+  /** Surface a failure to the user: consumer callback when wired, toast otherwise. */
+  private notifyError(message: string): void {
+    if (this.errorCallback) {
+      this.errorCallback(message);
+    } else {
+      toast.error(message);
+    }
+  }
 
   private doHotSwap(sequenceData: SequenceData): void {
     if (!this.playbackController || !this.animationState) return;
@@ -312,7 +322,7 @@ export class SequenceChainingOrchestrator {
       }
     } catch (err) {
       console.error("SequenceChainingOrchestrator: chain failed:", err);
-      this.errorCallback?.("Failed to load next sequence");
+      this.notifyError("Failed to load the next sequence");
     } finally {
       this._isChainingNow = false;
       this.preloadNext(this.inferCurrentMode());
@@ -335,6 +345,9 @@ export class SequenceChainingOrchestrator {
       }
     } catch (err) {
       console.error("SequenceChainingOrchestrator: preload failed:", err);
+      // Preload is a background optimization (chaining falls back to async
+      // generation), so warn rather than error.
+      toast.warning("Couldn't preload the next sequence");
     } finally {
       this._isPreloading = false;
     }

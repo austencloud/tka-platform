@@ -3,7 +3,7 @@ import type { StartPositionData } from "$lib/shared/foundation/domain/models/sta
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
-export class FrameBuilderService {
+export class FrameBuilder {
   calculateBeatNumber(
     sequenceData: SequenceData | null,
     stepData: StartPositionData | StepData | null

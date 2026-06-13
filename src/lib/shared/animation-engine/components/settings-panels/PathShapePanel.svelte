@@ -98,6 +98,9 @@
   }
 
   .hybrid-btn {
+    /* Module accent: matches the Concave option color above; no global token
+       covers this violet, so it's scoped here. */
+    --hybrid-accent: #a78bfa;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -122,13 +125,13 @@
   }
 
   .hybrid-btn.active {
-    background: color-mix(in srgb, #a78bfa 15%, transparent);
-    border-color: color-mix(in srgb, #a78bfa 40%, transparent);
+    background: color-mix(in srgb, var(--hybrid-accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--hybrid-accent) 40%, transparent);
     color: var(--theme-text, white);
   }
 
   .hybrid-btn:focus-visible {
-    outline: 2px solid #a78bfa;
+    outline: 2px solid var(--hybrid-accent);
     outline-offset: 2px;
   }
 
@@ -155,18 +158,18 @@
   }
 
   .toggle-indicator.on {
-    background: color-mix(in srgb, #a78bfa 50%, transparent);
+    background: color-mix(in srgb, var(--hybrid-accent) 50%, transparent);
   }
 
   .toggle-indicator.on::after {
     transform: translateX(14px);
-    background: #a78bfa;
+    background: var(--hybrid-accent);
   }
 
   .motion-hint {
     margin: 4px 0 0;
     padding: 0;
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     text-align: center;
   }
