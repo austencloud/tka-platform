@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
+import { LibrarySequenceDocSchema } from "$lib/shared/library/domain/library-schemas";
 
 /**
  * Error class for collection operations
@@ -155,21 +156,30 @@ export async function batchFetchPublicSequences(
     const snapshot = await getDocs(q);
 
     for (const docSnap of snapshot.docs) {
-      const data = docSnap.data();
-      results.push({
+      // Public-index docs are untrusted input - validate the shape before
+      // mapping. The schema also converts Firestore Timestamps to Dates and
+      // fills count defaults (forkCount/viewCount/starCount -> 0).
+      const parsed = LibrarySequenceDocSchema.safeParse({
         id: docSnap.id,
-        ...data,
-        source: "imported" as const,
-        visibility: "public" as const,
+        ...docSnap.data(),
+      });
+      if (!parsed.success) {
+        console.warn(
+          `[collection-firestore-mapper] Validation failed for publicSequences/${docSnap.id}, skipping:`,
+          parsed.error.issues
+        );
+        continue;
+      }
+
+      const sequence = mapDocToSequence(parsed.data as DocumentData, docSnap.id);
+      results.push({
+        ...sequence,
+        source: "imported",
+        visibility: "public",
         collectionIds: [],
         sequenceTags: [],
         tagIds: [],
-        forkCount: data["forkCount"] ?? 0,
-        viewCount: data["viewCount"] ?? 0,
-        starCount: data["starCount"] ?? 0,
-        createdAt: data["createdAt"]?.toDate?.() ?? new Date(),
-        updatedAt: data["updatedAt"]?.toDate?.() ?? new Date(),
-      } as unknown as LibrarySequence);
+      });
     }
   }
 

@@ -28,7 +28,7 @@ import type {
   SequenceVisibility,
 } from "$lib/shared/library/domain/models/library-sequence";
 import type { IPublicIndexSyncer as PublicIndexSyncer } from "$lib/shared/library/services/IPublicIndexSyncer";
-import { LibraryError } from "$lib/shared/library/services/library-repository";
+import { LibraryError } from "$lib/shared/library/domain/library-error";
 
 type MapDocFn = (doc: DocumentData, id: string) => LibrarySequence;
 

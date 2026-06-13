@@ -20,6 +20,7 @@ import {
   writeBatch,
   arrayUnion,
   arrayRemove,
+  increment,
   type Unsubscribe,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
@@ -293,7 +294,7 @@ export async function addSequenceToCollection(
   try {
     await updateDoc(collectionRef, {
       sequenceIds: arrayUnion(sequenceId),
-      sequenceCount: (await getCollection(collectionId))!.sequenceCount + 1,
+      sequenceCount: increment(1),
       updatedAt: serverTimestamp(),
     });
   } catch (error) {

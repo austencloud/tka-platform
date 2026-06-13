@@ -24,7 +24,7 @@ import { getImageCompositionManager } from "$lib/shared/share/state/image-compos
 import type {
   SaveToLibraryOptions, SaveProgress, SaveResult } from "./types";
 import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
-import { LibraryError } from "$lib/shared/library/services/library-repository";
+import { LibraryError } from "$lib/shared/library/domain/library-error";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte.ts";
 import { db } from "$lib/shared/persistence/database/tka-database";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";

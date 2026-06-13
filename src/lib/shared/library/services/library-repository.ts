@@ -64,23 +64,7 @@ import {
 } from "$lib/shared/library/library-events";
 import { LibraryRecycleBin } from "$lib/shared/library/services/library-recycle-bin";
 import { LibraryBatchOperations } from "$lib/shared/library/services/library-batch-operations";
-
-export class LibraryError extends Error {
-  constructor(
-    message: string,
-    public code:
-      | "NOT_FOUND"
-      | "UNAUTHORIZED"
-      | "INVALID_DATA"
-      | "NETWORK"
-      | "QUOTA_EXCEEDED"
-      | "ALREADY_EXISTS",
-    public sequenceId?: string
-  ) {
-    super(message);
-    this.name = "LibraryError";
-  }
-}
+import { LibraryError } from "$lib/shared/library/domain/library-error";
 
 export class LibraryRepository {
   /**
@@ -1051,6 +1035,7 @@ export class LibraryRepository {
           "[LibraryRepository] Failed to initialize sequence subscription:",
           error
         );
+        toast.error("Failed to connect to sequence updates.");
       });
 
     // Return cleanup function
