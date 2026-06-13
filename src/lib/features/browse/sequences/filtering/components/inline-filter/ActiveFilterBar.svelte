@@ -48,8 +48,12 @@ Only renders when at least one filter is active.
             type="button"
             aria-label={t('browse_remove_filter', { label: filter.label })}
             onmousedown={(e) => {
+              // Keep focus where it is so an open input doesn't blur-close before the click lands
               e.stopPropagation();
               e.preventDefault();
+            }}
+            onclick={(e) => {
+              e.stopPropagation();
               handleRemove(filter.type);
             }}
           >
@@ -63,8 +67,12 @@ Only renders when at least one filter is active.
           class="clear-all-btn"
           type="button"
           onmousedown={(e) => {
+            // Keep focus where it is so an open input doesn't blur-close before the click lands
             e.stopPropagation();
             e.preventDefault();
+          }}
+          onclick={(e) => {
+            e.stopPropagation();
             handleClearAll();
           }}
         >

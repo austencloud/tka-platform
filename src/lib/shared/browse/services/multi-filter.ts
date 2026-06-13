@@ -13,9 +13,13 @@ import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/fil
 import type { ActiveFilter } from "$lib/shared/browse/domain/multi-filter-models";
 import { applyFilter } from "./browse-filter";
 
-export function applyFilters(
+// Accept any structural subtype of ActiveFilter (e.g. the engine's variant that
+// adds a `locked` flag). Both functions only read `.type` and `.value`, so a
+// generic over `T extends ActiveFilter` lets callers pass their richer map
+// without an invariance-defeating cast at the call site.
+export function applyFilters<T extends ActiveFilter>(
   sequences: SequenceData[],
-  filters: Map<string, ActiveFilter>
+  filters: Map<string, T>
 ): SequenceData[] {
   let result = sequences;
 
@@ -26,11 +30,11 @@ export function applyFilters(
   return result;
 }
 
-export function getFilteredCount(
+export function getFilteredCount<T extends ActiveFilter>(
   sequences: SequenceData[],
   candidateType: BrowseFilterType,
   candidateValue: BrowseFilterValue,
-  otherFilters: Map<string, ActiveFilter>
+  otherFilters: Map<string, T>
 ): number {
   // First apply all other filters (excluding the candidate type)
   let filtered = sequences;
