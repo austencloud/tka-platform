@@ -597,17 +597,17 @@ import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   @keyframes generatePulse {
     0% {
       transform: scale(1);
-      box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
     }
     30% {
       transform: scale(0.97);
     }
     60% {
-      box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
+      box-shadow: 0 0 0 8px color-mix(in srgb, var(--theme-accent, #6366f1) 0%, transparent);
     }
     100% {
       transform: scale(1);
-      box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--theme-accent, #6366f1) 0%, transparent);
     }
   }
 

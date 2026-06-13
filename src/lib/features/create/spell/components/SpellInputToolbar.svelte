@@ -39,6 +39,19 @@
     onKeyboardHeightChange?: (height: number) => void;
   }>();
 
+  // The VirtualKeyboard API (Chrome on Android) isn't in TypeScript's built-in
+  // DOM types yet, so we describe just the pieces we rely on: the flag that
+  // lets us position this toolbar ourselves instead of the browser resizing
+  // the page, and the keyboard's on-screen rectangle for measuring its height.
+  interface VirtualKeyboard extends EventTarget {
+    overlaysContent: boolean;
+    readonly boundingRect: DOMRect;
+  }
+
+  type NavigatorWithVirtualKeyboard = Navigator & {
+    virtualKeyboard: VirtualKeyboard;
+  };
+
   const haptic = getHapticFeedback();
 
   let keyboardHeight = $state(0);
@@ -92,7 +105,7 @@
     // Try VirtualKeyboard API first (Chrome Android 94+)
     if ("virtualKeyboard" in navigator) {
       hasVirtualKeyboardAPI = true;
-      const vk = (navigator as any).virtualKeyboard;
+      const vk = (navigator as NavigatorWithVirtualKeyboard).virtualKeyboard;
 
       // Opt-in to manual keyboard handling
       vk.overlaysContent = true;
@@ -113,7 +126,7 @@
     }
 
     if (hasVirtualKeyboardAPI && "virtualKeyboard" in navigator) {
-      const vk = (navigator as any).virtualKeyboard;
+      const vk = (navigator as NavigatorWithVirtualKeyboard).virtualKeyboard;
       vk.removeEventListener("geometrychange", handleVirtualKeyboardChange);
     }
 
@@ -124,7 +137,7 @@
   });
 
   function handleVirtualKeyboardChange(event: Event) {
-    const vk = event.target as any;
+    const vk = event.target as VirtualKeyboard;
     const rect = vk.boundingRect;
     const newHeight = rect.height;
 

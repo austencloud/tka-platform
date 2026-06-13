@@ -572,8 +572,8 @@ Container-aware responsive design (2-tier):
     font-size: var(--font-size-compact, 12px);
     color: var(--semantic-warning, #f59e0b);
     padding: 4px 8px;
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.25);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning, #f59e0b) 25%, transparent);
     border-radius: 6px;
   }
 
