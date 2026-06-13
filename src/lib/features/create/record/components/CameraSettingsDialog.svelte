@@ -2,9 +2,12 @@
 CameraSettingsDialog.svelte
 
 Settings dialog for camera configuration including mirror toggle and camera source selection.
+Built on Bits UI Dialog (same primitive as ConfirmDialog.svelte) for role=dialog,
+aria-modal, focus trapping, Escape-to-close, and backdrop dismissal.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import { Dialog as DialogPrimitive } from "bits-ui";
 
   // Services
   const hapticService = getHapticFeedback();
@@ -44,43 +47,30 @@ Settings dialog for camera configuration including mirror toggle and camera sour
     onClose?.();
   }
 
-  function handleBackdropClick(event: MouseEvent) {
-    if (event.target === event.currentTarget) {
-      handleClose();
-    }
-  }
-
-  function handleBackdropKeydown(event: KeyboardEvent) {
-    if (
-      (event.key === "Enter" || event.key === " ") &&
-      event.target === event.currentTarget
-    ) {
-      event.preventDefault();
+  // Fires when Bits UI closes the dialog via Escape or backdrop click
+  function handleOpenChange(open: boolean) {
+    if (!open && isOpen) {
       handleClose();
     }
   }
 </script>
 
-{#if isOpen}
-  <!-- Backdrop -->
-  <div
-    class="dialog-backdrop"
-    role="button"
-    tabindex="0"
-    onclick={handleBackdropClick}
-    onkeydown={handleBackdropKeydown}
-  >
-    <!-- Dialog -->
-    <div class="camera-settings-dialog">
+<DialogPrimitive.Root open={isOpen} onOpenChange={handleOpenChange}>
+  <DialogPrimitive.Portal>
+    <DialogPrimitive.Overlay class="camera-dialog-backdrop" />
+    <DialogPrimitive.Content class="camera-dialog-container">
       <!-- Header -->
       <div class="dialog-header">
-        <h3 class="dialog-title">Camera Settings</h3>
+        <DialogPrimitive.Title class="camera-dialog-title"
+          >Camera Settings</DialogPrimitive.Title
+        >
         <button
           class="close-button"
           onclick={handleClose}
           title="Close settings"
+          aria-label="Close camera settings"
         >
-          <span class="close-icon">✕</span>
+          <span class="close-icon" aria-hidden="true">✕</span>
         </button>
       </div>
 
@@ -88,16 +78,21 @@ Settings dialog for camera configuration including mirror toggle and camera sour
       <div class="dialog-content">
         <!-- Mirror Toggle -->
         <div class="setting-group">
-          <label class="setting-label" for="mirror-toggle">Mirror Video</label>
+          <span class="setting-label" id="mirror-toggle-label"
+            >Mirror Video</span
+          >
           <div class="setting-control">
             <button
-              id="mirror-toggle"
               class="toggle-button"
               class:active={isMirrored}
               onclick={handleMirrorToggle}
+              aria-pressed={isMirrored}
+              aria-labelledby="mirror-toggle-label"
               title={isMirrored ? "Disable mirror" : "Enable mirror"}
             >
-              <span class="toggle-icon">{isMirrored ? "🪞" : "📹"}</span>
+              <span class="toggle-icon" aria-hidden="true"
+                >{isMirrored ? "🪞" : "📹"}</span
+              >
               <span class="toggle-text"
                 >{isMirrored ? "Mirrored" : "Normal"}</span
               >
@@ -133,12 +128,12 @@ Settings dialog for camera configuration including mirror toggle and camera sour
           <p>Adjust your camera settings for the best recording experience.</p>
         </div>
       </div>
-    </div>
-  </div>
-{/if}
+    </DialogPrimitive.Content>
+  </DialogPrimitive.Portal>
+</DialogPrimitive.Root>
 
 <style>
-  .dialog-backdrop {
+  :global(.camera-dialog-backdrop) {
     position: fixed;
     top: 0;
     left: 0;
@@ -146,23 +141,26 @@ Settings dialog for camera configuration including mirror toggle and camera sour
     bottom: 0;
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    -webkit-backdrop-filter: blur(8px);
     z-index: var(--z-modal);
-    padding: var(--spacing-lg, 24px);
   }
 
-  .camera-settings-dialog {
+  :global(.camera-dialog-container) {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     background: var(--surface-glass, rgba(20, 20, 20, 0.95));
     backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border-color, var(--theme-stroke));
     border-radius: var(--border-radius-lg, 12px);
     box-shadow: 0 20px 40px var(--theme-shadow);
-    width: 100%;
+    width: calc(100% - 2 * var(--spacing-lg, 24px));
     max-width: 400px;
     max-height: 80vh;
     overflow: hidden;
+    z-index: calc(var(--z-modal) + 1);
   }
 
   .dialog-header {
@@ -173,7 +171,7 @@ Settings dialog for camera configuration including mirror toggle and camera sour
     border-bottom: 1px solid var(--border-color, var(--theme-stroke));
   }
 
-  .dialog-title {
+  :global(.camera-dialog-title) {
     margin: 0;
     font-size: var(--font-size-lg);
     font-weight: 600;
@@ -252,6 +250,11 @@ Settings dialog for camera configuration including mirror toggle and camera sour
     border-color: var(--primary, var(--semantic-info));
   }
 
+  .toggle-button:focus-visible {
+    outline: 2px solid var(--theme-accent, var(--semantic-info));
+    outline-offset: 2px;
+  }
+
   .toggle-button.active {
     background: var(--primary-glass, rgba(59, 130, 246, 0.2));
     border-color: var(--primary, var(--semantic-info));
@@ -303,11 +306,8 @@ Settings dialog for camera configuration including mirror toggle and camera sour
 
   /* Mobile responsive */
   @media (max-width: 480px) {
-    .dialog-backdrop {
-      padding: var(--spacing-md, 16px);
-    }
-
-    .camera-settings-dialog {
+    :global(.camera-dialog-container) {
+      width: calc(100% - 2 * var(--spacing-md, 16px));
       max-width: none;
     }
 

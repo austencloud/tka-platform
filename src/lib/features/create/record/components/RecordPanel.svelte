@@ -6,6 +6,7 @@ Combines video feed with playback controls for practicing sequences.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { onDestroy, onMount } from "svelte";
   import { Metronome } from "../services/metronome";
   import { createRecordTabState } from "../state/record-tab-state.svelte";
@@ -57,10 +58,16 @@ Combines video feed with playback controls for practicing sequences.
 
     // Start metronome if enabled
     if (recordState.isMetronomeEnabled && metronome) {
-      metronome.start(recordState.bpm, (_stepNumber) => {
+      const started = metronome.start(recordState.bpm, (_stepNumber) => {
         // Metronome handles its own beat scheduling
         // We sync our visual beat progression with it
       });
+      if (!started) {
+        showToast(
+          "Metronome audio couldn't start. Playback continues without clicks.",
+          "warning"
+        );
+      }
     }
 
     // Start visual beat progression

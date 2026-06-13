@@ -124,17 +124,19 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
 
   <!-- Metronome toggle -->
   <div class="metronome-control">
-    <label class="metronome-toggle">
-      <input
-        type="checkbox"
-        checked={isMetronomeEnabled}
-        onchange={(e) =>
-          onMetronomeToggle((e.target as HTMLInputElement).checked)}
-        aria-label={isMetronomeEnabled ? "Disable metronome" : "Enable metronome"}
-      />
+    <button
+      type="button"
+      class="metronome-toggle"
+      aria-pressed={isMetronomeEnabled}
+      onclick={() => onMetronomeToggle(!isMetronomeEnabled)}
+      aria-label={isMetronomeEnabled ? "Disable metronome" : "Enable metronome"}
+    >
+      <span class="toggle-track" class:on={isMetronomeEnabled} aria-hidden="true">
+        <span class="toggle-thumb"></span>
+      </span>
       <span class="toggle-icon" aria-hidden="true">{isMetronomeEnabled ? "🔊" : "🔇"}</span>
       <span class="toggle-label">Metronome</span>
-    </label>
+    </button>
   </div>
 </div>
 
@@ -142,8 +144,8 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
   .record-controls {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs, --spacing-xs);
-    padding: var(--spacing-xs, --spacing-xs);
+    gap: var(--spacing-xs, 4px);
+    padding: var(--spacing-xs, 4px);
     background: var(
       --theme-panel-elevated-bg,
       var(--surface-glass, rgba(0, 0, 0, 0.5))
@@ -311,23 +313,25 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
     gap: var(--spacing-md, 16px);
     cursor: pointer;
     color: var(--theme-text, var(--foreground, #ffffff));
+    background: transparent;
+    border: none;
+    padding: 0;
+    min-height: var(--min-touch-target);
   }
 
-  .metronome-toggle input[type="checkbox"] {
-    width: var(--min-touch-target);
+  .toggle-track {
+    width: 48px;
     height: 24px;
-    appearance: none;
+    flex-shrink: 0;
     background: var(--theme-card-bg, var(--surface-light, #333));
     border: 1px solid
       var(--theme-stroke, var(--border-color, var(--theme-stroke)));
     border-radius: 12px;
     position: relative;
-    cursor: pointer;
     transition: all var(--duration-emphasis) ease;
   }
 
-  .metronome-toggle input[type="checkbox"]::before {
-    content: "";
+  .toggle-thumb {
     position: absolute;
     width: 18px;
     height: 18px;
@@ -338,11 +342,11 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
     transition: all var(--duration-emphasis) ease;
   }
 
-  .metronome-toggle input[type="checkbox"]:checked {
+  .toggle-track.on {
     background: var(--theme-accent, var(--primary, var(--semantic-info)));
   }
 
-  .metronome-toggle input[type="checkbox"]:checked::before {
+  .toggle-track.on .toggle-thumb {
     left: 26px;
   }
 
@@ -383,9 +387,10 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
     outline-offset: 4px;
   }
 
-  .metronome-toggle input[type="checkbox"]:focus-visible {
+  .metronome-toggle:focus-visible {
     outline: 2px solid var(--theme-accent, var(--semantic-info));
     outline-offset: 2px;
+    border-radius: var(--border-radius-md, 8px);
   }
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
@@ -394,8 +399,8 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
     .bpm-adjust-button,
     .speed-slider::-webkit-slider-thumb,
     .speed-slider::-moz-range-thumb,
-    .metronome-toggle input[type="checkbox"],
-    .metronome-toggle input[type="checkbox"]::before {
+    .toggle-track,
+    .toggle-thumb {
       transition: none;
     }
   }
