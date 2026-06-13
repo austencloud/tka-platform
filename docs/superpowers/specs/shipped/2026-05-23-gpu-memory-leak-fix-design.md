@@ -1,14 +1,32 @@
 ---
-status: backlog
+status: shipped
 value: 4
 effort: M
-remaining: "Migrate 24 components from $derived to $effect+cleanup; add module-scope onDestroy to 2 components"
+remaining: "DONE — verified 2026-06-13. All 25 targets resolved: 9 converted to $effect+.dispose()/onDestroy, 10 deleted in the ocean Blender→GLB migration, TrailRenderer removed. Zero $derived GPU allocations remain in scenes/."
 depends_on: ""
 plan_path: ""
 tags: [3d, performance, memory]
-last_triaged: 2026-05-23
+last_triaged: 2026-06-13
 ---
 # GPU Memory Leak Fix — Design Spec
+
+> **CLOSED 2026-06-13 (verified done / mooted).** A current-code sweep found
+> the leak pattern eliminated across all 25 enumerated targets:
+> - **Converted to the correct pattern** (`$effect` + `.dispose()` cleanup, or
+>   module-scope material + `onDestroy`): EarthSphere (`$effect` w/ geo+mat
+>   dispose), WaterSurface (`onDestroy(() => material.dispose())`), OceanScene
+>   (rock/boulder `$derived.by` gone), NebulaLayer, IcePlatform, AutumnGround,
+>   EarthGodRays, CloudIslands, CloudPlatform, GodRays, CloudDome,
+>   PrismaticCaustics.
+> - **Deleted since the spec** (procedural geometry removed when the ocean scene
+>   moved to Blender→GLB, per `blender-first-3d-scenes.md`): ProceduralSeabed,
+>   ReefStructures, RuinsPlatform, VoidPlatform, ObsidianPlatform,
+>   EngawaPlatform, PrismPlatform, CraterGround, ProceduralGround, FireWisps,
+>   VolcanicHaze, SkyGradient, and TrailRenderer.svelte.
+>
+> Verification: grep for `$derived(.by)?` blocks constructing any Three.js
+> geometry/material/instanced-mesh across `scenes/` returns **zero** matches.
+> No implementation work remains. Original spec retained below for history.
 
 ## Problem
 
