@@ -202,11 +202,9 @@ export function updateStep(
   }
 
   // Legacy field guard (stepNumber) for migrated data
-  if (
-    typeof (stepData as unknown as { stepNumber?: number }).stepNumber ===
-    "number"
-  ) {
-    if ((stepData as unknown as { stepNumber: number }).stepNumber < 0) {
+  if ("stepNumber" in stepData) {
+    const stepNumber = (stepData as { stepNumber?: unknown }).stepNumber;
+    if (typeof stepNumber === "number" && stepNumber < 0) {
       throw new Error("Beat number must be non-negative");
     }
   }

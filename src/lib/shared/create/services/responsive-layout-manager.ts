@@ -126,9 +126,15 @@ export class ResponsiveLayoutManager {
 
   calculateLayout(): LayoutConfiguration {
     return {
-      width: this.getViewportWidth(),
-      height: this.getViewportHeight(),
-    } as unknown as LayoutConfiguration;
+      navigationLayout: this.getNavigationLayout(),
+      shouldUseSideBySideLayout: this.shouldUseSideBySideLayout(),
+      viewportWidth: this.getViewportWidth(),
+      viewportHeight: this.getViewportHeight(),
+      isDesktop: this.isDesktop(),
+      isLandscapeMobile: this.isLandscapeMobile(),
+      aspectRatio: this.getAspectRatio(),
+      isLikelyZFoldUnfolded: this.isLikelyZFoldUnfolded(),
+    };
   }
 
   private notifyLayoutChange(): void {
