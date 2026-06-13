@@ -540,5 +540,12 @@
     .filter-options {
       animation: none;
     }
+
+    /* Closing variants rely on `forwards` fill to hold the hidden end state,
+       so collapse their duration instead of removing the animation. */
+    .sheet-backdrop.closing,
+    .sheet-container.closing {
+      animation-duration: 0.01ms;
+    }
   }
 </style>

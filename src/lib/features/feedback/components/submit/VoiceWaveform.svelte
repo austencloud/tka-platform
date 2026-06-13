@@ -19,6 +19,14 @@
 	const MIN_BAR_HEIGHT = 3;
 	const CORNER_RADIUS = 2;
 
+	// Reduced motion: keep the waveform (it's the live mic-level indicator)
+	// but throttle from 60fps to ~8fps so the bars step instead of dance.
+	const REDUCED_MOTION_FRAME_MS = 125;
+	const prefersReducedMotion =
+		typeof window !== "undefined" &&
+		window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+	let lastDrawTime = 0;
+
 	onMount(() => {
 		if (!canvas) return;
 
@@ -56,11 +64,17 @@
 		};
 	});
 
-	function draw() {
+	function draw(now: number) {
 		if (!ctx || canvasWidth === 0 || canvasHeight === 0) {
 			animationId = requestAnimationFrame(draw);
 			return;
 		}
+
+		if (prefersReducedMotion && now - lastDrawTime < REDUCED_MOTION_FRAME_MS) {
+			animationId = requestAnimationFrame(draw);
+			return;
+		}
+		lastDrawTime = now;
 
 		ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 

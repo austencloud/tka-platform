@@ -499,5 +499,9 @@
       transition: none;
       animation: none;
     }
+
+    .wip-indicator.over-limit {
+      animation: none;
+    }
   }
 </style>

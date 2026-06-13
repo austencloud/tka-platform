@@ -62,6 +62,12 @@ import type { VoiceRecorder } from "../../services/voice-recorder";
     onFocusChange?: (focused: boolean) => void;
   }>();
 
+  // Reduced motion: Svelte transition directives and smooth scrolling are
+  // JS-driven, so the stylesheet guard can't reach them — gate them here.
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   let textareaElement = $state<HTMLTextAreaElement | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Svelte 5 component ref
   let stableUploadRef: any = $state(undefined);
@@ -74,7 +80,10 @@ import type { VoiceRecorder } from "../../services/voice-recorder";
     // On mobile, scroll the textarea into view after keyboard animation
     if (isMobile && textareaElement) {
       setTimeout(() => {
-        textareaElement?.scrollIntoView({ behavior: "smooth", block: "center" });
+        textareaElement?.scrollIntoView({
+          behavior: prefersReducedMotion ? "auto" : "smooth",
+          block: "center",
+        });
       }, 300);
     }
   }
@@ -100,11 +109,17 @@ import type { VoiceRecorder } from "../../services/voice-recorder";
   >
   <div class="textarea-wrapper">
     {#if isVoiceRecording && audioAnalyzer}
-      <div class="waveform-strip" transition:slide={{ duration: 200 }}>
+      <div
+        class="waveform-strip"
+        transition:slide={{ duration: prefersReducedMotion ? 0 : 200 }}
+      >
         <VoiceWaveform analyzer={audioAnalyzer} />
       </div>
     {:else if isTranscribing}
-      <div class="waveform-strip transcribing" transition:slide={{ duration: 200 }}>
+      <div
+        class="waveform-strip transcribing"
+        transition:slide={{ duration: prefersReducedMotion ? 0 : 200 }}
+      >
         <div class="transcribing-content">
           <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
           <span>{t("feedback_transcribing")}</span>
