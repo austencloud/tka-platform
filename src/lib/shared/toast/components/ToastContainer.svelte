@@ -8,42 +8,43 @@
     toastQueue,
     removeToast,
     type Toast,
+    type ToastType,
   } from "../state/toast-state.svelte";
 
-  const typeConfig: Record<
-    string,
-    { icon: string; color: string; bg: string; textColor?: string }
-  > = {
-    info: {
-      icon: "fa-info-circle",
-      color: "var(--semantic-info)",
-      bg: "rgba(30, 58, 95, 0.95)",
-    },
-    success: {
-      icon: "fa-check-circle",
-      color: "#10b981",
-      bg: "rgba(6, 78, 59, 0.95)",
-      textColor: "#a7f3d0",
-    },
-    warning: {
-      icon: "fa-exclamation-triangle",
-      color: "var(--semantic-warning)",
-      bg: "rgba(92, 59, 13, 0.95)",
-    },
-    error: {
-      icon: "fa-times-circle",
-      color: "var(--semantic-error)",
-      bg: "rgba(95, 30, 30, 0.95)",
-    },
-  };
-
-  function getConfig(type: string): {
+  interface ToastTypeConfig {
     icon: string;
     color: string;
     bg: string;
     textColor?: string;
-  } {
-    return typeConfig[type] ?? typeConfig.info!;
+  }
+
+  const typeConfig: Record<ToastType, ToastTypeConfig> = {
+    info: {
+      icon: "fa-info-circle",
+      color: "var(--semantic-info, #3b82f6)",
+      bg: "color-mix(in srgb, var(--semantic-info, #3b82f6) 40%, rgba(0, 0, 0, 0.92))",
+    },
+    success: {
+      icon: "fa-check-circle",
+      color: "var(--semantic-success, #22c55e)",
+      bg: "color-mix(in srgb, var(--semantic-success, #22c55e) 40%, rgba(0, 0, 0, 0.92))",
+      textColor:
+        "color-mix(in srgb, var(--semantic-success, #22c55e) 35%, white)",
+    },
+    warning: {
+      icon: "fa-exclamation-triangle",
+      color: "var(--semantic-warning, #f59e0b)",
+      bg: "color-mix(in srgb, var(--semantic-warning, #f59e0b) 40%, rgba(0, 0, 0, 0.92))",
+    },
+    error: {
+      icon: "fa-times-circle",
+      color: "var(--semantic-error, #ef4444)",
+      bg: "color-mix(in srgb, var(--semantic-error, #ef4444) 40%, rgba(0, 0, 0, 0.92))",
+    },
+  };
+
+  function getConfig(type: ToastType): ToastTypeConfig {
+    return typeConfig[type];
   }
 </script>
 
@@ -69,7 +70,7 @@
             <i class="fas {config.icon} toast-icon" aria-hidden="true"></i>
             <span class="toast-message">{toast.message}</span>
             <button
-              class="toast-close"
+              class="toast-close accessible-touch-target"
               onclick={() => removeToast(toast.id)}
               aria-label="Dismiss"
             >
@@ -184,7 +185,7 @@
     background: transparent;
     border: none;
     border-radius: 6px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     transition: all var(--duration-fast);
     flex-shrink: 0;
