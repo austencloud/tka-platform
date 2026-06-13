@@ -414,7 +414,7 @@
   }
 
   .retry-btn:hover {
-    background: rgba(239, 68, 68, 0.1);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
   }
 
   .retry-btn:focus-visible {
@@ -465,6 +465,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
+    min-height: 44px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 9999px;
     background: transparent;
@@ -473,6 +474,12 @@
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
+  }
+
+  @media (pointer: coarse) {
+    .chip {
+      min-height: var(--min-touch-target);
+    }
   }
 
   .chip:hover:not(:disabled) {
@@ -491,20 +498,17 @@
     color: var(--theme-text, #fff);
   }
 
-  .chip.cat1.active {
-    border-color: #60a5fa;
-  }
+  /* Category accent colors — scoped to skewlab; no global token exists for these. */
+  .chip.cat1 { --skewlab-cat-accent: #60a5fa; } /* blue — normal→skewed */
+  .chip.cat2 { --skewlab-cat-accent: #34d399; } /* emerald — both skew→normal */
+  .chip.cat3 { --skewlab-cat-accent: #fbbf24; } /* amber — skewed→skewed */
+  .chip.cat4 { --skewlab-cat-accent: #f87171; } /* red — skewed→normal */
 
-  .chip.cat2.active {
-    border-color: #34d399;
-  }
-
-  .chip.cat3.active {
-    border-color: #fbbf24;
-  }
-
+  .chip.cat1.active,
+  .chip.cat2.active,
+  .chip.cat3.active,
   .chip.cat4.active {
-    border-color: #f87171;
+    border-color: var(--skewlab-cat-accent);
   }
 
   .chip .label {
@@ -634,7 +638,7 @@
   /* Selected card (editor panel open for this card) */
   .card.selected {
     border-color: var(--theme-accent, #8b5cf6);
-    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent);
   }
 
   .pictograph-area {
