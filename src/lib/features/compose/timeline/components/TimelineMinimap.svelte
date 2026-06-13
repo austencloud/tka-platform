@@ -178,7 +178,7 @@
 <style>
   .timeline-minimap {
     padding: 4px 8px;
-    background: #16161e;
+    background: var(--theme-panel-bg, #16161e);
     border-top: 1px solid var(--theme-stroke);
     cursor: pointer;
     user-select: none;
@@ -263,8 +263,9 @@
     top: 0;
     bottom: 0;
     width: 2px;
-    background: #ff4444;
-    box-shadow: 0 0 4px rgba(255, 68, 68, 0.5);
+    background: var(--semantic-error, #ff4444);
+    box-shadow: 0 0 4px
+      color-mix(in srgb, var(--semantic-error, #ff4444) 50%, transparent);
     pointer-events: none;
     z-index: 2;
     transform: translateX(-50%);

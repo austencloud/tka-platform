@@ -430,7 +430,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
     --source-monitor-accent: #ffd43b;
     display: flex;
     flex-direction: column;
-    background: #0e0e12;
+    background: var(--theme-panel-bg, #0e0e12);
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
     overflow: hidden;
@@ -655,7 +655,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
   }
 
   .add-btn:hover {
-    background: #5aabff;
+    background: var(--theme-accent-strong, #5aabff);
     transform: translateY(-1px);
   }
 

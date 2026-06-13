@@ -425,7 +425,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
   .timeline-preview {
     display: flex;
     flex-direction: column;
-    background: #0e0e12;
+    background: var(--theme-panel-bg, #0e0e12);
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
     overflow: hidden;
@@ -534,10 +534,10 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
     justify-content: center;
     width: 28px;
     height: 28px;
-    background: rgba(81, 207, 102, 0.2);
+    background: color-mix(in srgb, var(--semantic-success, #51cf66) 20%, transparent);
     border-radius: 50%;
     backdrop-filter: blur(4px);
-    color: #51cf66;
+    color: var(--semantic-success, #51cf66);
     font-size: var(--font-size-compact);
     animation: pulse 1.5s ease-in-out infinite;
   }
