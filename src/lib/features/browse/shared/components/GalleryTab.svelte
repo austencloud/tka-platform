@@ -82,9 +82,6 @@
       engine.addFilter(BrowseFilterType.STARTING_POSITION, position.startPosition ?? "", "Start Position", "var(--theme-accent)");
     } else {
       engine.removeFilter(String(BrowseFilterType.STARTING_POSITION));
-      if (!endPosition) {
-        // No position filters left
-      }
     }
   }
 
@@ -94,9 +91,6 @@
       engine.addFilter(BrowseFilterType.END_POSITION, position.endPosition ?? "", "End Position", "var(--theme-accent)");
     } else {
       engine.removeFilter(String(BrowseFilterType.END_POSITION));
-      if (!startPosition) {
-        // No position filters left
-      }
     }
   }
 
@@ -395,7 +389,7 @@
     align-items: center;
     justify-content: center;
     font-size: 24px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 24px var(--theme-shadow, rgba(0, 0, 0, 0.5));
     cursor: pointer;
     z-index: var(--z-modal);
     transition: transform var(--duration-fast) ease, background var(--duration-fast) ease, opacity var(--duration-fast) ease;

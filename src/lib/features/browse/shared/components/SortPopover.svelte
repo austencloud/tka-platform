@@ -52,10 +52,18 @@
   );
   const currentLabel = $derived(chipLabels[currentMethod] ?? "Sort");
 
-  /** Duration (ms) for the popover exit animation - matches CSS transition */
-  const EXIT_ANIMATION_MS = 180;
+  /** Duration (ms) for the popover exit animation - matches the CSS opacity transition (--duration-normal) */
+  const EXIT_ANIMATION_MS = 200;
+
+  /** Pending exit-animation timer - cleared on reopen and on destroy */
+  let closeTimer: ReturnType<typeof setTimeout> | null = null;
 
   function openPopover() {
+    // Cancel a pending close so a quick reopen isn't yanked out of the DOM mid-entrance
+    if (closeTimer !== null) {
+      clearTimeout(closeTimer);
+      closeTimer = null;
+    }
     isOpen = true;
     // Set initial focus to the currently selected option
     focusedIndex = sortOptions.findIndex((o) => o.id === currentMethod);
@@ -75,9 +83,10 @@
     isVisible = false;
     focusedIndex = -1;
     // Wait for exit animation before removing from DOM
-    setTimeout(() => {
+    closeTimer = setTimeout(() => {
       isOpen = false;
       isAnimating = false;
+      closeTimer = null;
     }, EXIT_ANIMATION_MS);
   }
 
@@ -159,6 +168,10 @@
 
   onDestroy(() => {
     document.removeEventListener("pointerdown", handlePointerDownOutside, true);
+    if (closeTimer !== null) {
+      clearTimeout(closeTimer);
+      closeTimer = null;
+    }
   });
 </script>
 
@@ -298,8 +311,8 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 14px;
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.3),
-      0 2px 8px rgba(0, 0, 0, 0.2);
+      0 8px 32px var(--theme-shadow, rgba(0, 0, 0, 0.3)),
+      0 2px 8px var(--theme-shadow, rgba(0, 0, 0, 0.2));
     z-index: 50;
 
     /* Entrance animation: scale + opacity with overshoot */
@@ -307,8 +320,8 @@
     transform: scale(0.92) translateY(-4px);
     transform-origin: top left;
     transition:
-      opacity 180ms ease,
-      transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      opacity var(--duration-normal, 200ms) ease,
+      transform var(--duration-emphasis, 280ms) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .sort-popover.visible {
@@ -349,7 +362,7 @@
       background var(--duration-fast, 150ms) ease,
       color var(--duration-fast, 150ms) ease,
       transform var(--duration-fast, 150ms) ease,
-      opacity 150ms ease;
+      opacity var(--duration-fast, 150ms) ease;
   }
 
   .sort-option:hover,
