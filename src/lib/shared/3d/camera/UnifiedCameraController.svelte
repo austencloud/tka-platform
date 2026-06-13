@@ -464,6 +464,7 @@
     } else if (!enabled && attached) {
       detachFromCanvas();
     }
+    return undefined;
   });
 
   function attachToCanvas(canvas: HTMLCanvasElement) {
