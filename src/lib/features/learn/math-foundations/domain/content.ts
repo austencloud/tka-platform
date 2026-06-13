@@ -18,6 +18,17 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
+/**
+ * Triad palette — single source for the thesis/antithesis/synthesis colors
+ * used in data-driven styling. The CSS mirror lives in
+ * ../components/triad-palette.css (.mf-triad-scope) — keep the two in sync.
+ */
+export const TRIAD_COLORS = {
+  thesis: "#6366f1", // Indigo
+  antithesis: "#ec4899", // Pink
+  synthesis: "#14b8a6", // Teal
+} as const;
+
 export interface PositionGroupData {
   name: string;
   greek: string;
@@ -33,8 +44,8 @@ export const POSITION_GROUPS: PositionGroupData[] = [
     greek: "α",
     count: 8,
     description: "Hands point in opposite directions",
-    relationship: "180° apart",
-    color: "#6366f1", // Indigo
+    relationship: "Hands at opposite points",
+    color: TRIAD_COLORS.thesis
   },
   {
     name: "Beta",
@@ -42,7 +53,7 @@ export const POSITION_GROUPS: PositionGroupData[] = [
     count: 8,
     description: "Hands point in the same direction",
     relationship: "0° apart",
-    color: "#ec4899", // Pink
+    color: TRIAD_COLORS.antithesis
   },
   {
     name: "Gamma",
@@ -50,7 +61,7 @@ export const POSITION_GROUPS: PositionGroupData[] = [
     count: 16,
     description: "All other combinations (perpendicular, adjacent)",
     relationship: "Contains two halves (1-8 and 9-16)",
-    color: "#14b8a6", // Teal
+    color: TRIAD_COLORS.synthesis
   },
 ];
 
@@ -260,14 +271,14 @@ export const ORIENTATION_PAIRINGS: OrientationPairingData[] = [
     members: ["Pro", "Static"],
     behavior: "Retain orientation at 0 turns",
     description: "Both PRO and STATIC keep the prop pointing the same direction when no turns are applied",
-    color: "#6366f1",
+    color: TRIAD_COLORS.thesis,
   },
   {
     family: "Swapping",
     members: ["Anti", "Dash"],
     behavior: "Swap orientation at 0 turns",
     description: "Both ANTI and DASH flip the prop's direction (IN↔OUT or CLOCK↔COUNTER) even with no turns",
-    color: "#ec4899",
+    color: TRIAD_COLORS.antithesis,
   },
 ];
 
@@ -313,12 +324,4 @@ export const ORIENTATIONS: OrientationData[] = [
 export const CORE_PATTERN = {
   title: "The Core Pattern",
   subtitle: "Binary Synthesis",
-  description: `Throughout The Kinetic Alphabet, a single mathematical pattern repeats at multiple levels:
-    Two elements exist as opposites of each other, and a third element fuses them-containing aspects of both.
-    The fusion is often twice as large or has two internal halves.`,
-  diagram: {
-    thesis: "Thesis",
-    antithesis: "Antithesis",
-    synthesis: "Synthesis (contains both)",
-  },
 };

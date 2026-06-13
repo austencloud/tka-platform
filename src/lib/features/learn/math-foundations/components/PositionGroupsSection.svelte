@@ -5,9 +5,10 @@
    * Shows the 8 + 8 = 16 binary synthesis pattern for grid positions.
    */
   import { POSITION_GROUPS } from "../domain/content";
+  import "./triad-palette.css";
 </script>
 
-<section class="position-groups">
+<section class="position-groups mf-triad-scope">
   <div class="container">
     <h2>Level 1: Grid Positions</h2>
     <p class="section-intro">
@@ -192,28 +193,28 @@
   }
 
   .thesis {
-    --accent: #6366f1;
+    --accent: var(--mf-thesis);
   }
 
   .thesis .greek {
-    color: #6366f1;
+    color: var(--accent);
   }
 
   .antithesis {
-    --accent: #ec4899;
+    --accent: var(--mf-antithesis);
   }
 
   .antithesis .greek {
-    color: #ec4899;
+    color: var(--accent);
   }
 
   .synthesis {
-    --accent: #14b8a6;
+    --accent: var(--mf-synthesis);
     padding: 24px 36px;
   }
 
   .synthesis .greek {
-    color: #14b8a6;
+    color: var(--accent);
     font-size: 3rem;
   }
 
@@ -226,9 +227,9 @@
   .insight {
     text-align: center;
     padding: 20px;
-    background: rgba(20, 184, 166, 0.08);
+    background: color-mix(in srgb, var(--mf-synthesis) 8%, transparent);
     border-radius: 12px;
-    border: 1px solid rgba(20, 184, 166, 0.2);
+    border: 1px solid color-mix(in srgb, var(--mf-synthesis) 20%, transparent);
   }
 
   .insight p {

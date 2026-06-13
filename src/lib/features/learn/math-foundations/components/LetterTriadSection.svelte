@@ -11,6 +11,7 @@
     createLetterBPictograph,
     createLetterCPictograph,
   } from "../domain/content";
+  import "./triad-palette.css";
 
   // Create real pictograph data
   const pictographs = {
@@ -20,7 +21,7 @@
   };
 </script>
 
-<section class="letter-triad">
+<section class="letter-triad mf-triad-scope">
   <div class="container">
     <h2>Level 2: Letter Motion Types</h2>
     <p class="section-intro">
@@ -93,7 +94,7 @@
     background: linear-gradient(
       180deg,
       transparent 0%,
-      rgba(99, 102, 241, 0.03) 100%
+      color-mix(in srgb, var(--mf-thesis) 3%, transparent) 100%
     );
   }
 
@@ -142,15 +143,15 @@
   }
 
   .letter-card.thesis {
-    --card-accent: #6366f1;
+    --card-accent: var(--mf-thesis);
   }
 
   .letter-card.antithesis {
-    --card-accent: #ec4899;
+    --card-accent: var(--mf-antithesis);
   }
 
   .letter-card.synthesis {
-    --card-accent: #14b8a6;
+    --card-accent: var(--mf-synthesis);
   }
 
   .card-header {

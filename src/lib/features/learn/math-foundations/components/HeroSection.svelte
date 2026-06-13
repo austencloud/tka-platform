@@ -3,9 +3,10 @@
    * HeroSection - Introduction to mathematical foundations
    */
   import { CORE_PATTERN } from "../domain/content";
+  import "./triad-palette.css";
 </script>
 
-<section class="hero">
+<section class="hero mf-triad-scope">
   <div class="container">
     <h1>Mathematical Foundations</h1>
     <p class="subtitle">The recurring patterns that underpin TKA's structure</p>
@@ -133,21 +134,21 @@
   }
 
   .thesis {
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.3);
-    color: #a5b4fc;
+    background: color-mix(in srgb, var(--mf-thesis) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mf-thesis) 30%, transparent);
+    color: var(--mf-thesis-light);
   }
 
   .antithesis {
-    background: rgba(236, 72, 153, 0.15);
-    border: 1px solid rgba(236, 72, 153, 0.3);
-    color: #f9a8d4;
+    background: color-mix(in srgb, var(--mf-antithesis) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mf-antithesis) 30%, transparent);
+    color: var(--mf-antithesis-light);
   }
 
   .synthesis {
-    background: rgba(20, 184, 166, 0.15);
-    border: 1px solid rgba(20, 184, 166, 0.3);
-    color: #5eead4;
+    background: color-mix(in srgb, var(--mf-synthesis) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mf-synthesis) 30%, transparent);
+    color: var(--mf-synthesis-light);
     padding: 20px 40px;
   }
 
@@ -175,8 +176,8 @@
   }
 
   .key-insight {
-    background: rgba(99, 102, 241, 0.08);
-    border: 1px solid rgba(99, 102, 241, 0.15);
+    background: color-mix(in srgb, var(--mf-thesis) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mf-thesis) 15%, transparent);
     border-radius: 12px;
     padding: 20px;
   }

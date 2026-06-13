@@ -1,0 +1,25 @@
+/*
+ * Math-foundations triad palette — single source of truth for the
+ * indigo/pink/teal thesis/antithesis/synthesis colors shared by
+ * HeroSection, PositionGroupsSection, LetterTriadSection, and
+ * MotionTypesSection. Previously these hexes were duplicated as
+ * literals across all four components.
+ *
+ * Deliberately feature-local: the properties are scoped to an opt-in
+ * class, not :root, so they don't become global design tokens (same
+ * pattern as create/generate/components/customize-accent.css).
+ * Components import this file and add `mf-triad-scope` to their root
+ * section element. Translucent tints are derived in place via
+ * color-mix(in srgb, var(--mf-*) N%, transparent).
+ *
+ * The TypeScript mirror for data-driven colors lives in
+ * ../domain/content.ts as TRIAD_COLORS — keep the two in sync.
+ */
+.mf-triad-scope {
+  --mf-thesis: #6366f1; /* indigo */
+  --mf-thesis-light: #a5b4fc;
+  --mf-antithesis: #ec4899; /* pink */
+  --mf-antithesis-light: #f9a8d4;
+  --mf-synthesis: #14b8a6; /* teal */
+  --mf-synthesis-light: #5eead4;
+}
