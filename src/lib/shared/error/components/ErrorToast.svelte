@@ -120,7 +120,7 @@
     -webkit-backdrop-filter: blur(16px);
 
     /* Entrance animation */
-    animation: toast-enter 300ms ease-out both;
+    animation: toast-enter var(--duration-emphasis, 300ms) ease-out both;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -136,17 +136,19 @@
       rgba(180, 120, 40, 0.12) 0%,
       rgba(20, 18, 24, 0.92) 100%
     );
-    border: 1px solid rgba(251, 191, 36, 0.2);
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-warning, #fbbf24) 20%, transparent);
   }
 
   /* Info variant */
   .toast--info {
     background: linear-gradient(
       135deg,
-      rgba(59, 130, 246, 0.08) 0%,
+      color-mix(in srgb, var(--semantic-info, #3b82f6) 8%, transparent) 0%,
       rgba(20, 18, 24, 0.92) 100%
     );
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-info, #3b82f6) 20%, transparent);
   }
 
   /* ── Body row ──────────────────────────────────────────────────────────── */
@@ -169,11 +171,11 @@
   }
 
   .toast--warning .toast-icon {
-    color: #fbbf24;
+    color: var(--semantic-warning, #fbbf24);
   }
 
   .toast--info .toast-icon {
-    color: #60a5fa;
+    color: var(--semantic-info, #60a5fa);
   }
 
   /* ── Message ───────────────────────────────────────────────────────────── */
@@ -221,7 +223,9 @@
     color: rgba(255, 255, 255, 0.4);
     font-size: 13px;
     border-radius: 8px;
-    transition: color 150ms ease, background 150ms ease;
+    transition:
+      color var(--duration-fast, 150ms) ease,
+      background var(--duration-fast, 150ms) ease;
   }
 
   .toast-close:hover {
@@ -247,11 +251,19 @@
   }
 
   .toast--warning .toast-progress {
-    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    background: linear-gradient(
+      90deg,
+      var(--semantic-warning, #f59e0b),
+      color-mix(in srgb, var(--semantic-warning, #f59e0b) 75%, white)
+    );
   }
 
   .toast--info .toast-progress {
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    background: linear-gradient(
+      90deg,
+      var(--semantic-info, #3b82f6),
+      color-mix(in srgb, var(--semantic-info, #3b82f6) 75%, white)
+    );
   }
 
   @keyframes deplete {

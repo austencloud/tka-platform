@@ -8,14 +8,36 @@
 -->
 <script lang="ts">
 
-import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+import { onDestroy } from "svelte";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { getCurrentError, dismissError } from "../state/error-state.svelte";
   import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { FocusTrap } from "$lib/shared/foundation/ui/drawer/focus-trap";
 
   let userComment = $state("");
   let isReporting = $state(false);
   let copied = $state(false);
+  let modalElement = $state<HTMLDivElement | null>(null);
+  let copyResetTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  // Trap focus inside the alertdialog while it's open: focus moves to the
+  // dialog container on open, Tab is trapped within, everything else goes
+  // inert, and focus returns to the trigger on close.
+  const focusTrap = new FocusTrap({
+    focusContainerOnInitial: true,
+    inertExclusions: [],
+  });
+
+  $effect(() => {
+    if (!modalElement) return;
+    focusTrap.activate(modalElement);
+    return () => focusTrap.deactivate();
+  });
+
+  onDestroy(() => {
+    clearTimeout(copyResetTimeout);
+  });
 
   const error = $derived(getCurrentError());
 
@@ -73,7 +95,8 @@ import { getErrorHandler } from "$lib/shared/application/get-error-handler";
     try {
       await navigator.clipboard.writeText(buildCopyText());
       copied = true;
-      setTimeout(() => (copied = false), 2000);
+      clearTimeout(copyResetTimeout);
+      copyResetTimeout = setTimeout(() => (copied = false), 2000);
     } catch {
       toast.error("Failed to copy to clipboard");
     }
@@ -159,14 +182,18 @@ import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 
 {#if error}
   {@const config = getConfig(error.severity)}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="error-overlay" onclick={handleDismiss} aria-hidden="true">
+  <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+  <div class="error-overlay" onclick={handleDismiss} role="presentation">
     <div
+      bind:this={modalElement}
       class="error-modal"
       class:has-params={hasParams}
       style="--error-color: {config.color}; --error-bg: {config.bg}"
       onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
+      onkeydown={(e) => {
+        if (e.key === "Escape") handleDismiss();
+        e.stopPropagation();
+      }}
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="error-title"
