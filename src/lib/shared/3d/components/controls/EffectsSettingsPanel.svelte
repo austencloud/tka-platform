@@ -285,7 +285,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 14px;
     color: var(--theme-text-dim);
-    font-size: 0.6rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast);

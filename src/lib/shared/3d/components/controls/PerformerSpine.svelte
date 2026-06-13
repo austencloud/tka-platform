@@ -121,10 +121,10 @@
 
   /* All chip */
   .all-chip[aria-pressed="true"] {
-    background: color-mix(in srgb, #4a9eff 18%, transparent);
-    border-color: color-mix(in srgb, #4a9eff 50%, transparent);
-    color: #8fc3ff;
-    box-shadow: 0 4px 20px color-mix(in srgb, #4a9eff 25%, transparent);
+    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 18%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 50%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #4a9eff) 60%, #ffffff);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-accent, #4a9eff) 25%, transparent);
   }
 
   /* Performer chip */

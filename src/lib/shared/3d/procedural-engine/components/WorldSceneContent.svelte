@@ -213,6 +213,7 @@
   // Flag to prevent physics operations during/after cleanup
   // This prevents Rapier WASM errors during HMR when the module is partially freed
   let isDisposed = false;
+  let hannonsLoadTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Campground objects placed in spawn clearing
   let campgroundObjects: Object3D[] = [];
@@ -505,13 +506,18 @@
 
     // Auto-load terrain if configured
     if (activeConfig.terrain.type === "real-terrain" || autoLoadHannons) {
-      setTimeout(() => loadHannonsCamp(), 100);
+      hannonsLoadTimer = setTimeout(() => loadHannonsCamp(), 100);
     }
   });
 
   onDestroy(() => {
     // Mark as disposed FIRST to prevent useTask from accessing freed resources
     isDisposed = true;
+
+    if (hannonsLoadTimer !== null) {
+      clearTimeout(hannonsLoadTimer);
+      hannonsLoadTimer = null;
+    }
 
     // Dispose chunk meshes
     for (const [key, mesh] of chunkMeshes) {

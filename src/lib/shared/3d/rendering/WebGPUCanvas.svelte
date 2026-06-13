@@ -30,6 +30,7 @@
   // Resolved state after async WebGPU check
   let isReady = $state(false);
   let shouldUseWebGPU = $state(false);
+  let rendererError = $state<string | null>(null);
 
   // Pre-loaded WebGPU module (if available)
   let WebGPURendererClass: typeof import("three/webgpu").WebGPURenderer | null = null;
@@ -76,8 +77,12 @@
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = PCFSoftShadowMap;
 
-      // Three.js queues renders until WebGPU init completes
-      renderer.init().catch(() => {});
+      // Three.js queues renders until WebGPU init completes.
+      // Surface init failures so the user isn't left with a blank canvas.
+      renderer.init().catch((err: unknown) => {
+        console.error("[WebGPUCanvas] WebGPU renderer.init() failed:", err);
+        rendererError = err instanceof Error ? err.message : "WebGPU renderer failed to initialize";
+      });
 
       return renderer as unknown as WebGLRenderer;
     }
@@ -96,7 +101,13 @@
   }
 </script>
 
-{#if isReady}
+{#if rendererError}
+  <div class="canvas-error">
+    <span class="canvas-error-icon" aria-hidden="true">&#9888;</span>
+    <span>{t("gallery_renderer_failed")}</span>
+    <small>{rendererError}</small>
+  </div>
+{:else if isReady}
   <Canvas {autoRender} {toneMapping} {createRenderer}>
     {@render children()}
   </Canvas>
@@ -118,5 +129,31 @@
     background: #0a0a1a;
     color: rgba(255, 255, 255, 0.7);
     gap: 12px;
+  }
+
+  .canvas-error {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a1a;
+    color: rgba(255, 255, 255, 0.7);
+    gap: 8px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .canvas-error-icon {
+    font-size: 32px;
+    color: rgba(255, 180, 60, 0.9);
+  }
+
+  .canvas-error small {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    max-width: 280px;
+    word-break: break-word;
   }
 </style>

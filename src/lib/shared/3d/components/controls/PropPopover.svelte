@@ -121,6 +121,8 @@
         <button
           class="variant-chip"
           class:active={currentProp === variant}
+          aria-label={vInfo.label}
+          title={vInfo.label}
           onclick={() => handleVariantClick(variant)}
         >
           <div class="variant-icon">
@@ -185,11 +187,12 @@
     position: absolute;
     top: 2px;
     left: 2px;
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.14);
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1;
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -211,7 +214,7 @@
     margin: 0 -14px -14px;
   }
   .variant-label {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;

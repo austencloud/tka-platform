@@ -200,15 +200,15 @@
     }
   }
   .rail-chip[aria-pressed="true"] {
-    background: color-mix(in srgb, #4a9eff 18%, transparent);
-    border-color: color-mix(in srgb, #4a9eff 50%, transparent);
-    color: #8fc3ff;
-    box-shadow: 0 4px 20px color-mix(in srgb, #4a9eff 25%, transparent);
+    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 18%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 50%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #4a9eff) 60%, #ffffff);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-accent, #4a9eff) 25%, transparent);
     animation: chip-glow 2.4s ease-in-out infinite;
   }
   @keyframes chip-glow {
-    0%, 100% { box-shadow: 0 4px 20px color-mix(in srgb, #4a9eff 25%, transparent); }
-    50% { box-shadow: 0 4px 28px color-mix(in srgb, #4a9eff 40%, transparent); }
+    0%, 100% { box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-accent, #4a9eff) 25%, transparent); }
+    50% { box-shadow: 0 4px 28px color-mix(in srgb, var(--theme-accent, #4a9eff) 40%, transparent); }
   }
   .rail-chip.performer-scoped i {
     color: var(--chip-tint, rgba(255, 255, 255, 0.62));

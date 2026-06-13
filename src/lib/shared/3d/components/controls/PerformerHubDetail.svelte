@@ -497,10 +497,10 @@
   }
 
   .avatar-circle.all-mode {
-    border-color: #4a9eff;
-    background: color-mix(in srgb, #4a9eff 14%, transparent);
-    box-shadow: 0 0 12px color-mix(in srgb, #4a9eff 20%, transparent);
-    color: #8fc3ff;
+    border-color: var(--theme-accent, #4a9eff);
+    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 14%, transparent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--theme-accent, #4a9eff) 20%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #4a9eff) 60%, #ffffff);
     font-size: 14px;
   }
 
@@ -513,7 +513,7 @@
   }
 
   .all-hint {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.4);
     font-style: italic;
   }
@@ -556,10 +556,13 @@
   }
 
   .edit-hint {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.3);
     opacity: 0;
     flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     transition: opacity 140ms ease;
   }
 
@@ -591,14 +594,14 @@
   .badge {
     padding: 1px 6px;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 800;
     color: rgba(0, 0, 0, 0.85);
     line-height: 1.3;
   }
 
   .seq-chip {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: rgba(255, 255, 255, 0.55);
     white-space: nowrap;
@@ -607,12 +610,12 @@
   }
 
   .seq-dot {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.3);
   }
 
   .seq-beats {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     color: rgba(255, 255, 255, 0.55);
   }
@@ -687,7 +690,7 @@
     border: none;
     background: transparent;
     color: rgba(255, 255, 255, 0.68);
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
     transition:
@@ -734,7 +737,7 @@
 
   /* ─── Section label ─── */
   .section-label {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -844,7 +847,7 @@
   }
 
   .avatar-card-name {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-align: center;
     line-height: 1.2;
@@ -960,7 +963,7 @@
   }
 
   .seq-hint {
-    font-size: 11px !important;
+    font-size: var(--font-size-compact, 12px) !important;
     font-weight: 400 !important;
     color: rgba(255, 255, 255, 0.2) !important;
     text-align: center;
@@ -1024,7 +1027,7 @@
   }
 
   .variant-header {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -1047,7 +1050,7 @@
     border-radius: 8px;
     cursor: pointer;
     color: rgba(255, 255, 255, 0.65);
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     transition:
       border-color 150ms,

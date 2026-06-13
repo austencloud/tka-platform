@@ -559,6 +559,7 @@
         class="control-btn"
         onclick={() => sequenceBrowserOpen = true}
         title="Load sequence"
+        aria-label="Load sequence"
       >
         <i class="fas fa-folder-open" aria-hidden="true"></i>
       </button>
@@ -575,6 +576,7 @@
           class="control-btn"
           onclick={() => activePerformerState?.prevStep()}
           title="Previous step"
+          aria-label="Previous step"
           disabled={activePerformerState.currentStepIndex === 0}
         >
           <i class="fas fa-step-backward" aria-hidden="true"></i>
@@ -584,6 +586,7 @@
           class="control-btn play-btn"
           onclick={() => activePerformerState?.togglePlay()}
           title={activePerformerState.isPlaying ? 'Pause' : 'Play'}
+          aria-label={activePerformerState.isPlaying ? 'Pause' : 'Play'}
         >
           <i class="fas" class:fa-pause={activePerformerState.isPlaying} class:fa-play={!activePerformerState.isPlaying} aria-hidden="true"></i>
         </button>
@@ -592,6 +595,7 @@
           class="control-btn"
           onclick={() => activePerformerState?.nextStep()}
           title="Next step"
+          aria-label="Next step"
           disabled={activePerformerState.currentStepIndex >= activePerformerState.totalSteps - 1}
         >
           <i class="fas fa-step-forward" aria-hidden="true"></i>
@@ -601,6 +605,7 @@
           class="control-btn"
           onclick={() => activePerformerState?.reset()}
           title="Reset to start"
+          aria-label="Reset to start"
         >
           <i class="fas fa-undo" aria-hidden="true"></i>
         </button>
@@ -612,6 +617,7 @@
             if (activePerformerState) activePerformerState.loop = !activePerformerState.loop;
           }}
           title={activePerformerState.loop ? 'Looping enabled' : 'Enable loop'}
+          aria-label={activePerformerState.loop ? 'Looping enabled' : 'Enable loop'}
         >
           <i class="fas fa-sync" aria-hidden="true"></i>
         </button>

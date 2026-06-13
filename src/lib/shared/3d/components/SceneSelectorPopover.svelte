@@ -66,10 +66,10 @@
   }
 
   .scene-tile.active {
-    background: color-mix(in srgb, #4a9eff 18%, transparent);
-    border-color: color-mix(in srgb, #4a9eff 50%, transparent);
-    color: #cfe4ff;
-    box-shadow: 0 2px 12px color-mix(in srgb, #4a9eff 20%, transparent);
+    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 18%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 50%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #4a9eff) 40%, #ffffff);
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--theme-accent, #4a9eff) 20%, transparent);
   }
 
   .scene-tile i {
@@ -77,11 +77,11 @@
   }
 
   .scene-tile.active i {
-    color: #8fc3ff;
+    color: color-mix(in srgb, var(--theme-accent, #4a9eff) 60%, #ffffff);
   }
 
   .tile-label {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     letter-spacing: 0.03em;
     text-align: center;
