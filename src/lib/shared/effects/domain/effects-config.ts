@@ -170,6 +170,17 @@ export interface BloomIntent {
   pulse: number;
   /** 0.25-4 Hz - pulse frequency. */
   pulseRate: number;
+  /** 0-1 - anamorphic motion streak. Halo stretches along the motion vector;
+   *  length grows with per-frame tip speed. 0 = pure round halo. */
+  streak: number;
+  /** 0-1 - diffraction star-spike brightness (the lens glint off a bright
+   *  point). 0 = no spikes. */
+  spikes: number;
+  /** 0-1 - chromatic aberration. Red/blue fringe offset grows with tip speed. */
+  chromatic: number;
+  /** 0-1 - long-exposure afterglow persistence. 0 = none (draw-fresh each
+   *  frame), 1 = light trail lingers ~1s. */
+  afterglow: number;
 }
 
 export interface WaterIntent {

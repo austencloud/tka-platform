@@ -80,6 +80,10 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     falloff: "smooth",
     pulse: 0,
     pulseRate: 1,
+    streak: 0.55,
+    spikes: 0.6,
+    chromatic: 0.35,
+    afterglow: 0.5,
   },
 
   water: {
