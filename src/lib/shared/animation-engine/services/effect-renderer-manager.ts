@@ -65,6 +65,18 @@ export class EffectRendererManager {
   ledConfig: LedOverlayConfig = { ...DEFAULT_LED_CONFIG };
   private ledInitPending = false;
 
+  /**
+   * WebGL overlay ids with a deferred init scheduled (at most one rAF in
+   * flight per id). Heavy WebGL init — shader compilation + float-FBO
+   * allocation — is deferred off the reactive chain so the click that enables
+   * the effect stays smooth. On Windows/ANGLE a synchronous compile can freeze
+   * the page for seconds; fire builds ~16 shader programs + ~18 float FBOs.
+   * Membership doubles as a cancel signal: dispose() clears it, and the rAF
+   * callback bails if its id is no longer present. Same rationale as
+   * syncLedOverlay, applied generically to every webgl-kind overlay.
+   */
+  private pendingWebglInit = new Set<OverlayEffectId>();
+
   // ── Per-cell maps ───────────────────────────────────────────────────
   cellTipEffectMap: TipEffectMap | undefined = undefined;
   cellTipEffortMap: TipEffortMap | undefined = undefined;
@@ -183,21 +195,14 @@ export class EffectRendererManager {
       const current = this.renderers.get(id);
       if (!current?.isInitialized()) {
         if (!this.containerElement) return;
-        const renderer = plugin.createRenderer();
-        const success = renderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize,
-        );
-        if (success) {
-          this.renderers.set(id, renderer);
-          this.renderLoopService?.updateConfig({
-            renderers: { [id]: renderer },
-          } as Partial<RenderLoopConfig>);
-          plugin.onInit?.(this, renderer);
-        } else {
-          this.renderers.delete(id);
+        if (plugin.kind === "webgl") {
+          // Heavy WebGL init (shader compile + float-FBO alloc) is deferred off
+          // the reactive chain so the enabling click stays smooth. The deferred
+          // path fires its own triggerRender once the renderer is ready.
+          this.scheduleWebglInit(plugin);
+          return;
         }
+        this.initOverlayRenderer(plugin); // canvas2d: cheap getContext, inline
       }
     } else {
       const current = this.renderers.get(id);
@@ -214,6 +219,63 @@ export class EffectRendererManager {
     if (plugin.triggerRender !== false) {
       this.triggerRender();
     }
+  }
+
+  /**
+   * Construct + initialize one overlay renderer and wire it into the render
+   * loop. Shared by the inline canvas2d path and the deferred webgl path so
+   * both register the renderer and run plugin.onInit identically.
+   */
+  private initOverlayRenderer(plugin: typeof OVERLAY_PLUGINS[number]): void {
+    const id = plugin.id as OverlayEffectId;
+    if (!this.containerElement) return;
+    const renderer = plugin.createRenderer();
+    const success = renderer.initialize(
+      this.containerElement,
+      this.canvasSize,
+      this.canvasSize,
+    );
+    if (success) {
+      this.renderers.set(id, renderer);
+      this.renderLoopService?.updateConfig({
+        renderers: { [id]: renderer },
+      } as Partial<RenderLoopConfig>);
+      plugin.onInit?.(this, renderer);
+    } else {
+      this.renderers.delete(id);
+    }
+  }
+
+  /**
+   * Defer a webgl overlay's init to the next frame so the click that enables it
+   * doesn't block on shader compilation. Generalizes syncLedOverlay's proven
+   * rAF deferral to every webgl-kind overlay (fire, etc.). At most one rAF in
+   * flight per id; membership in pendingWebglInit doubles as a cancel signal so
+   * dispose() (which clears the set) aborts an in-flight init.
+   */
+  private scheduleWebglInit(plugin: typeof OVERLAY_PLUGINS[number]): void {
+    const id = plugin.id as OverlayEffectId;
+    if (this.pendingWebglInit.has(id)) return;
+    this.pendingWebglInit.add(id);
+    requestAnimationFrame(() => {
+      if (!this.pendingWebglInit.has(id)) return; // cancelled by dispose()
+      this.pendingWebglInit.delete(id);
+      // Re-check: effect may have been toggled off, or container torn down,
+      // or the renderer initialized by another path while we were deferred.
+      if (!(this.prevEffectEnabled.get(id) ?? false)) return;
+      if (!this.containerElement) return;
+      if (this.renderers.get(id)?.isInitialized()) return;
+      try {
+        this.initOverlayRenderer(plugin);
+      } catch (err) {
+        console.error(`[AnimationEngine] ${id} overlay init error:`, err);
+        this.renderers.delete(id);
+        return;
+      }
+      if (plugin.triggerRender !== false) {
+        this.triggerRender();
+      }
+    });
   }
 
   /**
@@ -513,6 +575,10 @@ export class EffectRendererManager {
   // ── Dispose ─────────────────────────────────────────────────────────
 
   dispose(): void {
+    // Cancel any in-flight deferred webgl init; the rAF callback bails when its
+    // id is no longer present, so clearing the set acts as the cancel signal.
+    this.pendingWebglInit.clear();
+
     // Dispose all registry-driven renderers (canvas2d + webgl overlays)
     for (const plugin of OVERLAY_PLUGINS) {
       const renderer = this.renderers.get(plugin.id as OverlayEffectId);
