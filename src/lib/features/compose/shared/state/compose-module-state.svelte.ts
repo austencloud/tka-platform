@@ -22,13 +22,9 @@ const debug = createComponentLogger("ComposeModuleState");
 
 // Tab types - Playback is an overlay, not a tab
 export type ComposeTab = "arrange" | "browse" | "timeline";
-/** @deprecated Use ComposeTab instead */
-export type AnimateTab = ComposeTab;
 
-// Re-Download AnimationMode for backwards compatibility
+// Re-export AnimationMode for backwards compatibility
 export type ComposeMode = AnimationMode;
-/** @deprecated Use ComposeMode instead */
-export type AnimateMode = ComposeMode;
 
 export type BrowserTargetMode =
   | "primary"
@@ -83,6 +79,9 @@ export type ComposeModuleState = {
 
   // Reset
   reset: () => void;
+
+  // Tear down the standalone reactive scope created by the factory
+  destroy: () => void;
 };
 
 // Persistence helpers
@@ -110,8 +109,10 @@ export function createComposeModuleState(): ComposeModuleState {
   // Current animation mode (persisted) - used for playback configuration
   let currentMode = $state<ComposeMode>(modePersistence.load());
 
-  // Auto-save tab and mode changes
-  $effect.root(() => {
+  // Auto-save tab and mode changes.
+  // Uses $effect.root() because this factory runs outside component context;
+  // capture the disposer so the scope can be torn down via destroy().
+  let cleanupEffects: (() => void) | null = $effect.root(() => {
     $effect(() => {
       void currentTab;
       tabPersistence.setupAutoSave(currentTab);
@@ -222,6 +223,15 @@ export function createComposeModuleState(): ComposeModuleState {
       modePersistence.save("single");
       debug.log("Reset");
     },
+
+    // Teardown
+    destroy() {
+      if (cleanupEffects) {
+        cleanupEffects();
+        cleanupEffects = null;
+        debug.log("Destroyed reactive scope");
+      }
+    },
   };
 }
 
@@ -234,8 +244,3 @@ export function getComposeModuleState(): ComposeModuleState {
   }
   return composeModuleStateInstance;
 }
-
-/** @deprecated Use getComposeModuleState instead */
-export const getAnimateModuleState = getComposeModuleState;
-/** @deprecated Use ComposeModuleState instead */
-export type AnimateModuleState = ComposeModuleState;

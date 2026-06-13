@@ -22,36 +22,36 @@ export const COMPOSE_MODE_CONFIG: Record<AnimationMode, ComposeModeConfig> = {
     icon: "fa-play",
     label: "Single",
     gradient:
-      "linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%)",
-    accent: "var(--semantic-info)",
+      "linear-gradient(135deg, color-mix(in srgb, var(--semantic-info, #3b82f6) 20%, transparent) 0%, color-mix(in srgb, var(--semantic-info, #3b82f6) 10%, transparent) 100%)",
+    accent: "var(--semantic-info, #3b82f6)",
   },
   mirror: {
     icon: "fa-clone",
     label: "Mirror",
     gradient:
-      "linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(109, 40, 217, 0.1) 100%)",
-    accent: "#8b5cf6",
+      "linear-gradient(135deg, color-mix(in srgb, var(--feature-edit, #8b5cf6) 20%, transparent) 0%, color-mix(in srgb, var(--feature-edit, #8b5cf6) 10%, transparent) 100%)",
+    accent: "var(--feature-edit, #8b5cf6)",
   },
   tunnel: {
     icon: "fa-layer-group",
     label: "Tunnel",
     gradient:
-      "linear-gradient(135deg, rgba(236, 72, 153, 0.2) 0%, rgba(219, 39, 119, 0.1) 100%)",
-    accent: "#ec4899",
+      "linear-gradient(135deg, color-mix(in srgb, var(--accent-pink, #ec4899) 20%, transparent) 0%, color-mix(in srgb, var(--accent-pink, #ec4899) 10%, transparent) 100%)",
+    accent: "var(--accent-pink, #ec4899)",
   },
   grid: {
     icon: "fa-th-large",
     label: "Grid",
     gradient:
-      "linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%)",
-    accent: "var(--semantic-warning)",
+      "linear-gradient(135deg, color-mix(in srgb, var(--semantic-warning, #f59e0b) 20%, transparent) 0%, color-mix(in srgb, var(--semantic-warning, #f59e0b) 10%, transparent) 100%)",
+    accent: "var(--semantic-warning, #f59e0b)",
   },
   "side-by-side": {
     icon: "fa-columns",
     label: "Side by Side",
     gradient:
-      "linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.1) 100%)",
-    accent: "var(--semantic-success)",
+      "linear-gradient(135deg, color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent) 0%, color-mix(in srgb, var(--semantic-success, #22c55e) 10%, transparent) 100%)",
+    accent: "var(--semantic-success, #22c55e)",
   },
 };
 
