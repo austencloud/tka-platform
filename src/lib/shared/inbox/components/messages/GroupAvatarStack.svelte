@@ -143,7 +143,7 @@
   }
 
   .overflow-count {
-    font-size: 0.65rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text);
   }
