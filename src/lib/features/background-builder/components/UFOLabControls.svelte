@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { type UFOMood, type WobbleType } from "@austencloud/backgrounds";
   import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";
   import LabStatusBar from "$lib/shared/components/lab/LabStatusBar.svelte";
@@ -60,8 +61,12 @@
   let activeMoodTrigger = $state<UFOMood | null>(null);
   let activeWobbleTrigger = $state<WobbleType | null>(null);
 
+  // One-shot visual-feedback timers — cleared on destroy to avoid callbacks
+  // firing against a torn-down component.
+  const feedbackTimers = new Set<ReturnType<typeof setTimeout>>();
+
   // Status bar configuration
-  let statusChips = $derived(() => {
+  let statusChips = $derived.by(() => {
     const chips: { label: string; color: "cyan" | "blue" | "green" | "orange" | "red" | "purple" | "gray" }[] = [];
 
     // State chip
@@ -138,24 +143,31 @@
   function triggerMood(mood: UFOMood) {
     onSetMood(mood);
     activeMoodTrigger = mood;
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       if (activeMoodTrigger === mood) activeMoodTrigger = null;
     }, 300);
+    feedbackTimers.add(timer);
   }
 
   function triggerWobble(type: WobbleType) {
     onTriggerWobble(type);
     activeWobbleTrigger = type;
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       if (activeWobbleTrigger === type) activeWobbleTrigger = null;
     }, 300);
+    feedbackTimers.add(timer);
   }
+
+  onDestroy(() => {
+    for (const timer of feedbackTimers) clearTimeout(timer);
+    feedbackTimers.clear();
+  });
 </script>
 
 <div class="ufo-lab">
   <!-- Status Bar -->
   <LabStatusBar
-    chips={statusChips()}
+    chips={statusChips}
     energy={{ value: 1 - (status.tiredness ?? 0), label: "Energy" }}
     counters={statusCounters}
   />
@@ -281,7 +293,7 @@
   }
 
   .anim-label {
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.5);
     width: 36px;
     flex-shrink: 0;
@@ -300,7 +312,7 @@
     justify-content: center;
     gap: 6px;
     padding: 8px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.35);
   }
 

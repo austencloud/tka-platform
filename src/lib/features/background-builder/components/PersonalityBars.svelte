@@ -40,7 +40,7 @@
   }
 
   .trait-label {
-    font-size: 0.65rem;
+    font-size: var(--font-size-compact, 12px);
     color: #9ca3af;
     width: 60px;
     flex-shrink: 0;
@@ -59,5 +59,11 @@
     background: linear-gradient(90deg, #06b6d4, #22d3ee);
     border-radius: 3px;
     transition: width 0.3s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fill {
+      transition: none;
+    }
   }
 </style>

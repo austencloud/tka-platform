@@ -293,7 +293,7 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 6px;
     color: #9ca3af;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     cursor: pointer;
     transition: all 0.15s ease;
   }
@@ -400,7 +400,7 @@
   }
 
   .stat-label {
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     color: #6b7280;
     text-transform: uppercase;
   }
@@ -420,4 +420,20 @@
   .easter-egg-stat.active { background: rgba(250, 204, 21, 0.1); }
   .easter-egg-stat.active i { color: #facc15; opacity: 1; }
   .easter-egg-stat.active .stat-label { color: #facc15; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .action-btn,
+    .pattern-select,
+    .random-btn,
+    .reset-btn,
+    .placement-section input[type="range"]::-webkit-slider-thumb,
+    .easter-egg-stat i {
+      transition: none;
+    }
+
+    .random-btn:hover,
+    .placement-section input[type="range"]::-webkit-slider-thumb:hover {
+      transform: none;
+    }
+  }
 </style>

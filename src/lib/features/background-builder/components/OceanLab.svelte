@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getCoralSceneRenderer } from "../get-coral-scene-renderer";
   import { getOceanBackgroundSystem } from "../get-ocean-background-system";
   import {
@@ -30,9 +31,18 @@
     spawnJellyfish as spawnJellyfishAction,
   } from "../services/fish-behavior-controls";
 
+  // The backgrounds package's FishMoodManager reads `_manualMoodSetAt` at runtime
+  // (FishMoodManager.js) but the published FishMarineLife type omits it. Declare a
+  // local augmentation so we can write the timestamp without an `as any` cast.
+  type ManualMoodFish = FishMarineLife & { _manualMoodSetAt?: number };
+
   // Canvas reference
   let canvas: HTMLCanvasElement | null = $state(null);
   let isLoading = $state(true);
+  let initError = $state<string | null>(null);
+
+  // One-shot visual-feedback timers — tracked so they can be cleared on destroy.
+  const feedbackTimers = new Set<ReturnType<typeof setTimeout>>();
   let backgroundSystem: OceanBackgroundOrchestrator | null = $state(null);
   let animationFrame: number | null = $state(null);
   let lastFrameTime = 0;
@@ -81,7 +91,7 @@
   ]);
 
   // Status chips for selected fish
-  let statusChips = $derived(() => {
+  let statusChips = $derived.by(() => {
     if (!selectedFish) return [];
     return [
       { label: selectedFish.behavior, color: getBehaviorChipColor(selectedFish.behavior) },
@@ -146,6 +156,7 @@
       canvas.height = 600;
     }
 
+    initError = null;
     try {
       const system = getOceanBackgroundSystem();
       backgroundSystem = system;
@@ -169,7 +180,10 @@
       isLoading = false;
     } catch (error) {
       isLoading = false;
+      const message = error instanceof Error ? error.message : String(error);
+      initError = message;
       console.error("Failed to initialize Ocean Lab:", error);
+      toast.error(`Ocean Lab failed to load: ${message}`);
     }
   }
 
@@ -474,12 +488,13 @@
 
     f.mood = mood;
     f.moodTimer = 0;
-    (f as any)._manualMoodSetAt = performance.now();
+    (f as ManualMoodFish)._manualMoodSetAt = performance.now();
 
     activeMoodTrigger = mood;
-    setTimeout(() => {
+    const moodTimer = setTimeout(() => {
       if (activeMoodTrigger === mood) activeMoodTrigger = null;
     }, 300);
+    feedbackTimers.add(moodTimer);
   }
 
   function triggerWobble(wobbleType: FishMarineLife["wobbleType"]) {
@@ -494,9 +509,10 @@
     f.wobbleIntensity = 1;
 
     activeWobbleTrigger = wobbleType ?? null;
-    setTimeout(() => {
+    const wobbleTimer = setTimeout(() => {
       if (activeWobbleTrigger === wobbleType) activeWobbleTrigger = null;
     }, 300);
+    feedbackTimers.add(wobbleTimer);
   }
 
   onMount(() => {
@@ -506,6 +522,8 @@
 
   onDestroy(() => {
     stopAnimation();
+    for (const timer of feedbackTimers) clearTimeout(timer);
+    feedbackTimers.clear();
     if (backgroundSystem) {
       backgroundSystem.cleanup?.();
     }
@@ -542,7 +560,7 @@
   let activeRareTrigger = $state<string | null>(null);
 
   // Hunt stats for display
-  let huntStats = $derived(() => {
+  let huntStats = $derived.by(() => {
     const fishAnimator = backgroundSystem?.getFishAnimator?.();
     if (!fishAnimator) return { activeHunts: 0, totalHunts: 0, successfulCatches: 0, escapes: 0 };
     const huntingHandler = fishAnimator.getHuntingHandler?.();
@@ -604,9 +622,10 @@
     }
 
     activeRareTrigger = type;
-    setTimeout(() => {
+    const rareTimer = setTimeout(() => {
       if (activeRareTrigger === type) activeRareTrigger = null;
     }, 300);
+    feedbackTimers.add(rareTimer);
   }
 </script>
 
@@ -667,7 +686,7 @@
       <!-- Selected Fish Status -->
       {#if selectedFish}
         <LabStatusBar
-          chips={statusChips()}
+          chips={statusChips}
           energy={{ value: selectedFish.energy ?? 1, label: "Energy" }}
         />
       {/if}
@@ -731,13 +750,13 @@
       </div>
       <div class="hunt-stats">
         <span class="hunt-stat">
-          <i class="fas fa-bullseye"></i> {huntStats().activeHunts} active
+          <i class="fas fa-bullseye"></i> {huntStats.activeHunts} active
         </span>
         <span class="hunt-stat">
-          <i class="fas fa-check"></i> {huntStats().successfulCatches} catches
+          <i class="fas fa-check"></i> {huntStats.successfulCatches} catches
         </span>
         <span class="hunt-stat">
-          <i class="fas fa-running"></i> {huntStats().escapes} escapes
+          <i class="fas fa-running"></i> {huntStats.escapes} escapes
         </span>
       </div>
 
@@ -889,6 +908,16 @@
         <i class="fas fa-spinner fa-spin"></i>
         <span>Loading ocean...</span>
       </div>
+    {:else if initError}
+      <div class="error-overlay" role="alert">
+        <i class="fas fa-triangle-exclamation"></i>
+        <span class="error-title">Ocean Lab failed to load</span>
+        <span class="error-detail">{initError}</span>
+        <button class="retry-btn" onclick={regenerate}>
+          <i class="fas fa-rotate-right"></i>
+          Retry
+        </button>
+      </div>
     {/if}
     <canvas bind:this={canvas}></canvas>
   </div>
@@ -908,7 +937,7 @@
     flex-direction: column;
     gap: 12px;
     padding: 16px;
-    background: rgba(15, 15, 25, 0.8);
+    background: var(--theme-panel-bg, rgba(15, 15, 25, 0.8));
     border-radius: 16px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     overflow-y: auto;
@@ -1139,6 +1168,61 @@
     font-size: 1.5rem;
   }
 
+  .error-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px;
+    text-align: center;
+    background: rgba(10, 22, 40, 0.92);
+    color: var(--theme-error, #fb7185);
+    z-index: 10;
+  }
+
+  .error-overlay i {
+    font-size: 1.75rem;
+  }
+
+  .error-title {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .error-detail {
+    font-size: var(--font-size-min, 0.875rem);
+    color: #9ca3af;
+    max-width: 32ch;
+  }
+
+  .retry-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 16px;
+    background: rgba(34, 211, 238, 0.15);
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    border-radius: 10px;
+    color: #22d3ee;
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .retry-btn:hover {
+    background: rgba(34, 211, 238, 0.25);
+  }
+
+  .retry-btn:focus-visible {
+    outline: 2px solid #22d3ee;
+    outline-offset: 2px;
+  }
+
   @media (max-width: 800px) {
     .ocean-lab {
       grid-template-columns: 1fr;
@@ -1153,7 +1237,8 @@
 
   /* Accessibility: Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .nav-btn {
+    .nav-btn,
+    .retry-btn {
       transition: none;
     }
   }
