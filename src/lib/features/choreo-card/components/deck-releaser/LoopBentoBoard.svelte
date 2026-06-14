@@ -24,7 +24,6 @@
     LOOP_TYPE_LABELS,
   } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
-  import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
   import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import TransformPanel from "./TransformPanel.svelte";
@@ -143,8 +142,7 @@
   // Generate panel's LevelCard uses.
   const levelColor = $derived(DIFFICULTY_LEVELS[currentLevel]?.cssBg ?? c.level.color);
   const levelTextColor = $derived(DIFFICULTY_LEVELS[currentLevel]?.text ?? "white");
-  let loopComponents = $state<Set<LOOPComponent>>(parseLoopComponents(LOOPType.ROTATED));
-  $effect(() => { loopComponents = parseLoopComponents(currentLoop); });
+  const loopComponents = $derived(parseLoopComponents(currentLoop));
 
   const periodLabel = $derived(
     selectedSliceTypes.size === 2
@@ -207,7 +205,8 @@
   // ── actions ────────────────────────────────────────────────────────────────
   function pickLoop(lt: LOOPType) {
     rs.selectedLoopTypes = new Set([lt]);
-    loopComponents = parseLoopComponents(lt);
+    // loopComponents is $derived(parseLoopComponents(currentLoop)) and currentLoop
+    // tracks rs.selectedLoopTypes, so it recomputes automatically from the line above.
     showLoop = false;
     rs.persist();
   }
@@ -382,7 +381,13 @@
         <div class="pos-grid" class:all={posShowAll}>
           {#each posList as p (p.id)}
             {@const sel = rs.selectedStartPositionIds.has(String(p.startPosition))}
-            <button class="pos-cell" class:on={sel} aria-pressed={sel} onclick={() => togglePos(String(p.startPosition))}>
+            <button
+              class="pos-cell"
+              class:on={sel}
+              aria-pressed={sel}
+              aria-label={`Start position ${String(p.startPosition)}${sel ? " (selected)" : ""}`}
+              onclick={() => togglePos(String(p.startPosition))}
+            >
               <PictographContainer pictographData={p} />
               {#if sel}<span class="pos-check">✓</span>{/if}
             </button>
@@ -460,7 +465,7 @@
   /* Unify type scale across the cards (matches the prototype). */
   .card-grid :global(.value-number),
   .card-grid :global(.base-card .card-value) { font-size: 24px !important; line-height: 1.15 !important; }
-  .card-grid :global(.card-title) { font-size: 11px !important; letter-spacing: 0.8px !important; }
+  .card-grid :global(.card-title) { font-size: var(--font-size-compact, 12px) !important; letter-spacing: 0.8px !important; }
 
   .recipe {
     display: grid;
@@ -561,7 +566,7 @@
     transition: border-color 0.15s, background 0.15s, transform 0.1s;
   }
   .pos-cell:hover { background: rgba(255, 255, 255, 0.08); transform: translateY(-1px); }
-  .pos-cell.on { border-color: #14b8a6; background: color-mix(in srgb, #14b8a6 18%, transparent); }
+  .pos-cell.on { border-color: var(--pos-active-accent, #14b8a6); background: color-mix(in srgb, var(--pos-active-accent, #14b8a6) 18%, transparent); }
   /* Scope to the pictograph wrapper + its SVG only — NOT every descendant.
      `:global(*) { width/height: 100% }` blows up the prop groups inside the SVG. */
   .pos-cell :global(.pictograph),
@@ -575,7 +580,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #14b8a6;
+    background: var(--pos-active-accent, #14b8a6);
     color: #042f2a;
     font-size: 13px;
     font-weight: 900;
@@ -631,7 +636,7 @@
   .size-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .size-input:focus { outline: none; }
   .size-desc {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     letter-spacing: 0.8px;
     color: rgba(255, 255, 255, 0.75);

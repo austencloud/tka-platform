@@ -20,6 +20,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
   import { buildOverridePlacementBundle } from "$lib/shared/render/services/override-placement-bundle";
   import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
+  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // Render-schema version baked into every card cache key (memory + IndexedDB).
   // Bump when rendered pixels change for reasons NOT captured by the keyed
@@ -299,6 +300,22 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   // Track the render generation so stale renders are discarded
   let renderGeneration = 0;
 
+  // The blob cache (IndexedDB) is opportunistic, but a write failure on a large
+  // deck usually means storage OOM/quota — surface that once per render pass so
+  // the user understands why a re-open re-renders from scratch instead of failing
+  // silently. Reset on each new render generation so a later deck can warn again.
+  let blobCacheWarned = false;
+  function warnBlobCacheFailure(context: string, err: unknown): void {
+    console.error(`[PrintPreview] blob cache ${context} failed:`, err);
+    if (blobCacheWarned) return;
+    blobCacheWarned = true;
+    showToast(
+      "Couldn't cache rendered cards (storage may be full). Cards still print, but re-opening this deck will re-render them.",
+      "warning",
+      6000,
+    );
+  }
+
   $effect(() => {
     // Capture reactive dependencies
     const seqs = sequences;
@@ -320,6 +337,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     void _redProp;
 
     const generation = ++renderGeneration;
+    blobCacheWarned = false;
 
     if (seqs.length === 0) {
       renderedCards = [];
@@ -376,7 +394,18 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
       rebuildPairs(seqs, generation).then(pairs => {
         if (pairs && generation === renderGeneration) onPairsReady?.(pairs);
-      }).catch(err => console.error("[PrintPreview] rebuildPairs failed:", err));
+      }).catch(err => {
+        console.error("[PrintPreview] rebuildPairs failed:", err);
+        // Pairs power the print PDF — without them the download is blank. Tell the
+        // user instead of letting them download an empty file with no explanation.
+        if (generation === renderGeneration) {
+          showToast(
+            "Couldn't prepare the print pages. Try regenerating the deck before downloading the PDF.",
+            "error",
+            6000,
+          );
+        }
+      });
       return;
     }
 
@@ -477,7 +506,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
           Promise.all([canvasToBlob(frontCanvas), canvasToBlob(backCanvas)])
             .then(([fb, bb]) => deckCardBlobCache.set(cacheKey, fb, bb, label))
-            .catch(() => {});
+            .catch((err) => warnBlobCacheFailure("write", err));
         }
       } catch (err) {
         console.error(`[PrintPreview] Card ${i + 1} (${seq.word}) render failed:`, err);
@@ -568,7 +597,16 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
     const cacheKey = buildCacheKey(seq, stepCount, index);
     cardCache.delete(cacheKey);
-    deckCardBlobCache.delete(cacheKey).catch(() => {});
+    // A failed delete can leave a stale blob entry that shows the OLD card image
+    // after a fix — warn so the user knows a hard refresh may be needed.
+    deckCardBlobCache.delete(cacheKey).catch((err) => {
+      console.error("[PrintPreview] stale blob delete failed:", err);
+      showToast(
+        "Couldn't clear the old cached image. If this card still looks unchanged, refresh the page.",
+        "warning",
+        6000,
+      );
+    });
 
     // A single-card refresh is the explicit "I just fixed this card's arrows"
     // path — push the saved overrides to the worker before recomposing.
@@ -591,7 +629,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
     Promise.all([canvasToBlob(frontCanvas), canvasToBlob(backCanvas)])
       .then(([fb, bb]) => deckCardBlobCache.set(cacheKey, fb, bb, label))
-      .catch(() => {});
+      .catch((err) => warnBlobCacheFailure("write", err));
 
     renderedCards = renderedCards.map((c, i) => i === index ? card : c);
     return card.frontUrl;

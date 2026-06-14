@@ -334,8 +334,8 @@
   .page-guide-bottom { bottom: 3px; }
 
   .guide-text {
-    font-size: 7px;
-    color: #9a9a9a;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, #9a9a9a);
     font-family: Helvetica, Arial, sans-serif;
     letter-spacing: 0.02em;
     white-space: nowrap;
@@ -358,7 +358,7 @@
 
   .section-label {
     margin: 4px 0 0;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;

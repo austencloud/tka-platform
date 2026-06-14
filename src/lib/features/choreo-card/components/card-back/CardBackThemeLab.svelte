@@ -126,6 +126,8 @@
         class:selected={selectedVariant === i}
         onclick={() => selectVariant(i)}
         type="button"
+        aria-pressed={selectedVariant === i}
+        aria-label={`${variant.label} card-back variant — ${variant.description}`}
       >
         <div class="variant-label">{variant.label}</div>
         <div class="card-container">

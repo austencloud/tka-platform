@@ -141,9 +141,9 @@
   .count {
     margin-left: auto;
     padding: 1px 8px;
-    background: rgba(139, 92, 246, 0.15);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
     border-radius: 10px;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-accent, #a78bfa);
   }
@@ -176,7 +176,7 @@
   .archive-row:hover { border-color: rgba(255, 255, 255, 0.15); }
   .archive-row.active {
     border-color: var(--theme-accent, rgba(139, 92, 246, 0.5));
-    background: rgba(139, 92, 246, 0.08);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 8%, transparent);
   }
   .archive-item {
     flex: 1;
@@ -220,7 +220,7 @@
   }
   .archive-row:hover .trash-btn,
   .archive-row:focus-within .trash-btn { opacity: 1; }
-  .trash-btn:hover { color: #f87171; background: rgba(248, 113, 113, 0.12); }
+  .trash-btn:hover { color: var(--semantic-error, #f87171); background: color-mix(in srgb, var(--semantic-error, #f87171) 12%, transparent); }
   .confirm-btn {
     display: inline-flex;
     align-items: center;
@@ -234,10 +234,10 @@
     font-weight: 700;
     cursor: pointer;
   }
-  .confirm-yes { background: #ef4444; color: #fff; }
-  .confirm-yes:hover { background: #dc2626; }
+  .confirm-yes { background: var(--semantic-error, #ef4444); color: var(--theme-text, #fff); }
+  .confirm-yes:hover { background: color-mix(in srgb, var(--semantic-error, #ef4444) 85%, black); }
   .confirm-no { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.7); padding: 4px 8px; }
-  .confirm-no:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+  .confirm-no:hover { background: rgba(255, 255, 255, 0.15); color: var(--theme-text, #fff); }
   @media (hover: none) { .trash-btn { opacity: 1; } }
   .row-header { display: flex; align-items: center; gap: 8px; }
   .deck-badge {
@@ -246,9 +246,9 @@
     color: var(--theme-accent, #a78bfa);
     font-variant-numeric: tabular-nums;
   }
-  .row-date { margin-left: auto; font-size: 11px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.35)); }
+  .row-date { margin-left: auto; font-size: var(--font-size-compact, 12px); color: var(--theme-text-dim, rgba(255, 255, 255, 0.35)); }
   .row-summary { font-size: 13px; font-weight: 600; color: var(--theme-text, rgba(255, 255, 255, 0.85)); line-height: 1.3; }
-  .row-meta { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.4)); }
+  .row-meta { display: flex; align-items: center; gap: 10px; font-size: var(--font-size-compact, 12px); color: var(--theme-text-dim, rgba(255, 255, 255, 0.4)); }
   .card-count { font-weight: 600; }
   .word-count { font-variant-numeric: tabular-nums; }
   @media (prefers-reduced-motion: reduce) { .archive-row { transition: none; } }

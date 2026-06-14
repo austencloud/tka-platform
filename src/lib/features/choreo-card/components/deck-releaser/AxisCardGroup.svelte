@@ -63,7 +63,7 @@
   }
 
   .axis-hint {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     line-height: 1.3;
   }

@@ -1531,10 +1531,10 @@
     width: 100%;
     min-height: 44px;
     padding: 10px 16px;
-    background: #10b981;
+    background: var(--semantic-success, #10b981);
     border: none;
     border-radius: 10px;
-    color: #fff;
+    color: var(--theme-text, #fff);
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
@@ -1580,7 +1580,7 @@
 
   .released-icon {
     font-size: 48px;
-    color: #10b981;
+    color: var(--semantic-success, #10b981);
   }
 
   .released-title {
