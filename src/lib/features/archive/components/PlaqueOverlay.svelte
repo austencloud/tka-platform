@@ -16,6 +16,9 @@
 
 	let { content, visible, onClose }: Props = $props();
 
+	const titleId = "archive-plaque-title";
+	let dialogEl = $state<HTMLDivElement | null>(null);
+
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === "Escape" && visible) {
 			onClose();
@@ -27,17 +30,34 @@
 			onClose();
 		}
 	}
+
+	// Move focus into the overlay when it opens so keyboard users land on the
+	// dialog (and can reach the dismiss text / ESC) instead of staying on the canvas.
+	$effect(() => {
+		if (visible) {
+			dialogEl?.focus();
+		}
+	});
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
 {#if visible}
-	<div class="plaque-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="button" tabindex="-1">
+	<div
+		bind:this={dialogEl}
+		class="plaque-backdrop"
+		onclick={handleBackdropClick}
+		onkeydown={handleKeydown}
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby={titleId}
+		tabindex="-1"
+	>
 		<div class="plaque-container">
 			<!-- Main plaque -->
 			<div class="plaque-panel">
 				<div class="plaque-border">
-					<div class="plaque-title">{content.title}</div>
+					<div class="plaque-title" id={titleId}>{content.title}</div>
 					<div class="plaque-subtitle">
 						{#each content.subtitle.split("\n") as line}
 							<div>{line}</div>
@@ -80,9 +100,12 @@
 
 <style>
 	.plaque-backdrop {
+		/* Parchment tint RGB triple — one source for the rgba(200,180,140,…) family. */
+		--archive-parchment: 200, 180, 140;
+
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.85);
+		background: var(--archive-scrim, rgba(0, 0, 0, 0.85));
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -99,25 +122,25 @@
 		overflow-y: auto;
 		padding: 2rem;
 		scrollbar-width: thin;
-		scrollbar-color: rgba(200, 180, 140, 0.3) transparent;
+		scrollbar-color: rgba(var(--archive-parchment), 0.3) transparent;
 	}
 
 	.plaque-panel {
-		background: #1a1612;
-		border: 2px solid #3a3228;
+		background: var(--archive-panel-bg, #1a1612);
+		border: 2px solid var(--archive-panel-border, #3a3228);
 		box-shadow:
 			0 0 30px rgba(0, 0, 0, 0.5),
 			inset 0 0 60px rgba(0, 0, 0, 0.3);
 	}
 
 	.plaque-panel.secondary {
-		background: #161210;
-		border-color: #2a2420;
+		background: var(--archive-panel-bg-secondary, #161210);
+		border-color: var(--archive-panel-border-secondary, #2a2420);
 	}
 
 	.plaque-border {
 		padding: 2rem 2.5rem;
-		border: 1px solid #2a2218;
+		border: 1px solid var(--archive-inner-border, #2a2218);
 		margin: 6px;
 	}
 
@@ -126,7 +149,7 @@
 		font-size: 1.1rem;
 		letter-spacing: 0.25em;
 		text-align: center;
-		color: #d4c5a0;
+		color: var(--archive-parchment-bright, #d4c5a0);
 		margin-bottom: 0.75rem;
 		font-weight: 400;
 	}
@@ -135,7 +158,7 @@
 		text-align: center;
 		font-family: "Georgia", "Times New Roman", serif;
 		font-size: 0.85rem;
-		color: #a09070;
+		color: var(--archive-parchment-muted, #a09070);
 		line-height: 1.6;
 		font-style: italic;
 	}
@@ -145,8 +168,8 @@
 		background: linear-gradient(
 			to right,
 			transparent,
-			#3a3228 20%,
-			#3a3228 80%,
+			var(--archive-panel-border, #3a3228) 20%,
+			var(--archive-panel-border, #3a3228) 80%,
 			transparent
 		);
 		margin: 1.25rem 0;
@@ -156,14 +179,14 @@
 		font-family: "Georgia", "Times New Roman", serif;
 		font-size: 0.9rem;
 		line-height: 1.75;
-		color: #c8b890;
+		color: var(--archive-parchment-body, #c8b890);
 		text-align: justify;
 	}
 
 	.plaque-body.small {
 		font-size: 0.82rem;
 		line-height: 1.65;
-		color: #a89878;
+		color: var(--archive-parchment-dim, #a89878);
 	}
 
 	.plaque-body p {
@@ -179,7 +202,7 @@
 		font-size: 0.8rem;
 		letter-spacing: 0.2em;
 		text-align: center;
-		color: #a09070;
+		color: var(--archive-parchment-muted, #a09070);
 		font-weight: 400;
 	}
 
@@ -187,7 +210,7 @@
 		text-align: center;
 		font-family: "Georgia", "Times New Roman", serif;
 		font-size: 0.75rem;
-		color: #807060;
+		color: var(--archive-parchment-faint, #807060);
 		font-style: italic;
 		line-height: 1.6;
 	}
@@ -195,12 +218,18 @@
 	.plaque-dismiss {
 		text-align: center;
 		font-size: 0.75rem;
-		color: rgba(200, 180, 140, 0.4);
+		color: rgba(var(--archive-parchment), 0.4);
 		font-family: system-ui, sans-serif;
 	}
 
 	@keyframes fadeIn {
 		from { opacity: 0; }
 		to { opacity: 1; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.plaque-backdrop {
+			animation: none;
+		}
 	}
 </style>

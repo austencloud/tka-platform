@@ -66,10 +66,13 @@
 
 <style>
 	.archive-scene {
+		/* Parchment tint RGB triple — one source for the rgba(200,180,140,…) family. */
+		--archive-parchment: 200, 180, 140;
+
 		width: 100%;
 		height: 100%;
 		position: relative;
-		background: #050403;
+		background: var(--archive-void, #050403);
 		cursor: crosshair;
 	}
 
@@ -83,12 +86,12 @@
 		left: 50%;
 		width: 2px;
 		height: 2px;
-		background: rgba(200, 180, 140, 0.5);
+		background: rgba(var(--archive-parchment), 0.5);
 		border-radius: 50%;
 		transform: translate(-50%, -50%);
 		pointer-events: none;
 		z-index: 10;
-		box-shadow: 0 0 4px rgba(200, 180, 140, 0.3);
+		box-shadow: 0 0 4px rgba(var(--archive-parchment), 0.3);
 	}
 
 	.hint {
@@ -98,7 +101,7 @@
 		transform: translate(-50%, -50%);
 		font-family: "Georgia", "Times New Roman", serif;
 		font-size: 1.1rem;
-		color: rgba(200, 180, 140, 0.6);
+		color: rgba(var(--archive-parchment), 0.6);
 		letter-spacing: 0.1em;
 		pointer-events: none;
 		z-index: 10;
@@ -114,8 +117,8 @@
 		align-items: center;
 		gap: 0.75rem;
 		padding: 0.6rem 1.2rem;
-		background: rgba(0, 0, 0, 0.7);
-		border: 1px solid rgba(200, 180, 140, 0.3);
+		background: var(--archive-prompt-scrim, rgba(0, 0, 0, 0.7));
+		border: 1px solid rgba(var(--archive-parchment), 0.3);
 		border-radius: 6px;
 		z-index: 100;
 		pointer-events: none;
@@ -127,19 +130,25 @@
 		justify-content: center;
 		width: 2rem;
 		height: 2rem;
-		background: rgba(200, 180, 140, 0.15);
-		border: 1px solid rgba(200, 180, 140, 0.4);
+		background: rgba(var(--archive-parchment), 0.15);
+		border: 1px solid rgba(var(--archive-parchment), 0.4);
 		border-radius: 4px;
 		font-family: system-ui, sans-serif;
 		font-size: 0.9rem;
 		font-weight: 600;
-		color: #d4c5a0;
+		color: var(--archive-parchment-bright, #d4c5a0);
 	}
 
 	.prompt-text {
 		font-family: "Georgia", "Times New Roman", serif;
 		font-size: 0.9rem;
-		color: #c8b890;
+		color: var(--archive-parchment-body, #c8b890);
 		letter-spacing: 0.05em;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.hint {
+			transition: none;
+		}
 	}
 </style>
