@@ -8,6 +8,7 @@
 	import { connectState } from '../../state/connect-state.svelte';
 	import type { Friend } from '../../domain/models/connect-models';
 	import { t } from '$lib/shared/i18n/i18n.svelte';
+	import { toast } from '$lib/shared/toast/state/toast-state.svelte';
 
 	// Derived state
 	const friends = $derived(connectState.friends);
@@ -30,11 +31,23 @@
 	}
 
 	async function handleInvite(friend: Friend) {
-		await connectState.inviteUser(friend.userId);
+		const name = friend.nickname || friend.displayName;
+		try {
+			await connectState.inviteUser(friend.userId);
+			toast.success(`Invite sent to ${name}.`);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to send invite. Please try again.');
+		}
 	}
 
 	async function handleRemoveFriend(friend: Friend) {
-		await connectState.removeFriend(friend.userId);
+		const name = friend.nickname || friend.displayName;
+		try {
+			await connectState.removeFriend(friend.userId);
+			toast.success(`Removed ${name} from your friends.`);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to remove friend. Please try again.');
+		}
 	}
 </script>
 
@@ -270,6 +283,7 @@
 	}
 
 	.remove-button {
+		position: relative;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -281,6 +295,20 @@
 		color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
 		cursor: pointer;
 		transition: all 0.15s ease;
+	}
+
+	/* Expand the hit area to the 44px WCAG touch-target minimum without
+	   growing the visual button. */
+	.remove-button::before {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		min-width: var(--min-touch-target, 44px);
+		min-height: var(--min-touch-target, 44px);
+		width: 100%;
+		height: 100%;
 	}
 
 	.remove-button:hover {

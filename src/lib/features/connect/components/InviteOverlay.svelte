@@ -52,7 +52,7 @@
 			<!-- Content -->
 			<div class="invite-content" id="invite-description">
 				<div class="sender-info">
-					<span class="sender-name">{activeInvite.senderDisplayName}</span>
+					<span class="sender-name">{activeInvite.fromDisplayName}</span>
 					<span class="invite-action">invited you to sync</span>
 				</div>
 
@@ -68,7 +68,7 @@
 					class="decline-button"
 					onclick={handleDecline}
 					disabled={isConnecting}
-					aria-label={`Decline ${activeInvite.senderDisplayName}'s invite to sync ${activeInvite.sequenceWord}`}
+					aria-label={`Decline ${activeInvite.fromDisplayName}'s invite to sync ${activeInvite.sequenceWord}`}
 				>
 					<i class="fas fa-times" aria-hidden="true"></i>
 					Decline
@@ -78,7 +78,7 @@
 					class="accept-button"
 					onclick={handleAccept}
 					disabled={isConnecting}
-					aria-label={`Join ${activeInvite.senderDisplayName}'s session for ${activeInvite.sequenceWord}`}
+					aria-label={`Join ${activeInvite.fromDisplayName}'s session for ${activeInvite.sequenceWord}`}
 				>
 					{#if isConnecting}
 						<ProgressRing percent={-1} size={24} strokeWidth={2} />
@@ -281,6 +281,20 @@
 		cursor: pointer;
 		border-radius: 8px;
 		transition: all 0.15s ease;
+	}
+
+	/* Expand the hit area to the 44px WCAG touch-target minimum without
+	   growing the visual button. */
+	.dismiss-button::before {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		min-width: var(--min-touch-target, 44px);
+		min-height: var(--min-touch-target, 44px);
+		width: 100%;
+		height: 100%;
 	}
 
 	.dismiss-button:hover {

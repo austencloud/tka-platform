@@ -30,6 +30,7 @@ import type {
 	ParticipantFirebaseData
 } from '../domain/models/connect-models';
 import { SESSION_CONFIG, FIREBASE_PATHS } from '../domain/models/connect-constants';
+import { toast } from '$lib/shared/toast/state/toast-state.svelte';
 
 export class SessionManager {
 	private _currentSession: SyncSession | null = null;
@@ -251,6 +252,8 @@ export class SessionManager {
 			}
 		} catch (error) {
 			console.error('[SessionManager] Error leaving session:', error);
+			toast.error('Failed to leave session. Please check your connection and try again.');
+			throw error;
 		} finally {
 			// Stop watching
 			if (this.sessionUnsubscribe) {
@@ -273,6 +276,7 @@ export class SessionManager {
 			return;
 		}
 
+		const previous = this._displayPreference;
 		this._displayPreference = preference;
 
 		try {
@@ -281,6 +285,10 @@ export class SessionManager {
 			});
 		} catch (error) {
 			console.error('[SessionManager] Error updating display preference:', error);
+			// Roll back so local state matches what actually persisted.
+			this._displayPreference = previous;
+			toast.error('Failed to update display preference. Other participants may see stale data.');
+			throw error;
 		}
 	}
 
@@ -289,6 +297,7 @@ export class SessionManager {
 			return this._isSynced;
 		}
 
+		const previous = this._isSynced;
 		this._isSynced = !this._isSynced;
 
 		try {
@@ -297,6 +306,9 @@ export class SessionManager {
 			});
 		} catch (error) {
 			console.error('[SessionManager] Error toggling sync mode:', error);
+			// Roll back so the returned value reflects what actually persisted.
+			this._isSynced = previous;
+			toast.error('Failed to change sync mode. Please try again.');
 		}
 
 		return this._isSynced;
