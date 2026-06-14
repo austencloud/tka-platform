@@ -22,11 +22,17 @@ Each dimension is graded A+ through F. Thresholds are mechanical based on eviden
 
 | Grade | Criteria |
 |-------|----------|
-| A+ | 0 barrel imports, 0 Service suffixes, 0 utils/hooks dirs |
+| A+ | 0 barrel imports, 0 Service suffixes, no junk-drawer or stateful-logic utils |
 | A | 1-2 naming violations only |
-| B | 3-5 violations or utils file present |
+| B | 3-5 violations, or a generic `utils.ts`/`helpers.ts` dump, or stateful logic shipped as loose functions in `utils/` |
 | C | Barrel imports or 6+ violations |
 | F | God component, pervasive structural issues |
+
+> A `utils/` directory of **pure, stateless functions** named for what they hold
+> (e.g. `seeded-rng.ts`, `canonical-json.ts`) is NOT a violation — do not
+> downgrade for it. Flag only (1) junk-drawer names where unrelated helpers pile
+> up, or (2) stateful logic (cache/lifecycle/deps/coordination) disguised as a
+> utility, which belongs in a verb-named service. See the `code-style` skill.
 
 ### 2. Code Quality
 
