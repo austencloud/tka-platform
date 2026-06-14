@@ -109,7 +109,9 @@ const fragmentShader = /* glsl */ `
   float fbm(vec2 p) {
     float s = 0.0;
     float a = 0.5;
-    for (int i = 0; i < 3; i++) {
+    // 2 octaves: with thousands of overlapping sprites the density supplies the
+    // fine detail, so we keep the per-fragment cost low under heavy overdraw.
+    for (int i = 0; i < 2; i++) {
       s += a * vnoise(p);
       p *= 2.0;
       a *= 0.5;
@@ -118,30 +120,23 @@ const fragmentShader = /* glsl */ `
   }
 
   void main() {
-    // vUv.y: 0 = trailing base, 1 = leading tip (along velocity).
-    float y = clamp(vUv.y, 0.0, 1.0);
-    float xc = vUv.x - 0.5; // -0.5 .. 0.5 across the lick
+    // No flame-shaped sprite: each particle is a soft, formless, eroded blob.
+    // The flame is built by DENSITY + motion + color across thousands of these,
+    // never by any single sprite's outline - so nothing reads as a triangle.
+    float xc = vUv.x - 0.5; // -0.5 .. 0.5 across
+    float yc = vUv.y - 0.5; // -0.5 .. 0.5 along (velocity)
 
-    // Snake the centreline: low-freq noise sways the lick sideways, swaying
-    // more toward the tip so it curls instead of reading as a straight wedge.
-    float sway = fbm(vec2(y * 2.2 - uTime * 1.3 + vSeed * 6.0, vSeed * 17.0)) - 0.5;
-    float xw = xc + sway * 0.5 * y;
+    // Smooth elongated Gaussian. Tighter across than along so the velocity-
+    // stretched quad reads as a soft tongue, with zero hard edges anywhere.
+    float across = abs(xc) * 2.0;
+    float along = abs(yc) * 2.0;
+    float g = exp(-(across * across * 3.0 + along * along * 1.5));
 
-    // Curved width profile: rounded base, smooth taper to the tip. The pow()
-    // bows the sides outward so they are never straight triangle edges.
-    float widthEnv = smoothstep(0.0, 0.1, y) * pow(1.0 - y, 0.62);
-    float across = abs(xw) * 2.0;
-
-    // High-freq fBm frays the boundary in and out and is allowed to reach zero,
-    // so the silhouette is torn and notched (flame), not a filled wedge.
-    float fray = fbm(vec2(xc * 5.0 + vSeed * 23.0,
-                          y * 6.0 - uTime * 2.4 + vSeed * 11.0));
-    float edge = widthEnv * (0.55 + 0.8 * fray);
-    float body = smoothstep(edge, edge * 0.3, across);
-
-    // Vertical envelope: fade in at the base, fade out into a frayed tip.
-    float vert = smoothstep(0.0, 0.1, y) * (1.0 - smoothstep(0.5, 1.0, y));
-    float shape = pow(clamp(body * vert, 0.0, 1.0), 1.2);
+    // Scrolling fBm tears the blob into filaments and wispy edges. Low floor so
+    // thin areas vanish to nothing instead of holding a defined boundary.
+    float fray = fbm(vec2(xc * 4.5 + vSeed * 19.0,
+                          vUv.y * 4.5 - uTime * 2.2 + vSeed * 8.0));
+    float shape = clamp(g * (0.3 + 0.85 * fray), 0.0, 1.0);
     if (shape < 0.004) discard;
 
     // Blackbody ramp across normalized age.
@@ -185,13 +180,16 @@ export function createFireParticleMaterial(
       uWarm: { value: colors.warm.clone() },
       uCool: { value: colors.cool.clone() },
       uSmoke: { value: colors.smoke.clone() },
-      uEmissiveHot: { value: emissiveHot ?? 3.2 },
+      // Lower per-particle emission: isolated blobs stay faint wisps; the bright
+      // core comes from additive overlap where the flame is dense.
+      uEmissiveHot: { value: emissiveHot ?? 1.6 },
       uTime: { value: 0 },
-      // Stretch tuning (world-unit factors of aSize).
-      uLenBase: { value: 1.0 },
-      uLenPerSpeed: { value: 0.55 },
-      uLenMax: { value: 3.6 },
-      uWidth: { value: 0.55 },
+      // Stretch tuning (world-unit factors of aSize). Shorter + fatter than the
+      // first pass so sprites read as soft tongues, not long spikes.
+      uLenBase: { value: 0.9 },
+      uLenPerSpeed: { value: 0.28 },
+      uLenMax: { value: 2.2 },
+      uWidth: { value: 0.8 },
     },
     vertexShader,
     fragmentShader,

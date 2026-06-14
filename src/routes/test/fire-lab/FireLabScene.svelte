@@ -4,12 +4,13 @@
 
 <script lang="ts">
   /**
-   * FireLabScene - exercises the REAL production fire path (FireRenderer3D wick
-   * model + the V1 VolumetricFireMesh shader) under simulated staff motion.
+   * FireLabScene - exercises the REAL production fire path (FireRenderer3D's
+   * Lagrangian particle system + velocity-stretched flame-lick shader) under
+   * simulated staff motion.
    *
    * Three columns driven at increasing spin speed (rest / medium / fast) so the
-   * full wick range - vertical at rest, streaming behind the tip under motion,
-   * poofing on reversals - is visible side by side. This is shipped code, not a
+   * full range - rising tongues at rest, streaking trails under motion, a poof
+   * knot on reversals - is visible side by side. This is shipped code, not a
    * lab prototype: what renders here is what renders in the viewer.
    */
   import { onMount, onDestroy } from "svelte";

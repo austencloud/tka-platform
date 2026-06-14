@@ -39,18 +39,19 @@ import { QualityTier } from "../types";
 
 const MAX_FIRE_TIPS = 4;
 
-/** Per-tier particle pool sizes (shared across all active tips). */
+/** Per-tier particle pool sizes (shared across all active tips). High density
+ *  is what lets the soft faint blobs overlap into a continuous flame body. */
 const POOL_SIZE: Record<QualityTier, number> = {
-  [QualityTier.HIGH]: 4500,
-  [QualityTier.MEDIUM]: 2000,
-  [QualityTier.LOW]: 700,
+  [QualityTier.HIGH]: 7000,
+  [QualityTier.MEDIUM]: 3000,
+  [QualityTier.LOW]: 1000,
 };
 
 /** Continuous emission at the wick (particles/sec per tip) - the idle candle. */
 const EMIT_RATE: Record<QualityTier, number> = {
-  [QualityTier.HIGH]: 240,
-  [QualityTier.MEDIUM]: 150,
-  [QualityTier.LOW]: 70,
+  [QualityTier.HIGH]: 440,
+  [QualityTier.MEDIUM]: 270,
+  [QualityTier.LOW]: 120,
 };
 
 /**
