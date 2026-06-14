@@ -421,7 +421,7 @@
   .shuffle-button.active {
     background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
     border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
-    color: #fff;
+    color: var(--theme-text, #fff);
   }
 
   .shuffle-button:focus-visible {

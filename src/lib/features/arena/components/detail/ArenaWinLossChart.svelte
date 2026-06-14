@@ -33,7 +33,7 @@
       {cy}
       r={radius}
       fill="none"
-      stroke="#ef4444"
+      stroke="var(--semantic-error, #ef4444)"
       stroke-width="8"
       opacity="0.6"
     />
@@ -44,7 +44,7 @@
         {cy}
         r={radius}
         fill="none"
-        stroke="#22c55e"
+        stroke="var(--semantic-success, #22c55e)"
         stroke-width="8"
         stroke-dasharray="{winDash} {lossDash}"
         stroke-linecap="round"

@@ -42,25 +42,3 @@ export interface MatchupCandidate {
   sourceRef?: string;
 }
 
-// === From IMatchupSelector ===
-
-export interface MatchupCandidate {
-  entry: ArenaEntry;
-  rating: ArenaRating;
-  data: SequenceData;
-  /** Firestore path to the full sequence document (e.g., users/{uid}/sequences/{id}) */
-  sourceRef?: string;
-}
-
-// === From IStabilityAnalyzer ===
-
-export interface StabilityReport {
-  /** Percentage of entries with phi < STABLE_PHI_THRESHOLD */
-  convergencePercent: number;
-  /** Number of entries still in cold-start (< COLD_START_THRESHOLD matchups) */
-  coldStartCount: number;
-  /** Total entries in the pool */
-  totalEntries: number;
-  /** Average rating deviation across all entries */
-  averagePhi: number;
-}
