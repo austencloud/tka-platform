@@ -160,7 +160,9 @@ describe("migrateEffectsConfig", () => {
     expect((out.bloom as any).threshold).toBeUndefined();
     expect(out.bloom.color).toBe("#f472b6");
     expect(out.bloom.palette).toEqual(["#f472b6", "#fbbf24", "#22d3ee"]);
-    expect(out.bloom.colorMode).toBe("solid");
+    // v7 seeds colorMode "solid"; the v16→v17 lens-bloom remap then flips that
+    // default-echo to "prop-matched" (migrate() runs the full chain).
+    expect(out.bloom.colorMode).toBe("prop-matched");
     expect(out.bloom.falloff).toBe("smooth");
     expect(out.bloom.pulse).toBe(0);
     expect(out.bloom.pulseRate).toBe(1);
@@ -450,6 +452,55 @@ describe("migrateEffectsConfig", () => {
     };
     const out = migrateEffectsConfig(current);
     expect(out.led.brightness).toBe(5);
+  });
+
+  it("migrates pre-v17 bloom stale old defaults (intensity 0.95, colorMode solid)", () => {
+    const v16 = {
+      version: 16,
+      bloom: {
+        intensity: 0.95, radius: 90, color: "#f472b6",
+        palette: ["#f472b6", "#fbbf24", "#22d3ee"],
+        colorMode: "solid" as const, falloff: "smooth" as const,
+        pulse: 0, pulseRate: 1,
+      },
+    };
+    const out = migrateEffectsConfig(v16);
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.bloom.intensity).toBe(0.6);
+    expect(out.bloom.colorMode).toBe("prop-matched");
+    // Lens-bloom fields fill from defaults via the merge.
+    expect(out.bloom.streak).toBeGreaterThan(0);
+    expect(out.bloom.afterglow).toBeGreaterThan(0);
+  });
+
+  it("preserves a deliberate pre-v17 bloom (non-default intensity + non-solid mode)", () => {
+    const v16 = {
+      version: 16,
+      bloom: {
+        intensity: 0.8, radius: 90, color: "#f472b6",
+        palette: ["#f472b6", "#fbbf24", "#22d3ee"],
+        colorMode: "palette" as const, falloff: "smooth" as const,
+        pulse: 0, pulseRate: 1,
+      },
+    };
+    const out = migrateEffectsConfig(v16);
+    expect(out.bloom.intensity).toBe(0.8);
+    expect(out.bloom.colorMode).toBe("palette");
+  });
+
+  it("preserves a deliberate post-v17 bloom (intensity 0.95 / solid)", () => {
+    const current = {
+      version: EFFECTS_CONFIG_VERSION,
+      bloom: {
+        intensity: 0.95, radius: 90, color: "#f472b6",
+        palette: ["#f472b6", "#fbbf24", "#22d3ee"],
+        colorMode: "solid" as const, falloff: "smooth" as const,
+        pulse: 0, pulseRate: 1, streak: 0.55, spikes: 0.6, chromatic: 0.35, afterglow: 0.5,
+      },
+    };
+    const out = migrateEffectsConfig(current);
+    expect(out.bloom.intensity).toBe(0.95);
+    expect(out.bloom.colorMode).toBe("solid");
   });
 
   it("deep-merges a partial pulse block over defaults", () => {

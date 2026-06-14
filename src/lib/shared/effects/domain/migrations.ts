@@ -175,6 +175,18 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     input.led = { ...input.led, brightness: 3 };
   }
 
+  // v16 → v17: Bloom became lens bloom and its defaults changed - intensity
+  // 0.95 → 0.6 (the old 0.95 default was overkill against the new additive
+  // layers) and colorMode "solid" → "prop-matched". A persisted value equal to
+  // the OLD default is that default echoing back, not a user choice (same logic
+  // as the v16 LED remap), so remap each independently. Users who picked any
+  // other intensity / a non-solid mode keep their setting. The new streak/
+  // spikes/chromatic/afterglow fields resolve from defaults via the merge below.
+  if (version < 17 && input.bloom) {
+    if (input.bloom.intensity === 0.95) input.bloom.intensity = 0.6;
+    if (input.bloom.colorMode === "solid") input.bloom.colorMode = "prop-matched";
+  }
+
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,
