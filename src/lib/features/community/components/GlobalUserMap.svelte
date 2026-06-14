@@ -10,6 +10,11 @@
   import UserProfileMarker from "./UserProfileMarker.svelte";
   import { goto } from "$app/navigation";
 
+  // Google Maps loads via a JSONP-style callback whose name is generated at
+  // runtime. Type the dynamic window properties instead of casting to `any`.
+  type MapsCallbackWindow = Window &
+    Record<`__googleMapsCallback_${number}`, (() => void) | undefined>;
+
   let {
     locations = [],
     userLocation = null,
@@ -53,9 +58,10 @@
 
     return new Promise<void>((resolve, reject) => {
       // Use the callback approach so we know the API is fully initialized
-      const callbackName = `__googleMapsCallback_${Date.now()}`;
-      (window as any)[callbackName] = () => {
-        delete (window as any)[callbackName];
+      const callbackName = `__googleMapsCallback_${Date.now()}` as const;
+      const win = window as unknown as MapsCallbackWindow;
+      win[callbackName] = () => {
+        delete win[callbackName];
         resolve();
       };
 
@@ -64,7 +70,7 @@
       script.async = true;
       script.defer = true;
       script.onerror = () => {
-        delete (window as any)[callbackName];
+        delete win[callbackName];
         reject(new Error("Failed to load Google Maps"));
       };
       document.head.appendChild(script);
@@ -159,10 +165,11 @@
     selectedUser = null;
   }
 
-  // Recreate markers when locations change
+  // Recreate markers when locations change. Reading `locations.length`
+  // registers the prop as a reactive dependency; createMarkers() reads the
+  // current value via closure.
   $effect(() => {
-    // Explicitly track locations as a dependency
-    const currentLocations = locations;
+    locations.length;
     if (map) {
       createMarkers();
     }
@@ -250,9 +257,9 @@
   :global(.scan-pin) {
     width: 12px;
     height: 12px;
-    background: #10b981;
+    background: var(--semantic-success, #10b981);
     border-radius: 50%;
-    box-shadow: 0 0 8px #10b981;
+    box-shadow: 0 0 8px var(--semantic-success, #10b981);
   }
 
   :global(.scan-pin--new) {
@@ -261,7 +268,7 @@
 
   @keyframes scanPinPulse {
     0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.5); box-shadow: 0 0 16px #10b981; }
+    50% { transform: scale(1.5); box-shadow: 0 0 16px var(--semantic-success, #10b981); }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -269,12 +276,15 @@
   }
 
   .popup-overlay {
+    /* Scoped scrim tokens — no global overlay token exists yet. */
+    --scrim: color-mix(in srgb, black 30%, transparent);
+    --scrim-hover: color-mix(in srgb, black 40%, transparent);
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--scrim);
     z-index: 10;
     border: none;
     padding: 0;
@@ -282,7 +292,7 @@
   }
 
   .popup-overlay:hover {
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--scrim-hover);
   }
 
   .popup-overlay:focus-visible {

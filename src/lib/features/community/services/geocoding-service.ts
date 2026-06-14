@@ -5,7 +5,7 @@
 
 import type { CityLocation } from "./types";
 
-export class GeocodingService {
+export class Geocoder {
   constructor(private apiKey: string) {}
 
   async reverseGeocode(lat: number, lng: number): Promise<CityLocation> {
@@ -77,7 +77,7 @@ export class GeocodingService {
         },
       };
     } catch (error) {
-      console.error("❌ [GeocodingService] Reverse geocoding failed:", error);
+      console.error("❌ [Geocoder] Reverse geocoding failed:", error);
       throw new Error("Failed to determine your city. Please try again.");
     }
   }
@@ -121,7 +121,7 @@ export class GeocodingService {
       return null;
     } catch (error) {
       console.warn(
-        "⚠️ [GeocodingService] Failed to get city center, using user coords:",
+        "⚠️ [Geocoder] Failed to get city center, using user coords:",
         error
       );
       return null;

@@ -223,7 +223,7 @@
 
   .btn-accept {
     background: var(--theme-accent, #4a9eff);
-    color: #000000;
+    color: var(--text-on-accent, #000);
   }
 
   .btn-accept:hover {

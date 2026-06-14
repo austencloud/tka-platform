@@ -91,7 +91,7 @@
     padding: 20px;
     min-width: 280px;
     max-width: 320px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-elevated, 0 8px 32px rgba(0, 0, 0, 0.4));
     position: relative;
   }
 
@@ -210,7 +210,7 @@
     width: 100%;
     padding: 12px 16px;
     background: var(--theme-accent, #4a9eff);
-    color: #000000;
+    color: var(--text-on-accent, #000);
     border: none;
     border-radius: 10px;
     font-size: var(--font-size-min, 14px);
