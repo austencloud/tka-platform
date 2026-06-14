@@ -2,12 +2,12 @@ import type { EffectPreset, EffectPresetGroup } from "./types";
 
 export const ZAP_PRESETS: EffectPreset<"zap">[] = [
   {
-    id: "zap-thunder",
-    name: "Thunder",
+    id: "zap-storm",
+    name: "Storm",
     previewColor: "#88ccff",
     patch: {
-      intensity: 0.9, leftColor: "#88ccff", rightColor: "#88ccff",
-      frequency: 8, mode: "arc", branching: 0.4,
+      intensity: 0.9, leftColor: "#88ccff", rightColor: "#a25bff",
+      frequency: 10, branching: 0.5, style: "branching", mode: "arc",
     },
   },
   {
@@ -15,17 +15,18 @@ export const ZAP_PRESETS: EffectPreset<"zap">[] = [
     name: "Tesla",
     previewColor: "#a855f7",
     patch: {
-      intensity: 1.0, leftColor: "#a855f7", rightColor: "#a855f7",
-      frequency: 20, mode: "arc", branching: 0.6,
+      intensity: 1.0, leftColor: "#c084fc", rightColor: "#7c3aed",
+      frequency: 18, branching: 0.4, style: "plasma", mode: "arc",
     },
   },
   {
-    id: "zap-plasma",
-    name: "Plasma",
-    previewColor: "#ec4899",
+    id: "zap-web",
+    name: "Web",
+    previewColor: "#22d3ee",
+    previewColor2: "#9d7bff",
     patch: {
-      intensity: 0.7, leftColor: "#ec4899", rightColor: "#22d3ee",
-      frequency: 16, mode: "crackle", branching: 0.2,
+      intensity: 0.8, leftColor: "#22d3ee", rightColor: "#ec4899",
+      frequency: 12, branching: 0.2, style: "web", mode: "arc",
     },
   },
   {
@@ -42,6 +43,7 @@ export const ZAP_PRESET_GROUP: EffectPresetGroup = {
   presets: ZAP_PRESETS,
   getSummary: (state) => {
     const z = state.zap;
-    return `${z.mode} · freq ${z.frequency}/s · ${Math.round(z.intensity * 100)}%`;
+    const label = z.style === "branching" ? "storm" : z.style;
+    return `${label} · freq ${z.frequency}/s · ${Math.round(z.intensity * 100)}%`;
   },
 };

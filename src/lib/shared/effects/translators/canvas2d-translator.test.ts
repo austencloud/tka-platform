@@ -26,6 +26,7 @@ describe("resolveZap2D - per-hand color", () => {
       frequency: 12,
       mode: "arc",
       branching: 0.3,
+      style: "branching",
     };
     const out = resolveZap2D(intent);
     expect(out.leftColor).toBe("#ff0000");

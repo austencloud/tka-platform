@@ -47,6 +47,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     frequency: 12,
     mode: "arc",
     branching: 0.3,
+    style: "branching",
   },
 
   sparkles: {

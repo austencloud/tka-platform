@@ -187,6 +187,11 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     if (input.bloom.colorMode === "solid") input.bloom.colorMode = "prop-matched";
   }
 
+  // v17 → v18: zap gains a `style` selector ("branching" | "plasma" | "web").
+  // Net-new field, no migration code - absent style resolves to
+  // DEFAULT_EFFECTS_CONFIG.zap.style ("branching") via the merge below. The
+  // legacy `mode` field is retained but no longer drives rendering.
+
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,

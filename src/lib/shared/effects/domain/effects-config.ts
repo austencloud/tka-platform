@@ -14,7 +14,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 17;
+export const EFFECTS_CONFIG_VERSION = 18;
 
 export type EffectType =
   | "none"
@@ -104,10 +104,17 @@ export interface ZapIntent {
   rightColor: string;
   /** 1-30 strikes per second. */
   frequency: number;
-  /** 'arc' = tip-to-tip arc. 'crackle' = radiate from each tip. */
+  /** Legacy topology toggle, superseded by `style`. Retained for back-compat. */
   mode: "arc" | "crackle";
-  /** 0-1 - probability each arc segment spawns a branch. */
+  /** 0-1 - fork probability per bolt (branching style). */
   branching: number;
+  /**
+   * Discharge character:
+   * "branching" = forking storm bolts between blue↔red tip pairs (default).
+   * "plasma" = thick Tesla-coil conduits shedding sputter sparks.
+   * "web" = live mesh across every tip with charge pulses on the edges.
+   */
+  style: "branching" | "plasma" | "web";
 }
 
 export interface SparklesIntent {

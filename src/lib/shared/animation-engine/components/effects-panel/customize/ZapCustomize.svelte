@@ -17,31 +17,42 @@
 
   {#if state}
     <div class="zap-controls">
-      <!-- Mode (chip row) -->
+      <!-- Style (chip row) -->
       <div class="option-row">
-        <span class="option-label">Mode</span>
-        <div class="chip-group" role="radiogroup" aria-label="Zap mode">
+        <span class="option-label">Style</span>
+        <div class="chip-group" role="radiogroup" aria-label="Zap style">
           <button
             class="chip"
-            class:active={state.zap.mode === "arc"}
+            class:active={state.zap.style === "branching"}
             type="button"
             role="radio"
-            aria-checked={state.zap.mode === "arc"}
-            onclick={() => state.updateEffect("zap", { mode: "arc" })}
+            aria-checked={state.zap.style === "branching"}
+            onclick={() => state.updateEffect("zap", { style: "branching" })}
           >
             <i class="fas fa-bolt" aria-hidden="true"></i>
-            Arc
+            Storm
           </button>
           <button
             class="chip"
-            class:active={state.zap.mode === "crackle"}
+            class:active={state.zap.style === "plasma"}
             type="button"
             role="radio"
-            aria-checked={state.zap.mode === "crackle"}
-            onclick={() => state.updateEffect("zap", { mode: "crackle" })}
+            aria-checked={state.zap.style === "plasma"}
+            onclick={() => state.updateEffect("zap", { style: "plasma" })}
           >
-            <i class="fas fa-asterisk" aria-hidden="true"></i>
-            Crackle
+            <i class="fas fa-fire-flame-simple" aria-hidden="true"></i>
+            Plasma
+          </button>
+          <button
+            class="chip"
+            class:active={state.zap.style === "web"}
+            type="button"
+            role="radio"
+            aria-checked={state.zap.style === "web"}
+            onclick={() => state.updateEffect("zap", { style: "web" })}
+          >
+            <i class="fas fa-diagram-project" aria-hidden="true"></i>
+            Web
           </button>
         </div>
       </div>
@@ -76,20 +87,22 @@
         <span class="slider-value">{state.zap.frequency}/s</span>
       </div>
 
-      <!-- Branching -->
-      <div class="slider-row">
-        <label for="zap-branching">Branching</label>
-        <input
-          id="zap-branching"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.zap.branching}
-          oninput={(e) => state.updateEffect("zap", { branching: +(e.currentTarget as HTMLInputElement).value })}
-        />
-        <span class="slider-value">{Math.round(state.zap.branching * 100)}%</span>
-      </div>
+      <!-- Branching (Storm style only) -->
+      {#if state.zap.style === "branching"}
+        <div class="slider-row">
+          <label for="zap-branching">Branching</label>
+          <input
+            id="zap-branching"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.zap.branching}
+            oninput={(e) => state.updateEffect("zap", { branching: +(e.currentTarget as HTMLInputElement).value })}
+          />
+          <span class="slider-value">{Math.round(state.zap.branching * 100)}%</span>
+        </div>
+      {/if}
 
       <!-- Per-hand color pickers -->
       <div class="color-row">

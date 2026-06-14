@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Zap — direction comparison</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #06070d;
+    color: #e7e9f3;
+    font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    padding: 24px clamp(12px, 3vw, 40px) 60px;
+  }
+  h1 { font-size: 20px; font-weight: 650; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: #8b90a8; margin: 0 0 24px; max-width: 70ch; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+  }
+  .panel {
+    background: radial-gradient(120% 120% at 50% 0%, #0d1020 0%, #07080f 70%);
+    border: 1px solid #1b1f33;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel header {
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid #161a2c;
+  }
+  .panel h2 { font-size: 15px; margin: 0 0 2px; font-weight: 600; }
+  .panel p { margin: 0; color: #797f99; font-size: 12.5px; }
+  .panel canvas { width: 100%; aspect-ratio: 1 / 1; display: block; }
+  .controls {
+    display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+    margin: 0 0 20px;
+  }
+  .controls label { display: flex; align-items: center; gap: 8px; color: #9aa0bb; font-size: 13px; }
+  input[type="range"] { accent-color: #7c8cff; }
+  button {
+    background: #141931; color: #cdd2ee; border: 1px solid #283156;
+    border-radius: 9px; padding: 7px 14px; font-size: 13px; cursor: pointer;
+  }
+  button:hover { background: #1b2240; }
+</style>
+</head>
+<body>
+  <h1>Zap — three directions, live</h1>
+  <p class="sub">
+    Simulated prop tips (two blue, two red) orbit each panel so you can judge the
+    look <em>and</em> the motion reactivity. Drag <strong>Speed</strong> up to see how
+    each style responds to faster spinning. These are throwaway sketches, not the
+    real renderer — pick the character and I build it for real.
+  </p>
+
+  <div class="controls">
+    <label>Speed
+      <input id="speed" type="range" min="0.2" max="3" step="0.1" value="1" />
+    </label>
+    <label>Path
+      <select id="path">
+        <option value="orbit">Orbit</option>
+        <option value="figure8">Figure-8</option>
+        <option value="lissajous">Lissajous</option>
+      </select>
+    </label>
+    <button id="pause">Pause</button>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <header><h2>① Branching storm lightning</h2><p>Forking bolts · stepped-leader core · flicker · energy ∝ speed</p></header>
+      <canvas id="c1" width="600" height="600"></canvas>
+    </div>
+    <div class="panel">
+      <header><h2>② Tesla-coil plasma</h2><p>Thick sustained arc · heavy bloom · sputtering sparks</p></header>
+      <canvas id="c2" width="600" height="600"></canvas>
+    </div>
+    <div class="panel">
+      <header><h2>③ Electric web / field</h2><p>Mesh of arcs across all tips · charge pulses on edges</p></header>
+      <canvas id="c3" width="600" height="600"></canvas>
+    </div>
+  </div>
+
+<script>
+const BLUE = "#5bc8ff", RED = "#ff5b78";
+const speedEl = document.getElementById("speed");
+const pathEl = document.getElementById("path");
+const pauseBtn = document.getElementById("pause");
+let paused = false;
+pauseBtn.onclick = () => { paused = !paused; pauseBtn.textContent = paused ? "Play" : "Pause"; };
+
+// rand helper
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+// ── Tip simulation ──────────────────────────────────────────────
+// 4 tips: 0,1 blue (one prop, two staff ends), 2,3 red.
+const tips = [
+  { x: 0, y: 0, px: 0, py: 0, prop: 0, color: BLUE },
+  { x: 0, y: 0, px: 0, py: 0, prop: 0, color: BLUE },
+  { x: 0, y: 0, px: 0, py: 0, prop: 1, color: RED },
+  { x: 0, y: 0, px: 0, py: 0, prop: 1, color: RED },
+];
+
+function updateTips(t, W, H) {
+  const sp = +speedEl.value;
+  const mode = pathEl.value;
+  const cx = W / 2, cy = H / 2;
+  const armBlue = W * 0.17, armRed = W * 0.17;
+  // Two prop centers orbit gently; each prop's two tips are opposite staff ends.
+  const bAng = t * 1.1 * sp;
+  const rAng = -t * 1.0 * sp + 1.7;
+  let bcx, bcy, rcx, rcy;
+  if (mode === "figure8") {
+    bcx = cx + Math.sin(t * 0.9 * sp) * W * 0.22;
+    bcy = cy + Math.sin(t * 1.8 * sp) * H * 0.16;
+    rcx = cx + Math.sin(t * 0.9 * sp + 2.1) * W * 0.22;
+    rcy = cy + Math.sin(t * 1.8 * sp + 2.1) * H * 0.16;
+  } else if (mode === "lissajous") {
+    bcx = cx + Math.sin(t * 0.8 * sp) * W * 0.24;
+    bcy = cy + Math.cos(t * 1.3 * sp) * H * 0.2;
+    rcx = cx + Math.cos(t * 1.1 * sp) * W * 0.24;
+    rcy = cy + Math.sin(t * 0.7 * sp) * H * 0.2;
+  } else {
+    bcx = cx - W * 0.16 + Math.cos(t * 0.7 * sp) * W * 0.1;
+    bcy = cy + Math.sin(t * 0.7 * sp) * H * 0.1;
+    rcx = cx + W * 0.16 + Math.cos(t * 0.7 * sp + 1) * W * 0.1;
+    rcy = cy + Math.sin(t * 0.7 * sp + 1) * H * 0.1;
+  }
+  setTip(0, bcx + Math.cos(bAng) * armBlue, bcy + Math.sin(bAng) * armBlue);
+  setTip(1, bcx - Math.cos(bAng) * armBlue, bcy - Math.sin(bAng) * armBlue);
+  setTip(2, rcx + Math.cos(rAng) * armRed, rcy + Math.sin(rAng) * armRed);
+  setTip(3, rcx - Math.cos(rAng) * armRed, rcy - Math.sin(rAng) * armRed);
+}
+function setTip(i, x, y) {
+  const tp = tips[i];
+  tp.px = tp.x; tp.py = tp.y; tp.x = x; tp.y = y;
+}
+const speedOf = (tp) => Math.hypot(tp.x - tp.px, tp.y - tp.py);
+
+// ── Shared: jagged bolt point generator (midpoint displacement) ──
+function boltPoints(ax, ay, bx, by, displace, out) {
+  if (displace < 3) { out.push([bx, by]); return; }
+  const mx = (ax + bx) / 2 + rnd(-1, 1) * displace;
+  const my = (ay + by) / 2 + rnd(-1, 1) * displace;
+  boltPoints(ax, ay, mx, my, displace / 2, out);
+  boltPoints(mx, my, bx, by, displace / 2, out);
+}
+
+function strokePath(ctx, pts, width, glow, coreCol, glowCol, alpha) {
+  if (pts.length < 2) return;
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  // glow pass
+  ctx.shadowBlur = glow;
+  ctx.shadowColor = glowCol;
+  ctx.strokeStyle = glowCol;
+  ctx.globalAlpha = alpha * 0.6;
+  ctx.lineWidth = width * 2.2;
+  ctx.lineJoin = "round"; ctx.lineCap = "round";
+  trace(ctx, pts); ctx.stroke();
+  // hot core
+  ctx.shadowBlur = glow * 0.4;
+  ctx.strokeStyle = "#ffffff";
+  ctx.globalAlpha = alpha;
+  ctx.lineWidth = width;
+  trace(ctx, pts); ctx.stroke();
+  ctx.restore();
+}
+function trace(ctx, pts) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+}
+
+// ── ① Branching storm lightning ─────────────────────────────────
+function drawBranching(ctx, W, H, t) {
+  ctx.clearRect(0, 0, W, H);
+  // pairs: blue end ↔ red end (the circuit between props)
+  const pairs = [[0, 2], [1, 3]];
+  for (const [a, b] of pairs) {
+    const A = tips[a], B = tips[b];
+    const energy = Math.min(1, (speedOf(A) + speedOf(B)) / 22); // 0..1 from motion
+    const strikes = 1 + Math.round(energy * 2);                 // multi-strike on fast moves
+    const dist = Math.hypot(B.x - A.x, B.y - A.y);
+    for (let s = 0; s < strikes; s++) {
+      const flick = rnd(0.45, 1) * (0.5 + energy * 0.5);
+      const pts = [[A.x, A.y]];
+      boltPoints(A.x, A.y, B.x, B.y, Math.min(dist * 0.28, 70), pts);
+      const col = A.color;
+      strokePath(ctx, pts, 1.6 + energy * 1.6, 16 + energy * 14, "#fff", col, flick);
+      // branches off random interior nodes
+      const branches = 1 + Math.round(energy * 3);
+      for (let k = 0; k < branches; k++) {
+        const idx = (Math.random() * (pts.length - 2) | 0) + 1;
+        const [ox, oy] = pts[idx];
+        const ang = Math.atan2(oy - A.y, ox - A.x) + rnd(-0.9, 0.9);
+        const len = dist * rnd(0.12, 0.32);
+        const ex = ox + Math.cos(ang) * len, ey = oy + Math.sin(ang) * len;
+        const bp = [[ox, oy]];
+        boltPoints(ox, oy, ex, ey, Math.min(len * 0.3, 28), bp);
+        strokePath(ctx, bp, 0.9 + energy, 10, "#fff", col, flick * 0.6);
+      }
+    }
+    // tip terminals glow
+    terminal(ctx, A); terminal(ctx, B);
+  }
+}
+function terminal(ctx, tp) {
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  const g = ctx.createRadialGradient(tp.x, tp.y, 0, tp.x, tp.y, 22);
+  g.addColorStop(0, "rgba(255,255,255,0.9)");
+  g.addColorStop(0.3, tp.color);
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(tp.x - 22, tp.y - 22, 44, 44);
+  ctx.restore();
+}
+
+// ── ② Tesla-coil plasma ─────────────────────────────────────────
+const sparks = [];
+function drawPlasma(ctx, W, H, t) {
+  // fade prev frame for a touch of persistence
+  ctx.save();
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = "rgba(6,7,13,0.35)";
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+  const pairs = [[0, 2], [1, 3]];
+  for (const [a, b] of pairs) {
+    const A = tips[a], B = tips[b];
+    const energy = Math.min(1, (speedOf(A) + speedOf(B)) / 22);
+    // a few overlapping smooth wobbling conduits = thick plasma
+    for (let layer = 0; layer < 3; layer++) {
+      const midx = (A.x + B.x) / 2 + rnd(-1, 1) * (18 + energy * 30);
+      const midy = (A.y + B.y) / 2 + rnd(-1, 1) * (18 + energy * 30);
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.shadowBlur = 34 - layer * 8;
+      ctx.shadowColor = layer === 0 ? "#bcd4ff" : A.color;
+      ctx.strokeStyle = layer === 0 ? "#ffffff" : A.color;
+      ctx.globalAlpha = layer === 0 ? 0.9 : 0.5;
+      ctx.lineWidth = (layer === 0 ? 3 : 9 - layer * 2);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(A.x, A.y);
+      ctx.quadraticCurveTo(midx, midy, B.x, B.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+    // sputter sparks off the arc
+    const n = 1 + Math.round(energy * 4);
+    for (let i = 0; i < n; i++) {
+      const f = Math.random();
+      const sx = A.x + (B.x - A.x) * f, sy = A.y + (B.y - A.y) * f;
+      sparks.push({ x: sx, y: sy, vx: rnd(-2, 2), vy: rnd(-2.5, 1), life: 1, col: A.color });
+    }
+  }
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i];
+    s.x += s.vx; s.y += s.vy; s.vy += 0.12; s.life -= 0.05;
+    if (s.life <= 0) { sparks.splice(i, 1); continue; }
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.fillStyle = `rgba(255,255,255,${s.life})`;
+    ctx.shadowBlur = 8; ctx.shadowColor = s.col;
+    ctx.beginPath(); ctx.arc(s.x, s.y, 1.6, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ── ③ Electric web / field ──────────────────────────────────────
+let pulse = 0;
+function drawWeb(ctx, W, H, t) {
+  ctx.clearRect(0, 0, W, H);
+  pulse = (pulse + 0.02 * +speedEl.value) % 1;
+  // every pair of tips connected
+  for (let i = 0; i < tips.length; i++) {
+    for (let j = i + 1; j < tips.length; j++) {
+      const A = tips[i], B = tips[j];
+      const dist = Math.hypot(B.x - A.x, B.y - A.y);
+      const pts = [[A.x, A.y]];
+      boltPoints(A.x, A.y, B.x, B.y, Math.min(dist * 0.18, 34), pts);
+      const sameProp = A.prop === B.prop;
+      const col = sameProp ? A.color : "#9d7bff";
+      strokePath(ctx, pts, sameProp ? 1.2 : 0.8, 8, "#fff", col, sameProp ? 0.7 : 0.45);
+      // charge dot travelling the edge
+      const f = (pulse + (i * 0.13 + j * 0.07)) % 1;
+      const cxp = A.x + (B.x - A.x) * f, cyp = A.y + (B.y - A.y) * f;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = "#ffffff"; ctx.shadowBlur = 12; ctx.shadowColor = col;
+      ctx.beginPath(); ctx.arc(cxp, cyp, 2.4, 0, 7); ctx.fill();
+      ctx.restore();
+    }
+  }
+  for (const tp of tips) terminal(ctx, tp);
+}
+
+// ── Driver ──────────────────────────────────────────────────────
+const c1 = document.getElementById("c1").getContext("2d");
+const c2 = document.getElementById("c2").getContext("2d");
+const c3 = document.getElementById("c3").getContext("2d");
+const W = 600, H = 600;
+let t = 0;
+function frame() {
+  if (!paused) {
+    t += 0.016;
+    updateTips(t, W, H);
+    drawBranching(c1, W, H, t);
+    drawPlasma(c2, W, H, t);
+    drawWeb(c3, W, H, t);
+  }
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>
