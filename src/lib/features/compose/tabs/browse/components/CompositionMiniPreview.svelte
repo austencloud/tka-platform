@@ -106,8 +106,8 @@
 		justify-content: center;
 		background: linear-gradient(
 			135deg,
-			rgba(99, 102, 241, 0.08) 0%,
-			rgba(99, 102, 241, 0.03) 100%
+			color-mix(in srgb, var(--theme-accent, #6366f1) 8%, transparent) 0%,
+			color-mix(in srgb, var(--theme-accent, #6366f1) 3%, transparent) 100%
 		);
 	}
 

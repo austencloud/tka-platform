@@ -195,7 +195,7 @@
 	}
 
 	.anim-cell.has-sequence {
-		background: #080812;
+		background: var(--theme-panel-bg, #080812);
 	}
 
 	.anim-cell.empty-cell {

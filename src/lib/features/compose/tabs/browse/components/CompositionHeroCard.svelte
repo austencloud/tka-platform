@@ -118,6 +118,7 @@ import { resolveThumbnail, generatePlaceholderSvg } from "$lib/features/compose/
 			class="favorite-btn"
 			class:active={composition.isFavorite}
 			title={composition.isFavorite ? "Remove from favorites" : "Add to favorites"}
+			aria-label={composition.isFavorite ? "Remove from favorites" : "Add to favorites"}
 			onclick={handleFavoriteClick}
 		>
 			<i class="fas fa-heart" aria-hidden="true"></i>
@@ -125,10 +126,10 @@ import { resolveThumbnail, generatePlaceholderSvg } from "$lib/features/compose/
 
 		<!-- Quick action overlay -->
 		<div class="action-overlay">
-			<button type="button" class="quick-action" onclick={handlePlay} title="Play">
+			<button type="button" class="quick-action" onclick={handlePlay} title="Play" aria-label="Play">
 				<i class="fas fa-play" aria-hidden="true"></i>
 			</button>
-			<button type="button" class="quick-action" onclick={handleEdit} title="Edit">
+			<button type="button" class="quick-action" onclick={handleEdit} title="Edit" aria-label="Edit">
 				<i class="fas fa-pen" aria-hidden="true"></i>
 			</button>
 		</div>
@@ -349,7 +350,7 @@ import { resolveThumbnail, generatePlaceholderSvg } from "$lib/features/compose/
 		border-radius: 4px;
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
 		font-weight: 600;
-		font-size: 11px;
+		font-size: var(--font-size-compact, 12px);
 	}
 
 	.detail {
