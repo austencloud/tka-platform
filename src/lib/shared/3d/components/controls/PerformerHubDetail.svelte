@@ -421,7 +421,10 @@
       {#if activeTab === "effects"}
         <div id="hub-panel-effects" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-effects">
           <div class="effects-section">
-            <EffectsSettingsPanel performer={performer ?? allPerformers[0] ?? null} />
+            <EffectsSettingsPanel
+              performer={isAllMode ? null : performer}
+              performers={isAllMode ? allPerformers : null}
+            />
           </div>
         </div>
       {/if}

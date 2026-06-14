@@ -6,11 +6,15 @@
    * echo/bloom/water/bubbles/petals/smoke/ink) + 1 scene-level motion modifier.
    * Uses chip-style buttons consistent with GridSettingsPanel.
    *
-   * Accepts an optional `performer` prop. When provided, reads/writes that
-   * performer's single `settings.effect` (radio) via `performer.setEffect()`,
-   * inheriting the global default when the override is null. When absent, reads
-   * the unified EffectsConfig via `getEffectsConfigContext()` plus the
-   * Scene3DRenderConfig for motion.
+   * Three scopes, in precedence order:
+   *   - `performers` (All-Performers mode): reads/writes EVERY performer's
+   *     `setEffect()` as a group radio. The grid shows an effect active only
+   *     when all performers share it; toggling broadcasts to all.
+   *   - `performer` (single): reads/writes that one performer's override,
+   *     inheriting the global default when the override is null.
+   *   - neither (global): reads/writes the unified EffectsConfig wildcard via
+   *     `getEffectsConfigContext()`.
+   * Motion is a scene-level modifier in every scope.
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
@@ -29,8 +33,14 @@
 
   interface Props {
     performer?: AvatarInstanceState | null;
+    /** All-Performers mode: apply every change to this whole group. */
+    performers?: AvatarInstanceState[] | null;
   }
-  let { performer = null }: Props = $props();
+  let { performer = null, performers = null }: Props = $props();
+
+  // Non-empty group => broadcast scope (All-Performers). Takes precedence over
+  // the single-performer path.
+  const multi = $derived(performers && performers.length > 0 ? performers : null);
 
   const config = getEffectsConfigContext() ?? createEffectsConfigState();
   const scene3DRender = getScene3DRenderContext() ?? createScene3DRenderState();
@@ -54,15 +64,22 @@
   // The global default a performer inherits when it has no override is the
   // effects-config wildcard.
   const inheritedEffect = $derived(config.config.tipEffectMap["*"]?.effect ?? "none");
-  const performerEffect = $derived(
-    performer ? (performer.rawEffect ?? inheritedEffect) : null,
-  );
+  const performerEffect = $derived.by<EffectKey | null>(() => {
+    if (multi) {
+      // The group shares an effect only when every performer resolves to the
+      // same one; a mixed group reads as "none" (nothing highlighted).
+      const first = multi[0]!.rawEffect ?? inheritedEffect;
+      const allSame = multi.every((p) => (p.rawEffect ?? inheritedEffect) === first);
+      return allSame ? first : "none";
+    }
+    return performer ? (performer.rawEffect ?? inheritedEffect) : null;
+  });
 
   function isEnabled(key: EffectKey): boolean {
     if (key === "motion") {
       return scene3DRender.motion.blur || scene3DRender.motion.speedLines;
     }
-    if (performer) {
+    if (multi || performer) {
       return performerEffect === key;
     }
     return config.config.tipEffectMap["*"]?.effect === key;
@@ -75,6 +92,13 @@
         blur: !motionEnabled,
         speedLines: !motionEnabled,
       });
+      return;
+    }
+    if (multi) {
+      // Group radio: if every performer already has this effect, clicking it
+      // turns it off for all; otherwise set every performer to it.
+      const allActive = multi.every((p) => (p.rawEffect ?? inheritedEffect) === key);
+      for (const p of multi) p.setEffect(allActive ? "none" : (key as EffectType));
       return;
     }
     if (performer) {
@@ -146,8 +170,8 @@
     {/each}
   </div>
 
-  <!-- Trail Mode + Tracking (when trails enabled globally) -->
-  {#if isEnabled("trails") && !performer}
+  <!-- Trail Mode + Tracking (global-scope only; the params are scene-wide) -->
+  {#if isEnabled("trails") && !performer && !multi}
     <div class="sub-control">
       <span class="sub-label">{t("viewer3d_color")}</span>
       <div class="mode-chips">
@@ -229,7 +253,7 @@
   {/if}
 
   <!-- Quick Info -->
-  {#if performer}
+  {#if multi || performer}
     {#if performerEffect && performerEffect !== "none"}
       <div class="active-count">1 effect active</div>
     {/if}
