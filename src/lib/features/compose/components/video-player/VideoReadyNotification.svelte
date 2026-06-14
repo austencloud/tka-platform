@@ -29,7 +29,11 @@
     position: absolute;
     top: 12px;
     right: 12px;
-    background: linear-gradient(135deg, var(--semantic-success), #16a34a);
+    background: linear-gradient(
+      135deg,
+      var(--semantic-success),
+      var(--semantic-success-strong, #16a34a)
+    );
     color: white;
     padding: 10px 16px;
     border-radius: 10px;

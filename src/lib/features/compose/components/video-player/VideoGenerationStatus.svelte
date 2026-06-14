@@ -28,7 +28,7 @@
         Complete!
       {/if}
     </div>
-    <button class="cancel-btn" onclick={onCancel}>Cancel</button>
+    <button class="cancel-btn" type="button" onclick={onCancel}>Cancel</button>
   </div>
   <div
     class="progress-bar"
@@ -100,7 +100,17 @@
 
   .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #4ade80, var(--semantic-success));
+    background: linear-gradient(
+      90deg,
+      var(--semantic-success-bright, #4ade80),
+      var(--semantic-success)
+    );
     transition: width var(--duration-normal) ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .progress-fill {
+      transition: none;
+    }
   }
 </style>
