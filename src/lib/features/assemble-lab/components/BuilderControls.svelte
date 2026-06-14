@@ -62,6 +62,15 @@ import { getSoloPropSaveOrchestrator } from "$lib/features/library/get-solo-prop
    * Derive MotionType from a builder step's start/end positions.
    * Same heuristic as the assemble-state arc math: same point = static,
    * diametrically opposite = dash, different = shift (pro or anti).
+   *
+   * NOT delegated to the shared `hand-path-motion-calculator.calculateMotionType`:
+   * that returns the `HandMotionType` enum (STATIC/SHIFT/DASH/HASH_*), requires a
+   * `gridMode` argument, and throws on positions outside the active set. This
+   * function returns the distinct `MotionType` enum (adds FLOAT and the PRO/ANTI
+   * split), needs no grid mode, and must never throw for the save path. Different
+   * return type + signature means it is not a clean drop-in replacement.
+   * StepStrip.resolveMotionType already wraps the shared calculator where the
+   * grid-mode-aware HandMotionType→MotionType mapping is appropriate.
    */
   function deriveMotionType(step: BuilderStep): MotionType {
     if (step.turnCount < 0) return MotionType.FLOAT;

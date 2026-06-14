@@ -1,7 +1,34 @@
 import type { CaptureMode, InterpretMode, TimedStepRecord } from "../services/timing-interpreter";
 import { computeDurations } from "../services/timing-interpreter";
 
-export function createTimingState() {
+/**
+ * Public shape of the timing capture/playback state. Declared explicitly so the
+ * API surface consumed by components stays stable under refactors.
+ */
+export interface TimingState {
+  readonly records: TimedStepRecord[];
+  readonly captureMode: CaptureMode;
+  readonly interpretMode: InterpretMode;
+  readonly bpm: number;
+  readonly subdivision: 4 | 8 | 16;
+  readonly durations: number[];
+  readonly hasTimingData: boolean;
+  readonly isReRecording: boolean;
+  readonly reRecordIndex: number;
+
+  recordKeydown(): void;
+  recordKeyup(): void;
+  startReRecord(totalSteps: number): void;
+  advanceReRecord(): boolean;
+  finishReRecord(): void;
+  clearTiming(): void;
+  setCaptureMode(mode: CaptureMode): void;
+  setInterpretMode(mode: InterpretMode): void;
+  setBpm(value: number): void;
+  setSubdivision(value: 4 | 8 | 16): void;
+}
+
+export function createTimingState(): TimingState {
   let records = $state<TimedStepRecord[]>([]);
   let captureMode = $state<CaptureMode>("inter-press");
   let interpretMode = $state<InterpretMode>("proportional");
@@ -86,5 +113,3 @@ export function createTimingState() {
     setSubdivision,
   };
 }
-
-export type TimingState = ReturnType<typeof createTimingState>;

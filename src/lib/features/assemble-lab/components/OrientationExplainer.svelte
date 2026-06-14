@@ -224,7 +224,7 @@
       </p>
     {/if}
 
-    <button class="got-it-btn" onclick={handleClose}>
+    <button class="got-it-btn" onclick={handleClose} aria-label="Close orientation explainer">
       Got it
     </button>
   </div>

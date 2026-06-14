@@ -7,15 +7,20 @@
 -->
 <script lang="ts">
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import type { AssembleState } from "../state/assemble-state.svelte";
 
   let { builderState }: { builderState: AssembleState } = $props();
 
-  const GRID_MODES = [
-    { mode: GridMode.DIAMOND, label: "Diamond", desc: "N / E / S / W" },
-    { mode: GridMode.BOX, label: "Box", desc: "NE / SE / SW / NW" },
-    { mode: GridMode.SKEWED, label: "Merged", desc: "All 8 points" },
-  ] as const;
+  const GRID_MODES: { value: GridMode; label: string; desc: string }[] = [
+    { value: GridMode.DIAMOND, label: "Diamond", desc: "N / E / S / W" },
+    { value: GridMode.BOX, label: "Box", desc: "NE / SE / SW / NW" },
+    { value: GridMode.SKEWED, label: "Merged", desc: "All 8 points" },
+  ];
+
+  const activeModeDesc = $derived(
+    GRID_MODES.find((m) => m.value === builderState.gridMode)?.desc ?? ""
+  );
 </script>
 
 <aside class="idle-panel" aria-label="Build setup">
@@ -44,19 +49,17 @@
 
     <div class="divider"></div>
 
-    <div class="mode-section" role="radiogroup" aria-label="Grid mode">
-      {#each GRID_MODES as option}
-        <button
-          class="mode-chip"
-          class:active={builderState.gridMode === option.mode}
-          role="radio"
-          aria-checked={builderState.gridMode === option.mode}
-          onclick={() => builderState.setGridMode(option.mode)}
-        >
-          <span class="chip-label">{option.label}</span>
-          <span class="chip-desc">{option.desc}</span>
-        </button>
-      {/each}
+    <div class="mode-section">
+      <div class="mode-select">
+        <SegmentedControl
+          options={GRID_MODES}
+          value={builderState.gridMode}
+          onchange={(mode) => builderState.setGridMode(mode)}
+          size="sm"
+          color="accent"
+        />
+        <span class="mode-desc">{activeModeDesc}</span>
+      </div>
 
       <button
         class="center-chip"
@@ -169,14 +172,29 @@
     background: var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  /* ── Grid mode chips ── */
+  /* ── Grid mode selector + toggles ── */
   .mode-section {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
 
-  .mode-chip,
+  .mode-select {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .mode-desc {
+    /* Reserve a fixed line height so swapping descriptions (which vary in
+       width) never reflows the toggles below it. */
+    min-height: 1.2em;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
   .center-chip {
     display: flex;
     align-items: center;
@@ -192,15 +210,9 @@
     transition: border-color 0.15s ease, background 0.15s ease;
   }
 
-  .mode-chip:hover,
   .center-chip:hover {
     background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-  }
-
-  .mode-chip.active {
-    border-color: var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
   }
 
   .center-chip.active {
@@ -208,7 +220,6 @@
     background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
   }
 
-  .mode-chip:focus-visible,
   .center-chip:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
@@ -255,7 +266,6 @@
       font-size: var(--font-size-compact, 12px);
     }
 
-    .mode-chip,
     .center-chip {
       padding: 10px 14px;
       min-height: 44px;
@@ -263,7 +273,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .mode-chip,
     .center-chip {
       transition: none;
     }

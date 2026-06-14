@@ -65,9 +65,16 @@
   });
 
   const TURN_SEQUENCE = [-0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3] as const;
+  type TurnValue = (typeof TURN_SEQUENCE)[number];
+  const isTurnValue = (value: number): value is TurnValue =>
+    (TURN_SEQUENCE as readonly number[]).includes(value);
+
   const ORIENTATION_SEQUENCE = [
     Orientation.IN, Orientation.OUT, Orientation.CLOCK, Orientation.COUNTER,
   ] as const;
+  type OrientationValue = (typeof ORIENTATION_SEQUENCE)[number];
+  const isOrientationValue = (value: Orientation): value is OrientationValue =>
+    (ORIENTATION_SEQUENCE as readonly Orientation[]).includes(value);
 
   function dispatchKeyboardAction(action: KeyboardAction): void {
     switch (action.type) {
@@ -80,13 +87,15 @@
         }
         break;
       case "turnUp": {
-        const idx = TURN_SEQUENCE.indexOf(builderState.turnCount as any);
+        const turn = builderState.turnCount;
+        const idx = isTurnValue(turn) ? TURN_SEQUENCE.indexOf(turn) : -1;
         const next = idx < TURN_SEQUENCE.length - 1 ? idx + 1 : 1;
         builderState.setTurnCount(TURN_SEQUENCE[next]!);
         break;
       }
       case "turnDown": {
-        const idx = TURN_SEQUENCE.indexOf(builderState.turnCount as any);
+        const turn = builderState.turnCount;
+        const idx = isTurnValue(turn) ? TURN_SEQUENCE.indexOf(turn) : -1;
         const next = idx > 0 ? idx - 1 : TURN_SEQUENCE.length - 1;
         builderState.setTurnCount(TURN_SEQUENCE[next]!);
         break;
@@ -99,7 +108,8 @@
         );
         break;
       case "cycleOrientation": {
-        const oriIdx = ORIENTATION_SEQUENCE.indexOf(builderState.currentOrientation as any);
+        const ori = builderState.currentOrientation;
+        const oriIdx = isOrientationValue(ori) ? ORIENTATION_SEQUENCE.indexOf(ori) : -1;
         const nextOri = (oriIdx + 1) % ORIENTATION_SEQUENCE.length;
         builderState.setOrientation(ORIENTATION_SEQUENCE[nextOri]!);
         break;
