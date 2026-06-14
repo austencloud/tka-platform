@@ -103,7 +103,7 @@
     display: flex;
     gap: 2px;
     margin-left: 2px;
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     opacity: 0.9;
   }
 

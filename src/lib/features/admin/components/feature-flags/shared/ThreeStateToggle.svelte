@@ -110,30 +110,52 @@
 
   /* Selected states */
   .toggle-option.selected.inherit {
-    background: rgba(107, 114, 128, 0.2);
-    color: #9ca3af;
+    background: color-mix(
+      in srgb,
+      var(--theme-text-dim, #9ca3af) 20%,
+      transparent
+    );
+    color: var(--theme-text-dim, #9ca3af);
   }
 
   .toggle-option.selected.inherit.resolves-granted {
-    background: rgba(16, 185, 129, 0.15);
-    color: #34d399;
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #10b981) 15%,
+      transparent
+    );
+    color: var(--semantic-success, #34d399);
   }
 
   .toggle-option.selected.inherit.resolves-denied {
-    background: rgba(239, 68, 68, 0.1);
-    color: #fca5a5;
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      transparent
+    );
+    color: var(--semantic-error, #fca5a5);
   }
 
   .toggle-option.selected.grant {
-    background: rgba(16, 185, 129, 0.2);
-    color: #34d399;
-    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #10b981) 20%,
+      transparent
+    );
+    color: var(--semantic-success, #34d399);
+    box-shadow: 0 0 0 1px
+      color-mix(in srgb, var(--semantic-success, #10b981) 30%, transparent);
   }
 
   .toggle-option.selected.deny {
-    background: rgba(239, 68, 68, 0.2);
-    color: #f87171;
-    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.3);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 20%,
+      transparent
+    );
+    color: var(--semantic-error, #f87171);
+    box-shadow: 0 0 0 1px
+      color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
   }
 
   .toggle-option i {
@@ -152,13 +174,21 @@
   }
 
   .resolve-hint.granted {
-    background: rgba(16, 185, 129, 0.2);
-    color: #34d399;
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #10b981) 20%,
+      transparent
+    );
+    color: var(--semantic-success, #34d399);
   }
 
   .resolve-hint.denied {
-    background: rgba(239, 68, 68, 0.15);
-    color: #fca5a5;
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
+    color: var(--semantic-error, #fca5a5);
   }
 
   /* Responsive - stack vertically on very small screens */

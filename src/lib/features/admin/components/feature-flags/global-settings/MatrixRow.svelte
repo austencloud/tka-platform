@@ -250,24 +250,40 @@
     justify-content: center;
     border: none;
     border-radius: 8px;
-    background: rgba(239, 68, 68, 0.15);
-    color: #f87171;
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
+    color: var(--semantic-error, #f87171);
     font-size: 18px;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
   }
 
   .enable-toggle:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.25);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 25%,
+      transparent
+    );
   }
 
   .enable-toggle.enabled {
-    background: rgba(16, 185, 129, 0.15);
-    color: #34d399;
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #10b981) 15%,
+      transparent
+    );
+    color: var(--semantic-success, #34d399);
   }
 
   .enable-toggle.enabled:hover:not(:disabled) {
-    background: rgba(16, 185, 129, 0.25);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #10b981) 25%,
+      transparent
+    );
   }
 
   .enable-toggle:disabled {
@@ -276,8 +292,12 @@
   }
 
   .enable-toggle.locked {
-    background: rgba(107, 114, 128, 0.15);
-    color: #9ca3af;
+    background: color-mix(
+      in srgb,
+      var(--theme-text-dim, #9ca3af) 15%,
+      transparent
+    );
+    color: var(--theme-text-dim, #9ca3af);
   }
 
   .saving-indicator {
