@@ -687,6 +687,13 @@ export default defineConfig(({ mode }) => ({
         // Strategic chunking for your actual dependencies
         manualChunks: (id) => {
           if (id.includes("node_modules")) {
+            // NOTE: pinning the Svelte runtime to its own chunk was attempted to
+            // get three fully off boot, but it re-introduces a vendor↔runtime
+            // TDZ cycle. The runtime stays Rollup-managed. three is isolated to
+            // vendor-three below (down from the old 5.3MB-gz mega-vendor), but
+            // it still rides boot via the svelte↔threlte↔three weld — fully
+            // removing it needs @austencloud/scene-3d shipped tree-shakeable
+            // (sideEffects:false). Tracked as follow-up.
             // Three.js + Threlte bridge svelte ↔ three, creating circular chunks
             // if split from vendor. Keep them together in vendor to avoid TDZ errors.
             if (id.includes("fabric")) return "vendor-fabric";
@@ -724,33 +731,45 @@ export default defineConfig(({ mode }) => ({
               // based on dynamic import boundaries). Never lands in vendor.
               return undefined;
             }
-            // Three.js ecosystem — keep it OUT of the shared `vendor` chunk so
-            // it stops riding boot alongside small boot-critical libs (zod,
-            // posthog, date-fns). We must NOT force it into a named chunk: a
-            // dedicated `vendor-three` creates a circular chunk cycle with
-            // `vendor` (threlte ↔ vendor helpers) → "Cannot access X before
-            // initialization" TDZ crashes at runtime. Returning undefined lets
-            // Rollup's own splitter place three by its real import graph and
-            // resolve init order correctly. Three is reached almost entirely
-            // through dynamic imports (BackgroundFactory dynamic-imports each
-            // background system; feature modules dynamic-import via
-            // ModuleRenderer), so Rollup emits it as async chunks off the boot
-            // path — same approach as mediapipe/rapier above.
+            // Three.js ecosystem → its own `vendor-three` chunk, OFF the boot
+            // path. Returning undefined here is NOT enough: Rollup then merges
+            // three into the universal Svelte/SvelteKit runtime chunk (which
+            // every entry imports statically), dragging ~4MB gz onto boot. A
+            // named chunk is required to separate it.
+            //
+            // The earlier TDZ ("Cannot access X before initialization") was a
+            // `vendor ↔ vendor-three` cycle: three landed in vendor-three while
+            // OTHER packages that import three (@austencloud/scene-3d etc.) fell
+            // through to `vendor`, so vendor imported vendor-three AND a
+            // three-eco lib imported a vendor util — a cycle. The fix is to put
+            // EVERY three-importing package in vendor-three so no `vendor`
+            // module imports three (no back-edge → no cycle). Three is reached
+            // only via dynamic imports (BackgroundFactory + ModuleRenderer), so
+            // this whole chunk loads on demand, never at boot.
             if (
               id.includes("node_modules/three/") ||
               id.includes("node_modules/three-mesh-bvh") ||
               id.includes("node_modules/three-stdlib") ||
               id.includes("node_modules/three-good-godrays") ||
               id.includes("node_modules/three-viewport-gizmo") ||
+              id.includes("node_modules/three-instanced-uniforms-mesh") ||
+              id.includes("node_modules/three-perf") ||
+              id.includes("node_modules/three-player-controller") ||
               id.includes("node_modules/troika") ||
+              id.includes("node_modules/maath") ||
               id.includes("@threlte") ||
               id.includes("node_modules/postprocessing") ||
               id.includes("camera-controls") ||
               id.includes("node_modules/draco") ||
               id.includes("basis_universal") ||
-              id.includes("meshoptimizer")
+              id.includes("meshoptimizer") ||
+              // App-side packages that statically import three (non
+              // tree-shakeable barrels) — must share three's chunk.
+              id.includes("@austencloud/scene-3d") ||
+              id.includes("@austencloud/camera-3d") ||
+              id.includes("@dgreenheck/ez-tree")
             ) {
-              return undefined;
+              return "vendor-three";
             }
             if (id.includes("firebase")) return "vendor-firebase";
             if (id.includes("dexie")) return "vendor-dexie";
