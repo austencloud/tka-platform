@@ -183,6 +183,54 @@
         />
         <span class="slider-value">{state.echo.thickness}px</span>
       </div>
+
+      <!-- Glow (luminous bloom) -->
+      <div class="slider-row">
+        <label for="echo-glow">Glow</label>
+        <input
+          id="echo-glow"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={state.echo.glow}
+          oninput={(e) =>
+            state.updateEffect("echo", { glow: +(e.currentTarget as HTMLInputElement).value })}
+        />
+        <span class="slider-value">{Math.round(state.echo.glow * 100)}%</span>
+      </div>
+
+      <!-- Depth (older phantoms recede) -->
+      <div class="slider-row">
+        <label for="echo-depth">Depth</label>
+        <input
+          id="echo-depth"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={state.echo.depth}
+          oninput={(e) =>
+            state.updateEffect("echo", { depth: +(e.currentTarget as HTMLInputElement).value })}
+        />
+        <span class="slider-value">{Math.round(state.echo.depth * 100)}%</span>
+      </div>
+
+      <!-- Flash (capture pop on the beat) -->
+      <div class="slider-row">
+        <label for="echo-flash">Flash</label>
+        <input
+          id="echo-flash"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={state.echo.flash}
+          oninput={(e) =>
+            state.updateEffect("echo", { flash: +(e.currentTarget as HTMLInputElement).value })}
+        />
+        <span class="slider-value">{Math.round(state.echo.flash * 100)}%</span>
+      </div>
     </div>
   {:else}
     <p class="empty">Effect state unavailable.</p>

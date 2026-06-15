@@ -10,9 +10,12 @@ function makeCtx() {
     strokeStyle: "",
     lineWidth: 1,
     lineCap: "butt",
+    shadowBlur: 0,
+    shadowColor: "",
     beginPath: vi.fn(),
     arc: vi.fn(),
     fill: vi.fn(),
+    fillRect: vi.fn(),
     stroke: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
@@ -21,6 +24,7 @@ function makeCtx() {
     restore: vi.fn(),
     translate: vi.fn(),
     rotate: vi.fn(),
+    createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
   } as unknown as CanvasRenderingContext2D;
   return ctx;
 }
@@ -34,6 +38,9 @@ function makeParams(overrides: Partial<Echo2DParams> = {}): Echo2DParams {
     colorMode: "solid",
     color: "#ffffff",
     thickness: 3,
+    glow: 0.6,
+    depth: 0.5,
+    flash: 0.5,
     blendMode: "lighter",
     ...overrides,
   };
@@ -279,6 +286,9 @@ describe("Echo2DRenderer scale", () => {
       colorMode: "solid",
       color: "#ffffff",
       thickness: 4,
+      glow: 0.6,
+      depth: 0.5,
+      flash: 0.5,
       blendMode: "lighter",
     };
     const tips = {
@@ -312,6 +322,10 @@ describe("Echo2DRenderer scale", () => {
       colorMode: "solid",
       color: "#ffffff",
       thickness: 8,
+      // depth 0 → no recede, so the main staff lineWidth is exactly thickness*scale.
+      glow: 0,
+      depth: 0,
+      flash: 0,
       blendMode: "lighter",
     };
     // Step 1: capture at beat 0.

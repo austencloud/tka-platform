@@ -83,6 +83,11 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
         colorMode: "solid",
         color: "#ffffff",
         thickness: 3,
+        // v19 luminous-stroboscope fields (seed at defaults; the merge would
+        // fill these anyway, but the EchoIntent shape now requires them).
+        glow: 0.6,
+        depth: 0.5,
+        flash: 0.5,
       };
       delete input.motion;
     }
@@ -191,6 +196,10 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // Net-new field, no migration code - absent style resolves to
   // DEFAULT_EFFECTS_CONFIG.zap.style ("branching") via the merge below. The
   // legacy `mode` field is retained but no longer drives rendering.
+
+  // v18 → v19: echo becomes a luminous stroboscope - gains glow/depth/flash.
+  // Net-new fields, no migration code - absent values resolve to
+  // DEFAULT_EFFECTS_CONFIG.echo (glow 0.6, depth 0.5, flash 0.5) via the merge.
 
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,

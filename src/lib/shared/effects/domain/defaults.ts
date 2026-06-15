@@ -70,6 +70,9 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     colorMode: "solid",
     color: "#ffffff",
     thickness: 3,
+    glow: 0.6,
+    depth: 0.5,
+    flash: 0.5,
   },
 
   bloom: {

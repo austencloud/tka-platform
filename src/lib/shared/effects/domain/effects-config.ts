@@ -14,7 +14,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 18;
+export const EFFECTS_CONFIG_VERSION = 19;
 
 export type EffectType =
   | "none"
@@ -153,6 +153,12 @@ export interface EchoIntent {
   color: string;
   /** 1-8 - stroke width / tip dot size in 2D. */
   thickness: number;
+  /** 0-1 - luminous bloom (shadowBlur halo) on phantoms + tip orbs. */
+  glow: number;
+  /** 0-1 - temporal depth: how much older phantoms recede (shrink + blur). */
+  depth: number;
+  /** 0-1 - capture-flash brightness: a bright pop on each beat of capture. */
+  flash: number;
 }
 
 export interface BloomIntent {
