@@ -37,22 +37,22 @@
   }
 
   .stat.pending {
-    background: #422006;
-    color: #fbbf24;
+    background: color-mix(in srgb, var(--semantic-warning, #fbbf24) 18%, transparent);
+    color: var(--semantic-warning, #fbbf24);
   }
 
   .stat.completed {
-    background: #052e16;
-    color: #4ade80;
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 18%, transparent);
+    color: var(--semantic-success, #4ade80);
   }
 
   .stat.preview {
-    background: #172554;
-    color: #60a5fa;
+    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 18%, transparent);
+    color: var(--semantic-info, #60a5fa);
   }
 
   .stat.failed {
-    background: #450a0a;
-    color: #f87171;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 18%, transparent);
+    color: var(--semantic-error, #f87171);
   }
 </style>

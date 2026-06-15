@@ -316,7 +316,7 @@
     max-width: 1600px;
     margin: 0 auto;
     padding: 1.5rem;
-    color: #e4e4e7;
+    color: var(--theme-text, #e4e4e7);
     background: #0c0c10;
     min-height: 100vh;
   }
@@ -329,11 +329,11 @@
     margin: 0 0 0.25rem 0;
     font-size: 1.5rem;
     font-weight: 600;
-    color: #fff;
+    color: var(--theme-text, #fff);
   }
 
   .subtitle {
-    color: #71717a;
+    color: var(--theme-text-tertiary, #71717a);
     margin: 0;
     font-size: 0.875rem;
   }

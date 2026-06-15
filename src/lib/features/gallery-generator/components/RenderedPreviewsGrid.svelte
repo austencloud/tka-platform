@@ -41,6 +41,7 @@
           class="preview-card"
           class:written={img.written}
           onclick={() => handleCardClick(img)}
+          aria-label={img.name}
         >
           <img src={img.imageUrl} alt={img.name} loading="lazy" />
           <span class="card-label">{img.name}</span>
@@ -97,7 +98,7 @@
     position: relative;
     border-radius: 8px;
     border: 2px solid var(--semantic-warning, #f59e0b);
-    background: #1a1a2e;
+    background: var(--theme-card-bg, #1a1a2e);
     padding: 0;
     cursor: pointer;
     overflow: hidden;
@@ -117,14 +118,14 @@
     aspect-ratio: 4 / 3;
     object-fit: contain;
     display: block;
-    background: #1a1a2e;
+    background: var(--theme-card-bg, #1a1a2e);
   }
 
   .card-label {
     display: block;
     padding: 0.25rem 0.5rem;
     font-size: 0.7rem;
-    color: #a1a1aa;
+    color: var(--theme-text-dim, #a1a1aa);
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
@@ -135,16 +136,16 @@
     position: absolute;
     bottom: 1.75rem;
     right: 0.25rem;
-    font-size: 0.65rem;
+    font-size: var(--font-size-compact, 12px);
     padding: 0.125rem 0.375rem;
     border-radius: 4px;
     font-weight: 500;
-    background: rgba(245, 158, 11, 0.9);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 90%, transparent);
     color: #000;
   }
 
   .status-badge.written {
-    background: rgba(34, 197, 94, 0.9);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 90%, transparent);
     color: #000;
   }
 
@@ -185,7 +186,7 @@
 
   .lightbox-title {
     text-align: center;
-    color: #e4e4e7;
+    color: var(--theme-text, #e4e4e7);
     margin: 0.5rem 0 0;
     font-size: 0.875rem;
   }

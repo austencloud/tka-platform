@@ -26,7 +26,7 @@
 
 <style>
   .failed-section {
-    background: #1c1012;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
     border-radius: 8px;
     padding: 1rem;
     margin-top: 1rem;
@@ -35,7 +35,7 @@
   .failed-section summary {
     cursor: pointer;
     font-weight: 600;
-    color: #f87171;
+    color: var(--semantic-error, #f87171);
     font-size: 0.875rem;
   }
 
@@ -50,15 +50,15 @@
     justify-content: space-between;
     padding: 0.35rem 0;
     font-size: 0.8rem;
-    border-bottom: 1px solid #27272a;
+    border-bottom: 1px solid var(--theme-card-bg, #27272a);
   }
 
   .failed-name {
-    color: #a1a1aa;
+    color: var(--theme-text-dim, #a1a1aa);
   }
 
   .failed-error {
-    color: #f87171;
+    color: var(--semantic-error, #f87171);
     font-size: 0.75rem;
   }
 </style>

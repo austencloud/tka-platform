@@ -81,44 +81,44 @@
   }
 
   .action-btn.primary {
-    background: #f43f5e;
+    background: var(--theme-accent, #f43f5e);
     color: white;
   }
 
   .action-btn.primary:hover:not(:disabled) {
-    background: #e11d48;
+    background: var(--theme-accent-strong, #e11d48);
   }
 
   .action-btn.cancel {
-    background: #dc2626;
+    background: var(--semantic-error, #dc2626);
     color: white;
   }
 
   .action-btn.success {
-    background: #22c55e;
+    background: var(--semantic-success, #22c55e);
     color: white;
   }
 
   .action-btn.success:hover:not(:disabled) {
-    background: #16a34a;
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 80%, black);
   }
 
   .action-btn.secondary {
-    background: #27272a;
-    color: #a1a1aa;
+    background: var(--theme-card-bg, #27272a);
+    color: var(--theme-text-dim, #a1a1aa);
   }
 
   .action-btn.secondary:hover:not(:disabled) {
-    background: #3f3f46;
-    color: #e4e4e7;
+    background: var(--theme-stroke, #3f3f46);
+    color: var(--theme-text, #e4e4e7);
   }
 
   .action-btn.cloud {
-    background: #3b82f6;
+    background: var(--semantic-info, #3b82f6);
     color: white;
   }
 
   .action-btn.cloud:hover:not(:disabled) {
-    background: #2563eb;
+    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 82%, black);
   }
 </style>
