@@ -41,9 +41,9 @@
 	const canFuse = $derived(leftBrowsingSeq !== null && rightBrowsingSeq !== null);
 
 	// DOM refs for assembly animation
-	let leftPanelEl: HTMLDivElement = $state(undefined as unknown as HTMLDivElement);
-	let rightPanelEl: HTMLDivElement = $state(undefined as unknown as HTMLDivElement);
-	let fuseTargetEl: HTMLDivElement = $state(undefined as unknown as HTMLDivElement);
+	let leftPanelEl = $state<HTMLDivElement | null>(null);
+	let rightPanelEl = $state<HTMLDivElement | null>(null);
+	let fuseTargetEl = $state<HTMLDivElement | null>(null);
 
 
 	async function handleFuse() {
@@ -345,6 +345,18 @@
 {/if}
 
 <style>
+	/* Shared Fuse brand gradient — defined once, referenced by every fuse
+	   accent surface here and mirrored in FuseResultView / FuseSequenceBrowser. */
+	.fuse-layout,
+	.tour-overlay {
+		--fuse-gradient: linear-gradient(
+			135deg,
+			var(--fuse-accent-light, #fb923c) 0%,
+			var(--fuse-accent, #f97316) 50%,
+			var(--fuse-accent-deep, #ea580c) 100%
+		);
+	}
+
 	.fuse-layout {
 		display: flex;
 		flex-direction: column;
@@ -540,7 +552,7 @@
 
 	.play-btn:hover {
 		transform: scale(1.05);
-		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+		box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent, #3b82f6) 40%, transparent);
 	}
 
 	.play-btn:active {
@@ -556,7 +568,7 @@
 		padding: var(--spacing-sm, 8px) var(--spacing-xl, 32px);
 		border: none;
 		border-radius: var(--radius-md, 12px);
-		background: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
+		background: var(--fuse-gradient);
 		color: #ffffff;
 		font-size: var(--font-size-min, 14px);
 		font-weight: 700;
@@ -583,7 +595,12 @@
 		position: absolute;
 		inset: 0;
 		z-index: 10;
-		background: linear-gradient(165deg, #1a1a2e 0%, #0f0f23 40%, #1a1025 100%);
+		background: linear-gradient(
+			165deg,
+			var(--theme-bg-elevated, #1a1a2e) 0%,
+			var(--theme-bg, #0f0f23) 40%,
+			var(--theme-bg-tinted, #1a1025) 100%
+		);
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
@@ -634,8 +651,8 @@
 	}
 
 	@keyframes tourPulse {
-		0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
-		50% { box-shadow: 0 0 0 12px rgba(249, 115, 22, 0); }
+		0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--fuse-accent, #f97316) 40%, transparent); }
+		50% { box-shadow: 0 0 0 12px color-mix(in srgb, var(--fuse-accent, #f97316) 0%, transparent); }
 	}
 
 	.tour-result {

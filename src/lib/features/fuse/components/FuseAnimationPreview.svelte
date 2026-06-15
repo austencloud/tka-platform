@@ -206,8 +206,8 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 		height: 44px;
 		border: none;
 		border-radius: var(--radius-sm, 8px);
-		background: rgba(0, 0, 0, 0.5);
-		color: #ffffff;
+		background: var(--color-scrim, rgba(0, 0, 0, 0.5));
+		color: var(--theme-text, #ffffff);
 		font-size: 1rem;
 		cursor: pointer;
 		z-index: 10;
@@ -215,7 +215,7 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 	}
 
 	.back-btn:hover {
-		background: rgba(0, 0, 0, 0.7);
+		background: var(--color-scrim-strong, rgba(0, 0, 0, 0.7));
 	}
 
 	.state-msg {
