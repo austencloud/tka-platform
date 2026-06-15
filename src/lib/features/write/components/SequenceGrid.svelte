@@ -281,7 +281,11 @@
     right: var(--spacing-xs);
     width: 28px;
     height: 28px;
-    background: rgba(239, 68, 68, 0.9);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 90%,
+      transparent
+    );
     border: none;
     border-radius: var(--border-radius-sm, 6px);
     color: white;
@@ -299,7 +303,7 @@
   }
 
   .remove-btn:hover {
-    background: #ef4444;
+    background: var(--semantic-error, #ef4444);
     transform: scale(1.1);
   }
 

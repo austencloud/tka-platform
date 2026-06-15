@@ -113,8 +113,8 @@
   }
 
   .act-card.selected {
-    background: rgba(244, 63, 94, 0.1);
-    border-color: rgba(244, 63, 94, 0.3);
+    background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
 
   .act-card:focus-visible {
@@ -129,14 +129,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(244, 63, 94, 0.15);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
     border-radius: var(--border-radius-md, 8px);
     color: var(--theme-accent, #f43f5e);
     font-size: 1rem;
   }
 
   .selected .card-icon {
-    background: rgba(244, 63, 94, 0.25);
+    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
   }
 
   .card-content {
@@ -171,9 +171,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(34, 197, 94, 0.2);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 20%,
+      transparent
+    );
     border-radius: 50%;
-    color: #22c55e;
+    color: var(--semantic-success, #22c55e);
     font-size: 0.6rem;
   }
 

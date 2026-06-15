@@ -6,13 +6,15 @@
   import { generateSequenceThumbnail } from "../domain/types/write";
   import { onMount } from "svelte";
 
-  // Props
-  let { sequence, position, onSequenceClicked, onRemoveRequested } = $props<{
+  interface Props {
     sequence: SequenceData;
     position: number;
     onSequenceClicked?: (position: number) => void;
     onRemoveRequested?: (position: number) => void;
-  }>();
+  }
+
+  let { sequence, position, onSequenceClicked, onRemoveRequested }: Props =
+    $props();
 
   // Services
   let hapticService: HapticFeedback;
@@ -47,9 +49,11 @@
     onRemoveRequested?.(position);
   }
 
-  // Generate thumbnail
+  // Generate thumbnail (synchronous — falls back to the default asset when none)
   const thumbnailSrc = $derived(
-    sequence.thumbnails?.[0] || generateSequenceThumbnail(sequence)
+    sequence.thumbnails?.[0] ||
+      generateSequenceThumbnail(sequence) ||
+      "/static/thumbnails/default-sequence.png"
   );
   const beatsCount = $derived(sequence.steps.length);
 </script>

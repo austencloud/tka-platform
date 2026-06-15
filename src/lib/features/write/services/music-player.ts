@@ -5,8 +5,23 @@ export class MusicPlayer {
   private audioContext: AudioContext | null = null;
   private currentAudio: HTMLAudioElement | null = null;
   private initialized = false;
+  private errorListener: ((message: string) => void) | null = null;
 
   constructor() {}
+
+  /**
+   * Register a callback invoked whenever playback or loading fails, with a
+   * human-readable message. Consumers wire this into their UI state (e.g.
+   * `MusicPlayerState.error`) so failures surface instead of only hitting the
+   * console. Pass `null` to clear.
+   */
+  onError(listener: ((message: string) => void) | null): void {
+    this.errorListener = listener;
+  }
+
+  private emitError(message: string): void {
+    this.errorListener?.(message);
+  }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -76,6 +91,7 @@ export class MusicPlayer {
       await this.currentAudio.play();
     } catch (error) {
       console.error("❌ MusicPlayer: Failed to play track:", error);
+      this.emitError(`Failed to play track: ${track}`);
       throw new Error(`Failed to play track: ${track}`);
     }
   }
@@ -129,5 +145,26 @@ export class MusicPlayer {
 
   private handleError = (event: Event): void => {
     console.error("❌ MusicPlayer: Audio error:", event);
+
+    // Translate the MediaError code into a readable message and surface it so
+    // the UI can show the failure rather than silently dropping it.
+    const mediaError = (event.target as HTMLAudioElement | null)?.error;
+    const message = this.describeMediaError(mediaError);
+    this.emitError(message);
   };
+
+  private describeMediaError(error: MediaError | null | undefined): string {
+    switch (error?.code) {
+      case MediaError.MEDIA_ERR_ABORTED:
+        return "Playback was aborted.";
+      case MediaError.MEDIA_ERR_NETWORK:
+        return "A network error interrupted the audio download.";
+      case MediaError.MEDIA_ERR_DECODE:
+        return "The audio could not be decoded.";
+      case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+        return "This audio format or source is not supported.";
+      default:
+        return "An unknown audio error occurred.";
+    }
+  }
 }

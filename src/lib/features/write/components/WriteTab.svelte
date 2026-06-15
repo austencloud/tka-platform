@@ -2,6 +2,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import { getMusicPlayer } from "../get-music-player";
   import { onMount } from "svelte";
   import ActBrowser from "./ActBrowser.svelte";
   import ActSheet from "./ActSheet.svelte";
@@ -31,6 +32,16 @@
 
   onMount(() => {
     hapticService = getHapticFeedback();
+
+    // Surface playback/loading failures from the audio engine into the player
+    // state so the UI shows them instead of only logging to the console.
+    const player = getMusicPlayer();
+    player.onError((message) => {
+      musicPlayerState.error = message;
+      musicPlayerState.isPlaying = false;
+    });
+
+    return () => player.onError(null);
   });
 
   // Layout state
@@ -129,6 +140,7 @@
 
   // Music player handlers
   function handlePlayRequested() {
+    musicPlayerState.error = null;
     musicPlayerState.isPlaying = true;
   }
 

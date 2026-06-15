@@ -170,19 +170,35 @@
 
   /* Save button with unsaved changes */
   .toolbar-btn.has-changes {
-    background: rgba(34, 197, 94, 0.15);
-    border-color: rgba(34, 197, 94, 0.4);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 15%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 40%,
+      transparent
+    );
   }
 
   .toolbar-btn.has-changes:hover:not(:disabled) {
-    background: rgba(34, 197, 94, 0.25);
-    border-color: rgba(34, 197, 94, 0.5);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 25%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 50%,
+      transparent
+    );
   }
 
   .unsaved-dot {
     width: 8px;
     height: 8px;
-    background: #22c55e;
+    background: var(--semantic-success, #22c55e);
     border-radius: 50%;
     animation: pulse 2s ease-in-out infinite;
   }

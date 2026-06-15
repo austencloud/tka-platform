@@ -104,8 +104,15 @@
       <i class="fas fa-music" aria-hidden="true"></i>
       <span>Music</span>
     </div>
-    <div class="status" class:loaded={playerState.isLoaded}>
-      {#if playerState.isLoaded}
+    <div
+      class="status"
+      class:loaded={playerState.isLoaded}
+      class:error={!!playerState.error}
+    >
+      {#if playerState.error}
+        <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+        <span class="error-message" role="alert">{playerState.error}</span>
+      {:else if playerState.isLoaded}
         <i class="fas fa-circle-check" aria-hidden="true"></i>
         <span class="filename">{playerState.filename || "Loaded"}</span>
       {:else}
@@ -217,14 +224,20 @@
   }
 
   .status.loaded {
-    color: #22c55e;
+    color: var(--semantic-success, #22c55e);
   }
 
-  .status.loaded i {
+  .status.error {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .status.loaded i,
+  .status.error i {
     font-size: 0.8rem;
   }
 
-  .filename {
+  .filename,
+  .error-message {
     max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -345,9 +358,17 @@
   }
 
   .transport-btn.active {
-    background: rgba(34, 197, 94, 0.2);
-    border-color: rgba(34, 197, 94, 0.4);
-    color: #22c55e;
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 20%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 40%,
+      transparent
+    );
+    color: var(--semantic-success, #22c55e);
   }
 
   /* Responsive */
