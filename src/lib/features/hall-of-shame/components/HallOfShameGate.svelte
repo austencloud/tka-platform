@@ -2,7 +2,7 @@
   HallOfShameGate.svelte
 
   Age verification modal for accessing Hall of Shame content.
-  Uses honor-system checkbox confirmation (18+).
+  Uses an honor-system toggle button confirmation (18+).
   Stores consent in user profile for persistence.
 -->
 <script lang="ts">
@@ -86,14 +86,22 @@ import { getAgeVerifier } from "$lib/features/hall-of-shame/get-age-verifier";
 			{t('hall_of_shame_gate_disclaimer')}
 		</p>
 
-		<label class="checkbox-label">
-			<input
-				type="checkbox"
-				bind:checked={confirmed}
-				disabled={isSubmitting}
-			/>
-			<span>{t('hall_of_shame_confirm_age')}</span>
-		</label>
+		<button
+			type="button"
+			class="confirm-toggle"
+			class:confirmed
+			role="switch"
+			aria-checked={confirmed}
+			disabled={isSubmitting}
+			onclick={() => (confirmed = !confirmed)}
+		>
+			<span class="toggle-indicator" aria-hidden="true">
+				{#if confirmed}
+					<i class="fas fa-check"></i>
+				{/if}
+			</span>
+			<span class="toggle-text">{t('hall_of_shame_confirm_age')}</span>
+		</button>
 
 		{#if error}
 			<div class="error-message" role="alert">
@@ -138,12 +146,12 @@ import { getAgeVerifier } from "$lib/features/hall-of-shame/get-age-verifier";
 		width: 64px;
 		height: 64px;
 		border-radius: 50%;
-		background: rgba(239, 68, 68, 0.15);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		font-size: 28px;
-		color: #ef4444;
+		color: var(--semantic-error, #ef4444);
 	}
 
 	.warning-text {
@@ -160,32 +168,61 @@ import { getAgeVerifier } from "$lib/features/hall-of-shame/get-age-verifier";
 		line-height: 1.5;
 	}
 
-	.checkbox-label {
+	.confirm-toggle {
 		display: flex;
 		align-items: center;
 		gap: 10px;
 		padding: 12px 16px;
 		min-height: var(--min-touch-target);
+		width: 100%;
 		background: rgba(255, 255, 255, 0.05);
 		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 8px;
 		cursor: pointer;
+		text-align: left;
 		transition: border-color 0.2s ease;
 	}
 
-	.checkbox-label:hover {
+	.confirm-toggle:hover:not(:disabled) {
 		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
 	}
 
-	.checkbox-label input[type='checkbox'] {
+	.confirm-toggle:focus-visible {
+		outline: 2px solid var(--theme-accent, #3b82f6);
+		outline-offset: 2px;
+	}
+
+	.confirm-toggle.confirmed {
+		border-color: var(--semantic-error, #ef4444);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 12%, transparent);
+	}
+
+	.confirm-toggle:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.toggle-indicator {
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		width: 24px;
 		height: 24px;
 		min-width: 24px;
-		accent-color: #ef4444;
-		cursor: pointer;
+		border-radius: 6px;
+		border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
+		background: transparent;
+		color: white;
+		font-size: 13px;
+		transition: background 0.2s ease, border-color 0.2s ease;
 	}
 
-	.checkbox-label span {
+	.confirm-toggle.confirmed .toggle-indicator {
+		background: var(--semantic-error, #ef4444);
+		border-color: var(--semantic-error, #ef4444);
+	}
+
+	.toggle-text {
 		font-size: var(--font-size-min, 14px);
 		color: var(--theme-text, rgba(255, 255, 255, 0.9));
 	}
@@ -195,11 +232,11 @@ import { getAgeVerifier } from "$lib/features/hall-of-shame/get-age-verifier";
 		align-items: center;
 		gap: 8px;
 		padding: 10px 14px;
-		background: rgba(239, 68, 68, 0.1);
-		border: 1px solid rgba(239, 68, 68, 0.3);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+		border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
 		border-radius: 8px;
 		font-size: var(--font-size-min, 14px);
-		color: #fca5a5;
+		color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, white);
 	}
 
 	/* Footer buttons */
@@ -226,17 +263,26 @@ import { getAgeVerifier } from "$lib/features/hall-of-shame/get-age-verifier";
 	}
 
 	button.primary.danger {
-		background: #ef4444;
+		background: var(--semantic-error, #ef4444);
 		color: white;
 	}
 
 	button.primary.danger:hover:not(:disabled) {
-		background: #dc2626;
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 80%, black);
 	}
 
 	button:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	/* Respect reduced-motion: drop all transitions */
+	@media (prefers-reduced-motion: reduce) {
+		.confirm-toggle,
+		.toggle-indicator,
+		button {
+			transition: none;
+		}
 	}
 
 	/* Mobile responsive */
