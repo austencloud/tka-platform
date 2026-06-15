@@ -33,6 +33,7 @@
   import type { LodBand } from "$lib/features/coven-hub/domain/coven-lod";
   import { useGltf } from "@threlte/extras";
   import EffectOrchestrator3D from "$lib/shared/3d/effects/EffectOrchestrator3D.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   interface Props {
     stationId: string;
@@ -109,6 +110,9 @@
   // Create avatar instances: 6 for center planes + 6 for acolytes
   let centerInstances = $state<AvatarInstance[]>([]);
   let acolyteInstances = $state<AvatarInstance[]>([]);
+  // True when avatar-instance construction threw — the scene falls back to a
+  // visible marker (below) instead of rendering nothing, and we surface a toast.
+  let initFailed = $state(false);
 
   // Initialize all avatar instances
   try {
@@ -127,6 +131,8 @@
     );
   } catch (err) {
     console.warn(`[CovenStation] Failed to init ${stationId}:`, err);
+    initFailed = true;
+    toast.error("Couldn't load the coven performers for this station.");
   }
 
   // hero: all 6 center + 6 acolytes. idle/frozen: only the first center rig.
@@ -230,14 +236,12 @@
   // Prop type from sequence or global settings
   const bluePropType = $derived.by((): PropType => {
     try {
-      const settings = settingsService;
-      return (settings as any)?.settings?.bluePropType ?? PropType.STAFF;
+      return settingsService.settings.bluePropType ?? PropType.STAFF;
     } catch { return PropType.STAFF; }
   });
   const redPropType = $derived.by((): PropType => {
     try {
-      const settings = settingsService;
-      return (settings as any)?.settings?.redPropType ?? PropType.STAFF;
+      return settingsService.settings.redPropType ?? PropType.STAFF;
     } catch { return PropType.STAFF; }
   });
 </script>
@@ -248,13 +252,30 @@
   <!-- Ritual platform: bespoke GLB stage when stageModel is set, otherwise the
        original stone disc (keeps the museum exhibit identical until GLBs land). -->
   {#if stageGltf}
-    {#await stageGltf then gltf}
+    {#await stageGltf}
+      <!-- GLB stage still streaming in: show a dim placeholder disc so the slot
+           isn't visually empty while the model resolves. -->
+      <T.Mesh position.y={PLATFORM_HEIGHT / 2} receiveShadow>
+        <T.CylinderGeometry args={[PLATFORM_RADIUS, PLATFORM_RADIUS + 0.1, PLATFORM_HEIGHT, 32]} />
+        <T.MeshStandardMaterial color={platformColor} roughness={0.95} transparent opacity={0.35} />
+      </T.Mesh>
+    {:then gltf}
       <T is={gltf.scene} position.y={PLATFORM_HEIGHT} />
     {/await}
   {:else}
     <T.Mesh position.y={PLATFORM_HEIGHT / 2} receiveShadow>
       <T.CylinderGeometry args={[PLATFORM_RADIUS, PLATFORM_RADIUS + 0.1, PLATFORM_HEIGHT, 32]} />
       <T.MeshStandardMaterial color={platformColor} roughness={0.9} />
+    </T.Mesh>
+  {/if}
+
+  {#if initFailed}
+    <!-- Degraded fallback: avatar instances failed to construct, so the rigs
+         below render nothing. Show a clearly-broken marker pillar at center so
+         the empty station is observable rather than silently blank. -->
+    <T.Mesh position.y={PLATFORM_HEIGHT + 0.75}>
+      <T.BoxGeometry args={[0.25, 1.5, 0.25]} />
+      <T.MeshStandardMaterial color="#a01818" emissive="#5a0000" roughness={0.6} />
     </T.Mesh>
   {/if}
   <!-- Decorative ring at acolyte circle -->
