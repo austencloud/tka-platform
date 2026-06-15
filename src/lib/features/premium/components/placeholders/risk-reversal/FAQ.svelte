@@ -71,7 +71,12 @@
   <div class="faq-list">
     {#each displayItems as item (item.id)}
       <div class="faq-item">
-        <button class="faq-question" onclick={() => toggle(item.id)}>
+        <button
+          class="faq-question"
+          onclick={() => toggle(item.id)}
+          aria-expanded={openItems.has(item.id)}
+          aria-controls="faq-answer-{item.id}"
+        >
           <span>{item.question}</span>
           <i
             class="fas fa-chevron-{openItems.has(item.id) ? 'up' : 'down'}"
@@ -79,7 +84,7 @@
           ></i>
         </button>
         {#if openItems.has(item.id)}
-          <div class="faq-answer">
+          <div class="faq-answer" id="faq-answer-{item.id}" role="region">
             {item.answer}
           </div>
         {/if}

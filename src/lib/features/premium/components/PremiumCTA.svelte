@@ -109,6 +109,18 @@
     cursor: not-allowed;
   }
 
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .subscribe-button {
+      transition: none;
+    }
+
+    .subscribe-button:hover:not(:disabled),
+    .subscribe-button:active:not(:disabled) {
+      transform: none;
+    }
+  }
+
   .note {
     font-size: var(--font-size-compact);
     color: var(--theme-text-dim);

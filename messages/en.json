@@ -1042,6 +1042,7 @@
   "premium_about_title": "About TKA",
   "premium_badge_ssl": "256-bit SSL encryption",
   "premium_badge_stripe": "Secure payments by Stripe",
+  "premium_checkout_error": "Checkout couldn't start. Please try again, and contact support if it keeps happening.",
   "premium_close": "Close",
   "premium_cta_cancel_note": "Cancel anytime • No long-term commitment",
   "premium_cta_price_amount": "${price}",

@@ -7,6 +7,7 @@
   import { createCheckoutSession } from "$lib/shared/subscription/services/subscription-manager";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { HapticFeedback } from "../../../shared/application/services/haptic-feedback";
   import PremiumHero from "./PremiumHero.svelte";
   import PremiumCTA from "./PremiumCTA.svelte";
@@ -26,7 +27,10 @@
   let { onClose, hapticService = null }: Props = $props();
 
   let isLoading = $state(false);
+  let checkoutError = $state<string | null>(null);
 
+  // Public Stripe price id, not a credential — price ids ship in the client
+  // checkout bundle by design. Env var lets it be swapped per environment.
   const PRICE_ID =
     import.meta.env.PUBLIC_STRIPE_PRICE_ID || "price_1SgbRTLZdzgHfpQbEp99bKp7";
 
@@ -56,6 +60,7 @@
 
     hapticService?.trigger("selection");
     isLoading = true;
+    checkoutError = null;
 
     try {
       trackEvent("checkout_initiated", {
@@ -81,6 +86,12 @@
       });
 
       hapticService?.trigger("error");
+
+      // Surface the failure: a silent paywall failure leaves the user with a
+      // reset button and no idea what happened. Show both a toast and inline text.
+      checkoutError = t('premium_checkout_error');
+      toast.error(checkoutError);
+
       isLoading = false;
     }
   }
@@ -145,6 +156,12 @@
       disabled={!PRICE_ID}
       onSubscribe={() => handleSubscribe("desktop")}
     />
+    {#if checkoutError}
+      <p class="checkout-error" role="alert">
+        <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+        {checkoutError}
+      </p>
+    {/if}
     <p class="support-note">
       {t('premium_support_note')}
     </p>
@@ -245,6 +262,17 @@
     text-align: center;
     font-size: var(--font-size-min);
     color: var(--theme-text-dim, var(--theme-text-dim));
+    margin: var(--spacing-md, 16px) 0 0;
+  }
+
+  .checkout-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs, 6px);
+    text-align: center;
+    font-size: var(--font-size-min);
+    color: var(--semantic-error, #ef4444);
     margin: var(--spacing-md, 16px) 0 0;
   }
 
