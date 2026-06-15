@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getFestivalContext } from "../../context/festival-context";
   import { auth } from "$lib/shared/auth/firebase";
+  import { Timestamp } from "firebase/firestore";
   import type { TeachingPortfolio, BioVersion } from "../../domain/models/teaching-portfolio";
   import { AUSTEN_PORTFOLIO_SEED } from "../../data/portfolio-seed";
   import WorkshopSection from "./WorkshopSection.svelte";
@@ -32,7 +33,7 @@
   function createBlankPortfolio() {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
-    const now = { toDate: () => new Date() } as unknown as import("firebase/firestore").Timestamp;
+    const now = Timestamp.now();
     festivalState.savePortfolio(uid, {
       userId: uid,
       classes: [],
@@ -53,7 +54,7 @@
   function importSeed() {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
-    const now = { toDate: () => new Date() } as unknown as import("firebase/firestore").Timestamp;
+    const now = Timestamp.now();
     const portfolio: TeachingPortfolio = {
       ...AUSTEN_PORTFOLIO_SEED,
       userId: uid,

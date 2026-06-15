@@ -10,6 +10,7 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import ModalFooter from "$lib/shared/foundation/ui/modal/ModalFooter.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   const { state: festivalState } = getFestivalContext();
 
@@ -88,6 +89,7 @@
       wImageUrl = downloadUrl;
     } catch (error) {
       console.error("Failed to upload workshop cover image:", error);
+      toast.error("Couldn't upload the cover image. Please try again.");
     } finally {
       wImageUploading = false;
       if (imageFileInput) imageFileInput.value = "";

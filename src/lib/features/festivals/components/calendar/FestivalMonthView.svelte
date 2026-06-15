@@ -319,7 +319,7 @@
     }
 
     .header-cell {
-      font-size: 11px;
+      font-size: var(--font-size-compact, 12px);
       padding: 4px 2px;
     }
   }

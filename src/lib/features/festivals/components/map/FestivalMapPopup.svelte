@@ -241,9 +241,9 @@
     border-radius: 10px;
     font-size: var(--font-size-xs, 11px);
     font-weight: 500;
-    background: rgba(34, 197, 94, 0.15);
-    color: #22c55e;
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+    color: var(--semantic-success, #22c55e);
+    border: 1px solid color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
     align-self: flex-start;
   }
 
