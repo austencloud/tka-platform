@@ -16,6 +16,8 @@
     propType,
     printMode = false,
     darkMode,
+    /** Skip IntersectionObserver and render immediately — use for print/poster contexts. */
+    eager = false,
   }: {
     data?: PictographData | null;
     pngFallback?: string;
@@ -27,6 +29,7 @@
     propType?: PropType;
     printMode?: boolean;
     darkMode?: boolean;
+    eager?: boolean;
   } = $props();
 
   let prepared: PreparedPictographData | null = $state(null);
@@ -34,6 +37,11 @@
   let isVisible = $state(false);
 
   $effect(() => {
+    // Eager mode (print/poster): skip the IntersectionObserver and render immediately.
+    if (eager) {
+      isVisible = true;
+      return;
+    }
     if (!wrapperEl) return;
     const observer = new IntersectionObserver(
       (entries) => {

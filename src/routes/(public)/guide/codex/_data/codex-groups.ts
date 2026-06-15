@@ -29,11 +29,15 @@ export function transitionFor(id: string): string {
   return `${posBase(d.startPosition)}→${posBase(d.endPosition)}`;
 }
 
-/** Clone with turns zeroed — base letters render clean (no turn-count glyphs).
- *  letters.json motions are raw (no arrow/propPlacementData), so they must pass
- *  through createMotionData — which fills those placement defaults — or the
- *  preparer's `if (!motion.propPlacementData) return` guard skips every prop and
- *  arrow, leaving grid-only pictographs. */
+/** Wrap raw letters.json motions through createMotionData so that
+ *  arrowPlacementData and propPlacementData are filled with valid defaults.
+ *  Without this, pictograph-preparer's `if (!motion.propPlacementData) return`
+ *  guard skips every prop and arrow, leaving grid-only pictographs.
+ *
+ *  Turns are passed through as-is — they are structural positioning data, NOT
+ *  the turn-count glyph.  The glyph is suppressed separately via showTnD={false}
+ *  in GuidePictograph.svelte, so zeroing turns here is wrong and corrupts the
+ *  special/default placement lookups (which are keyed on the actual turn value). */
 export function codexData(id: string): PictographData | null {
   const d = pictographs[id];
   if (!d) return null;
@@ -42,8 +46,8 @@ export function codexData(id: string): PictographData | null {
   return {
     ...d,
     motions: {
-      blue: createMotionData({ ...blue, turns: 0 }),
-      red: createMotionData({ ...red, turns: 0 }),
+      blue: createMotionData({ ...blue }),
+      red: createMotionData({ ...red }),
     },
   };
 }

@@ -21,6 +21,7 @@
       propType={PropType.STAFF}
       printMode={true}
       darkMode={false}
+      eager={true}
     />
   </div>
   {#if cell.name}
