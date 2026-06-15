@@ -31,9 +31,15 @@
     border: none;
     border-radius: 12px;
     background: var(--theme-accent, #60a5fa);
-    color: #fff;
+    color: var(--theme-text-on-accent, #fff);
     cursor: pointer;
     transition: opacity 0.2s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .buy-button {
+      transition: none;
+    }
   }
 
   .buy-button:hover:not(:disabled) {

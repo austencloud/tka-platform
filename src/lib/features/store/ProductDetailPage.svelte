@@ -72,6 +72,8 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
         imageUrls={product.previewImageUrls}
         productName={product.name}
       />
+    {:else}
+      <div class="error">Product not found.</div>
     {/if}
   </main>
 </div>

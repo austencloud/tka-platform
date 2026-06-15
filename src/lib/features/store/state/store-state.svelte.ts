@@ -57,6 +57,7 @@ export function createStoreState(
     } catch (e) {
       error = "Failed to start checkout. Please try again.";
       console.error("[Store] Checkout failed:", e);
+    } finally {
       isCheckingOut = false;
     }
   }
