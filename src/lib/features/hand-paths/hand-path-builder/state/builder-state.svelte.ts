@@ -65,7 +65,30 @@ export interface HandMove {
   to: GridLocation;
 }
 
-export function createBuilderState() {
+export interface BuilderState {
+  readonly phase: BuilderPhase;
+  readonly gridMode: GridMode;
+  readonly blueLocations: GridLocation[];
+  readonly redLocations: GridLocation[];
+  readonly bluePathName: string;
+  readonly redPathName: string;
+  readonly availableLocations: GridLocation[];
+  readonly canSwitchToRed: boolean;
+  readonly canComplete: boolean;
+  readonly activeLocations: GridLocation[];
+  readonly lastLocation: GridLocation | null;
+  readonly canUndo: boolean;
+  readonly isAnimating: boolean;
+  addLocation(loc: GridLocation): Promise<void>;
+  setAnimationCallback(cb: (move: HandMove) => Promise<void>): void;
+  undo(): void;
+  switchToRed(): void;
+  complete(): void;
+  reset(): void;
+  setGridMode(mode: GridMode): void;
+}
+
+export function createBuilderState(): BuilderState {
   let phase = $state<BuilderPhase>("blue");
   let gridMode = $state<GridMode>(GridMode.DIAMOND);
   let blueLocations = $state<GridLocation[]>([]);
@@ -198,5 +221,3 @@ export function createBuilderState() {
     setGridMode,
   };
 }
-
-export type BuilderState = ReturnType<typeof createBuilderState>;

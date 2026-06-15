@@ -144,12 +144,12 @@
 
         <!-- Animated hand SVGs (positioned via HandPathAnimator.animate()) -->
         {#if builder.blueLocations.length > 0 && blueHandData?.svgData}
-          <g bind:this={activeBlueHandRef} class="hand-anim-group">
+          <g bind:this={activeBlueHandRef} class="hand-anim-group" aria-hidden="true">
             {@html blueHandData.svgData.svgContent}
           </g>
         {/if}
         {#if builder.redLocations.length > 0 && redHandData?.svgData}
-          <g bind:this={activeRedHandRef} class="hand-anim-group">
+          <g bind:this={activeRedHandRef} class="hand-anim-group" aria-hidden="true">
             {@html redHandData.svgData.svgContent}
           </g>
         {/if}

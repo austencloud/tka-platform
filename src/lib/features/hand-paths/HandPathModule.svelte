@@ -8,50 +8,36 @@
   Navigation between tabs is handled by the sidebar - no internal tab bar needed.
 -->
 <script lang="ts">
+  import type { Component } from "svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { HAND_PATH_TABS } from "$lib/shared/navigation/config/tab-definitions";
 
-  const tabComponents: Record<string, () => Promise<{ default: any }>> = {
+  type TabModule = { default: Component };
+
+  const tabComponents: Record<string, () => Promise<TabModule>> = {
     "hand-path-explorer": () => import("$lib/features/hand-paths/hand-path-explorer/HandPathExplorerLab.svelte"),
     "hand-path-builder": () => import("$lib/features/hand-paths/hand-path-builder/HandPathBuilderLab.svelte"),
   };
 
   const activeTab = $derived(navigationState.activeTab || HAND_PATH_TABS[0]?.id || "hand-path-explorer");
 
-  let TabComponent = $state<any>(null);
+  let TabComponent = $state<Component | null>(null);
   let loadError = $state<string | null>(null);
 
   $effect(() => {
     const loader = tabComponents[activeTab];
     if (loader) {
       loadError = null;
-      try {
-        const result = loader();
-        if (result && typeof result.then === "function") {
-          result
-            .then((mod: { default: any }) => {
-              TabComponent = mod.default;
-            })
-            .catch((err: Error) => {
-              console.error(`Failed to load hand-path tab "${activeTab}":`, err);
-              loadError = `Failed to load "${activeTab}" tab`;
-              TabComponent = null;
-            });
-        } else {
-          const mod = result as unknown as { default: any };
-          if (mod && mod.default) {
-            TabComponent = mod.default;
-          } else {
-            console.error(`Unexpected loader result for "${activeTab}":`, result);
-            loadError = `Failed to load "${activeTab}" tab`;
-            TabComponent = null;
-          }
-        }
-      } catch (err) {
-        console.error(`Error calling loader for "${activeTab}":`, err);
-        loadError = `Failed to load "${activeTab}" tab`;
-        TabComponent = null;
-      }
+      // import() always returns a Promise — resolve it and swap in the component.
+      loader()
+        .then((mod) => {
+          TabComponent = mod.default;
+        })
+        .catch((err: unknown) => {
+          console.error(`Failed to load hand-path tab "${activeTab}":`, err);
+          loadError = `Failed to load "${activeTab}" tab`;
+          TabComponent = null;
+        });
     } else {
       if (navigationState.currentModule === "hand-paths") {
         loadError = `Unknown tab: ${activeTab}`;

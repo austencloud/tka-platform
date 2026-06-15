@@ -20,21 +20,21 @@
   const isSelected = $derived(state.selectedHash === group.hash);
 
   // Pick a color based on which sides use the path.
-  const sideColor = $derived(() => {
+  const sideColor = $derived.by(() => {
     const hasBoth = group.sides.has("blue") && group.sides.has("red");
     if (hasBoth) return "#a855f7"; // purple = both
     if (group.sides.has("blue")) return "#3b82f6";
     return "#ef4444"; // red
   });
 
-  const sideBadgeLabel = $derived(() => {
+  const sideBadgeLabel = $derived.by(() => {
     const hasBoth = group.sides.has("blue") && group.sides.has("red");
     if (hasBoth) return "both";
     if (group.sides.has("blue")) return "blue";
     return "red";
   });
 
-  const gridModeLabel = $derived(() => {
+  const gridModeLabel = $derived.by(() => {
     switch (group.handPath.impliedGridMode) {
       case GridMode.DIAMOND: return "diamond";
       case GridMode.BOX: return "box";
@@ -68,7 +68,7 @@
   aria-label="Hand path {group.name}, used in {group.sequences.length} sequences"
 >
   <div class="card__viz">
-    <PathMiniViz locations={group.handPath.locations} color={sideColor()} />
+    <PathMiniViz locations={group.handPath.locations} color={sideColor} />
   </div>
 
   <div class="card__info">
@@ -78,13 +78,13 @@
       <span class="card__count">{group.sequences.length} seq</span>
       <span
         class="card__badge"
-        style:background-color="{sideColor()}22"
-        style:color={sideColor()}
-        style:border-color="{sideColor()}55"
+        style:background-color="{sideColor}22"
+        style:color={sideColor}
+        style:border-color="{sideColor}55"
       >
-        {sideBadgeLabel()}
+        {sideBadgeLabel}
       </span>
-      <span class="card__mode">{gridModeLabel()}</span>
+      <span class="card__mode">{gridModeLabel}</span>
     </div>
 
     {#if group.handPath.isClosed}
