@@ -761,14 +761,15 @@ export class EndlessSpinnerOrchestrator {
       const startPos = this.startPositionDeriver.getOrDeriveStartPosition(fullSequence);
       if (!startPos) continue;
 
-      // Try multiple ways to get the position - the data structure varies
-      const startPosRecord = startPos as unknown as Record<string, unknown>;
-      const sequenceStartPosition = (
-        startPosRecord.gridPosition ??
-        startPosRecord.startPosition ??
+      // Try multiple ways to get the position - the data structure varies.
+      // StartPositionData carries `gridPosition`; StepData (and the first beat)
+      // carry `startPosition`. Narrow against both rather than probing an
+      // untyped record (mirrors the union-narrowing at buildSequenceIndex).
+      const sequenceStartPosition: string | null =
+        (startPos as StartPositionData).gridPosition ??
+        (startPos as StepData).startPosition ??
         fullSequence.steps?.[0]?.startPosition ??
-        null
-      ) as string | null;
+        null;
 
       // Check if it's in the same position group
       const sequenceGroup = getPositionGroup(sequenceStartPosition);
@@ -922,9 +923,15 @@ export class EndlessSpinnerOrchestrator {
         propContinuity: PropContinuity.CONTINUOUS,
         turnIntensity: 1,
         startPosition: startPositionData as PictographData,
+        // The generation orchestrator only reads `endPosition.startPosition`
+        // (coerced to a string grid-position constraint). Build a structurally
+        // honest PictographData carrying just that constraint rather than
+        // casting a partial stub through `unknown`.
         endPosition: {
+          id: `spinner-end-${Date.now()}`,
           startPosition: targetPosition,
-        } as unknown as PictographData, // Minimal end position constraint
+          motions: {},
+        } satisfies PictographData,
       });
 
       return bridge;

@@ -100,9 +100,13 @@
     letter-spacing: 0.05em;
   }
 
-  /* Highlight for the global counter */
+  /* Highlight for the global counter — brand accent gradient */
   .stat.highlight .stat-value {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: linear-gradient(
+      135deg,
+      var(--theme-accent, #6366f1),
+      var(--theme-accent-strong, #8b5cf6)
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -110,7 +114,7 @@
   }
 
   .stat.highlight .stat-label {
-    color: rgba(99, 102, 241, 0.7);
+    color: color-mix(in srgb, var(--theme-accent, #6366f1) 70%, transparent);
   }
 
   @media (max-width: 600px) {
@@ -131,7 +135,7 @@
     }
 
     .stat-label {
-      font-size: 0.6875rem;
+      font-size: var(--font-size-compact, 12px);
     }
   }
 </style>

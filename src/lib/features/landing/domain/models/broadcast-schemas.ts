@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { firestoreDate } from "$lib/shared/firestore";
+import { LOOPType, Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 
 const BroadcastHandSchema = z
   .object({
@@ -34,8 +35,10 @@ const BroadcastSequenceSchema = z
     startPosition: z.string(),
     gridMode: z.string(),
     isCircular: z.boolean(),
-    loopType: z.string(),
-    period: z.string(),
+    // Parse straight to the domain enums so the inferred type matches
+    // BroadcastSequence (shared model) — keeps subscribeToHistory cast-free.
+    loopType: z.nativeEnum(LOOPType),
+    period: z.nativeEnum(Period),
     totalSteps: z.number(),
   })
   .passthrough();

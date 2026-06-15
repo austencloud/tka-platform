@@ -112,11 +112,11 @@ export class BroadcastRepository {
       BROADCAST_HISTORY_COLLECTION,
       BroadcastHistoryEntrySchema,
       (items) => {
-        const entries = items.map((item) => ({
-          sequence: item.sequence as unknown as BroadcastHistoryEntry["sequence"],
+        const entries = items.map((item): BroadcastHistoryEntry => ({
+          sequence: item.sequence,
           sequenceNumber: item.sequenceNumber,
           playedAtMs: item.playedAt instanceof Date ? item.playedAt.getTime() : Date.now(),
-        })) as BroadcastHistoryEntry[];
+        }));
         callback(entries);
       },
       {

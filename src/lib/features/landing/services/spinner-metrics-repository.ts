@@ -23,6 +23,11 @@ const METRICS_COLLECTION = "appMetrics";
 const METRICS_DOC_ID = "spinner";
 const METRICS_PATH = "appMetrics/spinner";
 
+const DEFAULT_METRICS: SpinnerMetrics = {
+  totalGenerated: 0,
+  lastGeneratedAt: null,
+};
+
 export class SpinnerMetricsRepository {
   private cachedMetrics: SpinnerMetrics | null = null;
   private unsubscribe: Unsubscribe | null = null;
@@ -137,12 +142,8 @@ export class SpinnerMetricsRepository {
               this.cachedMetrics = metrics;
               callback(metrics);
             } else {
-              const defaultMetrics: SpinnerMetrics = {
-                totalGenerated: 0,
-                lastGeneratedAt: null,
-              };
-              this.cachedMetrics = defaultMetrics;
-              callback(defaultMetrics);
+              this.cachedMetrics = DEFAULT_METRICS;
+              callback(DEFAULT_METRICS);
             }
           },
           (error) => {
@@ -150,6 +151,11 @@ export class SpinnerMetricsRepository {
               "[SpinnerMetricsRepository] Subscription error:",
               error
             );
+            if (unsubscribed) return;
+            // Surface a fallback so a Firestore failure still updates the UI
+            // (last-known metrics if we have them, otherwise zeroed defaults)
+            // instead of leaving the consumer hanging on a never-resolving load.
+            callback(this.cachedMetrics ?? DEFAULT_METRICS);
           }
         );
       } catch (error) {
@@ -157,6 +163,9 @@ export class SpinnerMetricsRepository {
           "[SpinnerMetricsRepository] Failed to setup subscription:",
           error
         );
+        if (!unsubscribed) {
+          callback(this.cachedMetrics ?? DEFAULT_METRICS);
+        }
       }
     };
 
