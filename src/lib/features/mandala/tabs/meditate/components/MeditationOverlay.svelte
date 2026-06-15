@@ -181,7 +181,7 @@
 		right: 16px;
 		font-size: 14px;
 		font-weight: 500;
-		color: rgba(255, 255, 255, 0.4);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
 		font-variant-numeric: tabular-nums;
 		letter-spacing: 0.05em;
 	}
@@ -196,7 +196,7 @@
 	.phase-label {
 		font-size: 18px;
 		font-weight: 500;
-		color: rgba(255, 255, 255, 0.8);
+		color: var(--theme-text, rgba(255, 255, 255, 0.8));
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
 		transition: opacity 150ms ease;
@@ -212,7 +212,7 @@
 
 	.phase-text-counter {
 		font-size: 14px;
-		color: rgba(255, 255, 255, 0.5);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
 		font-variant-numeric: tabular-nums;
 	}
 
@@ -233,7 +233,7 @@
 	.completion-backdrop {
 		position: absolute;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.7);
+		background: var(--theme-overlay-bg-hover, rgba(0, 0, 0, 0.7));
 		backdrop-filter: blur(8px);
 	}
 
@@ -256,7 +256,7 @@
 
 	.completion-summary {
 		font-size: 15px;
-		color: rgba(255, 255, 255, 0.6);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
 		margin: 0;
 	}
 
@@ -290,7 +290,7 @@
 	.completion-btn.secondary {
 		background: rgba(255, 255, 255, 0.06);
 		border-color: rgba(255, 255, 255, 0.12);
-		color: rgba(255, 255, 255, 0.7);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
 	}
 
 	.completion-btn.secondary:hover {

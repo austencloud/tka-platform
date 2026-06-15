@@ -6,21 +6,30 @@ const localRepo = new LocalMandalaCollectionRepository();
 
 class MandalaCollectionState {
 	collection = $state<CollectedMandala[]>([]);
+	// True while the Firestore hydration is in flight, so the gallery can show a
+	// loading indicator instead of mistaking "not loaded yet" for "empty".
+	loading = $state(false);
 	private userId: string | null = null;
 	private initialized = false;
 
 	async init(userId: string): Promise<void> {
 		this.userId = userId;
+		this.loading = true;
 
-		const firebaseEntries = await loadMandalas(userId);
-		this.collection = firebaseEntries;
+		try {
+			const firebaseEntries = await loadMandalas(userId);
+			this.collection = firebaseEntries;
 
-		await this.migrateFromLocalStorage(userId, firebaseEntries);
-		this.initialized = true;
+			await this.migrateFromLocalStorage(userId, firebaseEntries);
+			this.initialized = true;
+		} finally {
+			this.loading = false;
+		}
 	}
 
 	teardown(): void {
 		this.collection = [];
+		this.loading = false;
 		this.userId = null;
 		this.initialized = false;
 	}

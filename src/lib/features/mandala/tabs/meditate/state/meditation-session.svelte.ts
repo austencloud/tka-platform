@@ -17,6 +17,34 @@ import { getPatternCycleTime } from "../domain/meditation-types";
 
 const PHASE_ORDER: BreathPhase[] = ["inhale", "hold-in", "exhale", "hold-out"];
 
+/**
+ * Public surface of a meditation session instance: read-only reactive getters
+ * plus the lifecycle controls. Explicit so callers and tooling get a stable
+ * contract instead of an inferred shape.
+ */
+export interface MeditationSession {
+	readonly status: MeditationSessionStatus;
+	readonly pattern: BreathingPattern;
+	readonly durationMinutes: number;
+	readonly elapsedSeconds: number;
+	readonly breathCount: number;
+	readonly currentPhase: BreathPhase;
+	readonly phaseElapsed: number;
+	readonly phaseDuration: number;
+	readonly holdPulseDx: number | undefined;
+	readonly sessionHistory: CompletedSession[];
+	start(
+		p: BreathingPattern,
+		dur: number,
+		aMin: number,
+		aMax: number,
+		onComplete?: () => void,
+		onPhaseChange?: (phase: BreathPhase) => void,
+	): void;
+	stop(): void;
+	dispose(): void;
+}
+
 function getPhaseDuration(pattern: BreathingPattern, phase: BreathPhase): number {
 	switch (phase) {
 		case "inhale":
@@ -34,7 +62,7 @@ function getPhaseDuration(pattern: BreathingPattern, phase: BreathPhase): number
  * Create a reactive meditation session state instance.
  * One instance per viewer/modal context.
  */
-export function createMeditationSession() {
+export function createMeditationSession(): MeditationSession {
 	// ── Core reactive state ────────────────────────────────────────
 	let status = $state<MeditationSessionStatus>("idle");
 	let pattern = $state<BreathingPattern>(null!);
@@ -314,5 +342,3 @@ export function createMeditationSession() {
 		dispose,
 	};
 }
-
-export type MeditationSession = ReturnType<typeof createMeditationSession>;

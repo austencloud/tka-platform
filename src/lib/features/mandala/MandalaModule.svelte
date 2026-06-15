@@ -5,6 +5,8 @@
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import type { UndulationEasing } from "$lib/shared/mandala/domain/mandala-types";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import MeditationControls from "./tabs/meditate/components/MeditationControls.svelte";
   import MeditationOverlay from "./tabs/meditate/components/MeditationOverlay.svelte";
   import { createMeditationSession } from "./tabs/meditate/state/meditation-session.svelte";
@@ -13,16 +15,12 @@
   import { exportMandalaPNG, downloadBlob } from "./tabs/export/services/mandala-export";
   import { mandalaCollectionState } from "./tabs/collection/state/mandala-collection-state.svelte";
   import { DEFAULT_MANDALAS } from "./tabs/meditate/domain/default-mandalas";
-  import type { CollectedMandala } from "./tabs/collection/domain/mandala-collection-types";
   import type { StepLike } from "$lib/shared/mandala/services/types";
   import { onMount } from "svelte";
 
   // ── Phase management ──
   type Phase = "gallery" | "detail" | "meditate-config" | "meditate-session" | "export";
   let phase = $state<Phase>("gallery");
-
-  // ── Selected mandala ──
-  let selectedMandala = $state<CollectedMandala | null>(null);
 
   // ── All sources ──
   interface MandalaItem {
@@ -35,6 +33,15 @@
     createdAt: number;
     group: "curated" | "collection";
   }
+
+  // The selected mandala drives detail/meditate/export. Everything downstream
+  // consumes its steps as StepLike (render + export), so the selection mirrors
+  // MandalaItem's step shape rather than the persisted CollectedMandala's
+  // StepData[] — no lossy cast needed at the assignment or the consumers.
+  type SelectedMandala = Omit<MandalaItem, "group">;
+
+  // ── Selected mandala ──
+  let selectedMandala = $state<SelectedMandala | null>(null);
 
   const items = $derived.by((): MandalaItem[] => {
     const curated: MandalaItem[] = DEFAULT_MANDALAS.map((m) => ({
@@ -104,9 +111,22 @@
   const ANIMATE_MAX = 250;
   const BASE_PERIOD = 5;
 
-  const reducedMotion = typeof window !== "undefined"
-    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    : false;
+  // Reactive prefers-reduced-motion — tracks runtime OS toggles mid-session,
+  // not just the value sampled at mount.
+  let reducedMotion = $state(
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false,
+  );
+
+  $effect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = (e: MediaQueryListEvent) => { reducedMotion = e.matches; };
+    reducedMotion = mql.matches;
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  });
 
   const meditationSession = createMeditationSession();
   let audioService = createMeditationAudioService();
@@ -225,7 +245,7 @@
     exporting = true;
     try {
       const blob = await exportMandalaPNG(
-        selectedMandala.steps as StepLike[],
+        selectedMandala.steps,
         selectedMandala.bluePropType,
         selectedMandala.redPropType,
         { size: resolution, background, strokeWidth },
@@ -234,6 +254,7 @@
       downloadBlob(blob, `mandala-${safeName}-${resolution}px.png`);
     } catch (err) {
       console.error("[MandalaExport] Export failed:", err);
+      toast.error("Couldn't export the mandala. Please try again.");
     } finally {
       exporting = false;
     }
@@ -244,7 +265,7 @@
     selectedMandala = {
       id: item.id,
       name: item.name,
-      steps: item.steps as any,
+      steps: item.steps,
       variant: item.variant,
       bluePropType: item.bluePropType,
       redPropType: item.redPropType,
@@ -267,6 +288,7 @@
 
   onMount(() => {
     return () => {
+      clearTimeout(deleteTimer);
       meditationSession.dispose();
       audioService.dispose();
     };
@@ -277,7 +299,12 @@
   <!-- ═══ GALLERY ═══ -->
   {#if phase === "gallery"}
     <div class="gallery-view">
-      {#if items.length === 0}
+      {#if mandalaCollectionState.loading && items.length === 0}
+        <div class="loading-state">
+          <PanelSpinner size={12} />
+          <p class="loading-label">Loading your mandalas…</p>
+        </div>
+      {:else if items.length === 0}
         <div class="empty-state">
           <i class="fas fa-dharmachakra empty-icon" aria-hidden="true"></i>
           <p class="empty-title">No mandalas yet</p>
@@ -648,6 +675,18 @@
   .empty-title { font-size: 16px; font-weight: 500; margin: 0; }
   .empty-hint { font-size: 13px; margin: 0; opacity: 0.7; }
 
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 16px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
+
+  .loading-label { font-size: 13px; margin: 0; opacity: 0.7; }
+
   /* ── Detail layout ── */
   .detail-layout {
     display: flex;
@@ -745,10 +784,14 @@
   }
 
   .meditate-btn {
-    background: linear-gradient(135deg, #818cf8, #6366f1);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--theme-accent, #6366f1) 75%, white),
+      var(--theme-accent, #6366f1)
+    );
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: white;
-    box-shadow: 0 4px 12px color-mix(in srgb, #6366f1 30%, transparent);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
   }
 
   .export-btn {
@@ -773,7 +816,7 @@
   @media (hover: hover) {
     .meditate-btn:hover {
       transform: translateY(-1px);
-      box-shadow: 0 6px 16px color-mix(in srgb, #6366f1 40%, transparent);
+      box-shadow: 0 6px 16px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
     }
     .export-btn:hover {
       background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
@@ -964,7 +1007,7 @@
     outline-offset: 2px;
   }
 
-  .chip-detail { font-size: 11px; opacity: 0.5; }
+  .chip-detail { font-size: var(--font-size-compact, 12px); opacity: 0.5; }
 
   .bg-swatch {
     width: 14px;
