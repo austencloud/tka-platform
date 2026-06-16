@@ -552,6 +552,7 @@ function buildCacheKey(
 	parts.push(bluePropType ?? "staff", redPropType ?? "staff");
 	if (options?.pathShape) parts.push("ps:" + options.pathShape);
 	if (options?.motionAware) parts.push("ma:1");
+	if (options?.tipEnds === 1) parts.push("te:1");
 	return parts.join("|");
 }
 
@@ -561,7 +562,8 @@ function computePointSets(
 	dx: number,
 	dy: number
 ): { blue: MandalaPoint[][]; red: MandalaPoint[][] } {
-	const tips = [{ dx: -dx, dy }, { dx, dy }];
+	// One-ended prop (club) traces only the outer tip; two-ended (staff) both.
+	const tips = options?.tipEnds === 1 ? [{ dx, dy }] : [{ dx: -dx, dy }, { dx, dy }];
 	const gridRadius = MANDALA_GRID_RADIUS;
 	const samplesPerBeat = BASE_SAMPLES_PER_BEAT;
 

@@ -108,6 +108,8 @@
 		strokeWidth?: number;
 		/** Per-path gradient colors for gradient color mode */
 		gradient?: { blue: [string, string]; red: [string, string]; purple: [string, string] };
+		/** Prop ends traced: 2 = staff (both tips), 1 = club (one tip). Default 2. */
+		tipEnds?: 1 | 2;
 	}
 
 	let {
@@ -131,6 +133,7 @@
 		palette: paletteOverride,
 		strokeWidth,
 		gradient,
+		tipEnds = 2,
 	}: Props = $props();
 
 	const DARK_MOTION_PALETTE: MandalaPalette = {
@@ -178,9 +181,11 @@
 	});
 
 	function optionsFor(shape: MandalaPathShape): MandalaPathOptions | undefined {
-		if (shape === "hybrid") return { motionAware: true };
-		if (shape !== "arc") return { pathShape: shape };
-		return undefined;
+		const base: MandalaPathOptions = {};
+		if (shape === "hybrid") base.motionAware = true;
+		else if (shape !== "arc") base.pathShape = shape;
+		if (tipEnds === 1) base.tipEnds = 1;
+		return Object.keys(base).length > 0 ? base : undefined;
 	}
 
 	// Drive a morph whenever pathShape changes. Reads pathShape (tracked); lastShape

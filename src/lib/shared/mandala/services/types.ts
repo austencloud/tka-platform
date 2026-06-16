@@ -20,6 +20,13 @@ export interface MotionLike {
 export interface MandalaPathOptions {
 	pathShape?: "arc" | "linear" | "concave";
 	motionAware?: boolean;
+	/**
+	 * Prop end-points traced: 2 = a two-ended prop (staff), both tips drawn; 1 =
+	 * a single-ended prop (club), only the outer tip. One end halves the path
+	 * count, so the busiest high-turn mandalas read far less overwhelming.
+	 * Default 2.
+	 */
+	tipEnds?: 1 | 2;
 }
 
 

@@ -16,6 +16,8 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
   let grid = $state<LabGridMode>("diamond");
+  type PropKind = "staff" | "club";
+  let prop = $state<PropKind>("staff");
 
   // Open picker context (null = closed).
   let picker = $state<{ variations: StyleVariation[]; turnPattern: string; accent: string } | null>(null);
@@ -24,6 +26,14 @@
     { value: "diamond" as LabGridMode, label: "Diamond", icon: "fas fa-diamond" },
     { value: "box" as LabGridMode, label: "Box", icon: "fas fa-square" },
   ];
+
+  // Staff = two-ended prop (both tips); club = one-ended (single tip → half the
+  // paths, so the busy high-turn mandalas read far less overwhelming).
+  const propOptions = [
+    { value: "staff" as PropKind, label: "Staff" },
+    { value: "club" as PropKind, label: "Club" },
+  ];
+  const tipEnds = $derived(prop === "club" ? (1 as const) : (2 as const));
 
   // VTG ratio per turn value (1:1 … 7:1) — the axis numbering for this lab.
   const vtgRatios = TURN_VALUES.map((t) => TND_TURNS_RATIO_MAP[t] ?? String(t));
@@ -63,8 +73,15 @@
       The mandala is set by <strong>prop rotation</strong> and turns — not the VTG mode. These three are
       every fingerprint there is; pick a cell to choose which letter wears it.
     </p>
-    <div class="grid-toggle" role="group" aria-label="Grid mode">
-      <SegmentedControl options={gridOptions} value={grid} onchange={setGrid} color="accent" size="sm" />
+    <div class="controls">
+      <div class="ctl">
+        <span class="ctl-label">Grid</span>
+        <SegmentedControl options={gridOptions} value={grid} onchange={setGrid} color="accent" size="sm" />
+      </div>
+      <div class="ctl">
+        <span class="ctl-label">Prop</span>
+        <SegmentedControl options={propOptions} value={prop} onchange={(v) => (prop = v)} color="accent" size="sm" />
+      </div>
     </div>
   </div>
 
@@ -94,7 +111,7 @@
                   aria-label="{m.label} blue {blue} red {red} — pick a letter"
                   onclick={() => (picker = { variations: m.variations, turnPattern: turnKey(blue, red), accent: m.accent })}
                 >
-                  <SequenceMandala sequence={seq} mode="gallery" show="both" size={120} darkMode />
+                  <SequenceMandala sequence={seq} mode="gallery" show="both" size={120} {tipEnds} darkMode />
                 </button>
               {:else}
                 <div class="empty" aria-label="No sequence for {blue}|{red}"></div>
@@ -119,10 +136,18 @@
 
 <style>
   .explorer { display: flex; flex-direction: column; gap: 1rem; }
-  .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-  .grid-toggle { flex-shrink: 0; min-width: 180px; }
-  .intro { margin: 0; font-size: var(--font-size-min, 14px); color: var(--theme-text-secondary, #9fb2bd); max-width: 60ch; }
+  .topbar {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;
+    padding-bottom: 0.85rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .intro { margin: 0; font-size: var(--font-size-min, 14px); color: var(--theme-text-secondary, #9fb2bd); max-width: 56ch; }
   .intro strong { color: var(--theme-text, #fff); }
+  .controls { display: flex; gap: 0.85rem; flex-shrink: 0; flex-wrap: wrap; }
+  .ctl { display: flex; flex-direction: column; gap: 0.3rem; min-width: 150px; }
+  .ctl-label {
+    font-size: var(--font-size-compact, 11px); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--theme-text-secondary, #7e93a0);
+  }
   .status { padding: 2rem; text-align: center; color: var(--theme-text-secondary, #888); font-size: var(--font-size-min, 14px); }
   .status.err { color: #fbbf24; }
 
