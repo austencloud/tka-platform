@@ -40,8 +40,15 @@ const DB_FPS = 30;            // database sampling rate
 const SEARCH_EVERY = 3;       // frames between searches (~10Hz @30fps)
 const INERTIALIZE_SEC = 0.25; // blend duration on a clip switch
 const REACH_SEC = 1.0;        // trajectory horizon used to reach the target
-/** Min separation (sec, same clip) before a search result counts as a real jump. */
-const REPLAN_TIME_EPS = 0.2;
+/** Minimum time (sec) to commit to a clip before allowing a switch — prevents
+ *  flip-flop snapping between clips every search. */
+const MIN_DWELL_SEC = 0.3;
+/** Scale applied to clip-driven root TRANSLATION. This slice is reorient-IN-PLACE:
+ *  the performer pivots and the leg lift comes from the clip pose, not root
+ *  travel. The standalone RootMotionExtractor also returns translation in an
+ *  unconverted (≈cm) scale that flings the avatar, so translation is held at 0
+ *  here. Yaw is integrated at full strength. Tunable up when travel is added. */
+const ROOT_POS_SCALE = 0.0;
 
 /**
  * Motion-matching locomotion controller. Per frame it builds a trajectory query
@@ -58,6 +65,9 @@ export class MmLocomotionController {
   private frameCounter = 0;
   private readonly bones = new Map<string, Bone>();
   private readonly inert = new Map<string, Inertializer>();
+  private readonly durations = new Map<string, number>();
+  /** Seconds played on the current clip since the last clip switch. */
+  private timeSinceSwitch = 0;
 
   private readonly _state: LocomotionState = {
     position: new Vector3(),
@@ -88,6 +98,8 @@ export class MmLocomotionController {
       DB_FPS,
       DEFAULT_WEIGHTS,
     );
+
+    for (const s of specs) this.durations.set(s.clipId, s.durationSec);
 
     for (const name of TRACKED_BONES) {
       const b = this.rig.getBone(name);
@@ -122,12 +134,19 @@ export class MmLocomotionController {
   update(dt: number): void {
     if (!this.db || !this.current) return;
 
-    // 1. Advance the playhead within the current clip and pose the LIVE rig to
-    //    it. This must happen before readLivePose() so the query reflects the
-    //    current frame, and before rootMotionDelta() so the extractor reads the
-    //    legitimately-advanced hip (not a search-scrubbed one).
+    // 1. Advance the playhead CONTINUOUSLY and loop within the clip. The clip
+    //    PLAYS — it is never scrubbed to an arbitrary frame mid-clip — so root
+    //    motion is a clean per-frame delta, leg motion completes, and the body
+    //    does not snap. (The old per-search time-jump was the spazzing.)
+    const dur = this.durations.get(this.current.clipId) ?? 1;
     this.current.time += dt;
+    let looped = false;
+    if (this.current.time >= dur) {
+      this.current.time -= dur;
+      looped = true;
+    }
     this.rig.applyClip(this.current.clipId, this.current.time);
+    this.timeSinceSwitch += dt;
 
     // 2. Build the trajectory + query from the LIVE pose (no scrub).
     const cur: LocomotionPose = {
@@ -137,18 +156,17 @@ export class MmLocomotionController {
     const target: LocomotionPose = { position: this.targetPos, facing: this.targetFacing };
     const traj = buildTrajectoryQuery(cur, target, REACH_SEC);
 
-    // 3. Search at a reduced cadence (clips stay continuous between searches).
-    if (this.frameCounter % SEARCH_EVERY === 0) {
+    // 3. Search at a reduced cadence. Switch ONLY when the matched CLIP differs
+    //    (never jump the playhead within a clip), and only after a minimum dwell
+    //    so the controller commits to a clip and lets it play through instead of
+    //    snapping between frames every search.
+    if (this.frameCounter % SEARCH_EVERY === 0 && this.timeSinceSwitch >= MIN_DWELL_SEC) {
       const query = this.buildQuery(traj);
       const idx = searchNearest(this.db, query);
       const frame: MotionFrame | undefined = idx >= 0 ? this.db.frames[idx] : undefined;
-      const jumped =
-        frame !== undefined &&
-        (frame.clipId !== this.current.clipId ||
-          Math.abs(frame.time - this.current.time) > REPLAN_TIME_EPS);
 
-      if (frame && jumped) {
-        // Capture where each bone WAS, switch to the matched clip frame, then
+      if (frame && frame.clipId !== this.current.clipId) {
+        // Capture where each bone WAS, switch to the matched clip phase, then
         // start an inertializer from the old pose into the new clip pose so the
         // visible transition eases instead of popping.
         const oldQuats = new Map<string, Quaternion>();
@@ -162,18 +180,16 @@ export class MmLocomotionController {
         }
 
         this.current = { clipId: frame.clipId, time: frame.time };
+        this.timeSinceSwitch = 0;
 
-        // The applyClip above teleported the hip to an arbitrary clip/time.
-        // Reset root-motion accumulation so the next rootMotionDelta() does NOT
-        // count that discontinuity as a (huge, bogus) movement delta.
+        // The applyClip above moved the hip to the new clip's phase. Reset
+        // root-motion accumulation so the next rootMotionDelta() does NOT count
+        // that discontinuity as a (huge, bogus) movement delta.
         this.rig.resetRootMotion();
       }
     }
 
     // 4. Apply the decaying inertialization offset ON TOP of the posed clip.
-    // applyClip set each bone to the clip pose; applyInertialize blends from the
-    // captured old pose toward that clip pose, decaying to identity over the
-    // blend duration. Dropping a finished inertializer keeps the map small.
     for (const [name, bone] of this.bones) {
       const it = this.inert.get(name);
       if (it) {
@@ -184,17 +200,20 @@ export class MmLocomotionController {
 
     // 5. Integrate clip-driven root motion into world-space state. The delta is
     // in the character's local frame (x = lateral, forward = facing axis);
-    // rotate it by the current world facing before accumulating. Thanks to the
-    // resetRootMotion() in step 3, the first extract() after a switch returns
-    // ~0 (the teleport is not counted).
+    // rotate it by the current world facing before accumulating. On a loop wrap
+    // the playhead jumped from clip end to start, so reset first to avoid
+    // counting that wrap as motion.
+    if (looped) this.rig.resetRootMotion();
     const rm = this.rig.rootMotionDelta();
     const cosF = Math.cos(this._state.facing);
     const sinF = Math.sin(this._state.facing);
-    this._state.position.x += rm.x * cosF + rm.forward * sinF;
-    this._state.position.z += -rm.x * sinF + rm.forward * cosF;
+    const sx = rm.x * ROOT_POS_SCALE;
+    const sf = rm.forward * ROOT_POS_SCALE;
+    this._state.position.x += sx * cosF + sf * sinF;
+    this._state.position.z += -sx * sinF + sf * cosF;
     this._state.facing += rm.yawDelta;
-    this._state.speed = Math.hypot(rm.x, rm.forward) / Math.max(dt, 1e-4);
-    this._state.isMoving = this._state.speed > 0.01;
+    this._state.speed = Math.hypot(sx, sf) / Math.max(dt, 1e-4);
+    this._state.isMoving = Math.abs(rm.yawDelta) > 1e-4 || this._state.speed > 0.01;
 
     // 6. Advance the frame counter.
     this.frameCounter++;
