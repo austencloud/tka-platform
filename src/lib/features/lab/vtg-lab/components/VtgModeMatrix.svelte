@@ -42,6 +42,11 @@
     const f = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
     return `${f(blue)}|${f(red)}`;
   }
+
+  // Base-seed ids are `tnd-<family>-<word>`; show just the word (e.g. "DJDJ").
+  function displayWord(seedId: string): string {
+    return (seedId.split("-").pop() ?? seedId).toUpperCase();
+  }
 </script>
 
 {#if loading}
@@ -51,10 +56,11 @@
 {:else if seeds.length === 0}
   <div class="status">No sequences for this family.</div>
 {:else}
-  {#each seeds as seed (seed.seedId)}
+  <div class="seed-grid">
+    {#each seeds as seed (seed.seedId)}
     <section class="seed-block">
-      <h3 class="seed-title">{seed.word}</h3>
-      <TurnMatrixGrid ariaLabel="{seed.word} turn matrix">
+      <h3 class="seed-title">{displayWord(seed.seedId)}</h3>
+      <TurnMatrixGrid ariaLabel="{displayWord(seed.seedId)} turn matrix">
         {#snippet cell(blue: number, red: number)}
           {@const seq = seed.byTurn.get(turnKey(blue, red))}
           {#if seq}
@@ -72,7 +78,8 @@
         {/snippet}
       </TurnMatrixGrid>
     </section>
-  {/each}
+    {/each}
+  </div>
 {/if}
 
 {#if inspected}
@@ -87,11 +94,18 @@
     font-size: var(--font-size-min, 14px);
   }
   .status.error { color: #fbbf24; }
+  /* Lay seed matrices side by side on wide screens; wrap/stack when narrow. */
+  .seed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem 1rem;
+    align-items: start;
+  }
   .seed-block {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    gap: 0.5rem;
+    min-width: 0;
   }
   .seed-title {
     margin: 0;

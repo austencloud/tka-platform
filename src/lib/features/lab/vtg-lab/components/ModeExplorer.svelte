@@ -28,14 +28,18 @@
 			<h2>{modeGroup.name}</h2>
 			<span class="letter-type">{modeGroup.letterType}</span>
 		</div>
-		<p class="mode-description">{modeInfo.description}</p>
-		<div class="tka-mapping">
-			<span class="label">TKA Position:</span>
-			<span class="value">{modeGroup.tkaPositionDescription}</span>
-		</div>
-		<div class="tka-mapping">
-			<span class="label">TKA Motion:</span>
-			<span class="value">{modeGroup.tkaMotionDescription}</span>
+		<div class="header-meta">
+			<p class="mode-description">{modeInfo.description}</p>
+			<div class="tka-mappings">
+				<div class="tka-mapping">
+					<span class="label">TKA Position:</span>
+					<span class="value">{modeGroup.tkaPositionDescription}</span>
+				</div>
+				<div class="tka-mapping">
+					<span class="label">TKA Motion:</span>
+					<span class="value">{modeGroup.tkaMotionDescription}</span>
+				</div>
+			</div>
 		</div>
 		{#if modeGroup.hasPositionDependentLetters && modeGroup.positionDependenceNote}
 			<div class="position-warning">
@@ -52,7 +56,7 @@
 	.mode-explorer {
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
+		gap: 1rem;
 	}
 
 	/* Mode header */
@@ -88,10 +92,27 @@
 		color: var(--theme-text-secondary, #888);
 	}
 
+	/* Description + TKA mappings sit side by side on wide screens to use the
+	   horizontal space and keep the header short; they wrap when narrow. */
+	.header-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem 2.5rem;
+		align-items: flex-start;
+	}
+
 	.mode-description {
 		margin: 0;
 		font-size: var(--font-size-min, 14px);
 		color: var(--theme-text-secondary, #888);
+		flex: 1 1 260px;
+	}
+
+	.tka-mappings {
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+		flex: 1 1 340px;
 	}
 
 	.tka-mapping {
