@@ -1,15 +1,13 @@
 <script lang="ts">
 	/**
-	 * ModeExplorer - displays all VTG patterns for a selected mode
-	 * as 4-step sequence strips, grouped by rotation style.
+	 * ModeExplorer - displays the ChoreoCard matrix for a selected VTG mode,
+	 * with a mode-description header.
 	 */
 
 	import { VTG_MODE_INFO } from "$lib/features/learn/domain/constants/vtg-experience-data";
-	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-	import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 	import type { VtgModeGroup } from "../domain/vtg-lab-types";
-	import { getModeChains, expandChain, type ChainDef } from "../domain/vtg-sequence-data";
-	import SequenceStrip from "./SequenceStrip.svelte";
+	import { VTG_MODE_TO_TND_FAMILY } from "../domain/vtg-tnd-family-map";
+	import VtgModeMatrix from "./VtgModeMatrix.svelte";
 
 	interface Props {
 		modeGroup: VtgModeGroup;
@@ -19,37 +17,7 @@
 
 	const modeInfo = $derived(VTG_MODE_INFO[modeGroup.mode]);
 	const modeColor = $derived(modeInfo.color);
-	const chains = $derived(getModeChains(modeGroup.mode));
-
-	const bluePropType = $derived.by(() => {
-		const settings = getSettings();
-		return (settings.bluePropType ?? settings.propType ?? PropType.STAFF) as PropType;
-	});
-
-	const redPropType = $derived.by(() => {
-		const settings = getSettings();
-		return (settings.redPropType ?? settings.propType ?? PropType.STAFF) as PropType;
-	});
-
-	/** Group chains by rotation style for display */
-	const groupedChains = $derived.by(() => {
-		const groups: { style: string; label: string; chains: ChainDef[] }[] = [];
-		const styleOrder = ["pro/pro", "anti/anti", "hybrid"] as const;
-		const labels: Record<string, string> = {
-			"pro/pro": "Pro / Pro (Isolation)",
-			"anti/anti": "Anti / Anti (Antispin)",
-			hybrid: "Hybrid",
-		};
-
-		for (const style of styleOrder) {
-			const matching = chains.filter((c) => c.rotationStyle === style);
-			if (matching.length > 0) {
-				groups.push({ style, label: labels[style] ?? style, chains: matching });
-			}
-		}
-
-		return groups;
-	});
+	const familyId = $derived(VTG_MODE_TO_TND_FAMILY[modeGroup.mode]);
 </script>
 
 <section class="mode-explorer">
@@ -77,23 +45,7 @@
 		{/if}
 	</div>
 
-	<!-- Sequence strips grouped by rotation style -->
-	{#each groupedChains as group (group.style)}
-		<div class="rotation-group">
-			<h3 class="rotation-label">{group.label}</h3>
-			<div class="strips-stack">
-				{#each group.chains as chain (chain.label)}
-					<SequenceStrip
-						beats={expandChain(chain, bluePropType, redPropType)}
-						label={chain.label}
-						mnemonic={chain.mnemonic}
-						rotationStyle={chain.rotationStyle}
-						{modeColor}
-					/>
-				{/each}
-			</div>
-		</div>
-	{/each}
+	<VtgModeMatrix {familyId} />
 </section>
 
 <style>
@@ -174,27 +126,5 @@
 	.position-warning i {
 		margin-top: 1px;
 		flex-shrink: 0;
-	}
-
-	/* Rotation groups */
-	.rotation-group {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.rotation-label {
-		margin: 0;
-		font-size: var(--font-size-min, 14px);
-		font-weight: 600;
-		color: var(--theme-text-secondary, #888);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	.strips-stack {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
 	}
 </style>
