@@ -384,6 +384,12 @@ export const TURN_RATIO_MAPPINGS: TurnRatioMapping[] = [
 		tkaDescription: "Two turns per beat",
 	},
 	{
+		vtgRatio: "6:1",
+		vtgDescription: "6 prop rotations per arm revolution. Inspin = 5 petals. Antispin = 7 petals.",
+		tkaTurns: "2.5",
+		tkaDescription: "Two and a half turns per beat",
+	},
+	{
 		vtgRatio: "7:1",
 		vtgDescription: "7 prop rotations per arm revolution. Inspin = 6 petals. Antispin = 8 petals.",
 		tkaTurns: "3",

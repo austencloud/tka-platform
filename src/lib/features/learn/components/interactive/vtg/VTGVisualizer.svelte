@@ -1,6 +1,6 @@
 <!--
-VTGVisualizer - Animated visualization of VTG (Velocity-Timing-Direction) modes
-Shows how hands coordinate their movements in different VTG patterns
+VTGVisualizer - Animated visualization of VTG (Vulcan Tech Gospel) modes
+Shows how the two hands coordinate across the timing and direction axes.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
@@ -33,44 +33,44 @@ Shows how hands coordinate their movements in different VTG patterns
     SS: {
       name: "Split-Same",
       color: "#22D3EE",
-      direction: "Split (opposite directions)",
-      timing: "Same (synchronized)",
-      description: "Hands move in opposite directions at the same time",
+      direction: "Same (both hands arc the same way)",
+      timing: "Split (180° out of phase)",
+      description: "Both hands arc the same way, held 180° out of phase",
     },
     TS: {
       name: "Together-Same",
       color: "#4ADE80",
-      direction: "Together (same direction)",
-      timing: "Same (synchronized)",
-      description: "Hands move in the same direction at the same time",
+      direction: "Same (both hands arc the same way)",
+      timing: "Together (in sync at the downbeat)",
+      description: "Both hands arc the same way, in sync",
     },
     SO: {
-      name: "Same-Opposite",
+      name: "Split-Opposite",
       color: "#F472B6",
-      direction: "Same direction",
-      timing: "Opposite (staggered half-beat)",
-      description: "Hands move same direction, but staggered timing",
+      direction: "Opposite (hands arc opposite ways)",
+      timing: "Split (180° apart at the downbeat)",
+      description: "Hands arc opposite ways — they sweep through together and apart; 180° apart at the downbeat",
     },
     TO: {
       name: "Together-Opposite",
       color: "#FB923C",
-      direction: "Together (same direction)",
-      timing: "Opposite (staggered)",
-      description: "Hands move together but start at opposite times",
+      direction: "Opposite (hands arc opposite ways)",
+      timing: "Together (in sync at the downbeat)",
+      description: "Hands arc opposite ways — they sweep through apart and back; together at the downbeat",
     },
     QS: {
       name: "Quarter-Same",
       color: "#A78BFA",
-      direction: "Same direction",
-      timing: "Quarter (90� offset)",
-      description: "Hands move same direction with quarter-beat offset",
+      direction: "Same (both hands arc the same way)",
+      timing: "Quarter (90° out of phase)",
+      description: "Both hands arc the same way, held 90° out of phase",
     },
     QO: {
       name: "Quarter-Opposite",
       color: "var(--semantic-warning)",
-      direction: "Opposite directions",
-      timing: "Quarter (90� offset)",
-      description: "Hands move opposite with quarter-beat timing",
+      direction: "Opposite (hands arc opposite ways)",
+      timing: "Quarter (90° apart at the downbeat)",
+      description: "Hands arc opposite ways — they sweep through together and apart; 90° apart at the downbeat",
     },
   };
 
@@ -82,70 +82,64 @@ Shows how hands coordinate their movements in different VTG patterns
   let animationProgress = $state(0);
   let hasPlayed = $state(false);
 
-  // Get timing offset for each hand based on VTG mode
-  function getHandProgress(
-    baseProgress: number,
-    isLeft: boolean,
-    vtgMode: VTGMode
-  ): number {
-    switch (vtgMode) {
-      case "SS": // Split-Same: both move at same time
-      case "TS": // Together-Same: both move at same time
-        return baseProgress;
-      case "SO": // Same-Opposite: staggered by half
-      case "TO": // Together-Opposite: staggered by half
-        return isLeft ? baseProgress : (baseProgress + 0.5) % 1;
-      case "QS": // Quarter-Same: staggered by quarter
-      case "QO": // Quarter-Opposite: staggered by quarter
-        return isLeft ? baseProgress : (baseProgress + 0.25) % 1;
+  // VTG splits into two independent axes (Flow Arts Knowledge MCP, "VTG"):
+  //
+  //   Timing (1st letter) = phase relationship at the downbeat:
+  //     Together = in sync (0), Split = 180° out of phase (0.5), Quarter = 90° (0.25)
+  //   Direction (2nd letter) = hand-path arc direction (NOT prop rotation):
+  //     Same = both hands arc the same way (+1)
+  //     Opposite = hands arc opposite ways (-1) → the gap is no longer fixed, so
+  //     the two hands sweep through together and apart on every cycle.
+  function timingOffset(vtgMode: VTGMode): number {
+    switch (vtgMode[0]) {
+      case "T":
+        return 0; // Together — both hands hit the downbeat at the same moment
+      case "S":
+        return 0.5; // Split — 180° out of phase at the downbeat
+      case "Q":
+        return 0.25; // Quarter — 90° out of phase
       default:
-        return baseProgress;
+        return 0;
     }
   }
 
-  // Get position based on progress (oscillating movement)
-  function getPosition(
-    progress: number,
-    isLeft: boolean,
-    vtgMode: VTGMode
-  ): { x: number; y: number } {
-    const centerX = 50;
-    const centerY = 50;
-    const radius = 25;
+  function arcSign(vtgMode: VTGMode): number {
+    return vtgMode[1] === "O" ? -1 : 1; // Opposite counter-arcs the right hand
+  }
 
-    // Determine if hands move together or split
-    const isSplit = vtgMode === "SS" || vtgMode === "QO";
-    const angle = progress * Math.PI * 2;
+  // Angle (radians) of a hand on the shared orbit. Progress 0 places the left
+  // hand at the downbeat (bottom of the circle). The right hand carries the
+  // timing offset and, for Opposite modes, the reversed arc direction — which is
+  // what makes those modes visibly converge and diverge.
+  const DOWNBEAT = Math.PI / 2; // bottom of the circle (SVG y grows downward)
+  function handAngle(progress: number, isLeft: boolean, vtgMode: VTGMode): number {
+    if (isLeft) return DOWNBEAT + progress * Math.PI * 2;
+    return (
+      DOWNBEAT +
+      arcSign(vtgMode) * progress * Math.PI * 2 +
+      timingOffset(vtgMode) * Math.PI * 2
+    );
+  }
 
-    if (isSplit) {
-      // Split: hands move in opposite directions
-      const direction = isLeft ? 1 : -1;
-      return {
-        x:
-          centerX +
-          Math.cos(angle * direction) * radius * (isLeft ? -0.6 : 0.6),
-        y: centerY + Math.sin(angle) * radius * 0.4,
-      };
-    } else {
-      // Together: hands move in same direction
-      return {
-        x: centerX + Math.cos(angle) * radius * (isLeft ? -0.6 : 0.6),
-        y: centerY + Math.sin(angle) * radius * 0.4,
-      };
-    }
+  // Both hands orbit the shared center circle; the downbeat is the bottom.
+  function getPosition(angle: number): { x: number; y: number } {
+    const center = 50;
+    const orbitR = 18;
+    return {
+      x: center + Math.cos(angle) * orbitR,
+      y: center + Math.sin(angle) * orbitR,
+    };
   }
 
   // Current hand positions
   const leftPos = $derived(() => {
     const modeVal = mode as VTGMode;
-    const prog = getHandProgress(animationProgress, true, modeVal);
-    return getPosition(prog, true, modeVal);
+    return getPosition(handAngle(animationProgress, true, modeVal));
   });
 
   const rightPos = $derived(() => {
     const modeVal = mode as VTGMode;
-    const prog = getHandProgress(animationProgress, false, modeVal);
-    return getPosition(prog, false, modeVal);
+    return getPosition(handAngle(animationProgress, false, modeVal));
   });
 
   // Animation loop

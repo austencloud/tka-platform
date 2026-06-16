@@ -13,7 +13,7 @@ export interface VTGModeConfig {
 export const VTG_MODES: VTGModeConfig[] = [
   { mode: "SS", name: "Split-Same", color: "#22D3EE" },
   { mode: "TS", name: "Together-Same", color: "#4ADE80" },
-  { mode: "SO", name: "Same-Opposite", color: "#F472B6" },
+  { mode: "SO", name: "Split-Opposite", color: "#F472B6" },
   { mode: "TO", name: "Together-Opposite", color: "#FB923C" },
   { mode: "QS", name: "Quarter-Same", color: "#A78BFA" },
   { mode: "QO", name: "Quarter-Opposite", color: "#F59E0B" },
