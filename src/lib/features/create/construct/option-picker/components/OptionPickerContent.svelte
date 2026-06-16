@@ -17,7 +17,7 @@ Uses organizer and sizer services for section grouping and sizing.
   import OptionViewerSwipeLayout from "../swipe-layout/components/OptionViewerSwipeLayout.svelte";
   import OptionViewerSection from "../swipe-layout/components/OptionViewerSection.svelte";
   import HorizontalSwipeContainer from "$lib/shared/foundation/ui/HorizontalSwipeContainer.svelte";
-  import PendingTurnsBar from "./PendingTurnsBar.svelte";
+  import OptionPickerHeader from "./OptionPickerHeader.svelte";
   import type { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { identifyContinuation } from "../services/continuation-identifier";
 
@@ -339,8 +339,9 @@ Uses organizer and sizer services for section grouping and sizing.
   {#if sizingStable}
     <!-- Content stays mounted so pictographs transition in place instead of remounting -->
     <div class="animated-content">
-      <!-- Filter toggle chip - only show when we have rotation context -->
-      {#if shouldShowFilterToggle()}
+      <!-- Standalone filter pill: mobile/compact layouts only. The wide desktop
+           layout folds this into OptionPickerHeader below. -->
+      {#if shouldShowFilterToggle() && !(shouldUseWideLayout && !isMobileStackedLayout() && !shouldUseCompact4x4() && !shouldUseSwipeLayout())}
         <div class="filter-header" class:mobile={shouldUseSwipeLayout()}>
           <button
             class="filter-toggle"
@@ -409,15 +410,16 @@ Uses organizer and sizer services for section grouping and sizing.
       {:else if shouldUseWideLayout && !isMobileStackedLayout()}
         <!-- ==================== WIDE DESKTOP LAYOUT ==================== -->
         <div class="sections-container">
-          <!-- Pending-turns bar: header for the options it retunes; centers with
-               the grid as one group so it hugs the options instead of stranding
-               at the top of the panel. -->
-          <PendingTurnsBar
+          <!-- Unified header: All/Continuous filter + collapsible turns. Centers
+               with the grid as one group so it hugs the options. -->
+          <OptionPickerHeader
+            showFilter={shouldShowFilterToggle()}
+            {isContinuousOnly}
+            {onToggleContinuous}
             {blueTurns}
             {redTurns}
             {blueRotation}
             {redRotation}
-            {isContinuousOnly}
             onBlueChange={onBlueTurnsChange}
             onRedChange={onRedTurnsChange}
             onBlueRotationChange={onBlueRotationChange}
