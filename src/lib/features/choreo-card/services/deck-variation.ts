@@ -248,6 +248,33 @@ function applyStartOriMode(seq: SequenceData, mode: StartOriMode | undefined): S
 }
 
 /**
+ * Re-seed explicit per-hand start orientations, then propagate. Unlike the
+ * family-aware `startOriMode` register, this sets exactly the given orientation
+ * on each hand (a hand left undefined is untouched) — used by the VTG lab to
+ * explore how each hand's start orientation reshapes the mandala. NEVER mutates `seq`.
+ */
+function applyStartOrientationPair(
+  seq: SequenceData,
+  pair: { blue?: Orientation; red?: Orientation } | undefined,
+): SequenceData {
+  if (!pair || (!pair.blue && !pair.red)) return seq;
+  const sp = seq.startPosition;
+  if (!sp) return seq;
+  const reseed = (m: typeof sp.motions.blue, o: Orientation | undefined) =>
+    m && o ? createMotionData({ ...m, startOrientation: o, endOrientation: o }) : m;
+  const newStart = {
+    ...sp,
+    motions: {
+      ...sp.motions,
+      [MotionColor.BLUE]: reseed(sp.motions[MotionColor.BLUE], pair.blue),
+      [MotionColor.RED]: reseed(sp.motions[MotionColor.RED], pair.red),
+    },
+  };
+  const seeded = updateSequenceData(seq, { startPosition: newStart });
+  return recalculateAllOrientations(seeded);
+}
+
+/**
  * Re-render a diamond-authored sequence in box mode: rotate the hand path 45°,
  * direction per start-position family (alpha/gamma CW = +1, beta CCW = −1).
  * No-op when gridMode isn't "box" or the family is unsupported (zeta/eta).
@@ -280,6 +307,7 @@ export function applyVariationDescriptor(
 ): AppliedDescriptorResult {
   let working = applyBoxMode(seq, variation.gridMode);
   working = applyStartOriMode(working, variation.startOriMode);
+  working = applyStartOrientationPair(working, variation.startOriPair);
 
   if (variation.reversalSequence) {
     const resolved: ResolvedReversalPattern = {

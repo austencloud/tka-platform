@@ -11,9 +11,13 @@ import { classifyRotationStyle, type RotationStyle } from "../domain/classify-ro
 import { allTurnPatterns } from "../domain/tnd-turn-patterns";
 import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRenderer";
 import { TND_BY_FAMILY } from "$lib/features/choreo-card/domain/tnd-element";
+import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 /** Diamond vs box grid — drives which TnD family each seed lands in. */
 export type LabGridMode = "diamond" | "box";
+
+/** Explicit per-hand start orientation for the mandala (undefined hand = default). */
+export type StartOriPair = { blue?: Orientation; red?: Orientation };
 
 export interface StyleVariation {
   word: string; // e.g. "DJDJ"
@@ -70,6 +74,7 @@ function loadBases(): Promise<SequenceData[]> {
  */
 export async function resolveRotationStyleMatrices(
   grid: LabGridMode = "diamond",
+  startOri?: StartOriPair,
 ): Promise<RotationStyleMatrix[]> {
   const bases = await loadBases();
   const edges = await loadDiamondEdges();
@@ -96,13 +101,27 @@ export async function resolveRotationStyleMatrices(
   for (const style of STYLE_ORDER) {
     const members = byStyle.get(style) ?? [];
     if (members.length === 0) continue;
-    const rep = members[0]!.seq; // any member renders the style's fingerprint
+    // The cell renders the ARCHETYPE: the structurally simplest member (fewest
+    // distinct letters → a single-letter seed like A/B/C, alpha tiebreak),
+    // chosen deterministically rather than by catalog order. Every member shares
+    // this prop-spin rosette; they differ only in how the two hands phase
+    // together (VTG mode = timing/direction), which is what the picker drills into.
+    const rep = [...members].sort((a, b) => {
+      const da = new Set(word(a.seq.id).split("")).size;
+      const db = new Set(word(b.seq.id).split("")).size;
+      if (da !== db) return da - db;
+      return word(a.seq.id).localeCompare(word(b.seq.id));
+    })[0]!.seq;
 
     const byTurn = new Map<string, SequenceData>();
     for (const tp of patterns) {
       byTurn.set(
         tp,
-        applyVariationDescriptor(rep, { turnPattern: tp, turnLabel: tp, gridMode: grid } as any, edges).sequence,
+        applyVariationDescriptor(
+          rep,
+          { turnPattern: tp, turnLabel: tp, gridMode: grid, startOriPair: startOri } as any,
+          edges,
+        ).sequence,
       );
     }
 
@@ -125,12 +144,17 @@ export async function resolveVariationSequence(
   seedId: string,
   turnPattern: string,
   grid: LabGridMode = "diamond",
+  startOri?: StartOriPair,
 ): Promise<SequenceData | null> {
   const bases = await loadBases();
   const base = bases.find((s) => s.id === seedId);
   if (!base) return null;
   const edges = await loadDiamondEdges();
-  return applyVariationDescriptor(base, { turnPattern, turnLabel: turnPattern, gridMode: grid } as any, edges).sequence;
+  return applyVariationDescriptor(
+    base,
+    { turnPattern, turnLabel: turnPattern, gridMode: grid, startOriPair: startOri } as any,
+    edges,
+  ).sequence;
 }
 
 /**

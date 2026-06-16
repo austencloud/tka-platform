@@ -1,7 +1,7 @@
 <script lang="ts">
   import ChoreoCard from "$lib/features/choreo-card/components/ChoreoCard.svelte";
   import CardInspectModal from "$lib/features/choreo-card/components/CardInspectModal.svelte";
-  import { resolveVariationSequence, bakeVariationFront, type StyleVariation, type LabGridMode } from "../services/resolve-rotation-style-matrices";
+  import { resolveVariationSequence, bakeVariationFront, type StyleVariation, type LabGridMode, type StartOriPair } from "../services/resolve-rotation-style-matrices";
   import { portal } from "$lib/features/create/generate/components/modals/portal";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
@@ -10,9 +10,10 @@
     turnPattern: string; // "blue|red"
     accent: string;
     grid: LabGridMode;
+    startOri: StartOriPair;
     onClose: () => void;
   }
-  const { variations, turnPattern, accent, grid, onClose }: Props = $props();
+  const { variations, turnPattern, accent, grid, startOri, onClose }: Props = $props();
 
   interface ResolvedVariation {
     v: StyleVariation;
@@ -31,6 +32,7 @@
   // bakes finish out of order.
   $effect(() => {
     const tp = turnPattern;
+    const ori = startOri;
     loading = true;
     cards = [];
     let cancelled = false;
@@ -39,7 +41,7 @@
     Promise.all(
       variations.map(async (v, i) => {
         try {
-          const seq = await resolveVariationSequence(v.seedId, tp, grid);
+          const seq = await resolveVariationSequence(v.seedId, tp, grid, ori);
           if (!seq || cancelled) return;
           const frontUrl = await bakeVariationFront(seq, v.familyId);
           if (cancelled) return;

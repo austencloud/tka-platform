@@ -1,5 +1,6 @@
 import type { ResolvedReversalPattern } from "../reversal-transform";
 import type { VariationConfig } from "../../services/deck-variation";
+import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export interface CardFooter {
   left?: string;
@@ -30,6 +31,10 @@ export interface CardVariation {
   /** Grid-mode register, deck-wide. Absent / "diamond" → as-authored. "box" →
    *  hand path rotated 45° (per-family direction: alpha/gamma CW, beta CCW). */
   gridMode?: "diamond" | "box";
+  /** Explicit per-hand start-orientation override (e.g. VTG-lab exploration).
+   *  Overrides the paired `startOriMode` register; a hand left undefined keeps
+   *  the register/default. Applied after box-mode, before reversal/turns. */
+  startOriPair?: { blue?: Orientation; red?: Orientation };
 }
 
 export interface DeckReleaseCard {

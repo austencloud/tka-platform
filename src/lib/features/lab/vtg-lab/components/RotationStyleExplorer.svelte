@@ -8,9 +8,11 @@
     type RotationStyleMatrix,
     type StyleVariation,
     type LabGridMode,
+    type StartOriPair,
   } from "../services/resolve-rotation-style-matrices";
   import { TURN_VALUES } from "$lib/features/choreo-card/domain/turn-pattern-parser";
   import { TND_TURNS_RATIO_MAP } from "$lib/features/choreo-card/domain/tnd-element";
+  import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   let matrices = $state<RotationStyleMatrix[]>([]);
   let loading = $state(true);
@@ -35,6 +37,17 @@
   ];
   const tipEnds = $derived(prop === "club" ? (1 as const) : (2 as const));
 
+  // Independent per-hand start orientation — reshapes each hand's rosette.
+  let blueOri = $state<Orientation>(Orientation.IN);
+  let redOri = $state<Orientation>(Orientation.IN);
+  const oriOptions = [
+    { value: Orientation.IN, label: "In" },
+    { value: Orientation.OUT, label: "Out" },
+    { value: Orientation.CLOCK, label: "Clock" },
+    { value: Orientation.COUNTER, label: "Counter" },
+  ];
+  const startOri: StartOriPair = $derived({ blue: blueOri, red: redOri });
+
   // VTG ratio per turn value (1:1 … 7:1) — the axis numbering for this lab.
   const vtgRatios = TURN_VALUES.map((t) => TND_TURNS_RATIO_MAP[t] ?? String(t));
 
@@ -44,20 +57,22 @@
     grid = next;
   }
 
-  // Re-resolve whenever the grid mode changes; family/dedup follow the active grid.
+  // Re-resolve when grid or start orientation changes; family/dedup follow the
+  // active grid, each hand's rosette follows its orientation.
   $effect(() => {
     const g = grid;
+    const ori = startOri;
     loading = true;
     error = null;
-    resolveRotationStyleMatrices(g)
+    resolveRotationStyleMatrices(g, ori)
       .then((res) => {
-        if (g === grid) matrices = res;
+        if (g === grid && ori === startOri) matrices = res;
       })
       .catch((e) => {
-        if (g === grid) error = e instanceof Error ? e.message : "Failed to load";
+        if (g === grid && ori === startOri) error = e instanceof Error ? e.message : "Failed to load";
       })
       .finally(() => {
-        if (g === grid) loading = false;
+        if (g === grid && ori === startOri) loading = false;
       });
   });
 
@@ -70,8 +85,9 @@
 <div class="explorer">
   <div class="topbar">
     <p class="intro">
-      The mandala is set by <strong>prop rotation</strong> and turns — not the VTG mode. These three are
-      every fingerprint there is; pick a cell to choose which letter wears it.
+      Each cell shows the <strong>archetype</strong> rosette for a prop-spin and turn count. Every letter
+      in a panel shares that rosette; they differ only in how the two hands phase together (VTG mode —
+      timing and direction). Pick a cell to drill into those letters.
     </p>
     <div class="controls">
       <div class="ctl">
@@ -81,6 +97,14 @@
       <div class="ctl">
         <span class="ctl-label">Prop</span>
         <SegmentedControl options={propOptions} value={prop} onchange={(v) => (prop = v)} color="accent" size="sm" />
+      </div>
+      <div class="ctl ctl-wide">
+        <span class="ctl-label">Blue start</span>
+        <SegmentedControl options={oriOptions} value={blueOri} onchange={(v) => (blueOri = v)} color="blue" size="sm" />
+      </div>
+      <div class="ctl ctl-wide">
+        <span class="ctl-label">Red start</span>
+        <SegmentedControl options={oriOptions} value={redOri} onchange={(v) => (redOri = v)} color="red" size="sm" />
       </div>
     </div>
   </div>
@@ -130,6 +154,7 @@
     turnPattern={picker.turnPattern}
     accent={picker.accent}
     {grid}
+    {startOri}
     onClose={() => (picker = null)}
   />
 {/if}
@@ -144,6 +169,7 @@
   .intro strong { color: var(--theme-text, #fff); }
   .controls { display: flex; gap: 0.85rem; flex-shrink: 0; flex-wrap: wrap; }
   .ctl { display: flex; flex-direction: column; gap: 0.3rem; min-width: 150px; }
+  .ctl-wide { min-width: 220px; }
   .ctl-label {
     font-size: var(--font-size-compact, 11px); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
     color: var(--theme-text-secondary, #7e93a0);
