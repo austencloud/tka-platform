@@ -104,7 +104,8 @@ export async function createSelfLoadedRigBinding(
       );
     }
     const action = mixer.clipAction(clip);
-    // Do not play; we drive .time manually and call mixer.update(0).
+    // Activated lazily in poseAt (play + paused scrub). A non-playing action is
+    // never evaluated by the mixer, so .time alone would pose nothing.
     clipMap.set(clipId, { clip, action, durationSec: clip.duration });
   }
 
@@ -164,7 +165,22 @@ export async function createSelfLoadedRigBinding(
   // --- pose helpers -------------------------------------------------------
   function poseAt(clipId: string, time: number): void {
     const entry = requireClip(clipId);
-    entry.action.time = clamp(time, 0, entry.durationSec);
+    // Make the target clip the only active action, paused at the scrub time.
+    // A paused action is still evaluated by mixer.update() — its time just does
+    // not advance — which is exactly stateless pose sampling. Other actions are
+    // disabled + zero-weight so they do not blend into the pose.
+    for (const [id, e] of clipMap) {
+      if (id === clipId) {
+        e.action.enabled = true;
+        e.action.play();
+        e.action.paused = true;
+        e.action.setEffectiveWeight(1);
+        e.action.time = clamp(time, 0, e.durationSec);
+      } else {
+        e.action.enabled = false;
+        e.action.setEffectiveWeight(0);
+      }
+    }
     mixer.update(0);
     avatarRoot.updateMatrixWorld(true);
   }
