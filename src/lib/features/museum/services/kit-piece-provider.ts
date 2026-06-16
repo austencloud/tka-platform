@@ -50,11 +50,3 @@ export const proceduralKitProvider: KitPieceProvider = {
     return root;
   },
 };
-
-/**
- * GLB provider stub — Phase 3 swaps this in. It will load the baked
- * `static/models/museum/kit/<theme>/` GLB pieces and place them along runs.
- * Kept as a documented seam so the wiring in the builder needs no change later:
- * the builder picks `glbKitProvider ?? proceduralKitProvider`.
- */
-export const glbKitProvider: KitPieceProvider | null = null;

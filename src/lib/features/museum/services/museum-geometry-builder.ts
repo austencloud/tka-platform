@@ -15,7 +15,8 @@ import type { PlaqueContent, PlaqueSize } from "./types";
 import { MANUAL_PLACEMENTS } from '../data/museum-manual-placements';
 import { getPlaceableObject } from '../domain/placeable-object-registry';
 import { resolveWallRuns } from "./wall-run-resolver";
-import { proceduralKitProvider, glbKitProvider } from "./kit-piece-provider";
+import { proceduralKitProvider } from "./kit-piece-provider";
+import { loadKitWallSection, buildGlbWalls } from "./museum-kit-glb";
 import type { BatchTransfer } from "../workers/geometry-worker-protocol";
 
 // ── Constants ──
@@ -601,8 +602,12 @@ export async function buildRoomChunk(
       const room = { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
       const resolved = resolveWallRuns(room, (x, y) => wallTiles.has(`${x},${y}`));
       const color = WING_WALL_COLORS[wing.theme];
-      const provider = glbKitProvider ?? proceduralKitProvider;
-      kitWalls = provider.buildWalls(resolved, wing.theme, TILE_SIZE, WALL_HEIGHT, color);
+      // Institutional has an authored GLB kit; other wings use the procedural
+      // kit until theirs lands. GLB load failure falls back to procedural.
+      const asset = wing.theme === "institutional" ? await loadKitWallSection("institutional") : null;
+      kitWalls = asset
+        ? buildGlbWalls(resolved, asset, TILE_SIZE)
+        : proceduralKitProvider.buildWalls(resolved, wing.theme, TILE_SIZE, WALL_HEIGHT, color);
     }
   } else {
     for (const [, bucket] of buckets.wallBuckets) {
@@ -780,6 +785,9 @@ export function disposeRoomChunk(chunk: RoomChunk): void {
   for (const { mesh } of chunk.wallMeshes) mesh.dispose();
   if (chunk.kitWalls) {
     chunk.kitWalls.traverse((obj) => {
+      // GLB-sourced kit walls share cached geometry/material across rooms —
+      // never dispose those here. Only the procedural kit owns its resources.
+      if (obj.userData?.sharedAssets) return;
       const m = obj as import("three").Mesh;
       if (m.geometry) m.geometry.dispose();
       const mat = m.material;
