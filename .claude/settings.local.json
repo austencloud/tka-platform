@@ -581,5 +581,8 @@
     "game-controller",
     "tika-talk"
   ],
-  "disabledMcpjsonServers": []
+  "disabledMcpjsonServers": [],
+  "remote": {
+    "defaultEnvironmentId": "env_011CUWruzSWTAf3wr7G42HP4"
+  }
 }
