@@ -67,30 +67,40 @@
 </div>
 
 <style>
+  /* Header band: label anchored left, steppers truly centered (middle grid
+     column), reset anchored right — reads as a designed toolbar, not floating
+     chips. Faint top gradient + hairline divider separate it from the options. */
   .pending-turns-bar {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
     gap: 16px;
     width: 100%;
-    padding: 6px 10px 10px;
+    padding: 8px 18px 10px;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.045) 0%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .bar-title {
+    justify-self: start;
     font-size: 0.7rem;
     font-weight: 700;
-    letter-spacing: 0.75px;
+    letter-spacing: 1px;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.55);
+    color: rgba(255, 255, 255, 0.5);
   }
 
-  /* Hold the compact pair at content width instead of stretching it */
+  /* Hold the compact pair at content width, centered in the middle column */
   .pair-wrap {
-    flex: 0 0 auto;
+    justify-self: center;
   }
 
   .reset-btn {
+    justify-self: end;
     display: inline-flex;
     align-items: center;
     gap: 6px;

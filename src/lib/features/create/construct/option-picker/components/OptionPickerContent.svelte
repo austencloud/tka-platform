@@ -330,17 +330,6 @@ Uses organizer and sizer services for section grouping and sizing.
   {#if sizingStable}
     <!-- Content stays mounted so pictographs transition in place instead of remounting -->
     <div class="animated-content">
-      <!-- Pending-turns bar: desktop only, applies turns to every option -->
-      {#if !shouldUseSwipeLayout()}
-        <PendingTurnsBar
-          {blueTurns}
-          {redTurns}
-          onBlueChange={onBlueTurnsChange}
-          onRedChange={onRedTurnsChange}
-          onReset={onResetTurns}
-        />
-      {/if}
-
       <!-- Filter toggle chip - only show when we have rotation context -->
       {#if shouldShowFilterToggle()}
         <div class="filter-header" class:mobile={shouldUseSwipeLayout()}>
@@ -411,6 +400,17 @@ Uses organizer and sizer services for section grouping and sizing.
       {:else if shouldUseWideLayout && !isMobileStackedLayout()}
         <!-- ==================== WIDE DESKTOP LAYOUT ==================== -->
         <div class="sections-container">
+          <!-- Pending-turns bar: header for the options it retunes; centers with
+               the grid as one group so it hugs the options instead of stranding
+               at the top of the panel. -->
+          <PendingTurnsBar
+            {blueTurns}
+            {redTurns}
+            onBlueChange={onBlueTurnsChange}
+            onRedChange={onRedTurnsChange}
+            onReset={onResetTurns}
+          />
+
           <!-- Types 1-3: Individual vertical sections -->
           {#each types123Sections() as section (section.title)}
             <OptionSection
