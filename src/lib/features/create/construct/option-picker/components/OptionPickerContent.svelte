@@ -17,6 +17,7 @@ Uses organizer and sizer services for section grouping and sizing.
   import OptionViewerSwipeLayout from "../swipe-layout/components/OptionViewerSwipeLayout.svelte";
   import OptionViewerSection from "../swipe-layout/components/OptionViewerSection.svelte";
   import HorizontalSwipeContainer from "$lib/shared/foundation/ui/HorizontalSwipeContainer.svelte";
+  import PendingTurnsBar from "./PendingTurnsBar.svelte";
   import { identifyContinuation } from "../services/continuation-identifier";
 
   interface Props {
@@ -33,6 +34,12 @@ Uses organizer and sizer services for section grouping and sizing.
     // Continuation reordering
     onSlotClicked?: (typeSection: string, slotIndex: number) => void;
     lastClickedSlot?: { typeSection: string; slotIndex: number } | null;
+    // Pending turns bar
+    blueTurns: number | "fl";
+    redTurns: number | "fl";
+    onBlueTurnsChange: (delta: number) => void;
+    onRedTurnsChange: (delta: number) => void;
+    onResetTurns: () => void;
   }
 
   const {
@@ -46,6 +53,11 @@ Uses organizer and sizer services for section grouping and sizing.
     currentSequence = [],
     onSlotClicked,
     lastClickedSlot = null,
+    blueTurns,
+    redTurns,
+    onBlueTurnsChange,
+    onRedTurnsChange,
+    onResetTurns,
   }: Props = $props();
 
   // Track container dimensions with simple resize observer
@@ -318,6 +330,17 @@ Uses organizer and sizer services for section grouping and sizing.
   {#if sizingStable}
     <!-- Content stays mounted so pictographs transition in place instead of remounting -->
     <div class="animated-content">
+      <!-- Pending-turns bar: desktop only, applies turns to every option -->
+      {#if !shouldUseSwipeLayout()}
+        <PendingTurnsBar
+          {blueTurns}
+          {redTurns}
+          onBlueChange={onBlueTurnsChange}
+          onRedChange={onRedTurnsChange}
+          onReset={onResetTurns}
+        />
+      {/if}
+
       <!-- Filter toggle chip - only show when we have rotation context -->
       {#if shouldShowFilterToggle()}
         <div class="filter-header" class:mobile={shouldUseSwipeLayout()}>
