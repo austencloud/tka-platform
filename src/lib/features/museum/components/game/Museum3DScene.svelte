@@ -1058,6 +1058,8 @@
      bright enough that corridors and doorways aren't pitch black -->
 <T.AmbientLight intensity={0.15} color="#c8b890" />
 <T.HemisphereLight intensity={0.3} color="#fff8e0" groundColor="#2a2015" />
+<!-- Interim key light so sealed walls read with form until baked GLB kits land -->
+<T.DirectionalLight intensity={0.55} position={[12, 20, 8]} color="#fff4e2" castShadow={false} />
 
 <!-- Floor, wall, ceiling, pedestal, sign meshes are added directly to the Three.js
      scene via scene.add() during init - NOT through Svelte templates. This eliminates
