@@ -8,9 +8,11 @@ const ACCENT = "#9a8f7a";
 function runDims(run: WallRun, tileSize: number) {
   const count = run.end - run.start + 1;
   const len = count * tileSize;
-  // center of the run in world units (tile center convention: i*tileSize + tileSize/2)
-  const centerAlong = ((run.start + run.end) / 2) * tileSize + tileSize / 2;
-  const fixedWorld = run.fixed * tileSize + tileSize / 2;
+  // The museum builder places every tile box centered at tile*tileSize (no
+  // half-tile offset). Match it exactly or the kit walls drift off the floor
+  // edge and expose the floor-less perimeter row (see-through gaps).
+  const centerAlong = ((run.start + run.end) / 2) * tileSize;
+  const fixedWorld = run.fixed * tileSize;
   if (run.axis === "x") return { cx: centerAlong, cz: fixedWorld, lx: len, lz: tileSize };
   return { cx: fixedWorld, cz: centerAlong, lx: tileSize, lz: len };
 }
