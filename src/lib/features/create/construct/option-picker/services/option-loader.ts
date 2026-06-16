@@ -36,41 +36,38 @@ export class OptionLoader {
       return [];
     }
 
-    try {
-      // Get all available options from motion query service
-      const allOptions =
-        await this.motionQueryHandler.getNextOptionsForSequence(
-          sequence,
-          gridMode
+    // Errors propagate to the caller — option-picker-state catches them and
+    // routes to its error state so the user sees a retryable error instead of
+    // a silently empty picker.
+    const allOptions =
+      await this.motionQueryHandler.getNextOptionsForSequence(
+        sequence,
+        gridMode
+      );
+
+    // Filter options based on sequence context
+    // The next beat's start position should match the current beat's end position
+    const filteredOptions = allOptions.filter((option) => {
+      if (!option.motions.blue || !option.motions.red) {
+        return false;
+      }
+
+      // Calculate the start position of this option
+      const optionStartPosition =
+        getGridPositionFromLocations(
+          option.motions.blue.startLocation,
+          option.motions.red.startLocation
         );
 
-      // Filter options based on sequence context
-      // The next beat's start position should match the current beat's end position
-      const filteredOptions = allOptions.filter((option) => {
-        if (!option.motions.blue || !option.motions.red) {
-          return false;
-        }
+      const optionStartPositionStr = optionStartPosition
+        .toString()
+        .toLowerCase();
+      const targetEndPosition = endPosition.toLowerCase();
 
-        // Calculate the start position of this option
-        const optionStartPosition =
-          getGridPositionFromLocations(
-            option.motions.blue.startLocation,
-            option.motions.red.startLocation
-          );
+      return optionStartPositionStr === targetEndPosition;
+    });
 
-        const optionStartPositionStr = optionStartPosition
-          .toString()
-          .toLowerCase();
-        const targetEndPosition = endPosition.toLowerCase();
-
-        return optionStartPositionStr === targetEndPosition;
-      });
-
-      return filteredOptions;
-    } catch (error) {
-      console.error("Failed to load options from sequence:", error);
-      return [];
-    }
+    return filteredOptions;
   }
 }
 

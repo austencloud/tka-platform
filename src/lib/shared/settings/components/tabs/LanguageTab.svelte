@@ -43,17 +43,18 @@
 
   // Track locale changes for screen reader announcement
   $effect(() => {
-    if (currentLocale !== previousLocale) {
-      localeChanged = true;
-      previousLocale = currentLocale;
-      // Reset after announcement
-      setTimeout(() => (localeChanged = false), 3000);
-    }
+    if (currentLocale === previousLocale) return;
+    localeChanged = true;
+    previousLocale = currentLocale;
+    // Reset after announcement
+    const announcementTimer = setTimeout(() => (localeChanged = false), 3000);
+    return () => clearTimeout(announcementTimer);
   });
 
   onMount(() => {
     hapticService = getHapticFeedback();
-    setTimeout(() => (isVisible = true), 30);
+    const entryTimer = setTimeout(() => (isVisible = true), 30);
+    return () => clearTimeout(entryTimer);
   });
 
   function handleLanguageSelect(locale: string) {

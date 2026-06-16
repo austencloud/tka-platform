@@ -801,7 +801,12 @@
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .priority-badge {
+    /* Compound selectors repeated here so this guard outranks the
+       higher-specificity rules that attach the infinite pulses. */
+    .priority-badge,
+    .kanban-card.priority-critical .priority-badge,
+    .claim-indicator.claim-stale,
+    .claim-indicator.claim-orphaned {
       animation: none;
     }
   }

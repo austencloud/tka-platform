@@ -65,8 +65,6 @@ export interface Invite {
 	fromUserId: string;
 	/** Display name of sender */
 	fromDisplayName: string;
-	/** Display name of sender (alternative field name used in some components) */
-	senderDisplayName?: string;
 	/** Firebase UID of recipient */
 	toUserId: string;
 	/** The session to join */

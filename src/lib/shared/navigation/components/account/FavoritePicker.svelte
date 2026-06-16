@@ -122,7 +122,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     animation: crown-pop var(--duration-normal, 200ms) ease-out;
   }

@@ -14,6 +14,10 @@
 
   const { state: festivalState } = getFestivalContext();
 
+  // Single source of truth for the festival pin color. Mirrors the
+  // --festival-pin-color CSS token; Google Maps PinElement needs a literal.
+  const PIN_COLOR = "#f97316";
+
   let mapContainer: HTMLDivElement;
   let map: google.maps.Map | null = null;
   let markers: google.maps.marker.AdvancedMarkerElement[] = [];
@@ -88,7 +92,7 @@
       const { lat, lng } = festival.location.coordinates;
 
       const pin = new PinElement({
-        background: "#f97316",
+        background: PIN_COLOR,
         borderColor: "#ffffff",
         glyphColor: "#ffffff",
       });
@@ -195,7 +199,7 @@
   }
 
   .popup-overlay:focus-visible {
-    outline: 2px solid #f97316;
+    outline: 2px solid var(--festival-pin-color, #f97316);
     outline-offset: -2px;
   }
 
@@ -238,7 +242,7 @@
 
   .empty-state i {
     font-size: 64px;
-    color: #f97316;
+    color: var(--festival-pin-color, #f97316);
     opacity: 0.3;
     margin-bottom: 16px;
   }

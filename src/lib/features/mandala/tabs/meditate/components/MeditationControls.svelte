@@ -595,14 +595,14 @@
 	}
 
 	.stop-btn {
-		background: color-mix(in srgb, #ef4444 20%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
-		border: 1px solid color-mix(in srgb, #ef4444 40%, transparent);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
+		border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
 		color: rgba(255, 255, 255, 0.9);
 	}
 
 	.stop-btn:hover {
-		background: color-mix(in srgb, #ef4444 35%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
-		border-color: color-mix(in srgb, #ef4444 55%, transparent);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 35%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
+		border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 55%, transparent);
 	}
 
 	.start-btn:active,

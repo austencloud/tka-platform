@@ -96,26 +96,27 @@
   .favorites-btn:hover {
     background: var(--theme-card-hover-bg);
     border-color: var(--theme-stroke-strong);
-    color: #ec4899;
+    color: var(--accent-pink, #ec4899);
     transform: scale(1.1);
   }
 
   .favorites-btn.active {
     background: linear-gradient(
       135deg,
-      rgba(244, 114, 182, 0.25) 0%,
-      rgba(236, 72, 153, 0.2) 100%
+      color-mix(in srgb, var(--accent-pink, #ec4899) 25%, transparent) 0%,
+      color-mix(in srgb, var(--accent-pink, #ec4899) 20%, transparent) 100%
     );
-    border-color: #ec4899;
-    color: #ec4899;
-    box-shadow: 0 0 12px rgba(236, 72, 153, 0.3);
+    border-color: var(--accent-pink, #ec4899);
+    color: var(--accent-pink, #ec4899);
+    box-shadow: 0 0 12px
+      color-mix(in srgb, var(--accent-pink, #ec4899) 30%, transparent);
   }
 
   .favorites-btn.active:hover {
     background: linear-gradient(
       135deg,
-      rgba(244, 114, 182, 0.35) 0%,
-      rgba(236, 72, 153, 0.3) 100%
+      color-mix(in srgb, var(--accent-pink, #ec4899) 35%, transparent) 0%,
+      color-mix(in srgb, var(--accent-pink, #ec4899) 30%, transparent) 100%
     );
     transform: scale(1.1);
   }

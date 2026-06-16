@@ -18,15 +18,22 @@ export class Metronome {
   }
 
   /**
-   * Initialize audio context if not already initialized
+   * Initialize audio context if not already initialized.
+   * Construction can throw (unsupported browser, exhausted audio resources),
+   * so failures leave audioContext null for the caller to detect.
    */
   private initializeAudioContext(): void {
     if (!this.audioContext) {
-      const AudioContextConstructor =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext })
-          .webkitAudioContext;
-      this.audioContext = new AudioContextConstructor();
+      try {
+        const AudioContextConstructor =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext })
+            .webkitAudioContext;
+        this.audioContext = new AudioContextConstructor();
+      } catch (err) {
+        console.error("Failed to construct audio context:", err);
+        this.audioContext = null;
+      }
     }
   }
 
@@ -64,13 +71,15 @@ export class Metronome {
    * Start the metronome
    * @param bpm - Beats per minute
    * @param onStep - Callback called on each beat with beat index
+   * @returns false when the audio context could not be initialized, so the
+   *          caller can surface the failure to the user; true otherwise.
    */
-  start(bpm: number, onStep?: (stepNumber: number) => void): void {
+  start(bpm: number, onStep?: (stepNumber: number) => void): boolean {
     this.initializeAudioContext();
 
     if (!this.audioContext) {
       console.error("Failed to initialize audio context");
-      return;
+      return false;
     }
 
     const beatsPerSecond = bpm / 60;
@@ -108,6 +117,7 @@ export class Metronome {
     };
 
     scheduler();
+    return true;
   }
 
   /**

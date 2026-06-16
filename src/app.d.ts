@@ -36,6 +36,13 @@ declare global {
     interface Platform {
       env: {
         QR_VIDEOS: R2Bucket;
+        // Native Cloudflare ratelimit bindings (see wrangler.toml [[ratelimits]]).
+        // Optional: absent under `vite dev`, where withRateLimit falls back to
+        // the in-memory window. Shape matches CfRateLimiter in rate-limiter.ts.
+        RL_GENERAL?: { limit(o: { key: string }): Promise<{ success: boolean }> };
+        RL_AI_CHAT?: { limit(o: { key: string }): Promise<{ success: boolean }> };
+        RL_AI_RENDER?: { limit(o: { key: string }): Promise<{ success: boolean }> };
+        RL_ADMIN?: { limit(o: { key: string }): Promise<{ success: boolean }> };
       };
     }
   }

@@ -5,6 +5,14 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
   // Module-level: survives component remounts so we never show the auth
   // spinner again after the app has loaded once in this session.
   let _mainInterfaceShown = false;
+
+  // Teach TypeScript about the boot-script progress hook injected in app.html.
+  // Signature: __tkaLoadProgress(percent: number, message: string) => void
+  declare global {
+    interface Window {
+      __tkaLoadProgress?: (percent: number, message: string) => void;
+    }
+  }
 </script>
 
 <script lang="ts">
@@ -35,7 +43,6 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
   } from "../../navigation/services/sheet-router";
 import type { SheetType } from "../../navigation/services/types";
   import { authState } from "../../auth/state/auth-state.svelte";
-  import LandingPage from "../../auth/components/LandingPage.svelte";
   import { authDrawerState } from "../../auth/state/auth-drawer-state.svelte";
   import ErrorScreen from "../../foundation/ui/ErrorScreen.svelte";
   import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
@@ -239,7 +246,7 @@ import type { SheetType } from "../../navigation/services/types";
         }
 
         // Progress: Services are resolved from DI container
-        (window as any).__tkaLoadProgress?.(88, "Loading settings...");
+        window.__tkaLoadProgress?.(88, "Loading settings...");
 
         // Initialize sheet router state (now that service is resolved)
         currentSheetType = getCurrentSheet();
@@ -248,6 +255,15 @@ import type { SheetType } from "../../navigation/services/types";
         if (currentSheetType === "settings") {
           closeSheet();
           await handleModuleChange("settings" as ModuleId);
+        }
+
+        // A ?sheet=auth deep link means "sign in if needed" (the QR scan
+        // funnel arrives this way). Drop it when the user is already signed
+        // in so the sheet doesn't flash open. If auth hasn't restored yet,
+        // AuthSheet's own auto-close-when-authenticated effect covers it.
+        if (currentSheetType === "auth" && authState.isAuthenticated) {
+          closeSheet();
+          currentSheetType = null;
         }
 
         cleanupSheetListener = onRouteChange(
@@ -267,7 +283,7 @@ import type { SheetType } from "../../navigation/services/types";
         await restoreApplicationState();
         await initService.initialize();
         bootProfiler.end("app:restore-workspace");
-        (window as any).__tkaLoadProgress?.(92, "Restoring workspace...");
+        window.__tkaLoadProgress?.(92, "Restoring workspace...");
 
         bootProfiler.mark("app:load-settings+theme");
         await settingsService.loadSettings();
@@ -275,7 +291,7 @@ import type { SheetType } from "../../navigation/services/types";
         initializeTheme();
 
         // Progress: Settings loaded, applying theme
-        (window as any).__tkaLoadProgress?.(95, "Applying your theme...");
+        window.__tkaLoadProgress?.(95, "Applying your theme...");
 
         // Apply background-based theme colors on startup
         const { applyThemeForBackground } =
@@ -289,7 +305,7 @@ import type { SheetType } from "../../navigation/services/types";
 
         // Initialize gamification system (authenticated users only - requires Firestore)
         if (authState.isAuthenticated) {
-          (window as any).__tkaLoadProgress?.(98, "Initializing achievements...");
+          window.__tkaLoadProgress?.(98, "Initializing achievements...");
           bootProfiler.mark("app:gamification");
           try {
             const { initializeGamification } =
@@ -307,7 +323,7 @@ import type { SheetType } from "../../navigation/services/types";
         setInitializationState(true, false, null, 0);
 
         // Progress: Fully ready - triggers loading screen fade out with random ready message
-        (window as any).__tkaLoadProgress?.(100, "Ready");
+        window.__tkaLoadProgress?.(100, "Ready");
         detectAndCaptureScanEntry();
 
       } catch (error) {
@@ -379,8 +395,8 @@ import type { SheetType } from "../../navigation/services/types";
     return () => document.removeEventListener("keydown", handleKeydown);
   });
 
-  // Note: First-run wizard is now shown based on simple state checks in the template:
-  // - !isAuthenticated → LandingPage
+  // Note: First-run wizard is shown based on simple state checks in the template:
+  // - !isAuthenticated → guest mode (MainInterface with guest restrictions)
   // - isAuthenticated && !firstRunState.isDone() → FirstRunWizard
   // No need for triggerIfFirstTime() calls since we check isDone() directly
 
@@ -680,7 +696,7 @@ import type { SheetType } from "../../navigation/services/types";
     position: fixed;
     inset: 0;
     z-index: 900;
-    background: rgb(18, 18, 28);
+    background: var(--theme-panel-bg, rgb(18, 18, 28));
   }
 
   /* Wizard exit animation - fades out + slight scale down */

@@ -9,6 +9,7 @@ Features square aspect ratio for consistent layout and settings dialog for camer
   import { onDestroy, onMount } from "svelte";
   import CameraSettingsDialog from "./CameraSettingsDialog.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // Props
   const {
@@ -29,6 +30,10 @@ Features square aspect ratio for consistent layout and settings dialog for camer
   let selectedCameraId = $state<string | null>(null);
   let isMirrored = $state(true); // Default to mirrored for front-facing cameras
   let isSettingsOpen = $state(false); // Settings dialog state
+
+  // Set on unmount so an in-flight getUserMedia doesn't leak live tracks
+  // when it resolves after the component is gone (no reactivity needed).
+  let isDestroyed = false;
 
   // Camera constraints - square aspect ratio for consistent layout
   function getCameraConstraints(deviceId?: string): MediaStreamConstraints {
@@ -78,6 +83,11 @@ Features square aspect ratio for consistent layout and settings dialog for camer
       );
     } catch (err) {
       console.error("Failed to enumerate cameras:", err);
+      // Non-fatal: the default camera can still start, but switching is unavailable
+      showToast(
+        "Couldn't list your cameras. Switching cameras won't be available.",
+        "warning"
+      );
     }
   }
 
@@ -94,7 +104,17 @@ Features square aspect ratio for consistent layout and settings dialog for camer
 
       // Request camera access
       const constraints = getCameraConstraints(deviceId);
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      const acquiredStream =
+        await navigator.mediaDevices.getUserMedia(constraints);
+
+      // Component unmounted while getUserMedia was pending — release the
+      // tracks immediately or the camera stays live with no owner.
+      if (isDestroyed) {
+        acquiredStream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
+      stream = acquiredStream;
 
       // Attach stream to video element
       if (videoElement) {
@@ -165,6 +185,12 @@ Features square aspect ratio for consistent layout and settings dialog for camer
         })
         .catch((err) => {
           console.error("❌ Failed to play video in effect:", err);
+          // Without this the user is stuck on "Camera initializing..." with
+          // no explanation — surface the failure and offer the retry path.
+          error =
+            "Couldn't start the camera preview: " +
+            (err instanceof Error ? err.message : String(err));
+          isLoading = false;
         });
     }
   });
@@ -183,6 +209,7 @@ Features square aspect ratio for consistent layout and settings dialog for camer
   });
 
   onDestroy(() => {
+    isDestroyed = true;
     stopCamera();
   });
 </script>

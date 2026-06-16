@@ -151,9 +151,10 @@
       class="toggle-btn birthday-btn"
       class:active={showBirthday}
       onclick={() => toggleSetting("birthday")}
+      aria-label="Birthday date"
       title="Birthday date"
     >
-      🎂
+      <span aria-hidden="true">🎂</span>
     </button>
   </div>
 

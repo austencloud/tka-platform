@@ -50,6 +50,7 @@
               onclick={() => onRenderSingle(sequence)}
               disabled={state.isRendering}
               title={t('gallery_gen_render_single')}
+              aria-label={t('gallery_gen_render_single')}
             >
               ▶
             </button>
@@ -67,7 +68,7 @@
 
 <style>
   .column {
-    background: #18181b;
+    background: var(--theme-panel-bg, #18181b);
     border-radius: 10px;
     padding: 1rem;
   }
@@ -76,14 +77,14 @@
     margin: 0 0 0.75rem 0;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #a1a1aa;
+    color: var(--theme-text-dim, #a1a1aa);
     display: flex;
     align-items: center;
     gap: 0.25rem;
   }
 
   .rendering-count {
-    color: #f43f5e;
+    color: var(--theme-accent, #f43f5e);
     font-weight: 500;
     animation: pulse 1.5s ease-in-out infinite;
   }
@@ -114,16 +115,16 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0.625rem;
-    background: #27272a;
+    background: var(--theme-card-bg, #27272a);
     border-radius: 6px;
     font-size: 0.8rem;
-    border-left: 2px solid #f59e0b;
+    border-left: 2px solid var(--semantic-warning, #f59e0b);
   }
 
   .sequence-item .name {
     flex: 1;
     font-weight: 500;
-    color: #e4e4e7;
+    color: var(--theme-text, #e4e4e7);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -131,18 +132,18 @@
 
   .sequence-item .meta {
     font-size: 0.7rem;
-    color: #52525b;
+    color: var(--theme-text-tertiary, #52525b);
   }
 
   .render-btn {
     width: 24px;
     height: 24px;
     padding: 0;
-    font-size: 0.65rem;
-    background: #3f3f46;
+    font-size: var(--font-size-compact, 12px);
+    background: var(--theme-stroke, #3f3f46);
     border: none;
     border-radius: 4px;
-    color: #a1a1aa;
+    color: var(--theme-text-dim, #a1a1aa);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -150,7 +151,7 @@
   }
 
   .render-btn:hover:not(:disabled) {
-    background: #f43f5e;
+    background: var(--theme-accent, #f43f5e);
     color: white;
   }
 
@@ -161,23 +162,23 @@
 
   /* Rendering state - highlight the item being processed */
   .sequence-item.rendering {
-    border-left-color: #f43f5e;
-    background: #3f3f46;
+    border-left-color: var(--theme-accent, #f43f5e);
+    background: var(--theme-stroke, #3f3f46);
   }
 
   .sequence-item.rendering .name {
-    color: #f43f5e;
+    color: var(--theme-accent, #f43f5e);
   }
 
   .more-text {
-    color: #52525b;
+    color: var(--theme-text-tertiary, #52525b);
     text-align: center;
     padding: 1rem;
     font-size: 0.8rem;
   }
 
   .empty-message {
-    color: #52525b;
+    color: var(--theme-text-tertiary, #52525b);
     padding: 3rem 2rem;
     text-align: center;
     font-size: 0.875rem;

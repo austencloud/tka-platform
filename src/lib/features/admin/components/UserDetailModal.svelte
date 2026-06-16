@@ -640,7 +640,7 @@
 
   .level-badge.small {
     padding: 3px 6px;
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .level-badge i {

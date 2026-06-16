@@ -23,6 +23,7 @@
   import { trainChallengesState } from "../../state/train-challenges-state.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import ChallengeCard from "./ChallengeCard.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Services
@@ -54,6 +55,22 @@
 
     return { total, completed, available };
   });
+
+  // Single-select filter bar options (SegmentedControl owns the exactly-one
+  // invariant + sliding indicator). Counts come from the live stats above.
+  const filterOptions = $derived([
+    { value: "all" as const, label: t("train_filter_all"), count: stats.total },
+    {
+      value: "available" as const,
+      label: t("train_filter_available"),
+      count: stats.available,
+    },
+    {
+      value: "completed" as const,
+      label: t("train_filter_done"),
+      count: stats.completed,
+    },
+  ]);
 
   // Active filter count for badge
   const activeFilterCount = $derived.by(() => {
@@ -167,30 +184,16 @@
   <header class="header">
     <h1>{t("train_challenges_title")}</h1>
 
-    <!-- Quick Filter Chips - Inline -->
+    <!-- Quick Filter Bar - single-select, exactly one active -->
     {#if !loading}
       <div class="quick-filters">
-        <button
-          class="chip"
-          class:active={filter === "all"}
-          onclick={() => handleFilterChange("all")}
-        >
-          {t("train_filter_all")}
-        </button>
-        <button
-          class="chip"
-          class:active={filter === "available"}
-          onclick={() => handleFilterChange("available")}
-        >
-          {t("train_filter_available")}
-        </button>
-        <button
-          class="chip"
-          class:active={filter === "completed"}
-          onclick={() => handleFilterChange("completed")}
-        >
-          {t("train_filter_done")}
-        </button>
+        <SegmentedControl
+          options={filterOptions}
+          value={filter}
+          onchange={handleFilterChange}
+          color="red"
+          size="sm"
+        />
       </div>
 
       <button
@@ -420,10 +423,10 @@
   .filter-button.has-filters {
     background: linear-gradient(
       135deg,
-      rgba(239, 68, 68, 0.2),
-      rgba(220, 38, 38, 0.15)
+      color-mix(in srgb, var(--semantic-error) 20%, transparent),
+      color-mix(in srgb, var(--semantic-error) 15%, transparent)
     );
-    border-color: rgba(239, 68, 68, 0.4);
+    border-color: color-mix(in srgb, var(--semantic-error) 40%, transparent);
     color: var(--semantic-error);
   }
 
@@ -436,7 +439,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #f43f5e, #ec4899);
+    background: linear-gradient(
+      135deg,
+      var(--semantic-error),
+      var(--accent-pink)
+    );
     border-radius: 9px;
     font-size: var(--font-size-compact);
     font-weight: 700;
@@ -444,68 +451,11 @@
     padding: 0 5px;
   }
 
-  /* Quick Filter Chips - Inline with header */
+  /* Quick Filter Bar - single-select SegmentedControl, inline with header */
   .quick-filters {
     display: flex;
-    gap: 6px;
     flex: 1;
     min-width: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .quick-filters::-webkit-scrollbar {
-    display: none;
-  }
-
-  .chip {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 52px;
-    padding: 0 18px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 24px;
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .chip:hover {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text, var(--theme-text));
-  }
-
-  .chip:active {
-    transform: scale(0.97);
-  }
-
-  .chip.active {
-    background: linear-gradient(
-      135deg,
-      color-mix(
-        in srgb,
-        var(--semantic-error, var(--semantic-error)) 25%,
-        transparent
-      ),
-      color-mix(
-        in srgb,
-        var(--semantic-error, var(--semantic-error)) 20%,
-        transparent
-      )
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--semantic-error, var(--semantic-error)) 40%,
-      transparent
-    );
-    color: var(--theme-text, white);
   }
 
   /* Content Area */
@@ -731,41 +681,37 @@
     opacity: 1;
   }
 
-  /* Difficulty-specific colors */
+  /* Difficulty-specific colors. Each tier carries a deliberate data color via a
+     scoped --tier-color property; the gradient + border derive from it with
+     color-mix so the four tiers stay visually distinct but tokenized.
+     Green/amber/red map to the semantic palette; orange (hard) has no semantic
+     token, so it stays a scoped literal. */
   .option-btn.difficulty-easy.active {
-    background: linear-gradient(
-      135deg,
-      rgba(34, 197, 94, 0.2),
-      rgba(22, 163, 74, 0.15)
-    );
-    border-color: rgba(34, 197, 94, 0.5);
+    --tier-color: var(--semantic-success);
   }
 
   .option-btn.difficulty-medium.active {
-    background: linear-gradient(
-      135deg,
-      rgba(234, 179, 8, 0.2),
-      rgba(202, 138, 4, 0.15)
-    );
-    border-color: rgba(234, 179, 8, 0.5);
+    --tier-color: var(--semantic-warning);
   }
 
   .option-btn.difficulty-hard.active {
-    background: linear-gradient(
-      135deg,
-      rgba(249, 115, 22, 0.2),
-      rgba(234, 88, 12, 0.15)
-    );
-    border-color: rgba(249, 115, 22, 0.5);
+    --tier-color: #f97316;
   }
 
   .option-btn.difficulty-expert.active {
+    --tier-color: var(--semantic-error);
+  }
+
+  .option-btn.difficulty-easy.active,
+  .option-btn.difficulty-medium.active,
+  .option-btn.difficulty-hard.active,
+  .option-btn.difficulty-expert.active {
     background: linear-gradient(
       135deg,
-      rgba(239, 68, 68, 0.2),
-      rgba(220, 38, 38, 0.15)
+      color-mix(in srgb, var(--tier-color) 20%, transparent),
+      color-mix(in srgb, var(--tier-color) 15%, transparent)
     );
-    border-color: rgba(239, 68, 68, 0.5);
+    border-color: color-mix(in srgb, var(--tier-color) 50%, transparent);
   }
 
   /* Filter Panel Footer */
@@ -852,25 +798,6 @@
       min-height: 52px;
     }
 
-    /* Visual size reduced but touch target maintained via pseudo-element */
-    .chip {
-      height: 36px;
-      padding: 0 12px;
-      font-size: var(--font-size-compact);
-      border-radius: 18px;
-      position: relative;
-    }
-
-    .chip::before {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      min-width: 100%;
-      min-height: 52px;
-    }
-
     .content {
       padding: 10px 12px;
     }
@@ -893,12 +820,6 @@
 
     .header h1 {
       font-size: var(--font-size-xl);
-    }
-
-    .chip {
-      height: 52px;
-      padding: 0 20px;
-      font-size: var(--font-size-sm);
     }
 
     .content {
@@ -946,7 +867,6 @@
      ACCESSIBILITY
      ============================================================================ */
   @media (prefers-reduced-motion: reduce) {
-    .chip,
     .filter-button,
     .option-btn,
     .apply-btn,

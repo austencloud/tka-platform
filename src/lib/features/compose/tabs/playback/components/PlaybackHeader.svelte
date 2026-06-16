@@ -72,8 +72,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.875rem 1.25rem;
-    background: rgba(0, 0, 0, 0.6);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-panel-bg);
+    border-bottom: 1px solid var(--theme-stroke);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     position: sticky;
@@ -118,7 +118,7 @@
   }
 
   .mode-indicator i {
-    color: rgba(236, 72, 153, 0.8);
+    color: color-mix(in srgb, var(--accent-pink, #ec4899) 80%, transparent);
   }
 
   .mode-label {
@@ -140,27 +140,27 @@
   }
 
   .save-btn {
-    background: rgba(139, 92, 246, 0.2);
-    border-color: rgba(139, 92, 246, 0.3);
-    color: rgba(167, 139, 250, 1);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
+    color: var(--theme-accent, #a78bfa);
   }
 
   .save-btn:hover {
-    background: rgba(139, 92, 246, 0.3);
-    border-color: rgba(139, 92, 246, 0.5);
-    color: rgba(196, 181, 253, 1);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
+    color: var(--theme-accent, #c4b5fd);
   }
 
   .share-btn {
-    background: rgba(6, 182, 212, 0.2);
-    border-color: rgba(6, 182, 212, 0.3);
-    color: rgba(34, 211, 238, 1);
+    background: color-mix(in srgb, var(--feature-view, #06b6d4) 20%, transparent);
+    border-color: color-mix(in srgb, var(--feature-view, #06b6d4) 30%, transparent);
+    color: var(--feature-view, #22d3ee);
   }
 
   .share-btn:hover {
-    background: rgba(6, 182, 212, 0.3);
-    border-color: rgba(6, 182, 212, 0.5);
-    color: rgba(103, 232, 249, 1);
+    background: color-mix(in srgb, var(--feature-view, #06b6d4) 30%, transparent);
+    border-color: color-mix(in srgb, var(--feature-view, #06b6d4) 50%, transparent);
+    color: var(--feature-view, #67e8f9);
   }
 
   .action-btn:active {
@@ -184,9 +184,9 @@
   }
 
   .close-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.4);
-    color: rgba(252, 165, 165, 1);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+    color: var(--semantic-error, #fca5a5);
   }
 
   .close-btn:active {

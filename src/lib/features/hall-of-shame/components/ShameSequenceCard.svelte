@@ -8,6 +8,7 @@
 
 import { getHallOfShameVoter } from "$lib/features/hall-of-shame/get-hall-of-shame-voter";
   import { t } from "$lib/shared/i18n/i18n.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { HallOfShameEntry } from "../domain/models/hall-of-shame-models";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import type { HallOfShameVoter } from "../services/hall-of-shame-voter";
@@ -60,6 +61,7 @@ import { getHallOfShameVoter } from "$lib/features/hall-of-shame/get-hall-of-sha
       onVoteChange?.(entry.id, localVoteCount);
     } catch (error) {
       console.error("[ShameSequenceCard] Vote failed:", error);
+      toast.error("Couldn't record your vote. Please try again.");
     } finally {
       isVoting = false;
     }
@@ -136,6 +138,7 @@ import { getHallOfShameVoter } from "$lib/features/hall-of-shame/get-hall-of-sha
       onclick={handleVote}
       disabled={!currentUser || hasVoted || isVoting}
       title={hasVoted ? t('hall_of_shame_already_voted') : currentUser ? t('hall_of_shame_vote_for_this') : t('hall_of_shame_sign_in_to_vote')}
+      aria-label={hasVoted ? t('hall_of_shame_already_voted') : currentUser ? t('hall_of_shame_vote_for_this') : t('hall_of_shame_sign_in_to_vote')}
     >
       {#if isVoting}
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -184,7 +187,11 @@ import { getHallOfShameVoter } from "$lib/features/hall-of-shame/get-hall-of-sha
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    background: linear-gradient(
+      135deg,
+      var(--theme-panel-bg, #1a1a2e) 0%,
+      var(--theme-card-bg, #16213e) 100%
+    );
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 2rem;
   }
@@ -212,7 +219,7 @@ import { getHallOfShameVoter } from "$lib/features/hall-of-shame/get-hall-of-sha
     padding: 4px 10px;
     background: color-mix(in srgb, var(--category-color) 80%, black);
     border-radius: 6px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -249,7 +256,7 @@ import { getHallOfShameVoter } from "$lib/features/hall-of-shame/get-hall-of-sha
 
   .date {
     margin: 4px 0 0;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 

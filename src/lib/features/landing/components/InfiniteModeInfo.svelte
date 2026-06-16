@@ -64,6 +64,21 @@
     return colors[loopType] || "#6366f1";
   }
 
+  // Honor prefers-reduced-motion — gates the JS fade/fly transition durations
+  // below (a CSS @media block alone can't stop Svelte's JS-driven transitions).
+  let reduceMotion = $state(
+    typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  $effect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handler = (e: MediaQueryListEvent) => { reduceMotion = e.matches; };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  });
+
   // Track badge visibility with auto-hide after 3 seconds
   let badgeVisible = $state(false);
   let badgeTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -97,14 +112,14 @@
 </script>
 
 {#if sequenceInfo}
-  <div class="infinite-info" in:fade={{ duration: 200 }}>
+  <div class="infinite-info" in:fade={{ duration: reduceMotion ? 0 : 200 }}>
     <!-- LOOP Type Badge -->
     <div class="loop-info">
       {#key sequenceInfo.generatedAt.getTime()}
         <span
           class="loop-badge"
           style="--loop-color: {loopColor}"
-          in:fly={{ y: -10, duration: 300 }}
+          in:fly={{ y: reduceMotion ? 0 : -10, duration: reduceMotion ? 0 : 300 }}
         >
           {loopLabel}
         </span>
@@ -116,7 +131,11 @@
 
     <!-- First Rendering Badge -->
     {#if badgeVisible}
-      <span class="first-rendering-badge" in:fade out:fade={{ delay: 200 }}>
+      <span
+        class="first-rendering-badge"
+        in:fade={{ duration: reduceMotion ? 0 : 200 }}
+        out:fade={{ duration: reduceMotion ? 0 : 200, delay: reduceMotion ? 0 : 200 }}
+      >
         {t('landing_infinite_first_rendering')}
       </span>
     {/if}
@@ -166,12 +185,16 @@
     display: inline-flex;
     align-items: center;
     padding: 4px 12px;
-    background: linear-gradient(135deg, rgba(80, 200, 120, 0.2), rgba(52, 211, 153, 0.15));
-    border: 1px solid rgba(80, 200, 120, 0.3);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-success, #50c878) 20%, transparent),
+      color-mix(in srgb, var(--color-success, #50c878) 15%, transparent)
+    );
+    border: 1px solid color-mix(in srgb, var(--color-success, #50c878) 30%, transparent);
     border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #50c878;
+    color: var(--color-success, #50c878);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -202,12 +225,24 @@
     }
 
     .first-rendering-badge {
-      font-size: 0.6875rem;
+      font-size: var(--font-size-compact, 12px);
       padding: 3px 10px;
     }
 
     .timestamp {
       font-size: 0.75rem;
+    }
+  }
+
+  /* Honor reduced-motion: the badge/loop fly+fade transitions are declared in
+     markup (in:fade/in:fly/out:fade) — neutralize any CSS-driven motion and let
+     the transitions land instantly rather than animating. */
+  @media (prefers-reduced-motion: reduce) {
+    .infinite-info,
+    .loop-badge,
+    .first-rendering-badge {
+      animation: none !important;
+      transition: none !important;
     }
   }
 </style>

@@ -9,7 +9,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { onMount } from "svelte";
+  import { onMount, type Snippet } from "svelte";
   import type { Message } from "$lib/shared/messaging/domain/models/message-models";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { layoutState } from "$lib/shared/layout/layout-state.svelte";
@@ -29,7 +29,7 @@
   } = $props<{
     message: Message;
     isOwn: boolean;
-    children: any;
+    children: Snippet;
   }>();
 
   let showReactions = $state(false);
@@ -202,10 +202,13 @@
 
   $effect(() => {
     if (showReactions || showMoreMenu) {
-      setTimeout(() => {
+      const addListenerTimer = setTimeout(() => {
         document.addEventListener("pointerdown", handlePointerDownOutside);
       }, 10);
-      return () => document.removeEventListener("pointerdown", handlePointerDownOutside);
+      return () => {
+        clearTimeout(addListenerTimer);
+        document.removeEventListener("pointerdown", handlePointerDownOutside);
+      };
     }
     return undefined;
   });

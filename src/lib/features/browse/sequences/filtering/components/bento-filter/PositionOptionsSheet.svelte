@@ -69,10 +69,10 @@ Uses shared PositionSection components for consistent UX with Generate module
     width: 100%;
     min-height: var(--min-touch-target);
     padding: 12px 24px;
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: var(--semantic-error-dim);
+    border: 1px solid color-mix(in srgb, var(--semantic-error) 30%, transparent);
     border-radius: 12px;
-    color: rgba(239, 68, 68, 0.9);
+    color: var(--semantic-error);
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
@@ -80,8 +80,8 @@ Uses shared PositionSection components for consistent UX with Generate module
   }
 
   .clear-all-button:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.5);
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 50%, transparent);
   }
 
   .clear-all-button:active {

@@ -8,7 +8,7 @@ import type {
   LocationSharingPreferences,
 } from "../domain/models/user-location";
 import { Timestamp } from "firebase/firestore";
-import type { GeocodingService } from "./geocoding-service";
+import type { Geocoder } from "./geocoding-service";
 import {
   getCurrentLocation,
 } from "./location-provider";
@@ -23,7 +23,7 @@ import {
 
 export class LocationSharingOrchestrator {
   constructor(
-    private geocodingService: GeocodingService
+    private geocodingService: Geocoder
   ) {}
 
   async hasConsented(userId: string): Promise<boolean> {
@@ -31,41 +31,31 @@ export class LocationSharingOrchestrator {
     return prefs?.hasConsented ?? false;
   }
 
-  async requestLocationSharing(userId: string): Promise<boolean> {
-    try {
-      // Get user's exact location (used for geocoding, then discarded)
-      const position = await getCurrentLocation();
+  async requestLocationSharing(userId: string): Promise<void> {
+    // Get user's exact location (used for geocoding, then discarded)
+    const position = await getCurrentLocation();
 
-      // Reverse geocode to get city/country and city center coordinates
-      const cityLocation = await this.geocodingService.reverseGeocode(
-        position.lat,
-        position.lng
-      );
+    // Reverse geocode to get city/country and city center coordinates
+    const cityLocation = await this.geocodingService.reverseGeocode(
+      position.lat,
+      position.lng
+    );
 
-      // Save ONLY city-level data to Firestore (exact coords are never stored)
-      await saveLocation(userId, {
-        city: cityLocation.city,
-        country: cityLocation.country,
-        cityCenterCoordinates: cityLocation.cityCenterCoordinates,
-        visibility: "public",
-        updatedAt: Timestamp.now(),
-      });
+    // Save ONLY city-level data to Firestore (exact coords are never stored)
+    await saveLocation(userId, {
+      city: cityLocation.city,
+      country: cityLocation.country,
+      cityCenterCoordinates: cityLocation.cityCenterCoordinates,
+      visibility: "public",
+      updatedAt: Timestamp.now(),
+    });
 
-      // Save consent preferences
-      await savePreferences(userId, {
-        hasConsented: true,
-        consentedAt: Timestamp.now(),
-        visibility: "public",
-      });
-
-      return true;
-    } catch (error) {
-      console.error(
-        "❌ [LocationSharingOrchestrator] Failed to share location:",
-        error
-      );
-      return false;
-    }
+    // Save consent preferences
+    await savePreferences(userId, {
+      hasConsented: true,
+      consentedAt: Timestamp.now(),
+      visibility: "public",
+    });
   }
 
   async updateLocation(userId: string): Promise<void> {

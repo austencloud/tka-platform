@@ -1,4 +1,5 @@
 <script lang="ts">
+  import "../museum-theme.css";
   import {
     SKIN_OPTIONS,
     HAIR_OPTIONS,
@@ -14,7 +15,7 @@
   let { avatar, onenter }: Props = $props();
 </script>
 
-<div class="picker-overlay">
+<div class="picker-overlay museum-gold-scope">
   <div class="picker">
     <h2 class="picker-title">Choose Your Visitor</h2>
 
@@ -142,7 +143,7 @@
     font-size: 22px;
     font-weight: 400;
     letter-spacing: 0.06em;
-    color: rgba(200, 180, 140, 0.8);
+    color: var(--museum-gold-80);
     margin: 0;
   }
 
@@ -242,8 +243,8 @@
   }
 
   .preview-tile-label {
-    font-size: 10px;
-    color: rgba(200, 180, 140, 0.3);
+    font-size: var(--font-size-compact, 12px);
+    color: var(--museum-gold-30);
   }
 
   /* Choice rows */
@@ -255,10 +256,10 @@
   }
 
   .choice-label {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: rgba(200, 180, 140, 0.35);
+    color: var(--museum-gold-35);
   }
 
   .swatches {
@@ -281,17 +282,17 @@
   }
 
   .swatch.selected {
-    border-color: rgba(200, 180, 140, 0.6);
-    box-shadow: 0 0 0 3px rgba(200, 180, 140, 0.15);
+    border-color: var(--museum-gold-60);
+    box-shadow: 0 0 0 3px var(--museum-gold-15);
   }
 
   .enter-btn {
     margin-top: 8px;
     padding: 12px 40px;
-    background: rgba(200, 180, 140, 0.06);
-    border: 1.5px solid rgba(200, 180, 140, 0.2);
+    background: var(--museum-gold-06);
+    border: 1.5px solid var(--museum-gold-20);
     border-radius: 8px;
-    color: rgba(200, 180, 140, 0.65);
+    color: var(--museum-gold-65);
     font-family: Georgia, serif;
     font-size: 15px;
     letter-spacing: 0.05em;
@@ -300,14 +301,14 @@
   }
 
   .enter-btn:hover {
-    background: rgba(200, 180, 140, 0.1);
-    border-color: rgba(200, 180, 140, 0.35);
-    color: rgba(200, 180, 140, 0.9);
+    background: var(--museum-gold-10);
+    border-color: var(--museum-gold-35);
+    color: var(--museum-gold-90);
   }
 
   .footnote {
-    color: rgba(200, 180, 140, 0.18);
-    font-size: 11px;
+    color: var(--museum-gold-18);
+    font-size: var(--font-size-compact, 12px);
     margin: 0;
   }
 </style>

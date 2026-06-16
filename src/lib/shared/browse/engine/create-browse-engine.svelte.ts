@@ -47,6 +47,7 @@ import {
 	onLibraryMutated,
 	onLibrarySequenceAdded,
 } from "$lib/shared/library/library-events";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -187,11 +188,9 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
 		// Apply filters
 		if (activeFilters.size > 0) {
-			// Cast to the service's ActiveFilter type (it only reads `type` and `value`)
-			result = applyMultiFilters(
-				result,
-				activeFilters as unknown as Map<string, ActiveFilter>
-			);
+			// applyFilters is generic over `T extends ActiveFilter`, so the engine's
+			// richer ActiveFilter (with `locked`) passes structurally — no cast needed.
+			result = applyMultiFilters(result, activeFilters);
 		}
 
 		// Apply search
@@ -621,7 +620,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 				allSequences,
 				candidateType,
 				candidateValue,
-				activeFilters as unknown as Map<string, ActiveFilter>
+				activeFilters
 			);
 		},
 
@@ -641,7 +640,11 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 					libraryCache = libraryCache.map(update);
 				}
 			} catch (err) {
+				// No optimistic flip happens before this point — the local
+				// state only updates after doToggleFavorite resolves — so there
+				// is nothing to revert here, just surface the failure.
 				console.error("[BrowseEngine] Failed to toggle favorite:", err);
+				toast.error("Couldn't update favorite. Please try again.");
 			}
 		},
 

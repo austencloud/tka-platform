@@ -76,7 +76,7 @@
   }
 
   .count {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
     line-height: 1;

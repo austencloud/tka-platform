@@ -137,11 +137,16 @@ with pre-prepared data for better performance.
     musicalPosition?: string;
   }>();
 
-  // Extract beat context from StepData if available
-  const blueReversal = $derived((pictographData as any)?.blueReversal ?? false);
-  const redReversal = $derived((pictographData as any)?.redReversal ?? false);
-  const stepNumber = $derived((pictographData as any)?.stepNumber ?? null);
-  const duration = $derived((pictographData as any)?.duration ?? 1);
+  // Extract beat context from StepData if available.
+  // StepData extends PictographData with beat fields; "stepNumber" only exists
+  // on StepData, so the `in` check narrows the union without any casting.
+  const stepData = $derived(
+    pictographData && "stepNumber" in pictographData ? pictographData : null
+  );
+  const blueReversal = $derived(stepData?.blueReversal ?? false);
+  const redReversal = $derived(stepData?.redReversal ?? false);
+  const stepNumber = $derived(stepData?.stepNumber ?? null);
+  const duration = $derived(stepData?.duration ?? 1);
   const isStartPosition = $derived(stepNumber === 0);
   const showStepNumber = $derived(stepNumber !== null && !isStartPosition);
 

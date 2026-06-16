@@ -187,11 +187,9 @@
 </script>
 
 <section class="how-tka-works">
-  <h2>How TKA works</h2>
-
   {#if loaded && sequence}
-    <!-- Top row: 3 cards -->
-    <div class="top-row">
+    <!-- All six cards in one row: grid → hands → props → motion → sequence → animation -->
+    <div class="cards-row">
       <!-- Card 1: Empty grid -->
       <div class="step-card">
         <span class="step-badge">1</span>
@@ -260,10 +258,7 @@
         </div>
         <h3>Add props</h3>
       </div>
-    </div>
 
-    <!-- Bottom row: 3 cards -->
-    <div class="bottom-row">
       <!-- Card 4: Full pictograph -->
       <div class="step-card">
         <span class="step-badge">4</span>
@@ -290,7 +285,7 @@
       </div>
 
       <!-- Card 5: Full sequence -->
-      <div class="step-card wide-card">
+      <div class="step-card">
         <span class="step-badge">5</span>
         <div class="sequence-frame">
           <ChoreoCard
@@ -348,19 +343,9 @@
       </div>
     </div> -->
   {:else}
-    <!-- Skeleton: same 3+3 grid layout, pulsing placeholders -->
-    <div class="top-row">
-      {#each [1, 2, 3] as n}
-        <div class="step-card skeleton">
-          <span class="step-badge">{n}</span>
-          <div class="skeleton-pictograph"></div>
-          <div class="skeleton-title"></div>
-          <div class="skeleton-text"></div>
-        </div>
-      {/each}
-    </div>
-    <div class="bottom-row">
-      {#each [4, 5, 6] as n}
+    <!-- Skeleton: same single-row layout, pulsing placeholders -->
+    <div class="cards-row">
+      {#each [1, 2, 3, 4, 5, 6] as n}
         <div class="step-card skeleton">
           <span class="step-badge">{n}</span>
           <div class="skeleton-pictograph"></div>
@@ -384,34 +369,15 @@
 <style>
   .how-tka-works {
     padding: 80px 24px;
-    max-width: 1000px;
+    max-width: 1400px;
     margin: 0 auto;
   }
 
-  h2 {
-    font-family: var(--landing-heading-font, "Instrument Serif", Georgia, serif);
-    font-size: clamp(1.8rem, 4vw, 2.6rem);
-    font-weight: 400;
-    color: var(--theme-text, #fff);
-    text-align: center;
-    margin: 0 0 48px;
-    letter-spacing: -0.02em;
-  }
-
-  /* Top row: 3 equal cards */
-  .top-row {
+  /* One row of six equal cards - the progression reads left to right */
+  .cards-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-bottom: 20px;
-  }
-
-  /* Bottom row: 3 cards, full width */
-  .bottom-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-bottom: 20px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
   }
 
   /* Individual card */
@@ -488,29 +454,43 @@
     text-align: center;
   }
 
-  /* Mobile: stack everything */
+  /* Narrow: keep the row, let it scroll horizontally with snap points */
+  @media (max-width: 1100px) {
+    .cards-row {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x proximity;
+      -webkit-overflow-scrolling: touch;
+      gap: 14px;
+      padding: 14px 4px 18px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    }
+
+    .cards-row::-webkit-scrollbar {
+      height: 4px;
+    }
+    .cards-row::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .cards-row::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
+    }
+
+    .step-card {
+      flex: 0 0 220px;
+      scroll-snap-align: center;
+    }
+  }
+
   @media (max-width: 680px) {
     .how-tka-works {
       padding: 48px 16px;
     }
 
-    h2 {
-      margin-bottom: 36px;
-    }
-
-    .top-row {
-      grid-template-columns: 1fr;
-      max-width: 340px;
-      margin-left: auto;
-      margin-right: auto;
-      margin-bottom: 20px;
-    }
-
-    .bottom-row {
-      grid-template-columns: 1fr;
-      max-width: 340px;
-      margin-left: auto;
-      margin-right: auto;
+    .step-card {
+      flex: 0 0 200px;
     }
 
     .pictograph-frame {
@@ -544,14 +524,6 @@
     height: 20px;
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.05);
-    margin: 0 auto;
-  }
-
-  .skeleton .skeleton-text {
-    width: 80%;
-    height: 14px;
-    border-radius: 3px;
-    background: rgba(255, 255, 255, 0.03);
     margin: 0 auto;
   }
 

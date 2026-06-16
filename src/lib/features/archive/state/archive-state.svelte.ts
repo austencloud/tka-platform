@@ -1,6 +1,16 @@
 import type { PlaqueContent } from "../domain/archive-types";
 
-export function createArchiveState() {
+export interface ArchiveState {
+	readonly activePlaqueContent: PlaqueContent | null;
+	readonly interactionTargetId: string | null;
+	readonly isOverlayOpen: boolean;
+	setInteractionTarget(id: string | null): void;
+	openPlaque(content: PlaqueContent): void;
+	closePlaque(): void;
+	reset(): void;
+}
+
+export function createArchiveState(): ArchiveState {
 	let activePlaqueContent = $state<PlaqueContent | null>(null);
 	let interactionTargetId = $state<string | null>(null);
 	let isOverlayOpen = $state(false);
@@ -37,5 +47,3 @@ export function createArchiveState() {
 		},
 	};
 }
-
-export type ArchiveState = ReturnType<typeof createArchiveState>;

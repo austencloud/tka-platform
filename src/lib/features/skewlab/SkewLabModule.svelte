@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Level 5 Lab Module
+   * Skew Lab (L4) Module
    *
    * Admin-only experimental sandbox for validating skewed position rendering.
    * Has two tabs:
@@ -167,10 +167,10 @@
   }
 </script>
 
-<div class="level4-lab">
+<div class="skewlab">
   <header class="header">
     <div class="title-row">
-      <h1>Level 5</h1>
+      <h1>Skew Lab</h1>
       <span class="badge">Admin</span>
     </div>
     <nav class="tabs">
@@ -291,7 +291,7 @@
 </div>
 
 <style>
-  .level4-lab {
+  .skewlab {
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -324,8 +324,8 @@
     letter-spacing: 0.05em;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
-    background: rgba(249, 115, 22, 0.15);
-    color: #f97316;
+    background: color-mix(in srgb, var(--semantic-warning, #f97316) 15%, transparent);
+    color: var(--semantic-warning, #f97316);
   }
 
   .tabs {
@@ -407,6 +407,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
+    min-height: 44px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 9999px;
     background: transparent;
@@ -415,6 +416,12 @@
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
+  }
+
+  @media (pointer: coarse) {
+    .chip {
+      min-height: var(--min-touch-target);
+    }
   }
 
   .chip:hover {
@@ -428,12 +435,16 @@
     color: var(--theme-text, #fff);
   }
 
+  /* Zeta/Eta position group accents — scoped to skewlab; no global token exists. */
+  .chip.zeta { --skewlab-zeta-accent: #a78bfa; } /* violet — 135° obtuse */
+  .chip.eta  { --skewlab-eta-accent:  #34d399; } /* emerald — 45° acute */
+
   .chip.zeta.active {
-    border-color: #a78bfa;
+    border-color: var(--skewlab-zeta-accent);
   }
 
   .chip.eta.active {
-    border-color: #34d399;
+    border-color: var(--skewlab-eta-accent);
   }
 
   .chip .angle {

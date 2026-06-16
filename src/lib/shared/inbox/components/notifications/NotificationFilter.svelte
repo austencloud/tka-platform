@@ -14,6 +14,7 @@
    */
 
   import { slide } from "svelte/transition";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   // Note: UserNotification type is imported in the module script above
 
   interface Props {
@@ -102,22 +103,15 @@
   <!-- Collapsible type filters -->
   {#if showTypeFilters}
     <div class="type-filter" transition:slide={{ duration: 200 }}>
-      <!-- Desktop: Scrollable chip row -->
-      <div
-        class="chip-scroll desktop-only themed-scrollbar"
-        role="group"
-        aria-label="Filter by notification type"
-      >
-        {#each notificationTypes as type}
-          <button
-            class="chip type-chip"
-            class:active={filters.type === type.value}
-            onclick={() => (filters.type = type.value)}
-            aria-pressed={filters.type === type.value}
-          >
-            {type.label}
-          </button>
-        {/each}
+      <!-- Desktop: Single-select segmented control -->
+      <div class="segmented-wrap desktop-only">
+        <SegmentedControl
+          options={notificationTypes}
+          value={filters.type}
+          onchange={(value) => (filters.type = value)}
+          color="accent"
+          size="sm"
+        />
       </div>
 
       <!-- Mobile: Button to open type selector sheet -->
@@ -263,40 +257,6 @@
     justify-content: flex-start;
   }
 
-  .chip {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
-    border-radius: 20px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: var(--font-size-min);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-    white-space: nowrap;
-  }
-
-  .chip:hover:not(.active) {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke);
-    color: var(--theme-text);
-  }
-
-  .chip.active {
-    background: var(--theme-accent, var(--semantic-info));
-    border-color: var(--theme-accent, var(--semantic-info));
-    color: white;
-  }
-
-  .chip:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px
-      color-mix(in srgb, var(--theme-accent) 50%, transparent);
-  }
-
   /* Filter toggle button */
   .filter-toggle-btn {
     position: relative;
@@ -350,17 +310,9 @@
     position: relative;
   }
 
-  /* Desktop: Scrollable chip row */
-  .chip-scroll {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 4px;
-  }
-
-  .type-chip {
-    flex-shrink: 0;
+  /* Desktop: Segmented control wrapper */
+  .segmented-wrap {
+    width: 100%;
   }
 
   /* Mobile: Type selector button */
@@ -537,7 +489,6 @@
   @media (prefers-reduced-motion: reduce) {
     .search-box input,
     .clear-search,
-    .chip,
     .filter-toggle-btn,
     .type-filter,
     .type-selector-btn,

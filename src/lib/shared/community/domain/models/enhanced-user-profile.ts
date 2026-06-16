@@ -35,6 +35,10 @@ export interface UserProfile {
   propsISpinWith?: PropType[];
   /** Their single primary identity prop */
   favoriteProp?: PropType | null;
+  /** Mirrored from settings: the prop they most recently selected to render
+   * with. Inferred identity — display via getEffectiveProp(), which prefers
+   * the explicit favoriteProp when set. */
+  activeProp?: PropType | null;
   /** Optional catdog combo favorite */
   favoriteCatdog?: {
     bluePropType: PropType;
@@ -103,6 +107,4 @@ export interface CreatorQueryOptions {
   sortBy?: CreatorSortCriteria;
   limit?: number;
   offset?: number;
-  /** Filter to creators who spin with these props */
-  propFilter?: PropType[];
 }

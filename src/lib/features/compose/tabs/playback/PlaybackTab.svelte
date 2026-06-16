@@ -179,12 +179,6 @@
       <MirrorRenderer
         sequence={mirrorSequence()}
         axis="vertical"
-        isPlaying={playbackState.isPlaying}
-        speed={playbackState.speed}
-        shouldLoop={playbackState.shouldLoop}
-        playbackMode={playbackState.playbackMode}
-        stepPlaybackPauseMs={playbackState.stepPlaybackPauseMs}
-        stepPlaybackStepSize={playbackState.stepPlaybackStepSize}
         onOpenSettings={handleOpenSettings}
       />
     {:else if playbackState.currentMode === "grid"}

@@ -53,6 +53,12 @@
     item.userPhotoURL || generateAvatarUrl(item.userDisplayName, 64)
   );
 
+  // Reduced motion: inline swipe transitions bypass the stylesheet guard,
+  // so JS-driven motion gates on the same media query directly.
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   // Swipe state
   let swipeOffset = $state(0);
   let isSwiping = $state(false);
@@ -158,6 +164,13 @@
       (absOffset > DELETE_THRESHOLD || Math.abs(velocity) > VELOCITY_THRESHOLD)
     ) {
       if (onDelete) {
+        if (prefersReducedMotion) {
+          // Skip the fling-out animation; delete immediately
+          onDelete();
+          swipeOffset = 0;
+          isSwiping = false;
+          return;
+        }
         // Animate out then delete
         swipeOffset = -300;
         setTimeout(() => {
@@ -196,7 +209,7 @@
   // Computed styles
   const cardStyle = $derived(
     swipeOffset !== 0
-      ? `transform: translateX(${swipeOffset}px); transition: ${isSwiping ? "none" : "transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)"}`
+      ? `transform: translateX(${swipeOffset}px); transition: ${isSwiping || prefersReducedMotion ? "none" : "transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)"}`
       : ""
   );
 

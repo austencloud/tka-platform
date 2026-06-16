@@ -160,8 +160,8 @@
     font-size: clamp(0.65rem, 2cqi, 0.75rem);
     font-weight: 500;
     text-transform: none;
-    background: rgba(139, 92, 246, 0.2);
-    color: rgba(167, 139, 250, 0.95);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent);
+    color: color-mix(in srgb, var(--theme-accent-light, #a78bfa) 95%, transparent);
   }
 
   .count {
@@ -272,9 +272,9 @@
   }
 
   .chip-action-btn.danger:hover {
-    background: rgba(239, 68, 68, 0.08);
-    border-color: rgba(239, 68, 68, 0.15);
-    color: rgba(239, 68, 68, 0.7);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 8%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, transparent);
   }
 
   /* Add / Paste buttons */
@@ -292,10 +292,10 @@
     gap: var(--chip-gap, clamp(6px, 1.5cqi, 8px));
     min-height: 44px;
     padding: 10px 14px;
-    background: color-mix(in srgb, #10b981 4%, transparent);
-    border: 1px solid color-mix(in srgb, #10b981 10%, transparent);
+    background: color-mix(in srgb, var(--semantic-success, #10b981) 4%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-success, #10b981) 10%, transparent);
     border-radius: var(--action-radius, 10px);
-    color: rgba(16, 185, 129, 0.55);
+    color: color-mix(in srgb, var(--semantic-success, #10b981) 55%, transparent);
     font-size: clamp(0.8rem, 2.8cqi, 0.95rem);
     font-weight: 500;
     cursor: pointer;
@@ -303,9 +303,9 @@
   }
 
   .add-sequence-btn:hover {
-    background: color-mix(in srgb, #10b981 8%, transparent);
-    border-color: color-mix(in srgb, #10b981 20%, transparent);
-    color: rgba(16, 185, 129, 0.75);
+    background: color-mix(in srgb, var(--semantic-success, #10b981) 8%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success, #10b981) 20%, transparent);
+    color: color-mix(in srgb, var(--semantic-success, #10b981) 75%, transparent);
   }
 
   .paste-btn {
@@ -315,10 +315,10 @@
     gap: var(--chip-gap, clamp(6px, 1.5cqi, 8px));
     min-height: 44px;
     padding: 10px 14px;
-    background: color-mix(in srgb, #8b5cf6 4%, transparent);
-    border: 1px solid color-mix(in srgb, #8b5cf6 10%, transparent);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 4%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #8b5cf6) 10%, transparent);
     border-radius: var(--action-radius, 10px);
-    color: rgba(167, 139, 250, 0.55);
+    color: color-mix(in srgb, var(--theme-accent-light, #a78bfa) 55%, transparent);
     font-size: clamp(0.8rem, 2.8cqi, 0.95rem);
     font-weight: 500;
     cursor: pointer;
@@ -326,9 +326,9 @@
   }
 
   .paste-btn:hover {
-    background: color-mix(in srgb, #8b5cf6 8%, transparent);
-    border-color: color-mix(in srgb, #8b5cf6 20%, transparent);
-    color: rgba(167, 139, 250, 0.75);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 8%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent);
+    color: color-mix(in srgb, var(--theme-accent-light, #a78bfa) 75%, transparent);
   }
 
   @media (prefers-reduced-motion: reduce) {

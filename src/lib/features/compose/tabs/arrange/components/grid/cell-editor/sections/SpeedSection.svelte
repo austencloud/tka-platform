@@ -77,7 +77,7 @@
 
   .speed-slider {
     width: 100%;
-    accent-color: #60a5fa;
+    accent-color: var(--theme-accent, #60a5fa);
     cursor: pointer;
     height: 6px;
   }
@@ -109,9 +109,9 @@
   }
 
   .preset-btn.active {
-    background: rgba(96, 165, 250, 0.12);
-    border-color: rgba(96, 165, 250, 0.3);
-    color: #60a5fa;
+    background: color-mix(in srgb, var(--theme-accent, #60a5fa) 12%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #60a5fa) 30%, transparent);
+    color: var(--theme-accent, #60a5fa);
   }
 
   @media (prefers-reduced-motion: reduce) {

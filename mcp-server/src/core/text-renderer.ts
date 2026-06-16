@@ -92,8 +92,7 @@ export function renderWordHeader(
   showDifficultyBadge: boolean = true,
   darkMode: boolean = true,
   letterStyles?: LetterStyle[],
-  loopComponents?: LOOPComponent[],
-  period?: number
+  loopComponents?: LOOPComponent[]
 ): void {
   ensureFontsRegistered();
 
@@ -116,7 +115,6 @@ export function renderWordHeader(
     difficultyLevel,
     showDifficultyBadge,
     loopComponents: loopSet,
-    period,
     darkMode,
     letterStyles: sharedLetterStyles,
   };

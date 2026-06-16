@@ -201,7 +201,8 @@
   }
 
   .field-input:focus {
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
   }
 
   .title-input {

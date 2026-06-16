@@ -10,6 +10,7 @@
 	import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
 	import type { UserSearchResult, Invite } from '../../domain/models/connect-models';
 	import { t } from '$lib/shared/i18n/i18n.svelte';
+	import { toast } from '$lib/shared/toast/state/toast-state.svelte';
 
 	// Local state
 	let searchQuery = $state('');
@@ -62,19 +63,37 @@
 	}
 
 	async function handleInviteUser(user: UserSearchResult) {
-		await connectState.inviteUser(user.userId);
+		try {
+			await connectState.inviteUser(user.userId);
+			toast.success(`Invite sent to ${user.displayName}.`);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to send invite. Please try again.');
+		}
 	}
 
 	async function handleAddFriend(user: UserSearchResult) {
-		await connectState.addFriend(user.userId, user.displayName);
+		try {
+			await connectState.addFriend(user.userId, user.displayName);
+			toast.success(`Added ${user.displayName} as a friend.`);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to add friend. Please try again.');
+		}
 	}
 
 	async function handleAcceptInvite(invite: Invite) {
-		await connectState.acceptInvite(invite.inviteId);
+		try {
+			await connectState.acceptInvite(invite.inviteId);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to accept invite. Please try again.');
+		}
 	}
 
 	async function handleDeclineInvite(invite: Invite) {
-		await connectState.declineInvite(invite.inviteId);
+		try {
+			await connectState.declineInvite(invite.inviteId);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to decline invite. Please try again.');
+		}
 	}
 
 	// Cleanup debounce timeout on destroy to prevent memory leak
@@ -168,7 +187,7 @@
 							<button
 								class="accept-button"
 								onclick={() => handleAcceptInvite(invite)}
-								aria-label={t('connect_join_session_for' as any, { name: invite.fromDisplayName, word: invite.sequenceWord })}
+								aria-label={`${t('connect_join')} — ${invite.fromDisplayName}: "${invite.sequenceWord}"`}
 							>
 								<i class="fas fa-check" aria-hidden="true"></i>
 								{t('connect_join')}

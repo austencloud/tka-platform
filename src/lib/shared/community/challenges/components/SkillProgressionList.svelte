@@ -170,8 +170,8 @@
   }
 
   .skill-item.completed {
-    border-color: rgba(34, 197, 94, 0.3);
-    background: rgba(34, 197, 94, 0.05);
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 5%, transparent);
   }
 
   .skill-icon {
@@ -239,8 +239,8 @@
   }
 
   .level-badge.mastered {
-    background: rgba(34, 197, 94, 0.2);
-    color: var(--semantic-success);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent);
+    color: var(--semantic-success, #22c55e);
   }
 
   .skill-description {
@@ -294,9 +294,9 @@
     align-items: center;
     gap: 3px;
     padding: 3px 6px;
-    background: rgba(245, 158, 11, 0.15);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 15%, transparent);
     border-radius: 12px;
-    color: var(--semantic-warning);
+    color: var(--semantic-warning, #f59e0b);
     font-size: var(--font-size-compact);
     font-weight: 600;
     flex-shrink: 0;

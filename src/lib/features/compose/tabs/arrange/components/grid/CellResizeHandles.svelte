@@ -177,36 +177,36 @@
 
   /* Hover effects for edge handles */
   .handle.left:hover {
-    background: linear-gradient(to right, rgba(139, 92, 246, 0.3) 0%, transparent 100%);
+    background: linear-gradient(to right, color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent) 0%, transparent 100%);
   }
 
   .handle.right:hover {
-    background: linear-gradient(to left, rgba(139, 92, 246, 0.3) 0%, transparent 100%);
+    background: linear-gradient(to left, color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent) 0%, transparent 100%);
   }
 
   .handle.top:hover {
-    background: linear-gradient(to bottom, rgba(139, 92, 246, 0.3) 0%, transparent 100%);
+    background: linear-gradient(to bottom, color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent) 0%, transparent 100%);
   }
 
   .handle.bottom:hover {
-    background: linear-gradient(to top, rgba(139, 92, 246, 0.3) 0%, transparent 100%);
+    background: linear-gradient(to top, color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent) 0%, transparent 100%);
   }
 
   /* Hover effects for corner handles */
   .handle.corner.top-left:hover {
-    background: radial-gradient(circle at top left, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+    background: radial-gradient(circle at top left, color-mix(in srgb, var(--theme-accent, #8b5cf6) 40%, transparent) 0%, transparent 70%);
   }
 
   .handle.corner.top-right:hover {
-    background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+    background: radial-gradient(circle at top right, color-mix(in srgb, var(--theme-accent, #8b5cf6) 40%, transparent) 0%, transparent 70%);
   }
 
   .handle.corner.bottom-left:hover {
-    background: radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+    background: radial-gradient(circle at bottom left, color-mix(in srgb, var(--theme-accent, #8b5cf6) 40%, transparent) 0%, transparent 70%);
   }
 
   .handle.corner.bottom-right:hover {
-    background: radial-gradient(circle at bottom right, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+    background: radial-gradient(circle at bottom right, color-mix(in srgb, var(--theme-accent, #8b5cf6) 40%, transparent) 0%, transparent 70%);
   }
 
   /* Visual indicator on hover */

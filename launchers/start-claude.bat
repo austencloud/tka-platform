@@ -1,6 +1,5 @@
 @echo off
 setlocal
-
 set "REPO_ROOT=%~dp0.."
 set "SHORTCUT_DIR=%USERPROFILE%\launchers"
 set "SHORTCUT=%SHORTCUT_DIR%\TKA Platform.lnk"
@@ -12,7 +11,7 @@ if not exist "%SHORTCUT%" (
     powershell -ExecutionPolicy Bypass -Command ^
         "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%SHORTCUT%');" ^
         "$s.TargetPath='C:\Windows\System32\cmd.exe';" ^
-        "$s.Arguments='/c \""%BAT_FILE%\"';" ^
+        "$s.Arguments='/c \"%BAT_FILE%\"';" ^
         "$s.WorkingDirectory='%REPO_ROOT%';" ^
         "$s.IconLocation='%ICON%,0';" ^
         "$s.Description='Launch Claude Code in TKA Platform';" ^
@@ -23,4 +22,16 @@ if not exist "%SHORTCUT%" (
 )
 
 cd /d "%REPO_ROOT%"
-claude --dangerously-skip-permissions
+
+where claude >nul 2>&1
+if %errorlevel%==0 (
+    claude --dangerously-skip-permissions
+) else if exist "%USERPROFILE%\.local\bin\claude.exe" (
+    "%USERPROFILE%\.local\bin\claude.exe" --dangerously-skip-permissions
+) else (
+    echo.
+    echo claude was not found on PATH or in %USERPROFILE%\.local\bin
+    echo Reinstall with:  irm https://claude.ai/install.ps1 ^| iex
+    echo.
+    pause
+)

@@ -192,7 +192,7 @@
   }
 
   .back-button i {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .phase-container {

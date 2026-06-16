@@ -3,17 +3,18 @@
   Tabs appear in the sidebar. Navigation handled by the nav system.
 -->
 <script lang="ts">
+  import type { Component } from "svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { SOCIAL_TABS } from "$lib/shared/navigation/config/tab-definitions";
 
-  const tabComponents: Record<string, () => Promise<{ default: any }>> = {
+  const tabComponents: Record<string, () => Promise<{ default: Component }>> = {
     community: () => import("$lib/features/community/Community.svelte"),
     connect: () => import("$lib/features/connect/ConnectModule.svelte"),
   };
 
   const activeTab = $derived(navigationState.activeTab || SOCIAL_TABS[0]?.id || "community");
 
-  let TabComponent = $state<any>(null);
+  let TabComponent = $state<Component | null>(null);
   let loadError = $state<string | null>(null);
 
   $effect(() => {
@@ -21,7 +22,7 @@
     if (loader) {
       loadError = null;
       loader()
-        .then((mod: { default: any }) => {
+        .then((mod: { default: Component }) => {
           TabComponent = mod.default;
         })
         .catch((err: Error) => {
@@ -47,7 +48,7 @@
   {:else if TabComponent}
     <TabComponent />
   {:else}
-    <div class="loading">
+    <div class="loading" role="status" aria-live="polite" aria-label="Loading">
       <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
     </div>
   {/if}

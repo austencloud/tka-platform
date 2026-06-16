@@ -10,7 +10,10 @@
  */
 
 import type { Plugin, ResolvedConfig } from "vite";
-import { getDisabledFeatureModulePaths } from "./feature-flags";
+import {
+  getDisabledFeatureModulePaths,
+  getSsrStubbedModulePaths,
+} from "./feature-flags";
 
 const STUB_ID = "\0feature-gate-stub.js";
 const STUB_EXPORT = "export default null;\n";
@@ -31,11 +34,18 @@ export function featureGatePlugin(): Plugin {
       isProductionBuild = config.command === "build";
       if (!isProductionBuild) return;
 
-      disabledModulePaths = getDisabledFeatureModulePaths();
+      // The SSR/server build (Cloudflare Pages Functions, 25 MiB cap) never
+      // renders feature modules — the app shell is CSR-only — so stub every
+      // non-core module there. The client build only stubs genuinely-disabled
+      // (dev-tier) features so all shipped modules reach users.
+      const isSsrBuild = config.build?.ssr === true;
+      disabledModulePaths = isSsrBuild
+        ? getSsrStubbedModulePaths()
+        : getDisabledFeatureModulePaths();
 
       if (disabledModulePaths.length > 0) {
         console.log(
-          `[feature-gate] Production build: gating ${disabledModulePaths.length} disabled feature module path(s).`
+          `[feature-gate] Production ${isSsrBuild ? "SSR" : "client"} build: gating ${disabledModulePaths.length} module path(s).`
         );
       }
     },

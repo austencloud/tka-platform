@@ -237,7 +237,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 6px;
     color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: 0.65rem;
+    font-size: var(--font-size-compact, 12px);
     cursor: pointer;
     transition: all var(--duration-fast);
   }

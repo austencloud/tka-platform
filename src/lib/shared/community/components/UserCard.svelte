@@ -201,7 +201,7 @@
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
-    background: #1a1a2e;
+    background: var(--theme-panel-bg, #1a1a2e);
   }
 
   .avatar-placeholder {
@@ -210,8 +210,8 @@
     justify-content: center;
     background: linear-gradient(
       135deg,
-      color-mix(in srgb, var(--card-accent) 20%, #1a1a2e) 0%,
-      #1a1a2e 100%
+      color-mix(in srgb, var(--card-accent) 20%, var(--theme-panel-bg, #1a1a2e)) 0%,
+      var(--theme-panel-bg, #1a1a2e) 100%
     );
   }
 
@@ -233,8 +233,8 @@
     align-items: center;
     justify-content: center;
     font-size: var(--font-size-compact);
-    color: #000;
-    border: 2px solid #1a1a2e;
+    color: #000; /* contrast text on colored badge — no token for this */
+    border: 2px solid var(--theme-panel-bg, #1a1a2e);
     z-index: 1;
   }
 
@@ -301,6 +301,7 @@
   .follow-button {
     width: 100%;
     padding: 6px 12px;
+    min-height: var(--min-touch-target); /* WCAG AA touch floor */
     border: 1px solid var(--card-accent);
     border-radius: 6px;
     font-size: var(--font-size-compact);

@@ -56,7 +56,7 @@
     z-index: 20;
     display: grid;
     place-items: center;
-    background: rgba(8, 8, 14, 0.78);
+    background: var(--theme-overlay-scrim, rgba(8, 8, 14, 0.78));
     backdrop-filter: blur(6px);
   }
 
@@ -67,6 +67,6 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-modal, 0 16px 48px rgba(0, 0, 0, 0.5));
   }
 </style>

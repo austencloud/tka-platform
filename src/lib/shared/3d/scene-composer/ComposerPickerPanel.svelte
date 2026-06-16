@@ -175,7 +175,7 @@
 
   .scene-indicator {
     padding: 8px 12px;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.5);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
@@ -190,7 +190,7 @@
     gap: 6px;
     width: 100%;
     padding: 8px 12px;
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -208,7 +208,7 @@
 
   .cat-count {
     margin-left: auto;
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.3);
     font-weight: 500;
   }
@@ -260,7 +260,7 @@
   }
 
   .item-label {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     line-height: 1.3;
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
     overflow: hidden;
@@ -277,7 +277,8 @@
     position: absolute;
     top: 4px;
     right: 4px;
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1;
     color: rgba(255, 255, 255, 0.3);
     font-weight: 600;
   }
@@ -290,7 +291,7 @@
   }
 
   .picker-hint p {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
     margin: 0 0 5px;
     line-height: 1.4;
@@ -301,7 +302,7 @@
   kbd {
     display: inline-block;
     padding: 1px 5px;
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-family: inherit;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));

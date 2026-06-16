@@ -57,10 +57,12 @@
         var(--theme-accent-strong) 100%
       )
     );
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-top: 1px solid
+      var(--theme-stroke-strong, color-mix(in srgb, #fff 20%, transparent));
     backdrop-filter: blur(10px);
     z-index: var(--z-toast);
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 -4px 12px
+      var(--theme-shadow, color-mix(in srgb, #000 15%, transparent));
   }
 
   .price-info {
@@ -91,7 +93,8 @@
     font-weight: 600;
     cursor: pointer;
     transition: all var(--transition-fast, var(--duration-fast) ease);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px
+      var(--theme-shadow, color-mix(in srgb, #000 15%, transparent));
   }
 
   .cta-button:active:not(:disabled) {
@@ -101,6 +104,17 @@
   .cta-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .cta-button {
+      transition: none;
+    }
+
+    .cta-button:active:not(:disabled) {
+      transform: none;
+    }
   }
 
   /* Hide on desktop */

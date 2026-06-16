@@ -11,6 +11,7 @@
   import { useThrelte, useTask } from "@threlte/core";
   import { TransformControls } from "@threlte/extras";
   import { Raycaster, Vector2, Vector3, Euler, Mesh, type Object3D, type Camera } from "three";
+  import { resolveScene, resolveCamera, resolveRenderer } from "../resolve-threlte-scene";
 
   const _tempVec2 = new Vector3();
   const _worldPos = new Vector3();
@@ -102,15 +103,9 @@
   }
 
   const ctx = useThrelte();
-  const getScene = () => (ctx.scene as any)?.current ?? ctx.scene;
-  const getCamera = (): Camera | null => {
-    const c = (ctx.camera as any)?.current ?? ctx.camera;
-    return c?.isCamera ? c : null;
-  };
-  const getCanvas = (): HTMLCanvasElement | null => {
-    const r = (ctx.renderer as any)?.current ?? ctx.renderer;
-    return r?.domElement ?? null;
-  };
+  const getScene = () => resolveScene(ctx);
+  const getCamera = (): Camera | null => resolveCamera(ctx);
+  const getCanvas = (): HTMLCanvasElement | null => resolveRenderer(ctx)?.domElement ?? null;
 
   const raycaster = new Raycaster();
   const pointer = new Vector2();

@@ -9,6 +9,7 @@
 
 import lettersData from "../../level-1/_data/letters.json";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 const pictographs = (
   lettersData as unknown as { pictographs: Record<string, PictographData> }
@@ -28,7 +29,15 @@ export function transitionFor(id: string): string {
   return `${posBase(d.startPosition)}→${posBase(d.endPosition)}`;
 }
 
-/** Clone with turns zeroed — base letters render clean (no turn-count glyphs). */
+/** Wrap raw letters.json motions through createMotionData so that
+ *  arrowPlacementData and propPlacementData are filled with valid defaults.
+ *  Without this, pictograph-preparer's `if (!motion.propPlacementData) return`
+ *  guard skips every prop and arrow, leaving grid-only pictographs.
+ *
+ *  Turns are passed through as-is — they are structural positioning data, NOT
+ *  the turn-count glyph.  The glyph is suppressed separately via showTnD={false}
+ *  in GuidePictograph.svelte, so zeroing turns here is wrong and corrupts the
+ *  special/default placement lookups (which are keyed on the actual turn value). */
 export function codexData(id: string): PictographData | null {
   const d = pictographs[id];
   if (!d) return null;
@@ -36,7 +45,10 @@ export function codexData(id: string): PictographData | null {
   if (!blue || !red) return d;
   return {
     ...d,
-    motions: { blue: { ...blue, turns: 0 }, red: { ...red, turns: 0 } },
+    motions: {
+      blue: createMotionData({ ...blue }),
+      red: createMotionData({ ...red }),
+    },
   };
 }
 

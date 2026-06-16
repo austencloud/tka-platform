@@ -15,6 +15,7 @@ import { browser } from "$app/environment";
 import type { SpellPreferences } from "../domain/models/spell-models";
 import { DEFAULT_SPELL_PREFERENCES } from "$lib/shared/create/domain/spell-constants";
 import { debounce } from "$lib/shared/utils/debounce";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
 // ============================================================================
 // VERSIONING
@@ -96,6 +97,13 @@ function migrateData(version: number): void {
 // SAVE/LOAD
 // ============================================================================
 
+// Saving happens silently in the background on every change, so when the
+// browser's storage is full the user would keep typing assuming their word
+// and settings survive a reload — when nothing is actually being written.
+// We warn them once instead of on every keystroke (saves retry constantly),
+// and re-arm the warning after a save succeeds again.
+let hasWarnedQuotaExceeded = false;
+
 /**
  * Internal save function (called by debounced wrapper)
  */
@@ -127,6 +135,8 @@ function saveSpellStateInternal(state: Partial<SpellPersistedState>): void {
         String(state.hasGeneratedOnce)
       );
     }
+
+    hasWarnedQuotaExceeded = false;
   } catch (error) {
     if (
       error instanceof Error &&
@@ -134,6 +144,12 @@ function saveSpellStateInternal(state: Partial<SpellPersistedState>): void {
         error.name === "NS_ERROR_DOM_QUOTA_REACHED")
     ) {
       console.error("[SpellPersistence] Storage quota exceeded.");
+      if (!hasWarnedQuotaExceeded) {
+        hasWarnedQuotaExceeded = true;
+        toast.error(
+          "Browser storage is full — your Spell word and settings aren't being saved."
+        );
+      }
     } else {
       console.warn("[SpellPersistence] Failed to save state:", error);
     }

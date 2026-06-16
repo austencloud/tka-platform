@@ -57,8 +57,7 @@
 
   const backgroundType = $derived.by((): BackgroundType => {
     try {
-      const settings = settingsService;
-      return (settings as any)?.settings?.backgroundType ?? BackgroundType.COSMIC;
+      return settingsService.settings?.backgroundType ?? BackgroundType.COSMIC;
     } catch { return BackgroundType.COSMIC; }
   });
 

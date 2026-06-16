@@ -23,7 +23,25 @@ function writeLS(key: string, value: string | null): void {
   }
 }
 
-export function createCovenHubState() {
+export interface CovenHubState {
+  /** The sequence currently performed across the coven stations. */
+  readonly activeSequence: SequenceData | null;
+  /** Whether the sequence picker overlay is showing. */
+  readonly pickerOpen: boolean;
+  /** Camera/navigation mode for the 3D viewer. */
+  readonly navMode: ViewerNavMode;
+  /** Id of the effect the user has zoomed in on, or null for the full hub. */
+  readonly focusedEffect: string | null;
+  /** Persisted id from a prior session; the page hydrates the full data. */
+  readonly lastSequenceId: string | null;
+  setSequence(seq: SequenceData): void;
+  openPicker(): void;
+  closePicker(): void;
+  setNavMode(mode: ViewerNavMode): void;
+  setFocusedEffect(id: string | null): void;
+}
+
+export function createCovenHubState(): CovenHubState {
   const persistedSeqId = readLS(SEQ_KEY);
   const persistedNav = readLS(NAV_KEY) as ViewerNavMode | null;
 

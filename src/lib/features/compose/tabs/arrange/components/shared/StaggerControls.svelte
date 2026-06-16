@@ -250,9 +250,9 @@
   }
 
   .preset-btn.active {
-    background: rgba(139, 92, 246, 0.2);
-    border-color: rgba(139, 92, 246, 0.4);
-    color: rgba(167, 139, 250, 1);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 40%, transparent);
+    color: var(--theme-accent-light, #a78bfa);
   }
 
   .preset-btn:focus-visible {
@@ -292,13 +292,13 @@
   }
 
   .save-btn {
-    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+    background: linear-gradient(135deg, var(--theme-accent, #8b5cf6), var(--accent-pink, #ec4899));
     border: none;
     color: white;
   }
 
   .save-btn:hover {
-    box-shadow: 0 2px 12px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--theme-accent, #8b5cf6) 40%, transparent);
   }
 
   .cancel-btn:focus-visible,

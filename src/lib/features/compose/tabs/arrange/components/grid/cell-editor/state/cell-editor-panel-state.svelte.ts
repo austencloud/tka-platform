@@ -22,7 +22,20 @@ export const PILL_SCOPE_CONFIG: PillScopeConfig[] = [
   { id: 'export', scopes: [] },
 ];
 
-export function createCellEditorPanelState() {
+export interface CellEditorPanelState {
+  readonly expandedSection: ExpandableSection;
+  readonly applyToHand: TargetHand;
+  readonly activePill: PillId;
+  readonly scopeLevel: ScopeLevel;
+  toggleSection(section: ExpandableSection): void;
+  closeSection(): void;
+  setApplyToHand(hand: TargetHand): void;
+  setActivePill(pill: PillId): void;
+  setScopeLevel(level: ScopeLevel): void;
+  resetForNewCell(): void;
+}
+
+export function createCellEditorPanelState(): CellEditorPanelState {
   let expandedSection = $state<ExpandableSection>(null);
   let applyToHand = $state<TargetHand>('both');
   let activePill = $state<PillId>('effects');
@@ -56,5 +69,3 @@ export function createCellEditorPanelState() {
     },
   };
 }
-
-export type CellEditorPanelState = ReturnType<typeof createCellEditorPanelState>;

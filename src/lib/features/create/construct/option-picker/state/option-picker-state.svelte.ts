@@ -143,6 +143,9 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
       error = err instanceof Error ? err.message : "Failed to load options";
       state = "error";
       options = [];
+      // Allow a retry of the same sequence — otherwise loadOptions would
+      // early-return on the matching sequence ID and the error would be sticky.
+      lastSequenceId = null;
     }
   }
 
@@ -190,16 +193,6 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
     }
 
     return filteredResults;
-  }
-
-  function selectOption(_option: PictographData) {
-    try {
-      // Basic selection handling - can be extended as needed
-      // Currently this is a no-op, reserved for future functionality
-    } catch (err) {
-      console.error("Failed to select option:", err);
-      error = err instanceof Error ? err.message : "Failed to select option";
-    }
   }
 
   function clearError() {
@@ -332,7 +325,6 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
     setSortMethod,
     setContinuousOnly,
     recordClickSlot,
-    selectOption,
     clearError,
     reset,
     getFilteredOptions,

@@ -10,6 +10,7 @@ import type { AnimationMode } from "../../../shared/domain/animation-mode";
 import type { CellConfig, Composition, GridLayout } from "$lib/shared/animation-engine/domain/compose-types";
 import { getComposition as dexieGetComposition } from "../../../services/dexie-composition-repository";
 import { compositionSyncer } from "../../../services/composition-syncer";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
 // ============================================================================
 // Types
@@ -200,7 +201,7 @@ export function createCompositionBrowseState() {
 			}
 		} catch (err) {
 			console.error("Failed to toggle favorite:", err);
-			error = err instanceof Error ? err.message : "Failed to toggle favorite";
+			toast.error(err instanceof Error ? err.message : "Failed to toggle favorite");
 		}
 	}
 
@@ -229,7 +230,7 @@ export function createCompositionBrowseState() {
 			}
 		} catch (err) {
 			console.error("Failed to delete composition:", err);
-			error = err instanceof Error ? err.message : "Failed to delete composition";
+			toast.error(err instanceof Error ? err.message : "Failed to delete composition");
 		}
 	}
 
@@ -254,7 +255,7 @@ export function createCompositionBrowseState() {
 			return copy.id;
 		} catch (err) {
 			console.error("Failed to duplicate composition:", err);
-			error = err instanceof Error ? err.message : "Failed to duplicate composition";
+			toast.error(err instanceof Error ? err.message : "Failed to duplicate composition");
 			return null;
 		}
 	}

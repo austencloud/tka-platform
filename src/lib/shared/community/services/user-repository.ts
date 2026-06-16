@@ -38,6 +38,7 @@ import type {
   CreatorSortCriteria,
 } from "../domain/models/enhanced-user-profile";
 import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
   UserFirestoreDataSchema,
   UserAchievementFirestoreSchema,
@@ -72,6 +73,9 @@ interface FirestoreUserData extends DocumentData {
   pronouns?: string;
   lastActivityDate?: Timestamp;
   profileColor?: string;
+  propsISpinWith?: string[];
+  favoriteProp?: string | null;
+  activeProp?: string | null;
   role?: UserRole;
   isDisabled?: boolean;
   isHidden?: boolean;
@@ -191,6 +195,10 @@ async function mapFirestoreToEnhancedProfile(
     const pronouns = data.pronouns ?? undefined;
     const profileColor = data.profileColor ?? undefined;
 
+    const propsISpinWith = (data.propsISpinWith as PropType[]) ?? undefined;
+    const favoriteProp = (data.favoriteProp as PropType) ?? null;
+    const activeProp = (data.activeProp as PropType) ?? null;
+
     const role = data.role ?? "user";
     const isDisabled = data.isDisabled ?? false;
     const isHidden = data.isHidden ?? false;
@@ -216,6 +224,9 @@ async function mapFirestoreToEnhancedProfile(
       instagramUsername,
       pronouns,
       profileColor,
+      propsISpinWith,
+      favoriteProp,
+      activeProp,
       totalXP,
       currentLevel,
       achievementCount,
@@ -493,6 +504,7 @@ export async function getFeaturedCreators(
     return users;
   } catch (error) {
     console.error("[UserRepository] Error fetching featured creators:", error);
+    toast.error("Failed to load featured creators.");
     return [];
   }
 }
@@ -763,6 +775,7 @@ export async function getFollowing(
     return batchFetchUserProfiles(firestore, userIds);
   } catch (error) {
     console.error(`[UserRepository] Error getting following list:`, error);
+    toast.error("Failed to load following list.");
     return [];
   }
 }
@@ -788,6 +801,7 @@ export async function getFollowers(
     return batchFetchUserProfiles(firestore, userIds);
   } catch (error) {
     console.error(`[UserRepository] Error getting followers list:`, error);
+    toast.error("Failed to load followers.");
     return [];
   }
 }

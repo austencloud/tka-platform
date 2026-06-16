@@ -380,7 +380,7 @@
   }
 
   .combo-label {
-    font-size: 0.625rem;
+    font-size: var(--font-size-compact, 12px);
     text-transform: uppercase;
     color: var(--theme-text-dim, var(--theme-text-dim));
   }

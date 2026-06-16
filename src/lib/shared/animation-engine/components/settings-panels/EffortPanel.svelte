@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+  import { getAnimationVisibilityContext } from "../../state/animation-visibility-context";
   import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
 
   let {
@@ -11,7 +12,7 @@
     showSubtitles?: boolean;
   } = $props();
 
-  const vm = getAnimationVisibilityManager();
+  const vm = getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
 
   let effortPreset = $state(vm.getEffortPreset());
 

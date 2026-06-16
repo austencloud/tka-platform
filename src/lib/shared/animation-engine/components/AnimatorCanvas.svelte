@@ -299,6 +299,18 @@ Last audit: 2025-12-27
     }
   }
 
+  // Unmount cleanup so the long-press and tap-feedback timeouts can't fire
+  // (and touch state or the context-menu host) after the component is gone.
+  $effect(() => {
+    return () => {
+      cancelLongPress();
+      if (tapFeedbackTimer !== null) {
+        clearTimeout(tapFeedbackTimer);
+        tapFeedbackTimer = null;
+      }
+    };
+  });
+
   let contextMenuHost: CanvasContextMenuHost | undefined = $state();
 
   // Engine instance - created and owned by the CanvasSurface leaf, bound back
@@ -382,7 +394,6 @@ Last audit: 2025-12-27
   );
   const computedRotationPeriod = $derived(loopDisplay.rotationPeriod);
   const computedInversionPeriod = $derived(loopDisplay.inversionPeriod);
-  const computedLoopPeriod = $derived(loopDisplay.period);
 
   function handleContextMenu(e: MouseEvent) {
     e.preventDefault();
@@ -416,7 +427,6 @@ Last audit: 2025-12-27
         loopComponents={computedLoopComponents}
         rotationPeriod={computedRotationPeriod}
         inversionPeriod={computedInversionPeriod}
-        loopPeriod={computedLoopPeriod}
       />
     </div>
 

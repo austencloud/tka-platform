@@ -175,7 +175,7 @@
     height: 100%; /* Fill grid cell */
     padding: 0;
     background: var(--print-bg);
-    border: 2px solid #999999;
+    border: 2px solid var(--theme-stroke, #999999);
     border-radius: 0;
     overflow: hidden;
     cursor: pointer;

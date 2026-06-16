@@ -120,8 +120,8 @@
   }
 
   .daily-challenge-card.complete {
-    border-color: rgba(34, 197, 94, 0.3);
-    background: rgba(34, 197, 94, 0.08);
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 8%, transparent);
   }
 
   .card-header {
@@ -191,9 +191,9 @@
     align-items: center;
     gap: 4px;
     padding: 4px 8px;
-    background: rgba(245, 158, 11, 0.15);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 15%, transparent);
     border-radius: 16px;
-    color: var(--semantic-warning);
+    color: var(--semantic-warning, #f59e0b);
     font-size: var(--font-size-compact);
     font-weight: 600;
     flex-shrink: 0;
@@ -237,7 +237,7 @@
   }
 
   .progress-fill.complete {
-    background: linear-gradient(90deg, var(--semantic-success), #16a34a);
+    background: linear-gradient(90deg, var(--semantic-success, #22c55e), color-mix(in srgb, var(--semantic-success, #22c55e) 80%, #000));
   }
 
   .progress-text {

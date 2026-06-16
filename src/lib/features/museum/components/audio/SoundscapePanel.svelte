@@ -8,6 +8,7 @@
   import { getSoundscapeContext } from "../../audio/soundscape-context";
   import type { AudioCandidate } from "../../audio/soundscape";
 
+  import "../museum-theme.css";
   const player = getSoundscapeContext();
 
   let wing = $derived(player.currentWing);
@@ -40,7 +41,7 @@
   }
 </script>
 
-<div class="panel" role="dialog" aria-label="Museum soundscape">
+<div class="panel museum-gold-scope" role="dialog" aria-label="Museum soundscape">
   <header class="panel-header">
     <div class="header-text">
       <div class="panel-title">Ambient Score</div>
@@ -161,7 +162,7 @@
     max-height: min(620px, calc(100vh - 120px));
     background: rgba(14, 11, 9, 0.96);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(200, 180, 140, 0.18);
+    border: 1px solid var(--museum-gold-18);
     border-radius: 12px;
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
     color: rgba(220, 210, 190, 0.9);
@@ -182,12 +183,12 @@
     align-items: center;
     justify-content: space-between;
     padding: 14px 16px 12px;
-    border-bottom: 1px solid rgba(200, 180, 140, 0.12);
+    border-bottom: 1px solid var(--museum-gold-12);
     gap: 8px;
   }
 
   .panel-title {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: rgba(220, 200, 160, 0.55);
@@ -209,14 +210,14 @@
     height: 32px;
     border: none;
     background: transparent;
-    color: rgba(200, 180, 140, 0.6);
+    color: var(--museum-gold-60);
     cursor: pointer;
     border-radius: 6px;
     transition: background 0.15s ease, color 0.15s ease;
   }
 
   .icon-btn:hover {
-    background: rgba(200, 180, 140, 0.1);
+    background: var(--museum-gold-10);
     color: rgba(220, 200, 160, 0.9);
   }
 
@@ -230,7 +231,7 @@
     font-size: 12px;
     color: rgba(220, 180, 140, 0.75);
     background: rgba(100, 80, 40, 0.15);
-    border-bottom: 1px solid rgba(200, 180, 140, 0.08);
+    border-bottom: 1px solid var(--museum-gold-08);
   }
 
   .track-list {
@@ -244,12 +245,12 @@
   .track {
     display: flex;
     flex-direction: column;
-    border-bottom: 1px solid rgba(200, 180, 140, 0.06);
+    border-bottom: 1px solid var(--museum-gold-06);
     transition: background 0.15s ease;
   }
 
-  .track:hover { background: rgba(200, 180, 140, 0.04); }
-  .track.active { background: rgba(200, 180, 140, 0.09); }
+  .track:hover { background: var(--museum-gold-04); }
+  .track.active { background: var(--museum-gold-09); }
 
   .track-main {
     display: flex;
@@ -274,7 +275,7 @@
     justify-content: center;
     font-size: 11px;
     color: rgba(220, 200, 160, 0.5);
-    border: 1px solid rgba(200, 180, 140, 0.2);
+    border: 1px solid var(--museum-gold-20);
     border-radius: 50%;
     transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
   }
@@ -302,8 +303,8 @@
   }
 
   .track-meta {
-    font-size: 11px;
-    color: rgba(200, 180, 140, 0.5);
+    font-size: var(--font-size-compact, 12px);
+    color: var(--museum-gold-50);
     display: flex;
     align-items: center;
     gap: 4px;
@@ -316,7 +317,7 @@
     color: rgba(180, 220, 180, 0.85);
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .track-volume {
@@ -324,7 +325,7 @@
     align-items: center;
     gap: 8px;
     padding: 0 16px 10px 56px;
-    color: rgba(200, 180, 140, 0.4);
+    color: var(--museum-gold-40);
     font-size: 10px;
   }
 
@@ -335,7 +336,7 @@
 
   .commit-row {
     padding: 10px 16px;
-    border-top: 1px solid rgba(200, 180, 140, 0.08);
+    border-top: 1px solid var(--museum-gold-08);
   }
 
   .commit-btn {
@@ -361,7 +362,7 @@
   }
 
   .commit-status {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: rgba(180, 220, 180, 0.65);
     text-align: center;
   }
@@ -369,13 +370,13 @@
   .empty {
     padding: 20px 16px;
     font-size: 12px;
-    color: rgba(200, 180, 140, 0.5);
+    color: var(--museum-gold-50);
     text-align: center;
   }
 
   .empty code {
     font-family: Menlo, Monaco, monospace;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: rgba(220, 200, 160, 0.8);
     background: rgba(0, 0, 0, 0.3);
     padding: 1px 4px;
@@ -384,7 +385,7 @@
 
   .master-volume {
     padding: 10px 16px;
-    border-top: 1px solid rgba(200, 180, 140, 0.12);
+    border-top: 1px solid var(--museum-gold-12);
     background: rgba(8, 6, 5, 0.4);
   }
 
@@ -392,8 +393,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 11px;
-    color: rgba(200, 180, 140, 0.6);
+    font-size: var(--font-size-compact, 12px);
+    color: var(--museum-gold-60);
   }
 
   .master-label {

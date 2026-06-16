@@ -350,3 +350,6 @@ static/models/**/_tmp_*.glb
 
 # Claude scratch / diagnostic artifacts (logs, traces, throwaway scripts)
 .claude-tmp/
+
+# Module-audit scratch (8-dimension audit JSON reports + debug chrome profile)
+.audit-evidence/

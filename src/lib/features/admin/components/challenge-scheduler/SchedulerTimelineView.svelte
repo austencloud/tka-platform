@@ -94,6 +94,9 @@
 
 <style>
   .timeline-container {
+    /* Brand purple gradient (shared with ChallengeFormPanel). No global token
+       matches this exact 2-stop ramp; scoped per never-hand-roll fix pattern. */
+    --challenge-brand-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     flex: 1;
     overflow-y: auto;
   }
@@ -122,7 +125,7 @@
 
   .add-challenge-btn {
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--challenge-brand-gradient);
     border: none;
     border-radius: 8px;
     color: #fff;
@@ -191,7 +194,7 @@
     color: #ffd700;
     padding: 0.15rem 0.4rem;
     border-radius: 4px;
-    font-size: 0.65rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: bold;
     margin-top: 4px;
   }

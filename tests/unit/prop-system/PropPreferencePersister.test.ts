@@ -25,7 +25,7 @@ vi.mock("$lib/shared/auth/firebase", () => ({
 }));
 
 import { savePropPreferences, removePropPreference } from "../../../src/lib/shared/community/services/prop-preference-persister";
-import { PropType } from "../../../src/lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "../../../src/lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { PropPreferences } from "../../../src/lib/shared/community/services/contracts/types";
 import { updateDoc, getDoc } from "firebase/firestore";
 

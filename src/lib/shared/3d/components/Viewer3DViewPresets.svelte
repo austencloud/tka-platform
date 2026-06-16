@@ -184,15 +184,15 @@
   }
 
   .preset-button.active {
-    color: #cfe4ff;
-    background: color-mix(in srgb, #4a9eff 18%, transparent);
-    border-color: color-mix(in srgb, #4a9eff 40%, transparent);
-    box-shadow: 0 2px 12px color-mix(in srgb, #4a9eff 20%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #4a9eff) 40%, #ffffff);
+    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 18%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 40%, transparent);
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--theme-accent, #4a9eff) 20%, transparent);
   }
 
   .preset-button.active i {
     opacity: 1;
-    color: #8fc3ff;
+    color: color-mix(in srgb, var(--theme-accent, #4a9eff) 60%, #ffffff);
   }
 
   .presets-bar.grid {
@@ -228,8 +228,8 @@
   }
 
   .grid .preset-button.active {
-    background: color-mix(in srgb, #4a9eff 22%, transparent);
-    border-color: color-mix(in srgb, #4a9eff 55%, transparent);
-    box-shadow: 0 4px 16px color-mix(in srgb, #4a9eff 25%, transparent);
+    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 22%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 55%, transparent);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--theme-accent, #4a9eff) 25%, transparent);
   }
 </style>

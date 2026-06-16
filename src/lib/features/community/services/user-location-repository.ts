@@ -85,19 +85,30 @@ export async function getPublicLocations(
 
     // Join with user profiles
     const locationsWithProfiles = await Promise.all(
-      locations.map(async (location) => {
+      locations.map(async (location): Promise<UserLocationWithProfile | null> => {
         const profile = await firestoreGet("users", location.userId, UserProfileJoinSchema);
         if (!profile) return null;
 
-        return {
-          ...location,
-          username: profile.username || "Unknown",
-          displayName: profile.displayName || "Anonymous",
-          avatar: profile.avatar,
-          totalXP: profile.totalXP || 0,
-          currentLevel: profile.currentLevel || 1,
-          sequenceCount: profile.sequenceCount || 0,
-        } as unknown as UserLocationWithProfile;
+        // The list schema parses Firestore timestamps to Date; the domain model
+        // types updatedAt as Timestamp. Markers never read it, so map the field
+        // explicitly to the domain shape rather than spreading the divergent type.
+        const result: UserLocationWithProfile = {
+          userId: location.userId,
+          city: location.city,
+          country: location.country,
+          cityCenterCoordinates: location.cityCenterCoordinates,
+          visibility: location.visibility,
+          // Schema-parsed Date vs domain Timestamp don't structurally overlap,
+          // so the bridge goes through unknown (markers never read this field).
+          updatedAt: location.updatedAt as unknown as UserLocation["updatedAt"],
+          username: profile.username ?? "Unknown",
+          displayName: profile.displayName ?? "Anonymous",
+          avatar: profile.avatar ?? undefined,
+          totalXP: profile.totalXP ?? 0,
+          currentLevel: profile.currentLevel ?? 1,
+          sequenceCount: profile.sequenceCount ?? 0,
+        };
+        return result;
       }),
     );
 
@@ -106,7 +117,9 @@ export async function getPublicLocations(
     );
   } catch (error) {
     console.error("❌ [UserLocationRepository] Failed to get public locations:", error);
-    return [];
+    // Rethrow so the caller can distinguish a load failure from a genuine
+    // zero-users result (an empty map should not look like a broken one).
+    throw new Error("Failed to load community locations. Please try again.");
   }
 }
 
@@ -115,7 +128,14 @@ export async function savePreferences(
   preferences: LocationSharingPreferences,
 ): Promise<void> {
   try {
-    await firestoreSet(preferencesPath(userId), "locationSharing", preferences as unknown as Record<string, unknown>);
+    const data: Record<string, unknown> = {
+      hasConsented: preferences.hasConsented,
+      visibility: preferences.visibility,
+    };
+    if (preferences.consentedAt !== undefined) {
+      data.consentedAt = preferences.consentedAt;
+    }
+    await firestoreSet(preferencesPath(userId), "locationSharing", data);
   } catch (error) {
     console.error("❌ [UserLocationRepository] Failed to save preferences:", error);
     throw new Error("Failed to save location preferences. Please try again.");

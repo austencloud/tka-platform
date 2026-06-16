@@ -190,7 +190,7 @@
 
 	/* ── Section label ── */
 	.section-label {
-		font-size: 11px;
+		font-size: var(--font-size-compact, 12px);
 		font-weight: 600;
 		letter-spacing: 0.5px;
 		text-transform: uppercase;

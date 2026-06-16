@@ -12,8 +12,13 @@
   import ScanActivityCard from "./ScanActivityCard.svelte";
   import RecentScansList from "./RecentScansList.svelte";
   import TopLocationsBlock from "./TopLocationsBlock.svelte";
-  import ScanActivityGlobe from "./ScanActivityGlobe.svelte";
   import { countryCentroid } from "./country-centroids";
+
+  // globe.gl bundles its own three + d3 (~heavy). Used only in this map panel,
+  // so load it on demand to keep it off the choreo-card module's first paint.
+  const ScanActivityGlobe = import("./ScanActivityGlobe.svelte").then(
+    (m) => m.default
+  );
 
   const scanState = scanActivityState;
   const isAdmin = $derived(authState.isAdmin === true);
@@ -116,7 +121,9 @@
           <h5>Live map</h5>
           <span class="count">● {scanState.recentEvents.length} recent</span>
         </div>
-        <ScanActivityGlobe points={globePoints} height={260} />
+        {#await ScanActivityGlobe then Globe}
+          <Globe points={globePoints} height={260} />
+        {/await}
         <RecentScansList events={scanState.recentEvents} onRowClick={openCard} />
       </div>
       <TopLocationsBlock events={scanState.recentEvents} />

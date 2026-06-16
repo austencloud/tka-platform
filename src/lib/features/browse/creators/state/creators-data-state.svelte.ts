@@ -9,7 +9,8 @@ import type { DocumentSnapshot } from "firebase/firestore";
 import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 import type { CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";
 import { getUsersPaginated, getFeaturedCreators } from "$lib/shared/community/services/user-repository";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { getEffectiveProp } from "$lib/shared/community/domain/get-effective-prop";
+import { getBasePropType } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 
 const DEFAULT_PAGE_SIZE = 30;
 
@@ -42,13 +43,6 @@ function createCreatorsDataState() {
   let searchResults = $state<EnhancedUserProfile[] | null>(null);
   let isSearching = $state(false);
 
-  // Prop filter state (multi-select)
-  let selectedPropFilters = $state<PropType[]>([]);
-
-  // Cached userId so togglePropFilter can reload without needing the caller
-  // to pass userId again on every filter change.
-  let cachedCurrentUserId: string | undefined = undefined;
-
   // Track if initial load has happened
   let isInitialized = $state(false);
 
@@ -58,25 +52,27 @@ function createCreatorsDataState() {
   let hasFollowState = $state(false);
 
   /**
-   * Group creators by their favoriteProp field.
-   *
-   * Creators who have set a favorite prop come first, sorted alphabetically
-   * by prop name so the same prop types cluster together. Those with no
-   * favorite prop fall to the bottom in whatever order they arrived.
+   * Group creators by their effective prop (explicit favorite, else the
+   * settings-derived activeProp), collapsed to base families so staff
+   * variants cluster together. Creators with no prop at all fall to the
+   * bottom in whatever order they arrived.
    */
-  function groupByFavoriteProp(
+  function groupByEffectiveProp(
     results: EnhancedUserProfile[]
   ): EnhancedUserProfile[] {
-    const withFav = results.filter((u) => u.favoriteProp);
-    const withoutFav = results.filter((u) => !u.favoriteProp);
+    const groupKey = (u: EnhancedUserProfile): string | null => {
+      const prop = getEffectiveProp(u);
+      return prop ? getBasePropType(prop) : null;
+    };
 
-    withFav.sort((a, b) => {
-      const aProp = a.favoriteProp ?? "";
-      const bProp = b.favoriteProp ?? "";
-      return aProp.localeCompare(bProp);
-    });
+    const withProp = results.filter((u) => groupKey(u));
+    const withoutProp = results.filter((u) => !groupKey(u));
 
-    return [...withFav, ...withoutFav];
+    withProp.sort((a, b) =>
+      (groupKey(a) ?? "").localeCompare(groupKey(b) ?? "")
+    );
+
+    return [...withProp, ...withoutProp];
   }
 
   /**
@@ -93,16 +89,8 @@ function createCreatorsDataState() {
     // If already loading, skip
     if (isLoading) return;
 
-    // Cache for use by togglePropFilter, which needs to reload without
-    // requiring the caller to pass userId again.
-    cachedCurrentUserId = currentUserId;
-
     isLoading = true;
     error = null;
-
-    // Prop filter applied to all query branches when active.
-    const propFilter =
-      selectedPropFilters.length > 0 ? selectedPropFilters : undefined;
 
     try {
       if (sortBy === "favoriteProp") {
@@ -115,12 +103,11 @@ function createCreatorsDataState() {
             sortDirection: "desc",
             limit: 1000,
             cursor: null,
-            ...(propFilter ? { propFilter } : {}),
           },
           currentUserId
         );
 
-        users = groupByFavoriteProp(result.users);
+        users = groupByEffectiveProp(result.users);
         lastDocSnapshot = null;
         hasMore = false; // Pagination disabled for grouped view
       } else {
@@ -130,7 +117,6 @@ function createCreatorsDataState() {
             sortDirection,
             limit: pageSize,
             cursor: null,
-            ...(propFilter ? { propFilter } : {}),
           },
           currentUserId
         );
@@ -208,27 +194,6 @@ function createCreatorsDataState() {
 
     // Reload with new sort
     await loadCreators(currentUserId);
-  }
-
-  /**
-   * Toggle a prop filter on or off, then reload from the first page.
-   *
-   * Uses the cached repository from the most recent loadCreators call so the
-   * caller doesn't need to pass it again on every chip tap.
-   */
-  async function togglePropFilter(prop: PropType): Promise<void> {
-    if (selectedPropFilters.includes(prop)) {
-      selectedPropFilters = selectedPropFilters.filter((p) => p !== prop);
-    } else {
-      selectedPropFilters = [...selectedPropFilters, prop];
-    }
-
-    // Reset pagination so we fetch from the start with the new filter set.
-    users = [];
-    lastDocSnapshot = null;
-    hasMore = true;
-
-    await loadCreators(cachedCurrentUserId);
   }
 
   /**
@@ -425,16 +390,10 @@ function createCreatorsDataState() {
       return isSearching;
     },
 
-    // Prop filter state
-    get selectedPropFilters() {
-      return selectedPropFilters;
-    },
-
     // Actions
     loadCreators,
     loadMoreCreators,
     changeSortOrder,
-    togglePropFilter,
     loadFeaturedCreators,
     setSearchQuery,
     clearSearch,
@@ -516,11 +475,6 @@ export const creatorsDataState = {
     return getCreatorsDataState().isSearching;
   },
 
-  // Prop filter state
-  get selectedPropFilters() {
-    return getCreatorsDataState().selectedPropFilters;
-  },
-
   // Actions
   loadCreators(currentUserId?: string) {
     return getCreatorsDataState().loadCreators(currentUserId);
@@ -538,9 +492,6 @@ export const creatorsDataState = {
       direction,
       currentUserId
     );
-  },
-  togglePropFilter(prop: PropType) {
-    return getCreatorsDataState().togglePropFilter(prop);
   },
   loadFeaturedCreators(limit?: number) {
     return getCreatorsDataState().loadFeaturedCreators(limit);

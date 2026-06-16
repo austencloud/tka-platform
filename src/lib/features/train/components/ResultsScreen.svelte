@@ -579,7 +579,7 @@
   }
 
   .stat-label {
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--theme-text-dim, var(--theme-text-dim));

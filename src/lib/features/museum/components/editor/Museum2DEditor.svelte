@@ -54,8 +54,9 @@
 				disabled={!editor.canUndo}
 				onclick={() => editor.undo()}
 				title="Undo (Ctrl+Z)"
+				aria-label="Undo"
 			>
-				<i class="fa-solid fa-rotate-left"></i>
+				<i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
 			</button>
 			<button
 				type="button"
@@ -63,8 +64,9 @@
 				disabled={!editor.canRedo}
 				onclick={() => editor.redo()}
 				title="Redo (Ctrl+Shift+Z)"
+				aria-label="Redo"
 			>
-				<i class="fa-solid fa-rotate-right"></i>
+				<i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
 			</button>
 			<div class="toolbar-spacer"></div>
 			<button

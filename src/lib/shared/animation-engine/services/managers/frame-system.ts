@@ -18,7 +18,7 @@
  */
 
 import { FrameParameterBuilder } from "../frame-parameter-builder";
-import { FrameBuilderService } from "../frame-builder-service";
+import { FrameBuilder } from "../frame-builder";
 import type { AnimatorState } from "../../state/animator-state.svelte";
 import type { CanvasLifecycleManager } from "../canvas-lifecycle-manager";
 import type { PropSystem } from "./prop-system";
@@ -32,7 +32,7 @@ import type { EffectRendererManager } from "../effect-renderer-manager";
 export class FrameSystem {
   // ── Owned services ──────────────────────────────────────────────────────────
   readonly frameParameterBuilder = new FrameParameterBuilder();
-  private readonly frameBuilderService = new FrameBuilderService();
+  private readonly frameBuilder = new FrameBuilder();
 
   constructor(
     private readonly state: AnimatorState,
@@ -77,21 +77,21 @@ export class FrameSystem {
   // ── Label calculations ───────────────────────────────────────────────────────
 
   calculateBeatNumber(props: AnimationEngineProps): number {
-    return this.frameBuilderService.calculateBeatNumber(
+    return this.frameBuilder.calculateBeatNumber(
       props.sequenceData ?? null,
       props.stepData ?? null
     );
   }
 
   calculateTurnsTuple(props: AnimationEngineProps): string {
-    return this.frameBuilderService.calculateTurnsTuple(
+    return this.frameBuilder.calculateTurnsTuple(
       props.stepData ?? null,
       this.deps.lifecycleManager.turnsTupleGenerator ?? null
     );
   }
 
   calculateMusicalPosition(props: AnimationEngineProps): string | null {
-    return this.frameBuilderService.calculateMusicalPosition(
+    return this.frameBuilder.calculateMusicalPosition(
       props.sequenceData ?? null,
       props.stepData ?? null,
       this.deps.lifecycleManager.orchestrator ?? null

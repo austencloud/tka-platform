@@ -1,4 +1,5 @@
 <script lang="ts">
+  import "../museum-theme.css";
   import { Canvas } from "@threlte/core";
   import { useProgress } from "@threlte/extras";
   import Museum3DScene from "./Museum3DScene.svelte";
@@ -487,6 +488,7 @@
       window.removeEventListener("blur", handleBlur);
       // Clean up debounce timer
       if (hmrSaveTimer !== null) clearTimeout(hmrSaveTimer);
+      if (settleTimer !== null) clearTimeout(settleTimer);
       clearTimeout(watchdog);
       clearTimeout(canvasHookTimer);
       if (contextRestoreTimer) clearTimeout(contextRestoreTimer);
@@ -499,7 +501,7 @@
   let exhibitSequenceId = $derived(focusedExhibit?.sequenceId ?? null);
 </script>
 
-<div class="museum-container">
+<div class="museum-container museum-gold-scope">
   <!-- 3D Canvas -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="canvas-area" onwheel={handleWheel} bind:this={canvasAreaEl}>
@@ -673,9 +675,9 @@
     gap: 8px;
     padding: 8px 14px;
     background: rgba(18, 18, 28, 0.85);
-    border: 1px solid rgba(200, 180, 140, 0.15);
+    border: 1px solid var(--museum-gold-15);
     border-radius: 8px;
-    color: rgba(200, 180, 140, 0.8);
+    color: var(--museum-gold-80);
     font-family: Georgia, "Times New Roman", serif;
     font-size: 14px;
     pointer-events: none;
@@ -699,9 +701,9 @@
     gap: 8px;
     padding: 8px 16px;
     background: rgba(18, 18, 28, 0.9);
-    border: 1.5px solid rgba(200, 180, 140, 0.25);
+    border: 1.5px solid var(--museum-gold-25);
     border-radius: 8px;
-    color: rgba(200, 180, 140, 0.8);
+    color: var(--museum-gold-80);
     font-size: 14px;
     pointer-events: none;
     z-index: 10;
@@ -715,13 +717,13 @@
     min-width: 24px;
     height: 24px;
     padding: 0 6px;
-    background: rgba(200, 180, 140, 0.15);
-    border: 1px solid rgba(200, 180, 140, 0.3);
+    background: var(--museum-gold-15);
+    border: 1px solid var(--museum-gold-30);
     border-radius: 4px;
     font-family: monospace;
     font-size: 13px;
     font-weight: 600;
-    color: rgba(200, 180, 140, 0.9);
+    color: var(--museum-gold-90);
   }
 
   /* Controls hint */
@@ -746,7 +748,7 @@
     bottom: 16px;
     width: min(360px, 40%);
     background: rgba(18, 18, 28, 0.95);
-    border: 1px solid rgba(200, 180, 140, 0.12);
+    border: 1px solid var(--museum-gold-12);
     border-radius: 12px;
     padding: 24px;
     overflow-y: auto;
@@ -756,7 +758,7 @@
     gap: 20px;
     animation: panel-slide-in 0.25s ease;
     scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(200, 180, 140, 0.2)) transparent;
+    scrollbar-color: var(--scrollbar-thumb, var(--museum-gold-20)) transparent;
   }
 
   .panel-close {
@@ -768,21 +770,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(200, 180, 140, 0.08);
-    border: 1px solid rgba(200, 180, 140, 0.15);
+    background: var(--museum-gold-08);
+    border: 1px solid var(--museum-gold-15);
     border-radius: 6px;
-    color: rgba(200, 180, 140, 0.5);
+    color: var(--museum-gold-50);
     cursor: pointer;
     font-size: 12px;
   }
 
   .panel-close:hover {
-    background: rgba(200, 180, 140, 0.15);
-    color: rgba(200, 180, 140, 0.8);
+    background: var(--museum-gold-15);
+    color: var(--museum-gold-80);
   }
 
   .panel-section {
-    border-top: 1px solid rgba(200, 180, 140, 0.1);
+    border-top: 1px solid var(--museum-gold-10);
     padding-top: 16px;
   }
 

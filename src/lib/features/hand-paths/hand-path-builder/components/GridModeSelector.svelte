@@ -55,7 +55,7 @@
   }
 
   .mode-btn:hover {
-    background: rgba(255, 255, 255, 0.07);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.07));
     color: var(--theme-text, #fff);
   }
 

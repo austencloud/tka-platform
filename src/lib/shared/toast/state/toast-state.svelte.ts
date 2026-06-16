@@ -21,6 +21,9 @@ export const toastQueue = $state<Toast[]>([]);
 
 let toastIdCounter = 0;
 
+// Auto-dismiss timers, keyed by toast id, so dismissal/clearing can cancel them
+const dismissTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
 export interface ShowToastOptions {
   message: string;
   type?: ToastType;
@@ -57,9 +60,12 @@ export function showToast(
 
   // Auto-remove after duration
   if (toast.duration > 0) {
-    setTimeout(() => {
-      removeToast(id);
-    }, toast.duration);
+    dismissTimers.set(
+      id,
+      setTimeout(() => {
+        removeToast(id);
+      }, toast.duration)
+    );
   }
 
   return id;
@@ -69,6 +75,11 @@ export function showToast(
  * Remove a specific toast by ID
  */
 export function removeToast(id: string): void {
+  const timer = dismissTimers.get(id);
+  if (timer !== undefined) {
+    clearTimeout(timer);
+    dismissTimers.delete(id);
+  }
   const index = toastQueue.findIndex((t) => t.id === id);
   if (index !== -1) {
     toastQueue.splice(index, 1);
@@ -79,6 +90,10 @@ export function removeToast(id: string): void {
  * Clear all toasts
  */
 export function clearToasts(): void {
+  for (const timer of dismissTimers.values()) {
+    clearTimeout(timer);
+  }
+  dismissTimers.clear();
   toastQueue.length = 0;
 }
 

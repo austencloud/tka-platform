@@ -42,6 +42,12 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .product-card {
+      transition: none;
+    }
+  }
+
   .card-info {
     display: flex;
     flex-direction: column;

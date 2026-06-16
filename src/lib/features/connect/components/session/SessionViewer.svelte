@@ -188,9 +188,14 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
 		}
 	}
 
-	// Display preference change
+	// Display preference change. The service surfaces a toast and rolls back
+	// local state on failure; catch here so the rejection isn't unhandled.
 	async function handleDisplayChange(pref: DisplayPreference) {
-		await connectState.setDisplayPreference(pref);
+		try {
+			await connectState.setDisplayPreference(pref);
+		} catch {
+			// Failure already surfaced via toast at the service layer.
+		}
 	}
 
 	// Solo mode toggle

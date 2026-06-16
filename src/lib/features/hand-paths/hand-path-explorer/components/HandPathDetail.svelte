@@ -18,14 +18,14 @@
   const { group }: Props = $props();
   const { state } = getExplorerContext();
 
-  const sideColor = $derived(() => {
+  const sideColor = $derived.by(() => {
     const hasBoth = group.sides.has("blue") && group.sides.has("red");
     if (hasBoth) return "#a855f7";
     if (group.sides.has("blue")) return "#3b82f6";
     return "#ef4444";
   });
 
-  const gridModeLabel = $derived(() => {
+  const gridModeLabel = $derived.by(() => {
     switch (group.handPath.impliedGridMode) {
       case GridMode.DIAMOND: return "diamond";
       case GridMode.BOX: return "box";
@@ -35,7 +35,7 @@
     }
   });
 
-  const sidesLabel = $derived(() => {
+  const sidesLabel = $derived.by(() => {
     const hasBoth = group.sides.has("blue") && group.sides.has("red");
     if (hasBoth) return "blue + red";
     if (group.sides.has("blue")) return "blue only";
@@ -57,14 +57,14 @@
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
     <span class="detail__title">{group.name}</span>
-    <span class="detail__subtitle">{group.sequences.length} sequences · {sidesLabel()}</span>
+    <span class="detail__subtitle">{group.sequences.length} sequences · {sidesLabel}</span>
   </div>
 
   <div class="detail__body">
     <!-- Larger visualization -->
     <div class="detail__viz-wrapper">
       <div class="detail__viz">
-        <PathMiniViz locations={group.handPath.locations} color={sideColor()} dotRadius={7} />
+        <PathMiniViz locations={group.handPath.locations} color={sideColor} dotRadius={7} />
       </div>
     </div>
 
@@ -76,7 +76,7 @@
       </div>
       <div class="detail__prop">
         <span class="detail__prop-label">Grid mode</span>
-        <span class="detail__prop-value">{gridModeLabel()}</span>
+        <span class="detail__prop-value">{gridModeLabel}</span>
       </div>
       <div class="detail__prop">
         <span class="detail__prop-label">Closed loop</span>

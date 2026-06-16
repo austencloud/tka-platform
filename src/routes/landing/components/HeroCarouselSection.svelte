@@ -323,6 +323,7 @@
         <span class="glint glint-4"></span>
       </span>
     </h1>
+    <p class="hero-tagline">Notation for flow arts.</p>
   </div>
 
   <!-- Video + CTA row -->
@@ -434,19 +435,10 @@
 
   <!-- CTA panel beside the video -->
   <div class="hero-cta">
-    <p class="cta-tagline">Notation for flow arts.</p>
-
-
-    <div class="cta-buttons">
-      <a href="/create" class="cta-btn cta-primary" data-sveltekit-reload>
-        <i class="fas fa-pen-nib" aria-hidden="true"></i>
-        Start creating
-      </a>
-      <a href="/browse/gallery" class="cta-btn cta-secondary" data-sveltekit-reload>
-        <i class="fas fa-compass" aria-hidden="true"></i>
-        Browse sequences
-      </a>
-    </div>
+    <a href="/create" class="cta-btn cta-primary" data-sveltekit-reload>
+      <i class="fas fa-pen-nib" aria-hidden="true"></i>
+      Open composer
+    </a>
 
     <button class="cta-btn cta-tertiary" onclick={() => {
       document.getElementById('main-content')?.scrollIntoView({ behavior: 'smooth' });
@@ -534,6 +526,15 @@
     transform: translateY(-50%);
   }
 
+  .hero-tagline {
+    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
+    font-size: clamp(1.1rem, 2vw, 1.5rem);
+    font-weight: 400;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+    margin: clamp(8px, 1.5vw, 14px) 0 0;
+    line-height: 1.3;
+  }
+
   .glint-1 { top: 15%; left: 8%; animation: glint-flash 3.5s ease-in-out 0.5s infinite; }
   .glint-2 { top: 25%; right: 5%; animation: glint-flash 4s ease-in-out 1.8s infinite; }
   .glint-3 { bottom: 20%; left: 42%; animation: glint-flash 3.8s ease-in-out 3s infinite; }
@@ -570,22 +571,6 @@
     animation-delay: 0.5s;
   }
 
-  .cta-tagline {
-    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
-    font-size: clamp(1.2rem, 2vw, 1.5rem);
-    font-weight: 400;
-    color: var(--theme-text, #fff);
-    margin: 0;
-    line-height: 1.3;
-  }
-
-
-  .cta-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
   .cta-btn {
     display: inline-flex;
     align-items: center;
@@ -613,16 +598,6 @@
 
   .cta-primary:hover {
     box-shadow: 0 6px 28px rgba(212, 129, 58, 0.5);
-  }
-
-  .cta-secondary {
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--theme-text, #fff);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-  }
-
-  .cta-secondary:hover {
-    background: rgba(255, 255, 255, 0.12);
   }
 
   .cta-tertiary {
@@ -903,14 +878,10 @@
       max-width: 100%;
       text-align: center;
       align-items: center;
-    }
-
-    .cta-buttons {
       flex-direction: row;
       justify-content: center;
       flex-wrap: wrap;
     }
-
 
     .carousel-stage {
       border-radius: 12px;

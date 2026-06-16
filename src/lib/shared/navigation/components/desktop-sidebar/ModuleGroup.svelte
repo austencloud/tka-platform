@@ -74,18 +74,24 @@
 
   // Scroll the expanded module into view when it expands
   $effect(() => {
-    if (isExpanded && hasSections && !isCollapsed && moduleGroupElement) {
-      // Wait for DOM update and slide transition to start
-      tick().then(() => {
-        // Small delay to let the slide animation begin
-        setTimeout(() => {
-          moduleGroupElement?.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest",
-          });
-        }, 100);
-      });
-    }
+    if (!isExpanded || !hasSections || isCollapsed || !moduleGroupElement) return;
+    let scrollTimer: ReturnType<typeof setTimeout> | undefined;
+    let cancelled = false;
+    // Wait for DOM update and slide transition to start
+    tick().then(() => {
+      if (cancelled) return;
+      // Small delay to let the slide animation begin
+      scrollTimer = setTimeout(() => {
+        moduleGroupElement?.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
+      }, 100);
+    });
+    return () => {
+      cancelled = true;
+      if (scrollTimer !== undefined) clearTimeout(scrollTimer);
+    };
   });
 </script>
 

@@ -235,9 +235,9 @@
 	}
 
 	// Reference for image capture - will be set by the TikaConversationReadOnly component
-	let conversationReadOnlyComponent = $state<any>(null);
+	let conversationReadOnlyComponent = $state<ReturnType<typeof TikaConversationReadOnly> | null>(null);
 	let conversationPreviewEl: HTMLElement | null = $derived(
-		conversationReadOnlyComponent?.getContainerElement?.() ?? null
+		conversationReadOnlyComponent?.getContainerElement() ?? null
 	);
 
 	// Generate comprehensive conversation data for AI review (delegated to service)

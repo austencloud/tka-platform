@@ -287,7 +287,7 @@
   }
 
   .input.error {
-    border-color: rgba(239, 68, 68, 0.6);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
   }
 
   .input:disabled {
@@ -300,7 +300,7 @@
     align-items: center;
     gap: 6px;
     font-size: var(--font-size-compact);
-    color: rgba(239, 68, 68, 0.9);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 90%, transparent);
     margin: 6px 0 0 0;
   }
 

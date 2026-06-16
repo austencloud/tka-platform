@@ -26,7 +26,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   },
 
   led: {
-    brightness: 5,
+    brightness: 3,
     patternId: "solid",
     patternSpeed: 1.0,
     primaryColor: "#00ff88",
@@ -47,6 +47,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     frequency: 12,
     mode: "arc",
     branching: 0.3,
+    style: "branching",
   },
 
   sparkles: {
@@ -69,17 +70,24 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     colorMode: "solid",
     color: "#ffffff",
     thickness: 3,
+    glow: 0.6,
+    depth: 0.5,
+    flash: 0.5,
   },
 
   bloom: {
-    intensity: 0.95,
+    intensity: 0.6,
     radius: 90,
     color: "#f472b6",
     palette: ["#f472b6", "#fbbf24", "#22d3ee"],
-    colorMode: "solid",
+    colorMode: "prop-matched",
     falloff: "smooth",
     pulse: 0,
     pulseRate: 1,
+    streak: 0.55,
+    spikes: 0.6,
+    chromatic: 0.35,
+    afterglow: 0.5,
   },
 
   water: {

@@ -154,19 +154,26 @@ export class HallOfShameLoader {
 			const firestore = await getFirestoreInstance();
 			const collectionRef = collection(firestore, this.COLLECTION);
 
-			// Query each category separately for accurate counts
+			// Query each category separately for accurate counts. The three
+			// counts are independent, so run them in parallel rather than
+			// awaiting each in sequence (~3x faster).
 			const categories: ShameCategory[] = ['profanity', 'sexual', 'creative'];
 
-			for (const category of categories) {
-				const q = query(
-					collectionRef,
-					where('status', '==', 'approved'),
-					where('hidden', '==', false),
-					where('category', '==', category)
-				);
+			const results = await Promise.all(
+				categories.map(async (category) => {
+					const q = query(
+						collectionRef,
+						where('status', '==', 'approved'),
+						where('hidden', '==', false),
+						where('category', '==', category)
+					);
+					const countSnapshot = await getCountFromServer(q);
+					return [category, countSnapshot.data().count] as const;
+				})
+			);
 
-				const countSnapshot = await getCountFromServer(q);
-				counts[category] = countSnapshot.data().count;
+			for (const [category, count] of results) {
+				counts[category] = count;
 			}
 
 			return counts;

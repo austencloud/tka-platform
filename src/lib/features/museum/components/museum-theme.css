@@ -1,0 +1,47 @@
+/*
+ * Museum gold/parchment accent tokens — single source of truth for the
+ * rgba(200, 180, 140, …) family used across all museum UI panels.
+ *
+ * Previously these literal rgba values were duplicated 100+ times across
+ * SoundscapePanel, DetailPanel, RoomPicker, AvatarPicker, PlaqueView,
+ * InteractionPrompt, MuseumTileRenderer, DimensionFlipProof, EditorCanvas,
+ * and the showroom components.
+ *
+ * Deliberately feature-local: properties are scoped to `.museum-gold-scope`,
+ * not :root, so they don't pollute the global design token namespace.
+ * Components add `museum-gold-scope` to their root element and reference
+ * these variables instead of the raw rgba. Translucent tints are derived via
+ * color-mix(in srgb, var(--museum-gold) N%, transparent).
+ *
+ * Pattern mirrors src/lib/features/learn/math-foundations/components/triad-palette.css.
+ */
+
+.museum-gold-scope {
+  /* Base gold — rgb(200, 180, 140) at full opacity */
+  --museum-gold: rgb(200, 180, 140);
+
+  /* Text / icon tints — from fully opaque down to near-invisible */
+  --museum-gold-95: rgba(200, 180, 140, 0.95);
+  --museum-gold-90: rgba(200, 180, 140, 0.9);
+  --museum-gold-85: rgba(200, 180, 140, 0.85);
+  --museum-gold-80: rgba(200, 180, 140, 0.8);
+  --museum-gold-75: rgba(200, 180, 140, 0.75);
+  --museum-gold-65: rgba(200, 180, 140, 0.65);
+  --museum-gold-60: rgba(200, 180, 140, 0.6);
+  --museum-gold-50: rgba(200, 180, 140, 0.5);
+  --museum-gold-45: rgba(200, 180, 140, 0.45);
+  --museum-gold-40: rgba(200, 180, 140, 0.4);
+  --museum-gold-35: rgba(200, 180, 140, 0.35);
+  --museum-gold-30: rgba(200, 180, 140, 0.3);
+  --museum-gold-25: rgba(200, 180, 140, 0.25);
+  --museum-gold-20: rgba(200, 180, 140, 0.2);
+  --museum-gold-18: rgba(200, 180, 140, 0.18);
+  --museum-gold-15: rgba(200, 180, 140, 0.15);
+  --museum-gold-12: rgba(200, 180, 140, 0.12);
+  --museum-gold-10: rgba(200, 180, 140, 0.1);
+  --museum-gold-09: rgba(200, 180, 140, 0.09);
+  --museum-gold-08: rgba(200, 180, 140, 0.08);
+  --museum-gold-06: rgba(200, 180, 140, 0.06);
+  --museum-gold-04: rgba(200, 180, 140, 0.04);
+  --museum-gold-18-val: rgba(200, 180, 140, 0.18);
+}

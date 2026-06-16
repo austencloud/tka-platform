@@ -29,6 +29,7 @@
     class="animation-mode-btn"
     class:active={currentMode === "live"}
     onclick={switchToLive}
+    type="button"
     aria-label="Live playback mode"
     aria-pressed={currentMode === "live"}
   >
@@ -38,6 +39,7 @@
     class="animation-mode-btn"
     class:active={currentMode === "video"}
     onclick={switchToVideo}
+    type="button"
     aria-label="Video playback mode"
     aria-pressed={currentMode === "video"}
   >
@@ -77,5 +79,11 @@
   .animation-mode-btn.active {
     background: color-mix(in srgb, var(--theme-text) 20%, transparent);
     color: white;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animation-mode-btn {
+      transition: none;
+    }
   }
 </style>

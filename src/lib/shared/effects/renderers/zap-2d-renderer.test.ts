@@ -1,33 +1,60 @@
 import { describe, it, expect, vi } from "vitest";
-import { Zap2DRenderer } from "./zap-2d-renderer";
+import { Zap2DRenderer, type ZapTipInput } from "./zap-2d-renderer";
 import type { Zap2DParams } from "../translators/canvas2d-types";
 
-function makeCtx(): CanvasRenderingContext2D {
-  return {
+function makeCtx() {
+  const calls = { stroke: 0, fill: 0, quad: 0, arc: 0, fillRect: 0, linearGrad: 0, radialGrad: 0 };
+  const strokeStyles: unknown[] = [];
+  const lineWidths: number[] = [];
+  let _stroke: unknown = "";
+  let _lineWidth = 1;
+
+  const grad = () => ({ addColorStop: vi.fn() });
+  const ctx: any = {
     globalCompositeOperation: "source-over",
     shadowBlur: 0,
     shadowColor: "",
-    strokeStyle: "",
-    lineWidth: 1,
     globalAlpha: 1,
+    fillStyle: "",
+    lineCap: "butt",
+    lineJoin: "miter",
+    save: vi.fn(),
+    restore: vi.fn(),
     beginPath: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
-    stroke: vi.fn(),
-    createLinearGradient: vi.fn(() => ({
-      addColorStop: vi.fn(),
-    })),
-  } as unknown as CanvasRenderingContext2D;
+    quadraticCurveTo: vi.fn(() => { calls.quad++; }),
+    arc: vi.fn(() => { calls.arc++; }),
+    fill: vi.fn(() => { calls.fill++; }),
+    fillRect: vi.fn(() => { calls.fillRect++; }),
+    stroke: vi.fn(() => { calls.stroke++; }),
+    createLinearGradient: vi.fn(() => { calls.linearGrad++; return grad(); }),
+    createRadialGradient: vi.fn(() => { calls.radialGrad++; return grad(); }),
+  };
+  Object.defineProperties(ctx, {
+    strokeStyle: {
+      get() { return _stroke; },
+      set(v) { _stroke = v; strokeStyles.push(v); },
+      configurable: true, enumerable: true,
+    },
+    lineWidth: {
+      get() { return _lineWidth; },
+      set(v: number) { _lineWidth = v; lineWidths.push(v); },
+      configurable: true, enumerable: true,
+    },
+  });
+  return { ctx: ctx as CanvasRenderingContext2D, calls, strokeStyles, lineWidths };
 }
 
 function makeParams(overrides: Partial<Zap2DParams> = {}): Zap2DParams {
   return {
-    intensity: 0.7,
+    intensity: 1,
     leftColor: "#88ccff",
     rightColor: "#88ccff",
-    frequency: 12,
+    frequency: 60, // regen every frame → always in strike window (no flicker variance)
     mode: "arc",
-    branching: 0.3,
+    branching: 0,
+    style: "branching",
     segments: 8,
     jitterAmount: 10,
     glowBlur: 12,
@@ -36,165 +63,105 @@ function makeParams(overrides: Partial<Zap2DParams> = {}): Zap2DParams {
   };
 }
 
-describe("Zap2DRenderer.frequency", () => {
-  it("regenerates more often at high frequency than low", () => {
-    const r = new Zap2DRenderer();
-    const ctx = makeCtx();
-    const tips = {
-      bluePosA: { x: 0, y: 0 },
-      bluePosB: null,
-      redPosA: { x: 100, y: 0 },
-      redPosB: null,
-    };
-
-    // At freq=30 → regen every 60/30=2 frames; over 10 frames = 5 regens
-    const high = makeParams({ frequency: 30 });
-    let highRegens = 0;
-    const origGen = (r as any).generatePath.bind(r);
-    (r as any).generatePath = (...a: unknown[]) => { highRegens++; return origGen(...a); };
-    for (let i = 0; i < 10; i++) r.render(ctx, high, tips);
-
-    // At freq=1 → regen every 60/1=60 frames; over 10 frames = 0 regens (after first frame)
-    const r2 = new Zap2DRenderer();
-    const low = makeParams({ frequency: 1 });
-    let lowRegens = 0;
-    const origGen2 = (r2 as any).generatePath.bind(r2);
-    (r2 as any).generatePath = (...a: unknown[]) => { lowRegens++; return origGen2(...a); };
-    for (let i = 0; i < 10; i++) r2.render(ctx, low, tips);
-
-    expect(highRegens).toBeGreaterThan(lowRegens);
-  });
+const pair = (): ZapTipInput => ({
+  bluePosA: { x: 100, y: 100 },
+  bluePosB: null,
+  redPosA: { x: 300, y: 100 },
+  redPosB: null,
 });
 
-describe("Zap2DRenderer - scale contract", () => {
-  function mockCtx() {
-    const lineWidths: number[] = [];
-    let _lineWidth = 1;
-    let _shadowBlur = 0;
-    // Build the object without lineWidth/shadowBlur so defineProperty works cleanly.
-    const ctx = Object.defineProperties(
-      {
-        globalCompositeOperation: "source-over",
-        shadowColor: "",
-        strokeStyle: "",
-        globalAlpha: 1,
-        beginPath: vi.fn(),
-        moveTo: vi.fn(),
-        lineTo: vi.fn(),
-        stroke: vi.fn(),
-        createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
-      } as unknown as CanvasRenderingContext2D,
-      {
-        lineWidth: {
-          get() { return _lineWidth; },
-          set(v: number) { _lineWidth = v; lineWidths.push(v); },
-          enumerable: true,
-          configurable: true,
-        },
-        shadowBlur: {
-          get() { return _shadowBlur; },
-          set(v: number) { _shadowBlur = v; },
-          enumerable: true,
-          configurable: true,
-        },
-      },
-    );
-    return { ctx, lineWidths };
-  }
-
-  it("scale=1 produces same lineWidth as unscaled render", () => {
-    const tips = { bluePosA: { x: 0, y: 0 }, bluePosB: null, redPosA: { x: 100, y: 0 }, redPosB: null };
-    const params = makeParams({ frequency: 60 });
-
-    const { ctx: ctx1, lineWidths: widths1 } = mockCtx();
-    const r1 = new Zap2DRenderer();
-    r1.render(ctx1, params, tips, 1);
-
-    const { ctx: ctx2, lineWidths: widths2 } = mockCtx();
-    const r2 = new Zap2DRenderer();
-    r2.render(ctx2, params, tips);
-
-    expect(widths1).toEqual(widths2);
-  });
-
-  it("scale=2 doubles lineWidth values (glow and core passes)", () => {
-    const tips = { bluePosA: { x: 0, y: 0 }, bluePosB: null, redPosA: { x: 100, y: 0 }, redPosB: null };
-    const params = makeParams({ frequency: 60, lineWidth: 2 });
-
-    const { ctx: ctx1, lineWidths: widths1 } = mockCtx();
-    const r1 = new Zap2DRenderer();
-    r1.render(ctx1, params, tips, 1);
-
-    const { ctx: ctx2, lineWidths: widths2 } = mockCtx();
-    const r2 = new Zap2DRenderer();
-    r2.render(ctx2, params, tips, 2);
-
-    // drawArc sets lineWidth twice per arc (glow pass: lineWidth*2*scale, core pass: lineWidth*scale).
-    // The finally-block restore also writes prevLineWidth=1 unconditionally - exclude it by taking
-    // only the per-draw-call assignments (all but the last restore write).
-    const drawn1 = widths1.slice(0, -1);
-    const drawn2 = widths2.slice(0, -1);
-    expect(drawn1.length).toBeGreaterThan(0);
-    expect(drawn1.length).toBe(drawn2.length);
-    drawn1.forEach((w, i) => {
-      expect(drawn2[i]).toBeCloseTo(w * 2);
-    });
-  });
-
-  it("crackle spoke length scales with scale factor", () => {
-    // At scale=2 the endpoint distance should roughly double (jitter aside).
-    // We verify by checking that paths in crackle mode extend further at scale=2.
-    const tips = { bluePosA: { x: 200, y: 200 }, bluePosB: null, redPosA: null, redPosB: null };
-    const params = makeParams({ mode: "crackle", frequency: 60, intensity: 0, jitterAmount: 0 });
-
-    const r1 = new Zap2DRenderer();
-    const ctx1 = makeCtx();
-    r1.render(ctx1, params, tips, 1);
-    const arcs1: Array<{ x: number; y: number }>[] = (r1 as any).cachedArcs.map((a: any) => a.path);
-
-    const r2 = new Zap2DRenderer();
-    const ctx2 = makeCtx();
-    r2.render(ctx2, params, tips, 2);
-    const arcs2: Array<{ x: number; y: number }>[] = (r2 as any).cachedArcs.map((a: any) => a.path);
-
-    // Last point of each arc should be further from origin at scale=2
-    const origin = { x: 200, y: 200 };
-    const dist = (p: { x: number; y: number }) =>
-      Math.hypot(p.x - origin.x, p.y - origin.y);
-
-    const maxDist1 = Math.max(...arcs1.map(p => dist(p[p.length - 1]!)));
-    const maxDist2 = Math.max(...arcs2.map(p => dist(p[p.length - 1]!)));
-    expect(maxDist2).toBeGreaterThan(maxDist1);
-  });
-});
-
-describe("Zap2DRenderer - per-hand color", () => {
-  it("uses leftColor for blue-origin crackle spokes and rightColor for red-origin", () => {
+describe("Zap2DRenderer", () => {
+  it("draws nothing when all tips are null", () => {
     const r = new Zap2DRenderer();
-    const styles: string[] = [];
-    const ctx = makeCtx();
-    Object.defineProperty(ctx, "strokeStyle", {
-      get() { return ""; },
-      set(v: string) { styles.push(v); },
+    const { ctx, calls } = makeCtx();
+    r.render(ctx, makeParams(), { bluePosA: null, bluePosB: null, redPosA: null, redPosB: null });
+    expect(calls.stroke).toBe(0);
+  });
+
+  describe("branching (storm)", () => {
+    it("strokes a bolt between a present blue↔red pair", () => {
+      const r = new Zap2DRenderer();
+      const { ctx, calls } = makeCtx();
+      r.render(ctx, makeParams({ branching: 0 }), pair());
+      // One bolt = glow + core = 2 strokes (no branches at branching 0, static).
+      expect(calls.stroke).toBe(2);
     });
 
-    const params = makeParams({
-      mode: "crackle",
-      leftColor: "#ff0000",
-      rightColor: "#0000ff",
-      frequency: 60, // regenerate every frame
+    it("uses a left→right gradient when the two hand colors differ", () => {
+      const r = new Zap2DRenderer();
+      const { ctx, calls } = makeCtx();
+      r.render(ctx, makeParams({ leftColor: "#ff0000", rightColor: "#0000ff" }), pair());
+      expect(calls.linearGrad).toBeGreaterThan(0);
     });
-    const tips = {
-      bluePosA: { x: 0, y: 0 },
-      bluePosB: null,
-      redPosA: { x: 100, y: 0 },
-      redPosB: null,
-    };
 
-    r.render(ctx, params, tips);
+    it("reacts to motion: a moving pair draws more than a static pair (energy → strikes + forks)", () => {
+      const r = new Zap2DRenderer();
+      const params = makeParams({ branching: 0 });
 
-    // Glow + core passes per spoke; we assert both hand colors appear.
-    expect(styles.some(s => s === "#ff0000")).toBe(true);
-    expect(styles.some(s => s === "#0000ff")).toBe(true);
+      // Frame 1 establishes prevTip (no velocity yet).
+      const f1 = makeCtx();
+      r.render(f1.ctx, params, pair());
+
+      // Frame 2: move both endpoints far → high energy.
+      const f2 = makeCtx();
+      r.render(f2.ctx, params, {
+        bluePosA: { x: 140, y: 100 },
+        bluePosB: null,
+        redPosA: { x: 260, y: 100 },
+        redPosB: null,
+      });
+      expect(f2.calls.stroke).toBeGreaterThan(f1.calls.stroke);
+    });
+  });
+
+  describe("plasma", () => {
+    it("draws quadratic conduits and sheds sparks", () => {
+      const r = new Zap2DRenderer();
+      const { ctx, calls } = makeCtx();
+      r.render(ctx, makeParams({ style: "plasma" }), pair());
+      expect(calls.quad).toBeGreaterThan(0); // wobbling conduits
+      expect(calls.fill).toBeGreaterThan(0); // sputter sparks
+    });
+  });
+
+  describe("web", () => {
+    it("connects every tip pair and uses violet for cross-prop edges", () => {
+      const r = new Zap2DRenderer();
+      const { ctx, calls, strokeStyles } = makeCtx();
+      const allTips: ZapTipInput = {
+        bluePosA: { x: 100, y: 100 },
+        bluePosB: { x: 150, y: 200 },
+        redPosA: { x: 300, y: 120 },
+        redPosB: { x: 280, y: 220 },
+      };
+      r.render(ctx, makeParams({ style: "web" }), allTips);
+      // 4 tips → 6 edges, each glow+core = lots of strokes.
+      expect(calls.stroke).toBeGreaterThanOrEqual(12);
+      expect(strokeStyles).toContain("#9d7bff"); // cross-prop edge color
+    });
+  });
+
+  describe("scale contract", () => {
+    it("scale=2 doubles the stroke line widths", () => {
+      const params = makeParams({ branching: 0 });
+
+      const a = makeCtx();
+      new Zap2DRenderer().render(a.ctx, params, pair(), 1);
+      const b = makeCtx();
+      new Zap2DRenderer().render(b.ctx, params, pair(), 2);
+
+      // strokeBolt sets glow (width*2*scale) then core (width*scale) widths.
+      const aw = a.lineWidths.filter((w) => w > 0);
+      const bw = b.lineWidths.filter((w) => w > 0);
+      expect(aw.length).toBe(bw.length);
+      aw.forEach((w, i) => expect(bw[i]).toBeCloseTo(w * 2));
+    });
+  });
+
+  it("dispose resets state without throwing", () => {
+    const r = new Zap2DRenderer();
+    const { ctx } = makeCtx();
+    r.render(ctx, makeParams(), pair());
+    expect(() => r.dispose()).not.toThrow();
   });
 });

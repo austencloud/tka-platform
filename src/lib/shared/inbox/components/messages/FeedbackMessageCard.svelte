@@ -202,7 +202,7 @@
     border-radius: 12px;
     font-size: var(--font-size-compact);
     font-weight: 500;
-    background: rgba(239, 68, 68, 0.15);
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
     color: var(--semantic-error);
   }
 

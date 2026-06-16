@@ -7,13 +7,12 @@
  *
  * Presets are COLOR ONLY - they don't touch intensity, turbulence, or blend.
  * Those settings are controlled by the sliders and apply uniformly to all presets.
- * The 4th preset ("Custom") lets users pick their own fire color.
+ * The 4th preset ("Custom") reads a user-picked fire color from localStorage at
+ * apply time via `resolvePatch`.
  */
 
 import type { EffectPreset, EffectPresetGroup } from "./types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-import type { FireIntent } from "$lib/shared/effects/domain/effects-config";
-import type { EffectsPreset } from "$lib/shared/effects/domain/effects-preset";
 import type { FireColorCurve } from "../../../domain/types/fire-types";
 import { hexToFlameColor } from "../../../domain/types/fire-types";
 
@@ -76,58 +75,37 @@ export function applyCustomFireColors(state: EffectsConfigState, colors: CustomF
   });
 }
 
-// ── Helper (restores activePresets after updateEffect("fire") nulls it) ──────────
-
-function applyFire(
-  state: EffectsConfigState,
-  presetId: string,
-  patch: Partial<FireIntent>,
-): void {
-  state.updateEffect("fire", patch);
-  state.applyPreset({
-    id: presetId,
-    effectType: "fire",
-    patch: { activePresets: { ...state.activePresets, fire: presetId } },
-  } as unknown as EffectsPreset);
-}
-
 // ── Presets (color only - no intensity/turbulence changes) ─────────────
 
-export const FIRE_PRESETS: EffectPreset[] = [
+export const FIRE_PRESETS: EffectPreset<"fire">[] = [
   {
     id: "fire-classic",
     name: "Classic",
     previewColor: "#f97316",
-    apply: (state) => applyFire(state, "fire-classic", {
-      colorCurve: CLASSIC_CURVE, propColors: null,
-    }),
+    patch: { colorCurve: CLASSIC_CURVE, propColors: null },
   },
   {
     id: "fire-blue-flame",
     name: "Blue Flame",
     previewColor: "#60a5fa",
-    apply: (state) => applyFire(state, "fire-blue-flame", {
-      colorCurve: BLUE_CURVE, propColors: null,
-    }),
+    patch: { colorCurve: BLUE_CURVE, propColors: null },
   },
   {
     id: "fire-spirit",
     name: "Spirit",
     previewColor: "#a855f7",
-    apply: (state) => applyFire(state, "fire-spirit", {
-      colorCurve: SPIRIT_CURVE, propColors: null,
-    }),
+    patch: { colorCurve: SPIRIT_CURVE, propColors: null },
   },
   {
     id: "fire-custom",
     name: "Custom",
     previewColor: "custom",
-    apply: (state) => {
+    resolvePatch: () => {
       const colors = loadCustomFireColors();
-      applyFire(state, "fire-custom", {
+      return {
         colorBlend: 1.0,
         propColors: [hexToFlameColor(colors.left), hexToFlameColor(colors.right)],
-      });
+      };
     },
   },
 ];

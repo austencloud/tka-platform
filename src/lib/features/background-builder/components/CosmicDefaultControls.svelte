@@ -121,7 +121,7 @@
   }
 
   .pill.complete {
-    background: rgba(16, 185, 129, 0.15);
-    color: #34d399;
+    background: color-mix(in srgb, var(--theme-success, #34d399) 15%, transparent);
+    color: var(--theme-success, #34d399);
   }
 </style>

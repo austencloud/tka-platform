@@ -12,6 +12,7 @@ Always renders as a pure button. Word input is now in WordInputCard.
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { uiConfigToGenerationOptions } from "$lib/shared/create/utils/config-mapper";
+  import type { GenerationOptions } from "$lib/shared/foundation/domain/models/generation/generate-models";
 
   let {
     isGenerating,
@@ -22,7 +23,7 @@ Always renders as a pure button. Word input is now in WordInputCard.
   } = $props<{
     isGenerating: boolean;
     hasSettingsChanged?: boolean;
-    onGenerateClicked: (options: any) => Promise<void>;
+    onGenerateClicked: (options: GenerationOptions) => Promise<void>;
     config: UIGenerationConfig;
     startEndOptions?: StartEndOptions | null;
   }>();

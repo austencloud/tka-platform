@@ -154,10 +154,41 @@
     return unsubscribe;
   });
 
-  // When column count changes, row content reflows - invalidate cached measurements
+  // Keep every rendered row's measured height exact.
+  //
+  // Cards change height AFTER their row is first measured: auth resolving makes
+  // the follow button appear (your own card never has one, so a row mixes tall
+  // and short cards), and colors / prop tags / stats render in asynchronously.
+  // The virtualizer is also recreated whenever rowCount changes (data loads,
+  // column count resolves) — and a fresh instance's ResizeObserver has never
+  // observed the rows already in the DOM. Any of these leaves a row sized by a
+  // stale estimate, so the next row stacks ~18px too high and the cards overlap.
+  //
+  // Re-running measureElement on each rendered row re-observes it against the
+  // current instance and writes its true border-box height back into the size
+  // cache (non-destructive, unlike measure(), which resets every size to the
+  // estimate). Positions then re-settle exactly. rAF defers to after paint so
+  // the freshly-grown content is laid out before we read it.
   $effect(() => {
-    columnCount;
-    untrack(() => virtualizerRef?.measure());
+    // Track everything that changes a row's height or swaps the instance.
+    virtualizerRef;
+    void users;
+    void currentUserId;
+    void sortBy;
+    void followingInProgress;
+    void columnCount;
+
+    return untrack(() => {
+      const v = virtualizerRef;
+      const container = scrollElement;
+      if (!v || !container) return;
+      const frame = requestAnimationFrame(() => {
+        for (const node of container.querySelectorAll<HTMLElement>(".virtual-row")) {
+          v.measureElement(node);
+        }
+      });
+      return () => cancelAnimationFrame(frame);
+    });
   });
 
   // Setup infinite scroll observer

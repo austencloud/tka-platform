@@ -8,7 +8,7 @@ import { withRateLimit } from "$lib/server/security/withRateLimit";
 import { getSequencePersister } from "$lib/features/create/shared/get-sequence-persister";
 
 export const POST: RequestHandler = async (event) => {
-  const blocked = withRateLimit(event, RATE_LIMITS.AI_RENDER, "ip");
+  const blocked = await withRateLimit(event, RATE_LIMITS.AI_RENDER, "ip");
   if (blocked) return blocked;
 
   const { request } = event;

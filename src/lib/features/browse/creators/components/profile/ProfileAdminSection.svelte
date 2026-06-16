@@ -24,6 +24,7 @@
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
   import { getContributorLoader } from "$lib/shared/feedback/get-contributor-loader";
+  import { FocusTrap } from "$lib/shared/foundation/ui/drawer/focus-trap";
   import { onDestroy } from "svelte";
 
   interface Props {
@@ -40,6 +41,34 @@
   let confirmAction = $state<{ type: string; message: string } | null>(null);
   let editNameModal = $state<{ open: boolean; value: string }>({ open: false, value: "" });
   let deleteConfirmText = $state("");
+
+  // Modal focus management - shared FocusTrap (same helper Drawer.svelte uses)
+  // moves focus in on open, traps Tab, and restores focus on close.
+  let confirmModalEl = $state<HTMLDivElement | null>(null);
+  let editNameModalEl = $state<HTMLDivElement | null>(null);
+  const confirmModalTrap = new FocusTrap();
+  const editNameModalTrap = new FocusTrap();
+
+  $effect(() => {
+    if (!confirmAction || !confirmModalEl) return;
+    confirmModalTrap.activate(confirmModalEl);
+    return () => confirmModalTrap.deactivate();
+  });
+
+  $effect(() => {
+    if (!editNameModal.open || !editNameModalEl) return;
+    editNameModalTrap.activate(editNameModalEl);
+    return () => editNameModalTrap.deactivate();
+  });
+
+  function closeConfirmModal() {
+    confirmAction = null;
+    deleteConfirmText = "";
+  }
+
+  function closeEditNameModal() {
+    editNameModal = { open: false, value: "" };
+  }
 
   // Admin label state (quick identifier like "Jake from Tuesday jam")
   let adminLabel = $state("");
@@ -580,13 +609,14 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="modal-backdrop"
-    onclick={() => { confirmAction = null; deleteConfirmText = ""; }}
-    onkeydown={(e) => e.key === "Escape" && (confirmAction = null, deleteConfirmText = "")}
+    onclick={closeConfirmModal}
+    onkeydown={(e) => e.key === "Escape" && closeConfirmModal()}
   >
     <div
+      bind:this={confirmModalEl}
       class="modal"
       onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.key === "Escape" && closeConfirmModal()}
       role="dialog"
       aria-modal="true"
       tabindex="-1"
@@ -614,7 +644,7 @@
       <div class="modal-actions">
         <button
           class="modal-btn cancel"
-          onclick={() => { confirmAction = null; deleteConfirmText = ""; }}
+          onclick={closeConfirmModal}
           disabled={isActionPending}
           aria-label="Cancel action"
         >
@@ -644,13 +674,14 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="modal-backdrop"
-    onclick={() => (editNameModal = { open: false, value: "" })}
-    onkeydown={(e) => e.key === "Escape" && (editNameModal = { open: false, value: "" })}
+    onclick={closeEditNameModal}
+    onkeydown={(e) => e.key === "Escape" && closeEditNameModal()}
   >
     <div
+      bind:this={editNameModalEl}
       class="modal"
       onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.key === "Escape" && closeEditNameModal()}
       role="dialog"
       aria-modal="true"
       aria-labelledby="edit-name-title"
@@ -668,7 +699,7 @@
       <div class="modal-actions">
         <button
           class="modal-btn cancel"
-          onclick={() => (editNameModal = { open: false, value: "" })}
+          onclick={closeEditNameModal}
           disabled={isActionPending}
           aria-label="Cancel name edit"
         >

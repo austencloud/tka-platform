@@ -101,7 +101,7 @@
   .toggle-icon {
     position: absolute;
     right: 12px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim);
     opacity: 0;
     transition:

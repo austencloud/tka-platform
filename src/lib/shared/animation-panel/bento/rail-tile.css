@@ -5,6 +5,18 @@
    visual family.
    ========================================================================== */
 
+/* Rail/bento accent — single source of truth for the family's blue.
+   No global token exists for this value (--theme-accent is dynamic and
+   scene-driven, and this family's glass surfaces are constant dark), so the
+   accent is scoped to the rail/bento primitives rather than :root. */
+.rt-tile,
+.rt-chip,
+.rt-split,
+.rt-download,
+.bento-sheet {
+  --rail-accent: #4a9eff;
+}
+
 .rt-zone {
   display: flex;
   flex-direction: column;
@@ -53,24 +65,24 @@
 }
 
 .rt-tile:focus-visible {
-  outline: 2px solid rgba(120, 160, 255, 0.6);
+  outline: 2px solid var(--rail-accent, #4a9eff);
   outline-offset: 2px;
 }
 
 .rt-tile[aria-pressed="true"] {
-  background: color-mix(in srgb, #4a9eff 18%, rgba(20, 22, 32, 0.78));
-  border-color: color-mix(in srgb, #4a9eff 50%, transparent);
-  color: #8fc3ff;
-  box-shadow: 0 4px 20px color-mix(in srgb, #4a9eff 25%, transparent);
+  background: color-mix(in srgb, var(--rail-accent, #4a9eff) 18%, rgba(20, 22, 32, 0.78));
+  border-color: color-mix(in srgb, var(--rail-accent, #4a9eff) 50%, transparent);
+  color: color-mix(in srgb, var(--rail-accent, #4a9eff) 62%, white);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--rail-accent, #4a9eff) 25%, transparent);
 }
 
 .rt-tile[aria-pressed="true"] .rt-icon,
 .rt-tile[aria-pressed="true"] .rt-val {
-  color: #c5ddff;
+  color: color-mix(in srgb, var(--rail-accent, #4a9eff) 34%, white);
 }
 
 .rt-tile[aria-pressed="true"] .rt-lbl {
-  color: #8fc3ff;
+  color: color-mix(in srgb, var(--rail-accent, #4a9eff) 62%, white);
 }
 
 .rt-tile .rt-icon {
@@ -87,7 +99,7 @@
 }
 
 .rt-tile .rt-lbl {
-  font-size: 10px;
+  font-size: var(--font-size-compact, 12px);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -99,13 +111,13 @@
   position: absolute;
   top: 6px;
   right: 6px;
-  min-width: 18px;
-  height: 18px;
+  min-width: 20px;
+  height: 20px;
   padding: 0 5px;
-  border-radius: 9px;
-  background: #4a9eff;
+  border-radius: 10px;
+  background: var(--rail-accent, #4a9eff);
   color: white;
-  font-size: 10px;
+  font-size: var(--font-size-compact, 12px);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -191,7 +203,7 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: var(--font-size-compact, 12px);
   font-weight: 600;
   color: rgba(255, 255, 255, 0.55);
   background: transparent;
@@ -201,8 +213,8 @@
 }
 
 .rt-split-opt[aria-pressed="true"] {
-  background: color-mix(in srgb, #4a9eff 32%, rgba(20, 22, 32, 0.8));
-  color: #c5ddff;
+  background: color-mix(in srgb, var(--rail-accent, #4a9eff) 32%, rgba(20, 22, 32, 0.8));
+  color: color-mix(in srgb, var(--rail-accent, #4a9eff) 34%, white);
   font-weight: 700;
 }
 
@@ -211,8 +223,8 @@
   width: 100%;
   min-height: 52px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #4a9eff, #2b6fd4);
-  border: 1px solid rgba(122, 180, 255, 0.5);
+  background: linear-gradient(135deg, var(--rail-accent, #4a9eff), #2b6fd4);
+  border: 1px solid color-mix(in srgb, var(--rail-accent, #4a9eff) 60%, transparent);
   color: white;
   display: flex;
   align-items: center;
@@ -220,7 +232,7 @@
   gap: 10px;
   font-weight: 700;
   font-size: 14px;
-  box-shadow: 0 4px 20px rgba(74, 158, 255, 0.35);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--rail-accent, #4a9eff) 35%, transparent);
   cursor: pointer;
   padding: 10px 16px;
   -webkit-tap-highlight-color: transparent;
@@ -241,9 +253,9 @@
 }
 
 .rt-download.rt-secondary {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  border-color: #7c3aed;
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+  background: linear-gradient(135deg, var(--theme-accent-strong, #6366f1), var(--theme-accent, #8b5cf6));
+  border-color: var(--theme-accent-strong, #7c3aed);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-accent-strong, #6366f1) 30%, transparent);
   text-decoration: none;
 }
 
@@ -328,13 +340,13 @@
 }
 
 .rt-chip[aria-pressed="true"] {
-  background: color-mix(in srgb, #4a9eff 22%, rgba(20, 22, 32, 0.6));
-  border-color: color-mix(in srgb, #4a9eff 55%, transparent);
+  background: color-mix(in srgb, var(--rail-accent, #4a9eff) 22%, rgba(20, 22, 32, 0.6));
+  border-color: color-mix(in srgb, var(--rail-accent, #4a9eff) 55%, transparent);
   color: #ffffff;
 }
 
 .rt-chip:focus-visible {
-  outline: 2px solid #4a9eff;
+  outline: 2px solid var(--rail-accent, #4a9eff);
   outline-offset: 2px;
 }
 

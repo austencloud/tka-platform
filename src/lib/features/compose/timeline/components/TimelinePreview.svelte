@@ -425,7 +425,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
   .timeline-preview {
     display: flex;
     flex-direction: column;
-    background: #0e0e12;
+    background: var(--theme-panel-bg, #0e0e12);
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
     overflow: hidden;
@@ -450,7 +450,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
   .time-display {
     font-family: "SF Mono", monospace;
     color: var(--theme-accent);
-    background: rgba(74, 158, 255, 0.1);
+    background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
     padding: 2px 8px;
     border-radius: 4px;
   }
@@ -534,10 +534,10 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
     justify-content: center;
     width: 28px;
     height: 28px;
-    background: rgba(81, 207, 102, 0.2);
+    background: color-mix(in srgb, var(--semantic-success, #51cf66) 20%, transparent);
     border-radius: 50%;
     backdrop-filter: blur(4px);
-    color: #51cf66;
+    color: var(--semantic-success, #51cf66);
     font-size: var(--font-size-compact);
     animation: pulse 1.5s ease-in-out infinite;
   }
@@ -622,13 +622,13 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
   .transport-btn.play-btn {
     width: 52px; /* WCAG AAA touch target - slightly larger for primary */
     height: 52px;
-    background: rgba(74, 158, 255, 0.2);
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
     color: var(--theme-accent);
     font-size: var(--font-size-sm);
   }
 
   .transport-btn.play-btn:hover {
-    background: rgba(74, 158, 255, 0.3);
+    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */

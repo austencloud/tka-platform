@@ -5,7 +5,6 @@
   If not, loads version data and triggers the What's New modal.
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { whatsNewState } from "../state/whats-new-state.svelte";
   import * as versionService from "$lib/shared/feedback/services/version-service";
@@ -17,19 +16,13 @@
   // Track if we've already checked this session
   let hasChecked = false;
 
-  // Watch for auth state - only show to authenticated users
+  // Watch for auth state - only show to authenticated users.
+  // The effect runs on mount too, so it covers the already-authenticated case.
   $effect(() => {
-    if (authState.isAuthenticated && authState.user && !hasChecked) {
-      // Small delay to let the app settle
-      setTimeout(checkForNewVersion, CHECK_DELAY_MS);
-    }
-  });
-
-  onMount(() => {
-    // Also check on mount if already authenticated
-    if (authState.isAuthenticated && !hasChecked) {
-      setTimeout(checkForNewVersion, CHECK_DELAY_MS);
-    }
+    if (!authState.isAuthenticated || !authState.user || hasChecked) return;
+    // Small delay to let the app settle
+    const timer = setTimeout(checkForNewVersion, CHECK_DELAY_MS);
+    return () => clearTimeout(timer);
   });
 
   async function checkForNewVersion() {

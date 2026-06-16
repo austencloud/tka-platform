@@ -103,7 +103,7 @@
   }
 
   .label {
-    font-size: 0.68rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     line-height: 1.1;
     text-align: center;

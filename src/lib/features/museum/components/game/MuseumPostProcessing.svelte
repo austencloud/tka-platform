@@ -22,6 +22,7 @@
   import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
   import { ACESFilmicToneMapping, Vector2, Vector3 } from "three";
   import type { WebGLRenderer, Scene, Camera, PerspectiveCamera } from "three";
+  import { resolveRenderer, resolveScene, resolveCamera } from "../resolve-threlte-scene";
 
   interface Props {
     /** All geometry is in the scene - safe to pre-warm bloom shaders */
@@ -68,18 +69,9 @@
 
   const ctx = useThrelte();
 
-  const getRenderer = (): WebGLRenderer | null => {
-    const r = (ctx.renderer as any)?.current ?? ctx.renderer;
-    return r?.domElement ? r : null;
-  };
-  const getScene = (): Scene | null => {
-    const s = (ctx.scene as any)?.current ?? ctx.scene;
-    return s?.isScene ? s : null;
-  };
-  const getCamera = (): Camera | null => {
-    const c = (ctx.camera as any)?.current ?? ctx.camera;
-    return c?.isCamera ? c : null;
-  };
+  const getRenderer = (): WebGLRenderer | null => resolveRenderer(ctx);
+  const getScene = (): Scene | null => resolveScene(ctx);
+  const getCamera = (): Camera | null => resolveCamera(ctx);
 
   let composer: EffectComposer | undefined;
   let bloomPreWarmed = false;

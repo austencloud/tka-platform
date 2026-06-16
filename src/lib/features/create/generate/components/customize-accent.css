@@ -1,0 +1,22 @@
+/*
+ * Customize accent palette — single source of truth for the cyan surface
+ * treatment shared by CustomizeExpandedOverlay (inline card overlay) and
+ * CustomizeDrawer (drawer/bottom-sheet host). Previously this gradient was
+ * duplicated verbatim in both components.
+ *
+ * Deliberately feature-local: the properties are scoped to an opt-in class,
+ * not :root, so they don't become global design tokens. Components import
+ * this file and add `customize-accent-scope` to the element that uses the
+ * variables.
+ */
+.customize-accent-scope {
+  --customize-accent: #06b6d4;
+  --customize-accent-strong: #0891b2;
+  --customize-surface-base: #1a1a2e;
+  --customize-surface-gradient: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--customize-accent) 20%, var(--customize-surface-base)) 0%,
+    color-mix(in srgb, var(--customize-accent-strong) 12%, var(--customize-surface-base)) 50%,
+    color-mix(in srgb, var(--customize-accent) 16%, var(--customize-surface-base)) 100%
+  );
+}

@@ -77,8 +77,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: color-mix(in srgb, var(--color-status-live, #ef4444) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-status-live, #ef4444) 30%, transparent);
     border-radius: 20px;
     padding: 6px 14px;
   }
@@ -86,7 +86,7 @@
   .live-dot {
     width: 8px;
     height: 8px;
-    background: #ef4444;
+    background: var(--color-status-live, #ef4444);
     border-radius: 50%;
     animation: pulse 2s infinite;
   }
@@ -106,7 +106,7 @@
   .live-label {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #ef4444;
+    color: var(--color-status-live, #ef4444);
     letter-spacing: 0.1em;
   }
 

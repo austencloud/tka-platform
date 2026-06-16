@@ -171,6 +171,10 @@
       }
     } catch (error) {
       console.error("Detection error:", error);
+      // Tracking failed to start: clear the active flag so it doesn't die
+      // silently, and surface the failure on the panel's error state.
+      trainState.setDetectionActive(false);
+      trainState.setError(t('train_detection_start_failed'));
     }
   }
 
@@ -180,21 +184,25 @@
 
     // Only restart if detection is already active and we have a video element
     if (
-      trainState.isDetectionActive &&
-      detectionService &&
-      currentVideoElement
+      !trainState.isDetectionActive ||
+      !detectionService ||
+      !currentVideoElement
     ) {
-      // Stop current detection
-      detectionService.stopDetection();
-      trainState.setDetectionActive(false);
+      return;
+    }
 
-      // Restart with new mode
-      setTimeout(async () => {
-        if (
-          currentVideoElement &&
-          detectionService &&
-          trainState.isCameraReady
-        ) {
+    // Stop current detection
+    detectionService.stopDetection();
+    trainState.setDetectionActive(false);
+
+    // Restart with new mode
+    const restartTimer = setTimeout(async () => {
+      if (
+        currentVideoElement &&
+        detectionService &&
+        trainState.isCameraReady
+      ) {
+        try {
           trainState.setDetectionActive(true);
           await detectionService.startRealTimeDetection(
             currentVideoElement,
@@ -203,9 +211,15 @@
             },
             { mirrored: true, gridMode: currentMode }
           );
+        } catch (error) {
+          console.error("Detection restart error:", error);
+          trainState.setDetectionActive(false);
+          trainState.setError(t('train_detection_start_failed'));
         }
-      }, 50); // Small delay to ensure clean restart
-    }
+      }
+    }, 50); // Small delay to ensure clean restart
+
+    return () => clearTimeout(restartTimer);
   });
 
   function handleStartCountdown() {

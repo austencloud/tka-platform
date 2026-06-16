@@ -201,7 +201,7 @@
     border-radius: 6px;
     background: color-mix(in srgb, var(--chip-color, #6b7280) 12%, transparent);
     color: var(--chip-color, #6b7280);
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
   }
 
@@ -220,7 +220,7 @@
     border-radius: 6px;
     background: transparent;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     cursor: pointer;
     transition: all var(--duration-fast) ease;
   }
@@ -231,7 +231,7 @@
   }
 
   .no-features {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     font-style: italic;
   }

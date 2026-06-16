@@ -104,30 +104,30 @@
     position: absolute;
     top: 4px;
     right: 4px;
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     background: var(--theme-accent, #6366f1);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 8px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .favorite-badge {
     position: absolute;
     top: 4px;
     left: 4px;
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     background: white;
     color: var(--semantic-warning, #f59e0b);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .prop-image {

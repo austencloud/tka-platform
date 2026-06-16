@@ -122,6 +122,20 @@ interface ShaderProgram {
   uniforms: Map<string, WebGLUniformLocation>;
 }
 
+/**
+ * A program whose compile + link has been dispatched but not yet finalized.
+ * Under KHR_parallel_shader_compile the driver compiles on its own threads; we
+ * hold these until COMPLETION_STATUS_KHR reports done, then resolve uniforms and
+ * assign the field — never touching LINK_STATUS/getUniformLocation early (those
+ * force the GPU-CPU sync stall this whole dance exists to avoid).
+ */
+interface PendingProgram {
+  program: WebGLProgram;
+  fragShader: WebGLShader;
+  uniformNames: string[];
+  assign: (sp: ShaderProgram) => void;
+}
+
 export class WebGLFireRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private gl: WebGL2RenderingContext | null = null;
@@ -150,6 +164,17 @@ export class WebGLFireRenderer {
   private bloomDownsampleProgram: ShaderProgram | null = null;
   private bloomUpsampleProgram: ShaderProgram | null = null;
   private bloomCompositeProgram: ShaderProgram | null = null;
+
+  // Async shader compilation (KHR_parallel_shader_compile). Compiling fire's
+  // ~15 fluid-sim programs synchronously froze the page for ~1s on the click
+  // that enabled the effect (Windows/ANGLE). Instead we dispatch all compiles,
+  // then poll the non-blocking COMPLETION_STATUS_KHR in renderFire and only
+  // resolve uniforms once the driver is done — the props never stop animating.
+  private parallelCompileExt: { COMPLETION_STATUS_KHR: number } | null = null;
+  private pendingPrograms: PendingProgram[] = [];
+  private pendingVertexShader: WebGLShader | null = null;
+  private shadersReady = false;
+  private shaderCompileFailed = false;
 
   // Double-buffered simulation fields
   private velocity: DoubleFBO | null = null;
@@ -259,10 +284,11 @@ export class WebGLFireRenderer {
     }
     gl.getExtension("OES_texture_float_linear");
 
-    if (!this.compileAllPrograms()) {
-      this.cleanup();
-      return false;
-    }
+    // Dispatch all shader compiles + links without blocking on their status.
+    // The DOM path finalizes lazily via pollShaderCompletion() in renderFire;
+    // the headless export path finalizes synchronously below (it renders frames
+    // deterministically right after init and can't tolerate an async fade-in).
+    this.kickoffProgramCompiles();
 
     this.createSimulationBuffers();
 
@@ -275,6 +301,14 @@ export class WebGLFireRenderer {
 
     if (isDom && typeof window !== "undefined" && window.matchMedia) {
       this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+
+    // Headless/export renders immediately after init, so finalize now (one
+    // blocking compile — acceptable with no user watching). The DOM path leaves
+    // shadersReady=false and polls without blocking on the next frames.
+    if (!isDom && !this.finalizePrograms()) {
+      this.cleanup();
+      return false;
     }
 
     this.initialized = true;
@@ -392,6 +426,12 @@ export class WebGLFireRenderer {
   renderFire(input: FireFrameInput, config: FireOverlayConfig): void {
     const gl = this.gl;
     if (!gl || !this.initialized) return;
+
+    // Shaders compile asynchronously so enabling fire never blocked the click.
+    // Until the driver finishes, skip the frame — the props keep animating and
+    // fire fades in within a few frames. pollShaderCompletion() only touches the
+    // non-blocking COMPLETION_STATUS_KHR, so polling here costs nothing.
+    if (!this.shadersReady && !this.pollShaderCompletion()) return;
 
     // Deduplicate: during export, two RAF callbacks fire with the same
     // virtualTime. Running the Navier-Stokes simulation twice doubles
@@ -1457,53 +1497,135 @@ export class WebGLFireRenderer {
   // Shader compilation
   // ============================================================
 
-  private compileAllPrograms(): boolean {
-    this.splatProgram = this.buildProgram(SPLAT_FRAG, ["u_target", "u_point", "u_splatValue", "u_radius"]);
-    this.advectionProgram = this.buildProgram(ADVECTION_FRAG, ["u_velocity", "u_source", "u_texelSize", "u_dt", "u_dissipation"]);
-    this.curlProgram = this.buildProgram(CURL_FRAG, ["u_velocity", "u_texelSize"]);
-    this.vorticityProgram = this.buildProgram(VORTICITY_FRAG, ["u_velocity", "u_curl", "u_texelSize", "u_dt", "u_strength", "u_time"]);
-    this.buoyancyProgram = this.buildProgram(BUOYANCY_FRAG, ["u_velocity", "u_temperature", "u_dt", "u_buoyancy", "u_ambientTemp", "u_terminalVelocity", "u_gravity"]);
-    this.curlNoiseProgram = this.buildProgram(CURL_NOISE_FRAG, ["u_velocity", "u_temperature", "u_texelSize", "u_dt", "u_time", "u_strength"]);
-    this.combustionProgram = this.buildProgram(COMBUSTION_FRAG, ["u_temperature", "u_fuel", "u_dt", "u_burnRate", "u_burnTemp", "u_fuelEfficiency", "u_coolingRate", "u_ambientTemp"]);
-    this.divergenceProgram = this.buildProgram(DIVERGENCE_FRAG, ["u_velocity", "u_texelSize"]);
-    this.jacobiProgram = this.buildProgram(JACOBI_FRAG, ["u_pressure", "u_divergence", "u_texelSize"]);
-    this.gradientSubtractProgram = this.buildProgram(GRADIENT_SUBTRACT_FRAG, ["u_velocity", "u_pressure", "u_texelSize"]);
-    this.clearProgram = this.buildProgram(CLEAR_FRAG, ["u_clearValue"]);
-    this.displayProgram = this.buildProgram(DISPLAY_FRAG, [
-      "u_temperature", "u_fuel", "u_colorField",
-      "u_displayIntensity",
-      "u_tipCount", "u_aspectCorrect", "u_colorBlend",
-      "u_colorCold", "u_colorMid", "u_colorHot", "u_colorCore",
-      "u_time",
-    ]);
-    this.bloomDownsampleProgram = this.buildProgram(BLOOM_DOWNSAMPLE_FRAG, [
-      "u_source", "u_texelSize", "u_threshold", "u_knee",
-    ]);
-    this.bloomUpsampleProgram = this.buildProgram(BLOOM_UPSAMPLE_FRAG, [
-      "u_source", "u_texelSize", "u_bloomRadius",
-    ]);
-    this.bloomCompositeProgram = this.buildProgram(BLOOM_COMPOSITE_FRAG, [
-      "u_scene", "u_bloom", "u_bloomStrength",
-    ]);
-    const all = [
-      this.splatProgram, this.advectionProgram, this.curlProgram,
-      this.vorticityProgram, this.buoyancyProgram, this.curlNoiseProgram,
-      this.combustionProgram,
-      this.divergenceProgram, this.jacobiProgram, this.gradientSubtractProgram,
-      this.clearProgram, this.displayProgram,
-      this.bloomDownsampleProgram,
-      this.bloomUpsampleProgram, this.bloomCompositeProgram,
+  /**
+   * Dispatch compile + link for every fire program WITHOUT blocking on status.
+   * Under KHR_parallel_shader_compile the driver does this on its own threads;
+   * we resolve results later in finalizePrograms(). One shared vertex shader
+   * (identical source across all programs) halves the shader-object count.
+   * Crucially this touches no LINK_STATUS / COMPILE_STATUS / getUniformLocation
+   * call — those would force the synchronous stall this exists to eliminate.
+   */
+  private kickoffProgramCompiles(): void {
+    const gl = this.gl!;
+    this.parallelCompileExt = gl.getExtension(
+      "KHR_parallel_shader_compile",
+    ) as { COMPLETION_STATUS_KHR: number } | null;
+
+    const vert = gl.createShader(gl.VERTEX_SHADER)!;
+    gl.shaderSource(vert, VERTEX_SHADER);
+    gl.compileShader(vert);
+    this.pendingVertexShader = vert;
+
+    const specs: { frag: string; uniforms: string[]; assign: (sp: ShaderProgram) => void }[] = [
+      { frag: SPLAT_FRAG, uniforms: ["u_target", "u_point", "u_splatValue", "u_radius"], assign: sp => { this.splatProgram = sp; } },
+      { frag: ADVECTION_FRAG, uniforms: ["u_velocity", "u_source", "u_texelSize", "u_dt", "u_dissipation"], assign: sp => { this.advectionProgram = sp; } },
+      { frag: CURL_FRAG, uniforms: ["u_velocity", "u_texelSize"], assign: sp => { this.curlProgram = sp; } },
+      { frag: VORTICITY_FRAG, uniforms: ["u_velocity", "u_curl", "u_texelSize", "u_dt", "u_strength", "u_time"], assign: sp => { this.vorticityProgram = sp; } },
+      { frag: BUOYANCY_FRAG, uniforms: ["u_velocity", "u_temperature", "u_dt", "u_buoyancy", "u_ambientTemp", "u_terminalVelocity", "u_gravity"], assign: sp => { this.buoyancyProgram = sp; } },
+      { frag: CURL_NOISE_FRAG, uniforms: ["u_velocity", "u_temperature", "u_texelSize", "u_dt", "u_time", "u_strength"], assign: sp => { this.curlNoiseProgram = sp; } },
+      { frag: COMBUSTION_FRAG, uniforms: ["u_temperature", "u_fuel", "u_dt", "u_burnRate", "u_burnTemp", "u_fuelEfficiency", "u_coolingRate", "u_ambientTemp"], assign: sp => { this.combustionProgram = sp; } },
+      { frag: DIVERGENCE_FRAG, uniforms: ["u_velocity", "u_texelSize"], assign: sp => { this.divergenceProgram = sp; } },
+      { frag: JACOBI_FRAG, uniforms: ["u_pressure", "u_divergence", "u_texelSize"], assign: sp => { this.jacobiProgram = sp; } },
+      { frag: GRADIENT_SUBTRACT_FRAG, uniforms: ["u_velocity", "u_pressure", "u_texelSize"], assign: sp => { this.gradientSubtractProgram = sp; } },
+      { frag: CLEAR_FRAG, uniforms: ["u_clearValue"], assign: sp => { this.clearProgram = sp; } },
+      { frag: DISPLAY_FRAG, uniforms: [
+        "u_temperature", "u_fuel", "u_colorField",
+        "u_displayIntensity",
+        "u_tipCount", "u_aspectCorrect", "u_colorBlend",
+        "u_colorCold", "u_colorMid", "u_colorHot", "u_colorCore",
+        "u_time",
+      ], assign: sp => { this.displayProgram = sp; } },
+      { frag: BLOOM_DOWNSAMPLE_FRAG, uniforms: ["u_source", "u_texelSize", "u_threshold", "u_knee"], assign: sp => { this.bloomDownsampleProgram = sp; } },
+      { frag: BLOOM_UPSAMPLE_FRAG, uniforms: ["u_source", "u_texelSize", "u_bloomRadius"], assign: sp => { this.bloomUpsampleProgram = sp; } },
+      { frag: BLOOM_COMPOSITE_FRAG, uniforms: ["u_scene", "u_bloom", "u_bloomStrength"], assign: sp => { this.bloomCompositeProgram = sp; } },
     ];
 
-    if (all.some(p => p === null)) {
-      console.error("Failed to compile one or more fire simulation shaders");
-      return false;
+    this.pendingPrograms = [];
+    for (const spec of specs) {
+      const frag = gl.createShader(gl.FRAGMENT_SHADER)!;
+      gl.shaderSource(frag, spec.frag);
+      gl.compileShader(frag);
+
+      const program = gl.createProgram()!;
+      gl.attachShader(program, vert);
+      gl.attachShader(program, frag);
+      gl.linkProgram(program);
+
+      this.pendingPrograms.push({
+        program,
+        fragShader: frag,
+        uniformNames: spec.uniforms,
+        assign: spec.assign,
+      });
+    }
+  }
+
+  /**
+   * Non-blocking readiness check called from renderFire. Returns true once all
+   * programs are finalized (uniforms resolved, fields assigned). While the
+   * driver is still compiling it returns false WITHOUT touching any blocking
+   * query, so the caller simply skips the frame and the animation never stalls.
+   */
+  private pollShaderCompletion(): boolean {
+    if (this.shadersReady) return true;
+    if (this.shaderCompileFailed) return false;
+    const gl = this.gl;
+    if (!gl) return false;
+
+    const ext = this.parallelCompileExt;
+    if (ext) {
+      for (const pending of this.pendingPrograms) {
+        // COMPLETION_STATUS_KHR is the ONLY status safe to read before a program
+        // is done — it never blocks. LINK_STATUS/getUniformLocation here would
+        // reintroduce the stall.
+        if (!gl.getProgramParameter(pending.program, ext.COMPLETION_STATUS_KHR)) {
+          return false; // still compiling on a driver thread — retry next frame
+        }
+      }
+    }
+    // All complete — or no parallel-compile extension, in which case finalize
+    // blocks once (unavoidable fallback on browsers lacking the extension).
+    return this.finalizePrograms();
+  }
+
+  /**
+   * Resolve linked programs into ShaderPrograms: verify LINK_STATUS, look up
+   * uniform locations, assign the named fields, and free shader objects. Safe to
+   * call only once the driver has finished (after COMPLETION_STATUS_KHR, or on
+   * the synchronous headless path). Returns false if any program failed to link.
+   */
+  private finalizePrograms(): boolean {
+    const gl = this.gl!;
+
+    for (const pending of this.pendingPrograms) {
+      if (!gl.getProgramParameter(pending.program, gl.LINK_STATUS)) {
+        console.error("Fire shader link error:", gl.getProgramInfoLog(pending.program));
+        this.shaderCompileFailed = true;
+        return false;
+      }
+
+      gl.detachShader(pending.program, this.pendingVertexShader!);
+      gl.detachShader(pending.program, pending.fragShader);
+      gl.deleteShader(pending.fragShader);
+
+      const uniforms = new Map<string, WebGLUniformLocation>();
+      for (const name of pending.uniformNames) {
+        const loc = gl.getUniformLocation(pending.program, name);
+        if (loc !== null) uniforms.set(name, loc);
+      }
+      pending.assign({ program: pending.program, uniforms });
     }
 
-    // Pre-cache tip array uniform locations to avoid per-frame getUniformLocation calls.
-    // On Windows/ANGLE, each getUniformLocation triggers a GPU-CPU pipeline sync stall.
-    this.cacheTipUniformLocations();
+    if (this.pendingVertexShader) {
+      gl.deleteShader(this.pendingVertexShader);
+      this.pendingVertexShader = null;
+    }
+    this.pendingPrograms = [];
 
+    // Pre-cache tip array uniform locations to avoid per-frame getUniformLocation
+    // calls. On Windows/ANGLE each getUniformLocation triggers a GPU-CPU stall.
+    this.cacheTipUniformLocations();
+    this.shadersReady = true;
     return true;
   }
 
@@ -1524,60 +1646,6 @@ export class WebGLFireRenderer {
       this.tipFlameScaleLocs[i] = gl.getUniformLocation(prog, `u_tipFlameScales[${i}]`);
       this.tipColorLocs[i] = gl.getUniformLocation(prog, `u_tipColors[${i}]`);
     }
-  }
-
-  private buildProgram(fragSource: string, uniformNames: string[]): ShaderProgram | null {
-    const gl = this.gl!;
-
-    const vertShader = this.compileShader(gl.VERTEX_SHADER, VERTEX_SHADER);
-    const fragShader = this.compileShader(gl.FRAGMENT_SHADER, fragSource);
-    if (!vertShader || !fragShader) return null;
-
-    const program = gl.createProgram()!;
-    gl.attachShader(program, vertShader);
-    gl.attachShader(program, fragShader);
-    gl.linkProgram(program);
-
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error("Fire shader link error:", gl.getProgramInfoLog(program));
-      gl.deleteProgram(program);
-      gl.deleteShader(vertShader);
-      gl.deleteShader(fragShader);
-      return null;
-    }
-
-    gl.detachShader(program, vertShader);
-    gl.detachShader(program, fragShader);
-    gl.deleteShader(vertShader);
-    gl.deleteShader(fragShader);
-
-    const uniforms = new Map<string, WebGLUniformLocation>();
-    for (const name of uniformNames) {
-      const loc = gl.getUniformLocation(program, name);
-      if (loc !== null) {
-        uniforms.set(name, loc);
-      }
-    }
-
-    return { program, uniforms };
-  }
-
-  private compileShader(type: number, source: string): WebGLShader | null {
-    const gl = this.gl!;
-    const shader = gl.createShader(type);
-    if (!shader) return null;
-
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      const typeName = type === gl.VERTEX_SHADER ? "vertex" : "fragment";
-      console.error(`Fire ${typeName} shader error:`, gl.getShaderInfoLog(shader));
-      gl.deleteShader(shader);
-      return null;
-    }
-
-    return shader;
   }
 
   // ============================================================
@@ -1606,7 +1674,19 @@ export class WebGLFireRenderer {
       for (const p of programs) {
         if (p) gl.deleteProgram(p.program);
       }
+      // Free any programs still pending finalize (disposed mid-compile).
+      for (const pending of this.pendingPrograms) {
+        gl.deleteProgram(pending.program);
+        gl.deleteShader(pending.fragShader);
+      }
+      if (this.pendingVertexShader) gl.deleteShader(this.pendingVertexShader);
     }
+
+    this.pendingPrograms = [];
+    this.pendingVertexShader = null;
+    this.parallelCompileExt = null;
+    this.shadersReady = false;
+    this.shaderCompileFailed = false;
 
     this.splatProgram = null;
     this.advectionProgram = null;

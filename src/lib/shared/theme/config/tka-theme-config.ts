@@ -17,12 +17,16 @@ import {
 import { BackgroundType } from "@austencloud/backgrounds";
 
 /**
- * Theme colors for each background type
+ * Theme colors for each background type — single source of truth.
+ *
  * Format: [dark1, dark2, accent, accentLight?]
  * - First colors are for luminance calculation
  * - Middle/later colors are extracted as accent for buttons and interactive elements
+ *
+ * Consumed here and by settings' background-theme-calculator. Note: src/app.html
+ * carries an inline pre-hydration JS copy that must be kept in sync manually.
  */
-const BACKGROUND_THEME_COLORS: Partial<Record<BackgroundType, string[]>> = {
+export const BACKGROUND_THEME_COLORS: Partial<Record<BackgroundType, string[]>> = {
   [BackgroundType.RAINBOW]: ["#8b1c1c", "#6b6b00", "#f43f5e", "#fda4af"],
   [BackgroundType.WINTER]: ["#1e3a5f", "#3b82f6", "#93c5fd"],
   [BackgroundType.COSMIC]: ["#1e1b4b", "#4338ca", "#818cf8"],

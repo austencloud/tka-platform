@@ -167,9 +167,79 @@ function saveToStorage(state: ExportOptionsState): void {
 }
 
 /**
+ * Public surface of the export-options state manager. Getters are reactive
+ * (backed by $state runes); setters persist to localStorage on every call.
+ */
+export interface ExportOptionsStateManager {
+  // Video options (reactive getters)
+  readonly videoFps: VideoFps;
+  readonly videoLoopCount: number;
+  readonly videoResolution: VideoResolution;
+  readonly videoEffectOverrides: EffectOverride | null;
+  readonly videoIncludeStartPosition: boolean;
+  readonly videoIncludeEndHold: boolean;
+  readonly videoQuality: VideoQuality;
+
+  // Split options (reactive getters)
+  readonly splitFps: VideoFps;
+  readonly splitLoopCount: number;
+  readonly splitOrientation: CompositeOrientation;
+  readonly splitGridStepSize: GridStepSize;
+  readonly splitShowStepNumbers: boolean;
+  readonly splitIncludeStartPosition: boolean;
+
+  // Image options (reactive getters)
+  readonly imageIncludeStartPosition: boolean;
+  readonly imageShowStepNumbers: boolean;
+  readonly imageShowWord: boolean;
+  readonly imageShowDifficulty: boolean;
+  readonly imageShowCreatorName: boolean;
+  readonly imageShowNotes: boolean;
+  readonly imageShowQRCode: boolean;
+  readonly imageDarkMode: boolean;
+  readonly imageColumnCount: number | null;
+
+  // Video setters
+  setVideoFps(fps: VideoFps): void;
+  setVideoLoopCount(count: number): void;
+  setVideoResolution(res: VideoResolution): void;
+  setVideoEffectOverrides(overrides: EffectOverride | null): void;
+  setVideoIncludeStartPosition(include: boolean): void;
+  setVideoIncludeEndHold(include: boolean): void;
+  setVideoQuality(q: VideoQuality): void;
+
+  // Split setters
+  setSplitFps(fps: VideoFps): void;
+  setSplitLoopCount(count: number): void;
+  setSplitOrientation(orientation: CompositeOrientation): void;
+  setSplitGridStepSize(size: GridStepSize): void;
+  setSplitShowStepNumbers(show: boolean): void;
+  setSplitIncludeStartPosition(include: boolean): void;
+
+  // Image setters
+  setImageIncludeStartPosition(include: boolean): void;
+  setImageShowStepNumbers(show: boolean): void;
+  setImageShowWord(show: boolean): void;
+  setImageShowDifficulty(show: boolean): void;
+  setImageShowCreatorName(show: boolean): void;
+  setImageShowNotes(show: boolean): void;
+  setImageShowQRCode(show: boolean): void;
+  setImageDarkMode(dark: boolean): void;
+  setImageColumnCount(count: number | null): void;
+
+  // Bulk getters for export functions
+  getVideoOptions(): VideoExportOptions;
+  getSplitOptions(): SplitExportOptions;
+  getImageOptions(): ImageExportOptions;
+
+  // Reset to defaults
+  resetToDefaults(): void;
+}
+
+/**
  * Creates export options state with Svelte 5 runes and localStorage persistence.
  */
-export function createExportOptionsState() {
+export function createExportOptionsState(): ExportOptionsStateManager {
   const stored = loadFromStorage();
 
   // Video export options (animation-only mode)
@@ -437,9 +507,6 @@ export function createExportOptionsState() {
     },
   };
 }
-
-/** The return type of createExportOptionsState - used for typing the state object */
-export type ExportOptionsStateManager = ReturnType<typeof createExportOptionsState>;
 
 // Singleton for global access (created once per app)
 let singletonInstance: ExportOptionsStateManager | null = null;

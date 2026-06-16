@@ -33,12 +33,16 @@
     disabled?: boolean;
     /** Show a spinner instead of the icon (e.g. preparing export). */
     busy?: boolean;
+    /** Accent-filled emphasis (primary CTA, e.g. scan-landing "Remix"). */
+    accent?: boolean;
   }
 
   export interface ControlDockLink {
     icon?: string;
     label: string;
     href: string;
+    /** Accent-filled emphasis (primary CTA). */
+    accent?: boolean;
   }
 </script>
 
@@ -56,9 +60,10 @@
     tray?: Snippet;
     /** Compact trailing trigger (download / record). */
     trailingAction?: ControlDockAction;
-    /** Optional secondary trailing slot: a link (e.g. scan-landing "Open TKA")
-     *  or an action button (e.g. choreo-card "Print"). */
-    secondaryAction?: ControlDockLink | ControlDockAction;
+    /** Optional secondary trailing slot(s): links (e.g. scan-landing
+     *  "Open TKA") and/or action buttons (e.g. choreo-card "Print"),
+     *  rendered in order before the trailing trigger. */
+    secondaryActions?: (ControlDockLink | ControlDockAction)[];
     /** Reports the dock's measured height so the stage can reserve room. */
     onHeightChange?: (px: number) => void;
     /** Bar width (px) below which tab labels hide and tabs go icon-only. */
@@ -78,7 +83,7 @@
     onTabSelect,
     tray,
     trailingAction,
-    secondaryAction,
+    secondaryActions = [],
     onHeightChange,
     labelMinWidth = 380,
     overlay = false,
@@ -95,8 +100,9 @@
   });
   const dur = (ms: number) => (reduceMotion ? 0 : ms);
 
-  // Secondary slot is a link if it carries an href, else an action button.
-  const secondaryIsLink = $derived(!!secondaryAction && "href" in secondaryAction);
+  // A secondary slot entry is a link if it carries an href, else an action.
+  const isLink = (a: ControlDockLink | ControlDockAction): a is ControlDockLink =>
+    "href" in a;
 
   // Measure: own height (-> stage padding) and own width (-> label-hide).
   // Parent width drives the desktop floating layout (measuring the parent
@@ -104,6 +110,11 @@
   let dockEl: HTMLDivElement | undefined = $state();
   let wide = $state(false);
   let compact = $state(false);
+  // Secondary CTAs (Remix / Open TKA) + the download trigger eat ~260px of a
+  // single-row bar, starving the tab strip on phones. Below this width the bar
+  // stacks: tabs own the top row, CTAs share the bottom row. Docks without
+  // secondary actions (mandala) never stack.
+  let stacked = $state(false);
   $effect(() => {
     if (!dockEl) return;
     const parent = dockEl.parentElement;
@@ -111,7 +122,9 @@
       const e = entries[0];
       if (!e) return;
       onHeightChange?.(Math.ceil(e.contentRect.height));
-      compact = e.contentRect.width < labelMinWidth;
+      stacked = secondaryActions.length > 0 && e.contentRect.width < 620;
+      // Stacked tabs have the full row to themselves — labels fit far narrower.
+      compact = e.contentRect.width < (stacked ? 300 : labelMinWidth);
     });
     hRo.observe(dockEl);
     let wRo: ResizeObserver | undefined;
@@ -145,7 +158,7 @@
     </div>
   {/if}
 
-  <div class="cat-bar">
+  <div class="cat-bar" class:stacked>
     <div class="cat-scroll">
       {#each tabs as t, i (t.id)}
         <button
@@ -171,34 +184,37 @@
       {/each}
     </div>
 
-    {#if secondaryAction}
-      {#if secondaryIsLink}
-        <a class="dock-btn trailing-link" style:--btn-i={tabs.length} href={(secondaryAction as ControlDockLink).href} aria-label={secondaryAction.label}>
-          {#if secondaryAction.icon}<i class="fas {secondaryAction.icon}" aria-hidden="true"></i>{/if}
-          <span class="trailing-label">{secondaryAction.label}</span>
+    {#if secondaryActions.length > 0 || trailingAction}
+    <div class="dock-actions">
+    {#each secondaryActions as action, i (action.label)}
+      {#if isLink(action)}
+        <a class="dock-btn trailing-link" class:accent={action.accent} style:--btn-i={tabs.length + i} href={action.href} aria-label={action.label}>
+          {#if action.icon}<i class="fas {action.icon}" aria-hidden="true"></i>{/if}
+          <span class="trailing-label">{action.label}</span>
         </a>
       {:else}
         <button
           class="dock-btn trailing-link"
-          style:--btn-i={tabs.length}
-          onclick={(secondaryAction as ControlDockAction).onClick}
-          disabled={(secondaryAction as ControlDockAction).disabled}
-          aria-label={secondaryAction.label}
+          class:accent={action.accent}
+          style:--btn-i={tabs.length + i}
+          onclick={action.onClick}
+          disabled={action.disabled}
+          aria-label={action.label}
         >
-          {#if (secondaryAction as ControlDockAction).busy}
+          {#if action.busy}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          {:else if secondaryAction.icon}
-            <i class="fas {secondaryAction.icon}" aria-hidden="true"></i>
+          {:else if action.icon}
+            <i class="fas {action.icon}" aria-hidden="true"></i>
           {/if}
-          <span class="trailing-label">{secondaryAction.label}</span>
+          <span class="trailing-label">{action.label}</span>
         </button>
       {/if}
-    {/if}
+    {/each}
 
     {#if trailingAction}
       <button
         class="dock-btn download"
-        style:--btn-i={tabs.length + 1}
+        style:--btn-i={tabs.length + secondaryActions.length}
         onclick={trailingAction.onClick}
         disabled={trailingAction.disabled}
         aria-label={trailingAction.label}
@@ -209,6 +225,8 @@
           <i class="fas {trailingAction.icon}" aria-hidden="true"></i>
         {/if}
       </button>
+    {/if}
+    </div>
     {/if}
   </div>
 </div>
@@ -269,6 +287,22 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
   .cat-scroll { display: flex; flex: 1; min-width: 0; gap: 4px; }
+
+  /* Secondary CTAs + download live in one group so the bar can stack them
+     onto their own row on narrow screens. */
+  .dock-actions {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+
+  /* Narrow + secondary CTAs: two rows — tabs on top at full width, the
+     CTA group below sharing the row. No more smushed tab chips. */
+  .cat-bar.stacked { flex-wrap: wrap; }
+  .stacked .cat-scroll { flex: 1 1 100%; }
+  .stacked .dock-actions { flex: 1 1 100%; }
+  .stacked .dock-actions .dock-btn.trailing-link { flex: 1 1 0; }
 
   .dock-btn {
     display: flex;
@@ -346,6 +380,13 @@
   .compact .dock-btn.trailing-link { padding: 0; width: 46px; }
   .compact .trailing-label { display: none; }
 
+  /* Accent emphasis: the dock's primary CTA (mirrors .download's fill). */
+  .dock-btn.trailing-link.accent {
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
+    color: white;
+  }
+
   @media (hover: hover) {
     .dock-btn.cat:hover {
       background: color-mix(in srgb, var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 88%, white 8%);
@@ -367,6 +408,11 @@
     .dock-btn.trailing-link:hover {
       background: color-mix(in srgb, var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 88%, white 8%);
       transform: translateY(-2px);
+    }
+    .dock-btn.trailing-link.accent:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--theme-accent, #6366f1) 42%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
+      border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 75%, transparent);
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
     }
   }
 

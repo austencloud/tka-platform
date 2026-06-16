@@ -16,6 +16,9 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 	import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
+	import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+	import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+	import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 
 	const { state: fuseState } = getFuseContext();
 
@@ -27,6 +30,10 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+
+	// Save-to-library state
+	let saving = $state(false);
+	let saved = $state(false);
 
 	const isPlaying = $derived(animState.isPlaying);
 	const currentStep = $derived(animState.currentStep);
@@ -84,11 +91,19 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 
 		if (!controller || !seq) return;
 
+		// Capture the autoplay timeout so a re-run or teardown can cancel a
+		// still-pending toggle — otherwise overlapping timeouts fire against
+		// the same controller when the effect re-triggers within 50ms.
+		let autoplayTimer: ReturnType<typeof setTimeout> | undefined;
+		// Guards the async chain from mutating state after this run is cleaned up.
+		let disposed = false;
+
 		untrack(async () => {
 			if (animState.isPlaying) controller!.togglePlayback();
 			animState.reset();
 
 			const fullSeq = await ensureMotionData(seq);
+			if (disposed) return;
 			if (!fullSeq) {
 				error = "Failed to load sequence motion data";
 				return;
@@ -96,6 +111,7 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 
 			animState.setShouldLoop(true);
 			const ok = controller!.initialize(fullSeq, animState);
+			if (disposed) return;
 			if (!ok) {
 				error = "Failed to initialize playback";
 				return;
@@ -105,9 +121,38 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 			controller!.setSpeed(speed);
 
 			// Autoplay with minimal delay
-			setTimeout(() => controller?.togglePlayback(), 50);
+			autoplayTimer = setTimeout(() => controller?.togglePlayback(), 50);
 		});
+
+		return () => {
+			disposed = true;
+			if (autoplayTimer !== undefined) clearTimeout(autoplayTimer);
+		};
 	});
+
+	async function handleSave() {
+		if (saving || saved) return;
+		const seq = sequence;
+		if (!seq) {
+			showToast("No sequence to save", "info");
+			return;
+		}
+		if (!authState.isAuthenticated) {
+			showToast("Sign in to save sequences", "info");
+			return;
+		}
+		saving = true;
+		try {
+			await getLibraryRepository().saveSequence(seq);
+			saved = true;
+			showToast("Saved to library", "success");
+		} catch (err) {
+			console.error("Failed to save fused sequence:", err);
+			showToast("Failed to save sequence", "error");
+		} finally {
+			saving = false;
+		}
+	}
 
 	function handleBuildAnother() {
 		fuseState.reset();
@@ -225,9 +270,22 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 
 	<!-- Action buttons -->
 	<div class="result-actions">
-		<button class="action-btn action-save" onclick={() => {}}>
-			<i class="fas fa-bookmark" aria-hidden="true"></i>
-			<span>Save</span>
+		<button
+			class="action-btn action-save"
+			onclick={handleSave}
+			disabled={saving || saved}
+			aria-label={saved ? "Saved to library" : "Save to library"}
+		>
+			{#if saving}
+				<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+				<span>Saving</span>
+			{:else if saved}
+				<i class="fas fa-check" aria-hidden="true"></i>
+				<span>Saved</span>
+			{:else}
+				<i class="fas fa-bookmark" aria-hidden="true"></i>
+				<span>Save</span>
+			{/if}
 		</button>
 		<button class="action-btn action-ghost" onclick={handleBuildAnother}>
 			<i class="fas fa-redo" aria-hidden="true"></i>
@@ -242,6 +300,13 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 
 <style>
 	.fuse-result {
+		/* Shared Fuse brand gradient — mirrors FuseLayout / FuseSequenceBrowser. */
+		--fuse-gradient: linear-gradient(
+			135deg,
+			var(--fuse-accent-light, #fb923c) 0%,
+			var(--fuse-accent, #f97316) 50%,
+			var(--fuse-accent-deep, #ea580c) 100%
+		);
 		display: flex;
 		flex-direction: column;
 		height: 100%;
@@ -372,13 +437,18 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 	}
 
 	.action-save {
-		background: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
+		background: var(--fuse-gradient);
 		color: #ffffff;
 		border: none;
 	}
 
-	.action-save:hover {
+	.action-save:hover:not(:disabled) {
 		opacity: 0.9;
+	}
+
+	.action-save:disabled {
+		opacity: 0.5;
+		cursor: progress;
 	}
 
 	.action-ghost {

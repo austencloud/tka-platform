@@ -1,13 +1,18 @@
 import { describe, it, expect, vi } from "vitest";
 
-// Mock getSceneUndoManager before importing the module under test
-vi.mock("$lib/shared/3d/undo/getSceneUndoManager", () => ({
-  getSceneUndoManager: () => ({
-    registerDomain: vi.fn(),
-    captureState: vi.fn(),
-    commitState: vi.fn(),
-    commitStateCoalescing: vi.fn(),
-  }),
+// Mock the scene undo manager before importing the module under test.
+// Module path is `get-scene-undo-manager` (Phase C kebab rename) — mocking the
+// old `getSceneUndoManager` path silently never attaches. Shared hoisted spies
+// let the undo call-count assertions below observe the real instance.
+const undoSpies = vi.hoisted(() => ({
+  registerDomain: vi.fn(),
+  captureState: vi.fn(),
+  commitState: vi.fn(),
+  commitStateCoalescing: vi.fn(),
+}));
+
+vi.mock("$lib/shared/3d/undo/get-scene-undo-manager", () => ({
+  getSceneUndoManager: () => undoSpies,
 }));
 
 const { createEffectsConfigState } = await import("../effects-config-state.svelte");
@@ -36,6 +41,49 @@ describe("EffectsConfigState", () => {
     it("throws for unknown effect id", () => {
       const state = createEffectsConfigState();
       expect(() => state.updateEffect("bogus" as any, {})).toThrow("Unknown effect id");
+    });
+  });
+
+  describe("applyPreset", () => {
+    it("merges the patch into the target effect's intent", () => {
+      const state = createEffectsConfigState();
+      state.applyPreset("led", "led-green-glow", { brightness: 4, patternId: "solid" });
+      expect(state.led.brightness).toBe(4);
+      expect(state.led.patternId).toBe("solid");
+    });
+
+    it("sets activePresets[effectType] to the preset id", () => {
+      const state = createEffectsConfigState();
+      state.applyPreset("led", "led-green-glow", { brightness: 4 });
+      expect(state.activePresets.led).toBe("led-green-glow");
+    });
+
+    it("preserves untouched fields of the intent", () => {
+      const state = createEffectsConfigState();
+      const originalSpeed = state.led.patternSpeed;
+      state.applyPreset("led", "led-green-glow", { brightness: 2 });
+      expect(state.led.patternSpeed).toBe(originalSpeed);
+    });
+
+    it("a subsequent updateEffect on the same effect nulls the active preset", () => {
+      const state = createEffectsConfigState();
+      state.applyPreset("led", "led-green-glow", { brightness: 2 });
+      expect(state.activePresets.led).toBe("led-green-glow");
+      state.updateEffect("led", { brightness: 3 });
+      expect(state.activePresets.led).toBeNull();
+    });
+
+    it("records exactly ONE undo capture/commit pair per apply (pins the double-undo fix)", () => {
+      const state = createEffectsConfigState();
+      undoSpies.captureState.mockClear();
+      undoSpies.commitState.mockClear();
+      undoSpies.commitStateCoalescing.mockClear();
+      state.applyPreset("led", "led-green-glow", { brightness: 4 });
+      expect(undoSpies.captureState).toHaveBeenCalledTimes(1);
+      expect(undoSpies.commitState).toHaveBeenCalledTimes(1);
+      // The old two-call hack also ran commitStateCoalescing via updateEffect.
+      // The honest single-step apply must not.
+      expect(undoSpies.commitStateCoalescing).not.toHaveBeenCalled();
     });
   });
 

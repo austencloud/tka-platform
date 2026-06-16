@@ -28,28 +28,27 @@
   import { configureShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
+  import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
+  import { registerLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
+  import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
   import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
-  import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { updateSettings } from "$lib/shared/application/state/app-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
-  import {
-    COMPARISON_MODE_LAYOUTS,
-    splitConfigToMode,
-    type SplitConfig,
-    type ComparisonMode,
-  } from "$lib/shared/sequence-viewer/services/viewer-state-persistence";
+  import type { SplitConfig } from "$lib/shared/sequence-viewer/services/viewer-state-persistence";
+  import type { ContentType, ViewerMode } from "$lib/shared/sequence-viewer/state/viewer-state.svelte";
   import type { OrchestratorContext } from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
   import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
-  import ComparisonModeBar from "$lib/shared/sequence-viewer/components/ComparisonModeBar.svelte";
+  import ViewerContentRail from "$lib/shared/sequence-viewer/components/ViewerContentRail.svelte";
+  import ViewerModeBottomBar from "$lib/shared/sequence-viewer/components/ViewerModeBottomBar.svelte";
   import ToastContainer from "$lib/shared/toast/components/ToastContainer.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
   import type { ExportPhase } from "$lib/shared/video-export/components/ExportTakeover.svelte";
@@ -133,13 +132,29 @@
     | typeof import("$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte").default
     | null = $state(null);
 
-  // Comparison-mode layout for the embedded split pane. Defaults to the
-  // animation/card side-by-side; the in-pane ComparisonModeBar (desktop) and
-  // the mobile switcher let the user move between animation / card / mandala.
-  let qrSplitConfig = $state<SplitConfig>({ leftPane: "animation", rightPane: "card" });
-  // Non-3D comparison modes offered on the scan page (Three.js never loads).
-  const QR_MODES: ComparisonMode[] = ["2d-card", "2d-mandala"];
-  const qrComparisonMode = $derived(splitConfigToMode(qrSplitConfig));
+  // View mode for the embedded viewer — the single source of truth that the
+  // ViewerContentRail (landscape side rail) and ViewerModeBottomBar (portrait
+  // bottom bar) drive, mirroring SequenceViewerDrawerHost. No 3D mode is offered
+  // on the scan page: webgl2Available={false} filters 'animation-3d' out of both
+  // switchers, so the only modes are split / animation / card / mandala.
+  let qrViewerMode = $state<ViewerMode>("split");
+  // Pane layout derived from the mode: mandala swaps the left pane; every other
+  // mode is the 2D-animation + choreo-card pairing. Single-view modes focus one
+  // pane (DrawerHost convention: 'image' = right/card, 'animation' = left).
+  const qrSplitConfig = $derived<SplitConfig>(
+    qrViewerMode === "mandala"
+      ? { leftPane: "mandala", rightPane: "card" }
+      : { leftPane: "animation", rightPane: "card" }
+  );
+  const qrFocusedPane = $derived<"animation" | "image" | null>(
+    qrViewerMode === "split" ? null : qrViewerMode === "card" ? "image" : "animation"
+  );
+  function selectQrMode(mode: ContentType) {
+    qrViewerMode = mode as ViewerMode;
+  }
+  function selectQrSplit() {
+    qrViewerMode = "split";
+  }
 
   // ── Export state (drives the QR ExportTakeover overlay + native share) ──
   let isExporting = $state(false);
@@ -175,9 +190,12 @@
       ? pageState.word
       : data?.meta?.word) || "Sequence"
   );
+  // Browser-tab title + OG/Twitter meta are all UTF-8, so keep the real Greek
+  // glyphs (Σ, Δ, Λ…) here. greekToAscii ("sig", "del") is for filenames/URLs
+  // only — using it for display turned the tab title into mojibake-looking ASCII.
   const displayWord = $derived(
     rawWord !== "Sequence"
-      ? greekToAscii(simplifyRepeatedWord(rawWord))
+      ? simplifyRepeatedWord(rawWord)
       : "Sequence"
   );
   const ogDesc = $derived(
@@ -278,6 +296,30 @@
     }
   }
 
+  // ── Open in Composer (festival signup funnel) ──
+  // Stores the scanned sequence as a pending edit (the exact handoff the
+  // viewer's Remix uses; the create module consumes it on init) and heads to
+  // the construct tab. ?sheet=auth opens the sign-up sheet on arrival for
+  // signed-out scanners — auth isn't initialized on this bare route, so
+  // MainApplication makes that call and drops the sheet for signed-in users.
+  function openInComposer() {
+    if (!resolvedSeq) return;
+    try {
+      localStorage.setItem(
+        "tka-pending-edit-sequence",
+        JSON.stringify(resolvedSeq)
+      );
+    } catch {
+      // Storage unavailable (private mode) — still navigate; the composer
+      // just starts empty.
+    }
+    captureEvent("qr_open_composer", {
+      short_code: shortCode,
+      sequence_word: seqWord,
+    });
+    void goto("/create/construct?sheet=auth");
+  }
+
   // Unique base letters for a word, reusing the renderer's own tokenization so
   // the priority-loaded glyphs exactly match what TKAWordGlyph will request.
   function wordBaseLetters(word: string): string[] {
@@ -302,10 +344,18 @@
       window.addEventListener("resize", checkViewport);
       onDestroy(() => window.removeEventListener("resize", checkViewport));
 
-      // The bare /q layout skips the root-layout bootstrap, so the short-code
-      // manager (used by ChoreoCard's QR generator) is never configured. Wire
-      // the stub loader so getShortCodeManager() resolves instead of throwing.
+      // The bare /q layout skips the root-layout bootstrap (composition-root),
+      // so the critical registrations never fire on this route. Wire the three
+      // the scan viewer actually consumes:
+      //  - short-code manager: getShortCodeManager() (ChoreoCard's QR generator)
+      //  - LOOP detector: getLoopDetector() throws otherwise, so the
+      //    compositional QR encoder errors and every code falls back to flat
+      //    (bigger codes + a console warning on every generation).
+      //  - loop display resolver: tryGet…() degrades silently, dropping the
+      //    LOOP component labels on the scanned ChoreoCard.
       configureShortCodeManager(stubBrowseLoader);
+      registerLoopDetector(loopDetector);
+      registerLoopDisplayResolver(resolveLoopDisplay);
     }
 
     if (!shortCode) {
@@ -469,13 +519,28 @@
       onClose={() => goto(`/browse/gallery?from=scan&code=${shortCode}`)}
     >
       {#snippet children(ctx)}
-        <div class="player-layout" class:sidebar-mode={isSidebarLayout}>
-          <div class="canvas-area">
-            <ComparisonModeBar
-              current={qrComparisonMode}
-              allowed={QR_MODES}
-              onSelect={(m) => (qrSplitConfig = COMPARISON_MODE_LAYOUTS[m])}
+        <div
+          class="player-layout"
+          class:sidebar-mode={isSidebarLayout}
+          class:with-panel={isSidebarLayout && qrViewerMode === "animation"}
+        >
+          {#if isSidebarLayout}
+            <!-- Landscape / large: vertical side rail to switch views — the same
+                 ViewerContentRail the desktop viewer uses. webgl2Available={false}
+                 drops the 3D option (no Three.js on the scan page). -->
+            <ViewerContentRail
+              activeMode={qrViewerMode}
+              webgl2Available={false}
+              onSelectMode={selectQrMode}
+              onSelectSplit={selectQrSplit}
+              footerAction={{
+                label: "Open TKA",
+                icon: "fa-compass",
+                href: `/browse/gallery?from=scan&code=${shortCode}`,
+              }}
             />
+          {/if}
+          <div class="canvas-area">
             {#if ctx.effectiveSequence && ViewerSplitPaneComponent}
             <ViewerSplitPaneComponent
               sequence={ctx.effectiveSequence}
@@ -490,8 +555,8 @@
                 fullscreenStackVertical: false,
                 isMobile: !isSidebarLayout,
                 isLandscapeMobile: false,
-                focusedPane: ctx.editingPane,
-                suppressCloseButton: ctx.editingPane !== null,
+                focusedPane: qrFocusedPane ?? ctx.editingPane,
+                suppressCloseButton: qrViewerMode !== "split" || ctx.editingPane !== null,
               }}
               splitConfig={qrSplitConfig}
               onFocusPane={ctx.enterEditMode}
@@ -505,6 +570,20 @@
               playbackMode={ctx.playbackMode}
               onPlaybackModeChange={ctx.handlePlaybackModeChange}
             />
+            {/if}
+            {#if isSidebarLayout}
+              <!-- Landscape/desktop has no bottom dock outside animation mode,
+                   so the scan page's two exits float over the stage. -->
+              <div class="scan-cta-cluster">
+                <button class="cta-button" onclick={openInComposer}>
+                  <i class="fas fa-pen" aria-hidden="true"></i>
+                  Open in Composer
+                </button>
+                <a class="cta-button ghost" href={`/browse/gallery?from=scan&code=${shortCode}`}>
+                  <i class="fas fa-compass" aria-hidden="true"></i>
+                  Open TKA
+                </a>
+              </div>
             {/if}
             <ExportTakeover
               phase={takeoverPhase}
@@ -520,6 +599,12 @@
             </ExportTakeover>
           </div>
 
+          <!-- Desktop matches the viewer: Side-by-Side / Card / Mandala fill the
+               width with no permanent right panel (mandala brings its own dock);
+               the Effects/BPM panel appears only in 2D Animation mode — the same
+               behavior as DrawerHost's animation-export sidebar. Portrait keeps
+               the always-on control drawer. -->
+          {#if !isSidebarLayout || qrViewerMode === "animation"}
           <div class="controls-column">
             <div class="drawer-host">
               {#await import("$lib/shared/animation-panel/components/AnimationPanel.svelte") then mod}
@@ -541,11 +626,25 @@
                   onPlaybackModeChange={ctx.handlePlaybackModeChange}
                   onBpmChange={ctx.handleBpmChange}
                   onExport={() => handleExport(ctx)}
-                  secondaryAction={{ label: "Open TKA", href: `/browse/gallery?from=scan&code=${shortCode}`, icon: "fa-compass" }}
+                  secondaryActions={[
+                    { label: "Remix", icon: "fa-pen", onClick: openInComposer, accent: true },
+                    { label: "Open TKA", href: `/browse/gallery?from=scan&code=${shortCode}`, icon: "fa-compass" },
+                  ]}
                 />
               {/await}
             </div>
           </div>
+          {/if}
+          {#if !isSidebarLayout}
+            <!-- Portrait: bottom bar to switch views — the same ViewerModeBottomBar
+                 the mobile viewer uses. webgl2Available={false} drops 3D. -->
+            <ViewerModeBottomBar
+              activeMode={qrViewerMode}
+              webgl2Available={false}
+              onSelectMode={selectQrMode}
+              onSelectSplit={selectQrSplit}
+            />
+          {/if}
         </div>
       {/snippet}
     </OrchestratorComponent>
@@ -617,6 +716,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0.5rem;
     min-height: var(--min-touch-target);
     padding: 0.75rem 1.5rem;
     background: var(--theme-accent);
@@ -627,6 +727,23 @@
     font-size: 0.875rem;
     cursor: pointer;
     text-decoration: none;
+  }
+
+  .cta-button.ghost {
+    background: rgba(18, 18, 28, 0.85);
+    border: 1px solid var(--theme-stroke-strong);
+    color: var(--theme-text);
+  }
+
+  /* Floating exits over the stage (sidebar/landscape only — portrait gets
+     the same two actions in the bottom ControlDock). */
+  .scan-cta-cluster {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+    display: flex;
+    gap: 8px;
   }
 
   .word-loader {
@@ -723,22 +840,36 @@
 
   .player-layout.sidebar-mode {
     display: grid;
-    grid-template-columns: 1fr 260px;
+    /* rail (auto) | canvas (flex). Mirrors the desktop viewer: no permanent
+       right panel — Side-by-Side / Card / Mandala fill the full width. */
+    grid-template-columns: auto 1fr;
     grid-template-rows: 1fr;
     align-items: stretch;
     padding: 8px 12px;
     gap: 8px;
   }
 
-  .sidebar-mode .canvas-area {
+  /* 2D Animation mode opens the Effects/BPM panel as a right sidebar — the
+     viewer's animation-export sidebar behavior. */
+  .player-layout.sidebar-mode.with-panel {
+    grid-template-columns: auto 1fr 300px;
+  }
+
+  /* The view-switcher rail owns the first column at landscape/desktop widths. */
+  .sidebar-mode :global(.content-rail) {
     grid-column: 1;
+    grid-row: 1;
+  }
+
+  .sidebar-mode .canvas-area {
+    grid-column: 2;
     grid-row: 1;
     max-width: none;
     min-height: 0;
   }
 
   .sidebar-mode .controls-column {
-    grid-column: 2;
+    grid-column: 3;
     grid-row: 1;
     max-width: none;
     overflow: hidden;
@@ -772,19 +903,19 @@
 
   @media (min-width: 960px) {
     .player-layout.sidebar-mode {
-      grid-template-columns: 1fr 340px;
-      max-width: 1000px;
-      margin: 0 auto;
       padding: 16px 24px;
       gap: 16px;
+    }
+
+    .player-layout.sidebar-mode.with-panel {
+      grid-template-columns: auto 1fr 340px;
     }
 
   }
 
   @media (min-width: 1440px) {
-    .player-layout.sidebar-mode {
-      max-width: 1200px;
-      grid-template-columns: 1fr 380px;
+    .player-layout.sidebar-mode.with-panel {
+      grid-template-columns: auto 1fr 380px;
     }
   }
 </style>

@@ -99,10 +99,13 @@ export function createEmptyAct(name: string = "Untitled Act"): ActData {
 /**
  * Generate a placeholder thumbnail for a sequence
  * (stub implementation - actual rendering handled by thumbnail services)
+ *
+ * Synchronous by design: returns null when no precomputed thumbnail exists so
+ * callers can use it directly inside a `$derived` without resolving a Promise.
  */
-export async function generateSequenceThumbnail(
+export function generateSequenceThumbnail(
   _sequence: SequenceData
-): Promise<string | null> {
+): string | null {
   // Return null to use default thumbnail rendering
   return null;
 }

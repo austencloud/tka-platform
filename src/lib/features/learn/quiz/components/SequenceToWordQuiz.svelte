@@ -35,11 +35,13 @@
   let scorePopTimer: ReturnType<typeof setTimeout> | null = null;
   let hapticTimer: ReturnType<typeof setTimeout> | null = null;
   let nextQuestionTimer: ReturnType<typeof setTimeout> | null = null;
+  let copiedDiagTimer: ReturnType<typeof setTimeout> | null = null;
 
   onDestroy(() => {
     if (scorePopTimer !== null) clearTimeout(scorePopTimer);
     if (hapticTimer !== null) clearTimeout(hapticTimer);
     if (nextQuestionTimer !== null) clearTimeout(nextQuestionTimer);
+    if (copiedDiagTimer !== null) clearTimeout(copiedDiagTimer);
   });
 
   let questionData = $state<QuizQuestionData | null>(null);
@@ -75,7 +77,8 @@
     };
     await navigator.clipboard.writeText(JSON.stringify(diag, null, 2));
     copiedDiag = true;
-    setTimeout(() => { copiedDiag = false; }, 1500);
+    if (copiedDiagTimer !== null) clearTimeout(copiedDiagTimer);
+    copiedDiagTimer = setTimeout(() => { copiedDiag = false; }, 1500);
   }
 
   let currentSequence = $derived(
@@ -217,7 +220,7 @@
           <div class="scene-strip">
             {#each ANIMATED_BACKGROUNDS as bg}
               <button
-                class="scene-chip"
+                class="scene-chip accessible-touch-target"
                 class:active={quizScene === bg.type}
                 onclick={() => selectScene(bg.type)}
                 aria-pressed={quizScene === bg.type}
@@ -234,7 +237,10 @@
             onclick={copyDiagnostic}
             title="Copy sequence diagnostic"
           >
-            {copiedDiag ? "Copied" : "Copy Diag"}
+            <span class="diag-label">
+              <span class="diag-sizer" aria-hidden="true">Copy Diag</span>
+              <span class="diag-live">{copiedDiag ? "Copied" : "Copy Diag"}</span>
+            </span>
           </button>
         </div>
       </div>
@@ -321,19 +327,35 @@
   .diag-btn {
     padding: 4px 10px;
     border-radius: 8px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.35);
+    background: var(--theme-panel-bg);
+    border: 1px solid var(--theme-stroke);
+    color: var(--theme-text-dim);
     cursor: pointer;
-    font-size: 11px;
+    font-size: var(--font-size-compact);
     font-weight: 500;
     transition: all 150ms ease;
     white-space: nowrap;
   }
 
+  /* Ghost-sizer: reserve width for the longest label variant so the
+     "Copy Diag" / "Copied" swap never resizes the button */
+  .diag-label {
+    display: inline-grid;
+  }
+
+  .diag-sizer {
+    grid-area: 1 / 1;
+    visibility: hidden;
+  }
+
+  .diag-live {
+    grid-area: 1 / 1;
+    justify-self: center;
+  }
+
   .diag-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.7);
+    background: var(--theme-card-hover-bg);
+    color: var(--theme-text);
   }
 
   .diag-btn.copied {
@@ -349,9 +371,9 @@
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.4);
+    background: var(--theme-panel-bg);
+    border: 1px solid var(--theme-stroke);
+    color: var(--theme-text-dim);
     cursor: pointer;
     transition: all 150ms ease;
     font-size: 12px;
@@ -359,8 +381,8 @@
   }
 
   .scene-chip:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.8);
+    background: var(--theme-card-hover-bg);
+    color: var(--theme-text);
   }
 
   .scene-chip.active {

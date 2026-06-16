@@ -6,6 +6,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type {
   BrowseNavigationConfig,
   BrowseNavigationItem,
@@ -196,6 +197,7 @@ export function filterSequencesByNavigation(
     return sequences;
   } catch (error) {
     console.error("Failed to filter sequences by navigation:", error);
+    toast.error("Failed to apply filter. Showing all sequences instead.");
     return sequences;
   }
 }

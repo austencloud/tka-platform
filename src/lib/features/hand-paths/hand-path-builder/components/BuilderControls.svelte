@@ -234,13 +234,13 @@ import { getHandPathSaveOrchestrator } from "$lib/features/library/get-hand-path
   }
 
   .btn-ghost:not(:disabled):hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.1));
     color: var(--theme-text, #fff);
   }
 
   .btn-primary {
     background: var(--theme-accent, #3b82f6);
-    color: #fff;
+    color: var(--theme-text-on-accent, #fff);
   }
 
   .btn-primary:not(:disabled):hover {
@@ -285,7 +285,7 @@ import { getHandPathSaveOrchestrator } from "$lib/features/library/get-hand-path
     font-family: monospace;
     font-size: var(--font-size-min, 14px);
     color: var(--theme-text, #fff);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     padding: 3px 8px;
     border-radius: 5px;
   }

@@ -26,8 +26,8 @@
     onMouseMove?: (event: MouseEvent) => void;
     /** Optional callback for mouse leave events */
     onMouseLeave?: () => void;
-    /** Optional callback for click events */
-    onClick?: (event: MouseEvent) => void;
+    /** Optional callback for click/activation events (pointer or keyboard) */
+    onClick?: (event: MouseEvent | KeyboardEvent) => void;
     /** Optional callback called each frame with current stats */
     onFrame?: () => void;
     /** Optional callback when canvas is ready with dimensions */
@@ -152,7 +152,7 @@
   onmousemove={onMouseMove}
   onmouseleave={onMouseLeave}
   onclick={onClick}
-  onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(e as any); } }}
+  onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(e); } }}
   role="button"
   tabindex="0"
   aria-label="Lab preview canvas"

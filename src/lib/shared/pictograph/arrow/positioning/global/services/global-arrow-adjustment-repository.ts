@@ -77,29 +77,12 @@ export class GlobalArrowAdjustmentRepository {
         globalAdjustmentVersion.increment();
       }
 
-      // Subscribe to real-time updates
-      this.unsubscribe = this.persister.subscribe(
-        // On add/modify
-        (adjustment: GlobalArrowAdjustment) => {
-          this.state.setAdjustment(adjustment);
-          logger.info(`Real-time update: ${generateAdjustmentKeyString({
-            gridMode: adjustment.gridMode,
-            oriKey: adjustment.oriKey,
-            letter: adjustment.letter,
-            turnsTuple: adjustment.turnsTuple,
-            arrowKey: adjustment.arrowKey,
-          })}`);
-        },
-        // On remove
-        (keyString: string) => {
-          // Parse key string to get components
-          const key = parseAdjustmentKeyString(keyString);
-          if (key) {
-            this.state.removeAdjustment(key);
-            logger.info(`Real-time removal: ${keyString}`);
-          }
-        }
-      );
+      // The collection requires auth to read — a listener opened while signed
+      // out just gets permission-killed. resumeSubscription() picks it up
+      // once the boot orchestrator re-initializes after sign-in.
+      if (authState.isAuthenticated) {
+        this.startSubscription();
+      }
 
       logger.success(
         `Initialized with ${this.state.count} global adjustments`
@@ -116,6 +99,54 @@ export class GlobalArrowAdjustmentRepository {
       this.state.setLoading(false);
       this.initializePromise = null;
     }
+  }
+
+  private startSubscription(): void {
+    this.unsubscribe = this.persister.subscribe(
+      // On add/modify
+      (adjustment: GlobalArrowAdjustment) => {
+        this.state.setAdjustment(adjustment);
+        logger.info(`Real-time update: ${generateAdjustmentKeyString({
+          gridMode: adjustment.gridMode,
+          oriKey: adjustment.oriKey,
+          letter: adjustment.letter,
+          turnsTuple: adjustment.turnsTuple,
+          arrowKey: adjustment.arrowKey,
+        })}`);
+      },
+      // On remove
+      (keyString: string) => {
+        const key = parseAdjustmentKeyString(keyString);
+        if (key) {
+          this.state.removeAdjustment(key);
+          logger.info(`Real-time removal: ${keyString}`);
+        }
+      }
+    );
+  }
+
+  /**
+   * Stop the Firestore listener but keep loaded adjustments in memory.
+   * Called before sign-out so the listener isn't permission-killed when
+   * the auth token is invalidated.
+   */
+  pauseSubscription(): void {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+      logger.info("Subscription paused");
+    }
+  }
+
+  /**
+   * Start the Firestore listener if it isn't running and the user is
+   * authenticated. The initial snapshot redelivers every doc, so state
+   * catches up on anything missed while paused.
+   */
+  resumeSubscription(): void {
+    if (this.unsubscribe || !authState.isAuthenticated) return;
+    this.startSubscription();
+    logger.info("Subscription resumed");
   }
 
   /**

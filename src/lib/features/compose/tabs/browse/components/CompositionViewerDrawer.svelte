@@ -359,7 +359,7 @@ import { resolveThumbnail } from "$lib/features/compose/tabs/browse/services/com
 		padding: 2px 10px;
 		border: 1px solid;
 		border-radius: 20px;
-		font-size: 11px;
+		font-size: var(--font-size-compact, 12px);
 		font-weight: 600;
 		white-space: nowrap;
 		flex-shrink: 0;
@@ -458,61 +458,68 @@ import { resolveThumbnail } from "$lib/features/compose/tabs/browse/services/com
 		outline-offset: 2px;
 	}
 
-	/* Color-coded action buttons (matching sequence viewer style) */
+	/* Color-coded action buttons (matching sequence viewer style).
+	   Each family resolves to a design token (with a hex fallback that
+	   preserves the original color), tints derived via color-mix. */
 	.action-btn.play {
-		background: rgba(99, 102, 241, 0.15);
-		border-color: rgba(99, 102, 241, 0.35);
-		color: #818cf8;
+		--btn-color: var(--theme-accent, #6366f1);
+		background: color-mix(in srgb, var(--btn-color) 15%, transparent);
+		border-color: color-mix(in srgb, var(--btn-color) 35%, transparent);
+		color: var(--theme-accent-soft, #818cf8);
 	}
 
 	.action-btn.play:hover {
-		background: rgba(99, 102, 241, 0.25);
-		border-color: rgba(99, 102, 241, 0.5);
-		color: #a5b4fc;
+		background: color-mix(in srgb, var(--btn-color) 25%, transparent);
+		border-color: color-mix(in srgb, var(--btn-color) 50%, transparent);
+		color: var(--theme-accent-softer, #a5b4fc);
 	}
 
 	.action-btn.edit {
-		background: rgba(245, 158, 11, 0.1);
-		border-color: rgba(245, 158, 11, 0.25);
-		color: #f59e0b;
+		--btn-color: var(--semantic-warning, #f59e0b);
+		background: color-mix(in srgb, var(--btn-color) 10%, transparent);
+		border-color: color-mix(in srgb, var(--btn-color) 25%, transparent);
+		color: var(--btn-color);
 	}
 
 	.action-btn.edit:hover {
-		background: rgba(245, 158, 11, 0.2);
-		border-color: rgba(245, 158, 11, 0.4);
+		background: color-mix(in srgb, var(--btn-color) 20%, transparent);
+		border-color: color-mix(in srgb, var(--btn-color) 40%, transparent);
 	}
 
 	.action-btn.fave {
-		background: rgba(168, 85, 247, 0.1);
-		border-color: rgba(168, 85, 247, 0.25);
-		color: #a855f7;
+		--btn-color: var(--semantic-fave, #a855f7);
+		background: color-mix(in srgb, var(--btn-color) 10%, transparent);
+		border-color: color-mix(in srgb, var(--btn-color) 25%, transparent);
+		color: var(--btn-color);
 	}
 
 	.action-btn.fave:hover {
-		background: rgba(168, 85, 247, 0.2);
-		border-color: rgba(168, 85, 247, 0.4);
+		background: color-mix(in srgb, var(--btn-color) 20%, transparent);
+		border-color: color-mix(in srgb, var(--btn-color) 40%, transparent);
 	}
 
 	.action-btn.fave.favorited {
-		background: rgba(239, 68, 68, 0.15);
-		border-color: rgba(239, 68, 68, 0.35);
-		color: #ef4444;
+		--btn-color: var(--semantic-error, #ef4444);
+		background: color-mix(in srgb, var(--btn-color) 15%, transparent);
+		border-color: color-mix(in srgb, var(--btn-color) 35%, transparent);
+		color: var(--btn-color);
 	}
 
 	.action-btn.fave.favorited:hover {
-		background: rgba(239, 68, 68, 0.25);
-		border-color: rgba(239, 68, 68, 0.5);
+		background: color-mix(in srgb, var(--btn-color) 25%, transparent);
+		border-color: color-mix(in srgb, var(--btn-color) 50%, transparent);
 	}
 
 	.action-btn.copy {
-		background: rgba(6, 182, 212, 0.1);
-		border-color: rgba(6, 182, 212, 0.25);
-		color: #06b6d4;
+		--btn-color: var(--semantic-info, #06b6d4);
+		background: color-mix(in srgb, var(--btn-color) 10%, transparent);
+		border-color: color-mix(in srgb, var(--btn-color) 25%, transparent);
+		color: var(--btn-color);
 	}
 
 	.action-btn.copy:hover {
-		background: rgba(6, 182, 212, 0.2);
-		border-color: rgba(6, 182, 212, 0.4);
+		background: color-mix(in srgb, var(--btn-color) 20%, transparent);
+		border-color: color-mix(in srgb, var(--btn-color) 40%, transparent);
 	}
 
 	.action-btn.delete {
@@ -522,9 +529,10 @@ import { resolveThumbnail } from "$lib/features/compose/tabs/browse/services/com
 	}
 
 	.action-btn.delete:hover {
-		background: rgba(239, 68, 68, 0.12);
-		border-color: rgba(239, 68, 68, 0.35);
-		color: #ef4444;
+		--btn-color: var(--semantic-error, #ef4444);
+		background: color-mix(in srgb, var(--btn-color) 12%, transparent);
+		border-color: color-mix(in srgb, var(--btn-color) 35%, transparent);
+		color: var(--btn-color);
 	}
 
 	@media (prefers-reduced-motion: reduce) {

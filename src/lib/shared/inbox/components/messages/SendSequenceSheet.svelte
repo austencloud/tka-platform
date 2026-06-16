@@ -8,7 +8,7 @@
    */
 
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
   import { messagingService } from "$lib/shared/messaging/services/messenger";
   import { inboxState } from "../../state/inbox-state.svelte";
@@ -72,9 +72,16 @@
   // Sent-to name for the success screen
   let sentToName = $state("");
 
+  // Auto-close timer (cleared on unmount so it can't fire after teardown)
+  let closeTimer: ReturnType<typeof setTimeout> | null = null;
+
   onMount(async () => {
     hapticService = getHapticFeedback();
     await loadSuggestions();
+  });
+
+  onDestroy(() => {
+    if (closeTimer) clearTimeout(closeTimer);
   });
 
   async function loadSuggestions() {
@@ -186,7 +193,8 @@
       phase = "success";
 
       // Auto-close after a moment so the user sees confirmation
-      setTimeout(() => {
+      if (closeTimer) clearTimeout(closeTimer);
+      closeTimer = setTimeout(() => {
         onSent?.(conversationId);
         onClose();
       }, 1200);
@@ -602,7 +610,7 @@
   }
 
   .chip-deselect i {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
   }
 
 
@@ -633,7 +641,7 @@
   }
 
   .suggestions-label i {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .suggestions-scroll {

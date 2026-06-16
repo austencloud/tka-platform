@@ -29,6 +29,9 @@
   let typingTimeout: ReturnType<typeof setTimeout> | null = null;
   const TYPING_DEBOUNCE_MS = 1000;
 
+  // Brief success indicator timer (cleared on unmount to avoid late state writes)
+  let successTimeout: ReturnType<typeof setTimeout> | null = null;
+
   // Haptic feedback service
   let hapticService: HapticFeedback | undefined;
 
@@ -40,6 +43,7 @@
     // Cleanup typing on unmount
     return () => {
       if (typingTimeout) clearTimeout(typingTimeout);
+      if (successTimeout) clearTimeout(successTimeout);
       if (mountedConversationId) {
         messagingService.setTyping(mountedConversationId, false).catch(() => {});
       }
@@ -51,8 +55,10 @@
     if (inboxState.editingMessage) {
       messageText = inboxState.editingMessage.content;
       // Focus input when entering edit mode
-      setTimeout(() => inputElement?.focus(), 50);
+      const focusTimer = setTimeout(() => inputElement?.focus(), 50);
+      return () => clearTimeout(focusTimer);
     }
+    return undefined;
   });
 
   // Auto-resize textarea and update typing indicator
@@ -139,7 +145,8 @@
       // Show brief success indicator with haptic feedback
       hapticService?.trigger("success");
       sendSuccess = true;
-      setTimeout(() => {
+      if (successTimeout) clearTimeout(successTimeout);
+      successTimeout = setTimeout(() => {
         sendSuccess = false;
       }, 1500);
     } catch (error) {
@@ -179,7 +186,8 @@
       messageText = "";
 
       sendSuccess = true;
-      setTimeout(() => {
+      if (successTimeout) clearTimeout(successTimeout);
+      successTimeout = setTimeout(() => {
         sendSuccess = false;
       }, 1500);
     } catch (error) {

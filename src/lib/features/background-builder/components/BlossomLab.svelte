@@ -384,7 +384,7 @@
     flex-direction: column;
     gap: 16px;
     padding: 20px;
-    background: rgba(15, 15, 25, 0.8);
+    background: var(--theme-panel-bg, rgba(15, 15, 25, 0.8));
     border-radius: 16px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     overflow-y: auto;
@@ -524,8 +524,8 @@
   }
 
   .pill.complete {
-    background: rgba(16, 185, 129, 0.15);
-    color: #34d399;
+    background: color-mix(in srgb, var(--theme-success, #34d399) 15%, transparent);
+    color: var(--theme-success, #34d399);
   }
 
   .pill.active {

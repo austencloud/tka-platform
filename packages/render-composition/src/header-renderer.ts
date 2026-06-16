@@ -18,8 +18,6 @@ export interface HeaderOptions {
   rotationPeriod?: LoopRotationPeriod;
   /** When inverted is active, picks checkerboard circle (quartered) vs circle-half-stroke (halved) */
   inversionPeriod?: LoopInversionPeriod;
-  /** Integer LOOP period (2/4/8), drawn as centered number badge on each icon */
-  period?: number;
   darkMode?: boolean;
   letterStyles?: LetterStyle[];
   /** Override header background color */
@@ -233,7 +231,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
   const {
     canvasWidth, headerHeight, word,
     difficultyLevel = 1, showDifficultyBadge = true,
-    loopComponents, rotationPeriod, inversionPeriod, period, darkMode = true, letterStyles,
+    loopComponents, rotationPeriod, inversionPeriod, darkMode = true, letterStyles,
     backgroundColor, borderColor, accentColor, accentTintOpacity, glyphImages, compressedSegments,
   } = options;
 

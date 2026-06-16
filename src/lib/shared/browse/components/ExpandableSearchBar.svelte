@@ -41,6 +41,8 @@
     typeof window !== "undefined" &&
     window.matchMedia("(pointer: fine)").matches;
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let collapseTimer: ReturnType<typeof setTimeout> | null = null;
+  let focusTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Track the last value received from the parent to avoid reset loops
   let lastSyncedValue = "";
@@ -64,7 +66,8 @@
     event.stopPropagation();
     isExpanded = true;
     if (!hasFinePointer) showVirtualKeyboard = true;
-    setTimeout(() => inputRef?.focus(), 0);
+    if (focusTimer) clearTimeout(focusTimer);
+    focusTimer = setTimeout(() => inputRef?.focus(), 0);
   }
 
   function handleFocus() {
@@ -72,7 +75,8 @@
   }
 
   function handleCollapse() {
-    setTimeout(() => {
+    if (collapseTimer) clearTimeout(collapseTimer);
+    collapseTimer = setTimeout(() => {
       if (!inputValue.trim() && !showVirtualKeyboard) {
         isExpanded = false;
       }
@@ -184,9 +188,9 @@
     document.addEventListener("pointerdown", handlePointerDownOutside, true);
     return () => {
       document.removeEventListener("pointerdown", handlePointerDownOutside, true);
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-      }
+      if (debounceTimer) clearTimeout(debounceTimer);
+      if (collapseTimer) clearTimeout(collapseTimer);
+      if (focusTimer) clearTimeout(focusTimer);
     };
   });
 </script>

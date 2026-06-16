@@ -31,10 +31,12 @@
     if (wasUnread && notification.read && !justMarkedRead) {
       justMarkedRead = true;
       // Reset after animation completes (1.8s total)
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         justMarkedRead = false;
       }, 1800);
+      return () => clearTimeout(timer);
     }
+    return undefined;
   });
 
   // Haptic feedback service
@@ -98,8 +100,21 @@
   async function handleCardClick() {
     hapticService?.trigger("selection");
 
-    // Deep-link to relevant content based on notification type
-    const n = notification as unknown as Record<string, unknown>;
+    // Deep-link to relevant content based on notification type.
+    // Each union member carries a subset of these target fields; type the
+    // payload as the partial set of known deep-link keys rather than `any`.
+    type DeepLinkFields = Partial<
+      Record<
+        | "feedbackId"
+        | "sequenceId"
+        | "fromUserId"
+        | "conversationId"
+        | "newUserId"
+        | "actionUrl",
+        string
+      >
+    >;
+    const n = notification as UserNotification & DeepLinkFields;
 
     switch (notification.type) {
       case "feedback-resolved":

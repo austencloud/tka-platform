@@ -389,12 +389,12 @@
   }
 
   .info-chip.deadline {
-    background: rgba(234, 179, 8, 0.08);
-    border-color: rgba(234, 179, 8, 0.2);
-    color: #eab308;
+    background: color-mix(in srgb, var(--semantic-warning, #eab308) 8%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-warning, #eab308) 20%, transparent);
+    color: var(--semantic-warning, #eab308);
   }
 
-  .info-chip.deadline i { color: #eab308; }
+  .info-chip.deadline i { color: var(--semantic-warning, #eab308); }
 
   /* ── Description ────────────────────────────────────── */
 

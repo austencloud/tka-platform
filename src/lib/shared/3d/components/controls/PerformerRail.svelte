@@ -105,7 +105,7 @@
     color: white;
     padding: 6px 10px;
     border-radius: 8px;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     letter-spacing: 0.04em;
     white-space: nowrap;
@@ -124,10 +124,10 @@
 
   /* All chip */
   .all-chip[aria-pressed="true"] {
-    background: color-mix(in srgb, #4a9eff 18%, transparent);
-    border-color: color-mix(in srgb, #4a9eff 50%, transparent);
-    color: #8fc3ff;
-    box-shadow: 0 4px 20px color-mix(in srgb, #4a9eff 25%, transparent);
+    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 18%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 50%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #4a9eff) 60%, #ffffff);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-accent, #4a9eff) 25%, transparent);
   }
 
   /* Performer chip */

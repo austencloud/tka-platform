@@ -68,7 +68,16 @@ export function updateSectionConfig(
   };
 }
 
-export function getSectionStatistics(sections: SequenceSection[]) {
+export interface SectionStatistics {
+  totalSections: number;
+  totalSequences: number;
+  expandedSections: number;
+  averageSequencesPerSection: number;
+}
+
+export function getSectionStatistics(
+  sections: SequenceSection[]
+): SectionStatistics {
   const totalSections = sections.length;
   const totalSequences = sections.reduce(
     (sum, section) => sum + section.count,

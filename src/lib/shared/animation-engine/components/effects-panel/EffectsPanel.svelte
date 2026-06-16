@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet, Component } from "svelte";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { isEffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
   import EffectSelector from "./EffectSelector.svelte";
   import EffectPresetsSection from "./EffectPresetsSection.svelte";
   import { EFFECT_COLORS, EFFECT_LABELS, EFFECTS, getRegistration } from "./effect-registry";
@@ -78,14 +79,16 @@
       effectsConfigState.setActiveEffect("none");
       return;
     }
-    effectsConfigState.setActiveEffect(effectId);
+    if (isEffectId(effectId)) effectsConfigState.setActiveEffect(effectId);
   }
 
   function handlePresetSelect(presetId: string): void {
     if (!registration) return;
-    const preset = registration.presetGroup.presets.find(p => p.id === presetId);
+    const group = registration.presetGroup;
+    const preset = group.presets.find(p => p.id === presetId);
     if (!preset) return;
-    preset.apply(effectsConfigState);
+    const patch = preset.resolvePatch ? preset.resolvePatch() : (preset.patch ?? {});
+    effectsConfigState.applyPreset(group.effectType, preset.id, patch);
     savePresetId(activeEffect, presetId);
   }
 
@@ -216,6 +219,14 @@
 {/if}
 
 <style>
+  /* Module accent: the animation-panel blue family (matches rail-tile.css).
+     No global token covers this hue, so it's scoped here. */
+  .effects-panel,
+  .mep {
+    --fx-accent: #4a9eff;
+    --fx-accent-text: #c5ddff;
+  }
+
   /* ── Sidebar layout ─────────────────────────────────────────────────────── */
   .effects-panel {
     display: flex;
@@ -224,12 +235,12 @@
 
   .sb-section {
     padding: 12px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .sb-label {
     display: block;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -274,29 +285,38 @@
     width: 64px;
     height: 64px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.65);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 4px;
-    font-size: 9px;
+    padding: 0 2px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
     cursor: pointer;
     position: relative;
     -webkit-tap-highlight-color: transparent;
     transition: all 150ms ease;
   }
+  /* Guard: 7-char labels (Sparkle, Bubbles) at the 12px floor are borderline
+     in a 64px tile - clip instead of pushing the tile wider. */
+  .fx-tile > span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .fx-tile i {
     font-size: 18px;
     line-height: 1;
   }
   .fx-tile.active {
-    background: color-mix(in srgb, var(--fx) 22%, rgba(20, 22, 32, 0.6));
+    background: color-mix(in srgb, var(--fx) 22%, var(--theme-panel-bg, rgba(20, 22, 32, 0.6)));
     border-color: color-mix(in srgb, var(--fx) 55%, transparent);
     color: var(--fx);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--fx) 30%, transparent);
@@ -317,10 +337,10 @@
     height: 32px;
     padding: 0 10px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.65);
-    font-size: 11px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -330,9 +350,9 @@
     transition: all 150ms ease;
   }
   .preset-chip.active {
-    background: color-mix(in srgb, #4a9eff 18%, rgba(20, 22, 32, 0.6));
-    border-color: color-mix(in srgb, #4a9eff 45%, transparent);
-    color: #c5ddff;
+    background: color-mix(in srgb, var(--fx-accent) 18%, var(--theme-panel-bg, rgba(20, 22, 32, 0.6)));
+    border-color: color-mix(in srgb, var(--fx-accent) 45%, transparent);
+    color: var(--fx-accent-text);
   }
   .preset-chip .swatch {
     width: 10px;
@@ -340,6 +360,8 @@
     border-radius: 50%;
     flex-shrink: 0;
   }
+  /* Deliberate effect-color swatch data, not UI chrome: these hexes preview the
+     rainbow / custom preset colors themselves, so they stay literal. */
   .preset-chip .swatch.rainbow {
     background: conic-gradient(
       from 0deg,
@@ -370,17 +392,19 @@
     align-items: center;
     gap: 10px;
     padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 10px;
   }
   .slider-label {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.55);
-    width: 72px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    /* min-width (not fixed width): "Brightness" at the 12px floor overflows the
+       old 72px slot; let long labels grow instead of clipping. */
+    min-width: 72px;
     flex-shrink: 0;
   }
   .slider {
@@ -394,7 +418,7 @@
   .slider::-webkit-slider-runnable-track {
     height: 6px;
     border-radius: 3px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
   .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
@@ -402,33 +426,33 @@
     height: 16px;
     margin-top: -5px;
     border-radius: 50%;
-    background: white;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    background: var(--theme-text, white);
+    box-shadow: 0 2px 6px var(--theme-shadow, rgba(0, 0, 0, 0.4));
     cursor: pointer;
   }
   .slider::-moz-range-track {
     height: 6px;
     border-radius: 3px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
   .slider::-moz-range-progress {
     height: 6px;
     border-radius: 3px;
-    background: #4a9eff;
+    background: var(--fx-accent);
   }
   .slider::-moz-range-thumb {
     width: 16px;
     height: 16px;
     border: none;
     border-radius: 50%;
-    background: white;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    background: var(--theme-text, white);
+    box-shadow: 0 2px 6px var(--theme-shadow, rgba(0, 0, 0, 0.4));
     cursor: pointer;
   }
   .slider-val {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
-    color: #c5ddff;
+    color: var(--fx-accent-text);
     min-width: 44px;
     text-align: right;
   }
@@ -436,10 +460,10 @@
   .more-btn {
     height: 40px;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 11px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -452,7 +476,7 @@
     transition: all 150ms ease;
   }
   .more-btn:hover {
-    background: rgba(255, 255, 255, 0.07);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
   }
 
   .back-row {
@@ -461,9 +485,9 @@
     gap: 10px;
     padding: 6px 10px;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.75);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text, rgba(255, 255, 255, 0.75));
     font: inherit;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
@@ -486,10 +510,10 @@
     text-transform: uppercase;
   }
   .back-row-sub {
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: rgba(74, 158, 255, 0.8);
+    color: color-mix(in srgb, var(--fx-accent) 80%, transparent);
   }
 
   @media (prefers-reduced-motion: reduce) {

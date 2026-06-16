@@ -429,7 +429,7 @@
 
   .track-btn.solo.active {
     background: var(--semantic-warning);
-    border-color: #ffb800;
+    border-color: var(--semantic-warning, #ffb800);
     color: #1a1a1a;
     box-shadow: 0 0 10px
       color-mix(in srgb, var(--semantic-warning) 35%, transparent);

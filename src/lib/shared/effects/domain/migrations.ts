@@ -83,6 +83,11 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
         colorMode: "solid",
         color: "#ffffff",
         thickness: 3,
+        // v19 luminous-stroboscope fields (seed at defaults; the merge would
+        // fill these anyway, but the EchoIntent shape now requires them).
+        glow: 0.6,
+        depth: 0.5,
+        flash: 0.5,
       };
       delete input.motion;
     }
@@ -164,6 +169,38 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // (16th chip including "none"). No field migration - absent silk resolves
   // to DEFAULT_EFFECTS_CONFIG.silk via the merge below.
 
+  // v14 → v15: add pulse intent + activePresets.pulse. Net-new 16th effect
+  // (17th chip including "none"). No field migration - absent pulse resolves
+  // to DEFAULT_EFFECTS_CONFIG.pulse via the merge below.
+
+  // v15 → v16: default LED brightness dropped 5 → 3. A persisted 5 on a
+  // pre-16 config is the old default echoing back, not a user choice -
+  // remap it. Users who picked 1-4 keep their setting.
+  if (version < 16 && input.led && input.led.brightness === 5) {
+    input.led = { ...input.led, brightness: 3 };
+  }
+
+  // v16 → v17: Bloom became lens bloom and its defaults changed - intensity
+  // 0.95 → 0.6 (the old 0.95 default was overkill against the new additive
+  // layers) and colorMode "solid" → "prop-matched". A persisted value equal to
+  // the OLD default is that default echoing back, not a user choice (same logic
+  // as the v16 LED remap), so remap each independently. Users who picked any
+  // other intensity / a non-solid mode keep their setting. The new streak/
+  // spikes/chromatic/afterglow fields resolve from defaults via the merge below.
+  if (version < 17 && input.bloom) {
+    if (input.bloom.intensity === 0.95) input.bloom.intensity = 0.6;
+    if (input.bloom.colorMode === "solid") input.bloom.colorMode = "prop-matched";
+  }
+
+  // v17 → v18: zap gains a `style` selector ("branching" | "plasma" | "web").
+  // Net-new field, no migration code - absent style resolves to
+  // DEFAULT_EFFECTS_CONFIG.zap.style ("branching") via the merge below. The
+  // legacy `mode` field is retained but no longer drives rendering.
+
+  // v18 → v19: echo becomes a luminous stroboscope - gains glow/depth/flash.
+  // Net-new fields, no migration code - absent values resolve to
+  // DEFAULT_EFFECTS_CONFIG.echo (glow 0.6, depth 0.5, flash 0.5) via the merge.
+
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,
@@ -182,6 +219,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     ink: { ...DEFAULT_EFFECTS_CONFIG.ink, ...(input.ink ?? {}) },
     frost: { ...DEFAULT_EFFECTS_CONFIG.frost, ...(input.frost ?? {}) },
     silk: { ...DEFAULT_EFFECTS_CONFIG.silk, ...(input.silk ?? {}) },
+    pulse: { ...DEFAULT_EFFECTS_CONFIG.pulse, ...(input.pulse ?? {}) },
     activePresets: {
       ...DEFAULT_EFFECTS_CONFIG.activePresets,
       ...(input.activePresets ?? {}),

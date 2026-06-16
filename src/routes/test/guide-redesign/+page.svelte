@@ -39,21 +39,21 @@
     <nav class="nav-current">
       <div class="nav-title-current">Level 1 Guide</div>
       <div class="chapter-group-current">
-        <a href="#" class="chapter-link-current active">1.0 - Positions & Motions</a>
+        <button type="button" class="chapter-link-current active">1.0 - Positions & Motions</button>
         <ul class="section-list-current">
-          <li><a href="#" class="section-link-current active">The Grid</a></li>
-          <li><a href="#" class="section-link-current">Hand Positions</a></li>
-          <li><a href="#" class="section-link-current">Hand Motions</a></li>
-          <li><a href="#" class="section-link-current">Types 1–6</a></li>
-          <li><a href="#" class="section-link-current">Staff Positions</a></li>
-          <li><a href="#" class="section-link-current">Negative Space</a></li>
+          <li><button type="button" class="section-link-current active">The Grid</button></li>
+          <li><button type="button" class="section-link-current">Hand Positions</button></li>
+          <li><button type="button" class="section-link-current">Hand Motions</button></li>
+          <li><button type="button" class="section-link-current">Types 1–6</button></li>
+          <li><button type="button" class="section-link-current">Staff Positions</button></li>
+          <li><button type="button" class="section-link-current">Negative Space</button></li>
         </ul>
       </div>
       <div class="chapter-group-current">
-        <a href="#" class="chapter-link-current">1.1 - Letters</a>
+        <button type="button" class="chapter-link-current">1.1 - Letters</button>
       </div>
       <div class="chapter-group-current">
-        <a href="#" class="chapter-link-current">1.2 - Words & LOOPs</a>
+        <button type="button" class="chapter-link-current">1.2 - Words & LOOPs</button>
       </div>
     </nav>
   </div>
@@ -142,12 +142,12 @@
           <span class="progress-fill" style="width: 35%"></span>
         </button>
         <ul class="section-list-glass">
-          <li><a href="#" class="section-link-glass active">The Grid</a></li>
-          <li><a href="#" class="section-link-glass">Hand Positions</a></li>
-          <li><a href="#" class="section-link-glass">Hand Motions</a></li>
-          <li><a href="#" class="section-link-glass">Types 1–6</a></li>
-          <li><a href="#" class="section-link-glass">Staff Positions</a></li>
-          <li><a href="#" class="section-link-glass">Negative Space</a></li>
+          <li><button type="button" class="section-link-glass active">The Grid</button></li>
+          <li><button type="button" class="section-link-glass">Hand Positions</button></li>
+          <li><button type="button" class="section-link-glass">Hand Motions</button></li>
+          <li><button type="button" class="section-link-glass">Types 1–6</button></li>
+          <li><button type="button" class="section-link-glass">Staff Positions</button></li>
+          <li><button type="button" class="section-link-glass">Negative Space</button></li>
         </ul>
       </div>
       <div class="chapter-group-glass">
@@ -273,12 +273,12 @@
           Positions & Motions
         </button>
         <ul class="section-list-bleeding">
-          <li><a href="#" class="section-link-bleeding active">The Grid</a></li>
-          <li><a href="#" class="section-link-bleeding">Hand Positions</a></li>
-          <li><a href="#" class="section-link-bleeding">Hand Motions</a></li>
-          <li><a href="#" class="section-link-bleeding">Types 1–6</a></li>
-          <li><a href="#" class="section-link-bleeding">Staff Positions</a></li>
-          <li><a href="#" class="section-link-bleeding">Negative Space</a></li>
+          <li><button type="button" class="section-link-bleeding active">The Grid</button></li>
+          <li><button type="button" class="section-link-bleeding">Hand Positions</button></li>
+          <li><button type="button" class="section-link-bleeding">Hand Motions</button></li>
+          <li><button type="button" class="section-link-bleeding">Types 1–6</button></li>
+          <li><button type="button" class="section-link-bleeding">Staff Positions</button></li>
+          <li><button type="button" class="section-link-bleeding">Negative Space</button></li>
         </ul>
       </div>
       <div class="chapter-group-bleeding">
@@ -312,7 +312,7 @@
         <p class="p-bleeding">
           The Kinetic Alphabet is built on a grid system that maps the space around the performer.
           Think of it as a compass rose — four
-          <span class="term" tabindex="0">cardinal points<span class="term-tip">North, south, east, west — the four primary grid positions.</span></span>
+          <span class="term">cardinal points<span class="term-tip">North, south, east, west — the four primary grid positions.</span></span>
           define the primary positions where your hands can be.
         </p>
       </div>
@@ -338,9 +338,9 @@
         <h2 class="h2-bleeding">Hand Positions</h2>
         <p class="p-bleeding">
           Three fundamental position types, named with Greek letters:
-          <span class="term" tabindex="0">alpha<span class="term-tip">α — Both hands at the same grid point.</span></span> (α),
-          <span class="term" tabindex="0">beta<span class="term-tip">β — Hands at opposite grid points (180° apart).</span></span> (β), and
-          <span class="term" tabindex="0">gamma<span class="term-tip">Γ — Hands at a right angle (90° apart).</span></span> (Γ).
+          <span class="term">alpha<span class="term-tip">α — Both hands at the same grid point.</span></span> (α),
+          <span class="term">beta<span class="term-tip">β — Hands at opposite grid points (180° apart).</span></span> (β), and
+          <span class="term">gamma<span class="term-tip">Γ — Hands at a right angle (90° apart).</span></span> (Γ).
         </p>
       </div>
       <div class="picto-row-bleeding full">
@@ -370,9 +370,9 @@
         <h2 class="h2-bleeding">Hand Motions</h2>
         <p class="p-bleeding">
           Motions describe how hands travel between positions:
-          <span class="term" tabindex="0">shift<span class="term-tip">Hand moves to an adjacent grid point.</span></span>,
-          <span class="term" tabindex="0">dash<span class="term-tip">Hand moves in a straight line to the opposite grid point.</span></span>, and
-          <span class="term" tabindex="0">static<span class="term-tip">Hand doesn't move at all.</span></span>.
+          <span class="term">shift<span class="term-tip">Hand moves to an adjacent grid point.</span></span>,
+          <span class="term">dash<span class="term-tip">Hand moves in a straight line to the opposite grid point.</span></span>, and
+          <span class="term">static<span class="term-tip">Hand doesn't move at all.</span></span>.
         </p>
       </div>
       <div class="picto-row-bleeding full">
@@ -591,6 +591,12 @@
     padding: 0.4rem 0;
     color: #333;
     text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    width: 100%;
+    text-align: left;
   }
   .chapter-link-current.active { color: #4ea7e8; }
   .section-list-current {
@@ -604,6 +610,12 @@
     padding: 0.3rem 0 0.3rem 1rem;
     color: #666;
     text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    width: 100%;
+    text-align: left;
   }
   .section-link-current.active { color: #4ea7e8; font-weight: 600; }
 
@@ -822,6 +834,12 @@
     border-radius: 6px;
     transition: all 100ms ease;
     font-weight: 400;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    width: 100%;
+    text-align: left;
   }
   .section-link-glass:hover {
     color: rgba(255, 255, 255, 0.65);
@@ -994,11 +1012,6 @@
     color: oklch(0.72 0.01 270);
     font-weight: 370;
   }
-  .p-bleeding strong {
-    color: oklch(0.82 0.08 270);
-    font-weight: 600;
-  }
-
   /* Scroll-driven section reveals */
   @supports (animation-timeline: view()) {
     .section-bleeding.reveal {
@@ -1228,6 +1241,12 @@
     border-radius: 8px;
     transition: all 100ms ease;
     font-weight: 400;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    width: 100%;
+    text-align: left;
   }
   .section-link-bleeding:hover {
     color: oklch(0.65 0.04 270);

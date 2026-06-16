@@ -394,7 +394,6 @@ export async function paintCardFrontChrome(
       borderColor: options.deckCard && !options.accentColor ? DECK_BORDER_COLOR : undefined,
       rotationPeriod: showLoopGlyph ? periodForRender : undefined,
       inversionPeriod: showLoopGlyph ? inversionForRender : undefined,
-      period: showLoopGlyph ? loopPeriod : undefined,
       accentColor: options.accentColor,
       accentTintOpacity: options.accentTintOpacity,
     });

@@ -272,9 +272,9 @@
     align-items: center;
     gap: 10px;
     padding: 10px 12px;
-    background: rgba(239, 68, 68, 0.12);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 12%, transparent);
     border-radius: 8px;
-    color: #fca5a5;
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 50%, white);
     font-size: var(--font-size-compact);
   }
 
@@ -394,7 +394,7 @@
   }
 
   .action-btn.unlink:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.15);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
     color: var(--semantic-error);
   }
 

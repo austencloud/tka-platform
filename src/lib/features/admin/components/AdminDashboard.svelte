@@ -16,32 +16,45 @@
   // Lazy load LOOP Labeler to avoid blocking admin dashboard if it fails
   let LOOPLabelerModule: typeof import("$lib/features/loop-labeler/components/LOOPLabelerModule.svelte").default | null =
     $state(null);
+  let loopLabelerError = $state(false);
 
   // Lazy load PostHog Analytics Dashboard
   let PostHogDashboard: typeof import("./analytics/PostHogDashboard.svelte").default | null =
     $state(null);
+  let postHogError = $state(false);
+
+  function loadLoopLabeler() {
+    loopLabelerError = false;
+    import("$lib/features/loop-labeler/components/LOOPLabelerModule.svelte")
+      .then((mod) => {
+        LOOPLabelerModule = mod.default;
+      })
+      .catch((err) => {
+        console.error("Failed to load LOOP Labeler:", err);
+        loopLabelerError = true;
+      });
+  }
+
+  function loadPostHog() {
+    postHogError = false;
+    import("./analytics/PostHogDashboard.svelte")
+      .then((mod) => {
+        PostHogDashboard = mod.default;
+      })
+      .catch((err) => {
+        console.error("Failed to load PostHog Dashboard:", err);
+        postHogError = true;
+      });
+  }
 
   $effect(() => {
-    if (activeSection === "loop-labeler" && !LOOPLabelerModule) {
-      import("$lib/features/loop-labeler/components/LOOPLabelerModule.svelte")
-        .then((mod) => {
-          LOOPLabelerModule = mod.default;
-        })
-        .catch((err) => {
-          console.error("Failed to load LOOP Labeler:", err);
-        });
+    if (activeSection === "loop-labeler" && !LOOPLabelerModule && !loopLabelerError) {
+      loadLoopLabeler();
     }
 
-    if (activeSection === "analytics" && !PostHogDashboard) {
-      import("./analytics/PostHogDashboard.svelte")
-        .then((mod) => {
-          PostHogDashboard = mod.default;
-        })
-        .catch((err) => {
-          console.error("Failed to load PostHog Dashboard:", err);
-        });
+    if (activeSection === "analytics" && !PostHogDashboard && !postHogError) {
+      loadPostHog();
     }
-
   });
 
   // State
@@ -112,6 +125,15 @@
         >
           {#if LOOPLabelerModule}
             <LOOPLabelerModule />
+          {:else if loopLabelerError}
+            <div class="error-state" role="alert">
+              <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+              <p>Failed to load LOOP Labeler.</p>
+              <button class="retry-button" onclick={loadLoopLabeler}>
+                <i class="fas fa-rotate-right" aria-hidden="true"></i>
+                Retry
+              </button>
+            </div>
           {:else}
             <div class="loading-state">
               <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -127,6 +149,15 @@
         >
           {#if PostHogDashboard}
             <PostHogDashboard />
+          {:else if postHogError}
+            <div class="error-state" role="alert">
+              <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+              <p>Failed to load Analytics.</p>
+              <button class="retry-button" onclick={loadPostHog}>
+                <i class="fas fa-rotate-right" aria-hidden="true"></i>
+                Retry
+              </button>
+            </div>
           {:else}
             <div class="loading-state">
               <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -162,6 +193,53 @@
 
   .loading-state i {
     font-size: 3rem;
+  }
+
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 1rem;
+    text-align: center;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .error-state i {
+    font-size: 3rem;
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .error-state p {
+    margin: 0;
+    font-size: 1.1rem;
+    opacity: 0.85;
+  }
+
+  .retry-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.5rem 1.25rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-base, 1rem);
+    cursor: pointer;
+    transition: background var(--duration-fast, 0.15s) ease;
+  }
+
+  .retry-button:hover {
+    background: color-mix(in srgb, var(--theme-text, #ffffff) 10%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .retry-button {
+      transition: none;
+    }
   }
 
   /* Content Area */

@@ -20,6 +20,7 @@
   import StatsOverviewComponent from "./StatsOverview.svelte";
   import PersonalBests from "./PersonalBests.svelte";
   import SessionHistory from "./SessionHistory.svelte";
+  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let isLoading = $state(true);
@@ -45,6 +46,7 @@
       recentSessions = sessionsData;
     } catch (error) {
       console.error("[ProgressPanel] Failed to load data:", error);
+      showToast(t("train_load_progress_failed"), "error");
     } finally {
       isLoading = false;
     }

@@ -5,9 +5,7 @@
  * pure functions in src/lib/shared/effects/translators/.
  *
  * The intent layer describes what the user meant (fire intensity,
- * trail brightness, LED color) independent of any backend. Per-backend
- * overrides live in the optional `overrides` field and let 2D/3D
- * grow independently where their physics genuinely diverge.
+ * trail brightness, LED color) independent of any backend.
  */
 
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
@@ -16,7 +14,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 15;
+export const EFFECTS_CONFIG_VERSION = 19;
 
 export type EffectType =
   | "none"
@@ -106,10 +104,17 @@ export interface ZapIntent {
   rightColor: string;
   /** 1-30 strikes per second. */
   frequency: number;
-  /** 'arc' = tip-to-tip arc. 'crackle' = radiate from each tip. */
+  /** Legacy topology toggle, superseded by `style`. Retained for back-compat. */
   mode: "arc" | "crackle";
-  /** 0-1 - probability each arc segment spawns a branch. */
+  /** 0-1 - fork probability per bolt (branching style). */
   branching: number;
+  /**
+   * Discharge character:
+   * "branching" = forking storm bolts between blue↔red tip pairs (default).
+   * "plasma" = thick Tesla-coil conduits shedding sputter sparks.
+   * "web" = live mesh across every tip with charge pulses on the edges.
+   */
+  style: "branching" | "plasma" | "web";
 }
 
 export interface SparklesIntent {
@@ -148,6 +153,12 @@ export interface EchoIntent {
   color: string;
   /** 1-8 - stroke width / tip dot size in 2D. */
   thickness: number;
+  /** 0-1 - luminous bloom (shadowBlur halo) on phantoms + tip orbs. */
+  glow: number;
+  /** 0-1 - temporal depth: how much older phantoms recede (shrink + blur). */
+  depth: number;
+  /** 0-1 - capture-flash brightness: a bright pop on each beat of capture. */
+  flash: number;
 }
 
 export interface BloomIntent {
@@ -172,6 +183,17 @@ export interface BloomIntent {
   pulse: number;
   /** 0.25-4 Hz - pulse frequency. */
   pulseRate: number;
+  /** 0-1 - anamorphic motion streak. Halo stretches along the motion vector;
+   *  length grows with per-frame tip speed. 0 = pure round halo. */
+  streak: number;
+  /** 0-1 - diffraction star-spike brightness (the lens glint off a bright
+   *  point). 0 = no spikes. */
+  spikes: number;
+  /** 0-1 - chromatic aberration. Red/blue fringe offset grows with tip speed. */
+  chromatic: number;
+  /** 0-1 - long-exposure afterglow persistence. 0 = none (draw-fresh each
+   *  frame), 1 = light trail lingers ~1s. */
+  afterglow: number;
 }
 
 export interface WaterIntent {
@@ -360,47 +382,6 @@ export interface PulseIntent {
   trackingMode: "left_end" | "right_end" | "both_ends";
 }
 
-/**
- * Backend-specific override storage. Populated only when the user
- * has explicitly edited a backend-only parameter via an Advanced
- * panel (Phase D). Intentionally untyped here - concrete shapes
- * live with the translators.
- */
-export interface EffectsOverrides {
-  trails2D?: Record<string, unknown>;
-  trails3D?: Record<string, unknown>;
-  fire2D?: Record<string, unknown>;
-  fire3D?: Record<string, unknown>;
-  led2D?: Record<string, unknown>;
-  led3D?: Record<string, unknown>;
-  charcoal2D?: Record<string, unknown>;
-  charcoal3D?: Record<string, unknown>;
-  zap2D?: Record<string, unknown>;
-  zap3D?: Record<string, unknown>;
-  sparkles2D?: Record<string, unknown>;
-  sparkles3D?: Record<string, unknown>;
-  echo2D?: Record<string, unknown>;
-  echo3D?: Record<string, unknown>;
-  bloom2D?: Record<string, unknown>;
-  bloom3D?: Record<string, unknown>;
-  water2D?: Record<string, unknown>;
-  water3D?: Record<string, unknown>;
-  bubbles2D?: Record<string, unknown>;
-  bubbles3D?: Record<string, unknown>;
-  petals2D?: Record<string, unknown>;
-  petals3D?: Record<string, unknown>;
-  smoke2D?: Record<string, unknown>;
-  smoke3D?: Record<string, unknown>;
-  ink2D?: Record<string, unknown>;
-  ink3D?: Record<string, unknown>;
-  frost2D?: Record<string, unknown>;
-  frost3D?: Record<string, unknown>;
-  silk2D?: Record<string, unknown>;
-  silk3D?: Record<string, unknown>;
-  pulse2D?: Record<string, unknown>;
-  pulse3D?: Record<string, unknown>;
-}
-
 export interface EffectsConfig {
   version: number;
   tipEffectMap: TipEffectMap;
@@ -442,5 +423,4 @@ export interface EffectsConfig {
   activeEffect: EffectType;
   /** Per-effect render-layer override. Missing key = default ("behind"). */
   effectLayerOverrides: Record<string, "behind" | "front">;
-  overrides?: EffectsOverrides;
 }

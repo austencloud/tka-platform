@@ -78,7 +78,7 @@
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-dim);
     font-size: 0.85rem;
   }
 
@@ -98,8 +98,8 @@
   .step-cell {
     position: relative;
     aspect-ratio: 1;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--theme-text, #ffffff) 3%, transparent);
+    border: 1.5px solid var(--theme-stroke);
     border-radius: 8px;
     display: flex;
     align-items: center;
@@ -109,12 +109,12 @@
   }
 
   .step-cell.current {
-    border-color: rgba(251, 191, 36, 0.8);
+    border-color: color-mix(in srgb, var(--semantic-warning-text, #fbbf24) 80%, transparent);
     box-shadow:
-      0 0 12px rgba(251, 191, 36, 0.4),
-      0 0 24px rgba(251, 191, 36, 0.2),
-      inset 0 0 8px rgba(251, 191, 36, 0.1);
-    background: rgba(251, 191, 36, 0.08);
+      0 0 12px color-mix(in srgb, var(--semantic-warning-text, #fbbf24) 40%, transparent),
+      0 0 24px color-mix(in srgb, var(--semantic-warning-text, #fbbf24) 20%, transparent),
+      inset 0 0 8px color-mix(in srgb, var(--semantic-warning-text, #fbbf24) 10%, transparent);
+    background: color-mix(in srgb, var(--semantic-warning-text, #fbbf24) 8%, transparent);
   }
 
   .step-cell.played {
@@ -134,13 +134,13 @@
     position: absolute;
     bottom: 2px;
     right: 4px;
-    font-size: 0.65rem;
+    font-size: var(--font-size-compact); /* 12px supplementary-text floor */
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.35);
+    color: color-mix(in srgb, var(--theme-text, #ffffff) 35%, transparent);
     font-variant-numeric: tabular-nums;
   }
 
   .step-cell.current .step-number {
-    color: rgba(251, 191, 36, 0.9);
+    color: color-mix(in srgb, var(--semantic-warning-text, #fbbf24) 90%, transparent);
   }
 </style>

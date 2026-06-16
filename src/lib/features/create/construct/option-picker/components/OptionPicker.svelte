@@ -62,6 +62,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
   let preparedOptions = $state<PreparedPictographData[]>([]);
   let isReady = $state(false);
   let isSelecting = $state(false);
+  let initError = $state<string | null>(null);
 
   // Internal continuous filter state - initialize with default
   let internalContinuousOnly = $state(false);
@@ -200,9 +201,15 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
     })();
   }
 
-  // Initialize services
-  onMount(() => {
-    let darkModeUnsubscribe: (() => void) | null = null;
+  // Initialize services - extracted so the error UI can retry
+  let darkModeUnsubscribe: (() => void) | null = null;
+
+  function initialize() {
+    initError = null;
+
+    // Drop any subscription from a previous attempt before re-subscribing
+    darkModeUnsubscribe?.();
+    darkModeUnsubscribe = null;
 
     try {
       const loader = getOptionLoader();
@@ -240,7 +247,21 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
       isReady = true;
     } catch (error) {
       console.error("Failed to initialize option picker:", error);
+      initError =
+        error instanceof Error ? error.message : "Failed to initialize option picker";
     }
+  }
+
+  // Retry a failed option load - clears the error and reloads the current sequence
+  function retryLoadOptions() {
+    pickerState?.clearError();
+    if (currentSequence.length > 0) {
+      pickerState?.loadOptions(currentSequence, currentGridMode);
+    }
+  }
+
+  onMount(() => {
+    initialize();
 
     return () => {
       if (darkModeUnsubscribe) {
@@ -250,12 +271,17 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
   });
 </script>
 
-{#if !isReady}
+{#if initError}
+  <div class="error" role="alert">
+    <p>Couldn't start the option picker: {initError}</p>
+    <button onclick={initialize}>Retry</button>
+  </div>
+{:else if !isReady}
   <div class="loading">Initializing...</div>
 {:else if pickerState?.error}
-  <div class="error">
+  <div class="error" role="alert">
     <p>Error: {pickerState.error}</p>
-    <button onclick={() => pickerState?.clearError()}>Retry</button>
+    <button onclick={retryLoadOptions}>Retry</button>
   </div>
 {:else}
   <OptionPickerContent

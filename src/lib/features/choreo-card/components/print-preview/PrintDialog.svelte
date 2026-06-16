@@ -327,7 +327,7 @@
 
   .dialog {
     position: relative;
-    background: #151520;
+    background: var(--theme-panel-bg, #151520);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
     padding: 28px 32px 32px;
@@ -376,7 +376,7 @@
     margin: 0;
     font-size: 22px;
     font-weight: 700;
-    color: #fff;
+    color: var(--theme-text, #fff);
     font-family: "JetBrains Mono", monospace;
   }
 
@@ -435,7 +435,7 @@
   }
 
   .inline-hint {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 400;
     color: rgba(255, 255, 255, 0.3);
   }
@@ -443,8 +443,8 @@
   .theme-badge {
     text-transform: capitalize;
     padding: 2px 10px;
-    background: rgba(139, 92, 246, 0.12);
-    border: 1px solid rgba(139, 92, 246, 0.25);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #8b5cf6) 25%, transparent);
     border-radius: 6px;
     font-size: 12px;
     color: #a78bfa;
@@ -481,7 +481,7 @@
 
   .section-label {
     margin: 0;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -516,9 +516,9 @@
   }
 
   .format-card.selected {
-    background: rgba(139, 92, 246, 0.1);
-    border-color: rgba(139, 92, 246, 0.5);
-    color: #fff;
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 10%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
+    color: var(--theme-text, #fff);
   }
 
   .format-icon {
@@ -535,7 +535,7 @@
   }
 
   .format-detail {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 400;
     opacity: 0.6;
     font-variant-numeric: tabular-nums;
@@ -553,11 +553,11 @@
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    background: rgba(248, 113, 113, 0.08);
-    border: 1px solid rgba(248, 113, 113, 0.2);
+    background: color-mix(in srgb, var(--semantic-error, #f87171) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #f87171) 20%, transparent);
     border-radius: 8px;
     font-size: 13px;
-    color: #f87171;
+    color: var(--semantic-error, #f87171);
   }
 
   /* Print + Download sit side by side — the two actions a user chooses between. */
@@ -577,7 +577,7 @@
     font-size: 15px;
     font-weight: 700;
     font-family: inherit;
-    color: #fff;
+    color: var(--theme-text, #fff);
     border: none;
     border-radius: 12px;
     cursor: pointer;
@@ -594,13 +594,13 @@
   }
 
   .print-action {
-    background: linear-gradient(135deg, #10b981, #059669);
+    background: linear-gradient(135deg, var(--semantic-success, #10b981), #059669);
   }
 
   .print-action:hover:not(:disabled) {
-    background: linear-gradient(135deg, #34d399, #10b981);
+    background: linear-gradient(135deg, #34d399, var(--semantic-success, #10b981));
     transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--semantic-success, #10b981) 30%, transparent);
   }
 
   .download-action {
@@ -612,21 +612,21 @@
 
   .download-action:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    color: var(--theme-text, #fff);
     transform: translateY(-1px);
   }
 
   /* No print path (download-only callers): Download becomes the primary action. */
   .download-action.full {
-    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    background: linear-gradient(135deg, var(--theme-accent, #7c3aed), #6d28d9);
     border: none;
     font-weight: 700;
-    color: #fff;
+    color: var(--theme-text, #fff);
   }
 
   .download-action.full:hover:not(:disabled) {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+    background: linear-gradient(135deg, var(--theme-accent, #8b5cf6), #7c3aed);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-accent, #7c3aed) 30%, transparent);
   }
 
   .workflow-tip {

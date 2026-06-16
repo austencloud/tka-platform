@@ -1,4 +1,5 @@
 <script lang="ts">
+  import "../museum-theme.css";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { MUSEUM_EXHIBIT_SEQUENCES } from "../../data/museum-exhibit-sequences";
 
@@ -12,7 +13,7 @@
 </script>
 
 {#if sequence}
-  <div class="sequence-strip">
+  <div class="sequence-strip museum-gold-scope">
     <div class="strip-cells">
       {#if sequence.startPosition}
         <div class="cell start-cell">
@@ -61,7 +62,7 @@
     overflow-x: auto;
     padding: 8px 0;
     scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(200, 180, 140, 0.2)) transparent;
+    scrollbar-color: var(--scrollbar-thumb, var(--museum-gold-20)) transparent;
   }
 
   .cell {
@@ -71,7 +72,7 @@
     border-radius: 4px;
     overflow: hidden;
     background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(200, 180, 140, 0.1);
+    border: 1px solid var(--museum-gold-10);
   }
 
   .start-cell {
@@ -83,7 +84,7 @@
     margin: 0;
     font-family: Georgia, "Times New Roman", serif;
     font-size: var(--font-size-compact, 12px);
-    color: rgba(200, 180, 140, 0.45);
+    color: var(--museum-gold-45);
     text-align: center;
     letter-spacing: 0.03em;
   }
@@ -94,7 +95,7 @@
     align-items: center;
     gap: 6px;
     padding: 20px;
-    color: rgba(200, 180, 140, 0.25);
+    color: var(--museum-gold-25);
   }
 
   .sequence-unknown i {

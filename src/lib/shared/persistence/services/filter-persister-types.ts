@@ -1,3 +1,4 @@
+import type { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
 import type { BrowseFilterType } from "../domain/enums/filtering-enums";
 import type { BrowseFilterValue } from "../domain/types/filtering-types";
 
@@ -12,6 +13,5 @@ export interface FilterHistoryEntry {
 export interface SimpleBrowseState {
   filterType: BrowseFilterType | null;
   filterValue: BrowseFilterValue;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  sortMethod: any; // Will be typed properly when we consolidate sort enums
+  sortMethod: BrowseSortMethod;
 }

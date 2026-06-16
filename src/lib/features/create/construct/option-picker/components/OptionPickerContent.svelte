@@ -455,6 +455,16 @@ Uses organizer and sizer services for section grouping and sizing.
     --option-header-shadow: rgba(0, 0, 0, 0.1);
     --option-header-text: var(--theme-text, #000000);
     --option-dark-transition: var(--duration-fast) ease-out;
+
+    /* Shared option-card elevation recipe - consumed by OptionCard and
+       OptionViewerSection so the shadow stacks live in one place. */
+    --option-card-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.1),
+      0 2px 4px rgba(0, 0, 0, 0.06);
+    --option-card-shadow-hover:
+      0 2px 4px rgba(0, 0, 0, 0.12),
+      0 4px 8px rgba(0, 0, 0, 0.08),
+      0 8px 16px rgba(0, 0, 0, 0.06);
   }
 
   :global(:root.dark) .option-picker-content {
@@ -543,14 +553,14 @@ Uses organizer and sizer services for section grouping and sizing.
 
   /* Continuous state - highlighted */
   .filter-toggle.continuous {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.4);
-    color: rgba(147, 197, 253, 1);
+    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #3b82f6) 40%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #3b82f6) 60%, white);
   }
 
   .filter-toggle.continuous:hover {
-    background: rgba(59, 130, 246, 0.25);
-    border-color: rgba(59, 130, 246, 0.5);
+    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 25%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #3b82f6) 50%, transparent);
   }
 
   .filter-toggle i {

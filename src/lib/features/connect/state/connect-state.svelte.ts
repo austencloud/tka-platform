@@ -241,10 +241,14 @@ class ConnectState {
 
 		try {
 			await this.orchestrator.leaveSession();
+			this.syncFromOrchestrator();
 		} catch (error) {
 			this._connectionError = error instanceof Error ? error.message : 'Failed to leave session';
+			// Resync so the UI reflects the actual post-failure state rather
+			// than optimistically clearing the session. The service surfaces a
+			// toast.error; we re-sync from the (still-present) session node.
+			this.syncFromOrchestrator();
 		}
-		this.syncFromOrchestrator();
 	}
 
 	/**

@@ -37,11 +37,22 @@
     if (idx < 0) idx = 0;
     return valueList[Math.min(valueList.length - 1, Math.max(0, idx + dir))]!;
   }
+  function openPopover(li: number, bi: number, el: HTMLElement) {
+    const r = el.getBoundingClientRect();
+    popover = { lane: li, beat: bi, x: r.left, y: r.bottom + 8 };
+  }
   function onNumberClick(e: MouseEvent, li: number, bi: number, v: T, el: HTMLElement) {
+    // Keyboard activation (Enter/Space) fires a click with detail === 0 and
+    // clientX/clientY === 0, which the clientX-based zone() always reads as the
+    // left ("−") zone. Route keyboard activation to the popover so keyboard
+    // users can reach the full value list instead of only ever decrementing.
+    if (e.detail === 0) {
+      openPopover(li, bi, el);
+      return;
+    }
     const z = zone(e, el);
     if (z === 0) {
-      const r = el.getBoundingClientRect();
-      popover = { lane: li, beat: bi, x: r.left, y: r.bottom + 8 };
+      openPopover(li, bi, el);
     } else {
       onEdit(li, bi, step(v, z));
       popover = null;

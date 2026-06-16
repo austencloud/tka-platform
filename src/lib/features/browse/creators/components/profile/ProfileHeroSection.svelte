@@ -4,6 +4,7 @@
   import AvatarImage from "$lib/shared/browse/components/AvatarImage.svelte";
   import { reportModalState } from "$lib/features/moderation/state/report-modal-state.svelte";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import { getEffectiveProp } from "$lib/shared/community/domain/get-effective-prop";
 
   let {
     userProfile,
@@ -24,6 +25,11 @@
   } = $props();
 
   const accentColor = $derived(userProfile.profileColor || "var(--theme-accent)");
+
+  // Settings-derived prop shown when the user never curated a props list
+  const fallbackProp = $derived(
+    !userProfile.propsISpinWith?.length ? getEffectiveProp(userProfile) : null
+  );
 
   function handleReportUser() {
     reportModalState.open({
@@ -74,6 +80,18 @@
               </div>
             {/each}
           </div>
+        {:else if fallbackProp}
+          <div class="props-row">
+            <div
+              class="profile-prop-icon"
+              title="Spins with {getPropTypeDisplayInfo(fallbackProp).label}"
+            >
+              <img
+                src={getPropTypeDisplayInfo(fallbackProp).image}
+                alt="Spins with {getPropTypeDisplayInfo(fallbackProp).label}"
+              />
+            </div>
+          </div>
         {/if}
       </div>
 
@@ -122,7 +140,7 @@
           class:loading={followInProgress}
           disabled={followInProgress}
           onclick={onFollowToggle}
-          aria-label={userProfile.isFollowing ? "Unfollow {userProfile.displayName}" : "Follow {userProfile.displayName}"}
+          aria-label={userProfile.isFollowing ? `Unfollow ${userProfile.displayName}` : `Follow ${userProfile.displayName}`}
         >
           {#if followInProgress}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -401,6 +419,10 @@
     width: 22px;
     height: 22px;
     object-fit: contain;
+    /* The prop SVGs are a dark brand-indigo silhouette that washes out at
+       this size; recolor to white so they read against the hero (staff is
+       the worst case and the most common prop). */
+    filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
   }
 
   .favorite-star {
@@ -408,7 +430,7 @@
     bottom: -4px;
     right: -4px;
     font-size: 0.65rem;
-    color: gold;
+    color: var(--semantic-warning, #f59e0b);
   }
 
   /* ═══ Mobile: collapse to centered vertical stack ═══ */

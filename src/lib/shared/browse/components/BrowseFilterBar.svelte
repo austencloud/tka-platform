@@ -307,15 +307,15 @@ Reads from / writes to a headless BrowseEngine instance.
       transform var(--duration-fast, 150ms) ease;
   }
 
-  /* Expanded touch target */
+  /* Expanded touch target — 44px WCAG floor without growing the visual chip */
   .chip-dismiss::before {
     content: "";
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    min-width: 32px;
-    min-height: 32px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .chip-dismiss:hover {

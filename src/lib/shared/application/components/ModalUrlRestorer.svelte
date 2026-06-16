@@ -13,7 +13,7 @@
 <script lang="ts">
 
 import { getDeepLinkResolver } from "$lib/shared/application/get-deep-link-resolver";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import {
     getModalUrlState,
     clearModalUrlState,
@@ -40,10 +40,18 @@ import { getDeepLinkResolver } from "$lib/shared/application/get-deep-link-resol
   });
 
   // Redirect legacy modal URLs on mount
+  let redirectTimer: ReturnType<typeof setTimeout> | null = null;
+
   onMount(() => {
-    setTimeout(() => {
+    redirectTimer = setTimeout(() => {
       redirectLegacyUrl();
     }, 100);
+  });
+
+  onDestroy(() => {
+    if (redirectTimer !== null) {
+      clearTimeout(redirectTimer);
+    }
   });
 
   async function redirectLegacyUrl() {

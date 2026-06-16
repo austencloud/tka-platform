@@ -223,4 +223,10 @@
   .visibility-toggle:active {
     transform: scale(0.97);
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .visibility-toggle {
+      transition: none;
+    }
+  }
 </style>

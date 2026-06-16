@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { resolvePresentation } from "$lib/shared/sequence-viewer/services/presentation-resolver";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 
 function sequenceWithCreatorIntent() {

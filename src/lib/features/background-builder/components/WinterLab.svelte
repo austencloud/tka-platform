@@ -2,6 +2,7 @@
   import { onDestroy } from "svelte";
   import { WinterBackgroundSystem, type QualityLevel } from "@austencloud/backgrounds";
   import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import LabPreviewCanvas from "./LabPreviewCanvas.svelte";
 
   // Background system
@@ -13,6 +14,7 @@
 
   // Loading state
   let isLoading = $state(true);
+  let initError = $state<string | null>(null);
 
   // Layer toggles
   let layers = $state({
@@ -32,6 +34,7 @@
   // Initialize system when canvas is ready
   function handleCanvasReady(dimensions: { width: number; height: number }) {
     canvasDimensions = dimensions;
+    initError = null;
     try {
       backgroundSystem = new WinterBackgroundSystem();
       backgroundSystem.initialize(dimensions, quality);
@@ -44,7 +47,10 @@
       isLoading = false;
     } catch (error) {
       isLoading = false;
+      const message = error instanceof Error ? error.message : String(error);
+      initError = message;
       console.error("Failed to initialize Winter Lab:", error);
+      toast.error(`Winter Lab failed to load: ${message}`);
     }
   }
 
@@ -61,10 +67,18 @@
     if (backgroundSystem) {
       backgroundSystem.cleanup?.();
     }
-    backgroundSystem = new WinterBackgroundSystem();
-    backgroundSystem.initialize(canvasDimensions, quality);
-    if (backgroundSystem.setLayerVisibility) {
-      backgroundSystem.setLayerVisibility(layers);
+    try {
+      backgroundSystem = new WinterBackgroundSystem();
+      backgroundSystem.initialize(canvasDimensions, quality);
+      if (backgroundSystem.setLayerVisibility) {
+        backgroundSystem.setLayerVisibility(layers);
+      }
+      initError = null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      initError = message;
+      console.error("Failed to regenerate Winter Lab:", error);
+      toast.error(`Winter Lab failed to load: ${message}`);
     }
   }
 
@@ -98,6 +112,17 @@
       <h2>Winter Lab</h2>
       <span class="badge">Winter Wonder</span>
     </div>
+
+    {#if initError}
+      <div class="error-banner" role="alert">
+        <i class="fas fa-triangle-exclamation"></i>
+        <div class="error-text">
+          <span class="error-title">Failed to load</span>
+          <span class="error-detail">{initError}</span>
+        </div>
+        <button class="retry-btn" onclick={regenerate}>Retry</button>
+      </div>
+    {/if}
 
     <!-- Quality Chips -->
     <ChipGroup>
@@ -176,10 +201,57 @@
     flex-direction: column;
     gap: 20px;
     padding: 20px;
-    background: rgba(15, 15, 25, 0.8);
+    background: var(--theme-panel-bg, rgba(15, 15, 25, 0.8));
     border-radius: 16px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     overflow-y: auto;
+  }
+
+  .error-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--theme-error, #fb7185) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-error, #fb7185) 40%, transparent);
+    border-radius: 12px;
+    color: var(--theme-error, #fb7185);
+  }
+
+  .error-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .error-title {
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 600;
+  }
+
+  .error-detail {
+    font-size: var(--font-size-compact, 12px);
+    color: #9ca3af;
+    word-break: break-word;
+  }
+
+  .retry-btn {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    background: color-mix(in srgb, var(--theme-error, #fb7185) 18%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-error, #fb7185) 40%, transparent);
+    border-radius: 8px;
+    color: var(--theme-error, #fb7185);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .retry-btn:focus-visible {
+    outline: 2px solid var(--theme-error, #fb7185);
+    outline-offset: 2px;
   }
 
   .header {
@@ -302,8 +374,8 @@
   }
 
   .pill.complete {
-    background: rgba(16, 185, 129, 0.15);
-    color: #34d399;
+    background: color-mix(in srgb, var(--theme-success, #34d399) 15%, transparent);
+    color: var(--theme-success, #34d399);
   }
 
   .pill.active {

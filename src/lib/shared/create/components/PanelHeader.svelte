@@ -66,7 +66,7 @@
     width: 100%;
     min-height: 60px; /* Consistent height across all panels */
     padding: 12px 16px;
-    background: rgba(15, 20, 30, 0.95);
+    background: var(--theme-panel-bg, rgba(15, 20, 30, 0.95));
     border-bottom: 1px solid var(--theme-stroke);
     gap: 12px;
     flex-shrink: 0; /* Prevent header from shrinking */
@@ -186,76 +186,76 @@
     );
   }
 
-  /* Remove button (destructive action) - red gradient */
+  /* Remove button (destructive action) - error gradient */
   :global(.panel-header .remove-button) {
     background: linear-gradient(
       135deg,
-      rgba(239, 68, 68, 0.9),
-      rgba(220, 38, 38, 0.9)
+      color-mix(in srgb, var(--semantic-error, #ef4444) 90%, transparent),
+      color-mix(in srgb, var(--semantic-error, #ef4444) 78%, #000 12%)
     );
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid color-mix(in srgb, #fff 20%, transparent);
     box-shadow:
-      0 2px 8px rgba(239, 68, 68, 0.35),
-      0 6px 18px rgba(220, 38, 38, 0.25);
+      0 2px 8px color-mix(in srgb, var(--semantic-error, #ef4444) 35%, transparent),
+      0 6px 18px color-mix(in srgb, var(--semantic-error, #ef4444) 25%, #000 10%);
   }
 
   :global(.panel-header .remove-button:hover) {
     background: linear-gradient(
       135deg,
-      rgba(239, 68, 68, 1),
-      rgba(220, 38, 38, 1)
+      var(--semantic-error, #ef4444),
+      color-mix(in srgb, var(--semantic-error, #ef4444) 88%, #000 12%)
     );
     box-shadow:
-      0 4px 12px rgba(239, 68, 68, 0.45),
-      0 8px 22px rgba(220, 38, 38, 0.35);
+      0 4px 12px color-mix(in srgb, var(--semantic-error, #ef4444) 45%, transparent),
+      0 8px 22px color-mix(in srgb, var(--semantic-error, #ef4444) 35%, #000 10%);
   }
 
-  /* Adjust button (primary action) - blue gradient */
+  /* Adjust button (primary action) - accent gradient */
   :global(.panel-header .adjust-button) {
     background: linear-gradient(
       135deg,
-      rgba(59, 130, 246, 0.9),
-      rgba(37, 99, 235, 0.9)
+      color-mix(in srgb, var(--theme-accent, #3b82f6) 90%, transparent),
+      color-mix(in srgb, var(--theme-accent, #3b82f6) 78%, #000 12%)
     );
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid color-mix(in srgb, #fff 20%, transparent);
     box-shadow:
-      0 2px 8px rgba(59, 130, 246, 0.35),
-      0 6px 18px rgba(37, 99, 235, 0.25);
+      0 2px 8px color-mix(in srgb, var(--theme-accent, #3b82f6) 35%, transparent),
+      0 6px 18px color-mix(in srgb, var(--theme-accent, #3b82f6) 25%, #000 10%);
   }
 
   :global(.panel-header .adjust-button:hover) {
     background: linear-gradient(
       135deg,
-      rgba(59, 130, 246, 1),
-      rgba(37, 99, 235, 1)
+      var(--theme-accent, #3b82f6),
+      color-mix(in srgb, var(--theme-accent, #3b82f6) 88%, #000 12%)
     );
     box-shadow:
-      0 4px 12px rgba(59, 130, 246, 0.45),
-      0 8px 22px rgba(37, 99, 235, 0.35);
+      0 4px 12px color-mix(in srgb, var(--theme-accent, #3b82f6) 45%, transparent),
+      0 8px 22px color-mix(in srgb, var(--theme-accent, #3b82f6) 35%, #000 10%);
   }
 
-  /* Export button (primary action) - purple-pink gradient like share button */
+  /* Export button (primary action) - edit-to-pink gradient like share button */
   :global(.panel-header .export-button) {
     background: linear-gradient(
       135deg,
-      rgba(139, 92, 246, 0.9),
-      rgba(236, 72, 153, 0.9)
+      color-mix(in srgb, var(--feature-edit, #8b5cf6) 90%, transparent),
+      color-mix(in srgb, var(--accent-2026-pink, #ec4899) 90%, transparent)
     );
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid color-mix(in srgb, #fff 25%, transparent);
     box-shadow:
-      0 2px 8px rgba(79, 70, 229, 0.35),
-      0 6px 18px rgba(236, 72, 153, 0.25);
+      0 2px 8px color-mix(in srgb, var(--accent-2026-indigo, #6366f1) 35%, transparent),
+      0 6px 18px color-mix(in srgb, var(--accent-2026-pink, #ec4899) 25%, transparent);
   }
 
   :global(.panel-header .export-button:hover) {
     background: linear-gradient(
       135deg,
-      rgba(139, 92, 246, 1),
-      rgba(236, 72, 153, 1)
+      var(--feature-edit, #8b5cf6),
+      var(--accent-2026-pink, #ec4899)
     );
     box-shadow:
-      0 4px 14px rgba(79, 70, 229, 0.55),
-      0 10px 26px rgba(236, 72, 153, 0.4);
+      0 4px 14px color-mix(in srgb, var(--accent-2026-indigo, #6366f1) 55%, transparent),
+      0 10px 26px color-mix(in srgb, var(--accent-2026-pink, #ec4899) 40%, transparent);
   }
 
   /* Mobile adjustments - maintain accessible touch targets (48px minimum) */

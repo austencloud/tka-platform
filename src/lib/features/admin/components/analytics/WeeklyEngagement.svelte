@@ -12,8 +12,10 @@
   import type { CachedUserMetadata } from "../../services/types";
   import type { SystemStateManager } from "../../services/system-state-manager";
   import { t } from "$lib/shared/i18n/i18n.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   let isLoading = $state(true);
+  let loadError = $state(false);
   let users = $state<CachedUserMetadata[]>([]);
   let cacheAge = $state<string>("");
 
@@ -42,7 +44,9 @@
     };
   });
 
-  onMount(async () => {
+  async function loadStats() {
+    isLoading = true;
+    loadError = false;
     try {
       const systemStateService = getSystemStateManager();
       const state = await systemStateService.getSystemState();
@@ -57,10 +61,14 @@
       }
     } catch (error) {
       console.error("Failed to load system state:", error);
+      loadError = true;
+      toast.error("Failed to load quick stats.");
     } finally {
       isLoading = false;
     }
-  });
+  }
+
+  onMount(loadStats);
 </script>
 
 <section class="section" aria-labelledby="stats-title">
@@ -88,6 +96,15 @@
             <div class="skeleton-label"></div>
           </div>
         {/each}
+      </div>
+    {:else if loadError}
+      <div class="error-state" role="alert">
+        <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+        <p>Couldn't load stats.</p>
+        <button class="retry-button" onclick={loadStats}>
+          <i class="fas fa-rotate-right" aria-hidden="true"></i>
+          Retry
+        </button>
       </div>
     {:else}
       <div class="metrics-grid" role="list" aria-label="User statistics">
@@ -189,6 +206,46 @@
     color: var(--theme-text);
   }
 
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--theme-text);
+  }
+
+  .error-state i {
+    font-size: var(--font-size-2xl, 1.5rem);
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .error-state p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--theme-text-dim);
+  }
+
+  .retry-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 8px 16px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    background: var(--theme-panel-bg);
+    color: var(--theme-text);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: background var(--duration-fast, 0.15s) ease;
+  }
+
+  .retry-button:hover {
+    background: var(--theme-card-bg);
+  }
+
   /* Skeleton loading */
   .metric-card.skeleton {
     background: var(--theme-panel-bg);
@@ -233,6 +290,10 @@
     .skeleton-value,
     .skeleton-label {
       animation: none;
+    }
+
+    .retry-button {
+      transition: none;
     }
   }
 </style>

@@ -30,7 +30,9 @@ interface StoredDeepLinkData {
  */
 const MODULE_MAPPINGS: Record<string, ModuleMapping> = {
   construct: { moduleId: "create", tabId: "construct" },
-  constructor: { moduleId: "create", tabId: "construct" }, // Legacy alias
+  // Legacy alias. `satisfies` needed: TS skips contextual typing for a
+  // literal property named `constructor`, so moduleId would widen to string.
+  constructor: { moduleId: "create", tabId: "construct" } satisfies ModuleMapping,
   assemble: { moduleId: "create", tabId: "assemble" },
   assembler: { moduleId: "create", tabId: "assemble" }, // Legacy alias
   generate: { moduleId: "create", tabId: "generate" },
@@ -119,9 +121,14 @@ export class DeepLinker {
       this.setData(mapping.moduleId, parsed.sequence, mapping.tabId);
 
       // Navigate to the target module (use navigateToModule if specified, otherwise use moduleId)
-      const targetModule = mapping.navigateToModule || mapping.moduleId;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      navigationState.setCurrentModule(targetModule as any);
+      const targetModule = mapping.navigateToModule ?? mapping.moduleId;
+      if (targetModule === "share") {
+        // Unreachable in practice: the "share" pseudo-module always carries
+        // navigateToModule. Guarding keeps the union narrowed to ModuleId
+        // without a cast ("view" is already excluded by the early return above).
+        return;
+      }
+      navigationState.setCurrentModule(targetModule);
 
       // Navigate to the target tab if specified
       if (mapping.tabId) {

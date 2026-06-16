@@ -35,7 +35,49 @@ export interface BuilderStep {
   readonly endOrientation: Orientation;
 }
 
-export function createAssembleState() {
+/**
+ * Public shape of the assemble builder state. Declared explicitly (rather than
+ * inferred via ReturnType) so the API surface consumed by components is stable
+ * under refactors.
+ */
+export interface AssembleState {
+  readonly phase: BuilderPhase;
+  readonly activeHand: MotionColor;
+  readonly gridMode: GridMode;
+  readonly blueSteps: BuilderStep[];
+  readonly redSteps: BuilderStep[];
+  readonly currentPosition: GridLocation | null;
+  readonly currentOrientation: Orientation;
+  readonly rotationDirection: RotationDirection;
+  readonly turnCount: number;
+  readonly showOrientationArrow: boolean;
+  readonly arrowOrientation: Orientation;
+  readonly activeSteps: BuilderStep[];
+  readonly stepCount: number;
+  readonly isBlueComplete: boolean;
+  readonly canUndo: boolean;
+  readonly canFinishHand: boolean;
+  readonly showCenter: boolean;
+  readonly canChangeGridMode: boolean;
+  readonly keyboardMode: boolean;
+
+  handlePointClick(location: GridLocation): void;
+  finishHand(): void;
+  undoStep(): Promise<void>;
+  truncateAtStep(stepIndex: number): void;
+  reset(): void;
+  setRotationDirection(dir: RotationDirection): void;
+  setTurnCount(turns: number): void;
+  setOrientation(ori: Orientation): void;
+  setGridMode(mode: GridMode): void;
+  setShowCenter(show: boolean): void;
+  switchToHand(hand: MotionColor): void;
+  toggleKeyboardMode(): void;
+  setAnimationCallback(cb: (step: BuilderStep, durationMs?: number) => Promise<void>): void;
+  setUndoAnimationCallback(cb: (step: BuilderStep, wasPlacement: boolean) => Promise<void>): void;
+}
+
+export function createAssembleState(): AssembleState {
   // Phase & hand
   let phase = $state<BuilderPhase>("idle");
   let activeHand = $state<MotionColor>(MotionColor.BLUE);
@@ -404,7 +446,6 @@ export function createAssembleState() {
     setUndoAnimationCallback,
   };
 }
-
 // --- Arc math helpers (mirror SvgPropAnimator's math) ---
 
 /** Normalize angle to [0, 2*PI) */
@@ -584,5 +625,3 @@ function isLocationValidForMode(location: GridLocation, mode: GridMode, centerEn
     default: return true;
   }
 }
-
-export type AssembleState = ReturnType<typeof createAssembleState>;

@@ -160,7 +160,9 @@ describe("migrateEffectsConfig", () => {
     expect((out.bloom as any).threshold).toBeUndefined();
     expect(out.bloom.color).toBe("#f472b6");
     expect(out.bloom.palette).toEqual(["#f472b6", "#fbbf24", "#22d3ee"]);
-    expect(out.bloom.colorMode).toBe("solid");
+    // v7 seeds colorMode "solid"; the v16→v17 lens-bloom remap then flips that
+    // default-echo to "prop-matched" (migrate() runs the full chain).
+    expect(out.bloom.colorMode).toBe("prop-matched");
     expect(out.bloom.falloff).toBe("smooth");
     expect(out.bloom.pulse).toBe(0);
     expect(out.bloom.pulseRate).toBe(1);
@@ -410,5 +412,106 @@ describe("migrateEffectsConfig", () => {
     const out = migrateEffectsConfig(v11);
     expect(out.tipEffectMap["*"]?.effect).toBe("smoke");
     expect(out.tipEffectMap["0-0"]?.effect).toBe("petals");
+  });
+
+  it("migrates pre-v16 led.brightness 5 (stale old default) to 3", () => {
+    const v15 = {
+      version: 15,
+      led: {
+        brightness: 5, patternId: "rainbow", patternSpeed: 2.0,
+        primaryColor: "#ff0000", secondaryColor: "#00ff00", colorMode: "unified" as const,
+      },
+    };
+    const out = migrateEffectsConfig(v15);
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.led.brightness).toBe(3);
+    // Only brightness remaps - the rest of the user's led settings survive.
+    expect(out.led.patternId).toBe("rainbow");
+    expect(out.led.patternSpeed).toBe(2.0);
+  });
+
+  it("preserves a deliberate pre-v16 led.brightness 1-4", () => {
+    const v15 = {
+      version: 15,
+      led: {
+        brightness: 2, patternId: "solid", patternSpeed: 1.0,
+        primaryColor: "#00ff88", secondaryColor: "#ffffff", colorMode: "unified" as const,
+      },
+    };
+    const out = migrateEffectsConfig(v15);
+    expect(out.led.brightness).toBe(2);
+  });
+
+  it("preserves a deliberate post-v16 led.brightness 5", () => {
+    const current = {
+      version: EFFECTS_CONFIG_VERSION,
+      led: {
+        brightness: 5, patternId: "solid", patternSpeed: 1.0,
+        primaryColor: "#00ff88", secondaryColor: "#ffffff", colorMode: "unified" as const,
+      },
+    };
+    const out = migrateEffectsConfig(current);
+    expect(out.led.brightness).toBe(5);
+  });
+
+  it("migrates pre-v17 bloom stale old defaults (intensity 0.95, colorMode solid)", () => {
+    const v16 = {
+      version: 16,
+      bloom: {
+        intensity: 0.95, radius: 90, color: "#f472b6",
+        palette: ["#f472b6", "#fbbf24", "#22d3ee"],
+        colorMode: "solid" as const, falloff: "smooth" as const,
+        pulse: 0, pulseRate: 1,
+      },
+    };
+    const out = migrateEffectsConfig(v16);
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.bloom.intensity).toBe(0.6);
+    expect(out.bloom.colorMode).toBe("prop-matched");
+    // Lens-bloom fields fill from defaults via the merge.
+    expect(out.bloom.streak).toBeGreaterThan(0);
+    expect(out.bloom.afterglow).toBeGreaterThan(0);
+  });
+
+  it("preserves a deliberate pre-v17 bloom (non-default intensity + non-solid mode)", () => {
+    const v16 = {
+      version: 16,
+      bloom: {
+        intensity: 0.8, radius: 90, color: "#f472b6",
+        palette: ["#f472b6", "#fbbf24", "#22d3ee"],
+        colorMode: "palette" as const, falloff: "smooth" as const,
+        pulse: 0, pulseRate: 1,
+      },
+    };
+    const out = migrateEffectsConfig(v16);
+    expect(out.bloom.intensity).toBe(0.8);
+    expect(out.bloom.colorMode).toBe("palette");
+  });
+
+  it("preserves a deliberate post-v17 bloom (intensity 0.95 / solid)", () => {
+    const current = {
+      version: EFFECTS_CONFIG_VERSION,
+      bloom: {
+        intensity: 0.95, radius: 90, color: "#f472b6",
+        palette: ["#f472b6", "#fbbf24", "#22d3ee"],
+        colorMode: "solid" as const, falloff: "smooth" as const,
+        pulse: 0, pulseRate: 1, streak: 0.55, spikes: 0.6, chromatic: 0.35, afterglow: 0.5,
+      },
+    };
+    const out = migrateEffectsConfig(current);
+    expect(out.bloom.intensity).toBe(0.95);
+    expect(out.bloom.colorMode).toBe("solid");
+  });
+
+  it("deep-merges a partial pulse block over defaults", () => {
+    const v15 = {
+      version: 15,
+      pulse: { intensity: 0.9 },
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const out = migrateEffectsConfig(v15 as any);
+    expect(out.pulse.intensity).toBe(0.9);
+    expect(out.pulse.trigger).toBe("beat");
+    expect(out.pulse.palette).toBe("sonar");
   });
 });

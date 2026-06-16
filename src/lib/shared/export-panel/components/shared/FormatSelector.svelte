@@ -32,14 +32,49 @@
     // { id: 'performance', label: 'Performance', icon: 'fa-video' }, // TODO: Enable post-MVP
   ];
 
+  let chipElements: Array<HTMLButtonElement | null> = [];
+
   function handleFormatSelect(format: MediaFormat) {
     onFormatSelect?.(format);
+  }
+
+  // WAI-ARIA radiogroup pattern: arrow keys move focus AND selection together
+  // (selection follows focus), with wraparound.
+  function selectAndFocusAt(index: number) {
+    const wrapped = ((index % formats.length) + formats.length) % formats.length;
+    handleFormatSelect(formats[wrapped]!.id);
+    chipElements[wrapped]?.focus();
   }
 
   function handleKeydown(event: KeyboardEvent, format: MediaFormat) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       handleFormatSelect(format);
+      return;
+    }
+
+    const index = formats.findIndex((f) => f.id === format);
+    if (index < 0) return;
+
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        event.preventDefault();
+        selectAndFocusAt(index + 1);
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        event.preventDefault();
+        selectAndFocusAt(index - 1);
+        break;
+      case "Home":
+        event.preventDefault();
+        selectAndFocusAt(0);
+        break;
+      case "End":
+        event.preventDefault();
+        selectAndFocusAt(formats.length - 1);
+        break;
     }
   }
 </script>
@@ -49,8 +84,9 @@
   role="radiogroup"
   aria-label="Media format selection"
 >
-  {#each formats as format}
+  {#each formats as format, i}
     <button
+      bind:this={chipElements[i]}
       class="format-chip"
       class:active={selectedFormat === format.id}
       role="radio"

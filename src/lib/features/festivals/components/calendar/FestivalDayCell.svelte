@@ -102,7 +102,7 @@
   }
 
   .overflow-label {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     padding: 0 4px;
     align-self: flex-start;
@@ -116,7 +116,7 @@
     }
 
     .day-number {
-      font-size: 11px;
+      font-size: var(--font-size-compact, 12px);
     }
   }
 </style>

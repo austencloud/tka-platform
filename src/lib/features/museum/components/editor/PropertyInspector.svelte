@@ -11,6 +11,7 @@
 	import type { Direction, WingTheme, MuseumGridSerialized } from "../../domain/museum-grid-types";
 	import { serializeGrid, deserializeGrid } from "../../domain/museum-grid-types";
 	import { getEditorContext } from "../../state/editor-context";
+	import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
 	const { state: editor } = getEditorContext();
 
@@ -57,8 +58,10 @@
 				try {
 					const data = JSON.parse(reader.result as string) as MuseumGridSerialized;
 					editor.importGrid(data);
+					toast.success("Floor plan imported successfully");
 				} catch (err) {
 					console.error("Failed to import floor plan:", err);
+					toast.error(`Import failed: ${err instanceof Error ? err.message : "invalid JSON"}`);
 				}
 			};
 			reader.readAsText(file);

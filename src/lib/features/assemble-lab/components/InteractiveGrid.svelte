@@ -22,7 +22,10 @@
   import { SvgPropAnimator } from "../services/svg-prop-animator";
   import type { AssembleState, BuilderStep } from "../state/assemble-state.svelte";
 
-  // Prop SVG rendering
+  // Prop SVG rendering.
+  // Trust boundary: svgData.svgContent below is injected via {@html}. The source
+  // is this internal propSvgLoader service (bundled static prop SVGs), never user
+  // or external input, so it is a trusted, non-XSS surface — no sanitization pass.
   import { propSvgLoader } from "$lib/shared/pictograph/prop/services/prop-svg-loader";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { PropRotAngleManager } from "$lib/shared/pictograph/prop/services/prop-rot-angle-manager";
@@ -582,21 +585,21 @@
         <path
           d="M 60,0 A 60,60 0 0,1 30,52"
           fill="none"
-          stroke="#FFD700"
+          stroke="var(--color-gold, #FFD700)"
           stroke-width="5"
           stroke-linecap="round"
         />
         <path
           d="M 60,0 A 60,60 0 0,0 30,-52"
           fill="none"
-          stroke="#FFD700"
+          stroke="var(--color-gold, #FFD700)"
           stroke-width="5"
           stroke-linecap="round"
         />
         <!-- Arrowhead at the tip -->
-        <polygon points="55,-8 72,0 55,8" fill="#FFD700" />
+        <polygon points="55,-8 72,0 55,8" fill="var(--color-gold, #FFD700)" />
         <!-- Outer glow ring -->
-        <circle cx="0" cy="0" r="80" fill="none" stroke="#FFD700" stroke-width="2" opacity="0.2" />
+        <circle cx="0" cy="0" r="80" fill="none" stroke="var(--color-gold, #FFD700)" stroke-width="2" opacity="0.2" />
       </g>
     {/if}
 
@@ -872,14 +875,14 @@
   .key-label {
     font-size: 28px;
     font-weight: 700;
-    fill: rgba(255, 255, 255, 0.25);
+    fill: var(--key-label-fill, rgba(255, 255, 255, 0.25));
     pointer-events: none;
     font-family: var(--font-mono, monospace);
     user-select: none;
   }
 
   .key-label.key-invalid {
-    fill: rgba(255, 255, 255, 0.08);
+    fill: var(--key-label-fill-invalid, rgba(255, 255, 255, 0.08));
   }
 
   /* Blue pulse - fill + stroke + subtle scale */
@@ -925,8 +928,8 @@
     pointer-events: none;
     animation: ori-fade 1.2s ease forwards;
     filter:
-      drop-shadow(0 0 8px #FFD700)
-      drop-shadow(0 0 18px rgba(255, 215, 0, 0.5));
+      drop-shadow(0 0 8px var(--color-gold, #FFD700))
+      drop-shadow(0 0 18px color-mix(in srgb, var(--color-gold, #FFD700) 50%, transparent));
   }
 
   @keyframes ori-fade {

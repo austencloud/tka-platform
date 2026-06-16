@@ -4,7 +4,8 @@
  * Just saves/loads basic filter history - no complex state management.
  */
 
-import { BrowseFilterType } from "../domain/enums/filtering-enums";
+import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
+import type { BrowseFilterType } from "../domain/enums/filtering-enums";
 import type { BrowseFilterValue } from "../domain/types/filtering-types";
 import type {
   FilterHistoryEntry,
@@ -186,26 +187,7 @@ export class FilterPersister {
     return {
       filterType: null,
       filterValue: null,
-      sortMethod: "alphabetical", // Will be properly typed when we consolidate sort enums
-    };
-  }
-
-  // Simple filter state save
-  async saveFilterState(): Promise<void> {
-    const browseState: SimpleBrowseState = {
-      filterType: null,
-      filterValue: null,
-      sortMethod: "alphabetical",
-    };
-    await this.saveBrowseState(browseState);
-  }
-
-  loadFilterState(): FilterHistoryEntry {
-    // Return a default filter state matching the interface
-    return {
-      type: BrowseFilterType.ALL_SEQUENCES,
-      value: null,
-      appliedAt: new Date(),
+      sortMethod: BrowseSortMethod.ALPHABETICAL,
     };
   }
 }

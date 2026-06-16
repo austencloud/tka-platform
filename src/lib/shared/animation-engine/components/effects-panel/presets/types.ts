@@ -1,30 +1,41 @@
 /**
  * Shared preset types for the unified effects panel.
  *
- * Each effect type (Fire, Charcoal, LED, Trails) has 4 visual presets
- * shown as quick-select options before the user taps "Customize".
+ * A preset is DATA: a static `patch` (the normal case) or, for the two
+ * "Custom" presets that read user-picked colors from localStorage, a
+ * `resolvePatch` thunk evaluated at apply time. EffectsPanel feeds the patch
+ * to `effectsConfigState.applyPreset` — presets no longer carry an imperative
+ * `apply` closure, so their data can be inspected, serialized, and reused.
  */
 
-import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+import type {
+  EffectConfigMap,
+  EffectsConfigState,
+} from "$lib/shared/effects/state/effects-config-state.svelte";
 
-export interface EffectPreset {
+export interface EffectPreset<E extends keyof EffectConfigMap = keyof EffectConfigMap> {
   id: string;
   name: string;
-  /** CSS color for the preview dot, or "rainbow" for special conic-gradient visual */
+  /** CSS color for the preview dot, "rainbow" for the conic-gradient, or "custom". */
   previewColor: string;
-  /** Optional second color for dual-dot previews (e.g. "Prop Colors") */
+  /** Optional second color for dual-dot previews (e.g. "Prop Colors"). */
   previewColor2?: string;
   /**
-   * Apply this preset's settings.
-   * Captured by EffectsPanel via getContext at init time - Svelte 5 forbids
-   * getContext() inside event handlers, so presets must NOT call it themselves.
+   * Static intent patch — the normal case. Exactly one of patch/resolvePatch
+   * is set. The two "Custom" presets (trails, fire) use resolvePatch instead;
+   * the "Custom" chips that only open the Customize panel use an empty patch.
    */
-  apply: (state: EffectsConfigState) => void;
+  patch?: Partial<EffectConfigMap[E]>;
+  /**
+   * Dynamic patch resolved at apply time. Only the trails/fire "Custom"
+   * presets use this — they read user-picked colors from localStorage.
+   */
+  resolvePatch?: () => Partial<EffectConfigMap[E]>;
 }
 
 export interface EffectPresetGroup {
-  effectType: string;
+  effectType: keyof EffectConfigMap;
   presets: EffectPreset[];
-  /** One-line summary of current settings. Same context rules as `apply`. */
+  /** One-line summary of current settings. Pure read of state. */
   getSummary: (state: EffectsConfigState) => string;
 }

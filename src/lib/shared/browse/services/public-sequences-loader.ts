@@ -276,10 +276,20 @@ export class PublicSequencesLoader {
     data: PublicSequenceIndex,
     id: string
   ): SequenceData {
+    // Firestore docs carry a few display fields that aren't declared on
+    // PublicSequenceIndex. Narrow the doc shape once here instead of casting
+    // each field at the read site.
+    const doc = data as PublicSequenceIndex & {
+      displayName?: string;
+      components?: SequenceData["components"];
+      componentDomains?: SequenceData["componentDomains"];
+      isCircular?: boolean;
+    };
+
     const seq: SequenceData = {
       id,
       name: data.name,
-      displayName: (data as unknown as { displayName?: string }).displayName,
+      displayName: doc.displayName,
       word: data.word,
       steps: [], // Will be hydrated below if compositional fields are present
       thumbnails: [...data.thumbnails],
@@ -287,11 +297,11 @@ export class PublicSequencesLoader {
       level: data.level ?? this.difficultyStringToLevel(data.difficultyLevel),
       difficultyLevel: data.difficultyLevel,
       loopType: data.loopType as SequenceData["loopType"],
-      period: (data as unknown as { period?: number }).period,
-      components: (data as unknown as { components?: string[] }).components as SequenceData["components"],
-      componentDomains: (data as unknown as { componentDomains?: SequenceData["componentDomains"] }).componentDomains,
+      period: data.period,
+      components: doc.components,
+      componentDomains: doc.componentDomains,
       isFavorite: false,
-      isCircular: (data as unknown as { isCircular?: boolean }).isCircular ?? false,
+      isCircular: doc.isCircular ?? false,
       tags: [...data.tags],
       metadata: {},
       // Date info - prefer birthday (real creation date) over publishedAt (bulk publish date)

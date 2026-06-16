@@ -14,6 +14,7 @@
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
   import TrailPointAssignmentSection from "./TrailPointAssignmentSection.svelte";
 
@@ -45,7 +46,7 @@
       if (copyFeedbackTimer !== null) clearTimeout(copyFeedbackTimer);
       copyFeedbackTimer = setTimeout(() => { copyFeedback = false; copyFeedbackTimer = null; }, 1500);
     } catch {
-      // Fallback: select-all on textarea
+      toast.error("Couldn't copy to clipboard");
     }
   }
 

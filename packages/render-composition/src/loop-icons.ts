@@ -126,7 +126,6 @@ export const LOOP_ICON_COLORS: Record<LOOPComponentId | "freeform", string> = {
  * @param showFreeformWhenEmpty - Draw the freeform icon when the set is empty
  * @param rotationPeriod    - "quartered" swaps rotated → fa-arrows-spin
  * @param inversionPeriod   - "quartered" swaps inverted → checkerboard circle
- * @param period            - Integer LOOP period (2/4/8), drawn as centered number badge
  * @returns                    The total rendered width in canvas pixels
  */
 export function renderLoopIconStrip(
@@ -138,8 +137,7 @@ export function renderLoopIconStrip(
   darkMode: boolean,
   showFreeformWhenEmpty: boolean = false,
   rotationPeriod?: LoopRotationPeriod,
-  inversionPeriod?: LoopInversionPeriod,
-  period?: number
+  inversionPeriod?: LoopInversionPeriod
 ): { totalWidth: number } {
   const active = DISPLAY_ORDER.filter((c) => components.has(c));
 
@@ -165,9 +163,6 @@ export function renderLoopIconStrip(
             ? "inverted-quartered"
             : component;
       drawLoopIcon(ctx, pathKey, currentX, centerY, iconSize, LOOP_ICON_COLORS[component], darkMode);
-    }
-    if (period != null && period >= 2) {
-      drawPeriodBadge(ctx, currentX, centerY, iconSize, period);
     }
     currentX += iconSize + gap;
   }
@@ -232,32 +227,6 @@ function drawLoopIcon(
   const target = { x: x - size / 2, y: y - size / 2, width: size, height: size };
   drawSvgPath(ctx, iconData.d, { width: iconData.viewBox[0], height: iconData.viewBox[1] }, target);
   ctx.fill();
-
-  ctx.restore();
-}
-
-function drawPeriodBadge(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  iconSize: number,
-  period: number
-): void {
-  const text = period.toString();
-  const fontSize = Math.max(8, Math.round(iconSize * 0.55));
-
-  ctx.save();
-  ctx.font = `bold ${fontSize}px sans-serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-
-  ctx.strokeStyle = "rgba(0, 0, 0, 0.85)";
-  ctx.lineWidth = Math.max(2, fontSize * 0.2);
-  ctx.lineJoin = "round";
-  ctx.strokeText(text, x, y);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.fillText(text, x, y);
 
   ctx.restore();
 }

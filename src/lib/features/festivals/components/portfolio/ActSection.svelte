@@ -9,6 +9,7 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import ModalFooter from "$lib/shared/foundation/ui/modal/ModalFooter.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   const { state: festivalState } = getFestivalContext();
 
@@ -97,6 +98,7 @@
       aActImageUrl = downloadUrl;
     } catch (error) {
       console.error("Failed to upload act cover image:", error);
+      toast.error("Couldn't upload the cover image. Please try again.");
     } finally {
       aActImageUploading = false;
       if (actImageFileInput) actImageFileInput.value = "";
@@ -209,7 +211,7 @@
     <ModalHeader
       title={editingActId ? "Edit Act" : "New Act"}
       icon={editingActId ? "fa-pencil-alt" : "fa-plus"}
-      iconColor="#f59e0b"
+      iconColor="var(--semantic-warning, #f59e0b)"
       onClose={() => cancelActForm()}
     />
   {/snippet}
@@ -226,6 +228,7 @@
       type="button"
       class="image-upload-area"
       class:has-image={!!aActImageUrl}
+      aria-label={aActImageUrl ? "Change act cover image" : "Upload act cover image"}
       onclick={() => actImageFileInput?.click()}
       disabled={aActImageUploading}
     >
@@ -410,17 +413,17 @@
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
-    background: color-mix(in srgb, #f59e0b 15%, transparent);
-    border: 1px solid color-mix(in srgb, #f59e0b 30%, transparent);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning, #f59e0b) 30%, transparent);
     border-radius: 8px;
-    color: #f59e0b;
+    color: var(--semantic-warning, #f59e0b);
     font-size: var(--font-size-sm, 14px);
     cursor: pointer;
     transition: background var(--transition-fast, 0.15s);
   }
 
   .add-btn:not(:disabled):hover {
-    background: color-mix(in srgb, #f59e0b 25%, transparent);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 25%, transparent);
   }
 
   .act-list {

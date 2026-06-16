@@ -5,6 +5,8 @@
  * Triggers the first time the step editor opens with a beat selected.
  */
 
+import { AUTO_TOURS_ENABLED } from "../domain/onboarding-flags";
+
 const TOUR_COMPLETED_KEY = "tka-step-editor-tour-completed";
 
 export type StepEditorTourStop =
@@ -59,8 +61,11 @@ function createStepEditorTourState() {
       return data.currentStopIndex >= STOPS.length - 1;
     },
 
-    /** Start tour if user hasn't seen it yet. Returns true if tour started. */
+    /** Start tour if user hasn't seen it yet. Returns true if tour started.
+     *  No-op while auto-tours are deactivated; restart() (help button) is
+     *  not gated. */
     triggerIfFirstTime(): boolean {
+      if (!AUTO_TOURS_ENABLED) return false;
       if (data.hasCompleted) return false;
       data.isActive = true;
       data.currentStopIndex = 0;

@@ -135,8 +135,13 @@
       <div class="section">
         <div class="section-header">
           <h4 class="section-label">Shade</h4>
-          <button class="shuffle-btn compact" onclick={shuffle} title="Shuffle to random shade">
-            <i class="fas fa-random"></i>
+          <button
+            class="shuffle-btn compact"
+            onclick={shuffle}
+            title="Shuffle to random shade"
+            aria-label="Shuffle to random shade"
+          >
+            <i class="fas fa-random" aria-hidden="true"></i>
           </button>
         </div>
         <div class="gradient-row">
@@ -146,6 +151,8 @@
               class:selected={selectedGradientId === gradient.id}
               onclick={() => onGradientChange(gradient.id)}
               title={gradient.name}
+              aria-label={gradient.name}
+              aria-pressed={selectedGradientId === gradient.id}
               style="background: {gradient.gradient};"
             >
               {#if selectedGradientId === gradient.id}
@@ -212,8 +219,13 @@
       <div class="section">
         <div class="section-header">
           <h4 class="section-label">Shade</h4>
-          <button class="shuffle-btn" onclick={shuffle} title="Shuffle to random shade">
-            <i class="fas fa-random"></i>
+          <button
+            class="shuffle-btn"
+            onclick={shuffle}
+            title="Shuffle to random shade"
+            aria-label="Shuffle to random shade"
+          >
+            <i class="fas fa-random" aria-hidden="true"></i>
           </button>
         </div>
         <div class="gradient-row">
@@ -223,6 +235,8 @@
               class:selected={selectedGradientId === gradient.id}
               onclick={() => onGradientChange(gradient.id)}
               title={gradient.name}
+              aria-label={gradient.name}
+              aria-pressed={selectedGradientId === gradient.id}
               style="background: {gradient.gradient};"
             >
               {#if selectedGradientId === gradient.id}

@@ -25,7 +25,6 @@ import { browser } from "$app/environment";
 export interface PersistenceOptions<T> {
   key: string;
   defaultValue: T;
-  version?: number; // Optional: for migration support in future
 }
 
 /**
@@ -128,25 +127,4 @@ function mergeWithDefaults<T>(current: T, defaults: T): T {
   }
 
   return result as T;
-}
-
-/**
- * Helper to create a getter-setter pair for a single persisted property
- *
- * Usage:
- * ```typescript
- * const [getValue, setValue, setupAutoSave] = createPersistentProperty<number>(
- *   'my-number',
- *   42
- * );
- *
- * let value = $state(getValue());
- * $effect(() => {
- *   setupAutoSave(value);
- * });
- * ```
- */
-export function createPersistentProperty<T>(key: string, defaultValue: T) {
-  const helper = createPersistenceHelper({ key, defaultValue });
-  return [helper.load, helper.save, helper.setupAutoSave] as const;
 }

@@ -1,12 +1,36 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { CelestialBackgroundSystem, type QualityLevel } from "@austencloud/backgrounds";
+  import {
+    CelestialBackgroundSystem,
+    type QualityLevel,
+    type CelestialLayers,
+  } from "@austencloud/backgrounds";
   import { ChipToggle, ChipGroup } from "@austencloud/chip-toggle";
   import LabPreviewCanvas from "./LabPreviewCanvas.svelte";
   import {
     getCelestialLabSettings,
     updateCelestialLabSettings,
   } from "../state/background-builder-state.svelte";
+
+  // The UI exposes four conceptual layers (clouds / godRays / islands / pillars)
+  // whose names predate the package. The package's CelestialBackgroundSystem
+  // only models `clouds` from that set; setLayerVisibility merges any extra keys
+  // into its layer bag harmlessly. We type the payload as the package's partial
+  // widened with the UI-only keys so the call is type-checked without `as any`.
+  type CelestialLayerVisibility = Partial<CelestialLayers> & {
+    godRays: boolean;
+    islands: boolean;
+    pillars: boolean;
+  };
+
+  function buildLayerVisibility(): CelestialLayerVisibility {
+    return {
+      clouds: layers.clouds,
+      godRays: layers.godRays,
+      islands: layers.islands,
+      pillars: layers.pillars,
+    };
+  }
 
   let backgroundSystem: CelestialBackgroundSystem | null = $state(null);
   let canvasDimensions = $state({ width: 800, height: 600 });
@@ -20,12 +44,7 @@
     canvasDimensions = dimensions;
     backgroundSystem = new CelestialBackgroundSystem();
     backgroundSystem.initialize(dimensions, quality);
-    backgroundSystem.setLayerVisibility({
-      clouds: layers.clouds,
-      godRays: layers.godRays,
-      islands: layers.islands,
-      pillars: layers.pillars,
-    } as any);
+    backgroundSystem.setLayerVisibility(buildLayerVisibility());
     isLoading = false;
   }
 
@@ -33,12 +52,7 @@
     backgroundSystem?.cleanup?.();
     backgroundSystem = new CelestialBackgroundSystem();
     backgroundSystem.initialize(canvasDimensions, quality);
-    backgroundSystem.setLayerVisibility({
-      clouds: layers.clouds,
-      godRays: layers.godRays,
-      islands: layers.islands,
-      pillars: layers.pillars,
-    } as any);
+    backgroundSystem.setLayerVisibility(buildLayerVisibility());
   }
 
   function setQuality(q: QualityLevel) {
@@ -50,12 +64,7 @@
   function toggleLayer(layer: keyof typeof layers) {
     layers = { ...layers, [layer]: !layers[layer] };
     updateCelestialLabSettings({ layers: { ...layers } });
-    backgroundSystem?.setLayerVisibility({
-      clouds: layers.clouds,
-      godRays: layers.godRays,
-      islands: layers.islands,
-      pillars: layers.pillars,
-    } as any);
+    backgroundSystem?.setLayerVisibility(buildLayerVisibility());
   }
 
   onDestroy(() => {
@@ -112,7 +121,7 @@
     flex-direction: column;
     gap: 20px;
     padding: 20px;
-    background: rgba(15, 15, 25, 0.8);
+    background: var(--theme-panel-bg, rgba(15, 15, 25, 0.8));
     border-radius: 16px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     overflow-y: auto;

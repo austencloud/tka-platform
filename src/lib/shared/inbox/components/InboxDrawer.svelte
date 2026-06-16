@@ -71,10 +71,12 @@
       const conversationId = inboxState.pendingConversationId;
       inboxState.clearPendingNavigation();
       // Use setTimeout to ensure state is settled before loading
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         handleConversationSelect(conversationId);
       }, 50);
+      return () => clearTimeout(timer);
     }
+    return undefined;
   });
 
   $effect(() => {
@@ -82,10 +84,12 @@
       const notificationId = inboxState.pendingNotificationId;
       inboxState.clearPendingNavigation();
       // Handle notification action
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         handleNotificationAction(notificationId);
       }, 50);
+      return () => clearTimeout(timer);
     }
+    return undefined;
   });
 
   // Auto-mark all notifications as read when viewing the notifications tab
@@ -125,9 +129,8 @@
     switch (notification.type) {
       case "message-received": {
         // Open the conversation directly
-        const msgNotification = notification as any;
-        if (msgNotification.conversationId) {
-          handleConversationSelect(msgNotification.conversationId);
+        if ("conversationId" in notification && notification.conversationId) {
+          handleConversationSelect(notification.conversationId);
         }
         break;
       }
@@ -638,15 +641,15 @@
     position: absolute;
     top: 4px;
     right: 4px;
-    min-width: 18px;
-    height: 18px;
+    min-width: 20px;
+    height: 20px;
     padding: 0 5px;
     background: var(--semantic-error, #ef4444);
-    border-radius: 9px;
+    border-radius: 10px;
     color: white;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    line-height: 18px;
+    line-height: 20px;
     text-align: center;
   }
 

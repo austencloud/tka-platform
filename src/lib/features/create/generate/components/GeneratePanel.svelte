@@ -39,6 +39,7 @@ Card-based architecture with integrated Generate button:
     type GeneratorVoiceRef,
   } from "$lib/shared/create/state/generator-voice-ref.svelte";
   import { uiConfigToGenerationOptions } from "../shared/utils/config-mapper";
+  import type { GenerationOptions } from "../shared/domain/models/generate-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
@@ -112,10 +113,10 @@ Card-based architecture with integrated Generate button:
     panelState?.closePresetDrawer();
   }
 
-  async function handleGenerate(options: any) {
+  async function handleGenerate(options: GenerationOptions | null) {
     if (hasWord) {
       await actionsState.onSpellGenerate();
-    } else {
+    } else if (options) {
       await actionsState.onGenerateClicked(options);
     }
   }

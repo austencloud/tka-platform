@@ -11,6 +11,7 @@
   import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { creatorsViewState } from "../state/creators-view-state.svelte";
   import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
@@ -174,6 +175,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
       followersLoaded = true;
     } catch (err) {
       console.error("[UserProfilePanel] Error loading followers:", err);
+      toast.error("Failed to load followers. Please try again.");
     } finally {
       followersLoading = false;
     }
@@ -187,6 +189,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
       followingLoaded = true;
     } catch (err) {
       console.error("[UserProfilePanel] Error loading following:", err);
+      toast.error("Failed to load following list. Please try again.");
     } finally {
       followingLoading = false;
     }

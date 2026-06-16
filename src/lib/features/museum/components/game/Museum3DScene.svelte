@@ -55,8 +55,8 @@
   import type { CameraFlipState } from "../../services/museum-camera-flip-controller";
   import { MuseumGeometryStreamer } from "../../services/museum-geometry-streamer";
   import { MuseumProximityRenderer, PROXIMITY_MAX_MOUNTS_PER_FRAME } from "../../services/museum-proximity-renderer";
-  import type { MountCategory } from "../../services/museum-proximity-renderer";
   import { MuseumPlayerController } from "../../services/museum-player-controller";
+  import { resolveScene, resolveRenderer } from "../resolve-threlte-scene";
 
   // Plaque texture generation uses module-level cache (generatePlaqueCanvas)
   // Torch materials use module-level template compiled once on first createTorchInstance call
@@ -64,13 +64,13 @@
 
   const threlteCtx = useThrelte();
   $effect(() => {
-    const sc = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
+    const sc = resolveScene(threlteCtx);
     if (sc && sc.fog !== atmosphere.fog) sc.fog = atmosphere.fog;
   });
 
   // Enable shadow maps on the renderer
   $effect(() => {
-    const renderer = (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer;
+    const renderer = resolveRenderer(threlteCtx);
     if (renderer && !renderer.shadowMap.enabled) {
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = PCFSoftShadowMap;
@@ -217,7 +217,7 @@
   });
 
   function getSceneObj() {
-    return (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
+    return resolveScene(threlteCtx);
   }
 
   const editorPlacement = new MuseumEditorPlacement(grid, TILE_SIZE, getSceneObj, {
@@ -448,14 +448,14 @@
     // Drain pending mount queue (max per frame to avoid spikes)
     if (pendingMounts.length > 0) {
       const batch = pendingMounts.splice(0, PROXIMITY_MAX_MOUNTS_PER_FRAME);
-      for (const { category, item } of batch) {
-        switch (category) {
-          case "plaque": visiblePlaques = [...visiblePlaques, item]; break;
-          case "performer": visiblePerformers = [...visiblePerformers, item]; break;
-          case "exhibitLight": visibleExhibitLights = [...visibleExhibitLights, item]; break;
-          case "ceilingLight": visibleCeilingLights = [...visibleCeilingLights, item]; break;
-          case "sunlight": visibleSunlights = [...visibleSunlights, item]; break;
-          case "furniture": visibleFurniture = [...visibleFurniture, item]; break;
+      for (const mount of batch) {
+        switch (mount.category) {
+          case "plaque": visiblePlaques = [...visiblePlaques, mount.item]; break;
+          case "performer": visiblePerformers = [...visiblePerformers, mount.item]; break;
+          case "exhibitLight": visibleExhibitLights = [...visibleExhibitLights, mount.item]; break;
+          case "ceilingLight": visibleCeilingLights = [...visibleCeilingLights, mount.item]; break;
+          case "sunlight": visibleSunlights = [...visibleSunlights, mount.item]; break;
+          case "furniture": visibleFurniture = [...visibleFurniture, mount.item]; break;
         }
       }
     }
@@ -730,7 +730,7 @@
 
   /** Add a room chunk's meshes to the Three.js scene */
   function addChunkToScene(chunk: RoomChunk): void {
-    const sceneObj = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
+    const sceneObj = resolveScene(threlteCtx);
     if (!sceneObj) return;
     for (const { mesh } of chunk.floorMeshes) {
       mesh.receiveShadow = true;
@@ -774,8 +774,8 @@
     onBuildStage: props.onBuildStage,
     onGeometryReady: undefined as (() => void) | undefined,
     getCamera: () => camera,
-    getScene: () => (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene,
-    getRenderer: () => (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer,
+    getScene: () => resolveScene(threlteCtx) ?? undefined,
+    getRenderer: () => resolveRenderer(threlteCtx) ?? undefined,
   };
 
   (async () => {
@@ -867,7 +867,15 @@
   // Shadow disabled on dynamic lights - toggling castShadow reactively causes
   // Three.js deallocateRenderTarget crashes.
 
-  let pendingMounts: { category: MountCategory; item: any }[] = [];
+  // Discriminated by category so the drain loop narrows `item` to the correct
+  // fixture type per case with no casts. Mirrors the visible* $state element types.
+  type PendingMount =
+    | { category: "plaque"; item: PlaquePlacement }
+    | { category: "performer"; item: (typeof grid.performers)[number] }
+    | { category: "exhibitLight" | "ceilingLight" | "sunlight"; item: LightPosition }
+    | { category: "furniture"; item: NonNullable<typeof grid.furniture>[number] }
+    | { category: "torch"; item: TorchPosition };
+  let pendingMounts: PendingMount[] = [];
 
   // Torch light set - derived from visible torches, capped at MAX_POINT_LIGHTS
   const torchLightSet = $derived.by(() => {

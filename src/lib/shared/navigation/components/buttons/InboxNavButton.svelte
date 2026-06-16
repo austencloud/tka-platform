@@ -107,7 +107,7 @@
     background: var(--semantic-error, #ef4444);
     border-radius: 9px;
     color: white;
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     line-height: 18px;
     text-align: center;

@@ -224,6 +224,13 @@
 
 <style>
 	.shuffle-card {
+		/* Shared Fuse brand gradient — mirrors FuseLayout / FuseResultView. */
+		--fuse-gradient: linear-gradient(
+			135deg,
+			var(--fuse-accent-light, #fb923c) 0%,
+			var(--fuse-accent, #f97316) 50%,
+			var(--fuse-accent-deep, #ea580c) 100%
+		);
 		display: flex;
 		flex-direction: column;
 		height: 100%;
@@ -293,7 +300,7 @@
 	}
 
 	.select-btn {
-		background: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
+		background: var(--fuse-gradient);
 		color: #ffffff;
 		border-color: transparent;
 	}
@@ -309,14 +316,14 @@
 		justify-content: center;
 		gap: var(--spacing-xs, 4px);
 		padding: 10px 16px;
-		border: 1.5px solid rgba(34, 197, 94, 0.4);
+		border: 1.5px solid color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
 		border-radius: var(--radius-md, 8px);
 		font-size: var(--font-size-min, 14px);
 		font-weight: 600;
 		cursor: default;
 		min-height: 48px;
-		background: rgba(34, 197, 94, 0.15);
-		color: rgb(134, 239, 172);
+		background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+		color: color-mix(in srgb, var(--semantic-success, #22c55e) 55%, #ffffff);
 	}
 
 	.state-msg {

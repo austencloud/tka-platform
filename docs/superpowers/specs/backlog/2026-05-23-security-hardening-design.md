@@ -1,6 +1,22 @@
 # Security Hardening
 
-## Status: BACKLOG
+## Status: PARTIALLY SHIPPED — re-triaged 2026-06-13
+
+**Reconciliation (verified against current code 2026-06-13):**
+
+| # | Finding | State |
+|---|---|---|
+| 1 | qr-video PUT no auth | **PARTIAL** — same-origin check + MP4 magic-byte validation added; `requireFirebaseUser` still absent. Origin is spoofable by non-browser clients. **OPEN — needs product call** (does QR Remix allow guest uploads?). |
+| 2 | appMetrics world-writable | ✅ shipped — constrained `+1`-only update, `create/delete: if false`. |
+| 3 | HogQL injection | ✅ shipped — strict `/^[a-zA-Z0-9]{1,128}$/` + escaped `safeId` (this spec's sanctioned fallback). |
+| 4 | scanEvents recursive wildcard | ✅ shipped — wildcard is read-only for admin; creation scoped to `shortcodes/{code}/scanEvents`. |
+| 5 | unbounded maxAttempts / no auth | ✅ clamp shipped (`MAX_ATTEMPTS_CEILING = 200`); batch-render now `requireFirebaseUser`. `tika/sequence` left rate-limit-only (anon landing demo). **OPEN if anon tika gen is not intended.** |
+| 6 | in-memory rate limiter resets per isolate | ✅ shipped 2026-06-13 (commit `bc7490f32f`) — native CF ratelimit binding for the four 60s presets, in-memory fallback retained for the three 15-min auth presets. **Follow-up: Durable Object for the 15-min presets** (native binding can't express their window). |
+| 7 | feedback key in query string | ✅ shipped — POST + `x-api-key` header; GET deprecated. |
+| 8 | CSP `unsafe-eval` | **WON'T-FIX as specced** — Three.js TSL uses `new Function()` for shader compilation in prod, so dev-only gating is infeasible (documented in hooks.server.ts). Nonce migration remains a large optional follow-up. |
+| 9 | followerCount manipulation | ✅ shipped — removed from client rules. |
+
+**Remaining open work:** F1 auth (product decision), F5-tika auth (product decision), F6 Durable Object follow-up for 15-min presets, F8 CSP nonce migration (large, optional). Original findings retained below.
 
 ## Problem
 

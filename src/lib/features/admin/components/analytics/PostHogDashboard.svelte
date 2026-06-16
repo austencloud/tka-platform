@@ -18,6 +18,7 @@
   import type { SystemStateManager } from "../../services/system-state-manager";
   import type { PostHogAnalyticsProvider } from "../../services/post-hog-analytics-provider";
   import { t } from "$lib/shared/i18n/i18n.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // PostHog project ID for dashboard links
   const POSTHOG_PROJECT_ID = "299320";
@@ -25,6 +26,7 @@
 
   // State
   let isLoading = $state(true);
+  let loadError = $state(false);
   let postHogAvailable = $state(false);
   let cacheAge = $state<string>("");
 
@@ -99,7 +101,9 @@
     },
   ];
 
-  onMount(async () => {
+  async function loadAnalytics() {
+    isLoading = true;
+    loadError = false;
     try {
       // Check PostHog availability
       const analyticsProvider = getPostHogAnalyticsProvider();
@@ -166,10 +170,14 @@
       }
     } catch (error) {
       console.error("Failed to load analytics data:", error);
+      loadError = true;
+      toast.error("Failed to load analytics data.");
     } finally {
       isLoading = false;
     }
-  });
+  }
+
+  onMount(loadAnalytics);
 
   function formatNumber(num: number): string {
     if (num >= 1000) {
@@ -200,6 +208,15 @@
     <div class="loading-state">
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
       <p>Loading analytics...</p>
+    </div>
+  {:else if loadError}
+    <div class="error-state" role="alert">
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+      <p>Couldn't load analytics data.</p>
+      <button class="retry-button" onclick={loadAnalytics}>
+        <i class="fas fa-rotate-right" aria-hidden="true"></i>
+        Retry
+      </button>
     </div>
   {:else}
     <!-- Quick Stats -->
@@ -404,6 +421,52 @@
 
   .loading-state i {
     font-size: 2.5rem;
+  }
+
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    gap: 16px;
+    text-align: center;
+    color: var(--theme-text);
+  }
+
+  .error-state i {
+    font-size: 2.5rem;
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .error-state p {
+    margin: 0;
+    color: var(--theme-text-dim);
+  }
+
+  .retry-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 8px 16px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    background: var(--theme-panel-bg);
+    color: var(--theme-text);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: background var(--duration-fast, 0.15s) ease;
+  }
+
+  .retry-button:hover {
+    background: var(--theme-card-bg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .retry-button {
+      transition: none;
+    }
   }
 
   /* Sections */

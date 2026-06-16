@@ -87,6 +87,7 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
       }
     } catch (error) {
       console.error("[CanvasSection] Error initializing animation:", error);
+      loadError = "Failed to load animation canvas";
     }
   });
 

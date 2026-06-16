@@ -126,8 +126,10 @@
     onRenderStateChange,
   }: Props = $props();
 
-  let nameDraft = $state(deckName);
-  $effect(() => { nameDraft = deckName; });
+  // Editable mirror of the deckName prop. A reassignable $derived shows the
+  // current prop, lets the input override it while typing (bind:value), and
+  // resets to the prop when it changes externally — no prop→state sync effect.
+  let nameDraft = $derived(deckName);
 
   function commitName() {
     const t = nameDraft.trim();
@@ -455,7 +457,7 @@
     align-items: center;
     gap: 5px;
     font-weight: 600;
-    color: #fbbf24;
+    color: var(--semantic-warning, #fbbf24);
   }
 
   .action-buttons {
@@ -497,27 +499,27 @@
   }
 
   .swap-btn {
-    background: rgba(139, 92, 246, 0.15);
-    border-color: rgba(139, 92, 246, 0.3);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
     color: var(--theme-accent, #a78bfa);
   }
 
   .swap-btn:hover {
-    background: rgba(139, 92, 246, 0.25);
-    border-color: rgba(139, 92, 246, 0.5);
-    color: #fff;
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 25%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
+    color: var(--theme-text, #fff);
   }
 
   .remove-btn {
-    background: rgba(248, 113, 113, 0.14);
-    border-color: rgba(248, 113, 113, 0.32);
-    color: #f87171;
+    background: color-mix(in srgb, var(--semantic-error, #f87171) 14%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #f87171) 32%, transparent);
+    color: var(--semantic-error, #f87171);
   }
 
   .remove-btn:hover {
-    background: rgba(248, 113, 113, 0.26);
-    border-color: rgba(248, 113, 113, 0.55);
-    color: #fff;
+    background: color-mix(in srgb, var(--semantic-error, #f87171) 26%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #f87171) 55%, transparent);
+    color: var(--theme-text, #fff);
   }
 
   @media (max-width: 768px) {

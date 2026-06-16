@@ -217,7 +217,7 @@
   }
 
   .section-title i.fa-compass {
-    color: #3b82f6;
+    color: var(--semantic-info, #3b82f6);
   }
 
   /* Toggle List */

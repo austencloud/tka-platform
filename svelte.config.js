@@ -15,6 +15,7 @@ const config = {
           '/.well-known/*',
           '/animations/*',
           '/assets/*',
+          '/audio/*',
           '/branding/*',
           '/data/*',
           '/fonts/*',

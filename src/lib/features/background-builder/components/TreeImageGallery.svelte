@@ -278,11 +278,11 @@
 
   .tree-count {
     padding: 2px 6px;
-    background: rgba(132, 204, 22, 0.2);
+    background: color-mix(in srgb, var(--theme-success, #a3e635) 20%, transparent);
     border-radius: 8px;
-    font-size: 0.6rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    color: #a3e635;
+    color: var(--theme-success, #a3e635);
   }
 
   .empty-state {
@@ -302,6 +302,23 @@
 
     .image-grid.large {
       grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .category-btn,
+    .image-card,
+    .delete-btn {
+      transition: none;
+    }
+
+    .image-card:hover {
+      transform: none;
+    }
+
+    .delete-btn:hover,
+    .delete-btn:active {
+      transform: none;
     }
   }
 </style>

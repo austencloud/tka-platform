@@ -37,6 +37,7 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import {
   getUserSequencesPath,
 } from "$lib/shared/library/data/firestore-paths";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
 export class SequenceRepository {
   constructor(
@@ -143,6 +144,7 @@ export class SequenceRepository {
       return sequence;
     } catch (error) {
       console.error(`Failed to get sequence ${id}:`, error);
+      toast.error("Couldn't load that sequence. Please try again.");
       return null;
     }
   }
@@ -171,6 +173,7 @@ export class SequenceRepository {
       });
     } catch (error) {
       console.error("Failed to get all sequences:", error);
+      toast.error("Couldn't load your sequences. Please refresh.");
       return [];
     }
   }
@@ -201,6 +204,7 @@ export class SequenceRepository {
       return snap.docs.map((d) => this.hydrateSequence({ ...d.data(), id: d.id } as SequenceData));
     } catch (error) {
       console.error("[SequenceRepository] getByPathHash failed:", error);
+      toast.error("Couldn't search sequences by hand path. Please try again.");
       return [];
     }
   }
@@ -231,6 +235,7 @@ export class SequenceRepository {
       return snap.docs.map((d) => this.hydrateSequence({ ...d.data(), id: d.id } as SequenceData));
     } catch (error) {
       console.error("[SequenceRepository] getBySoloHash failed:", error);
+      toast.error("Couldn't search sequences by prop. Please try again.");
       return [];
     }
   }

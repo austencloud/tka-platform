@@ -369,21 +369,21 @@
   }
 
   .overflow-item.save {
-    color: #22c55e;
+    color: var(--semantic-success, #22c55e);
   }
 
   .overflow-item.remix {
-    color: #f59e0b;
+    color: var(--semantic-warning, #f59e0b);
   }
 
   .overflow-item.practice-active {
-    color: #f87171;
+    color: var(--semantic-error, #f87171);
   }
 
   .overflow-item.practice-active:hover,
   .overflow-item.practice-active:focus {
-    background: rgba(239, 68, 68, 0.1);
-    color: #f87171;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    color: var(--semantic-error, #f87171);
   }
 
   .menu-divider {

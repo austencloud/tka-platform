@@ -31,6 +31,7 @@
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import { modelTemplateCache } from "../game/MuseumTorch3D.svelte";
   import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
+  import { resolveScene, resolveCamera, resolveRenderer } from "../resolve-threlte-scene";
 
   // ── Constants ──
 
@@ -56,9 +57,9 @@
   // on version. Use the ?.current ?? fallback pattern the codebase uses elsewhere.
 
   const threlteCtx = useThrelte();
-  function getScene() { return (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene; }
-  function getCamera() { return (threlteCtx as any).camera?.current ?? (threlteCtx as any).camera; }
-  function getRenderer() { return (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer; }
+  function getScene() { return resolveScene(threlteCtx); }
+  function getCamera() { return resolveCamera(threlteCtx); }
+  function getRenderer() { return resolveRenderer(threlteCtx); }
 
   // ── Ghost state ──
 

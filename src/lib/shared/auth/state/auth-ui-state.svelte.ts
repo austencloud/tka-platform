@@ -23,10 +23,20 @@ export function closeAuthDialog(): void {
 }
 
 /**
+ * Reactive handle for the auth dialog: open/close actions plus a
+ * reactive `isOpen` getter backed by the module-level $state rune.
+ */
+export interface AuthDialogState {
+  readonly isOpen: boolean;
+  open: () => void;
+  close: () => void;
+}
+
+/**
  * Get reactive state of auth dialog
  * Use this in components to reactively track dialog state
  */
-export function getAuthDialogState() {
+export function getAuthDialogState(): AuthDialogState {
   return {
     get isOpen() {
       return isAuthDialogOpen;
@@ -37,7 +47,7 @@ export function getAuthDialogState() {
 }
 
 // Export reactive getter for direct use
-export const authDialogState = {
+export const authDialogState: AuthDialogState = {
   get isOpen() {
     return isAuthDialogOpen;
   },

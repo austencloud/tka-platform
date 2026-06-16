@@ -372,20 +372,21 @@
   }
 
   .timeline-clip.changing-track {
-    outline: 2px solid #cc5de8;
+    outline: 2px solid var(--feature-edit, #cc5de8);
     outline-offset: -2px;
     box-shadow:
-      0 6px 20px rgba(204, 93, 232, 0.5),
-      0 0 16px rgba(204, 93, 232, 0.4);
+      0 6px 20px color-mix(in srgb, var(--feature-edit, #cc5de8) 50%, transparent),
+      0 0 16px color-mix(in srgb, var(--feature-edit, #cc5de8) 40%, transparent);
     opacity: 0.85;
   }
 
   .timeline-clip.trimming {
-    outline: 2px solid #ffd43b;
+    outline: 2px solid var(--semantic-warning, #ffd43b);
     outline-offset: -2px;
     box-shadow:
       0 4px 12px rgba(0, 0, 0, 0.4),
-      0 0 12px rgba(255, 212, 59, 0.3);
+      0 0 12px
+        color-mix(in srgb, var(--semantic-warning, #ffd43b) 30%, transparent);
   }
 
   .timeline-clip.resizing {
@@ -393,7 +394,8 @@
     outline-offset: -2px;
     box-shadow:
       0 4px 12px rgba(0, 0, 0, 0.4),
-      0 0 12px rgba(81, 207, 102, 0.3);
+      0 0 12px
+        color-mix(in srgb, var(--semantic-success, #51cf66) 30%, transparent);
   }
 
   .clip-body {
@@ -551,17 +553,29 @@
 
   .trim-handle.left {
     left: 0;
-    background: linear-gradient(90deg, rgba(255, 212, 59, 0.6), transparent);
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--semantic-warning, #ffd43b) 60%, transparent),
+      transparent
+    );
     border-radius: 4px 0 0 4px;
   }
 
   .trim-handle.right {
     right: 12px;
-    background: linear-gradient(-90deg, rgba(255, 212, 59, 0.6), transparent);
+    background: linear-gradient(
+      -90deg,
+      color-mix(in srgb, var(--semantic-warning, #ffd43b) 60%, transparent),
+      transparent
+    );
   }
 
   .trim-handle:hover {
-    background: rgba(255, 212, 59, 0.4);
+    background: color-mix(
+      in srgb,
+      var(--semantic-warning, #ffd43b) 40%,
+      transparent
+    );
   }
 
   .handle-grip {
@@ -598,7 +612,11 @@
 
   .resize-handle.right {
     right: 0;
-    background: linear-gradient(-90deg, rgba(81, 207, 102, 0.6), transparent);
+    background: linear-gradient(
+      -90deg,
+      color-mix(in srgb, var(--semantic-success, #51cf66) 60%, transparent),
+      transparent
+    );
     border-radius: 0 4px 4px 0;
   }
 
@@ -609,7 +627,11 @@
   }
 
   .resize-handle:hover {
-    background: rgba(81, 207, 102, 0.4);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #51cf66) 40%,
+      transparent
+    );
   }
 
   .resize-grip {

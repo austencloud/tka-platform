@@ -34,7 +34,6 @@ export interface WordHeaderOptions {
   borderColor?: string;
   rotationPeriod?: LoopRotationPeriod;
   inversionPeriod?: LoopInversionPeriod;
-  period?: number;
   accentColor?: string;
   accentTintOpacity?: number;
 }
@@ -245,7 +244,6 @@ export class TextRenderer {
       loopComponents: packageComponents,
       rotationPeriod: opts.rotationPeriod,
       inversionPeriod: opts.inversionPeriod,
-      period: opts.period,
       darkMode: opts.darkMode ?? false,
       backgroundColor: opts.backgroundColor,
       borderColor: opts.borderColor,

@@ -102,6 +102,8 @@
   let handRev = $state<"smooth" | "mixed" | "choppy">("mixed");
   let dashes = $state<"low" | "mixed" | "high">("mixed");
   let seed = $state(mintSeed());
+  let wordInputEl = $state<HTMLInputElement | null>(null);
+  $effect(() => { if (wordEditing && wordInputEl) wordInputEl.focus(); });
 
   // Start Position & Orientation — deck wants a SUBSET (a deck draws from many start
   // positions), so this is MULTI-select, unlike Construct's single-pick. Content-driven grid
@@ -220,7 +222,7 @@
             <span class="we-label">Word</span>
             <input
               class="we-input"
-              autofocus
+              bind:this={wordInputEl}
               placeholder="A–Z"
               bind:value={word}
               onblur={() => (wordEditing = false)}

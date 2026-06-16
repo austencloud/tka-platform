@@ -23,6 +23,7 @@
   import MessageActions from "./MessageActions.svelte";
   import { messagingService } from "$lib/shared/messaging/services/messenger";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
+  import { toast } from "../../../toast/state/toast-state.svelte";
 
   interface Props {
     message: Message;
@@ -70,6 +71,7 @@
       .toggleReaction(message.conversationId, message.id, emoji)
       .catch((err) => {
         console.error("Failed to toggle reaction:", err);
+        toast.error("Failed to update reaction");
       });
   }
 
@@ -391,7 +393,8 @@
   }
 
   .own .read-receipt.read {
-    color: #93c5fd;
+    /* Lighter tint of the read color for contrast on the accent bubble */
+    color: color-mix(in srgb, var(--semantic-info) 60%, white);
   }
 
   .read-time {

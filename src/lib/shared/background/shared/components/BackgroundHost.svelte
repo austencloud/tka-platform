@@ -36,15 +36,23 @@
 	// The @austencloud/backgrounds package caps canvas at 960×540 for perf,
 	// but that makes 2D backgrounds look zoomed/blurry on modern displays.
 	// Patch the controller to use full viewport resolution (capped at 1x DPR).
-	// The @austencloud/backgrounds package caps canvas at 960×540 for perf,
-	// but that makes 2D backgrounds look zoomed/blurry on modern displays.
-	// Patch the controller to use full viewport resolution (capped at 1x DPR).
+	// Proper fix: expose a public resolution API in @austencloud/backgrounds and
+	// remove this patch. Until then, keep it typed via the interface below.
+
+	/** Private fields accessed by the patched updateCanvasDimensions method. */
+	interface BackgroundControllerPrivate {
+		canvasA: HTMLCanvasElement | null;
+		canvasB: HTMLCanvasElement | null;
+		container: HTMLElement | null;
+		updateCanvasDimensions: () => void;
+	}
+
 	function patchCanvasResolution(ctrl: NonNullable<typeof controller>) {
-		const c = ctrl as any;
-		c.updateCanvasDimensions = function (this: any) {
-			const cA = this.canvasA as HTMLCanvasElement | null;
-			const cB = this.canvasB as HTMLCanvasElement | null;
-			const cont = this.container as HTMLElement | null;
+		const c = ctrl as unknown as BackgroundControllerPrivate;
+		c.updateCanvasDimensions = function (this: BackgroundControllerPrivate) {
+			const cA = this.canvasA;
+			const cB = this.canvasB;
+			const cont = this.container;
 			if (!cA || !cB || !cont) return;
 			const rect = cont.getBoundingClientRect();
 			const w = Math.max(1, Math.floor(rect.width));
@@ -60,7 +68,7 @@
 		if (!browser || !containerRef || !controller) return;
 		controller.mount(containerRef);
 		patchCanvasResolution(controller);
-		(controller as any).updateCanvasDimensions();
+		(controller as unknown as BackgroundControllerPrivate).updateCanvasDimensions();
 		mounted = true;
 		onReady?.();
 	});

@@ -113,7 +113,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease;
   }
 
   .toggle-chip:hover {

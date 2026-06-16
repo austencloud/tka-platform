@@ -14,13 +14,11 @@
     ViewerLayoutState,
   } from "../domain/viewer-prop-groups";
   import type { SplitConfig } from '../services/viewer-state-persistence';
-  import { COMPARISON_MODE_LAYOUTS, splitConfigToMode, type ComparisonMode } from '../services/viewer-state-persistence';
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
   import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import RightRail from "./RightRail.svelte";
-  import ComparisonModeBar from './ComparisonModeBar.svelte';
   import VideoGallery from './VideoGallery.svelte';
   import MandalaPane from './MandalaPane.svelte';
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -110,7 +108,6 @@
      */
     isExporting?: boolean;
     splitConfig?: SplitConfig;
-    onSplitConfigReplace?: (config: SplitConfig) => void;
     isLoggedIn?: boolean;
     onVideoUpload?: () => void;
   }
@@ -137,7 +134,6 @@
     rerenderTrigger = 0,
     isExporting = false,
     splitConfig = { leftPane: 'animation', rightPane: 'card' },
-    onSplitConfigReplace,
     isLoggedIn = false,
     onVideoUpload,
   }: Props = $props();
@@ -173,12 +169,6 @@
   $effect(() => {
     if (needs3D) startSceneAssetPreload();
   });
-
-  const comparisonMode = $derived(splitConfigToMode(splitConfig));
-
-  function selectComparisonMode(mode: ComparisonMode) {
-    onSplitConfigReplace?.(COMPARISON_MODE_LAYOUTS[mode]);
-  }
 
   function handleCloseClick(e: MouseEvent | KeyboardEvent) {
     e.stopPropagation();
@@ -353,10 +343,6 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
   data-focused={layout.focusedPane}
   data-mobile-transport={showMobileTransport || undefined}
 >
-  {#if !layout.focusedPane && !isExporting && onSplitConfigReplace && !layout.isMobile}
-    <ComparisonModeBar current={comparisonMode} onSelect={selectComparisonMode} />
-  {/if}
-
   <!-- Animation pane -->
   <div
     class="split-column animation-column"

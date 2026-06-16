@@ -4,7 +4,7 @@
   Global TKA user map - shows where practitioners are located worldwide
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { auth } from "$lib/shared/auth/firebase";
   import { getLocationSharingOrchestrator } from "./get-location-sharing-orchestrator";
@@ -19,20 +19,33 @@
   let userLocation: { lat: number; lng: number } | null = $state(null);
   let showConsentSheet = $state(false);
   let isLoading = $state(true);
+  let loadError = $state(false);
   let hasSharedLocation = $state(false);
 
   const orchestrator = getLocationSharingOrchestrator();
+
+  let consentTimer: ReturnType<typeof setTimeout> | null = null;
 
   onMount(async () => {
     await loadLocations();
     await checkUserLocationStatus();
   });
 
+  onDestroy(() => {
+    if (consentTimer !== null) {
+      clearTimeout(consentTimer);
+      consentTimer = null;
+    }
+  });
+
   async function loadLocations() {
+    loadError = false;
+    isLoading = true;
     try {
       locations = await orchestrator.getPublicLocations();
     } catch (error) {
       console.error("Failed to load locations:", error);
+      loadError = true;
       toast.error(t('community_error_load_map'));
     } finally {
       isLoading = false;
@@ -48,8 +61,9 @@
 
     // If user hasn't shared yet, show consent sheet after a delay
     if (!hasConsent) {
-      setTimeout(() => {
+      consentTimer = setTimeout(() => {
         showConsentSheet = true;
+        consentTimer = null;
       }, 2000);
     }
   }
@@ -62,24 +76,22 @@
     }
 
     try {
-      const success = await orchestrator.requestLocationSharing(userId);
+      await orchestrator.requestLocationSharing(userId);
 
-      if (success) {
-        toast.success(t('community_success_city_added'));
-        hasSharedLocation = true;
+      toast.success(t('community_success_city_added'));
+      hasSharedLocation = true;
 
-        // Reload locations to show the new marker
-        await loadLocations();
+      // Reload locations to show the new marker
+      await loadLocations();
 
-        // Get user's location for map centering (city center will be shown)
-        const position = await getCurrentLocation();
-        userLocation = { lat: position.lat, lng: position.lng };
-      } else {
-        toast.error(t('community_error_add_city'));
-      }
+      // Get user's location for map centering (city center will be shown)
+      const position = await getCurrentLocation();
+      userLocation = { lat: position.lat, lng: position.lng };
     } catch (error) {
       console.error("Location sharing error:", error);
-      toast.error(t('community_error_access_location'));
+      // Surface the specific failure reason rather than a generic sentinel.
+      const message = error instanceof Error ? error.message : "";
+      toast.error(message || t('community_error_add_city'));
     }
   }
 
@@ -178,6 +190,16 @@
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
         <p>{t('community_loading_map')}</p>
       </div>
+    {:else if loadError}
+      <div class="error-state" role="alert">
+        <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+        <h2>{t('community_error_map_title')}</h2>
+        <p>{t('community_error_map_body')}</p>
+        <button class="control-btn share-btn" onclick={loadLocations}>
+          <i class="fas fa-rotate-right" aria-hidden="true"></i>
+          {t('community_error_retry')}
+        </button>
+      </div>
     {:else}
       <GlobalUserMap
         {locations}
@@ -261,7 +283,7 @@
 
   .share-btn {
     background: var(--theme-accent, #4a9eff);
-    color: #000000;
+    color: var(--text-on-accent, #000);
   }
 
   .share-btn:hover {
@@ -286,7 +308,7 @@
   }
 
   .remove-btn:hover {
-    background: rgba(239, 68, 68, 0.1);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
   }
 
   .map-section {
@@ -296,7 +318,8 @@
   }
 
   .api-key-warning,
-  .loading-state {
+  .loading-state,
+  .error-state {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -304,6 +327,32 @@
     text-align: center;
     max-width: 500px;
     padding: 32px;
+  }
+
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .error-state i {
+    font-size: 48px;
+    color: var(--semantic-error, #ef4444);
+    margin-bottom: 4px;
+  }
+
+  .error-state h2 {
+    font-size: var(--font-size-lg, 20px);
+    color: var(--theme-text, #ffffff);
+    margin: 0;
+  }
+
+  .error-state p {
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+    line-height: 1.5;
+    margin: 0 0 8px 0;
   }
 
   .api-key-warning i {

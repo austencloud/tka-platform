@@ -6,6 +6,7 @@
  */
 
 import { safeSessionStorageGet, safeSessionStorageSet } from "$lib/shared/foundation/services/storage-manager";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 export class FavoritesManager {
   private readonly CACHE_VERSION = "v2.1"; // ✅ ROBUST: Cache versioning
   private readonly STORAGE_KEY = `tka-${this.CACHE_VERSION}-favorites`;
@@ -128,6 +129,8 @@ export class FavoritesManager {
       safeSessionStorageSet(this.STORAGE_KEY, favorites);
     } catch (error) {
       console.error("Failed to save favorites to storage:", error);
+      // Surface the failure - otherwise the favorite toggle silently fails to persist
+      toast.error("Couldn't save your favorites. Changes may be lost when you leave.");
     }
   }
 }

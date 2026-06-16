@@ -3,14 +3,11 @@
    * MotionTypesSection - Displays the STATIC/DASH/SHIFT triadic pattern
    * and the orientation behavior pairing (PRO/STATIC vs ANTI/DASH)
    */
-  import {
-    MOTION_TYPE_TRIAD,
-    ORIENTATION_PAIRINGS,
-    ORIENTATIONS,
-  } from "../domain/content";
+  import { MOTION_TYPE_TRIAD, ORIENTATION_PAIRINGS } from "../domain/content";
+  import "./triad-palette.css";
 </script>
 
-<section class="motion-types">
+<section class="motion-types mf-triad-scope">
   <div class="container">
     <h2>Level 3: Motion Types & Orientation</h2>
     <p class="section-intro">
@@ -145,7 +142,7 @@
     padding: 80px 24px;
     background: linear-gradient(
       180deg,
-      rgba(236, 72, 153, 0.03) 0%,
+      color-mix(in srgb, var(--mf-antithesis) 3%, transparent) 0%,
       transparent 100%
     );
   }
@@ -220,15 +217,15 @@
   }
 
   .motion-card.thesis {
-    --card-accent: #6366f1;
+    --card-accent: var(--mf-thesis);
   }
 
   .motion-card.antithesis {
-    --card-accent: #ec4899;
+    --card-accent: var(--mf-antithesis);
   }
 
   .motion-card.synthesis {
-    --card-accent: #14b8a6;
+    --card-accent: var(--mf-synthesis);
   }
 
   .card-header {
@@ -274,7 +271,7 @@
     right: 8px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 0.75rem);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -291,11 +288,11 @@
     margin-top: 12px;
     display: inline-block;
     padding: 4px 12px;
-    background: rgba(20, 184, 166, 0.15);
-    border: 1px solid rgba(20, 184, 166, 0.3);
+    background: color-mix(in srgb, var(--mf-synthesis) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mf-synthesis) 30%, transparent);
     border-radius: 12px;
     font-size: 0.8125rem;
-    color: #5eead4;
+    color: var(--mf-synthesis-light);
     font-weight: 500;
   }
 
@@ -338,28 +335,28 @@
   }
 
   .pattern-item.thesis {
-    border-color: rgba(99, 102, 241, 0.3);
+    border-color: color-mix(in srgb, var(--mf-thesis) 30%, transparent);
   }
 
   .pattern-item.thesis .label {
-    color: #a5b4fc;
+    color: var(--mf-thesis-light);
   }
 
   .pattern-item.antithesis {
-    border-color: rgba(236, 72, 153, 0.3);
+    border-color: color-mix(in srgb, var(--mf-antithesis) 30%, transparent);
   }
 
   .pattern-item.antithesis .label {
-    color: #f9a8d4;
+    color: var(--mf-antithesis-light);
   }
 
   .pattern-item.synthesis {
-    border-color: rgba(20, 184, 166, 0.3);
+    border-color: color-mix(in srgb, var(--mf-synthesis) 30%, transparent);
     padding: 20px 32px;
   }
 
   .pattern-item.synthesis .label {
-    color: #5eead4;
+    color: var(--mf-synthesis-light);
     font-size: 1.125rem;
   }
 
@@ -480,13 +477,13 @@
   }
 
   .pair.radial .ori-item {
-    color: #a5b4fc;
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    color: var(--mf-thesis-light);
+    border: 1px solid color-mix(in srgb, var(--mf-thesis) 30%, transparent);
   }
 
   .pair.non-radial .ori-item {
-    color: #f9a8d4;
-    border: 1px solid rgba(236, 72, 153, 0.3);
+    color: var(--mf-antithesis-light);
+    border: 1px solid color-mix(in srgb, var(--mf-antithesis) 30%, transparent);
   }
 
   .toggle {
@@ -504,11 +501,11 @@
   .base-four-insight {
     background: linear-gradient(
       135deg,
-      rgba(99, 102, 241, 0.08) 0%,
-      rgba(236, 72, 153, 0.08) 50%,
-      rgba(20, 184, 166, 0.08) 100%
+      color-mix(in srgb, var(--mf-thesis) 8%, transparent) 0%,
+      color-mix(in srgb, var(--mf-antithesis) 8%, transparent) 50%,
+      color-mix(in srgb, var(--mf-synthesis) 8%, transparent) 100%
     );
-    border: 1px solid rgba(99, 102, 241, 0.15);
+    border: 1px solid color-mix(in srgb, var(--mf-thesis) 15%, transparent);
     border-radius: 20px;
     padding: 28px;
     text-align: center;

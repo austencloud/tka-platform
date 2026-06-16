@@ -10,31 +10,26 @@
 
   type MirrorAxis = "vertical" | "horizontal";
 
+  // Placeholder renderer: `sequence` stays in the prop contract for the real
+  // mirroring implementation (callers already pass it), but nothing consumes
+  // it yet, so it is intentionally not destructured.
   let {
-    sequence,
     axis = "vertical",
-    isPlaying = false,
-    speed = 1.0,
-    shouldLoop = false,
-    playbackMode = "continuous",
-    stepPlaybackPauseMs = 300,
-    stepPlaybackStepSize = 1,
     onOpenSettings,
   }: {
     sequence: SequenceData | null;
     axis?: MirrorAxis;
-    isPlaying?: boolean;
-    speed?: number;
-    shouldLoop?: boolean;
-    playbackMode?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode;
-    stepPlaybackPauseMs?: number;
-    stepPlaybackStepSize?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").StepPlaybackStepSize;
     onOpenSettings: (canvasId: string) => void;
   } = $props();
 </script>
 
 <div class="mirror-renderer">
   <CanvasControls canvasId="mirror" {onOpenSettings} />
+
+  <div class="unavailable-notice" role="status">
+    <i class="fas fa-circle-info" aria-hidden="true"></i>
+    <span>Mirror mode isn't available yet. This is a preview of the split layout.</span>
+  </div>
 
   <div class="canvas-split">
     <!-- Original Side -->
@@ -137,6 +132,29 @@
     justify-content: center;
   }
 
+  .unavailable-notice {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: min(90%, 28rem);
+    padding: 0.625rem 1rem;
+    background: var(--theme-panel-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    color: var(--theme-text);
+    font-size: var(--font-size-min); /* essential messaging, 14px floor */
+  }
+
+  .unavailable-notice i {
+    color: var(--semantic-info-text, #60a5fa);
+    flex-shrink: 0;
+  }
+
   .placeholder-visual {
     font-size: 6rem;
     opacity: 0.1;
@@ -158,7 +176,7 @@
     background: linear-gradient(
       to bottom,
       transparent,
-      rgba(6, 182, 212, 0.4),
+      color-mix(in srgb, var(--feature-view, #06b6d4) 40%, transparent),
       transparent
     );
   }
@@ -166,13 +184,13 @@
   .divider-icon {
     width: 36px;
     height: 36px;
-    background: rgba(6, 182, 212, 0.2);
-    border: 1px solid rgba(6, 182, 212, 0.4);
+    background: color-mix(in srgb, var(--feature-view, #06b6d4) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--feature-view, #06b6d4) 40%, transparent);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #22d3ee;
+    color: var(--feature-view, #22d3ee);
     font-size: 0.85rem;
     flex-shrink: 0;
   }
@@ -196,7 +214,7 @@
       background: linear-gradient(
         to right,
         transparent,
-        rgba(6, 182, 212, 0.4),
+        color-mix(in srgb, var(--feature-view, #06b6d4) 40%, transparent),
         transparent
       );
     }

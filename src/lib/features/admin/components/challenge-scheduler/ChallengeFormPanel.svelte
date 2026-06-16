@@ -237,6 +237,9 @@
 
 <style>
   .detail-panel {
+    /* Brand purple gradient (shared with SchedulerTimelineView). No global token
+       matches this exact 2-stop ramp; scoped per never-hand-roll fix pattern. */
+    --challenge-brand-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
@@ -455,7 +458,7 @@
     padding: 0.5rem;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 6px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     opacity: 0.7;
     transition: all var(--duration-normal) ease;
   }
@@ -540,7 +543,7 @@
   }
 
   .schedule-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--challenge-brand-gradient);
     color: #fff;
     display: flex;
     align-items: center;

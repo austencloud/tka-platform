@@ -131,7 +131,7 @@
   }
 
   .mode-desc {
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 400;
     color: var(--theme-text-dim, var(--theme-text-dim));
     line-height: 1.2;

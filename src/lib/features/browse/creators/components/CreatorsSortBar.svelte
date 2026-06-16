@@ -113,7 +113,7 @@
     color: var(--theme-text, #fff);
     font-size: var(--font-size-sm, 14px);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal, 200ms) ease;
   }
 
   .sort-trigger:hover {
@@ -141,7 +141,7 @@
   .chevron {
     font-size: 0.75rem;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal, 200ms) ease;
   }
 
   .chevron.rotated {
@@ -172,7 +172,7 @@
     color: var(--theme-text, #fff);
     font-size: var(--font-size-sm, 14px);
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background var(--duration-fast, 150ms) ease;
     text-align: left;
   }
 

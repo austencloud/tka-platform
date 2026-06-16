@@ -42,7 +42,6 @@ Supports letter highlighting during animation playback.
     loopComponents = null,
     rotationPeriod,
     inversionPeriod,
-    loopPeriod,
   }: {
     word?: string | null;
     visible?: boolean;
@@ -52,7 +51,6 @@ Supports letter highlighting during animation playback.
     loopComponents?: Set<LOOPComponent> | null;
     rotationPeriod?: Period;
     inversionPeriod?: Period;
-    loopPeriod?: number;
   } = $props();
 
   // Animation state machine: "idle" | "exiting" | "entering"
@@ -139,6 +137,13 @@ Supports letter highlighting during animation playback.
 
     wasVisible = currentlyVisible;
     lastWord = currentWord;
+  });
+
+  // Unmount-only timer cleanup. The effect above intentionally does NOT return
+  // a cleanup (it would clear timers on every re-run - the race documented
+  // there), so this dependency-free effect handles destroy instead.
+  $effect(() => {
+    return clearAnimationTimers;
   });
 
   // Derive display text from displayedWord (the word currently showing)
@@ -235,7 +240,6 @@ Supports letter highlighting during animation playback.
           activeComponents={loopComponents}
           {rotationPeriod}
           {inversionPeriod}
-          period={loopPeriod}
           size={20}
           darkMode={darkMode}
           showFreeformWhenEmpty={false}

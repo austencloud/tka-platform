@@ -13,7 +13,7 @@
   - Smooth slide-in animation via Drawer
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import ArrowAdjustmentPanel from "$lib/features/create/shared/components/sequence-actions/ArrowAdjustmentPanel.svelte";
@@ -51,22 +51,12 @@
     onNavigate,
   }: Props = $props();
 
-  // Track arrow selection for showing adjustment panel
-  let selectionVersion = $state(0);
-  const hasArrowSelected = $derived.by(() => {
-    void selectionVersion;
-    return selectedArrowState.selectedArrow !== null;
-  });
+  // selectedArrowState.selectedArrow is $state, so $derived tracks it directly —
+  // no subscribe bridge needed.
+  const hasArrowSelected = $derived(selectedArrowState.selectedArrow !== null);
 
-  // Subscribe to selection changes
-  onMount(() => {
-    const unsubscribe = selectedArrowState.subscribe(() => {
-      selectionVersion++;
-    });
-    return () => {
-      unsubscribe();
-      selectedArrowState.clearSelection();
-    };
+  onDestroy(() => {
+    selectedArrowState.clearSelection();
   });
 
   // Get prop types from settings
@@ -479,7 +469,7 @@
     padding: 2px 6px;
     margin: 0 2px;
     font-family: "SF Mono", Monaco, monospace;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 4px;

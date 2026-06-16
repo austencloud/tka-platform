@@ -15,9 +15,9 @@
 
 <style>
   .error-message {
-    background: #1c1012;
-    border-left: 3px solid #ef4444;
-    color: #fca5a5;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 12%, transparent);
+    border-left: 3px solid var(--semantic-error, #ef4444);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, white);
     padding: 0.75rem 1rem;
     border-radius: 6px;
     margin-bottom: 1rem;

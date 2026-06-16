@@ -367,7 +367,7 @@ interface SequenceRequest {
 }
 
 export const POST: RequestHandler = async (event) => {
-  const blocked = withRateLimit(event, RATE_LIMITS.GENERAL, "ip");
+  const blocked = await withRateLimit(event, RATE_LIMITS.GENERAL, "ip");
   if (blocked) return blocked;
 
   try {

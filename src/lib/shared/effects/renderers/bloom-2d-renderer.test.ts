@@ -8,13 +8,15 @@ interface GradientStop {
 }
 
 interface FakeGradient {
+  kind: "radial" | "linear";
   stops: GradientStop[];
   addColorStop: (offset: number, color: string) => void;
 }
 
-function makeGradient(): FakeGradient {
+function makeGradient(kind: "radial" | "linear"): FakeGradient {
   const stops: GradientStop[] = [];
   return {
+    kind,
     stops,
     addColorStop(offset: number, color: string) {
       stops.push({ offset, color });
@@ -22,44 +24,67 @@ function makeGradient(): FakeGradient {
   };
 }
 
+/**
+ * Fake Canvas2D context with no `canvas` property, so the renderer can't
+ * allocate an offscreen accumulation buffer and takes its direct-draw fallback
+ * - the same lens-bloom layers minus the persistent afterglow. That's also the
+ * path jsdom exercises in CI (no 2D backend for an offscreen canvas).
+ */
 function makeCtx() {
-  const gradients: FakeGradient[] = [];
+  const radial: FakeGradient[] = [];
+  const linear: FakeGradient[] = [];
   const fillRects: Array<{ x: number; y: number; w: number; h: number; fill: unknown }> = [];
-   
+  const calls = { translate: 0, rotate: 0, scale: 0, stroke: 0, drawImage: 0 };
+
   const ctx: any = {
     globalCompositeOperation: "source-over",
     globalAlpha: 1,
     fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
+    lineCap: "butt",
     save: vi.fn(),
     restore: vi.fn(),
     clearRect: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    translate: vi.fn(() => { calls.translate++; }),
+    rotate: vi.fn(() => { calls.rotate++; }),
+    scale: vi.fn(() => { calls.scale++; }),
+    stroke: vi.fn(() => { calls.stroke++; }),
+    drawImage: vi.fn(() => { calls.drawImage++; }),
     createRadialGradient: vi.fn(() => {
-      const g = makeGradient();
-      gradients.push(g);
+      const g = makeGradient("radial");
+      radial.push(g);
       return g;
     }),
-    fillRect: vi.fn(function (this: any, x: number, y: number, w: number, h: number) {
-      fillRects.push({ x, y, w, h, fill: this.fillStyle });
+    createLinearGradient: vi.fn(() => {
+      const g = makeGradient("linear");
+      linear.push(g);
+      return g;
+    }),
+    fillRect: vi.fn((x: number, y: number, w: number, h: number) => {
+      fillRects.push({ x, y, w, h, fill: ctx.fillStyle });
     }),
   };
-  // fillRect's `this` isn't bound via the function; patch it to capture the
-  // live ctx.fillStyle when called.
-  ctx.fillRect = vi.fn((x: number, y: number, w: number, h: number) => {
-    fillRects.push({ x, y, w, h, fill: ctx.fillStyle });
-  });
-  return { ctx: ctx as CanvasRenderingContext2D, gradients, fillRects };
+  return { ctx: ctx as CanvasRenderingContext2D, radial, linear, fillRects, calls };
 }
 
 function makeParams(overrides: Partial<Bloom2DParams> = {}): Bloom2DParams {
   return {
     intensity: 0.8,
-    radius: 28,
+    radius: 90,
     color: "#f472b6",
     palette: ["#f472b6", "#fbbf24", "#22d3ee"],
     colorMode: "solid",
     falloff: "smooth",
     pulse: 0,
     pulseRate: 1,
+    streak: 0.55,
+    spikes: 0.6,
+    chromatic: 0.35,
+    afterglow: 0.5,
     blendMode: "lighter",
     ...overrides,
   };
@@ -77,7 +102,7 @@ function makeTip(overrides: Partial<BloomTipInput> = {}): BloomTipInput {
   };
 }
 
-describe("Bloom2DRenderer", () => {
+describe("Bloom2DRenderer (lens bloom)", () => {
   let nowSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -94,123 +119,129 @@ describe("Bloom2DRenderer", () => {
     expect(fillRects).toHaveLength(0);
   });
 
-  it("draws one additive radial gradient per tip", () => {
+  it("draws a colored halo + white core per tip (2 radial gradients each)", () => {
     const r = new Bloom2DRenderer();
-    const { ctx, gradients, fillRects } = makeCtx();
-    r.render(ctx, makeParams(), [makeTip(), makeTip({ x: 50, y: 50, tipIndex: 1 })]);
-    expect(gradients).toHaveLength(2);
-    expect(fillRects).toHaveLength(2);
-    // Square around the tip, side = 2*radius
-    expect(fillRects[0]!.w).toBe(56);
-    expect(fillRects[0]!.h).toBe(56);
+    const { ctx, radial } = makeCtx();
+    // First frame: no prior position → speed 0 → no streak / no chroma.
+    r.render(ctx, makeParams({ spikes: 0 }), [makeTip()]);
+    expect(radial).toHaveLength(2);
   });
 
-  describe("pulse math", () => {
-    it("pulse=0 yields pulseFactor=1 regardless of time", () => {
+  describe("falloff strategies (halo is the first radial gradient)", () => {
+    it("smooth halo has stops at 0, 0.4, 1", () => {
       const r = new Bloom2DRenderer();
-      const { ctx, gradients } = makeCtx();
-      nowSpy.mockReturnValue(1234);
-      r.render(ctx, makeParams({ pulse: 0, intensity: 1 }), [makeTip()]);
-      // Center stop should carry full alpha=1.
-      const centerStop = gradients[0]!.stops[0]!;
-      expect(centerStop.offset).toBe(0);
-      expect(centerStop.color).toContain("1)"); // rgba(..., 1)
+      const { ctx, radial } = makeCtx();
+      r.render(ctx, makeParams({ falloff: "smooth", spikes: 0 }), [makeTip()]);
+      expect(radial[0]!.stops.map((s) => s.offset)).toEqual([0, 0.4, 1]);
     });
 
-    it("pulse=1 at t=0 yields pulseFactor=0.5 (sin(0)=0 → 0.5+0.5*0)", () => {
+    it("sharp halo has stops at 0, 0.15, 0.6, 1", () => {
       const r = new Bloom2DRenderer();
-      const { ctx, gradients } = makeCtx();
-      nowSpy.mockReturnValue(0);
-      r.render(ctx, makeParams({ pulse: 1, intensity: 1, pulseRate: 1 }), [makeTip()]);
-      const centerStop = gradients[0]!.stops[0]!;
-      // pulseFactor = 1 - 1 + 1*(0.5 + 0.5*sin(0)) = 0.5
-      expect(centerStop.color).toContain("0.5)");
+      const { ctx, radial } = makeCtx();
+      r.render(ctx, makeParams({ falloff: "sharp", spikes: 0 }), [makeTip()]);
+      expect(radial[0]!.stops.map((s) => s.offset)).toEqual([0, 0.15, 0.6, 1]);
     });
 
-    it("pulse=1 at quarter period peaks at pulseFactor=1 (sin(π/2)=1 → 0.5+0.5 = 1)", () => {
+    it("ring halo has 5 stops and starts transparent", () => {
       const r = new Bloom2DRenderer();
-      const { ctx, gradients } = makeCtx();
-      // t * pulseRate * 2π = π/2 → t = 0.25 / pulseRate = 0.25s @ 1Hz → 250ms
-      nowSpy.mockReturnValue(250);
-      r.render(ctx, makeParams({ pulse: 1, intensity: 1, pulseRate: 1 }), [makeTip()]);
-      const centerStop = gradients[0]!.stops[0]!;
-      expect(centerStop.color).toContain("1)");
-    });
-  });
-
-  describe("falloff strategies", () => {
-    it("smooth gradient has 3 stops at 0, 0.4, 1", () => {
-      const r = new Bloom2DRenderer();
-      const { ctx, gradients } = makeCtx();
-      r.render(ctx, makeParams({ falloff: "smooth" }), [makeTip()]);
-      const stops = gradients[0]!.stops;
-      expect(stops.map((s) => s.offset)).toEqual([0, 0.4, 1]);
-    });
-
-    it("sharp gradient has 4 stops at 0, 0.15, 0.6, 1", () => {
-      const r = new Bloom2DRenderer();
-      const { ctx, gradients } = makeCtx();
-      r.render(ctx, makeParams({ falloff: "sharp" }), [makeTip()]);
-      const stops = gradients[0]!.stops;
-      expect(stops.map((s) => s.offset)).toEqual([0, 0.15, 0.6, 1]);
-    });
-
-    it("ring gradient has 5 stops and starts transparent", () => {
-      const r = new Bloom2DRenderer();
-      const { ctx, gradients } = makeCtx();
-      r.render(ctx, makeParams({ falloff: "ring" }), [makeTip()]);
-      const stops = gradients[0]!.stops;
+      const { ctx, radial } = makeCtx();
+      r.render(ctx, makeParams({ falloff: "ring", spikes: 0 }), [makeTip()]);
+      const stops = radial[0]!.stops;
       expect(stops.map((s) => s.offset)).toEqual([0, 0.45, 0.7, 0.9, 1]);
       expect(stops[0]!.color).toContain("0)");
     });
   });
 
-  describe("color modes", () => {
-    it("solid uses params.color at center stop", () => {
+  describe("color modes (halo center stop)", () => {
+    it("solid uses params.color", () => {
       const r = new Bloom2DRenderer();
-      const { ctx, gradients } = makeCtx();
-      r.render(ctx, makeParams({ colorMode: "solid", color: "#ff0000" }), [makeTip()]);
-      const center = gradients[0]!.stops[0]!;
-      expect(center.color.toLowerCase()).toContain("255, 0, 0");
+      const { ctx, radial } = makeCtx();
+      r.render(ctx, makeParams({ colorMode: "solid", color: "#ff0000", spikes: 0 }), [makeTip()]);
+      expect(radial[0]!.stops[0]!.color.toLowerCase()).toContain("255, 0, 0");
     });
 
-    it("prop-matched picks blueColor for propIndex=0, redColor for propIndex=1", () => {
+    it("prop-matched picks blue for propIndex 0, red for propIndex 1", () => {
       const r = new Bloom2DRenderer();
-      const { ctx, gradients } = makeCtx();
-      r.render(ctx, makeParams({ colorMode: "prop-matched" }), [
+      const { ctx, radial } = makeCtx();
+      r.render(ctx, makeParams({ colorMode: "prop-matched", spikes: 0 }), [
         makeTip({ propIndex: 0, blueColor: "#0000ff", redColor: "#ff0000" }),
-        makeTip({ propIndex: 1, blueColor: "#0000ff", redColor: "#ff0000", x: 50 }),
+        makeTip({ propIndex: 1, blueColor: "#0000ff", redColor: "#ff0000", x: 50, tipIndex: 1 }),
       ]);
-      expect(gradients[0]!.stops[0]!.color.toLowerCase()).toContain("0, 0, 255");
-      expect(gradients[1]!.stops[0]!.color.toLowerCase()).toContain("255, 0, 0");
+      // tip0 → halo at radial[0]; tip1 → halo at radial[2] (each tip: halo+core).
+      expect(radial[0]!.stops[0]!.color.toLowerCase()).toContain("0, 0, 255");
+      expect(radial[2]!.stops[0]!.color.toLowerCase()).toContain("255, 0, 0");
     });
 
-    it("palette cycles by tipIndex modulo palette length", () => {
+    it("palette cycles by tipIndex", () => {
       const r = new Bloom2DRenderer();
-      const { ctx, gradients } = makeCtx();
+      const { ctx, radial } = makeCtx();
       const palette = ["#ff0000", "#00ff00", "#0000ff"];
-      r.render(ctx, makeParams({ colorMode: "palette", palette }), [
+      r.render(ctx, makeParams({ colorMode: "palette", palette, spikes: 0 }), [
         makeTip({ tipIndex: 0 }),
         makeTip({ tipIndex: 1, x: 50 }),
-        makeTip({ tipIndex: 2, x: 150 }),
-        makeTip({ tipIndex: 3, x: 200 }), // wraps → palette[0]
       ]);
-      expect(gradients[0]!.stops[0]!.color.toLowerCase()).toContain("255, 0, 0");
-      expect(gradients[1]!.stops[0]!.color.toLowerCase()).toContain("0, 255, 0");
-      expect(gradients[2]!.stops[0]!.color.toLowerCase()).toContain("0, 0, 255");
-      expect(gradients[3]!.stops[0]!.color.toLowerCase()).toContain("255, 0, 0");
+      expect(radial[0]!.stops[0]!.color.toLowerCase()).toContain("255, 0, 0");
+      expect(radial[2]!.stops[0]!.color.toLowerCase()).toContain("0, 255, 0");
     });
 
-    it("rainbow produces hsla(...) output advancing with time", () => {
+    it("rainbow produces hsla output", () => {
       const r = new Bloom2DRenderer();
-      const { ctx, gradients } = makeCtx();
-      nowSpy.mockReturnValue(0);
-      r.render(ctx, makeParams({ colorMode: "rainbow" }), [makeTip()]);
-      expect(gradients[0]!.stops[0]!.color.toLowerCase()).toContain("hsla");
+      const { ctx, radial } = makeCtx();
+      r.render(ctx, makeParams({ colorMode: "rainbow", spikes: 0 }), [makeTip()]);
+      expect(radial[0]!.stops[0]!.color.toLowerCase()).toContain("hsla");
     });
   });
 
-  it("sets globalCompositeOperation to 'lighter' by default then restores", () => {
+  describe("diffraction spikes", () => {
+    it("spikes>0 draws 8 stroked spike lines (linear gradients)", () => {
+      const r = new Bloom2DRenderer();
+      const { ctx, linear, calls } = makeCtx();
+      r.render(ctx, makeParams({ spikes: 0.8 }), [makeTip()]);
+      expect(linear).toHaveLength(8);
+      expect(calls.stroke).toBe(8);
+    });
+
+    it("spikes=0 draws no spike lines", () => {
+      const r = new Bloom2DRenderer();
+      const { ctx, linear, calls } = makeCtx();
+      r.render(ctx, makeParams({ spikes: 0 }), [makeTip()]);
+      expect(linear).toHaveLength(0);
+      expect(calls.stroke).toBe(0);
+    });
+  });
+
+  describe("motion reactivity (streak + chromatic) needs a prior position", () => {
+    it("frame 1 (no velocity) draws no streak transform; frame 2 (moved) does", () => {
+      const r = new Bloom2DRenderer();
+      const params = makeParams({ spikes: 0, streak: 0.8, chromatic: 0.5 });
+
+      // Frame 1: establishes prevPos. speed 0 → no streak/chroma.
+      const f1 = makeCtx();
+      r.render(f1.ctx, params, [makeTip({ x: 100, y: 150, tipIndex: 0 })]);
+      expect(f1.calls.scale).toBe(0); // streak uses scale(); none on first frame
+
+      // Frame 2: same tipIndex moved far → high per-frame speed.
+      const f2 = makeCtx();
+      r.render(f2.ctx, params, [makeTip({ x: 180, y: 150, tipIndex: 0 })]);
+      expect(f2.calls.scale).toBeGreaterThan(0); // anamorphic streak fired
+      expect(f2.calls.translate).toBeGreaterThan(0);
+      // chroma adds 2 tinted radial blobs on top of halo+core (>2 radials).
+      expect(f2.radial.length).toBeGreaterThan(2);
+    });
+  });
+
+  describe("scale parameter", () => {
+    it("halo fillRect side = radius*scale*2", () => {
+      const r = new Bloom2DRenderer();
+      const { ctx, fillRects } = makeCtx();
+      r.render(ctx, makeParams({ radius: 100, spikes: 0 }), [makeTip()], 0.5);
+      // coreR = 100 * 0.5 = 50; halo fillRect side = 100. Halo is the first rect.
+      expect(fillRects[0]!.w).toBe(100);
+      expect(fillRects[0]!.h).toBe(100);
+    });
+  });
+
+  it("uses additive blend and balances save/restore", () => {
     const r = new Bloom2DRenderer();
     const { ctx } = makeCtx();
     r.render(ctx, makeParams(), [makeTip()]);
@@ -218,20 +249,10 @@ describe("Bloom2DRenderer", () => {
     expect(ctx.restore).toHaveBeenCalled();
   });
 
-  describe("scale parameter", () => {
-    it("accepts scale argument without throwing", () => {
-      const r = new Bloom2DRenderer();
-      const { ctx } = makeCtx();
-      expect(() => r.render(ctx, makeParams(), [makeTip()], 0.5)).not.toThrow();
-    });
-
-    it("fillRect w/h = radius*scale*2 when scale=0.5 and radius=100", () => {
-      const r = new Bloom2DRenderer();
-      const { ctx, fillRects } = makeCtx();
-      r.render(ctx, makeParams({ radius: 100 }), [makeTip()], 0.5);
-      // r = 100 * 0.5 = 50; side = r*2 = 100
-      expect(fillRects[0]!.w).toBe(100);
-      expect(fillRects[0]!.h).toBe(100);
-    });
+  it("dispose clears tracked state without throwing", () => {
+    const r = new Bloom2DRenderer();
+    const { ctx } = makeCtx();
+    r.render(ctx, makeParams(), [makeTip()]);
+    expect(() => r.dispose()).not.toThrow();
   });
 });

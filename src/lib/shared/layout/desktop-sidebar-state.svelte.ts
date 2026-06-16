@@ -30,13 +30,13 @@ export const desktopSidebarState = $state({
 });
 
 // Helper functions
-export function setDesktopSidebarVisible(visible: boolean) {
+export function setDesktopSidebarVisible(visible: boolean): void {
   desktopSidebarState.isVisible = visible;
 }
 
 /** Modules that need full-screen (museum) call this to suppress the sidebar
  *  even when viewport recalculations fire. */
-export function setDesktopSidebarForcedHidden(hidden: boolean) {
+export function setDesktopSidebarForcedHidden(hidden: boolean): void {
   desktopSidebarState.forcedHidden = hidden;
   if (hidden) {
     desktopSidebarState.isVisible = false;
@@ -51,11 +51,7 @@ export function setDesktopSidebarForcedHidden(hidden: boolean) {
   }
 }
 
-export function setDesktopSidebarWidth(width: number) {
-  desktopSidebarState.width = width;
-}
-
-export function setDesktopSidebarCollapsed(collapsed: boolean) {
+export function setDesktopSidebarCollapsed(collapsed: boolean): void {
   desktopSidebarState.isCollapsed = collapsed;
   // Update current width based on collapsed state
   desktopSidebarState.width = collapsed
@@ -63,15 +59,15 @@ export function setDesktopSidebarCollapsed(collapsed: boolean) {
     : desktopSidebarState.expandedWidth;
 }
 
-export function toggleDesktopSidebarCollapsed() {
+export function toggleDesktopSidebarCollapsed(): void {
   setDesktopSidebarCollapsed(!desktopSidebarState.isCollapsed);
 }
 
-export function setIsDesktopDevice(isDesktop: boolean) {
+export function setIsDesktopDevice(isDesktop: boolean): void {
   desktopSidebarState.isDesktopDevice = isDesktop;
 }
 
-export function setIsSideBySideLayout(isSideBySide: boolean) {
+export function setIsSideBySideLayout(isSideBySide: boolean): void {
   desktopSidebarState.isSideBySideLayout = isSideBySide;
 }
 
@@ -99,7 +95,7 @@ export function updateDesktopSidebarVisibility(
   isDesktop: boolean,
   viewportWidth: number,
   isSideBySideLayout: boolean
-) {
+): void {
   const shouldShow = desktopSidebarState.forcedHidden
     ? false
     : shouldShowDesktopSidebar(isDesktop, viewportWidth, isSideBySideLayout);
@@ -124,7 +120,7 @@ export function loadDesktopSidebarCollapsedState(): boolean {
   }
 }
 
-export function saveDesktopSidebarCollapsedState(collapsed: boolean) {
+export function saveDesktopSidebarCollapsedState(collapsed: boolean): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY, collapsed.toString());
@@ -136,7 +132,7 @@ export function saveDesktopSidebarCollapsedState(collapsed: boolean) {
 /**
  * Initialize desktop sidebar collapsed state from localStorage
  */
-export function initializeDesktopSidebarCollapsedState() {
+export function initializeDesktopSidebarCollapsedState(): void {
   const collapsed = loadDesktopSidebarCollapsedState();
   setDesktopSidebarCollapsed(collapsed);
 }

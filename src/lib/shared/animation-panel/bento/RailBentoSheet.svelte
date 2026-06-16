@@ -251,7 +251,7 @@
   }
 
   .bento-sheet-title {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     color: rgba(255, 255, 255, 0.9);
     letter-spacing: 0.1em;
@@ -281,7 +281,8 @@
   }
 
   .bento-sheet-close:focus-visible {
-    outline: 2px solid #4a9eff;
+    /* --rail-accent is defined on .bento-sheet in rail-tile.css */
+    outline: 2px solid var(--rail-accent, #4a9eff);
     outline-offset: 2px;
   }
 

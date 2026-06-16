@@ -582,7 +582,7 @@ export class WordSequenceGenerator {
 
   private createErrorResult(word: string, error: string): SpellResult {
     return {
-      sequence: null as unknown as SequenceData,
+      sequence: null,
       originalWord: word,
       expandedWord: "",
       letterSources: [],

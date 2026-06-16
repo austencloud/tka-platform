@@ -1,4 +1,5 @@
 <script lang="ts">
+  import "../museum-theme.css";
   import { getMuseumContext } from "../../state/museum-context";
   import PlaqueView from "./PlaqueView.svelte";
   import SequenceView from "./SequenceView.svelte";
@@ -40,7 +41,7 @@
   let currentWing = $derived(museum.currentWing);
 </script>
 
-<div class="detail-panel">
+<div class="detail-panel museum-gold-scope">
   {#if focusedExhibit}
     <div class="panel-content">
       {#if focusedExhibit.plaque}
@@ -122,7 +123,7 @@
     height: 100%;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(200, 180, 140, 0.2)) transparent;
+    scrollbar-color: var(--scrollbar-thumb, var(--museum-gold-20)) transparent;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
   }
 
@@ -140,7 +141,7 @@
   }
 
   .panel-section {
-    border-top: 1px solid rgba(200, 180, 140, 0.1);
+    border-top: 1px solid var(--museum-gold-10);
     padding-top: 16px;
   }
 
@@ -177,7 +178,7 @@
   }
 
   .performer-detail.auto-play {
-    color: rgba(200, 180, 140, 0.5);
+    color: var(--museum-gold-50);
     font-style: italic;
   }
 
@@ -206,7 +207,7 @@
   .trigger-action {
     padding: 20px;
     font-size: var(--font-size-min, 14px);
-    color: rgba(200, 180, 140, 0.5);
+    color: var(--museum-gold-50);
     font-style: italic;
   }
 
@@ -226,7 +227,7 @@
 
   .wing-icon {
     font-size: 1rem;
-    color: rgba(200, 180, 140, 0.5);
+    color: var(--museum-gold-50);
   }
 
   .wing-name {
@@ -234,7 +235,7 @@
     font-family: Georgia, "Times New Roman", serif;
     font-size: 1.3rem;
     font-weight: 400;
-    color: rgba(200, 180, 140, 0.85);
+    color: var(--museum-gold-85);
     letter-spacing: 0.02em;
   }
 
@@ -242,19 +243,19 @@
     margin: 0;
     font-size: var(--font-size-min, 14px);
     line-height: 1.7;
-    color: rgba(200, 180, 140, 0.45);
+    color: var(--museum-gold-45);
   }
 
   .wing-hint {
     margin-top: 8px;
     padding-top: 16px;
-    border-top: 1px solid rgba(200, 180, 140, 0.08);
+    border-top: 1px solid var(--museum-gold-08);
   }
 
   .wing-hint p {
     margin: 0;
     font-size: var(--font-size-min, 14px);
-    color: rgba(200, 180, 140, 0.25);
+    color: var(--museum-gold-25);
   }
 
   .wing-hint kbd {
@@ -264,12 +265,12 @@
     min-width: 20px;
     height: 20px;
     padding: 0 5px;
-    background: rgba(200, 180, 140, 0.1);
-    border: 1px solid rgba(200, 180, 140, 0.2);
+    background: var(--museum-gold-10);
+    border: 1px solid var(--museum-gold-20);
     border-radius: 3px;
     font-family: monospace;
     font-size: var(--font-size-compact, 12px);
-    color: rgba(200, 180, 140, 0.5);
+    color: var(--museum-gold-50);
     vertical-align: middle;
   }
 
@@ -286,20 +287,20 @@
 
   .panel-empty i {
     font-size: 2rem;
-    color: rgba(200, 180, 140, 0.15);
+    color: var(--museum-gold-15);
   }
 
   .empty-title {
     margin: 0;
     font-family: Georgia, "Times New Roman", serif;
     font-size: 1.1rem;
-    color: rgba(200, 180, 140, 0.4);
+    color: var(--museum-gold-40);
   }
 
   .empty-hint {
     margin: 0;
     font-size: var(--font-size-min, 14px);
-    color: rgba(200, 180, 140, 0.25);
+    color: var(--museum-gold-25);
     line-height: 1.5;
   }
 

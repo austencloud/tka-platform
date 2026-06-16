@@ -106,7 +106,7 @@ export const GET: RequestHandler = async (event) => {
 	try {
 		const caller = await requireAdminAuth(event);
 
-		const blocked = withRateLimit(event, RATE_LIMITS.ADMIN, 'user', caller.uid);
+		const blocked = await withRateLimit(event, RATE_LIMITS.ADMIN, 'user', caller.uid);
 		if (blocked) return blocked;
 		// Find all evaluation reports
 		if (!fs.existsSync(REPORTS_DIR)) {
@@ -182,7 +182,7 @@ export const POST: RequestHandler = async (event) => {
 	try {
 		const caller = await requireAdminAuth(event);
 
-		const blocked = withRateLimit(event, RATE_LIMITS.ADMIN, 'user', caller.uid);
+		const blocked = await withRateLimit(event, RATE_LIMITS.ADMIN, 'user', caller.uid);
 		if (blocked) return blocked;
 
 		const body = await event.request.json();

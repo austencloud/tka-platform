@@ -1,57 +1,40 @@
 import type { EffectPreset, EffectPresetGroup } from "./types";
-import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-import type { ZapIntent } from "$lib/shared/effects/domain/effects-config";
-import type { EffectsPreset } from "$lib/shared/effects/domain/effects-preset";
 
-function applyZap(
-  state: EffectsConfigState,
-  presetId: string,
-  patch: Partial<ZapIntent>,
-): void {
-  state.updateEffect("zap", patch);
-  // updateZap nulls activePresets.zap; restore it so the chip stays highlighted.
-  state.applyPreset({
-    id: presetId,
-    effectType: "zap",
-    patch: { activePresets: { ...state.activePresets, zap: presetId } },
-  } as unknown as EffectsPreset);
-}
-
-export const ZAP_PRESETS: EffectPreset[] = [
+export const ZAP_PRESETS: EffectPreset<"zap">[] = [
   {
-    id: "zap-thunder",
-    name: "Thunder",
+    id: "zap-storm",
+    name: "Storm",
     previewColor: "#88ccff",
-    apply: (state) => applyZap(state, "zap-thunder", {
-      intensity: 0.9, leftColor: "#88ccff", rightColor: "#88ccff",
-      frequency: 8, mode: "arc", branching: 0.4,
-    }),
+    patch: {
+      intensity: 0.9, leftColor: "#88ccff", rightColor: "#a25bff",
+      frequency: 10, branching: 0.5, style: "branching", mode: "arc",
+    },
   },
   {
     id: "zap-tesla",
     name: "Tesla",
     previewColor: "#a855f7",
-    apply: (state) => applyZap(state, "zap-tesla", {
-      intensity: 1.0, leftColor: "#a855f7", rightColor: "#a855f7",
-      frequency: 20, mode: "arc", branching: 0.6,
-    }),
+    patch: {
+      intensity: 1.0, leftColor: "#c084fc", rightColor: "#7c3aed",
+      frequency: 18, branching: 0.4, style: "plasma", mode: "arc",
+    },
   },
   {
-    id: "zap-plasma",
-    name: "Plasma",
-    previewColor: "#ec4899",
-    apply: (state) => applyZap(state, "zap-plasma", {
-      intensity: 0.7, leftColor: "#ec4899", rightColor: "#22d3ee",
-      frequency: 16, mode: "crackle", branching: 0.2,
-    }),
+    id: "zap-web",
+    name: "Web",
+    previewColor: "#22d3ee",
+    previewColor2: "#9d7bff",
+    patch: {
+      intensity: 0.8, leftColor: "#22d3ee", rightColor: "#ec4899",
+      frequency: 12, branching: 0.2, style: "web", mode: "arc",
+    },
   },
   {
+    // "Custom" just opens the Customize panel - empty patch, marks the chip active.
     id: "zap-custom",
     name: "Custom",
     previewColor: "custom",
-    apply: () => {
-      // "Custom" just opens the Customize panel - EffectsPanel routes Custom → customizeOpen.
-    },
+    patch: {},
   },
 ];
 
@@ -60,6 +43,7 @@ export const ZAP_PRESET_GROUP: EffectPresetGroup = {
   presets: ZAP_PRESETS,
   getSummary: (state) => {
     const z = state.zap;
-    return `${z.mode} · freq ${z.frequency}/s · ${Math.round(z.intensity * 100)}%`;
+    const label = z.style === "branching" ? "storm" : z.style;
+    return `${label} · freq ${z.frequency}/s · ${Math.round(z.intensity * 100)}%`;
   },
 };

@@ -44,14 +44,20 @@
   function handleStartClick(): void {
     const start = sequence.startPosition;
     if (!start) return;
-    emit({
-      ...start,
+    // StartPositionData and StepData both extend PictographData; drop the
+    // start-position-only discriminator and add the beat-context fields so the
+    // result structurally satisfies StepData without an `unknown` bridge cast.
+    const { isStartPosition: _isStart, ...pictograph } = start;
+    const step: StepData = {
+      ...pictograph,
+      isStep: true,
       stepNumber: 0,
       duration: 1,
       blueReversal: false,
       redReversal: false,
       isBlank: false,
-    } as unknown as StepData);
+    };
+    emit(step);
   }
 </script>
 

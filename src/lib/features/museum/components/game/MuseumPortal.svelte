@@ -23,6 +23,7 @@
     LinearFilter,
     type WebGLRenderer,
   } from "three";
+  import { resolveScene, resolveRenderer } from "../resolve-threlte-scene";
 
   interface Props {
     /** Portal's own position in world space */
@@ -71,10 +72,8 @@
   let frameCounter = 0;
 
   const threlteCtx = useThrelte();
-  // Threlte 8 wraps scene and renderer in CurrentWritable<T> (has a .current property)
-  // but the type definition varies between versions. Access .current at runtime.
-  const getScene = () => (threlteCtx.scene as any).current ?? threlteCtx.scene;
-  const getRenderer = (): WebGLRenderer => (threlteCtx.renderer as any).current ?? threlteCtx.renderer;
+  const getScene = () => resolveScene(threlteCtx);
+  const getRenderer = () => resolveRenderer(threlteCtx);
 
   // The render target captures the destination view each frame
   const renderTarget = new WebGLRenderTarget(textureSize, textureSize, {
@@ -120,10 +119,10 @@
   updateVirtualCamera();
 
   onMount(() => {
-    getScene().add(portalMesh);
+    getScene()?.add(portalMesh);
 
     return () => {
-      getScene().remove(portalMesh);
+      getScene()?.remove(portalMesh);
       portalGeometry.dispose();
       portalMaterial.dispose();
       renderTarget.dispose();
@@ -157,6 +156,7 @@
     const gl = getRenderer();
     if (!gl || !gl.render) return;
     const scn = getScene();
+    if (!scn) return;
 
     // Hide the portal surface so it doesn't appear in its own render target
     portalMesh.visible = false;

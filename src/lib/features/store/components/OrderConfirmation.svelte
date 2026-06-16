@@ -56,7 +56,7 @@
     margin-top: 32px;
     padding: 12px 24px;
     background: var(--theme-accent, #60a5fa);
-    color: #fff;
+    color: var(--theme-text-on-accent, #fff);
     text-decoration: none;
     border-radius: 8px;
     font-weight: 600;

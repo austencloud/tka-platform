@@ -47,6 +47,10 @@ import {
   type PropEndpointConfig,
 } from "$lib/shared/animation-engine/services/prop-position-calculator";
 import { getTipPoints } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
+import {
+  getTrailPointConfig,
+  type TrailPointSource,
+} from "$lib/shared/animation-engine/domain/types/trail-point-types";
 
 /** Standard viewbox size used by the prop coordinate system */
 const VIEWBOX_SIZE = 950;
@@ -630,8 +634,9 @@ export class TrailCapturer {
   }
 
   /**
-   * Resolve which tip indices to track based on legacy TrackingMode.
-   * Used as fallback when no TipEffectMap assigns specific tips to trails.
+   * Resolve which tip indices to track. Honors the user's trail point
+   * assignment from the tip lab (via getTrailPointConfig) when one exists,
+   * otherwise falls back to legacy TrackingMode behavior.
    */
   private resolveTipIndices(
     propIndex: 0 | 1,
@@ -642,6 +647,40 @@ export class TrailCapturer {
     const tipCount = tipConfig.points.length;
 
     if (tipCount === 0) return [];
+
+    // Tip-lab trail assignment takes precedence (e.g. fan trails from tip 3).
+    // "custom" sources can't be represented as a tip index here, so they fall
+    // back to the same geometric defaults the trail overlay uses (left=0,
+    // right=1); "none" disables that end.
+    const trailConfig = getTrailPointConfig(propType);
+    if (trailConfig) {
+      const resolveEnd = (
+        source: TrailPointSource,
+        fallback: number
+      ): number | null => {
+        if (source.type === "none") return null;
+        if (source.type === "tip") {
+          return source.index < tipCount ? source.index : null;
+        }
+        return fallback;
+      };
+
+      const leftIndex = resolveEnd(trailConfig.left, 0);
+      const rightIndex = resolveEnd(trailConfig.right, tipCount >= 2 ? 1 : 0);
+
+      const indices: number[] = [];
+      if (trailSettings.trackingMode === TrackingMode.BOTH_ENDS) {
+        if (leftIndex !== null) indices.push(leftIndex);
+        if (rightIndex !== null && rightIndex !== leftIndex) {
+          indices.push(rightIndex);
+        }
+      } else if (trailSettings.trackingMode === TrackingMode.LEFT_END) {
+        if (leftIndex !== null) indices.push(leftIndex);
+      } else {
+        if (rightIndex !== null) indices.push(rightIndex);
+      }
+      return indices;
+    }
 
     if (trailSettings.trackingMode === TrackingMode.BOTH_ENDS) {
       // Track all tips for the prop

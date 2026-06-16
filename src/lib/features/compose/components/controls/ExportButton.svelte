@@ -20,7 +20,7 @@
   const computedAriaLabel = $derived(ariaLabel ?? label);
 </script>
 
-<button class="export-btn" {onclick} aria-label={computedAriaLabel}>
+<button class="export-btn" type="button" {onclick} aria-label={computedAriaLabel}>
   <i class="fas {icon}" aria-hidden="true"></i>
   <span class="export-label">{label}</span>
 </button>

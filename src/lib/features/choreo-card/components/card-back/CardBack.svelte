@@ -518,21 +518,6 @@
     filter: none;
   }
 
-  .loop-period-badge {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 4.5cqi;
-    font-weight: 900;
-    color: #fff;
-    line-height: 1;
-    pointer-events: none;
-    text-shadow:
-      0 0 3px rgba(0, 0, 0, 0.9),
-      0 0 6px rgba(0, 0, 0, 0.7);
-  }
-
   .loop-col-label {
     font-size: 2.2cqi;
     color: var(--card-text-muted, rgba(255, 255, 255, 0.7));

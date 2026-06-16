@@ -31,7 +31,6 @@
     loopComponents: Set<LOOPComponent> | null;
     loopRotationPeriod: Period | undefined;
     loopInversionPeriod: Period | undefined;
-    loopPeriod: number;
     scaledHeaderHeight: number;
     badgeSize: number;
     badgePadding: number;
@@ -54,7 +53,6 @@
     loopComponents,
     loopRotationPeriod,
     loopInversionPeriod,
-    loopPeriod,
     scaledHeaderHeight,
     badgeSize,
     badgePadding,
@@ -112,7 +110,6 @@
             activeComponents={loopComponents}
             rotationPeriod={loopRotationPeriod}
             inversionPeriod={loopInversionPeriod}
-            period={loopPeriod}
             size={Math.floor(badgeSize * LOOP_ICON_SIZE_SCALE)}
             darkMode={activeDarkMode}
             showFreeformWhenEmpty={false}

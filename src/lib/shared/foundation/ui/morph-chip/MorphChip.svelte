@@ -250,8 +250,8 @@
 		display: flex;
 		flex-direction: column;
 		box-shadow:
-			0 4px 20px rgba(99, 102, 241, 0.15),
-			0 0 0 1px rgba(99, 102, 241, 0.1);
+			0 4px 20px color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent),
+			0 0 0 1px color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
 	}
 
 	/* Auto-height mode: size to content instead of being constrained by group */

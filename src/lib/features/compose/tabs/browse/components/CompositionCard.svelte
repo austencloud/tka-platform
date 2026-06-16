@@ -141,6 +141,7 @@ import { resolveThumbnail, generatePlaceholderSvg } from "$lib/features/compose/
 			class="favorite-btn"
 			class:active={composition.isFavorite}
 			title={composition.isFavorite ? "Remove from favorites" : "Add to favorites"}
+			aria-label={composition.isFavorite ? "Remove from favorites" : "Add to favorites"}
 			onclick={handleFavoriteClick}
 		>
 			<i class="fas fa-heart" aria-hidden="true"></i>
@@ -320,7 +321,7 @@ import { resolveThumbnail, generatePlaceholderSvg } from "$lib/features/compose/
 		border-radius: 4px;
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
 		font-weight: 500;
-		font-size: 11px;
+		font-size: var(--font-size-compact, 12px);
 	}
 
 	.seq-count {

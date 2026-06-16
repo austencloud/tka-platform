@@ -34,7 +34,7 @@ Each dimension is graded A+ through F. Goal is A+ across all.
 | C | Multiple responsibilities crammed together |
 | F | God component, untestable, spaghetti |
 
-**Check:** Single file = single thing? Services extracted? Module singletons used correctly? No barrel exports?
+**Check:** Single file = single thing? Services extracted? Module singletons used correctly? No barrel exports? A `utils/` of pure stateless functions named for their contents is fine — flag only junk-drawer dumps (`utils.ts`/`helpers.ts` grab-bags) or stateful logic (cache/lifecycle/deps/coordination) shipped as loose functions, which belong in a verb-named service.
 
 ---
 

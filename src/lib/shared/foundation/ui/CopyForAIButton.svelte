@@ -244,6 +244,20 @@
     min-height: 36px;
     padding: 8px 12px;
     font-size: var(--font-size-compact, 12px);
+    /* Expand hit area to 44px minimum without growing the visual */
+    position: relative;
+  }
+
+  .size-sm::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 44px;
+    min-height: 44px;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
   }
 
   .size-md {

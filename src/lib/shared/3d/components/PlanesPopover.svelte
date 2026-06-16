@@ -398,7 +398,7 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #f59e0b;
+    background: var(--semantic-warning, #f59e0b);
     border: 1.5px solid rgba(20, 22, 32, 1);
   }
 </style>

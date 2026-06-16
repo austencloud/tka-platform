@@ -89,7 +89,7 @@ export const POST: RequestHandler = async (event) => {
 	}
 
 	// 2. Rate limit by IP
-	const blocked = withRateLimit(event, RATE_LIMITS.FEEDBACK_INGEST, "ip");
+	const blocked = await withRateLimit(event, RATE_LIMITS.FEEDBACK_INGEST, "ip");
 	if (blocked) return blocked;
 
 	// 3. Parse and validate body

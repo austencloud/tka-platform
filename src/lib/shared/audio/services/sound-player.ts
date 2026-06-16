@@ -73,9 +73,13 @@ export class SoundPlayer {
 		}
 
 		try {
-			// Resume context if suspended (browsers require user interaction)
+			// Resume context if suspended (browsers require user interaction).
+			// resume() is async; route a rejection to the same graceful-degradation
+			// path rather than letting it surface as an unhandled rejection.
 			if (this.audioContext.state === 'suspended') {
-				this.audioContext.resume();
+				this.audioContext.resume().catch((error) => {
+					console.warn(`[SoundPlayer] Failed to resume audio context:`, error);
+				});
 			}
 
 			// Create buffer source

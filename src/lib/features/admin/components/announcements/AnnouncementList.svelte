@@ -139,7 +139,7 @@
 
   .empty-state span {
     font-size: var(--font-size-sm);
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 
   /* ============================================================================
@@ -159,14 +159,18 @@
     flex-direction: column;
     gap: 12px;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-panel-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     transition: all var(--duration-normal) ease;
   }
 
   .announcement-card:hover {
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-text, #ffffff) 20%,
+      transparent
+    );
     background: var(--theme-card-bg);
   }
 
@@ -241,13 +245,25 @@
   }
 
   .action-button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: color-mix(in srgb, var(--theme-text, #ffffff) 10%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-text, #ffffff) 20%,
+      transparent
+    );
   }
 
   .action-button.delete:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.4);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 20%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 40%,
+      transparent
+    );
     color: var(--semantic-error);
   }
 
@@ -275,7 +291,7 @@
   .announcement-title {
     font-size: var(--font-size-base);
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text, rgba(255, 255, 255, 0.95));
     margin: 0 0 8px 0;
   }
 
@@ -299,7 +315,7 @@
     align-items: center;
     justify-content: space-between;
     padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .footer-info {
@@ -326,7 +342,11 @@
   }
 
   .expires-date {
-    color: rgba(251, 191, 36, 0.8);
+    color: color-mix(
+      in srgb,
+      var(--semantic-warning, #fbbf24) 80%,
+      transparent
+    );
   }
 
   /* ============================================================================

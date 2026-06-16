@@ -23,11 +23,16 @@ import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-sh
   import ShameSequenceCard from "./ShameSequenceCard.svelte";
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // State
   let isVerified = $state(false);
   let isCheckingVerification = $state(true);
   let showGate = $state(false);
+  // True when the age verifier was unavailable or errored — we fail closed and
+  // tell the user we couldn't confirm their age.
+  let verificationError = $state(false);
 
   // Gallery state
   let entries = $state<HallOfShameEntry[]>([]);
@@ -94,22 +99,26 @@ import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-sh
       return;
     }
 
-    // If ageVerifier service isn't available, skip verification and show gallery
+    // Fail CLOSED: if the age verifier is unavailable, deny access rather than
+    // silently granting it. The 18+ gate must never open on service failure.
     if (!ageVerifier) {
-      console.warn("[HallOfShameGallery] Age verifier service not available, skipping verification");
-      isVerified = true; // Allow access if service is unavailable
+      console.warn("[HallOfShameGallery] Age verifier service not available, denying access");
+      isVerified = false;
+      verificationError = true;
       isCheckingVerification = false;
-      await loadGallery();
       return;
     }
 
     try {
+      // Setting isVerified=true triggers the guarded filter $effect, which owns
+      // the initial gallery load. Don't call loadGallery() here too — that's the
+      // double-load this guard exists to prevent.
       isVerified = await ageVerifier.isVerified(currentUser.uid);
-      if (isVerified) {
-        await loadGallery();
-      }
     } catch (e) {
       console.error("[HallOfShameGallery] Verification check failed:", e);
+      // Fail CLOSED on error too — deny access and surface the failure.
+      isVerified = false;
+      verificationError = true;
     } finally {
       isCheckingVerification = false;
     }
@@ -166,15 +175,16 @@ import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-sh
       lastDoc = result.nextCursor;
     } catch (e) {
       console.error("[HallOfShameGallery] Failed to load more:", e);
+      toast.error("Couldn't load more entries. Please try again.");
     } finally {
       isLoadingMore = false;
     }
   }
 
   function handleVerified() {
+    // The guarded filter $effect performs the initial load once isVerified flips.
     isVerified = true;
     showGate = false;
-    loadGallery();
   }
 
   function handleGateCanceled() {
@@ -192,11 +202,17 @@ import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-sh
     );
   }
 
-  // Reload when filters change
+  // Reload when filters change. Guarded so the initial verification load
+  // (checkVerification → loadGallery) doesn't double-fire with this effect:
+  // we only reload when the category/sort combination actually differs from
+  // what was last loaded.
+  let lastLoadedFilters = $state<string | null>(null);
   $effect(() => {
-    if (isVerified && (selectedCategory || sortOption)) {
-      loadGallery();
-    }
+    if (!isVerified) return;
+    const combo = `${selectedCategory}|${sortOption}`;
+    if (combo === lastLoadedFilters) return;
+    lastLoadedFilters = combo;
+    loadGallery();
   });
 </script>
 
@@ -211,6 +227,22 @@ import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-sh
       <i class="fas fa-lock" aria-hidden="true"></i>
       <h2>{t('hall_of_shame_sign_in_required')}</h2>
       <p>{t('hall_of_shame_sign_in_message')}</p>
+    </div>
+  {:else if verificationError}
+    <div class="verification-required">
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+      <h2>{t('hall_of_shame_age_required')}</h2>
+      <p>We couldn't verify your age right now. Access is blocked until age verification is available. Please try again later.</p>
+      <button
+        class="verify-button"
+        onclick={() => {
+          verificationError = false;
+          isCheckingVerification = true;
+          checkVerification();
+        }}
+      >
+        {t('hall_of_shame_retry')}
+      </button>
     </div>
   {:else if !isVerified}
     <div class="verification-required">
@@ -241,25 +273,21 @@ import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-sh
       </div>
 
       <div class="filter-controls">
-        <select
-          class="filter-select"
-          bind:value={selectedCategory}
-          aria-label={t('hall_of_shame_filter_by_category')}
-        >
-          {#each categories as cat}
-            <option value={cat.value}>{cat.label}</option>
-          {/each}
-        </select>
+        <SegmentedControl
+          options={categories}
+          value={selectedCategory}
+          onchange={(v) => (selectedCategory = v)}
+          color="red"
+          size="sm"
+        />
 
-        <select
-          class="filter-select"
-          bind:value={sortOption}
-          aria-label={t('hall_of_shame_sort_by')}
-        >
-          {#each sortOptions as opt}
-            <option value={opt.value}>{opt.label}</option>
-          {/each}
-        </select>
+        <SegmentedControl
+          options={sortOptions}
+          value={sortOption}
+          onchange={(v) => (sortOption = v)}
+          color="red"
+          size="sm"
+        />
       </div>
     </header>
 
@@ -390,8 +418,8 @@ import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-sh
     gap: 10px;
     margin-top: 24px;
     padding: 12px 16px;
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
     border-radius: 8px;
     max-width: 450px;
   }
@@ -414,8 +442,8 @@ import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-sh
     gap: 8px;
     margin-top: 12px;
     padding: 8px 12px;
-    background: rgba(239, 68, 68, 0.08);
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
     border-radius: 6px;
   }
 
@@ -483,26 +511,8 @@ import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-sh
   .filter-controls {
     display: flex;
     gap: 12px;
-  }
-
-  .filter-select {
-    padding: 10px 14px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 8px;
-    color: var(--theme-text);
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: border-color var(--duration-fast) ease;
-  }
-
-  .filter-select:hover {
-    border-color: var(--theme-stroke-strong);
-  }
-
-  .filter-select:focus {
-    outline: none;
-    border-color: var(--theme-accent);
+    align-items: center;
+    flex-wrap: wrap;
   }
 
   /* Featured Section */
@@ -586,10 +596,8 @@ import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-sh
 
     .filter-controls {
       width: 100%;
-    }
-
-    .filter-select {
-      flex: 1;
+      flex-direction: column;
+      align-items: stretch;
     }
 
     .header-content h1 {

@@ -79,11 +79,14 @@
   // --- Letter lookup cache ---
   // Maps step index -> resolved letter (null = looked up but no match)
   let letterCache = $state<Map<number, Letter | null>>(new Map());
+  // Indices whose async letter lookup is in flight (drives the loading skeleton).
+  let pendingLetters = $state<Set<number>>(new Set());
 
   // Reset cache when steps are cleared
   $effect(() => {
     if (builderState.blueSteps.length === 0 && builderState.redSteps.length === 0) {
       letterCache = new Map();
+      pendingLetters = new Set();
     }
   });
 
@@ -98,11 +101,17 @@
       if (letterCache.has(i)) continue;
       const blueMotion = stepToMotion(blueSteps[i]!, MotionColor.BLUE);
       const redMotion = stepToMotion(redSteps[i]!, MotionColor.RED);
-      // Mark as pending so we don't re-trigger
+      // Mark as pending so we don't re-trigger and so the cell shows a skeleton.
       letterCache = new Map(letterCache).set(i, null);
+      pendingLetters = new Set(pendingLetters).add(i);
       motionQueryHandler.findLetterByMotionConfiguration(blueMotion, redMotion, gm)
         .then(letter => {
           letterCache = new Map(letterCache).set(i, (letter as Letter) ?? null);
+        })
+        .finally(() => {
+          const next = new Set(pendingLetters);
+          next.delete(i);
+          pendingLetters = next;
         });
     }
   });
@@ -237,6 +246,9 @@
               showTnD={false}
               showElemental={false}
             />
+            {#if pendingLetters.has(idx)}
+              <span class="letter-skeleton" aria-hidden="true" title="Resolving letter"></span>
+            {/if}
           </div>
         {/each}
       </div>
@@ -289,9 +301,40 @@
     opacity: 0.7;
   }
 
+  /* Letter-resolving skeleton: a soft shimmer where the TKA glyph will land,
+     so the cell doesn't pop the letter in without warning. */
+  .letter-skeleton {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 38%;
+    height: 14px;
+    border-radius: 7px;
+    background: linear-gradient(
+      90deg,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.06)) 25%,
+      var(--theme-card-bg-hover, rgba(255, 255, 255, 0.14)) 50%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.06)) 75%
+    );
+    background-size: 200% 100%;
+    animation: letter-shimmer 1.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes letter-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .step-strip-container {
       transition: none;
+    }
+
+    .letter-skeleton {
+      animation: none;
+      opacity: 0.6;
     }
   }
 </style>

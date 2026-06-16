@@ -176,7 +176,7 @@
   }
 
   .sequence-steps {
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-weight: 500;
   }
@@ -195,7 +195,7 @@
     }
 
     .sequence-steps {
-      font-size: 0.625rem;
+      font-size: var(--font-size-compact, 12px);
     }
   }
 

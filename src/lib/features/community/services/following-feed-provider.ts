@@ -81,7 +81,11 @@ export async function getFollowingFeed(
     return allItems.slice(0, limit);
   } catch (error) {
     console.error("[following-feed-provider] Error getting feed:", error);
-    return [];
+    // A fetch failure is not an empty feed. Propagate so callers can render an
+    // error state instead of an indistinguishable "no activity" view.
+    throw error instanceof Error
+      ? error
+      : new Error("Failed to load following feed.");
   }
 }
 
@@ -105,7 +109,10 @@ export async function getFollowingCount(userId?: string): Promise<number> {
       "[following-feed-provider] Error getting following count:",
       error
     );
-    return 0;
+    // Propagate rather than report a false zero; callers decide how to surface.
+    throw error instanceof Error
+      ? error
+      : new Error("Failed to load following count.");
   }
 }
 

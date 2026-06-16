@@ -17,6 +17,7 @@
   import { PER_HAND_RHYTHMS } from "$lib/shared/create/domain/rhythm/rhythm-catalog";
   import { stampPerHand } from "$lib/shared/create/domain/rhythm/rhythm-mask";
   import { stripToTurnPattern } from "../../domain/pattern-strip-apply";
+  import type { TurnValue } from "$lib/shared/create/domain/turn-pattern-data";
   import * as turnPatternManager from "$lib/shared/create/services/turn-pattern-manager";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
@@ -62,9 +63,11 @@
 
   function applyStrip() {
     if (!sequence) return;
+    // StripValue widens to boolean for toggle-style strips; this binding's
+    // TURN_VALUES only ever hold numbers and "fl", so the narrow is safe.
     const pattern = stripToTurnPattern(
-      strip[0]!,
-      strip[1]!,
+      strip[0]! as TurnValue[],
+      strip[1]! as TurnValue[],
       sequence.steps.length
     );
     const result = turnPatternManager.applyPattern(pattern, sequence, "both");

@@ -150,8 +150,8 @@ export interface CircularizationOption {
  * Result of word-to-sequence generation
  */
 export interface SpellResult {
-  /** The generated sequence data */
-  sequence: SequenceData;
+  /** The generated sequence data — null when generation failed (`success` is false) */
+  sequence: SequenceData | null;
   /** The original word the user typed */
   originalWord: string;
   /** The expanded word including bridge letters */

@@ -10,6 +10,7 @@
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import { onMount } from "svelte";
+  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
@@ -63,6 +64,7 @@
       }
     } catch (error) {
       console.error("[TrainSetup] Error loading full sequence:", error);
+      showToast(t("train_load_sequence_failed"), "error");
     } finally {
       isLoadingFullSequence = false;
     }

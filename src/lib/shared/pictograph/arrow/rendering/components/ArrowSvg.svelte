@@ -510,15 +510,15 @@ even when Svelte recreates the component instance.
   }
 
   .arrow-svg.clickable:hover {
-    filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--color-accent, var(--semantic-warning)) 60%, transparent));
   }
 
   .arrow-svg.clickable:active {
-    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.4));
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-accent, var(--semantic-warning)) 40%, transparent));
   }
 
   .arrow-svg.selected {
-    filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.9));
+    filter: drop-shadow(0 0 12px color-mix(in srgb, var(--color-accent, var(--semantic-warning)) 90%, transparent));
   }
 
   .selection-glow {
