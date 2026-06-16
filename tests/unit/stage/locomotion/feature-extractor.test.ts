@@ -1,0 +1,42 @@
+import { describe, expect, it } from "vitest";
+import { buildMotionDatabase } from "$lib/features/stage/locomotion/motion-matching/feature-extractor";
+import { FEATURE_STRIDE, DEFAULT_WEIGHTS, type PoseSample } from "$lib/features/stage/locomotion/motion-matching/feature-types";
+
+// A stationary clip: feet fixed relative to hips, no root translation or turn.
+function stationarySampler(_clipId: string, _time: number): PoseSample {
+  return {
+    leftFoot: [-0.1, 0, 0],
+    rightFoot: [0.1, 0, 0],
+    hips: [0, 1, 0],
+    facing: 0,
+    rootXZ: [0, 0],
+  };
+}
+
+describe("buildMotionDatabase", () => {
+  it("produces frameCount * stride features and a matching frame index", () => {
+    const db = buildMotionDatabase(
+      [{ clipId: "idle", durationSec: 1.0 }],
+      stationarySampler,
+      30,
+      DEFAULT_WEIGHTS,
+    );
+    expect(db.features.length).toBe(db.frames.length * FEATURE_STRIDE);
+    expect(db.columnWeights.length).toBe(FEATURE_STRIDE);
+    expect(db.frames.length).toBeGreaterThan(0);
+  });
+
+  it("yields ~zero velocities and ~zero trajectory deltas for a stationary clip", () => {
+    const db = buildMotionDatabase(
+      [{ clipId: "idle", durationSec: 1.5 }],
+      stationarySampler,
+      30,
+      DEFAULT_WEIGHTS,
+    );
+    for (let c = 6; c < FEATURE_STRIDE; c++) {
+      expect(Math.abs(db.features[c])).toBeLessThan(1e-4);
+    }
+    expect(db.features[0]).toBeCloseTo(-0.1, 4);
+    expect(db.features[3]).toBeCloseTo(0.1, 4);
+  });
+});
