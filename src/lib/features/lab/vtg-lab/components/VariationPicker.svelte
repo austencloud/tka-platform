@@ -44,6 +44,12 @@
 
   const blueTurns = $derived(turnPattern.split("|")[0]);
   const redTurns = $derived(turnPattern.split("|")[1]);
+
+  // Balanced columns: one row when they fit (≤8), otherwise split into even rows —
+  // never a lonely 5-and-2. minmax(0,1fr) lets the cards shrink to share the row.
+  const cols = $derived(
+    cards.length <= 8 ? cards.length : Math.ceil(cards.length / Math.ceil(cards.length / 8)),
+  );
 </script>
 
 {#if inspected}
@@ -77,7 +83,7 @@
       {:else if cards.length === 0}
         <div class="status">No sequences.</div>
       {:else}
-        <div class="card-grid">
+        <div class="card-grid" style="grid-template-columns: repeat({cols}, minmax(0, 1fr));">
           {#each cards as c (c.v.seedId)}
             <button class="card-cell" onclick={() => (inspected = c.seq)} aria-label="{c.v.word} ({c.v.modeTag}) — open full card">
               <div class="card-frame">
@@ -143,7 +149,6 @@
 
   .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
   }
   .card-cell {
