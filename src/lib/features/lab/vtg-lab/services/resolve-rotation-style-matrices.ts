@@ -6,6 +6,10 @@ import { loadDiamondEdges } from "$lib/features/choreo-card/services/pictograph-
 import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
 import { classifyRotationStyle, type RotationStyle } from "../domain/classify-rotation-style";
 import { allTurnPatterns } from "../domain/tnd-turn-patterns";
+import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRenderer";
+import { TND_BY_FAMILY } from "$lib/features/choreo-card/domain/tnd-element";
+import { VTG_MODE_TO_TND_FAMILY } from "../domain/vtg-tnd-family-map";
+import type { VTGMode } from "$lib/features/learn/domain/constants/vtg-experience-data";
 
 export interface StyleVariation {
   word: string; // e.g. "DJDJ"
@@ -87,4 +91,21 @@ export async function resolveVariationSequence(seedId: string, turnPattern: stri
   if (!base) return null;
   const edges = await loadDiamondEdges();
   return applyVariationDescriptor(base, { turnPattern, turnLabel: turnPattern } as any, edges).sequence;
+}
+
+/**
+ * Bake a variation's actual deck-card front: the elemental stripe frame + tint
+ * for its TnD family (timing+direction), QR, mandala fills, exactly the card the
+ * timing/direction decks release. modeTag (e.g. "SO") → family → TnDElement.
+ * Returns a PNG data URL for ChoreoCard's `preRenderedImageUrl`.
+ */
+export async function bakeVariationFront(seq: SequenceData, modeTag: string): Promise<string> {
+  const familyId = VTG_MODE_TO_TND_FAMILY[modeTag as VTGMode];
+  const tndElement = familyId ? TND_BY_FAMILY[familyId] : undefined;
+  const canvas = await getPrintCardRenderer().renderFront(seq, {
+    includeStartPosition: true,
+    tndElement,
+    showMandala: true,
+  });
+  return canvas.toDataURL("image/png");
 }

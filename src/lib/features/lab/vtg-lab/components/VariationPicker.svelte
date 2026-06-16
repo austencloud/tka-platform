@@ -1,7 +1,7 @@
 <script lang="ts">
   import ChoreoCard from "$lib/features/choreo-card/components/ChoreoCard.svelte";
   import CardInspectModal from "$lib/features/choreo-card/components/CardInspectModal.svelte";
-  import { resolveVariationSequence, type StyleVariation } from "../services/resolve-rotation-style-matrices";
+  import { resolveVariationSequence, bakeVariationFront, type StyleVariation } from "../services/resolve-rotation-style-matrices";
   import { portal } from "$lib/features/create/generate/components/modals/portal";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
@@ -16,40 +16,57 @@
   interface ResolvedVariation {
     v: StyleVariation;
     seq: SequenceData;
+    frontUrl: string;
   }
 
   let cards = $state<ResolvedVariation[]>([]);
   let loading = $state(true);
   let inspected = $state<SequenceData | null>(null);
 
-  // Resolve every variation's real sequence at this turn pattern up front, so the
-  // user picks by looking at the actual choreo card, not an opaque letter code.
+  // Resolve every variation's real sequence at this turn pattern, then bake the
+  // actual timing/direction deck-card front (elemental stripe frame + tint + QR +
+  // mandala) so the user picks by looking at the colored deck card, not a plain
+  // white render. Fill by index so the grid order stays the modeTag order even as
+  // bakes finish out of order.
   $effect(() => {
     const tp = turnPattern;
     loading = true;
     cards = [];
+    let cancelled = false;
+    const slots: (ResolvedVariation | null)[] = variations.map(() => null);
+
     Promise.all(
-      variations.map((v) =>
-        resolveVariationSequence(v.seedId, tp)
-          .then((seq) => (seq ? { v, seq } : null))
-          .catch(() => null),
-      ),
-    )
-      .then((rs) => {
-        if (tp === turnPattern) cards = rs.filter((r): r is ResolvedVariation => r !== null);
-      })
-      .finally(() => {
-        if (tp === turnPattern) loading = false;
-      });
+      variations.map(async (v, i) => {
+        try {
+          const seq = await resolveVariationSequence(v.seedId, tp);
+          if (!seq || cancelled) return;
+          const frontUrl = await bakeVariationFront(seq, v.modeTag);
+          if (cancelled) return;
+          slots[i] = { v, seq, frontUrl };
+          if (tp === turnPattern) cards = slots.filter((s): s is ResolvedVariation => s !== null);
+        } catch {
+          /* drop this variation */
+        }
+      }),
+    ).finally(() => {
+      if (tp === turnPattern && !cancelled) loading = false;
+    });
+
+    return () => {
+      cancelled = true;
+    };
   });
 
   const blueTurns = $derived(turnPattern.split("|")[0]);
   const redTurns = $derived(turnPattern.split("|")[1]);
 
-  // Balanced columns: one row when they fit (≤8), otherwise split into even rows —
-  // never a lonely 5-and-2. minmax(0,1fr) lets the cards shrink to share the row.
+  // Balanced columns off the full variation count (stable as bakes stream in) —
+  // one row when they fit (≤8), otherwise split into even rows, never a lonely
+  // 5-and-2. minmax(0,1fr) lets the cards shrink to share the row.
   const cols = $derived(
-    cards.length <= 8 ? cards.length : Math.ceil(cards.length / Math.ceil(cards.length / 8)),
+    variations.length <= 8
+      ? Math.max(variations.length, 1)
+      : Math.ceil(variations.length / Math.ceil(variations.length / 8)),
   );
 </script>
 
@@ -80,8 +97,8 @@
         <button class="x" onclick={onClose} aria-label="Close"><i class="fas fa-xmark"></i></button>
       </header>
 
-      {#if loading}
-        <div class="status" role="status">Rendering cards…</div>
+      {#if loading && cards.length === 0}
+        <div class="status" role="status">Rendering deck cards…</div>
       {:else if cards.length === 0}
         <div class="status">No sequences.</div>
       {:else}
@@ -89,7 +106,7 @@
           {#each cards as c (c.v.seedId)}
             <button class="card-cell" onclick={() => (inspected = c.seq)} aria-label="{c.v.word} ({c.v.modeTag}) — open full card">
               <div class="card-frame">
-                <ChoreoCard sequence={c.seq} cardMode showWord showQRCodes={false} />
+                <ChoreoCard sequence={c.seq} cardMode preRenderedImageUrl={c.frontUrl} />
               </div>
               <span class="cap"><strong>{c.v.word}</strong>{#if c.v.modeTag}<span class="tag">{c.v.modeTag}</span>{/if}</span>
             </button>
