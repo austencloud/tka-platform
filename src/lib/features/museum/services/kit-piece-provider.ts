@@ -31,6 +31,11 @@ export const proceduralKitProvider: KitPieceProvider = {
       const { cx, cz, lx, lz } = runDims(run, tileSize);
       const wall = new Mesh(new BoxGeometry(lx, wallHeight, lz), wallMat);
       wall.position.set(cx, wallHeight / 2, cz);
+      // Camera collision raycasts child meshes and reads userData.cameraCollider
+      // on the hit object — so the flag goes on each wall mesh, not the Group.
+      wall.userData.cameraCollider = true;
+      wall.castShadow = true;
+      wall.receiveShadow = true;
       root.add(wall);
       // baseboard + cornice trim (the "panel" read; replaced by GLB art in Phase 3)
       const base = new Mesh(new BoxGeometry(lx + 0.06, 0.6, lz + 0.06), trimMat);

@@ -743,6 +743,11 @@
       sceneObj.add(mesh);
       allSceneMeshes.push(mesh);
     }
+    if (chunk.kitWalls) {
+      // Merged kit-run wall group (institutional wing). Child meshes carry
+      // their own cameraCollider/shadow flags from the provider.
+      sceneObj.add(chunk.kitWalls);
+    }
     if (chunk.ceilingMesh) {
       const cm = chunk.ceilingMesh;
       for (const id of (cm.instanceIds ?? [])) {
@@ -834,6 +839,7 @@
   function setChunkVisible(chunk: RoomChunk, visible: boolean): void {
     for (const { mesh } of chunk.floorMeshes) mesh.visible = visible;
     for (const { mesh } of chunk.wallMeshes) mesh.visible = visible;
+    if (chunk.kitWalls) chunk.kitWalls.visible = visible;
     if (chunk.ceilingMesh) chunk.ceilingMesh.mesh.visible = visible && fpsActive;
     if (chunk.pedestalMesh) chunk.pedestalMesh.visible = visible;
     if (chunk.signMesh) chunk.signMesh.visible = visible;

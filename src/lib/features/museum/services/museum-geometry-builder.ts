@@ -14,6 +14,8 @@ import { parseTileKey, tileKey } from "../domain/museum-grid-types";
 import type { PlaqueContent, PlaqueSize } from "./types";
 import { MANUAL_PLACEMENTS } from '../data/museum-manual-placements';
 import { getPlaceableObject } from '../domain/placeable-object-registry';
+import { resolveWallRuns } from "./wall-run-resolver";
+import { proceduralKitProvider, glbKitProvider } from "./kit-piece-provider";
 import type { BatchTransfer } from "../workers/geometry-worker-protocol";
 
 // ── Constants ──
@@ -481,6 +483,8 @@ export interface RoomChunk {
   wingId: string;
   floorMeshes: BatchedMeshData[];
   wallMeshes: BatchedMeshData[];
+  /** When set (institutional wing), kit-built wall group replaces wallMeshes. */
+  kitWalls: import("three").Object3D | null;
   ceilingMesh: BatchedMeshData | null;
   pedestalMesh: BatchedMesh | null;
   signMesh: BatchedMesh | null;
@@ -568,19 +572,41 @@ export async function buildRoomChunk(
 
   await yieldToMain();
 
-  // Wall batches - one per theme/color bucket
+  // Wall geometry. The institutional wing is built as merged kit runs (sealed,
+  // continuous, no per-tile seams) via the resolver + provider; every other
+  // wing keeps the per-tile BatchedMesh path until its kit lands.
   const wallMeshes: BatchedMeshData[] = [];
-  for (const [, bucket] of buckets.wallBuckets) {
-    if (bucket.positions.length === 0) continue;
-    const texturePack = bucket.wingTheme ? WALL_TEXTURE_MAP[bucket.wingTheme] : undefined;
-    const wallMat = texturePack
-      ? loadPBR(texturePack, 4, bucket.color)
-      : new MeshStandardMaterial({ color: bucket.color });
-    const { mesh, instanceIds } = buildBatch(wallGeo, wallMat, bucket.positions, WALL_Y_CENTER);
-    mesh.userData.cameraCollider = true;
-    mesh.computeBoundingBox();
-    mesh.computeBoundingSphere();
-    wallMeshes.push({ mesh, instanceIds });
+  let kitWalls: import("three").Object3D | null = null;
+
+  if (wing && wing.theme === "institutional") {
+    // Reconstruct wall tile coords from the bucketed world positions.
+    const wallTiles = new Set<string>();
+    for (const [, bucket] of buckets.wallBuckets) {
+      for (const p of bucket.positions) {
+        const tx = Math.round(p.x / TILE_SIZE);
+        const ty = Math.round(p.z / TILE_SIZE);
+        wallTiles.add(`${tx},${ty}`);
+      }
+    }
+    const b = wing.bounds;
+    const room = { x: b.x, y: b.y, w: b.width, h: b.height };
+    const resolved = resolveWallRuns(room, (x, y) => wallTiles.has(`${x},${y}`));
+    const color = WING_WALL_COLORS.institutional;
+    const provider = glbKitProvider ?? proceduralKitProvider;
+    kitWalls = provider.buildWalls(resolved, "institutional", TILE_SIZE, WALL_HEIGHT, color);
+  } else {
+    for (const [, bucket] of buckets.wallBuckets) {
+      if (bucket.positions.length === 0) continue;
+      const texturePack = bucket.wingTheme ? WALL_TEXTURE_MAP[bucket.wingTheme] : undefined;
+      const wallMat = texturePack
+        ? loadPBR(texturePack, 4, bucket.color)
+        : new MeshStandardMaterial({ color: bucket.color });
+      const { mesh, instanceIds } = buildBatch(wallGeo, wallMat, bucket.positions, WALL_Y_CENTER);
+      mesh.userData.cameraCollider = true;
+      mesh.computeBoundingBox();
+      mesh.computeBoundingSphere();
+      wallMeshes.push({ mesh, instanceIds });
+    }
   }
 
   await yieldToMain();
@@ -728,7 +754,7 @@ export async function buildRoomChunk(
 
   return {
     wingId,
-    floorMeshes, wallMeshes, ceilingMesh,
+    floorMeshes, wallMeshes, kitWalls, ceilingMesh,
     pedestalMesh, signMesh, performerMesh: null,
     torchPositions,
     plaquePlacements: buckets.plaquePlacements,
@@ -742,6 +768,15 @@ export async function buildRoomChunk(
 export function disposeRoomChunk(chunk: RoomChunk): void {
   for (const { mesh } of chunk.floorMeshes) mesh.dispose();
   for (const { mesh } of chunk.wallMeshes) mesh.dispose();
+  if (chunk.kitWalls) {
+    chunk.kitWalls.traverse((obj) => {
+      const m = obj as import("three").Mesh;
+      if (m.geometry) m.geometry.dispose();
+      const mat = m.material;
+      if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
+      else if (mat) mat.dispose();
+    });
+  }
   if (chunk.ceilingMesh) chunk.ceilingMesh.mesh.dispose();
   if (chunk.pedestalMesh) chunk.pedestalMesh.dispose();
   if (chunk.signMesh) chunk.signMesh.dispose();
