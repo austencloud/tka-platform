@@ -682,96 +682,139 @@ Expected: all PASS. Phase 1 is shippable, testable software with zero external d
 
 ---
 
-## PHASE 2 — Controller + clip sampling + foot-lock
+## PHASE 2 — RigBinding seam + controller + foot-lock
 
-Phase 2 touches `@austencloud/scene-3d` (`PerformerRig`, `RootMotionExtractor`)
-and the local `solveLegIK` / `contact-curve-cache`. Some accessors are not
-visible from this repo, so Phase 2 begins with a confirmation task — these are
-real read actions, not placeholders.
+**Architecture decision (from Task 6 investigation, 2026-06-16):** the package
+`@austencloud/scene-3d` keeps its rig root, skeleton (`IAvatarSkeletonBuilder`),
+locomotion mixer, and IK services **private inside `Avatar3D.svelte`** — they are
+not exposed via props/refs/context. The capabilities all exist and are correct
+(`getBone`, `getLeftLegChain`/`getRightLegChain`, `RootMotionExtractor`,
+`HingeConstrainedLegIKSolver`, `BoneChain`), but cannot be reached from an
+external controller.
 
-### Task 6: Confirm integration interfaces (read-only)
+Resolution: the controller depends on an injected **`RigBinding`** interface, not
+on the package directly. Two providers satisfy the same interface:
+- **Path C (this slice):** a **self-loaded** provider mounts the avatar GLB at the
+  app level, builds its own bone map + leg chains, owns a mixer, and runs the
+  local `solveLegIK` + `contact-curve-cache`. Zero package edits.
+- **Path A (production, later):** add an `onLocomotionServicesReady` seam (+
+  `samplePoseAtTime`) to the package and have it satisfy the SAME `RigBinding`.
+  One controller, two providers, no controller rewrite.
 
-**Files (read):**
-- `node_modules/@austencloud/scene-3d/dist/lib/components/PerformerRig.svelte.d.ts`
-- `node_modules/@austencloud/scene-3d/dist/lib/services/contracts/IRootMotionExtractor.d.ts`
-- `node_modules/@austencloud/scene-3d/dist/lib/services/implementations/RootMotionExtractor.js`
-- `node_modules/@austencloud/scene-3d/dist/lib/services/contracts/ILegIKSolver.d.ts` (for `LegIKInput` / `BoneChain` shape)
-- `src/lib/shared/3d/components/Viewer3DScene.svelte` (how the rig + mixer are exposed to a useTask consumer)
+### Task 6: Confirm integration interfaces (read-only) — DONE
 
-- [ ] **Step 1:** Read each file. Record, in a scratch comment block at the top of `mm-locomotion-controller.ts`, the exact signatures for:
-  - How to obtain the performer's skeleton root `Object3D` and look up bones by canonical name (`Hips`, `LeftUpLeg`, `LeftLeg`, `LeftFoot`, right equivalents).
-  - The `RootMotionExtractor` constructor + per-frame call that yields `{ x, z, yawDelta }`.
-  - The `BoneChain` shape required by `LegIKInput` (`root`, `middle`, `effector`, `upperLength`, `lowerLength`, plus rest-dir fields used by `computeKneeHingeAxis`).
-- [ ] **Step 2:** If any accessor is missing (e.g. the rig does not expose bones), STOP and surface to the user with the exact gap. Do not fabricate an API.
+Investigation complete (2026-06-16). Verdict recorded above. Confirmed public &
+usable: `IAvatarSkeletonBuilder.getBone(name)` / `getLeftLegChain()` /
+`getRightLegChain()` / `getRoot()`; `BoneChain` = `{ root, middle, effector,
+totalLength, upperLength, lowerLength, rootRestDir, middleRestDir }`;
+`RootMotionExtractor` (`new`, `initialize(hipsBone)`, `extract(): { x, forward,
+yawDelta }`); `LegIKInput` per `ILegIKSolver.d.ts`. Confirmed **gap**: these are
+instantiated privately in `Avatar3D.svelte` — hence the `RigBinding` seam above.
 
-### Task 7: Clip sampler (rig-backed `PoseSampler`)
+### Task 7: `RigBinding` interface + self-loaded provider
 
 **Files:**
-- Create: `src/lib/features/stage/locomotion/motion-matching/clip-sampler.ts`
+- Create: `src/lib/features/stage/locomotion/motion-matching/rig-binding.ts`
+- Create: `src/lib/features/stage/locomotion/motion-matching/self-loaded-rig-binding.ts`
 
-Wraps an `AnimationMixer` + a cloned skeleton to implement `PoseSampler`
-(`(clipId, time) => PoseSample`) for use by `buildMotionDatabase` at load time,
-and to sample the live pose each frame. Uses the bone accessors confirmed in
-Task 6.
+- [ ] **Step 0 (confirm asset):** `glob static/models/**/*.glb` — find the avatar
+  GLB (per `src/lib/shared/3d/docs/AVATAR-MODEL-GUIDE.md`, expected
+  `static/models/tka-avatar.glb`). If absent, STOP and report; do not guess a path.
+- [ ] **Step 1:** Define the `RigBinding` interface in `rig-binding.ts` — the only
+  surface the controller depends on:
 
-- [ ] **Step 1:** Implement `createClipSampler(rigRoot, clips)` that:
-  - Loads each GLB via `GLTFLoader` (mirroring `LocomotionController.initialize`,
-    `locomotion-controller.ts:34-54`), keyed by `clipId`.
-  - Exposes `sample(clipId, time): PoseSample` by setting the action `.time`,
-    calling `mixer.update(0)`, `rigRoot.updateMatrixWorld(true)`, then reading
-    `Hips`, `LeftFoot`, `RightFoot` world positions and converting feet to
-    hip-local; reads root facing from the `Hips` Y-rotation and `rootXZ` from
-    `Hips` world X/Z.
-  - Exposes `sampleClipMap(): ClipSpec[]` (clipId + durationSec) for the extractor.
-- [ ] **Step 2:** Manual sanity: log the database size built from
-  `[idle, walk-forward, turn-left, turn-right]`. Expected: a few hundred frames,
-  `features.length === frames.length * 24`.
-- [ ] **Step 3: Commit**
+```typescript
+import type { Bone, Object3D, Vector3 } from "three";
+import type { PoseSample } from "./feature-types";
 
-```bash
-git add src/lib/features/stage/locomotion/motion-matching/clip-sampler.ts
-git commit -m "feat(mm-locomotion): rig-backed clip sampler for feature extraction" -- src/lib/features/stage/locomotion/motion-matching/clip-sampler.ts
+/** A leg chain matching the package BoneChain shape used by solveLegIK. */
+export interface LegChain {
+  root: Bone; middle: Bone; effector: Bone;
+  upperLength: number; lowerLength: number;
+  rootRestDir: Vector3; middleRestDir: Vector3;
+}
+
+export interface RigBinding {
+  /** Rig root for world-matrix updates. */
+  readonly root: Object3D;
+  /** Canonical-name bone lookup (Mixamo names: Hips, LeftUpLeg, LeftFoot, ...). */
+  getBone(name: string): Bone | null;
+  getLeftLegChain(): LegChain;
+  getRightLegChain(): LegChain;
+  /** Clip ids available + their durations (for buildMotionDatabase). */
+  clipSpecs(): { clipId: string; durationSec: number }[];
+  /** Pose the rig at (clipId, time) and read a PoseSample (root-local feet). */
+  samplePose(clipId: string, time: number): PoseSample;
+  /** Advance the live mixer for the chosen clip by dt (drives the visible pose). */
+  applyClip(clipId: string, time: number): void;
+  /** Root-motion delta since last call: local lateral x, forward, yaw radians. */
+  rootMotionDelta(): { x: number; forward: number; yawDelta: number };
+}
 ```
+
+- [ ] **Step 2:** Implement `createSelfLoadedRigBinding(avatarGlbUrl, clips)` in
+  `self-loaded-rig-binding.ts`:
+  - Load the avatar GLB + each clip GLB via `GLTFLoader` (mirror
+    `locomotion-controller.ts:34-54`).
+  - Find bones via `skinnedMesh.skeleton.getBoneByName(...)` for the Mixamo names.
+  - Build `LegChain`s: lengths from rest-pose bone world positions; `rootRestDir`/
+    `middleRestDir` from normalized rest-pose bone directions (the inputs
+    `computeKneeHingeAxis` expects).
+  - `samplePose`/`applyClip`: a `THREE.AnimationMixer` on the avatar root; set the
+    action `.time`, `mixer.update(0)`, `root.updateMatrixWorld(true)`, read
+    `Hips`/`LeftFoot`/`RightFoot` world positions (feet → hip-local), facing from
+    `Hips` Y-rotation, `rootXZ` from `Hips` world X/Z.
+  - `rootMotionDelta`: instantiate the package `RootMotionExtractor`,
+    `initialize(hipsBone)`, return `extract()`.
+- [ ] **Step 3:** Manual sanity: build a database from
+  `[idle, walk-forward, turn-left, turn-right]`; log frame count. Expected: a few
+  hundred frames, `features.length === frames.length * 24`.
+- [ ] **Step 4: Commit** (explicit pathspec, both new files only).
 
 ### Task 8: MM controller (search + inertialization, no foot-lock yet)
 
 **Files:**
 - Create: `src/lib/features/stage/locomotion/motion-matching/mm-locomotion-controller.ts`
 
-- [ ] **Step 1:** Implement `MmLocomotionController` with the drop-in surface:
-  - `async initialize(rigRoot)` — build sampler + database (`buildMotionDatabase`).
-  - `setTargetFacing(rad)`, `setTargetPosition(x, z)`, `stepBackToOrigin()`.
-  - `update(dt)` — per frame:
+Depends ONLY on `RigBinding` + the Phase-1 pure units. No package imports.
+
+- [ ] **Step 1:** Implement `MmLocomotionController`:
+  - `constructor(rig: RigBinding)`; `initialize()` builds the database via
+    `buildMotionDatabase(rig.clipSpecs(), (c,t)=>rig.samplePose(c,t), 30, DEFAULT_WEIGHTS)`.
+  - Drop-in surface mirroring stage `LocomotionController`:
+    `setTargetFacing(rad)`, `setTargetPosition(x,z)`, `stepBackToOrigin()`,
+    `update(dt)`, `get state(): LocomotionState` (`{ position, facing, speed, isMoving }`,
+    shape from `locomotion-controller.ts:9-14`).
+  - `update(dt)` per frame:
     1. `buildTrajectoryQuery(current, target, 1.0)`.
-    2. Assemble the full query `Float32Array(24)`: pose columns [0..14] from the
-       current sampled pose; trajectory columns [15..23] from the query.
-    3. Every 3rd frame, `searchNearest(db, query)` → `{ clipId, time }`. If it
-       differs from the playing frame, `startInertialize` per tracked joint
-       (Hips + legs + spine) capturing current vs new-clip quaternions.
-    4. Advance the chosen clip; for each tracked joint apply `applyInertialize`.
-    5. Apply `RootMotionExtractor` delta (x, z, yawDelta) to `current`.
-  - `get state(): LocomotionState` (`{ position, facing, speed, isMoving }`,
-    matching `locomotion-controller.ts:9-14`).
-- [ ] **Step 2:** Manual: drive `setTargetFacing(Math.PI/2)` on the test page
-  (Task 10) and confirm a smooth turn with NO pop. (Foot slide still expected —
-  fixed in Task 9.)
-- [ ] **Step 3: Commit** (pathspec: the controller file only).
+    2. Assemble query `Float32Array(24)`: pose cols [0..14] from the current
+       `rig.samplePose` of the playing frame; traj cols [15..23] from the query.
+    3. Every 3rd frame `searchNearest(db, query)` → `{ clipId, time }`. On change,
+       `startInertialize` per tracked joint (Hips + both legs + spine) capturing
+       current vs new-clip quaternions.
+    4. `rig.applyClip(clipId, time)`; for each tracked joint apply `applyInertialize`.
+    5. `rig.rootMotionDelta()` → integrate into `current` (x, forward, yawDelta).
+- [ ] **Step 2:** Manual: `setTargetFacing(Math.PI/2)` on the test page (Task 10)
+  → smooth turn, NO pop. (Foot slide still expected — fixed in Task 9.)
+- [ ] **Step 3: Commit** (pathspec: controller file only).
 
 ### Task 9: Foot-lock pass
 
 **Files:**
 - Modify: `src/lib/features/stage/locomotion/motion-matching/mm-locomotion-controller.ts`
 
-- [ ] **Step 1:** At controller init, build a `ContactCurveCache`
-  (`createContactCurveCache`) and `registerCurve` for any clip with a sidecar
-  (none yet → velocity fallback). Compute `kneeHingeAxis` per leg once via
-  `computeKneeHingeAxis(upLegRestDir, legRestDir)` using the rest-dir fields from
-  Task 6.
+- [ ] **Step 1:** At init, build a `ContactCurveCache` (`createContactCurveCache`)
+  and `registerCurve` for any clip with a sidecar (none yet → velocity fallback).
+  Compute `kneeHingeAxis` per leg once via
+  `computeKneeHingeAxis(chain.rootRestDir, chain.middleRestDir)`.
 - [ ] **Step 2:** In `update`, after pose application, per foot:
   - `getContactAt(cache, clipId, phase)`; if `!hasCurve`, derive contact from the
     sampled foot vertical velocity (planted when `|vy| < 0.05`).
   - On rising contact, freeze the foot's current world position as `footTarget`.
-  - While planted, call `solveLegIK({ chain, footTarget, kneeHingeAxis, weight: contact, groundNormal: (0,1,0), footForward: current-forward, poleDirection: forward })`.
+  - While planted, call `solveLegIK({ chain, footTarget, kneeHingeAxis,
+    weight: contact, groundNormal: new Vector3(0,1,0), footForward: <facing fwd>,
+    poleDirection: <facing fwd> })` using `rig.getLeftLegChain()` /
+    `getRightLegChain()`.
   - On falling contact, ramp `weight`→0.
 - [ ] **Step 3: Verify (runtime, objective).** On the test page, via Chrome
   DevTools `evaluate_script`, capture the locked foot's world position across a
@@ -788,11 +831,16 @@ git commit -m "feat(mm-locomotion): rig-backed clip sampler for feature extracti
 **Files:**
 - Create: `src/routes/test/mm-locomotion/+page.svelte`
 
-- [ ] **Step 1:** Mount the real `Viewer3DScene` with one performer. Add a
-  `SegmentedControl` (import from `src/lib/shared/3d/components/controls/SegmentedControl.svelte`)
-  with options −90/−45/0/+45/+90 calling `controller.setTargetFacing(deg*PI/180)`,
-  and a "Step back to origin" `<button>` calling `controller.stepBackToOrigin()`.
-  Drive `controller.update(dt)` from the scene's `useTask` loop.
+- [ ] **Step 1:** Mount a minimal Threlte `<Canvas>` (orbit camera + ground +
+  light) that adds the self-loaded `RigBinding.root` to the scene
+  (`createSelfLoadedRigBinding(avatarGlbUrl, clips)` → `new MmLocomotionController(rig)`
+  → `await controller.initialize()`). Add a `SegmentedControl` (import from
+  `src/lib/shared/3d/components/controls/SegmentedControl.svelte`) with options
+  −90/−45/0/+45/+90 calling `controller.setTargetFacing(deg*PI/180)`, and a
+  "Step back to origin" `<button>` calling `controller.stepBackToOrigin()`. Drive
+  `controller.update(dt)` from a `useTask` loop. (This is the Path C harness —
+  it does not use the package `Viewer3DScene`; production wiring is the later
+  Path A seam.)
 - [ ] **Step 2:** Confirm dev server serves it:
   `curl -s -o /dev/null -w "%{http_code}" http://localhost:5173/test/mm-locomotion` → `200`.
 - [ ] **Step 3: Commit** (pathspec: the page file only).
