@@ -1,8 +1,10 @@
 <script lang="ts">
   import TurnMatrixGrid from "$lib/features/choreo-card/components/TurnMatrixGrid.svelte";
-  import LazyCardCell from "./LazyCardCell.svelte";
+  import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
+  import CardInspectModal from "$lib/features/choreo-card/components/CardInspectModal.svelte";
   import { resolveTnDFamilyCards } from "../services/resolve-tnd-family-cards";
   import type { SeedMatrix } from "../domain/tnd-turn-patterns";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   interface Props {
     /** TnD family id, e.g. "split-opp". */
@@ -13,6 +15,9 @@
   let seeds = $state<SeedMatrix[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+
+  // The sequence whose full card is expanded in the inspect modal (null = closed).
+  let inspected = $state<SequenceData | null>(null);
 
   $effect(() => {
     const fam = familyId;
@@ -25,6 +30,7 @@
         seeds = res;
       })
       .catch((e) => {
+        if (fam !== familyId) return; // stale — don't clobber a newer family
         error = e instanceof Error ? e.message : "Failed to load sequences";
       })
       .finally(() => {
@@ -52,7 +58,14 @@
         {#snippet cell(blue: number, red: number)}
           {@const seq = seed.byTurn.get(turnKey(blue, red))}
           {#if seq}
-            <LazyCardCell sequence={seq} notes={seed.footer.center ?? ""} />
+            <button
+              type="button"
+              class="mandala-cell"
+              aria-label="{seed.word} {blue}|{red} — expand card"
+              onclick={() => (inspected = seq)}
+            >
+              <SequenceMandala sequence={seq} mode="gallery" show="both" size={120} darkMode />
+            </button>
           {:else}
             <div class="card-empty" aria-label="No sequence for {blue}|{red}"></div>
           {/if}
@@ -60,6 +73,10 @@
       </TurnMatrixGrid>
     </section>
   {/each}
+{/if}
+
+{#if inspected}
+  <CardInspectModal sequence={inspected} onClose={() => (inspected = null)} />
 {/if}
 
 <style>
@@ -84,9 +101,37 @@
     letter-spacing: 0.05em;
     color: var(--theme-text-secondary, #888);
   }
+  .mandala-cell {
+    width: 100%;
+    aspect-ratio: 1;
+    padding: 2px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: clamp(4px, 1cqi, 8px);
+    transition: transform 0.12s ease, background 0.12s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mandala-cell :global(svg) {
+    width: 100%;
+    height: 100%;
+  }
+  .mandala-cell:hover {
+    transform: scale(1.08);
+    background: rgba(183, 99, 205, 0.12);
+  }
+  .mandala-cell:focus-visible {
+    outline: 2px solid rgba(183, 99, 205, 0.7);
+    outline-offset: 1px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mandala-cell { transition: none; }
+  }
   .card-empty {
     width: 100%;
-    aspect-ratio: 5 / 7;
+    aspect-ratio: 1;
     border-radius: clamp(4px, 1cqi, 8px);
     background: rgba(255, 255, 255, 0.015);
     border: 1px solid rgba(255, 255, 255, 0.03);

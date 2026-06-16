@@ -48,6 +48,11 @@ export function groupCardsBySeed(
   for (let i = 0; i < cards.length; i++) {
     const card = cards[i]!;
     const res = resolved[i];
+    // Invariant: resolveDeckSequences preserves card order and only drops a card
+    // when its base is missing — which cannot happen here (every card's base is in
+    // baseByKey). So resolved[i] always pairs with cards[i]. If a future change to
+    // resolveDeckSequences ever drops cards, this guard would silently misalign the
+    // rest; keep the one-base-per-card invariant intact upstream.
     if (!res) continue;
     let entry = bySeed.get(card.sequenceId);
     if (!entry) {
