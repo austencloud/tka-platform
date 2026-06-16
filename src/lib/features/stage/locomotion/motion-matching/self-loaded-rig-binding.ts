@@ -225,6 +225,29 @@ export async function createSelfLoadedRigBinding(
       };
     },
 
+    readLivePose(): PoseSample {
+      hipsBone.getWorldPosition(_hipsWorld);
+      leftFootBone.getWorldPosition(_leftFootWorld);
+      rightFootBone.getWorldPosition(_rightFootWorld);
+      hipsBone.getWorldQuaternion(_hipsQuat);
+      _euler.setFromQuaternion(_hipsQuat, "YXZ");
+      return {
+        hips: [_hipsWorld.x, _hipsWorld.y, _hipsWorld.z],
+        leftFoot: [
+          _leftFootWorld.x - _hipsWorld.x,
+          _leftFootWorld.y - _hipsWorld.y,
+          _leftFootWorld.z - _hipsWorld.z,
+        ],
+        rightFoot: [
+          _rightFootWorld.x - _hipsWorld.x,
+          _rightFootWorld.y - _hipsWorld.y,
+          _rightFootWorld.z - _hipsWorld.z,
+        ],
+        facing: _euler.y,
+        rootXZ: [_hipsWorld.x, _hipsWorld.z],
+      };
+    },
+
     applyClip(clipId: string, time: number): void {
       poseAt(clipId, time);
     },
@@ -235,6 +258,10 @@ export async function createSelfLoadedRigBinding(
         rootMotion.initialize(hipsBone);
       }
       return rootMotion.extract();
+    },
+
+    resetRootMotion(): void {
+      if (rootMotion) rootMotion.reset();
     },
   };
 }

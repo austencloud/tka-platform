@@ -122,6 +122,14 @@ export class MmLocomotionController {
   update(dt: number): void {
     if (!this.db || !this.current) return;
 
+    // 1. Advance the playhead within the current clip and pose the LIVE rig to
+    //    it. This must happen before readLivePose() so the query reflects the
+    //    current frame, and before rootMotionDelta() so the extractor reads the
+    //    legitimately-advanced hip (not a search-scrubbed one).
+    this.current.time += dt;
+    this.rig.applyClip(this.current.clipId, this.current.time);
+
+    // 2. Build the trajectory + query from the LIVE pose (no scrub).
     const cur: LocomotionPose = {
       position: { x: this._state.position.x, z: this._state.position.z },
       facing: this._state.facing,
@@ -129,7 +137,7 @@ export class MmLocomotionController {
     const target: LocomotionPose = { position: this.targetPos, facing: this.targetFacing };
     const traj = buildTrajectoryQuery(cur, target, REACH_SEC);
 
-    // Search at a reduced cadence (clips stay continuous between searches).
+    // 3. Search at a reduced cadence (clips stay continuous between searches).
     if (this.frameCounter % SEARCH_EVERY === 0) {
       const query = this.buildQuery(traj);
       const idx = searchNearest(this.db, query);
@@ -154,14 +162,15 @@ export class MmLocomotionController {
         }
 
         this.current = { clipId: frame.clipId, time: frame.time };
+
+        // The applyClip above teleported the hip to an arbitrary clip/time.
+        // Reset root-motion accumulation so the next rootMotionDelta() does NOT
+        // count that discontinuity as a (huge, bogus) movement delta.
+        this.rig.resetRootMotion();
       }
     }
 
-    // Advance the current clip so it keeps playing between searches.
-    this.current.time += dt;
-    this.rig.applyClip(this.current.clipId, this.current.time);
-
-    // Apply the decaying inertialization offset ON TOP of the freshly posed clip.
+    // 4. Apply the decaying inertialization offset ON TOP of the posed clip.
     // applyClip set each bone to the clip pose; applyInertialize blends from the
     // captured old pose toward that clip pose, decaying to identity over the
     // blend duration. Dropping a finished inertializer keeps the map small.
@@ -173,9 +182,11 @@ export class MmLocomotionController {
       }
     }
 
-    // Integrate clip-driven root motion into world-space state. The delta is in
-    // the character's local frame (x = lateral, forward = facing axis); rotate
-    // it by the current world facing before accumulating.
+    // 5. Integrate clip-driven root motion into world-space state. The delta is
+    // in the character's local frame (x = lateral, forward = facing axis);
+    // rotate it by the current world facing before accumulating. Thanks to the
+    // resetRootMotion() in step 3, the first extract() after a switch returns
+    // ~0 (the teleport is not counted).
     const rm = this.rig.rootMotionDelta();
     const cosF = Math.cos(this._state.facing);
     const sinF = Math.sin(this._state.facing);
@@ -185,12 +196,15 @@ export class MmLocomotionController {
     this._state.speed = Math.hypot(rm.x, rm.forward) / Math.max(dt, 1e-4);
     this._state.isMoving = this._state.speed > 0.01;
 
+    // 6. Advance the frame counter.
     this.frameCounter++;
   }
 
   /**
    * Assemble the live feature query. Pose position cols [0..5] come from the
-   * current playing frame; velocity cols [6..14] are left at 0 because analytic
+   * LIVE rig pose (read without re-posing — see {@link RigBinding.readLivePose})
+   * so building the query never scrambles the visible pose or pollutes the
+   * root-motion extractor. Velocity cols [6..14] are left at 0 because analytic
    * live velocities aren't computed per frame — DEFAULT_WEIGHTS already
    * down-weights footVel (0.3) and hipVel (0.5), so matching leans on the
    * position and trajectory columns. Trajectory cols [15..23] come from
@@ -199,16 +213,14 @@ export class MmLocomotionController {
   private buildQuery(traj: TrajectoryQuery): Float32Array {
     const q = new Float32Array(FEATURE_STRIDE);
 
-    if (this.current) {
-      const pose = this.rig.samplePose(this.current.clipId, this.current.time);
-      q[0] = pose.leftFoot[0];
-      q[1] = pose.leftFoot[1];
-      q[2] = pose.leftFoot[2];
-      q[3] = pose.rightFoot[0];
-      q[4] = pose.rightFoot[1];
-      q[5] = pose.rightFoot[2];
-      // Velocity cols [6..14] intentionally left at 0 — see method doc.
-    }
+    const pose = this.rig.readLivePose();
+    q[0] = pose.leftFoot[0];
+    q[1] = pose.leftFoot[1];
+    q[2] = pose.leftFoot[2];
+    q[3] = pose.rightFoot[0];
+    q[4] = pose.rightFoot[1];
+    q[5] = pose.rightFoot[2];
+    // Velocity cols [6..14] intentionally left at 0 — see method doc.
 
     // Trajectory position cols [15..20] (3 horizons x x,z).
     for (let i = 0; i < 6; i++) q[15 + i] = traj.posXZ[i] ?? 0;

@@ -27,6 +27,10 @@ export interface RigBinding {
   getRightLegChain(): LegChain;
   clipSpecs(): { clipId: string; durationSec: number }[];
   samplePose(clipId: string, time: number): PoseSample;
+  /** Read the CURRENT live skeleton pose without re-posing (no scrub). */
+  readLivePose(): PoseSample;
   applyClip(clipId: string, time: number): void;
   rootMotionDelta(): { x: number; forward: number; yawDelta: number };
+  /** Reset root-motion accumulation (call after a discontinuous clip switch). */
+  resetRootMotion(): void;
 }
