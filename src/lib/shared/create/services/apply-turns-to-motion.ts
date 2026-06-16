@@ -197,3 +197,63 @@ export function applyPendingTurnsToOption(
     },
   };
 }
+
+/**
+ * Turn variants for a single hand.
+ *
+ * Shifts (pro/anti) carry an intrinsic base rotation direction, so turns add in
+ * that one direction → a single variant. Dashes and statics have no base
+ * rotation; once turns ≥ 1 they can spin CW OR CCW, and the two produce
+ * genuinely different end orientations, so both are emitted. At 0 turns there is
+ * no direction → a single (no-rotation) variant.
+ */
+function handTurnVariants(
+  motion: MotionData,
+  turns: number | "fl",
+  color: MotionColor
+): MotionData[] {
+  const isDashOrStatic =
+    motion.motionType === MotionType.DASH || motion.motionType === MotionType.STATIC;
+
+  if (isDashOrStatic && typeof turns === "number" && turns > 0) {
+    return [
+      createUpdatedMotion(motion, turns, color, RotationDirection.CLOCKWISE),
+      createUpdatedMotion(motion, turns, color, RotationDirection.COUNTER_CLOCKWISE),
+    ];
+  }
+
+  const result = applyTurnToMotion(turns, motion, color, [], 0);
+  return [result.motion ?? motion];
+}
+
+/**
+ * Apply pending turns to an option, fanning out the ambiguous rotation directions.
+ *
+ * Returns 1–4 option pictographs: each dash/static hand with turns ≥ 1 doubles
+ * the variants (CW/CCW), shift hands and 0-turn hands stay single. The cartesian
+ * product across both hands yields 1 (no ambiguity), 2 (one ambiguous hand), or 4
+ * (both ambiguous). Never mutates the input.
+ */
+export function applyTurnsToOptionVariants(
+  option: PictographData,
+  blueTurns: number | "fl",
+  redTurns: number | "fl"
+): PictographData[] {
+  const blue = option.motions?.blue;
+  const red = option.motions?.red;
+  if (!blue || !red) return [option];
+
+  const blues = handTurnVariants(blue, blueTurns, MotionColor.BLUE);
+  const reds = handTurnVariants(red, redTurns, MotionColor.RED);
+
+  const variants: PictographData[] = [];
+  for (const b of blues) {
+    for (const r of reds) {
+      variants.push({
+        ...option,
+        motions: { ...option.motions, blue: b, red: r },
+      });
+    }
+  }
+  return variants;
+}

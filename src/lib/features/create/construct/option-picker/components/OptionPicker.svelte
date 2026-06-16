@@ -17,12 +17,12 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
   import { onMount } from "svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
-  import { applyPendingTurnsToOption } from "$lib/shared/create/services/apply-turns-to-motion";
+  import { applyTurnsToOptionVariants } from "$lib/shared/create/services/apply-turns-to-motion";
+  import { countDirectionReversals } from "$lib/features/create/construct/option-picker/services/reversal-checker";
   import { calculateDeviceAwareSize } from "../services/option-grid-fit-calculator";
 
   import { createOptionPickerState } from "../state/option-picker-state.svelte";
   import type { OptionLoader } from "$lib/features/create/construct/option-picker/services/option-loader";
-  import type { OptionFilter } from "$lib/features/create/construct/option-picker/services/option-filter";
   import type { OptionSorter } from "$lib/features/create/construct/option-picker/services/option-sorter";
   import type { OrganizedSection, SortMethod } from "$lib/features/create/construct/option-picker/domain/option-picker-types";
   import type { DeviceAwareSizingParams, DeviceAwareSizingResult } from "../services/types";
@@ -89,10 +89,25 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
   function prepareWithTurns(
     filtered: PictographData[]
   ): Promise<PreparedPictographData[]> {
-    const turned =
-      blueTurns === 0 && redTurns === 0
-        ? filtered
-        : filtered.map((o) => applyPendingTurnsToOption(o, blueTurns, redTurns));
+    // Fan out ambiguous rotation directions: dash/static hands with turns ≥ 1
+    // become CW + CCW tiles (different end orientations, both valid next steps).
+    const noTurns = blueTurns === 0 && redTurns === 0;
+    let turned = noTurns
+      ? filtered
+      : filtered.flatMap((o) => applyTurnsToOptionVariants(o, blueTurns, redTurns));
+
+    // pickerState applied the continuous filter to the 0-turn base options, but
+    // the fanned CW/CCW variants carry new rotation directions that pickerState
+    // never saw. When Continuous is on, drop any variant whose spin direction
+    // reverses against the established direction. Direction-only (not full
+    // getReversalCount) so the turns>1 magnitude heuristic doesn't nuke every
+    // option at 2+ turns.
+    if (!noTurns && internalContinuousOnly && currentSequence.length >= 2) {
+      turned = turned.filter(
+        (o) => countDirectionReversals(o, currentSequence) === 0
+      );
+    }
+
     const s = getSettings();
     return preparer!.prepareBatch(turned, {
       bluePropType: s.bluePropType,

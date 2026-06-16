@@ -59,6 +59,22 @@ export function hasReversals(option: PictographData): boolean {
 }
 
 /**
+ * Count reversals based ONLY on rotation-direction continuity versus the previous
+ * sequence step — ignoring the intrinsic turn-magnitude heuristic in
+ * getReversalCount (turns>1), which is not a direction reversal. Used to filter
+ * the turn-picker's fanned CW/CCW variants: a dash/static variant "reverses" only
+ * if its spin direction opposes the established direction. Returns 0 when there is
+ * no prior rotation context to compare against.
+ */
+export function countDirectionReversals(
+  option: PictographData,
+  sequence: PictographData[] = []
+): number {
+  if (sequence.length === 0) return 0;
+  return analyzeSequenceContext(option, sequence);
+}
+
+/**
  * Analyze a single motion for reversal patterns using the heuristics from the
  * previous monolithic service implementation.
  */
