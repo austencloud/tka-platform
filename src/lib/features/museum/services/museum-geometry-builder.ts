@@ -572,13 +572,14 @@ export async function buildRoomChunk(
 
   await yieldToMain();
 
-  // Wall geometry. The institutional wing is built as merged kit runs (sealed,
-  // continuous, no per-tile seams) via the resolver + provider; every other
-  // wing keeps the per-tile BatchedMesh path until its kit lands.
+  // Wall geometry. Any wing (rectangular room) is built as merged kit runs
+  // (sealed, continuous, no per-tile seams) via the resolver + provider, using
+  // the wing's theme color. Corridors (wing === null) keep the per-tile path.
+  // Flat per-theme color for now; the GLB provider restores real materials.
   const wallMeshes: BatchedMeshData[] = [];
   let kitWalls: import("three").Object3D | null = null;
 
-  if (wing && wing.theme === "institutional") {
+  if (wing) {
     // Reconstruct wall tile coords from the bucketed world positions, tracking
     // their extent. The room rect is derived from the actual wall tiles, not
     // wing.bounds — a room's walls can be inset from the wing rectangle, and
@@ -599,9 +600,9 @@ export async function buildRoomChunk(
     if (wallTiles.size > 0) {
       const room = { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
       const resolved = resolveWallRuns(room, (x, y) => wallTiles.has(`${x},${y}`));
-      const color = WING_WALL_COLORS.institutional;
+      const color = WING_WALL_COLORS[wing.theme];
       const provider = glbKitProvider ?? proceduralKitProvider;
-      kitWalls = provider.buildWalls(resolved, "institutional", TILE_SIZE, WALL_HEIGHT, color);
+      kitWalls = provider.buildWalls(resolved, wing.theme, TILE_SIZE, WALL_HEIGHT, color);
     }
   } else {
     for (const [, bucket] of buckets.wallBuckets) {
