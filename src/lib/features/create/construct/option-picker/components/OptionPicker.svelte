@@ -17,6 +17,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
   import { onMount } from "svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
+  import { applyPendingTurnsToOption } from "$lib/shared/create/services/apply-turns-to-motion";
   import { calculateDeviceAwareSize } from "../services/option-grid-fit-calculator";
 
   import { createOptionPickerState } from "../state/option-picker-state.svelte";
@@ -66,6 +67,38 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
 
   // Internal continuous filter state - initialize with default
   let internalContinuousOnly = $state(false);
+
+  // Sticky pending turns applied to every option (persist across selections)
+  let blueTurns = $state<number | "fl">(0);
+  let redTurns = $state<number | "fl">(0);
+
+  function handleBlueTurnsChange(delta: number) {
+    if (blueTurns === "fl") return;
+    blueTurns = Math.max(0, blueTurns + delta);
+  }
+  function handleRedTurnsChange(delta: number) {
+    if (redTurns === "fl") return;
+    redTurns = Math.max(0, redTurns + delta);
+  }
+  function handleResetTurns() {
+    blueTurns = 0;
+    redTurns = 0;
+  }
+
+  // Apply sticky turns to each option, then prepare for rendering.
+  function prepareWithTurns(
+    filtered: PictographData[]
+  ): Promise<PreparedPictographData[]> {
+    const turned =
+      blueTurns === 0 && redTurns === 0
+        ? filtered
+        : filtered.map((o) => applyPendingTurnsToOption(o, blueTurns, redTurns));
+    const s = getSettings();
+    return preparer!.prepareBatch(turned, {
+      bluePropType: s.bluePropType,
+      redPropType: s.redPropType,
+    });
+  }
 
   // Single effect: always push the prop value to both internal state and pickerState
   $effect(() => {
@@ -148,8 +181,13 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
       return;
     }
 
-    const s = getSettings();
-    preparer.prepareBatch(filtered, { bluePropType: s.bluePropType, redPropType: s.redPropType }).then((prepared) => {
+    // Track sticky turns so a turn change re-renders the options
+    const _blueTurns = blueTurns;
+    const _redTurns = redTurns;
+    void _blueTurns;
+    void _redTurns;
+
+    prepareWithTurns(filtered).then((prepared) => {
       preparedOptions = prepared;
       isSelecting = false;
     });
@@ -191,8 +229,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
           filtered = filtered.filter(filterPredicate);
         }
         if (preparer && filtered.length > 0) {
-          const s2 = getSettings();
-          const prepared = await preparer.prepareBatch(filtered, { bluePropType: s2.bluePropType, redPropType: s2.redPropType });
+          const prepared = await prepareWithTurns(filtered);
           preparedOptions = prepared;
         }
       } finally {
@@ -295,6 +332,11 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
     {currentSequence}
     onSlotClicked={handleSlotClicked}
     lastClickedSlot={pickerState?.lastClickedSlot ?? null}
+    {blueTurns}
+    {redTurns}
+    onBlueTurnsChange={handleBlueTurnsChange}
+    onRedTurnsChange={handleRedTurnsChange}
+    onResetTurns={handleResetTurns}
   />
 {/if}
 
