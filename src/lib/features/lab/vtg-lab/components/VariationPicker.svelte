@@ -2,6 +2,7 @@
   import ChoreoCard from "$lib/features/choreo-card/components/ChoreoCard.svelte";
   import CardInspectModal from "$lib/features/choreo-card/components/CardInspectModal.svelte";
   import { resolveVariationSequence, type StyleVariation } from "../services/resolve-rotation-style-matrices";
+  import { portal } from "$lib/features/create/generate/components/modals/portal";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   interface Props {
@@ -58,6 +59,7 @@
 {:else}
   <div
     class="backdrop"
+    use:portal
     role="button"
     tabindex="-1"
     aria-label="Close"
@@ -102,7 +104,7 @@
   .backdrop {
     position: fixed;
     inset: 0;
-    z-index: 60;
+    z-index: var(--z-modal, 1000);
     background: rgba(4, 12, 18, 0.62);
     backdrop-filter: blur(3px);
     display: flex;
