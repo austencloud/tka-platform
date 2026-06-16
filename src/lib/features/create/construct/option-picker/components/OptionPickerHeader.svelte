@@ -12,6 +12,8 @@
   import PropTurnsControl from "$lib/features/create/shared/components/sequence-actions/PropTurnsControl.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { slide, fade } from "svelte/transition";
+  import { quintOut } from "svelte/easing";
 
   interface Props {
     // Filter
@@ -106,16 +108,16 @@
         {#if !expanded && hasRedTurns}
           <span class="badge red">{redTurns}</span>
         {/if}
-        <i
-          class="fas chevron"
-          class:fa-chevron-up={expanded}
-          class:fa-chevron-down={!expanded}
-          aria-hidden="true"
-        ></i>
+        <i class="fas fa-chevron-down chevron" aria-hidden="true"></i>
       </button>
 
       {#if expanded && hasAnyTurns}
-        <button class="reset-btn" aria-label="Reset turns to 0" onclick={onReset}>
+        <button
+          class="reset-btn"
+          aria-label="Reset turns to 0"
+          onclick={onReset}
+          transition:fade={{ duration: 150 }}
+        >
           <i class="fas fa-rotate-left" aria-hidden="true"></i>
           <span>Reset</span>
         </button>
@@ -124,7 +126,10 @@
   </div>
 
   {#if expanded}
-    <div class="oph-steppers">
+    <div
+      class="oph-steppers"
+      transition:slide={{ duration: 240, easing: quintOut }}
+    >
       <PropControlPair compact>
         {#snippet blueContent()}
           <PropTurnsControl
@@ -153,7 +158,7 @@
   {/if}
 
   {#if showSpin}
-    <div class="spin-strip">
+    <div class="spin-strip" transition:slide={{ duration: 200, easing: quintOut }}>
       <span class="spin-label">Dash &amp; static spin</span>
       {#if hasBlueTurns}
         <button
@@ -253,6 +258,11 @@
   .turns-toggle .chevron {
     font-size: 0.6rem;
     opacity: 0.7;
+    transition: transform var(--duration-fast, 0.15s) ease;
+  }
+
+  .turns-toggle.active .chevron {
+    transform: rotate(180deg);
   }
 
   .badge {

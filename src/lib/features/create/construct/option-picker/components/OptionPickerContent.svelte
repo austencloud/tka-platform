@@ -213,6 +213,16 @@ Uses organizer and sizer services for section grouping and sizing.
     return shouldSwipe && !shouldUseCompact4x4() && sections.length > 1;
   });
 
+  // The unified header (filter + turns) replaces the standalone filter pill on the
+  // wide desktop layout. It's pinned to the top of the picker; the grid scrolls
+  // beneath it. Matches the wide-layout branch condition.
+  const useUnifiedHeader = $derived(
+    !shouldUseCompact4x4() &&
+      !shouldUseSwipeLayout() &&
+      shouldUseWideLayout &&
+      !isMobileStackedLayout()
+  );
+
   // For swipe layout: combine Types 4-6 into a single grouped panel
   const swipeSections = $derived(() => {
     const sections123 = types123Sections();
@@ -339,9 +349,29 @@ Uses organizer and sizer services for section grouping and sizing.
   {#if sizingStable}
     <!-- Content stays mounted so pictographs transition in place instead of remounting -->
     <div class="animated-content">
-      <!-- Standalone filter pill: mobile/compact layouts only. The wide desktop
-           layout folds this into OptionPickerHeader below. -->
-      {#if shouldShowFilterToggle() && !(shouldUseWideLayout && !isMobileStackedLayout() && !shouldUseCompact4x4() && !shouldUseSwipeLayout())}
+      <!-- Unified header: pinned to the top of the picker (outside the scrolling
+           grid) so its position is consistent. Desktop wide layout only. -->
+      {#if useUnifiedHeader}
+        <div class="picker-header-slot">
+          <OptionPickerHeader
+            showFilter={shouldShowFilterToggle()}
+            {isContinuousOnly}
+            {onToggleContinuous}
+            {blueTurns}
+            {redTurns}
+            {blueRotation}
+            {redRotation}
+            onBlueChange={onBlueTurnsChange}
+            onRedChange={onRedTurnsChange}
+            onBlueRotationChange={onBlueRotationChange}
+            onRedRotationChange={onRedRotationChange}
+            onReset={onResetTurns}
+          />
+        </div>
+      {/if}
+
+      <!-- Standalone filter pill: mobile/compact layouts only. -->
+      {#if shouldShowFilterToggle() && !useUnifiedHeader}
         <div class="filter-header" class:mobile={shouldUseSwipeLayout()}>
           <button
             class="filter-toggle"
@@ -410,23 +440,6 @@ Uses organizer and sizer services for section grouping and sizing.
       {:else if shouldUseWideLayout && !isMobileStackedLayout()}
         <!-- ==================== WIDE DESKTOP LAYOUT ==================== -->
         <div class="sections-container">
-          <!-- Unified header: All/Continuous filter + collapsible turns. Centers
-               with the grid as one group so it hugs the options. -->
-          <OptionPickerHeader
-            showFilter={shouldShowFilterToggle()}
-            {isContinuousOnly}
-            {onToggleContinuous}
-            {blueTurns}
-            {redTurns}
-            {blueRotation}
-            {redRotation}
-            onBlueChange={onBlueTurnsChange}
-            onRedChange={onRedTurnsChange}
-            onBlueRotationChange={onBlueRotationChange}
-            onRedRotationChange={onRedRotationChange}
-            onReset={onResetTurns}
-          />
-
           <!-- Types 1-3: Individual vertical sections -->
           {#each types123Sections() as section (section.title)}
             <OptionSection
@@ -519,6 +532,15 @@ Uses organizer and sizer services for section grouping and sizing.
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+
+  /* Pinned header: stays at the top of the picker while the grid scrolls below. */
+  .picker-header-slot {
+    width: 100%;
+    flex: 0 0 auto;
+    position: sticky;
+    top: 0;
+    z-index: 5;
   }
 
   /* Filter header - inline, minimal */
