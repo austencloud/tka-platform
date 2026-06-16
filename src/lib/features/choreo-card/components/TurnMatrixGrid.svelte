@@ -8,8 +8,11 @@
     /** Optional content above the grid (e.g. preset bar). */
     header?: Snippet;
     ariaLabel?: string;
+    /** Show the B/R corner + row/column turn labels. Off for a bare cell grid
+        when a single shared legend lives outside the matrix. */
+    showAxes?: boolean;
   }
-  const { cell, header, ariaLabel = "Turn combination matrix" }: Props = $props();
+  const { cell, header, ariaLabel = "Turn combination matrix", showAxes = true }: Props = $props();
 
   function formatTurn(v: number): string {
     return Number.isInteger(v) ? String(v) : v.toFixed(1);
@@ -20,23 +23,27 @@
   {#if header}{@render header()}{/if}
 
   <div class="matrix-grid-wrapper">
-    <div class="matrix-grid" role="grid" aria-label={ariaLabel}>
-      <div class="header-cell corner" role="presentation">
-        <span class="corner-blue">B</span>
-        <span class="corner-sep">/</span>
-        <span class="corner-red">R</span>
-      </div>
-
-      {#each TURN_VALUES as red (red)}
-        <div class="header-cell col-header" role="columnheader" aria-label="Red {red} turns">
-          <span class="header-val red-val">{formatTurn(red)}</span>
+    <div class="matrix-grid" class:no-axes={!showAxes} role="grid" aria-label={ariaLabel}>
+      {#if showAxes}
+        <div class="header-cell corner" role="presentation">
+          <span class="corner-blue">B</span>
+          <span class="corner-sep">/</span>
+          <span class="corner-red">R</span>
         </div>
-      {/each}
+
+        {#each TURN_VALUES as red (red)}
+          <div class="header-cell col-header" role="columnheader" aria-label="Red {red} turns">
+            <span class="header-val red-val">{formatTurn(red)}</span>
+          </div>
+        {/each}
+      {/if}
 
       {#each TURN_VALUES as blue (blue)}
-        <div class="header-cell row-header" role="rowheader" aria-label="Blue {blue} turns">
-          <span class="header-val blue-val">{formatTurn(blue)}</span>
-        </div>
+        {#if showAxes}
+          <div class="header-cell row-header" role="rowheader" aria-label="Blue {blue} turns">
+            <span class="header-val blue-val">{formatTurn(blue)}</span>
+          </div>
+        {/if}
         {#each TURN_VALUES as red (red)}
           {@render cell(blue, red)}
         {/each}
@@ -67,6 +74,10 @@
     grid-template-rows: auto repeat(7, 1fr);
     gap: clamp(4px, 1cqi, 8px);
     width: 100%;
+  }
+  .matrix-grid.no-axes {
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(7, 1fr);
   }
   .header-cell {
     display: flex;
