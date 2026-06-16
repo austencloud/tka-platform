@@ -38,11 +38,11 @@ describe("groupCardsBySeed", () => {
 
     const seeds = groupCardsBySeed(cards, resolved);
     expect(seeds).toHaveLength(2);
-    expect(seeds[0].seedId).toBe("MPMP");
-    expect(seeds[0].byTurn.get("0|0")?.id).toBe("s1");
-    expect(seeds[0].byTurn.get("1|1")?.id).toBe("s2");
-    expect(seeds[1].seedId).toBe("DJDJ");
-    expect(seeds[1].byTurn.get("0|0")?.id).toBe("s3");
-    expect(seeds[0].footer.center).toBe("Split-Same");
+    expect(seeds[0]!.seedId).toBe("MPMP");
+    expect(seeds[0]!.byTurn.get("0|0")?.id).toBe("s1");
+    expect(seeds[0]!.byTurn.get("1|1")?.id).toBe("s2");
+    expect(seeds[1]!.seedId).toBe("DJDJ");
+    expect(seeds[1]!.byTurn.get("0|0")?.id).toBe("s3");
+    expect(seeds[0]!.footer.center).toBe("Split-Same");
   });
 });

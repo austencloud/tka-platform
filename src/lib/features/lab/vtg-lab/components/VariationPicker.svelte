@@ -1,7 +1,7 @@
 <script lang="ts">
   import ChoreoCard from "$lib/features/choreo-card/components/ChoreoCard.svelte";
   import CardInspectModal from "$lib/features/choreo-card/components/CardInspectModal.svelte";
-  import { resolveVariationSequence, bakeVariationFront, type StyleVariation } from "../services/resolve-rotation-style-matrices";
+  import { resolveVariationSequence, bakeVariationFront, type StyleVariation, type LabGridMode } from "../services/resolve-rotation-style-matrices";
   import { portal } from "$lib/features/create/generate/components/modals/portal";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
@@ -9,9 +9,10 @@
     variations: StyleVariation[];
     turnPattern: string; // "blue|red"
     accent: string;
+    grid: LabGridMode;
     onClose: () => void;
   }
-  const { variations, turnPattern, accent, onClose }: Props = $props();
+  const { variations, turnPattern, accent, grid, onClose }: Props = $props();
 
   interface ResolvedVariation {
     v: StyleVariation;
@@ -21,7 +22,7 @@
 
   let cards = $state<ResolvedVariation[]>([]);
   let loading = $state(true);
-  let inspected = $state<SequenceData | null>(null);
+  let inspected = $state<ResolvedVariation | null>(null);
 
   // Resolve every variation's real sequence at this turn pattern, then bake the
   // actual timing/direction deck-card front (elemental stripe frame + tint + QR +
@@ -38,9 +39,9 @@
     Promise.all(
       variations.map(async (v, i) => {
         try {
-          const seq = await resolveVariationSequence(v.seedId, tp);
+          const seq = await resolveVariationSequence(v.seedId, tp, grid);
           if (!seq || cancelled) return;
-          const frontUrl = await bakeVariationFront(seq, v.modeTag);
+          const frontUrl = await bakeVariationFront(seq, v.familyId);
           if (cancelled) return;
           slots[i] = { v, seq, frontUrl };
           if (tp === turnPattern) cards = slots.filter((s): s is ResolvedVariation => s !== null);
@@ -71,8 +72,13 @@
 </script>
 
 {#if inspected}
-  <!-- Drill one deeper into the full front+back card; closing returns to the gallery. -->
-  <CardInspectModal sequence={inspected} onClose={() => (inspected = null)} />
+  <!-- Drill one deeper into the full front+back card; pass the baked colored front
+       so the side-by-side preview shows the elemental deck card, not a generic render. -->
+  <CardInspectModal
+    sequence={inspected.seq}
+    frontImageUrl={inspected.frontUrl}
+    onClose={() => (inspected = null)}
+  />
 {:else}
   <div
     class="backdrop"
@@ -104,7 +110,7 @@
       {:else}
         <div class="card-grid" style="grid-template-columns: repeat({cols}, minmax(0, 1fr));">
           {#each cards as c (c.v.seedId)}
-            <button class="card-cell" onclick={() => (inspected = c.seq)} aria-label="{c.v.word} ({c.v.modeTag}) — open full card">
+            <button class="card-cell" onclick={() => (inspected = c)} aria-label="{c.v.word} ({c.v.modeTag}) — open full card">
               <div class="card-frame">
                 <ChoreoCard sequence={c.seq} cardMode preRenderedImageUrl={c.frontUrl} />
               </div>

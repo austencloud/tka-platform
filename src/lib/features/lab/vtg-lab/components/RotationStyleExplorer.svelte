@@ -1,23 +1,54 @@
 <script lang="ts">
   import TurnMatrixGrid from "$lib/features/choreo-card/components/TurnMatrixGrid.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import VariationPicker from "./VariationPicker.svelte";
-  import { resolveRotationStyleMatrices, type RotationStyleMatrix, type StyleVariation } from "../services/resolve-rotation-style-matrices";
+  import {
+    resolveRotationStyleMatrices,
+    type RotationStyleMatrix,
+    type StyleVariation,
+    type LabGridMode,
+  } from "../services/resolve-rotation-style-matrices";
+  import { TURN_VALUES } from "$lib/features/choreo-card/domain/turn-pattern-parser";
+  import { TND_TURNS_RATIO_MAP } from "$lib/features/choreo-card/domain/tnd-element";
 
   let matrices = $state<RotationStyleMatrix[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+  let grid = $state<LabGridMode>("diamond");
 
   // Open picker context (null = closed).
   let picker = $state<{ variations: StyleVariation[]; turnPattern: string; accent: string } | null>(null);
 
+  const gridOptions = [
+    { value: "diamond" as LabGridMode, label: "Diamond", icon: "fas fa-diamond" },
+    { value: "box" as LabGridMode, label: "Box", icon: "fas fa-square" },
+  ];
+
+  // VTG ratio per turn value (1:1 … 7:1) — the axis numbering for this lab.
+  const vtgRatios = TURN_VALUES.map((t) => TND_TURNS_RATIO_MAP[t] ?? String(t));
+
+  function setGrid(next: LabGridMode): void {
+    if (next === grid) return;
+    picker = null; // stale variations belong to the previous grid
+    grid = next;
+  }
+
+  // Re-resolve whenever the grid mode changes; family/dedup follow the active grid.
   $effect(() => {
+    const g = grid;
     loading = true;
     error = null;
-    resolveRotationStyleMatrices()
-      .then((res) => (matrices = res))
-      .catch((e) => (error = e instanceof Error ? e.message : "Failed to load"))
-      .finally(() => (loading = false));
+    resolveRotationStyleMatrices(g)
+      .then((res) => {
+        if (g === grid) matrices = res;
+      })
+      .catch((e) => {
+        if (g === grid) error = e instanceof Error ? e.message : "Failed to load";
+      })
+      .finally(() => {
+        if (g === grid) loading = false;
+      });
   });
 
   function turnKey(blue: number, red: number): string {
@@ -27,10 +58,15 @@
 </script>
 
 <div class="explorer">
-  <p class="intro">
-    The mandala is set by <strong>prop rotation</strong> and turns — not the VTG mode. These three are
-    every fingerprint there is; pick a cell to choose which letter wears it.
-  </p>
+  <div class="topbar">
+    <p class="intro">
+      The mandala is set by <strong>prop rotation</strong> and turns — not the VTG mode. These three are
+      every fingerprint there is; pick a cell to choose which letter wears it.
+    </p>
+    <div class="grid-toggle" role="group" aria-label="Grid mode">
+      <SegmentedControl options={gridOptions} value={grid} onchange={setGrid} color="accent" size="sm" />
+    </div>
+  </div>
 
   {#if loading}
     <div class="status" role="status">Loading sequences…</div>
@@ -38,9 +74,9 @@
     <div class="status err" role="alert"><i class="fas fa-triangle-exclamation"></i> {error}</div>
   {:else}
     <div class="axis-key" aria-hidden="true">
-      <span class="ak blue"><i class="fas fa-arrow-down"></i> Blue turns</span>
-      <span class="scale">0 · 0.5 · 1 · 1.5 · 2 · 2.5 · 3</span>
-      <span class="ak red">Red turns <i class="fas fa-arrow-right"></i></span>
+      <span class="ak blue"><i class="fas fa-arrow-down"></i> Blue (VTG)</span>
+      <span class="scale">{vtgRatios.join(" · ")}</span>
+      <span class="ak red">Red (VTG) <i class="fas fa-arrow-right"></i></span>
     </div>
     <div class="panels">
       {#each matrices as m (m.style)}
@@ -76,12 +112,15 @@
     variations={picker.variations}
     turnPattern={picker.turnPattern}
     accent={picker.accent}
+    {grid}
     onClose={() => (picker = null)}
   />
 {/if}
 
 <style>
   .explorer { display: flex; flex-direction: column; gap: 1rem; }
+  .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .grid-toggle { flex-shrink: 0; min-width: 180px; }
   .intro { margin: 0; font-size: var(--font-size-min, 14px); color: var(--theme-text-secondary, #9fb2bd); max-width: 60ch; }
   .intro strong { color: var(--theme-text, #fff); }
   .status { padding: 2rem; text-align: center; color: var(--theme-text-secondary, #888); font-size: var(--font-size-min, 14px); }
