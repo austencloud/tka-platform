@@ -417,6 +417,7 @@ Uses organizer and sizer services for section grouping and sizing.
             {redTurns}
             {blueRotation}
             {redRotation}
+            {isContinuousOnly}
             onBlueChange={onBlueTurnsChange}
             onRedChange={onRedTurnsChange}
             onBlueRotationChange={onBlueRotationChange}
