@@ -49,6 +49,11 @@ const MIN_DWELL_SEC = 0.3;
  *  unconverted (≈cm) scale that flings the avatar, so translation is held at 0
  *  here. Yaw is integrated at full strength. Tunable up when travel is added. */
 const ROOT_POS_SCALE = 0.0;
+/** Turn clips are one-shot pivots (play once, hold at end); idle/walk loop.
+ *  Looping a turn snaps the legs back to the step start — the "twitch". */
+function isOneShot(clipId: string): boolean {
+  return clipId.startsWith("turn");
+}
 
 /**
  * Motion-matching locomotion controller. Per frame it builds a trajectory query
@@ -68,6 +73,8 @@ export class MmLocomotionController {
   private readonly durations = new Map<string, number>();
   /** Seconds played on the current clip since the last clip switch. */
   private timeSinceSwitch = 0;
+  /** True once a one-shot clip (a turn) has reached its end and is held. */
+  private clipDone = false;
 
   private readonly _state: LocomotionState = {
     position: new Vector3(),
@@ -139,11 +146,17 @@ export class MmLocomotionController {
     //    motion is a clean per-frame delta, leg motion completes, and the body
     //    does not snap. (The old per-search time-jump was the spazzing.)
     const dur = this.durations.get(this.current.clipId) ?? 1;
+    const oneShot = isOneShot(this.current.clipId);
     this.current.time += dt;
-    let looped = false;
+    let wrapped = false;
     if (this.current.time >= dur) {
-      this.current.time -= dur;
-      looped = true;
+      if (oneShot) {
+        this.current.time = dur; // hold the last frame — one pivot, no replay
+        this.clipDone = true;
+      } else {
+        this.current.time -= dur; // looping clip (idle/walk)
+        wrapped = true;
+      }
     }
     this.rig.applyClip(this.current.clipId, this.current.time);
     this.timeSinceSwitch += dt;
@@ -160,27 +173,38 @@ export class MmLocomotionController {
     //    (never jump the playhead within a clip), and only after a minimum dwell
     //    so the controller commits to a clip and lets it play through instead of
     //    snapping between frames every search.
-    if (this.frameCounter % SEARCH_EVERY === 0 && this.timeSinceSwitch >= MIN_DWELL_SEC) {
+    // A one-shot pivot must NOT be interrupted mid-step — only re-plan when the
+    // current clip loops (idle/walk) or the one-shot pivot has finished.
+    const canReplan = !oneShot || this.clipDone;
+    if (this.frameCounter % SEARCH_EVERY === 0 && this.timeSinceSwitch >= MIN_DWELL_SEC && canReplan) {
       const query = this.buildQuery(traj);
       const idx = searchNearest(this.db, query);
       const frame: MotionFrame | undefined = idx >= 0 ? this.db.frames[idx] : undefined;
 
-      if (frame && frame.clipId !== this.current.clipId) {
-        // Capture where each bone WAS, switch to the matched clip phase, then
-        // start an inertializer from the old pose into the new clip pose so the
-        // visible transition eases instead of popping.
+      // Switch on a different clip, OR re-trigger a fresh pivot when the current
+      // one-shot has finished but more turning is still wanted.
+      const wantSwitch = frame !== undefined && (frame.clipId !== this.current.clipId || this.clipDone);
+
+      if (frame && wantSwitch) {
+        // A turn always restarts from frame 0 (one clean full pivot); a looping
+        // clip enters at its matched phase.
+        const startTime = isOneShot(frame.clipId) ? 0 : frame.time;
+
+        // Capture where each bone WAS, pose the new clip, then inertialize from
+        // the old pose into the new so the transition eases instead of popping.
         const oldQuats = new Map<string, Quaternion>();
         for (const [name, bone] of this.bones) oldQuats.set(name, bone.quaternion.clone());
 
-        this.rig.applyClip(frame.clipId, frame.time);
+        this.rig.applyClip(frame.clipId, startTime);
 
         for (const [name, bone] of this.bones) {
           const oldQ = oldQuats.get(name)!; // populated in the loop directly above
           this.inert.set(name, startInertialize(oldQ, bone.quaternion, INERTIALIZE_SEC));
         }
 
-        this.current = { clipId: frame.clipId, time: frame.time };
+        this.current = { clipId: frame.clipId, time: startTime };
         this.timeSinceSwitch = 0;
+        this.clipDone = false;
 
         // The applyClip above moved the hip to the new clip's phase. Reset
         // root-motion accumulation so the next rootMotionDelta() does NOT count
@@ -203,7 +227,7 @@ export class MmLocomotionController {
     // rotate it by the current world facing before accumulating. On a loop wrap
     // the playhead jumped from clip end to start, so reset first to avoid
     // counting that wrap as motion.
-    if (looped) this.rig.resetRootMotion();
+    if (wrapped) this.rig.resetRootMotion();
     const rm = this.rig.rootMotionDelta();
     const cosF = Math.cos(this._state.facing);
     const sinF = Math.sin(this._state.facing);
