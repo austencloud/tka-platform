@@ -579,21 +579,30 @@ export async function buildRoomChunk(
   let kitWalls: import("three").Object3D | null = null;
 
   if (wing && wing.theme === "institutional") {
-    // Reconstruct wall tile coords from the bucketed world positions.
+    // Reconstruct wall tile coords from the bucketed world positions, tracking
+    // their extent. The room rect is derived from the actual wall tiles, not
+    // wing.bounds — a room's walls can be inset from the wing rectangle, and
+    // scanning the wing border would then miss them entirely.
     const wallTiles = new Set<string>();
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const [, bucket] of buckets.wallBuckets) {
       for (const p of bucket.positions) {
         const tx = Math.round(p.x / TILE_SIZE);
         const ty = Math.round(p.z / TILE_SIZE);
         wallTiles.add(`${tx},${ty}`);
+        if (tx < minX) minX = tx;
+        if (tx > maxX) maxX = tx;
+        if (ty < minY) minY = ty;
+        if (ty > maxY) maxY = ty;
       }
     }
-    const b = wing.bounds;
-    const room = { x: b.x, y: b.y, w: b.width, h: b.height };
-    const resolved = resolveWallRuns(room, (x, y) => wallTiles.has(`${x},${y}`));
-    const color = WING_WALL_COLORS.institutional;
-    const provider = glbKitProvider ?? proceduralKitProvider;
-    kitWalls = provider.buildWalls(resolved, "institutional", TILE_SIZE, WALL_HEIGHT, color);
+    if (wallTiles.size > 0) {
+      const room = { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+      const resolved = resolveWallRuns(room, (x, y) => wallTiles.has(`${x},${y}`));
+      const color = WING_WALL_COLORS.institutional;
+      const provider = glbKitProvider ?? proceduralKitProvider;
+      kitWalls = provider.buildWalls(resolved, "institutional", TILE_SIZE, WALL_HEIGHT, color);
+    }
   } else {
     for (const [, bucket] of buckets.wallBuckets) {
       if (bucket.positions.length === 0) continue;
