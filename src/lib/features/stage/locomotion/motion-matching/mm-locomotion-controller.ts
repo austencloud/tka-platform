@@ -7,8 +7,8 @@ import { startInertialize, applyInertialize, type Inertializer } from "./inertia
 import type { RigBinding } from "./rig-binding";
 
 /**
- * Drop-in shape mirroring locomotion-controller.ts:9-14 so call sites that read
- * the legacy controller's `state` work unchanged against this controller.
+ * Drop-in shape mirroring locomotion-controller.ts so call sites that read the
+ * legacy controller's `state` work unchanged against this controller.
  */
 export interface LocomotionState {
   position: Vector3;
@@ -18,29 +18,29 @@ export interface LocomotionState {
 }
 
 /**
- * The skeleton bones we drive through inertialization. Foot/leg bones carry the
- * locomotion pose; spine bones keep the upper body coherent across clip swaps.
+ * Bones smoothed across a clip switch by inertialization: legs (the visible
+ * stepping) plus the spine (upper-body coherence). The HIPS bone is
+ * deliberately EXCLUDED — its authored yaw is transferred into the rig root by
+ * the seam bank (see {@link update}); inertializing the hips would blend that
+ * ~90° yaw delta and re-create the snap-back this controller exists to remove.
  */
-const TRACKED_BONES = [
-  "Hips", "Spine", "Spine1", "Spine2",
+const INERTIALIZED_BONES = [
+  "Spine", "Spine1", "Spine2",
   "LeftUpLeg", "LeftLeg", "LeftFoot",
   "RightUpLeg", "RightLeg", "RightFoot",
 ] as const;
 
-const INERTIALIZE_SEC = 0.25; // pose blend duration on a clip switch
-/** Body turn rate (rad/s) while reorienting — ~90° in ~0.8s. Facing is driven
- *  deterministically toward the target (capped per frame so it can NEVER
- *  overshoot), which is what kills the oscillation the noisy root-motion yaw
- *  caused. The turn clip supplies the stepping look, not the rotation. */
-const TURN_RATE = 2.0;
-/** Settle tolerance (rad, ~1.7°). Within this of target → snap exactly + stop. */
-const STOP_TOL = 0.03;
-/** Minimum time (sec) to commit to a clip before allowing a switch — prevents
- *  flip-flop snapping between clips. */
-const MIN_DWELL_SEC = 0.3;
+/** Leg/spine pose blend duration on a clip switch. */
+const INERTIALIZE_SEC = 0.2;
+/** Settle deadzone (rad, ~2.9°). Sits above idle breathing sway (~1°) so the
+ *  controller does not hunt between turn and idle at rest. */
+const STOP_TOL = 0.05;
+/** Minimum commit time (sec) before re-triggering the SAME one-shot turn clip,
+ *  so a finished pivot does not re-fire every frame. Family changes (including
+ *  the settle to idle) are not gated, so stopping is prompt. */
+const MIN_DWELL_SEC = 0.12;
 
-/** Turn clips are one-shot pivots (play once, hold at end); idle loops. Looping
- *  a turn snaps the legs back to the step start — the "twitch". */
+/** Turn clips are one-shot pivots (play once, hold at end); idle/walk loop. */
 function isOneShot(clipId: string): boolean {
   return clipId.startsWith("turn");
 }
@@ -53,29 +53,42 @@ function angleDelta(a: number, b: number): number {
 }
 
 /**
- * Reorient-in-place locomotion controller. Facing is driven deterministically
- * toward the target (capped rate, no overshoot, settles in a deadzone); a turn
- * clip is selected by intent (left/right while turning, idle when settled) and
- * supplies the visible stepping pose, smoothed across switches by
- * inertialization. The accumulated facing is written to the rig root.
+ * Reorient-in-place locomotion controller — seam-matched root motion.
  *
- * For this discrete clip set, intent-gated selection is the correct regime (the
- * turn-in-place design notes MM search is overkill here); the feature DB /
- * search modules remain for the future richer-clip phase.
+ * The visible turn is produced by the authored turn clip (the hips bone carries
+ * the body rotation; the legs step). The rig root stays CONSTANT during a clip;
+ * at every clip switch the root yaw is adjusted by
+ * `(visibleYaw_before - visibleYaw_after)` so the body's world yaw is continuous
+ * across the seam. This banks each clip's authored rotation into the root, so
+ * when the turn clip hands off to idle (whose hips return to neutral) there is
+ * no discontinuity — the rotation already lives in the root.
  *
- * Depends ONLY on the {@link RigBinding} interface and the inertialization unit
- * — no package imports — so it can be driven by any rig provider.
+ * Visible facing is read from the HIPS bone's WORLD matrix (atan2 of the world
+ * Z basis), which is robust; the package RootMotionExtractor derives yaw from a
+ * single Euler component and is unreliable for large turn clips (measured 24°
+ * for a 90° clip), so it is not used for rotation here.
+ *
+ * Arbitrary angles fall out for free: a partial target consumes only part of a
+ * turn clip then settles; a target beyond one clip re-triggers the turn clip
+ * (seam-matched, no pop) until the target is reached. The settle switch lands
+ * the body EXACTLY on the requested facing.
+ *
+ * Depends only on the {@link RigBinding} interface plus the inertialization
+ * unit, so any rig provider can drive it.
  */
 export class MmLocomotionController {
   private current: { clipId: string; time: number } | null = null;
   private idleClipId = "idle";
-  private readonly bones = new Map<string, Bone>();
+  private leftClipId = "turn-left";
+  private rightClipId = "turn-right";
+  private hips: Bone | null = null;
+  private readonly inertBones = new Map<string, Bone>();
   private readonly inert = new Map<string, Inertializer>();
   private readonly durations = new Map<string, number>();
   /** Seconds played on the current clip since the last clip switch. */
   private timeSinceSwitch = 0;
-  /** True once a one-shot clip (a turn) has reached its end and is held. */
-  private clipDone = false;
+  /** Hips world yaw at rest (the idle frame-0 facing); the relative target zero. */
+  private restVis = 0;
 
   private readonly _state: LocomotionState = {
     position: new Vector3(),
@@ -83,9 +96,9 @@ export class MmLocomotionController {
     speed: 0,
     isMoving: false,
   };
-  private targetPos = { x: 0, z: 0 };
+  /** Absolute world yaw to reach, in the same metric as {@link visYaw}. */
   private targetFacing = 0;
-  private origin = { x: 0, z: 0, facing: 0 };
+  private origin = { facing: 0 };
 
   constructor(private readonly rig: RigBinding) {}
 
@@ -93,104 +106,130 @@ export class MmLocomotionController {
     return this._state;
   }
 
+  /** Pose a clip; applyClip updates the rig's world matrices internally. */
+  private pose(clipId: string, time: number): void {
+    this.rig.applyClip(clipId, time);
+  }
+
+  /** The body's VISIBLE facing = hips world yaw, from the world Z basis vector.
+   *  Robust under the rig's bone rest orientations (unlike Euler decomposition). */
+  private visYaw(): number {
+    const h = this.hips;
+    if (!h) return this._state.facing;
+    const e = h.matrixWorld.elements;
+    return Math.atan2(e[8]!, e[10]!);
+  }
+
   /**
-   * Cache clip durations + tracked bones, resolve the idle/settle clip, seed
-   * playback, and record the spawn origin for {@link stepBackToOrigin}.
+   * Cache clip durations + bones, resolve idle/turn clips, seed playback on
+   * idle, and record the rest facing (the relative-target zero + step-back
+   * origin).
    */
   async initialize(): Promise<void> {
     const specs = this.rig.clipSpecs();
-
     for (const s of specs) this.durations.set(s.clipId, s.durationSec);
 
-    // Resolve the idle/rest clip (the settle target); fall back to the first.
-    const idle = specs.find((s) => s.clipId.includes("idle"));
-    this.idleClipId = idle?.clipId ?? specs[0]?.clipId ?? "idle";
+    this.idleClipId = specs.find((s) => s.clipId.includes("idle"))?.clipId ?? specs[0]?.clipId ?? "idle";
+    this.leftClipId = specs.find((s) => s.clipId.includes("left"))?.clipId ?? "turn-left";
+    this.rightClipId = specs.find((s) => s.clipId.includes("right"))?.clipId ?? "turn-right";
 
-    for (const name of TRACKED_BONES) {
+    this.hips = this.rig.getBone("Hips");
+    for (const name of INERTIALIZED_BONES) {
       const b = this.rig.getBone(name);
-      if (b) this.bones.set(name, b);
+      if (b) this.inertBones.set(name, b);
     }
 
-    // Seed on idle so update() has a playing frame from the start.
+    // Seed on idle frame 0 and capture the rest facing.
+    this.rig.root.rotation.y = 0;
+    this.pose(this.idleClipId, 0);
+    this.rig.root.updateMatrixWorld(true);
+    this.restVis = this.visYaw();
+
+    this._state.facing = this.restVis;
+    this.targetFacing = this.restVis;
     this.current = { clipId: this.idleClipId, time: 0 };
-
-    this.origin = {
-      x: this._state.position.x,
-      z: this._state.position.z,
-      facing: this._state.facing,
-    };
+    this.origin = { facing: this.restVis };
   }
 
+  /** Request a turn of `rad` relative to rest-forward (0 = face forward). */
   setTargetFacing(rad: number): void {
-    this.targetFacing = rad;
+    this.targetFacing = this.restVis + rad;
   }
 
-  setTargetPosition(x: number, z: number): void {
-    this.targetPos = { x, z };
-  }
+  /** Reorient-in-place slice: no translation target yet (kept for API parity). */
+  setTargetPosition(_x: number, _z: number): void {}
 
-  /** Re-aim the controller back at its recorded spawn origin. */
+  /** Re-aim back at the recorded spawn facing. */
   stepBackToOrigin(): void {
-    this.targetPos = { x: this.origin.x, z: this.origin.z };
     this.targetFacing = this.origin.facing;
   }
 
   update(dt: number): void {
-    if (!this.current) return;
-
-    // Remaining shortest-arc angle to the target facing.
-    const remaining = angleDelta(this.targetFacing, this._state.facing);
-    const turning = Math.abs(remaining) > STOP_TOL;
-
-    // Desired clip family by INTENT — deterministic, so it can never oscillate:
-    // turn toward the target while outside the deadzone, idle once settled.
-    const desired = turning
-      ? remaining > 0
-        ? "turn-left"
-        : "turn-right"
-      : this.idleClipId;
+    if (!this.current || !this.hips) return;
+    const root = this.rig.root;
 
     // Advance the current clip's playhead. One-shot turns hold at their end;
-    // looping clips (idle) wrap.
+    // looping clips (idle/walk) wrap.
     const dur = this.durations.get(this.current.clipId) ?? 1;
     const oneShot = isOneShot(this.current.clipId);
     this.current.time += dt;
+    let finished = false;
     if (this.current.time >= dur) {
       if (oneShot) {
-        this.current.time = dur; // hold last frame — one pivot, no replay
-        this.clipDone = true;
+        this.current.time = dur;
+        finished = true;
       } else {
-        this.current.time -= dur; // looping clip (idle)
+        this.current.time -= dur;
       }
     }
     this.timeSinceSwitch += dt;
 
-    // Switch when the desired family changes, or re-trigger a finished pivot
-    // while still turning. Exactly one applyClip runs per frame.
-    const needSwitch =
-      desired !== this.current.clipId || (this.clipDone && oneShot && turning);
+    // Pose the current clip and read the body's visible facing from it.
+    this.pose(this.current.clipId, this.current.time);
+    const vis = this.visYaw();
+    const remaining = angleDelta(this.targetFacing, vis);
+    const turning = Math.abs(remaining) > STOP_TOL;
 
-    if (needSwitch && this.timeSinceSwitch >= MIN_DWELL_SEC) {
-      // Capture where each bone WAS, pose the new clip at frame 0, then
-      // inertialize from the old pose into the new so the swap eases (no pop).
-      const oldQuats = new Map<string, Quaternion>();
-      for (const [name, bone] of this.bones) oldQuats.set(name, bone.quaternion.clone());
+    // Desired clip by INTENT: turn toward the target while outside the deadzone,
+    // idle once settled.
+    const desired = turning
+      ? remaining > 0
+        ? this.leftClipId
+        : this.rightClipId
+      : this.idleClipId;
+
+    // Switch on a family change (prompt — not dwell-gated, so settling is
+    // immediate and exact), or re-trigger a finished pivot that still needs to
+    // turn further (dwell-gated so it cannot re-fire every frame).
+    const familyChange = desired !== this.current.clipId;
+    const retrigger = finished && oneShot && turning && this.timeSinceSwitch >= MIN_DWELL_SEC;
+
+    if (familyChange || retrigger) {
+      // Capture leg/spine pose for inertialization (NOT hips — see header).
+      const oldQ = new Map<string, Quaternion>();
+      for (const [name, bone] of this.inertBones) oldQ.set(name, bone.quaternion.clone());
+
+      const visBefore = vis;
+      this.pose(desired, 0);
+      const visAfter = this.visYaw();
+
+      // Settling to idle lands EXACTLY on the requested facing; a turn->turn or
+      // idle->turn switch preserves the current visible facing (continuity).
+      const landYaw = desired === this.idleClipId ? this.targetFacing : visBefore;
+      root.rotation.y += angleDelta(landYaw, visAfter);
+      root.updateMatrixWorld(true);
+
+      for (const [name, bone] of this.inertBones) {
+        const q = oldQ.get(name)!; // populated in the loop directly above
+        this.inert.set(name, startInertialize(q, bone.quaternion, INERTIALIZE_SEC));
+      }
 
       this.current = { clipId: desired, time: 0 };
-      this.clipDone = false;
       this.timeSinceSwitch = 0;
-      this.rig.applyClip(desired, 0);
-
-      for (const [name, bone] of this.bones) {
-        const oldQ = oldQuats.get(name)!; // populated in the loop directly above
-        this.inert.set(name, startInertialize(oldQ, bone.quaternion, INERTIALIZE_SEC));
-      }
-    } else {
-      this.rig.applyClip(this.current.clipId, this.current.time);
     }
 
-    // Apply the decaying inertialization offset on top of the posed clip.
-    for (const [name, bone] of this.bones) {
+    // Apply the decaying inertialization offset on the legs/spine.
+    for (const [name, bone] of this.inertBones) {
       const it = this.inert.get(name);
       if (it) {
         bone.quaternion.copy(applyInertialize(it, bone.quaternion, dt));
@@ -198,24 +237,9 @@ export class MmLocomotionController {
       }
     }
 
-    // Drive facing toward the target — capped per frame so it never overshoots;
-    // snap + stop inside the deadzone. This is the deterministic control that
-    // replaced the noisy root-motion yaw integration (the oscillation source).
-    if (turning) {
-      this._state.facing +=
-        Math.sign(remaining) * Math.min(Math.abs(remaining), TURN_RATE * dt);
-    } else {
-      this._state.facing = this.targetFacing;
-    }
-    this._state.speed = turning ? TURN_RATE : 0;
+    root.updateMatrixWorld(true);
+    this._state.facing = this.visYaw();
+    this._state.speed = turning ? 1 : 0;
     this._state.isMoving = turning;
-
-    // The accumulated facing IS the visible body rotation: the rig root carries
-    // it while the clip animates the legs in local space. Position is held in
-    // place for this reorient-in-place slice.
-    const root = this.rig.root;
-    root.position.x = this._state.position.x;
-    root.position.z = this._state.position.z;
-    root.rotation.y = this._state.facing;
   }
 }
