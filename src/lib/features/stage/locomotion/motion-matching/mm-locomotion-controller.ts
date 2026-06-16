@@ -215,7 +215,16 @@ export class MmLocomotionController {
     this._state.speed = Math.hypot(sx, sf) / Math.max(dt, 1e-4);
     this._state.isMoving = Math.abs(rm.yawDelta) > 1e-4 || this._state.speed > 0.01;
 
-    // 6. Advance the frame counter.
+    // 6. Apply the accumulated world transform to the rig root. Root motion was
+    // EXTRACTED (removed) from the hips by the extractor and banked into _state;
+    // the root must carry it or the body never visibly turns/moves. The clip
+    // animates bones (local), not this root node, so this does not fight the mixer.
+    const root = this.rig.root;
+    root.position.x = this._state.position.x;
+    root.position.z = this._state.position.z;
+    root.rotation.y = this._state.facing;
+
+    // 7. Advance the frame counter.
     this.frameCounter++;
   }
 
