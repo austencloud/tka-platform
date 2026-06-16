@@ -3,21 +3,12 @@
 import { Quaternion } from "three";
 import type { Bone } from "three";
 import { Vector3 } from "three";
-import {
-  DEFAULT_WEIGHTS,
-  FEATURE_STRIDE,
-  type MotionDatabase,
-  type MotionFrame,
-} from "./feature-types";
-import { buildMotionDatabase } from "./feature-extractor";
-import { searchNearest } from "./search";
-import { buildTrajectoryQuery, type LocomotionPose, type TrajectoryQuery } from "./trajectory";
 import { startInertialize, applyInertialize, type Inertializer } from "./inertialization";
 import type { RigBinding } from "./rig-binding";
 
 /**
  * Drop-in shape mirroring locomotion-controller.ts:9-14 so call sites that read
- * the legacy controller's `state` work unchanged against the MM controller.
+ * the legacy controller's `state` work unchanged against this controller.
  */
 export interface LocomotionState {
   position: Vector3;
@@ -36,38 +27,48 @@ const TRACKED_BONES = [
   "RightUpLeg", "RightLeg", "RightFoot",
 ] as const;
 
-const DB_FPS = 30;            // database sampling rate
-const SEARCH_EVERY = 3;       // frames between searches (~10Hz @30fps)
-const INERTIALIZE_SEC = 0.25; // blend duration on a clip switch
-const REACH_SEC = 1.0;        // trajectory horizon used to reach the target
+const INERTIALIZE_SEC = 0.25; // pose blend duration on a clip switch
+/** Body turn rate (rad/s) while reorienting — ~90° in ~0.8s. Facing is driven
+ *  deterministically toward the target (capped per frame so it can NEVER
+ *  overshoot), which is what kills the oscillation the noisy root-motion yaw
+ *  caused. The turn clip supplies the stepping look, not the rotation. */
+const TURN_RATE = 2.0;
+/** Settle tolerance (rad, ~1.7°). Within this of target → snap exactly + stop. */
+const STOP_TOL = 0.03;
 /** Minimum time (sec) to commit to a clip before allowing a switch — prevents
- *  flip-flop snapping between clips every search. */
+ *  flip-flop snapping between clips. */
 const MIN_DWELL_SEC = 0.3;
-/** Scale applied to clip-driven root TRANSLATION. This slice is reorient-IN-PLACE:
- *  the performer pivots and the leg lift comes from the clip pose, not root
- *  travel. The standalone RootMotionExtractor also returns translation in an
- *  unconverted (≈cm) scale that flings the avatar, so translation is held at 0
- *  here. Yaw is integrated at full strength. Tunable up when travel is added. */
-const ROOT_POS_SCALE = 0.0;
-/** Turn clips are one-shot pivots (play once, hold at end); idle/walk loop.
- *  Looping a turn snaps the legs back to the step start — the "twitch". */
+
+/** Turn clips are one-shot pivots (play once, hold at end); idle loops. Looping
+ *  a turn snaps the legs back to the step start — the "twitch". */
 function isOneShot(clipId: string): boolean {
   return clipId.startsWith("turn");
 }
 
+/** Shortest-arc signed difference a-b, wrapped to [-PI, PI]. */
+function angleDelta(a: number, b: number): number {
+  let d = ((a - b + Math.PI) % (Math.PI * 2)) - Math.PI;
+  if (d < -Math.PI) d += Math.PI * 2;
+  return d;
+}
+
 /**
- * Motion-matching locomotion controller. Per frame it builds a trajectory query
- * from the live target, finds the nearest database frame, inertializes the
- * skeleton toward that frame's pose, advances the clip, and integrates root
- * motion into a world-space {@link LocomotionState}.
+ * Reorient-in-place locomotion controller. Facing is driven deterministically
+ * toward the target (capped rate, no overshoot, settles in a deadzone); a turn
+ * clip is selected by intent (left/right while turning, idle when settled) and
+ * supplies the visible stepping pose, smoothed across switches by
+ * inertialization. The accumulated facing is written to the rig root.
  *
- * Depends ONLY on the {@link RigBinding} interface and the Phase-1 pure units —
- * no package imports — so it can be driven by any rig provider.
+ * For this discrete clip set, intent-gated selection is the correct regime (the
+ * turn-in-place design notes MM search is overkill here); the feature DB /
+ * search modules remain for the future richer-clip phase.
+ *
+ * Depends ONLY on the {@link RigBinding} interface and the inertialization unit
+ * — no package imports — so it can be driven by any rig provider.
  */
 export class MmLocomotionController {
-  private db: MotionDatabase | null = null;
   private current: { clipId: string; time: number } | null = null;
-  private frameCounter = 0;
+  private idleClipId = "idle";
   private readonly bones = new Map<string, Bone>();
   private readonly inert = new Map<string, Inertializer>();
   private readonly durations = new Map<string, number>();
@@ -93,29 +94,25 @@ export class MmLocomotionController {
   }
 
   /**
-   * Build the motion database from the rig's clip specs and cache the tracked
-   * bones. Seeds playback on the first clip and records the spawn origin so
-   * {@link stepBackToOrigin} can return there.
+   * Cache clip durations + tracked bones, resolve the idle/settle clip, seed
+   * playback, and record the spawn origin for {@link stepBackToOrigin}.
    */
   async initialize(): Promise<void> {
     const specs = this.rig.clipSpecs();
-    this.db = buildMotionDatabase(
-      specs,
-      (clipId, time) => this.rig.samplePose(clipId, time),
-      DB_FPS,
-      DEFAULT_WEIGHTS,
-    );
 
     for (const s of specs) this.durations.set(s.clipId, s.durationSec);
+
+    // Resolve the idle/rest clip (the settle target); fall back to the first.
+    const idle = specs.find((s) => s.clipId.includes("idle"));
+    this.idleClipId = idle?.clipId ?? specs[0]?.clipId ?? "idle";
 
     for (const name of TRACKED_BONES) {
       const b = this.rig.getBone(name);
       if (b) this.bones.set(name, b);
     }
 
-    // Seed on the first clip so update() has a playing frame from the start.
-    const first = specs[0];
-    if (first) this.current = { clipId: first.clipId, time: 0 };
+    // Seed on idle so update() has a playing frame from the start.
+    this.current = { clipId: this.idleClipId, time: 0 };
 
     this.origin = {
       x: this._state.position.x,
@@ -139,81 +136,60 @@ export class MmLocomotionController {
   }
 
   update(dt: number): void {
-    if (!this.db || !this.current) return;
+    if (!this.current) return;
 
-    // 1. Advance the playhead CONTINUOUSLY and loop within the clip. The clip
-    //    PLAYS — it is never scrubbed to an arbitrary frame mid-clip — so root
-    //    motion is a clean per-frame delta, leg motion completes, and the body
-    //    does not snap. (The old per-search time-jump was the spazzing.)
+    // Remaining shortest-arc angle to the target facing.
+    const remaining = angleDelta(this.targetFacing, this._state.facing);
+    const turning = Math.abs(remaining) > STOP_TOL;
+
+    // Desired clip family by INTENT — deterministic, so it can never oscillate:
+    // turn toward the target while outside the deadzone, idle once settled.
+    const desired = turning
+      ? remaining > 0
+        ? "turn-left"
+        : "turn-right"
+      : this.idleClipId;
+
+    // Advance the current clip's playhead. One-shot turns hold at their end;
+    // looping clips (idle) wrap.
     const dur = this.durations.get(this.current.clipId) ?? 1;
     const oneShot = isOneShot(this.current.clipId);
     this.current.time += dt;
-    let wrapped = false;
     if (this.current.time >= dur) {
       if (oneShot) {
-        this.current.time = dur; // hold the last frame — one pivot, no replay
+        this.current.time = dur; // hold last frame — one pivot, no replay
         this.clipDone = true;
       } else {
-        this.current.time -= dur; // looping clip (idle/walk)
-        wrapped = true;
+        this.current.time -= dur; // looping clip (idle)
       }
     }
-    this.rig.applyClip(this.current.clipId, this.current.time);
     this.timeSinceSwitch += dt;
 
-    // 2. Build the trajectory + query from the LIVE pose (no scrub).
-    const cur: LocomotionPose = {
-      position: { x: this._state.position.x, z: this._state.position.z },
-      facing: this._state.facing,
-    };
-    const target: LocomotionPose = { position: this.targetPos, facing: this.targetFacing };
-    const traj = buildTrajectoryQuery(cur, target, REACH_SEC);
+    // Switch when the desired family changes, or re-trigger a finished pivot
+    // while still turning. Exactly one applyClip runs per frame.
+    const needSwitch =
+      desired !== this.current.clipId || (this.clipDone && oneShot && turning);
 
-    // 3. Search at a reduced cadence. Switch ONLY when the matched CLIP differs
-    //    (never jump the playhead within a clip), and only after a minimum dwell
-    //    so the controller commits to a clip and lets it play through instead of
-    //    snapping between frames every search.
-    // A one-shot pivot must NOT be interrupted mid-step — only re-plan when the
-    // current clip loops (idle/walk) or the one-shot pivot has finished.
-    const canReplan = !oneShot || this.clipDone;
-    if (this.frameCounter % SEARCH_EVERY === 0 && this.timeSinceSwitch >= MIN_DWELL_SEC && canReplan) {
-      const query = this.buildQuery(traj);
-      const idx = searchNearest(this.db, query);
-      const frame: MotionFrame | undefined = idx >= 0 ? this.db.frames[idx] : undefined;
+    if (needSwitch && this.timeSinceSwitch >= MIN_DWELL_SEC) {
+      // Capture where each bone WAS, pose the new clip at frame 0, then
+      // inertialize from the old pose into the new so the swap eases (no pop).
+      const oldQuats = new Map<string, Quaternion>();
+      for (const [name, bone] of this.bones) oldQuats.set(name, bone.quaternion.clone());
 
-      // Switch on a different clip, OR re-trigger a fresh pivot when the current
-      // one-shot has finished but more turning is still wanted.
-      const wantSwitch = frame !== undefined && (frame.clipId !== this.current.clipId || this.clipDone);
+      this.current = { clipId: desired, time: 0 };
+      this.clipDone = false;
+      this.timeSinceSwitch = 0;
+      this.rig.applyClip(desired, 0);
 
-      if (frame && wantSwitch) {
-        // A turn always restarts from frame 0 (one clean full pivot); a looping
-        // clip enters at its matched phase.
-        const startTime = isOneShot(frame.clipId) ? 0 : frame.time;
-
-        // Capture where each bone WAS, pose the new clip, then inertialize from
-        // the old pose into the new so the transition eases instead of popping.
-        const oldQuats = new Map<string, Quaternion>();
-        for (const [name, bone] of this.bones) oldQuats.set(name, bone.quaternion.clone());
-
-        this.rig.applyClip(frame.clipId, startTime);
-
-        for (const [name, bone] of this.bones) {
-          const oldQ = oldQuats.get(name)!; // populated in the loop directly above
-          this.inert.set(name, startInertialize(oldQ, bone.quaternion, INERTIALIZE_SEC));
-        }
-
-        this.current = { clipId: frame.clipId, time: startTime };
-        this.timeSinceSwitch = 0;
-        this.clipDone = false;
-
-        // The applyClip above moved the hip to the new clip's phase. Reset
-        // root-motion accumulation so the next rootMotionDelta() does NOT count
-        // that discontinuity as a (huge, bogus) movement delta.
-        this.rig.resetRootMotion();
+      for (const [name, bone] of this.bones) {
+        const oldQ = oldQuats.get(name)!; // populated in the loop directly above
+        this.inert.set(name, startInertialize(oldQ, bone.quaternion, INERTIALIZE_SEC));
       }
+    } else {
+      this.rig.applyClip(this.current.clipId, this.current.time);
     }
 
-    // 4. Apply the decaying inertialization offset ON TOP of the posed clip.
+    // Apply the decaying inertialization offset on top of the posed clip.
     for (const [name, bone] of this.bones) {
       const it = this.inert.get(name);
       if (it) {
@@ -222,63 +198,24 @@ export class MmLocomotionController {
       }
     }
 
-    // 5. Integrate clip-driven root motion into world-space state. The delta is
-    // in the character's local frame (x = lateral, forward = facing axis);
-    // rotate it by the current world facing before accumulating. On a loop wrap
-    // the playhead jumped from clip end to start, so reset first to avoid
-    // counting that wrap as motion.
-    if (wrapped) this.rig.resetRootMotion();
-    const rm = this.rig.rootMotionDelta();
-    const cosF = Math.cos(this._state.facing);
-    const sinF = Math.sin(this._state.facing);
-    const sx = rm.x * ROOT_POS_SCALE;
-    const sf = rm.forward * ROOT_POS_SCALE;
-    this._state.position.x += sx * cosF + sf * sinF;
-    this._state.position.z += -sx * sinF + sf * cosF;
-    this._state.facing += rm.yawDelta;
-    this._state.speed = Math.hypot(sx, sf) / Math.max(dt, 1e-4);
-    this._state.isMoving = Math.abs(rm.yawDelta) > 1e-4 || this._state.speed > 0.01;
+    // Drive facing toward the target — capped per frame so it never overshoots;
+    // snap + stop inside the deadzone. This is the deterministic control that
+    // replaced the noisy root-motion yaw integration (the oscillation source).
+    if (turning) {
+      this._state.facing +=
+        Math.sign(remaining) * Math.min(Math.abs(remaining), TURN_RATE * dt);
+    } else {
+      this._state.facing = this.targetFacing;
+    }
+    this._state.speed = turning ? TURN_RATE : 0;
+    this._state.isMoving = turning;
 
-    // 6. Apply the accumulated world transform to the rig root. Root motion was
-    // EXTRACTED (removed) from the hips by the extractor and banked into _state;
-    // the root must carry it or the body never visibly turns/moves. The clip
-    // animates bones (local), not this root node, so this does not fight the mixer.
+    // The accumulated facing IS the visible body rotation: the rig root carries
+    // it while the clip animates the legs in local space. Position is held in
+    // place for this reorient-in-place slice.
     const root = this.rig.root;
     root.position.x = this._state.position.x;
     root.position.z = this._state.position.z;
     root.rotation.y = this._state.facing;
-
-    // 7. Advance the frame counter.
-    this.frameCounter++;
-  }
-
-  /**
-   * Assemble the live feature query. Pose position cols [0..5] come from the
-   * LIVE rig pose (read without re-posing — see {@link RigBinding.readLivePose})
-   * so building the query never scrambles the visible pose or pollutes the
-   * root-motion extractor. Velocity cols [6..14] are left at 0 because analytic
-   * live velocities aren't computed per frame — DEFAULT_WEIGHTS already
-   * down-weights footVel (0.3) and hipVel (0.5), so matching leans on the
-   * position and trajectory columns. Trajectory cols [15..23] come from
-   * {@link buildTrajectoryQuery}.
-   */
-  private buildQuery(traj: TrajectoryQuery): Float32Array {
-    const q = new Float32Array(FEATURE_STRIDE);
-
-    const pose = this.rig.readLivePose();
-    q[0] = pose.leftFoot[0];
-    q[1] = pose.leftFoot[1];
-    q[2] = pose.leftFoot[2];
-    q[3] = pose.rightFoot[0];
-    q[4] = pose.rightFoot[1];
-    q[5] = pose.rightFoot[2];
-    // Velocity cols [6..14] intentionally left at 0 — see method doc.
-
-    // Trajectory position cols [15..20] (3 horizons x x,z).
-    for (let i = 0; i < 6; i++) q[15 + i] = traj.posXZ[i] ?? 0;
-    // Trajectory facing-delta cols [21..23] (3 horizons).
-    for (let i = 0; i < 3; i++) q[21 + i] = traj.facing[i] ?? 0;
-
-    return q;
   }
 }
