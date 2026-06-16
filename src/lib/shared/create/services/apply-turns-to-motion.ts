@@ -170,90 +170,56 @@ function createUpdatedMotion(
 }
 
 /**
+ * Apply turns to a single hand using an explicit rotation direction.
+ *
+ * Dash/static hands have no base rotation, so once turns > 0 they need a chosen
+ * spin direction — supplied here by the turns bar's per-hand toggle. Shift hands
+ * (pro/anti) carry an intrinsic direction and ignore the override. At 0 turns the
+ * hand stays at no-rotation.
+ */
+function applyHandTurns(
+  motion: MotionData,
+  turns: number | "fl",
+  color: MotionColor,
+  direction: RotationDirection
+): MotionData {
+  const isDashOrStatic =
+    motion.motionType === MotionType.DASH || motion.motionType === MotionType.STATIC;
+
+  if (isDashOrStatic && typeof turns === "number" && turns > 0) {
+    return createUpdatedMotion(motion, turns, color, direction);
+  }
+
+  const result = applyTurnToMotion(turns, motion, color, [], 0);
+  return result.motion ?? motion;
+}
+
+/**
  * Apply pending turn values to both hands of a single option pictograph.
  *
  * Each option already carries the propagated start orientation (= previous step's
- * end orientation), so no surrounding-step context is needed — rotation falls back
- * to each motion's own direction. Returns a new PictographData; never mutates input.
+ * end orientation). For dash/static hands with turns the chosen rotation direction
+ * (blueDirection/redDirection — set globally in the turns bar) is applied; shift
+ * hands keep their intrinsic direction. Returns a new PictographData; never mutates
+ * the input.
  */
 export function applyPendingTurnsToOption(
   option: PictographData,
   blueTurns: number | "fl",
-  redTurns: number | "fl"
+  redTurns: number | "fl",
+  blueDirection: RotationDirection,
+  redDirection: RotationDirection
 ): PictographData {
   const blue = option.motions?.blue;
   const red = option.motions?.red;
   if (!blue || !red) return option;
 
-  const blueResult = applyTurnToMotion(blueTurns, blue, MotionColor.BLUE, [], 0);
-  const redResult = applyTurnToMotion(redTurns, red, MotionColor.RED, [], 0);
-
   return {
     ...option,
     motions: {
       ...option.motions,
-      blue: blueResult.motion ?? blue,
-      red: redResult.motion ?? red,
+      blue: applyHandTurns(blue, blueTurns, MotionColor.BLUE, blueDirection),
+      red: applyHandTurns(red, redTurns, MotionColor.RED, redDirection),
     },
   };
-}
-
-/**
- * Turn variants for a single hand.
- *
- * Shifts (pro/anti) carry an intrinsic base rotation direction, so turns add in
- * that one direction → a single variant. Dashes and statics have no base
- * rotation; once turns ≥ 1 they can spin CW OR CCW, and the two produce
- * genuinely different end orientations, so both are emitted. At 0 turns there is
- * no direction → a single (no-rotation) variant.
- */
-function handTurnVariants(
-  motion: MotionData,
-  turns: number | "fl",
-  color: MotionColor
-): MotionData[] {
-  const isDashOrStatic =
-    motion.motionType === MotionType.DASH || motion.motionType === MotionType.STATIC;
-
-  if (isDashOrStatic && typeof turns === "number" && turns > 0) {
-    return [
-      createUpdatedMotion(motion, turns, color, RotationDirection.CLOCKWISE),
-      createUpdatedMotion(motion, turns, color, RotationDirection.COUNTER_CLOCKWISE),
-    ];
-  }
-
-  const result = applyTurnToMotion(turns, motion, color, [], 0);
-  return [result.motion ?? motion];
-}
-
-/**
- * Apply pending turns to an option, fanning out the ambiguous rotation directions.
- *
- * Returns 1–4 option pictographs: each dash/static hand with turns ≥ 1 doubles
- * the variants (CW/CCW), shift hands and 0-turn hands stay single. The cartesian
- * product across both hands yields 1 (no ambiguity), 2 (one ambiguous hand), or 4
- * (both ambiguous). Never mutates the input.
- */
-export function applyTurnsToOptionVariants(
-  option: PictographData,
-  blueTurns: number | "fl",
-  redTurns: number | "fl"
-): PictographData[] {
-  const blue = option.motions?.blue;
-  const red = option.motions?.red;
-  if (!blue || !red) return [option];
-
-  const blues = handTurnVariants(blue, blueTurns, MotionColor.BLUE);
-  const reds = handTurnVariants(red, redTurns, MotionColor.RED);
-
-  const variants: PictographData[] = [];
-  for (const b of blues) {
-    for (const r of reds) {
-      variants.push({
-        ...option,
-        motions: { ...option.motions, blue: b, red: r },
-      });
-    }
-  }
-  return variants;
 }

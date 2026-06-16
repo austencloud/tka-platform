@@ -14,14 +14,31 @@
   interface Props {
     blueTurns: number | "fl";
     redTurns: number | "fl";
+    blueRotation: RotationDirection;
+    redRotation: RotationDirection;
     onBlueChange: (delta: number) => void;
     onRedChange: (delta: number) => void;
+    onBlueRotationChange: (dir: RotationDirection) => void;
+    onRedRotationChange: (dir: RotationDirection) => void;
     onReset: () => void;
   }
 
-  const { blueTurns, redTurns, onBlueChange, onRedChange, onReset }: Props = $props();
+  const {
+    blueTurns,
+    redTurns,
+    blueRotation,
+    redRotation,
+    onBlueChange,
+    onRedChange,
+    onBlueRotationChange,
+    onRedRotationChange,
+    onReset,
+  }: Props = $props();
 
-  const noop = () => {};
+  // Spin direction matters only for dash/static hands with turns; the toggle
+  // appears once a hand has turns dialed up. Shifts ignore it.
+  const showBlueRotation = $derived(typeof blueTurns === "number" && blueTurns > 0);
+  const showRedRotation = $derived(typeof redTurns === "number" && redTurns > 0);
   const isCleared = $derived(blueTurns === 0 && redTurns === 0);
 </script>
 
@@ -34,22 +51,22 @@
         <PropTurnsControl
           color="blue"
           turns={blueTurns}
-          rotationDirection={RotationDirection.NO_ROTATION}
-          showRotation={false}
+          rotationDirection={blueRotation}
+          showRotation={showBlueRotation}
           compact
           onTurnsChange={onBlueChange}
-          onRotationChange={noop}
+          onRotationChange={onBlueRotationChange}
         />
       {/snippet}
       {#snippet redContent()}
         <PropTurnsControl
           color="red"
           turns={redTurns}
-          rotationDirection={RotationDirection.NO_ROTATION}
-          showRotation={false}
+          rotationDirection={redRotation}
+          showRotation={showRedRotation}
           compact
           onTurnsChange={onRedChange}
-          onRotationChange={noop}
+          onRotationChange={onRedRotationChange}
         />
       {/snippet}
     </PropControlPair>

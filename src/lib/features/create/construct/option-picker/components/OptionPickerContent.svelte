@@ -18,6 +18,7 @@ Uses organizer and sizer services for section grouping and sizing.
   import OptionViewerSection from "../swipe-layout/components/OptionViewerSection.svelte";
   import HorizontalSwipeContainer from "$lib/shared/foundation/ui/HorizontalSwipeContainer.svelte";
   import PendingTurnsBar from "./PendingTurnsBar.svelte";
+  import type { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { identifyContinuation } from "../services/continuation-identifier";
 
   interface Props {
@@ -37,8 +38,12 @@ Uses organizer and sizer services for section grouping and sizing.
     // Pending turns bar
     blueTurns: number | "fl";
     redTurns: number | "fl";
+    blueRotation: RotationDirection;
+    redRotation: RotationDirection;
     onBlueTurnsChange: (delta: number) => void;
     onRedTurnsChange: (delta: number) => void;
+    onBlueRotationChange: (dir: RotationDirection) => void;
+    onRedRotationChange: (dir: RotationDirection) => void;
     onResetTurns: () => void;
   }
 
@@ -55,8 +60,12 @@ Uses organizer and sizer services for section grouping and sizing.
     lastClickedSlot = null,
     blueTurns,
     redTurns,
+    blueRotation,
+    redRotation,
     onBlueTurnsChange,
     onRedTurnsChange,
+    onBlueRotationChange,
+    onRedRotationChange,
     onResetTurns,
   }: Props = $props();
 
@@ -406,8 +415,12 @@ Uses organizer and sizer services for section grouping and sizing.
           <PendingTurnsBar
             {blueTurns}
             {redTurns}
+            {blueRotation}
+            {redRotation}
             onBlueChange={onBlueTurnsChange}
             onRedChange={onRedTurnsChange}
+            onBlueRotationChange={onBlueRotationChange}
+            onRedRotationChange={onRedRotationChange}
             onReset={onResetTurns}
           />
 

@@ -17,8 +17,9 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
   import { onMount } from "svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
-  import { applyTurnsToOptionVariants } from "$lib/shared/create/services/apply-turns-to-motion";
+  import { applyPendingTurnsToOption } from "$lib/shared/create/services/apply-turns-to-motion";
   import { countDirectionReversals } from "$lib/features/create/construct/option-picker/services/reversal-checker";
+  import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { calculateDeviceAwareSize } from "../services/option-grid-fit-calculator";
 
   import { createOptionPickerState } from "../state/option-picker-state.svelte";
@@ -71,6 +72,10 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
   // Sticky pending turns applied to every option (persist across selections)
   let blueTurns = $state<number | "fl">(0);
   let redTurns = $state<number | "fl">(0);
+  // Chosen spin direction for dash/static hands with turns (one bit per hand,
+  // set via the turns-bar toggle — no per-tile fan-out). Shifts ignore these.
+  let blueRotation = $state<RotationDirection>(RotationDirection.CLOCKWISE);
+  let redRotation = $state<RotationDirection>(RotationDirection.CLOCKWISE);
 
   function handleBlueTurnsChange(delta: number) {
     if (blueTurns === "fl") return;
@@ -80,28 +85,36 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
     if (redTurns === "fl") return;
     redTurns = Math.max(0, redTurns + delta);
   }
+  function handleBlueRotationChange(dir: RotationDirection) {
+    blueRotation = dir;
+  }
+  function handleRedRotationChange(dir: RotationDirection) {
+    redRotation = dir;
+  }
   function handleResetTurns() {
     blueTurns = 0;
     redTurns = 0;
+    blueRotation = RotationDirection.CLOCKWISE;
+    redRotation = RotationDirection.CLOCKWISE;
   }
 
   // Apply sticky turns to each option, then prepare for rendering.
   function prepareWithTurns(
     filtered: PictographData[]
   ): Promise<PreparedPictographData[]> {
-    // Fan out ambiguous rotation directions: dash/static hands with turns ≥ 1
-    // become CW + CCW tiles (different end orientations, both valid next steps).
+    // One tile per option: apply the chosen per-hand spin direction to dash/static
+    // hands rather than fanning out CW/CCW tiles (keeps the grid scannable).
     const noTurns = blueTurns === 0 && redTurns === 0;
     let turned = noTurns
       ? filtered
-      : filtered.flatMap((o) => applyTurnsToOptionVariants(o, blueTurns, redTurns));
+      : filtered.map((o) =>
+          applyPendingTurnsToOption(o, blueTurns, redTurns, blueRotation, redRotation)
+        );
 
-    // pickerState applied the continuous filter to the 0-turn base options, but
-    // the fanned CW/CCW variants carry new rotation directions that pickerState
-    // never saw. When Continuous is on, drop any variant whose spin direction
-    // reverses against the established direction. Direction-only (not full
-    // getReversalCount) so the turns>1 magnitude heuristic doesn't nuke every
-    // option at 2+ turns.
+    // When Continuous is on, drop any dash/static option whose chosen spin
+    // direction reverses against the established direction. Direction-only (not
+    // full getReversalCount) so the turns>1 magnitude heuristic doesn't nuke
+    // every option at 2+ turns.
     if (!noTurns && internalContinuousOnly && currentSequence.length >= 2) {
       turned = turned.filter(
         (o) => countDirectionReversals(o, currentSequence) === 0
@@ -196,11 +209,15 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
       return;
     }
 
-    // Track sticky turns so a turn change re-renders the options
+    // Track sticky turns + spin directions so a change re-renders the options
     const _blueTurns = blueTurns;
     const _redTurns = redTurns;
+    const _blueRotation = blueRotation;
+    const _redRotation = redRotation;
     void _blueTurns;
     void _redTurns;
+    void _blueRotation;
+    void _redRotation;
 
     prepareWithTurns(filtered).then((prepared) => {
       preparedOptions = prepared;
@@ -349,8 +366,12 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
     lastClickedSlot={pickerState?.lastClickedSlot ?? null}
     {blueTurns}
     {redTurns}
+    {blueRotation}
+    {redRotation}
     onBlueTurnsChange={handleBlueTurnsChange}
     onRedTurnsChange={handleRedTurnsChange}
+    onBlueRotationChange={handleBlueRotationChange}
+    onRedRotationChange={handleRedRotationChange}
     onResetTurns={handleResetTurns}
   />
 {/if}
