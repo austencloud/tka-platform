@@ -259,6 +259,36 @@ export function bucketMuseumTiles(grid: MuseumGrid): MuseumGeometryDryRun {
     exhibitByTile.set(tileKey(exhibit.tileX, exhibit.tileY), exhibit);
   }
 
+  // Wall tiles are not walkable floor, but the kit wall section is thinner than a
+  // tile (0.18m vs 0.5m), so the rest of the wall tile's footprint would expose
+  // the floorless void (teal gap at every wall base). Lay a subfloor under wall /
+  // exhibit-panel tiles, matching the nearest walkable neighbor's material so the
+  // carpet runs continuously under the wall.
+  function subfloorMaterialAt(tileX: number, tileY: number): FloorMaterial {
+    const dirs = [
+      [0, -1], [0, 1], [-1, 0], [1, 0],
+    ] as const;
+    for (const [dx, dy] of dirs) {
+      const n = grid.tiles.get(tileKey(tileX + dx, tileY + dy));
+      if (!n) continue;
+      if (
+        n.type === "floor" ||
+        n.type === "corridor" ||
+        n.type === "performer-station" ||
+        n.type === "pedestal" ||
+        n.type === "sign"
+      ) {
+        return n.material ?? "stone";
+      }
+    }
+    return "stone";
+  }
+
+  function addSubfloor(tileX: number, tileY: number, x: number, z: number): void {
+    const mat = subfloorMaterialAt(tileX, tileY);
+    addToFloorBucket(FLOOR_COLORS[mat], x, z, mat);
+  }
+
   function addToFloorBucket(color: string, x: number, z: number, material?: FloorMaterial): void {
     let bucket = floorBuckets.get(color);
     if (!bucket) {
@@ -297,6 +327,7 @@ export function bucketMuseumTiles(grid: MuseumGrid): MuseumGeometryDryRun {
         const wingTheme = getWingThemeAt(tileX, tileY);
         const wallColor = wingTheme ? WING_WALL_COLORS[wingTheme] : TILE_TYPE_COLORS.wall!;
         addToWallBucket(wallColor, worldX, worldZ, wingTheme ?? undefined);
+        addSubfloor(tileX, tileY, worldX, worldZ);
         break;
       }
       case "exhibit-panel": {
@@ -310,6 +341,7 @@ export function bucketMuseumTiles(grid: MuseumGrid): MuseumGeometryDryRun {
             ? WING_WALL_COLORS[exhibitWingTheme]
             : TILE_TYPE_COLORS.wall!;
           addToWallBucket(exhibitWallColor, worldX, worldZ, exhibitWingTheme ?? undefined);
+          addSubfloor(tileX, tileY, worldX, worldZ);
           const facing = tile.facing ?? "south";
           const plaqueContent: PlaqueContent = exhibitDef.plaque ?? {
             title: exhibitDef.id ?? "Exhibit",
@@ -327,6 +359,7 @@ export function bucketMuseumTiles(grid: MuseumGrid): MuseumGeometryDryRun {
           const wingTheme = getWingThemeAt(tileX, tileY);
           const wallColor = wingTheme ? WING_WALL_COLORS[wingTheme] : TILE_TYPE_COLORS.wall!;
           addToWallBucket(wallColor, worldX, worldZ, wingTheme ?? undefined);
+          addSubfloor(tileX, tileY, worldX, worldZ);
         }
         break;
       }
