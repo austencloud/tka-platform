@@ -299,7 +299,14 @@ export function bucketMuseumTiles(grid: MuseumGrid): MuseumGeometryDryRun {
       case "exhibit-panel": {
         const exhibitDef = exhibitByTile.get(tileKey(tileX, tileY));
         if (exhibitDef) {
-          addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
+          // Wall behind the plaque so the exhibit isn't an open hole to the
+          // exterior. The plaque is offset off the wall face by PLAQUE_WALL_SHIFT,
+          // so it still reads in front. This tile is now wall, not walkable floor.
+          const exhibitWingTheme = getWingThemeAt(tileX, tileY);
+          const exhibitWallColor = exhibitWingTheme
+            ? WING_WALL_COLORS[exhibitWingTheme]
+            : TILE_TYPE_COLORS.wall!;
+          addToWallBucket(exhibitWallColor, worldX, worldZ, exhibitWingTheme ?? undefined);
           const facing = tile.facing ?? "south";
           const plaqueContent: PlaqueContent = exhibitDef.plaque ?? {
             title: exhibitDef.id ?? "Exhibit",
@@ -496,7 +503,9 @@ let sharedSignGeo: BoxGeometry | null = null;
 // Performer geo removed - MuseumPerformerStation3D renders its own platform
 
 function getSharedGeometries() {
-  if (!sharedFloorGeo) sharedFloorGeo = new BoxGeometry(TILE_SIZE - 0.02, 0.05, TILE_SIZE - 0.02);
+  // Full tile width so adjacent tiles abut (no seam grid), real depth so you
+  // can't see through to the void below. Placed at y=-0.1 so the top stays at 0.
+  if (!sharedFloorGeo) sharedFloorGeo = new BoxGeometry(TILE_SIZE, 0.2, TILE_SIZE);
   if (!sharedWallGeo) sharedWallGeo = new BoxGeometry(TILE_SIZE, WALL_HEIGHT, TILE_SIZE);
   if (!sharedPedestalGeo) sharedPedestalGeo = new BoxGeometry(TILE_SIZE * 0.7, 0.5, TILE_SIZE * 0.7);
   if (!sharedSignGeo) sharedSignGeo = new BoxGeometry(TILE_SIZE * 0.6, 0.4, 0.06);
@@ -553,7 +562,7 @@ export async function buildRoomChunk(
     const material = texturePack
       ? loadPBR(texturePack, 8)
       : new MeshStandardMaterial({ color: bucket.color });
-    const { mesh, instanceIds } = buildBatch(floorGeo, material, bucket.positions, 0);
+    const { mesh, instanceIds } = buildBatch(floorGeo, material, bucket.positions, -0.1);
     floorMeshes.push({ mesh, instanceIds });
   }
 
