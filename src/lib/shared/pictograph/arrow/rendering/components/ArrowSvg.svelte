@@ -103,9 +103,17 @@ even when Svelte recreates the component instance.
       MOTION_COLORS["blue"]
   );
 
-  // White stroke for visibility against light backgrounds (when NOT in dark mode)
-  const lightModeStroke = $derived(
-    !isDarkMode ? "drop-shadow(0 0 1.5px white) drop-shadow(0 0 1.5px white)" : ""
+  // Background-matching halo that separates the arrow from a same-color prop
+  // beneath it. The halo is colored to match the pictograph background, so it is
+  // invisible against the background and only renders as a clean gap where the
+  // arrow overlaps a prop (worst with wide props like fans/doublestars).
+  // Dark mode: #0a0a0f halo (matches the dark bg rect in PictographRenderer), medium gap.
+  // Light mode: white halo, same medium gap — light-friendly counterpart, and stays
+  // invisible against print's white background (print renders !isDarkMode).
+  const haloFilter = $derived(
+    isDarkMode
+      ? "drop-shadow(0 0 2px #0a0a0f) drop-shadow(0 0 2px #0a0a0f) drop-shadow(0 0 2px #0a0a0f)"
+      : "drop-shadow(0 0 2px white) drop-shadow(0 0 2px white) drop-shadow(0 0 2px white)"
   );
 
   // Safe center values - guard against NaN which can occur with empty/static arrow SVGs
@@ -457,7 +465,7 @@ even when Svelte recreates the component instance.
       transform: translate({displayedX}px, {displayedY}px)
                  rotate({displayedRotation}deg)
                  {shouldMirror ? 'scale(-1, 1)' : ''};
-      {lightModeStroke && !isSelected ? `filter: ${lightModeStroke};` : ''}
+      {!isSelected ? `filter: ${haloFilter};` : ''}
     "
   >
     <!-- Position group at calculated coordinates, let SVG handle its own centering -->
