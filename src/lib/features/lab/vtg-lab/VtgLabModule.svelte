@@ -10,15 +10,10 @@
 
 	import { browser } from "$app/environment";
 	import type { VtgLabTab } from "./domain/vtg-lab-types";
-	import type { VTGMode } from "$lib/features/learn/domain/constants/vtg-experience-data";
-	import { VTG_MODE_INFO } from "$lib/features/learn/domain/constants/vtg-experience-data";
-	import { VTG_MODE_GROUPS } from "./domain/vtg-pattern-data";
-	import ModeSelector from "./components/ModeSelector.svelte";
-	import ModeExplorer from "./components/ModeExplorer.svelte";
+	import RotationStyleExplorer from "./components/RotationStyleExplorer.svelte";
 	import RosettaPanel from "./components/RosettaPanel.svelte";
 
 	const TAB_STORAGE_KEY = "vtg-lab-active-tab";
-	const MODE_STORAGE_KEY = "vtg-lab-selected-mode";
 
 	function getInitialTab(): VtgLabTab {
 		if (browser) {
@@ -28,27 +23,10 @@
 		return "explorer";
 	}
 
-	function getInitialMode(): VTGMode {
-		if (browser) {
-			const stored = sessionStorage.getItem(MODE_STORAGE_KEY);
-			if (stored && stored in VTG_MODE_INFO) return stored as VTGMode;
-		}
-		return "SS";
-	}
-
 	let activeTab = $state<VtgLabTab>(getInitialTab());
-	let selectedMode = $state<VTGMode>(getInitialMode());
-
-	const activeModeGroup = $derived(
-		VTG_MODE_GROUPS.find((g) => g.mode === selectedMode) ?? VTG_MODE_GROUPS[0]!
-	);
 
 	$effect(() => {
 		if (browser) sessionStorage.setItem(TAB_STORAGE_KEY, activeTab);
-	});
-
-	$effect(() => {
-		if (browser) sessionStorage.setItem(MODE_STORAGE_KEY, selectedMode);
 	});
 </script>
 
@@ -81,8 +59,7 @@
 
 	<div class="content themed-scrollbar">
 		{#if activeTab === "explorer"}
-			<ModeSelector {selectedMode} onSelect={(mode) => (selectedMode = mode)} />
-			<ModeExplorer modeGroup={activeModeGroup} />
+			<RotationStyleExplorer />
 		{:else if activeTab === "rosetta"}
 			<RosettaPanel />
 		{/if}
