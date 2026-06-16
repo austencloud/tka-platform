@@ -1,142 +1,142 @@
-# Reorient-by-Stepping via Motion Matching — Design
+# Free-Running Motion-Matching Locomotion Controller — Design
 
 **Date:** 2026-06-16
 **Status:** Approved (design), pending implementation plan
-**Slice:** 1 of an eventual motion-matching locomotion system
+**Decision:** Option 2 — free-running MM controller (not an `ITurnAnimator` impl)
 
 ## Goal
 
-A 3D performer turns their torso to a target facing by taking natural step(s),
-and can step back to the origin facing/position. The planted foot does not slide
-(foot-lock). Clip transitions are seamless (inertialization).
+A single performer continuously reorients their torso and steps toward a **live
+target** (position + facing), with natural lift→place→reorient and step-back
+motion. The planted foot does not slide (foot-lock). Clip transitions are
+seamless (inertialization). Arbitrary facing angles, not 45° notation snaps.
 
-This is the narrow, demoable vertical slice of the larger ambition (general
-motion-matching locomotion, then environment-aware avoidance à la the SIGGRAPH
-Asia 2025 *Environment-aware Motion Matching* demo). It proves the three pieces
-the codebase is missing — MM nearest-neighbour search, inertialization, and
-foot-lock wiring — on **clips that already ship**, at zero data cost.
+This is the EAMM-demo behavior: trajectory-driven continuous control, drivable by
+a target that anything can set (a test page now; stage formations later).
+
+## How This Relates To What Already Exists (reconciliation)
+
+Two adjacent systems were found and reconciled before scoping:
+
+1. **Turn-in-place (`@austencloud/scene-3d`, 2026-04-11).** Ships
+   `ITurnAnimator` + `ClipBasedTurnAnimator` (phase-clocked, 45°-snapped, for
+   notation beats), plus the foundation: `ILegIKSolver`, `RootMotionExtractor`
+   (with yaw), `FootPlanter`, `ContactCurveCache`. That design **deliberately**
+   scoped MM out for the discrete-beat regime and named
+   `MotionMatchingTurnAnimator` a *future* swap. We are **not** building that —
+   we are building the **free-running** controller, which the notation/phase
+   interface can't express. The shipped foundation is reused, not duplicated.
+
+2. **Stage locomotion (2026-05-25).** A choreography module whose locomotion
+   layer is a speed-blend `LocomotionController`
+   (`src/lib/features/stage/locomotion/locomotion-controller.ts`: idle/walk/run
+   by speed). Its polish backlog item #1 is **"Inertialization blending"** and
+   Phase 4 is **"Turn-in-place."** This MM controller is the **drop-in
+   high-fidelity replacement** for that speed-blend controller — same driving
+   contract (`update(dt, targetPosition, targetFacing)`), better internals. It is
+   the convergence of both backlog items, not a competing system.
 
 ## Non-Goals (explicit YAGNI for this slice)
 
-- Environment/obstacle collision penalty in the search cost (later slice).
-- Multi-agent avoidance / crowds.
-- New mocap capture. Slice 1 runs on existing clips; richer pivot-angle vocab
-  (FreeMoCap / Move.ai capture) is a later data-only fill, no code change.
-- Replacing the existing speed-blend `LocomotionController` everywhere. The MM
-  controller is additive and scoped to the reorient behaviour for now.
-- Arm/upper-body IK (handled by `@austencloud/scene-3d`; untouched here).
+- The 2D formation editor, multi-performer formations, beat-sync, persistence —
+  all stage-locomotion's job; untouched here.
+- Environment/obstacle collision penalty (the EAMM "environment-aware" layer).
+- `ITurnAnimator` / notation-phase model.
+- New IK solver, new contact detection, new root-motion extractor — **reused**.
+- New mocap capture. Slice runs on existing clips; richer pivot/step-back vocab
+  (FreeMoCap, $0, multi-webcam) is a later data-only fill, no code change.
 
-## What Already Exists (reuse — no hand-roll)
+## What Already Exists (reuse — verified 2026-06-16)
 
-Verified by grep/read on 2026-06-16:
-
-| Capability | File / source | Used for |
+| Capability | Source | Used for |
 |---|---|---|
-| Rigged performer (SkinnedMesh, Mixamo bone names) | `@austencloud/scene-3d` → `PerformerRig`; `static/models/` | The body we animate. Mixamo naming = drop-in for future Mixamo/Rokoko/Move.ai/FreeMoCap data. |
-| Two-bone analytic leg IK (hinge knee, ground-normal foot) | `src/lib/shared/3d/services/hinge-constrained-leg-ik-solver.ts` → `solveLegIK(input: LegIKInput)` | Foot-lock execution. |
-| Knee hinge axis calibration | `src/lib/shared/3d/services/knee-hinge-axis-calibrator.ts` | Supplies `kneeHingeAxis` to `solveLegIK`. |
-| Per-frame foot-contact curves (0–1 per foot, phase-sampled, velocity fallback by design) | `src/lib/shared/3d/services/contact-curve-cache.ts` → `getContactAt`, `registerCurve` | Foot-contact detection (when to lock). |
-| AnimationMixer + clip blending + root motion + yaw delta | `src/lib/features/stage/locomotion/locomotion-controller.ts`, `clip-registry.ts` | Clip sampling + the controller pattern to mirror. |
-| Per-frame loop | Threlte `useTask(delta)` (e.g. `src/lib/features/museum/components/game/Museum3DScene.svelte:437`) | Drive the MM controller each frame. |
-| Scene mount + feature registry | `src/lib/shared/3d/components/Viewer3DScene.svelte`, `Viewer3DCanvas.svelte`, `scene-features/domain/scene-feature-registry.ts` | Where the test harness mounts one performer. |
-| Existing clips | `static/animations/locomotion-pack/`: `turn-left.glb`, `turn-right.glb`, `walk-forward.glb`, `walk-backward.glb`, `idle.glb`, strafes | The slice-1 motion database. |
-| Single-select control primitive | `SegmentedControl` (`src/lib/shared/3d/components/controls/SegmentedControl.svelte`) | Test-page facing selector (per chip-primitives rule). |
+| Rigged performer (SkinnedMesh, Mixamo bones) | `@austencloud/scene-3d` `PerformerRig`; `static/models/` | Body to animate. |
+| Two-bone hinge-knee leg IK | `src/lib/shared/3d/services/hinge-constrained-leg-ik-solver.ts` → `solveLegIK(input: LegIKInput)` | Foot-lock execution. |
+| Knee hinge axis calibration | `.../knee-hinge-axis-calibrator.ts` → `computeKneeHingeAxis(upLegRestDir, legRestDir)` | Supplies `kneeHingeAxis`. |
+| Per-foot contact curves (0–1, phase-sampled, velocity fallback) | `.../contact-curve-cache.ts` → `getContactAt`, `registerCurve` | Contact detection (when to lock). |
+| Root motion + yaw delta | `@austencloud/scene-3d` `RootMotionExtractor` | Applying clip-driven translation + turn to the rig. |
+| AnimationMixer clip sampling, controller pattern | `src/lib/features/stage/locomotion/locomotion-controller.ts`, `clip-registry.ts` | Clip sampling + the `update()` contract to mirror. |
+| Per-frame loop | Threlte `useTask(delta)` (e.g. `Museum3DScene.svelte:437`) | Driving the controller each frame. |
+| Scene mount | `Viewer3DScene.svelte`, `Viewer3DCanvas.svelte` | Where the test harness mounts one performer. |
+| Existing clips | `static/animations/locomotion-pack/`: `idle`, `walk-forward`, `walk-backward`, `turn-left`, `turn-right` (90°), strafes | The slice-1 motion database. |
+| Single-select control | `SegmentedControl` (`.../controls/SegmentedControl.svelte`) | Test-page target controls. |
 
-## Approach Decision
+**Foot-lock reuse decision:** the slice wires the **local** `solveLegIK` +
+`contact-curve-cache` directly in a thin foot-lock pass inside the controller
+(both are local, accessible, testable). The package `FootPlanter` is the eventual
+production integration target, but the vertical slice stays self-contained on the
+local solver to remain verifiable without reaching into package internals.
 
-Three options were weighed:
+## Architecture — Five New Units + One Reused Pass
 
-- **A — MM-lite tailored to this rig (CHOSEN).** Build six small, owned,
-  testable units; reuse the leg IK solver + contact cache. Right-sized, no
-  license entanglement, fully understood. The EAMM reference repo is Unity/C# +
-  CC-BY-SA, so its code can't be lifted regardless; the algorithm is
-  reimplemented from public writeups (Holden / *MM for VR Avatars*).
-- **B — Port a full MM framework** (e.g. adapt `Digital-Humans-23/motion-matching`).
-  More features (gait phase, learned-MM compression) but heavier, foreign-engine
-  origin, port cost, mostly YAGNI for one behaviour.
-- **C — Physics inverted-pendulum stepper** (Kenwright). No data, but the
-  "functional, not artistic" look that fails the fidelity bar. Rejected as the
-  primary; retained only as a possible future balance/recovery fallback.
-
-## Architecture — Six Units
-
-All new code under `src/lib/features/stage/locomotion/motion-matching/`. Each
-unit has one job, a typed interface, and is testable in isolation. Pure modules
-follow the project's pure-function-module convention (no `Service` suffix).
+New code under `src/lib/features/stage/locomotion/motion-matching/`. Each unit
+one job, typed interface, testable in isolation. Pure modules follow the
+project's pure-function-module convention (no `Service` suffix).
 
 ### 1. `feature-extractor.ts` (pure, load-time)
 
-Sample each registered clip at a fixed rate (30 fps) and emit a per-frame
-**feature vector**:
+Sample each registered clip at 30 fps → per-frame **feature vector**:
+- **Pose:** left/right foot position + velocity (root-local), hip linear velocity.
+- **Trajectory:** future root position (root-local) + facing at +0.33/0.66/1.0 s.
 
-- **Pose features:** left/right foot position + velocity in root-local space,
-  hip (root) linear velocity.
-- **Trajectory features:** future root position (root-local) and facing at
-  +0.33 s, +0.66 s, +1.0 s.
-
-Output: a flat `Float32Array` database + a parallel index array of
-`{ clipId, time }` per frame, + the feature layout (offsets/dims) and a default
-weight vector. Deterministic. Unit-testable: feed a known clip → assert vector
-dimensions and that a stationary frame yields ~zero velocities.
+Output: flat `Float32Array` DB + parallel `{ clipId, time }` index + a layout
+descriptor (offsets/dims) + a default weight vector. Deterministic.
+Test: known clip → assert vector dims; stationary frame → ~zero velocities.
 
 ### 2. `search.ts` (pure)
 
-Given a **query vector** (current pose features + desired trajectory) and the
-database, return the nearest frame `{ clipId, time }` by weighted squared L2 over
-the feature columns. Flat linear scan — the DB is a few thousand frames × ~30
-floats, trivially real-time. Feature weights configurable. Unit-testable on a
-synthetic DB where the nearest answer is known.
+Query vector (current pose features + desired trajectory) + DB → nearest frame
+`{ clipId, time }` by weighted squared L2. Flat linear scan (DB is small,
+real-time trivial). Weights configurable.
+Test: synthetic DB where the nearest answer is known.
 
 ### 3. `trajectory.ts` (pure)
 
-Convert high-level intent into the future query points `search` expects:
-
-- **Reorient:** desired facing interpolated from current → target over a ~1 s
-  horizon; position held roughly stationary (pivot in place).
-- **Step-back:** target facing/position set back to the recorded origin; produces
-  trajectory points returning to it.
-
-Unit-testable: target facing +90° → query facing samples ramp toward +90°.
+Convert live intent into the future query points `search` expects:
+- **Move/reorient:** desired facing + position interpolated from current → target
+  over a ~1 s horizon.
+- **Step-back:** target set back to the recorded origin.
+Test: target facing +90° → query facing samples ramp toward +90°.
 
 ### 4. `inertialization.ts`
 
-When `search` selects a new `{ clipId, time }` that differs from what's currently
-playing, blend from the current pose to the new clip's pose using
-**inertialization** (Bollo): capture the per-joint quaternion + root offset at the
-switch instant, then decay that offset to zero over a blend time (~0.25 s). This
-removes the pop that naive clip-switching causes — the core smoothness lever.
-Unit-testable on a single joint: offset magnitude decays monotonically to ~0 by
-blend-time end.
+On a frame switch to a new `{ clipId, time }`, capture per-joint quaternion +
+root offset at the switch instant and decay it to zero over ~0.25 s
+(Bollo inertialization). The smoothness lever — directly satisfies
+stage-locomotion polish item #1.
+Test: single joint — offset magnitude decays monotonically to ~0 by blend end.
 
-### 5. `foot-lock.ts`
+### 5. `mm-locomotion-controller.ts` (stateful; drop-in for stage `LocomotionController`)
 
-Per foot, sample contact via `contact-curve-cache.getContactAt(clip, phase)`
-(falling back to the velocity-based detection the cache already documents when a
-clip has no curve). While a foot is planted (contact ≈ 1): freeze its world
-position the moment it lands, and each frame call `solveLegIK` with that frozen
-`footTarget` and the calibrated `kneeHingeAxis` so the foot stays put as the root
-moves/turns. Release (ramp `weight`→0) as contact falls during swing.
-Unit-testable: given contact=1 and a moving root, the locked world target stays
-fixed and `solveLegIK` is invoked with it; contact=0 → `weight` 0, no lock.
+Per-frame orchestration from `useTask`. **Public surface mirrors the stage
+controller** so it's a drop-in:
 
-### 6. `mm-locomotion-controller.ts` (stateful, mirrors `LocomotionController`)
+- `update(dt, targetPosition: Vector3, targetFacing: number): void`
+- `stepBackToOrigin(): void`
+- `get state(): LocomotionState` (`{ position, facing, speed, isMoving }`)
 
-Per-frame orchestration, called from `useTask`:
-
-1. `trajectory` builds the query from the current target (facing / step-back).
-2. Every N frames (~10 Hz), `search` returns the best `{ clipId, time }`.
+Each frame:
+1. `trajectory` builds the query from current target.
+2. Every N frames (~10 Hz) `search` returns best `{ clipId, time }`.
 3. `inertialization` blends the sampled pose toward the new selection.
-4. AnimationMixer samples the chosen clip at `time`.
-5. `foot-lock` overrides planted-foot pose via leg IK.
+4. AnimationMixer samples the chosen clip at `time`; `RootMotionExtractor`
+   applies translation + yaw to the rig transform.
+5. Foot-lock pass (below) plants the contacting foot.
 
-Public surface: `setTargetFacing(rad)`, `stepBackToOrigin()`, `update(dt)`,
-`.state` (current facing, isStepping, lockedFeet). Construction takes the rig +
-the loaded clip DB, mirroring how `LocomotionController` takes the scene + mixer.
+### Reused foot-lock pass (inside the controller, not a new unit)
+
+Per foot: sample contact via `contact-curve-cache.getContactAt(clip, phase)`
+(velocity fallback when a clip has no curve). While contact ≈ 1, freeze the
+foot's world position on landing and call `solveLegIK` each frame with that frozen
+`footTarget` + calibrated `kneeHingeAxis` so it stays planted as the root moves.
+Release (`weight`→0) as contact falls.
+Test: contact=1 + moving root → locked world target fixed, `solveLegIK` invoked
+with it; contact=0 → weight 0, no lock.
 
 ## Data Flow
 
 ```
-target facing / step-back
+live target (position + facing) / stepBackToOrigin
         │
         ▼
    trajectory.ts ──► query vector ─┐
@@ -146,10 +146,10 @@ target facing / step-back
                                             inertialization.ts (blend toward it)
                                                          │
                                                          ▼
-                                          AnimationMixer samples pose
+                         AnimationMixer sample + RootMotionExtractor (pos + yaw)
                                                          │
                                                          ▼
-                              foot-lock.ts (freeze planted foot, solveLegIK)
+                       foot-lock pass: contact-curve-cache → solveLegIK (plant)
                                                          │
                                                          ▼
                                                       render
@@ -157,50 +157,52 @@ target facing / step-back
 
 ## Verification Surface
 
-Test page `src/routes/test/reorient-stepping/+page.svelte` mounting the real
+Test page `src/routes/test/mm-locomotion/+page.svelte` mounting the real
 `Viewer3DScene` with one performer, plus:
-
-- A `SegmentedControl` of target facings (e.g. −90°, −45°, 0°, +45°, +90°).
+- A `SegmentedControl` of target facings (−90°, −45°, 0°, +45°, +90°).
 - A "Step back to origin" button.
+- (Optional) click-to-set target position on a ground plane.
 
 Real components + HMR (per visualization-routing: test page, not mockup).
 Objective foot-slide check via Chrome DevTools `evaluate_script`: record the
-locked foot's world position across a turn; **variance ≈ 0 while contact = 1**
-is the pass condition. Screenshot the mid-turn pose for the visual check.
+locked foot's world position across a turn; **variance ≈ 0 while contact = 1** is
+the pass condition. Mid-turn screenshot for the visual check.
 
 ## Phasing (each phase verified before the next)
 
-1. **Search + inertialization** on existing clips → facing target drives smooth
+1. **Search + inertialization** on existing clips → target facing drives smooth
    clip selection (no foot-lock yet). Verify: smooth, no pop, on the test page.
-2. **Foot-lock**: contact detection + leg IK wiring → planted foot variance ≈ 0.
-   Verify: DevTools foot-pos variance eval.
-3. **Step-back**: origin-return trajectory → performer steps back to start.
-   Verify: returns to start facing/position on button press.
-4. *(later slices, out of scope here)* general MM engine across all clips ·
-   environment collision penalty · captured pivot-angle vocab (FreeMoCap/Move.ai)
-   to fill coverage.
+2. **Foot-lock pass**: contact + `solveLegIK` wiring → planted foot variance ≈ 0.
+   Verify: DevTools foot-pos-variance eval.
+3. **Step-back + target position**: origin-return trajectory + move-to-target.
+   Verify: performer steps to a clicked target and back on button press.
+4. *(later, out of scope)* package `FootPlanter` integration · stage formations
+   drive the target · environment penalty · captured pivot/step-back vocab
+   (FreeMoCap) to fill angle coverage.
 
 ## Testing Strategy
 
 - **Unit (Vitest):** feature dims + stationary-velocity (extractor); nearest on
   synthetic DB (search); facing ramp (trajectory); offset decays to ~0
-  (inertialization); locked target fixed under root motion (foot-lock).
+  (inertialization); locked target fixed under root motion (foot-lock pass).
 - **Runtime/visual:** test-page screenshot + locked-foot world-position-variance
   DevTools eval. No "done" claim without this evidence.
 
 ## Known Gap (honest)
 
-Existing clips are limited turn angles (likely ±90°). At in-between target
-angles, `search` returns the nearest available frame → residual foot slide until
-richer pivot vocabulary exists. Slice 1 proves the **mechanism**; angle coverage
-is a **data-only** fill in phase 4 (capture exact lift→place→reorient→step-back
-vocab with FreeMoCap, $0, multi-webcam → better foot-depth than single-cam), with
-no controller code change.
+Existing clips cover limited turn angles (idle/walk + ±90° turns). At in-between
+angles, `search` returns the nearest available frame → residual slide until richer
+pivot vocabulary exists. Slice proves the **mechanism**; angle coverage is a
+**data-only** fill in phase 4 (capture exact lift→place→reorient→step-back with
+FreeMoCap, $0, multi-webcam → better foot-depth than single-cam), no controller
+code change.
 
 ## Related
 
+- Reconciles: turn-in-place (`@austencloud/scene-3d`, clip path = sibling),
+  stage-locomotion (`2026-05-25`, this upgrades its locomotion layer + delivers
+  its polish item #1 inertialization + Phase 4 turn-in-place).
 - Memory: `project_root_motion_migration`, `project_stage_locomotion`,
-  `project_tka_sequence_capture` (phone mocap → the phase-4 capture path).
-- Rules: `never-hand-roll`, `chip-primitives` (SegmentedControl),
-  `visualization-routing` (test page), `verification-protocol` (foot-variance
-  proof), `research-before-building` (reuse leg IK / contact cache, don't rebuild).
+  `project_tka_sequence_capture` (phase-4 capture path).
+- Rules: `never-hand-roll`, `chip-primitives`, `visualization-routing`,
+  `verification-protocol`, `research-before-building`.
