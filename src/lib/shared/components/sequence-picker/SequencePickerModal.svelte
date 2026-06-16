@@ -26,20 +26,17 @@
     showSourceToggle = true,
   }: Props = $props();
 
-  // Engine with optional beat count constraint — $derived.by ensures reactive
-  // prop access (requiredBeatCount, showSourceToggle) satisfies Svelte 5's
-  // state_referenced_locally check while remaining stable when props don't change.
-  const engine = $derived.by(() => {
-    const constraints = requiredBeatCount != null
+  // Engine created once at init. createBrowseEngine registers an internal
+  // $effect, so it must run in component-init scope — never inside $derived/
+  // $effect (that throws effect_in_teardown when the computation re-runs).
+  // Constraints capture the initial prop values, which are fixed per modal open.
+  const engine = createBrowseEngine({
+    persistKey: null,
+    constraints: requiredBeatCount != null
       ? [{ type: BrowseFilterType.LENGTH, value: requiredBeatCount, label: `${requiredBeatCount} beats` }]
-      : undefined;
-
-    return createBrowseEngine({
-      persistKey: null,
-      constraints,
-      allowSourceToggle: showSourceToggle,
-      sources: ["community", "my-library"],
-    });
+      : undefined,
+    allowSourceToggle: showSourceToggle,
+    sources: ["community", "my-library"],
   });
 
   let initialized = $state(false);
