@@ -596,6 +596,136 @@ const packageJson = JSON.parse(
   fs.readFileSync(path.resolve(dirname, "package.json"), "utf-8")
 );
 
+// Manual chunk assignment. Extracted to a named function so the DIAG_CHUNKS
+// diagnostic plugin can replay the EXACT same logic against the module graph.
+//
+// THE TDZ CYCLE (root cause of the 2026-06-16 prod outage):
+// "Cannot access 'SY' before initialization" was a `vendor-three ⇄ vendor`
+// circular chunk. The Svelte CLIENT runtime (which defines from_html/`SY`) fell
+// through to `vendor`, while threlte/scene-3d live in `vendor-three` and import
+// that runtime — so vendor-three → vendor. The back-edge vendor → vendor-three
+// came from `@threejs-kit/instanced-sprite-mesh` (a threlte-extras dep that
+// imports three but didn't match the three list). The cycle made vendor-three's
+// components run `from_html()` at module-eval before `vendor` initialized `SY`.
+//
+// THE FIX (keeps three lazy, no boot regression):
+//  1. Pin the Svelte runtime + its runtime-only deps (esm-env, clsx) into a
+//     `vendor-svelte` LEAF chunk. Both `vendor` and `vendor-three` now depend on
+//     it one-directionally — a leaf can't close a cycle. (The earlier "pinning
+//     svelte re-introduces a cycle" attempt left esm-env/clsx in `vendor`, so
+//     the svelte chunk wasn't a leaf. Including them is what makes it one.)
+//  2. Route `@threejs-kit/instanced-sprite-mesh` into `vendor-three`, killing the
+//     only `vendor → vendor-three` back-edge.
+// Verified acyclic via DIAG_CHUNKS — see scripts/.. build log (no "Circular chunk").
+const classifyChunk = (id: string): string | undefined => {
+  if (id.includes("node_modules")) {
+    // (1) Svelte client runtime + its runtime-only deps → own LEAF chunk.
+    // Must come first: threlte/app/three all import svelte, so it has to be
+    // isolated below everyone else. `node_modules/svelte/` matches the core
+    // package even under pnpm's nested layout (…/node_modules/svelte/…); it does
+    // NOT match `svelte-*` component libs or `@sveltejs/*`.
+    if (
+      id.includes("node_modules/svelte/") ||
+      id.includes("node_modules/esm-env/") ||
+      id.includes("node_modules/clsx/") ||
+      // SvelteKit's hydration serializer — imported by svelte's SSR renderer.
+      // Keep it in the leaf so vendor-svelte imports nothing from `vendor`
+      // (otherwise vendor ⇄ vendor-svelte via devalue, another chunk cycle).
+      id.includes("node_modules/devalue/")
+    ) {
+      return "vendor-svelte";
+    }
+    if (id.includes("fabric")) return "vendor-fabric";
+    if (id.includes("pdfjs-dist")) return "vendor-pdf";
+    // CSP-sensitive libs (use `new Function` — no unsafe-eval allowed).
+    // Let Rollup auto-generate dynamic chunks for these so they only
+    // load when consumers actually dynamic-import them.
+    if (
+      id.includes("pdf-lib") ||
+      id.includes("html2canvas") ||
+      id.includes("@mediapipe") ||
+      id.includes("peerjs") ||
+      id.includes("protobufjs") ||
+      // Rapier ships its wasm inlined as ~4MB base64. It is already
+      // dynamic-imported (rapier-world.ts), but a string return here
+      // overrides Rollup's split and forces it eager into vendor.
+      // Let Rollup honor the dynamic boundary so physics loads on demand.
+      id.includes("rapier3d") ||
+      // globe.gl drags its own three copy (three-globe) + d3 + a family of
+      // three-* geometry helpers. Used in a single tab, lazy-imported in
+      // ScanActivityTab — keep the whole family out of `vendor` so the dynamic
+      // boundary holds (otherwise each helper imports three → vendor → vendor-
+      // three back-edge, re-forming the TDZ cycle).
+      id.includes("globe.gl") ||
+      id.includes("three-globe") ||
+      id.includes("three-conic-polygon-geometry") ||
+      id.includes("three-geojson-geometry") ||
+      id.includes("three-slippy-map-globe") ||
+      // JSZip uses new Function for its worker pipeline
+      id.includes("jszip") ||
+      // Vercel AI SDK uses new Function for JSON schema compilation.
+      // Only needed by Tika module — let it lazy-load with the module.
+      id.includes("node_modules/ai/") ||
+      id.includes("@ai-sdk/") ||
+      // JSON schema validators that commonly use new Function
+      id.includes("ajv/") ||
+      id.includes("json-schema-to-ts")
+    ) {
+      // Returning undefined → Rollup decides (usually its own chunk
+      // based on dynamic import boundaries). Never lands in vendor.
+      return undefined;
+    }
+    // Three.js ecosystem → its own `vendor-three` chunk, OFF the boot
+    // path. Returning undefined here is NOT enough: Rollup then merges
+    // three into the universal runtime chunk. A named chunk is required.
+    // EVERY package that statically imports three must live here so no
+    // `vendor` module imports three (no vendor → vendor-three back-edge).
+    if (
+      id.includes("node_modules/three/") ||
+      id.includes("node_modules/three-mesh-bvh") ||
+      id.includes("node_modules/three-stdlib") ||
+      id.includes("node_modules/three-good-godrays") ||
+      id.includes("node_modules/three-viewport-gizmo") ||
+      id.includes("node_modules/three-instanced-uniforms-mesh") ||
+      id.includes("node_modules/three-perf") ||
+      id.includes("node_modules/three-player-controller") ||
+      id.includes("node_modules/troika") ||
+      id.includes("node_modules/maath") ||
+      id.includes("@threlte") ||
+      // threlte-postprocessing (un-scoped pkg, NOT @threlte/*) bundles three +
+      // postprocessing + @threlte/core. Must share three's chunk or its ~48
+      // effect modules each become a vendor → vendor-three back-edge.
+      id.includes("threlte-postprocessing") ||
+      // threlte-extras' InstancedSprite dep — imports three, so it must
+      // share three's chunk or it becomes a vendor → vendor-three back-edge.
+      id.includes("@threejs-kit") ||
+      id.includes("instanced-sprite-mesh") ||
+      // troika text + globe.gl render deps that statically import three.
+      // Without these they fall to `vendor` and re-form vendor ⇄ vendor-three.
+      id.includes("three-render-objects") ||
+      id.includes("webgl-sdf-generator") ||
+      id.includes("node_modules/postprocessing") ||
+      id.includes("camera-controls") ||
+      id.includes("node_modules/draco") ||
+      id.includes("basis_universal") ||
+      id.includes("meshoptimizer") ||
+      // App-side packages that statically import three (non
+      // tree-shakeable barrels) — must share three's chunk.
+      id.includes("@austencloud/scene-3d") ||
+      id.includes("@austencloud/camera-3d") ||
+      id.includes("@dgreenheck/ez-tree")
+    ) {
+      return "vendor-three";
+    }
+    if (id.includes("firebase")) return "vendor-firebase";
+    if (id.includes("dexie")) return "vendor-dexie";
+    // pixi.js is heavy (~500KB) - keep it in its own chunk
+    if (id.includes("pixi.js") || id.includes("pixi")) return "vendor-pixi";
+    return "vendor";
+  }
+  return undefined;
+};
+
 export default defineConfig(({ mode }) => ({
   esbuild: {
     pure: mode === 'production' ? ['console.log', 'console.debug', 'console.info'] : [],
@@ -656,6 +786,78 @@ export default defineConfig(({ mode }) => ({
         brotliSize: true,
         template: "treemap", // or "sunburst", "network"
       }),
+    // 🔎 CHUNK-CYCLE GUARD — opt-in diagnostic (DIAG_CHUNKS=1). Cross-chunk
+    // ESM cycles among manual chunks cause "Cannot access X before
+    // initialization" TDZ crashes at runtime (prod outage 2026-06-16, and
+    // earlier). Rollup only warns ("Circular chunk: …"); this replays
+    // classifyChunk() over the real module graph and prints every chunk cycle
+    // plus an example responsible module edge, and every edge INTO vendor-three
+    // (the usual back-edge source). Run before shipping manualChunks changes:
+    //   DIAG_CHUNKS=1 npx vite build  →  expect "CYCLES (0)".
+    process.env.DIAG_CHUNKS === "1" && {
+      name: "diag-chunk-cycle",
+      buildEnd() {
+        const short = (id: string) =>
+          id.replace(/^.*node_modules\//, "").split("?")[0];
+        const edges = new Map<string, Map<string, string>>(); // from -> to -> example
+        for (const id of this.getModuleIds()) {
+          const cFrom = classifyChunk(id);
+          if (!cFrom) continue;
+          const info = this.getModuleInfo(id);
+          if (!info) continue;
+          for (const dep of info.importedIds) {
+            const cTo = classifyChunk(dep);
+            if (!cTo || cTo === cFrom) continue;
+            if (!edges.has(cFrom)) edges.set(cFrom, new Map());
+            if (!edges.get(cFrom)!.has(cTo))
+              edges.get(cFrom)!.set(cTo, short(id) + " ==> " + short(dep));
+          }
+        }
+        console.log("\n##### DIAG chunk edges #####");
+        for (const [from, tos] of edges)
+          console.log("  " + from + " -> [" + [...tos.keys()].join(", ") + "]");
+        // Dump EVERY module edge that crosses INTO vendor-three from elsewhere
+        // (these are the back-edge candidates that can re-form a cycle).
+        const intoThree: string[] = [];
+        for (const id of this.getModuleIds()) {
+          const cFrom = classifyChunk(id);
+          if (!cFrom || cFrom === "vendor-three") continue;
+          const info = this.getModuleInfo(id);
+          if (!info) continue;
+          for (const dep of info.importedIds)
+            if (classifyChunk(dep) === "vendor-three")
+              intoThree.push(cFrom + ": " + short(id) + " ==> " + short(dep));
+        }
+        console.log(
+          "\n##### DIAG edges INTO vendor-three (" + intoThree.length + ") #####"
+        );
+        for (const e of [...new Set(intoThree)].sort()) console.log("  " + e);
+        // simple cycle detection (DFS)
+        const cycles: string[] = [];
+        const visit = (n: string, path: string[], seen: Set<string>) => {
+          for (const to of edges.get(n)?.keys() ?? []) {
+            const i = path.indexOf(to);
+            if (i !== -1) {
+              cycles.push(path.slice(i).concat(to).join(" -> "));
+              continue;
+            }
+            if (seen.has(to)) continue;
+            seen.add(to);
+            visit(to, path.concat(to), seen);
+          }
+        };
+        for (const from of edges.keys()) visit(from, [from], new Set([from]));
+        const uniq = [...new Set(cycles)];
+        console.log("\n##### DIAG CYCLES (" + uniq.length + ") #####");
+        for (const c of uniq) {
+          console.log("  CYCLE: " + c);
+          const segs = c.split(" -> ");
+          for (let i = 0; i < segs.length - 1; i++)
+            console.log("     " + edges.get(segs[i])?.get(segs[i + 1]));
+        }
+        console.log("##### DIAG END #####\n");
+      },
+    },
   ].filter(Boolean),
   resolve: {
     dedupe: ["three", "@threlte/core"],
@@ -684,101 +886,9 @@ export default defineConfig(({ mode }) => ({
         /mcp-server/,
       ],
       output: {
-        // Strategic chunking for your actual dependencies
-        manualChunks: (id) => {
-          if (id.includes("node_modules")) {
-            // NOTE: pinning the Svelte runtime to its own chunk was attempted to
-            // get three fully off boot, but it re-introduces a vendor↔runtime
-            // TDZ cycle. The runtime stays Rollup-managed. three is isolated to
-            // vendor-three below (down from the old 5.3MB-gz mega-vendor), but
-            // it still rides boot via the svelte↔threlte↔three weld — fully
-            // removing it needs @austencloud/scene-3d shipped tree-shakeable
-            // (sideEffects:false). Tracked as follow-up.
-            // Three.js + Threlte bridge svelte ↔ three, creating circular chunks
-            // if split from vendor. Keep them together in vendor to avoid TDZ errors.
-            if (id.includes("fabric")) return "vendor-fabric";
-            if (id.includes("pdfjs-dist")) return "vendor-pdf";
-            // CSP-sensitive libs (use `new Function` — no unsafe-eval allowed).
-            // Let Rollup auto-generate dynamic chunks for these so they only
-            // load when consumers actually dynamic-import them.
-            if (
-              id.includes("pdf-lib") ||
-              id.includes("html2canvas") ||
-              id.includes("@mediapipe") ||
-              id.includes("peerjs") ||
-              id.includes("protobufjs") ||
-              // Rapier ships its wasm inlined as ~4MB base64. It is already
-              // dynamic-imported (rapier-world.ts), but a string return here
-              // overrides Rollup's split and forces it eager into vendor.
-              // Let Rollup honor the dynamic boundary so physics loads on demand.
-              id.includes("rapier3d") ||
-              // globe.gl drags its own three copy (three-globe) + d3. Used in a
-              // single tab, lazy-imported in ScanActivityTab — keep it out of
-              // vendor so the dynamic boundary holds.
-              id.includes("globe.gl") ||
-              id.includes("three-globe") ||
-              // JSZip uses new Function for its worker pipeline
-              id.includes("jszip") ||
-              // Vercel AI SDK uses new Function for JSON schema compilation.
-              // Only needed by Tika module — let it lazy-load with the module.
-              id.includes("node_modules/ai/") ||
-              id.includes("@ai-sdk/") ||
-              // JSON schema validators that commonly use new Function
-              id.includes("ajv/") ||
-              id.includes("json-schema-to-ts")
-            ) {
-              // Returning undefined → Rollup decides (usually its own chunk
-              // based on dynamic import boundaries). Never lands in vendor.
-              return undefined;
-            }
-            // Three.js ecosystem → its own `vendor-three` chunk, OFF the boot
-            // path. Returning undefined here is NOT enough: Rollup then merges
-            // three into the universal Svelte/SvelteKit runtime chunk (which
-            // every entry imports statically), dragging ~4MB gz onto boot. A
-            // named chunk is required to separate it.
-            //
-            // The earlier TDZ ("Cannot access X before initialization") was a
-            // `vendor ↔ vendor-three` cycle: three landed in vendor-three while
-            // OTHER packages that import three (@austencloud/scene-3d etc.) fell
-            // through to `vendor`, so vendor imported vendor-three AND a
-            // three-eco lib imported a vendor util — a cycle. The fix is to put
-            // EVERY three-importing package in vendor-three so no `vendor`
-            // module imports three (no back-edge → no cycle). Three is reached
-            // only via dynamic imports (BackgroundFactory + ModuleRenderer), so
-            // this whole chunk loads on demand, never at boot.
-            if (
-              id.includes("node_modules/three/") ||
-              id.includes("node_modules/three-mesh-bvh") ||
-              id.includes("node_modules/three-stdlib") ||
-              id.includes("node_modules/three-good-godrays") ||
-              id.includes("node_modules/three-viewport-gizmo") ||
-              id.includes("node_modules/three-instanced-uniforms-mesh") ||
-              id.includes("node_modules/three-perf") ||
-              id.includes("node_modules/three-player-controller") ||
-              id.includes("node_modules/troika") ||
-              id.includes("node_modules/maath") ||
-              id.includes("@threlte") ||
-              id.includes("node_modules/postprocessing") ||
-              id.includes("camera-controls") ||
-              id.includes("node_modules/draco") ||
-              id.includes("basis_universal") ||
-              id.includes("meshoptimizer") ||
-              // App-side packages that statically import three (non
-              // tree-shakeable barrels) — must share three's chunk.
-              id.includes("@austencloud/scene-3d") ||
-              id.includes("@austencloud/camera-3d") ||
-              id.includes("@dgreenheck/ez-tree")
-            ) {
-              return "vendor-three";
-            }
-            if (id.includes("firebase")) return "vendor-firebase";
-            if (id.includes("dexie")) return "vendor-dexie";
-            // pixi.js is heavy (~500KB) - keep it in its own chunk
-            if (id.includes("pixi.js") || id.includes("pixi"))
-              return "vendor-pixi";
-            return "vendor";
-          }
-        },
+        // Strategic chunking — see classifyChunk() above the config for the
+        // full rationale (incl. the 2026-06-16 vendor-three ⇄ vendor TDZ fix).
+        manualChunks: classifyChunk,
       },
     },
     chunkSizeWarningLimit: 1000, // Warn for 1MB+ chunks
