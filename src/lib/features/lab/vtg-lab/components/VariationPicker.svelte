@@ -111,13 +111,13 @@
     padding: 1.5rem;
   }
   .sheet {
-    width: min(960px, 94vw);
-    max-height: 88vh;
+    width: 96vw;
+    max-height: 94vh;
     overflow-y: auto;
     background: rgba(16, 28, 38, 0.97);
     border: 1px solid color-mix(in srgb, var(--accent) 40%, rgba(255, 255, 255, 0.1));
     border-radius: 18px;
-    padding: 1rem 1.25rem 1.4rem;
+    padding: 1.25rem 1.75rem 1.75rem;
     box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
   }
   header {
@@ -149,7 +149,7 @@
 
   .card-grid {
     display: grid;
-    gap: 1rem;
+    gap: 1.5rem;
   }
   .card-cell {
     display: flex;
@@ -181,12 +181,12 @@
   .cap {
     display: inline-flex;
     align-items: baseline;
-    gap: 0.4rem;
-    font-size: 0.8rem;
+    gap: 0.5rem;
+    font-size: 1rem;
     letter-spacing: 0.05em;
     color: #fff;
   }
-  .cap .tag { font-size: 0.7rem; opacity: 0.6; }
+  .cap .tag { font-size: 0.85rem; opacity: 0.6; }
   @media (prefers-reduced-motion: reduce) {
     .card-cell { transition: none; }
   }
