@@ -65,7 +65,7 @@ export function buildMotionDatabase(
       const cosF = Math.cos(-cur.facing);
       const sinF = Math.sin(-cur.facing);
       for (let h = 0; h < HORIZONS_SEC.length; h++) {
-        const th = Math.min(clip.durationSec, t + HORIZONS_SEC[h]);
+        const th = Math.min(clip.durationSec, t + HORIZONS_SEC[h]!);
         const fut = sample(clip.clipId, th);
         const dxw = fut.rootXZ[0] - cur.rootXZ[0];
         const dzw = fut.rootXZ[1] - cur.rootXZ[1];
@@ -77,7 +77,7 @@ export function buildMotionDatabase(
       }
 
       frames.push({ clipId: clip.clipId, time: t });
-      for (let c = 0; c < FEATURE_STRIDE; c++) rows.push(row[c]);
+      for (let c = 0; c < FEATURE_STRIDE; c++) rows.push(row[c]!);
     }
   }
 

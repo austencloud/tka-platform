@@ -14,8 +14,8 @@ export function searchNearest(db: MotionDatabase, query: Float32Array): number {
     const base = r * FEATURE_STRIDE;
     let dist = 0;
     for (let c = 0; c < FEATURE_STRIDE; c++) {
-      const d = features[base + c] - query[c];
-      dist += columnWeights[c] * d * d;
+      const d = features[base + c]! - query[c]!;
+      dist += columnWeights[c]! * d * d;
       if (dist >= bestDist) break; // early-out
     }
     if (dist < bestDist) {

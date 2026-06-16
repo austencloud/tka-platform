@@ -36,7 +36,7 @@ export function buildTrajectoryQuery(
   const facing: number[] = [];
 
   for (let h = 0; h < HORIZONS_SEC.length; h++) {
-    const t = reachSec > 0 ? Math.min(1, HORIZONS_SEC[h] / reachSec) : 1;
+    const t = reachSec > 0 ? Math.min(1, HORIZONS_SEC[h]! / reachSec) : 1;
     const wx = current.position.x + (target.position.x - current.position.x) * t;
     const wz = current.position.z + (target.position.z - current.position.z) * t;
     const dxw = wx - current.position.x;
