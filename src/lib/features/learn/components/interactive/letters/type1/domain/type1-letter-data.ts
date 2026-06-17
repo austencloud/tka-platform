@@ -71,6 +71,9 @@ export const PROSPIN_LETTERS: Type1LetterData[] = [
     startPositionGroup: GridPositionGroup.GAMMA,
     endPositionGroup: GridPositionGroup.GAMMA,
     description: "Gamma to Gamma, both hands prospin",
+    vtgGroup: "qs",
+    rotationPattern: "pro",
+    leaderRotation: "pro",
   },
 ];
 
@@ -134,6 +137,9 @@ export const ANTISPIN_LETTERS: Type1LetterData[] = [
     startPositionGroup: GridPositionGroup.GAMMA,
     endPositionGroup: GridPositionGroup.GAMMA,
     description: "Gamma to Gamma, both hands antispin",
+    vtgGroup: "qs",
+    rotationPattern: "anti",
+    leaderRotation: "anti",
   },
 ];
 
@@ -199,6 +205,9 @@ export const HYBRID_LETTERS: Type1LetterData[] = [
     startPositionGroup: GridPositionGroup.GAMMA,
     endPositionGroup: GridPositionGroup.GAMMA,
     description: "Gamma to Gamma, blue antispin, red prospin",
+    vtgGroup: "qs",
+    rotationPattern: "hybrid",
+    leaderRotation: "pro",
   },
   {
     letter: Letter.V,
@@ -207,6 +216,9 @@ export const HYBRID_LETTERS: Type1LetterData[] = [
     startPositionGroup: GridPositionGroup.GAMMA,
     endPositionGroup: GridPositionGroup.GAMMA,
     description: "Gamma to Gamma, blue prospin, red antispin (reverse hybrid)",
+    vtgGroup: "qs",
+    rotationPattern: "hybrid",
+    leaderRotation: "anti",
   },
 ];
 

@@ -199,7 +199,9 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
 
     <!-- Motion pattern badge -->
     <div class="pattern-info">
-      {#if isHybrid}
+      {#if isHybrid && letterData.leaderRotation}
+        <span class="pattern-badge hybrid">Hybrid · leads {letterData.leaderRotation}</span>
+      {:else if isHybrid}
         <span class="pattern-badge hybrid">Hybrid</span>
       {:else if letterData.blueMotion === MotionType.PRO}
         <span class="pattern-badge pro">Pro-Pro</span>

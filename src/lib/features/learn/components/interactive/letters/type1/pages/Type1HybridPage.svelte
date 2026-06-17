@@ -7,6 +7,7 @@ Now uses shared Type1LetterLessonPage component
   import Type1LetterLessonPage from "./Type1LetterLessonPage.svelte";
   import { HYBRID_PAGE_CONFIG } from "../domain/type1-page-config";
   import type { Type1LetterData } from "../type1-letter-data";
+  import { PLAIN_QUARTER_SAME_EXPLANATION } from "@tka/domain";
 
   interface Props {
     currentLetter: Type1LetterData | undefined;
@@ -37,3 +38,25 @@ Now uses shared Type1LetterLessonPage component
   {onPrevious}
   showFinalSummary={true}
 />
+
+<aside class="quarter-same-note">
+  {#each PLAIN_QUARTER_SAME_EXPLANATION.split("\n\n") as para}
+    <p>{para}</p>
+  {/each}
+</aside>
+
+<style>
+  .quarter-same-note {
+    margin: 1rem auto 0;
+    max-width: 48ch;
+    padding: 1rem;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke);
+    border-radius: 12px;
+    color: var(--theme-text-dim);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+  .quarter-same-note p { margin: 0 0 0.75rem; }
+  .quarter-same-note p:last-child { margin-bottom: 0; }
+</style>
