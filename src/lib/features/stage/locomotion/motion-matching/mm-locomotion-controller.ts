@@ -39,6 +39,10 @@ const STOP_TOL = 0.05;
  *  so a finished pivot does not re-fire every frame. Family changes (including
  *  the settle to idle) are not gated, so stopping is prompt. */
 const MIN_DWELL_SEC = 0.12;
+/** A sign flip of remaining-to-target only counts as "arrived" (settle) when
+ *  the body was already within this of the target (rad, ~34°). Beyond it a flip
+ *  is a genuine re-target, not an overshoot to clamp. */
+const CROSS_NEAR = 0.6;
 
 /** Turn clips are one-shot pivots (play once, hold at end); idle/walk loop. */
 function isOneShot(clipId: string): boolean {
@@ -99,6 +103,11 @@ export class MmLocomotionController {
   /** Absolute world yaw to reach, in the same metric as {@link visYaw}. */
   private targetFacing = 0;
   private origin = { facing: 0 };
+  /** Signed remaining-to-target last frame; used to detect the frame the body
+   *  CROSSES the target so it settles instead of stepping over the deadzone and
+   *  running the clip to completion (which overshoots, then reverses). */
+  private lastRemaining = 0;
+  private hasLastRemaining = false;
 
   constructor(private readonly rig: RigBinding) {}
 
@@ -154,6 +163,7 @@ export class MmLocomotionController {
   /** Request a turn of `rad` relative to rest-forward (0 = face forward). */
   setTargetFacing(rad: number): void {
     this.targetFacing = this.restVis + rad;
+    this.hasLastRemaining = false; // new maneuver: don't cross-detect across it
   }
 
   /** Reorient-in-place slice: no translation target yet (kept for API parity). */
@@ -162,6 +172,7 @@ export class MmLocomotionController {
   /** Re-aim back at the recorded spawn facing. */
   stepBackToOrigin(): void {
     this.targetFacing = this.origin.facing;
+    this.hasLastRemaining = false;
   }
 
   update(dt: number): void {
@@ -188,10 +199,22 @@ export class MmLocomotionController {
     this.pose(this.current.clipId, this.current.time);
     const vis = this.visYaw();
     const remaining = angleDelta(this.targetFacing, vis);
-    const turning = Math.abs(remaining) > STOP_TOL;
+
+    // CROSSING: the body passed the target this frame (sign of `remaining`
+    // flipped while already near it). The steep clip finish can step clean over
+    // the narrow deadzone; without this, settle never fires, the one-shot clip
+    // runs to completion (overshooting the target), `remaining` flips sign and
+    // the OPPOSITE turn clip fires to correct — the intermittent end-of-step
+    // twitch. Treating a near-target crossing as arrival settles instead.
+    const crossed =
+      this.hasLastRemaining &&
+      Math.sign(remaining) !== Math.sign(this.lastRemaining) &&
+      Math.abs(this.lastRemaining) < CROSS_NEAR;
+
+    const turning = Math.abs(remaining) > STOP_TOL && !crossed;
 
     // Desired clip by INTENT: turn toward the target while outside the deadzone,
-    // idle once settled.
+    // idle once settled (or just crossed).
     const desired = turning
       ? remaining > 0
         ? this.leftClipId
@@ -213,9 +236,16 @@ export class MmLocomotionController {
       this.pose(desired, 0);
       const visAfter = this.visYaw();
 
-      // Settling to idle lands EXACTLY on the requested facing; a turn->turn or
-      // idle->turn switch preserves the current visible facing (continuity).
-      const landYaw = desired === this.idleClipId ? this.targetFacing : visBefore;
+      // Land the body without a yank. A clean in-deadzone settle lands EXACTLY
+      // on target (no overshoot to correct). A CROSSING settle stops at the
+      // current facing (≤ one frame-step past target) rather than snapping back
+      // to exact target. A turn->turn / idle->turn switch preserves continuity.
+      const landYaw =
+        desired === this.idleClipId
+          ? crossed
+            ? visBefore
+            : this.targetFacing
+          : visBefore;
       root.rotation.y += angleDelta(landYaw, visAfter);
       root.updateMatrixWorld(true);
 
@@ -241,5 +271,8 @@ export class MmLocomotionController {
     this._state.facing = this.visYaw();
     this._state.speed = turning ? 1 : 0;
     this._state.isMoving = turning;
+
+    this.lastRemaining = remaining;
+    this.hasLastRemaining = true;
   }
 }
