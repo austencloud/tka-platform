@@ -8,7 +8,6 @@
   turns are set the toggle shows a badge so active turns are never hidden.
 -->
 <script lang="ts">
-  import PropControlPair from "$lib/features/create/shared/components/sequence-actions/PropControlPair.svelte";
   import PropTurnsControl from "$lib/features/create/shared/components/sequence-actions/PropTurnsControl.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -77,22 +76,52 @@
 </script>
 
 <div class="oph">
-  <div class="oph-row">
-    <div class="oph-left">
-      {#if showFilter}
-        <div class="filter-seg">
-          <SegmentedControl
-            options={filterOptions}
-            value={filterValue}
-            size="sm"
-            color="accent"
-            onchange={(v) => onToggleContinuous?.(v === "continuous")}
-          />
-        </div>
-      {/if}
-    </div>
+  <div class="oph-bar">
+    {#if showFilter}
+      <div class="filter-seg">
+        <SegmentedControl
+          options={filterOptions}
+          value={filterValue}
+          size="sm"
+          color="accent"
+          onchange={(v) => onToggleContinuous?.(v === "continuous")}
+        />
+      </div>
+    {/if}
 
     <div class="oph-right">
+      {#if expanded}
+        <div
+          class="oph-steppers"
+          transition:slide={{ axis: "x", duration: 240, easing: quintOut }}
+        >
+          <div class="hand-stepper blue">
+            <span class="hand-tag">Blue</span>
+            <PropTurnsControl
+              color="blue"
+              turns={blueTurns}
+              rotationDirection={blueRotation}
+              showRotation={false}
+              compact
+              onTurnsChange={onBlueChange}
+              onRotationChange={() => {}}
+            />
+          </div>
+          <div class="hand-stepper red">
+            <span class="hand-tag">Red</span>
+            <PropTurnsControl
+              color="red"
+              turns={redTurns}
+              rotationDirection={redRotation}
+              showRotation={false}
+              compact
+              onTurnsChange={onRedChange}
+              onRotationChange={() => {}}
+            />
+          </div>
+        </div>
+      {/if}
+
       <button
         class="turns-toggle"
         class:active={expanded}
@@ -124,38 +153,6 @@
       {/if}
     </div>
   </div>
-
-  {#if expanded}
-    <div
-      class="oph-steppers"
-      transition:slide={{ duration: 240, easing: quintOut }}
-    >
-      <PropControlPair compact>
-        {#snippet blueContent()}
-          <PropTurnsControl
-            color="blue"
-            turns={blueTurns}
-            rotationDirection={blueRotation}
-            showRotation={false}
-            compact
-            onTurnsChange={onBlueChange}
-            onRotationChange={() => {}}
-          />
-        {/snippet}
-        {#snippet redContent()}
-          <PropTurnsControl
-            color="red"
-            turns={redTurns}
-            rotationDirection={redRotation}
-            showRotation={false}
-            compact
-            onTurnsChange={onRedChange}
-            onRotationChange={() => {}}
-          />
-        {/snippet}
-      </PropControlPair>
-    </div>
-  {/if}
 
   {#if showSpin}
     <div class="spin-strip" transition:slide={{ duration: 200, easing: quintOut }}>
@@ -202,28 +199,77 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  .oph-row {
+  /* One wrapping row: filter on the left, the turns cluster on the right.
+     flex-wrap keeps it a single line on a wide panel and drops the cluster to a
+     second line only when the panel is too narrow — never a tall stacked block. */
+  .oph-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 8px 12px;
     min-height: var(--min-touch-target, 44px);
-  }
-
-  .oph-left {
-    display: flex;
-    align-items: center;
   }
 
   .filter-seg {
     width: 240px;
     max-width: 50vw;
+    flex: 0 1 auto;
   }
 
   .oph-right {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 8px;
+    margin-left: auto;
+  }
+
+  /* Inline hand steppers — slim chips, label beside the +/- row (not stacked
+     above it like the glass card), so each is one ~44px row with no vertical air.
+     Reuses PropTurnsControl (compact, showRotation off) for the actual stepper. */
+  .oph-steppers {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  .hand-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 6px 3px 10px;
+    border-radius: 10px;
+    border: 1px solid;
+  }
+
+  .hand-stepper.blue {
+    --prop-color-rgb: 59, 130, 246;
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.4);
+  }
+
+  .hand-stepper.red {
+    --prop-color-rgb: 239, 68, 68;
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+
+  .hand-tag {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .hand-stepper.blue .hand-tag {
+    color: #9ec1ff;
+  }
+
+  .hand-stepper.red .hand-tag {
+    color: #ffaba6;
   }
 
   .turns-toggle,
@@ -292,11 +338,6 @@
   .spin-toggle:focus-visible {
     outline: 2px solid var(--theme-accent, #6ea8fe);
     outline-offset: 2px;
-  }
-
-  .oph-steppers {
-    display: flex;
-    justify-content: center;
   }
 
   /* Dash/static spin direction — labeled, separate from the steppers. */
