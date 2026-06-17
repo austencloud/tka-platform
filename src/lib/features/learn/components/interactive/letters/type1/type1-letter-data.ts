@@ -14,8 +14,6 @@ export interface Type1LetterData {
   startPositionGroup: GridPositionGroup;
   endPositionGroup: GridPositionGroup;
   description: string;
-  vtgGroup?: "ss" | "so" | "ts" | "to" | "qo" | "qs";
-  rotationPattern?: "pro" | "anti" | "hybrid";
   /** Present only for quarter-same letters (S, T, U, V). */
   leaderRotation?: "pro" | "anti";
 }

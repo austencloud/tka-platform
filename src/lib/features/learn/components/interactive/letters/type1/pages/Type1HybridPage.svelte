@@ -39,11 +39,13 @@ Now uses shared Type1LetterLessonPage component
   showFinalSummary={true}
 />
 
-<aside class="quarter-same-note">
-  {#each PLAIN_QUARTER_SAME_EXPLANATION.split("\n\n") as para}
-    <p>{para}</p>
-  {/each}
-</aside>
+{#if currentLetter?.leaderRotation}
+  <aside class="quarter-same-note">
+    {#each PLAIN_QUARTER_SAME_EXPLANATION.split("\n\n") as para}
+      <p>{para}</p>
+    {/each}
+  </aside>
+{/if}
 
 <style>
   .quarter-same-note {
