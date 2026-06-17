@@ -44,6 +44,12 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
 import type { SheetType } from "../../navigation/services/types";
   import { authState } from "../../auth/state/auth-state.svelte";
   import { authDrawerState } from "../../auth/state/auth-drawer-state.svelte";
+  import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
+  import {
+    anonymousImportPrompt,
+    confirmAnonymousImport,
+    cancelAnonymousImport,
+  } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
   import ErrorScreen from "../../foundation/ui/ErrorScreen.svelte";
   import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
   import { initializeTheme, updateTheme as updateThemeService } from "../../theme/services/theme-service";
@@ -639,6 +645,18 @@ import type { SheetType } from "../../navigation/services/types";
       {/await}
     {/if}
   {/if}
+
+  <!-- Anonymous-guest collision import offer (open via promptAnonymousImport) -->
+  <ConfirmDialog
+    bind:isOpen={anonymousImportPrompt.isOpen}
+    variant="info"
+    title="Keep what you just made?"
+    message={`Add the ${anonymousImportPrompt.count} sequence${anonymousImportPrompt.count === 1 ? "" : "s"} you created as a guest to this account?`}
+    confirmText="Import"
+    cancelText="Not now"
+    onConfirm={confirmAnonymousImport}
+    onCancel={cancelAnonymousImport}
+  />
 
   <!-- Send Sequence Sheet (global overlay for "Send to..." actions) -->
   <SendSequenceSheetHost />
