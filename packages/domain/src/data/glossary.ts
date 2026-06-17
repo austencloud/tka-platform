@@ -319,7 +319,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "general"
   },
   "dual-shift": {
-    definition: "A letter type (Type 1) where both hands shift simultaneously to adjacent points. The largest type with 22 letters (A through V). Organized into 6 groups by timing and direction: split-same (A,B,C), split-opposite (D,E,F), together-same (G,H,I), together-opposite (J,K,L), quarter-opposite (M,N,O), and quarter-same (S,T,U,V). Five groups have 3 letters; quarter-same has 4 because leader/follower in gamma breaks color-swap invariance for hybrids. See domain topic 'stuv-anomaly' for the full explanation.",
+    definition: "A letter type (Type 1) where both hands shift simultaneously to adjacent points. The largest type with 22 letters (A through V). Organized by VTG timing and direction into pro+anti+hybrid triads: split-same (A,B,C), together-opposite (D,E,F), together-same (G,H,I), split-opposite (J,K,L), and quarter-opposite (M,N,O and P,Q,R). The exception is quarter-same (S,T,U,V), which has 4: same-direction shifts at a right angle (gamma) have a leader and follower, which splits the hybrid into U and V (breaking color-swap invariance). See domain topic 'stuv-anomaly' for the full explanation.",
     examples: ["Letters A through V", "A: both hands shift, both pro", "C: both hands shift, hybrid (one pro, one anti)", "S,T,U,V: quarter-same group has 4 letters due to leader/follower"],
     relatedTerms: ["shift", "letter", "leader-follower"],
     category: "letterType"

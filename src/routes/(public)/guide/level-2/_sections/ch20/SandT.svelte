@@ -4,7 +4,7 @@
 
 <GuideSection id="s-and-t" title="S and T">
   <p>
-    S and T are a different type of hybrid. Even though their motions are a matching shift type (pro|pro, anti|anti), each has one hand leading and the other following. Though this doesn't affect their base forms, it produces additional variations when modifying their motions. S and T are the only letters with this unique quality.
+    S and T are a different type of hybrid. Even though their motions are a matching shift type (pro|pro, anti|anti), each has one hand leading and the other following. Though this doesn't affect their base forms, it produces additional variations when modifying their motions. S and T are the only letters that have a leader and follower while both hands share the same motion type.
   </p>
 
   <p>
