@@ -1180,6 +1180,7 @@ service cloud.firestore {
 
       // One vote per user per sequence (enforced by document ID pattern)
       allow create: if isAuthenticated()
+        && isFullUser()
         && isAgeVerified()
         && voteId == request.auth.uid + '_' + request.resource.data.sequenceId
         && request.resource.data.voterId == request.auth.uid;
@@ -1203,6 +1204,7 @@ service cloud.firestore {
 
       // Age-verified users can submit reports
       allow create: if isAuthenticated()
+        && isFullUser()
         && isAgeVerified()
         && request.resource.data.reporterId == request.auth.uid;
 

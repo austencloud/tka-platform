@@ -124,6 +124,21 @@ describe("anonymous guests: community write paths are denied", () => {
       setDoc(doc(db, `festivalSubmissions/fs1`), {})
     );
   });
+  it("cannot cast a hallOfShame vote", async () => {
+    const db = anonCtx().firestore();
+    await assertFails(
+      setDoc(doc(db, `hallOfShameVotes/${ANON_UID}_seqX`), {
+        voterId: ANON_UID,
+        sequenceId: "seqX",
+      })
+    );
+  });
+  it("cannot create a hallOfShame report", async () => {
+    const db = anonCtx().firestore();
+    await assertFails(
+      setDoc(doc(db, `hallOfShameReports/r1`), { reporterId: ANON_UID })
+    );
+  });
 });
 
 describe("full users: community write paths succeed", () => {
