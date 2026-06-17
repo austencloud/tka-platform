@@ -31,6 +31,7 @@ import type { UndoMetadata } from "../services/undo-manager";
 import { UndoOperationType } from "../services/undo-manager";
 import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
 import type { IFilterPersister } from "../../construct/option-picker/services/filter-persister";
+import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
 
 /**
  * Minimal interface for createModuleState dependency
@@ -185,6 +186,10 @@ export function createConstructTabState(
     if (source !== "user" || !sequenceState) {
       return;
     }
+
+    // Provision a guest identity the moment a user starts building, so their
+    // work persists and survives refresh. Non-blocking: never delays the UI.
+    void ensureGuestIdentity();
 
     // Get the current grid mode from the start position picker to ensure
     // the sequence is created with the correct grid mode (Diamond or Box)
