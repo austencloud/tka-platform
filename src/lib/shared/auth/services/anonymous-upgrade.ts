@@ -14,6 +14,7 @@ import {
   linkWithPopup,
   signInWithCredential,
   signInWithEmailAndPassword,
+  signInWithEmailLink,
   type AuthError,
 } from "firebase/auth";
 import { getAuthInstance } from "$lib/shared/auth/firebase";
@@ -137,4 +138,19 @@ export async function importDrafts(drafts: LibrarySequence[]): Promise<number> {
     }
   }
   return imported;
+}
+
+/**
+ * Magic-link collision: capture anon drafts, then sign into the existing
+ * account via the email link. Returns the captured drafts to offer importing.
+ */
+export async function upgradeMagicLinkCollision(
+  anonUid: string,
+  email: string,
+  link: string
+): Promise<LibrarySequence[]> {
+  const auth = await getAuthInstance();
+  const drafts = await captureAnonDrafts(anonUid);
+  await signInWithEmailLink(auth, email, link);
+  return drafts;
 }

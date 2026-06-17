@@ -115,12 +115,48 @@
         return;
       }
 
-      // Sign in with the email link
-      const result = await signInWithEmailLink(
-        auth,
-        savedEmail,
-        window.location.href
-      );
+      // Sign in with the email link. If an anonymous session survived the
+      // round-trip, LINK the email credential onto the anon user in place
+      // (preserving its uid + data) instead of minting a fresh account.
+      const link = window.location.href;
+      if (auth.currentUser?.isAnonymous) {
+        const { EmailAuthProvider, linkWithCredential } = await import(
+          "firebase/auth"
+        );
+        const anonUid = auth.currentUser.uid;
+        const credential = EmailAuthProvider.credentialWithLink(
+          savedEmail,
+          link
+        );
+        try {
+          await linkWithCredential(auth.currentUser, credential);
+        } catch (linkErr) {
+          const code = (linkErr as { code?: string })?.code;
+          if (
+            code === "auth/credential-already-in-use" ||
+            code === "auth/email-already-in-use"
+          ) {
+            // Email already belongs to a permanent account: sign into it and
+            // offer to import the anon's drafts.
+            const { upgradeMagicLinkCollision } = await import(
+              "$lib/shared/auth/services/anonymous-upgrade"
+            );
+            const { promptAnonymousImport } = await import(
+              "$lib/shared/auth/state/anonymous-import-prompt.svelte"
+            );
+            const drafts = await upgradeMagicLinkCollision(
+              anonUid,
+              savedEmail,
+              link
+            );
+            promptAnonymousImport(drafts);
+          } else {
+            throw linkErr;
+          }
+        }
+      } else {
+        await signInWithEmailLink(auth, savedEmail, link);
+      }
 
       // Clear the email from storage
       window.localStorage.removeItem("emailForSignIn");
