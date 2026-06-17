@@ -17,6 +17,7 @@
   import { goto } from "$app/navigation";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { setDesktopSidebarForcedHidden } from "$lib/shared/layout/desktop-sidebar-state.svelte";
+  import { suppressBackground, releaseBackground } from "$lib/shared/background/shared/state/background-suppression.svelte";
 
   interface Props {
     /** False when mounted-but-hidden (keep-alive). Default true so the module
@@ -80,6 +81,13 @@
   // yields to the browser's task queue, ensuring the overlay is visible first.
   let deferredReady = $state(false);
   onMount(() => {
+    // Pause the global animated background while the museum is open. Its rAF
+    // runs even when fully occluded by the museum's WebGL canvas, and a trace
+    // of the 2D->3D flip showed the ocean background eating ~40% of the main
+    // thread behind the scene, stalling the transition. See spec
+    // docs/superpowers/specs/2026-06-16-background-suppression-design.md.
+    suppressBackground("museum");
+
     // rAF ensures we're past the first frame, setTimeout ensures the browser
     // has actually painted the overlay before we start the heavy 3D mount.
     requestAnimationFrame(() => {
@@ -88,6 +96,8 @@
       }, 0);
     });
     return () => {
+      // Resume the global animated background for the rest of the app.
+      releaseBackground("museum");
       // Restore sidebar when leaving museum
       setDesktopSidebarForcedHidden(false);
       // Tear down the village sim - a module-scope singleton that would
