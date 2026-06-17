@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" href="/pwa/favicon.png" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pulse → Pressure Shockwave (sketch)</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #07090f; color: #e8ecf4;
+    font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  .wrap { display: grid; grid-template-columns: 1fr 280px; height: 100vh; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .panel { padding: 16px 18px; background: #0c1018; border-left: 1px solid #1d2433;
+    overflow-y: auto; }
+  h1 { font-size: 15px; margin: 0 0 2px; letter-spacing: .2px; }
+  .sub { font-size: 11px; color: #7a869c; margin: 0 0 16px; }
+  .row { margin: 0 0 14px; }
+  .row label { display: flex; justify-content: space-between; font-size: 12px;
+    color: #aeb8cc; margin-bottom: 5px; }
+  .row label b { color: #e8ecf4; font-variant-numeric: tabular-nums; font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: #5fd0ff; }
+  .seg { display: flex; gap: 6px; margin-bottom: 14px; }
+  .seg button { flex: 1; padding: 7px 0; font-size: 12px; border-radius: 8px;
+    border: 1px solid #2a3346; background: #131a26; color: #aeb8cc; cursor: pointer; }
+  .seg button.on { background: #1b4a63; border-color: #5fd0ff; color: #dff4ff; }
+  .fire { width: 100%; padding: 10px; margin-top: 4px; border-radius: 9px; cursor: pointer;
+    border: 1px solid #6b4ad6; background: linear-gradient(180deg,#3a2a78,#241a55); color: #ece6ff; font-weight: 600; }
+  .readout { font-size: 11px; color: #7a869c; margin-top: 14px; border-top: 1px solid #1d2433; padding-top: 12px; }
+  .readout span { color: #5fd0ff; font-variant-numeric: tabular-nums; }
+  .hint { font-size: 11px; color: #5c6678; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="c"></canvas>
+  <div class="panel">
+    <h1>Pulse → Pressure Shockwave</h1>
+    <p class="sub">Two tips orbit at varying speed. Each emits energy-encoded rings. Drag the knobs.</p>
+
+    <div class="seg" id="palette">
+      <button data-pal="sonar" class="on">Sonar</button>
+      <button data-pal="aurora">Aurora</button>
+      <button data-pal="ember">Ember</button>
+    </div>
+
+    <div class="row"><label>velocityScale <b id="vVel">0.60</b></label>
+      <input id="velocityScale" type="range" min="0" max="1" step="0.01" value="0.6"></div>
+    <div class="row"><label>asymmetry (Mach cone) <b id="vAsym">0.50</b></label>
+      <input id="asymmetry" type="range" min="0" max="1" step="0.01" value="0.5"></div>
+    <div class="row"><label>chromatic fringe <b id="vChr">0.35</b></label>
+      <input id="chromatic" type="range" min="0" max="1" step="0.01" value="0.35"></div>
+    <div class="row"><label>flash (detonation) <b id="vFla">0.60</b></label>
+      <input id="flash" type="range" min="0" max="1" step="0.01" value="0.6"></div>
+    <div class="row"><label>harmonics (overtones) <b id="vHar">0.30</b></label>
+      <input id="harmonics" type="range" min="0" max="1" step="0.01" value="0.3"></div>
+    <div class="row"><label>intensity <b id="vInt">0.85</b></label>
+      <input id="intensity" type="range" min="0.1" max="1" step="0.01" value="0.85"></div>
+    <div class="row"><label>reach (max radius) <b id="vRea">0.60</b></label>
+      <input id="reach" type="range" min="0.1" max="1" step="0.01" value="0.6"></div>
+    <div class="row"><label>tip speed range <b id="vSpd">1.6</b></label>
+      <input id="speed" type="range" min="0.2" max="3" step="0.05" value="1.6"></div>
+
+    <button class="fire" id="fire">⚡ Fire a hard beat (max energy)</button>
+
+    <div class="readout">
+      blue energy <span id="rBlue">0.00</span><br>
+      red energy <span id="rRed">0.00</span><br>
+      live rings <span id="rRings">0</span>
+    </div>
+    <p class="hint">Watch the rings squash toward their travel direction as asymmetry × energy rises — that's the Doppler/Mach front. Hard hits fringe RGB and flash at the origin.</p>
+  </div>
+</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0, DPR = Math.min(2, window.devicePixelRatio || 1);
+function resize() {
+  const r = canvas.getBoundingClientRect();
+  W = r.width; H = r.height;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize); resize();
+
+const PALETTES = {
+  sonar:  { body: [95, 208, 255], fade: [40, 110, 160] },
+  aurora: { body: [120, 255, 190], fade: [60, 140, 255] },
+  ember:  { body: [255, 150, 70],  fade: [255, 70, 40] },
+};
+let palette = 'sonar';
+
+const P = {
+  velocityScale: 0.6, asymmetry: 0.5, chromatic: 0.35, flash: 0.6,
+  harmonics: 0.3, intensity: 0.85, reach: 0.6, speed: 1.6,
+};
+function bind(id, key, fmt) {
+  const el = document.getElementById(id);
+  const out = document.getElementById('v' + id[0].toUpperCase() + id.slice(1,3));
+  el.addEventListener('input', () => { P[key] = +el.value; if (out) out.textContent = (fmt||((x)=>x.toFixed(2)))(+el.value); });
+}
+bind('velocityScale','velocityScale'); bind('asymmetry','asymmetry');
+bind('chromatic','chromatic'); bind('flash','flash'); bind('harmonics','harmonics');
+bind('intensity','intensity'); bind('reach','reach');
+document.getElementById('speed').addEventListener('input', e => {
+  P.speed = +e.target.value; document.getElementById('vSpd').textContent = P.speed.toFixed(2);
+});
+document.querySelectorAll('#palette button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#palette button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); palette = b.dataset.pal;
+}));
+
+// --- ring pool (mirrors proposed renderer) ---
+const REF_SPEED = 900;        // px/s reference for energy normalization
+const LIFETIME = 1.1;         // s
+const MAX_RINGS = 110;        // hard cap (perf)
+let rings = [];
+function spawn(x, y, energy, travelAngle, ampScale) {
+  if (rings.length >= MAX_RINGS) rings.shift();
+  rings.push({ x, y, age: 0, energy, travelAngle, amp: ampScale });
+}
+function trigger(x, y, energy, travelAngle) {
+  spawn(x, y, energy, travelAngle, 1);
+  // harmonic train: trailing overtones at decreasing amplitude
+  const n = Math.round(P.harmonics * 2);
+  for (let i = 1; i <= n; i++) {
+    setTimeout(() => spawn(x, y, energy, travelAngle, 1 - i * 0.3), i * 90);
+  }
+}
+
+const tips = [
+  { ph: 0,        color: [80, 170, 255], px: 0, py: 0, lastSpawn: -1 },
+  { ph: Math.PI,  color: [255, 90, 110], px: 0, py: 0, lastSpawn: -1 },
+];
+let t = 0;
+
+function easeOut(p) { return 1 - (1 - p) * (1 - p); }
+
+function drawRing(r) {
+  const pal = PALETTES[palette];
+  const p = r.age / LIFETIME;
+  if (p >= 1) return false;
+  const eo = easeOut(p);
+  const baseR = (20 + P.reach * 230) * (0.45 + 0.55 * P.velocityScale * r.energy) * r.amp;
+  const R = baseR * eo;
+  const fade = (1 - p) * (1 - p);
+  const peak = P.intensity * (0.45 + 0.55 * r.energy) * fade * r.amp;
+  const asym = P.asymmetry * r.energy;
+  const ca = Math.cos(r.travelAngle), sa = Math.sin(r.travelAngle);
+
+  // sampled deformed path (limaçon: bunches toward travel direction).
+  // NO per-segment shadowBlur — that's the perf killer. One band fill + a few
+  // plain strokes. This is the constraint the production renderer inherits.
+  const SEG = 48;
+  function tracePath(radiusMul, dx, dy, fromSeg, toSeg) {
+    const a = fromSeg ?? 0, b = toSeg ?? SEG;
+    for (let i = a; i <= b; i++) {
+      const th = (i / SEG) * Math.PI * 2;
+      const rr = R * radiusMul * (1 - asym * Math.cos(th - r.travelAngle));
+      const x = r.x + dx + Math.cos(th) * rr;
+      const y = r.y + dy + Math.sin(th) * rr;
+      if (i === a) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+  }
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+
+  // chromatic fringe on high-energy rings (2 thin offset strokes, no shadow)
+  const chr = P.chromatic * r.energy;
+  if (chr > 0.02) {
+    const off = R * 0.05 * chr;
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(255,40,40,${peak * 0.5})`;
+    ctx.beginPath(); tracePath(1, ca * off, sa * off); ctx.stroke();
+    ctx.strokeStyle = `rgba(40,80,255,${peak * 0.5})`;
+    ctx.beginPath(); tracePath(1, -ca * off, -sa * off); ctx.stroke();
+  }
+
+  // soft colored band (wake): outer path + inner path, even-odd fill = a deformed
+  // annulus. One fill call, no shadow. This replaces the wide blurred stroke.
+  ctx.beginPath();
+  tracePath(1.0, 0, 0);
+  tracePath(0.78, 0, 0);
+  ctx.fillStyle = `rgba(${pal.fade.join(',')},${peak * 0.5})`;
+  ctx.fill('evenodd');
+
+  // hot leading front — single thin bright stroke over the whole ring (body color)…
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = `rgba(${pal.body.join(',')},${peak})`;
+  ctx.beginPath(); tracePath(1, 0, 0); ctx.stroke();
+
+  // …then a brighter white wedge ONLY across the leading arc (where it bunches).
+  // A handful of segments centred on travelAngle — cheap, gives the white-hot front.
+  const center = ((r.travelAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  const cSeg = (center / (Math.PI * 2)) * SEG;
+  const wedge = 8; // segments each side
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = `rgba(255,255,255,${peak * 0.9})`;
+  ctx.beginPath();
+  tracePath(1, 0, 0, Math.floor(cSeg - wedge), Math.ceil(cSeg + wedge));
+  ctx.stroke();
+
+  // origin detonation flash (collapses over first ~140ms)
+  const fl = P.flash * r.amp;
+  if (fl > 0.02 && r.age < 0.14) {
+    const ft = r.age / 0.14;
+    const fr = (10 + 26 * P.intensity) * (1 - ft) * (0.6 + r.energy);
+    const fa = fl * (1 - ft) * peak * 2.2;
+    const g = ctx.createRadialGradient(r.x, r.y, 0, r.x, r.y, Math.max(1, fr));
+    g.addColorStop(0, `rgba(255,255,255,${Math.min(1, fa)})`);
+    g.addColorStop(0.5, `rgba(${pal.body.join(',')},${fa * 0.6})`);
+    g.addColorStop(1, `rgba(${pal.body.join(',')},0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(r.x - fr, r.y - fr, fr * 2, fr * 2);
+  }
+
+  ctx.restore();
+  return true;
+}
+
+let prevTime = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - prevTime) / 1000); prevTime = now;
+  t += dt;
+  ctx.clearRect(0, 0, W, H);
+  // faint vignette backdrop
+  ctx.fillStyle = '#07090f'; ctx.fillRect(0, 0, W, H);
+
+  const cx = W * 0.5, cy = H * 0.5;
+  const orbit = Math.min(W, H) * 0.26;
+  // speed varies sinusoidally so energy pumps up and down
+  const speedPump = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(t * 1.3));
+  const angVel = P.speed * speedPump * 2.2;
+
+  for (const tip of tips) {
+    tip.ph += angVel * dt;
+    const wobble = orbit * (0.85 + 0.15 * Math.sin(t * 2 + tip.ph));
+    const nx = cx + Math.cos(tip.ph) * wobble;
+    const ny = cy + Math.sin(tip.ph) * wobble;
+    const dx = nx - tip.px, dy = ny - tip.py;
+    const sp = Math.hypot(dx, dy) / Math.max(dt, 1e-4);
+    tip.energy = Math.min(1, sp / REF_SPEED);
+    tip.travelAngle = Math.atan2(dy, dx);
+    tip.px = nx; tip.py = ny;
+    // continuous trigger: rate rises with speed
+    const interval = 1 / (2 * (1 + tip.energy * 2));
+    if (t - tip.lastSpawn > interval) {
+      trigger(nx, ny, tip.energy, tip.travelAngle);
+      tip.lastSpawn = t;
+    }
+  }
+
+  for (let i = rings.length - 1; i >= 0; i--) {
+    rings[i].age += dt;
+    if (!drawRing(rings[i])) rings.splice(i, 1);
+  }
+
+  // draw the tips themselves (small markers)
+  for (const tip of tips) {
+    ctx.beginPath(); ctx.arc(tip.px, tip.py, 5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgb(${tip.color.join(',')})`; ctx.fill();
+  }
+
+  document.getElementById('rBlue').textContent = (tips[0].energy || 0).toFixed(2);
+  document.getElementById('rRed').textContent = (tips[1].energy || 0).toFixed(2);
+  document.getElementById('rRings').textContent = rings.length;
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+document.getElementById('fire').addEventListener('click', () => {
+  for (const tip of tips) trigger(tip.px, tip.py, 1, tip.travelAngle || 0);
+});
+</script>
+</body>
+</html>

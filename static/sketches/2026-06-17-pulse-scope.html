@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" href="/pwa/favicon.png" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pulse rehaul — full scope (presets + customize)</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: #07090f; color: #e8ecf4;
+    font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  .head { padding: 16px 22px 8px; }
+  .head h1 { font-size: 17px; margin: 0 0 4px; }
+  .head p { font-size: 12px; color: #8893a8; margin: 0; max-width: 880px; }
+  .head .new { color: #5fd0ff; }
+  .wrap { display: grid; grid-template-columns: 1fr 300px; gap: 20px; padding: 12px 22px 40px; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: #6f7b92;
+    margin: 14px 0 10px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .tile { background: #0b0f17; border: 1px solid #1b2230; border-radius: 12px; overflow: hidden;
+    cursor: pointer; transition: border-color .12s; }
+  .tile.sel { border-color: #5fd0ff; }
+  .tile canvas { display: block; width: 100%; height: 150px; }
+  .tile .meta { padding: 8px 11px 10px; border-top: 1px solid #141a26; }
+  .tile .meta b { font-size: 13px; }
+  .tile .meta .d { font-size: 11px; color: #7a869c; margin-top: 2px; }
+  .tile .tags { font-size: 10px; color: #5c6678; margin-top: 5px; font-variant-numeric: tabular-nums; }
+
+  .panel { background: #0c1018; border: 1px solid #1d2433; border-radius: 12px; padding: 16px;
+    align-self: start; position: sticky; top: 12px; }
+  .panel h3 { margin: 0 0 2px; font-size: 14px; }
+  .panel .ps { font-size: 11px; color: #7a869c; margin: 0 0 14px; }
+  .bigwrap { background: #060810; border: 1px solid #161d2b; border-radius: 9px; margin-bottom: 14px; }
+  .bigwrap canvas { display: block; width: 100%; height: 170px; }
+  .grp { margin-bottom: 12px; }
+  .grp .gl { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: #6f7b92; margin-bottom: 6px; }
+  .seg { display: flex; gap: 5px; flex-wrap: wrap; }
+  .seg button { flex: 1 1 auto; padding: 6px 8px; font-size: 11px; border-radius: 7px;
+    border: 1px solid #2a3346; background: #131a26; color: #aeb8cc; cursor: pointer; white-space: nowrap; }
+  .seg button.on { background: #1b4a63; border-color: #5fd0ff; color: #dff4ff; }
+  .row { margin: 0 0 9px; }
+  .row label { display: flex; justify-content: space-between; font-size: 11px; color: #aeb8cc; margin-bottom: 3px; }
+  .row label .nb { color: #07090f; background: #5fd0ff; border-radius: 4px; padding: 0 5px; font-size: 9px;
+    font-weight: 700; margin-left: 6px; }
+  .row label b { color: #e8ecf4; font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: #5fd0ff; margin: 0; }
+  .legend { font-size: 11px; color: #7a869c; margin-top: 6px; }
+  .legend .nb { color: #07090f; background: #5fd0ff; border-radius: 4px; padding: 0 5px; font-size: 9px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="head">
+  <h1>Pulse rehaul — full scope</h1>
+  <p>The renderer gains energy-encoding: every ring records the tip speed at the moment it was born and uses it to drive size, brightness, Mach-cone deform, chromatic fringe and a detonation flash. Pulse drops from 6 presets to the 4 strongest, re-tuned to spread across that space. New knobs flagged <span class="new">NEW</span>. Click a preset tile to load it into the panel and edit live.</p>
+</div>
+<div class="wrap">
+  <div>
+    <h2>The 4 presets, under the new engine</h2>
+    <div class="grid" id="grid"></div>
+  </div>
+  <div class="panel">
+    <h3 id="pName">Customize</h3>
+    <p class="ps" id="pSummary"></p>
+    <div class="bigwrap"><canvas id="big"></canvas></div>
+    <div id="knobs"></div>
+    <p class="legend"><span class="nb">NEW</span> = field added by this rehaul. Everything else exists today.</p>
+  </div>
+</div>
+<script>
+// ---- palettes (from pulse-palettes.ts registry) ----
+function hx(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+const PAL = {
+  sonar:  { ring: hx('#38bdf8'), fade: hx('#0c4a6e') },
+  ripple: { ring: hx('#93c5fd'), fade: hx('#bfdbfe') },
+  aurora: { ring: hx('#a855f7'), fade: hx('#22d3ee') },
+  neon:   { ring: hx('#f0abfc'), fade: hx('#fb923c') },
+  ember:  { ring: hx('#ff6000'), fade: hx('#ffcc00') },
+  void:   { ring: hx('#404060'), fade: hx('#101020') },
+};
+
+// ---- presets: existing fields + NEW (velocityScale, asymmetry, chromatic, flash, harmonics) ----
+const PRESETS = [
+  { id:'shockwave', name:'Shockwave', desc:'Headline: hard Mach deform + fringe + flash', palette:'ember',
+    trigger:'velocity', style:'glow', intensity:.9, reach:.8, lifetime:.6, thickness:.6,
+    velocityScale:.9, asymmetry:.85, chromatic:.6, flash:.85, harmonics:.1 },
+  { id:'sonar', name:'Sonar', desc:'Pure clean concentric circles — zero deform', palette:'sonar',
+    trigger:'beat', style:'glow', intensity:.7, reach:.7, lifetime:1.0, thickness:.3,
+    velocityScale:.3, asymmetry:0, chromatic:0, flash:.3, harmonics:.15 },
+  { id:'ripple', name:'Ripple', desc:'Soft concentric water, overtone-driven', palette:'ripple',
+    trigger:'continuous', style:'glow', intensity:.5, reach:.6, lifetime:1.2, thickness:.5,
+    velocityScale:.35, asymmetry:.05, chromatic:.05, flash:.25, harmonics:.85 },
+  { id:'void', name:'Void', desc:'Dark, aggressive velocity deform', palette:'void',
+    trigger:'velocity', style:'stroke', intensity:.8, reach:.7, lifetime:.7, thickness:.4,
+    velocityScale:.7, asymmetry:.6, chromatic:.35, flash:.6, harmonics:.2 },
+];
+
+const REF_SPEED = 120;  // demo-calibrated so energy actually sweeps 0..1 in a small tile
+
+function easeOut(p){ return 1-(1-p)*(1-p); }
+
+// cheap deformed-front draw (no per-segment shadowBlur — production constraint)
+function drawRing(ctx, r, prm, pal){
+  const p = r.age / prm.lifetime; if (p>=1) return false;
+  const eo = easeOut(p);
+  const baseR = (16 + prm.reach*150) * (0.45 + 0.55*prm.velocityScale*r.energy) * r.amp;
+  const R = baseR*eo;
+  const fade=(1-p)*(1-p);
+  const peak = prm.intensity*(0.45+0.55*r.energy)*fade*r.amp;
+  // base directional floor + energy component: a preset with high asymmetry reads
+  // as a teardrop even at rest, then deforms HARDER on fast swings.
+  const asym = prm.asymmetry*(0.4 + 0.6*r.energy);
+  const ca=Math.cos(r.ta), sa=Math.sin(r.ta);
+  const SEG=40;
+  function trace(mul,dx,dy,a,b){ a=a??0;b=b??SEG;
+    for(let i=a;i<=b;i++){const th=(i/SEG)*Math.PI*2;
+      const rr=R*mul*(1-asym*Math.cos(th-r.ta));
+      const x=r.x+dx+Math.cos(th)*rr,y=r.y+dy+Math.sin(th)*rr;
+      i===a?ctx.moveTo(x,y):ctx.lineTo(x,y);} }
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  const chr=prm.chromatic*r.energy;
+  if(chr>0.02){const off=R*0.05*chr; ctx.lineWidth=1.6;
+    ctx.strokeStyle=`rgba(255,40,40,${peak*0.5})`; ctx.beginPath(); trace(1,ca*off,sa*off); ctx.stroke();
+    ctx.strokeStyle=`rgba(40,80,255,${peak*0.5})`; ctx.beginPath(); trace(1,-ca*off,-sa*off); ctx.stroke();}
+  // band fill (wake) — width from thickness
+  const inner = 1 - (0.12 + prm.thickness*0.22);
+  ctx.beginPath(); trace(1,0,0); trace(inner,0,0);
+  ctx.fillStyle=`rgba(${pal.fade.join(',')},${peak*0.5})`; ctx.fill('evenodd');
+  // bright front stroke
+  ctx.lineWidth=2; ctx.strokeStyle=`rgba(${pal.ring.join(',')},${peak})`;
+  ctx.beginPath(); trace(1,0,0); ctx.stroke();
+  // white-hot leading wedge
+  const center=((r.ta%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
+  const cSeg=(center/(Math.PI*2))*SEG, w=7;
+  ctx.lineWidth=3; ctx.strokeStyle=`rgba(255,255,255,${peak*0.85})`;
+  ctx.beginPath(); trace(1,0,0,Math.floor(cSeg-w),Math.ceil(cSeg+w)); ctx.stroke();
+  // detonation flash
+  const fl=prm.flash*r.amp;
+  if(fl>0.02 && r.age<0.14){const ft=r.age/0.14, fr=(8+20*prm.intensity)*(1-ft)*(0.6+r.energy);
+    const fa=fl*(1-ft)*peak*2.2; const g=ctx.createRadialGradient(r.x,r.y,0,r.x,r.y,Math.max(1,fr));
+    g.addColorStop(0,`rgba(255,255,255,${Math.min(1,fa)})`);
+    g.addColorStop(0.5,`rgba(${pal.ring.join(',')},${fa*0.6})`);
+    g.addColorStop(1,`rgba(${pal.ring.join(',')},0)`);
+    ctx.fillStyle=g; ctx.fillRect(r.x-fr,r.y-fr,fr*2,fr*2);}
+  ctx.restore(); return true;
+}
+
+// a self-contained animated emitter bound to one param set + canvas
+function makeEmitter(canvas, getPrm, getPal){
+  const ctx=canvas.getContext('2d'); const DPR=Math.min(2,devicePixelRatio||1);
+  let W,H; function size(){const r=canvas.getBoundingClientRect();W=r.width;H=r.height;
+    canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);}
+  size(); new ResizeObserver(size).observe(canvas);
+  let rings=[], t=0, last=-1, px=0, py=0;
+  const CAP=26;
+  function spawn(x,y,e,ta,amp){ if(rings.length>=CAP)rings.shift(); rings.push({x,y,age:0,energy:e,ta,amp}); }
+  function step(dt){
+    t+=dt; const prm=getPrm();
+    const cx=W*0.5, cy=H*0.5, orbit=Math.min(W,H)*0.27;
+    const pump=0.2+1.2*(0.5+0.5*Math.sin(t*1.3));  // sweeps slow drift → fast whip
+    const ph=t*2.6*pump;
+    const x=cx+Math.cos(ph)*orbit, y=cy+Math.sin(ph)*orbit;
+    const sp=Math.hypot(x-px,y-py)/Math.max(dt,1e-4);
+    const e=Math.min(1,sp/REF_SPEED), ta=Math.atan2(y-py,x-px); px=x;py=y;
+    const iv=1/(2*(1+e*2));
+    if(t-last>iv){ spawn(x,y,e,ta,1);
+      const n=Math.round(prm.harmonics*2);
+      for(let i=1;i<=n;i++) setTimeout(()=>spawn(x,y,e,ta,1-i*0.3), i*85);
+      last=t; }
+  }
+  function draw(){ const prm=getPrm(), pal=getPal();
+    ctx.clearRect(0,0,W,H); ctx.fillStyle='#060810'; ctx.fillRect(0,0,W,H);
+    for(let i=rings.length-1;i>=0;i--){rings[i].age+= 0; if(!drawRing(ctx,rings[i],prm,pal))rings.splice(i,1);}
+    ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+  }
+  return { step(dt){ step(dt); for(const r of rings) r.age+=dt; }, draw };
+}
+
+// ---- build preset tiles ----
+const grid=document.getElementById('grid');
+const emitters=[];
+PRESETS.forEach((pr,idx)=>{
+  const tile=document.createElement('div'); tile.className='tile'+(idx===0?' sel':''); tile.dataset.i=idx;
+  tile.innerHTML=`<canvas></canvas><div class="meta"><b>${pr.name}</b><div class="d">${pr.desc}</div>
+    <div class="tags">${pr.trigger} · ${pr.palette} · asym ${pr.asymmetry} · chr ${pr.chromatic} · harm ${pr.harmonics}</div></div>`;
+  grid.appendChild(tile);
+  const cv=tile.querySelector('canvas');
+  emitters.push(makeEmitter(cv, ()=>pr, ()=>PAL[pr.palette]));
+  tile.addEventListener('click', ()=>{ selectPreset(idx);
+    document.querySelectorAll('.tile').forEach(t=>t.classList.remove('sel')); tile.classList.add('sel'); });
+});
+
+// ---- customize panel (live param object) ----
+const live = { ...PRESETS[0] };
+const bigEmit = makeEmitter(document.getElementById('big'), ()=>live, ()=>PAL[live.palette]);
+
+const SEGS = [
+  { key:'trigger', label:'Trigger', opts:['beat','velocity','continuous'] },
+  { key:'style',   label:'Style',   opts:['stroke','glow'] },
+  { key:'palette', label:'Palette', opts:['sonar','ripple','aurora','neon','ember','void'] },
+];
+const SLIDERS = [
+  { key:'intensity', label:'Intensity' },
+  { key:'reach', label:'Reach' },
+  { key:'lifetime', label:'Lifetime', min:0.2, max:3, step:0.1 },
+  { key:'thickness', label:'Thickness' },
+  { key:'velocityScale', label:'Velocity → size/glow', neW:true },
+  { key:'asymmetry', label:'Asymmetry (Mach cone)', neW:true },
+  { key:'chromatic', label:'Chromatic fringe', neW:true },
+  { key:'flash', label:'Detonation flash', neW:true },
+  { key:'harmonics', label:'Harmonics (overtones)', neW:true },
+];
+const knobs=document.getElementById('knobs');
+function buildKnobs(){
+  knobs.innerHTML='';
+  for(const s of SEGS){ const g=document.createElement('div'); g.className='grp';
+    g.innerHTML=`<div class="gl">${s.label}</div><div class="seg"></div>`;
+    const seg=g.querySelector('.seg');
+    s.opts.forEach(o=>{ const b=document.createElement('button'); b.textContent=o;
+      if(live[s.key]===o)b.classList.add('on');
+      b.onclick=()=>{ live[s.key]=o; buildKnobs(); summary(); };
+      seg.appendChild(b); });
+    knobs.appendChild(g); }
+  for(const s of SLIDERS){ const min=s.min??0,max=s.max??1,step=s.step??0.05;
+    const row=document.createElement('div'); row.className='row';
+    const val = (k)=> (k==='lifetime'? live[k].toFixed(1)+'s' : Math.round(live[k]*100)+'%');
+    row.innerHTML=`<label>${s.label}${s.neW?'<span class="nb">NEW</span>':''}<b>${val(s.key)}</b></label>
+      <input type="range" min="${min}" max="${max}" step="${step}" value="${live[s.key]}">`;
+    const inp=row.querySelector('input'), b=row.querySelector('b');
+    inp.oninput=()=>{ live[s.key]=+inp.value; b.textContent=val(s.key); };
+    knobs.appendChild(row); }
+}
+function summary(){ document.getElementById('pSummary').textContent=`${live.trigger} · ${live.style} · ${live.palette}`; }
+function selectPreset(i){ Object.assign(live, PRESETS[i]); document.getElementById('pName').textContent=PRESETS[i].name;
+  buildKnobs(); summary(); }
+selectPreset(0);
+
+// ---- single shared loop ----
+let prev=performance.now();
+function loop(now){ const dt=Math.min(0.05,(now-prev)/1000); prev=now;
+  for(const e of emitters){ e.step(dt); e.draw(); }
+  bigEmit.step(dt); bigEmit.draw();
+  requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
