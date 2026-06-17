@@ -18,5 +18,10 @@
   },
   "extensions": {
     "firestore-stripe-payments": "stripe/firestore-stripe-payments@0.3.4"
+  },
+  "emulators": {
+    "firestore": { "port": 8080 },
+    "ui": { "enabled": false },
+    "singleProjectMode": true
   }
 }
