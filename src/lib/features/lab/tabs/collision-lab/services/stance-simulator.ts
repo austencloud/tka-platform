@@ -210,6 +210,80 @@ export class StanceSimulator {
     };
   }
 
+  /**
+   * Evaluate a FIXED stance against a swept volume: arrays of paired staff
+   * instants for each hand. Returns one SimResult whose collision/reach fields
+   * are the worst (max) across all instants, so a stance is "clear" only if it
+   * clears EVERY instant. Balance is stance-only, so it is taken from the first
+   * sample. Reuses evaluate() per instant — no duplicated primitives.
+   */
+  evaluateSweep(
+    stance: StancePose,
+    blueSweep: SimPropTarget[],
+    redSweep: SimPropTarget[]
+  ): SimResult {
+    const n = Math.min(blueSweep.length, redSweep.length);
+    if (n === 0) {
+      // Degenerate: nothing to hit. Evaluate at the stance with whatever single
+      // target exists so balance/joints are still reported.
+      return this.evaluate(
+        stance,
+        blueSweep[0] ?? redSweep[0]!,
+        redSweep[0] ?? blueSweep[0]!
+      );
+    }
+
+    let merged: SimResult | null = null;
+    const worstByZone = new Map<SimCollision["zone"], SimCollision>();
+
+    for (let i = 0; i < n; i++) {
+      const r = this.evaluate(stance, blueSweep[i]!, redSweep[i]!);
+      if (!merged) {
+        merged = {
+          reachShortfall: { ...r.reachShortfall },
+          reachStretch: { ...r.reachStretch },
+          collisions: [],
+          balanceMargin: r.balanceMargin, // stance-only — constant across sweep
+          jointViolationRad: r.jointViolationRad,
+          feasible: true,
+          totalCollisionDepth: 0,
+        };
+      } else {
+        merged.reachShortfall.blue = Math.max(merged.reachShortfall.blue, r.reachShortfall.blue);
+        merged.reachShortfall.red = Math.max(merged.reachShortfall.red, r.reachShortfall.red);
+        merged.reachStretch.blue = Math.max(merged.reachStretch.blue, r.reachStretch.blue);
+        merged.reachStretch.red = Math.max(merged.reachStretch.red, r.reachStretch.red);
+        merged.jointViolationRad = Math.max(merged.jointViolationRad, r.jointViolationRad);
+      }
+      for (const c of r.collisions) {
+        const prev = worstByZone.get(c.zone);
+        if (!prev || c.depth > prev.depth) worstByZone.set(c.zone, { ...c });
+      }
+    }
+
+    const result = merged!;
+    result.collisions = [...worstByZone.values()];
+    let total = 0;
+    let hardBodyDepth = 0;
+    for (const c of result.collisions) {
+      total += c.depth;
+      if (
+        c.zone === "prop-through-head" ||
+        c.zone === "prop-through-torso" ||
+        c.zone === "arm-through-face"
+      ) {
+        if (c.depth > hardBodyDepth) hardBodyDepth = c.depth;
+      }
+    }
+    result.totalCollisionDepth = total;
+    result.feasible =
+      result.reachShortfall.blue <= REACH_FEASIBILITY_TOLERANCE &&
+      result.reachShortfall.red <= REACH_FEASIBILITY_TOLERANCE &&
+      result.balanceMargin > -0.005 &&
+      hardBodyDepth <= 0.01;
+    return result;
+  }
+
   // -----------------------------------------------------------------------
   // Stance application - turns (footX, footZ, yaw, pitch) into world joint
   // positions by transforming the rest pose.
