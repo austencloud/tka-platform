@@ -85,6 +85,45 @@ describe("anonymous guests: community write paths are denied", () => {
       setDoc(doc(db, `userLocations/${ANON_UID}`), { userId: ANON_UID, lat: 0, lng: 0 })
     );
   });
+  it("cannot create a shortcode", async () => {
+    const db = anonCtx().firestore();
+    await assertFails(
+      setDoc(doc(db, `shortcodes/abc123`), { encoded: "abc" })
+    );
+  });
+  it("cannot create a userReport", async () => {
+    const db = anonCtx().firestore();
+    await assertFails(
+      setDoc(doc(db, `userReports/r1`), {
+        reporterId: ANON_UID,
+        reportedUserId: "someone-else",
+      })
+    );
+  });
+  it("cannot create a video", async () => {
+    const db = anonCtx().firestore();
+    await assertFails(
+      setDoc(doc(db, `videos/v1`), { creatorId: ANON_UID })
+    );
+  });
+  it("cannot publish a publicHandPath", async () => {
+    const db = anonCtx().firestore();
+    await assertFails(
+      setDoc(doc(db, `publicHandPaths/hp1`), { ownerId: ANON_UID })
+    );
+  });
+  it("cannot publish a publicSoloProp", async () => {
+    const db = anonCtx().firestore();
+    await assertFails(
+      setDoc(doc(db, `publicSoloProps/sp1`), { ownerId: ANON_UID })
+    );
+  });
+  it("cannot create a festivalSubmission", async () => {
+    const db = anonCtx().firestore();
+    await assertFails(
+      setDoc(doc(db, `festivalSubmissions/fs1`), {})
+    );
+  });
 });
 
 describe("full users: community write paths succeed", () => {
@@ -104,6 +143,45 @@ describe("full users: community write paths succeed", () => {
     const db = fullCtx().firestore();
     await assertSucceeds(
       setDoc(doc(db, `usernames/cooldude`), { userId: FULL_UID })
+    );
+  });
+  it("can create a shortcode", async () => {
+    const db = fullCtx().firestore();
+    await assertSucceeds(
+      setDoc(doc(db, `shortcodes/abc123`), { encoded: "abc" })
+    );
+  });
+  it("can create a userReport", async () => {
+    const db = fullCtx().firestore();
+    await assertSucceeds(
+      setDoc(doc(db, `userReports/r1`), {
+        reporterId: FULL_UID,
+        reportedUserId: "someone-else",
+      })
+    );
+  });
+  it("can create a video", async () => {
+    const db = fullCtx().firestore();
+    await assertSucceeds(
+      setDoc(doc(db, `videos/v1`), { creatorId: FULL_UID })
+    );
+  });
+  it("can publish a publicHandPath", async () => {
+    const db = fullCtx().firestore();
+    await assertSucceeds(
+      setDoc(doc(db, `publicHandPaths/hp1`), { ownerId: FULL_UID })
+    );
+  });
+  it("can publish a publicSoloProp", async () => {
+    const db = fullCtx().firestore();
+    await assertSucceeds(
+      setDoc(doc(db, `publicSoloProps/sp1`), { ownerId: FULL_UID })
+    );
+  });
+  it("can create a festivalSubmission", async () => {
+    const db = fullCtx().firestore();
+    await assertSucceeds(
+      setDoc(doc(db, `festivalSubmissions/fs1`), {})
     );
   });
 });

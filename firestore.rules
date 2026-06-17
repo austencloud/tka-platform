@@ -12,6 +12,13 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // A "full" user has a permanent credential (not an anonymous session).
+    // Free check — no document read, unlike the role helpers.
+    function isFullUser() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
     // Check if user owns the document (based on userId field)
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
@@ -225,12 +232,12 @@ service cloud.firestore {
       allow read: if isAuthenticated();
 
       // Create: User can claim an unclaimed username for themselves
-      allow create: if isAuthenticated()
+      allow create: if isFullUser()
         && request.resource.data.userId == request.auth.uid;
 
       // Update: Only the owner can update their username claim
       // (e.g., to update timestamps or reclaim after releasing)
-      allow update: if isAuthenticated()
+      allow update: if isFullUser()
         && resource.data.userId == request.auth.uid
         && request.resource.data.userId == request.auth.uid;
 
@@ -424,7 +431,7 @@ service cloud.firestore {
         // Anyone can read follow relationships (for "is following" checks)
         allow read: if isAuthenticated();
         // Only the owner can add/remove follows, admins can delete
-        allow create, update: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isFullUser();
         allow delete: if isOwner(userId) || isAdmin();
       }
 
@@ -434,7 +441,7 @@ service cloud.firestore {
         allow read: if isAuthenticated();
         // Written via transaction when someone follows/unfollows
         // The follower (followerUserId) writes to the target user's followers list
-        allow create: if isAuthenticated() && request.auth.uid == followerUserId;
+        allow create: if isFullUser() && request.auth.uid == followerUserId;
         allow update: if false; // No updates needed
         allow delete: if (isAuthenticated() && request.auth.uid == followerUserId) || isAdmin();
       }
@@ -648,7 +655,7 @@ service cloud.firestore {
       // Creating a conversation - user must be in participants list OR be admin (for impersonation)
       // Direct (1:1): exactly 2 participants, type must be "direct" or missing
       // Groups: 2-50 participants, type must be "group", creator must be admin
-      allow create: if isAuthenticated()
+      allow create: if isFullUser()
         && (request.auth.uid in request.resource.data.participants || isAdmin())
         && (
           // Direct conversations (existing behavior, backward compatible)
@@ -666,7 +673,7 @@ service cloud.firestore {
       // Updating - participants can update their conversations
       // Direct: cannot change participant list
       // Groups: standard updates by participants, membership changes by admins only
-      allow update: if isAuthenticated()
+      allow update: if isFullUser()
         && request.auth.uid in resource.data.participants
         && (
           // Direct conversations: participant list must stay size 2
@@ -693,7 +700,8 @@ service cloud.firestore {
         allow read: if isConversationParticipant(conversationId);
 
         // Creating messages - must be sender and a participant
-        allow create: if isConversationParticipant(conversationId)
+        allow create: if isFullUser()
+          && isConversationParticipant(conversationId)
           && request.resource.data.senderId == request.auth.uid;
 
         // Updating messages:
@@ -819,7 +827,7 @@ service cloud.firestore {
         && (resource.data.userId == request.auth.uid || isTester() || isApprovedDeveloper());
 
       // Any authenticated user can submit feedback (must set their own userId)
-      allow create: if isAuthenticated()
+      allow create: if isFullUser()
         && request.resource.data.userId == request.auth.uid;
 
       // Testers/admins OR approved developers can update feedback
@@ -856,7 +864,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
 
       // Only creator can create
-      allow create: if isAuthenticated()
+      allow create: if isFullUser()
         && request.resource.data.creatorId == request.auth.uid;
 
       // Creator can update, collaborators can update limited fields
@@ -885,7 +893,7 @@ service cloud.firestore {
       // blob (self-contained payload) OR a non-empty `sequenceData.steps` array
       // (embedded inline). Without one of those, the doc is a zombie waiting
       // to happen — see docs/superpowers/specs/2026-04-18-shortcode-durability-roadmap.md.
-      allow create: if isAuthenticated()
+      allow create: if isFullUser()
         && (
           (
             request.resource.data.keys().hasAny(['encoded'])
@@ -934,7 +942,7 @@ service cloud.firestore {
       allow read: if true;
 
       // Only the owner can write (via sync from their private library)
-      allow create, update: if isAuthenticated()
+      allow create, update: if isFullUser()
         && request.resource.data.ownerId == request.auth.uid;
       allow delete: if isAuthenticated()
         && resource.data.ownerId == request.auth.uid;
@@ -947,7 +955,7 @@ service cloud.firestore {
     // Public hand paths - browsable by anyone, writable by owner
     match /publicHandPaths/{pathId} {
       allow read: if true;
-      allow create, update: if isAuthenticated()
+      allow create, update: if isFullUser()
         && request.resource.data.ownerId == request.auth.uid;
       allow delete: if isAuthenticated()
         && resource.data.ownerId == request.auth.uid;
@@ -956,7 +964,7 @@ service cloud.firestore {
     // Public solo props - browsable by anyone, writable by owner
     match /publicSoloProps/{soloPropId} {
       allow read: if true;
-      allow create, update: if isAuthenticated()
+      allow create, update: if isFullUser()
         && request.resource.data.ownerId == request.auth.uid;
       allow delete: if isAuthenticated()
         && resource.data.ownerId == request.auth.uid;
@@ -983,6 +991,14 @@ service cloud.firestore {
     match /global_arrow_adjustment_history/{entryId} {
       allow read: if isAdmin();
       allow write: if isAdmin();
+    }
+
+    // Append-only audit trail for DEFAULT placement changes. Immutable: admins
+    // create + read, nobody updates or deletes (true history).
+    match /default_arrow_adjustment_history/{entryId} {
+      allow read:   if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
     }
 
     // Special arrow placement overrides - per-letter Firestore overrides for static JSON
@@ -1048,7 +1064,7 @@ service cloud.firestore {
         || isAdmin();
 
       // Only the user can create or update their own location
-      allow create, update: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isFullUser();
 
       // Users can delete their own location, admins can delete any
       allow delete: if isOwner(userId) || isAdmin();
@@ -1085,7 +1101,7 @@ service cloud.firestore {
         && (resource.data.reporterId == request.auth.uid || isAdmin());
 
       // Authenticated users can submit reports (not about themselves)
-      allow create: if isAuthenticated()
+      allow create: if isFullUser()
         && request.resource.data.reporterId == request.auth.uid
         && request.resource.data.reportedUserId != request.auth.uid;
 
@@ -1138,6 +1154,7 @@ service cloud.firestore {
       // Users can submit their own sequences (pending status only)
       // Enforces initial values to prevent manipulation
       allow create: if isAuthenticated()
+        && isFullUser()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.status == 'pending'
         && request.resource.data.voteCount == 0
@@ -1321,7 +1338,7 @@ service cloud.firestore {
 
     // Festival submissions (moderation queue)
     match /festivalSubmissions/{submissionId} {
-      allow create: if isAuthenticated();
+      allow create: if isFullUser();
       allow read: if isAdmin();
       allow update, delete: if isAdmin();
     }
