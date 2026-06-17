@@ -9,6 +9,8 @@
  * Following the common-questions.ts convention.
  */
 
+import { PRECISE_QUARTER_SAME_EXPLANATION } from "./rotation-invariant.js";
+
 export const DOMAIN_TOPICS: Record<string, { title: string; content: string }> = {
   "static-props": {
     title: "TKA and Props: Built for Double Staves",
@@ -788,57 +790,7 @@ Skews support all three shift motion types (pro, anti, float). Theoretically unb
 
   "stuv-anomaly": {
     title: "The STUV Anomaly: Why Quarter-Same Has 4 Letters",
-    content: `## The STUV Anomaly: Why Quarter-Same Has 4 Letters
-
-### The Pattern That Breaks
-
-Type 1 (dual-shift) letters are organized by **timing and direction** into groups. Each group follows a consistent structure:
-
-| Group | Timing/Direction | Letters | Structure |
-|-------|-----------------|---------|-----------|
-| Split-Same | A, B, C | pure-pure + pure-pure + hybrid = 3 |
-| Split-Opposite | D, E, F | pure-pure + pure-pure + hybrid = 3 |
-| Together-Same | G, H, I | pure-pure + pure-pure + hybrid = 3 |
-| Together-Opposite | J, K, L | pure-pure + pure-pure + hybrid = 3 |
-| Quarter-Opposite | M, N, O | pure-pure + pure-pure + hybrid = 3 |
-| Quarter-Same | **S, T, U, V** | **4 letters** |
-
-Every group has 3. Quarter-same has 4. Why?
-
-### The Symmetry Principle
-
-A founding design rule of TKA pictographs: **a letter must be invariant under rotation, reflection, and color swap.** If you take a pictograph card, rotate it, flip it, or swap which hand is red vs blue, you should get the same letter.
-
-This principle holds cleanly for alpha and beta positions (symmetric). If you swap colors on an alpha pattern, the spatial relationship is identical. The letter doesn't change.
-
-### Where It Breaks: Leader and Follower
-
-Quarter-same patterns live in **gamma** (hands 90 degrees apart). Gamma is an **asymmetric** position. When both hands shift in the same direction, one hand is spatially ahead of the other. This creates a **leader** and a **follower**.
-
-For the pure cases (both pro or both anti), swapping colors just swaps which hand leads. The motion pattern is geometrically identical. S and T handle these.
-
-But for the **hybrid** case (one pro, one anti), swapping colors doesn't just swap who leads. It changes which motion type is in front. Pro-leading and anti-leading are genuinely different movements. Color swap produces a different letter. So you need two:
-
-- **U:** the leading hand has **pro** rotation, the following hand has **anti** rotation.
-- **V:** the leading hand has **anti** rotation, the following hand has **pro** rotation.
-
-This is the defining distinction between U and V.
-
-This is the ONLY place in the alphabet where the symmetry principle forces an extra letter.
-
-### The Mathematical Defense
-
-You might think "that's just a special case for the hybrid." But S and T aren't as simple as they look either. Even though both hands use the same motion type, leader/follower matters when applying turns. The turn number for the leader appears on top in the TKA glyph; the follower's appears on bottom. This distinction doubles the variation space.
-
-The proof: **all four of S, T, U, V have exactly the same number of turn variations as hybrids in every other group.** D, I, J, O, R (the hybrids in alpha/beta groups) each have twice the variations of their pure siblings. S, T, U, and V all match that count individually. Leader/follower creates the same combinatorial expansion as mixed motion types.
-
-### Summary
-
-- Groups of 3 work when positions are symmetric (alpha, beta). Color swap preserves the letter.
-- Quarter-same forces a group of 4 because gamma is asymmetric and same-direction shifts create leader/follower.
-- The hybrid case (U, V) breaks color-swap invariance, requiring two distinct letters.
-- The pure cases (S, T) have doubled variation counts due to leader/follower turn assignment.
-- The structural reason: leader/follower is combinatorially equivalent to mixed motion types.`,
+    content: PRECISE_QUARTER_SAME_EXPLANATION,
   },
 
   "l1-quartered-loop-deck": {

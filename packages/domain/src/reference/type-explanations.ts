@@ -1,4 +1,5 @@
 import type { LetterTypeNumber } from "../types/letter.js";
+import { PRECISE_QUARTER_SAME_EXPLANATION } from "./rotation-invariant.js";
 
 export interface TypeDefinition {
   type: number;
@@ -42,8 +43,8 @@ export const TYPE_DEFINITIONS: Record<number, TypeDefinition> = {
         { letters: "PQR", pattern: "pro, anti, hybrid" },
         { letters: "STUV", pattern: "pro, anti, hybrid, hybrid" },
       ],
-      note: "STUV has two hybrids because U and V cannot be combined into one letter.",
-      uvExplanation: "Every pictograph can be rotated, mirrored, or color-swapped to produce variations without changing which letter it is. But U and V are geometrically distinct: in the frozen 2D pictograph, U has the pro spin inside the right angle, while V has the anti spin inside the right angle. You cannot rotate U to become V because the inside/outside relationship is invariant under rotation. They are mirror opposites that require separate letters.",
+      note: "Quarter-Same (S, T, U, V) has 4 letters; every other group has 3. See uvExplanation.",
+      uvExplanation: PRECISE_QUARTER_SAME_EXPLANATION,
     },
   },
   2: {

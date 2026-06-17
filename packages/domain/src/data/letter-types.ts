@@ -8,9 +8,9 @@ export const LETTER_TYPES: Record<string, LetterTypeDefinition> = {
       "Both hands move 90 degrees on the grid",
       "Creates smooth, flowing transitions",
       "22 letters - the largest type",
-      "A-L are Type 1 letters on alpha/beta (the symmetric diamond-grid positions). The split into A-L is by rotation pattern (pro/anti/hybrid in groups of three)",
-      "M-V are Type 1 letters on gamma (the asymmetric diamond-grid position). Gamma's leader/follower distinction is what expands this group to 10 letters vs alpha/beta's 12",
-      "U leads with pro rotation (leader=pro, follower=anti). V leads with anti rotation (leader=anti, follower=pro). This is the defining distinction between U and V"
+      "Organized by VTG timing+direction: Split-Same (ABC), Together-Opp (DEF), Together-Same (GHI), Split-Opp (JKL), Quarter-Opp (M-R), Quarter-Same (STUV)",
+      "Each group is pro + anti + hybrid = 3 letters, except Quarter-Same, which has 4",
+      "Quarter-Same's hybrid splits into U (leader pro) and V (leader anti) because same-direction shifts at a right angle have a leader and follower. Quarter-Opposite (M-R) has no leader/follower"
     ],
     letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"],
     motionPattern: {
