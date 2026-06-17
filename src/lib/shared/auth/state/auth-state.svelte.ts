@@ -700,6 +700,7 @@ export interface AuthStateHandle {
   readonly isAdmin: boolean;
   readonly role: UserRole;
   readonly isAuthenticated: boolean;
+  readonly isAnonymous: boolean;
 
   // Effective user helpers (as properties)
   readonly effectiveUserId: string | null;
@@ -750,6 +751,9 @@ export const authState: AuthStateHandle = {
   },
   get isAuthenticated() {
     return _state.user !== null;
+  },
+  get isAnonymous() {
+    return _state.user?.isAnonymous ?? false;
   },
 
   // Effective user helpers (as properties)

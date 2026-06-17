@@ -8,9 +8,10 @@ export const ACCESS_TIER_LABELS: Record<AccessTier, string> = {
 
 export function resolveAccessTier(
   isAuthenticated: boolean,
+  isAnonymous: boolean,
   isPremium: boolean
 ): AccessTier {
-  if (!isAuthenticated) return "guest";
+  if (!isAuthenticated || isAnonymous) return "guest";
   if (isPremium) return "premium";
   return "user";
 }

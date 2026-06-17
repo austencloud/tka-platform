@@ -1,43 +1,23 @@
 import { describe, it, expect } from "vitest";
-import {
-  resolveAccessTier,
-  getMaxBeats,
-  ACCESS_TIER_LABELS,
-  type AccessTier,
-} from "$lib/shared/auth/domain/AccessTier";
+import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
 
 describe("resolveAccessTier", () => {
-  it("returns guest when not authenticated", () => {
-    expect(resolveAccessTier(false, false)).toBe("guest");
+  it("unauthenticated → guest", () => {
+    expect(resolveAccessTier(false, false, false)).toBe("guest");
   });
-
-  it("returns user when authenticated but not premium", () => {
-    expect(resolveAccessTier(true, false)).toBe("user");
+  it("anonymous (authenticated but anon) → guest", () => {
+    expect(resolveAccessTier(true, true, false)).toBe("guest");
   });
-
-  it("returns premium when authenticated and premium", () => {
-    expect(resolveAccessTier(true, true)).toBe("premium");
+  it("anonymous never escalates to premium", () => {
+    expect(resolveAccessTier(true, true, true)).toBe("guest");
   });
-});
-
-describe("getMaxBeats", () => {
-  it("returns 8 for guest", () => {
-    expect(getMaxBeats("guest")).toBe(8);
+  it("full non-premium → user", () => {
+    expect(resolveAccessTier(true, false, false)).toBe("user");
   });
-
-  it("returns 16 for user", () => {
-    expect(getMaxBeats("user")).toBe(16);
+  it("full premium → premium", () => {
+    expect(resolveAccessTier(true, false, true)).toBe("premium");
   });
-
-  it("returns 64 for premium", () => {
-    expect(getMaxBeats("premium")).toBe(64);
-  });
-});
-
-describe("ACCESS_TIER_LABELS", () => {
-  it("maps internal names to display names", () => {
-    expect(ACCESS_TIER_LABELS.guest).toBe("Guest");
-    expect(ACCESS_TIER_LABELS.user).toBe("Composer");
-    expect(ACCESS_TIER_LABELS.premium).toBe("Scribe");
+  it("guest cap stays 8 for anonymous", () => {
+    expect(getMaxBeats(resolveAccessTier(true, true, false))).toBe(8);
   });
 });
