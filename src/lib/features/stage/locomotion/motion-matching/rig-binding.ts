@@ -8,6 +8,7 @@ export interface LegChain {
   root: Bone;
   middle: Bone;
   effector: Bone;
+  totalLength: number;
   upperLength: number;
   lowerLength: number;
   rootRestDir: Vector3;

@@ -149,6 +149,7 @@ export async function createSelfLoadedRigBinding(
       root: upLeg,
       middle: leg,
       effector: foot,
+      totalLength: upperLength + lowerLength,
       upperLength,
       lowerLength,
       rootRestDir,

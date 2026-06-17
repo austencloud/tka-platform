@@ -4,7 +4,9 @@ import { Quaternion } from "three";
 import type { Bone } from "three";
 import { Vector3 } from "three";
 import { startInertialize, applyInertialize, type Inertializer } from "./inertialization";
-import type { RigBinding } from "./rig-binding";
+import { solveLegIK } from "$lib/shared/3d/services/hinge-constrained-leg-ik-solver";
+import { computeKneeHingeAxis } from "$lib/shared/3d/services/knee-hinge-axis-calibrator";
+import type { RigBinding, LegChain } from "./rig-binding";
 
 /**
  * Drop-in shape mirroring locomotion-controller.ts so call sites that read the
@@ -18,11 +20,11 @@ export interface LocomotionState {
 }
 
 /**
- * Bones smoothed across a clip switch by inertialization: legs (the visible
- * stepping) plus the spine (upper-body coherence). The HIPS bone is
- * deliberately EXCLUDED — its authored yaw is transferred into the rig root by
- * the seam bank (see {@link update}); inertializing the hips would blend that
- * ~90° yaw delta and re-create the snap-back this controller exists to remove.
+ * Bones smoothed across a clip switch by inertialization: spine (upper-body
+ * coherence) and legs (the visible stepping). The HIPS is EXCLUDED: the seam
+ * yaw bank is INSTANT (it cancels the hips' yaw reset in the same frame, keeping
+ * visible facing continuous); inertializing the hips through this rig's X-rotated
+ * Armature + baked rest pitch makes yaw non-linear and swings it instead.
  */
 const INERTIALIZED_BONES = [
   "Spine", "Spine1", "Spine2",
@@ -43,6 +45,27 @@ const MIN_DWELL_SEC = 0.12;
  *  the body was already within this of the target (rad, ~34°). Beyond it a flip
  *  is a genuine re-target, not an overshoot to clamp. */
 const CROSS_NEAR = 0.6;
+
+/** Foot is "planted" when its ankle world Y is within this of the rest ankle
+ *  height. Measured: planted ≈0.088m, lifted ≥0.097m for these clips — a clean
+ *  ~1cm separation. */
+const PLANT_BAND = 0.012;
+/** IK weight ramp on plant (fast) and release (slower, eases the foot off the
+ *  lock back onto the clip trajectory so there is no release pop). */
+const FOOT_LOCK_ATTACK_SEC = 0.04;
+const FOOT_LOCK_RELEASE_SEC = 0.12;
+
+interface FootLockState {
+  chain: LegChain;
+  hinge: Vector3;
+  /** World position the planted foot is pinned to; null when airborne. */
+  lock: Vector3 | null;
+  /** Body forward captured at touchdown — the foot keeps this ground aim while
+   *  planted instead of twisting to follow the turning body. */
+  lockForward: Vector3 | null;
+  /** Current IK weight (ramps 0→1 on plant, 1→0 on release). */
+  weight: number;
+}
 
 /** Turn clips are one-shot pivots (play once, hold at end); idle/walk loop. */
 function isOneShot(clipId: string): boolean {
@@ -86,6 +109,14 @@ export class MmLocomotionController {
   private leftClipId = "turn-left";
   private rightClipId = "turn-right";
   private hips: Bone | null = null;
+  private readonly restHipsPos = new Vector3();
+  private footLocks: FootLockState[] = [];
+  private restAnkleY = 0.088;
+  private readonly _footWorld = new Vector3();
+  private readonly _forward = new Vector3(0, 0, 1);
+  private readonly _groundNormal = new Vector3(0, 1, 0);
+  private readonly _qFootBefore = new Quaternion();
+  private readonly _qParent = new Quaternion();
   private readonly inertBones = new Map<string, Bone>();
   private readonly inert = new Map<string, Inertializer>();
   private readonly durations = new Map<string, number>();
@@ -148,11 +179,31 @@ export class MmLocomotionController {
       if (b) this.inertBones.set(name, b);
     }
 
+    // Foot-lock chains + per-leg hinge axes (derived once at build time).
+    const leftChain = this.rig.getLeftLegChain();
+    const rightChain = this.rig.getRightLegChain();
+    this.footLocks = [leftChain, rightChain].map((chain) => ({
+      chain,
+      hinge: computeKneeHingeAxis(chain.rootRestDir, chain.middleRestDir),
+      lock: null,
+      lockForward: null,
+      weight: 0,
+    }));
+
     // Seed on idle frame 0 and capture the rest facing.
     this.rig.root.rotation.y = 0;
     this.pose(this.idleClipId, 0);
     this.rig.root.updateMatrixWorld(true);
     this.restVis = this.visYaw();
+    if (this.hips) this.restHipsPos.copy(this.hips.position);
+
+    // Capture rest ankle height (both feet planted at idle) as the plant datum.
+    const ankleY: number[] = [];
+    for (const fl of this.footLocks) {
+      fl.chain.effector.getWorldPosition(this._footWorld);
+      ankleY.push(this._footWorld.y);
+    }
+    if (ankleY.length) this.restAnkleY = Math.min(...ankleY);
 
     this._state.facing = this.restVis;
     this.targetFacing = this.restVis;
@@ -246,6 +297,11 @@ export class MmLocomotionController {
             ? visBefore
             : this.targetFacing
           : visBefore;
+
+      // Bank the root INSTANTLY so it cancels the hips' yaw reset in this same
+      // frame — that is what keeps the visible facing continuous across the seam
+      // (an eased bank lets the hips reset show as a yaw jump). The planted-foot
+      // swing this would otherwise cause is absorbed by the foot-lock below.
       root.rotation.y += angleDelta(landYaw, visAfter);
       root.updateMatrixWorld(true);
 
@@ -258,7 +314,7 @@ export class MmLocomotionController {
       this.timeSinceSwitch = 0;
     }
 
-    // Apply the decaying inertialization offset on the legs/spine.
+    // Apply the decaying inertialization offset on the hips/spine/legs.
     for (const [name, bone] of this.inertBones) {
       const it = this.inert.get(name);
       if (it) {
@@ -267,12 +323,94 @@ export class MmLocomotionController {
       }
     }
 
+    // Strip the hips' horizontal root-motion translation back to rest each frame
+    // (in-place reorient). The turn clips displace the hips ~8cm during the step;
+    // idle resets it — that mismatch is the "body lands in a different place"
+    // snap. Keep local Z (vertical bob in this Mixamo→GLB axis mapping).
+    if (this.hips) {
+      this.hips.position.x = this.restHipsPos.x;
+      this.hips.position.y = this.restHipsPos.y;
+    }
+
     root.updateMatrixWorld(true);
+
+    // Foot-lock: pin each planted foot to its touchdown world position so it
+    // cannot swing when the seam bank rotates the body about the root origin
+    // (the mid-step settle snap), nor slide during the step.
+    this.applyFootLock(dt);
+
     this._state.facing = this.visYaw();
     this._state.speed = turning ? 1 : 0;
     this._state.isMoving = turning;
 
     this.lastRemaining = remaining;
     this.hasLastRemaining = true;
+  }
+
+  /**
+   * Hold each planted foot at the world position it touched down on, via the
+   * analytic hinge-constrained leg IK. Plant is detected from ankle world Y
+   * (lifted feet rise ~1cm+ above the rest datum in these clips). The IK weight
+   * ramps in on plant and out on lift so there is no acquire/release pop.
+   */
+  private applyFootLock(dt: number): void {
+    const h = this.hips;
+    if (!h || !this.footLocks.length) return;
+
+    // Body forward (horizontal) from the hips world Z basis — drives the foot's
+    // toe alignment and the knee pole.
+    const e = h.matrixWorld.elements;
+    this._forward.set(e[8]!, 0, e[10]!);
+    if (this._forward.lengthSq() < 1e-8) this._forward.set(0, 0, 1);
+    else this._forward.normalize();
+
+    const plantThresh = this.restAnkleY + PLANT_BAND;
+
+    for (const fl of this.footLocks) {
+      fl.chain.effector.getWorldPosition(this._footWorld);
+      const planted = this._footWorld.y < plantThresh;
+
+      if (planted) {
+        if (!fl.lock) {
+          // Capture touchdown world position AND ground aim — the planted foot
+          // holds both; it must not twist to follow the turning body.
+          fl.lock = this._footWorld.clone();
+          fl.lockForward = this._forward.clone();
+        }
+        fl.weight = Math.min(1, fl.weight + dt / FOOT_LOCK_ATTACK_SEC);
+      } else {
+        fl.weight = Math.max(0, fl.weight - dt / FOOT_LOCK_RELEASE_SEC);
+        if (fl.weight <= 0) {
+          fl.lock = null;
+          fl.lockForward = null;
+        }
+      }
+
+      if (fl.lock && fl.weight > 0) {
+        const forward = fl.lockForward ?? this._forward;
+        const foot = fl.chain.effector;
+        // Foot-lock pins POSITION only. solveLegIK also forces the foot's world
+        // orientation to a ground basis whose axis convention does not match
+        // this Mixamo foot bone (it folds/twists the foot). Capture the clip's
+        // natural foot orientation, solve for position, then restore it.
+        foot.getWorldQuaternion(this._qFootBefore);
+        solveLegIK({
+          chain: fl.chain,
+          footTarget: fl.lock,
+          groundNormal: this._groundNormal,
+          footForward: forward,
+          kneeHingeAxis: fl.hinge,
+          poleDirection: forward,
+          weight: fl.weight,
+        });
+        if (foot.parent) {
+          foot.parent.getWorldQuaternion(this._qParent);
+          foot.quaternion.copy(this._qParent.invert()).multiply(this._qFootBefore);
+        } else {
+          foot.quaternion.copy(this._qFootBefore);
+        }
+        foot.updateMatrixWorld(true);
+      }
+    }
   }
 }
