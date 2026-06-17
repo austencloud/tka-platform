@@ -26,6 +26,15 @@ describe("TYPE1_ROTATION canonical data", () => {
     }
   });
 
+  it("pins each VTG group to its exact letters (verified via tka_to_vtg MCP)", () => {
+    expect(lettersIn("ss")).toEqual(["A", "B", "C"]);
+    expect(lettersIn("to")).toEqual(["D", "E", "F"]);
+    expect(lettersIn("ts")).toEqual(["G", "H", "I"]);
+    expect(lettersIn("so")).toEqual(["J", "K", "L"]);
+    expect(lettersIn("qo")).toEqual(["M", "N", "O", "P", "Q", "R"]);
+    expect(lettersIn("qs")).toEqual(["S", "T", "U", "V"]);
+  });
+
   it("quarter-same is exactly S, T, U, V", () => {
     expect(lettersIn("qs")).toEqual(["S", "T", "U", "V"]);
   });

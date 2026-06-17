@@ -1,5 +1,3 @@
-import type { Letter } from "../types/letter.js";
-
 /** VTG timing+direction group for a Type 1 letter. */
 export type VtgGroup = "ss" | "so" | "ts" | "to" | "qo" | "qs";
 
@@ -24,18 +22,18 @@ export const TYPE1_ROTATION: Record<string, Type1RotationEntry> = {
   A: { vtgGroup: "ss", rotationPattern: "pro" },
   B: { vtgGroup: "ss", rotationPattern: "anti" },
   C: { vtgGroup: "ss", rotationPattern: "hybrid" },
-  // Split-Opposite
-  D: { vtgGroup: "so", rotationPattern: "pro" },
-  E: { vtgGroup: "so", rotationPattern: "anti" },
-  F: { vtgGroup: "so", rotationPattern: "hybrid" },
+  // Together-Opposite
+  D: { vtgGroup: "to", rotationPattern: "pro" },
+  E: { vtgGroup: "to", rotationPattern: "anti" },
+  F: { vtgGroup: "to", rotationPattern: "hybrid" },
   // Together-Same
   G: { vtgGroup: "ts", rotationPattern: "pro" },
   H: { vtgGroup: "ts", rotationPattern: "anti" },
   I: { vtgGroup: "ts", rotationPattern: "hybrid" },
-  // Together-Opposite
-  J: { vtgGroup: "to", rotationPattern: "pro" },
-  K: { vtgGroup: "to", rotationPattern: "anti" },
-  L: { vtgGroup: "to", rotationPattern: "hybrid" },
+  // Split-Opposite
+  J: { vtgGroup: "so", rotationPattern: "pro" },
+  K: { vtgGroup: "so", rotationPattern: "anti" },
+  L: { vtgGroup: "so", rotationPattern: "hybrid" },
   // Quarter-Opposite (two triples, M-R) — NO leaderRotation
   M: { vtgGroup: "qo", rotationPattern: "pro" },
   N: { vtgGroup: "qo", rotationPattern: "anti" },
@@ -62,9 +60,9 @@ export function getType1Rotation(letter: string): Type1RotationEntry | undefined
 export const PRECISE_QUARTER_SAME_EXPLANATION = `Type 1 (dual-shift, 22 letters) is organized by VTG timing + direction into groups:
 
 - Split-Same: A, B, C
-- Split-Opposite: D, E, F
+- Together-Opposite: D, E, F
 - Together-Same: G, H, I
-- Together-Opposite: J, K, L
+- Split-Opposite: J, K, L
 - Quarter-Opposite: M, N, O and P, Q, R
 - Quarter-Same: S, T, U, V
 
