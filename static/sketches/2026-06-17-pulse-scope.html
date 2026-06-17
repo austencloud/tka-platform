@@ -4,171 +4,177 @@
 <link rel="icon" href="/pwa/favicon.png" />
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pulse presets — pick the keepers</title>
+<title>Pulse — final 4, dial to taste</title>
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
   html, body { margin: 0; min-height: 100%; background: #07090f; color: #e8ecf4;
     font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, sans-serif; }
-  .head { padding: 18px 26px 6px; }
-  .head h1 { font-size: 18px; margin: 0 0 4px; }
-  .head p { font-size: 12.5px; color: #8893a8; margin: 0; max-width: 920px; }
-  .head .new { color: #5fd0ff; }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 16px 26px 40px; }
-  .tile { background: #0b0f17; border: 1px solid #1b2230; border-radius: 14px; overflow: hidden;
-    display: flex; flex-direction: column; }
-  .tile canvas { display: block; width: 100%; height: 240px; background: #060810; }
-  .meta { padding: 11px 14px 13px; border-top: 1px solid #141a26; }
-  .meta .nm { display: flex; align-items: baseline; gap: 9px; }
-  .meta .nm b { font-size: 15px; }
-  .meta .nm .trig { font-size: 10px; text-transform: uppercase; letter-spacing: .6px;
-    color: #5fd0ff; background: #0f2533; padding: 2px 7px; border-radius: 5px; }
-  .meta .id { font-size: 12px; color: #9aa6bc; margin-top: 4px; }
-  .meta .tags { font-size: 10.5px; color: #5c6678; margin-top: 6px; font-variant-numeric: tabular-nums; }
-  .meta .trait { color: #b98bff; }
+  .head { padding: 16px 24px 4px; }
+  .head h1 { font-size: 17px; margin: 0 0 4px; }
+  .head p { font-size: 12px; color: #8893a8; margin: 0; max-width: 900px; }
+  .wrap { display: grid; grid-template-columns: 1fr 300px; gap: 18px; padding: 12px 24px 40px; }
+  .tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; align-content: start; }
+  .tile { background: #0b0f17; border: 1px solid #1b2230; border-radius: 13px; overflow: hidden; cursor: pointer;
+    transition: border-color .12s; }
+  .tile.sel { border-color: #5fd0ff; }
+  .tile canvas { display: block; width: 100%; height: 210px; background: #060810; }
+  .meta { padding: 9px 13px 11px; border-top: 1px solid #141a26; }
+  .meta .nm { display: flex; align-items: baseline; gap: 8px; }
+  .meta .nm b { font-size: 14px; }
+  .meta .nm .trig { font-size: 9.5px; text-transform: uppercase; letter-spacing: .5px; color: #5fd0ff;
+    background: #0f2533; padding: 2px 6px; border-radius: 5px; }
+  .meta .id { font-size: 11.5px; color: #9aa6bc; margin-top: 3px; }
+
+  .panel { background: #0c1018; border: 1px solid #1d2433; border-radius: 12px; padding: 15px;
+    align-self: start; position: sticky; top: 12px; }
+  .panel h3 { margin: 0 0 2px; font-size: 14px; }
+  .panel .ps { font-size: 11px; color: #7a869c; margin: 0 0 12px; }
+  .bigwrap { background: #060810; border: 1px solid #161d2b; border-radius: 9px; margin-bottom: 12px; }
+  .bigwrap canvas { display: block; width: 100%; height: 180px; }
+  .grp { margin-bottom: 10px; }
+  .grp .gl { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: #6f7b92; margin-bottom: 5px; }
+  .seg { display: flex; gap: 5px; flex-wrap: wrap; }
+  .seg button { flex: 1 1 auto; padding: 5px 7px; font-size: 11px; border-radius: 7px;
+    border: 1px solid #2a3346; background: #131a26; color: #aeb8cc; cursor: pointer; white-space: nowrap; }
+  .seg button.on { background: #1b4a63; border-color: #5fd0ff; color: #dff4ff; }
+  .row { margin: 0 0 8px; }
+  .row label { display: flex; justify-content: space-between; font-size: 11px; color: #aeb8cc; margin-bottom: 3px; }
+  .row label b { color: #e8ecf4; font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: #5fd0ff; margin: 0; }
+  .copy { width: 100%; margin-top: 6px; padding: 8px; border-radius: 8px; cursor: pointer;
+    border: 1px solid #2a5a3a; background: #16331f; color: #cfeed9; font-size: 11px; }
+  .out { font-family: ui-monospace, monospace; font-size: 10px; color: #7a869c; margin-top: 8px; white-space: pre-wrap;
+    word-break: break-all; }
 </style>
 </head>
 <body>
 <div class="head">
-  <h1>Pulse presets — all 6 candidates, live</h1>
-  <p>Every ring now records tip speed at birth and uses it to drive size, brightness, Mach-cone deform, chromatic fringe and a detonation flash (the <span class="new">new</span> mechanics). Each preset below leans hard into ONE always-visible identity so they read differently at a glance. Tip whips fast→slow so you can see energy scale the deform. Tell me which to keep (landing on 4).</p>
+  <h1>Pulse — final 4, dial to taste</h1>
+  <p>Deform now caps at a smooth teardrop (no cardioid cusp). Heartbeat is beat-locked paired thumps; Ripple is continuous flowing many-ring. Click a tile to load it into the panel, dial it, and Copy values — paste them back to me for the preset.</p>
 </div>
-<div class="grid" id="grid"></div>
+<div class="wrap">
+  <div class="tiles" id="tiles"></div>
+  <div class="panel">
+    <h3 id="pName">Customize</h3>
+    <p class="ps" id="pSummary"></p>
+    <div class="bigwrap"><canvas id="big"></canvas></div>
+    <div id="knobs"></div>
+    <button class="copy" id="copy">Copy values</button>
+    <div class="out" id="out"></div>
+  </div>
+</div>
 <script>
 function hx(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
 const PAL = {
-  sonar:  { ring: hx('#38bdf8'), fade: hx('#0c4a6e') },
-  ripple: { ring: hx('#93c5fd'), fade: hx('#bfdbfe') },
-  aurora: { ring: hx('#a855f7'), fade: hx('#22d3ee') },
-  neon:   { ring: hx('#f0abfc'), fade: hx('#fb923c') },
-  ember:  { ring: hx('#ff6000'), fade: hx('#ffcc00') },
-  void:   { ring: hx('#8a8ad8'), fade: hx('#3a3a66') },  // brightened so the dark theme still reads on additive blend
+  sonar:{ring:hx('#38bdf8'),fade:hx('#0c4a6e')}, ripple:{ring:hx('#93c5fd'),fade:hx('#bfdbfe')},
+  aurora:{ring:hx('#a855f7'),fade:hx('#22d3ee')}, neon:{ring:hx('#f0abfc'),fade:hx('#fb923c')},
+  ember:{ring:hx('#ff6000'),fade:hx('#ffcc00')}, void:{ring:hx('#8a8ad8'),fade:hx('#3a3a66')},
 };
-
-// 6 candidates — each owns ONE dominant, always-visible trait.
+// final 4, matching the committed presets
 const PRESETS = [
-  { id:'sonar', name:'Sonar', trig:'beat', palette:'sonar', trait:'pure concentric circles',
-    style:'glow', intensity:.7, reach:.7, lifetime:1.1, thickness:.3,
-    velocityScale:.3, asymmetry:0, chromatic:0, flash:.3, harmonics:.15, harmCount:0 },
-  { id:'shockwave', name:'Shockwave', trig:'velocity', palette:'ember', trait:'directional Mach teardrop + fringe + flash',
-    style:'glow', intensity:.9, reach:.85, lifetime:.7, thickness:.6,
-    velocityScale:.9, asymmetry:.9, chromatic:.6, flash:.85, harmonics:.1, harmCount:0 },
-  { id:'heartbeat', name:'Heartbeat', trig:'continuous', palette:'neon', trait:'paired double-thump',
-    style:'glow', intensity:.7, reach:.5, lifetime:.85, thickness:.45,
-    velocityScale:.5, asymmetry:.2, chromatic:.15, flash:.6, harmonics:0, harmCount:0, double:true },
-  { id:'radar', name:'Radar', trig:'beat', palette:'aurora', trait:'slow wide thin sweep',
-    style:'stroke', intensity:.55, reach:.98, lifetime:1.8, thickness:.15,
-    velocityScale:.2, asymmetry:.08, chromatic:.05, flash:.2, harmonics:.1, harmCount:0 },
-  { id:'ripple', name:'Ripple', trig:'continuous', palette:'ripple', trait:'multi-ring concentric trains',
-    style:'glow', intensity:.55, reach:.65, lifetime:1.3, thickness:.45,
-    velocityScale:.35, asymmetry:.05, chromatic:.05, flash:.25, harmonics:.9, harmCount:3 },
-  { id:'void', name:'Void', trig:'velocity', palette:'void', trait:'dark hard deform, thin stroke',
-    style:'stroke', intensity:.85, reach:.72, lifetime:.8, thickness:.3,
-    velocityScale:.7, asymmetry:.65, chromatic:.4, flash:.6, harmonics:.15, harmCount:0 },
+  { id:'sonar', name:'Sonar', trig:'beat', palette:'sonar', id2:'pure beat circles',
+    intensity:.7, reach:.7, lifetime:1.1, thickness:.3, velocityScale:.3, asymmetry:0, chromatic:0, flash:.3, harmonics:.15 },
+  { id:'shockwave', name:'Shockwave', trig:'velocity', palette:'ember', id2:'directional teardrop + flash',
+    intensity:.5, reach:.85, lifetime:.7, thickness:.6, velocityScale:.9, asymmetry:.9, chromatic:.3, flash:.5, harmonics:.1 },
+  { id:'heartbeat', name:'Heartbeat', trig:'beat', palette:'neon', id2:'beat-locked paired thump',
+    intensity:.42, reach:.45, lifetime:.7, thickness:.45, velocityScale:.5, asymmetry:.15, chromatic:.1, flash:.6, harmonics:.4 },
+  { id:'ripple', name:'Ripple', trig:'continuous', palette:'ripple', id2:'continuous flowing many-ring',
+    intensity:.3, reach:.8, lifetime:1.5, thickness:.5, velocityScale:.35, asymmetry:0, chromatic:0, flash:0, harmonics:.9 },
 ];
+const REF=120; const ease=p=>1-(1-p)*(1-p);
 
-const REF_SPEED = 120; // demo-calibrated so energy sweeps 0..1 in a small tile
-function easeOut(p){ return 1-(1-p)*(1-p); }
-
-function drawRing(ctx, r, prm, pal){
-  const p = r.age/prm.lifetime; if(p>=1) return false;
-  const eo = easeOut(p);
-  const baseR = (16 + prm.reach*155) * (0.45 + 0.55*prm.velocityScale*r.energy) * r.amp;
-  const R = baseR*eo;
-  const fade=(1-p)*(1-p);
-  const peak = prm.intensity*(0.45+0.55*r.energy)*fade*r.amp;
-  // base directional floor + energy: high-asym presets read as a teardrop even at rest.
-  const asym = prm.asymmetry*(0.4 + 0.6*r.energy);
-  const ca=Math.cos(r.ta), sa=Math.sin(r.ta);
-  const SEG=44;
-  function trace(mul,dx,dy,a,b){ a=a??0;b=b??SEG;
-    for(let i=a;i<=b;i++){const th=(i/SEG)*Math.PI*2;
-      const rr=R*mul*(1-asym*Math.cos(th-r.ta));
-      const x=r.x+dx+Math.cos(th)*rr,y=r.y+dy+Math.sin(th)*rr;
-      i===a?ctx.moveTo(x,y):ctx.lineTo(x,y);} }
+function drawRing(ctx,r,prm,pal){
+  const p=r.age/prm.lifetime; if(p>=1)return false;
+  const R=(16+prm.reach*155)*(0.45+0.55*prm.velocityScale*r.energy)*r.amp*ease(p);
+  if(R<=0.5)return true;
+  const fade=(1-p)*(1-p), peak=prm.intensity*(0.45+0.55*r.energy)*fade*r.amp;
+  const asym=prm.asymmetry*(0.2+0.3*r.energy); // capped 0.5 → smooth teardrop, no cusp
+  const ta=Math.atan2(r.dy,r.dx), SEG=44;
+  const trace=(mul,dx,dy,a,b)=>{a=a??0;b=b??SEG;for(let i=a;i<=b;i++){const th=(i/SEG)*Math.PI*2;
+    const rr=R*mul*(1-asym*Math.cos(th-ta)); const x=r.x+dx+Math.cos(th)*rr,y=r.y+dy+Math.sin(th)*rr;
+    i===a?ctx.moveTo(x,y):ctx.lineTo(x,y);}};
   ctx.save(); ctx.globalCompositeOperation='lighter';
   const chr=prm.chromatic*r.energy;
-  if(chr>0.02){const off=R*0.05*chr; ctx.lineWidth=1.6;
-    ctx.strokeStyle=`rgba(255,40,40,${peak*0.5})`; ctx.beginPath(); trace(1,ca*off,sa*off); ctx.stroke();
-    ctx.strokeStyle=`rgba(40,80,255,${peak*0.5})`; ctx.beginPath(); trace(1,-ca*off,-sa*off); ctx.stroke();}
-  if(prm.style==='glow'){
-    const inner = 1 - (0.12 + prm.thickness*0.22);
-    ctx.beginPath(); trace(1,0,0); trace(inner,0,0);
-    ctx.fillStyle=`rgba(${pal.fade.join(',')},${peak*0.5})`; ctx.fill('evenodd');
-  }
-  ctx.lineWidth = prm.style==='stroke' ? (1.2+prm.thickness*3) : 2;
-  ctx.strokeStyle=`rgba(${pal.ring.join(',')},${peak})`;
-  ctx.beginPath(); trace(1,0,0); ctx.stroke();
-  if(asym>0.04){ // white-hot leading wedge only where it bunches
-    const center=((r.ta%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
-    const cSeg=(center/(Math.PI*2))*SEG, w=7;
-    ctx.lineWidth=3; ctx.strokeStyle=`rgba(255,255,255,${peak*0.85})`;
-    ctx.beginPath(); trace(1,0,0,Math.floor(cSeg-w),Math.ceil(cSeg+w)); ctx.stroke();
-  }
+  if(chr>0.02){const off=R*0.05*chr,ca=Math.cos(ta),sa=Math.sin(ta); ctx.lineWidth=1.5;
+    ctx.strokeStyle=`rgba(255,40,40,${peak*0.5})`;ctx.beginPath();trace(1,ca*off,sa*off);ctx.stroke();
+    ctx.strokeStyle=`rgba(40,80,255,${peak*0.5})`;ctx.beginPath();trace(1,-ca*off,-sa*off);ctx.stroke();}
+  const inner=Math.max(0,1-(0.12+prm.thickness*0.22));
+  ctx.beginPath();trace(1,0,0);trace(inner,0,0);
+  ctx.fillStyle=`rgba(${pal.fade.join(',')},${peak*0.5})`;ctx.fill('evenodd');
+  ctx.lineWidth=2;ctx.strokeStyle=`rgba(${pal.ring.join(',')},${peak})`;ctx.beginPath();trace(1,0,0);ctx.stroke();
+  if(asym>0.04){const c=((ta%(Math.PI*2))+Math.PI*2)%(Math.PI*2),cs=(c/(Math.PI*2))*SEG;
+    ctx.lineWidth=3;ctx.strokeStyle=`rgba(255,255,255,${peak*0.85})`;ctx.beginPath();trace(1,0,0,Math.floor(cs-7),Math.ceil(cs+7));ctx.stroke();}
   const fl=prm.flash*r.amp;
-  if(fl>0.02 && r.age<0.14){const ft=r.age/0.14, fr=(8+22*prm.intensity)*(1-ft)*(0.6+r.energy);
-    const fa=fl*(1-ft)*peak*2.2; const g=ctx.createRadialGradient(r.x,r.y,0,r.x,r.y,Math.max(1,fr));
-    g.addColorStop(0,`rgba(255,255,255,${Math.min(1,fa)})`);
-    g.addColorStop(0.5,`rgba(${pal.ring.join(',')},${fa*0.6})`);
-    g.addColorStop(1,`rgba(${pal.ring.join(',')},0)`);
-    ctx.fillStyle=g; ctx.fillRect(r.x-fr,r.y-fr,fr*2,fr*2);}
-  ctx.restore(); return true;
+  if(fl>0.02&&r.age<0.14){const ft=r.age/0.14,fr=(8+22*prm.intensity)*(1-ft)*(0.6+r.energy);
+    const fa=Math.min(1,fl*(1-ft)*peak*2.2),g=ctx.createRadialGradient(r.x,r.y,0,r.x,r.y,Math.max(1,fr));
+    g.addColorStop(0,`rgba(255,255,255,${fa})`);g.addColorStop(0.5,`rgba(${pal.ring.join(',')},${fa*0.6})`);
+    g.addColorStop(1,`rgba(${pal.ring.join(',')},0)`);ctx.fillStyle=g;ctx.fillRect(r.x-fr,r.y-fr,fr*2,fr*2);}
+  ctx.restore();return true;
 }
 
-function makeEmitter(canvas, prm, pal){
-  const ctx=canvas.getContext('2d'); const DPR=Math.min(2,devicePixelRatio||1);
-  let W,H; function size(){const r=canvas.getBoundingClientRect();W=r.width;H=r.height;
-    canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);}
+function makeEmitter(canvas,getPrm,getPal){
+  const ctx=canvas.getContext('2d'),DPR=Math.min(2,devicePixelRatio||1); let W,H;
+  const size=()=>{const b=canvas.getBoundingClientRect();W=b.width;H=b.height;canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);};
   size(); new ResizeObserver(size).observe(canvas);
-  let rings=[], t=0, last=-1, px=0, py=0; const CAP=30;
-  function spawn(x,y,e,ta,amp){ if(rings.length>=CAP)rings.shift(); rings.push({x,y,age:0,energy:e,ta,amp}); }
-  function fire(x,y,e,ta){
-    spawn(x,y,e,ta,1);
-    if(prm.double){ setTimeout(()=>spawn(x,y,e,ta,0.7), 150); }      // heartbeat: paired thump
-    const n = prm.harmCount || 0;                                    // ripple: concentric train
-    for(let i=1;i<=n;i++) setTimeout(()=>spawn(x,y,e,ta,1-i*0.22), i*110);
-  }
+  let rings=[],t=0,last=-1,px=0,py=0; const CAP=30;
+  const spawn=(x,y,e,dx,dy,amp)=>{if(rings.length>=CAP)rings.shift();rings.push({x,y,age:0,energy:e,dx,dy,amp});};
+  const fire=(prm,x,y,e,dx,dy)=>{spawn(x,y,e,dx,dy,1);
+    const n=Math.round(prm.harmonics*3); for(let i=1;i<=n;i++)setTimeout(()=>spawn(x,y,e,dx,dy,Math.max(.1,1-i*0.22)),i*110);};
   return {
-    step(dt){
-      t+=dt;
-      const cx=W*0.5, cy=H*0.5, orbit=Math.min(W,H)*0.30;
-      const pump=0.2+1.2*(0.5+0.5*Math.sin(t*1.3));
-      const ph=t*2.6*pump;
-      const x=cx+Math.cos(ph)*orbit, y=cy+Math.sin(ph)*orbit;
-      const sp=Math.hypot(x-px,y-py)/Math.max(dt,1e-4);
-      const e=Math.min(1,sp/REF_SPEED), ta=Math.atan2(y-py,x-px); px=x;py=y;
-      const iv = prm.trig==='beat' ? 0.62 : 1/(2.2*(1+e*2));
-      if(t-last>iv){ fire(x,y,e,ta); last=t; }
-      for(const r of rings) r.age+=dt;
-      this.px=x; this.py=y;
+    step(dt){ t+=dt; const prm=getPrm();
+      const cx=W*0.5,cy=H*0.5,orbit=Math.min(W,H)*0.30;
+      const pump=0.2+1.2*(0.5+0.5*Math.sin(t*1.3)), ph=t*2.6*pump;
+      const x=cx+Math.cos(ph)*orbit,y=cy+Math.sin(ph)*orbit;
+      const pf=Math.hypot(x-px,y-py),sp=pf/Math.max(dt,1e-4),e=Math.min(1,sp/REF);
+      const len=pf>1e-4?pf:1,dx=(x-px)/len,dy=(y-py)/len; px=x;py=y;
+      let iv; if(prm.trig==='beat')iv=0.6; else if(prm.trig==='velocity')iv=null; else iv=1/(2.2*(1+e*2));
+      if(prm.trig==='velocity'){ if(e>0.45&&t-last>0.12){fire(prm,x,y,e,dx,dy);last=t;} }
+      else if(t-last>iv){fire(prm,x,y,e,dx,dy);last=t;}
+      for(const r of rings)r.age+=dt; this.px=x;this.py=y;
     },
-    draw(){
-      ctx.clearRect(0,0,W,H); ctx.fillStyle='#060810'; ctx.fillRect(0,0,W,H);
-      for(let i=rings.length-1;i>=0;i--){ if(!drawRing(ctx,rings[i],prm,pal))rings.splice(i,1); }
-      ctx.beginPath(); ctx.arc(this.px||cx0(),this.py||cy0(),3.5,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
-      function cx0(){return W*0.5;} function cy0(){return H*0.5;}
-    }
+    draw(){const prm=getPrm(),pal=getPal();ctx.clearRect(0,0,W,H);ctx.fillStyle='#060810';ctx.fillRect(0,0,W,H);
+      for(let i=rings.length-1;i>=0;i--){if(!drawRing(ctx,rings[i],prm,pal))rings.splice(i,1);}
+      ctx.beginPath();ctx.arc(this.px||W/2,this.py||H/2,3.5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();}
   };
 }
 
-const grid=document.getElementById('grid');
-const emitters=[];
-for(const pr of PRESETS){
-  const tile=document.createElement('div'); tile.className='tile';
-  tile.innerHTML=`<canvas></canvas>
-    <div class="meta">
-      <div class="nm"><b>${pr.name}</b><span class="trig">${pr.trig}</span></div>
-      <div class="id">${pr.palette} · <span class="trait">${pr.trait}</span></div>
-      <div class="tags">asym ${pr.asymmetry} · chr ${pr.chromatic} · flash ${pr.flash} · harm ${pr.harmCount||(pr.double?'2× thump':pr.harmonics)}</div>
-    </div>`;
-  grid.appendChild(tile);
-  emitters.push(makeEmitter(tile.querySelector('canvas'), pr, PAL[pr.palette]));
+const tiles=document.getElementById('tiles'),emitters=[];
+PRESETS.forEach((pr,idx)=>{
+  const tile=document.createElement('div');tile.className='tile'+(idx===1?' sel':'');
+  tile.innerHTML=`<canvas></canvas><div class="meta"><div class="nm"><b>${pr.name}</b><span class="trig">${pr.trig}</span></div><div class="id">${pr.palette} · ${pr.id2}</div></div>`;
+  tiles.appendChild(tile);
+  emitters.push(makeEmitter(tile.querySelector('canvas'),()=>pr,()=>PAL[pr.palette]));
+  tile.addEventListener('click',()=>{select(idx);document.querySelectorAll('.tile').forEach(t=>t.classList.remove('sel'));tile.classList.add('sel');});
+});
+
+const live={...PRESETS[1]};
+const big=makeEmitter(document.getElementById('big'),()=>live,()=>PAL[live.palette]);
+const SEGS=[{k:'trig',l:'Trigger',o:['beat','velocity','continuous']},{k:'palette',l:'Palette',o:['sonar','ripple','aurora','neon','ember','void']}];
+const SL=[['intensity','Intensity'],['reach','Reach'],['lifetime','Lifetime',0.2,3,0.1],['thickness','Thickness'],
+  ['velocityScale','Velocity→Size'],['asymmetry','Asymmetry'],['chromatic','Chromatic'],['flash','Flash'],['harmonics','Harmonics']];
+const knobs=document.getElementById('knobs');
+function build(){knobs.innerHTML='';
+  for(const s of SEGS){const g=document.createElement('div');g.className='grp';g.innerHTML=`<div class="gl">${s.l}</div><div class="seg"></div>`;
+    const seg=g.querySelector('.seg');s.o.forEach(o=>{const b=document.createElement('button');b.textContent=o;if(live[s.k]===o)b.classList.add('on');
+      b.onclick=()=>{live[s.k]=o;build();sum();};seg.appendChild(b);});knobs.appendChild(g);}
+  for(const s of SL){const[k,l,mn,mx,st]=s;const row=document.createElement('div');row.className='row';
+    const v=()=>k==='lifetime'?live[k].toFixed(1)+'s':Math.round(live[k]*100)+'%';
+    row.innerHTML=`<label>${l}<b>${v()}</b></label><input type="range" min="${mn??0}" max="${mx??1}" step="${st??0.05}" value="${live[k]}">`;
+    const inp=row.querySelector('input'),b=row.querySelector('b');inp.oninput=()=>{live[k]=+inp.value;b.textContent=v();};knobs.appendChild(row);}
 }
+function sum(){document.getElementById('pSummary').textContent=`${live.trig} · ${live.palette}`;}
+function select(i){Object.assign(live,PRESETS[i]);document.getElementById('pName').textContent=PRESETS[i].name;build();sum();}
+select(1);
+document.getElementById('copy').onclick=()=>{
+  const f=['intensity','reach','lifetime','thickness','velocityScale','asymmetry','chromatic','flash','harmonics'];
+  const o={trigger:live.trig,palette:live.palette};f.forEach(k=>o[k]=+live[k].toFixed(2));
+  document.getElementById('out').textContent=JSON.stringify(o,null,2);
+};
 
 let prev=performance.now();
-function loop(now){ const dt=Math.min(0.05,(now-prev)/1000); prev=now;
-  for(const e of emitters){ e.step(dt); e.draw(); }
-  requestAnimationFrame(loop); }
+function loop(now){const dt=Math.min(0.05,(now-prev)/1000);prev=now;
+  for(const e of emitters){e.step(dt);e.draw();} big.step(dt);big.draw(); requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
 </script>
 </body>

@@ -277,9 +277,12 @@ export class Pulse2DRenderer {
 
     const falloff = (1 - progress) * (1 - progress);
     const peak = params.intensity * (0.45 + 0.55 * ring.energy) * falloff * ring.amp;
-    // Base directional floor + energy term: a high-asymmetry preset reads as a
-    // teardrop even at rest, then deforms harder on fast swings.
-    const asym = params.asymmetry * (0.4 + 0.6 * ring.energy);
+    // Base directional floor + energy term, capped at 0.5 so r(θ) = R·(1−asym·cos)
+    // stays a smooth teardrop (front compressed, wake stretched) and never reaches
+    // the cardioid cusp at asym→1 (which pinches to an ugly crescent). A
+    // high-asymmetry preset reads as a teardrop even at rest, deforming harder on
+    // fast swings.
+    const asym = params.asymmetry * (0.2 + 0.3 * ring.energy);
     const travelAngle = Math.atan2(ring.dirY, ring.dirX);
 
     const drawColor = params.resolvedPalette.hueShift
