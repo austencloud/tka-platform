@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
+import { resolveAccessTier, getMaxBeats, ACCESS_TIER_LABELS } from "$lib/shared/auth/domain/access-tier";
 
 describe("resolveAccessTier", () => {
   it("unauthenticated → guest", () => {
@@ -19,5 +19,19 @@ describe("resolveAccessTier", () => {
   });
   it("guest cap stays 8 for anonymous", () => {
     expect(getMaxBeats(resolveAccessTier(true, true, false))).toBe(8);
+  });
+});
+
+describe("getMaxBeats", () => {
+  it("guest cap is 8", () => expect(getMaxBeats("guest")).toBe(8));
+  it("user cap is 16", () => expect(getMaxBeats("user")).toBe(16));
+  it("premium cap is 64", () => expect(getMaxBeats("premium")).toBe(64));
+});
+
+describe("ACCESS_TIER_LABELS", () => {
+  it("labels match product tier names", () => {
+    expect(ACCESS_TIER_LABELS.guest).toBe("Guest");
+    expect(ACCESS_TIER_LABELS.user).toBe("Composer");
+    expect(ACCESS_TIER_LABELS.premium).toBe("Scribe");
   });
 });
