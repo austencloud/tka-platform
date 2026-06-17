@@ -70,18 +70,18 @@ export const TYPE1_ROTATION: Record<string, Type1RotationEntry> = {
   A: { vtgGroup: "ss", rotationPattern: "pro" },
   B: { vtgGroup: "ss", rotationPattern: "anti" },
   C: { vtgGroup: "ss", rotationPattern: "hybrid" },
-  // Split-Opposite
-  D: { vtgGroup: "so", rotationPattern: "pro" },
-  E: { vtgGroup: "so", rotationPattern: "anti" },
-  F: { vtgGroup: "so", rotationPattern: "hybrid" },
+  // Together-Opposite
+  D: { vtgGroup: "to", rotationPattern: "pro" },
+  E: { vtgGroup: "to", rotationPattern: "anti" },
+  F: { vtgGroup: "to", rotationPattern: "hybrid" },
   // Together-Same
   G: { vtgGroup: "ts", rotationPattern: "pro" },
   H: { vtgGroup: "ts", rotationPattern: "anti" },
   I: { vtgGroup: "ts", rotationPattern: "hybrid" },
-  // Together-Opposite
-  J: { vtgGroup: "to", rotationPattern: "pro" },
-  K: { vtgGroup: "to", rotationPattern: "anti" },
-  L: { vtgGroup: "to", rotationPattern: "hybrid" },
+  // Split-Opposite
+  J: { vtgGroup: "so", rotationPattern: "pro" },
+  K: { vtgGroup: "so", rotationPattern: "anti" },
+  L: { vtgGroup: "so", rotationPattern: "hybrid" },
   // Quarter-Opposite (two triples, M-R) — NO leaderRotation
   M: { vtgGroup: "qo", rotationPattern: "pro" },
   N: { vtgGroup: "qo", rotationPattern: "anti" },
@@ -108,9 +108,9 @@ export function getType1Rotation(letter: string): Type1RotationEntry | undefined
 export const PRECISE_QUARTER_SAME_EXPLANATION = `Type 1 (dual-shift, 22 letters) is organized by VTG timing + direction into groups:
 
 - Split-Same: A, B, C
-- Split-Opposite: D, E, F
+- Together-Opposite: D, E, F
 - Together-Same: G, H, I
-- Together-Opposite: J, K, L
+- Split-Opposite: J, K, L
 - Quarter-Opposite: M, N, O and P, Q, R
 - Quarter-Same: S, T, U, V
 
@@ -197,6 +197,15 @@ describe("TYPE1_ROTATION canonical data", () => {
     for (const g of ["ss", "so", "ts", "to"] as VtgGroup[]) {
       expect(patternsIn(g)).toEqual(["anti", "hybrid", "pro"]);
     }
+  });
+
+  it("pins each VTG group to its exact letters (verified via tka_to_vtg MCP)", () => {
+    expect(lettersIn("ss")).toEqual(["A", "B", "C"]);
+    expect(lettersIn("to")).toEqual(["D", "E", "F"]);
+    expect(lettersIn("ts")).toEqual(["G", "H", "I"]);
+    expect(lettersIn("so")).toEqual(["J", "K", "L"]);
+    expect(lettersIn("qo")).toEqual(["M", "N", "O", "P", "Q", "R"]);
+    expect(lettersIn("qs")).toEqual(["S", "T", "U", "V"]);
   });
 
   it("quarter-same is exactly S, T, U, V", () => {
@@ -295,7 +304,7 @@ Leave the `groups` array and `description` unchanged.
 In `packages/domain/src/data/letter-types.ts`, replace the three Type-1 `characteristics` strings at lines 11-13 (the "A-L … groups of three", "M-V … leader/follower distinction … 10 letters", and "U leads with pro …" lines) with these accurate ones:
 
 ```ts
-      "Organized by VTG timing+direction: Split-Same (ABC), Split-Opp (DEF), Together-Same (GHI), Together-Opp (JKL), Quarter-Opp (M-R), Quarter-Same (STUV)",
+      "Organized by VTG timing+direction: Split-Same (ABC), Together-Opp (DEF), Together-Same (GHI), Split-Opp (JKL), Quarter-Opp (M-R), Quarter-Same (STUV)",
       "Each group is pro + anti + hybrid = 3 letters, except Quarter-Same, which has 4",
       "Quarter-Same's hybrid splits into U (leader pro) and V (leader anti) because same-direction shifts at a right angle have a leader and follower. Quarter-Opposite (M-R) has no leader/follower",
 ```

@@ -60,9 +60,9 @@ grouped by timing + direction `[list_vtg_categories, stuv-anomaly]`:
 | Group | Letters | Position |
 |---|---|---|
 | Split-Same | A B C | symmetric (α/β) |
-| Split-Opposite | D E F | symmetric |
+| Together-Opposite | D E F | symmetric |
 | Together-Same | G H I | symmetric |
-| Together-Opposite | J K L | symmetric |
+| Split-Opposite | J K L | symmetric |
 | Quarter-Opposite | M N O **and** P Q R | gamma (asymmetric) |
 | Quarter-Same | **S T U V** | gamma (asymmetric) |
 
