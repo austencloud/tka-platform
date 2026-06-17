@@ -104,7 +104,7 @@
     vm.setNonRadialVisibility(target);
   }
 
-  // TnD and elemental glyphs move together (matching VisibilityTab behavior).
+  // TnD and elemental glyphs move together.
   function toggleTnD(): void {
     const next = !tndGlyph;
     vm.setGlyphVisibility("tndGlyph", next);

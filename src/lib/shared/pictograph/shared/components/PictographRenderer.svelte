@@ -442,7 +442,7 @@ Usage:
     <!-- Corner glyphs - positioned at edges of expanded viewBox -->
       <!-- TKA Glyph (fades when one motion is dimmed since it represents both hands) -->
       {#if pictograph.letter}
-        <g opacity={showTKA ? glyphOpacity : 0}>
+        <g opacity={glyphOpacity}>
           <TKAGlyph
             letter={pictograph.letter}
             pictographData={pictograph}
@@ -455,7 +455,7 @@ Usage:
       {/if}
 
       <!-- Turns Column (part of TKA) -->
-      <g opacity={showTKA ? glyphOpacity : 0}>
+      <g opacity={glyphOpacity}>
         <TurnsColumn
           {turnsTuple}
           letter={pictograph.letter}
@@ -469,7 +469,7 @@ Usage:
 
       <!-- Direction Dot (same/opp indicator) - positioned relative to letter -->
       {#if pictograph.letter}
-        <g opacity={showTKA ? glyphOpacity : 0}>
+        <g opacity={glyphOpacity}>
           <DirectionDot
             direction={parsedDirection}
             letter={pictograph.letter}
@@ -503,7 +503,7 @@ Usage:
       />
 
       <!-- Fused Elemental + TnD glyph (bottom-right) -->
-      <g opacity={(showElemental || showTnD) ? glyphOpacity : 0}>
+      <g opacity={glyphOpacity}>
         <ElementalGlyph
           elementalType={tndInfo.elementalType}
           letter={pictograph.letter}
@@ -516,7 +516,7 @@ Usage:
       </g>
 
       <!-- Position glyph -->
-      <g opacity={showPositions ? glyphOpacity : 0}>
+      <g opacity={glyphOpacity}>
         <PositionGlyph
           startPosition={pictograph.startPosition}
           endPosition={pictograph.endPosition}

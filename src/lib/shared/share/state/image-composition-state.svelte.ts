@@ -228,7 +228,7 @@ class ImageCompositionStateManager {
   }
 
   get includeStartPosition(): boolean {
-    return true;
+    return this.settings.includeStartPosition;
   }
 
   /**

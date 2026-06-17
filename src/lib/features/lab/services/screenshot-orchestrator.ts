@@ -45,7 +45,6 @@ const ROUTES: RouteNode[] = [
   // Settings
   { label: "settings--profile", moduleId: "settings", tabId: "profile", requiresAuth: true },
   { label: "settings--theme", moduleId: "settings", tabId: "theme", requiresAuth: true },
-  { label: "settings--visibility", moduleId: "settings", tabId: "visibility", requiresAuth: true },
   // Feedback
   { label: "feedback", moduleId: "feedback", requiresAuth: true },
 ];

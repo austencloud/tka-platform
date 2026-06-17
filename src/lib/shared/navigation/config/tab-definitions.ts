@@ -456,16 +456,6 @@ export const ADMIN_TABS: Section[] = [
 // Settings tabs configuration - shown in sidebar like other modules
 export const SETTINGS_TABS: Section[] = [
   {
-    id: "visibility",
-    labelKey: "tab_settings_visibility",
-    descKey: "tab_desc_settings_visibility",
-    label: "Visibility",
-    icon: '<i class="fas fa-eye" aria-hidden="true"></i>',
-    description: "Pictograph, animation, and card display settings",
-    color: "#22c55e",
-    gradient: "linear-gradient(135deg, #4ade80 0%, #22c55e 100%)",
-  },
-  {
     id: "profile",
     labelKey: "tab_settings_profile",
     descKey: "tab_desc_settings_profile",
