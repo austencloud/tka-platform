@@ -90,7 +90,8 @@ Depends on B (guest identity exists). Do last.
    anonymous uid; "guest" tier = unauthenticated **or** anonymous; full-account
    gates use `isFullUser()`, not `isAuthenticated()`.
 2. **No silent loss anywhere.** Any flow that could drop user work warns first
-   (cross-ref `.claude/rules/error-boundaries` philosophy).
+   and offers a recovery path (see slice B's collision-import and edge-case
+   handling for the pattern).
 3. **Reuse the real components.** Scaffolds and bridges render real Constructor /
    Learn / animation components, never emoji/mock stand-ins
    (cross-ref `never-hand-roll.md`, `visualization-routing.md`).
