@@ -15,6 +15,8 @@ import {
 import type { UIGenerationConfig } from "../shared/utils/config-mapper";
 import { getTemplateById } from "../../shared/domain/templates/duration-templates";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { resolveAccessTier } from "$lib/shared/auth/domain/access-tier";
+import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
 
 // Re-export for convenience
 export type { UIGenerationConfig };
@@ -211,8 +213,17 @@ export function createGenerationConfigState(
 
   // Guests with no saved config get an opinionated starting state
   // so the Generate tab isn't a blank Intermediate freeform prompt.
+  // Resolve the access tier so anonymous Firebase guests (now
+  // isAuthenticated === true) are still treated as guests, rather than
+  // inferring guest from raw auth.
+  const isGuest =
+    resolveAccessTier(
+      authState.isAuthenticated,
+      authState.isAnonymous,
+      isPremiumOrAbove(authState.role)
+    ) === "guest";
   const guestOverrides =
-    !savedConfig && !authState.isAuthenticated ? GUEST_DEFAULT_OVERRIDES : {};
+    !savedConfig && isGuest ? GUEST_DEFAULT_OVERRIDES : {};
 
   // Initialize config with priority: initialConfig > savedConfig > guestOverrides > DEFAULT_CONFIG
   let config = $state<UIGenerationConfig>({
