@@ -1,8 +1,10 @@
 import { writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { LETTER_TYPES } from "@tka/domain";
 
-const OUT = resolve("mcp-server-pkg/data/letter-types.json");
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const OUT = resolve(__dirname, "..", "mcp-server-pkg", "data", "letter-types.json");
 
 function build(): Record<string, unknown> {
   const out: Record<string, unknown> = {};
