@@ -254,6 +254,17 @@ export class GameBridge {
   // METHOD EXECUTION
   // --------------------------------------------------------------------------
 
+  /**
+   * Stable public entry point for driving the bridge directly (chrome-devtools
+   * MCP / browser console) WITHOUT a WebSocket controller. Forwards to the same
+   * dispatch the WS uses, so `window.__gameBridge.debug("teleport", {x,y,z})`,
+   * `debug("raycast", {})`, `debug("getState")`, etc. all work and stay valid
+   * even if the private method names change. Returns the method's result.
+   */
+  async debug(method: string, params: Record<string, unknown> = {}): Promise<unknown> {
+    return this.executeMethod(method, params);
+  }
+
   private async executeMethod(
     method: string,
     params: Record<string, unknown>
@@ -724,6 +735,65 @@ export class GameBridge {
 // ============================================================================
 
 let bridgeInstance: GameBridge | null = null;
+
+/**
+ * Whether the game bridge INSTANCE should be created.
+ *
+ * Two independent concerns, deliberately split:
+ *
+ *  1. ENABLED  (this fn)  — create the GameBridge and expose `window.__gameBridge`.
+ *     This is all you need to drive the scene directly (chrome-devtools MCP /
+ *     console calling `__gameBridge.teleport(...)`, `.raycast(...)`, etc.). It
+ *     does NOT open any socket, so it makes zero console noise.
+ *  2. CONNECT  (shouldConnectGameBridge) — additionally open the WebSocket to
+ *     the MCP game controller server. ONLY opt into this when that controller
+ *     is actually running, otherwise the absent server produces the
+ *     connection-refused / reconnect spam this split exists to prevent.
+ *
+ * Off by default. Opt in via any of:
+ *
+ *   - localStorage: tka:game-bridge = "1"       → enabled, no socket (quiet)
+ *   - localStorage: tka:game-bridge = "connect" → enabled AND connect to WS
+ *   - Vite env:     VITE_GAME_BRIDGE=1 | connect
+ *   - window flag:  window.__enableGameBridge / window.__connectGameBridge
+ *
+ * From the browser console:  localStorage["tka:game-bridge"] = "1"  then reload
+ * for direct driving (no WS). Use "connect" only with the controller running.
+ */
+function readBridgeFlag(): string | null {
+  const envFlag = import.meta.env?.VITE_GAME_BRIDGE;
+  if (typeof envFlag === "string" && envFlag !== "") return envFlag;
+  if (typeof window !== "undefined") {
+    try {
+      return window.localStorage?.getItem("tka:game-bridge") ?? null;
+    } catch {
+      // localStorage can throw in sandboxed/private contexts — treat as unset
+    }
+  }
+  return null;
+}
+
+export function isGameBridgeEnabled(): boolean {
+  const flag = readBridgeFlag();
+  if (flag === "1" || flag === "true" || flag === "connect") return true;
+  if (typeof window !== "undefined") {
+    const w = window as unknown as { __enableGameBridge?: boolean; __connectGameBridge?: boolean };
+    if (w.__enableGameBridge || w.__connectGameBridge) return true;
+  }
+  return false;
+}
+
+/**
+ * Whether to additionally open the WebSocket to the MCP game controller.
+ * Strictly narrower than isGameBridgeEnabled — connecting implies enabled.
+ */
+export function shouldConnectGameBridge(): boolean {
+  if (readBridgeFlag() === "connect") return true;
+  if (typeof window !== "undefined") {
+    if ((window as unknown as { __connectGameBridge?: boolean }).__connectGameBridge) return true;
+  }
+  return false;
+}
 
 /**
  * Get WebSocket URL from environment or default

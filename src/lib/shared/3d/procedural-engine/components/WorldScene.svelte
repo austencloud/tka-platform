@@ -151,6 +151,17 @@
   // Avatar/Camera state - restore from HMR if available
   // Default to ORBIT so users see the welcome overlay and can click to enter exploration
   let cameraMode = $state<CameraMode>(hmrState?.cameraMode ?? CameraMode.ORBIT);
+
+  // Game-bridge raycast fn, bound out of WorldSceneContent (which owns the
+  // scene camera + graph). Null until the inner scene mounts.
+  let sceneRaycast = $state<
+    | ((
+        origin?: { x: number; y: number; z: number },
+        direction?: { x: number; y: number; z: number },
+        maxDistance?: number,
+      ) => import("$lib/shared/3d/debug/game-bridge-types").RaycastResult)
+    | null
+  >(null);
   const showAvatar = $derived(cameraMode !== CameraMode.FIRST_PERSON);
   let showGridPlanes = $state(false); // Disabled for exploration mode
 
@@ -270,9 +281,12 @@
     if (!browser || !import.meta.env.DEV) return;
     if (!physicsProvider || !performerManager) return;
     if (gameBridgeInitialized) return;
-    gameBridgeInitialized = true;
 
-    import("$lib/shared/3d/debug/game-bridge").then(async ({ initGameBridge }) => {
+    import("$lib/shared/3d/debug/game-bridge").then(async ({ initGameBridge, isGameBridgeEnabled, shouldConnectGameBridge }) => {
+      // Opt-in only — see isGameBridgeEnabled. Skip silently otherwise.
+      if (!isGameBridgeEnabled()) return;
+      gameBridgeInitialized = true;
+
       const bridge = initGameBridge({
         physics: {
           getPlayerPosition: () => physicsProvider?.getPlayerPosition() ?? null,
@@ -280,7 +294,8 @@
           isGrounded: () => physicsProvider?.isGrounded() ?? false,
           movePlayer: (movement, deltaTime) => physicsProvider?.movePlayer(movement, deltaTime),
           teleportPlayer: (position) => physicsProvider?.teleport?.(position),
-          raycast: (_origin, _direction, _maxDistance) => ({ hit: false }),
+          raycast: (origin, direction, maxDistance) =>
+            sceneRaycast ? sceneRaycast(origin, direction, maxDistance) : { hit: false },
         },
         camera: {
           getMode: () => cameraMode === CameraMode.FIRST_PERSON ? "first_person" : cameraMode === CameraMode.THIRD_PERSON ? "third_person" : "orbit",
@@ -303,11 +318,15 @@
         debug: true,
       });
 
-      // Auto-connect to MCP server
-      try {
-        await bridge.connect();
-      } catch {
-        // MCP Game Bridge not available — ignored silently
+      // Only open the WebSocket when the MCP controller is actually running.
+      // Direct driving via window.__gameBridge needs no socket; connecting to
+      // an absent server is what produced the reconnect spam.
+      if (shouldConnectGameBridge()) {
+        try {
+          await bridge.connect();
+        } catch {
+          // MCP Game Bridge not available — ignored silently
+        }
       }
     });
   });
@@ -452,6 +471,7 @@
       {showGridPlanes}
       {inputCapabilities}
       bind:terrainTexturesEnabled
+      bind:bridgeRaycast={sceneRaycast}
       onModeChange={(mode) => (cameraMode = mode)}
       performerState={activePerformerState}
     />

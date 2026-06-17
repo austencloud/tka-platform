@@ -70,8 +70,12 @@
     AmbientLight,
     HemisphereLight,
     Object3D,
+    Raycaster,
+    Vector3,
+    Matrix3,
     type Scene,
   } from "three";
+  import type { RaycastResult } from "$lib/shared/3d/debug/game-bridge-types";
 
   // Terrain material + game loop services
   import { createTerrainMaterialFactory } from "../services/terrain-material-factory";
@@ -131,6 +135,17 @@
     /** Toggle terrain textures on/off (bindable) */
     terrainTexturesEnabled: boolean;
 
+    /** Game-bridge raycast (AI debug). Bound out to the parent so WorldScene's
+     *  bridge binding can cast rays against this scene's camera + graph, which
+     *  only exist inside the Threlte canvas. Null until mounted. */
+    bridgeRaycast?:
+      | ((
+          origin?: { x: number; y: number; z: number },
+          direction?: { x: number; y: number; z: number },
+          maxDistance?: number,
+        ) => RaycastResult)
+      | null;
+
     /** Performer state for sequence playback (optional) */
     performerState?: import("$lib/shared/3d/state/avatar-instance-state.svelte").AvatarInstanceState | null;
 
@@ -179,6 +194,7 @@
     inputCapabilities,
     onModeChange,
     terrainTexturesEnabled = $bindable(true),
+    bridgeRaycast = $bindable(null),
     performerState = null,
     terrainData = null,
   }: Props = $props();
@@ -192,6 +208,60 @@
   // The scene context stores the raw Scene object without any wrapper.
   const threlteSceneCtx = getContext<{ scene: Scene }>("threlte-scene-context");
   const rawScene: Scene = threlteSceneCtx.scene;
+
+  // ── Game-bridge raycast (AI debug) ──────────────────────────────────────
+  // Reused across calls so the debug bridge allocates nothing per query.
+  const _rayCaster = new Raycaster();
+  const _rayOrigin = new Vector3();
+  const _rayDir = new Vector3();
+  const _rayNormalMat = new Matrix3();
+  const _rayNormal = new Vector3();
+  function sceneRaycast(
+    origin?: { x: number; y: number; z: number },
+    direction?: { x: number; y: number; z: number },
+    maxDistance = 100,
+  ): RaycastResult {
+    const cam = camera.current;
+    // Default to a camera ray ("what the viewer is looking at").
+    if (origin) {
+      _rayOrigin.set(origin.x, origin.y, origin.z);
+    } else if (cam) {
+      _rayOrigin.copy(cam.position);
+    } else {
+      return { hit: false };
+    }
+    if (direction) {
+      _rayDir.set(direction.x, direction.y, direction.z).normalize();
+    } else if (cam) {
+      cam.getWorldDirection(_rayDir);
+    } else {
+      return { hit: false };
+    }
+
+    _rayCaster.set(_rayOrigin, _rayDir);
+    _rayCaster.far = maxDistance;
+    const hits = _rayCaster.intersectObjects(rawScene.children, true);
+    const first = hits.find((h) => h.object.visible);
+    if (!first) return { hit: false };
+
+    const p = first.point;
+    let normal: { x: number; y: number; z: number } | undefined;
+    if (first.face) {
+      _rayNormalMat.getNormalMatrix(first.object.matrixWorld);
+      _rayNormal.copy(first.face.normal).applyMatrix3(_rayNormalMat).normalize();
+      normal = { x: _rayNormal.x, y: _rayNormal.y, z: _rayNormal.z };
+    }
+    return {
+      hit: true,
+      point: { x: p.x, y: p.y, z: p.z },
+      normal,
+      distance: first.distance,
+      objectId: first.object.uuid,
+      objectType: first.object.name || first.object.type,
+    };
+  }
+  // Publish to the parent (WorldScene) which owns the game-bridge binding.
+  bridgeRaycast = sceneRaycast;
 
   // Grid plane sets
   // Stage mode: all three planes (wall, wheel, floor)

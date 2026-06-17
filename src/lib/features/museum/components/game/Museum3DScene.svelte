@@ -4,6 +4,8 @@
   import { PCFSoftShadowMap } from "three";
   import {
     Vector3,
+    Raycaster,
+    Matrix3,
   } from "three";
   import type { BatchedMesh, PerspectiveCamera } from "three";
   import MuseumPostProcessing from "./MuseumPostProcessing.svelte";
@@ -251,6 +253,64 @@
   // change event. Avoids per-frame Vector3 allocations.
   const _editorTargetVec = new Vector3();
 
+  // ── Game-bridge raycast (AI debug: "what am I looking at / what's at X") ──
+  // Reused across calls so the debug bridge doesn't allocate a Raycaster +
+  // scratch vectors per query.
+  const _rayCaster = new Raycaster();
+  const _rayOrigin = new Vector3();
+  const _rayDir = new Vector3();
+  const _rayNormalMat = new Matrix3();
+  const _rayNormal = new Vector3();
+  function bridgeRaycast(
+    origin?: { x: number; y: number; z: number },
+    direction?: { x: number; y: number; z: number },
+    maxDistance = 100,
+  ): import("$lib/shared/3d/debug/game-bridge-types").RaycastResult {
+    const scene = resolveScene(threlteCtx);
+    if (!scene) return { hit: false };
+
+    // Default to a camera ray ("what the viewer is looking at") when no
+    // explicit origin/direction is supplied.
+    if (origin) {
+      _rayOrigin.set(origin.x, origin.y, origin.z);
+    } else if (camera) {
+      _rayOrigin.copy(camera.position);
+    } else {
+      return { hit: false };
+    }
+    if (direction) {
+      _rayDir.set(direction.x, direction.y, direction.z).normalize();
+    } else if (camera) {
+      camera.getWorldDirection(_rayDir);
+    } else {
+      return { hit: false };
+    }
+
+    _rayCaster.set(_rayOrigin, _rayDir);
+    _rayCaster.far = maxDistance;
+    const hits = _rayCaster.intersectObjects(scene.children, true);
+    const first = hits.find((h) => h.object.visible);
+    if (!first) return { hit: false };
+
+    const p = first.point;
+    // face.normal is in geometry-local space; transform to world space so the
+    // returned normal actually describes the surface orientation in the scene.
+    let normal: { x: number; y: number; z: number } | undefined;
+    if (first.face) {
+      _rayNormalMat.getNormalMatrix(first.object.matrixWorld);
+      _rayNormal.copy(first.face.normal).applyMatrix3(_rayNormalMat).normalize();
+      normal = { x: _rayNormal.x, y: _rayNormal.y, z: _rayNormal.z };
+    }
+    return {
+      hit: true,
+      point: { x: p.x, y: p.y, z: p.z },
+      normal,
+      distance: first.distance,
+      objectId: first.object.uuid,
+      objectType: first.object.name || first.object.type,
+    };
+  }
+
   // Grid metrics
   const maxExtent = Math.max(grid.width, grid.height) * TILE_SIZE;
   const spawnWorldX = initialPlayerPos?.x ?? grid.spawn.x * TILE_SIZE;
@@ -297,6 +357,12 @@
   let playerYaw = $state(initialPlayerYaw ?? 0);
   let targetPlayerYaw = $state(initialPlayerYaw ?? 0);
   let playerPitch = $state(0);
+
+  // External rotation override for the game bridge (AI debug). When set to a
+  // number, UCC adopts it as the current yaw/pitch (one-shot on change — the
+  // user can still look around with the pointer afterward). Null = no override.
+  let externalYaw = $state<number | null>(null);
+  let externalPitch = $state<number | null>(null);
 
   // Snapshot of yaw/pitch at the moment we enter FPS mode.
   // Passed as initialYaw/initialPitch to UCC - these must NOT update while UCC is mounted,
@@ -644,9 +710,12 @@
   $effect(() => {
     if (typeof window === "undefined" || !import.meta.env.DEV) return;
     if (gameBridgeInitialized) return;
-    gameBridgeInitialized = true;
 
-    import("$lib/shared/3d/debug/game-bridge").then(async ({ initGameBridge }) => {
+    import("$lib/shared/3d/debug/game-bridge").then(async ({ initGameBridge, isGameBridgeEnabled, shouldConnectGameBridge }) => {
+      // Opt-in only — see isGameBridgeEnabled. Skip silently otherwise.
+      if (!isGameBridgeEnabled()) return;
+      gameBridgeInitialized = true;
+
       const bridge = initGameBridge({
         physics: {
           getPlayerPosition: () => physicsProvider?.getPlayerPosition() ?? null,
@@ -654,7 +723,8 @@
           isGrounded: () => physicsProvider?.isGrounded() ?? false,
           movePlayer: (movement, deltaTime) => physicsProvider?.movePlayer(movement, deltaTime),
           teleportPlayer: (position) => physicsProvider?.teleport?.(position),
-          raycast: (_origin, _direction, _maxDistance) => ({ hit: false }),
+          raycast: (origin, direction, maxDistance) =>
+            bridgeRaycast(origin, direction, maxDistance),
         },
         camera: {
           getMode: () => fpsActive
@@ -673,8 +743,10 @@
           },
           getYaw: () => playerYaw,
           getPitch: () => playerPitch,
-          setYaw: (yaw: number) => { playerYaw = yaw; },
-          setPitch: (_pitch: number) => { /* UCC manages pitch internally */ },
+          setYaw: (yaw: number) => { playerYaw = yaw; externalYaw = yaw; },
+          // Pitch is owned by UCC in FPS mode; push through the external
+          // override so look-up/down works from the bridge.
+          setPitch: (pitch: number) => { playerPitch = pitch; externalPitch = pitch; },
         },
         playback: {
           getPerformerManager: () => null,
@@ -683,10 +755,15 @@
         },
       }, { debug: true });
 
-      try {
-        await bridge.connect();
-      } catch {
-        // MCP Game Bridge not available
+      // Only open the WebSocket when the MCP controller is actually running —
+      // otherwise an absent server spams reconnects. Direct driving via
+      // window.__gameBridge needs no socket.
+      if (shouldConnectGameBridge()) {
+        try {
+          await bridge.connect();
+        } catch {
+          // MCP Game Bridge not available
+        }
       }
     });
 
@@ -1023,6 +1100,8 @@
   moveSpeed={3}
   initialYaw={fpsInitialYaw}
   initialPitch={fpsInitialPitch}
+  externalYaw={externalYaw}
+  externalPitch={externalPitch}
   allowedModes={[CameraMode.FIRST_PERSON, CameraMode.THIRD_PERSON]}
   disableModeToggle={true}
   onModeChange={(mode: CameraMode) => {
