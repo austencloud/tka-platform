@@ -28,6 +28,12 @@ export interface OptimizerInput {
   red: SimPropTarget;
 }
 
+/** Sweep variant of OptimizerInput: each hand is a sequence of staff instants. */
+export interface OptimizerSweepInput {
+  blue: SimPropTarget[];
+  red: SimPropTarget[];
+}
+
 /** Hard bounds on each stance parameter. */
 export interface OptimizerBounds {
   footOffsetX: { min: number; max: number };

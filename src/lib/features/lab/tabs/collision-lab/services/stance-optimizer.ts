@@ -47,7 +47,7 @@
  * Domain: Collision Lab - automated stance search
  */
 
-import type { OptimizerBounds, OptimizerInput, OptimizerResult } from "./types";
+import type { OptimizerBounds, OptimizerInput, OptimizerResult, OptimizerSweepInput } from "./types";
 import type { SimResult } from "./types";
 import type { StancePose } from "../domain/types";
 import type { StanceSimulator } from "./stance-simulator";
@@ -159,7 +159,8 @@ export class StanceOptimizer {
 
       const remaining = MAX_TOTAL_EVALS - totalEvals;
       const budget = Math.min(MAX_EVALS_PER_DESCENT, remaining);
-      const result = this.descend(input, seedStance, bounds, budget);
+      const evaluate = (s: StancePose) => this.simulator.evaluate(s, input.blue, input.red);
+      const result = this.descend(evaluate, seedStance, bounds, budget);
       totalEvals += result.evaluations;
 
       if (!best || result.loss < best.loss) best = result;
@@ -182,7 +183,8 @@ export class StanceOptimizer {
       const remaining = MAX_TOTAL_EVALS - totalEvals;
       const budget = Math.min(MAX_EVALS_PER_DESCENT, remaining);
       const start = this.randomStance(bounds, restarts);
-      const attempt = this.descend(input, start, bounds, budget);
+      const evaluate = (s: StancePose) => this.simulator.evaluate(s, input.blue, input.red);
+      const attempt = this.descend(evaluate, start, bounds, budget);
       totalEvals += attempt.evaluations;
       if (attempt.loss < best.loss) best = attempt;
       restarts++;
@@ -190,6 +192,61 @@ export class StanceOptimizer {
 
     // `best` is always set because YAW_SEEDS_RAD is non-empty and the
     // first iteration always runs. The non-null check satisfies TS.
+    const resolved = best!;
+    return {
+      stance: resolved.stance,
+      loss: resolved.loss,
+      simResult: resolved.simResult,
+      evaluations: totalEvals,
+      feasible: resolved.feasible,
+    };
+  }
+
+  /**
+   * Sweep variant of {@link optimize}: searches for one fixed stance that
+   * minimizes worst-case loss across a swept volume (the prop's whole motion).
+   * Same multi-start descent + loss as optimize(); only the evaluator differs.
+   */
+  optimizeSweep(
+    input: OptimizerSweepInput,
+    initial: StancePose,
+    bounds: OptimizerBounds
+  ): OptimizerResult {
+    const evaluate = (s: StancePose) => this.simulator.evaluateSweep(s, input.blue, input.red);
+    let totalEvals = 0;
+    let best: DescentResult | null = null;
+
+    for (const yawSeed of YAW_SEEDS_RAD) {
+      if (totalEvals >= MAX_TOTAL_EVALS) break;
+      const seedStance: StancePose = {
+        ...initial,
+        rootYawRad: this.wrapAngle(initial.rootYawRad + yawSeed),
+      };
+      this.clampInPlace(seedStance, bounds);
+      const remaining = MAX_TOTAL_EVALS - totalEvals;
+      const budget = Math.min(MAX_EVALS_PER_DESCENT, remaining);
+      const result = this.descend(evaluate, seedStance, bounds, budget);
+      totalEvals += result.evaluations;
+      if (!best || result.loss < best.loss) best = result;
+      if (best.feasible && best.loss < EARLY_EXIT_LOSS) break;
+    }
+
+    let restarts = 0;
+    while (
+      best &&
+      !best.feasible &&
+      restarts < MAX_RANDOM_RESTARTS &&
+      totalEvals < MAX_TOTAL_EVALS
+    ) {
+      const remaining = MAX_TOTAL_EVALS - totalEvals;
+      const budget = Math.min(MAX_EVALS_PER_DESCENT, remaining);
+      const start = this.randomStance(bounds, restarts);
+      const attempt = this.descend(evaluate, start, bounds, budget);
+      totalEvals += attempt.evaluations;
+      if (attempt.loss < best.loss) best = attempt;
+      restarts++;
+    }
+
     const resolved = best!;
     return {
       stance: resolved.stance,
@@ -220,7 +277,8 @@ export class StanceOptimizer {
     const seedStance: StancePose = { ...seed };
     seedStance.rootYawRad = this.wrapAngle(seedStance.rootYawRad);
     this.clampInPlace(seedStance, bounds);
-    const result = this.descend(input, seedStance, bounds, budget);
+    const evaluate = (s: StancePose) => this.simulator.evaluate(s, input.blue, input.red);
+    const result = this.descend(evaluate, seedStance, bounds, budget);
     return {
       stance: result.stance,
       loss: result.loss,
@@ -248,14 +306,14 @@ export class StanceOptimizer {
   // -----------------------------------------------------------------------
 
   private descend(
-    input: OptimizerInput,
+    evaluate: (s: StancePose) => SimResult,
     start: StancePose,
     bounds: OptimizerBounds,
     budget: number
   ): DescentResult {
     let best: StancePose = { ...start };
     this.clampInPlace(best, bounds);
-    let bestSim = this.simulator.evaluate(best, input.blue, input.red);
+    let bestSim = evaluate(best);
     let bestLoss = this.lossFrom(bestSim);
     let evals = 1;
 
@@ -270,7 +328,7 @@ export class StanceOptimizer {
           const candidate: StancePose = { ...best };
           candidate[key] = best[key] + dir * step[key];
           this.clampInPlace(candidate, bounds);
-          const sim = this.simulator.evaluate(candidate, input.blue, input.red);
+          const sim = evaluate(candidate);
           evals++;
           const loss = this.lossFrom(sim);
           if (loss < bestLoss - 1e-6) {
