@@ -1,8 +1,8 @@
 # Effect Leg Bolstering — Design / Progress
 
-**Status:** In progress (2026-06-16). Three legs upgraded and committed on `main`
-(bloom, zap, echo). In-browser visual verification still owed for all three.
-Next candidate: **pulse**.
+**Status:** In progress. Four legs upgraded and committed on `main`
+(bloom, zap, echo, **pulse**). In-browser visual verification still owed for all
+four. Re-assess the remaining cluster before the next leg.
 
 **Owner context:** This is the resumable handoff. Austen is switching machines —
 pull `main`, open this spec (it is the most recent by date prefix), and continue
@@ -97,6 +97,36 @@ concept (capture/cull/loop logic unchanged), rebuilt the drawing into light:
   Customize gains Glow/Depth/Flash sliders; presets reworked.
 - Commit: `3f0c0b1391`.
 
+### 4. Pulse → **pressure shockwave**
+
+Re-confirmed weakest of the bottom cluster over sparkles/petals (both genuine
+velocity sims): pulse computed tip speed but used it **only to gate spawning** —
+every ring looked identical regardless of the motion that birthed it. Rebuilt so
+each ring captures `birthEnergy` (px/frame vs `REF_ENERGY_SPEED = 22`, zap
+precedent) + travel direction at spawn and encodes them:
+
+- **velocity → size + brightness** (`velocityScale`), **Mach-cone deform** with a
+  base directional floor + energy term (`asymmetry` — a high-asym preset reads as
+  a teardrop even at rest, deforms harder on fast swings; this fixed the
+  "presets only differ on hard hits" flaw), eased expansion, **white-hot leading
+  wedge over a deformed band fill** (glow) / thin stroke (stroke), **detonation
+  flash** at the origin, **chromatic fringe** on high-energy rings, and a
+  **frame-clock-scheduled harmonic overtone train** (`harmonics` → `round(·*3)`
+  trailing rings; carries Heartbeat's paired thump and Ripple's concentric trains
+  with one knob).
+- **PERF constraint discovered in the sketch:** no per-segment `shadowBlur` (it
+  tanked the frame rate). The hot front is band fill + one stroke + a short wedge.
+  Also calibrate energy reference to real px/frame or the deform never fires.
+- `PulseIntent` gained `velocityScale`/`asymmetry`/`chromatic`/`flash`/`harmonics`.
+  **v19→v20**; default `style` flips `stroke→glow` with a default-echo remap.
+  Presets **6→4** (kept Sonar/Shockwave/Heartbeat/Ripple; removed Radar/Void —
+  removed preset ids read as Custom, no config break). Customize gains 5 sliders.
+  New `pulse-2d-renderer.test.ts` (energy→size, asym deform, no-shadowBlur,
+  harmonic train).
+- Spec: `docs/superpowers/specs/2026-06-17-pulse-shockwave-design.md`. Sketches:
+  `static/sketches/2026-06-16-pulse-shockwave.html`,
+  `static/sketches/2026-06-17-pulse-scope.html`. Commit: `74acf67b92`.
+
 ### Related prior work this session (context)
 
 - **Fire activation freeze fix**: the click that enabled fire stalled ~1s on
@@ -119,7 +149,7 @@ nothing else:
 
 1. **Intent** — add fields to `<Effect>Intent` in
    `src/lib/shared/effects/domain/effects-config.ts`, and **bump
-   `EFFECTS_CONFIG_VERSION`** (currently **19**).
+   `EFFECTS_CONFIG_VERSION`** (currently **20**).
 2. **Defaults** — add the new fields to `DEFAULT_EFFECTS_CONFIG.<effect>` in
    `src/lib/shared/effects/domain/defaults.ts`.
 3. **Migration** — in `src/lib/shared/effects/domain/migrations.ts`: net-new
@@ -183,13 +213,15 @@ panel where fire was tested and confirm:
 
 If any layer runs hot, every new knob is a 0–1 slider — retune defaults/presets.
 
-### Next leg: pulse (likely)
+### Next leg: re-assess
 
-`pulse-2d-renderer.ts` (257 LOC) — pooled expanding rings with beat/velocity/
-continuous triggers + glow rings + color lerp. It is the most developed of the
-remaining bottom cluster, so **re-assess before committing to it**: read pulse,
-sparkles (257), and petals (256) renderers and pick the genuinely weakest by the
-reactivity/richness criteria, not LOC. Then apply the recipe above.
+Pulse is done. The remaining canvas2d effects are largely the strong sims marked
+"do not touch" up top (water/frost/ink/silk/smoke/bubbles particle/diffusion
+sims; sparkles + petals are genuine velocity sims with pools, spawn modes,
+sprites). Before picking a 5th leg, re-read the bottom of the cluster against the
+reactivity/richness criteria and confirm there is still a genuinely weak leg
+worth a full rebuild — the walk may be approaching done. If one is found, apply
+the recipe above.
 
 ### Open question
 
