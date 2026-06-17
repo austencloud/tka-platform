@@ -63,7 +63,7 @@
 
 <style>
   .play-section {
-    max-width: 1200px;
+    max-width: 1600px;
     margin: 0 auto;
     padding: 80px 24px;
     text-align: center;
