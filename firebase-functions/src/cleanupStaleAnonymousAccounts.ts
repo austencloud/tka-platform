@@ -40,10 +40,17 @@ export const cleanupStaleAnonymousAccounts = functions.pubsub
         .map((u) => u.uid);
 
       for (const uid of staleUids) {
-        // Cascade-delete the user's Firestore subtree, then the auth account.
-        await db.recursiveDelete(db.doc(`users/${uid}`));
-        await auth.deleteUser(uid);
-        sweptCount += 1;
+        try {
+          // Cascade-delete the user's Firestore subtree, then the auth account.
+          await db.recursiveDelete(db.doc(`users/${uid}`));
+          await auth.deleteUser(uid);
+          sweptCount += 1;
+        } catch (err) {
+          functions.logger.error(
+            "cleanupStaleAnonymousAccounts failed to delete account",
+            { uid, err }
+          );
+        }
       }
 
       pageToken = page.pageToken;
