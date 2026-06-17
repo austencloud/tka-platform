@@ -6,11 +6,34 @@
       "Both hands move 90 degrees on the grid",
       "Creates smooth, flowing transitions",
       "22 letters - the largest type",
-      "A-L are Type 1 letters on alpha/beta (the symmetric diamond-grid positions). The split into A-L is by rotation pattern (pro/anti/hybrid in groups of three)",
-      "M-V are Type 1 letters on gamma (the asymmetric diamond-grid position). Gamma's leader/follower distinction is what expands this group to 10 letters vs alpha/beta's 12",
-      "U leads with pro rotation (leader=pro, follower=anti). V leads with anti rotation (leader=anti, follower=pro). This is the defining distinction between U and V"
+      "Organized by VTG timing+direction: Split-Same (ABC), Together-Opp (DEF), Together-Same (GHI), Split-Opp (JKL), Quarter-Opp (M-R), Quarter-Same (STUV)",
+      "Each group is pro + anti + hybrid = 3 letters, except Quarter-Same, which has 4",
+      "Quarter-Same's hybrid splits into U (leader pro) and V (leader anti) because same-direction shifts at a right angle have a leader and follower. Quarter-Opposite (M-R) has no leader/follower"
     ],
-    "letters": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"],
+    "letters": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "O",
+      "P",
+      "Q",
+      "R",
+      "S",
+      "T",
+      "U",
+      "V"
+    ],
     "motionPattern": {
       "blueMotion": "shift",
       "redMotion": "shift"
@@ -24,7 +47,16 @@
       "Often used for transitions between symmetric and asymmetric positions",
       "Uses Greek letters for most of this type"
     ],
-    "letters": ["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω"],
+    "letters": [
+      "W",
+      "X",
+      "Y",
+      "Z",
+      "Σ",
+      "Δ",
+      "Θ",
+      "Ω"
+    ],
     "motionPattern": {
       "blueMotion": "static OR shift",
       "redMotion": "shift OR static",
@@ -39,7 +71,16 @@
       "Named with a '-' suffix (e.g., 'W-', 'Sigma-')",
       "IMPORTANT: 'Sigma dash' means the letter Sigma- (Type 3), not a letter with dash motion"
     ],
-    "letters": ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-"],
+    "letters": [
+      "W-",
+      "X-",
+      "Y-",
+      "Z-",
+      "Σ-",
+      "Δ-",
+      "Θ-",
+      "Ω-"
+    ],
     "motionPattern": {
       "blueMotion": "shift OR dash",
       "redMotion": "dash OR shift",
@@ -52,9 +93,16 @@
     "characteristics": [
       "Creates dramatic position changes",
       "Uses Greek letters Phi, Psi, Lambda",
-      "Only 3 letters in this type"
+      "Only 3 letters in this type",
+      "Phi = diverging (angular separation increases): beta→alpha, or eta→zeta on 8-point grid",
+      "Psi = converging (angular separation decreases): alpha→beta, or zeta→eta on 8-point grid",
+      "Lambda = angle preserved (gamma→gamma). Cannot be skewed (gamma requires both hands on same grid)"
     ],
-    "letters": ["Φ", "Ψ", "Λ"],
+    "letters": [
+      "Φ",
+      "Ψ",
+      "Λ"
+    ],
     "motionPattern": {
       "blueMotion": "static OR dash",
       "redMotion": "dash OR static",
@@ -68,9 +116,14 @@
       "Both hands move 180 degrees",
       "Creates dramatic, symmetric movements",
       "Named with '-' suffix like Type 3",
-      "Only 3 letters in this type"
+      "Only 3 letters in this type",
+      "Same diverge/converge/preserve pattern as Type 4. Lambda- cannot be skewed (same reason as Lambda)"
     ],
-    "letters": ["Φ-", "Ψ-", "Λ-"],
+    "letters": [
+      "Φ-",
+      "Ψ-",
+      "Λ-"
+    ],
     "motionPattern": {
       "blueMotion": "dash",
       "redMotion": "dash"
@@ -85,7 +138,11 @@
       "Uses lowercase Greek letters",
       "Good for 'breathing space' in sequences"
     ],
-    "letters": ["α", "β", "γ"],
+    "letters": [
+      "α",
+      "β",
+      "γ"
+    ],
     "motionPattern": {
       "blueMotion": "static",
       "redMotion": "static"
