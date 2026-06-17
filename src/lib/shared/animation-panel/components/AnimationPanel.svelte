@@ -206,7 +206,6 @@
       {
         tkaGlyph: s.tkaGlyph,
         stepNumbers: s.stepNumbers,
-        beatPosition: s.beatPosition,
         props: s.props,
         wordHeader: s.wordHeader,
         progressBar: s.progressBar,

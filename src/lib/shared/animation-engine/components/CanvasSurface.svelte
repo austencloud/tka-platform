@@ -90,7 +90,6 @@ captureEffectDiagnostics to the context menu.
     darkModeEnabled = false,
     effectiveTkaGlyphVisible = false,
     effectiveBeatNumbersVisible = false,
-    effectiveStepPositionVisible = false,
     pathLinesVisible = false,
     suppress2DOverlays = false,
     // Engine wiring props
@@ -132,7 +131,6 @@ captureEffectDiagnostics to the context menu.
     darkModeEnabled?: boolean;
     effectiveTkaGlyphVisible?: boolean;
     effectiveBeatNumbersVisible?: boolean;
-    effectiveStepPositionVisible?: boolean;
     pathLinesVisible?: boolean;
     suppress2DOverlays?: boolean;
     resizePaused?: boolean;
@@ -412,7 +410,6 @@ captureEffectDiagnostics to the context menu.
       {stepData}
       tkaGlyphVisible={effectiveTkaGlyphVisible}
       stepNumbersVisible={effectiveBeatNumbersVisible}
-      beatPositionVisible={effectiveStepPositionVisible}
       darkMode={darkModeEnabled}
       isAtStartPosition={!hideStepNumbers && currentStep < 1 && sequenceData !== null}
       isAtEndPosition={

@@ -6,7 +6,6 @@ export function migrateStoredSettings(parsed: Record<string, unknown>): Record<s
     delete parsed.propGlow;
   }
 
-  parsed.beatPosition = false;
   parsed.stepNumbers = true;
 
   if ("flameColorMode" in parsed && !("fireColorBlend" in parsed)) {

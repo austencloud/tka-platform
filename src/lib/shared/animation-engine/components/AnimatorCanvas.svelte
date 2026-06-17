@@ -324,7 +324,6 @@ Last audit: 2025-12-27
   // Initialize visibility state via $effect.pre to avoid state_referenced_locally on visibilityManager
   let tkaGlyphVisible = $state(false);
   let stepNumbersVisible = $state(false);
-  let beatPositionVisible = $state(false);
   let globalDarkMode = $state(false);
   let wordHeaderVisible = $state(false);
   let progressBarVisible = $state(false);
@@ -332,7 +331,6 @@ Last audit: 2025-12-27
   $effect.pre(() => {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
     stepNumbersVisible = visibilityManager.getVisibility("stepNumbers");
-    beatPositionVisible = visibilityManager.getVisibility("beatPosition");
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
@@ -345,12 +343,10 @@ Last audit: 2025-12-27
 
   const effectiveTkaGlyphVisible = $derived(tkaGlyphVisible && !hideTkaGlyph);
   const effectiveBeatNumbersVisible = $derived(stepNumbersVisible && !hideStepNumbers);
-  const effectiveStepPositionVisible = $derived(beatPositionVisible);
 
   function handleVisibilityChange() {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
     stepNumbersVisible = visibilityManager.getVisibility("stepNumbers");
-    beatPositionVisible = visibilityManager.getVisibility("beatPosition");
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
@@ -459,7 +455,6 @@ Last audit: 2025-12-27
       {darkModeEnabled}
       {effectiveTkaGlyphVisible}
       {effectiveBeatNumbersVisible}
-      {effectiveStepPositionVisible}
       {pathLinesVisible}
       {suppress2DOverlays}
       {resizePaused}

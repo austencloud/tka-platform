@@ -5,7 +5,6 @@ export function computePropsSummary(propLabel: string): string {
 export interface DisplayFlags {
   tkaGlyph: boolean;
   stepNumbers: boolean;
-  beatPosition: boolean;
   props: boolean;
   wordHeader: boolean;
   progressBar: boolean;

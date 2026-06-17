@@ -22,7 +22,6 @@ interface SettingRoute {
 const SETTING_ROUTES: Record<string, SettingRoute> = {
   // Animation visibility settings
   stepNumbers: { owner: "animVis", property: "stepNumbers", displayName: "step numbers" },
-  beatPosition: { owner: "animVis", property: "beatPosition", displayName: "beat position" },
   props: { owner: "animVis", property: "props", displayName: "props" },
   wordHeader: { owner: "animVis", property: "wordHeader", displayName: "word header" },
   progressBar: { owner: "animVis", property: "progressBar", displayName: "progress bar" },

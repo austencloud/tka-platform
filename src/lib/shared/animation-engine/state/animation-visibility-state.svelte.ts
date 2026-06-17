@@ -37,7 +37,6 @@ interface AnimationVisibilitySettings {
   // Animation-specific elements (no pictograph equivalent)
   gridMode: GridMode; // Grid visualization mode (3-state)
   stepNumbers: boolean; // "Beat 1, 2, 3..." overlay at top-left
-  beatPosition: boolean; // Musical beat position at bottom-center (1, 1.5, 2e, etc.)
   props: boolean; // Show props vs trails-only mode
   playbackMode: PlaybackMode; // Continuous flow vs step-by-step
   speed: number; // Speed multiplier (1.0 = 60 BPM, range 0.1-3.0)
@@ -124,7 +123,6 @@ export class AnimationVisibilityStateManager {
       // Animation-specific defaults
       gridMode: "8point", // Default to 8-point grid (all cardinal + intercardinal points)
       stepNumbers: true, // Show step numbers by default
-      beatPosition: false, // Hide beat position by default (replaced by progress bar)
       props: true,
       playbackMode: "continuous", // Default to continuous playback
       speed: 1.0, // Default to 60 BPM
@@ -161,9 +159,6 @@ export class AnimationVisibilityStateManager {
         if (parsed.propGlow !== undefined) {
           delete parsed.propGlow;
         }
-
-        // Force beatPosition to false (replaced by progress bar)
-        parsed.beatPosition = false;
 
         // Force stepNumbers to true (re-enabled for export and preview)
         parsed.stepNumbers = true;
