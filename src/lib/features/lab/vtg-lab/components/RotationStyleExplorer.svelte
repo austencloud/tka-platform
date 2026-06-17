@@ -40,12 +40,40 @@
   // Independent per-hand start orientation — reshapes each hand's rosette.
   let blueOri = $state<Orientation>(Orientation.IN);
   let redOri = $state<Orientation>(Orientation.IN);
-  const oriOptions = [
-    { value: Orientation.IN, label: "In" },
-    { value: Orientation.OUT, label: "Out" },
-    { value: Orientation.CLOCK, label: "Clock" },
-    { value: Orientation.COUNTER, label: "Counter" },
-  ];
+
+  // A two-ended staff is symmetric: in/out land the same tip union, as do
+  // clock/counter — so it only distinguishes Radial vs Nonradial. A one-ended
+  // club resolves all four. Options follow the selected prop.
+  const oriOptions = $derived(
+    prop === "staff"
+      ? [
+          { value: Orientation.IN, label: "Radial" },
+          { value: Orientation.CLOCK, label: "Nonradial" },
+        ]
+      : [
+          { value: Orientation.IN, label: "In" },
+          { value: Orientation.OUT, label: "Out" },
+          { value: Orientation.CLOCK, label: "Clock" },
+          { value: Orientation.COUNTER, label: "Counter" },
+        ],
+  );
+
+  /** Collapse a club orientation to its staff representative (in/out→Radial, clock/counter→Nonradial). */
+  function radialize(o: Orientation): Orientation {
+    if (o === Orientation.OUT) return Orientation.IN;
+    if (o === Orientation.COUNTER) return Orientation.CLOCK;
+    return o;
+  }
+
+  function setProp(v: PropKind): void {
+    prop = v;
+    if (v === "staff") {
+      // Keep the pickers' value inside the 2-option staff set.
+      blueOri = radialize(blueOri);
+      redOri = radialize(redOri);
+    }
+  }
+
   const startOri: StartOriPair = $derived({ blue: blueOri, red: redOri });
 
   // VTG ratio per turn value (1:1 … 7:1) — the axis numbering for this lab.
@@ -96,7 +124,7 @@
       </div>
       <div class="ctl">
         <span class="ctl-label">Prop</span>
-        <SegmentedControl options={propOptions} value={prop} onchange={(v) => (prop = v)} color="accent" size="sm" />
+        <SegmentedControl options={propOptions} value={prop} onchange={setProp} color="accent" size="sm" />
       </div>
       <div class="ctl ctl-wide">
         <span class="ctl-label">Blue start</span>
