@@ -7,6 +7,8 @@ describe("MCP letter-types.json stays generated from canonical", () => {
   it("byte-matches what the generator produces from LETTER_TYPES", () => {
     // If this fails, regenerate:
     //   npm --prefix packages/domain run build && npx tsx scripts/generate-letter-types-json.ts
+    // Re-derived independently (NOT imported from the generator) so a bug in
+    // the generator's projection can't hide — both sides would drift together.
     const expected: Record<string, unknown> = {};
     for (const [num, def] of Object.entries(LETTER_TYPES)) {
       expected[num] = {
@@ -18,7 +20,7 @@ describe("MCP letter-types.json stays generated from canonical", () => {
       };
     }
     const onDisk = readFileSync(
-      resolve("mcp-server-pkg/data/letter-types.json"),
+      resolve(process.cwd(), "mcp-server-pkg/data/letter-types.json"),
       "utf-8"
     );
     expect(onDisk).toBe(JSON.stringify(expected, null, 2) + "\n");
@@ -26,15 +28,17 @@ describe("MCP letter-types.json stays generated from canonical", () => {
 });
 
 describe("server-context letter lists do not drift from canonical", () => {
-  it("each type's letters array matches LETTER_TYPES", () => {
+  it("every type's letters array matches LETTER_TYPES", () => {
     const src = readFileSync(
-      resolve("mcp-server-pkg/src/shared/server-context.ts"),
+      resolve(process.cwd(), "mcp-server-pkg/src/shared/server-context.ts"),
       "utf-8"
     );
-    // The TKA_LETTER_TYPES literal lists letters per type; assert the Type 1
-    // line contains exactly the canonical Type 1 letters in order.
-    const type1Letters = LETTER_TYPES["1"].letters.map((l) => `"${l}"`).join(", ");
-    expect(src).toContain(type1Letters);
+    // TKA_LETTER_TYPES in server-context.ts is a hardcoded literal (deliberately
+    // not imported from canonical), so we assert against its source text.
+    for (const [num, def] of Object.entries(LETTER_TYPES)) {
+      const rendered = def.letters.map((l) => `"${l}"`).join(", ");
+      expect(src, `Type ${num} letters drifted from canonical`).toContain(rendered);
+    }
   });
 });
 
