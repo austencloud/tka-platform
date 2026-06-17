@@ -201,6 +201,17 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // Net-new fields, no migration code - absent values resolve to
   // DEFAULT_EFFECTS_CONFIG.echo (glow 0.6, depth 0.5, flash 0.5) via the merge.
 
+  // v19 → v20: pulse becomes a pressure shockwave - gains velocityScale/
+  // asymmetry/chromatic/flash/harmonics (net-new, resolve from defaults via the
+  // merge), and its default `style` flips "stroke" → "glow" (the rich gradient
+  // front). A persisted value equal to the OLD default ("stroke") is that
+  // default echoing back, not a user choice (same logic as the v17 bloom remap),
+  // so remap it; a user who deliberately set glow (or stroke after this ships) is
+  // left alone.
+  if (version < 20 && input.pulse && input.pulse.style === "stroke") {
+    input.pulse.style = "glow";
+  }
+
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,

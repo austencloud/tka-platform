@@ -181,7 +181,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     reach: 0.6,
     lifetime: 1.0,
     trigger: "beat",
-    style: "stroke",
+    style: "glow",
     beatInterval: 1,
     velocityThreshold: 0.3,
     thickness: 0.3,
@@ -191,6 +191,11 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     color: "#38bdf8",
     colorPalette: ["#38bdf8", "#a855f7", "#22d3ee", "#f472b6", "#fbbf24"],
     trackingMode: "both_ends",
+    velocityScale: 0.5,
+    asymmetry: 0.45,
+    chromatic: 0.3,
+    flash: 0.5,
+    harmonics: 0.3,
   },
 
   activePresets: {

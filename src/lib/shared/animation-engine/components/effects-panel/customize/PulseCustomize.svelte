@@ -278,6 +278,91 @@
         />
         <span class="slider-value">{Math.round(state.pulse.thickness * 100)}%</span>
       </div>
+
+      <div class="slider-row">
+        <label for="pulse-velocity-scale">Velocity → Size</label>
+        <input
+          id="pulse-velocity-scale"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={state.pulse.velocityScale}
+          oninput={(e) =>
+            state.updateEffect("pulse", {
+              velocityScale: +(e.currentTarget as HTMLInputElement).value,
+            })}
+        />
+        <span class="slider-value">{Math.round(state.pulse.velocityScale * 100)}%</span>
+      </div>
+
+      <div class="slider-row">
+        <label for="pulse-asymmetry">Asymmetry</label>
+        <input
+          id="pulse-asymmetry"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={state.pulse.asymmetry}
+          oninput={(e) =>
+            state.updateEffect("pulse", {
+              asymmetry: +(e.currentTarget as HTMLInputElement).value,
+            })}
+        />
+        <span class="slider-value">{Math.round(state.pulse.asymmetry * 100)}%</span>
+      </div>
+
+      <div class="slider-row">
+        <label for="pulse-chromatic">Chromatic</label>
+        <input
+          id="pulse-chromatic"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={state.pulse.chromatic}
+          oninput={(e) =>
+            state.updateEffect("pulse", {
+              chromatic: +(e.currentTarget as HTMLInputElement).value,
+            })}
+        />
+        <span class="slider-value">{Math.round(state.pulse.chromatic * 100)}%</span>
+      </div>
+
+      <div class="slider-row">
+        <label for="pulse-flash">Flash</label>
+        <input
+          id="pulse-flash"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={state.pulse.flash}
+          oninput={(e) =>
+            state.updateEffect("pulse", {
+              flash: +(e.currentTarget as HTMLInputElement).value,
+            })}
+        />
+        <span class="slider-value">{Math.round(state.pulse.flash * 100)}%</span>
+      </div>
+
+      <div class="slider-row">
+        <label for="pulse-harmonics">Harmonics</label>
+        <input
+          id="pulse-harmonics"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={state.pulse.harmonics}
+          oninput={(e) =>
+            state.updateEffect("pulse", {
+              harmonics: +(e.currentTarget as HTMLInputElement).value,
+            })}
+        />
+        <span class="slider-value">{Math.round(state.pulse.harmonics * 100)}%</span>
+      </div>
     </div>
   {:else}
     <p class="empty">Effect state unavailable.</p>

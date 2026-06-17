@@ -14,7 +14,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 19;
+export const EFFECTS_CONFIG_VERSION = 20;
 
 export type EffectType =
   | "none"
@@ -380,6 +380,16 @@ export interface PulseIntent {
   colorPalette: string[];
   /** Which staff end(s) emit rings. */
   trackingMode: "left_end" | "right_end" | "both_ends";
+  /** 0-1. How much birth tip-speed drives ring size + brightness. */
+  velocityScale: number;
+  /** 0-1. Mach-cone deform strength (renderer adds a base directional floor). */
+  asymmetry: number;
+  /** 0-1. RGB fringe split on high-energy rings. */
+  chromatic: number;
+  /** 0-1. Origin detonation-flash strength. */
+  flash: number;
+  /** 0-1. Trailing overtone-ring count (maps to round(·*3)). */
+  harmonics: number;
 }
 
 export interface EffectsConfig {
