@@ -135,6 +135,17 @@ export {
   listDomainTopics,
   findDomainTopic,
 } from "./reference/domain-topics.js";
+export {
+  TYPE1_ROTATION,
+  getType1Rotation,
+  PRECISE_QUARTER_SAME_EXPLANATION,
+  PLAIN_QUARTER_SAME_EXPLANATION,
+} from "./reference/rotation-invariant.js";
+export type {
+  VtgGroup,
+  RotationPattern,
+  Type1RotationEntry,
+} from "./reference/rotation-invariant.js";
 
 export { KNOWLEDGE_GRAPH } from "./curriculum/knowledge-graph.js";
 export {
