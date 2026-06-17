@@ -23,7 +23,7 @@ export const VTG_MAPPINGS: Record<string, VTGMapping> = {
   },
   "quarter-same": {
     vtgTerm: "Quarter-Same",
-    tkaLetters: ["S", "T"],
+    tkaLetters: ["S", "T", "U", "V"],
     explanation: "Hands at right angle (gamma), both shift same direction, end at right angle (gamma).",
   },
   "quarter-opp": {

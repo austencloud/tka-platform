@@ -25,7 +25,7 @@
   <div class="container">
     <h2>Level 2: Letter Motion Types</h2>
     <p class="section-intro">
-      The Type 1 letters (A through V) follow the same pattern in groups of three.
+      Most Type 1 letters follow the same pattern in groups of three (Quarter-Same is the exception, with four).
       Here are the first three letters showing the <strong>thesis → antithesis → synthesis</strong> structure.
     </p>
 
