@@ -55,6 +55,11 @@ const PLANT_BAND = 0.012;
 const FOOT_LOCK_ATTACK_SEC = 0.04;
 const FOOT_LOCK_RELEASE_SEC = 0.12;
 
+/** Max root translation speed (m/s) while stepping to a target position. */
+const STEP_SPEED = 0.6;
+/** Arrived-at-position tolerance (m). */
+const POS_TOL = 0.01;
+
 interface FootLockState {
   chain: LegChain;
   hinge: Vector3;
@@ -133,6 +138,8 @@ export class MmLocomotionController {
   };
   /** Absolute world yaw to reach, in the same metric as {@link visYaw}. */
   private targetFacing = 0;
+  /** World XZ the root steps toward; null = stay in place (pure reorient). */
+  private targetPos: { x: number; z: number } | null = null;
   private origin = { facing: 0 };
   /** Signed remaining-to-target last frame; used to detect the frame the body
    *  CROSSES the target so it settles instead of stepping over the deadzone and
@@ -217,8 +224,10 @@ export class MmLocomotionController {
     this.hasLastRemaining = false; // new maneuver: don't cross-detect across it
   }
 
-  /** Reorient-in-place slice: no translation target yet (kept for API parity). */
-  setTargetPosition(_x: number, _z: number): void {}
+  /** Request a step so the avatar's root reaches world (x, z). */
+  setTargetPosition(x: number, z: number): void {
+    this.targetPos = { x, z };
+  }
 
   /** Re-aim back at the recorded spawn facing. */
   stepBackToOrigin(): void {
@@ -332,6 +341,23 @@ export class MmLocomotionController {
       this.hips.position.y = this.restHipsPos.y;
     }
 
+    // Translational step: move the root toward the target XZ at a capped speed.
+    // The world-space foot-lock below keeps planted feet put, so the body steps
+    // over them; feet lifted during the pivot re-plant at the new location.
+    if (this.targetPos) {
+      const dx = this.targetPos.x - root.position.x;
+      const dz = this.targetPos.z - root.position.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist <= POS_TOL) {
+        root.position.x = this.targetPos.x;
+        root.position.z = this.targetPos.z;
+      } else {
+        const stepLen = Math.min(dist, STEP_SPEED * dt);
+        root.position.x += (dx / dist) * stepLen;
+        root.position.z += (dz / dist) * stepLen;
+      }
+    }
+
     root.updateMatrixWorld(true);
 
     // Foot-lock: pin each planted foot to its touchdown world position so it
@@ -339,9 +365,17 @@ export class MmLocomotionController {
     // (the mid-step settle snap), nor slide during the step.
     this.applyFootLock(dt);
 
+    const stepping =
+      !!this.targetPos &&
+      Math.hypot(
+        this.targetPos.x - root.position.x,
+        this.targetPos.z - root.position.z
+      ) > POS_TOL;
+
     this._state.facing = this.visYaw();
-    this._state.speed = turning ? 1 : 0;
-    this._state.isMoving = turning;
+    this._state.speed = turning || stepping ? 1 : 0;
+    this._state.isMoving = turning || stepping;
+    this._state.position.copy(root.position);
 
     this.lastRemaining = remaining;
     this.hasLastRemaining = true;
