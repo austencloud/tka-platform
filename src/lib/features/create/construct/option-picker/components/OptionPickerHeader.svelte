@@ -52,10 +52,6 @@
   const hasRedTurns = $derived(typeof redTurns === "number" && redTurns > 0);
   const hasAnyTurns = $derived(hasBlueTurns || hasRedTurns);
 
-  // Spin direction only matters for dash/static hands with turns, only when the
-  // steppers are open, and only when NOT continuous (continuous predetermines it).
-  const showSpin = $derived(expanded && !isContinuousOnly && hasAnyTurns);
-
   const filterOptions = [
     { value: "all", label: "All" },
     { value: "continuous", label: "Continuous" },
@@ -106,6 +102,18 @@
               onTurnsChange={onBlueChange}
               onRotationChange={() => {}}
             />
+            {#if !isContinuousOnly && hasBlueTurns}
+              <span class="spin-divider" aria-hidden="true"></span>
+              <button
+                class="spin-inline"
+                title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
+                aria-label="Toggle blue dash/static spin (currently {dirLabel(blueRotation)})"
+                onclick={() => onBlueRotationChange(opposite(blueRotation))}
+              >
+                <i class="fas {dirIcon(blueRotation)}" aria-hidden="true"></i>
+                <span class="dir">{dirLabel(blueRotation)}</span>
+              </button>
+            {/if}
           </div>
           <div class="hand-stepper red">
             <span class="hand-tag">Red</span>
@@ -118,6 +126,18 @@
               onTurnsChange={onRedChange}
               onRotationChange={() => {}}
             />
+            {#if !isContinuousOnly && hasRedTurns}
+              <span class="spin-divider" aria-hidden="true"></span>
+              <button
+                class="spin-inline"
+                title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
+                aria-label="Toggle red dash/static spin (currently {dirLabel(redRotation)})"
+                onclick={() => onRedRotationChange(opposite(redRotation))}
+              >
+                <i class="fas {dirIcon(redRotation)}" aria-hidden="true"></i>
+                <span class="dir">{dirLabel(redRotation)}</span>
+              </button>
+            {/if}
           </div>
         </div>
       {/if}
@@ -154,33 +174,6 @@
     </div>
   </div>
 
-  {#if showSpin}
-    <div class="spin-strip" transition:slide={{ duration: 200, easing: quintOut }}>
-      <span class="spin-label">Dash &amp; static spin</span>
-      {#if hasBlueTurns}
-        <button
-          class="spin-toggle blue"
-          aria-label="Toggle blue dash/static spin (currently {dirLabel(blueRotation)})"
-          onclick={() => onBlueRotationChange(opposite(blueRotation))}
-        >
-          <span class="hand">Blue</span>
-          <i class="fas {dirIcon(blueRotation)}" aria-hidden="true"></i>
-          <span class="dir">{dirLabel(blueRotation)}</span>
-        </button>
-      {/if}
-      {#if hasRedTurns}
-        <button
-          class="spin-toggle red"
-          aria-label="Toggle red dash/static spin (currently {dirLabel(redRotation)})"
-          onclick={() => onRedRotationChange(opposite(redRotation))}
-        >
-          <span class="hand">Red</span>
-          <i class="fas {dirIcon(redRotation)}" aria-hidden="true"></i>
-          <span class="dir">{dirLabel(redRotation)}</span>
-        </button>
-      {/if}
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -335,78 +328,60 @@
 
   .turns-toggle:focus-visible,
   .reset-btn:focus-visible,
-  .spin-toggle:focus-visible {
+  .spin-inline:focus-visible {
     outline: 2px solid var(--theme-accent, #6ea8fe);
     outline-offset: 2px;
   }
 
-  /* Dash/static spin direction — labeled, separate from the steppers. */
-  .spin-strip {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    padding-top: 6px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  /* Dash/static spin — nested inside the hand chip, after a hairline divider.
+     Inherits the chip's --prop-color-rgb so it themes to the hand automatically. */
+  .spin-divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.18);
+    flex-shrink: 0;
   }
 
-  .spin-label {
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    color: rgba(255, 255, 255, 0.55);
-  }
-
-  .spin-toggle {
+  .spin-inline {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    height: 32px;
-    padding: 0 12px;
-    border-radius: 8px;
-    border: 1px solid;
+    gap: 5px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 7px;
+    border: 1px solid rgba(var(--prop-color-rgb), 0.5);
+    background: rgba(var(--prop-color-rgb), 0.22);
+    color: rgba(255, 255, 255, 0.92);
     font-size: 0.72rem;
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
     cursor: pointer;
     transition: all var(--duration-fast, 0.15s) ease;
   }
 
-  .spin-toggle .hand {
-    font-weight: 700;
+  .spin-inline:hover {
+    background: rgba(var(--prop-color-rgb), 0.34);
+    border-color: rgba(var(--prop-color-rgb), 0.7);
   }
 
-  .spin-toggle.blue {
-    background: rgba(59, 130, 246, 0.18);
-    border-color: rgba(59, 130, 246, 0.45);
-    color: #9ec1ff;
-  }
-
-  .spin-toggle.blue:hover {
-    background: rgba(59, 130, 246, 0.28);
-  }
-
-  .spin-toggle.red {
-    background: rgba(239, 68, 68, 0.18);
-    border-color: rgba(239, 68, 68, 0.45);
-    color: #ffaba6;
-  }
-
-  .spin-toggle.red:hover {
-    background: rgba(239, 68, 68, 0.28);
-  }
-
-  .spin-toggle:active {
+  .spin-inline:active {
     transform: scale(0.96);
+  }
+
+  /* Fixed-width direction label so CW <-> CCW toggling never resizes the chip. */
+  .spin-inline .dir {
+    display: inline-block;
+    min-width: 2.4ch;
+    text-align: left;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .turns-toggle,
     .reset-btn,
-    .spin-toggle {
+    .spin-inline {
       transition: none;
     }
-    .spin-toggle:active {
+    .spin-inline:active {
       transform: none;
     }
   }
