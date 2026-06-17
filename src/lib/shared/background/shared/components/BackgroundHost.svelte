@@ -12,6 +12,7 @@
 	import { browser } from '$app/environment';
 	import { onMount, onDestroy } from 'svelte';
 	import { BackgroundType, getBackgroundController } from '@austencloud/backgrounds';
+	import { isBackgroundSuppressed } from '../state/background-suppression.svelte';
 
 	const {
 		backgroundType = BackgroundType.COSMIC,
@@ -66,9 +67,6 @@
 
 	onMount(() => {
 		if (!browser || !containerRef || !controller) return;
-		controller.mount(containerRef);
-		patchCanvasResolution(controller);
-		(controller as unknown as BackgroundControllerPrivate).updateCanvasDimensions();
 		mounted = true;
 		onReady?.();
 	});
@@ -79,11 +77,36 @@
 		// truly closing, which SvelteKit handles via navigation.
 	});
 
-	// React to type changes (and initial set).
-	// This fires once on mount (when mounted becomes true) and
-	// again whenever any prop changes.
+	// Single owner of the controller's mount/unmount/background lifecycle.
+	// Re-runs on: initial mount, background prop changes, and suppression toggles.
+	//
+	// Suppression: a fullscreen-opaque scene (e.g. the museum) registers a
+	// suppressor so we unmount the controller while it's fully occluded. The
+	// controller's rAF runs even when its canvas is covered, so an un-paused
+	// ocean background burned ~40% of the main thread behind the museum and
+	// stalled the 2D->3D flip. unmount() stops that loop; mount() restores it.
 	$effect(() => {
-		if (!mounted || !controller) return;
+		if (!mounted || !controller || !containerRef) return;
+
+		if (isBackgroundSuppressed.current) {
+			if (controller.isReady()) controller.unmount();
+			return;
+		}
+
+		// mount() is idempotent and container-aware: a no-op when already bound to
+		// this container, a re-bind (unmount + remount) when the container changed.
+		// Gating it on isReady() was the bug — once mounted+initialized, isReady()
+		// stays true, so after any SPA navigation / remount the new container never
+		// received the canvases and only the CSS gradient showed. Always call mount()
+		// so the canvases follow the current container; only (re)patch + resize when
+		// we actually bind a new one.
+		const priv = controller as unknown as BackgroundControllerPrivate;
+		const needsBind = priv.container !== containerRef;
+		controller.mount(containerRef);
+		if (needsBind) {
+			patchCanvasResolution(controller);
+			priv.updateCanvasDimensions();
+		}
 		controller.setBackground(backgroundType, {
 			backgroundColor,
 			gradientColors,
