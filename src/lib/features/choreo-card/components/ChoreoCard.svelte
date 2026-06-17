@@ -207,7 +207,11 @@
     justify-content: center;
   }
 
-  .choreo-card :global(.prop-thumbnail img) {
+  /* Direct child only — the rendered thumbnail <img>. A bare descendant
+     selector here also caught the loading placeholder's TKAWordGlyph <img>
+     (nested inside .placeholder-glyph), where height:100% beat its height="24"
+     attribute and blew the word glyph up to fill the whole card. */
+  .choreo-card :global(.prop-thumbnail > img) {
     width: 100%;
     height: 100%;
     object-fit: contain; /* Scale down to fit, maintain aspect ratio */
