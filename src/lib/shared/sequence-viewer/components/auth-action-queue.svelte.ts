@@ -19,6 +19,8 @@ import {
 } from "firebase/auth";
 import { auth } from "$lib/shared/auth/firebase";
 import { notePopupCoop } from "$lib/shared/auth/services/authenticator";
+import { requiresFullAccount } from "$lib/shared/auth/domain/gated-action-policy";
+import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { getPendingActionQueue } from "../get-pending-action-queue";
@@ -69,10 +71,22 @@ export function createAuthActionQueue() {
     realHandler: (() => void) | (() => Promise<void>) | undefined,
     sequence: SequenceData | null,
   ) {
-    if (authState.isAuthenticated) {
-      void realHandler?.();
+    const isFullUser = authState.isAuthenticated && !authState.isAnonymous;
+
+    if (requiresFullAccount(type)) {
+      // publish: must be a permanent account.
+      if (isFullUser) {
+        void realHandler?.();
+        return;
+      }
+      // fall through to the sign-in sheet below
+    } else {
+      // save / favorite / remix / sendTo: provision a guest identity if
+      // needed, then run. Never prompts.
+      void ensureGuestIdentity().then(() => realHandler?.());
       return;
     }
+
     const sequenceId = sequence?.id ?? sequence?.word ?? "";
     if (!sequenceId) return;
 

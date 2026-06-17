@@ -6,6 +6,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
@@ -90,10 +91,7 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
   async function handleSave() {
     deps.getHapticService()?.trigger("selection");
     const sequence = deps.getSequence();
-    if (!authState.isAuthenticated) {
-      showToast("Sign in to save sequences", "info");
-      return;
-    }
+    await ensureGuestIdentity();
     if (!sequence) {
       showToast("No sequence to save", "info");
       return;
