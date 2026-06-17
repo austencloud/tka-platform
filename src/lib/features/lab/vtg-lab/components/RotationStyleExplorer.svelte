@@ -13,13 +13,54 @@
   import { TURN_VALUES } from "$lib/features/choreo-card/domain/turn-pattern-parser";
   import { TND_TURNS_RATIO_MAP } from "$lib/features/choreo-card/domain/tnd-element";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { browser } from "$app/environment";
+
+  type PropKind = "staff" | "club";
+
+  // Persist the four user-controlled settings across refresh + Vite HMR.
+  const GRID_STORAGE_KEY = "vtg-lab-grid";
+  const PROP_STORAGE_KEY = "vtg-lab-prop";
+  const BLUE_ORI_STORAGE_KEY = "vtg-lab-blue-ori";
+  const RED_ORI_STORAGE_KEY = "vtg-lab-red-ori";
+
+  function readStored(key: string): string | null {
+    return browser ? sessionStorage.getItem(key) : null;
+  }
+
+  function getInitialGrid(): LabGridMode {
+    const v = readStored(GRID_STORAGE_KEY);
+    return v === "diamond" || v === "box" ? v : "diamond";
+  }
+  function getInitialProp(): PropKind {
+    const v = readStored(PROP_STORAGE_KEY);
+    return v === "staff" || v === "club" ? v : "staff";
+  }
+  function getStoredOri(key: string): Orientation {
+    const v = readStored(key);
+    if (
+      v === Orientation.IN ||
+      v === Orientation.OUT ||
+      v === Orientation.CLOCK ||
+      v === Orientation.COUNTER
+    ) {
+      return v;
+    }
+    return Orientation.IN;
+  }
+
+  const initialProp = getInitialProp();
+  // If the restored prop is a staff, collapse a persisted club orientation
+  // (out/counter) back into the staff 2-option set so it stays selectable.
+  const initialBlueOri =
+    initialProp === "staff" ? radialize(getStoredOri(BLUE_ORI_STORAGE_KEY)) : getStoredOri(BLUE_ORI_STORAGE_KEY);
+  const initialRedOri =
+    initialProp === "staff" ? radialize(getStoredOri(RED_ORI_STORAGE_KEY)) : getStoredOri(RED_ORI_STORAGE_KEY);
 
   let matrices = $state<RotationStyleMatrix[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
-  let grid = $state<LabGridMode>("diamond");
-  type PropKind = "staff" | "club";
-  let prop = $state<PropKind>("staff");
+  let grid = $state<LabGridMode>(getInitialGrid());
+  let prop = $state<PropKind>(initialProp);
 
   // Open picker context (null = closed).
   let picker = $state<{ variations: StyleVariation[]; turnPattern: string; accent: string } | null>(null);
@@ -38,8 +79,8 @@
   const tipEnds = $derived(prop === "club" ? (1 as const) : (2 as const));
 
   // Independent per-hand start orientation — reshapes each hand's rosette.
-  let blueOri = $state<Orientation>(Orientation.IN);
-  let redOri = $state<Orientation>(Orientation.IN);
+  let blueOri = $state<Orientation>(initialBlueOri);
+  let redOri = $state<Orientation>(initialRedOri);
 
   // A two-ended staff is symmetric: in/out land the same tip union, as do
   // clock/counter — so it only distinguishes Radial vs Nonradial. A one-ended
@@ -102,6 +143,15 @@
       .finally(() => {
         if (g === grid && ori === startOri) loading = false;
       });
+  });
+
+  // Persist the four settings whenever any of them change.
+  $effect(() => {
+    if (!browser) return;
+    sessionStorage.setItem(GRID_STORAGE_KEY, grid);
+    sessionStorage.setItem(PROP_STORAGE_KEY, prop);
+    sessionStorage.setItem(BLUE_ORI_STORAGE_KEY, blueOri);
+    sessionStorage.setItem(RED_ORI_STORAGE_KEY, redOri);
   });
 
   function turnKey(blue: number, red: number): string {
