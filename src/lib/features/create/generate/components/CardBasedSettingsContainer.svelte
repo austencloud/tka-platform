@@ -106,7 +106,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   // Beat cap nudge state
   let showBeatCapNudge = $state(false);
   const accessTier = $derived(
-    resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role))
+    resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
   );
   const beatCapNudgeTrigger = $derived<AuthNudgeTrigger>(
     accessTier === "guest" ? "beat-cap-guest" : "beat-cap-composer"

@@ -133,7 +133,7 @@ export function createGenerationActionsState(
 
       // Enforce tier beat cap post-generation - handles words with bridge letters
       // that push the sequence beyond what the user's tier allows.
-      const tier = resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role));
+      const tier = resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role));
       const maxSteps = getMaxBeats(tier);
       if (generatedSequence.steps.length > maxSteps) {
         generatedSequence = {
@@ -382,7 +382,7 @@ export function createGenerationActionsState(
 
       // Enforce tier beat cap post-generation - spell sequences with bridge letters
       // can exceed the user's allowed length.
-      const spellTier = resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role));
+      const spellTier = resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role));
       const spellMaxBeats = getMaxBeats(spellTier);
       if (loopedSequence.steps.length > spellMaxBeats) {
         loopedSequence = {

@@ -16,6 +16,7 @@
   import { registerModuleCacheClear } from "../hmr-helper";
   import type { Component } from "svelte";
   import { onMount, onDestroy } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
   import IndeterminateBar from "$lib/shared/components/loading/IndeterminateBar.svelte";
   import { authState } from "../auth/state/auth-state.svelte";
   import { resolveAccessTier } from "../auth/domain/access-tier";
@@ -51,8 +52,11 @@
     onLearnHeaderChange,
   }: Props = $props();
 
-  // Cache for loaded modules to avoid re-importing
-  const moduleCache = new Map<string, Component<any>>();
+  // Cache for loaded modules to avoid re-importing. SvelteMap (not a plain Map)
+  // so markup reading moduleCache.get()/.has() reactively re-renders when a
+  // chunk finishes loading and calls .set() - critical for the keep-alive host
+  // below, whose component arrives asynchronously after first render.
+  const moduleCache = new SvelteMap<string, Component<any>>();
 
   // ── Keep-alive host wiring ────────────────────────────────────────────────
   // Certain heavy modules (museum = Three.js/Threlte) must survive module
@@ -272,7 +276,7 @@
   );
 
   const accessTier = $derived(
-    resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role))
+    resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
   );
 
   const isModuleBlocked = $derived(
@@ -393,6 +397,10 @@
      destroyed by {#key activeModule}. Each receives a `visible` prop so it can
      pause heavy work (render loop, sim) while hidden. -->
 {#each mountedKeepAlive as moduleId (moduleId)}
+  <!-- moduleCache is a SvelteMap, so this lookup re-renders when loadModule()
+       finishes and calls .set() asynchronously. With a plain Map the host stayed
+       blank whenever the chunk resolved after first render (e.g. the heavy museum
+       chunk). The (moduleId) key preserves the component instance - no remount. -->
   {@const Loaded = moduleCache.get(moduleId)}
   {#if Loaded}
     <div

@@ -40,7 +40,7 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
   }>();
 
   const accessTier = $derived(
-    resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role))
+    resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
   );
   const MAX_LENGTH = $derived(getMaxBeats(accessTier));
 

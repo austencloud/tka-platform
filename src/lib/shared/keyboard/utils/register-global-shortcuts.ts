@@ -123,6 +123,7 @@ export function registerGlobalShortcuts(
         // Guests can only navigate to modules their access tier allows.
         const tier = resolveAccessTier(
           authState.isAuthenticated,
+          authState.isAnonymous,
           isPremiumOrAbove(authState.role)
         );
         if (!isModuleAccessible(module.id, tier)) {

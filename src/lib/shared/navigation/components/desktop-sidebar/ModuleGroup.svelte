@@ -49,7 +49,7 @@
 
   // Filter tabs for guests (e.g., Browse shows only Gallery)
   const accessTier = $derived(
-    resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role))
+    resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
   );
   const filteredSections = $derived.by(() => {
     const allowed = getAccessibleTabs(module.id, accessTier);

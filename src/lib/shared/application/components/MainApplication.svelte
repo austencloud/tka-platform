@@ -382,6 +382,7 @@ import type { SheetType } from "../../navigation/services/types";
           event.preventDefault();
           const tier = resolveAccessTier(
             authState.isAuthenticated,
+            authState.isAnonymous,
             isPremiumOrAbove(authState.role)
           );
           if (isModuleAccessible(targetModuleId, tier)) {

@@ -141,7 +141,7 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
 
   // Auth/tier state for beat cap enforcement
   const accessTier = $derived(
-    resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role))
+    resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
   );
   let showBeatCapNudge = $state(false);
   const beatCapNudgeTrigger = $derived<AuthNudgeTrigger>(
