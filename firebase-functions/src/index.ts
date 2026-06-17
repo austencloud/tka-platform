@@ -50,6 +50,7 @@ export {
   r2DeleteByPrefix,
 } from "./r2/index";
 
+export { cleanupStaleAnonymousAccounts } from "./cleanupStaleAnonymousAccounts";
 export { cleanupStagedUploads } from "./cleanupStagedUploads";
 export { backupHealthCheck } from "./backupHealthCheck";
 export { createMerchCheckout } from "./merch/createMerchCheckout";

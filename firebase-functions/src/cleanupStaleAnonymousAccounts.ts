@@ -1,3 +1,5 @@
+import * as functions from "firebase-functions";
+import * as admin from "firebase-admin";
 import type { UserRecord } from "firebase-admin/auth";
 
 const STALE_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
@@ -15,3 +17,40 @@ export function isStaleAnonymousAccount(user: UserRecord, nowMs: number): boolea
   if (Number.isNaN(lastActive)) return false;
   return nowMs - lastActive > STALE_AFTER_MS;
 }
+
+/**
+ * Daily sweep: delete anonymous accounts idle > 30 days with no linked
+ * credential, cascading their /users/{uid} subtree. Logged, not silent.
+ */
+export const cleanupStaleAnonymousAccounts = functions.pubsub
+  .schedule("every 24 hours")
+  .timeZone("UTC")
+  .onRun(async () => {
+    const auth = admin.auth();
+    const db = admin.firestore();
+    const now = Date.now();
+
+    let sweptCount = 0;
+    let pageToken: string | undefined;
+
+    do {
+      const page = await auth.listUsers(1000, pageToken);
+      const staleUids = page.users
+        .filter((u) => isStaleAnonymousAccount(u, now))
+        .map((u) => u.uid);
+
+      for (const uid of staleUids) {
+        // Cascade-delete the user's Firestore subtree, then the auth account.
+        await db.recursiveDelete(db.doc(`users/${uid}`));
+        await auth.deleteUser(uid);
+        sweptCount += 1;
+      }
+
+      pageToken = page.pageToken;
+    } while (pageToken);
+
+    functions.logger.info("cleanupStaleAnonymousAccounts swept accounts", {
+      sweptCount,
+    });
+    return null;
+  });
