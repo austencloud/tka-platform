@@ -20,6 +20,8 @@
     signInWithPopup,
   } from "firebase/auth";
   import { getAuthInstance } from "../firebase";
+  import { upgradeAnonymousWithGoogle } from "$lib/shared/auth/services/anonymous-upgrade";
+  import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
 
   let { mode = "signin", onFacebookAuth } = $props<{
     mode: "signin" | "signup";
@@ -62,7 +64,14 @@
       // button unmounts via `{#if !isAuthenticated}` in MainApplication, so
       // the user stays on whatever app page they opened the sheet from.
       // Navigating to "/" used to send them back to the marketing landing.
-      await signInWithPopup(auth, provider);
+      if (auth.currentUser?.isAnonymous) {
+        const result = await upgradeAnonymousWithGoogle();
+        if (result.status === "collision-signed-in") {
+          promptAnonymousImport(result.importable ?? []);
+        }
+      } else {
+        await signInWithPopup(auth, provider);
+      }
     } catch (error: unknown) {
       const errorCode = (error as { code?: string })?.code;
 

@@ -17,6 +17,8 @@
   import { onDestroy } from "svelte";
   import { auth } from "../firebase";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { upgradeAnonymousWithEmail } from "$lib/shared/auth/services/anonymous-upgrade";
+  import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
 
   let { mode = $bindable("signin" as "signin" | "signup") } = $props();
 
@@ -96,17 +98,24 @@
       }
 
       if (mode === "signup") {
-        const result = await createUserWithEmailAndPassword(
-          auth,
-          email,
-          password
-        );
-
-        if (name.trim()) {
-          await updateProfile(result.user, { displayName: name.trim() });
+        if (auth.currentUser?.isAnonymous) {
+          const upgrade = await upgradeAnonymousWithEmail(email, password);
+          if (name.trim() && auth.currentUser) {
+            await updateProfile(auth.currentUser, { displayName: name.trim() });
+          }
+          if (auth.currentUser && !auth.currentUser.emailVerified) {
+            await sendEmailVerification(auth.currentUser);
+          }
+          if (upgrade.status === "collision-signed-in") {
+            promptAnonymousImport(upgrade.importable ?? []);
+          }
+        } else {
+          const result = await createUserWithEmailAndPassword(auth, email, password);
+          if (name.trim()) {
+            await updateProfile(result.user, { displayName: name.trim() });
+          }
+          await sendEmailVerification(result.user);
         }
-
-        await sendEmailVerification(result.user);
         success = t("auth_account_created");
         resetAttempts();
         await new Promise((resolve) => setTimeout(resolve, 1200));

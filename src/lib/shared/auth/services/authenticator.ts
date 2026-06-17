@@ -25,6 +25,8 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "../firebase";
+import { upgradeAnonymousWithFacebook } from "./anonymous-upgrade";
+import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
 
 // Dev-only breadcrumb. Google's popup auth handler ships a report-only COOP
 // header, so Chrome logs a browser-level "Cross-Origin-Opener-Policy policy
@@ -61,6 +63,13 @@ export async function signInWithGoogleCredential(idToken: string): Promise<void>
 }
 
 export async function signInWithFacebook(): Promise<void> {
+  if (auth.currentUser?.isAnonymous) {
+    const result = await upgradeAnonymousWithFacebook();
+    if (result.status === "collision-signed-in") {
+      promptAnonymousImport(result.importable ?? []);
+    }
+    return;
+  }
   const provider = new FacebookAuthProvider();
   provider.addScope("email");
   provider.addScope("public_profile");
