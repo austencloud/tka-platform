@@ -24,7 +24,7 @@ import {
   unlink,
   updateProfile,
 } from "firebase/auth";
-import { auth } from "../firebase";
+import { auth, getAuthInstance } from "../firebase";
 import { upgradeAnonymousWithFacebook } from "./anonymous-upgrade";
 import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
 
@@ -63,7 +63,8 @@ export async function signInWithGoogleCredential(idToken: string): Promise<void>
 }
 
 export async function signInWithFacebook(): Promise<void> {
-  if (auth.currentUser?.isAnonymous) {
+  const authInstance = await getAuthInstance();
+  if (authInstance.currentUser?.isAnonymous) {
     const result = await upgradeAnonymousWithFacebook();
     if (result.status === "collision-signed-in") {
       promptAnonymousImport(result.importable ?? []);
@@ -74,7 +75,7 @@ export async function signInWithFacebook(): Promise<void> {
   provider.addScope("email");
   provider.addScope("public_profile");
   notePopupCoop();
-  await signInWithPopup(auth, provider);
+  await signInWithPopup(authInstance, provider);
 }
 
 async function setAuthPersistence(): Promise<void> {

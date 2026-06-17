@@ -100,13 +100,14 @@
       if (mode === "signup") {
         if (auth.currentUser?.isAnonymous) {
           const upgrade = await upgradeAnonymousWithEmail(email, password);
-          if (name.trim() && auth.currentUser) {
-            await updateProfile(auth.currentUser, { displayName: name.trim() });
-          }
-          if (auth.currentUser && !auth.currentUser.emailVerified) {
-            await sendEmailVerification(auth.currentUser);
-          }
-          if (upgrade.status === "collision-signed-in") {
+          if (upgrade.status === "linked") {
+            if (name.trim() && auth.currentUser) {
+              await updateProfile(auth.currentUser, { displayName: name.trim() });
+            }
+            if (auth.currentUser && !auth.currentUser.emailVerified) {
+              await sendEmailVerification(auth.currentUser);
+            }
+          } else if (upgrade.status === "collision-signed-in") {
             promptAnonymousImport(upgrade.importable ?? []);
           }
         } else {
