@@ -11,7 +11,7 @@
   import PropTurnsControl from "$lib/features/create/shared/components/sequence-actions/PropTurnsControl.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { slide, fade } from "svelte/transition";
+  import { slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
 
   interface Props {
@@ -73,19 +73,24 @@
 
 <div class="oph">
   <div class="oph-bar">
-    {#if showFilter}
-      <div class="filter-seg">
-        <SegmentedControl
-          options={filterOptions}
-          value={filterValue}
-          size="sm"
-          color="accent"
-          onchange={(v) => onToggleContinuous?.(v === "continuous")}
-        />
-      </div>
-    {/if}
+    <!-- Zone 1: filter (fixed left) -->
+    <div class="oph-filter">
+      {#if showFilter}
+        <div class="filter-seg">
+          <SegmentedControl
+            options={filterOptions}
+            value={filterValue}
+            size="sm"
+            color="accent"
+            onchange={(v) => onToggleContinuous?.(v === "continuous")}
+          />
+        </div>
+      {/if}
+    </div>
 
-    <div class="oph-right">
+    <!-- Zone 2: steppers — reserved flexible middle, end-aligned so they unfurl
+         leftward into the void and never push the pinned controls in Zone 3. -->
+    <div class="oph-mid">
       {#if expanded}
         <div
           class="oph-steppers"
@@ -141,7 +146,11 @@
           </div>
         </div>
       {/if}
+    </div>
 
+    <!-- Zone 3: persistent controls (pinned right, never reflow). Reset is always
+         present — disabled when there are no turns — so it never appears/disappears. -->
+    <div class="oph-controls">
       <button
         class="turns-toggle"
         class:active={expanded}
@@ -160,17 +169,15 @@
         <i class="fas fa-chevron-down chevron" aria-hidden="true"></i>
       </button>
 
-      {#if expanded && hasAnyTurns}
-        <button
-          class="reset-btn"
-          aria-label="Reset turns to 0"
-          onclick={onReset}
-          transition:fade={{ duration: 150 }}
-        >
-          <i class="fas fa-rotate-left" aria-hidden="true"></i>
-          <span>Reset</span>
-        </button>
-      {/if}
+      <button
+        class="reset-btn"
+        disabled={!hasAnyTurns}
+        aria-label="Reset turns to 0"
+        onclick={onReset}
+      >
+        <i class="fas fa-rotate-left" aria-hidden="true"></i>
+        <span>Reset</span>
+      </button>
     </div>
   </div>
 
@@ -192,31 +199,44 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  /* One wrapping row: filter on the left, the turns cluster on the right.
-     flex-wrap keeps it a single line on a wide panel and drops the cluster to a
-     second line only when the panel is too narrow — never a tall stacked block. */
+  /* Three fixed zones: filter | flexible middle | pinned controls.
+     The controls zone (Turns + Reset) is grid-pinned to the right and never
+     reflows. The middle zone reserves the flexible space the steppers expand
+     into, so toggling Turns or growing a chip moves nothing else. */
   .oph-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 12px;
+    min-height: var(--min-touch-target, 44px);
+  }
+
+  .oph-filter {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    min-height: var(--min-touch-target, 44px);
+    min-width: 0;
   }
 
   .filter-seg {
     width: 240px;
     max-width: 50vw;
-    flex: 0 1 auto;
   }
 
-  .oph-right {
+  /* Steppers live here, end-aligned against the controls zone so they unfurl
+     leftward into the empty middle instead of pushing Turns/Reset. */
+  .oph-mid {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    flex-wrap: wrap;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .oph-controls {
+    display: flex;
+    align-items: center;
     gap: 8px;
-    margin-left: auto;
+    justify-self: end;
   }
 
   /* Inline hand steppers — slim chips, label beside the +/- row (not stacked
@@ -283,9 +303,14 @@
   }
 
   .turns-toggle:hover,
-  .reset-btn:hover {
+  .reset-btn:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.08);
     color: white;
+  }
+
+  .reset-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
   }
 
   .turns-toggle.active {
