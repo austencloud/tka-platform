@@ -26,7 +26,9 @@
     type Bone,
   } from "three";
   import type { MmLocomotionController } from "$lib/features/stage/locomotion/motion-matching/mm-locomotion-controller";
-  import type { RigBinding } from "$lib/features/stage/locomotion/motion-matching/rig-binding";
+  import type { RigBinding, LegChain } from "$lib/features/stage/locomotion/motion-matching/rig-binding";
+  import { solveLegIK } from "$lib/shared/3d/services/hinge-constrained-leg-ik-solver";
+  import { computeKneeHingeAxis } from "$lib/shared/3d/services/knee-hinge-axis-calibrator";
   import { calculatePropState } from "$lib/shared/3d/services/prop-state-interpolator";
   import { buildSweptVolume } from "$lib/features/stage/locomotion/dodge/swept-volume-builder";
   import { solveDodge } from "$lib/features/stage/locomotion/dodge/dodge-orchestrator";
@@ -86,9 +88,87 @@
   let didSolve = false;
   let clearanceFrames = 0;
 
+  // Arm IK chains (shoulder->elbow->hand) + per-elbow hinge axes. Built once.
+  let leftArm: LegChain | null = null;
+  let rightArm: LegChain | null = null;
+  let leftElbowHinge: Vector3 | null = null;
+  let rightElbowHinge: Vector3 | null = null;
+
   const _q = new Quaternion();
   const _pitchQ = new Quaternion();
   const _pitchAxis = new Vector3(1, 0, 0);
+  const _up = new Vector3(0, 1, 0);
+  const _grip = new Vector3();
+  const _staffAxis = new Vector3();
+  const _pole = new Vector3();
+  const _qHandBefore = new Quaternion();
+  const _qHandParent = new Quaternion();
+
+  /** Build a two-bone arm chain (Arm->ForeArm->Hand) from bind-pose offsets,
+   *  matching the LegChain shape solveLegIK consumes (the elbow is a hinge like
+   *  the knee). Bone local positions are bind-pose constants, so this is valid
+   *  whether or not the rig is currently posed. */
+  function buildArmChain(side: "Left" | "Right", r: RigBinding): LegChain | null {
+    const arm = r.getBone(`${side}Arm`);
+    const fore = r.getBone(`${side}ForeArm`);
+    const hand = r.getBone(`${side}Hand`);
+    if (!arm || !fore || !hand) return null;
+    // Lengths MUST be world distances (meters). The X Bot skeleton is authored
+    // at ~100x scale with the root scaled down, so bone.position (local) is in
+    // the wrong units; world distances between joints are the real bone lengths.
+    r.root.updateMatrixWorld(true);
+    const a = new Vector3();
+    const b = new Vector3();
+    const c = new Vector3();
+    arm.getWorldPosition(a);
+    fore.getWorldPosition(b);
+    hand.getWorldPosition(c);
+    const upperLength = a.distanceTo(b);
+    const lowerLength = b.distanceTo(c);
+    return {
+      root: arm,
+      middle: fore,
+      effector: hand,
+      totalLength: upperLength + lowerLength,
+      upperLength,
+      lowerLength,
+      rootRestDir: fore.position.clone().normalize(),
+      middleRestDir: hand.position.clone().normalize(),
+    };
+  }
+
+  /** Pin one hand to a world target (the prop grip) via the hinge two-bone IK,
+   *  reaching from the CURRENT (dodged) shoulder. footForward aligns the hand to
+   *  the staff; the pole biases the elbow outward + down. */
+  function solveArm(chain: LegChain, hinge: Vector3, staff: Mesh, isLeft: boolean): void {
+    _grip.copy(staff.position);
+    _staffAxis.set(0, 1, 0).applyQuaternion(staff.quaternion).normalize();
+    _pole.set(isLeft ? -1 : 1, -1, 0).normalize();
+    const hand = chain.effector;
+    // Capture the natural (clip-posed) wrist orientation before the solve.
+    hand.getWorldQuaternion(_qHandBefore);
+    solveLegIK({
+      chain,
+      footTarget: _grip,
+      groundNormal: _up,
+      footForward: _staffAxis,
+      kneeHingeAxis: hinge,
+      poleDirection: _pole,
+      weight: 1,
+    });
+    // Pin POSITION only. solveLegIK's final block forces the hand to a
+    // ground-basis world orientation whose axis convention does not match this
+    // Mixamo hand bone, twisting the wrist into an alien pose. Restore the
+    // natural orientation so the arm reaches without the robotic wrist (a clean
+    // grip alignment is a later refinement, not today's goal).
+    if (hand.parent) {
+      hand.parent.getWorldQuaternion(_qHandParent);
+      hand.quaternion.copy(_qHandParent.invert()).multiply(_qHandBefore);
+    } else {
+      hand.quaternion.copy(_qHandBefore);
+    }
+    hand.updateMatrixWorld(true);
+  }
 
   function readShoulderY(r: RigBinding): number {
     const ls = r.getBone("LeftShoulder");
@@ -113,6 +193,10 @@
     shoulderY = readShoulderY(rig);
     restFacing = controller.state.facing;
     spineBone = rig.getBone("Spine");
+    leftArm = buildArmChain("Left", rig);
+    rightArm = buildArmChain("Right", rig);
+    leftElbowHinge = leftArm ? computeKneeHingeAxis(leftArm.rootRestDir, leftArm.middleRestDir) : null;
+    rightElbowHinge = rightArm ? computeKneeHingeAxis(rightArm.rootRestDir, rightArm.middleRestDir) : null;
     blueSweep = buildSweptVolume(blueConfig, 24).samples;
     redSweep = buildSweptVolume(redConfig, 24).samples;
     sim = new StanceSimulator(restPoseFromHeight(1.8));
@@ -122,6 +206,12 @@
     if (typeof window !== "undefined") {
       (window as unknown as { __dodgeSolution?: DodgeSolution }).__dodgeSolution = solution;
       (window as unknown as { __dodgeClearance?: () => number }).__dodgeClearance = liveClearance;
+      // Distance (m) of each hand bone from its prop grip — 0 = fully attached.
+      (window as unknown as { __dodgeHandGap?: () => { left: number; right: number } }).__dodgeHandGap =
+        () => ({
+          left: leftArm ? leftArm.effector.getWorldPosition(new Vector3()).distanceTo(blueStaff.position) : -1,
+          right: rightArm ? rightArm.effector.getWorldPosition(new Vector3()).distanceTo(redStaff.position) : -1,
+        });
     }
   }
 
@@ -186,10 +276,16 @@
       spineBone.updateMatrixWorld(true);
     }
 
-    // Advance the prop clock and place the staves imperatively.
+    // Advance the prop clock and place the staves imperatively (the props are
+    // the fixed world-space choreography; they do NOT follow the body).
     progress = (progress + dt / LOOP_SEC) % 1;
     placeStaff(blueStaff, blueConfig, progress);
     placeStaff(redStaff, redConfig, progress);
+
+    // Pin each hand to its prop grip via arm IK, reaching from the dodged body.
+    // This is the "hands stay attached while the body dodges" requirement.
+    if (leftArm && leftElbowHinge) solveArm(leftArm, leftElbowHinge, blueStaff, true);
+    if (rightArm && rightElbowHinge) solveArm(rightArm, rightElbowHinge, redStaff, false);
 
     // Report clearance to the page at ~6/sec, not every frame, to keep the
     // panel's reactive updates well clear of the render loop.

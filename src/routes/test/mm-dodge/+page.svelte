@@ -28,26 +28,35 @@
   import type { DodgeSolution } from "$lib/features/stage/locomotion/dodge/dodge-types";
   import DodgeDriver from "./DodgeDriver.svelte";
 
-  // alpha1: LH (blue) wheel-plane spin at SOUTH; RH (red) wall-plane spin at NORTH.
+  // Letter A, variation 3 (alpha1 -> alpha3), from the Flow Arts Knowledge MCP:
+  //   Blue: s -> w (pro, cw)   Red: n -> e (pro, cw)
+  // One plane moved to WHEEL (blue/LH) so its prop sweeps the sagittal plane the
+  // torso occupies (impales); red/RH stays on WALL. (orientation IN / 0 turns are
+  // the base-shift defaults; get_pictograph_data was 502 at author time.)
   const blueConfig: MotionConfig3D = {
     plane: Plane.WHEEL,
     startLocation: GridLocation.SOUTH,
-    endLocation: GridLocation.SOUTH,
-    motionType: MotionType.STATIC,
+    endLocation: GridLocation.WEST,
+    motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
-    turns: 2,
+    turns: 0,
     startOrientation: Orientation.IN,
     endOrientation: Orientation.IN,
+    // Explicit arc path (PRO's canonical shape) so prop interpolation does not
+    // reach for the global AnimationVisibilityManager, which this test page does
+    // not initialize.
+    pathShape: "arc",
   };
   const redConfig: MotionConfig3D = {
     plane: Plane.WALL,
     startLocation: GridLocation.NORTH,
-    endLocation: GridLocation.NORTH,
-    motionType: MotionType.STATIC,
+    endLocation: GridLocation.EAST,
+    motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
-    turns: 2,
+    turns: 0,
     startOrientation: Orientation.IN,
     endOrientation: Orientation.IN,
+    pathShape: "arc",
   };
 
   let rigRoot = $state<Object3D | null>(null);
