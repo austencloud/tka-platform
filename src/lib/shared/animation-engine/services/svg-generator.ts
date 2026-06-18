@@ -9,7 +9,7 @@ import {
   type ThemeMode,
 } from "$lib/shared/utils/svg-color-utils";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 /**
  * SVG Generator for creating prop staff images and grid
@@ -24,9 +24,9 @@ const svgCache = new Map<string, string>();
  * Dark Mode (dark mode) = "dark" theme colors (brighter props for contrast)
  * Light Mode (light mode) = "light" theme colors (darker props for contrast)
  */
-function getCurrentThemeMode(): ThemeMode {
+function getCurrentThemeMode(vm?: AnimationVisibilityStateManager): ThemeMode {
   try {
-    const manager = getAnimationVisibilityManager();
+    const manager = vm ?? getAnimationVisibilityManager();
     return manager.isDarkMode() ? "dark" : "light";
   } catch {
     // Fallback to dark mode if manager not available
