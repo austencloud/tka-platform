@@ -17,7 +17,7 @@
   import type { Component } from "svelte";
   import { onMount, onDestroy } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
-  import IndeterminateBar from "$lib/shared/components/loading/IndeterminateBar.svelte";
+  import ModuleSkeleton from "$lib/shared/modules/skeletons/ModuleSkeleton.svelte";
   import { authState } from "../auth/state/auth-state.svelte";
   import { resolveAccessTier, resolveOptimisticAccessTier } from "../auth/domain/access-tier";
   import { readBootSnapshot } from "$lib/shared/application/services/boot-snapshot";
@@ -310,10 +310,7 @@
       </div>
     </div>
   {:else}
-    <div class="module-loading" role="status" aria-live="polite" aria-busy="true">
-      <IndeterminateBar height={3} position="top" />
-      <p class="module-loading-label">Loading {MODULE_DEFINITIONS.find((m) => m.id === activeModule)?.label ?? activeModule}...</p>
-    </div>
+    <ModuleSkeleton moduleKey={activeModule} />
   {/if}
 {:else}
   {#if isModuleBlocked}
@@ -347,15 +344,7 @@
                 </div>
               </div>
             {:else}
-              <div
-                class="module-loading"
-                role="status"
-                aria-live="polite"
-                aria-busy="true"
-              >
-                <IndeterminateBar height={3} position="top" />
-                <p class="module-loading-label">Loading {MODULE_DEFINITIONS.find((m) => m.id === activeModule)?.label ?? activeModule}...</p>
-              </div>
+              <ModuleSkeleton moduleKey={activeModule} />
             {/if}
           {:then LoadedModule}
             {#if LoadedModule}
@@ -449,21 +438,6 @@
     overflow: hidden;
     width: 100%;
     height: 100%;
-  }
-
-  .module-loading {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    min-height: 200px;
-  }
-
-  .module-loading-label {
-    margin: 0;
-    font-size: var(--font-size-sm, 13px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   .module-error {
