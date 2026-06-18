@@ -120,6 +120,8 @@ describe("resolvePetals2D - palette resolution + defaults", () => {
       palette: "blossom",
       customColor: "#ffb0c8",
       swayAmplitude: 0.6,
+      carry: 0.55,
+      streakLength: 0.4,
       fallSpeed: 0.4,
       trackingMode: "both_ends",
     };
@@ -131,7 +133,9 @@ describe("resolvePetals2D - palette resolution + defaults", () => {
     expect(out.ambientSpawnRate).toBeGreaterThan(0);
     expect(out.motionSpawnRate).toBeGreaterThan(0);
     expect(out.fallBaseSpeed).toBeGreaterThan(0);
-    expect(out.swayBaseSpeed).toBeGreaterThan(0);
+    // Airstream knobs pass through from intent.
+    expect(out.carry).toBe(0.55);
+    expect(out.streakLength).toBe(0.4);
   });
 
   it("resolves a custom palette from customColor", () => {
@@ -142,6 +146,8 @@ describe("resolvePetals2D - palette resolution + defaults", () => {
       palette: "custom",
       customColor: "#ff8800",
       swayAmplitude: 0.6,
+      carry: 0.55,
+      streakLength: 0.4,
       fallSpeed: 0.4,
       trackingMode: "both_ends",
     };
@@ -160,6 +166,8 @@ describe("resolvePetals2D - palette resolution + defaults", () => {
       palette: "ash",
       customColor: "#000000",
       swayAmplitude: 0.7,
+      carry: 0.6,
+      streakLength: 0.5,
       fallSpeed: 0.5,
       trackingMode: "both_ends",
     };

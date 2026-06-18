@@ -21,15 +21,18 @@ const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
 /**
  * A single live petal. Lightweight state integrated each frame.
  *
- * 2D petals fall from the tip along a sinusoidal sway curve, rotating
- * gently around their sprite center at a rate proportional to horizontal
- * velocity (so a sharp flutter spins the petal faster than a slow drift).
+ * Airstream model: a petal is born carrying a fraction (`carry`) of the prop
+ * tip's instantaneous velocity, so it launches along the prop's actual arc.
+ * That inherited motion bleeds off over time (rate set by `streakLength`)
+ * while vertical velocity eases toward a terminal fall. Each petal also has
+ * an individual flutter (own frequency + phase) so streaks read as living
+ * leaves rather than rigid lines — no global synchronized sway.
  */
 interface Petal {
   /** Current position (px). */
   x: number;
   y: number;
-  /** Horizontal velocity (px/s). Updated each frame from sway + drift. */
+  /** Horizontal velocity (px/s). Inherited at birth, decays toward flutter. */
   vx: number;
   /** Vertical velocity (px/s). Positive = down (screen-space). */
   vy: number;
@@ -45,9 +48,9 @@ interface Petal {
   tint: string;
   /** Current rotation angle (radians). */
   rot: number;
-  /** Angular velocity coefficient - per-petal scalar so flutter feels individual. */
-  rotK: number;
-  /** Per-petal phase offset for sway so petals don't sync. */
+  /** Per-petal flutter frequency (rad/s) - individual so petals don't sync. */
+  freq: number;
+  /** Per-petal flutter phase offset. */
   phase: number;
   /** True if this petal has an ember rim (ash palette, 20% chance). */
   ember: boolean;
@@ -83,7 +86,9 @@ export class Petals2DRenderer {
   ): void {
     this.clock += dt;
     const palette = params.resolvedPalette;
-    const baseSize = params.baseSize * scale * (0.7 + 0.9 * params.intensity);
+    // Halved relative to the legacy formula (0.7 + 0.9·intensity) — the
+    // petals/flowers read far too large before. Intensity 0.6 → ~7.6px half.
+    const baseSize = params.baseSize * scale * (0.4 + 0.6 * params.intensity);
     const poolCap = Math.min(MAX_PETALS, params.poolSize ?? MAX_PETALS);
 
     // 1. Per-tip velocity smoothing + spawn.
@@ -107,7 +112,7 @@ export class Petals2DRenderer {
       const svy = prev ? prev.vy + (vy - prev.vy) * alpha : vy;
       if (prev) { prev.vx = svx; prev.vy = svy; } else { this.smoothedVelocity[key] = { vx: svx, vy: svy }; }
       const speedPx = Math.hypot(svx, svy);
-      this.spawnPetals(params, palette, tip, speedPx, dt, scale, baseSize, poolCap);
+      this.spawnPetals(params, palette, tip, svx, svy, speedPx, dt, scale, baseSize, poolCap);
       if (last) { last.x = tip.x; last.y = tip.y; } else { this.lastTipPos[key] = { x: tip.x, y: tip.y }; }
     }
 
@@ -124,6 +129,8 @@ export class Petals2DRenderer {
     params: Petals2DParams,
     palette: PetalPalette,
     tip: { x: number; y: number },
+    svx: number,
+    svy: number,
     speedPx: number,
     dt: number,
     scale: number,
@@ -144,6 +151,7 @@ export class Petals2DRenderer {
     if (n <= 0) return;
 
     const fall = params.fallBaseSpeed * (0.3 + 0.7 * params.fallSpeed) * scale;
+    const carry = params.carry;
     // Lifetime scales with intensity - bigger petals last longer because
     // they fall slower relative to their size.
     const lifeBase = 2.0 + params.intensity * 3.0;
@@ -153,20 +161,22 @@ export class Petals2DRenderer {
       const size = baseSize * jitter;
       const ox = (Math.random() - 0.5) * 8 * scale;
       const oy = (Math.random() - 0.5) * 6 * scale;
-      // Small horizontal drift independent of sway.
-      const drift = (Math.random() - 0.5) * 40 * scale;
+      // Airstream: inherit a fraction of the tip's velocity so the petal
+      // launches along the prop's actual arc. A little spread keeps the
+      // stream from collapsing into one line.
+      const spread = (Math.random() - 0.5) * 40 * scale;
       this.petals.push({
         x: tip.x + ox,
         y: tip.y + oy,
-        vx: drift,
-        vy: fall * (0.8 + Math.random() * 0.4),
+        vx: svx * carry + spread,
+        vy: svy * carry + (10 + Math.random() * 20) * scale,
         age: 0,
         maxAge: lifeBase * (0.8 + Math.random() * 0.4),
         size,
         shape: pickPetalSprite(palette),
         tint: pickPetalTint(palette),
         rot: Math.random() * TAU,
-        rotK: (Math.random() - 0.5) * 0.012,
+        freq: 1.4 + Math.random() * 2.6,
         phase: Math.random() * TAU,
         ember: rollEmberFlag(palette),
       });
@@ -174,17 +184,26 @@ export class Petals2DRenderer {
   }
 
   private integratePetals(dt: number, params: Petals2DParams): void {
-    const swayFreq = params.swayFrequency;
-    const swayBase = params.swayBaseSpeed * params.swayAmplitude;
+    // Inherited horizontal motion bleeds off — higher streakLength keeps the
+    // decay base closer to 1 so the ribbon lingers longer behind the prop.
+    const decayBase = 0.02 + params.streakLength * 0.5;
+    const drag = Math.pow(decayBase, dt);
+    const fall = params.fallBaseSpeed * (0.3 + 0.7 * params.fallSpeed);
+    const fallEase = 1 - Math.pow(0.25, dt);
     let writeIdx = 0;
     for (let i = 0; i < this.petals.length; i++) {
       const p = this.petals[i]!;
       p.age += dt;
       if (p.age >= p.maxAge) continue;
-      const swayX = Math.sin(p.phase + this.clock * swayFreq * TAU) * swayBase;
-      p.x += (p.vx + swayX) * dt;
+      // Horizontal inherited motion decays; vertical eases toward terminal fall.
+      p.vx *= drag;
+      p.vy += (fall - p.vy) * fallEase;
+      // Individual flutter so streaks read as living leaves, not rigid lines.
+      const flutter = Math.sin(this.clock * p.freq + p.phase) * 16;
+      p.x += (p.vx + flutter) * dt;
       p.y += p.vy * dt;
-      p.rot += (swayX * p.rotK + p.vx * 0.0008) * dt * 60;
+      // Tumble follows the motion the petal is actually doing.
+      p.rot += (p.vx * 0.0016 + flutter * 0.02) * dt * 60;
       if (i !== writeIdx) this.petals[writeIdx] = p;
       writeIdx++;
     }

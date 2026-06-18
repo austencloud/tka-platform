@@ -212,6 +212,13 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     input.pulse.style = "glow";
   }
 
+  // v20 → v21: 2D petals adopt the airstream motion model — petals add
+  // `carry` (velocity inherited from the prop tip) and `streakLength` (how
+  // long that motion lingers). Both net-new; absent values resolve to
+  // DEFAULT_EFFECTS_CONFIG.petals (carry 0.55, streakLength 0.4) via the merge
+  // below. `swayAmplitude` is retained for the untouched 3D petal path. No
+  // field mutation needed.
+
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,

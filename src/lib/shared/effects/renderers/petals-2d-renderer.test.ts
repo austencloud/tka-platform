@@ -47,6 +47,8 @@ function makeParams(overrides: Partial<Petals2DParams> = {}): Petals2DParams {
     palette: "blossom",
     customColor: "#ffb0c8",
     swayAmplitude: 0.6,
+    carry: 0.55,
+    streakLength: 0.4,
     fallSpeed: 0.4,
     trackingMode: "both_ends",
     resolvedPalette: PETAL_PALETTES.blossom,
@@ -56,8 +58,6 @@ function makeParams(overrides: Partial<Petals2DParams> = {}): Petals2DParams {
     motionSpawnRate: 25,
     motionReferenceSpeed: 3.0,
     fallBaseSpeed: 140,
-    swayBaseSpeed: 80,
-    swayFrequency: 1.4,
     blendMode: "source-over",
     ...overrides,
   };

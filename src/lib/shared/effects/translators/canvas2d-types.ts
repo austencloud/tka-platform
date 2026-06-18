@@ -146,10 +146,6 @@ export interface Petals2DParams extends PetalsIntent {
   motionReferenceSpeed: number;
   /** px/s - base downward velocity at `fallSpeed=1`. */
   fallBaseSpeed: number;
-  /** px/s - sinusoidal sway amplitude at `swayAmplitude=1`. */
-  swayBaseSpeed: number;
-  /** Hz - sinusoidal sway frequency (shared across particles). */
-  swayFrequency: number;
   /** Canvas composite op - `source-over` for bodies; ember rim uses `lighter` internally. */
   blendMode?: GlobalCompositeOperation;
 }

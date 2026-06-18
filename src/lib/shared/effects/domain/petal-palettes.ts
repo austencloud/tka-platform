@@ -62,10 +62,14 @@ export interface PetalPalette {
 
 const BLOSSOM: PetalPalette = {
   id: "blossom",
-  // 1 flower for every 3 petals - flower is the hero, petals fill out the
-  // stream off the prop.
+  // 1 flower for every 7 petals - the full flower is a rare accent; loose
+  // petals carry the stream. (Was 1:3, which read as too many big flowers.)
   sprites: [
     "blossom_flower",
+    "blossom_petal",
+    "blossom_petal",
+    "blossom_petal",
+    "blossom_petal",
     "blossom_petal",
     "blossom_petal",
     "blossom_petal",
@@ -527,8 +531,8 @@ function drawBlossomFlower(
 ): void {
   const { r, g, b } = hexToRgbTuple(tint);
 
-  // Glow halo.
-  const glowRadius = size * 1.6;
+  // Glow halo. Trimmed from 1.6 - the wide halo made flowers dominate.
+  const glowRadius = size * 1.15;
   const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, glowRadius);
   glow.addColorStop(0, `rgba(${r},${g},${b},0.5)`);
   glow.addColorStop(0.45, `rgba(${r},${g},${b},0.2)`);

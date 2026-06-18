@@ -172,8 +172,6 @@ export function resolvePetals2D(
     motionSpawnRate: 25,
     motionReferenceSpeed: 3.0,
     fallBaseSpeed: 140,
-    swayBaseSpeed: 80,
-    swayFrequency: 1.4,
     blendMode: "source-over",
   };
   return { ...intent, ...defaults, ...override };

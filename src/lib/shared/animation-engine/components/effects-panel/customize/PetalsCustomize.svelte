@@ -144,22 +144,40 @@
         <span class="slider-value">{Math.round(state.petals.intensity * 100)}%</span>
       </div>
 
-      <!-- Sway amplitude -->
+      <!-- Carry: how much of the prop's velocity a petal inherits -->
       <div class="slider-row">
-        <label for="petals-sway">Sway</label>
+        <label for="petals-carry">Carry</label>
         <input
-          id="petals-sway"
+          id="petals-carry"
           type="range"
           min="0"
           max="1"
           step="0.05"
-          value={state.petals.swayAmplitude}
+          value={state.petals.carry}
           oninput={(e) =>
             state.updateEffect("petals", {
-              swayAmplitude: +(e.currentTarget as HTMLInputElement).value,
+              carry: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
-        <span class="slider-value">{Math.round(state.petals.swayAmplitude * 100)}%</span>
+        <span class="slider-value">{Math.round(state.petals.carry * 100)}%</span>
+      </div>
+
+      <!-- Streak: how long the inherited motion lingers -->
+      <div class="slider-row">
+        <label for="petals-streak">Streak</label>
+        <input
+          id="petals-streak"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={state.petals.streakLength}
+          oninput={(e) =>
+            state.updateEffect("petals", {
+              streakLength: +(e.currentTarget as HTMLInputElement).value,
+            })}
+        />
+        <span class="slider-value">{Math.round(state.petals.streakLength * 100)}%</span>
       </div>
 
       <!-- Fall speed -->

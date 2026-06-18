@@ -120,6 +120,8 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     palette: "blossom",
     customColor: "#ffb0c8",
     swayAmplitude: 0.6,
+    carry: 0.55,
+    streakLength: 0.4,
     fallSpeed: 0.4,
     trackingMode: "both_ends",
   },

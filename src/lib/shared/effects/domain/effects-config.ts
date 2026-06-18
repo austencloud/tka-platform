@@ -14,7 +14,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 20;
+export const EFFECTS_CONFIG_VERSION = 21;
 
 export type EffectType =
   | "none"
@@ -251,8 +251,15 @@ export interface PetalsIntent {
   palette: "blossom" | "autumn" | "jungle" | "ash" | "gold" | "custom";
   /** Hex string. Used only when palette === "custom". */
   customColor: string;
-  /** 0-1. Sinusoidal sway amplitude. 0 = straight fall, 1 = wide flutter. */
+  /** 0-1. Sinusoidal sway amplitude. 3D only — drives the ambient-shower
+   * flutter. The 2D backend ignores this in favor of the airstream model. */
   swayAmplitude: number;
+  /** 0-1. 2D airstream: fraction of prop tip velocity a petal inherits at
+   * birth. 0 = drips straight off the tip, 1 = rides the full arc. */
+  carry: number;
+  /** 0-1. 2D airstream: how long inherited motion lingers before settling.
+   * Low = quick puff, high = long ribbon trailing the prop's path. */
+  streakLength: number;
   /** 0-1. Downward velocity scalar. */
   fallSpeed: number;
   /** Which staff end(s) petals track. */
