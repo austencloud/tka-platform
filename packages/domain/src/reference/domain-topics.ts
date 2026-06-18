@@ -644,7 +644,8 @@ Compound letters are pairs that complete each other to create circular (LOOP) mo
 - J alone is alpha to beta (half a cycle)
 - DJ together = beta to alpha to beta (complete cycle)
 - In continuous motion, you're always doing the compound
-- VTG timing (split vs tog) applies to the compound unit, not individual letters`,
+- **Split/tog timing is vantage-relative.** The same loop reads as split-opp or tog-opp depending on where you start it: split-opp from the alpha-phase start, tog-opp from the beta-phase start. DJ/EK/FL are not intrinsically "split" — that label is just the canonical alpha1 vantage.
+- The "beta to alpha" descriptions above are the canonical alpha1 reading. The same loop started elsewhere is the same compound, only described from a different vantage.`,
   },
 
   "center-relative-orientation": {

@@ -8,7 +8,7 @@ export const COMPOUND_LETTERS: Record<string, CompoundLetter> = {
     description: "D (beta to alpha) + J (alpha to beta) creates a complete cycle",
     rotationStyle: "Pro/Pro (isolation)",
     transitionPattern: "beta -> alpha -> beta",
-    vtgNote: "VTG classification varies by variation: east-start = split-opp, south-start = tog-opp",
+    vtgNote: "Vantage-relative: split-opp from the alpha-phase start (e.g. east), tog-opp from the beta-phase start (e.g. south). Same loop either way; the label is the canonical alpha1 vantage.",
   },
   EK: {
     components: ["E", "K"],
@@ -17,7 +17,7 @@ export const COMPOUND_LETTERS: Record<string, CompoundLetter> = {
     description: "E (beta to alpha) + K (alpha to beta) creates a complete cycle",
     rotationStyle: "Anti/Anti",
     transitionPattern: "beta -> alpha -> beta",
-    vtgNote: "VTG classification varies by variation",
+    vtgNote: "Vantage-relative: split-opp from the alpha-phase start, tog-opp from the beta-phase start. Same loop either way; the label is the canonical alpha1 vantage.",
   },
   FL: {
     components: ["F", "L"],
@@ -26,7 +26,7 @@ export const COMPOUND_LETTERS: Record<string, CompoundLetter> = {
     description: "F (beta to alpha) + L (alpha to beta) creates a complete cycle",
     rotationStyle: "Hybrid (anti/pro)",
     transitionPattern: "beta -> alpha -> beta",
-    vtgNote: "VTG classification varies by variation",
+    vtgNote: "Vantage-relative: split-opp from the alpha-phase start, tog-opp from the beta-phase start. Same loop either way; the label is the canonical alpha1 vantage.",
   },
   MP: {
     components: ["M", "P"],
@@ -86,5 +86,6 @@ export const WHY_COMPOUNDS_MATTER: readonly string[] = [
   "J alone is alpha to beta - the other half",
   "DJ together = beta -> alpha -> beta (complete cycle)",
   "In continuous spinning, you're always doing compound units",
-  "VTG timing (split vs tog) applies to the compound, not individual letters",
+  "Split/tog timing is vantage-relative: the same loop reads as split-opp or tog-opp depending on where you start it. DJ/EK/FL are not intrinsically 'split' — that label is the canonical alpha1 vantage",
+  "The 'beta to alpha' descriptions are the canonical alpha1 reading; the same loop started elsewhere is the same compound, just described from a different vantage",
 ] as const;
