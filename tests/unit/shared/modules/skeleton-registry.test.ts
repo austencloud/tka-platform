@@ -1,12 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { resolveSkeleton, SHARED_SHELL } from "$lib/shared/modules/skeletons";
-import CreateSkeleton from "$lib/shared/modules/skeletons/CreateSkeleton.svelte";
 import BrowseSkeleton from "$lib/shared/modules/skeletons/BrowseSkeleton.svelte";
 import SharedShellSkeleton from "$lib/shared/modules/skeletons/SharedShellSkeleton.svelte";
 
 describe("resolveSkeleton", () => {
-  it("returns the Create skeleton for create", () => {
-    expect(resolveSkeleton("create")).toBe(CreateSkeleton);
+  it("falls back to the neutral loader for create (no bespoke skeleton — stateful layout)", () => {
+    expect(resolveSkeleton("create")).toBe(SharedShellSkeleton);
   });
   it("returns the Browse skeleton for browse", () => {
     expect(resolveSkeleton("browse")).toBe(BrowseSkeleton);
