@@ -50,6 +50,7 @@
     "format": "prettier --write .",
     "test:ci": "vitest run --config tests/config/vitest.config.ts",
     "test:rules": "firebase emulators:exec --only firestore --project the-kinetic-alphabet \"vitest run --config tests/config/vitest.rules.config.ts\"",
+    "test:e2e": "firebase emulators:exec --only auth --project the-kinetic-alphabet \"vitest run --config tests/config/vitest.e2e.config.ts\"",
     "validate": "npm run lint && npm run check && npm run test:ci",
     "validate:all": "node tools/validate-all.js",
     "validate:architecture": "node tools/validate-architecture.js",

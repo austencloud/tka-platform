@@ -20,6 +20,7 @@
     "firestore-stripe-payments": "stripe/firestore-stripe-payments@0.3.4"
   },
   "emulators": {
+    "auth": { "port": 9099 },
     "firestore": { "port": 8080 },
     "ui": { "enabled": false },
     "singleProjectMode": true
