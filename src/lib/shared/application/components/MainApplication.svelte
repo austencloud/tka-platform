@@ -2,9 +2,15 @@
 <script module lang="ts">
 
 import { getApplicationInitializer } from "$lib/shared/application/get-application-initializer";
+  import { readBootSnapshot } from "$lib/shared/application/services/boot-snapshot";
   // Module-level: survives component remounts so we never show the auth
   // spinner again after the app has loaded once in this session.
-  let _mainInterfaceShown = false;
+  // Seed from the boot snapshot: if the app has successfully booted before,
+  // settings/theme are already primed from localStorage, so we render
+  // MainInterface immediately and let auth reconcile in the background instead
+  // of showing the "Warming up" spinner. First-ever load (no snapshot) keeps
+  // the spinner.
+  let _mainInterfaceShown = readBootSnapshot() !== null;
 
   // Teach TypeScript about the boot-script progress hook injected in app.html.
   // Signature: __tkaLoadProgress(percent: number, message: string) => void
