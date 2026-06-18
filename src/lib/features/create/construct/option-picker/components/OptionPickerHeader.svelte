@@ -73,7 +73,7 @@
 
 <div class="oph">
   <div class="oph-bar">
-    <!-- Zone 1: filter (fixed left) -->
+    <!-- Row 1: filter (left), persistent controls (right). Never changes height. -->
     <div class="oph-filter">
       {#if showFilter}
         <div class="filter-seg">
@@ -88,68 +88,8 @@
       {/if}
     </div>
 
-    <!-- Zone 2: steppers — reserved flexible middle, end-aligned so they unfurl
-         leftward into the void and never push the pinned controls in Zone 3. -->
-    <div class="oph-mid">
-      {#if expanded}
-        <div
-          class="oph-steppers"
-          transition:slide={{ axis: "x", duration: 240, easing: quintOut }}
-        >
-          <div class="hand-stepper blue">
-            <span class="hand-tag">Blue</span>
-            <PropTurnsControl
-              color="blue"
-              turns={blueTurns}
-              rotationDirection={blueRotation}
-              showRotation={false}
-              compact
-              onTurnsChange={onBlueChange}
-              onRotationChange={() => {}}
-            />
-            {#if !isContinuousOnly && hasBlueTurns}
-              <span class="spin-divider" aria-hidden="true"></span>
-              <button
-                class="spin-inline"
-                title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
-                aria-label="Toggle blue dash/static spin (currently {dirLabel(blueRotation)})"
-                onclick={() => onBlueRotationChange(opposite(blueRotation))}
-              >
-                <i class="fas {dirIcon(blueRotation)}" aria-hidden="true"></i>
-                <span class="dir">{dirLabel(blueRotation)}</span>
-              </button>
-            {/if}
-          </div>
-          <div class="hand-stepper red">
-            <span class="hand-tag">Red</span>
-            <PropTurnsControl
-              color="red"
-              turns={redTurns}
-              rotationDirection={redRotation}
-              showRotation={false}
-              compact
-              onTurnsChange={onRedChange}
-              onRotationChange={() => {}}
-            />
-            {#if !isContinuousOnly && hasRedTurns}
-              <span class="spin-divider" aria-hidden="true"></span>
-              <button
-                class="spin-inline"
-                title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
-                aria-label="Toggle red dash/static spin (currently {dirLabel(redRotation)})"
-                onclick={() => onRedRotationChange(opposite(redRotation))}
-              >
-                <i class="fas {dirIcon(redRotation)}" aria-hidden="true"></i>
-                <span class="dir">{dirLabel(redRotation)}</span>
-              </button>
-            {/if}
-          </div>
-        </div>
-      {/if}
-    </div>
-
-    <!-- Zone 3: persistent controls (pinned right, never reflow). Reset is always
-         present — disabled when there are no turns — so it never appears/disappears. -->
+    <!-- Persistent controls (pinned right, never reflow). Reset is always present
+         — disabled when there are no turns — so it never appears/disappears. -->
     <div class="oph-controls">
       <button
         class="turns-toggle"
@@ -181,6 +121,63 @@
     </div>
   </div>
 
+  <!-- Row 2: blue (left half) / red (right half), slides down to appear. Each half
+       reserves a fixed-width spin slot, so the CW/CCW button materializing never
+       shifts the stepper next to it. -->
+  {#if expanded}
+    <div class="oph-turns-row" transition:slide={{ duration: 240, easing: quintOut }}>
+      <div class="hand-half blue">
+        <span class="hand-tag">Blue</span>
+        <PropTurnsControl
+          color="blue"
+          turns={blueTurns}
+          rotationDirection={blueRotation}
+          showRotation={false}
+          compact
+          onTurnsChange={onBlueChange}
+          onRotationChange={() => {}}
+        />
+        <div class="spin-slot">
+          {#if !isContinuousOnly && hasBlueTurns}
+            <button
+              class="spin-inline"
+              title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
+              aria-label="Toggle blue dash/static spin (currently {dirLabel(blueRotation)})"
+              onclick={() => onBlueRotationChange(opposite(blueRotation))}
+            >
+              <i class="fas {dirIcon(blueRotation)}" aria-hidden="true"></i>
+              <span class="dir">{dirLabel(blueRotation)}</span>
+            </button>
+          {/if}
+        </div>
+      </div>
+      <div class="hand-half red">
+        <span class="hand-tag">Red</span>
+        <PropTurnsControl
+          color="red"
+          turns={redTurns}
+          rotationDirection={redRotation}
+          showRotation={false}
+          compact
+          onTurnsChange={onRedChange}
+          onRotationChange={() => {}}
+        />
+        <div class="spin-slot">
+          {#if !isContinuousOnly && hasRedTurns}
+            <button
+              class="spin-inline"
+              title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
+              aria-label="Toggle red dash/static spin (currently {dirLabel(redRotation)})"
+              onclick={() => onRedRotationChange(opposite(redRotation))}
+            >
+              <i class="fas {dirIcon(redRotation)}" aria-hidden="true"></i>
+              <span class="dir">{dirLabel(redRotation)}</span>
+            </button>
+          {/if}
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -199,15 +196,13 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  /* Three fixed zones: filter | flexible middle | pinned controls.
-     The controls zone (Turns + Reset) is grid-pinned to the right and never
-     reflows. The middle zone reserves the flexible space the steppers expand
-     into, so toggling Turns or growing a chip moves nothing else. */
+  /* Row 1: filter left, persistent controls right. The steppers are NOT here —
+     they live on row 2 — so this row's height and contents never change. */
   .oph-bar {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    display: flex;
     align-items: center;
-    column-gap: 12px;
+    justify-content: space-between;
+    gap: 12px;
     min-height: var(--min-touch-target, 44px);
   }
 
@@ -222,66 +217,74 @@
     max-width: 50vw;
   }
 
-  /* Steppers live here, end-aligned against the controls zone so they unfurl
-     leftward into the empty middle instead of pushing Turns/Reset. */
-  .oph-mid {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    min-width: 0;
-    overflow: hidden;
-  }
-
   .oph-controls {
     display: flex;
     align-items: center;
     gap: 8px;
-    justify-self: end;
   }
 
-  /* Inline hand steppers — slim chips, label beside the +/- row (not stacked
-     above it like the glass card), so each is one ~44px row with no vertical air.
-     Reuses PropTurnsControl (compact, showRotation off) for the actual stepper. */
-  .oph-steppers {
+  /* Row 2: two equal halves — blue (left), red (right) — revealed by sliding
+     down. Each half holds [label][stepper][reserved spin slot]. */
+  .oph-turns-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .hand-half {
+    flex: 1 1 0;
+    min-width: 0;
     display: flex;
     align-items: center;
-    gap: 8px;
-    overflow: hidden;
-  }
-
-  .hand-stepper {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 3px 6px 3px 10px;
+    justify-content: center;
+    gap: 10px;
+    padding: 6px 12px;
     border-radius: 10px;
     border: 1px solid;
   }
 
-  .hand-stepper.blue {
+  .hand-half.blue {
     --prop-color-rgb: 59, 130, 246;
-    background: rgba(59, 130, 246, 0.12);
+    background: linear-gradient(
+      180deg,
+      rgba(59, 130, 246, 0.16) 0%,
+      rgba(59, 130, 246, 0.06) 100%
+    );
     border-color: rgba(59, 130, 246, 0.4);
   }
 
-  .hand-stepper.red {
+  .hand-half.red {
     --prop-color-rgb: 239, 68, 68;
-    background: rgba(239, 68, 68, 0.12);
+    background: linear-gradient(
+      180deg,
+      rgba(239, 68, 68, 0.16) 0%,
+      rgba(239, 68, 68, 0.06) 100%
+    );
     border-color: rgba(239, 68, 68, 0.4);
   }
 
+  /* Fixed-width slot the spin button fades into — reserved whether or not the
+     button is shown, so it can never shift the stepper beside it. Sized to the
+     widest state ("CCW"). */
+  .spin-slot {
+    flex: 0 0 auto;
+    width: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
   .hand-tag {
-    font-size: 0.68rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
-  .hand-stepper.blue .hand-tag {
+  .hand-half.blue .hand-tag {
     color: #9ec1ff;
   }
 
-  .hand-stepper.red .hand-tag {
+  .hand-half.red .hand-tag {
     color: #ffaba6;
   }
 
@@ -358,15 +361,8 @@
     outline-offset: 2px;
   }
 
-  /* Dash/static spin — nested inside the hand chip, after a hairline divider.
-     Inherits the chip's --prop-color-rgb so it themes to the hand automatically. */
-  .spin-divider {
-    width: 1px;
-    height: 24px;
-    background: rgba(255, 255, 255, 0.18);
-    flex-shrink: 0;
-  }
-
+  /* Dash/static spin — sits in the reserved spin slot, themed via the half's
+     --prop-color-rgb. */
   .spin-inline {
     display: inline-flex;
     align-items: center;
