@@ -37,6 +37,7 @@ import { loopViabilityService } from "$lib/features/create/generate/shared/servi
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
@@ -140,6 +141,14 @@ export function createGenerationActionsState(
           ...generatedSequence,
           steps: generatedSequence.steps.slice(0, maxSteps),
         };
+        // Truncation lost beats the user's word implied. Tell them it was
+        // capped and how to lift the cap. Premium is already at the ceiling,
+        // so we don't nag them. Copy matches AUTH_NUDGE_TEXTS phrasing.
+        if (tier === "guest") {
+          toast.info("Capped to 8 beats. Sign up free for up to 16.", 5000);
+        } else if (tier === "user") {
+          toast.info("Capped to 16 beats. Become a Scribe for up to 64.", 5000);
+        }
       }
 
       // Snapshot current state before replacing so the user can undo back to it
