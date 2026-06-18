@@ -51,3 +51,13 @@ describe("AnimationScope", () => {
     expect(s.speed).toBe(2); // 120 / 60
   });
 });
+
+describe("scope isolation regression (the reported bug)", () => {
+  it("one scope's motion-aware paths do not leak into another", () => {
+    const userScope = createAnimationScope({ persistence: "ephemeral" });
+    const landingScope = createAnimationScope({ persistence: "ephemeral" });
+    userScope.visibility.toggleMotionAwarePaths(); // user turns Hybrid ON
+    expect(userScope.visibility.getMotionAwarePaths()).toBe(true);
+    expect(landingScope.visibility.getMotionAwarePaths()).toBe(false); // landing stays OFF
+  });
+});
