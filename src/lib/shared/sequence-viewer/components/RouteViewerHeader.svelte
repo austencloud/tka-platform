@@ -16,6 +16,12 @@
     isFullscreen: boolean;
     isMobile: boolean;
     returnLabel: string;
+    /**
+     * Explore-home target. Renders an explicit compass link beside the back
+     * button so a first-time visitor arriving by QR/share link can step into
+     * the app instead of being stranded with only browser-back.
+     */
+    homeHref?: string;
     onClose: () => void;
     onExitEditMode: () => void;
     sequence?: SequenceData | null;
@@ -40,6 +46,7 @@
     isFullscreen,
     isMobile,
     returnLabel,
+    homeHref,
     onClose,
     onExitEditMode,
     sequence,
@@ -98,6 +105,19 @@
         <span class="back-label">{returnLabel}</span>
       {/if}
     </button>
+
+    {#if homeHref && !editingPane}
+      <!-- Explicit explore-home affordance for QR/share-link visitors. A real
+           anchor (not history-back) so it works even with no history stack. -->
+      <a
+        href={homeHref}
+        class="header-action-btn explore"
+        aria-label="Explore TKA"
+        title="Explore TKA"
+      >
+        <i class="fas fa-compass" aria-hidden="true"></i>
+      </a>
+    {/if}
   </div>
 
   <div class="header-center">
@@ -285,6 +305,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     border-radius: 8px;
+    text-decoration: none;
     transition: background 150ms ease, color 150ms ease;
   }
 

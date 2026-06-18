@@ -504,9 +504,18 @@
         <line x1="12" y1="8" x2="12" y2="12"></line>
         <line x1="12" y1="16" x2="12.01" y2="16"></line>
       </svg>
-      <h1 class="error-heading">Sequence Not Found</h1>
-      <p class="status-text">{pageState.message}</p>
-      <a href="/browse/gallery" class="cta-button">Browse Sequences</a>
+      <h1 class="error-heading">This sequence isn't available</h1>
+      <p class="status-text">The code may be broken, or the sequence was deleted by its owner.</p>
+      <div class="error-actions">
+        <a href="/browse/gallery" class="cta-button">
+          <i class="fas fa-compass" aria-hidden="true"></i>
+          Browse Sequences
+        </a>
+        <a href="/create" class="cta-button ghost">
+          <i class="fas fa-pen" aria-hidden="true"></i>
+          Create Your Own
+        </a>
+      </div>
     </div>
   {:else if pageState.kind === "playing" && OrchestratorComponent && resolvedSeq}
     <OrchestratorComponent
@@ -710,6 +719,14 @@
     font-size: 1.5rem;
     font-weight: 600;
     margin: 0 0 0.5rem;
+  }
+
+  .error-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 0.5rem;
   }
 
   .cta-button {

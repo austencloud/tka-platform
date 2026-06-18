@@ -491,11 +491,18 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
     <div class="error-container">
       <div class="error-card">
         <i class="fas fa-exclamation-circle error-icon" aria-hidden="true"></i>
-        <h1>Sequence Not Found</h1>
-        <p>{loadError || "This sequence could not be loaded."}</p>
-        <button class="back-button" onclick={() => goto("/browse/gallery")}>
-          Browse Sequences
-        </button>
+        <h1>This sequence isn't available</h1>
+        <p>{loadError || "The link may be broken, or the sequence was deleted by its owner."}</p>
+        <div class="recovery-actions">
+          <a class="recovery-button" href="/browse/gallery">
+            <i class="fas fa-compass" aria-hidden="true"></i>
+            Browse Sequences
+          </a>
+          <a class="recovery-button ghost" href="/create">
+            <i class="fas fa-pen" aria-hidden="true"></i>
+            Create Your Own
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -532,6 +539,7 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
           isFullscreen={ctx.isFullscreen}
           {isMobile}
           returnLabel={handoffData?.returnLabel || "Back"}
+          homeHref="/browse/gallery"
           onClose={ctx.onClose}
           onExitEditMode={ctx.exitEditMode}
           sequence={sequence}
@@ -797,24 +805,42 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
     font-size: var(--font-size-sm, 14px);
   }
 
-  .back-button {
+  .recovery-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .recovery-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     min-height: var(--min-touch-target);
-    padding: 0.75rem 1.5rem;
+    padding: 0.75rem 1.25rem;
     background: var(--theme-accent, #f43f5e);
     color: white;
     border: none;
     border-radius: 0.5rem;
     font-weight: 600;
     font-size: var(--font-size-sm, 14px);
+    text-decoration: none;
     cursor: pointer;
     transition: filter var(--duration-normal, 200ms) ease;
   }
 
-  .back-button:hover {
+  .recovery-button.ghost {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .recovery-button:hover {
     filter: brightness(1.1);
   }
 
-  .back-button:focus-visible {
+  .recovery-button:focus-visible {
     outline: 2px solid var(--theme-accent, #f43f5e);
     outline-offset: 2px;
   }
