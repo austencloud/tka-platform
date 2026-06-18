@@ -141,7 +141,10 @@ export class PresenceTracker {
     const now = Date.now();
 
     // Create presence data with activity tracking
-    // Session ID from PostHog (or fallback), device detected locally
+    // Session ID from PostHog (or fallback), device detected locally.
+    // Anonymous (guest) users have no displayName/email/photoURL — RTDB rejects
+    // any object containing `undefined`, so omit those keys entirely when absent
+    // rather than writing `undefined`/`null` values.
     this.currentPresence = {
       online: true,
       activityStatus: "active",
@@ -151,9 +154,9 @@ export class PresenceTracker {
       currentTab: null,
       sessionId: this.getSessionId(),
       device: this.detectDevice(),
-      displayName: user.displayName ?? undefined,
-      email: user.email ?? undefined,
-      photoURL: user.photoURL,
+      ...(user.displayName ? { displayName: user.displayName } : {}),
+      ...(user.email ? { email: user.email } : {}),
+      ...(user.photoURL ? { photoURL: user.photoURL } : {}),
     };
 
     // Set up onDisconnect handler FIRST
