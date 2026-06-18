@@ -35,22 +35,22 @@ export function buildPentatonicNotes(count: number): number[] {
 // ── Bell synth ───────────────────────────────────────────────────────────────
 // Additive inharmonic partials → per-partial exponential decay → lowpass
 // (underwater muffle) → stereo pan → master, with a shared convolver reverb tail.
-// A small, bright, celesta-like bell: fundamental dominant, a couple of
-// slightly inharmonic upper partials for "bell" rather than "organ".
+// A soft, mellow bell: fundamental dominant with gentle upper partials. Kept
+// dark and low on the bright inharmonic partials so it reads as a warm chime,
+// not a sharp ping. A lowpass envelope (see play) darkens the tail further.
 const PARTIALS: readonly [ratio: number, gain: number, decayMul: number][] = [
   [1.0, 1.0, 1.0],
-  [2.0, 0.5, 0.8],
-  [3.01, 0.28, 0.55],
-  [4.18, 0.16, 0.4],
-  [5.43, 0.09, 0.3],
+  [2.0, 0.4, 0.75],
+  [3.01, 0.16, 0.5],
+  [4.18, 0.07, 0.35],
 ];
-const ATTACK = 0.003;
-const BASE_DECAY = 1.7;
-const REVERB_SECONDS = 2.4;
-const REVERB_DECAY = 2.6;
-const REVERB_WET = 0.32;
-// Headroom so a five-partial bell at full scene volume never clips the master.
-const BELL_LEVEL = 0.5;
+const ATTACK = 0.014; // softer onset — no click/ping
+const BASE_DECAY = 2.0;
+const REVERB_SECONDS = 2.8;
+const REVERB_DECAY = 2.8;
+const REVERB_WET = 0.36; // lush, gentle tail
+// Headroom so the stacked partials at full scene volume never clip the master.
+const BELL_LEVEL = 0.42;
 
 export interface JellyfishChime {
   /** Play a bell at the given frequency (Hz), panned in [-1, 1]. */
@@ -102,19 +102,28 @@ function createLiveChime(): JellyfishChime {
       if (!ensure() || !ctx || !master || !reverb) return;
       if (ctx.state === "suspended") void ctx.resume();
 
-      const vol = sceneAudioState.effectiveVolume;
+      // Bells follow the master volume slider but NOT the music mute/pause —
+      // they're interaction feedback, so they ring even with the ambient track
+      // paused or muted.
+      const vol = sceneAudioState.masterVolume;
       if (vol <= 0) return;
       master.gain.value = vol * BELL_LEVEL;
 
       const t = ctx.currentTime;
+      const decayEnd = t + BASE_DECAY;
 
       const panner = ctx.createStereoPanner();
       panner.pan.value = Math.max(-1, Math.min(1, pan));
 
+      // Lowpass with a closing envelope: opens softly on attack, darkens as the
+      // note rings out — a mellower, gentler bloom than a static filter.
       const lp = ctx.createBiquadFilter();
       lp.type = "lowpass";
-      lp.frequency.value = Math.min(5200, freq * 6 + 1200);
-      lp.Q.value = 0.4;
+      lp.Q.value = 0.3;
+      const cutOpen = Math.min(3600, freq * 4 + 900);
+      const cutClose = Math.max(freq * 1.5 + 300, 350);
+      lp.frequency.setValueAtTime(cutOpen, t);
+      lp.frequency.exponentialRampToValueAtTime(cutClose, decayEnd);
       lp.connect(panner);
       panner.connect(master);
       panner.connect(reverb);

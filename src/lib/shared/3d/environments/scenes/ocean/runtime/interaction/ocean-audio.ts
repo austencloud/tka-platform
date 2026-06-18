@@ -8,11 +8,11 @@ export function createOceanAudio() {
   const track = OCEAN_TRACKS[0]!;
 
   function handleInteraction(): void {
+    // Unlock-only: the first user gesture clears the browser's autoplay block so
+    // the ambient track CAN start, but it stays paused until the user presses
+    // play (sceneAudioState.playing → syncPlayback). No auto-start.
     if (sceneAudioState.audioUnlocked) return;
     sceneAudioState.audioUnlocked = true;
-    engine.createContext();
-    engine.play(track.params, sceneAudioState.effectiveVolume);
-    sceneAudioState.playing = true;
     window.removeEventListener('pointerdown', handleInteraction);
     window.removeEventListener('keydown', handleInteraction);
   }
