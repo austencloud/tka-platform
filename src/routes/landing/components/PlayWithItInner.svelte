@@ -24,13 +24,10 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
   import { startPositionDeriver as startPositionDeriverInstance } from "$lib/shared/pictograph/shared/services/start-position-deriver";
   import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
-  import {
-    animationSettings,
-    TrackingMode,
-  } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { TrackingMode } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { createAnimationScope } from "$lib/shared/animation-engine/state/animation-scope.svelte";
+  import { setAnimationScopeContext } from "$lib/shared/animation-engine/state/animation-scope-context";
   import { setAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
-  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
@@ -45,18 +42,14 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   // Prop state
   let currentPropType = $state<PropType>(PropType.STAFF);
 
-  // Per-instance visibility manager so this player's effect/dark-mode settings
-  // don't conflict with other AnimatorCanvas instances on the same page.
-  // Ephemeral: no localStorage persistence, no global dark-class sync.
-  // Exposed via context so the AnimationPanel sections (Effort/Display/Paths)
-  // drive THIS instance instead of the global singleton.
-  const visibilityManager = setAnimationVisibilityContext(
-    new AnimationVisibilityStateManager({ ephemeral: true })
-  );
-
-  // Section-scoped effects state: the panel's Effects section and the canvas
-  // engine share this one instance through context + the canvas prop.
-  const effectsConfigState = setEffectsConfigContext(createEffectsConfigState());
+  // Per-surface animation state: one ephemeral AnimationScope owns this player's
+  // visibility, settings, and effects so nothing persists to localStorage and
+  // nothing leaks into (or from) the signed-in user's global app settings.
+  // The visibility + effects sub-contexts point at the scope's instances so the
+  // AnimationPanel sections (Effort/Display/Paths/Effects) drive THIS scope.
+  const scope = setAnimationScopeContext(createAnimationScope({ persistence: "ephemeral" }));
+  const visibilityManager = setAnimationVisibilityContext(scope.visibility);
+  const effectsConfigState = setEffectsConfigContext(scope.effects);
   visibilityManager.effectsConfigState = effectsConfigState;
 
   // BPM state - local to this landing section
@@ -84,9 +77,9 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   // ── Initialize animation engine ─────────────────────────────────────────────
   onMount(async () => {
     try {
-      animationSettings.setTrackingMode(TrackingMode.BOTH_ENDS);
+      scope.settings.setTrackingMode(TrackingMode.BOTH_ENDS);
       // Set landing-page default BPM (60 feels comfortable for visitors)
-      animationSettings.setBpm(bpm);
+      scope.settings.setBpm(bpm);
 
       // Dark mode on for visual impact
       visibilityManager.setDarkMode(true);
@@ -157,7 +150,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   // ── BPM control ─────────────────────────────────────────────────────────────
   function handleBpmChange(newBpm: number) {
     bpm = newBpm;
-    animationSettings.setBpm(newBpm);
+    scope.settings.setBpm(newBpm);
   }
 
   // ── Notation panel cells ──────────────────────────────────────────────────
@@ -346,7 +339,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
                 sequenceData={playback?.animationState?.sequenceData}
                 currentStep={playback?.animationState?.currentStep ?? 0}
                 isPlaying={isPlaying}
-                trailSettings={animationSettings.trail}
+                trailSettings={scope.settings.trail}
                 bluePropType={currentPropType}
                 redPropType={currentPropType}
                 word={playback?.animationState?.sequenceData?.intendedWord ?? playback?.animationState?.sequenceData?.word ?? null}
