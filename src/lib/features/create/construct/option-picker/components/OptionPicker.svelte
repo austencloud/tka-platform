@@ -20,6 +20,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
   import { applyPendingTurnsToOption } from "$lib/shared/create/services/apply-turns-to-motion";
   import { countDirectionReversals } from "$lib/features/create/construct/option-picker/services/reversal-checker";
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
   import { calculateDeviceAwareSize } from "../services/option-grid-fit-calculator";
 
   import { createOptionPickerState } from "../state/option-picker-state.svelte";
@@ -69,13 +70,41 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
   // Internal continuous filter state - initialize with default
   let internalContinuousOnly = $state(false);
 
-  // Sticky pending turns applied to every option (persist across selections)
-  let blueTurns = $state<number | "fl">(0);
-  let redTurns = $state<number | "fl">(0);
+  // Sticky pending turns applied to every option (persist across selections AND
+  // across reloads — survives HMR / full refresh via localStorage).
+  interface PendingTurnsState {
+    blueTurns: number | "fl";
+    redTurns: number | "fl";
+    blueRotation: RotationDirection;
+    redRotation: RotationDirection;
+  }
+  const pendingTurnsPersistence = createPersistenceHelper<PendingTurnsState>({
+    key: "tka-option-picker-pending-turns",
+    defaultValue: {
+      blueTurns: 0,
+      redTurns: 0,
+      blueRotation: RotationDirection.CLOCKWISE,
+      redRotation: RotationDirection.CLOCKWISE,
+    },
+  });
+  const loadedTurns = pendingTurnsPersistence.load();
+
+  let blueTurns = $state<number | "fl">(loadedTurns.blueTurns);
+  let redTurns = $state<number | "fl">(loadedTurns.redTurns);
   // Chosen spin direction for dash/static hands with turns (one bit per hand,
   // set via the turns-bar toggle — no per-tile fan-out). Shifts ignore these.
-  let blueRotation = $state<RotationDirection>(RotationDirection.CLOCKWISE);
-  let redRotation = $state<RotationDirection>(RotationDirection.CLOCKWISE);
+  let blueRotation = $state<RotationDirection>(loadedTurns.blueRotation);
+  let redRotation = $state<RotationDirection>(loadedTurns.redRotation);
+
+  // Persist every change so the picker reopens with the same sticky turns.
+  $effect(() => {
+    pendingTurnsPersistence.setupAutoSave({
+      blueTurns,
+      redTurns,
+      blueRotation,
+      redRotation,
+    });
+  });
 
   function handleBlueTurnsChange(delta: number) {
     if (blueTurns === "fl") return;

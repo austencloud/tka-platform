@@ -13,6 +13,7 @@
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
+  import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
 
   interface Props {
     // Filter
@@ -46,7 +47,17 @@
     onReset,
   }: Props = $props();
 
-  let expanded = $state(false);
+  // Persist the Turns drawer open/closed state across reloads.
+  const expandedPersistence = createPersistenceHelper<boolean>({
+    key: "tka-option-picker-turns-expanded",
+    defaultValue: false,
+  });
+  let expanded = $state(expandedPersistence.load());
+
+  $effect(() => {
+    void expanded;
+    expandedPersistence.setupAutoSave(expanded);
+  });
 
   const hasBlueTurns = $derived(typeof blueTurns === "number" && blueTurns > 0);
   const hasRedTurns = $derived(typeof redTurns === "number" && redTurns > 0);
