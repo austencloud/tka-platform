@@ -46,10 +46,13 @@ export class SessionManager {
   /**
    * Create a new session
    */
-  async createSession(): Promise<SequenceSession> {
+  async createSession(): Promise<SequenceSession | null> {
     const user = getAuthSync().currentUser;
     if (!user) {
-      throw new Error("User must be authenticated to create session");
+      // Guest (no Firebase identity): session tracking is a Firestore-backed
+      // convenience, not a hard requirement. No-op rather than throw so the
+      // create flow works for signed-out users without console noise.
+      return null;
     }
 
     const sessionData = createSequenceSession(user.uid, this.deviceId);
@@ -80,12 +83,17 @@ export class SessionManager {
     updates: Partial<Omit<SequenceSession, "sessionId" | "userId">>
   ): Promise<void> {
     if (!this.currentSession) {
-      throw new Error("No active session");
+      // No session was created (e.g. guest) — nothing to update.
+      return;
     }
 
     const user = getAuthSync().currentUser;
     if (!user) {
-      throw new Error("User must be authenticated");
+      // Auth lapsed (token expired / signed out) after the session was created.
+      // Cleanup paths like abandonSession() run on unmount and must not throw an
+      // uncaught rejection — drop the local session and return.
+      this.currentSession = null;
+      return;
     }
 
     const firestore = await getFirestoreInstance();

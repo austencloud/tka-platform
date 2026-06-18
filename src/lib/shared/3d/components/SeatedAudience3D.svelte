@@ -21,6 +21,16 @@
   import { seatedAudienceLoader } from "@austencloud/scene-3d";
   import SeatedFigure3D from "./SeatedFigure3D.svelte";
   import { getSceneFeatureContext } from "../scene-features/context/scene-feature-context";
+  import { isProduction } from "../../environment/environment-features";
+
+  // The avatar GLBs (16–124 MB each, ~711 MB raw Mixamo) are gitignored and
+  // deployed nowhere — every `/models/avatars/chXX.glb` 404s in production and
+  // floods the console. They can't ship until re-exported through the Blender
+  // optimization pipeline (decimate + KTX2 + Draco) and hosted on R2. Until
+  // then the audience is dev-only: skip the preload and render zero seats in
+  // production so no 404 fires. Re-enable by removing this guard once optimized
+  // avatars live on R2 and AVATAR_URLS points at the CDN.
+  const audienceDisabled = isProduction();
 
   interface Props {
     count?: number;
@@ -68,6 +78,7 @@
   }
 
   const seats = $derived.by<Seat[]>(() => {
+    if (audienceDisabled) return [];
     const result: Seat[] = [];
     for (let i = 0; i < count; i++) {
       const t = count === 1 ? 0.5 : i / (count - 1);
@@ -88,6 +99,14 @@
   let isReady = $state(false);
 
   onMount(() => {
+    // Production: assets aren't deployed — don't fire 404s. Report ready so the
+    // SceneLoadingCurtain still lifts, just with an empty audience.
+    if (audienceDisabled) {
+      isReady = true;
+      sceneFeatures?.reportReady("audience");
+      return;
+    }
+
     let cancelled = false;
     seatedAudienceLoader
       .preloadAll(AVATAR_URLS, ANIMATION_URLS)

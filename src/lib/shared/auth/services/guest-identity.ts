@@ -12,6 +12,7 @@ import { getAuthInstance } from "$lib/shared/auth/firebase";
  * static `auth` export to avoid the dev-cycle app-rotation argument-error.
  */
 let inFlight: Promise<void> | null = null;
+let warnedDisabled = false;
 
 export async function ensureGuestIdentity(): Promise<void> {
   const auth = await getAuthInstance();
@@ -19,6 +20,17 @@ export async function ensureGuestIdentity(): Promise<void> {
   if (inFlight) return inFlight;
   inFlight = signInAnonymously(auth)
     .then(() => undefined)
+    .catch((err: unknown) => {
+      // Anonymous auth provider may be disabled in the Firebase console
+      // (auth/admin-restricted-operation), or sign-in may fail offline. Swallow
+      // so a guest's first persistable action doesn't surface an uncaught
+      // rejection on every page — log once. Guest continuity stays inert until
+      // the provider is enabled; nothing downstream should hard-depend on a uid.
+      if (!warnedDisabled) {
+        warnedDisabled = true;
+        console.warn("[guest-identity] anonymous sign-in unavailable:", err);
+      }
+    })
     .finally(() => {
       inFlight = null;
     });

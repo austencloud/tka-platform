@@ -23,7 +23,7 @@ import {
   runTransaction,
   type Firestore,
 } from "firebase/firestore";
-import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import {
   type SequenceData,
   createSequenceData,
@@ -175,6 +175,21 @@ export class ShortCodeManager {
   }
 
   async createShortCode(sequence: SequenceData, options?: ShortCodeURLOptions): Promise<CreateShortCodeResult> {
+    // Guests have no Firebase identity, so the shortcodes write is guaranteed to
+    // fail `permission-denied` — and a passive viewer rendering gallery/QR
+    // thumbnails should never mint global shortcode docs as a side effect. Fall
+    // back to a self-contained offline ("s~...") code: no Firestore round-trip,
+    // and the QR still resolves because the sequence is embedded in the URL.
+    let signedIn = false;
+    try {
+      signedIn = !!getAuthSync().currentUser;
+    } catch {
+      // Auth not initialized — treat as guest.
+    }
+    if (!signedIn) {
+      return this.createOfflineCode(sequence, options);
+    }
+
     // Compute encoderHash for content-based dedup. Two sequences with the
     // same motions always produce the same hash, regardless of word or owner.
     // Falls back to word-based lookup for sequences without steps (legacy).
