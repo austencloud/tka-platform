@@ -2,19 +2,29 @@
   /**
    * DodgeDriver — Threlte child that drives the prop-dodge slice each frame.
    *
-   * Mirrors MmDriver: a useTask loop (delta in SECONDS) advances the
-   * MmLocomotionController. Adds: two live staves swinging on their planes, the
-   * solved anticipatory dodge (toggle), the applied spine pitch, and an
-   * authoritative clearance readout computed by running the SAME StanceSimulator
-   * at the avatar's live stance against the prop swept volume.
+   * IMPERATIVE by design: the staff/foot meshes are plain Object3Ds mutated
+   * directly in the useTask loop (exactly how MmLocomotionController mutates
+   * bones), and the solve runs ONCE behind a plain boolean guard. There is NO
+   * $effect, NO $derived, and NO per-frame $state in this component. Binding
+   * reactive $state to <T> props and rewriting it every frame feeds Threlte's
+   * invalidate -> render -> task -> invalidate cycle synchronously, which Svelte
+   * reports as effect_update_depth_exceeded (an infinite loop that hangs the
+   * page). Keeping the per-frame path reactivity-free makes that impossible.
    *
-   * Deferred to a follow-up (correctness-first bar): per-frame arm-IK so the
-   * hands grip the moving staves, and a full swept-volume wireframe gizmo. The
-   * load-bearing claim (torso cleared) is verified by the clearance readout
-   * without them.
+   * Deferred (correctness-first bar): per-frame arm-IK so the hands grip the
+   * moving staves, and a full swept-volume wireframe gizmo.
    */
   import { T, useTask } from "@threlte/core";
-  import { Euler, Quaternion, Vector3, type Bone } from "three";
+  import {
+    Euler,
+    Mesh,
+    CylinderGeometry,
+    MeshStandardMaterial,
+    SphereGeometry,
+    Quaternion,
+    Vector3,
+    type Bone,
+  } from "three";
   import type { MmLocomotionController } from "$lib/features/stage/locomotion/motion-matching/mm-locomotion-controller";
   import type { RigBinding } from "$lib/features/stage/locomotion/motion-matching/rig-binding";
   import { calculatePropState } from "$lib/shared/3d/services/prop-state-interpolator";
@@ -45,30 +55,36 @@
     onClearance: (clearanceM: number, solution: DodgeSolution | null) => void;
   } = $props();
 
-  const STAFF_LENGTH = 0.86;
-  const STAFF_RENDER_RADIUS = 0.02;
   const LOOP_SEC = 2.5;
   const STAFF_HORIZONTAL_QUAT = new Quaternion().setFromEuler(new Euler(0, 0, Math.PI / 2));
 
-  // Live render transforms for each staff (world).
-  let bluePos = $state<[number, number, number]>([0, 1, 0]);
-  let blueQuat = $state<[number, number, number, number]>([0, 0, 0, 1]);
-  let redPos = $state<[number, number, number]>([0, 1, 0]);
-  let redQuat = $state<[number, number, number, number]>([0, 0, 0, 1]);
+  // Imperative meshes — mutated each frame, NEVER bound to reactive $state.
+  const blueStaff = new Mesh(
+    new CylinderGeometry(0.02, 0.02, 0.86, 12),
+    new MeshStandardMaterial({ color: "#3b82f6" })
+  );
+  const redStaff = new Mesh(
+    new CylinderGeometry(0.02, 0.02, 0.86, 12),
+    new MeshStandardMaterial({ color: "#ef4444" })
+  );
+  const footSphere = new Mesh(
+    new SphereGeometry(0.05, 12, 12),
+    new MeshStandardMaterial({ color: "#22c55e", transparent: true, opacity: 0.7 })
+  );
+  footSphere.visible = false;
 
-  // Solved dodge + the marker for the solved foot target.
-  let solution = $state<DodgeSolution | null>(null);
-  let footMarker = $state<[number, number, number]>([0, 0.02, 0]);
-
-  // Solve + frame setup, recomputed when configs change.
+  // Plain (non-reactive) state. None of this triggers Svelte reactivity.
   let shoulderY = 0;
   let restFacing = 0;
   let blueSweep: SimPropTarget[] = [];
   let redSweep: SimPropTarget[] = [];
   let sim: StanceSimulator | null = null;
   let spineBone: Bone | null = null;
+  let solution: DodgeSolution | null = null;
   let lastDodgeOn = false;
   let progress = 0;
+  let didSolve = false;
+  let clearanceFrames = 0;
 
   const _q = new Quaternion();
   const _pitchQ = new Quaternion();
@@ -90,44 +106,35 @@
     return sum / n;
   }
 
-  // Initialize solve + frame once the rig + controller are ready.
-  $effect(() => {
-    if (!rig || !controller) return;
+  /** Run the solve + frame setup exactly once, the first frame the rig is ready. */
+  function ensureSolved(): void {
+    if (didSolve || !rig || !controller) return;
+    didSolve = true;
     shoulderY = readShoulderY(rig);
     restFacing = controller.state.facing;
     spineBone = rig.getBone("Spine");
     blueSweep = buildSweptVolume(blueConfig, 24).samples;
     redSweep = buildSweptVolume(redConfig, 24).samples;
     sim = new StanceSimulator(restPoseFromHeight(1.8));
-    // Use a LOCAL for the solve result. Reading the `solution` $state back inside
-    // this same effect (e.g. for footMarker) would make the effect depend on a
-    // value it writes — an infinite re-run (effect_update_depth_exceeded).
-    const sol = solveDodge(blueConfig, redConfig, 1.8, 24);
-    solution = sol;
-    footMarker = [sol.stance.footOffsetX, 0.02, sol.stance.footOffsetZ];
-
+    solution = solveDodge(blueConfig, redConfig, 1.8, 24);
+    footSphere.position.set(solution.stance.footOffsetX, 0.02, solution.stance.footOffsetZ);
+    footSphere.visible = true;
     if (typeof window !== "undefined") {
-      (window as unknown as { __dodgeSolution?: DodgeSolution }).__dodgeSolution = sol;
+      (window as unknown as { __dodgeSolution?: DodgeSolution }).__dodgeSolution = solution;
       (window as unknown as { __dodgeClearance?: () => number }).__dodgeClearance = liveClearance;
     }
-  });
+  }
 
-  /** Map calculatePropState output into a world render transform on this plane. */
-  function propRender(config: MotionConfig3D, p: number): {
-    pos: [number, number, number];
-    quat: [number, number, number, number];
-  } {
+  /** Place a staff mesh from the prop state on its plane (imperative, no state). */
+  function placeStaff(staff: Mesh, config: MotionConfig3D, p: number): void {
     const s = calculatePropState(config, p);
-    // grip world = (x, shoulderY + y, z + AVATAR_GRID_OFFSET-equivalent already
-    // baked by the renderer frame). buildSweptVolume adds the grid offset to z;
-    // mirror that here so the rendered staff sits where the solver placed it.
-    const pos: [number, number, number] = [
+    staff.position.set(
       s.worldPosition.x,
       shoulderY + s.worldPosition.y,
-      s.worldPosition.z + 0.3,
-    ];
+      s.worldPosition.z + 0.3
+    );
     _q.copy(s.worldRotation).multiply(STAFF_HORIZONTAL_QUAT);
-    return { pos, quat: [_q.x, _q.y, _q.z, _q.w] };
+    staff.quaternion.copy(_q);
   }
 
   /** Current avatar stance in the solver frame (origin at the rest pose). */
@@ -143,7 +150,7 @@
   }
 
   /** Worst body penetration at the live stance, as a signed clearance (m).
-   *  Negative = the prop is intruding into torso/head; >= 0 = cleared. */
+   *  Negative = the prop intrudes into torso/head; >= 0 = cleared. */
   function liveClearance(): number {
     if (!sim || blueSweep.length === 0) return 0;
     const r = sim.evaluateSweep(liveStance(), blueSweep, redSweep);
@@ -155,6 +162,7 @@
 
   useTask((delta) => {
     if (!controller || !rig) return;
+    ensureSolved();
     const dt = Math.min(delta, 1 / 15);
 
     // Drive the dodge intent on toggle change.
@@ -178,35 +186,20 @@
       spineBone.updateMatrixWorld(true);
     }
 
-    // Advance the prop clock and update render transforms.
+    // Advance the prop clock and place the staves imperatively.
     progress = (progress + dt / LOOP_SEC) % 1;
-    const b = propRender(blueConfig, progress);
-    bluePos = b.pos;
-    blueQuat = b.quat;
-    const r = propRender(redConfig, progress);
-    redPos = r.pos;
-    redQuat = r.quat;
+    placeStaff(blueStaff, blueConfig, progress);
+    placeStaff(redStaff, redConfig, progress);
 
-    onClearance(liveClearance(), solution);
+    // Report clearance to the page at ~6/sec, not every frame, to keep the
+    // panel's reactive updates well clear of the render loop.
+    if (++clearanceFrames >= 10) {
+      clearanceFrames = 0;
+      onClearance(liveClearance(), solution);
+    }
   });
 </script>
 
-<!-- Blue (LH) staff: wheel plane. -->
-<T.Mesh position={bluePos} quaternion={blueQuat}>
-  <T.CylinderGeometry args={[STAFF_RENDER_RADIUS, STAFF_RENDER_RADIUS, STAFF_LENGTH, 12]} />
-  <T.MeshStandardMaterial color="#3b82f6" />
-</T.Mesh>
-
-<!-- Red (RH) staff: wall plane. -->
-<T.Mesh position={redPos} quaternion={redQuat}>
-  <T.CylinderGeometry args={[STAFF_RENDER_RADIUS, STAFF_RENDER_RADIUS, STAFF_LENGTH, 12]} />
-  <T.MeshStandardMaterial color="#ef4444" />
-</T.Mesh>
-
-<!-- Solved foot-target marker. -->
-{#if solution}
-  <T.Mesh position={footMarker}>
-    <T.SphereGeometry args={[0.05, 12, 12]} />
-    <T.MeshStandardMaterial color="#22c55e" transparent opacity={0.7} />
-  </T.Mesh>
-{/if}
+<T is={blueStaff} />
+<T is={redStaff} />
+<T is={footSphere} />
