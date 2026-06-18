@@ -356,6 +356,11 @@ import type { SheetType } from "../../navigation/services/types";
         writeBootSnapshot({
           uid: authState.getEffectiveUserId(),
           role: authState.role,
+          tier: resolveAccessTier(
+            authState.isAuthenticated,
+            authState.isAnonymous,
+            isPremiumOrAbove(authState.role)
+          ),
           activeModule:
             (typeof localStorage !== "undefined" &&
               localStorage.getItem(CURRENT_MODULE_KEY)) ||
@@ -579,9 +584,9 @@ import type { SheetType } from "../../navigation/services/types";
       {/await}
     {/if}
 
-    <!-- AuthDrawer for guest sign-up / anonymous-upgrade flow -->
+    <!-- AuthModal for guest sign-up / anonymous-upgrade flow -->
     {#if isGuest}
-      {#await import("../../auth/components/AuthDrawer.svelte") then mod}
+      {#await import("../../auth/components/AuthModal.svelte") then mod}
         <mod.default
           open={authDrawerState.open}
           initialMode={authDrawerState.initialMode}

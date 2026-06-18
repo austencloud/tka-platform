@@ -19,7 +19,8 @@
   import { SvelteMap } from "svelte/reactivity";
   import IndeterminateBar from "$lib/shared/components/loading/IndeterminateBar.svelte";
   import { authState } from "../auth/state/auth-state.svelte";
-  import { resolveAccessTier } from "../auth/domain/access-tier";
+  import { resolveAccessTier, resolveOptimisticAccessTier } from "../auth/domain/access-tier";
+  import { readBootSnapshot } from "$lib/shared/application/services/boot-snapshot";
   import { isModuleAccessible } from "../auth/domain/guest-access-config";
   import { isPremiumOrAbove } from "../auth/domain/models/user-role";
   import AuthNudge from "../auth/components/AuthNudge.svelte";
@@ -275,8 +276,12 @@
     activeModule ? loadModule(activeModule) : Promise.resolve(null)
   );
 
-  const accessTier = $derived(
+  const _snapshotTier = readBootSnapshot()?.tier ?? null;
+  const _realTier = $derived(
     resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
+  );
+  const accessTier = $derived(
+    resolveOptimisticAccessTier(authState.loading, _realTier, _snapshotTier)
   );
 
   const isModuleBlocked = $derived(

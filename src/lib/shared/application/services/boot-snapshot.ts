@@ -9,6 +9,7 @@
  * and storage-quota errors.
  */
 import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
+import type { AccessTier } from "$lib/shared/auth/domain/access-tier";
 
 export const BOOT_SNAPSHOT_KEY = "tka-boot-snapshot";
 export const BOOT_SNAPSHOT_VERSION = 1;
@@ -20,6 +21,8 @@ export interface BootSnapshot {
   role: UserRole;
   /** Last-active module id — used to pick the right skeleton on reload. */
   activeModule: string;
+  /** Last-known resolved access tier — seeds the optimistic tier on reload. */
+  tier: AccessTier;
   /** Schema version; a mismatch means "treat as no snapshot". */
   version: number;
 }

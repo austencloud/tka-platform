@@ -16,6 +16,22 @@ export function resolveAccessTier(
   return "user";
 }
 
+/**
+ * Tier to show during the brief auth-loading window on a warm reload. Once auth
+ * has resolved, use the real tier. While it is still loading, fall back to the
+ * last-known tier from the boot snapshot so a signed-in user does not flash as
+ * guest. Once auth resolves, callers switch back to the real tier and it
+ * reconciles in place.
+ */
+export function resolveOptimisticAccessTier(
+  authLoading: boolean,
+  realTier: AccessTier,
+  snapshotTier: AccessTier | null
+): AccessTier {
+  if (!authLoading) return realTier;
+  return snapshotTier ?? realTier;
+}
+
 export function getMaxBeats(tier: AccessTier): number {
   switch (tier) {
     case "guest":
