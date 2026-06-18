@@ -14,7 +14,7 @@ import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine
 import type { ITrailCapturer as TrailCapturer } from "$lib/shared/animation-engine/services/ITrailCapturer";
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
 import { AnimationPathCache } from "$lib/shared/animation-engine/services/animation-path-cache";
-import { getAnimationVisibilityManager } from "../state/animation-visibility-state.svelte";
+import type { AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
 import {
   SequenceFramePreRenderer,
   type PreRenderProgress,
@@ -33,7 +33,12 @@ import type {
 const MAX_GLOBAL_CACHE_SIZE = 20;
 const globalPathCacheMap = new Map<string, AnimationPathCache>();
 
-function getSequencePathHash(seq: SequenceData, totalSteps: number, stepDurationMs: number): string {
+function getSequencePathHash(
+  seq: SequenceData,
+  totalSteps: number,
+  stepDurationMs: number,
+  vm: AnimationVisibilityStateManager
+): string {
   // Include motion data fingerprint so transforms (rotate, mirror, etc.) produce distinct hashes.
   // Without this, transformed sequences return stale untransformed cached paths.
   const motionFingerprint = seq.steps
@@ -49,7 +54,6 @@ function getSequencePathHash(seq: SequenceData, totalSteps: number, stepDuration
       return `${bPart}|${rPart}`;
     })
     .join(";") || "";
-  const vm = getAnimationVisibilityManager();
   const pathShape = vm.getPathShape();
   const motionAware = vm.getMotionAwarePaths();
   return `${seq.id || seq.word || "?"}-${totalSteps}-${stepDurationMs}-${pathShape}-${motionAware}-${motionFingerprint}`;
@@ -130,7 +134,12 @@ export class AnimationPrecomputer {
     }
 
     try {
-      const hash = getSequencePathHash(seqData, totalSteps, stepDurationMs);
+      const hash = getSequencePathHash(
+        seqData,
+        totalSteps,
+        stepDurationMs,
+        this.orchestrator.getActiveVisibilityManager()
+      );
       // Check global cache first - avoids re-precomputing after drag-to-move
       const cached = globalPathCacheMap.get(hash);
       if (cached?.isValid()) {

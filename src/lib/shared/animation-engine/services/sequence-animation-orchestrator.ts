@@ -73,6 +73,15 @@ export class SequenceAnimationOrchestrator {
     this.visibilityManagerOverride = vm;
   }
 
+  /**
+   * The active visibility manager: the per-instance override if one was set
+   * (e.g. the landing page's ephemeral manager), otherwise the global singleton.
+   * Path-shape/effort reads route through this so per-surface settings stay scoped.
+   */
+  getActiveVisibilityManager(): AnimationVisibilityStateManager {
+    return this.visibilityManagerOverride ?? getAnimationVisibilityManager();
+  }
+
   protected getDefaultPropConfig(): { bluePropType: PropType; redPropType: PropType } {
     const settings = getSettings();
     return {
@@ -275,6 +284,7 @@ export class SequenceAnimationOrchestrator {
     stepState: ReturnType<typeof calculateBeatState>
   ): InterpolationResult | undefined {
     let interpolationResult: InterpolationResult | undefined;
+    const vm = this.getActiveVisibilityManager();
 
     if (this.effortTimeline?.phrases?.length) {
       // Phrase mode: check if current beat falls within a phrase
@@ -289,21 +299,21 @@ export class SequenceAnimationOrchestrator {
         const targetStep = this.steps[phraseResult.stepIndex];
         if (targetStep) {
           interpolationResult = interpolatePropAngles(
-            targetStep, phraseResult.localProgress,
+            targetStep, phraseResult.localProgress, vm,
           );
         }
       } else {
         // Gap between phrases - use linear (no easing)
         interpolationResult = interpolatePropAngles(
-          stepState.currentStepData, stepState.stepProgress,
+          stepState.currentStepData, stepState.stepProgress, vm,
         );
       }
     } else {
       // No effort timeline - existing behavior (global preset)
-      const effortPreset = (this.visibilityManagerOverride ?? getAnimationVisibilityManager()).getEffortPreset();
+      const effortPreset = vm.getEffortPreset();
       const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
       interpolationResult = interpolatePropAngles(
-        stepState.currentStepData, easedProgress,
+        stepState.currentStepData, easedProgress, vm,
       );
     }
 
@@ -585,6 +595,7 @@ export class SequenceAnimationOrchestrator {
 
     // Determine interpolation based on effort timeline or global preset
     let interpolationResult;
+    const vm = this.getActiveVisibilityManager();
 
     if (this.effortTimeline?.phrases?.length) {
       // Phrase mode: check if current beat falls within a phrase
@@ -599,21 +610,21 @@ export class SequenceAnimationOrchestrator {
         const targetStep = this.steps[phraseResult.stepIndex];
         if (targetStep) {
           interpolationResult = interpolatePropAngles(
-            targetStep, phraseResult.localProgress,
+            targetStep, phraseResult.localProgress, vm,
           );
         }
       } else {
         // Gap between phrases - use linear (no easing)
         interpolationResult = interpolatePropAngles(
-          stepState.currentStepData, stepState.stepProgress,
+          stepState.currentStepData, stepState.stepProgress, vm,
         );
       }
     } else {
       // No effort timeline - existing behavior (global preset)
-      const effortPreset = (this.visibilityManagerOverride ?? getAnimationVisibilityManager()).getEffortPreset();
+      const effortPreset = vm.getEffortPreset();
       const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
       interpolationResult = interpolatePropAngles(
-        stepState.currentStepData, easedProgress,
+        stepState.currentStepData, easedProgress, vm,
       );
     }
 

@@ -12,21 +12,31 @@ import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/model
 import type { InterpolationResult } from "./animation-state-manager";
 import { lerpAngle, normalizeAnglePositive } from "./angle-calculator";
 import { calculateMotionEndpoints } from "./endpoint-calculator";
-import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import {
+  getAnimationVisibilityManager,
+  type AnimationVisibilityStateManager,
+} from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
-function resolvePathType(motionType: MotionType, motionPathShape?: "arc" | "linear" | "concave"): "arc" | "linear" | "concave" {
+// `vm` lets a caller pass a per-instance (e.g. landing-page ephemeral) visibility
+// manager so path-shape settings stay scoped to that surface. When omitted we
+// fall back to the global singleton — unchanged behavior for the main app.
+function resolvePathType(
+  motionType: MotionType,
+  motionPathShape?: "arc" | "linear" | "concave",
+  vm?: AnimationVisibilityStateManager
+): "arc" | "linear" | "concave" {
   if (motionPathShape) return motionPathShape;
   if (motionType === MotionType.DASH) return "linear";
   if (motionType === MotionType.STATIC) return "arc";
 
-  const vm = getAnimationVisibilityManager();
+  const manager = vm ?? getAnimationVisibilityManager();
 
-  if (vm.getMotionAwarePaths()) {
+  if (manager.getMotionAwarePaths()) {
     if (motionType === MotionType.PRO) return "arc";
     if (motionType === MotionType.ANTI) return "concave";
   }
 
-  return vm.getPathShape();
+  return manager.getPathShape();
 }
 
 /**
@@ -36,7 +46,8 @@ function resolvePathType(motionType: MotionType, motionPathShape?: "arc" | "line
  */
 export function interpolatePropAngles(
   currentStepData: StepData,
-  stepProgress: number
+  stepProgress: number,
+  vm?: AnimationVisibilityStateManager
 ): InterpolationResult {
   // Get motion data directly from domain beat (PURE DOMAIN!)
   const blueMotion = currentStepData.motions?.blue;
@@ -59,7 +70,8 @@ export function interpolatePropAngles(
       blueEndpoints,
       blueMotion.motionType,
       stepProgress,
-      blueMotion.pathShape
+      blueMotion.pathShape,
+      vm
     );
   }
 
@@ -71,7 +83,8 @@ export function interpolatePropAngles(
       redEndpoints,
       redMotion.motionType,
       stepProgress,
-      redMotion.pathShape
+      redMotion.pathShape,
+      vm
     );
   }
 
@@ -86,14 +99,15 @@ function interpolateMotion(
   endpoints: MotionEndpoints,
   motionType: MotionType,
   progress: number,
-  motionPathShape?: "arc" | "linear" | "concave"
+  motionPathShape?: "arc" | "linear" | "concave",
+  vm?: AnimationVisibilityStateManager
 ): {
   centerPathAngle: number;
   staffRotationAngle: number;
   x?: number;
   y?: number;
 } {
-  const pathType = resolvePathType(motionType, motionPathShape);
+  const pathType = resolvePathType(motionType, motionPathShape, vm);
 
   if (pathType === "linear") {
     return interpolateLinearMotion(endpoints, progress);
