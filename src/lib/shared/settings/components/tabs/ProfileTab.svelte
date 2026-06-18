@@ -81,6 +81,14 @@
     onSettingUpdate: _onSettingUpdate,
   }: Props = $props();
 
+  // PRE-LAUNCH gate: premium is hidden until launch. Driven by the same
+  // compile-time flag that filters the "Go Premium" nav module
+  // (feature-flags.ts: premium tier). dev → true, production → false.
+  // `typeof` guard keeps this safe if premium is ever moved off the dev tier
+  // (then the define is absent and the bare identifier would throw).
+  const premiumEnabled =
+    typeof __FEATURE_PREMIUM__ !== "undefined" && __FEATURE_PREMIUM__;
+
   // Services
   let hapticService = $state<HapticFeedback | null>(null);
   let accountManager = $state<AccountManager | null>(null);
@@ -362,8 +370,8 @@
           {/snippet}
         </GlassCard>
 
-        <!-- Subscription - Admin only (premium not ready yet) -->
-        {#if userPreviewState.data.profile?.role === "admin"}
+        <!-- Subscription - hidden pre-launch via premiumEnabled flag -->
+        {#if premiumEnabled && userPreviewState.data.profile?.role === "admin"}
           <GlassCard
             icon="fas fa-crown"
             iconClass="premium-icon"
@@ -423,8 +431,8 @@
       <!-- Settings Grid - Flexbox for natural fill behavior -->
       <div class="settings-grid">
         <!-- Row 1: Smaller cards -->
-        <!-- Subscription - Admin only (premium not ready yet) -->
-        {#if authState.isAdmin}
+        <!-- Subscription - hidden pre-launch via premiumEnabled flag -->
+        {#if premiumEnabled}
           <GlassCard
             icon="fas fa-crown"
             iconClass="premium-icon"

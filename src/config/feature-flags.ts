@@ -70,8 +70,13 @@ export const FEATURES: FeatureDefinition[] = [
     modulePaths: ["features/learn/"],
   },
   {
+    // PRE-LAUNCH: premium is intentionally dev-tier so it is hidden from real
+    // users in production (nav module filtered out, feature module stubbed,
+    // __FEATURE_PREMIUM__ === false) while staying visible in dev for building.
+    // To LAUNCH premium: change tier back to "shipped" — single source of truth,
+    // lights up the nav module + the ProfileTab SubscriptionCard together.
     id: "premium",
-    tier: "shipped",
+    tier: "dev",
     modulePaths: ["features/premium/"],
   },
   {
