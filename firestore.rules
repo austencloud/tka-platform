@@ -809,9 +809,13 @@ service cloud.firestore {
     // VERSIONS COLLECTION (Release Management)
     // ============================================================================
 
-    // App versions - testers/admins can read, only admins can write
+    // App versions - publicly readable, only admins can write.
+    // Version docs are user-facing release notes / changelog (What's New),
+    // meant for everyone including guests and anonymous sessions. Same
+    // non-sensitive class as config/featureFlags above. Previously gated to
+    // isTester(), which threw permission-denied for guests on load.
     match /versions/{versionId} {
-      allow read: if isTester();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
