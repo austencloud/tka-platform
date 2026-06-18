@@ -214,6 +214,13 @@ import type { SheetType } from "../../navigation/services/types";
   onMount(() => {
     let cleanupSheetListener: (() => void) | null = null;
 
+    // Optimistic warm-reload: settings/theme are primed and MainInterface is
+    // already rendering, so retire the boot splash now instead of waiting for
+    // the full async boot chain. Idempotent with the final __tkaLoadProgress(100).
+    if (readBootSnapshot() !== null) {
+      window.__tkaLoadProgress?.(100, "Ready");
+    }
+
     // Run async initialization without blocking cleanup function return
     (async () => {
       try {
