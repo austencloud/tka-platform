@@ -19,6 +19,7 @@ import {
 } from "firebase/auth";
 import { getAuthInstance } from "$lib/shared/auth/firebase";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 // LibrarySequence extends SequenceData, so it's accepted directly by
 // saveSequence(sequence: SequenceData). Imported from its canonical home —
 // library-repository.ts re-imports it but does not re-export it.
@@ -66,12 +67,23 @@ async function captureAnonDrafts(anonUid: string): Promise<LibrarySequence[]> {
  * upgrade would never trigger the admin notification. The "collision-signed-in"
  * path is NOT a new signup (it signs into a pre-existing account), so it is not
  * notified here.
+ *
+ * It is also the single fire site for the user-facing "your guest work was
+ * saved" confirmation: this function is invoked only from the in-place link
+ * paths (the three upgradeAnonymousWith* fns + the magic-link link branch),
+ * never from a plain sign-in or the collision path (which shows its own import
+ * dialog + toast). The non-anon guard below guarantees we only confirm a real
+ * upgrade.
  */
 export async function notifyUpgradeSignup(): Promise<void> {
   try {
     const auth = await getAuthInstance();
     const user = auth.currentUser;
     if (!user || user.isAnonymous) return;
+    // Guest work was attached to this uid before the link, so it carried over.
+    // One non-blocking confirmation so the ~90% no-collision signups aren't left
+    // wondering whether their sequences survived the upgrade.
+    toast.success("Account created. Your sequences are saved.");
     const displayName =
       user.displayName || user.email?.split("@")[0] || "New User";
     const { notifyNewUserSignup } = await import(
