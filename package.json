@@ -243,7 +243,6 @@
     "@capacitor/status-bar": "^8.0.2",
     "@capgo/capacitor-updater": "^8.45.9",
     "@caps/domain": "workspace:*",
-    "@dgreenheck/ez-tree": "^1.1.0",
     "@dimforge/rapier3d-compat": "^0.19.3",
     "@flow-arts/core": "workspace:*",
     "@googlemaps/markerclusterer": "^2.5.3",

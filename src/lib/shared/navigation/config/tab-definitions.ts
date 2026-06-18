@@ -5,7 +5,7 @@
  * Separated from state management for cleaner architecture.
  */
 
-import type { Section } from "../domain/types";
+import type { Section, SectionGroup } from "../domain/types";
 
 // Create tabs configuration - mutable to allow dynamic tab accessibility updates
 // Note: Edit functionality is now handled via a slide-out panel, not a tab
@@ -971,12 +971,53 @@ export const SOCIAL_TABS: Section[] = [
   },
 ];
 
+// Lab collapsible groups (desktop sidebar). Sections are matched to a group by
+// their `groupId`. Render-only — routing/activeTab stay flat. (2026-06-18)
+export const LAB_GROUPS: SectionGroup[] = [
+  {
+    id: "notation",
+    labelKey: "tab_group_lab_notation",
+    label: "Notation",
+    icon: '<i class="fas fa-shapes" aria-hidden="true"></i>',
+    color: "#50c878",
+  },
+  {
+    id: "choreography",
+    labelKey: "tab_group_lab_choreography",
+    label: "Choreography",
+    icon: '<i class="fas fa-music" aria-hidden="true"></i>',
+    color: "#a78bfa",
+  },
+  {
+    id: "physical",
+    labelKey: "tab_group_lab_physical",
+    label: "3D / Physical",
+    icon: '<i class="fas fa-cube" aria-hidden="true"></i>',
+    color: "#6a6aff",
+  },
+  {
+    id: "output",
+    labelKey: "tab_group_lab_output",
+    label: "Output",
+    icon: '<i class="fas fa-print" aria-hidden="true"></i>',
+    color: "#ec4899",
+  },
+  {
+    id: "presentation",
+    labelKey: "tab_group_lab_presentation",
+    label: "Presentation",
+    icon: '<i class="fas fa-palette" aria-hidden="true"></i>',
+    color: "#f472b6",
+  },
+];
+
 export const LAB_TABS: Section[] = [
   // ascii-pictograph graduated to Retro module (Mar 2026)
   // assemble-lab removed - functionality lives in Create module's Assemble tab
   // avatar removed (Mar 2026)
   {
     id: "themes",
+    groupId: "presentation",
     labelKey: "tab_lab_themes",
     descKey: "tab_desc_lab_themes",
     label: "Themes",
@@ -988,6 +1029,7 @@ export const LAB_TABS: Section[] = [
   // community graduated to Social module (Mar 2026)
   {
     id: "composition",
+    groupId: "choreography",
     labelKey: "tab_lab_composition",
     descKey: "tab_desc_lab_composition",
     label: "Composition",
@@ -998,18 +1040,10 @@ export const LAB_TABS: Section[] = [
   },
   // connect graduated to Social module (Mar 2026)
   // contact-ball removed (Mar 2026)
-  {
-    id: "disassemble",
-    labelKey: "tab_lab_disassemble",
-    descKey: "tab_desc_lab_disassemble",
-    label: "Disassemble",
-    icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
-    description: "Isolate and study individual hand paths",
-    color: "#06b6d4",
-    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
-  },
+  // disassemble removed (Jun 2026) — 16-line stub, overlapped graduated Hand Paths module
   {
     id: "duration",
+    groupId: "choreography",
     labelKey: "tab_lab_duration",
     descKey: "tab_desc_lab_duration",
     label: "Duration",
@@ -1020,6 +1054,7 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "effects",
+    groupId: "choreography",
     labelKey: "tab_lab_effects",
     descKey: "tab_desc_lab_effects",
     label: "Effects",
@@ -1029,18 +1064,10 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
   // hand-path-builder graduated to Hand Paths module (Mar 2026)
-  {
-    id: "hand-pose",
-    labelKey: "tab_lab_hand_pose",
-    descKey: "tab_desc_lab_hand_pose",
-    label: "Hand Pose",
-    icon: '<i class="fas fa-hand-paper" aria-hidden="true"></i>',
-    description: "Author finger grip poses for 3D avatars",
-    color: "#f59e0b",
-    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
-  },
+  // hand-pose removed (Jun 2026) — authoring dead-ended (sessionStorage only, no downstream); finger posing is a Blender/baked-content job
   {
     id: "landing",
+    groupId: "presentation",
     labelKey: "tab_lab_landing",
     descKey: "tab_desc_lab_landing",
     label: "Landing",
@@ -1057,6 +1084,7 @@ export const LAB_TABS: Section[] = [
   // hand-path-explorer graduated to Hand Paths module (Mar 2026)
   {
     id: "path-mandalas",
+    groupId: "notation",
     labelKey: "tab_lab_path_mandalas",
     descKey: "tab_desc_lab_path_mandalas",
     label: "Path Mandalas",
@@ -1067,6 +1095,7 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "pictograph-explorer",
+    groupId: "notation",
     labelKey: "tab_lab_pictograph_explorer",
     descKey: "tab_desc_lab_pictograph_explorer",
     label: "Pictograph Explorer",
@@ -1077,6 +1106,7 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "phrase-effort",
+    groupId: "choreography",
     labelKey: "tab_lab_phrase_effort",
     descKey: "tab_desc_lab_phrase_effort",
     label: "Phrase Effort",
@@ -1088,6 +1118,7 @@ export const LAB_TABS: Section[] = [
   // poi graduated to Levels module (Mar 2026)
   {
     id: "prop-buttons",
+    groupId: "presentation",
     labelKey: "tab_lab_prop_buttons",
     descKey: "tab_desc_lab_prop_buttons",
     label: "Prop Buttons",
@@ -1101,6 +1132,7 @@ export const LAB_TABS: Section[] = [
   // skel2tka graduated to Video module (Mar 2026)
   {
     id: "trigrid",
+    groupId: "notation",
     labelKey: "tab_lab_trigrid",
     descKey: "tab_desc_lab_trigrid",
     label: "Trigrid",
@@ -1112,6 +1144,7 @@ export const LAB_TABS: Section[] = [
   // video-lab, video-trails graduated to Video module (Mar 2026)
   {
     id: "voice",
+    groupId: "presentation",
     labelKey: "tab_lab_voice",
     descKey: "tab_desc_lab_voice",
     label: "Voice",
@@ -1122,6 +1155,7 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "vtg",
+    groupId: "notation",
     labelKey: "tab_lab_vtg",
     descKey: "tab_desc_lab_vtg",
     label: "VTG",
@@ -1132,6 +1166,7 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "village",
+    groupId: "physical",
     labelKey: "tab_lab_village",
     descKey: "tab_desc_lab_village",
     label: "Village",
@@ -1142,6 +1177,7 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "pov-pattern",
+    groupId: "output",
     labelKey: "tab_lab_pov_pattern",
     descKey: "tab_desc_lab_pov_pattern",
     label: "POV Pattern",
@@ -1152,6 +1188,7 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "collision-lab",
+    groupId: "physical",
     labelKey: "tab_lab_collision_lab",
     descKey: "tab_desc_lab_collision_lab",
     label: "Collision Lab",
@@ -1162,6 +1199,7 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "spatial-lab",
+    groupId: "physical",
     labelKey: "tab_lab_spatial_lab",
     descKey: "tab_desc_lab_spatial_lab",
     label: "Spatial Lab",
@@ -1172,6 +1210,7 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "stickers",
+    groupId: "output",
     labelKey: "tab_lab_stickers",
     descKey: "tab_desc_lab_stickers",
     label: "Stickers",
@@ -1180,16 +1219,7 @@ export const LAB_TABS: Section[] = [
     color: "#ec4899",
     gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
   },
-  {
-    id: "coral-lab",
-    labelKey: "tab_lab_coral_lab",
-    descKey: "tab_desc_lab_coral_lab",
-    label: "Coral Lab",
-    icon: '<i class="fas fa-seedling" aria-hidden="true"></i>',
-    description: "Procedural coral prototyping with EZ-Tree",
-    color: "#ff6b4a",
-    gradient: "linear-gradient(135deg, #ff6b4a 0%, #d4518a 100%)",
-  },
+  // coral-lab removed (Jun 2026) — EZ-Tree procedural approach abandoned for Smithsonian CC0 coral models
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs

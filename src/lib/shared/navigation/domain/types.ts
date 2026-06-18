@@ -31,6 +31,22 @@ export interface Section {
   gradient?: string;
   disabled?: boolean;
   metadata?: SectionMetadata;
+  /** Optional grouping key. When a module defines `groups`, sections sharing a
+   *  groupId render under a collapsible group header in the desktop sidebar. */
+  groupId?: string;
+}
+
+/**
+ * Section Group
+ * A collapsible cluster of sections within a single module's sidebar.
+ * Purely a render-time grouping — routing/activeTab remain flat.
+ */
+export interface SectionGroup {
+  id: string;
+  labelKey: TranslationKey;
+  label: string;
+  icon: string;
+  color?: string;
 }
 
 // Module-based navigation types
@@ -78,6 +94,10 @@ export interface ModuleDefinition {
   description?: string;
   isMain: boolean;
   sections: Section[];
+  /** Optional collapsible group definitions. When present, the desktop sidebar
+   *  renders this module's sections clustered under group headers (sections are
+   *  matched by their `groupId`). Absent → flat list (default). */
+  groups?: SectionGroup[];
   disabled?: boolean;
   disabledMessage?: string;
   adminOnly?: boolean;

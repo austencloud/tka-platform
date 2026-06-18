@@ -28,8 +28,6 @@
     trigrid: () => import("$lib/features/lab/trigrid-lab/TriGridLabModule.svelte"),
     duration: () => import("$lib/features/lab/duration-lab/DurationLabModule.svelte"),
     effects: () => import("$lib/features/lab/effects-lab/EffectsLabModule.svelte"),
-    "hand-pose": () => import("./tabs/hand-pose-editor/HandPoseEditor.svelte"),
-    disassemble: () => import("$lib/features/lab/disassemble-lab/DisassembleLab.svelte"),
     "prop-buttons": () => import("./tabs/PropButtonLab.svelte"),
     // retro, ascii-pictograph, retro-pictograph graduated to Retro module (Mar 2026)
     "phrase-effort": () => import("$lib/features/lab/phrase-effort-lab/PhraseEffortLabModule.svelte"),
@@ -40,7 +38,6 @@
     stickers: () => import("$lib/features/sticker-lab/StickerLab.svelte"),
     "path-mandalas": () => import("./tabs/PathMandalaLab.svelte"),
     "pictograph-explorer": () => import("./tabs/pictograph-explorer/PictographExplorerLab.svelte"),
-    "coral-lab": () => import("./tools/coral-lab/CoralLab.svelte"),
     // hand-path-explorer, hand-path-builder graduated to Hand Paths module (Mar 2026)
     // video-trails, video-lab graduated to Video module (Mar 2026)
   };

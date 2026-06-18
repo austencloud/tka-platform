@@ -17,6 +17,7 @@ import {
   SETTINGS_TABS,
   WATCH_TABS,
   LAB_TABS,
+  LAB_GROUPS,
   ARENA_TABS,
   CHOREO_CARD_TABS,
   FESTIVAL_TABS,
@@ -364,6 +365,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Temporary experiments and UI prototypes",
     isMain: true,
     sections: LAB_TABS,
+    groups: LAB_GROUPS,
     adminOnly: true,
   },
   {

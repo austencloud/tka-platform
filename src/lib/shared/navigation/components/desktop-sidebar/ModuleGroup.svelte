@@ -118,6 +118,7 @@
   {#if isExpanded && filteredSections.length > 0 && !isCollapsed && !isTransitioningFromCollapsed}
     <SectionsList
       sections={filteredSections}
+      groups={module.groups}
       {currentSection}
       moduleId={module.id}
       {isActive}
