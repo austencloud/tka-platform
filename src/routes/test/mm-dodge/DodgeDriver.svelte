@@ -99,11 +99,15 @@
     blueSweep = buildSweptVolume(blueConfig, 24).samples;
     redSweep = buildSweptVolume(redConfig, 24).samples;
     sim = new StanceSimulator(restPoseFromHeight(1.8));
-    solution = solveDodge(blueConfig, redConfig, 1.8, 24);
-    footMarker = [solution.stance.footOffsetX, 0.02, solution.stance.footOffsetZ];
+    // Use a LOCAL for the solve result. Reading the `solution` $state back inside
+    // this same effect (e.g. for footMarker) would make the effect depend on a
+    // value it writes — an infinite re-run (effect_update_depth_exceeded).
+    const sol = solveDodge(blueConfig, redConfig, 1.8, 24);
+    solution = sol;
+    footMarker = [sol.stance.footOffsetX, 0.02, sol.stance.footOffsetZ];
 
     if (typeof window !== "undefined") {
-      (window as unknown as { __dodgeSolution?: DodgeSolution }).__dodgeSolution = solution;
+      (window as unknown as { __dodgeSolution?: DodgeSolution }).__dodgeSolution = sol;
       (window as unknown as { __dodgeClearance?: () => number }).__dodgeClearance = liveClearance;
     }
   });
