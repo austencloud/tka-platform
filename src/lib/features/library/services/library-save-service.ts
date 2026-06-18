@@ -28,6 +28,7 @@ import { LibraryError } from "$lib/shared/library/domain/library-error";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte.ts";
 import { db } from "$lib/shared/persistence/database/tka-database";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
 import type { Sharer } from "../../../shared/share/services/sharer";
 import type { R2VideoUploader } from "../../../shared/share/services/r2-video-uploader";
 import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
@@ -54,6 +55,14 @@ export class LibrarySaveService {
     options: SaveToLibraryOptions,
     onProgress?: (progress: SaveProgress) => void
   ): Promise<SaveResult> {
+    // Guests can save: ensure an (anonymous) identity exists so the Firestore
+    // sync and thumbnail upload have a uid, regardless of how the user entered
+    // Create (Construct already provisions on start-position select; Generate /
+    // import do not). Best-effort — ensureGuestIdentity() swallows failures
+    // (anon provider disabled, offline), and the Dexie write below keeps the
+    // save working even when no identity could be provisioned.
+    await ensureGuestIdentity();
+
     const { name, displayName, visibility, tags, notes } = options;
 
     const emitProgress = (
