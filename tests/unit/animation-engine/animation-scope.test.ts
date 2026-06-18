@@ -5,6 +5,7 @@ import {
   createMemoryAdapter,
 } from "$lib/shared/animation-engine/state/persistence-adapter";
 import { createAnimationSettingsState } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+import { createAnimationScope } from "$lib/shared/animation-engine/state/animation-scope.svelte";
 
 describe("persistence adapters", () => {
   it("ephemeral adapter never loads or persists", () => {
@@ -32,5 +33,21 @@ describe("ephemeral animation settings", () => {
     expect(settings.bpm).toBe(99);
     expect(wrote).toBe(false);
     spy.mockRestore();
+  });
+});
+
+describe("AnimationScope", () => {
+  it("ephemeral scope isolates path shape from a second scope", () => {
+    const a = createAnimationScope({ persistence: "ephemeral" });
+    const b = createAnimationScope({ persistence: "ephemeral" });
+    a.visibility.setPathShape("concave");
+    expect(a.visibility.getPathShape()).toBe("concave");
+    expect(b.visibility.getPathShape()).toBe("arc"); // default, unaffected
+  });
+
+  it("derives speed from bpm", () => {
+    const s = createAnimationScope({ persistence: "ephemeral" });
+    s.settings.setBpm(120);
+    expect(s.speed).toBe(2); // 120 / 60
   });
 });
