@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Jellyfish Bells — key audition</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: -apple-system, system-ui, sans-serif;
+    color: #cfe9ff;
+    background:
+      radial-gradient(120% 90% at 50% -10%, #0a2540 0%, #061726 45%, #02080f 100%);
+    display: flex; flex-direction: column; align-items: center; gap: 28px;
+    padding: 48px 20px 80px;
+    overflow-x: hidden;
+  }
+  h1 { font-size: 22px; font-weight: 650; letter-spacing: .3px; margin: 0; }
+  p.sub { margin: -16px 0 0; opacity: .65; font-size: 14px; }
+
+  .keys { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .key-btn {
+    appearance: none; border: 1px solid rgba(120,190,255,.3);
+    background: rgba(20,55,90,.4); color: #cfe9ff;
+    padding: 10px 16px; border-radius: 999px; cursor: pointer;
+    font-size: 14px; transition: all .15s ease;
+  }
+  .key-btn:hover { background: rgba(40,90,140,.55); }
+  .key-btn.active {
+    background: linear-gradient(180deg, #4aa6ff, #2f7fd6);
+    border-color: #8fd0ff; color: #02101e; font-weight: 650;
+    box-shadow: 0 0 24px rgba(80,170,255,.5);
+  }
+  .key-desc { min-height: 20px; opacity: .7; font-size: 13px; text-align: center; max-width: 460px; }
+
+  .tank {
+    position: relative; width: min(760px, 96vw); height: 360px;
+    border-radius: 22px; overflow: hidden;
+    background:
+      radial-gradient(80% 60% at 50% 0%, rgba(60,140,210,.18), transparent 70%),
+      linear-gradient(180deg, #08243c 0%, #04121f 100%);
+    border: 1px solid rgba(120,190,255,.18);
+    box-shadow: inset 0 0 80px rgba(0,0,0,.5);
+  }
+  .jelly {
+    position: absolute; transform: translate(-50%, -50%);
+    width: 64px; height: 64px; cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .bell {
+    width: 46px; height: 38px;
+    border-radius: 50% 50% 42% 42% / 62% 62% 38% 38%;
+    background: radial-gradient(60% 55% at 50% 35%, rgba(180,225,255,.9), rgba(90,160,220,.55) 60%, rgba(40,90,150,.25));
+    box-shadow: 0 0 18px rgba(120,200,255,.45);
+    position: relative; transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+  }
+  .bell::after {
+    content: ""; position: absolute; left: 8%; right: 8%; top: 78%; height: 40px;
+    background: repeating-linear-gradient(90deg, rgba(150,210,255,.5) 0 2px, transparent 2px 7px);
+    -webkit-mask: linear-gradient(180deg, #000, transparent);
+            mask: linear-gradient(180deg, #000, transparent);
+    border-radius: 0 0 8px 8px;
+  }
+  .jelly.flash .bell {
+    transform: scale(.82) translateY(-6px);
+    filter: brightness(2.6);
+    box-shadow: 0 0 42px rgba(180,230,255,.95), 0 0 14px #fff;
+  }
+  .note-label { position: absolute; bottom: -2px; font-size: 10px; opacity: .55; letter-spacing: .5px; }
+
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  .play-btn {
+    appearance: none; border: 1px solid rgba(120,190,255,.3);
+    background: rgba(20,55,90,.4); color: #cfe9ff;
+    padding: 9px 18px; border-radius: 10px; cursor: pointer; font-size: 14px;
+  }
+  .play-btn:hover { background: rgba(40,90,140,.55); }
+  label.vol { display: flex; align-items: center; gap: 8px; font-size: 13px; opacity: .8; }
+  .hint { opacity: .5; font-size: 12px; }
+</style>
+</head>
+<body>
+  <h1>🪼 Jellyfish Bells</h1>
+  <p class="sub">Tap the jellies. Deeper = lower note. Pick a key, play them like music.</p>
+
+  <div class="keys" id="keys"></div>
+  <div class="key-desc" id="keyDesc"></div>
+
+  <div class="tank" id="tank"></div>
+
+  <div class="row">
+    <button class="play-btn" id="arp">▶ Play them in order</button>
+    <button class="play-btn" id="rand">🎲 Random melody</button>
+    <label class="vol">vol <input type="range" id="vol" min="0" max="1" step="0.01" value="0.7" /></label>
+  </div>
+  <div class="hint">audio starts on first tap (browser gesture rule)</div>
+
+<script>
+// ── Scales (semitone offsets from root) ──────────────────────────────────────
+const SCALES = {
+  "Dreamy major pentatonic": { steps: [0,2,4,7,9],        desc: "Bright, sweet, music-box. Classic delightful little bell." },
+  "Deep minor pentatonic":   { steps: [0,3,5,7,10],       desc: "Moodier, mysterious, deep-sea. Melancholic and cool." },
+  "Floaty whole-tone":       { steps: [0,2,4,6,8,10],     desc: "Weightless, magical, no home note. Most 'underwater float'." },
+  "Ethereal Lydian":         { steps: [0,2,4,6,7,9,11],   desc: "Shimmery, wondrous, that #4 wonder color. Expansive." },
+};
+const ROOT_MIDI = 60;   // C4
+const PAD_COUNT = 8;
+const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+
+function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+function midiName(m) { return NOTE_NAMES[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1); }
+
+// Build PAD_COUNT ascending MIDI notes from a scale, wrapping octaves.
+function buildNotes(steps) {
+  const out = [];
+  for (let i = 0; i < PAD_COUNT; i++) {
+    const oct = Math.floor(i / steps.length);
+    out.push(ROOT_MIDI + steps[i % steps.length] + oct * 12);
+  }
+  return out;
+}
+
+// ── Bell synth (the design that will port to jellyfish-chime.ts) ─────────────
+// Additive inharmonic partials → per-partial exp decay → lowpass (underwater
+// muffle) → stereo pan → master → shared convolver reverb tail.
+const PARTIALS = [
+  // ratio, gain, decay multiplier
+  [1.00, 1.00, 1.00],
+  [2.00, 0.50, 0.80],
+  [3.01, 0.28, 0.55],  // slightly inharmonic → "bell", not "organ"
+  [4.18, 0.16, 0.40],
+  [5.43, 0.09, 0.30],
+];
+const ATTACK = 0.003;
+const BASE_DECAY = 1.7;
+
+let ctx = null, master = null, reverb = null, wet = null;
+let volume = 0.7;
+
+function makeImpulse(ac, seconds, decay) {
+  const len = ac.sampleRate * seconds;
+  const buf = ac.createBuffer(2, len, ac.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+  }
+  return buf;
+}
+
+function ensureAudio() {
+  if (ctx) return;
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  master = ctx.createGain();
+  master.gain.value = volume;
+  master.connect(ctx.destination);
+
+  reverb = ctx.createConvolver();
+  reverb.buffer = makeImpulse(ctx, 2.4, 2.6);
+  wet = ctx.createGain();
+  wet.gain.value = 0.32;            // lush but not soupy
+  reverb.connect(wet);
+  wet.connect(ctx.destination);
+}
+
+function playBell(freq, pan = 0) {
+  ensureAudio();
+  if (ctx.state === "suspended") ctx.resume();
+  const t = ctx.currentTime;
+
+  const panner = ctx.createStereoPanner();
+  panner.pan.value = Math.max(-1, Math.min(1, pan));
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = "lowpass";
+  // Higher notes get a touch more brightness, but capped for underwater softness.
+  lp.frequency.value = Math.min(5200, freq * 6 + 1200);
+  lp.Q.value = 0.4;
+
+  lp.connect(panner);
+  panner.connect(master);
+  panner.connect(reverb);
+
+  for (const [ratio, gain, decMul] of PARTIALS) {
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = freq * ratio;
+    osc.detune.value = (Math.random() * 2 - 1) * 4;   // a few cents of life
+
+    const env = ctx.createGain();
+    const peak = gain * 0.9;
+    env.gain.setValueAtTime(0, t);
+    env.gain.linearRampToValueAtTime(peak, t + ATTACK);
+    env.gain.exponentialRampToValueAtTime(0.0001, t + BASE_DECAY * decMul);
+
+    osc.connect(env);
+    env.connect(lp);
+    osc.start(t);
+    osc.stop(t + BASE_DECAY * decMul + 0.1);
+  }
+}
+
+// ── Build the tank: jellies positioned by pitch (deeper = lower note) ────────
+const tank = document.getElementById("tank");
+let notes = [];
+let pads = [];
+
+function layout() {
+  tank.innerHTML = "";
+  pads = [];
+  const N = notes.length;
+  for (let i = 0; i < N; i++) {
+    // Spread horizontally; vertical position by pitch (low note = deep/bottom).
+    const xPct = (i + 0.5) / N * 100;
+    const pitchNorm = i / (N - 1);            // 0 lowest .. 1 highest
+    const yPct = 88 - pitchNorm * 72;         // higher pitch → higher up
+    const jelly = document.createElement("div");
+    jelly.className = "jelly";
+    jelly.style.left = xPct + "%";
+    jelly.style.top = yPct + "%";
+    jelly.innerHTML = `<div class="bell"></div><div class="note-label">${midiName(notes[i])}</div>`;
+    const pan = (xPct / 100) * 2 - 1;
+    jelly.addEventListener("pointerdown", () => tap(i, pan));
+    tank.appendChild(jelly);
+    pads.push(jelly);
+  }
+}
+
+function tap(i, pan) {
+  playBell(midiToFreq(notes[i]), pan);
+  const j = pads[i];
+  j.classList.add("flash");
+  setTimeout(() => j.classList.remove("flash"), 160);
+}
+
+// ── Key selector ─────────────────────────────────────────────────────────────
+const keysEl = document.getElementById("keys");
+const keyDescEl = document.getElementById("keyDesc");
+let currentKey = "Dreamy major pentatonic";
+
+function selectKey(name) {
+  currentKey = name;
+  notes = buildNotes(SCALES[name].steps);
+  keyDescEl.textContent = SCALES[name].desc;
+  [...keysEl.children].forEach(b => b.classList.toggle("active", b.textContent === name));
+  layout();
+}
+
+for (const name of Object.keys(SCALES)) {
+  const b = document.createElement("button");
+  b.className = "key-btn";
+  b.textContent = name;
+  b.addEventListener("click", () => selectKey(name));
+  keysEl.appendChild(b);
+}
+
+// ── Demo buttons ─────────────────────────────────────────────────────────────
+document.getElementById("arp").addEventListener("click", () => {
+  notes.forEach((_, i) => setTimeout(() => tap(i, (i / (notes.length - 1)) * 2 - 1), i * 160));
+});
+document.getElementById("rand").addEventListener("click", () => {
+  for (let k = 0; k < 12; k++) {
+    const i = Math.floor(Math.random() * notes.length);
+    setTimeout(() => tap(i, (i / (notes.length - 1)) * 2 - 1), k * (140 + Math.random() * 120));
+  }
+});
+document.getElementById("vol").addEventListener("input", (e) => {
+  volume = +e.target.value;
+  if (master) master.gain.value = volume;
+});
+
+selectKey(currentKey);
+</script>
+</body>
+</html>

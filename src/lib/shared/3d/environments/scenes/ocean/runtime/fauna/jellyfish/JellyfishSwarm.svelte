@@ -3,6 +3,7 @@
   import { onDestroy } from "svelte";
   import { Mesh, Raycaster, Vector2, Vector3 } from "three";
   import { Medusae, OCEAN_COLORS } from "./jellyfish-geometry";
+  import { createJellyfishChime, buildPentatonicNotes, midiToFreq } from "./jellyfish-chime";
   import type { OceanQualityConfig } from "../../../quality/ocean-quality";
 
   // ── Props ──────────────────────────────────────────────────────────────
@@ -74,9 +75,14 @@
     accumulator: number;
     dartVel: Vector3;
     dartOffset: Vector3;
+    /** Frequency (Hz) this jelly chimes when tapped. */
+    freq: number;
+    /** Stereo pan in [-1, 1], from spawn X. */
+    pan: number;
   }
 
   const instances: JellyfishInstance[] = [];
+  const chime = createJellyfishChime();
 
   // Flat list of pickable meshes + a reverse map for click raycasting.
   const pickMeshes: Mesh[] = [];
@@ -103,6 +109,8 @@
       accumulator: 0,
       dartVel: new Vector3(),
       dartOffset: new Vector3(),
+      freq: 0,
+      pan: Math.max(-1, Math.min(1, x / SPAWN_X_RANGE)),
     };
     instances.push(inst);
 
@@ -113,6 +121,16 @@
       }
     });
   }
+
+  // Assign a major-pentatonic note per jelly by depth: deeper (lower Y) → lower
+  // note, so the vertical swarm plays like a xylophone.
+  const notes = buildPentatonicNotes(instances.length);
+  instances
+    .map((inst, i) => ({ inst, i }))
+    .sort((a, b) => a.inst.baseY - b.inst.baseY)
+    .forEach(({ inst }, rank) => {
+      inst.freq = midiToFreq(notes[rank]!);
+    });
 
   // ── Click picking → startle ─────────────────────────────────────────────
 
@@ -155,6 +173,7 @@
     if (!inst) return;
 
     inst.medusae.triggerStartle();
+    chime.play(inst.freq, inst.pan);
 
     // Dart away from the cursor: flee along the view ray (deeper into the scene)
     // with an upward jet, the way a startled jelly pulses off.
@@ -266,6 +285,7 @@
 
   onDestroy(() => {
     for (const inst of instances) inst.medusae.dispose();
+    chime.dispose();
   });
 </script>
 

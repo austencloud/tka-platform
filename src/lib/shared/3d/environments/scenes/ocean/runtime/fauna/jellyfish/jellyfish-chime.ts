@@ -1,0 +1,168 @@
+import { browser } from "$app/environment";
+import { sceneAudioState } from "../../../../../../state/scene-audio-state.svelte";
+
+// ── Musical key ──────────────────────────────────────────────────────────────
+// Major pentatonic — no wrong notes, so taps always harmonize no matter the
+// order they're played in. Offsets in semitones from the root.
+const MAJOR_PENTATONIC = [0, 2, 4, 7, 9];
+const ROOT_MIDI = 60; // C4
+
+const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+export function midiToFreq(midi: number): number {
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+export function midiName(midi: number): string {
+  return NOTE_NAMES[((midi % 12) + 12) % 12]! + (Math.floor(midi / 12) - 1);
+}
+
+/**
+ * Build `count` ascending major-pentatonic MIDI notes, wrapping up the octaves.
+ * Index 0 is the lowest note; assign by jellyfish depth so the swarm reads as a
+ * vertical xylophone (deeper = lower).
+ */
+export function buildPentatonicNotes(count: number): number[] {
+  const out: number[] = [];
+  const scale = MAJOR_PENTATONIC;
+  for (let i = 0; i < count; i++) {
+    const oct = Math.floor(i / scale.length);
+    out.push(ROOT_MIDI + scale[i % scale.length]! + oct * 12);
+  }
+  return out;
+}
+
+// ── Bell synth ───────────────────────────────────────────────────────────────
+// Additive inharmonic partials → per-partial exponential decay → lowpass
+// (underwater muffle) → stereo pan → master, with a shared convolver reverb tail.
+// A small, bright, celesta-like bell: fundamental dominant, a couple of
+// slightly inharmonic upper partials for "bell" rather than "organ".
+const PARTIALS: readonly [ratio: number, gain: number, decayMul: number][] = [
+  [1.0, 1.0, 1.0],
+  [2.0, 0.5, 0.8],
+  [3.01, 0.28, 0.55],
+  [4.18, 0.16, 0.4],
+  [5.43, 0.09, 0.3],
+];
+const ATTACK = 0.003;
+const BASE_DECAY = 1.7;
+const REVERB_SECONDS = 2.4;
+const REVERB_DECAY = 2.6;
+const REVERB_WET = 0.32;
+// Headroom so a five-partial bell at full scene volume never clips the master.
+const BELL_LEVEL = 0.5;
+
+export interface JellyfishChime {
+  /** Play a bell at the given frequency (Hz), panned in [-1, 1]. */
+  play(freq: number, pan?: number): void;
+  dispose(): void;
+}
+
+const NOOP_CHIME: JellyfishChime = { play() {}, dispose() {} };
+
+function makeReverbImpulse(ctx: AudioContext, seconds: number, decay: number): AudioBuffer {
+  const len = Math.floor(ctx.sampleRate * seconds);
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const data = buf.getChannelData(c);
+    for (let i = 0; i < len; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+    }
+  }
+  return buf;
+}
+
+function createLiveChime(): JellyfishChime {
+  let ctx: AudioContext | null = null;
+  let master: GainNode | null = null;
+  let reverb: ConvolverNode | null = null;
+
+  function ensure(): boolean {
+    if (ctx) return true;
+    try {
+      ctx = new (window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    } catch {
+      return false;
+    }
+    master = ctx.createGain();
+    master.connect(ctx.destination);
+
+    reverb = ctx.createConvolver();
+    reverb.buffer = makeReverbImpulse(ctx, REVERB_SECONDS, REVERB_DECAY);
+    const wet = ctx.createGain();
+    wet.gain.value = REVERB_WET;
+    reverb.connect(wet);
+    wet.connect(ctx.destination);
+    return true;
+  }
+
+  return {
+    play(freq: number, pan = 0): void {
+      if (!ensure() || !ctx || !master || !reverb) return;
+      if (ctx.state === "suspended") void ctx.resume();
+
+      const vol = sceneAudioState.effectiveVolume;
+      if (vol <= 0) return;
+      master.gain.value = vol * BELL_LEVEL;
+
+      const t = ctx.currentTime;
+
+      const panner = ctx.createStereoPanner();
+      panner.pan.value = Math.max(-1, Math.min(1, pan));
+
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = Math.min(5200, freq * 6 + 1200);
+      lp.Q.value = 0.4;
+      lp.connect(panner);
+      panner.connect(master);
+      panner.connect(reverb);
+
+      let maxStop = 0;
+      for (const [ratio, gain, decMul] of PARTIALS) {
+        const osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.value = freq * ratio;
+        osc.detune.value = (Math.random() * 2 - 1) * 4;
+
+        const env = ctx.createGain();
+        const decay = BASE_DECAY * decMul;
+        env.gain.setValueAtTime(0, t);
+        env.gain.linearRampToValueAtTime(gain * 0.9, t + ATTACK);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+
+        osc.connect(env);
+        env.connect(lp);
+        const stop = t + decay + 0.1;
+        osc.start(t);
+        osc.stop(stop);
+        // Detach the panner/filter once the longest partial has finished so the
+        // graph doesn't leak nodes across many taps.
+        maxStop = Math.max(maxStop, stop);
+        osc.onended = () => {
+          osc.disconnect();
+          env.disconnect();
+        };
+      }
+
+      setTimeout(() => {
+        lp.disconnect();
+        panner.disconnect();
+      }, (maxStop - t) * 1000 + 200);
+    },
+
+    dispose(): void {
+      if (ctx && ctx.state !== "closed") void ctx.close();
+      ctx = null;
+      master = null;
+      reverb = null;
+    },
+  };
+}
+
+/** Factory getter — bell synth for jellyfish taps. No-op when Web Audio is absent. */
+export function createJellyfishChime(): JellyfishChime {
+  if (!browser || typeof AudioContext === "undefined") return NOOP_CHIME;
+  return createLiveChime();
+}
