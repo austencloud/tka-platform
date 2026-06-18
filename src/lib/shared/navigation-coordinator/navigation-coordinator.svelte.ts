@@ -25,6 +25,9 @@ import {
 } from "../navigation/state/navigation-state.svelte";
 import { switchModule } from "../application/state/ui/module-state";
 import { authState } from "../auth/state/auth-state.svelte";
+import { resolveAccessTier } from "../auth/domain/access-tier";
+import { isTabAccessible } from "../auth/domain/guest-access-config";
+import { isPremiumOrAbove } from "../auth/domain/models/user-role";
 import { featureFlagService, featureFlagState } from "../auth/services/post-hog-feature-flag-service.svelte";
 import {
   pushState as svelteKitPushState,
@@ -119,6 +122,17 @@ export function moduleSections() {
   const baseSections = currentModuleDefinition()?.sections || [];
   const module = currentModule();
 
+  // Guest tab gating: role-based canAccessTab() passes for the guest's implicit
+  // "user" role, so the guest-config tier check is required to keep gated tabs
+  // (e.g. browse collections/creators/hall-of-shame) out of mobile + collapsed
+  // navigation, mirroring the expanded desktop sidebar (ModuleGroup.svelte).
+  // Only subtracts for guests; isTabAccessible returns true for user/premium.
+  const accessTier = resolveAccessTier(
+    authState.isAuthenticated,
+    authState.isAnonymous,
+    isPremiumOrAbove(authState.role)
+  );
+
   // Create module section filtering
   if (module === "create") {
     // Filter sections based on user's feature access (role-based)
@@ -177,17 +191,25 @@ export function moduleSections() {
   }
 
   // Browse module: Filter tabs based on feature flag access (collections, hall-of-shame, etc.)
+  // plus guest-tier gating so guests see only Gallery (guest-access-config).
   if (module === "browse") {
     return baseSections.filter((section: { id: string }) => {
-      return featureFlagService.canAccessTab("browse", section.id);
+      return (
+        featureFlagService.canAccessTab("browse", section.id) &&
+        isTabAccessible("browse", section.id, accessTier)
+      );
     });
   }
 
   // Default: apply feature flag filtering for ALL modules
   // This ensures mobile navigation (which relies on moduleSections()) respects
-  // the same canAccessTab() checks that the desktop sidebar applies via getFilteredSections()
+  // the same canAccessTab() checks that the desktop sidebar applies via getFilteredSections(),
+  // plus the guest-tier gating from isTabAccessible() (only subtracts for guests).
   return baseSections.filter((section) => {
-    return featureFlagService.canAccessTab(module, section.id);
+    return (
+      featureFlagService.canAccessTab(module, section.id) &&
+      isTabAccessible(module, section.id, accessTier)
+    );
   });
 }
 

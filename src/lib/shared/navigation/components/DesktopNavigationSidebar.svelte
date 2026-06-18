@@ -26,6 +26,10 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     SETTINGS_TABS,
   } from "../state/navigation-state.svelte";
   import { featureFlagService } from "../../auth/services/post-hog-feature-flag-service.svelte";
+  import { authState } from "../../auth/state/auth-state.svelte";
+  import { resolveAccessTier } from "../../auth/domain/access-tier";
+  import { isTabAccessible } from "../../auth/domain/guest-access-config";
+  import { isPremiumOrAbove } from "../../auth/domain/models/user-role";
   import { t } from "../../i18n/i18n.svelte";
   import { getReactiveLocale } from "../../i18n/locale-state.svelte";
 
@@ -264,8 +268,21 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     onSectionChange?.(section.id);
   }
 
+  // Guest tab gating: mirror the expanded sidebar (ModuleGroup.svelte). Role-based
+  // canAccessTab() passes for the guest's implicit "user" role, so without the
+  // guest-config check the collapsed sidebar leaks gated tabs (collections,
+  // creators, hall-of-shame) to guests.
+  const accessTier = $derived(
+    resolveAccessTier(
+      authState.isAuthenticated,
+      authState.isAnonymous,
+      isPremiumOrAbove(authState.role)
+    )
+  );
+
   // Filter sections based on module-specific rules (e.g., admin-only tabs)
-  // Uses featureFlagService.canAccessTab() for role-based access control
+  // Uses featureFlagService.canAccessTab() for role-based access control,
+  // plus isTabAccessible() for guest-tier gating (only subtracts for guests).
   function getFilteredSections(module: ModuleDefinition): Section[] {
     // Hide Create module tabs during tutorial (until choice step)
     if (
@@ -277,7 +294,10 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     }
 
     return module.sections.filter((section) => {
-      return featureFlagService.canAccessTab(module.id, section.id);
+      return (
+        featureFlagService.canAccessTab(module.id, section.id) &&
+        isTabAccessible(module.id, section.id, accessTier)
+      );
     });
   }
 
