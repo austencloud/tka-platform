@@ -26,19 +26,20 @@
 
   <p class="body">{t("beta_discovery_body")}</p>
 
-  <label class="acknowledge-pill" class:checked={acknowledged}>
-    <input
-      type="checkbox"
-      bind:checked={acknowledged}
-      aria-label={t("beta_discovery_acknowledge")}
-    />
+  <button
+    type="button"
+    class="acknowledge-pill"
+    class:checked={acknowledged}
+    aria-pressed={acknowledged}
+    onclick={() => (acknowledged = !acknowledged)}
+  >
     <span class="pill-indicator">
       {#if acknowledged}
         <i class="fas fa-check" aria-hidden="true"></i>
       {/if}
     </span>
     <span class="pill-label">{t("beta_discovery_acknowledge")}</span>
-  </label>
+  </button>
 
   <button class="next-button" onclick={onNext} disabled={!acknowledged}>
     {t("beta_discovery_continue")} <i class="fas fa-arrow-right" aria-hidden="true"></i>
@@ -93,13 +94,13 @@
     margin: 0;
   }
 
-  /* Acknowledgment pill checkbox */
+  /* Acknowledgment pill toggle (button + toggle-indicator, no checkbox) */
   .acknowledge-pill {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 12px 20px;
-    min-height: var(--min-touch-target);
+    min-height: var(--min-touch-target, 44px);
     background: rgba(255, 255, 255, 0.04);
     border: 1.5px solid rgba(255, 255, 255, 0.12);
     border-radius: 12px;
@@ -108,11 +109,19 @@
     user-select: none;
     -webkit-user-select: none;
     margin-top: 4px;
+    font: inherit;
+    color: inherit;
+    text-align: left;
   }
 
   .acknowledge-pill:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .acknowledge-pill:focus-visible {
+    outline: 2px solid var(--theme-accent-strong, #8b5cf6);
+    outline-offset: 2px;
   }
 
   .acknowledge-pill.checked {
@@ -126,14 +135,6 @@
       var(--theme-accent-strong, #8b5cf6) 40%,
       transparent
     );
-  }
-
-  .acknowledge-pill input[type="checkbox"] {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-    pointer-events: none;
   }
 
   .pill-indicator {
