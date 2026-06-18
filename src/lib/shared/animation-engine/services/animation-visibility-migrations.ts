@@ -71,7 +71,10 @@ export function migrateStoredSettings(parsed: Record<string, unknown>): Record<s
 
   if (!("pathShape" in parsed)) parsed.pathShape = "arc";
   if (!("motionAwarePaths" in parsed)) parsed.motionAwarePaths = false;
-  if (!("pathLines" in parsed)) parsed.pathLines = false;
+  // Per-hand path lines, split from the legacy single `pathLines` flag.
+  if (!("bluePathLines" in parsed)) parsed.bluePathLines = parsed.pathLines ?? false;
+  if (!("redPathLines" in parsed)) parsed.redPathLines = parsed.pathLines ?? false;
+  delete parsed.pathLines;
 
   if (parsed.gridMode === "diamond" || parsed.gridMode === "box") {
     parsed.gridMode = "8point";

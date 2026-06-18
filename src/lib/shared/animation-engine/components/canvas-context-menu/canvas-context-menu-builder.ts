@@ -181,11 +181,18 @@ function buildPathShapeChildren(
       action: () => vm.toggleMotionAwarePaths(),
     },
     {
-      id: "path-lines",
-      label: "Show Path Lines",
+      id: "blue-path-lines",
+      label: "Show Blue Path",
       icon: "fa-route",
-      checked: vm.getVisibility("pathLines"),
-      action: () => vm.toggleVisibility("pathLines"),
+      checked: vm.getVisibility("bluePathLines"),
+      action: () => vm.toggleVisibility("bluePathLines"),
+    },
+    {
+      id: "red-path-lines",
+      label: "Show Red Path",
+      icon: "fa-route",
+      checked: vm.getVisibility("redPathLines"),
+      action: () => vm.toggleVisibility("redPathLines"),
     },
   ];
 }

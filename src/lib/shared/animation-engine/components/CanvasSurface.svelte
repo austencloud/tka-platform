@@ -90,7 +90,8 @@ captureEffectDiagnostics to the context menu.
     darkModeEnabled = false,
     effectiveTkaGlyphVisible = false,
     effectiveBeatNumbersVisible = false,
-    pathLinesVisible = false,
+    bluePathLinesVisible = false,
+    redPathLinesVisible = false,
     suppress2DOverlays = false,
     // Engine wiring props
     resizePaused = false,
@@ -131,7 +132,8 @@ captureEffectDiagnostics to the context menu.
     darkModeEnabled?: boolean;
     effectiveTkaGlyphVisible?: boolean;
     effectiveBeatNumbersVisible?: boolean;
-    pathLinesVisible?: boolean;
+    bluePathLinesVisible?: boolean;
+    redPathLinesVisible?: boolean;
     suppress2DOverlays?: boolean;
     resizePaused?: boolean;
     visibilityManagerOverride?: AnimationVisibilityStateManager;
@@ -420,8 +422,14 @@ captureEffectDiagnostics to the context menu.
       }
     />
 
-    {#if pathLinesVisible}
-      <PathLinesOverlay {sequenceData} {currentStep} />
+    {#if bluePathLinesVisible || redPathLinesVisible}
+      <PathLinesOverlay
+        {sequenceData}
+        {currentStep}
+        showBlue={bluePathLinesVisible}
+        showRed={redPathLinesVisible}
+        vm={visibilityManager}
+      />
     {/if}
 
     <ProgressOverlay

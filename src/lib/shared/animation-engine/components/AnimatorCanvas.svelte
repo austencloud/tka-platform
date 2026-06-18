@@ -327,14 +327,16 @@ Last audit: 2025-12-27
   let globalDarkMode = $state(false);
   let wordHeaderVisible = $state(false);
   let progressBarVisible = $state(false);
-  let pathLinesVisible = $state(false);
+  let bluePathLinesVisible = $state(false);
+  let redPathLinesVisible = $state(false);
   $effect.pre(() => {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
     stepNumbersVisible = visibilityManager.getVisibility("stepNumbers");
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
-    pathLinesVisible = visibilityManager.getVisibility("pathLines");
+    bluePathLinesVisible = visibilityManager.getVisibility("bluePathLines");
+    redPathLinesVisible = visibilityManager.getVisibility("redPathLines");
   });
 
   const darkModeEnabled = $derived(
@@ -350,7 +352,8 @@ Last audit: 2025-12-27
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
-    pathLinesVisible = visibilityManager.getVisibility("pathLines");
+    bluePathLinesVisible = visibilityManager.getVisibility("bluePathLines");
+    redPathLinesVisible = visibilityManager.getVisibility("redPathLines");
   }
 
   // Register/unregister observer reactively so visibilityManager is tracked
@@ -455,7 +458,8 @@ Last audit: 2025-12-27
       {darkModeEnabled}
       {effectiveTkaGlyphVisible}
       {effectiveBeatNumbersVisible}
-      {pathLinesVisible}
+      {bluePathLinesVisible}
+      {redPathLinesVisible}
       {suppress2DOverlays}
       {resizePaused}
       visibilityManagerOverride={visibilityManagerOverride}

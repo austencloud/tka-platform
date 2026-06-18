@@ -17,6 +17,8 @@
 	let propsVisible = $state(vm.getVisibility("props"));
 	let wordHeader = $state(vm.getVisibility("wordHeader"));
 	let progressBar = $state(vm.getVisibility("progressBar"));
+	let bluePathLines = $state(vm.getVisibility("bluePathLines"));
+	let redPathLines = $state(vm.getVisibility("redPathLines"));
 
 	function handleVisibilityChange(): void {
 		gridVisible = vm.isGridVisible();
@@ -25,6 +27,8 @@
 		propsVisible = vm.getVisibility("props");
 		wordHeader = vm.getVisibility("wordHeader");
 		progressBar = vm.getVisibility("progressBar");
+		bluePathLines = vm.getVisibility("bluePathLines");
+		redPathLines = vm.getVisibility("redPathLines");
 	}
 
 	vm.registerObserver(handleVisibilityChange);
@@ -34,12 +38,14 @@
 		vm.setGridMode(gridVisible ? "none" : "8point");
 	}
 
-	const toggles: { key: "tkaGlyph" | "stepNumbers" | "props" | "wordHeader" | "progressBar"; label: string; icon: string }[] = [
+	const toggles: { key: "tkaGlyph" | "stepNumbers" | "props" | "wordHeader" | "progressBar" | "bluePathLines" | "redPathLines"; label: string; icon: string }[] = [
 		{ key: "tkaGlyph", label: "TKA Glyph", icon: "fa-font" },
 		{ key: "stepNumbers", label: "Step #", icon: "fa-list-ol" },
 		{ key: "props", label: "Props", icon: "fa-wand-magic" },
 		{ key: "wordHeader", label: "Word", icon: "fa-heading" },
 		{ key: "progressBar", label: "Progress", icon: "fa-bars-progress" },
+		{ key: "bluePathLines", label: "Blue path", icon: "fa-route" },
+		{ key: "redPathLines", label: "Red path", icon: "fa-route" },
 	];
 
 	function getToggleValue(key: string): boolean {
@@ -49,6 +55,8 @@
 			case "props": return propsVisible;
 			case "wordHeader": return wordHeader;
 			case "progressBar": return progressBar;
+			case "bluePathLines": return bluePathLines;
+			case "redPathLines": return redPathLines;
 			default: return false;
 		}
 	}

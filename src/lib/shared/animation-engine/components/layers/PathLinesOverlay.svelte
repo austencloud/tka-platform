@@ -3,15 +3,25 @@
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { getPathD } from "$lib/features/hand-paths/hand-path-builder/services/hand-path-animator";
-  import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+  import {
+    getAnimationVisibilityManager,
+    type AnimationVisibilityStateManager,
+  } from "../../state/animation-visibility-state.svelte";
   import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
 
   let {
     sequenceData = null,
     currentStep = 0,
+    showBlue = false,
+    showRed = false,
+    vm = null,
   }: {
     sequenceData?: SequenceData | null;
     currentStep?: number;
+    showBlue?: boolean;
+    showRed?: boolean;
+    /** Per-surface visibility manager; falls back to the global singleton. */
+    vm?: AnimationVisibilityStateManager | null;
   } = $props();
 
   function resolvePathTypeForMotion(motion: MotionData): "arc" | "linear" | "concave" {
@@ -19,12 +29,12 @@
     if (motion.motionType === MotionType.DASH) return "linear";
     if (motion.motionType === MotionType.STATIC) return "arc";
 
-    const vm = getAnimationVisibilityManager();
-    if (vm.getMotionAwarePaths()) {
+    const manager = vm ?? getAnimationVisibilityManager();
+    if (manager.getMotionAwarePaths()) {
       if (motion.motionType === MotionType.PRO) return "arc";
       if (motion.motionType === MotionType.ANTI) return "concave";
     }
-    return vm.getPathShape();
+    return manager.getPathShape();
   }
 
   function buildPathD(motion: MotionData): string | null {
@@ -54,12 +64,14 @@
 
   const blueColor = $derived(getMotionColor(MotionColor.BLUE, "dark"));
   const redColor = $derived(getMotionColor(MotionColor.RED, "dark"));
-  const hasAnyPath = $derived(bluePathD !== null || redPathD !== null);
+  const drawBlue = $derived(showBlue && bluePathD !== null);
+  const drawRed = $derived(showRed && redPathD !== null);
+  const hasAnyPath = $derived(drawBlue || drawRed);
 </script>
 
 {#if hasAnyPath}
   <svg class="path-lines-overlay" viewBox="0 0 950 950" preserveAspectRatio="xMidYMid meet">
-    {#if bluePathD}
+    {#if drawBlue}
       <path
         d={bluePathD}
         fill="none"
@@ -70,7 +82,7 @@
         opacity="0.5"
       />
     {/if}
-    {#if redPathD}
+    {#if drawRed}
       <path
         d={redPathD}
         fill="none"

@@ -36,7 +36,8 @@ export interface FrameCompositorConfig {
   loopComponents: Set<string> | null;
   rotationPeriod: Period | undefined;
   inversionPeriod: Period | undefined;
-  showPathLines: boolean;
+  showBluePathLines: boolean;
+  showRedPathLines: boolean;
   sequenceSteps: readonly StepData[];
 }
 
@@ -192,8 +193,8 @@ export class ExportFrameCompositor {
       }
     }
 
-    // Render path lines
-    if (this.config.showPathLines) {
+    // Render path lines (per-hand)
+    if (this.config.showBluePathLines || this.config.showRedPathLines) {
       this.renderPathLines(offscreenCtx, actualCanvasSize, clampedStepIndex);
     }
 
@@ -330,8 +331,8 @@ export class ExportFrameCompositor {
     const blueColor = getMotionColor(MotionColor.BLUE, "dark");
     const redColor = getMotionColor(MotionColor.RED, "dark");
 
-    drawMotionPath(step.motions?.blue, blueColor);
-    drawMotionPath(step.motions?.red, redColor);
+    if (this.config.showBluePathLines) drawMotionPath(step.motions?.blue, blueColor);
+    if (this.config.showRedPathLines) drawMotionPath(step.motions?.red, redColor);
   }
 
   private drawPrerenderedGlyph(

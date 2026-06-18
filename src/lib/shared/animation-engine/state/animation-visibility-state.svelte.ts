@@ -55,8 +55,10 @@ interface AnimationVisibilitySettings {
   pathShape: "arc" | "linear" | "concave";
   /** When true, pro→arc and anti→concave regardless of pathShape */
   motionAwarePaths: boolean;
-  /** Show path shape lines on canvas during animation */
-  pathLines: boolean;
+  /** Show the blue hand's path-shape line on canvas during animation */
+  bluePathLines: boolean;
+  /** Show the red hand's path-shape line on canvas during animation */
+  redPathLines: boolean;
 
   // Per-tip effort assignments (global level)
   tipEffortMap: TipEffortMap;
@@ -138,7 +140,8 @@ export class AnimationVisibilityStateManager {
       effortPreset: "linear",
       pathShape: "arc",
       motionAwarePaths: false,
-      pathLines: false,
+      bluePathLines: false,
+      redPathLines: false,
 
       tipEffortMap: {},
     };
@@ -165,7 +168,10 @@ export class AnimationVisibilityStateManager {
 
         if (!("pathShape" in parsed)) parsed.pathShape = "arc";
         if (!("motionAwarePaths" in parsed)) parsed.motionAwarePaths = false;
-        if (!("pathLines" in parsed)) parsed.pathLines = false;
+        // Per-hand path lines, split from the legacy single `pathLines` flag.
+        if (!("bluePathLines" in parsed)) parsed.bluePathLines = parsed.pathLines ?? false;
+        if (!("redPathLines" in parsed)) parsed.redPathLines = parsed.pathLines ?? false;
+        delete parsed.pathLines;
 
         // Migrate old gridMode values ("diamond" | "box") → new system ("8point" | "auto")
         if (parsed.gridMode === "diamond" || parsed.gridMode === "box") {

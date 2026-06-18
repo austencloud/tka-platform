@@ -78,7 +78,8 @@
     vm.setVisibility("progressBar", false);
     vm.setVisibility("tkaGlyph", false);
     vm.setVisibility("stepNumbers", false);
-    vm.setVisibility("pathLines", false);
+    vm.setVisibility("bluePathLines", false);
+    vm.setVisibility("redPathLines", false);
   }
   let playbackController: AnimationPlaybackController | null = null;
   let loadedSequence: SequenceData | null = null;
