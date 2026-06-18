@@ -6,6 +6,7 @@ import {
 } from "$lib/features/lab/tabs/collision-lab/services/stance-simulator";
 import { StanceOptimizer } from "$lib/features/lab/tabs/collision-lab/services/stance-optimizer";
 import { OPTIMIZER_BOUNDS } from "$lib/features/lab/tabs/collision-lab/services/pose-target-mapper";
+import type { RestPoseGeometry } from "$lib/features/lab/tabs/collision-lab/services/types";
 import type { StancePose } from "$lib/features/lab/tabs/collision-lab/domain/types";
 import type { MotionConfig3D } from "$lib/shared/3d/domain/models/motion-data-3d";
 import { buildSweptVolume } from "./swept-volume-builder";
@@ -32,12 +33,16 @@ export function solveDodge(
   blueConfig: MotionConfig3D,
   redConfig: MotionConfig3D,
   heightMeters = 1.8,
-  sampleCount = 24
+  sampleCount = 24,
+  restPoseOverride?: RestPoseGeometry
 ): DodgeSolution {
   const blue = buildSweptVolume(blueConfig, sampleCount).samples;
   const red = buildSweptVolume(redConfig, sampleCount).samples;
 
-  const sim = new StanceSimulator(restPoseFromHeight(heightMeters));
+  // Prefer a body model measured from the real rig (correct handedness, real
+  // arm reach) so "reachable/feasible" matches the actual avatar; fall back to
+  // idealized anthropometrics by height.
+  const sim = new StanceSimulator(restPoseOverride ?? restPoseFromHeight(heightMeters));
   const opt = new StanceOptimizer(sim);
   const result = opt.optimizeSweep({ blue, red }, NEUTRAL, OPTIMIZER_BOUNDS);
 

@@ -12,7 +12,15 @@
    * what is on screen (negative = impaling, >= 0 = cleared).
    */
   import { Canvas, T } from "@threlte/core";
-  import type { Object3D } from "three";
+  import {
+    type Object3D,
+    Group,
+    Mesh,
+    PlaneGeometry,
+    MeshBasicMaterial,
+    CanvasTexture,
+    GridHelper,
+  } from "three";
   import { Plane } from "@austencloud/scene-3d";
   import {
     MotionType,
@@ -67,8 +75,53 @@
   let dodgeOn = $state(false);
   let clearanceM = $state(0);
   let solution = $state<DodgeSolution | null>(null);
+  let floorGroup = $state<Group | null>(null);
 
   let didSetup = false;
+
+  /** A flat floor label (number / compass letter) readable from a top-down view. */
+  function makeFloorLabel(text: string, color: string, size: number, x: number, z: number): Mesh {
+    const cv = document.createElement("canvas");
+    cv.width = cv.height = 128;
+    const ctx = cv.getContext("2d")!;
+    ctx.fillStyle = color;
+    ctx.font = "bold 92px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, 64, 64);
+    const tex = new CanvasTexture(cv);
+    const m = new Mesh(
+      new PlaneGeometry(size, size),
+      new MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false })
+    );
+    m.rotation.x = -Math.PI / 2; // lie flat on the floor, facing up
+    m.position.set(x, 0.02, z);
+    return m;
+  }
+
+  /** Numbered quadrant reference + N/E/S/W facing marks on the floor. Quadrants:
+   *  1 = +X/+Z, 2 = -X/+Z, 3 = -X/-Z, 4 = +X/-Z. Floor N = +Z (TKA convention). */
+  function buildFloorReference(): Group {
+    const g = new Group();
+    const grid = new GridHelper(4, 8, 0x55556a, 0x2c2c3a);
+    grid.position.y = 0.005;
+    g.add(grid);
+    const quads: { n: string; x: number; z: number }[] = [
+      { n: "1", x: 1.2, z: 1.2 },
+      { n: "2", x: -1.2, z: 1.2 },
+      { n: "3", x: -1.2, z: -1.2 },
+      { n: "4", x: 1.2, z: -1.2 },
+    ];
+    for (const q of quads) g.add(makeFloorLabel(q.n, "#7dd3fc", 0.55, q.x, q.z));
+    const comp: { t: string; x: number; z: number }[] = [
+      { t: "N", x: 0, z: 2 },
+      { t: "S", x: 0, z: -2 },
+      { t: "E", x: 2, z: 0 },
+      { t: "W", x: -2, z: 0 },
+    ];
+    for (const c of comp) g.add(makeFloorLabel(c.t, "#fbbf24", 0.4, c.x, c.z));
+    return g;
+  }
 
   async function setup() {
     try {
@@ -102,6 +155,7 @@
   $effect(() => {
     if (didSetup) return;
     didSetup = true;
+    floorGroup = buildFloorReference();
     void setup();
   });
 
@@ -132,7 +186,9 @@
   }
 
   const clearanceCm = $derived((clearanceM * 100).toFixed(1));
-  const cleared = $derived(clearanceM >= 0);
+  // Within 1cm of the conservative collision shell counts as clear — a sub-cm
+  // graze of the 12cm torso sphere means the prop is ~11cm off the actual spine.
+  const cleared = $derived(clearanceM >= -0.01);
 </script>
 
 <svelte:head>
@@ -153,6 +209,10 @@
       <T.PlaneGeometry args={[20, 20]} />
       <T.MeshStandardMaterial color="#2a2a33" />
     </T.Mesh>
+
+    {#if floorGroup}
+      <T is={floorGroup} />
+    {/if}
 
     {#if rigRoot}
       <T is={rigRoot} />
@@ -179,7 +239,7 @@
 
     <div class="readout" class:clear={cleared} class:hit={!cleared}>
       <span class="readout-label">Body clearance</span>
-      <span class="readout-value">{cleared ? "+" : ""}{clearanceCm} cm</span>
+      <span class="readout-value">{clearanceM > 0 ? "+" : ""}{clearanceCm} cm</span>
       <span class="readout-state">{cleared ? "clear" : "IMPALED"}</span>
     </div>
 

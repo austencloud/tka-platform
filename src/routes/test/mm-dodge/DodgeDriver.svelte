@@ -36,7 +36,7 @@
     StanceSimulator,
     restPoseFromHeight,
   } from "$lib/features/lab/tabs/collision-lab/services/stance-simulator";
-  import type { SimPropTarget } from "$lib/features/lab/tabs/collision-lab/services/types";
+  import type { SimPropTarget, RestPoseGeometry } from "$lib/features/lab/tabs/collision-lab/services/types";
   import type { StancePose } from "$lib/features/lab/tabs/collision-lab/domain/types";
   import type { DodgeSolution } from "$lib/features/stage/locomotion/dodge/dodge-types";
   import type { MotionConfig3D } from "$lib/shared/3d/domain/models/motion-data-3d";
@@ -171,8 +171,10 @@
   }
 
   function readShoulderY(r: RigBinding): number {
-    const ls = r.getBone("LeftShoulder");
-    const rs = r.getBone("RightShoulder");
+    // Use the arm-attachment joints (LeftArm/RightArm), not the clavicles, so the
+    // prop-grip anchor matches the body model's shoulder line exactly.
+    const ls = r.getBone("LeftArm");
+    const rs = r.getBone("RightArm");
     const v = new Vector3();
     let sum = 0;
     let n = 0;
@@ -184,6 +186,42 @@
       return 1.4;
     }
     return sum / n;
+  }
+
+  /** Measure a StanceSimulator body model from the REAL rig so the solve uses
+   *  the avatar's true handedness (left shoulder at +X here), arm reach, and
+   *  torso heights — not idealized anthropometrics. Frame: Y=0 at the shoulder
+   *  line, X=0 centerline, matching the prop-target frame. */
+  function measureRigBody(r: RigBinding): RestPoseGeometry | null {
+    const get = (n: string) => r.getBone(n);
+    const hips = get("Hips"), s1 = get("Spine1"), s2 = get("Spine2"),
+      neck = get("Neck"), head = get("Head"),
+      la = get("LeftArm"), ra = get("RightArm"),
+      lf = get("LeftForeArm"), lh = get("LeftHand"),
+      rf = get("RightForeArm"), rh = get("RightHand");
+    if (!hips || !s1 || !s2 || !neck || !head || !la || !ra || !lf || !lh || !rf || !rh) return null;
+    r.root.updateMatrixWorld(true);
+    const w = (b: typeof hips) => b.getWorldPosition(new Vector3());
+    const wHips = w(hips), wS1 = w(s1), wS2 = w(s2), wNeck = w(neck), wHead = w(head);
+    const wLa = w(la), wRa = w(ra), wLf = w(lf), wLh = w(lh), wRf = w(rf), wRh = w(rh);
+    const shoulderYW = (wLa.y + wRa.y) / 2;
+    const upper = (wLa.distanceTo(wLf) + wRa.distanceTo(wRf)) / 2;
+    const lower = (wLf.distanceTo(wLh) + wRf.distanceTo(wRh)) / 2;
+    return {
+      hipsY: wHips.y - shoulderYW,
+      spine1: new Vector3(0, wS1.y - shoulderYW, 0),
+      spine2: new Vector3(0, wS2.y - shoulderYW, 0),
+      neck: new Vector3(0, wNeck.y - shoulderYW, 0),
+      head: new Vector3(0, wHead.y - shoulderYW, 0),
+      leftShoulder: new Vector3(wLa.x, 0, 0),
+      rightShoulder: new Vector3(wRa.x, 0, 0),
+      upperArmLength: upper,
+      forearmLength: lower,
+      footHalfWidth: 0.1,
+      headRadius: 0.09,
+      torsoRadius: 0.12,
+      armRadius: 0.04,
+    };
   }
 
   /** Run the solve + frame setup exactly once, the first frame the rig is ready. */
@@ -199,8 +237,11 @@
     rightElbowHinge = rightArm ? computeKneeHingeAxis(rightArm.rootRestDir, rightArm.middleRestDir) : null;
     blueSweep = buildSweptVolume(blueConfig, 24).samples;
     redSweep = buildSweptVolume(redConfig, 24).samples;
-    sim = new StanceSimulator(restPoseFromHeight(1.8));
-    solution = solveDodge(blueConfig, redConfig, 1.8, 24);
+    // Body model measured from the REAL rig (real handedness + reach), shared by
+    // the solve and the live clearance readout so both match the actual avatar.
+    const body = measureRigBody(rig) ?? restPoseFromHeight(1.8);
+    sim = new StanceSimulator(body);
+    solution = solveDodge(blueConfig, redConfig, 1.8, 24, body);
     footSphere.position.set(solution.stance.footOffsetX, 0.02, solution.stance.footOffsetZ);
     footSphere.visible = true;
     if (typeof window !== "undefined") {
