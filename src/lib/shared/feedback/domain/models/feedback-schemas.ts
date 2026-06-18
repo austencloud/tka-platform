@@ -197,8 +197,11 @@ export const AppVersionSchema = z
     version: z.string(),
     releasedAt: firestoreDate,
     releaseNotes: z.string().optional(),
-    feedbackCount: z.number(),
-    feedbackSummary: FeedbackSummarySchema,
+    // Legacy version docs predate feedback aggregation — default to zero so they
+    // parse instead of getting skipped (was spamming "[firestore] Validation
+    // failed for versions/…" in the Release Notes console).
+    feedbackCount: z.number().default(0),
+    feedbackSummary: FeedbackSummarySchema.default({ bugs: 0, features: 0, general: 0 }),
     changelogEntries: z.array(ChangelogEntrySchema).optional(),
     highlights: z.array(z.string()).optional(),
     contributorIds: z.array(z.string()).optional(),

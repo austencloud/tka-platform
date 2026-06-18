@@ -28,6 +28,7 @@
   import StorageSection from "./profile/StorageSection.svelte";
   import AuthPrompt from "./profile/AuthPrompt.svelte";
   import ProfilePhotoPicker from "../ProfilePhotoPicker.svelte";
+  import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import type { PhotoSelection } from "../../domain/photo-picker-types";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { updateProfile } from "firebase/auth";
@@ -95,6 +96,7 @@
 
   // Cache clearing state
   let clearingCache = $state(false);
+  let showClearCacheConfirm = $state(false);
 
   // Pronouns loaded from Firestore
   let userPronouns = $state("");
@@ -203,24 +205,20 @@
     await accountManager.deleteAccount(password);
   }
 
-  async function handleClearCache() {
-    if (!accountManager) return;
+  // Opens the themed confirmation; the destructive clear runs on confirm.
+  function handleClearCache() {
+    showClearCacheConfirm = true;
+  }
 
-    if (
-      !confirm(
-        "Clear all cached data?\n\n" +
-          "This will remove locally stored data and reload the page. " +
-          "Your account and saved sequences are not affected."
-      )
-    ) {
-      return;
-    }
+  async function performClearCache() {
+    if (!accountManager) return;
 
     clearingCache = true;
 
     try {
       await accountManager.clearCache();
     } catch (error) {
+      console.error("Clear cache failed:", error);
       clearingCache = false;
     }
   }
@@ -516,6 +514,18 @@
   {profileColor}
   onColorChange={handleColorChange}
   {savedGooglePhotoUrl}
+/>
+
+<!-- Clear-cache confirmation -->
+<ConfirmDialog
+  bind:isOpen={showClearCacheConfirm}
+  variant="warning"
+  title="Clear cached data?"
+  message="This removes locally stored data and reloads the page. Your account and saved sequences are not affected."
+  confirmText="Clear cache"
+  cancelText="Cancel"
+  onConfirm={performClearCache}
+  onCancel={() => {}}
 />
 
 <style>

@@ -8,7 +8,9 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   import type { OfflineCacheStats } from "$lib/shared/offline/domain/offline-cache-types";
 
   interface Props {
-    onClearCache: () => Promise<void>;
+    /** Request a cache clear. Parent shows a confirmation, then runs the nuclear
+     *  clear (which also wipes the offline IndexedDB cache and reloads). */
+    onClearCache: () => void;
     isClearing: boolean;
   }
 
@@ -45,14 +47,11 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     }
   }
 
-  async function handleClearOfflineCache() {
-    await orchestrator.clearOfflineCache();
-    offlineStats = await orchestrator.getCacheStats();
-  }
-
-  async function handleClearCache() {
-    await handleClearOfflineCache();
-    await onClearCache();
+  // Request the clear. Parent confirms, then the nuclear clear wipes everything
+  // (including the offline IndexedDB cache) and reloads — no separate offline
+  // pre-clear needed.
+  function handleClearCache() {
+    onClearCache();
   }
 
   function formatBytes(bytes: number): string {
@@ -209,6 +208,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text);
     font-weight: 500;
+    font-variant-numeric: tabular-nums;
   }
 
   .stat-size {

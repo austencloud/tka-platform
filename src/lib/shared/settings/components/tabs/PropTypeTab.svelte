@@ -36,7 +36,7 @@
     { bluePropType: PropType.EIGHTRINGS, redPropType: PropType.EIGHTRINGS, catDogMode: false },
     { bluePropType: PropType.DOUBLESTAR, redPropType: PropType.DOUBLESTAR, catDogMode: false },
     { bluePropType: PropType.SWORD, redPropType: PropType.SWORD, catDogMode: false },
-    { bluePropType: PropType.HAND, redPropType: PropType.HAND, catDogMode: false },
+    { bluePropType: PropType.QUIAD, redPropType: PropType.QUIAD, catDogMode: false },
   ];
 
   let { settings, onUpdate } = $props<{
