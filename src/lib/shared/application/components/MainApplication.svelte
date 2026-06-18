@@ -83,6 +83,8 @@ import type { SheetType } from "../../navigation/services/types";
   import { resolveAccessTier } from "../../auth/domain/access-tier";
   import { isPremiumOrAbove } from "../../auth/domain/models/user-role";
   import { detectAndCaptureScanEntry } from "../../analytics/scan-attribution";
+  import { writeBootSnapshot } from "$lib/shared/application/services/boot-snapshot";
+  import { CURRENT_MODULE_KEY } from "$lib/shared/navigation/config/storage-keys";
   // Get DI container from context
 // Services - resolved lazily
   let initService: ApplicationInitializer | null = $state(null);
@@ -100,6 +102,11 @@ import type { SheetType } from "../../navigation/services/types";
 
   // Auth state for gating
   const isAuthenticated = $derived(authState.isAuthenticated);
+  // A guest is anyone without a full account: unauthenticated OR an anonymous
+  // Firebase identity (provisioned on first persistable action via
+  // ensureGuestIdentity). The AuthDrawer must mount for both — an anonymous
+  // guest tapping "Create Account" upgrades the anon session in place.
+  const isGuest = $derived(!authState.isAuthenticated || authState.isAnonymous);
   const authLoading = $derived(authState.loading);
 
   // Track whether MainInterface has been shown at least once.
@@ -330,6 +337,17 @@ import type { SheetType } from "../../navigation/services/types";
 
         // Progress: Fully ready - triggers loading screen fade out with random ready message
         window.__tkaLoadProgress?.(100, "Ready");
+        // Persist a boot snapshot so the NEXT load can skip the auth spinner and
+        // render optimistically. role/uid seed the optimistic tier (W1b); the
+        // active module picks the right skeleton.
+        writeBootSnapshot({
+          uid: authState.getEffectiveUserId(),
+          role: authState.role,
+          activeModule:
+            (typeof localStorage !== "undefined" &&
+              localStorage.getItem(CURRENT_MODULE_KEY)) ||
+            "create",
+        });
         detectAndCaptureScanEntry();
 
       } catch (error) {
@@ -548,8 +566,8 @@ import type { SheetType } from "../../navigation/services/types";
       {/await}
     {/if}
 
-    <!-- AuthDrawer for guest sign-up flow -->
-    {#if !isAuthenticated}
+    <!-- AuthDrawer for guest sign-up / anonymous-upgrade flow -->
+    {#if isGuest}
       {#await import("../../auth/components/AuthDrawer.svelte") then mod}
         <mod.default
           open={authDrawerState.open}
