@@ -77,6 +77,12 @@
   let solution = $state<DodgeSolution | null>(null);
   let floorGroup = $state<Group | null>(null);
 
+  // Manual mode: scrub the avatar's stance live while the props keep looping.
+  let manualMode = $state(false);
+  let manualX = $state(0);
+  let manualZ = $state(0);
+  let manualYawDeg = $state(0);
+
   let didSetup = false;
 
   /** A flat floor label (number / compass letter) readable from a top-down view. */
@@ -218,7 +224,18 @@
       <T is={rigRoot} />
     {/if}
 
-    <DodgeDriver {controller} {rig} {blueConfig} {redConfig} {dodgeOn} {onClearance} />
+    <DodgeDriver
+      {controller}
+      {rig}
+      {blueConfig}
+      {redConfig}
+      {dodgeOn}
+      {manualMode}
+      {manualX}
+      {manualZ}
+      {manualYawDeg}
+      {onClearance}
+    />
   </Canvas>
 
   <div class="panel">
@@ -231,11 +248,40 @@
       class:on={dodgeOn}
       aria-pressed={dodgeOn}
       onclick={toggleDodge}
-      disabled={!controller}
+      disabled={!controller || manualMode}
     >
       <span class="dot" class:on={dodgeOn}></span>
       Dodge {dodgeOn ? "ON" : "OFF"}
     </button>
+
+    <button
+      type="button"
+      class="toggle"
+      class:on={manualMode}
+      aria-pressed={manualMode}
+      onclick={() => (manualMode = !manualMode)}
+      disabled={!controller}
+    >
+      <span class="dot" class:on={manualMode}></span>
+      Manual {manualMode ? "ON" : "OFF"}
+    </button>
+
+    {#if manualMode}
+      <div class="sliders">
+        <label class="slider">
+          <span class="slabel">Step X <b>{manualX.toFixed(2)} m</b></span>
+          <input type="range" min="-1" max="1" step="0.01" bind:value={manualX} />
+        </label>
+        <label class="slider">
+          <span class="slabel">Step Z <b>{manualZ.toFixed(2)} m</b></span>
+          <input type="range" min="-1" max="1" step="0.01" bind:value={manualZ} />
+        </label>
+        <label class="slider">
+          <span class="slabel">Face <b>{manualYawDeg.toFixed(0)}°</b></span>
+          <input type="range" min="-180" max="180" step="1" bind:value={manualYawDeg} />
+        </label>
+      </div>
+    {/if}
 
     <div class="readout" class:clear={cleared} class:hit={!cleared}>
       <span class="readout-label">Body clearance</span>
@@ -391,6 +437,36 @@
     font-size: 0.72rem;
     opacity: 0.7;
     font-variant-numeric: tabular-nums;
+  }
+
+  .sliders {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.2rem 0;
+  }
+
+  .slider {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .slabel {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    opacity: 0.8;
+  }
+
+  .slabel b {
+    color: #7dd3fc;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .slider input[type="range"] {
+    width: 100%;
+    accent-color: #22c55e;
   }
 
   .action {

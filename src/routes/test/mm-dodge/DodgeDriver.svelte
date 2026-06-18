@@ -47,6 +47,10 @@
     blueConfig,
     redConfig,
     dodgeOn,
+    manualMode,
+    manualX,
+    manualZ,
+    manualYawDeg,
     onClearance,
   }: {
     controller: MmLocomotionController | null;
@@ -54,6 +58,10 @@
     blueConfig: MotionConfig3D;
     redConfig: MotionConfig3D;
     dodgeOn: boolean;
+    manualMode: boolean;
+    manualX: number;
+    manualZ: number;
+    manualYawDeg: number;
     onClearance: (clearanceM: number, solution: DodgeSolution | null) => void;
   } = $props();
 
@@ -83,7 +91,9 @@
   let sim: StanceSimulator | null = null;
   let spineBone: Bone | null = null;
   let solution: DodgeSolution | null = null;
-  let lastDodgeOn = false;
+  let lastTx = NaN;
+  let lastTz = NaN;
+  let lastTyaw = NaN;
   let progress = 0;
   let didSolve = false;
   let clearanceFrames = 0;
@@ -296,23 +306,34 @@
     ensureSolved();
     const dt = Math.min(delta, 1 / 15);
 
-    // Drive the dodge intent on toggle change.
-    if (dodgeOn !== lastDodgeOn) {
-      lastDodgeOn = dodgeOn;
-      if (dodgeOn && solution) {
-        controller.setTargetFacing(solution.stance.rootYawRad);
-        controller.setTargetPosition(solution.stance.footOffsetX, solution.stance.footOffsetZ);
-      } else {
-        controller.setTargetFacing(0);
-        controller.setTargetPosition(0, 0);
-      }
+    // Desired stance: MANUAL (user-scrubbed) overrides AUTO (solver). Neutral
+    // when the dodge is off and not in manual mode.
+    let tx = 0, tz = 0, tyaw = 0, tpitch = 0;
+    if (manualMode) {
+      tx = manualX;
+      tz = manualZ;
+      tyaw = (manualYawDeg * Math.PI) / 180;
+    } else if (dodgeOn && solution) {
+      tx = solution.stance.footOffsetX;
+      tz = solution.stance.footOffsetZ;
+      tyaw = solution.stance.rootYawRad;
+      tpitch = solution.stance.spinePitchRad;
+    }
+    // Re-issue the targets only when they change (setTargetFacing resets the
+    // turn-cross detector, so calling it every frame would break the turn).
+    if (tx !== lastTx || tz !== lastTz || tyaw !== lastTyaw) {
+      controller.setTargetFacing(tyaw);
+      controller.setTargetPosition(tx, tz);
+      lastTx = tx;
+      lastTz = tz;
+      lastTyaw = tyaw;
     }
 
     controller.update(dt);
 
     // Apply the solved spine pitch on top of the posed clip (local X hinge).
-    if (spineBone && dodgeOn && solution) {
-      _pitchQ.setFromAxisAngle(_pitchAxis, solution.stance.spinePitchRad);
+    if (spineBone && tpitch !== 0) {
+      _pitchQ.setFromAxisAngle(_pitchAxis, tpitch);
       spineBone.quaternion.multiply(_pitchQ);
       spineBone.updateMatrixWorld(true);
     }
