@@ -160,32 +160,41 @@ export type AnimationSettingsState = {
  * Create the shared animation settings state.
  * This is a singleton - call once at app init and share via context.
  */
-export function createAnimationSettingsState(): AnimationSettingsState {
-  let settings = $state<AnimationSettings>(loadSettings());
+export function createAnimationSettingsState(
+  options?: { ephemeral?: boolean },
+): AnimationSettingsState {
+  const ephemeral = options?.ephemeral ?? false;
+  let settings = $state<AnimationSettings>(
+    ephemeral
+      ? { ...DEFAULT_ANIMATION_SETTINGS, trail: { ...DEFAULT_TRAIL_SETTINGS } }
+      : loadSettings(),
+  );
   let propType = $state("staff");
 
-  // Auto-save on any changes (using $effect.root for module-level usage)
-  $effect.root(() => {
-    $effect(() => {
-      // Access all properties to track changes
-      void settings.bpm;
-      void settings.shouldLoop;
-      void settings.trail.mode;
-      void settings.trail.effect;
-      void settings.trail.trackingMode;
-      void settings.trail.lineWidth;
-      void settings.trail.maxOpacity;
-      void settings.trail.minOpacity;
-      void settings.trail.glowBlur;
-      void settings.trail.blueColor;
-      void settings.trail.redColor;
-      void settings.trail.fadeDurationMs;
-      void settings.trail.tailLength;
-      void settings.trail.hideProps;
+  if (!ephemeral) {
+    // Auto-save on any changes (using $effect.root for module-level usage)
+    $effect.root(() => {
+      $effect(() => {
+        // Access all properties to track changes
+        void settings.bpm;
+        void settings.shouldLoop;
+        void settings.trail.mode;
+        void settings.trail.effect;
+        void settings.trail.trackingMode;
+        void settings.trail.lineWidth;
+        void settings.trail.maxOpacity;
+        void settings.trail.minOpacity;
+        void settings.trail.glowBlur;
+        void settings.trail.blueColor;
+        void settings.trail.redColor;
+        void settings.trail.fadeDurationMs;
+        void settings.trail.tailLength;
+        void settings.trail.hideProps;
 
-      settingsPersistence.setupAutoSave(settings);
+        settingsPersistence.setupAutoSave(settings);
+      });
     });
-  });
+  }
 
   return {
     // Read-only getters
