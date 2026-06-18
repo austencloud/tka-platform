@@ -149,9 +149,14 @@ export const OCEAN_COLORS: MedusaeColors = {
 
 // ── Medusae class ──────────────────────────────────────────────────────────
 
+// Startle decay: bell flash + contraction ease back to rest over this window.
+const STARTLE_DURATION = 1.5;
+
 export class Medusae {
   item: Group;
   animTime = 0;
+  /** 0 at rest, 1 the instant a startle fires, decaying to 0 over STARTLE_DURATION. */
+  startleEnergy = 0;
 
   private system!: ParticleSystem;
   private position!: BufferAttribute;
@@ -205,6 +210,7 @@ export class Medusae {
   private weights: number[] = [];
 
   private timeUniforms: { value: number }[] = [];
+  private flashUniforms: { value: number }[] = [];
 
   constructor(colors: MedusaeColors = OCEAN_COLORS) {
     this.totalSegments = this.segmentsCount * 3 * 3;
@@ -654,6 +660,10 @@ export class Medusae {
     const timeUniform = { value: 0 };
     this.timeUniforms.push(timeUniform);
 
+    const bulbFlash = { value: 0 };
+    const faintFlash = { value: 0 };
+    this.flashUniforms.push(bulbFlash, faintFlash);
+
     const bulb = new Mesh(
       geom,
       new ShaderMaterial({
@@ -664,6 +674,7 @@ export class Medusae {
           diffuseB: { value: new Color(colors.hoodSecondary) },
           opacity: { value: 0.75 },
           time: timeUniform,
+          flash: bulbFlash,
         },
         transparent: true,
         side: FrontSide,
@@ -681,6 +692,7 @@ export class Medusae {
         uniforms: {
           diffuse: { value: new Color(colors.hoodTertiary) },
           opacity: { value: 0.25 },
+          flash: faintFlash,
         },
         transparent: true,
         blending: AdditiveBlending,
@@ -745,14 +757,20 @@ export class Medusae {
     return (sin(time * PI - PI * 0.5) + 1) * 0.5;
   }
 
+  /** Bell contracts up to 30% at peak startle, easing back as energy decays. */
+  private startleContract(): number {
+    return 1 - this.startleEnergy * 0.3;
+  }
+
   private updateRibs(ribs: Rib[], phase: number): void {
     const radiusOffset = 15;
     const segments = this.totalSegments;
+    const contract = this.startleContract();
 
     for (const rib of ribs) {
-      const radius = rib.radius + rib.yParam * phase * radiusOffset;
-      const radiusOuter = (rib.radiusOuter ?? rib.radius) + rib.yParam * phase * radiusOffset;
-      const radiusSpine = (rib.radiusSpine ?? rib.radius) + rib.yParam * phase * radiusOffset;
+      const radius = (rib.radius + rib.yParam * phase * radiusOffset) * contract;
+      const radiusOuter = ((rib.radiusOuter ?? rib.radius) + rib.yParam * phase * radiusOffset) * contract;
+      const radiusSpine = ((rib.radiusSpine ?? rib.radius) + rib.yParam * phase * radiusOffset) * contract;
 
       if (rib.outer) {
         const outerLen = 2 * PI * radiusOuter / segments;
@@ -768,17 +786,32 @@ export class Medusae {
     }
   }
 
+  /** Fire a startle: bell flashes, contracts, and (via the swarm) darts away. */
+  triggerStartle(): void {
+    this.startleEnergy = 1;
+  }
+
   update(delta: number): void {
-    const time = this.animTime += delta * 0.001;
+    const dtSec = delta * 0.001;
+    const time = this.animTime += dtSec;
     const phase = this.timePhase(time);
+
+    if (this.startleEnergy > 0) {
+      this.startleEnergy = Math.max(0, this.startleEnergy - dtSec / STARTLE_DURATION);
+    }
 
     this.updateRibs(this.ribs, phase);
     this.updateRibs(this.tailRibs, phase);
-    this.system.tick(delta * 0.001);
+    this.system.tick(dtSec);
 
     this.position.needsUpdate = true;
 
     for (const u of this.timeUniforms) u.value = time;
+
+    // Flash rides an ease-out of startle energy so the bloom peaks instantly on
+    // click and tapers smoothly back to dark.
+    const flash = this.startleEnergy * this.startleEnergy;
+    for (const u of this.flashUniforms) u.value = flash;
   }
 
   dispose(): void {

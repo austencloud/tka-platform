@@ -15,6 +15,7 @@ uniform vec3 diffuse;
 uniform vec3 diffuseB;
 uniform float opacity;
 uniform float time;
+uniform float flash;
 varying vec2 vUv;
 varying vec3 vNormal;
 
@@ -62,7 +63,15 @@ void main() {
   float fresnelGlow = pow(rim, 3.0) * 0.8;
   vec3 glowTint = diffuse * 1.5 + vec3(0.05, 0.15, 0.3);
 
-  gl_FragColor = vec4(baseColor + glowTint * fresnelGlow, baseAlpha + fresnelGlow * 0.2);
+  // Startle flash — bell lights from within. The core (low rim) glows while the
+  // rim already does its own emission, so a startled jelly reads as a full bloom.
+  float core = 1.0 - rim;
+  vec3 flashTint = (diffuse * 2.0 + vec3(0.15, 0.35, 0.6));
+  vec3 flashEmission = flashTint * flash * (0.6 + core * 1.4);
+
+  gl_FragColor = vec4(
+    baseColor + glowTint * fresnelGlow + flashEmission,
+    baseAlpha + fresnelGlow * 0.2 + flash * 0.35);
 }
 `;
 
@@ -79,6 +88,7 @@ void main() {
 export const gelFrag = /* glsl */ `
 uniform vec3 diffuse;
 uniform float opacity;
+uniform float flash;
 varying vec3 vNormal;
 
 void main() {
@@ -94,8 +104,11 @@ void main() {
   float fresnelGlow = pow(rim, 2.5) * 1.2;
   vec3 glowColor = diffuse * 1.8 + vec3(0.1, 0.2, 0.4);
 
-  gl_FragColor.rgb = diffuse * vec3(rimLight) + glowColor * fresnelGlow;
-  gl_FragColor.a = opacity + fresnelGlow * 0.3;
+  // Startle flash — additive shell adds an outward halo bloom on the contraction.
+  vec3 flashColor = diffuse * 2.2 + vec3(0.2, 0.4, 0.7);
+
+  gl_FragColor.rgb = diffuse * vec3(rimLight) + glowColor * fresnelGlow + flashColor * flash * 1.2;
+  gl_FragColor.a = opacity + fresnelGlow * 0.3 + flash * 0.4;
 }
 `;
 

@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { T, useTask } from "@threlte/core";
+  import { T, useTask, useThrelte } from "@threlte/core";
   import { onDestroy } from "svelte";
+  import { Mesh, Raycaster, Vector2, Vector3 } from "three";
   import { Medusae, OCEAN_COLORS } from "./jellyfish-geometry";
   import type { OceanQualityConfig } from "../../../quality/ocean-quality";
 
@@ -22,6 +23,13 @@
   const SPAWN_Z_RANGE = 15;
   const SPAWN_Y_MIN = 3;
   const SPAWN_Y_MAX = 8;
+
+  // Startle dart: impulse magnitude (world units/sec) and the time constants for
+  // the velocity impulse dying off vs. the displacement easing back to rest.
+  const DART_SPEED = 4;
+  const DART_VEL_TAU = 0.15;
+  const DART_OFFSET_TAU = 0.6;
+  const DART_UP_BIAS = 0.5;
 
   // ── Spawn position generation ──────────────────────────────────────────
 
@@ -61,9 +69,15 @@
     phaseOffset: number;
     elapsed: number;
     accumulator: number;
+    dartVel: Vector3;
+    dartOffset: Vector3;
   }
 
   const instances: JellyfishInstance[] = [];
+
+  // Flat list of pickable meshes + a reverse map for click raycasting.
+  const pickMeshes: Mesh[] = [];
+  const meshToInstance = new Map<Mesh, JellyfishInstance>();
 
   const count = quality.maxJellyfish;
 
@@ -76,7 +90,7 @@
     const { x, y, z } = generateSpawnPosition(i);
     const phaseOffset = i * 1.618; // Golden ratio spread for varied animation phases
 
-    instances.push({
+    const inst: JellyfishInstance = {
       medusae,
       baseX: x,
       baseY: y,
@@ -84,13 +98,79 @@
       phaseOffset,
       elapsed: phaseOffset * 1000,
       accumulator: 0,
+      dartVel: new Vector3(),
+      dartOffset: new Vector3(),
+    };
+    instances.push(inst);
+
+    medusae.item.traverse((child) => {
+      if ((child as Mesh).isMesh) {
+        pickMeshes.push(child as Mesh);
+        meshToInstance.set(child as Mesh, inst);
+      }
     });
   }
+
+  // ── Click picking → startle ─────────────────────────────────────────────
+
+  const { renderer, camera } = useThrelte();
+  const raycaster = new Raycaster();
+  const ndc = new Vector2();
+  const dartDir = new Vector3();
+
+  function getGl(): import("three").WebGLRenderer | undefined {
+    return (renderer as any)?.current ?? (renderer as any);
+  }
+
+  function getCam(): import("three").Camera | undefined {
+    return (camera as any)?.current ?? (camera as any);
+  }
+
+  function onPointerDown(event: PointerEvent): void {
+    const gl = getGl();
+    const cam = getCam();
+    const el = gl?.domElement as HTMLCanvasElement | undefined;
+    if (!el || !cam) return;
+
+    const rect = el.getBoundingClientRect();
+    const cx = event.clientX;
+    const cy = event.clientY;
+    if (cx < rect.left || cx > rect.right || cy < rect.top || cy > rect.bottom) return;
+
+    ndc.x = ((cx - rect.left) / rect.width) * 2 - 1;
+    ndc.y = -((cy - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(ndc, cam);
+
+    // Bells deform every frame, so the cached bounding spheres go stale — refresh
+    // before the hit test or three may cull a jelly that's actually under the cursor.
+    for (const mesh of pickMeshes) mesh.geometry.computeBoundingSphere();
+
+    const hit = raycaster.intersectObjects(pickMeshes, false)[0];
+    if (!hit) return;
+
+    const inst = meshToInstance.get(hit.object as Mesh);
+    if (!inst) return;
+
+    inst.medusae.triggerStartle();
+
+    // Dart away from the cursor: flee along the view ray (deeper into the scene)
+    // with an upward jet, the way a startled jelly pulses off.
+    dartDir.copy(raycaster.ray.direction).setY(raycaster.ray.direction.y + DART_UP_BIAS).normalize();
+    inst.dartVel.copy(dartDir).multiplyScalar(DART_SPEED);
+  }
+
+  $effect(() => {
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => window.removeEventListener("pointerdown", onPointerDown);
+  });
 
   // ── Per-frame update ───────────────────────────────────────────────────
 
   useTask((delta) => {
     const dt = Math.min(delta * 1000, 50);
+    const dtSec = dt * 0.001;
+    const velDecay = Math.exp(-dtSec / DART_VEL_TAU);
+    const offsetDecay = Math.exp(-dtSec / DART_OFFSET_TAU);
 
     for (const inst of instances) {
       inst.elapsed += dt;
@@ -101,7 +181,12 @@
         inst.accumulator -= FIXED_STEP;
       }
 
-      const { elapsed, phaseOffset, baseX, baseY, baseZ, medusae } = inst;
+      // Dart impulse: velocity dies quickly, displacement eases back to rest, so
+      // the jelly lurches off then settles into its drift.
+      inst.dartVel.multiplyScalar(velDecay);
+      inst.dartOffset.addScaledVector(inst.dartVel, dtSec).multiplyScalar(offsetDecay);
+
+      const { elapsed, phaseOffset, baseX, baseY, baseZ, medusae, dartOffset } = inst;
       const t = elapsed * 0.001;
 
       const driftX = Math.sin(t * DRIFT_SPEED + phaseOffset) * 0.5;
@@ -116,9 +201,9 @@
       const bob = pulse * strength * 0.08;
 
       medusae.item.position.set(
-        baseX + driftX,
-        baseY + driftY + bob,
-        baseZ + driftZ,
+        baseX + driftX + dartOffset.x,
+        baseY + driftY + bob + dartOffset.y,
+        baseZ + driftZ + dartOffset.z,
       );
       medusae.item.scale.setScalar(SCALE);
 
