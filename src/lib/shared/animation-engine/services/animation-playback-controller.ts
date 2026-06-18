@@ -15,7 +15,6 @@ import type { AnimationLoop } from "$lib/shared/animation-engine/services/animat
 import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import { sharedAnimationState } from "$lib/shared/animation-engine/state/shared-animation-state.svelte";
-import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 export class AnimationPlaybackController {
   private state: AnimationPanelState | null = null;
@@ -443,10 +442,12 @@ export class AnimationPlaybackController {
 
     this.state.setSpeed(speed);
 
-    // Sync to global visibility manager so fire cache invalidates on BPM change.
-    // Without this, the fire renderer reads stale speed from the global singleton
-    // and keeps replaying cached frames recorded at the old BPM.
-    getAnimationVisibilityManager().setSpeed(speed);
+    // Sync to the ACTIVE visibility manager so fire cache invalidates on BPM
+    // change. Targets the orchestrator's per-instance override when one is set
+    // (e.g. the landing's ephemeral scope), else the global singleton — without
+    // this, the fire renderer reads stale speed and keeps replaying cached
+    // frames recorded at the old BPM.
+    this.animationEngine.getActiveVisibilityManager().setSpeed(speed);
 
     // Update loop service if currently playing
     if (this.state.isPlaying) {
