@@ -30,6 +30,9 @@
   const DART_VEL_TAU = 0.15;
   const DART_OFFSET_TAU = 0.6;
   const DART_UP_BIAS = 0.5;
+  // Hover affordance: world-space radius around each bell for the cheap
+  // ray-vs-sphere test that drives the pointer cursor (no triangle raycast).
+  const HOVER_RADIUS = 0.7;
 
   // ── Spawn position generation ──────────────────────────────────────────
 
@@ -159,9 +162,55 @@
     inst.dartVel.copy(dartDir).multiplyScalar(DART_SPEED);
   }
 
+  // Hover → pointer cursor. Cheap ray-vs-sphere against each bell (sphere reject,
+  // no geometry raycast) so it can run on every pointermove without the cost of
+  // the precise click pick.
+  let cursorEl: HTMLCanvasElement | undefined;
+  let cursorSet = false;
+
+  function setHoverCursor(on: boolean): void {
+    if (on === cursorSet) return;
+    cursorSet = on;
+    if (cursorEl) cursorEl.style.cursor = on ? "pointer" : "";
+  }
+
+  function onPointerMove(event: PointerEvent): void {
+    const gl = getGl();
+    const cam = getCam();
+    const el = gl?.domElement as HTMLCanvasElement | undefined;
+    if (!el || !cam) return;
+    cursorEl = el;
+
+    const rect = el.getBoundingClientRect();
+    const cx = event.clientX;
+    const cy = event.clientY;
+    if (cx < rect.left || cx > rect.right || cy < rect.top || cy > rect.bottom) {
+      setHoverCursor(false);
+      return;
+    }
+
+    ndc.x = ((cx - rect.left) / rect.width) * 2 - 1;
+    ndc.y = -((cy - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(ndc, cam);
+
+    let over = false;
+    for (const inst of instances) {
+      if (raycaster.ray.distanceToPoint(inst.medusae.item.position) <= HOVER_RADIUS) {
+        over = true;
+        break;
+      }
+    }
+    setHoverCursor(over);
+  }
+
   $effect(() => {
     window.addEventListener("pointerdown", onPointerDown);
-    return () => window.removeEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      setHoverCursor(false);
+    };
   });
 
   // ── Per-frame update ───────────────────────────────────────────────────
