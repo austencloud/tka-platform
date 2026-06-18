@@ -11,7 +11,7 @@
   import PropTurnsControl from "$lib/features/create/shared/components/sequence-actions/PropTurnsControl.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { slide } from "svelte/transition";
+  import { slide, fade } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
 
@@ -132,9 +132,10 @@
     </div>
   </div>
 
-  <!-- Row 2: blue (left half) / red (right half), slides down to appear. Each half
-       reserves a fixed-width spin slot, so the CW/CCW button materializing never
-       shifts the stepper next to it. -->
+  <!-- Row 2: blue (left half) / red (right half), slides down to appear. The
+       stepper sits centered in each half; the CW/CCW spin button is pinned to the
+       half's outer (colored) edge — absolutely positioned, so it has its own room
+       and its appearance never nudges the centered stepper. -->
   {#if expanded}
     <div class="oph-turns-row" transition:slide={{ duration: 240, easing: quintOut }}>
       <div class="hand-half blue">
@@ -148,19 +149,18 @@
           onTurnsChange={onBlueChange}
           onRotationChange={() => {}}
         />
-        <div class="spin-slot">
-          {#if !isContinuousOnly && hasBlueTurns}
-            <button
-              class="spin-inline"
-              title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
-              aria-label="Toggle blue dash/static spin (currently {dirLabel(blueRotation)})"
-              onclick={() => onBlueRotationChange(opposite(blueRotation))}
-            >
-              <i class="fas {dirIcon(blueRotation)}" aria-hidden="true"></i>
-              <span class="dir">{dirLabel(blueRotation)}</span>
-            </button>
-          {/if}
-        </div>
+        {#if !isContinuousOnly && hasBlueTurns}
+          <button
+            class="spin-inline edge"
+            transition:fade={{ duration: 140 }}
+            title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
+            aria-label="Toggle blue dash/static spin (currently {dirLabel(blueRotation)})"
+            onclick={() => onBlueRotationChange(opposite(blueRotation))}
+          >
+            <i class="fas {dirIcon(blueRotation)}" aria-hidden="true"></i>
+            <span class="dir">{dirLabel(blueRotation)}</span>
+          </button>
+        {/if}
       </div>
       <div class="hand-half red">
         <span class="hand-tag">Red</span>
@@ -173,19 +173,18 @@
           onTurnsChange={onRedChange}
           onRotationChange={() => {}}
         />
-        <div class="spin-slot">
-          {#if !isContinuousOnly && hasRedTurns}
-            <button
-              class="spin-inline"
-              title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
-              aria-label="Toggle red dash/static spin (currently {dirLabel(redRotation)})"
-              onclick={() => onRedRotationChange(opposite(redRotation))}
-            >
-              <i class="fas {dirIcon(redRotation)}" aria-hidden="true"></i>
-              <span class="dir">{dirLabel(redRotation)}</span>
-            </button>
-          {/if}
-        </div>
+        {#if !isContinuousOnly && hasRedTurns}
+          <button
+            class="spin-inline edge"
+            transition:fade={{ duration: 140 }}
+            title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
+            aria-label="Toggle red dash/static spin (currently {dirLabel(redRotation)})"
+            onclick={() => onRedRotationChange(opposite(redRotation))}
+          >
+            <i class="fas {dirIcon(redRotation)}" aria-hidden="true"></i>
+            <span class="dir">{dirLabel(redRotation)}</span>
+          </button>
+        {/if}
       </div>
     </div>
   {/if}
@@ -235,20 +234,26 @@
   }
 
   /* Row 2: two equal halves — blue (left), red (right) — revealed by sliding
-     down. Each half holds [label][stepper][reserved spin slot]. */
+     down. Each half centers [label][stepper]; the spin button is pinned to the
+     half's colored edge, out of flow. */
   .oph-turns-row {
     display: flex;
     gap: 10px;
   }
 
   .hand-half {
+    position: relative;
     flex: 1 1 0;
-    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
+    /* Stepper centers in the FULL half (symmetric padding preserves the center).
+       The spin button is pinned out of flow on the colored edge — it costs no
+       layout width, so it can't pull the stepper off-center or shift it when it
+       appears. Min-width guards against overlap with the edge button. */
     padding: 6px 12px;
+    min-width: 240px;
     border-radius: 10px;
     border: 1px solid;
   }
@@ -271,17 +276,6 @@
       rgba(239, 68, 68, 0.06) 100%
     );
     border-color: rgba(239, 68, 68, 0.4);
-  }
-
-  /* Fixed-width slot the spin button fades into — reserved whether or not the
-     button is shown, so it can never shift the stepper beside it. Sized to the
-     widest state ("CCW"). */
-  .spin-slot {
-    flex: 0 0 auto;
-    width: 76px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
   }
 
   .hand-tag {
@@ -372,8 +366,7 @@
     outline-offset: 2px;
   }
 
-  /* Dash/static spin — sits in the reserved spin slot, themed via the half's
-     --prop-color-rgb. */
+  /* Dash/static spin — themed via the half's --prop-color-rgb. */
   .spin-inline {
     display: inline-flex;
     align-items: center;
@@ -400,6 +393,26 @@
     transform: scale(0.96);
   }
 
+  /* Pin the spin button to the half's outer (colored) edge, vertically centered.
+     Out of flow, so it has its own room and never shifts the centered stepper. */
+  .spin-inline.edge {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .hand-half.blue .spin-inline.edge {
+    left: 10px;
+  }
+
+  .hand-half.red .spin-inline.edge {
+    right: 10px;
+  }
+
+  .spin-inline.edge:active {
+    transform: translateY(-50%) scale(0.96);
+  }
+
   /* Fixed-width direction label so CW <-> CCW toggling never resizes the chip. */
   .spin-inline .dir {
     display: inline-block;
@@ -415,6 +428,10 @@
     }
     .spin-inline:active {
       transform: none;
+    }
+    /* Keep the edge button's positioning transform under reduced motion. */
+    .spin-inline.edge:active {
+      transform: translateY(-50%);
     }
   }
 </style>
