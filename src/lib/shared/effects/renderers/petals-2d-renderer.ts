@@ -152,9 +152,9 @@ export class Petals2DRenderer {
 
     const fall = params.fallBaseSpeed * (0.3 + 0.7 * params.fallSpeed) * scale;
     const carry = params.carry;
-    // Lifetime scales with intensity - bigger petals last longer because
-    // they fall slower relative to their size.
-    const lifeBase = 2.0 + params.intensity * 3.0;
+    // Short lifetime keeps petals near the prop's recent path so the effect
+    // reads as a trailing ribbon, not a cloud that fills the whole frame.
+    const lifeBase = 1.0 + params.intensity * 1.4;
 
     for (let i = 0; i < n; i++) {
       const jitter = 0.7 + Math.random() * 0.6;

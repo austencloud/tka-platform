@@ -114,14 +114,16 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   },
 
   petals: {
-    ambientEmission: 0.5,
-    motionEmission: 0.4,
-    intensity: 0.6,
+    // Motion-dominant: ambient is a whisper, motion drives the stream so
+    // petals appear where the prop IS and trail its arc (ribbon, not cloud).
+    ambientEmission: 0.22,
+    motionEmission: 0.8,
+    intensity: 0.5,
     palette: "blossom",
     customColor: "#ffb0c8",
     swayAmplitude: 0.6,
-    carry: 0.55,
-    streakLength: 0.4,
+    carry: 0.72,
+    streakLength: 0.6,
     fallSpeed: 0.4,
     trackingMode: "both_ends",
   },
