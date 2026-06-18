@@ -17,10 +17,10 @@
   import { onMount, onDestroy } from "svelte";
   // PropTypeRegistry imports removed - variations now visible in Bento grid
   import CatDogToggle from "./prop-type/CatDogToggle.svelte";
-  import PropSelectionSheet from "./prop-type/PropSelectionSheet.svelte";
   import PresetChipBar from "./prop-type/PresetChipBar.svelte";
   import CompactPropDisplay from "./prop-type/CompactPropDisplay.svelte";
   import BentoPropGrid from "./prop-type/BentoPropGrid.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const PRESET_COUNT = 10;
@@ -59,9 +59,13 @@
   let catDogMode = $state(false);
   let rememberedRedProp = $state<PropType | null>(null);
 
-  // Sheet state (mobile)
-  let isSheetOpen = $state(false);
-  let selectingHand = $state<"blue" | "red">("blue");
+  // Which hand the inline grid edits in cat/dog mode on narrow screens
+  // (desktop shows both grids side-by-side, so no tab needed there).
+  let mobileHand = $state<"blue" | "red">("blue");
+
+  // Narrow viewport → stack a single tabbed grid instead of dual side-by-side.
+  // Matches the 900px breakpoint the layout switches at.
+  let isNarrow = $state(false);
 
   // Preset state
   let propPresets = $state<(PropPreset | null)[]>([]);
@@ -82,9 +86,15 @@
 
     window.addEventListener("keydown", handleKeydown);
 
+    const narrowQuery = window.matchMedia("(max-width: 899px)");
+    isNarrow = narrowQuery.matches;
+    const onNarrowChange = (e: MediaQueryListEvent) => (isNarrow = e.matches);
+    narrowQuery.addEventListener("change", onNarrowChange);
+
     return () => {
       cleanup?.();
       window.removeEventListener("keydown", handleKeydown);
+      narrowQuery.removeEventListener("change", onNarrowChange);
     };
   });
 
@@ -274,29 +284,7 @@
     updateCurrentPreset();
   }
 
-  // Prop selection (mobile sheet)
-  function handleOpenSheet(hand: "blue" | "red") {
-    hapticService?.trigger("selection");
-    selectingHand = hand;
-    isSheetOpen = true;
-  }
-
-  function handlePropSelect(propType: PropType) {
-    if (selectingHand === "blue") {
-      selectedBluePropType = propType;
-      onUpdate?.({ key: "bluePropType", value: propType });
-      if (!catDogMode) {
-        selectedRedPropType = propType;
-        onUpdate?.({ key: "redPropType", value: propType });
-      }
-    } else {
-      selectedRedPropType = propType;
-      onUpdate?.({ key: "redPropType", value: propType });
-    }
-    updateCurrentPreset();
-  }
-
-  // Inline selection (desktop)
+  // Inline selection (blue / shared-when-not-cat-dog)
   function handleInlineSelect(propType: PropType) {
     hapticService?.trigger("selection");
     selectedBluePropType = propType;
@@ -355,7 +343,6 @@
         {catDogMode}
         {blueBuugengFlipped}
         {redBuugengFlipped}
-        onOpenSheet={handleOpenSheet}
         onToggleFlip={handleToggleFlip}
       />
     </div>
@@ -391,9 +378,40 @@
     </div>
   </section>
 
-  <!-- Right: Bento Prop Grid (desktop only, via CSS) -->
+  <!-- Right (desktop) / below controls (mobile): inline Bento Prop Grid -->
   <section class="selection-panel">
-    {#if catDogMode}
+    {#if catDogMode && isNarrow}
+      <!-- Narrow: one grid, Blue/Red tab picks the hand it edits -->
+      <SegmentedControl
+        options={[
+          { value: "blue", label: t("settings_select_left_prop") },
+          { value: "red", label: t("settings_select_right_prop") },
+        ]}
+        value={mobileHand}
+        onchange={(hand) => {
+          hapticService?.trigger("selection");
+          mobileHand = hand;
+        }}
+        color={mobileHand}
+        size="sm"
+      />
+      {#if mobileHand === "blue"}
+        <BentoPropGrid
+          selectedPropType={selectedBluePropType}
+          color="blue"
+          title={t("settings_select_left_prop")}
+          onSelect={handleInlineSelect}
+        />
+      {:else}
+        <BentoPropGrid
+          selectedPropType={selectedRedPropType}
+          color="red"
+          title={t("settings_select_right_prop")}
+          onSelect={handleInlineSelectRed}
+        />
+      {/if}
+    {:else if catDogMode}
+      <!-- Desktop cat/dog: both grids side by side -->
       <div class="dual-grids">
         <BentoPropGrid
           selectedPropType={selectedBluePropType}
@@ -419,19 +437,6 @@
   </section>
 </div>
 
-<!-- Mobile Sheet -->
-<PropSelectionSheet
-  bind:isOpen={isSheetOpen}
-  selectedPropType={selectingHand === "blue"
-    ? selectedBluePropType
-    : selectedRedPropType}
-  color={selectingHand}
-  title={selectingHand === "blue"
-    ? t("settings_select_left_prop")
-    : t("settings_select_right_prop")}
-  onSelect={handlePropSelect}
-/>
-
 <style>
   .prop-type-tab {
     display: flex;
@@ -443,7 +448,7 @@
     margin: 0 auto;
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow-y: auto;
     box-sizing: border-box;
   }
 
@@ -476,9 +481,7 @@
     border-radius: 12px;
     container-type: inline-size;
     container-name: controls-panel;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
+    flex: 0 0 auto;
   }
 
   /* Tablet: Slightly larger */
@@ -494,6 +497,7 @@
   @media (min-width: 900px) {
     .controls-panel {
       flex: 0 0 clamp(380px, 28vw, 520px);
+      min-height: 0;
       overflow-y: auto;
       padding: clamp(20px, 5cqi, 32px);
       gap: clamp(16px, 4cqi, 28px);
@@ -501,16 +505,20 @@
     }
   }
 
-  /* Selection Panel - hidden on mobile, shown on desktop */
+  /* Selection Panel - inline at all breakpoints (stacks below controls on
+     mobile, sits side-by-side on desktop) */
   .selection-panel {
-    display: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 0 0 auto;
+    min-width: 0;
   }
 
   @media (min-width: 900px) {
     .selection-panel {
-      display: flex;
       flex: 1;
-      min-width: 0;
+      min-height: 0;
       height: 100%;
       overflow-y: auto;
     }

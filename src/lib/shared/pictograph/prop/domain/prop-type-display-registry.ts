@@ -193,6 +193,10 @@ export const DEACTIVATED_PROP_TYPES: ReadonlySet<PropType> = new Set([
   PropType.CONTACTBALL,
   PropType.BIGCONTACTBALL,
   PropType.BIGDOUBLECONTACTBALL,
+  // Retired 2026-06-18 (props-tab redesign): Fractalgeng dropped entirely; Poi is
+  // a club.svg placeholder pending its own icon + design.
+  PropType.FRACTALGENG,
+  PropType.POI,
 ]);
 
 /**
@@ -441,3 +445,63 @@ export function getBasePropsByCategory(): Map<PropCategory, PropType[]> {
 
   return result;
 }
+
+/**
+ * Flat prop-picker sections (props-tab redesign, 2026-06-18).
+ *
+ * Single source of truth for the FLAT prop grid (`BentoPropGrid`): every listed
+ * prop renders as its own button under one of three section headers — no
+ * popover, no variant-drill. This is intentionally separate from the shared
+ * `category` taxonomy + variant maps above (consumed by PropPopover,
+ * MyPropsDrawer, composition recipes, …), which are left untouched.
+ *
+ * Curation: props NOT listed here are simply absent from the picker. Simple
+ * Staff (backend thumb-orientation prop), Staff V2, and Hand (hand-path teaching
+ * only) stay fully wired elsewhere but off the picker. Fractalgeng + Poi are
+ * fully retired via DEACTIVATED_PROP_TYPES.
+ *
+ * Rendering filters by isPropActive, so deactivating a listed prop hides it
+ * without editing this list.
+ */
+export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
+  {
+    label: "Standard",
+    props: [
+      PropType.STAFF,
+      PropType.CLUB,
+      PropType.FAN,
+      PropType.TRIAD,
+      PropType.MINIHOOP,
+      PropType.BUUGENG,
+      PropType.TRIGENG,
+      PropType.EIGHTRINGS,
+      PropType.DOUBLECONTACTBALL,
+      PropType.TORCH,
+      PropType.SWORD,
+    ],
+  },
+  {
+    label: "Big",
+    props: [
+      PropType.BIGSTAFF,
+      PropType.BIGCLUB,
+      PropType.BIGTRIAD,
+      PropType.BIGHOOP,
+      PropType.BIGBUUGENG,
+      PropType.BIGEIGHTRINGS,
+      PropType.BIGTORCH,
+      PropType.BIGCHICKEN,
+      PropType.BIGDOUBLESTAR,
+    ],
+  },
+  {
+    label: "Novelty",
+    props: [
+      PropType.CHICKEN,
+      PropType.DOUBLESTAR,
+      PropType.QUIAD,
+      PropType.TRIQUETRA,
+      PropType.TRIQUETRA2,
+    ],
+  },
+];

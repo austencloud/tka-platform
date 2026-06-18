@@ -4,7 +4,9 @@
   Single mode: One row showing prop icon, name, and flip control (for buugengs)
   Cat Dog mode: Two rows (blue/red) each with icon, name, controls
 
-  Tapping the prop opens the selection sheet where all variations are visible.
+  Read-only current-selection readout. Selection happens in the inline
+  BentoPropGrid alongside it; this panel just reflects the active prop(s) and
+  hosts the buugeng flip control.
 -->
 <script lang="ts">
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -24,7 +26,6 @@
     catDogMode = false,
     blueBuugengFlipped = false,
     redBuugengFlipped = false,
-    onOpenSheet,
     onToggleFlip,
   } = $props<{
     bluePropType: PropType;
@@ -32,7 +33,6 @@
     catDogMode?: boolean;
     blueBuugengFlipped?: boolean;
     redBuugengFlipped?: boolean;
-    onOpenSheet?: (hand: "blue" | "red") => void;
     onToggleFlip?: (hand: "blue" | "red") => void;
   }>();
 
@@ -48,18 +48,9 @@
   <div
     class="prop-row"
     class:blue={catDogMode}
-    onclick={() => onOpenSheet?.("blue")}
-    role="button"
-    tabindex="0"
-    onkeydown={(e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        onOpenSheet?.("blue");
-      }
-    }}
     aria-label={catDogMode
-      ? `${t("settings_left_hand")}: ${blueInfo.label}. Tap to change.`
-      : `${blueInfo.label}. Tap to change.`}
+      ? `${t("settings_left_hand")}: ${blueInfo.label}`
+      : blueInfo.label}
   >
     {#if catDogMode}
       <span class="hand-indicator blue">
@@ -75,10 +66,6 @@
     />
 
     <span class="prop-name">{blueInfo.label}</span>
-
-    <span class="change-affordance">
-      <i class="fas fa-chevron-right" aria-hidden="true"></i>
-    </span>
 
     <span class="action-buttons">
       {#if blueIsBuugeng}
@@ -102,16 +89,7 @@
   {#if catDogMode}
     <div
       class="prop-row red"
-      onclick={() => onOpenSheet?.("red")}
-      role="button"
-      tabindex="0"
-      onkeydown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpenSheet?.("red");
-        }
-      }}
-      aria-label={`${t("settings_right_hand")}: ${redInfo.label}. Tap to change.`}
+      aria-label={`${t("settings_right_hand")}: ${redInfo.label}`}
     >
       <span class="hand-indicator red">
         <span class="hand-dot"></span>
@@ -125,10 +103,6 @@
       />
 
       <span class="prop-name">{redInfo.label}</span>
-
-      <span class="change-affordance">
-        <i class="fas fa-chevron-right" aria-hidden="true"></i>
-      </span>
 
       <span class="action-buttons">
         {#if redIsBuugeng}
@@ -171,8 +145,6 @@
     background: var(--theme-card-bg);
     border: 1.5px solid var(--theme-stroke);
     border-radius: 14px;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
     min-height: 64px;
     -webkit-tap-highlight-color: transparent;
   }
@@ -186,34 +158,15 @@
     }
   }
 
-  .prop-row:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-  }
-
-  .prop-row:active {
-    transform: scale(0.99);
-  }
-
   /* Hand-colored variants */
   .prop-row.blue {
     border-color: color-mix(in srgb, var(--prop-blue-text, #818cf8) 30%, transparent);
     background: color-mix(in srgb, var(--prop-blue-text, #818cf8) 6%, transparent);
   }
 
-  .prop-row.blue:hover {
-    border-color: color-mix(in srgb, var(--prop-blue-text, #818cf8) 50%, transparent);
-    background: color-mix(in srgb, var(--prop-blue-text, #818cf8) 12%, transparent);
-  }
-
   .prop-row.red {
     border-color: color-mix(in srgb, var(--prop-red-text, #f87171) 30%, transparent);
     background: color-mix(in srgb, var(--prop-red-text, #f87171) 6%, transparent);
-  }
-
-  .prop-row.red:hover {
-    border-color: color-mix(in srgb, var(--prop-red-text, #f87171) 50%, transparent);
-    background: color-mix(in srgb, var(--prop-red-text, #f87171) 12%, transparent);
   }
 
   /* Hand indicator */
@@ -265,35 +218,19 @@
     filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.3)) hue-rotate(125deg) saturate(1.2);
   }
 
-  /* Prop name */
+  /* Prop name - fills row so the flip control sits at the right edge */
   .prop-name {
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
     color: var(--theme-text);
-    flex-shrink: 0;
+    flex: 1;
+    min-width: 0;
   }
 
   @media (min-width: 500px) {
     .prop-name {
       font-size: 16px;
     }
-  }
-
-  /* Chevron affordance */
-  .change-affordance {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    color: var(--theme-text-dim);
-    opacity: 0.5;
-    font-size: 14px;
-    transition: opacity var(--duration-fast) ease, transform var(--duration-fast) ease;
-  }
-
-  .prop-row:hover .change-affordance {
-    opacity: 0.8;
-    transform: translateX(2px);
   }
 
   /* Action buttons */
@@ -346,11 +283,6 @@
   }
 
   /* Focus states */
-  .prop-row:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
   .action-btn:focus-visible {
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
@@ -358,18 +290,8 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .prop-row,
-    .action-btn,
-    .change-affordance {
+    .action-btn {
       transition: none;
-    }
-
-    .prop-row:active {
-      transform: none;
-    }
-
-    .prop-row:hover .change-affordance {
-      transform: none;
     }
   }
 </style>

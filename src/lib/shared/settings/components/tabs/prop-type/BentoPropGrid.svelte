@@ -1,27 +1,23 @@
 <!--
-  BentoPropGrid.svelte - Family-first prop selection grid
+  BentoPropGrid.svelte - Flat prop selection grid
 
-  Shows prop families in a sectioned grid. Single-prop families
-  select immediately. Multi-variant families open a floating popover
-  for drilling into specific variants.
+  Every prop renders as its own button under one of three section headers
+  (Standard / Big / Novelty). No variant popover, no count badges — the
+  sections come from PROP_PICKER_SECTIONS.
 
   Variants:
   - "panel" (default): has border/background for standalone use (e.g. Settings tab)
   - "inline": no border/background, used inside drawers that already provide a container
+  - flat: drop the section labels and pack every prop into one dense auto-fill
+    grid. For tight contexts (the mobile dock) where maximizing visible count
+    beats grouping.
 -->
 <script lang="ts">
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
-    PROP_CATEGORIES,
-    getBasePropType,
-    getAllVariations,
-    getPropTypeDisplayInfo,
+    PROP_PICKER_SECTIONS,
     isPropActive,
-    getBasePropsByCategory,
   } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
-  import { Popover } from "bits-ui";
-  import { scale } from "svelte/transition";
-  import { backOut, cubicOut } from "svelte/easing";
   import PropTypeButton from "./PropTypeButton.svelte";
 
   let {
@@ -38,37 +34,23 @@
     onSelect: (propType: PropType) => void;
     variant?: "panel" | "inline";
     /**
-     * Flat mode: drop the category sections/labels and pack every base prop
-     * into one dense auto-fill grid. For tight contexts (the mobile dock)
-     * where maximizing visible count beats grouping.
+     * Flat mode: drop the section labels and pack every prop into one dense
+     * auto-fill grid. For tight contexts (the mobile dock) where maximizing
+     * visible count beats grouping.
      */
     flat?: boolean;
   }>();
 
-  const basePropsByCategory = $derived(getBasePropsByCategory());
-
+  // Active props grouped into the three flat picker sections. Each prop renders
+  // as its own button — no variant drill-down.
   const sections = $derived(
-    PROP_CATEGORIES.map((cat) => ({
-      label: cat.label,
-      bases: basePropsByCategory.get(cat.id) ?? [],
-    })).filter((s) => s.bases.length > 0),
+    PROP_PICKER_SECTIONS.map((s) => ({
+      label: s.label,
+      props: s.props.filter(isPropActive),
+    })).filter((s) => s.props.length > 0),
   );
 
-  const selectedBase = $derived(getBasePropType(selectedPropType));
-  const allBases = $derived(sections.flatMap((s) => s.bases));
-
-  function variantCount(base: PropType): number | undefined {
-    const count = getAllVariations(base).filter(isPropActive).length;
-    return count > 1 ? count : undefined;
-  }
-
-  function getActiveVariants(base: PropType): PropType[] {
-    return getAllVariations(base).filter(isPropActive);
-  }
-
-  function isSingleVariant(base: PropType): boolean {
-    return getActiveVariants(base).length <= 1;
-  }
+  const allProps = $derived(sections.flatMap((s) => s.props));
 </script>
 
 <div
@@ -82,73 +64,20 @@
     </header>
   {/if}
 
-  {#snippet tile(base: PropType)}
-    {#if isSingleVariant(base)}
-      <!-- Single-variant: select immediately -->
-      <PropTypeButton
-        propType={base}
-        selected={selectedBase === base}
-        {color}
-        onSelect={() => onSelect(base)}
-      />
-    {:else}
-      <!-- Multi-variant: open popover -->
-      <Popover.Root>
-        <Popover.Trigger>
-          {#snippet child({ props })}
-            <div {...props} class="popover-trigger-wrap">
-              <PropTypeButton
-                propType={base}
-                selected={selectedBase === base}
-                badge={variantCount(base)}
-                {color}
-              />
-            </div>
-          {/snippet}
-        </Popover.Trigger>
-        <Popover.Content
-          side="bottom"
-          sideOffset={6}
-          avoidCollisions={true}
-          collisionPadding={12}
-          forceMount
-        >
-          {#snippet child({ open, wrapperProps, props })}
-            <div {...wrapperProps}>
-              {#if open}
-                <div
-                  {...props}
-                  class="variant-popover"
-                  in:scale={{ duration: 200, start: 0.92, opacity: 0, easing: backOut }}
-                  out:scale={{ duration: 140, start: 0.95, opacity: 0, easing: cubicOut }}
-                >
-                  <span class="variant-popover-label">
-                    {getPropTypeDisplayInfo(base).label} Variants
-                  </span>
-                  <div class="variant-popover-buttons">
-                    {#each getActiveVariants(base) as variantProp}
-                      <PropTypeButton
-                        propType={variantProp}
-                        selected={selectedPropType === variantProp}
-                        {color}
-                        onSelect={() => onSelect(variantProp)}
-                      />
-                    {/each}
-                  </div>
-                </div>
-              {/if}
-            </div>
-          {/snippet}
-        </Popover.Content>
-      </Popover.Root>
-    {/if}
+  {#snippet tile(prop: PropType)}
+    <PropTypeButton
+      propType={prop}
+      selected={selectedPropType === prop}
+      {color}
+      onSelect={() => onSelect(prop)}
+    />
   {/snippet}
 
   <div class="grid-scroll themed-scrollbar">
     {#if flat}
       <div class="flat-grid">
-        {#each allBases as base (base)}
-          {@render tile(base)}
+        {#each allProps as prop (prop)}
+          {@render tile(prop)}
         {/each}
       </div>
     {:else}
@@ -156,8 +85,8 @@
         {#each sections as section, i}
           <div class="section-label" class:first={i === 0}>{section.label}</div>
           <div class="section-buttons">
-            {#each section.bases as base}
-              {@render tile(base)}
+            {#each section.props as prop (prop)}
+              {@render tile(prop)}
             {/each}
           </div>
         {/each}
@@ -230,8 +159,7 @@
     gap: 6px;
     padding: 0 2px;
   }
-  .flat-grid :global(.prop-button),
-  .flat-grid :global(.popover-trigger-wrap) {
+  .flat-grid :global(.prop-button) {
     width: 100%;
   }
 
@@ -260,81 +188,26 @@
     padding: 0 4px;
   }
 
-  .section-buttons :global(.prop-button),
-  .popover-trigger-wrap :global(.prop-button) {
+  .section-buttons :global(.prop-button) {
     width: 79px;
-    flex-shrink: 0;
-  }
-
-  .popover-trigger-wrap {
-    width: 79px;
-    flex-shrink: 0;
-  }
-
-  /* === Variant popover === */
-  .variant-popover {
-    z-index: 50;
-    border-radius: 14px;
-    background: var(--theme-card-bg, #0c0e16);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
-    padding: 10px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .variant-popover-label {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--theme-text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    opacity: 0.6;
-  }
-
-  .variant-popover-buttons {
-    display: flex;
-    gap: 6px;
-    justify-content: center;
-  }
-
-  .variant-popover-buttons :global(.prop-button) {
-    width: 70px;
     flex-shrink: 0;
   }
 
   /* Container queries for larger containers */
   @container prop-grid (min-width: 400px) {
-    .section-buttons :global(.prop-button),
-    .popover-trigger-wrap :global(.prop-button) {
-      width: 90px;
-    }
-    .popover-trigger-wrap {
+    .section-buttons :global(.prop-button) {
       width: 90px;
     }
   }
 
   @container prop-grid (min-width: 550px) {
-    .section-buttons :global(.prop-button),
-    .popover-trigger-wrap :global(.prop-button) {
+    .section-buttons :global(.prop-button) {
       width: 100px;
-    }
-    .popover-trigger-wrap {
-      width: 100px;
-    }
-    .variant-popover-buttons :global(.prop-button) {
-      width: 80px;
     }
   }
 
   @container prop-grid (min-width: 700px) {
-    .section-buttons :global(.prop-button),
-    .popover-trigger-wrap :global(.prop-button) {
-      width: 95px;
-    }
-    .popover-trigger-wrap {
+    .section-buttons :global(.prop-button) {
       width: 95px;
     }
   }
