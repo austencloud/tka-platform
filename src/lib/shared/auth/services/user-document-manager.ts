@@ -120,16 +120,23 @@ export class UserDocumentManager {
           console.warn(`[UserDocumentManager] Failed to claim username: ${err.message}`);
         });
 
-        // Notify admins of new user signup (async, non-blocking)
-        void import("$lib/features/admin/services/admin-notifier").then(
-          ({ notifyNewUserSignup }) => {
-            void notifyNewUserSignup(
-              user.uid,
-              user.email,
-              displayName
-            );
-          }
-        );
+        // Notify admins of new user signup (async, non-blocking).
+        // Skip anonymous (guest) users: provisioning a guest identity via
+        // signInAnonymously is NOT a signup, and the admin notification write
+        // is correctly denied by the isFullUser Firestore rule — firing it here
+        // just logs a permission error on every guest's first action. The real
+        // signup fires when a guest upgrades to a full account (anonymous-upgrade.ts).
+        if (!user.isAnonymous) {
+          void import("$lib/features/admin/services/admin-notifier").then(
+            ({ notifyNewUserSignup }) => {
+              void notifyNewUserSignup(
+                user.uid,
+                user.email,
+                displayName
+              );
+            }
+          );
+        }
 
       } else {
         // EXISTING USER: Preserve username, update other fields

@@ -55,6 +55,37 @@ async function captureAnonDrafts(anonUid: string): Promise<LibrarySequence[]> {
   }
 }
 
+/**
+ * Fire the admin "new signup" notification when a guest upgrades to a full
+ * account by linking a credential onto their anonymous session.
+ *
+ * This is the real signup moment for guest-first users. createOrUpdateUserDocument
+ * skips the notification for anonymous users (the write is denied by isFullUser),
+ * and a successful link preserves the anon uid so its user doc already exists —
+ * meaning the create-time branch never re-fires. Without this hook, guests who
+ * upgrade would never trigger the admin notification. The "collision-signed-in"
+ * path is NOT a new signup (it signs into a pre-existing account), so it is not
+ * notified here.
+ */
+export async function notifyUpgradeSignup(): Promise<void> {
+  try {
+    const auth = await getAuthInstance();
+    const user = auth.currentUser;
+    if (!user || user.isAnonymous) return;
+    const displayName =
+      user.displayName || user.email?.split("@")[0] || "New User";
+    const { notifyNewUserSignup } = await import(
+      "$lib/features/admin/services/admin-notifier"
+    );
+    await notifyNewUserSignup(user.uid, user.email, displayName);
+  } catch (error) {
+    console.warn(
+      "⚠️ [anonymous-upgrade] Failed to notify admins of upgrade signup:",
+      error
+    );
+  }
+}
+
 export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
   const auth = await getAuthInstance();
   const anon = auth.currentUser;
@@ -65,6 +96,7 @@ export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
   provider.addScope("profile");
   try {
     await linkWithPopup(anon, provider);
+    void notifyUpgradeSignup();
     return { status: "linked" };
   } catch (error) {
     if (isCollision(error)) {
@@ -87,6 +119,7 @@ export async function upgradeAnonymousWithFacebook(): Promise<UpgradeResult> {
   provider.addScope("public_profile");
   try {
     await linkWithPopup(anon, provider);
+    void notifyUpgradeSignup();
     return { status: "linked" };
   } catch (error) {
     if (isCollision(error)) {
@@ -110,6 +143,7 @@ export async function upgradeAnonymousWithEmail(
   const credential = EmailAuthProvider.credential(email.trim(), password);
   try {
     await linkWithCredential(anon, credential);
+    void notifyUpgradeSignup();
     return { status: "linked" };
   } catch (error) {
     if (isCollision(error)) {

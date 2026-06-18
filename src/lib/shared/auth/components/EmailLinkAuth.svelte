@@ -130,6 +130,13 @@
         );
         try {
           await linkWithCredential(auth.currentUser, credential);
+          // Guest just upgraded to a full account — fire the admin signup
+          // notification (createOrUpdateUserDocument skips it for anon users,
+          // and the linked uid's doc already exists so it won't re-fire there).
+          const { notifyUpgradeSignup } = await import(
+            "$lib/shared/auth/services/anonymous-upgrade"
+          );
+          void notifyUpgradeSignup();
         } catch (linkErr) {
           const code = (linkErr as { code?: string })?.code;
           if (
