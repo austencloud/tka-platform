@@ -126,7 +126,7 @@
     left: 6px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: #fff;
     text-shadow:

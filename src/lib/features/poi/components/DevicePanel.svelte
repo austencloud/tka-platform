@@ -157,8 +157,8 @@
   .error-msg {
     padding: 0.5rem;
     border-radius: 6px;
-    background: rgba(239 68 68 / 0.15);
-    color: #fca5a5;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, white);
     font-size: var(--font-size-compact, 12px);
   }
 

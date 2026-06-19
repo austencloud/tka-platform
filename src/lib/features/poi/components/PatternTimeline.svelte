@@ -478,7 +478,7 @@
 
   .icon-btn.active {
     border-color: var(--theme-accent, #3b82f6);
-    background: rgba(59, 130, 246, 0.18);
+    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 18%, transparent);
     color: var(--theme-accent, #3b82f6);
   }
 
@@ -496,8 +496,8 @@
   }
 
   .text-btn:hover:not(:disabled) {
-    border-color: rgba(239, 68, 68, 0.6);
-    color: #fca5a5;
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, white);
   }
 
   .text-btn:disabled {
@@ -527,14 +527,14 @@
   }
 
   .beat-number {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-variant-numeric: tabular-nums;
     color: rgba(255, 255, 255, 0.4);
     line-height: 1;
   }
 
   .beat-letter {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     color: var(--theme-accent, #60a5fa);
     line-height: 1;
@@ -572,7 +572,7 @@
   }
 
   .beats-locked .fa-lock {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.35);
   }
 
@@ -601,21 +601,21 @@
     z-index: 1;
     background-image: repeating-linear-gradient(
       45deg,
-      rgba(59, 130, 246, 0.22) 0px,
-      rgba(59, 130, 246, 0.22) 4px,
-      rgba(59, 130, 246, 0.05) 4px,
-      rgba(59, 130, 246, 0.05) 8px
+      color-mix(in srgb, var(--theme-accent, #3b82f6) 22%, transparent) 0px,
+      color-mix(in srgb, var(--theme-accent, #3b82f6) 22%, transparent) 4px,
+      color-mix(in srgb, var(--theme-accent, #3b82f6) 5%, transparent) 4px,
+      color-mix(in srgb, var(--theme-accent, #3b82f6) 5%, transparent) 8px
     );
-    border-left: 1px dashed rgba(59, 130, 246, 0.5);
-    border-right: 1px dashed rgba(59, 130, 246, 0.3);
+    border-left: 1px dashed color-mix(in srgb, var(--theme-accent, #3b82f6) 50%, transparent);
+    border-right: 1px dashed color-mix(in srgb, var(--theme-accent, #3b82f6) 30%, transparent);
   }
 
   .drag-preview {
     position: absolute;
     top: 4px;
     bottom: 4px;
-    background: rgba(59, 130, 246, 0.15);
-    border: 1.5px dashed rgba(59, 130, 246, 0.6);
+    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 15%, transparent);
+    border: 1.5px dashed color-mix(in srgb, var(--theme-accent, #3b82f6) 60%, transparent);
     border-radius: 6px;
     pointer-events: none;
     z-index: 3;
@@ -625,15 +625,15 @@
     position: absolute;
     top: 4px;
     bottom: 4px;
-    background: rgba(34, 197, 94, 0.15);
-    border: 2px dashed rgba(34, 197, 94, 0.7);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+    border: 2px dashed color-mix(in srgb, var(--semantic-success, #22c55e) 70%, transparent);
     border-radius: 6px;
     pointer-events: none;
     z-index: 3;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(34, 197, 94, 0.9);
+    color: color-mix(in srgb, var(--semantic-success, #22c55e) 90%, transparent);
     font-size: 16px;
   }
 

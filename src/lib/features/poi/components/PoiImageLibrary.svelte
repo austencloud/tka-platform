@@ -184,7 +184,7 @@
   .tile-label {
     display: block;
     padding: 2px 4px;
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     line-height: 1.2;
     color: var(--theme-text-primary, #e2e8f0);
     background: rgba(0, 0, 0, 0.6);
@@ -202,7 +202,7 @@
     border-radius: 50%;
     border: none;
     background: rgba(0, 0, 0, 0.65);
-    color: #fca5a5;
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, white);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -218,7 +218,7 @@
   }
 
   .tile-delete:hover {
-    background: rgba(239, 68, 68, 0.85);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 85%, transparent);
     color: #fff;
   }
 </style>

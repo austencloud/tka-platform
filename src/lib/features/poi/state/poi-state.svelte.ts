@@ -15,6 +15,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { libraryState } from "$lib/features/library/state/library-state.svelte";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
 /**
  * Rich playback state for the LED staff preview. When clips abut and
@@ -254,6 +255,9 @@ export function createPoiState(
 
   // Pattern state
   let activePattern = $state<StripPattern | null>(null);
+  // Surfaced to the UI when preset generation throws, so the user gets
+  // feedback instead of silently keeping a stale pattern.
+  let generationError = $state<string | null>(null);
   let activePresetId = $state<string>(saved.activePresetId ?? "solid");
   let ledCount = $state(saved.ledCount ?? 200);
   let frameCount = $state(saved.frameCount ?? 180);
@@ -471,11 +475,15 @@ export function createPoiState(
       activePattern = patternEngine.generate(
         activePresetId, ledCount, frameCount, patternParams
       );
+      generationError = null;
       // Switching to a preset clears the persisted image
       hasUploadedImage = false;
       clearImageDataUrl();
     } catch (err) {
       console.error("Pattern generation failed:", err);
+      const detail = err instanceof Error ? err.message : String(err);
+      generationError = `Couldn't generate the "${activePresetId}" pattern. ${detail}`;
+      toast.error(generationError);
     }
   }
 
@@ -890,6 +898,7 @@ export function createPoiState(
   return {
     // Getters
     get activePattern() { return activePattern; },
+    get generationError() { return generationError; },
     get activePresetId() { return activePresetId; },
     get ledCount() { return ledCount; },
     get frameCount() { return frameCount; },
@@ -934,6 +943,7 @@ export function createPoiState(
 
     // Actions
     generateFromPreset,
+    clearGenerationError() { generationError = null; },
     loadFromImage,
     loadFromFile,
     toImageData,
