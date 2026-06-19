@@ -431,7 +431,7 @@
 
       <div class="spacer"></div>
 
-      <div class="mode-toggle" title="Render mode - press M to cycle">
+      <div class="mode-toggle" role="group" aria-label="Render mode" title="Render mode - press M to cycle">
         <button
           class="mode-btn"
           class:active={renderMode === "smart"}
@@ -452,7 +452,7 @@
         >Data</button>
       </div>
 
-      <div class="mode-toggle">
+      <div class="mode-toggle" role="group" aria-label="Grid mode">
         <button
           class="mode-btn"
           class:active={gridMode === GridMode.DIAMOND}
@@ -546,7 +546,7 @@
 
   .toolbar {
     padding: 8px 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     flex-shrink: 0;
   }
   .toolbar-row {
@@ -612,7 +612,7 @@
     transition: background 150ms ease, color 150ms ease;
   }
   .mode-btn.active {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, #fff);
   }
   .mode-btn:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -634,8 +634,8 @@
   }
   .hint kbd {
     display: inline-block;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 3px;
     padding: 0 4px;
     font-size: 10px;
@@ -670,8 +670,8 @@
   }
 
   .era-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 8px;
     overflow: hidden;
     display: flex;
@@ -683,8 +683,8 @@
   .era-card.focused {
     grid-column: 1 / span 3;
     grid-row: 1 / span 3;
-    border-color: rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+    background: color-mix(in srgb, var(--theme-card-bg, rgba(255, 255, 255, 0.05)) 100%, #fff 2%);
   }
 
   /* Clickable overlay on thumbnails (iframe has pointer-events:none so it doesn't steal clicks) */
@@ -701,10 +701,10 @@
   }
   @media (hover: hover) {
     .era-card.thumb:hover .thumb-clicktarget {
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     }
     .era-card.thumb:hover {
-      border-color: rgba(255, 255, 255, 0.25);
+      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
     }
   }
 
@@ -727,14 +727,16 @@
 
   .era-label {
     padding: 4px 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     display: flex;
     flex-direction: column;
     gap: 1px;
     flex-shrink: 0;
   }
   .era-year {
-    font-size: 8px;
+    /* Functional metadata label (the era's year), not bitmap font art -
+       keep it at the readable compact minimum, not sub-readable pixel sizes. */
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     letter-spacing: 2px;
     text-transform: uppercase;
@@ -753,7 +755,7 @@
     gap: 10px;
   }
   .era-card.focused .era-year {
-    font-size: 10px;
+    font-size: var(--font-size-min, 14px);
   }
   .era-card.focused .era-title {
     font-size: 14px;
@@ -764,7 +766,9 @@
     padding: 3px 6px;
   }
   .era-card.thumb .era-year {
-    font-size: 7px;
+    /* Was 7px (invisible for low-vision). Keep thumbnails dense but hold the
+       year label at the readable compact floor. */
+    font-size: var(--font-size-compact, 12px);
     letter-spacing: 1px;
   }
   .era-card.thumb .era-title {
@@ -776,8 +780,8 @@
 
   .feedback {
     border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(0, 0, 0, 0.25);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    background: var(--theme-overlay, rgba(0, 0, 0, 0.25));
     color: var(--theme-text, #fff);
     font-family: "SF Mono", "Fira Code", "Courier New", monospace;
     font-size: 12px;
@@ -788,11 +792,11 @@
     outline: none;
   }
   .feedback::placeholder {
-    color: rgba(255, 255, 255, 0.25);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.25));
     font-style: italic;
   }
   .feedback:focus {
-    background: rgba(0, 0, 0, 0.4);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+    background: color-mix(in srgb, var(--theme-overlay, rgba(0, 0, 0, 0.4)) 100%, #000 15%);
+    box-shadow: inset 0 0 0 1px var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 </style>

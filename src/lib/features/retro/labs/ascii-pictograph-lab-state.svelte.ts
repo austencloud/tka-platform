@@ -259,7 +259,38 @@ const ARROW_TEST_CASES: RetroPictographData[] = [
 // STATE FACTORY
 // ============================================================================
 
-export function createAsciiLabState() {
+/**
+ * Public surface of the ASCII Pictograph Lab state object. Annotating the
+ * factory return with this catches accidental shape drift when callers
+ * destructure (a renamed/removed getter becomes a compile error, not a
+ * silent `undefined`).
+ */
+export interface AsciiLabState {
+	readonly mode: LabMode;
+	readonly viewMode: ViewMode;
+	readonly loading: boolean;
+	readonly error: string | null;
+	readonly label: string;
+	readonly layers: RenderLayers;
+	readonly gridModeFilter: GridMode;
+	readonly pictographData: RetroPictographData | null;
+	readonly sequenceSteps: RetroPictographData[];
+	readonly sequenceWord: string;
+	readonly sequenceExpanded: string;
+	readonly generating: boolean;
+	wordInput: string;
+	readonly arrowTestCases: RetroPictographData[];
+	loadData(): Promise<void>;
+	next(): void;
+	prev(): void;
+	toggleLayer(layer: keyof RenderLayers): void;
+	setMode(m: LabMode): void;
+	setViewMode(m: ViewMode): void;
+	setGridModeFilter(mode: GridMode): void;
+	generateSequence(word: string): Promise<void>;
+}
+
+export function createAsciiLabState(): AsciiLabState {
 	const restored = loadPersistedState();
 
 	// Shared

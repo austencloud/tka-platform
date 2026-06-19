@@ -10,6 +10,14 @@
 <script lang="ts">
   import "$lib/features/retro/dos/styles/dos-terminal.css";
 
+  /**
+   * SANITIZATION CONTRACT: `htmlLines` and `compact` are rendered with
+   * `{@html}` below. They MUST come from a trusted internal source only -
+   * the ASCII/Braille renderer (SvgToBrailleConverter) which emits exactly
+   * `<span class="dos-...">` colour wrappers around escaped glyph text. Never
+   * pass user-supplied or network-fetched HTML to these props; doing so would
+   * open an XSS hole. If an external source is ever needed, sanitize first.
+   */
   let {
     htmlLines = [],
     compact = "",
