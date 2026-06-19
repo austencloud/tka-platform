@@ -6,9 +6,11 @@
    * Features visual selectors, floating controls, and immersive canvas.
    */
 
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, tick } from "svelte";
   import { getPromoOrchestrator } from "$lib/features/promo-generator/get-promo-orchestrator";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { PromoOrchestrator } from "../services/promo-orchestrator";
   import type {
     PromoGeneratorState,
@@ -61,6 +63,20 @@
   let modelInput: HTMLInputElement | null = $state(null);
   let screenshotInput: HTMLInputElement | null = $state(null);
 
+  // Export modal ref for focus management
+  let exportModal: HTMLDivElement | null = $state(null);
+
+  // Object URLs created from uploads — revoked on replacement and on destroy
+  let modelObjectUrl: string | null = null;
+  let screenshotObjectUrl: string | null = null;
+
+  // Empty state: engine ready but no device model loaded yet
+  const showEmptyState = $derived(
+    generatorState.isReady &&
+      !generatorState.currentDevice &&
+      !generatorState.isExporting
+  );
+
   // Environment options with visual representation
   const environments: { id: EnvironmentType; label: string; color: string }[] = [
     { id: "studio", label: "Studio", color: "#1a1a2e" },
@@ -83,7 +99,10 @@
     try {
       orchestrator = getPromoOrchestrator();
       if (!orchestrator) {
-        console.error("[PromoGenerator] Failed to resolve orchestrator from DI container");
+        const message = "Failed to start the promo generator engine.";
+        console.error("[PromoGenerator]", message);
+        generatorState = { ...generatorState, error: message };
+        toast.error(message);
         return;
       }
 
@@ -108,12 +127,21 @@
         await orchestrator.loadScreenshot(initialScreenshot);
       }
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to initialize the 3D engine.";
       console.error("[PromoGenerator] Initialization failed:", error);
+      generatorState = { ...generatorState, error: message };
+      toast.error(message);
     }
   });
 
   onDestroy(() => {
     orchestrator?.dispose();
+    // Release any object URLs created from uploads to avoid leaking Blob memory
+    if (modelObjectUrl) URL.revokeObjectURL(modelObjectUrl);
+    if (screenshotObjectUrl) URL.revokeObjectURL(screenshotObjectUrl);
   });
 
   // Handlers
@@ -122,11 +150,21 @@
     const file = input.files?.[0];
     if (!file || !orchestrator) return;
 
+    // Revoke the previous model URL before replacing it
+    if (modelObjectUrl) URL.revokeObjectURL(modelObjectUrl);
+    const url = URL.createObjectURL(file);
+    modelObjectUrl = url;
+
     try {
-      const url = URL.createObjectURL(file);
       await orchestrator.loadDevice(url);
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? `Could not load model: ${error.message}`
+          : "Could not load the 3D model.";
       console.error("Failed to load model:", error);
+      generatorState = { ...generatorState, error: message };
+      toast.error(message);
     }
   }
 
@@ -135,11 +173,21 @@
     const file = input.files?.[0];
     if (!file || !orchestrator) return;
 
+    // Revoke the previous screenshot URL before replacing it
+    if (screenshotObjectUrl) URL.revokeObjectURL(screenshotObjectUrl);
+    const url = URL.createObjectURL(file);
+    screenshotObjectUrl = url;
+
     try {
-      const url = URL.createObjectURL(file);
       await orchestrator.loadScreenshot(url);
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? `Could not load screenshot: ${error.message}`
+          : "Could not load the screenshot.";
       console.error("Failed to load screenshot:", error);
+      generatorState = { ...generatorState, error: message };
+      toast.error(message);
     }
   }
 
@@ -206,6 +254,38 @@
     orchestrator?.cancelExport();
   }
 
+  // SegmentedControl options for the export panel single-select groups
+  const resolutionOptions = resolutions.map((r) => ({
+    value: r.id,
+    label: `${r.label} · ${r.dims}`,
+  }));
+
+  const fpsOptions: { value: "30" | "60"; label: string }[] = [
+    { value: "30", label: "30 fps" },
+    { value: "60", label: "60 fps" },
+  ];
+
+  // Close the export panel on Escape (keyboard dismissal for the popover)
+  function handleExportPanelKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape") {
+      showExportPanel = false;
+    }
+  }
+
+  // When the export modal opens, move focus into it so screen readers and
+  // keyboard users land inside the dialog. Escape cancels the export.
+  $effect(() => {
+    if (generatorState.isExporting && exportModal) {
+      tick().then(() => exportModal?.focus());
+    }
+  });
+
+  function handleExportModalKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape") {
+      cancelExport();
+    }
+  }
+
   // Get preset icon based on type
   function getPresetIcon(id: string): string {
     const icons: Record<string, string> = {
@@ -241,13 +321,32 @@
         <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <span>Initializing 3D Engine...</span>
       </div>
+    {:else if showEmptyState}
+      <div class="empty-state">
+        <i class="fas fa-cube empty-icon" aria-hidden="true"></i>
+        <span class="empty-title">No model loaded</span>
+        <p class="empty-desc">Load a 3D model to start building your promo video.</p>
+        <button class="empty-action" onclick={() => modelInput?.click()}>
+          <i class="fas fa-cube" aria-hidden="true"></i>
+          Load 3D Model
+        </button>
+      </div>
     {/if}
 
     {#if generatorState.isExporting}
       <div class="export-overlay">
-        <div class="export-modal">
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <div
+          class="export-modal"
+          bind:this={exportModal}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="export-modal-title"
+          tabindex="-1"
+          onkeydown={handleExportModalKeydown}
+        >
           <div class="export-header">
-            <span class="export-title">Rendering Video</span>
+            <span class="export-title" id="export-modal-title">Rendering Video</span>
             <span class="export-stage">{exportStage}</span>
           </div>
           <div class="export-progress-ring">
@@ -275,16 +374,18 @@
         onclick={() => modelInput?.click()}
         disabled={!generatorState.isReady}
         title="Load 3D Model"
+        aria-label="Load 3D Model"
       >
-        <i class="fas fa-cube"></i>
+        <i class="fas fa-cube" aria-hidden="true"></i>
       </button>
       <button
         class="icon-btn"
         onclick={() => screenshotInput?.click()}
         disabled={!generatorState.isReady}
         title="Load Screenshot"
+        aria-label="Load Screenshot"
       >
-        <i class="fas fa-image"></i>
+        <i class="fas fa-image" aria-hidden="true"></i>
       </button>
     </div>
 
@@ -300,43 +401,35 @@
       </button>
 
       {#if showExportPanel}
-        <div class="export-panel">
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="export-panel"
+          role="group"
+          aria-label="Export settings"
+          onkeydown={handleExportPanelKeydown}
+        >
           <div class="panel-section">
             <span class="section-label">Resolution</span>
-            <div class="pill-group">
-              {#each resolutions as res}
-                <button
-                  class="pill"
-                  class:active={exportResolution === res.id}
-                  onclick={() => (exportResolution = res.id)}
-                >
-                  <span class="pill-label">{res.label}</span>
-                  <span class="pill-sub">{res.dims}</span>
-                </button>
-              {/each}
-            </div>
+            <SegmentedControl
+              options={resolutionOptions}
+              value={exportResolution}
+              onchange={(v) => (exportResolution = v)}
+              color="accent"
+              size="sm"
+            />
           </div>
           <div class="panel-section">
             <span class="section-label">Frame Rate</span>
-            <div class="pill-group">
-              <button
-                class="pill"
-                class:active={exportFps === 30}
-                onclick={() => (exportFps = 30)}
-              >
-                30 fps
-              </button>
-              <button
-                class="pill"
-                class:active={exportFps === 60}
-                onclick={() => (exportFps = 60)}
-              >
-                60 fps
-              </button>
-            </div>
+            <SegmentedControl
+              options={fpsOptions}
+              value={String(exportFps) as "30" | "60"}
+              onchange={(v) => (exportFps = Number(v) as 30 | 60)}
+              color="accent"
+              size="sm"
+            />
           </div>
           <button class="render-btn" onclick={exportVideo} disabled={generatorState.isExporting}>
-            <i class="fas fa-film"></i>
+            <i class="fas fa-film" aria-hidden="true"></i>
             Render Video
           </button>
         </div>
@@ -447,10 +540,38 @@
 
 <style>
   .promo-generator {
+    /* Scoped chrome palette — primary accent maps to the app theme accent,
+       the secondary accent is derived from it via color-mix so the whole
+       gradient skin tracks theme changes. Hex values are kept as var()
+       fallbacks. These tokens style module CHROME only, never the exported
+       artwork (3D scene background / device render). */
+    --promo-accent: var(--theme-accent, #6366f1);
+    --promo-accent-2: color-mix(in srgb, var(--promo-accent) 55%, #8b5cf6);
+    --promo-accent-soft: color-mix(in srgb, var(--promo-accent) 20%, transparent);
+    --promo-accent-glow: color-mix(in srgb, var(--promo-accent) 40%, transparent);
+    --promo-surface-0: #0a0a0f;
+    --promo-surface-1: #1a1a2e;
+    --promo-panel-bg: rgba(20, 20, 30, 0.95);
+    --promo-bar-bg: rgba(20, 20, 30, 0.9);
+    --promo-sidebar-bg: rgba(15, 15, 20, 0.95);
+    --promo-overlay-bg: rgba(10, 10, 15, 0.9);
+    --promo-stroke: rgba(255, 255, 255, 0.1);
+    --promo-stroke-strong: rgba(255, 255, 255, 0.2);
+    --promo-stroke-soft: rgba(255, 255, 255, 0.06);
+    --promo-fill-hover: rgba(255, 255, 255, 0.15);
+    --promo-text: #fff;
+    --promo-text-strong: rgba(255, 255, 255, 0.8);
+    --promo-text-dim: rgba(255, 255, 255, 0.7);
+    --promo-text-muted: rgba(255, 255, 255, 0.5);
+    --promo-text-faint: rgba(255, 255, 255, 0.4);
+    --promo-fill-1: rgba(255, 255, 255, 0.08);
+    --promo-fill-2: rgba(255, 255, 255, 0.04);
+    --promo-fill-3: rgba(255, 255, 255, 0.03);
+
     display: grid;
     grid-template-columns: 1fr 280px;
     height: 100vh;
-    background: #0a0a0f;
+    background: var(--promo-surface-0);
     overflow: hidden;
   }
 
@@ -461,7 +582,11 @@
   /* Canvas Area */
   .canvas-area {
     position: relative;
-    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 100%);
+    background: radial-gradient(
+      ellipse at center,
+      var(--promo-surface-1) 0%,
+      var(--promo-surface-0) 100%
+    );
     overflow: hidden;
   }
 
@@ -480,9 +605,63 @@
     align-items: center;
     justify-content: center;
     gap: 16px;
-    background: rgba(10, 10, 15, 0.9);
-    color: rgba(255, 255, 255, 0.7);
+    background: var(--promo-overlay-bg);
+    color: var(--promo-text-dim);
     font-size: 14px;
+  }
+
+  /* Empty State */
+  .empty-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+    padding: 24px;
+    pointer-events: none;
+  }
+
+  .empty-icon {
+    font-size: 40px;
+    color: var(--promo-text-faint);
+  }
+
+  .empty-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--promo-text-strong);
+  }
+
+  .empty-desc {
+    margin: 0;
+    max-width: 280px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--promo-text-muted);
+  }
+
+  .empty-action {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--promo-accent), var(--promo-accent-2));
+    color: var(--promo-text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform var(--duration-normal) ease;
+  }
+
+  .empty-action:hover {
+    transform: translateY(-2px);
   }
 
   /* Floating Controls */
@@ -516,8 +695,8 @@
     height: 44px;
     border: none;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.8);
+    background: var(--promo-fill-1);
+    color: var(--promo-text-strong);
     font-size: 18px;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
@@ -525,8 +704,8 @@
   }
 
   .icon-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
+    background: var(--promo-fill-hover);
+    color: var(--promo-text);
     transform: translateY(-2px);
   }
 
@@ -543,8 +722,8 @@
     padding: 10px 16px;
     border: none;
     border-radius: 12px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: white;
+    background: linear-gradient(135deg, var(--promo-accent), var(--promo-accent-2));
+    color: var(--promo-text);
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -553,7 +732,7 @@
 
   .export-trigger:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 8px 24px var(--promo-accent-glow);
   }
 
   .export-trigger:disabled {
@@ -568,8 +747,8 @@
     right: 0;
     margin-top: 8px;
     padding: 16px;
-    background: rgba(20, 20, 30, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--promo-panel-bg);
+    border: 1px solid var(--promo-stroke);
     border-radius: 16px;
     backdrop-filter: blur(16px);
     min-width: 280px;
@@ -584,50 +763,9 @@
     margin-bottom: 8px;
     font-size: 12px;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--promo-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-  }
-
-  .pill-group {
-    display: flex;
-    gap: 6px;
-  }
-
-  .pill {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    padding: 10px 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 13px;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .pill:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-
-  .pill.active {
-    background: rgba(99, 102, 241, 0.2);
-    border-color: #6366f1;
-    color: #fff;
-  }
-
-  .pill-label {
-    font-weight: 600;
-  }
-
-  .pill-sub {
-    font-size: 10px;
-    opacity: 0.6;
   }
 
   .render-btn {
@@ -639,8 +777,8 @@
     padding: 12px;
     border: none;
     border-radius: 10px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: white;
+    background: linear-gradient(135deg, var(--promo-accent), var(--promo-accent-2));
+    color: var(--promo-text);
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -649,7 +787,7 @@
 
   .render-btn:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 16px var(--promo-accent-glow);
   }
 
   /* Playback Bar */
@@ -658,8 +796,8 @@
     align-items: center;
     gap: 12px;
     padding: 8px 16px;
-    background: rgba(20, 20, 30, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--promo-bar-bg);
+    border: 1px solid var(--promo-stroke);
     border-radius: 20px;
     backdrop-filter: blur(16px);
   }
@@ -669,8 +807,8 @@
     height: 40px;
     border: none;
     border-radius: 50%;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: white;
+    background: linear-gradient(135deg, var(--promo-accent), var(--promo-accent-2));
+    color: var(--promo-text);
     font-size: 14px;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
@@ -680,7 +818,7 @@
   }
 
   .playback-btn.stop {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--promo-stroke);
     width: 32px;
     height: 32px;
     font-size: 12px;
@@ -699,7 +837,7 @@
     position: relative;
     width: 200px;
     height: 6px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--promo-stroke);
     border-radius: 3px;
     overflow: hidden;
   }
@@ -719,7 +857,7 @@
     left: 0;
     top: 0;
     height: 100%;
-    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    background: linear-gradient(90deg, var(--promo-accent), var(--promo-accent-2));
     border-radius: 3px;
     pointer-events: none;
   }
@@ -727,9 +865,10 @@
   .time-display {
     font-size: 12px;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--promo-text-dim);
     min-width: 32px;
     text-align: right;
+    font-variant-numeric: tabular-nums;
   }
 
   /* Sidebar */
@@ -738,8 +877,8 @@
     flex-direction: column;
     gap: 24px;
     padding: 24px;
-    background: rgba(15, 15, 20, 0.95);
-    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--promo-sidebar-bg);
+    border-left: 1px solid var(--promo-stroke-soft);
     overflow-y: auto;
   }
 
@@ -751,9 +890,9 @@
 
   .section-title {
     margin: 0;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--promo-text-faint);
     text-transform: uppercase;
     letter-spacing: 1px;
   }
@@ -769,7 +908,7 @@
     margin: 0;
     font-size: 13px;
     line-height: 1.5;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--promo-text-dim);
   }
 
   .shot-list {
@@ -783,25 +922,26 @@
     align-items: center;
     gap: 12px;
     padding: 8px 10px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--promo-fill-3);
     border-radius: 8px;
     transition: background var(--duration-normal) ease;
   }
 
   .shot-item:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--promo-stroke-soft);
   }
 
   .shot-time {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    color: #6366f1;
+    color: var(--promo-accent);
     min-width: 40px;
+    font-variant-numeric: tabular-nums;
   }
 
   .shot-desc {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--promo-text-dim);
   }
 
   /* Environment Grid */
@@ -817,20 +957,20 @@
     align-items: center;
     gap: 8px;
     padding: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--promo-fill-1);
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--promo-fill-2);
     cursor: pointer;
     transition: all var(--duration-normal) ease;
   }
 
   .env-card:hover:not(:disabled) {
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: var(--promo-fill-hover);
     transform: translateY(-2px);
   }
 
   .env-card.active {
-    border-color: #6366f1;
+    border-color: var(--promo-accent);
   }
 
   .env-card:disabled {
@@ -846,13 +986,13 @@
   }
 
   .env-label {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--promo-text-dim);
   }
 
   .env-card.active .env-label {
-    color: #fff;
+    color: var(--promo-text);
   }
 
   /* Export Overlay */
@@ -862,7 +1002,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(10, 10, 15, 0.9);
+    background: var(--promo-overlay-bg);
     backdrop-filter: blur(8px);
   }
 
@@ -872,9 +1012,14 @@
     align-items: center;
     gap: 24px;
     padding: 32px 48px;
-    background: rgba(20, 20, 30, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--promo-panel-bg);
+    border: 1px solid var(--promo-stroke);
     border-radius: 24px;
+  }
+
+  .export-modal:focus-visible {
+    outline: 2px solid var(--promo-accent);
+    outline-offset: 2px;
   }
 
   .export-header {
@@ -887,12 +1032,12 @@
   .export-title {
     font-size: 18px;
     font-weight: 600;
-    color: #fff;
+    color: var(--promo-text);
   }
 
   .export-stage {
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--promo-text-muted);
     text-transform: capitalize;
   }
 
@@ -915,12 +1060,11 @@
   }
 
   .progress-bg {
-    stroke: rgba(255, 255, 255, 0.1);
+    stroke: var(--promo-stroke);
   }
 
   .progress-fill {
-    stroke: url(#gradient);
-    stroke: #6366f1;
+    stroke: var(--promo-accent);
     stroke-dasharray: 283;
     transition: stroke-dashoffset var(--duration-emphasis) ease;
   }
@@ -932,23 +1076,24 @@
     transform: translate(-50%, -50%);
     font-size: 24px;
     font-weight: 700;
-    color: #fff;
+    color: var(--promo-text);
+    font-variant-numeric: tabular-nums;
   }
 
   .cancel-btn {
     padding: 10px 24px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--promo-stroke-strong);
     border-radius: 10px;
     background: transparent;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--promo-text-dim);
     font-size: 14px;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
   }
 
   .cancel-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    background: var(--promo-stroke);
+    color: var(--promo-text);
   }
 
   /* Error Toast */
@@ -957,10 +1102,10 @@
     align-items: center;
     gap: 10px;
     padding: 12px 16px;
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: color-mix(in srgb, var(--theme-error, #fb7185) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-error, #fb7185) 30%, transparent);
     border-radius: 10px;
-    color: #fca5a5;
+    color: var(--theme-error, #fb7185);
     font-size: 13px;
   }
 
@@ -975,7 +1120,7 @@
       flex-direction: row;
       padding: 16px;
       border-left: none;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      border-top: 1px solid var(--promo-stroke-soft);
       overflow-x: auto;
     }
 

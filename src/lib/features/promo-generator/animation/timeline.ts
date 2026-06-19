@@ -61,6 +61,29 @@ export interface TweenOptions {
 }
 
 /**
+ * A target whose numeric fields can be tweened.
+ *
+ * THREE.js Vector3/Euler/PerspectiveCamera expose `x`/`y`/`z`/`fov` as plain
+ * mutable numbers but are not index-signature typed, so they don't structurally
+ * satisfy `Record<string, unknown>`. This interface names the exact tweenable
+ * surface the controller drives, letting callers pass those objects directly
+ * without an `as unknown as Record<…>` double-cast.
+ */
+export interface Tweenable {
+  x?: number;
+  y?: number;
+  z?: number;
+  fov?: number;
+}
+
+/** Numeric values to tween toward, plus the standard tween options. */
+export type TweenToProps = Partial<Record<keyof Tweenable, number>> &
+  TweenOptions;
+
+/** Numeric values to set instantly. */
+export type TweenSetProps = Partial<Record<keyof Tweenable, number>>;
+
+/**
  * Lightweight timeline for Three.js animations
  */
 export class Timeline {
@@ -90,22 +113,25 @@ export class Timeline {
    * Add a tween animation at a specific time
    */
   to(
-    target: Record<string, unknown>,
-    properties: Record<string, number> & TweenOptions,
+    target: Tweenable | Record<string, unknown>,
+    properties: TweenToProps,
     position: number
   ): this {
-    const { duration = 0.5, ease = "power2.inOut", onUpdate, ...props } = properties;
+    const { duration = 0.5, ease = "power2.inOut", onUpdate, ...props } =
+      properties;
+    const targetRecord = target as Record<string, unknown>;
+    const numericProps = props as Record<string, number>;
 
     // Capture starting values (will be updated when animation starts)
     const startValues: Record<string, number> = {};
-    for (const key of Object.keys(props)) {
-      const value = target[key];
+    for (const key of Object.keys(numericProps)) {
+      const value = targetRecord[key];
       startValues[key] = typeof value === "number" ? value : 0;
     }
 
     this.segments.push({
-      target,
-      properties: props,
+      target: targetRecord,
+      properties: numericProps,
       startTime: position,
       duration,
       easing: getEasing(ease),
@@ -126,14 +152,14 @@ export class Timeline {
    * Set values instantly at a specific time (no animation)
    */
   set(
-    target: Record<string, unknown>,
-    properties: Record<string, number>,
+    target: Tweenable | Record<string, unknown>,
+    properties: TweenSetProps,
     position: number
   ): this {
     // Set is just a tween with 0 duration
     this.segments.push({
-      target,
-      properties,
+      target: target as Record<string, unknown>,
+      properties: properties as Record<string, number>,
       startTime: position,
       duration: 0,
       easing: (t) => t,
