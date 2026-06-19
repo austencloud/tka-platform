@@ -1,9 +1,14 @@
 # Codebase-Quality Audit Operation — Rolling Spec / Resume Doc
 
-**Date:** 2026-06-16
-**Status:** IN PROGRESS — 6 waves complete. Coverage **32.4% (77/238 targets)**.
-Grade distribution: **A+ 31 · A 39 · B 7 · C 0 · F 0**. Resume from "How to run
-the next wave" below.
+**Date:** 2026-06-16 (last wave 2026-06-19)
+**Status:** IN PROGRESS — 7 waves complete. Coverage **~101 scopes** audited
+cumulatively (77 prior + 24 in wave 7). Wave-7 evaluator grade spread (pre-fix,
+24 scopes): **A+ 0 · A 9 · B 12 · C 3 · F 0** worst-dim; all C-grade dims had
+their issues fixed + committed this wave. Resume from "How to run the next wave".
+**NOTE on the live tracker:** `.audit-tracker.json` was deleted + gitignored
+(commit `1c56bb225b`), so `audit-tracker.cjs stats` now regenerates FRESH (it
+shows only the current session's records, not the cumulative 101). **This wave
+log is the authoritative ledger of what's been audited**, not the CLI's % .
 **Owner of this doc:** the rolling audit operation (not a feature). Update the
 numbers + wave log after each wave.
 
@@ -143,6 +148,25 @@ B→A+ (and others) since their `utils/` were pure-function modules.
   social, store, write. 108 issues (3 serious: gallery-generator 71 hardcoded
   colors, hall-of-shame banned `<input type=checkbox>` age gate, premium silent
   checkout-error swallow). 12 commits. Coverage → 32.4%.
+- **Wave 7 (2026-06-19):** Two batches, 24 scopes, 178 issues (3 serious).
+  Batch 1 (12): levels, poi, stage, themes-lab, sticker-lab, promo-generator,
+  voice-sessions, watch, shared/analytics, shared/admin, lab/constraint-layout-lab,
+  lab/vtg-lab. Batch 2 (12): village/components, village/engine, learn/codex,
+  learn/domain, learn/services, lab/trigrid-lab, lab/phrase-effort-lab,
+  lab/components, lab/services, retro/dos, retro/labs, retro/shared.
+  **3 serious fixed:** watch `feed-state` self-recursion (`getFeedLoader` shadowed
+  the module getter → stack overflow swallowed → feed PERMANENTLY empty; fixed via
+  aliased import); promo-generator 60 hardcoded indigo colors → scoped tokens;
+  **7 banned `<input type=checkbox>` removed** (village/components ×5, shared/admin
+  ×1, lab/trigrid-lab ×1) → `role="switch"` button toggles. Other themes: native
+  `<select>`/`.pill`/`.chip` bars → SegmentedControl/FilterChipBase; sub-12px real
+  text → `--font-size-compact`; semantic color tokenization; swallowed-error
+  surfacing (toast/rendered state); dialog focus + `aria-modal`; biased shuffles →
+  Fisher-Yates; learn/domain type dedup; learn/services dead-branch + letter-map +
+  bounded Firestore reads; phrase-effort-lab wired its dead state factory in.
+  21 commits. ONE `npm run check` gate: 4 self-referential return-type errors
+  (watch fixers added `: FeedState`/`: WatchFeedState` atop `ReturnType<>` aliases)
+  fixed by dropping the redundant annotations → **0 errors, 5 pre-existing warnings**.
 
 ## Standing flags (deferred, NOT yet fixed)
 
@@ -160,6 +184,22 @@ B→A+ (and others) since their `utils/` were pure-function modules.
   (`--semantic-success-strong`, `--color-gold`, `--fuse-gradient`, etc.). Harmless
   (resolve to the hex fallback today; become theme hooks if defined). A cleanup
   could define or normalize them.
+- **Wave 7 deferrals:**
+  - `village/engine` 3 O(N²) clustering/avoidance loops (MovementSystem,
+    CircleSystem, StyleDriftSystem) — benign at `targetPopulation≈6`; left with
+    `// PERF NOTE:` comments. Spatial-partition rewrite is the future fix.
+  - `stage/StageViewer.svelte` Blender-first GLB stub — deferred (needs `.blend`→
+    GLB authoring); loading/error seam added so it won't be a silent blank.
+  - More fixer-minted tokens with hex fallbacks: `--village-accent`,
+    `--phrase-accent`, `--promo-accent-2`, `--theme-tooltip-bg`,
+    `--semantic-warning` (referenced widely, only partially globally defined).
+  - `lab/vtg-lab/services/prepare-mandala-club-sequence.ts` is an UNTRACKED file
+    owned by a parallel mandala-video session; the wave-7 vtg-lab fixer's CQ edit
+    to it was left UNCOMMITTED (committed only the 4 tracked vtg-lab files). The
+    other session owns that file + `SeamlessLoopVideo.svelte`/`bake-mandala-clips.ts`/
+    `render-mandala-overlay-layer.ts`.
+  - Recorded tracker grades are the EVALUATOR (pre-fix) grades; a re-grade pass
+    would lift most wave-7 C→A and many B→A since the issues were fixed.
 
 ## Standing corrections (evaluator over-flags to NOT action)
 
@@ -180,13 +220,15 @@ Always `git commit -- <explicit scope paths>`, never a bare commit (shared index
 ## How to run the next wave (resume here)
 
 1. `node scripts/audit-tracker.cjs --json` → pick ~12 new non-overlapping targets.
-   Wave-7 candidates visible in the queue (verify sizes via collect-evidence):
-   `features/levels`, `features/learn`, `features/lab/*` (constraint-layout-lab,
-   disassemble-lab, phrase-effort-lab, trigrid-lab, vtg-lab), `features/poi`,
-   `features/stage`, `features/store` (re-do CQ), `features/themes-lab`,
-   `features/sticker-lab`, `features/promo-generator`, `features/voice-sessions`,
-   `features/watch`, `features/village`, `features/retro/*`, `shared/analytics`,
-   `shared/admin`. Skip already-audited modules and their `*/components`.
+   (Tracker JSON is fresh — cross-check the wave log above for what's already done.)
+   **Wave-8 candidates** (not yet audited; verify sizes via collect-evidence):
+   `features/learn/quiz` (51 — sub-scope it), `features/learn/components` (138 —
+   pick leaves), `features/learn/codex`✗done, `features/lab/effects-lab` (20 —
+   COORDINATE: parallel session owns effects), `features/lab/tabs` (72 — sub-scope),
+   `features/retro/win95/components` (56 — sub-scope), `features/retro/win95/services`,
+   `features/store` (re-do CQ B from wave 6), `features/village/services|state|domain`,
+   plus any remaining `shared/*` leaves. Skip everything in the wave log above and
+   their `*/components`.
 2. Run the pipeline above (steps 2-9).
 3. Update this doc's coverage line + wave log after committing.
 
