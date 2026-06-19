@@ -55,6 +55,7 @@
     <button
       class="mode-button"
       class:active={state.activeMode === "browse"}
+      aria-pressed={state.activeMode === "browse"}
       onclick={() => state.setMode("browse")}
     >
       Browse
@@ -62,6 +63,7 @@
     <button
       class="mode-button"
       class:active={state.activeMode === "explore"}
+      aria-pressed={state.activeMode === "explore"}
       onclick={() => state.setMode("explore")}
     >
       Explore
@@ -101,6 +103,7 @@
       <button
         class="toggle-button"
         class:active={state.showOverlapsOnly}
+        aria-pressed={state.showOverlapsOnly}
         onclick={() => state.toggleOverlapsOnly()}
       >
         <i class="fas fa-filter" aria-hidden="true"></i>
@@ -195,6 +198,7 @@
       <button
         class="toggle-button"
         class:active={state.manualPlacement}
+        aria-pressed={state.manualPlacement}
         onclick={() => state.toggleManualPlacement()}
       >
         <i
@@ -292,12 +296,12 @@
 
   .preset-button:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
   }
 
   .preset-button.active {
     border-color: var(--theme-accent, #10b981);
-    background: rgba(16, 185, 129, 0.1);
+    background: color-mix(in srgb, var(--theme-accent, #10b981) 10%, transparent);
   }
 
   .preset-button i {
@@ -338,12 +342,12 @@
   }
 
   .mode-button:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
   .mode-button.active {
     background: var(--theme-accent, #10b981);
-    color: #ffffff;
+    color: var(--text-on-accent, #ffffff);
   }
 
   /* Browse section */
@@ -386,7 +390,7 @@
 
   .control-button:hover:not(:disabled) {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
   }
 
   .control-button:disabled {
@@ -417,7 +421,7 @@
 
   .toggle-button.active {
     border-color: var(--theme-accent, #10b981);
-    background: rgba(16, 185, 129, 0.1);
+    background: color-mix(in srgb, var(--theme-accent, #10b981) 10%, transparent);
     color: var(--theme-accent, #10b981);
   }
 
@@ -429,9 +433,9 @@
     height: 20px;
     padding: 0 6px;
     background: var(--theme-accent, #10b981);
-    color: #ffffff;
+    color: var(--text-on-accent, #ffffff);
     border-radius: 10px;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
   }
 
@@ -462,7 +466,7 @@
 
   .play-button.playing {
     border-color: var(--theme-accent, #10b981);
-    background: rgba(16, 185, 129, 0.15);
+    background: color-mix(in srgb, var(--theme-accent, #10b981) 15%, transparent);
     color: var(--theme-accent, #10b981);
   }
 
@@ -513,7 +517,7 @@
     flex-direction: column;
     gap: 6px;
     padding: 8px;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
     border-radius: 6px;
   }
 
@@ -574,8 +578,8 @@
 
   .overlap-chip {
     padding: 4px 8px;
-    background: rgba(245, 158, 11, 0.08);
-    border: 1px solid rgba(245, 158, 11, 0.2);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning, #f59e0b) 20%, transparent);
     border-radius: 6px;
   }
 

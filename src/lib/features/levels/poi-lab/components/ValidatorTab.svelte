@@ -11,6 +11,7 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { PoiValidationResult } from "../domain/poi-models";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -45,11 +46,12 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
     validationResult = null;
 
     try {
-      // Parse input into letters
+      // Parse input into recognized TKA letters (drops any non-letter chars)
+      const knownLetters = new Set<string>(Object.values(Letter));
       const letters = sequenceInput
         .toUpperCase()
         .split("")
-        .filter((c) => /[A-Z]/.test(c));
+        .filter((c): c is Letter => knownLetters.has(c));
 
       if (letters.length === 0) {
         error = t('poi_lab_error_no_letters');
@@ -60,7 +62,7 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
       // Fetch pictographs for each letter
       const pictographs: PictographData[] = [];
       for (const letter of letters) {
-        const pictograph = await letterQueryHandler.getPictographByLetter(letter as any, GridMode.DIAMOND);
+        const pictograph = await letterQueryHandler.getPictographByLetter(letter, GridMode.DIAMOND);
         if (pictograph) {
           pictographs.push(pictograph);
         }
@@ -313,8 +315,8 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
     min-height: var(--min-touch-target);
     border: none;
     border-radius: 8px;
-    background: #22d3ee;
-    color: #000;
+    background: var(--theme-accent, #22d3ee);
+    color: var(--text-on-accent, #000);
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
@@ -322,7 +324,7 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
   }
 
   .validate-btn:hover:not(:disabled) {
-    background: #06b6d4;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 85%, #000);
   }
 
   .validate-btn:disabled {
@@ -331,7 +333,7 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
   }
 
   .validate-btn:focus-visible {
-    outline: 2px solid #22d3ee;
+    outline: 2px solid var(--theme-accent, #22d3ee);
     outline-offset: 2px;
   }
 
@@ -408,8 +410,8 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
     gap: 0.5rem;
     padding: 0.75rem 1rem;
     border-radius: 8px;
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    color: var(--semantic-error, #ef4444);
     font-size: var(--font-size-min, 14px);
     margin-bottom: 1rem;
   }
@@ -431,13 +433,13 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
   }
 
   .overall-result.valid {
-    background: rgba(34, 197, 94, 0.1);
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
   }
 
   .overall-result.invalid {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
   }
 
   .result-icon {
@@ -445,11 +447,11 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
   }
 
   .overall-result.valid .result-icon {
-    color: #22c55e;
+    color: var(--semantic-success, #22c55e);
   }
 
   .overall-result.invalid .result-icon {
-    color: #ef4444;
+    color: var(--semantic-error, #ef4444);
   }
 
   .result-text {
@@ -493,11 +495,11 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
   }
 
   .step-card.valid {
-    border-color: rgba(34, 197, 94, 0.3);
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
   }
 
   .step-card.invalid {
-    border-color: rgba(239, 68, 68, 0.3);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
   }
 
   .beat-header {
@@ -524,11 +526,11 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
   }
 
   .step-card.valid .beat-status {
-    color: #22c55e;
+    color: var(--semantic-success, #22c55e);
   }
 
   .step-card.invalid .beat-status {
-    color: #ef4444;
+    color: var(--semantic-error, #ef4444);
   }
 
   .beat-violations {
@@ -537,12 +539,12 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
     gap: 0.25rem;
     margin-top: 0.5rem;
     padding-top: 0.5rem;
-    border-top: 1px solid rgba(239, 68, 68, 0.2);
+    border-top: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
   }
 
   .beat-violations .violation {
-    font-size: 10px;
-    color: #ef4444;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--semantic-error, #ef4444);
     line-height: 1.3;
   }
 
@@ -558,8 +560,8 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
     gap: 0.5rem;
     padding: 0.75rem;
     border-radius: 8px;
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    color: var(--semantic-error, #ef4444);
     font-size: var(--font-size-compact, 12px);
   }
 

@@ -12,7 +12,10 @@
 import type { GridTopology, PointRef } from "$lib/shared/multi-grid/domain/models/grid-topology";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/prepared-pictograph-data";
-import type { GridMode } from "$lib/shared/render/core/types";
+// The shared letter-query-handler types its grid-mode param with the wider
+// grid-enums GridMode (6 values); we reference it here so the dep contract
+// matches the real handler signature without a call-site cast.
+import type { GridMode as PictographGridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { PrepareOptions } from "$lib/shared/pictograph/shared/services/types";
 import type { PositionPair } from "$lib/shared/multi-grid/services/types";
 import type { ConjoinedGridMode, PropPlacement, JunctionOverlap } from "$lib/shared/conjoined-grid/domain/types";
@@ -27,7 +30,7 @@ import { enumeratePositionPairs } from "$lib/shared/multi-grid/services/topology
 
 export interface ConjoinedGridDeps {
   letterQueryHandler: {
-    getAllPictographVariations(mode: GridMode): Promise<PictographData[]>;
+    getAllPictographVariations(mode: PictographGridMode): Promise<PictographData[]>;
   };
   pictographPreparer: {
     prepareSingle(p: PictographData, opts?: PrepareOptions): Promise<PreparedPictographData>;
@@ -35,10 +38,59 @@ export interface ConjoinedGridDeps {
 }
 
 // ---------------------------------------------------------------------------
+// Public API contract
+// ---------------------------------------------------------------------------
+
+export interface ConjoinedGridState {
+  // Topology
+  readonly selectedPresetId: string;
+  readonly topology: GridTopology;
+  selectPreset(id: string): void;
+
+  // Mode
+  readonly activeMode: ConjoinedGridMode;
+  setMode(mode: ConjoinedGridMode): void;
+
+  // Browse
+  readonly allPictographs: PictographData[];
+  readonly selectedPictographIndex: number;
+  readonly showOverlapsOnly: boolean;
+  readonly overlappingIndices: number[];
+  readonly preparedPictograph: PreparedPictographData | null;
+  loadPictographs(): Promise<void>;
+  nextPictograph(): void;
+  prevPictograph(): void;
+  toggleOverlapsOnly(): void;
+  goToNextOverlap(): void;
+  goToPrevOverlap(): void;
+
+  // Explore
+  readonly allPairs: PositionPair[];
+  readonly currentPairIndex: number;
+  readonly isPlaying: boolean;
+  readonly playbackSpeed: number;
+  readonly manualPlacement: boolean;
+  readonly manualBlueRef: PointRef | null;
+  readonly manualRedRef: PointRef | null;
+  play(): void;
+  pause(): void;
+  stepForward(): void;
+  stepBack(): void;
+  setSpeed(ms: number): void;
+  toggleManualPlacement(): void;
+  placeBlue(ref: PointRef): void;
+  placeRed(ref: PointRef): void;
+
+  // Shared derivations
+  readonly currentPlacement: PropPlacement | null;
+  readonly junctionOverlaps: JunctionOverlap[];
+}
+
+// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createConjoinedGridState(deps: ConjoinedGridDeps) {
+export function createConjoinedGridState(deps: ConjoinedGridDeps): ConjoinedGridState {
 
   // =========================================================================
   // Topology
@@ -332,5 +384,3 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps) {
     },
   };
 }
-
-export type ConjoinedGridState = ReturnType<typeof createConjoinedGridState>;

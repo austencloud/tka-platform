@@ -11,10 +11,9 @@
   import ConjoinedGridControls from "./components/ConjoinedGridControls.svelte";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
-  import type { ConjoinedGridDeps } from "./state/conjoined-grid-state.svelte";
 
   const state = createConjoinedGridState({
-    letterQueryHandler: letterQueryHandler as unknown as ConjoinedGridDeps["letterQueryHandler"],
+    letterQueryHandler,
     pictographPreparer,
   });
 

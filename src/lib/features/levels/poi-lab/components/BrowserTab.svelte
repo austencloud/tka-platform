@@ -16,6 +16,7 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PoiValidationResult } from "../domain/poi-models";
   import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 
   // State
@@ -129,6 +130,16 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
     return { all: allSequences.length, valid, invalid, pending };
   });
 
+  // Single-select filter options for the SegmentedControl.
+  // (No icons: SegmentedControl renders icon OR label, and the words are clearer.)
+  const filterOptions = $derived<
+    { value: "all" | "valid" | "invalid"; label: string; count: number }[]
+  >([
+    { value: "all", label: t('poi_lab_filter_all'), count: counts.all },
+    { value: "valid", label: t('poi_lab_filter_valid'), count: counts.valid },
+    { value: "invalid", label: t('poi_lab_filter_invalid'), count: counts.invalid },
+  ]);
+
   // Load sequences on mount - from community (Firestore)
   onMount(async () => {
     try {
@@ -187,34 +198,15 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
       </p>
     </div>
 
-    <!-- Filter chips -->
+    <!-- Filter (single-select) -->
     <nav class="filter-chips">
-      <button
-        class="chip"
-        class:active={selectedFilter === "all"}
-        onclick={() => (selectedFilter = "all")}
-      >
-        {t('poi_lab_filter_all')}
-        <span class="count">{counts.all}</span>
-      </button>
-      <button
-        class="chip valid"
-        class:active={selectedFilter === "valid"}
-        onclick={() => (selectedFilter = "valid")}
-      >
-        <i class="fas fa-check" aria-hidden="true"></i>
-        {t('poi_lab_filter_valid')}
-        <span class="count">{counts.valid}</span>
-      </button>
-      <button
-        class="chip invalid"
-        class:active={selectedFilter === "invalid"}
-        onclick={() => (selectedFilter = "invalid")}
-      >
-        <i class="fas fa-times" aria-hidden="true"></i>
-        {t('poi_lab_filter_invalid')}
-        <span class="count">{counts.invalid}</span>
-      </button>
+      <SegmentedControl
+        options={filterOptions}
+        value={selectedFilter}
+        onchange={(v) => (selectedFilter = v)}
+        color="accent"
+        size="sm"
+      />
     </nav>
 
     <!-- Pagination -->
@@ -397,7 +389,7 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
   }
 
   .retry-btn:hover {
-    background: rgba(239, 68, 68, 0.1);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
   }
 
   @media (pointer: coarse) {
@@ -432,63 +424,6 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
     flex-wrap: wrap;
     margin-bottom: 1rem;
     flex-shrink: 0;
-  }
-
-  .chip {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    min-height: 40px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 9999px;
-    background: transparent;
-    color: var(--theme-text-secondary, #888);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-  }
-
-  @media (pointer: coarse) {
-    .chip {
-      min-height: var(--min-touch-target);
-      padding: 0.625rem 1rem;
-    }
-  }
-
-  .chip:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, #fff);
-  }
-
-  .chip.active {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text, #fff);
-  }
-
-  .chip.valid.active {
-    background: rgba(34, 197, 94, 0.15);
-    border-color: #22c55e;
-    color: #22c55e;
-  }
-
-  .chip.invalid.active {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: #ef4444;
-    color: #ef4444;
-  }
-
-  .chip .count {
-    font-size: var(--font-size-compact, 12px);
-    padding: 0.125rem 0.375rem;
-    border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #22d3ee);
-    outline-offset: 2px;
   }
 
   .pagination {
@@ -582,11 +517,11 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
   }
 
   .card-wrapper.valid {
-    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.4);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
   }
 
   .card-wrapper.invalid {
-    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
   }
 
   /* Validation badge overlay */
@@ -606,12 +541,12 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
   }
 
   .validation-badge.valid {
-    background: rgba(34, 197, 94, 0.9);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 90%, transparent);
     color: #fff;
   }
 
   .validation-badge.invalid {
-    background: rgba(239, 68, 68, 0.9);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 90%, transparent);
     color: #fff;
   }
 
@@ -658,8 +593,8 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
     border-radius: 6px;
-    background: rgba(34, 197, 94, 0.1);
-    color: #22c55e;
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 10%, transparent);
+    color: var(--semantic-success, #22c55e);
     font-size: var(--font-size-min, 14px);
   }
 
@@ -669,8 +604,8 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
     border-radius: 6px;
-    background: rgba(234, 179, 8, 0.1);
-    color: #eab308;
+    background: color-mix(in srgb, var(--semantic-warning, #eab308) 10%, transparent);
+    color: var(--semantic-warning, #eab308);
     font-size: var(--font-size-min, 14px);
   }
 
@@ -686,8 +621,8 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
     gap: 0.5rem;
     padding: 0.375rem 0.5rem;
     border-radius: 4px;
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    color: var(--semantic-error, #ef4444);
     font-size: var(--font-size-compact, 12px);
     line-height: 1.4;
   }
@@ -699,7 +634,6 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .chip,
     .page-btn,
     .retry-btn {
       transition: none;

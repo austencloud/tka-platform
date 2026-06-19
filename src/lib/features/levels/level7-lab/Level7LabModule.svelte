@@ -266,6 +266,8 @@
               class="ori-chip"
               class:active={!gravityMode && blueOrientation === ori.value}
               class:interradial={ori.value.includes("clock") || ori.value.includes("counter")}
+              aria-pressed={!gravityMode && blueOrientation === ori.value}
+              aria-label={ori.label}
               disabled={gravityMode}
               onclick={() => (blueOrientation = ori.value)}
               title={ori.label}
@@ -288,6 +290,8 @@
               class="ori-chip"
               class:active={!gravityMode && redOrientation === ori.value}
               class:interradial={ori.value.includes("clock") || ori.value.includes("counter")}
+              aria-pressed={!gravityMode && redOrientation === ori.value}
+              aria-label={ori.label}
               disabled={gravityMode}
               onclick={() => (redOrientation = ori.value)}
               title={ori.label}
@@ -307,6 +311,7 @@
     <button
       class="gravity-toggle"
       class:active={gravityMode}
+      aria-pressed={gravityMode}
       onclick={() => (gravityMode = !gravityMode)}
       title="Gravity mode: auto-assign orientation based on hand location"
     >

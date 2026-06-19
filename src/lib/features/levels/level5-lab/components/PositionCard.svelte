@@ -130,6 +130,8 @@
           <button
             class="ori-chip"
             class:active={orientations.blue === ori.value}
+            aria-pressed={orientations.blue === ori.value}
+            aria-label={ori.label}
             onclick={() => onOrientationChange(position, "blue", ori.value)}
             title={ori.label}
           >
@@ -149,6 +151,8 @@
           <button
             class="ori-chip"
             class:active={orientations.red === ori.value}
+            aria-pressed={orientations.red === ori.value}
+            aria-label={ori.label}
             onclick={() => onOrientationChange(position, "red", ori.value)}
             title={ori.label}
           >
