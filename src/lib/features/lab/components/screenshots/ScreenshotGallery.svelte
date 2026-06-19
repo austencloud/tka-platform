@@ -23,6 +23,7 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { MediaSpotlight, type MediaItem as SpotlightMediaItem, type SpotlightConfig } from "@austencloud/media-spotlight";
   import { TagCreatorModal, TagPickerPanel } from "@austencloud/media-tagging-ui";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import GalleryGrid from "./GalleryGrid.svelte";
   import CaptureProgress from "./CaptureProgress.svelte";
   import UploadProgressCard from "./UploadProgress.svelte";
@@ -81,6 +82,14 @@
 
     loadScreenshots();
     tagFilter.loadTags();
+
+    // Tear down the Firestore subscription when the effect re-runs or the
+    // component is destroyed, so the listener doesn't leak past unmount.
+    return () => {
+      screenshotUnsubscribe?.();
+      screenshotUnsubscribe = null;
+      tagFilter.unsubscribeTags();
+    };
   });
 
   function loadScreenshots() {
@@ -130,6 +139,18 @@
     }
     return null;
   });
+
+  // SegmentedControl options for the size selector. `value` is the preset label;
+  // when columnMin is custom (no preset within range) activePreset is null, so
+  // no segment shows selected and the indicator slides off — the intended
+  // "none active" state for a fine-tuned size.
+  const SIZE_OPTIONS = SIZE_PRESETS.map((p) => ({ value: p.label, label: p.label }));
+  const sizeValue = $derived(activePreset ?? "");
+
+  function setPresetByLabel(label: string) {
+    const preset = SIZE_PRESETS.find((p) => p.label === label);
+    if (preset) setPreset(preset.value);
+  }
 
   function toGalleryItem(s: ScreenshotMetadata): GalleryItem {
     return {
@@ -247,6 +268,12 @@
 
   function formatRouteLabel(label: string): string {
     return label.replace(/--/g, " / ").replace(/(^|\s)\w/g, (c) => c.toUpperCase());
+  }
+
+  // Svelte action: move focus to the dialog when it mounts so keyboard users
+  // land inside the modal and the Escape handler is live immediately.
+  function focusOnMount(node: HTMLElement) {
+    node.focus();
   }
 
   function openSpotlight(item: GalleryItem) {
@@ -396,32 +423,26 @@
     <!-- Controls -->
     {#if !isLoading && hasItems}
       <div class="controls">
-        <div class="filter-chips" role="radiogroup" aria-label="Filter by device category">
-          {#each FILTERS as filter}
-            <button
-              class="chip"
-              class:active={activeFilter === filter.value}
-              role="radio"
-              aria-checked={activeFilter === filter.value}
-              onclick={() => { hapticService?.trigger("selection"); activeFilter = filter.value; }}
-            >
-              {filter.label}
-            </button>
-          {/each}
+        <div class="filter-segment" aria-label="Filter by device category">
+          <SegmentedControl
+            options={FILTERS}
+            value={activeFilter}
+            onchange={(value) => { hapticService?.trigger("selection"); activeFilter = value; }}
+            color="accent"
+            size="sm"
+          />
         </div>
 
-        <div class="size-presets" role="radiogroup" aria-label="Card size preset">
-          {#each SIZE_PRESETS as preset}
-            <button
-              class="size-pill"
-              class:active={activePreset === preset.label}
-              role="radio"
-              aria-checked={activePreset === preset.label}
-              onclick={() => setPreset(preset.value)}
-            >
-              {preset.label}
-            </button>
-          {/each}
+        <div class="size-presets">
+          <div class="size-segment" aria-label="Card size preset">
+            <SegmentedControl
+              options={SIZE_OPTIONS}
+              value={sizeValue}
+              onchange={setPresetByLabel}
+              color="accent"
+              size="sm"
+            />
+          </div>
           <span class="size-hint" title="Ctrl+Scroll to fine-tune">
             {columnMin}px
           </span>
@@ -507,10 +528,20 @@
 
 <!-- Tag Picker Panel (batch tagging modal) -->
 {#if tagFilter.showTagPicker}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="tag-picker-backdrop" onclick={tagFilter.closeTagPicker} onkeydown={(e) => { if (e.key === "Escape") tagFilter.closeTagPicker(); }}>
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="tag-picker-container" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+  <!-- Backdrop: click-to-close is a deliberate modal-dismiss affordance; the
+       keyboard path (Escape) lives on the focused dialog below, not here. -->
+  <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+  <div class="tag-picker-backdrop" onclick={tagFilter.closeTagPicker}>
+    <div
+      class="tag-picker-container"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Apply tags to selected screenshots"
+      tabindex="-1"
+      use:focusOnMount
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => { if (e.key === "Escape") tagFilter.closeTagPicker(); }}
+    >
       <TagPickerPanel
         allTags={tagFilter.allTags}
         selectedItems={selectedMediaItems}
@@ -653,82 +684,33 @@
     gap: 12px;
   }
 
-  .filter-chips {
-    display: flex;
-    gap: 6px;
+  /* Segmented filter sizes to its content rather than stretching full-width */
+  .filter-segment {
+    width: auto;
   }
 
-  .chip {
-    padding: 5px 12px;
-    border-radius: 20px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
-    cursor: pointer;
-    transition:
-      transform var(--duration-instant, 100ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
-      all var(--duration-fast, 150ms) var(--ease-out, ease-out);
-    font-family: inherit;
-  }
-
-  .chip:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    color: var(--theme-text, #fff);
-  }
-
-  .chip:active {
-    transform: scale(var(--active-scale, 0.98));
-  }
-
-  .chip.active {
-    background: var(--theme-accent, #3b82f6);
-    border-color: var(--theme-accent, #3b82f6);
-    color: #fff;
+  .filter-segment :global(.segmented-control) {
+    width: auto;
   }
 
   /* Size presets */
   .size-presets {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
   }
 
-  .size-pill {
-    padding: 4px 10px;
-    border-radius: 16px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    min-width: 32px;
-    transition:
-      transform var(--duration-instant, 100ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
-      background var(--duration-fast, 150ms) var(--ease-out, ease-out),
-      border-color var(--duration-fast, 150ms) var(--ease-out, ease-out),
-      color var(--duration-fast, 150ms) var(--ease-out, ease-out);
+  .size-segment {
+    width: auto;
+    min-width: 132px;
   }
 
-  .size-pill:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    color: var(--theme-text, #fff);
-  }
-
-  .size-pill:active {
-    transform: scale(var(--active-scale, 0.98));
-  }
-
-  .size-pill.active {
-    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 20%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #3b82f6) 50%, transparent);
-    color: var(--theme-text, #fff);
+  .size-segment :global(.segmented-control) {
+    width: auto;
   }
 
   .size-hint {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
     margin-left: 4px;
     font-variant-numeric: tabular-nums;
@@ -823,15 +805,9 @@
     .gallery-layout {
       transition: none;
     }
-    .chip,
-    .size-pill,
     .header-btn,
     .clear-filters-btn {
       transition: none;
-    }
-    .chip:active,
-    .size-pill:active {
-      transform: none;
     }
   }
 </style>

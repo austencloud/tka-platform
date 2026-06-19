@@ -405,7 +405,7 @@
     border-radius: 10px;
     background: color-mix(in srgb, var(--badge-color) 20%, transparent);
     color: var(--badge-color);
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -441,7 +441,7 @@
     border-radius: 10px;
     background: rgba(0, 0, 0, 0.7);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   @media (prefers-reduced-motion: reduce) {

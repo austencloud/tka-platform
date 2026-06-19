@@ -8,6 +8,7 @@
 
 import type { DeviceInfo, RouteNode, CaptureJobStatus, CaptureStartResult } from "../../../services/types";
 import type { ScreenshotUploadOrchestrator } from "../../../services/screenshot-upload-orchestrator";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
 interface ScreenshotOrchestratorLike {
   getRoutes(): RouteNode[];
@@ -44,6 +45,8 @@ export function createGalleryCaptureState(deps: GalleryCaptureDeps) {
       .catch((err: unknown) => {
         console.error("[GalleryCaptureState] Capture failed to start:", err);
         capturePhase = "idle";
+        const message = err instanceof Error ? err.message : String(err);
+        toast.error(`Screenshot capture failed: ${message}`);
       });
   }
 
@@ -81,6 +84,21 @@ export function createGalleryCaptureState(deps: GalleryCaptureDeps) {
       })
       .catch((err: unknown) => {
         console.error("[GalleryCaptureState] Upload failed:", err);
+        const message = err instanceof Error ? err.message : String(err);
+        // Surface the failure in the UI: a "failed" progress card (which exposes
+        // the Retry action) plus a toast, instead of leaving the phase stuck on
+        // "uploading" with a frozen progress bar.
+        const prior = uploadProgress;
+        uploadProgress = {
+          phase: "failed",
+          total: prior?.total ?? filenames.length,
+          uploaded: prior?.uploaded ?? 0,
+          skipped: prior?.skipped ?? 0,
+          failed: (prior?.total ?? filenames.length) - (prior?.uploaded ?? 0),
+          errors: [message],
+          currentFile: null,
+        };
+        toast.error(`Screenshot upload failed: ${message}`);
       });
   }
 

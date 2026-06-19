@@ -27,20 +27,32 @@
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") onClose();
   }
+
+  // Svelte action: focus the panel on mount so the Escape handler is live and
+  // keyboard users land inside the popup.
+  function focusOnMount(node: HTMLElement) {
+    node.focus();
+  }
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="tag-panel-backdrop" onclick={onClose} onkeydown={handleKeydown}>
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- Backdrop: click-to-close is a deliberate dismiss affordance; the keyboard
+     path (Escape) lives on the focused panel below. -->
+<!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+<div class="tag-panel-backdrop" onclick={onClose}>
   <div
     class="tag-context-panel"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Tag screenshot"
+    tabindex="-1"
+    use:focusOnMount
     style="left: {position.x}px; top: {position.y}px;"
     onclick={(e) => e.stopPropagation()}
-    onkeydown={(e) => e.stopPropagation()}
+    onkeydown={handleKeydown}
   >
     <div class="tag-panel-header">
       <span class="tag-panel-title">Tag screenshot</span>
-      <button class="tag-panel-close" onclick={onClose}>&times;</button>
+      <button class="tag-panel-close" aria-label="Close" onclick={onClose}>&times;</button>
     </div>
     <div class="tag-panel-tags">
       {#if allTags.length === 0}
