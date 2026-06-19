@@ -71,11 +71,16 @@ export class ProximityLearningSystem {
 			}
 		}
 
-		// Clean up progress for dead/aged-up entities
+		// Clean up progress for dead/aged-up entities. Build the youth-id set once
+		// (O(N)) and test membership per key (O(K)) instead of an O(K×N) scan that
+		// re-`find`s the entity list for every tracked key.
+		const youthIds = new Set<string>();
+		for (const e of world.entities) {
+			if (e.lifecycle.phase === "youth") youthIds.add(e.id);
+		}
 		for (const key of this.absorptionProgress.keys()) {
-			const entityId = key.split(":")[0];
-			const entity = world.entities.find((e) => e.id === entityId);
-			if (entity?.lifecycle.phase !== "youth") {
+			const entityId = key.split(":")[0]!;
+			if (!youthIds.has(entityId)) {
 				this.absorptionProgress.delete(key);
 			}
 		}

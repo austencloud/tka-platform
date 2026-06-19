@@ -99,6 +99,15 @@ export const PROP_WEAR_PROFILES: Record<
 	club: { wearRate: 0.0004, failureMode: "grip-worn", repairTicks: 15 },
 };
 
+// Per-prop-type display color, shared by the prop wall and dropped-prop meshes.
+export const PROP_COLORS: Record<string, string> = {
+	staff: "#8B4513",
+	fan: "#FF69B4",
+	club: "#4169E1",
+	poi: "#32CD32",
+	torch: "#FF4500",
+};
+
 // Prop maker
 export const MAKER_CRAFT_DURATION = 30;
 export const MAKER_POSITION_ANGLE = Math.PI;

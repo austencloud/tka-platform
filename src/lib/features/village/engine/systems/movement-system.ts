@@ -37,6 +37,9 @@ export class MovementSystem {
 			const nz = dz / dist;
 
 			// Collision avoidance - steer away from nearby avatars
+			// PERF NOTE: O(N²) per tick (sqrt per pair). Benign at the design
+			// targetPopulation (~6); a spatial-partition broad-phase is the fix if
+			// population grows. Out of audit scope.
 			let steerX = 0;
 			let steerZ = 0;
 			for (const other of world.entities) {

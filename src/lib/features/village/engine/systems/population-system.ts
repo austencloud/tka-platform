@@ -56,9 +56,14 @@ export class PopulationSystem {
 			world.remove(entity);
 		}
 
-		// Spawn replacements as new generation (maker doesn't count toward target)
-		const spinnerCount = () => world.entities.filter((e) => e.identity.role !== "maker").length;
-		while (spinnerCount() < this.config.targetPopulation) {
+		// Spawn replacements as new generation (maker doesn't count toward target).
+		// Count spinners once, then track locally: every iteration of this loop
+		// adds exactly one non-maker spinner, so re-filtering the entity list each
+		// pass is unnecessary.
+		let spinnerCount = world.entities.filter(
+			(e) => e.identity.role !== "maker",
+		).length;
+		for (; spinnerCount < this.config.targetPopulation; spinnerCount++) {
 			const name =
 				AVATAR_NAMES[this.nameIndex % AVATAR_NAMES.length] ?? "Unknown";
 			this.nameIndex++;
@@ -167,7 +172,13 @@ export class PopulationSystem {
 			});
 		}
 
-		// Store echo metadata for rendering layer
+		// Store echo metadata for the rendering layer as a sideband property.
+		// `_reincarnationEcho` is deliberately not part of VillageEntity: it is
+		// transient render-only decoration, not simulation state, so it lives off
+		// the canonical entity type. The `as unknown as Record` escape is the
+		// price of that separation — the renderer casts back to read it. Promoting
+		// it to a typed field would couple the domain type to a presentation
+		// concern, so this divergence is intentional.
 		(newEntity as unknown as Record<string, unknown>)._reincarnationEcho = {
 			sourceEntityId: source.id,
 			sourceName: source.identity.name,

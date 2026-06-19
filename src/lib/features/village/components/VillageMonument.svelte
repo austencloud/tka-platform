@@ -86,10 +86,10 @@
 
 <style>
 	.monument-tooltip {
-		font-size: 10px;
+		font-size: var(--font-size-compact, 12px);
 		font-family: monospace;
-		color: #fff;
-		background: rgba(0, 0, 0, 0.8);
+		color: var(--theme-text, #fff);
+		background: var(--theme-tooltip-bg, rgba(0, 0, 0, 0.8));
 		padding: 4px 6px;
 		border-radius: 3px;
 		white-space: nowrap;

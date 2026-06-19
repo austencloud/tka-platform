@@ -39,6 +39,10 @@ export class StyleDriftSystem {
 		// Greedy pivot-based clustering: pick an unassigned entity as pivot,
 		// gather all unassigned entities within STYLE_SIMILARITY_THRESHOLD,
 		// form a school if the cluster has enough members.
+		// PERF NOTE: O(N²) clustering rebuilt every tick (sqrt per style pair), no
+		// caching or change detection. Benign at the design targetPopulation (~6);
+		// a spatial partition / delta tracking is the fix if population grows. Out
+		// of audit scope.
 		const assigned = new Set<string>();
 		const newSchools: StyleSchool[] = [];
 

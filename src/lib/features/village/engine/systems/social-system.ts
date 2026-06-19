@@ -1,5 +1,9 @@
 import type { World } from "miniplex";
-import type { VillageEntity, LearnedSequence } from "../../domain/village-types";
+import type {
+	VillageEntity,
+	LearnedSequence,
+	Season,
+} from "../../domain/village-types";
 import type { VillageConfig } from "../village-config";
 import type { VillageEventEmitter } from "../village-event-emitter";
 import {
@@ -18,11 +22,14 @@ import type { VillageDecisionEngine } from "../llm/village-decision-engine";
 const SEEK_RADIUS = 5;
 
 export class SocialSystem {
-	decisionEngine: VillageDecisionEngine | null = null;
-
 	constructor(
 		private config: VillageConfig,
 		private emitter: VillageEventEmitter,
+		private decisionEngine: VillageDecisionEngine,
+		// Read lazily: SeasonSystem owns the canonical season and may tick after
+		// SocialSystem, so we resolve the current value at call time rather than
+		// capturing it at construction.
+		private getCurrentSeason: () => Season,
 	) {}
 
 	tick(world: World<VillageEntity>, _currentTick: number): void {
@@ -81,12 +88,10 @@ export class SocialSystem {
 		if (entity.identity.role === "maker") return;
 
 		// Check for pending LLM decision first
-		if (this.decisionEngine) {
-			const pending = this.decisionEngine.consumeDecision(entity.id);
-			if (pending) {
-				this.applyIdleDecision(entity, pending.action, world);
-				return;
-			}
+		const pending = this.decisionEngine.consumeDecision(entity.id);
+		if (pending) {
+			this.applyIdleDecision(entity, pending.action, world);
+			return;
 		}
 
 		entity.social.idleTimer++;
@@ -99,11 +104,11 @@ export class SocialSystem {
 		entity.social.idleTimer = 0;
 
 		// If LLM enabled, fire async decision and wait
-		if (this.decisionEngine?.enabled) {
+		if (this.decisionEngine.enabled) {
 			this.decisionEngine.requestIdleDecision(
 				entity,
 				world.entities,
-				"normal", // TODO: read from season system
+				this.getCurrentSeason(),
 				world.entities.length,
 				0,
 			);

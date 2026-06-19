@@ -25,6 +25,9 @@ export class CircleSystem {
 
 		const newCircles: EffectCircle[] = [];
 
+		// PERF NOTE: O(N²) clustering rebuilt every tick (sqrt per performer pair),
+		// no delta tracking. Benign at the design targetPopulation (~6); a spatial
+		// partition / change detection is the fix if population grows. Out of audit scope.
 		for (const [affinity, performers] of performersByAffinity) {
 			const assigned = new Set<string>();
 

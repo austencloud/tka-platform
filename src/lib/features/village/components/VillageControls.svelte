@@ -175,43 +175,82 @@
 	<!-- Toggles -->
 	<div class="section">
 		<h3>Display</h3>
-		<label class="toggle">
-			<input type="checkbox" checked={visualState.showToasts} onchange={(e) => visualState.setShowToasts(e.currentTarget.checked)} />
+		<button
+			type="button"
+			class="toggle"
+			role="switch"
+			aria-checked={visualState.showToasts}
+			onclick={() => visualState.setShowToasts(!visualState.showToasts)}
+		>
+			<span class="toggle-indicator" class:on={visualState.showToasts} aria-hidden="true"></span>
 			Show toasts
-		</label>
-		<label class="toggle">
-			<input type="checkbox" checked={visualState.showMonuments} onchange={(e) => visualState.setShowMonuments(e.currentTarget.checked)} />
+		</button>
+		<button
+			type="button"
+			class="toggle"
+			role="switch"
+			aria-checked={visualState.showMonuments}
+			onclick={() => visualState.setShowMonuments(!visualState.showMonuments)}
+		>
+			<span class="toggle-indicator" class:on={visualState.showMonuments} aria-hidden="true"></span>
 			Show monuments
-		</label>
-		<label class="toggle">
-			<input type="checkbox" checked={visualState.showCircleRings} onchange={(e) => visualState.setShowCircleRings(e.currentTarget.checked)} />
+		</button>
+		<button
+			type="button"
+			class="toggle"
+			role="switch"
+			aria-checked={visualState.showCircleRings}
+			onclick={() => visualState.setShowCircleRings(!visualState.showCircleRings)}
+		>
+			<span class="toggle-indicator" class:on={visualState.showCircleRings} aria-hidden="true"></span>
 			Show circle rings
-		</label>
-		<label class="toggle">
-			<input type="checkbox" checked={visualState.showReincarnationGlow} onchange={(e) => visualState.setShowReincarnationGlow(e.currentTarget.checked)} />
+		</button>
+		<button
+			type="button"
+			class="toggle"
+			role="switch"
+			aria-checked={visualState.showReincarnationGlow}
+			onclick={() => visualState.setShowReincarnationGlow(!visualState.showReincarnationGlow)}
+		>
+			<span class="toggle-indicator" class:on={visualState.showReincarnationGlow} aria-hidden="true"></span>
 			Show reincarnation glow
-		</label>
-		<label class="toggle">
-			<input type="checkbox" checked={visualState.showSchoolTints} onchange={(e) => visualState.setShowSchoolTints(e.currentTarget.checked)} />
+		</button>
+		<button
+			type="button"
+			class="toggle"
+			role="switch"
+			aria-checked={visualState.showSchoolTints}
+			onclick={() => visualState.setShowSchoolTints(!visualState.showSchoolTints)}
+		>
+			<span class="toggle-indicator" class:on={visualState.showSchoolTints} aria-hidden="true"></span>
 			Show school tints
-		</label>
+		</button>
 	</div>
 
 	<!-- LLM Decision Engine -->
 	<div class="section">
 		<h3>AI Decisions</h3>
-		<label class="toggle">
-			<input
-				type="checkbox"
-				checked={villageState.orchestrator.decisionEngine.enabled}
-				onchange={(e) => villageState.orchestrator.decisionEngine.setEnabled(e.currentTarget.checked)}
-			/>
+		<button
+			type="button"
+			class="toggle"
+			role="switch"
+			aria-checked={villageState.orchestrator.decisionEngine.enabled}
+			onclick={() =>
+				villageState.orchestrator.decisionEngine.setEnabled(
+					!villageState.orchestrator.decisionEngine.enabled,
+				)}
+		>
+			<span
+				class="toggle-indicator"
+				class:on={villageState.orchestrator.decisionEngine.enabled}
+				aria-hidden="true"
+			></span>
 			Enable LLM
-		</label>
+		</button>
 		<div class="stat">
 			Provider: {villageState.orchestrator.decisionEngine.providerName}
 			{#if villageState.orchestrator.decisionEngine.isLLMActive()}
-				<span style="color: #4ade80;">connected</span>
+				<span style="color: var(--semantic-success, #4ade80);">connected</span>
 			{/if}
 		</div>
 		<div class="stat">
@@ -257,8 +296,8 @@
 	h3 {
 		margin: 0;
 		font-size: var(--font-size-min, 14px);
-		color: #e8a87c;
-		border-bottom: 1px solid rgba(232, 168, 124, 0.2);
+		color: var(--village-accent, #e8a87c);
+		border-bottom: 1px solid color-mix(in srgb, var(--village-accent, #e8a87c) 20%, transparent);
 		padding-bottom: 4px;
 	}
 
@@ -298,7 +337,7 @@
 	}
 
 	.control-btn:hover {
-		border-color: #e8a87c;
+		border-color: var(--village-accent, #e8a87c);
 	}
 
 	.speed-buttons {
@@ -314,12 +353,12 @@
 		color: var(--theme-text, #fff);
 		border-radius: 3px;
 		cursor: pointer;
-		font-size: 11px;
+		font-size: var(--font-size-compact, 12px);
 	}
 
 	.speed-btn.active {
-		background: rgba(232, 168, 124, 0.2);
-		border-color: #e8a87c;
+		background: color-mix(in srgb, var(--village-accent, #e8a87c) 20%, transparent);
+		border-color: var(--village-accent, #e8a87c);
 	}
 
 	.sequence-list {
@@ -333,7 +372,7 @@
 		display: flex;
 		align-items: center;
 		gap: 4px;
-		font-size: 11px;
+		font-size: var(--font-size-compact, 12px);
 		opacity: 0.8;
 	}
 
@@ -351,7 +390,7 @@
 
 	.seq-source {
 		opacity: 0.5;
-		font-size: 10px;
+		font-size: var(--font-size-compact, 12px);
 	}
 
 	.decay-bar {
@@ -364,7 +403,7 @@
 
 	.decay-fill {
 		height: 100%;
-		background: #4ade80;
+		background: var(--semantic-success, #4ade80);
 		border-radius: 2px;
 		transition: width 0.3s ease;
 	}
@@ -376,10 +415,56 @@
 		font-size: var(--font-size-compact, 12px);
 		opacity: 0.8;
 		cursor: pointer;
+		background: none;
+		border: none;
+		padding: 2px 0;
+		color: inherit;
+		text-align: left;
+		width: 100%;
 	}
 
-	.toggle input {
-		cursor: pointer;
+	.toggle:hover {
+		opacity: 1;
+	}
+
+	.toggle:focus-visible {
+		outline: 2px solid var(--village-accent, #e8a87c);
+		outline-offset: 2px;
+		border-radius: 4px;
+	}
+
+	.toggle-indicator {
+		flex-shrink: 0;
+		width: 28px;
+		height: 16px;
+		border-radius: 999px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
+		position: relative;
+		transition: background 0.15s ease, border-color 0.15s ease;
+	}
+
+	.toggle-indicator::after {
+		content: "";
+		position: absolute;
+		top: 1px;
+		left: 1px;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--theme-text, #fff);
+		opacity: 0.6;
+		transition: transform 0.15s ease, opacity 0.15s ease;
+	}
+
+	.toggle-indicator.on {
+		background: color-mix(in srgb, var(--village-accent, #e8a87c) 35%, transparent);
+		border-color: var(--village-accent, #e8a87c);
+	}
+
+	.toggle-indicator.on::after {
+		transform: translateX(12px);
+		opacity: 1;
 	}
 
 	.llm-log {
@@ -390,7 +475,7 @@
 	}
 
 	.log-line {
-		font-size: 10px;
+		font-size: var(--font-size-compact, 12px);
 		font-family: monospace;
 		opacity: 0.6;
 		line-height: 1.3;

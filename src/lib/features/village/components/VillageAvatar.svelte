@@ -13,8 +13,9 @@
 	import { userProportionsState } from "@austencloud/scene-3d";
 	import { PlaneMode } from "@austencloud/scene-3d";
 	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-	import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+	import type { TipEffectMap, EffectType } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 	import type { AvatarRenderState } from "../state/village-state.svelte";
+	import type { EffectAffinity } from "../domain/village-types";
 	import type { AvatarId } from "@austencloud/scene-3d";
 
 	interface Props {
@@ -144,7 +145,7 @@
 	);
 
 	// Map entity's effect affinity to TipEffectMap
-	const affinityToEffect: Record<string, string> = {
+	const affinityToEffect: Record<EffectAffinity, EffectType> = {
 		fire: "fire",
 		led: "led",
 		charcoal: "charcoal",
@@ -154,7 +155,7 @@
 
 	const tipEffectMap = $derived<TipEffectMap>(
 		isActiveForEffects
-			? { "*": { effect: (affinityToEffect[renderState.entity.effect.affinity] ?? "none") as any } }
+			? { "*": { effect: affinityToEffect[renderState.entity.effect.affinity] ?? "none" } }
 			: {}
 	);
 
@@ -238,7 +239,7 @@
 
 <style>
 	.name-label {
-		font-size: 11px;
+		font-size: var(--font-size-compact, 12px);
 		font-family: monospace;
 		text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
 		white-space: nowrap;
@@ -256,6 +257,6 @@
 
 	.prop-indicator {
 		opacity: 0.5;
-		font-size: 9px;
+		font-size: var(--font-size-compact, 12px);
 	}
 </style>

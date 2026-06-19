@@ -39,11 +39,14 @@ export class VillageOrchestrator implements VillageEventEmitter {
 	private decaySystem: DecaySystem;
 	private performanceSystem: PerformanceSystem;
 	private funeralSystem: FuneralSystem;
-	monumentSystem: MonumentSystem;
+	// State is exposed via the `monuments` / `droppedProps` / `propWall` /
+	// `effectCircles` getters below; keep the systems private so callers can't
+	// mutate system internals directly.
+	private monumentSystem: MonumentSystem;
 	private proximityLearningSystem: ProximityLearningSystem;
 	private styleDriftSystem: StyleDriftSystem;
-	propSystem: PropSystem;
-	circleSystem: CircleSystem;
+	private propSystem: PropSystem;
+	private circleSystem: CircleSystem;
 	private seasonSys: SeasonSystem;
 	readonly decisionEngine: VillageDecisionEngine;
 	private lineageTracker: LineageTracker;
@@ -62,7 +65,16 @@ export class VillageOrchestrator implements VillageEventEmitter {
 
 		this.lifecycleSystem = new LifecycleSystem(config);
 		this.movementSystem = new MovementSystem(config);
-		this.socialSystem = new SocialSystem(config, this);
+		// SeasonSystem and DecisionEngine are constructed first so SocialSystem
+		// can take them as constructor dependencies (no post-construction wiring).
+		this.seasonSys = new SeasonSystem(config, this);
+		this.decisionEngine = new VillageDecisionEngine();
+		this.socialSystem = new SocialSystem(
+			config,
+			this,
+			this.decisionEngine,
+			() => this.seasonSys.currentSeason,
+		);
 		this.teachingSystem = new TeachingSystem(config, this);
 		this.recombinationSystem = new RecombinationSystem(
 			config,
@@ -83,9 +95,6 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.styleDriftSystem = new StyleDriftSystem(this);
 		this.propSystem = new PropSystem(this);
 		this.circleSystem = new CircleSystem(this);
-		this.seasonSys = new SeasonSystem(config, this);
-		this.decisionEngine = new VillageDecisionEngine();
-		this.socialSystem.decisionEngine = this.decisionEngine;
 
 		// Wire funeral system to death events
 		this.on("entity:died", (deceased) => {

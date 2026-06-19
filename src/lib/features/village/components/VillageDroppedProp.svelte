@@ -5,6 +5,7 @@
 <script lang="ts">
 	import { T, useTask } from "@threlte/core";
 	import type { DroppedProp } from "../domain/village-types";
+	import { PROP_COLORS } from "../domain/village-constants";
 
 	interface Props {
 		drop: DroppedProp;
@@ -19,14 +20,7 @@
 		emissiveIntensity = 0.5 + Math.sin(t * Math.PI * (2 / 3)) * 0.2;
 	});
 
-	const propColors: Record<string, string> = {
-		staff: "#8B4513",
-		fan: "#FF69B4",
-		club: "#4169E1",
-		poi: "#32CD32",
-		torch: "#FF4500",
-	};
-	const color = $derived(propColors[drop.artifact.propType] ?? "#e8a87c");
+	const color = $derived(PROP_COLORS[drop.artifact.propType] ?? "#e8a87c");
 </script>
 
 <T.Mesh
