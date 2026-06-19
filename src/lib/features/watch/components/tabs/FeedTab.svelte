@@ -97,6 +97,11 @@
     feedState.loadMore();
   }
 
+  function handleRetry() {
+    hapticService?.trigger("selection");
+    feedState.loadInitial();
+  }
+
   function handleCardClick(item: FeedItem) {
     hapticService?.trigger("selection");
     // TODO: Implement video/media lightbox for feed items
@@ -156,10 +161,13 @@
     items={feedState.items}
     isLoading={feedState.isLoading}
     hasMore={feedState.hasMore}
+    hasError={feedState.status === "error"}
+    error={feedState.error}
     {bluePropType}
     {redPropType}
     {catDogModeEnabled}
     onLoadMore={handleLoadMore}
+    onRetry={handleRetry}
     onCardClick={handleCardClick}
     onCreatorClick={handleCreatorClick}
     onCtaClick={handleCtaClick}

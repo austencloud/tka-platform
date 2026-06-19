@@ -46,7 +46,7 @@
       <path
         class="flame-inner"
         d="M12 21c-2.76 0-5-2.24-5-5 0-1.95 1.12-3.79 2.94-4.71.37-.19.82.1.77.51-.04.32.04.66.21.96.17.3.43.56.77.73.34.18.74-.05.76-.44-.01-.67.2-1.33.6-1.85.42-.54 1.04-.9 1.73-.98.39-.04.68.34.53.7-.17.42-.25.87-.25 1.32 0 1.16.58 2.19 1.46 2.82.12.08.19.22.19.36 0 2.76-2.24 5-5 5z"
-        fill="var(--flame-inner-color, #ff9800)"
+        fill="var(--flame-inner-color, var(--semantic-warning, #f59e0b))"
       />
     </svg>
     {#if isActive}
@@ -71,8 +71,8 @@
   }
 
   .streak-badge.active {
-    background: rgba(255, 152, 0, 0.1);
-    border-color: rgba(255, 152, 0, 0.3);
+    background: var(--semantic-warning-bg, rgba(245, 158, 11, 0.1));
+    border-color: var(--semantic-warning-border, rgba(245, 158, 11, 0.3));
   }
 
   .streak-badge.loading {
@@ -93,7 +93,9 @@
   }
 
   .active .flame-icon {
-    color: #ff9800;
+    color: var(--semantic-warning, #f59e0b);
+    /* Hot yellow core of the flame gradient - a deliberate two-tone flame
+       highlight, not a theme color, so it stays distinct from the orange. */
     --flame-inner-color: #ffeb3b;
     animation: flameFlicker 2s ease-in-out infinite;
   }
@@ -121,7 +123,7 @@
   .glow {
     position: absolute;
     inset: -4px;
-    background: radial-gradient(circle, rgba(255, 152, 0, 0.4) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--semantic-warning-glow, rgba(245, 158, 11, 0.4)) 0%, transparent 70%);
     border-radius: 50%;
     animation: glowPulse 2s ease-in-out infinite;
     pointer-events: none;
@@ -149,7 +151,7 @@
   }
 
   .active .streak-count {
-    color: #ff9800;
+    color: var(--semantic-warning, #f59e0b);
   }
 
   @media (prefers-reduced-motion: reduce) {

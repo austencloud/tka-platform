@@ -8,6 +8,7 @@
 
 import type { FeedItem } from "../domain/models/feed-models";
 import type { FeedLoader } from "../services/feed-loader";
+import { getFeedLoader as resolveFeedLoader } from "../get-feed-loader";
 
 
 export type FeedStatus = "idle" | "loading" | "loaded" | "error";
@@ -28,7 +29,7 @@ export function createWatchFeedState() {
 	function getFeedLoader(): FeedLoader | null {
 		if (!feedLoader) {
 			try {
-				feedLoader = getFeedLoader() ?? null;
+				feedLoader = resolveFeedLoader() ?? null;
 			} catch {
 				// Container not ready yet
 			}

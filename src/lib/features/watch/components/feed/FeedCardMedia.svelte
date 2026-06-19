@@ -230,6 +230,18 @@ import { getVideoPlaybackController } from "$lib/features/watch/get-video-playba
     backdrop-filter: blur(4px);
   }
 
+  /* Invisible hit-area expands the tap target to 44px without growing the
+     visible 36px icon (keeps the compact overlay look on a dark video). */
+  .mute-toggle::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+  }
+
   .mute-toggle:hover {
     background: rgba(0, 0, 0, 0.8);
   }

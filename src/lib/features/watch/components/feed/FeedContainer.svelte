@@ -26,15 +26,21 @@ import { getFeedSnapDetector } from "$lib/features/watch/get-feed-snap-detector"
   import FeedCard from "./FeedCard.svelte";
   import FeedLoadingState from "./FeedLoadingState.svelte";
   import FeedEmptyState from "./FeedEmptyState.svelte";
+  import FeedErrorState from "./FeedErrorState.svelte";
 
   interface Props {
     items: FeedItem[];
     isLoading: boolean;
     hasMore: boolean;
+    /** Whether the most recent load failed. */
+    hasError?: boolean;
+    /** Human-readable error message from the failed load. */
+    error?: string | null;
     bluePropType?: PropType;
     redPropType?: PropType;
     catDogModeEnabled?: boolean;
     onLoadMore?: () => void;
+    onRetry?: () => void;
     onCardClick?: (item: FeedItem) => void;
     onCreatorClick?: (creatorId: string, creatorName: string) => void;
     onCtaClick?: (item: FeedItem) => void;
@@ -45,10 +51,13 @@ import { getFeedSnapDetector } from "$lib/features/watch/get-feed-snap-detector"
     items,
     isLoading,
     hasMore,
+    hasError = false,
+    error = null,
     bluePropType,
     redPropType,
     catDogModeEnabled = false,
     onLoadMore,
+    onRetry,
     onCardClick,
     onCreatorClick,
     onCtaClick,
@@ -68,7 +77,7 @@ import { getFeedSnapDetector } from "$lib/features/watch/get-feed-snap-detector"
   let cardRefs = new Map<string, { triggerEntryAnimation: () => void }>();
 
   // Computed
-  const isEmpty = $derived(items.length === 0 && !isLoading);
+  const isEmpty = $derived(items.length === 0 && !isLoading && !hasError);
 
   // Track items near end for preloading
   const LOAD_MORE_THRESHOLD = 3;
@@ -239,6 +248,9 @@ import { getFeedSnapDetector } from "$lib/features/watch/get-feed-snap-detector"
   {#if isLoading && items.length === 0}
     <!-- Initial loading state -->
     <FeedLoadingState count={1} fullscreen />
+  {:else if hasError && items.length === 0}
+    <!-- Error state - surfaced instead of silently collapsing to empty -->
+    <FeedErrorState message={error} {onRetry} />
   {:else if isEmpty}
     <!-- Empty state -->
     <FeedEmptyState />

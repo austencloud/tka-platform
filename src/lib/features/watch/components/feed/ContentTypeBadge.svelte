@@ -31,7 +31,11 @@
     align-items: center;
     gap: 6px;
     padding: 6px 10px;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(139, 92, 246, 0.9));
+    background: linear-gradient(
+      135deg,
+      var(--theme-accent, rgba(99, 102, 241, 0.9)),
+      var(--theme-accent-strong, rgba(139, 92, 246, 0.9))
+    );
     border-radius: 8px;
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
