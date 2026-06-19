@@ -351,7 +351,7 @@
   }
 
   .stat-label {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -372,7 +372,7 @@
   }
 
   .tier-badge {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     padding: 2px 6px;
     border-radius: 3px;
@@ -382,7 +382,7 @@
   }
 
   .tier-badge.small {
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     padding: 1px 4px;
     min-width: 32px;
   }
@@ -444,7 +444,7 @@
   }
 
   .event-offset {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
     font-family: monospace;
     flex-shrink: 0;
@@ -520,13 +520,13 @@
   }
 
   .action-btn.delete {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    color: var(--semantic-error, #ef4444);
   }
 
   .action-btn.delete:hover {
-    background: rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
   }
 
   .sr-only {
@@ -601,7 +601,7 @@
   }
 
   .replay-stat-label {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     text-transform: uppercase;
   }
@@ -643,7 +643,7 @@
   }
 
   .diff-badge {
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     padding: 1px 5px;
     border-radius: 3px;
@@ -666,7 +666,7 @@
   }
 
   .diff-side-label {
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
@@ -675,7 +675,7 @@
   }
 
   .diff-command {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-family: monospace;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
@@ -686,13 +686,13 @@
   }
 
   .action-btn.replay {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
+    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 20%, transparent);
+    color: var(--semantic-info, #3b82f6);
   }
 
   .action-btn.replay:hover:not(:disabled) {
-    background: rgba(59, 130, 246, 0.2);
+    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 20%, transparent);
   }
 
   .action-btn.replay:disabled {

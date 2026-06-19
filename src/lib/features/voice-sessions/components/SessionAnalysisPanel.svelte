@@ -267,7 +267,7 @@
   }
 
   .count-badge {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     padding: 1px 6px;
     border-radius: 10px;
@@ -360,15 +360,15 @@
   }
 
   .insight-card.candidate {
-    border-left-color: #3b82f6;
+    border-left-color: var(--semantic-info, #3b82f6);
   }
 
   .insight-card.failure {
-    border-left-color: #ef4444;
+    border-left-color: var(--semantic-error, #ef4444);
   }
 
   .insight-card.unresolved {
-    border-left-color: #f59e0b;
+    border-left-color: var(--semantic-warning, #f59e0b);
   }
 
   .insight-main {
@@ -390,7 +390,7 @@
   }
 
   .command {
-    color: #60a5fa;
+    color: var(--semantic-info, #3b82f6);
     font-family: monospace;
     font-size: var(--font-size-compact, 12px);
   }
@@ -412,31 +412,43 @@
   }
 
   .hit-count, .confidence {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-family: monospace;
   }
 
   /* Tier Chips */
   .tier-chip {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     padding: 1px 5px;
     border-radius: 3px;
   }
 
-  .tier-chip.tier-1 { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
-  .tier-chip.tier-2 { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-  .tier-chip.tier-3 { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
-  .tier-chip.tier-unresolved { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+  .tier-chip.tier-1 {
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent);
+    color: color-mix(in srgb, var(--semantic-success, #22c55e) 70%, white);
+  }
+  .tier-chip.tier-2 {
+    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 20%, transparent);
+    color: color-mix(in srgb, var(--semantic-info, #3b82f6) 70%, white);
+  }
+  .tier-chip.tier-3 {
+    background: color-mix(in srgb, var(--theme-accent, #c084fc) 20%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #c084fc) 70%, white);
+  }
+  .tier-chip.tier-unresolved {
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, white);
+  }
 
   .more {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 
   .context-chip {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-family: monospace;
   }
@@ -506,7 +518,7 @@
 
   .trend-bar {
     height: 100%;
-    background: #22c55e;
+    background: var(--semantic-success, #22c55e);
     border-radius: 4px;
     transition: width 0.3s ease;
   }

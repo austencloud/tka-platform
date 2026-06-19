@@ -65,10 +65,10 @@
   }
 
   const tierColors: Record<ResolutionTier, string> = {
-    tier1_regex: "#22c55e",
-    tier2_llm: "#3b82f6",
-    tier3_chat: "#f59e0b",
-    unresolved: "#ef4444",
+    tier1_regex: "var(--semantic-success, #22c55e)",
+    tier2_llm: "var(--semantic-info, #3b82f6)",
+    tier3_chat: "var(--semantic-warning, #f59e0b)",
+    unresolved: "var(--semantic-error, #ef4444)",
   };
 
   const tierLabels: Record<ResolutionTier, string> = {
@@ -101,7 +101,7 @@
     <div class="item-meta">
       <span class="event-count">{t('voice_sessions_event_count', { count: String(preview.stats.totalEvents) })}</span>
       <span class="separator">·</span>
-      <span class="success-rate" style="color: {preview.stats.successCount === preview.stats.totalEvents ? '#22c55e' : preview.stats.unresolvedCount > 0 ? '#f59e0b' : '#94a3b8'}">{successRate(preview.stats)}</span>
+      <span class="success-rate" style="color: {preview.stats.successCount === preview.stats.totalEvents ? 'var(--semantic-success, #22c55e)' : preview.stats.unresolvedCount > 0 ? 'var(--semantic-warning, #f59e0b)' : 'var(--theme-text-muted, #94a3b8)'}">{successRate(preview.stats)}</span>
     </div>
     {#if tierDots.length > 0}
       <div class="tier-dots">
@@ -151,7 +151,7 @@
 
   .session-item.selected {
     border-color: var(--theme-accent, #6366f1);
-    background: rgba(99, 102, 241, 0.1);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
   }
 
   .item-content {
@@ -206,7 +206,7 @@
   }
 
   .tier-dot {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     padding: 1px 5px;
     border-radius: 3px;
@@ -236,7 +236,7 @@
   }
 
   .delete-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
     color: var(--semantic-error, #ef4444);
   }
 

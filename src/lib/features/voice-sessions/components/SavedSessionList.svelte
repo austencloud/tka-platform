@@ -72,10 +72,13 @@
     }
     selectedSessionId = id;
     loadingDetail = true;
+    error = null;
     try {
       selectedSession = await repository.getSession(id);
-    } catch {
+    } catch (e) {
       selectedSession = null;
+      selectedSessionId = null;
+      error = e instanceof Error ? e.message : "Failed to load session";
     } finally {
       loadingDetail = false;
     }
@@ -227,7 +230,7 @@
   }
 
   .count-badge {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     padding: 1px 6px;
     border-radius: 10px;
@@ -342,13 +345,13 @@
   }
 
   .confirm-btn.delete {
-    background: rgba(239, 68, 68, 0.2);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    color: var(--semantic-error, #ef4444);
   }
 
   .confirm-btn.delete:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.35);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 35%, transparent);
   }
 
   .confirm-btn:disabled {
