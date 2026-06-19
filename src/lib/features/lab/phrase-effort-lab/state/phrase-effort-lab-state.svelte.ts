@@ -13,7 +13,47 @@ const DEFAULT_PROP_STATE: PropState = {
   staffRotationAngle: 0,
 };
 
-export function createPhraseEffortLabState() {
+export interface PhraseEffortLabState {
+  selectedEffort: EffortId;
+  readonly timeline: EffortTimeline;
+  readonly selectedPhraseId: string | null;
+  isPlaying: boolean;
+  playbackBeat: number;
+  showPicker: boolean;
+  sequence: SequenceData | null;
+  readonly steps: readonly StepData[];
+  blueProp: PropState;
+  redProp: PropState;
+  currentStep: number;
+  currentLetter: Letter | null;
+  currentStepData: StepData | null;
+  saving: boolean;
+  saveStatus: "idle" | "saved" | "error";
+  showPresetMenu: boolean;
+  bpm: number;
+  rafId: number | null;
+  lastTime: number | null;
+  readonly gridMode: GridMode;
+  readonly sequenceWord: string | null;
+  readonly totalSteps: number;
+  readonly currentStepForTimeline: number;
+  readonly hasUnsavedChanges: boolean;
+  readonly DEFAULT_PROP_STATE: PropState;
+  loadSequence(seq: SequenceData): void;
+  togglePlayback(): void;
+  setBpm(newBpm: number): void;
+  updateTimeline(updated: EffortTimeline): void;
+  selectPhrase(id: string | null): void;
+  toggleTransition(): void;
+  restart(): void;
+  deleteSelected(): void;
+  clearTimeline(): void;
+  applyPreset4x4(efforts: [EffortId, EffortId, EffortId, EffortId]): void;
+  tryRestoreTimeline(): boolean;
+  getPersistedSequenceId(): string | null;
+}
+
+export function createPhraseEffortLabState(): PhraseEffortLabState {
   let selectedEffort: EffortId = $state("linear");
   let timeline: EffortTimeline = $state(createEffortTimeline());
   let selectedPhraseId: string | null = $state(null);
@@ -181,6 +221,7 @@ export function createPhraseEffortLabState() {
     get showPresetMenu() { return showPresetMenu; },
     set showPresetMenu(v: boolean) { showPresetMenu = v; },
     get bpm() { return bpm; },
+    set bpm(v: number) { bpm = v; },
     get rafId() { return rafId; },
     set rafId(v: number | null) { rafId = v; },
     get lastTime() { return lastTime; },
@@ -205,5 +246,3 @@ export function createPhraseEffortLabState() {
     getPersistedSequenceId,
   };
 }
-
-export type PhraseEffortLabState = ReturnType<typeof createPhraseEffortLabState>;

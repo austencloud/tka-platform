@@ -15,19 +15,10 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { EffortId } from "$lib/shared/effort/domain/effort-types";
   import type { EffortTimeline, EffortPhrase } from "./domain/effort-timeline-types";
-  import {
-    createEffortTimeline,
-    createEffortPhrase,
-    findPhraseAtBeat,
-    insertPhrase,
-    removePhrase,
-  } from "./domain/effort-timeline-types";
+  import { findPhraseAtBeat } from "./domain/effort-timeline-types";
   import { interpolatePhrase } from "$lib/shared/phrase-effort-lab/services/phrase-interpolator";
 
   import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
@@ -46,66 +37,33 @@
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
-  import type { CreatorIntent } from "$lib/shared/foundation/domain/models/creator-intent";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { createPhraseEffortLabState } from "./state/phrase-effort-lab-state.svelte";
-  import { persistTimeline as persistTimelineToSession, getPersistedSequenceId as getStoredSequenceId } from "./services/phrase-effort-lab-persister";
 
-  const SESSION_KEY = "phrase-effort-lab-sequence-id";
-  const SESSION_TIMELINE_KEY = "phrase-effort-lab-timeline";
-
-  // ─── Default PropState ───────────────────────────────────────────────
-  const DEFAULT_PROP_STATE: PropState = {
-    centerPathAngle: 0,
-    staffRotationAngle: 0,
-  };
+  // ─── Reactive UI state (factory + context pattern) ────────────────────
+  const lab = createPhraseEffortLabState();
 
   // ─── Services ready flag (set in onMount) ────────────────────────────
   let servicesReady = false;
 
-  // ─── Core state ──────────────────────────────────────────────────────
-  let selectedEffort: EffortId = $state("linear");
-  let timeline: EffortTimeline = $state(createEffortTimeline());
-  let selectedPhraseId: string | null = $state(null);
-  let isPlaying = $state(true);
-  let playbackBeat = $state(0); // fractional beat position (0-based continuous)
-
-  // ─── Sequence state ──────────────────────────────────────────────────
-  let showPicker = $state(false);
-  let sequence = $state<SequenceData | null>(null);
-  let steps = $state<readonly StepData[]>([]);
-  let blueProp = $state<PropState>({ ...DEFAULT_PROP_STATE });
-  let redProp = $state<PropState>({ ...DEFAULT_PROP_STATE });
-  let currentStep = $state(0);
-  let currentLetter = $state<import("$lib/shared/foundation/domain/models/letter").Letter | null>(null);
-  let currentStepData = $state<StepData | null>(null);
-  let saving = $state(false);
-  let saveStatus = $state<"idle" | "saved" | "error">("idle");
-
   // ─── Playback ────────────────────────────────────────────────────────
   const visibilityManager = getAnimationVisibilityManager();
-  let bpm = $state(visibilityManager.getBpm());
-  let rafId: number | null = null;
-  let lastTime: number | null = null;
 
-  // ─── Derived ─────────────────────────────────────────────────────────
-  let gridMode = $derived(sequence?.gridMode ?? GridMode.DIAMOND);
-  let sequenceWord = $derived(sequence?.word ?? sequence?.name ?? null);
-  let totalSteps = $derived(steps.length);
-  // 1-based current beat for the timeline playhead
-  let currentStepForTimeline = $derived(Math.floor(playbackBeat) + 1);
-  let hasUnsavedChanges = $derived(
-    sequence !== null && timeline.phrases.length > 0
+  // ─── Library load tracking (distinguish loading from empty) ───────────
+  // True while we've asked the library to load but it hasn't populated yet.
+  let awaitingLibraryLoad = $state(false);
+  let isLibraryLoading = $derived(
+    !lab.sequence && (awaitingLibraryLoad || libraryState.isLoading)
   );
 
-  // ─── Service construction ───────────────────────────────────────────
+  // ─── Keyboard shortcuts ───────────────────────────────────────────────
   function handleKeydown(e: KeyboardEvent) {
-    if ((e.key === "Delete" || e.key === "Backspace") && selectedPhraseId) {
+    if ((e.key === "Delete" || e.key === "Backspace") && lab.selectedPhraseId) {
       e.preventDefault();
       handleDeleteSelected();
     }
-    if (e.key === " " && sequence) {
+    if (e.key === " " && lab.sequence) {
       e.preventDefault();
       togglePlayback();
     }
@@ -115,40 +73,39 @@
   let hasRestored = false;
 
   function tryRestoreSession(): boolean {
-    if (hasRestored || sequence) return false;
+    if (hasRestored || lab.sequence) return false;
     if (libraryState.sequences.length === 0) return false;
 
-    try {
-      const savedId = sessionStorage.getItem(SESSION_KEY);
-      if (!savedId) return false;
+    const savedId = lab.getPersistedSequenceId();
+    if (!savedId) return false;
 
-      const saved = libraryState.getSequenceById(savedId);
-      if (!saved) return false;
+    // getSequenceById returns LibrarySequence, a structural superset of
+    // SequenceData — assignable directly, no cast needed.
+    const saved = libraryState.getSequenceById(savedId);
+    if (!saved) return false;
 
-      hasRestored = true;
-      handleSequenceSelected(saved as unknown as SequenceData);
+    hasRestored = true;
+    awaitingLibraryLoad = false;
+    handleSequenceSelected(saved);
 
-      // Restore persisted timeline (overrides what's on the sequence)
-      const savedTimeline = sessionStorage.getItem(SESSION_TIMELINE_KEY);
-      if (savedTimeline) {
-        const parsed = JSON.parse(savedTimeline) as EffortTimeline;
-        if (parsed?.phrases) {
-          timeline = parsed;
-        }
-      }
-      return true;
-    } catch { return false; }
+    // Restore persisted timeline (overrides what's on the sequence)
+    lab.tryRestoreTimeline();
+    return true;
   }
 
   onMount(() => {
     servicesReady = true;
 
     document.addEventListener("keydown", handleKeydown);
-    rafId = requestAnimationFrame(onFrame);
+    lab.rafId = requestAnimationFrame(onFrame);
+
+    // Seed playback tempo from the shared animation tempo.
+    lab.setBpm(visibilityManager.getBpm());
 
     // If we have a saved session but library isn't loaded yet, trigger load
-    const savedId = sessionStorage.getItem(SESSION_KEY);
+    const savedId = lab.getPersistedSequenceId();
     if (savedId && libraryState.sequences.length === 0) {
+      awaitingLibraryLoad = true;
       libraryState.loadSequences();
     }
 
@@ -158,47 +115,48 @@
 
   // Restore when library loads asynchronously (after loadSequences completes)
   $effect(() => {
-    if (hasRestored || sequence) return;
+    if (hasRestored || lab.sequence) return;
     // Read reactively so effect re-runs when library populates
-    const _seqs = libraryState.sequences;
-    if (_seqs.length === 0) return;
+    const seqs = libraryState.sequences;
+    if (seqs.length === 0) return;
+    awaitingLibraryLoad = false;
     tryRestoreSession();
   });
 
   onDestroy(() => {
     document.removeEventListener("keydown", handleKeydown);
-    if (rafId !== null) {
-      cancelAnimationFrame(rafId);
-      rafId = null;
+    if (lab.rafId !== null) {
+      cancelAnimationFrame(lab.rafId);
+      lab.rafId = null;
     }
   });
 
   // ─── RAF loop ────────────────────────────────────────────────────────
   function onFrame(timestamp: number) {
-    if (!isPlaying || steps.length === 0) {
-      lastTime = null;
-      rafId = requestAnimationFrame(onFrame);
+    if (!lab.isPlaying || lab.steps.length === 0) {
+      lab.lastTime = null;
+      lab.rafId = requestAnimationFrame(onFrame);
       return;
     }
 
-    if (lastTime === null) {
-      lastTime = timestamp;
-      rafId = requestAnimationFrame(onFrame);
+    if (lab.lastTime === null) {
+      lab.lastTime = timestamp;
+      lab.rafId = requestAnimationFrame(onFrame);
       return;
     }
 
-    const deltaMs = timestamp - lastTime;
-    lastTime = timestamp;
+    const deltaMs = timestamp - lab.lastTime;
+    lab.lastTime = timestamp;
 
-    const beatsPerMs = bpm / 60000;
-    playbackBeat += deltaMs * beatsPerMs;
+    const beatsPerMs = lab.bpm / 60000;
+    lab.playbackBeat += deltaMs * beatsPerMs;
 
-    if (playbackBeat >= totalSteps) {
-      playbackBeat = playbackBeat % totalSteps;
+    if (lab.playbackBeat >= lab.totalSteps) {
+      lab.playbackBeat = lab.playbackBeat % lab.totalSteps;
     }
 
     updatePropStates();
-    rafId = requestAnimationFrame(onFrame);
+    lab.rafId = requestAnimationFrame(onFrame);
   }
 
   // ─── Per-frame state computation ────────────────────────────────────
@@ -207,16 +165,18 @@
    * Find the next phrase after the given beat, for blend crossfade.
    */
   function findNextPhrase(beat: number): EffortPhrase | null {
-    for (const phrase of timeline.phrases) {
+    for (const phrase of lab.timeline.phrases) {
       if (phrase.startStep > beat) return phrase;
     }
     return null;
   }
 
   function updatePropStates() {
+    const steps = lab.steps;
+    const timeline = lab.timeline;
     if (!servicesReady || steps.length === 0) return;
 
-    const beat1Based = playbackBeat + 1;
+    const beat1Based = lab.playbackBeat + 1;
     const activePhrase = findPhraseAtBeat(timeline, beat1Based);
 
     let stepIndex: number;
@@ -282,7 +242,7 @@
       }
     } else {
       // No phrase covering this beat - use linear playback
-      const mapped = mapTimePositionToBeat(playbackBeat, steps);
+      const mapped = mapTimePositionToBeat(lab.playbackBeat, steps);
       stepIndex = mapped.stepIndex;
       localProgress = mapped.stepProgress;
     }
@@ -290,111 +250,63 @@
     const stepData = steps[stepIndex];
     if (!stepData?.motions?.blue && !stepData?.motions?.red) return;
 
-    currentStepData = stepData;
-    currentStep = stepIndex + 1;
-    currentLetter = stepData?.letter ?? null;
+    lab.currentStepData = stepData;
+    lab.currentStep = stepIndex + 1;
+    lab.currentLetter = stepData?.letter ?? null;
 
     const result = interpolatePropAngles(stepData!, localProgress);
     if (result.isValid) {
-      blueProp = result.blueAngles ?? { ...DEFAULT_PROP_STATE };
-      redProp = result.redAngles ?? { ...DEFAULT_PROP_STATE };
+      lab.blueProp = result.blueAngles ?? { ...lab.DEFAULT_PROP_STATE };
+      lab.redProp = result.redAngles ?? { ...lab.DEFAULT_PROP_STATE };
     }
   }
 
   // ─── Sequence loading ───────────────────────────────────────────────
   function handleSequenceSelected(seq: SequenceData) {
-    showPicker = false;
-    sequence = seq;
-    steps = seq.steps ?? [];
-    playbackBeat = 0;
-    lastTime = null;
-    saveStatus = "idle";
-
-    // Persist selection for tab re-entry
-    if (seq.id) {
-      try { sessionStorage.setItem(SESSION_KEY, seq.id); } catch { /* ignore */ }
-    }
-
-    // Restore existing effort timeline from the sequence if present
-    if (seq.effortTimeline) {
-      timeline = seq.effortTimeline;
-    } else {
-      timeline = createEffortTimeline();
-    }
+    awaitingLibraryLoad = false;
+    lab.loadSequence(seq);
 
     // Compute initial prop states
-    if (steps.length > 0) {
+    if (lab.steps.length > 0) {
       updatePropStates();
-      isPlaying = true;
     }
   }
 
   // ─── Controls ────────────────────────────────────────────────────────
   function togglePlayback() {
-    if (steps.length === 0) return;
-    isPlaying = !isPlaying;
-    if (!isPlaying) {
-      lastTime = null;
-    }
+    lab.togglePlayback();
   }
 
   function handleBpmChange(newBpm: number) {
-    bpm = newBpm;
+    lab.setBpm(newBpm);
   }
 
   function handleTimelineChange(updated: EffortTimeline) {
-    timeline = updated;
-    saveStatus = "idle";
-    persistTimeline();
-  }
-
-  function persistTimeline() {
-    try {
-      sessionStorage.setItem(SESSION_TIMELINE_KEY, JSON.stringify(timeline));
-    } catch { /* quota exceeded or private mode */ }
+    lab.updateTimeline(updated);
   }
 
   function handlePhraseSelect(id: string | null) {
-    selectedPhraseId = id;
+    lab.selectPhrase(id);
   }
 
   function handleTransitionToggle() {
-    timeline = {
-      ...timeline,
-      transition: timeline.transition === "hard" ? "blend" : "hard",
-      ...(timeline.transition === "hard" ? { blendSteps: 1 } : {}),
-    };
-    saveStatus = "idle";
-    persistTimeline();
+    lab.toggleTransition();
   }
 
   function handleRestart() {
-    playbackBeat = 0;
-    lastTime = null;
-    if (!isPlaying) {
-      isPlaying = true;
-    }
+    lab.restart();
     updatePropStates();
   }
 
   function handleDeleteSelected() {
-    if (!selectedPhraseId) return;
-    timeline = removePhrase(timeline, selectedPhraseId);
-    selectedPhraseId = null;
-    saveStatus = "idle";
-    persistTimeline();
+    lab.deleteSelected();
   }
 
   function handleClearTimeline() {
-    timeline = createEffortTimeline();
-    selectedPhraseId = null;
-    saveStatus = "idle";
-    persistTimeline();
+    lab.clearTimeline();
   }
 
   // ─── Presets ───────────────────────────────────────────────────────
-  let showPresetMenu = $state(false);
-
   /** 4x4 preset: divide beats into 4 equal sections, assign efforts */
   const PRESET_4X4_COMBOS: { label: string; efforts: [EffortId, EffortId, EffortId, EffortId] }[] = [
     { label: "Laban Cycle", efforts: ["glide", "dab", "press", "punch"] },
@@ -404,30 +316,13 @@
   ];
 
   function applyPreset4x4(efforts: [EffortId, EffortId, EffortId, EffortId]) {
-    if (totalSteps < 4) return;
-
-    const sectionSize = Math.floor(totalSteps / 4);
-    let newTimeline = createEffortTimeline();
-
-    for (let i = 0; i < 4; i++) {
-      const startStep = i * sectionSize + 1;
-      const endStep = i === 3 ? totalSteps : (i + 1) * sectionSize;
-      const phrase = createEffortPhrase(efforts[i]!, startStep, endStep);
-      newTimeline = insertPhrase(newTimeline, phrase);
-    }
-
-    // Preserve current transition setting
-    newTimeline = { ...newTimeline, transition: timeline.transition, blendSteps: timeline.blendSteps };
-    timeline = newTimeline;
-    selectedPhraseId = null;
-    saveStatus = "idle";
-    showPresetMenu = false;
-    persistTimeline();
+    lab.applyPreset4x4(efforts);
   }
 
   // ─── Save ────────────────────────────────────────────────────────────
   async function handleSave() {
-    if (!sequence?.id || saving) return;
+    const sequence = lab.sequence;
+    if (!sequence?.id || lab.saving) return;
 
     const user = getAuthSync().currentUser;
     if (!user) {
@@ -435,7 +330,7 @@
       return;
     }
 
-    saving = true;
+    lab.saving = true;
     try {
       const firestore = await getFirestoreInstance();
       const sequenceRef = doc(
@@ -444,7 +339,7 @@
       );
       // JSON round-trip strips Svelte $state proxies - Firestore rejects them
       // and structuredClone can't handle proxy Symbols either.
-      const plainTimeline = JSON.parse(JSON.stringify(timeline));
+      const plainTimeline = JSON.parse(JSON.stringify(lab.timeline));
       const propConfig = sequence.creatorIntent?.propConfig
         ? JSON.parse(JSON.stringify(sequence.creatorIntent.propConfig))
         : {
@@ -467,19 +362,19 @@
         { merge: true },
       );
 
-      sequence = {
+      lab.sequence = {
         ...sequence,
-        effortTimeline: timeline,
+        effortTimeline: lab.timeline,
         creatorIntent: updatedIntent,
       };
-      saveStatus = "saved";
+      lab.saveStatus = "saved";
       toast.success("Effort timeline saved.");
     } catch (err) {
       console.error("PhraseEffortLab: failed to save effort timeline:", err);
-      saveStatus = "error";
+      lab.saveStatus = "error";
       toast.error("Failed to save effort timeline.");
     } finally {
-      saving = false;
+      lab.saving = false;
     }
   }
 </script>
@@ -495,27 +390,27 @@
     <div class="header-right">
       <button
         class="pick-btn"
-        onclick={() => (showPicker = true)}
+        onclick={() => (lab.showPicker = true)}
         type="button"
       >
         <i class="fas fa-search" aria-hidden="true"></i>
-        {sequence ? (sequenceWord || "Sequence") : "Pick Sequence"}
+        {lab.sequence ? (lab.sequenceWord || "Sequence") : "Pick Sequence"}
       </button>
 
-      {#if sequence}
+      {#if lab.sequence}
         <button
           class="save-btn"
-          class:saved={saveStatus === "saved"}
-          class:error={saveStatus === "error"}
+          class:saved={lab.saveStatus === "saved"}
+          class:error={lab.saveStatus === "error"}
           onclick={handleSave}
-          disabled={saving || timeline.phrases.length === 0}
+          disabled={lab.saving || lab.timeline.phrases.length === 0}
           type="button"
         >
-          {#if saving}
+          {#if lab.saving}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          {:else if saveStatus === "saved"}
+          {:else if lab.saveStatus === "saved"}
             <i class="fas fa-check" aria-hidden="true"></i>
-          {:else if saveStatus === "error"}
+          {:else if lab.saveStatus === "error"}
             <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
           {:else}
             <i class="fas fa-save" aria-hidden="true"></i>
@@ -526,32 +421,40 @@
     </div>
   </header>
 
-  {#if !sequence}
-    <!-- Empty state -->
-    <div class="empty-state">
-      <i class="fas fa-paint-brush" aria-hidden="true"></i>
-      <p>Pick a sequence to paint effort phrases</p>
-      <button
-        class="pick-cta"
-        onclick={() => (showPicker = true)}
-        type="button"
-      >
-        Choose Sequence
-      </button>
-    </div>
+  {#if !lab.sequence}
+    {#if isLibraryLoading}
+      <!-- Loading state: library is fetching a saved session -->
+      <div class="empty-state" aria-live="polite" aria-busy="true">
+        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        <p>Loading your library…</p>
+      </div>
+    {:else}
+      <!-- Empty state -->
+      <div class="empty-state">
+        <i class="fas fa-paint-brush" aria-hidden="true"></i>
+        <p>Pick a sequence to paint effort phrases</p>
+        <button
+          class="pick-cta"
+          onclick={() => (lab.showPicker = true)}
+          type="button"
+        >
+          Choose Sequence
+        </button>
+      </div>
+    {/if}
   {:else}
     <!-- Canvas preview area -->
     <div class="canvas-area">
       <AnimatorCanvas
-        {blueProp}
-        {redProp}
-        {gridMode}
-        letter={currentLetter}
-        stepData={currentStepData}
-        sequenceData={sequence}
-        {currentStep}
-        {isPlaying}
-        word={sequenceWord}
+        blueProp={lab.blueProp}
+        redProp={lab.redProp}
+        gridMode={lab.gridMode}
+        letter={lab.currentLetter}
+        stepData={lab.currentStepData}
+        sequenceData={lab.sequence}
+        currentStep={lab.currentStep}
+        isPlaying={lab.isPlaying}
+        word={lab.sequenceWord}
         disableContextMenu={false}
         fireConfig={{ disableFrameCache: true }}
       />
@@ -560,7 +463,7 @@
     <!-- Transport controls -->
     <div class="transport-bar">
       <TempoControl
-        {bpm}
+        bpm={lab.bpm}
         onBpmChange={handleBpmChange}
         showPresets={false}
         showPractice={false}
@@ -575,7 +478,7 @@
         <i class="fas fa-undo" aria-hidden="true"></i>
       </button>
       <TransportControls
-        {isPlaying}
+        isPlaying={lab.isPlaying}
         onPlaybackToggle={togglePlayback}
       />
     </div>
@@ -583,8 +486,8 @@
     <!-- Effort palette -->
     <div class="palette-section">
       <EffortPalette
-        {selectedEffort}
-        onSelect={(effort) => { selectedEffort = effort; }}
+        selectedEffort={lab.selectedEffort}
+        onSelect={(effort) => { lab.selectedEffort = effort; }}
       />
     </div>
 
@@ -595,14 +498,14 @@
         <div class="preset-wrapper">
           <button
             class="action-btn preset-btn"
-            onclick={() => (showPresetMenu = !showPresetMenu)}
+            onclick={() => (lab.showPresetMenu = !lab.showPresetMenu)}
             type="button"
-            disabled={totalSteps < 4}
+            disabled={lab.totalSteps < 4}
           >
             <i class="fas fa-magic" aria-hidden="true"></i>
             4×4 Preset
           </button>
-          {#if showPresetMenu}
+          {#if lab.showPresetMenu}
             <div class="preset-menu">
               {#each PRESET_4X4_COMBOS as combo}
                 <button
@@ -620,7 +523,7 @@
           {/if}
         </div>
 
-        {#if selectedPhraseId}
+        {#if lab.selectedPhraseId}
           <button
             class="action-btn delete-btn"
             onclick={handleDeleteSelected}
@@ -630,7 +533,7 @@
             Delete
           </button>
         {/if}
-        {#if timeline.phrases.length > 0}
+        {#if lab.timeline.phrases.length > 0}
           <button
             class="action-btn clear-btn"
             onclick={handleClearTimeline}
@@ -643,17 +546,17 @@
       </div>
 
       <PhraseTimeline
-        {timeline}
-        {totalSteps}
-        {selectedEffort}
-        {selectedPhraseId}
+        timeline={lab.timeline}
+        totalSteps={lab.totalSteps}
+        selectedEffort={lab.selectedEffort}
+        selectedPhraseId={lab.selectedPhraseId}
         onTimelineChange={handleTimelineChange}
         onPhraseSelect={handlePhraseSelect}
-        currentStep={currentStepForTimeline}
+        currentStep={lab.currentStepForTimeline}
       />
 
-      {#if timeline.phrases.length > 0}
-        <PhraseEasingCurveOverlay {timeline} {totalSteps} />
+      {#if lab.timeline.phrases.length > 0}
+        <PhraseEasingCurveOverlay timeline={lab.timeline} totalSteps={lab.totalSteps} />
       {/if}
     </div>
 
@@ -663,20 +566,20 @@
       <div class="transition-toggle" role="radiogroup" aria-label="Transition mode">
         <button
           class="toggle-btn"
-          class:active={timeline.transition === "hard"}
+          class:active={lab.timeline.transition === "hard"}
           type="button"
           role="radio"
-          aria-checked={timeline.transition === "hard"}
+          aria-checked={lab.timeline.transition === "hard"}
           onclick={handleTransitionToggle}
         >
           Hard
         </button>
         <button
           class="toggle-btn"
-          class:active={timeline.transition === "blend"}
+          class:active={lab.timeline.transition === "blend"}
           type="button"
           role="radio"
-          aria-checked={timeline.transition === "blend"}
+          aria-checked={lab.timeline.transition === "blend"}
           onclick={handleTransitionToggle}
         >
           Blend
@@ -688,14 +591,20 @@
 
 <!-- Sequence Picker Modal -->
 <SequencePickerModal
-  open={showPicker}
+  open={lab.showPicker}
   onSelect={handleSequenceSelected}
-  onClose={() => (showPicker = false)}
+  onClose={() => (lab.showPicker = false)}
   title="Select Sequence for Phrase Effort Lab"
 />
 
 <style>
   .phrase-effort-lab {
+    /* Scoped accent palette — one source of truth for the lab's purple.
+       Falls back to the global theme accent when present. */
+    --phrase-accent: var(--theme-accent, #8b5cf6);
+    --phrase-accent-text: #a78bfa;
+    --phrase-accent-text-strong: #c4b5fd;
+
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -742,9 +651,9 @@
     letter-spacing: 0.08em;
     padding: 2px 8px;
     border-radius: 4px;
-    background: rgba(139, 92, 246, 0.2);
-    color: #a78bfa;
-    border: 1px solid rgba(139, 92, 246, 0.3);
+    background: color-mix(in srgb, var(--phrase-accent) 20%, transparent);
+    color: var(--phrase-accent-text);
+    border: 1px solid color-mix(in srgb, var(--phrase-accent) 30%, transparent);
   }
 
   /* ─── Buttons ──────────────────────────────────────────────────── */
@@ -776,14 +685,14 @@
   }
 
   .save-btn {
-    background: rgba(139, 92, 246, 0.15);
-    border: 1.5px solid rgba(139, 92, 246, 0.3);
-    color: #a78bfa;
+    background: color-mix(in srgb, var(--phrase-accent) 15%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--phrase-accent) 30%, transparent);
+    color: var(--phrase-accent-text);
   }
 
   .save-btn:hover:not(:disabled) {
-    background: rgba(139, 92, 246, 0.25);
-    border-color: rgba(139, 92, 246, 0.5);
+    background: color-mix(in srgb, var(--phrase-accent) 25%, transparent);
+    border-color: color-mix(in srgb, var(--phrase-accent) 50%, transparent);
   }
 
   .save-btn:disabled {
@@ -792,15 +701,15 @@
   }
 
   .save-btn.saved {
-    background: rgba(34, 197, 94, 0.15);
-    border-color: rgba(34, 197, 94, 0.3);
-    color: #4ade80;
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
+    color: color-mix(in srgb, var(--semantic-success, #22c55e) 70%, white);
   }
 
   .save-btn.error {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: #f87171;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, white);
   }
 
   /* ─── Empty State ──────────────────────────────────────────────── */
@@ -830,17 +739,17 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     border-radius: 10px;
-    background: rgba(139, 92, 246, 0.2);
-    border: 1.5px solid rgba(139, 92, 246, 0.4);
-    color: #a78bfa;
+    background: color-mix(in srgb, var(--phrase-accent) 20%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--phrase-accent) 40%, transparent);
+    color: var(--phrase-accent-text);
     cursor: pointer;
     transition: all var(--duration-fast, 100ms) ease;
     min-height: var(--min-touch-target, 44px);
   }
 
   .pick-cta:hover {
-    background: rgba(139, 92, 246, 0.3);
-    border-color: rgba(139, 92, 246, 0.6);
+    background: color-mix(in srgb, var(--phrase-accent) 30%, transparent);
+    border-color: color-mix(in srgb, var(--phrase-accent) 60%, transparent);
   }
 
   /* ─── Canvas Area ──────────────────────────────────────────────── */
@@ -916,9 +825,9 @@
   }
 
   .delete-btn:hover {
-    color: #f87171;
-    border-color: rgba(239, 68, 68, 0.3);
-    background: rgba(239, 68, 68, 0.1);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, white);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
   }
 
   /* ─── Restart Button ─────────────────────────────────────────── */
@@ -940,8 +849,8 @@
 
   .restart-btn:hover {
     color: var(--theme-text, white);
-    border-color: var(--theme-accent, #8b5cf6);
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-color: var(--phrase-accent);
+    background: color-mix(in srgb, var(--phrase-accent) 15%, transparent);
   }
 
   /* ─── Preset Menu ────────────────────────────────────────────── */
@@ -951,15 +860,15 @@
   }
 
   .preset-btn {
-    background: rgba(139, 92, 246, 0.1);
-    border-color: rgba(139, 92, 246, 0.25);
-    color: #a78bfa;
+    background: color-mix(in srgb, var(--phrase-accent) 10%, transparent);
+    border-color: color-mix(in srgb, var(--phrase-accent) 25%, transparent);
+    color: var(--phrase-accent-text);
   }
 
   .preset-btn:hover:not(:disabled) {
-    background: rgba(139, 92, 246, 0.2);
-    border-color: rgba(139, 92, 246, 0.4);
-    color: #c4b5fd;
+    background: color-mix(in srgb, var(--phrase-accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--phrase-accent) 40%, transparent);
+    color: var(--phrase-accent-text-strong);
   }
 
   .preset-menu {
@@ -991,7 +900,7 @@
   }
 
   .preset-option:hover {
-    background: rgba(139, 92, 246, 0.15);
+    background: color-mix(in srgb, var(--phrase-accent) 15%, transparent);
   }
 
   .preset-option-label {
@@ -1046,7 +955,7 @@
   }
 
   .toggle-btn.active {
-    background: rgba(139, 92, 246, 0.2);
+    background: color-mix(in srgb, var(--phrase-accent) 20%, transparent);
     color: var(--theme-text, #ffffff);
   }
 

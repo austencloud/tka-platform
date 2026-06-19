@@ -164,8 +164,8 @@
     position: absolute;
     top: 4px;
     bottom: 4px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1.5px dashed rgba(255, 255, 255, 0.3);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 1.5px dashed var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     border-radius: 6px;
     pointer-events: none;
     z-index: 3;
