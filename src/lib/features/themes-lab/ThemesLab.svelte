@@ -7,6 +7,7 @@
   import ThemeHeader from "./components/ThemeHeader.svelte";
   import ThemeControlsPanel from "./components/ThemeControlsPanel.svelte";
   import ScenePreview from "$lib/features/lab/tabs/scene-lab/components/ScenePreview.svelte";
+  import type { Component } from "svelte";
   import type { ThemeId } from "./domain/theme-types";
 
   import OceanLab from "$lib/features/background-builder/components/OceanLab.svelte";
@@ -24,7 +25,7 @@
 
   setSceneLabContext(state.sceneLabContext);
 
-  const labComponents: Record<string, any> = {
+  const labComponents: Partial<Record<ThemeId, Component>> = {
     ocean: OceanLab,
     cosmic: CosmicLab,
     forest: ForestLab,

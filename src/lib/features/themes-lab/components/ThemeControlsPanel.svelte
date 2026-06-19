@@ -136,15 +136,15 @@
   }
 
   .action-btn.success {
-    background: color-mix(in srgb, #10b981 22%, transparent);
-    border-color: color-mix(in srgb, #10b981 40%, transparent);
-    color: #34d399;
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 22%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
+    color: color-mix(in srgb, var(--semantic-success, #22c55e) 70%, white);
   }
 
   .action-btn.error {
-    background: color-mix(in srgb, #ef4444 22%, transparent);
-    border-color: color-mix(in srgb, #ef4444 40%, transparent);
-    color: #f87171;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 22%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, white);
   }
 
   .controls-scroll {
@@ -152,5 +152,11 @@
     min-height: 0;
     overflow-y: auto;
     padding-right: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .action-btn {
+      transition: none;
+    }
   }
 </style>

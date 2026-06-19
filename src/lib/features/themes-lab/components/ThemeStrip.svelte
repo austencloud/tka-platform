@@ -96,4 +96,11 @@
   .label {
     line-height: 1;
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    button,
+    button:active {
+      transition: none;
+    }
+  }
 </style>

@@ -68,16 +68,17 @@
     align-items: center;
     padding: 2px 8px;
     border-radius: 6px;
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     letter-spacing: 0.04em;
-    background: rgba(56, 189, 248, 0.15);
-    color: #7dd3fc;
+    background: color-mix(in srgb, var(--theme-accent, #38bdf8) 15%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #7dd3fc) 70%, white);
   }
 
+  /* 3D keeps a distinct tint while still deriving from the active theme accent. */
   .mode-badge.is-3d {
-    background: rgba(168, 85, 247, 0.15);
-    color: #c4b5fd;
+    background: color-mix(in srgb, var(--theme-accent, #a855f7) 18%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #c4b5fd) 60%, white);
   }
 
   .toggle {
@@ -113,5 +114,11 @@
   .toggle button:focus-visible {
     outline: 2px solid var(--theme-accent, #38bdf8);
     outline-offset: -2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toggle button {
+      transition: none;
+    }
   }
 </style>
