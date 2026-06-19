@@ -14,7 +14,7 @@
   Domain: Retro DOS Terminal
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { terminalState } from "../state/terminal-state.svelte";
   import { CommandParser } from "../services/command-parser";
   import { DosFileSystem } from "../services/dos-file-system";
@@ -50,14 +50,18 @@
   $effect(() => {
     // Read lines.length to subscribe to buffer changes
     const _len = terminalState.lines.length;
-    if (outputEl) {
-      // Use tick-deferred scroll so the DOM has rendered the new line
-      requestAnimationFrame(() => {
-        if (outputEl) {
-          outputEl.scrollTop = outputEl.scrollHeight;
-        }
-      });
-    }
+    if (!outputEl) return;
+
+    // Use a RAF-deferred scroll so the DOM has rendered the new line.
+    // Cancel any pending RAF from a prior re-run so rapid line appends
+    // don't leave ghost callbacks queued.
+    const rafId = requestAnimationFrame(() => {
+      if (outputEl) {
+        outputEl.scrollTop = outputEl.scrollHeight;
+      }
+    });
+
+    return () => cancelAnimationFrame(rafId);
   });
 
   /* ------------------------------------------------------------------ */
@@ -200,6 +204,12 @@
     terminalState.inputEnabled = false;
     // Focus the terminal so keyboard input works immediately
     terminalEl?.focus();
+  });
+
+  onDestroy(() => {
+    // Stop the FORMAT easter-egg interval if it's still running so it
+    // can't keep firing against terminalState after unmount.
+    commandParser.dispose();
   });
 </script>
 

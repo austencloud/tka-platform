@@ -56,7 +56,7 @@
     S: "Sigma",
     T: "Tau",
     U: "Upsilon",
-    V: "Nu",
+    V: "Theta",
     W: "Omega",
     X: "Xi",
     Y: "Psi",

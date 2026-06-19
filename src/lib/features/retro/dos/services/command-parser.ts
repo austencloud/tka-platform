@@ -24,8 +24,27 @@ export class CommandParser {
 	/** When true, the next execute() call handles serial number input */
 	private awaitingSerial = false;
 
+	/**
+	 * Active interval id for the FORMAT easter-egg progress animation.
+	 * Held so it can be cleared both on natural completion and on teardown
+	 * (dispose) if the terminal unmounts mid-animation.
+	 */
+	private formatInterval: ReturnType<typeof setInterval> | null = null;
+
 	constructor(fs: DosFileSystem) {
 		this.fs = fs;
+	}
+
+	/**
+	 * Release any timers this parser owns. Call from the host component's
+	 * teardown path so the FORMAT animation can't keep firing against
+	 * terminalState after the terminal unmounts.
+	 */
+	dispose(): void {
+		if (this.formatInterval !== null) {
+			clearInterval(this.formatInterval);
+			this.formatInterval = null;
+		}
 	}
 
 	execute(input: string): void {
@@ -280,7 +299,6 @@ export class CommandParser {
 		if (args.includes("/LETHE")) {
 			terminalState.writeLine("Bad command or file name");
 			terminalState.writeBlank();
-			console.log("Nice try.");
 			return;
 		}
 
@@ -578,11 +596,20 @@ export class CommandParser {
 		terminalState.writeLine("WARNING, ALL DATA ON NON-REMOVABLE DISK");
 		terminalState.writeLine("DRIVE C: WILL BE LOST!");
 
+		// Clear any in-flight FORMAT animation before starting a new one.
+		if (this.formatInterval !== null) {
+			clearInterval(this.formatInterval);
+			this.formatInterval = null;
+		}
+
 		let progress = 0;
-		const interval = setInterval(() => {
+		this.formatInterval = setInterval(() => {
 			progress += Math.floor(Math.random() * 8) + 3;
 			if (progress >= 99) {
-				clearInterval(interval);
+				if (this.formatInterval !== null) {
+					clearInterval(this.formatInterval);
+					this.formatInterval = null;
+				}
 				terminalState.writeLine(
 					"FORMAT ABORTED: Cannot format active notation archive.",
 					"red",

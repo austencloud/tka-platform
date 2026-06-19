@@ -73,7 +73,19 @@ class TerminalState {
 		this.trimBuffer();
 	}
 
-	/** Write raw HTML to the terminal (for colored/formatted output) */
+	/**
+	 * Write raw HTML to the terminal (for colored/formatted output).
+	 *
+	 * SECURITY CONTRACT: the `html` string is rendered verbatim via `{@html}`
+	 * with NO sanitization. Callers MUST pass only internally-trusted markup —
+	 * either compile-time-constant span wrappers (e.g. `dos-*` color classes)
+	 * or strings whose dynamic parts have already been run through
+	 * {@link escapeForDisplay}. NEVER pass raw user input or any untrusted
+	 * value to this method; route user text through {@link escapeForDisplay}
+	 * first, or use {@link writeLine}, which escapes for you.
+	 *
+	 * @param html Trusted, pre-escaped HTML. Untrusted input is an XSS vector.
+	 */
 	writeHtml(html: string): void {
 		this.lines.push({ html, timestamp: Date.now() });
 		this.trimBuffer();
