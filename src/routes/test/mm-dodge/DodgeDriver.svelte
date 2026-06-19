@@ -113,6 +113,31 @@
   const _pole = new Vector3();
   const _qHandBefore = new Quaternion();
   const _qHandParent = new Quaternion();
+  const _shL = new Vector3();
+  const _shR = new Vector3();
+
+  // Reach-lean: how aggressively the torso bends forward to close a hand's reach
+  // shortfall, and the cap on that bend.
+  const LEAN_GAIN = 3.0;
+  const MAX_LEAN = 1.15; // ~66 deg
+
+  /** Push the whole upper body forward toward the props by an amount that closes
+   *  the worse hand's reach shortfall, so the hands stay glued instead of the
+   *  staff floating. Runs AFTER the staves are placed, BEFORE arm IK. */
+  function applyReachLean(): void {
+    if (!leftArm || !rightArm || !spineBone) return;
+    const reach = (leftArm.upperLength + leftArm.lowerLength) * 0.99;
+    leftArm.root.getWorldPosition(_shL);
+    rightArm.root.getWorldPosition(_shR);
+    const dL = _shL.distanceTo(blueStaff.position);
+    const dR = _shR.distanceTo(redStaff.position);
+    const deficit = Math.max(dL, dR) - reach;
+    if (deficit <= 0.001) return; // arms reach unaided
+    const pitch = Math.min(deficit * LEAN_GAIN, MAX_LEAN);
+    _pitchQ.setFromAxisAngle(_pitchAxis, pitch);
+    spineBone.quaternion.multiply(_pitchQ); // forward bow about the spine's local X
+    spineBone.updateMatrixWorld(true);
+  }
 
   /** Build a two-bone arm chain (Arm->ForeArm->Hand) from bind-pose offsets,
    *  matching the LegChain shape solveLegIK consumes (the elbow is a hinge like
@@ -307,8 +332,9 @@
     const dt = Math.min(delta, 1 / 15);
 
     // Desired stance: MANUAL (user-scrubbed) overrides AUTO (solver). Neutral
-    // when the dodge is off and not in manual mode.
-    let tx = 0, tz = 0, tyaw = 0, tpitch = 0;
+    // when the dodge is off and not in manual mode. (Forward lean is no longer a
+    // static stance value — it is computed dynamically by applyReachLean below.)
+    let tx = 0, tz = 0, tyaw = 0;
     if (manualMode) {
       tx = manualX;
       tz = manualZ;
@@ -317,7 +343,6 @@
       tx = solution.stance.footOffsetX;
       tz = solution.stance.footOffsetZ;
       tyaw = solution.stance.rootYawRad;
-      tpitch = solution.stance.spinePitchRad;
     }
     // Re-issue the targets only when they change (setTargetFacing resets the
     // turn-cross detector, so calling it every frame would break the turn).
@@ -331,21 +356,15 @@
 
     controller.update(dt);
 
-    // Apply the solved spine pitch on top of the posed clip (local X hinge).
-    if (spineBone && tpitch !== 0) {
-      _pitchQ.setFromAxisAngle(_pitchAxis, tpitch);
-      spineBone.quaternion.multiply(_pitchQ);
-      spineBone.updateMatrixWorld(true);
-    }
-
     // Advance the prop clock and place the staves imperatively (the props are
     // the fixed world-space choreography; they do NOT follow the body).
     progress = (progress + dt / LOOP_SEC) % 1;
     placeStaff(blueStaff, blueConfig, progress);
     placeStaff(redStaff, redConfig, progress);
 
-    // Pin each hand to its prop grip via arm IK, reaching from the dodged body.
-    // This is the "hands stay attached while the body dodges" requirement.
+    // Lean the torso forward toward the props so the hands can reach them, then
+    // pin each hand to its grip via arm IK. Hands stay glued; the body reaches.
+    applyReachLean();
     if (leftArm && leftElbowHinge) solveArm(leftArm, leftElbowHinge, blueStaff, true);
     if (rightArm && rightElbowHinge) solveArm(rightArm, rightElbowHinge, redStaff, false);
 
