@@ -13,10 +13,17 @@ export interface LocomotionState {
   isMoving: boolean;
 }
 
+export interface ClipLoadFailure {
+  name: string;
+  path: string;
+  error: unknown;
+}
+
 export class LocomotionController {
   private mixer: THREE.AnimationMixer | null = null;
   private actions: Record<string, THREE.AnimationAction> = {};
   private clips: Record<string, THREE.AnimationClip> = {};
+  private _failedClips: ClipLoadFailure[] = [];
   private _state: LocomotionState = {
     position: new THREE.Vector3(),
     facing: 0,
@@ -31,9 +38,20 @@ export class LocomotionController {
     return this._state;
   }
 
+  /**
+   * Clips that failed to load during initialize(). Callers should check this
+   * after awaiting initialize() — a non-empty list means the avatar is playing
+   * with missing animations and the user should be told, rather than silently
+   * degrading.
+   */
+  get failedClips(): readonly ClipLoadFailure[] {
+    return this._failedClips;
+  }
+
   async initialize(scene: THREE.Object3D): Promise<void> {
     this.mixer = new THREE.AnimationMixer(scene);
     const loader = new GLTFLoader();
+    this._failedClips = [];
 
     for (const [name, meta] of Object.entries(LOCOMOTION_CLIPS)) {
       try {
@@ -46,8 +64,18 @@ export class LocomotionController {
           action.setEffectiveWeight(name === "idle" ? 1 : 0);
           action.setLoop(THREE.LoopRepeat, Infinity);
           this.actions[name] = action;
+        } else {
+          // The GLB loaded but carried no animation track — treat as a failure
+          // so callers can surface it rather than the clip silently going missing.
+          this._failedClips.push({
+            name,
+            path: meta.path,
+            error: new Error("GLB contained no animation tracks"),
+          });
+          console.warn(`[Locomotion] Clip has no animations: ${meta.path}`);
         }
       } catch (e) {
+        this._failedClips.push({ name, path: meta.path, error: e });
         console.warn(`[Locomotion] Failed to load clip: ${meta.path}`, e);
       }
     }

@@ -85,6 +85,21 @@
     stageState.addMark(editMode.selectedPerformerId, stageX, stageZ);
   }
 
+  // Keyboard alternative to clicking the stage: Enter/Space drops a mark at the
+  // stage center for the selected performer. Pointer placement stays the precise
+  // path; this gives keyboard users a way to add marks at all.
+  function handleStageKeydown(e: KeyboardEvent) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if (!editMode.selectedPerformerId) return;
+    if (editMode.isDragging) return;
+    e.preventDefault();
+    stageState.addMark(
+      editMode.selectedPerformerId,
+      choreography.stageWidth / 2,
+      choreography.stageDepth / 2
+    );
+  }
+
   const dotRadius = 24;
   const markRadius = 16;
 </script>
@@ -160,16 +175,21 @@
       stroke-dasharray="4 4"
     />
 
-    <!-- Click target for adding marks -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- Click/keyboard target for adding marks -->
     <rect
       x={margin}
       y={margin}
       width={svgWidth - margin * 2}
       height={svgHeight - margin * 2}
       fill="transparent"
+      role="button"
+      tabindex="0"
+      aria-label={editMode.selectedPerformerId
+        ? 'Add a mark for the selected performer. Click to place, or press Enter to add at stage center.'
+        : 'Stage area. Select a performer to add marks.'}
+      aria-disabled={!editMode.selectedPerformerId}
       onclick={handleStageClick}
+      onkeydown={handleStageKeydown}
       style="cursor: {editMode.selectedPerformerId ? 'crosshair' : 'default'}"
     />
 

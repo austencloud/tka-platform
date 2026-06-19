@@ -2,7 +2,19 @@
 
 export type CameraMode = 'orbit' | 'top-down';
 
-export function createStageEditMode() {
+export interface StageEditMode {
+	readonly cameraMode: CameraMode;
+	readonly selectedPerformerId: string | null;
+	readonly selectedMarkId: string | null;
+	readonly multiSelectedPerformerIds: Set<string>;
+	isDragging: boolean;
+	toggleCameraMode(): void;
+	selectPerformer(id: string, addToSelection?: boolean): void;
+	selectMark(performerId: string, markId: string): void;
+	clearSelection(): void;
+}
+
+export function createStageEditMode(): StageEditMode {
 	let cameraMode = $state<CameraMode>('orbit');
 	let selectedPerformerId = $state<string | null>(null);
 	let selectedMarkId = $state<string | null>(null);
@@ -64,5 +76,3 @@ export function createStageEditMode() {
 		clearSelection
 	};
 }
-
-export type StageEditMode = ReturnType<typeof createStageEditMode>;

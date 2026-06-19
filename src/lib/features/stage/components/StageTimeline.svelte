@@ -3,6 +3,23 @@
   import type { StageEditMode } from '../state/stage-edit-mode.svelte';
   import { TimelineCapShape } from 'animation-timeline-js';
 
+  // animation-timeline-js ships no @types package, so we declare a minimal
+  // local surface covering only the members this component touches.
+  interface TimelineTimeChangedEvent {
+    val: number;
+  }
+  interface TimelineSelectedEvent {
+    selected?: Array<{ data?: { markId?: string; performerId?: string } }>;
+  }
+  interface TimelineInstance {
+    _formatUnitsText: (ms: number) => string;
+    onTimeChanged(cb: (e: TimelineTimeChangedEvent) => void): void;
+    onSelected(cb: (e: TimelineSelectedEvent | undefined) => void): void;
+    setModel(model: { rows: unknown[] }): void;
+    setTime(time: number): void;
+    dispose?(): void;
+  }
+
   interface Props {
     editMode: StageEditMode;
   }
@@ -15,7 +32,7 @@
   const overallProgress = $derived(stageState.overallProgress);
 
   let containerEl: HTMLDivElement | null = $state(null);
-  let timeline: any = $state(null);
+  let timeline: TimelineInstance | null = $state(null);
 
   const maxBeats = $derived(
     Math.max(
@@ -29,12 +46,14 @@
   $effect(() => {
     if (!containerEl) return;
 
-    let instance: any = null;
+    let instance: TimelineInstance | null = null;
 
     import('animation-timeline-js').then((module) => {
       const TimelineClass = module.Timeline;
       if (!TimelineClass) return;
 
+      // Cast through unknown: the lib's constructor type isn't exported in a
+      // usable form, so we narrow it to our local TimelineInstance surface.
       instance = new TimelineClass({
         id: containerEl,
         min: 0,
@@ -70,14 +89,14 @@
             capType: TimelineCapShape.Triangle,
           },
         },
-      });
+      }) as unknown as TimelineInstance;
 
       instance._formatUnitsText = (ms: number) => {
         const beat = Math.round(ms / 1000);
         return `${beat}`;
       };
 
-      instance.onTimeChanged((e: any) => {
+      instance.onTimeChanged((e: TimelineTimeChangedEvent) => {
         if (!isPlaying) {
           const beatPos = e.val / 1000;
           const progress = maxBeats > 0 ? Math.min(1, beatPos / maxBeats) : 0;
@@ -85,7 +104,7 @@
         }
       });
 
-      instance.onSelected((e: any) => {
+      instance.onSelected((e: TimelineSelectedEvent | undefined) => {
         const selected = e?.selected;
         if (selected && selected.length > 0) {
           const kf = selected[0];

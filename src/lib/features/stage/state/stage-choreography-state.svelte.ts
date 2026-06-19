@@ -17,6 +17,44 @@ import {
 import { generatePresetPositions } from './formation-presets';
 import type { UnifiedPlaybackContext } from '$lib/shared/timeline/unified-playback-context';
 
+interface InterpolatedPosition {
+  performerId: string;
+  x: number;
+  z: number;
+  facing: number;
+}
+
+/**
+ * Explicit shape of the stage choreography state object. Implements the shared
+ * playback contract plus the stage-specific editing surface consumed by
+ * StageViewer / FormationOverlay / StageTimeline.
+ */
+export interface StageChoreographyState extends UnifiedPlaybackContext {
+  readonly choreography: StageChoreography;
+  readonly bpm: number;
+  readonly interpolatedPositions: InterpolatedPosition[];
+  readonly canUndo: boolean;
+  readonly canRedo: boolean;
+  seek(progress: number): void;
+  togglePlay(): void;
+  toggleLoop(): void;
+  onBpmChange(bpm: number): void;
+  getPerformer(id: string): Performer | undefined;
+  setPerformerCount(count: number): void;
+  applyPreset(preset: FormationPresetId): void;
+  insertFormationAtPlayhead(preset: FormationPresetId, transitionBeats?: number): void;
+  addMark(performerId: string, x: number, z: number, beats?: number): void;
+  beginDrag(): void;
+  updateMarkPosition(markId: string, x: number, z: number): void;
+  updateMarkBeats(markId: string, beats: number): void;
+  updateMarkWalkStyle(markId: string, walkStyle: WalkStyle): void;
+  updateMarkEasing(markId: string, easing: EasingType): void;
+  deleteMark(markId: string): void;
+  setBpm(bpm: number): void;
+  undo(): void;
+  redo(): void;
+}
+
 function createPerformer(index: number): Performer {
   return {
     id: crypto.randomUUID(),
@@ -56,7 +94,7 @@ function applyEasing(t: number, easing: EasingType): number {
   }
 }
 
-export function createStageChoreographyState() {
+export function createStageChoreographyState(): StageChoreographyState {
   let choreography = $state<StageChoreography>({
     id: crypto.randomUUID(),
     name: 'Untitled Choreography',
@@ -482,12 +520,17 @@ export function createStageChoreographyState() {
     setBpm,
     undo,
     redo,
-  } satisfies UnifiedPlaybackContext & Record<string, unknown>;
+  } satisfies StageChoreographyState;
 }
 
-let instance: ReturnType<typeof createStageChoreographyState> | null = null;
+// NOTE: module-level singleton with no reset path. Tests that need isolation
+// must import createStageChoreographyState() directly to get a fresh instance,
+// since getStageChoreographyState() shares one instance across the module's
+// lifetime (and across HMR). Intentional for the app runtime; flagged for test
+// authors rather than rearchitected.
+let instance: StageChoreographyState | null = null;
 
-export function getStageChoreographyState() {
+export function getStageChoreographyState(): StageChoreographyState {
   if (!instance) {
     instance = createStageChoreographyState();
   }
