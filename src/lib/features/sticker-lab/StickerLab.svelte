@@ -19,10 +19,18 @@
   <section class="col col-main" aria-label={viewMode === "shapes" ? "Shape browser" : "Sheet preview"}>
     <header>
       <div class="view-toggle">
-        <button class:active={viewMode === "shapes"} onclick={() => (viewMode = "shapes")}>
+        <button
+          class:active={viewMode === "shapes"}
+          aria-pressed={viewMode === "shapes"}
+          onclick={() => (viewMode = "shapes")}
+        >
           <i class="fas fa-shapes" aria-hidden="true"></i> Shapes
         </button>
-        <button class:active={viewMode === "sheet"} onclick={() => (viewMode = "sheet")}>
+        <button
+          class:active={viewMode === "sheet"}
+          aria-pressed={viewMode === "sheet"}
+          onclick={() => (viewMode = "sheet")}
+        >
           <i class="fas fa-file-image" aria-hidden="true"></i> Sheet
         </button>
       </div>

@@ -131,17 +131,25 @@
   let view = $state<View>({ kind: "catalogs" });
   let groups = $state<SoloGroup[]>([]);
   let scanProgress = $state("");
+  let loadError = $state<string | null>(null);
 
   const copiesMap = $derived(
     new Map(stickerState.sheet.stickers.map((s) => [s.primitiveRef.shapeHash, s.copies])),
   );
 
   onMount(async () => {
-    const cached = getCachedCatalogs();
-    if (cached && cached.length > 0) catalogs = cached;
-    const fresh = await loadCatalogs();
-    catalogs = fresh;
-    loading = false;
+    try {
+      const cached = getCachedCatalogs();
+      if (cached && cached.length > 0) catalogs = cached;
+      const fresh = await loadCatalogs();
+      catalogs = fresh;
+    } catch (err) {
+      console.error("Failed to load sticker catalogs", err);
+      loadError = "Couldn't load catalogs. Check your connection and try again.";
+      toast.error(loadError);
+    } finally {
+      loading = false;
+    }
   });
 
   async function openCatalog(catalog: Catalog) {
@@ -356,7 +364,12 @@
         </section>
       {/if}
 
-      {#if !loading && catalogs.length === 0}
+      {#if !loading && loadError}
+        <div class="error-state" role="alert">
+          <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+          <p>{loadError}</p>
+        </div>
+      {:else if !loading && catalogs.length === 0}
         <p class="empty">No catalogs found</p>
       {/if}
     </div>
@@ -377,7 +390,7 @@
     align-items: center;
     gap: 8px;
     padding: 12px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     flex-wrap: wrap;
   }
 
@@ -388,20 +401,20 @@
     min-height: 36px;
     padding: 6px 12px;
     background: none;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 6px;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     font: inherit;
     font-size: 13px;
     cursor: pointer;
   }
-  .back-btn:hover { color: #fff; border-color: rgba(255, 255, 255, 0.25); }
+  .back-btn:hover { color: var(--theme-text, #fff); border-color: var(--theme-stroke, rgba(255, 255, 255, 0.25)); }
   .back-btn:focus-visible { outline: 2px solid var(--accent, #63b7cd); outline-offset: 2px; }
 
-  .sep { color: rgba(255, 255, 255, 0.2); font-size: 13px; }
-  .current { font-size: 13px; font-weight: 600; color: #fff; }
-  .hint { margin-left: auto; font-size: 11px; color: rgba(255, 255, 255, 0.25); }
-  .status { margin-left: auto; font-size: 11px; color: rgba(255, 255, 255, 0.4); display: flex; align-items: center; gap: 6px; }
+  .sep { color: var(--theme-text-dim, rgba(255, 255, 255, 0.2)); font-size: 13px; }
+  .current { font-size: 13px; font-weight: 600; color: var(--theme-text, #fff); }
+  .hint { margin-left: auto; font-size: 11px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.25)); }
+  .status { margin-left: auto; font-size: 11px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.4)); display: flex; align-items: center; gap: 6px; }
 
   .sb-header {
     flex-shrink: 0;
@@ -409,9 +422,9 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
-  .title { font-size: 14px; font-weight: 600; color: #fff; }
+  .title { font-size: 14px; font-weight: 600; color: var(--theme-text, #fff); }
 
   .catalog-list {
     flex: 1;
@@ -421,14 +434,14 @@
     flex-direction: column;
     gap: 24px;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    scrollbar-color: var(--theme-stroke, rgba(255, 255, 255, 0.12)) transparent;
   }
 
   .section-label {
     margin: 0 0 8px;
     font-size: 12px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -445,18 +458,18 @@
     flex-direction: column;
     gap: 2px;
     padding: 12px 14px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 8px;
     cursor: pointer;
-    color: #fff;
+    color: var(--theme-text, #fff);
     text-align: left;
     font: inherit;
   }
   .catalog-card:hover { border-color: var(--accent, #63b7cd); }
   .catalog-card:focus-visible { outline: 2px solid var(--accent, #63b7cd); outline-offset: 2px; }
   .catalog-name { font-size: 13px; font-weight: 600; }
-  .catalog-meta { font-size: 11px; color: rgba(255, 255, 255, 0.4); }
+  .catalog-meta { font-size: 11px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.4)); }
 
   .grid {
     flex: 1;
@@ -468,7 +481,7 @@
     overflow-y: auto;
     align-content: start;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    scrollbar-color: var(--theme-stroke, rgba(255, 255, 255, 0.12)) transparent;
   }
 
   .tile {
@@ -477,17 +490,20 @@
     flex-direction: column;
     gap: 4px;
     padding: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
     cursor: pointer;
-    color: #fff;
+    color: var(--theme-text, #fff);
     font: inherit;
     text-align: left;
   }
   .tile:hover { border-color: var(--accent, #63b7cd); }
   .tile:focus-visible { outline: 2px solid var(--accent, #63b7cd); outline-offset: 2px; }
-  .tile.copied { border-color: #22c55e; box-shadow: 0 0 0 1px #22c55e; }
+  .tile.copied {
+    border-color: var(--semantic-success, #22c55e);
+    box-shadow: 0 0 0 1px var(--semantic-success, #22c55e);
+  }
 
   .art {
     width: 100%;
@@ -499,7 +515,7 @@
 
   .label {
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.45);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -524,9 +540,9 @@
     font-size: 11px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #fff;
+    background: var(--theme-overlay-strong, rgba(0, 0, 0, 0.6));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    color: var(--theme-text, #fff);
   }
 
   .empty {
@@ -535,7 +551,26 @@
     padding: 48px 24px;
     margin: 0;
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
+
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+  .error-state i {
+    font-size: 24px;
+    color: var(--semantic-error, #ef4444);
+  }
+  .error-state p {
+    margin: 0;
+    font-size: 13px;
+    max-width: 32ch;
   }
 
   @media (max-width: 768px) {
