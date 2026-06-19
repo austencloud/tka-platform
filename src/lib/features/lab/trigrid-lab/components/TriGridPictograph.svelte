@@ -16,6 +16,8 @@
   import { getTriGridCalculator } from "../get-tri-grid-calculator";
   import { TRIGRID_SVG_SIZE } from "../domain/trigrid-constants";
   import { applyColorToSvg } from "$lib/shared/utils/svg-color-utils";
+  import { BLUE_PROP_COLOR, RED_PROP_COLOR } from "../domain/trigrid-colors";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   interface Props {
     mode: TriGridMode;
@@ -41,13 +43,16 @@
   const TRIAD_CENTER_X = 124.38;
   const TRIAD_CENTER_Y = 109.545;
 
-  // Prop colors matching existing pictograph convention
-  const BLUE_COLOR = "#2563eb";
-  const RED_COLOR = "#dc2626";
+  // Prop colors matching existing pictograph convention (shared module)
+  const BLUE_COLOR = BLUE_PROP_COLOR;
+  const RED_COLOR = RED_PROP_COLOR;
 
   // SVG content loaded from static files
   let gridSvgContent = $state("");
   let triadSvgContent = $state("");
+
+  // Async load lifecycle so the canvas can show loading / error states
+  let loadStatus = $state<"loading" | "ready" | "error">("loading");
 
   // Load grid and prop SVGs via SvgPreloader (same pattern as GridSvg.svelte)
   $effect(() => {
@@ -55,6 +60,7 @@
   });
 
   async function loadAssets(): Promise<void> {
+    loadStatus = "loading";
     try {
       const [gridSvg, propSvg] = await Promise.all([
         svgPreloader.getSvgContent("grid", "trigrid_grid"),
@@ -62,8 +68,11 @@
       ]);
       gridSvgContent = stripSvgWrapper(gridSvg);
       triadSvgContent = stripSvgWrapper(propSvg);
+      loadStatus = "ready";
     } catch (err) {
       console.error("Failed to load trigrid assets:", err);
+      loadStatus = "error";
+      toast.error("Failed to load trigrid assets. Check that grid and triad SVGs are available.");
     }
   }
 
@@ -128,7 +137,8 @@
 
 </script>
 
-<svg
+<div class="trigrid-stage">
+  <svg
   viewBox="0 0 {TRIGRID_SVG_SIZE} {TRIGRID_SVG_SIZE}"
   class="trigrid-pictograph"
   role="img"
@@ -159,9 +169,32 @@
       {@html colorizedTriad(RED_COLOR)}
     </g>
   {/if}
-</svg>
+  </svg>
+
+  {#if loadStatus === "loading"}
+    <div class="stage-status" role="status" aria-live="polite">
+      <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+      <span>Loading assets…</span>
+    </div>
+  {:else if loadStatus === "error"}
+    <div class="stage-status error" role="alert">
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+      <span>Couldn't load trigrid assets.</span>
+      <button type="button" class="retry-btn" onclick={() => loadAssets()}>Retry</button>
+    </div>
+  {/if}
+</div>
 
 <style>
+  .trigrid-stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .trigrid-pictograph {
     width: 100%;
     height: 100%;
@@ -170,20 +203,66 @@
   }
 
   .pictograph-bg {
-    fill: #000000;
+    fill: var(--pictograph-bg, #000000);
   }
 
   /* Grid styling matching existing pictograph conventions */
   .grid-container {
-    color: #d0d0d0;
+    color: var(--pictograph-grid-color, #d0d0d0);
   }
 
   :global(:root.dark) .grid-container {
-    color: #d0d0d0;
+    color: var(--pictograph-grid-color-dark, #d0d0d0);
   }
 
   :global(:root:not(.dark)) .grid-container {
-    color: #333333;
+    color: var(--pictograph-grid-color-light, #333333);
+  }
+
+  .stage-status {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+    padding: 16px;
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    background: rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+  }
+
+  .stage-status i {
+    font-size: 24px;
+  }
+
+  .stage-status.error {
+    color: var(--theme-text, #ffffff);
+    pointer-events: auto;
+  }
+
+  .stage-status.error i {
+    color: var(--theme-danger, #f87171);
+  }
+
+  .retry-btn {
+    min-height: var(--min-touch-target);
+    padding: 0 16px;
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
+    border-radius: 8px;
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .retry-btn:hover {
+    border-color: var(--theme-accent, #10b981);
+    color: var(--theme-accent, #10b981);
   }
 
   /* Prop opacity */

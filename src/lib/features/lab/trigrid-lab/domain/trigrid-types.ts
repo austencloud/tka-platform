@@ -64,20 +64,3 @@ export interface TriGridArcData {
 
 /** Motion type for trigrid (no dash - no opposite points) */
 export type TriGridMotionType = "pro" | "anti" | "float" | "static";
-
-/** Lab state for a single hand */
-export interface TriGridHandState {
-  location: GridLocation;
-  orientation: Orientation;
-}
-
-/** Complete lab state */
-export interface TriGridLabState {
-  mode: TriGridMode;
-  blue: TriGridHandState;
-  red: TriGridHandState;
-  motionType: TriGridMotionType;
-  showGrid: boolean;
-  showArrows: boolean;
-  showOrientations: boolean;
-}

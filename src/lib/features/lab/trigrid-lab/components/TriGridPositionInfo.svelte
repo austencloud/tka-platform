@@ -8,6 +8,19 @@
   import type { TriGridMode } from "../domain/trigrid-types";
   import { getTriGridPositionResolver } from "../get-tri-grid-position-resolver";
   import { TRIGRID_AVAILABLE_LETTER_TYPES } from "../domain/trigrid-constants";
+  import {
+    BLUE_TEXT,
+    BLUE_TINT,
+    GAMMA_TEXT,
+    GAMMA_TINT,
+  } from "../domain/trigrid-colors";
+
+  const colorVars = [
+    `--tg-blue-text: ${BLUE_TEXT}`,
+    `--tg-blue-tint: ${BLUE_TINT}`,
+    `--tg-gamma-text: ${GAMMA_TEXT}`,
+    `--tg-gamma-tint: ${GAMMA_TINT}`,
+  ].join("; ");
 
   interface Props {
     blueLocation: GridLocation;
@@ -28,7 +41,7 @@
   };
 </script>
 
-<div class="position-info">
+<div class="position-info" style={colorVars}>
   <h3>Position</h3>
 
   {#if positionInfo}
@@ -115,13 +128,13 @@
   }
 
   .group-badge.beta {
-    background: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
+    background: var(--tg-blue-tint);
+    color: var(--tg-blue-text);
   }
 
   .group-badge.gamma {
-    background: rgba(16, 185, 129, 0.2);
-    color: #34d399;
+    background: var(--tg-gamma-tint);
+    color: var(--tg-gamma-text);
   }
 
   .separator {
@@ -159,7 +172,7 @@
     padding: 8px;
     background: rgba(255, 255, 255, 0.02);
     border-radius: 6px;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     line-height: 1.4;
   }

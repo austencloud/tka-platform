@@ -10,6 +10,29 @@
   import type { TriGridMode, TriGridMotionType } from "../domain/trigrid-types";
   import { TRIGRID_ORIENTATIONS } from "../domain/trigrid-types";
   import { getTriGridPositions } from "../domain/trigrid-positions";
+  import {
+    BLUE_PROP_COLOR,
+    RED_PROP_COLOR,
+    BLUE_TEXT,
+    RED_TEXT,
+    BLUE_TINT,
+    BLUE_TINT_STRONG,
+    GAMMA_TEXT,
+    GAMMA_TINT,
+    RED_TINT_STRONG,
+  } from "../domain/trigrid-colors";
+
+  const colorVars = [
+    `--tg-blue: ${BLUE_PROP_COLOR}`,
+    `--tg-red: ${RED_PROP_COLOR}`,
+    `--tg-blue-text: ${BLUE_TEXT}`,
+    `--tg-red-text: ${RED_TEXT}`,
+    `--tg-blue-tint: ${BLUE_TINT}`,
+    `--tg-blue-tint-strong: ${BLUE_TINT_STRONG}`,
+    `--tg-gamma-text: ${GAMMA_TEXT}`,
+    `--tg-gamma-tint: ${GAMMA_TINT}`,
+    `--tg-red-tint-strong: ${RED_TINT_STRONG}`,
+  ].join("; ");
 
   interface Props {
     mode: TriGridMode;
@@ -56,7 +79,7 @@
   };
 </script>
 
-<div class="controls">
+<div class="controls" style={colorVars}>
   <!-- Mode toggle -->
   <section class="control-section">
     <h3>Mode</h3>
@@ -127,6 +150,7 @@
         <button
           class="ori-btn blue"
           class:active={blueOrientation === ori}
+          aria-pressed={blueOrientation === ori}
           onclick={() => onBlueOrientationChange(ori)}
           title={orientationLabels[ori]}
         >
@@ -143,6 +167,7 @@
         <button
           class="ori-btn red"
           class:active={redOrientation === ori}
+          aria-pressed={redOrientation === ori}
           onclick={() => onRedOrientationChange(ori)}
           title={orientationLabels[ori]}
         >
@@ -173,10 +198,20 @@
   <section class="control-section">
     <h3>Display</h3>
     <div class="toggle-list">
-      <label class="toggle-label">
-        <input type="checkbox" checked={showGrid} onchange={onToggleGrid} />
-        Grid
-      </label>
+      <button
+        type="button"
+        class="switch-row"
+        class:active={showGrid}
+        role="switch"
+        aria-checked={showGrid}
+        aria-label="Show grid"
+        onclick={onToggleGrid}
+      >
+        <span class="switch-label">Grid</span>
+        <span class="switch-indicator" aria-hidden="true">
+          <span class="switch-knob"></span>
+        </span>
+      </button>
     </div>
   </section>
 </div>
@@ -291,13 +326,13 @@
   }
 
   .pos-group.beta {
-    background: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
+    background: var(--tg-blue-tint);
+    color: var(--tg-blue-text);
   }
 
   .pos-group.gamma {
-    background: rgba(16, 185, 129, 0.2);
-    color: #34d399;
+    background: var(--tg-gamma-tint);
+    color: var(--tg-gamma-text);
   }
 
   .pos-label {
@@ -320,7 +355,7 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     cursor: pointer;
     transition: all 0.15s ease;
   }
@@ -331,15 +366,15 @@
   }
 
   .ori-btn.blue.active {
-    background: rgba(37, 99, 235, 0.3);
-    border-color: #2563eb;
-    color: #60a5fa;
+    background: var(--tg-blue-tint-strong);
+    border-color: var(--tg-blue);
+    color: var(--tg-blue-text);
   }
 
   .ori-btn.red.active {
-    background: rgba(220, 38, 38, 0.3);
-    border-color: #dc2626;
-    color: #f87171;
+    background: var(--tg-red-tint-strong);
+    border-color: var(--tg-red);
+    color: var(--tg-red-text);
   }
 
   .toggle-list {
@@ -348,19 +383,56 @@
     gap: 8px;
   }
 
-  .toggle-label {
+  .switch-row {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 8px;
-    font-size: var(--font-size-min, 14px);
+    width: 100%;
+    min-height: var(--min-touch-target);
+    padding: 0 12px;
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
     color: var(--theme-text, #ffffff);
     cursor: pointer;
-    min-height: 32px;
+    transition: all 0.15s ease;
   }
 
-  .toggle-label input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--theme-accent, #10b981);
+  .switch-row:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .switch-label {
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .switch-indicator {
+    position: relative;
+    flex-shrink: 0;
+    width: 36px;
+    height: 20px;
+    border-radius: 999px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    transition: background 0.15s ease;
+  }
+
+  .switch-row.active .switch-indicator {
+    background: var(--theme-accent, #10b981);
+  }
+
+  .switch-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffffff;
+    transition: transform 0.15s ease;
+  }
+
+  .switch-row.active .switch-knob {
+    transform: translateX(16px);
   }
 </style>
