@@ -219,10 +219,10 @@ if (typeof window !== "undefined") {
         budgetChecker.report();
       }, 3000); // Wait 3s for all resources
     });
-  }
 
-  // Expose to window for debugging
-  (
-    window as unknown as { budgetChecker: PerformanceBudgetChecker }
-  ).budgetChecker = budgetChecker;
+    // Expose to window for debugging (localhost only)
+    (
+      window as unknown as { budgetChecker: PerformanceBudgetChecker }
+    ).budgetChecker = budgetChecker;
+  }
 }

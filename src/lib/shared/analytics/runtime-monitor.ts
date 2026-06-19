@@ -245,8 +245,12 @@ class RuntimeMonitor {
 // Singleton instance
 export const runtimeMonitor = new RuntimeMonitor();
 
-// Expose to window for debugging
-if (typeof window !== "undefined") {
+// Expose to window for debugging (localhost only)
+if (
+  typeof window !== "undefined" &&
+  (window.location.hostname.includes("localhost") ||
+    window.location.hostname.includes("127.0.0.1"))
+) {
   (window as unknown as { runtimeMonitor: RuntimeMonitor }).runtimeMonitor =
     runtimeMonitor;
 }
