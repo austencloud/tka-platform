@@ -6,6 +6,7 @@ import {
 } from "$lib/features/choreo-card/services/deck-composer";
 import { loadCatalogSequences } from "$lib/features/choreo-card/services/catalog-loader";
 import { applyVariationDescriptor } from "$lib/features/choreo-card/services/deck-variation";
+import type { CardVariation } from "$lib/features/choreo-card/domain/models/DeckRelease";
 import { loadDiamondEdges } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
 import { classifyRotationStyle, type RotationStyle } from "../domain/classify-rotation-style";
 import { allTurnPatterns } from "../domain/tnd-turn-patterns";
@@ -119,7 +120,12 @@ export async function resolveRotationStyleMatrices(
         tp,
         applyVariationDescriptor(
           rep,
-          { turnPattern: tp, turnLabel: tp, gridMode: grid, startOriPair: startOri } as any,
+          {
+            turnPattern: tp,
+            turnLabel: tp,
+            gridMode: grid,
+            startOriPair: startOri,
+          } satisfies CardVariation,
           edges,
         ).sequence,
       );
@@ -152,7 +158,12 @@ export async function resolveVariationSequence(
   const edges = await loadDiamondEdges();
   return applyVariationDescriptor(
     base,
-    { turnPattern, turnLabel: turnPattern, gridMode: grid, startOriPair: startOri } as any,
+    {
+      turnPattern,
+      turnLabel: turnPattern,
+      gridMode: grid,
+      startOriPair: startOri,
+    } satisfies CardVariation,
     edges,
   ).sequence;
 }

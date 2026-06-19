@@ -253,7 +253,7 @@
     color: var(--theme-text-secondary, #7e93a0);
   }
   .status { padding: 2rem; text-align: center; color: var(--theme-text-secondary, #888); font-size: var(--font-size-min, 14px); }
-  .status.err { color: #fbbf24; }
+  .status.err { color: var(--semantic-warning, #fbbf24); }
 
   .axis-key { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; font-size: var(--font-size-compact, 12px); color: var(--theme-text-secondary, #888); }
   .ak { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 600; }

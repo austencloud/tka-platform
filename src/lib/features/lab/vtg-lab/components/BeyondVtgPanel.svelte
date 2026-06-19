@@ -50,8 +50,8 @@
 		align-items: center;
 		justify-content: center;
 		border-radius: 8px;
-		background: rgba(34, 211, 238, 0.1);
-		color: #22d3ee;
+		background: var(--theme-accent-bg, rgba(34, 211, 238, 0.1));
+		color: var(--theme-accent, #22d3ee);
 		font-size: 1rem;
 	}
 
@@ -80,8 +80,8 @@
 		font-weight: 500;
 		padding: 0.125rem 0.5rem;
 		border-radius: 4px;
-		background: rgba(34, 211, 238, 0.1);
-		color: #22d3ee;
+		background: var(--theme-accent-bg, rgba(34, 211, 238, 0.1));
+		color: var(--theme-accent, #22d3ee);
 		align-self: flex-start;
 	}
 
