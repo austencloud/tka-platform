@@ -45,7 +45,52 @@ const MEDIA_CYCLE: ReadonlyArray<{
   { label: "3D Viewer", type: "viewer-3d", color: "#f59e0b" },
 ];
 
-export function createCompositionLabState(initialPresetId?: string) {
+export interface CompositionLabState {
+  readonly cells: ConstraintCell[];
+  readonly selectedCellIds: Set<string>;
+  readonly containerBounds: ContainerBounds;
+  readonly selectedCell: ConstraintCell | null;
+  readonly selectedCount: number;
+  readonly allPresets: LayoutPreset[];
+  readonly customPresets: CustomPreset[];
+  readonly initialized: boolean;
+  showSaveDialog: boolean;
+  newPresetName: string;
+  newPresetDescription: string;
+  newPresetIcon: string;
+  readonly exportStatus: "idle" | "copied" | "error";
+
+  handleSelectCell: (cellId: string | null, additive?: boolean) => void;
+  handleUpdateCellPosition: (cellId: string, x: number, y: number) => void;
+  handleUpdateCellSize: (
+    cellId: string,
+    width: number,
+    height: number,
+    x?: number,
+    y?: number,
+  ) => void;
+  handleUpdateLabel: (label: string) => void;
+  handleUpdateZIndex: (zIndex: number) => void;
+  handleUpdateColor: (color: string) => void;
+  handleUpdateMediaType: (mediaType: CellMediaType) => void;
+  handleDeleteCell: () => void;
+  handleDuplicateCell: () => void;
+  handleDuplicateCellAt: (cellId: string, x: number, y: number) => string;
+  handleAddCell: () => void;
+  handleDragStart: () => void;
+  handleExportLayout: () => Promise<void>;
+  handleSaveAsPreset: () => void;
+  handleDeletePreset: (presetId: string) => void;
+  handleCancelSaveDialog: () => void;
+  applyPreset: (preset: LayoutPreset) => void;
+  setContainerBounds: (bounds: ContainerBounds) => void;
+  undo: () => void;
+  redo: () => void;
+}
+
+export function createCompositionLabState(
+  initialPresetId?: string,
+): CompositionLabState {
   // ── Core layout state ──
   let cells = $state<ConstraintCell[]>([]);
   let selectedCellIds = $state<Set<string>>(new Set());
@@ -688,5 +733,3 @@ export function createCompositionLabState(initialPresetId?: string) {
     redo,
   };
 }
-
-export type CompositionLabState = ReturnType<typeof createCompositionLabState>;

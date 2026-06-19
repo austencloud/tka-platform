@@ -175,7 +175,7 @@
   }
 
   .delete-btn:hover {
-    background: #dc2626;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 80%, black);
   }
 
   .delete-btn:focus-visible {

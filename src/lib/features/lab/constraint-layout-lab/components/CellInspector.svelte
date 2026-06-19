@@ -314,12 +314,12 @@
   }
 
   .action-btn.danger {
-    border-color: rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    color: var(--semantic-error, #ef4444);
   }
 
   .action-btn.danger:hover {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.5);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 50%, transparent);
   }
 </style>

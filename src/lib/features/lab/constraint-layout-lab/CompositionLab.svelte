@@ -30,8 +30,18 @@
   // Container element ref (observed via ResizeObserver)
   let containerEl: HTMLDivElement | null = $state(null);
 
+  // Save Preset dialog ref (focused on open for keyboard users)
+  let dialogEl: HTMLDivElement | null = $state(null);
+
   // Create lab state (owns cells, selection, undo/redo, persistence effects)
   const lab = $derived(createCompositionLabState(initialPresetId));
+
+  // Move focus into the dialog when it opens so keyboard users aren't stranded
+  $effect(() => {
+    if (lab.showSaveDialog) {
+      dialogEl?.focus();
+    }
+  });
 
   // Observe container size and forward to lab state
   $effect(() => {
@@ -62,6 +72,9 @@
   <div class="lab-content">
     <!-- Canvas area -->
     <div class="canvas-wrapper" bind:this={containerEl}>
+      {#if !lab.initialized}
+        <div class="loading-hint" aria-live="polite">Loading layout…</div>
+      {/if}
       <CompositionCanvas
         cells={lab.cells}
         containerBounds={lab.containerBounds}
@@ -155,7 +168,21 @@
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <div class="dialog-backdrop" role="presentation" onclick={lab.handleCancelSaveDialog}>
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="save-preset-title" tabindex="-1" onclick={(e) => e.stopPropagation()}>
+      <div
+        bind:this={dialogEl}
+        class="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="save-preset-title"
+        tabindex="-1"
+        onclick={(e) => e.stopPropagation()}
+        onkeydown={(e) => {
+          if (e.key === "Escape") {
+            e.stopPropagation();
+            lab.handleCancelSaveDialog();
+          }
+        }}
+      >
         <h2 id="save-preset-title" class="dialog-title">Save as Preset</h2>
 
         <div class="form-field">
@@ -255,9 +282,22 @@
   }
 
   .canvas-wrapper {
+    position: relative;
     min-height: 400px;
     border-radius: var(--border-radius-lg, 12px);
     overflow: hidden;
+  }
+
+  .loading-hint {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    pointer-events: none;
+    z-index: 1;
   }
 
   .control-panel {
@@ -399,7 +439,7 @@
   }
 
   .multi-selection .action-btn.danger:hover {
-    background: rgba(239, 68, 68, 0.15);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
   }
 
   .no-selection {
