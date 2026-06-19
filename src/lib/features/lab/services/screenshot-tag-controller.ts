@@ -20,6 +20,17 @@ import {
   getAuthSync,
 } from "$lib/shared/auth/firebase";
 
+// NOTE: This is intentionally a stateful class accessed through the
+// `getScreenshotTagController()` singleton getter — NOT a pure-function module
+// like its siblings `screenshot-loader.ts` / `screenshot-orchestrator.ts`.
+// The code-style rule routes stateful concerns to a verb-named class + getter
+// and reserves plain function modules for stateless transforms. This controller
+// holds real state: a lazily-initialized `FirebaseTagPersistence` handle bound
+// to the signed-in user's collection paths. The singleton getter is the sole
+// consumption path, so the "multiple instances sharing a stale handle" risk
+// cannot occur in practice. If auth identity ever needs to change at runtime
+// without a reload, `persistence` must be invalidated — but the lab tool tears
+// down on auth change, so that case does not arise today.
 export class ScreenshotTagController {
   private persistence: FirebaseTagPersistence | null = null;
 
@@ -74,7 +85,10 @@ export class ScreenshotTagController {
     return persistence.tags.getAll();
   }
 
-  subscribeTags(callback: (tags: MediaTag[]) => void): () => void {
+  subscribeTags(
+    callback: (tags: MediaTag[]) => void,
+    onError?: (error: Error) => void
+  ): () => void {
     let unsubscribe: (() => void) | null = null;
     let cancelled = false;
 
@@ -108,17 +122,28 @@ export class ScreenshotTagController {
             unsubscribe?.();
             unsubscribe = null;
             setTimeout(() => {
-              setup(attempt + 1).catch(() => {});
+              // If even the retry can't get going, surface that failure to the
+              // caller instead of swallowing it — matches subscribeToScreenshots.
+              setup(attempt + 1).catch((err) => {
+                const msg = err instanceof Error ? err.message : String(err);
+                console.warn("[ScreenshotTagController] Tag subscription retry failed:", msg);
+                onError?.(err instanceof Error ? err : new Error(msg));
+              });
             }, 1000 * (attempt + 1));
           } else {
+            // Retries exhausted (or a non-recoverable error): tell the caller so
+            // it can react, rather than leaving it with neither tags nor an error.
             console.warn("[ScreenshotTagController] Tag snapshot listener error:", error.message);
+            onError?.(new Error(error.message));
           }
         }
       );
     };
 
     setup().catch((err) => {
-      console.warn("[ScreenshotTagController] Failed to set up tag subscription:", err instanceof Error ? err.message : err);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[ScreenshotTagController] Failed to set up tag subscription:", msg);
+      onError?.(err instanceof Error ? err : new Error(msg));
     });
 
     return () => {
@@ -233,9 +258,17 @@ export class ScreenshotTagController {
 
   // ─── Internal helpers ───────────────────────────────────────────────────
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private docToTag(docSnap: { id: string; data: () => any }): MediaTag {
+  private docToTag(docSnap: {
+    id: string;
+    data: () => Record<string, unknown>;
+  }): MediaTag {
     const d = docSnap.data();
+    // Firestore Timestamp is exported as a value (class), not a type-only import,
+    // and this helper runs after the dynamic firebase/firestore import. We only
+    // touch its `.toDate()`, so model just that shape rather than pulling the SDK
+    // type in here.
+    const toDate = (v: unknown): Date | undefined =>
+      (v as { toDate?: () => Date } | undefined)?.toDate?.();
     return {
       id: docSnap.id,
       name: (d.name as string) ?? "",
@@ -245,8 +278,8 @@ export class ScreenshotTagController {
       path: (d.path as string[]) ?? [],
       depth: (d.depth as number) ?? 0,
       aliases: (d.aliases as string[]) ?? [],
-      createdAt: d.createdAt?.toDate?.() ?? new Date(),
-      updatedAt: d.updatedAt?.toDate?.() ?? new Date(),
+      createdAt: toDate(d.createdAt) ?? new Date(),
+      updatedAt: toDate(d.updatedAt) ?? new Date(),
     };
   }
 }

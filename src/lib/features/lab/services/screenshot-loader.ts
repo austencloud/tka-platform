@@ -159,32 +159,33 @@ export async function deleteScreenshot(id: string): Promise<void> {
   }
 }
 
+// `Timestamp` stays `any`: Firestore exports it as a value (class) used here for
+// `instanceof`, and this helper runs inside a dynamic-import scope where a
+// type-only import isn't available — there's no clean static type to give it.
+// `data` is the dynamic Firestore doc shape, narrowed to a keyed record.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function docToMetadata(id: string, data: any, Timestamp: any): ScreenshotMetadata {
+function docToMetadata(id: string, data: Record<string, unknown>, Timestamp: any): ScreenshotMetadata {
+  // Timestamp fields can be a Firestore Timestamp (has .toDate()), a raw
+  // millis/ISO value, or absent; coerce all three to a real Date.
+  const toDate = (v: unknown): Date =>
+    v instanceof Timestamp
+      ? (v as { toDate: () => Date }).toDate()
+      : new Date((v as number | string) ?? Date.now());
   return {
     id,
-    filename: data.filename ?? "",
-    storagePath: data.storagePath ?? "",
-    downloadUrl: data.downloadUrl ?? "",
-    routeLabel: data.routeLabel ?? "",
-    module: data.module ?? "",
-    deviceSlug: data.deviceSlug ?? "",
-    deviceCategory: data.deviceCategory ?? "desktop",
-    deviceName: data.deviceName ?? "",
-    width: data.width ?? 0,
-    height: data.height ?? 0,
-    tagIds: data.tagIds ?? [],
-    capturedAt:
-      data.capturedAt instanceof Timestamp
-        ? data.capturedAt.toDate()
-        : new Date(data.capturedAt ?? Date.now()),
-    createdAt:
-      data.createdAt instanceof Timestamp
-        ? data.createdAt.toDate()
-        : new Date(data.createdAt ?? Date.now()),
-    updatedAt:
-      data.updatedAt instanceof Timestamp
-        ? data.updatedAt.toDate()
-        : new Date(data.updatedAt ?? Date.now()),
+    filename: (data.filename as string) ?? "",
+    storagePath: (data.storagePath as string) ?? "",
+    downloadUrl: (data.downloadUrl as string) ?? "",
+    routeLabel: (data.routeLabel as string) ?? "",
+    module: (data.module as string) ?? "",
+    deviceSlug: (data.deviceSlug as string) ?? "",
+    deviceCategory: (data.deviceCategory as ScreenshotMetadata["deviceCategory"]) ?? "desktop",
+    deviceName: (data.deviceName as string) ?? "",
+    width: (data.width as number) ?? 0,
+    height: (data.height as number) ?? 0,
+    tagIds: (data.tagIds as string[]) ?? [],
+    capturedAt: toDate(data.capturedAt),
+    createdAt: toDate(data.createdAt),
+    updatedAt: toDate(data.updatedAt),
   };
 }
