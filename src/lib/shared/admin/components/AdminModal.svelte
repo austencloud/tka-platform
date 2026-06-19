@@ -43,25 +43,22 @@
     }
   }
 
-  function handleKeydown(e: KeyboardEvent) {
+  function handleDialogKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
       onCancel();
     }
   }
 </script>
 
-<div
-  class="modal-overlay"
-  onclick={handleBackdropClick}
-  onkeydown={handleKeydown}
-  role="button"
-  tabindex="0"
-  aria-label="Close modal"
->
+<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+<div class="modal-overlay" onclick={handleBackdropClick}>
   <div
     class="admin-modal variant-{variant} {className}"
     role="dialog"
+    aria-modal="true"
     aria-labelledby="modal-title"
+    tabindex="-1"
+    onkeydown={handleDialogKeydown}
   >
     <h3 id="modal-title" class="modal-title">{title}</h3>
 

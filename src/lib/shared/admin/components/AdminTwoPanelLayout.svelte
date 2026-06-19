@@ -164,6 +164,6 @@
   }
 
   :global(.admin-detail-backdrop) {
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--backdrop-light, rgba(0, 0, 0, 0.4));
   }
 </style>

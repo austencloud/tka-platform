@@ -80,7 +80,7 @@
 
   @media (hover: hover) {
     .filter-btn:hover {
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--theme-text);
       background: var(--theme-card-bg);
     }
   }
@@ -90,8 +90,8 @@
   }
 
   .filter-btn.active {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, white);
   }
 
   /* On small screens, hide labels, show only icons */

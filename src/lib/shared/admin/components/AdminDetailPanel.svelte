@@ -158,7 +158,7 @@
     margin: 0 0 4px 0;
     font-size: var(--font-size-xl);
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text, rgba(255, 255, 255, 0.95));
   }
 
   .header-subtitle {

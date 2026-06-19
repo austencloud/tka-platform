@@ -12,8 +12,8 @@
   interface AdminFormFieldProps {
     label: string;
     type?: AdminFormFieldType;
-    value: any;
-    onChange: (value: any) => void;
+    value: string | number | boolean;
+    onChange: (value: string | number | boolean) => void;
     error?: string;
     helpText?: string;
     required?: boolean;
@@ -37,13 +37,12 @@
     class: className = "",
   }: AdminFormFieldProps = $props();
 
-  // Generate unique IDs for accessibility - derived from label prop
-  const baseId = $derived(
-    `field-${label.toLowerCase().replace(/\s+/g, "-")}-${Math.random().toString(36).slice(2, 7)}`
-  );
-  const fieldId = $derived(baseId);
-  const errorId = $derived(`${baseId}-error`);
-  const helpId = $derived(`${baseId}-help`);
+  // Stable unique ID for accessibility - generated once per component instance.
+  // Using $props.id() (Svelte 5) avoids the re-derive churn of Math.random().
+  const baseId = $props.id();
+  const fieldId = baseId;
+  const errorId = `${baseId}-error`;
+  const helpId = `${baseId}-help`;
 
   // Build aria-describedby value from available descriptions
   const describedBy = $derived.by(() => {
@@ -59,11 +58,7 @@
       | HTMLSelectElement
       | HTMLTextAreaElement;
 
-    if (type === "toggle") {
-      const checked = (target as HTMLInputElement).checked;
-      value = checked;
-      onChange(checked);
-    } else if (type === "number") {
+    if (type === "number") {
       const num = Number(target.value);
       value = num;
       onChange(num);
@@ -71,6 +66,13 @@
       value = target.value;
       onChange(target.value);
     }
+  }
+
+  function handleToggle() {
+    if (disabled) return;
+    const next = !value;
+    value = next;
+    onChange(next);
   }
 </script>
 
@@ -125,16 +127,20 @@
       {/each}
     </select>
   {:else if type === "toggle"}
-    <label class="field-toggle">
-      <input
-        type="checkbox"
-        aria-label={label}
-        checked={value}
-        {disabled}
-        onchange={handleChange}
-      />
+    <button
+      id={fieldId}
+      type="button"
+      class="field-toggle"
+      class:checked={value}
+      role="switch"
+      aria-checked={!!value}
+      aria-label={label}
+      aria-describedby={describedBy}
+      {disabled}
+      onclick={handleToggle}
+    >
       <span class="toggle-slider" aria-hidden="true"></span>
-    </label>
+    </button>
   {/if}
 
   {#if helpText}
@@ -201,18 +207,26 @@
     display: inline-block;
     width: var(--min-touch-target);
     height: 24px;
+    padding: 0;
+    border: none;
+    background: transparent;
     cursor: pointer;
+    align-self: flex-start;
   }
 
-  .field-toggle input {
-    opacity: 0;
-    width: 0;
-    height: 0;
+  .field-toggle:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .field-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+    border-radius: 24px;
   }
 
   .toggle-slider {
     position: absolute;
-    cursor: pointer;
     top: 0;
     left: 0;
     right: 0;
@@ -234,11 +248,11 @@
     border-radius: 50%;
   }
 
-  input:checked + .toggle-slider {
+  .field-toggle.checked .toggle-slider {
     background-color: var(--semantic-success);
   }
 
-  input:checked + .toggle-slider:before {
+  .field-toggle.checked .toggle-slider:before {
     transform: translateX(24px);
   }
 
@@ -250,7 +264,7 @@
 
   .field-error {
     font-size: var(--font-size-compact);
-    color: #fca5a5;
+    color: color-mix(in srgb, var(--semantic-error) 60%, white);
   }
 
   .has-error .field-input,

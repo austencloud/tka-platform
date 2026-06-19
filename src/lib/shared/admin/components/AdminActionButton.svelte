@@ -4,6 +4,7 @@
    * Styled action button with variants
    */
 
+  import type { Snippet } from "svelte";
   import type { AdminVariant } from "../types/admin-component-types";
 
   interface AdminActionButtonProps {
@@ -14,7 +15,7 @@
     fullWidth?: boolean;
     class?: string;
     onclick?: () => void;
-    children: any;
+    children: Snippet;
   }
 
   let {
@@ -87,7 +88,7 @@
 
   @media (hover: hover) {
     .variant-primary:hover:not(:disabled) {
-      background: #2563eb;
+      background: color-mix(in srgb, var(--semantic-info) 85%, black);
     }
   }
 
@@ -106,27 +107,27 @@
 
   /* Warning variant */
   .variant-warning {
-    background: rgba(245, 158, 11, 0.15);
+    background: color-mix(in srgb, var(--semantic-warning) 15%, transparent);
     color: var(--semantic-warning);
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning) 30%, transparent);
   }
 
   @media (hover: hover) {
     .variant-warning:hover:not(:disabled) {
-      background: rgba(245, 158, 11, 0.25);
+      background: color-mix(in srgb, var(--semantic-warning) 25%, transparent);
     }
   }
 
   /* Danger variant */
   .variant-danger {
-    background: rgba(239, 68, 68, 0.15);
-    color: #fca5a5;
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
+    color: color-mix(in srgb, var(--semantic-error) 60%, white);
+    border: 1px solid color-mix(in srgb, var(--semantic-error) 30%, transparent);
   }
 
   @media (hover: hover) {
     .variant-danger:hover:not(:disabled) {
-      background: rgba(239, 68, 68, 0.25);
+      background: color-mix(in srgb, var(--semantic-error) 25%, transparent);
     }
   }
 

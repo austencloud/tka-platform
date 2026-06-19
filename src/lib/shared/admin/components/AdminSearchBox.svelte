@@ -87,7 +87,7 @@
     background: transparent;
     border: none;
     outline: none;
-    color: white;
+    color: var(--theme-text, white);
     font-size: var(--font-size-base); /* Prevent zoom on iOS */
     min-width: 0;
   }
@@ -99,7 +99,7 @@
   }
 
   .search-input::placeholder {
-    color: rgba(255, 255, 255, 0.75); /* WCAG AAA compliant */
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75)); /* WCAG AAA compliant */
   }
 
   .clear-btn {
