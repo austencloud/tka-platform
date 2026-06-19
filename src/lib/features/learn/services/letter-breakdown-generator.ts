@@ -47,8 +47,11 @@ export function compare(letterA: string, letterB: string): LetterComparison | nu
 // ─── Summary builders ───────────────────────────────────────────
 
 function buildPositionDescription(entry: LetterBreakdownEntry): string {
+  // Hands return to the same position they started from (e.g. Type 6 static
+  // letters, and Type 1 letters like A/B/C). Reading "alpha to alpha" implies
+  // a transition that didn't happen — describe it as a single position.
   if (entry.startPosition === entry.endPosition) {
-    return `${entry.startPosition} to ${entry.endPosition}`;
+    return `at ${entry.startPosition}`;
   }
   return `${entry.startPosition} to ${entry.endPosition}`;
 }

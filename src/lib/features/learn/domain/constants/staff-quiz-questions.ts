@@ -2,9 +2,11 @@
  * Staff Quiz Questions - Question data for staff identification quiz
  */
 
+import { shuffleArray } from "./shared-types";
+
 export type HandPosition = "N" | "E" | "S" | "W";
 export type ThumbOrientation = "in" | "out";
-export type PositionType = "alpha" | "beta" | "gamma";
+export { type PositionType } from "./shared-types";
 export type RotationType = "prospin" | "antispin" | "none";
 export type QuestionType = "position" | "thumb" | "rotation";
 
@@ -177,6 +179,6 @@ export function generateStaffQuizQuestions(): StaffQuizQuestion[] {
     rotationType: "antispin",
   });
 
-  // Shuffle questions
-  return q.sort(() => Math.random() - 0.5);
+  // Shuffle questions (Fisher-Yates; unbiased)
+  return shuffleArray(q);
 }

@@ -4,7 +4,8 @@
 
 export type HandPosition = "N" | "E" | "S" | "W";
 export type ThumbOrientation = "in" | "out";
-export type PositionType = "alpha" | "beta" | "gamma";
+export { type PositionType } from "./shared-types";
+import type { PositionType } from "./shared-types";
 export type RotationType = "prospin" | "antispin" | "none";
 
 export interface GridPoint {

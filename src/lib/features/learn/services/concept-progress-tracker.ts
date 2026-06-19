@@ -74,7 +74,10 @@ export class ConceptProgressTracker {
       }
     }
 
-    // Subscribe to real-time changes for cross-device sync
+    // Subscribe to real-time changes for cross-device sync.
+    // subscribeToProgress sets up its document reference asynchronously, so any
+    // failure during setup (or a later snapshot error) only surfaces through the
+    // onError callback — without it, cross-device sync silently stops working.
     this.cleanupFirestoreSubscription();
     this.firestoreUnsubscribe = this.persister.subscribeToProgress(
       userId,
@@ -88,6 +91,12 @@ export class ConceptProgressTracker {
           this.saveToLocalStorage();
           this.notifySubscribers();
         }
+      },
+      (error) => {
+        console.error(
+          "[ConceptProgressTracker] Firestore progress subscription failed; cross-device sync is disabled until the next sign-in:",
+          error
+        );
       }
     );
   }
@@ -377,9 +386,14 @@ export class ConceptProgressTracker {
     if (completed >= 20) badges.add("almost-there");
     if (completed >= 28) badges.add("tka-master");
 
-    const maxStreak = Math.max(
-      ...Array.from(this.progress.concepts.values()).map((p) => p.bestStreak)
-    );
+    // reduce instead of Math.max(...spread): spreading a large concept map into
+    // a variadic call risks a call-stack overflow at high N, and Math.max() of
+    // an empty spread returns -Infinity. reduce is safe for any size, including
+    // an empty map (seeds at 0).
+    let maxStreak = 0;
+    for (const p of this.progress.concepts.values()) {
+      if (p.bestStreak > maxStreak) maxStreak = p.bestStreak;
+    }
     if (maxStreak >= 10) badges.add("streak-10");
     if (maxStreak >= 25) badges.add("streak-25");
     if (maxStreak >= 50) badges.add("streak-50");

@@ -2,7 +2,10 @@
  * VTG Quiz data constants
  */
 
-export type VTGMode = "SS" | "TS" | "SO" | "TO" | "QS" | "QO";
+// Canonical source for VTGMode + shuffleArray. Re-exported here so existing
+// importers of vtg-quiz-data keep working.
+export { shuffleArray, type VTGMode } from "./shared-types";
+import type { VTGMode } from "./shared-types";
 
 export interface VTGModeConfig {
   mode: VTGMode;
@@ -33,15 +36,6 @@ export const VTG_QUESTIONS: VTGMode[] = [
   "QS",
   "QO",
 ];
-
-export function shuffleArray<T>(array: T[]): T[] {
-  const arr = [...array];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j]!, arr[i]!];
-  }
-  return arr;
-}
 
 export function getModeInfo(mode: VTGMode): VTGModeConfig {
   return VTG_MODES.find((v) => v.mode === mode)!;

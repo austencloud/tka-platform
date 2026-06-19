@@ -3,8 +3,12 @@
  */
 
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { shuffleArray } from "./shared-types";
 
-export type PositionType = "alpha" | "beta" | "gamma";
+export { type PositionType } from "./shared-types";
+import type { PositionType } from "./shared-types";
+// 8-point cardinal+intercardinal union (distinct from the 4-point HandPosition
+// in the staff/motion files — see shared-types.ts).
 export type HandPosition = "N" | "NE" | "E" | "SE" | "S" | "SW" | "W" | "NW";
 
 export interface PositionQuestion {
@@ -63,6 +67,6 @@ export function generatePositionQuestions(): PositionQuestion[] {
     questions.push({ ...GAMMA_POSITIONS[gammaIdx]!, type: "gamma" });
   }
 
-  // Shuffle
-  return questions.sort(() => Math.random() - 0.5);
+  // Shuffle (Fisher-Yates; unbiased)
+  return shuffleArray(questions);
 }

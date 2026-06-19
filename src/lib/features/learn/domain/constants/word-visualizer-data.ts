@@ -3,7 +3,10 @@
  */
 
 export type HandPosition8 = "N" | "NE" | "E" | "SE" | "S" | "SW" | "W" | "NW";
-export type PositionType = "alpha" | "beta" | "gamma";
+export { type PositionType } from "./shared-types";
+import type { PositionType } from "./shared-types";
+// Prop-rotation family for word visualization (distinct from the hand-path
+// MotionType `shift|dash|static` in the motion files — see shared-types.ts).
 export type MotionType = "pro" | "anti" | "hybrid";
 
 export interface LetterDefinition {

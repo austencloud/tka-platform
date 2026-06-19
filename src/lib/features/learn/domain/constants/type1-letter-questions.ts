@@ -3,6 +3,7 @@
  */
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { shuffleArray } from "./shared-types";
 
 export type MotionPattern = "pro-pro" | "anti-anti" | "hybrid";
 
@@ -197,14 +198,14 @@ export function generateType1Questions(): Type1LetterQuestion[] {
   );
   const hybridLetters = TYPE1_LETTERS.filter((q) => q.pattern === "hybrid");
 
-  const shuffledProPro = [...proProLetters].sort(() => Math.random() - 0.5);
-  const shuffledAntiAnti = [...antiAntiLetters].sort(() => Math.random() - 0.5);
-  const shuffledHybrid = [...hybridLetters].sort(() => Math.random() - 0.5);
+  const shuffledProPro = shuffleArray(proProLetters);
+  const shuffledAntiAnti = shuffleArray(antiAntiLetters);
+  const shuffledHybrid = shuffleArray(hybridLetters);
 
   const selected: Type1LetterQuestion[] = [];
   selected.push(...shuffledProPro.slice(0, 4));
   selected.push(...shuffledAntiAnti.slice(0, 4));
   selected.push(...shuffledHybrid.slice(0, 4));
 
-  return selected.sort(() => Math.random() - 0.5);
+  return shuffleArray(selected);
 }

@@ -112,18 +112,14 @@ Shows all pictographs for a selected letter with:
             class:has-eight={pictographs.length === 8}
           >
             {#each pictographs as pictograph (pictograph.id)}
-              <div
+              <button
+                type="button"
                 class="pictograph-item"
                 onclick={() => handlePictographClick(pictograph)}
-                onkeydown={(e) =>
-                  (e.key === "Enter" || e.key === " ") &&
-                  handlePictographClick(pictograph)}
-                role="button"
-                tabindex="0"
                 aria-label={t("learn_view_pictograph_details")}
               >
                 <PictographContainer pictographData={pictograph} />
-              </div>
+              </button>
             {/each}
           </div>
 
@@ -268,12 +264,29 @@ Shows all pictographs for a selected letter with:
   }
 
   .pictograph-item {
+    /* Reset native button appearance — visuals come from PictographContainer */
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    font: inherit;
+    color: inherit;
+    display: block;
+    width: 100%;
     cursor: pointer;
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .pictograph-item:hover {
     transform: scale(1.05);
+  }
+
+  .pictograph-item:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
+    outline-offset: 2px;
+    border-radius: 8px;
   }
 
   .pictograph-item:active {

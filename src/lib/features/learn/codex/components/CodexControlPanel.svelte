@@ -7,6 +7,7 @@ rotating, mirroring, and color-swapping pictographs.
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
 
   // Props
   let {
@@ -27,13 +28,16 @@ rotating, mirroring, and color-swapping pictographs.
   const hapticService = getHapticFeedback();
 
   // Available orientations (matches desktop options)
-  const orientations = ["Diamond", "Box", "Skewed"];
+  const orientationOptions = [
+    { value: "Diamond", label: "Diamond" },
+    { value: "Box", label: "Box" },
+    { value: "Skewed", label: "Skewed" },
+  ];
 
   // Handle orientation change
-  function handleOrientationChange(event: Event) {
+  function handleOrientationChange(orientation: string) {
     hapticService?.trigger("selection");
-    const target = event.target as HTMLSelectElement;
-    onOrientationChange?.(target.value);
+    onOrientationChange?.(orientation);
   }
 
   // Button click handlers
@@ -58,30 +62,13 @@ rotating, mirroring, and color-swapping pictographs.
   <div class="control-row">
     <!-- Orientation Selector -->
     <div class="orientation-wrapper">
-      <select
-        id="orientation-selector"
-        class="orientation-selector"
+      <SegmentedControl
+        options={orientationOptions}
         value={currentOrientation}
         onchange={handleOrientationChange}
-      >
-        {#each orientations as orientation}
-          <option value={orientation}>{orientation}</option>
-        {/each}
-      </select>
-      <span class="select-icon">
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </span>
+        color="accent"
+        size="sm"
+      />
     </div>
 
     <!-- Control Buttons -->
@@ -150,8 +137,18 @@ rotating, mirroring, and color-swapping pictographs.
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <circle cx="8" cy="8" r="5" fill="rgba(239, 68, 68, 0.6)" />
-          <circle cx="16" cy="16" r="5" fill="rgba(59, 130, 246, 0.6)" />
+          <circle
+            cx="8"
+            cy="8"
+            r="5"
+            fill="color-mix(in srgb, var(--prop-red) 60%, transparent)"
+          />
+          <circle
+            cx="16"
+            cy="16"
+            r="5"
+            fill="color-mix(in srgb, var(--prop-blue) 60%, transparent)"
+          />
           <path d="M13 7l3 3-3 3" />
           <path d="M11 17l-3-3 3-3" />
         </svg>
@@ -180,61 +177,8 @@ rotating, mirroring, and color-swapping pictographs.
 
   /* Orientation selector wrapper */
   .orientation-wrapper {
-    position: relative;
     flex: 1;
-    max-width: 140px;
-  }
-
-  .orientation-selector {
-    width: 100%;
-    padding: 10px 32px 10px 14px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    color: var(--theme-text);
-    font-family: var(
-      --font-sans,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif
-    );
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    outline: none;
-    transition: all var(--duration-normal) ease;
-    appearance: none;
-    -webkit-appearance: none;
-  }
-
-  .orientation-selector:hover {
-    background: var(--theme-stroke);
-    border-color: var(--theme-stroke-strong);
-  }
-
-  .orientation-selector:focus {
-    border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
-    box-shadow: 0 0 0 3px
-      color-mix(in srgb, var(--theme-accent) 15%, transparent);
-  }
-
-  .orientation-selector option {
-    background: var(--theme-panel-bg);
-    color: var(--theme-text);
-    padding: 8px;
-  }
-
-  .select-icon {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--theme-text-dim);
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    max-width: 260px;
   }
 
   /* Control buttons */
@@ -299,13 +243,7 @@ rotating, mirroring, and color-swapping pictographs.
     }
 
     .orientation-wrapper {
-      max-width: 120px;
-    }
-
-    .orientation-selector {
-      padding: 8px 28px 8px 12px;
-      font-size: var(--font-size-min, 14px);
-      border-radius: 8px;
+      max-width: 200px;
     }
 
     .control-button {
@@ -321,8 +259,7 @@ rotating, mirroring, and color-swapping pictographs.
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .control-button,
-    .orientation-selector {
+    .control-button {
       transition: none;
     }
   }

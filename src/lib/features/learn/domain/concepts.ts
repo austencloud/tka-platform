@@ -612,6 +612,13 @@ export function getPreviousConcept(
  * Check if concept is unlocked based on completed prerequisites.
  * Currently all concepts are unlocked for admin review and content iteration.
  * Prerequisites are preserved in concept definitions for future re-enablement.
+ *
+ * TODO(learn-unlock): This is a deliberate stub — it ignores both arguments and
+ * always returns true. When the prerequisite-gating feature is (re-)enabled,
+ * implement the real check here: a concept is unlocked iff every id in its
+ * `prerequisites` array is present in `completedConcepts`. The params are named
+ * `_conceptId` / `_completedConcepts` only because they're currently unused;
+ * drop the underscores when wiring up the real logic.
  */
 export function isConceptUnlocked(
   _conceptId: string,

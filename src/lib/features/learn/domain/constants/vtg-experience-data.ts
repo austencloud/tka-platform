@@ -2,7 +2,10 @@
  * VTG (Velocity-Timing-Direction) concept experience data
  */
 
-export type VTGMode = "SS" | "TS" | "SO" | "TO" | "QS" | "QO";
+// Canonical source for VTGMode. Re-exported so existing importers (incl. the
+// vtg-lab domain) keep resolving it from here.
+export { type VTGMode } from "./shared-types";
+import type { VTGMode } from "./shared-types";
 
 export interface VTGModeInfo {
   name: string;

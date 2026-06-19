@@ -89,7 +89,12 @@ export interface ConceptMastery {
   /** Score trend based on recent attempts */
   trend: "improving" | "stable" | "declining";
 
-  /** Whether the user has mastered this concept (avg >= 80, attempts >= 3) */
+  /**
+   * Whether the user has mastered this concept. Mastery means
+   * `averageScore >= LearnModuleConfig.masteryThreshold` and
+   * `attempts >= LearnModuleConfig.completionRequirement`. Read the thresholds
+   * from the config rather than hardcoding them so callers stay in sync.
+   */
   mastered: boolean;
 
   /** When the user last attempted a quiz on this concept */

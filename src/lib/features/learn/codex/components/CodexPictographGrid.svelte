@@ -373,7 +373,7 @@
     }
 
     .section-text {
-      font-size: 0.75rem;
+      font-size: var(--font-size-compact, 12px);
     }
   }
 

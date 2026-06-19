@@ -34,6 +34,13 @@ const MASTERY_SCORE_THRESHOLD = 80;
 /** Number of recent scores used for trend detection */
 const TREND_WINDOW = 3;
 
+/**
+ * Cap on attempts fetched when aggregating mastery across all concepts.
+ * Matches getRecurringMisconceptions in gap-detector.ts so a high-volume
+ * user can't trigger an unbounded Firestore read.
+ */
+const ALL_MASTERY_FETCH_LIMIT = 50;
+
 async function getCollectionRef(userId: string) {
   const firestore = await getFirestoreInstance();
   return collection(firestore, getUserQuizHistoryPath(userId));
@@ -120,7 +127,7 @@ export async function getConceptMastery(
 export async function getAllMasteryScores(
   userId: string
 ): Promise<Map<string, ConceptMastery>> {
-  const allAttempts = await getHistory(userId);
+  const allAttempts = await getHistory(userId, undefined, ALL_MASTERY_FETCH_LIMIT);
   const byConceptId = new Map<string, QuizAttempt[]>();
 
   for (const attempt of allAttempts) {

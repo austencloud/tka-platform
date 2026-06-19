@@ -10,7 +10,30 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import { getCodex as getCodexService } from "$lib/features/learn/codex/get-codex";
 import type { Codex } from "../services/codex";
 
-export function createCodexState() {
+export interface CodexState {
+  readonly searchTerm: string;
+  readonly isLoading: boolean;
+  readonly isInitialized: boolean;
+  readonly pictographs: PictographData[];
+  readonly filteredPictographs: PictographData[];
+  readonly pictographsByLetter: Record<string, PictographData | null>;
+  readonly filteredPictographsByLetter: Record<string, PictographData | null>;
+  readonly letterRows: string[][];
+  readonly currentOrientation: string;
+  readonly error: string | null;
+  readonly isProcessingOperation: boolean;
+  setSearchTerm(term: string): void;
+  setOrientation(orientation: string): void;
+  refreshPictographs(): Promise<void>;
+  searchPictographs(term: string): Promise<void>;
+  getPictographByLetter(letter: string): Promise<PictographData | null>;
+  getAllPictographsForLetter(letter: string): Promise<PictographData[]>;
+  rotatePictographs(): Promise<void>;
+  mirrorPictographs(): Promise<void>;
+  colorSwapPictographs(): Promise<void>;
+}
+
+export function createCodexState(): CodexState {
   function getCodex(): Codex {
     return getCodexService();
   }

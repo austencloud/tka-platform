@@ -16,7 +16,7 @@ const LETTER_TYPE_MAP: ReadonlyMap<string, number> = new Map([
     (l) => [l, 1] as const
   ),
   // Type 2: Shift (one shifts, one static)
-  ...["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω"].map(
+  ...["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω", "μ", "ν"].map(
     (l) => [l, 2] as const
   ),
   // Type 3: Cross-Shift (one shifts, one dashes)
@@ -24,11 +24,11 @@ const LETTER_TYPE_MAP: ReadonlyMap<string, number> = new Map([
     (l) => [l, 3] as const
   ),
   // Type 4: Dash (one dashes, one static)
-  ...["Φ", "Ψ", "Λ"].map((l) => [l, 4] as const),
+  ...["Φ", "Ψ", "Λ", "τ-"].map((l) => [l, 4] as const),
   // Type 5: Dual-Dash (both dash)
   ...["Φ-", "Ψ-", "Λ-"].map((l) => [l, 5] as const),
   // Type 6: Static (both stay)
-  ...["α", "β", "γ"].map((l) => [l, 6] as const),
+  ...["α", "β", "γ", "ζ", "η", "τ", "⊕"].map((l) => [l, 6] as const),
 ]);
 
 /**

@@ -4,6 +4,8 @@
  * Used by StaffConceptExperience to demonstrate thumb orientations and spin types.
  */
 
+// Local on purpose: 4-point cardinal HandPosition diverges from the 8-point
+// variant in the word files. Not consolidated — see shared-types.ts.
 export type HandPosition = "N" | "E" | "S" | "W";
 export type ThumbOrientation = "in" | "out";
 

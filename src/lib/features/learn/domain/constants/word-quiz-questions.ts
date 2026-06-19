@@ -2,6 +2,11 @@
  * Word Quiz Questions - Question data for word building quiz
  */
 
+import { shuffleArray } from "./shared-types";
+
+// Local on purpose: 8-point HandPosition and the prop-rotation MotionType
+// (pro|anti|hybrid) diverge from the 4-point / hand-path variants in the motion
+// files. Not consolidated — see shared-types.ts.
 export type HandPosition = "N" | "NE" | "E" | "SE" | "S" | "SW" | "W" | "NW";
 export type MotionType = "pro" | "anti" | "hybrid";
 export type QuestionType =
@@ -239,5 +244,5 @@ export const WORD_QUIZ_QUESTIONS: WordQuizQuestion[] = [
  * Generate shuffled quiz questions (select 9)
  */
 export function generateWordQuizQuestions(): WordQuizQuestion[] {
-  return [...WORD_QUIZ_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 9);
+  return shuffleArray(WORD_QUIZ_QUESTIONS).slice(0, 9);
 }

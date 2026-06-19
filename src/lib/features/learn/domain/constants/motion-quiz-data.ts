@@ -2,6 +2,9 @@
  * Motion Identification Quiz data constants
  */
 
+// Local on purpose: 4-point cardinal HandPosition and the hand-path MotionType
+// (shift|dash|static) diverge from the 8-point / prop-rotation variants in the
+// word files. Not consolidated — see shared-types.ts.
 export type HandPosition = "N" | "E" | "S" | "W";
 export type MotionType = "shift" | "dash" | "static";
 export type MotionTypeNumber = 1 | 2 | 3 | 4 | 5 | 6;
