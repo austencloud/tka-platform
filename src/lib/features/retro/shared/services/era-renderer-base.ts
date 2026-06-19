@@ -21,10 +21,23 @@ import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { getSvgImageCache, type DrawableImage } from "$lib/shared/render/services/svg-image-cache";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 
 // The canonical viewBox size used throughout the TKA rendering system
 const VIEWBOX_SIZE = 950;
+
+// Set of valid Letter enum values, built once, for runtime narrowing of the
+// `Letter | string` field that RetroPictographData carries.
+const VALID_LETTERS = new Set<string>(Object.values(Letter));
+
+/**
+ * Narrow a `Letter | string` to a `Letter` with a runtime check against the
+ * enum's values, rather than forcing the cast. Returns null when the value is
+ * not a recognised TKA letter.
+ */
+function asLetter(value: Letter | string): Letter | null {
+	return VALID_LETTERS.has(value) ? (value as Letter) : null;
+}
 
 // How much to expand the viewBox when capturing overflowing arrow tips.
 // SVG's overflow:visible is NOT respected when rasterizing to canvas, so we
@@ -33,6 +46,11 @@ const OVERFLOW_EXPANSION = 0.15;
 
 export abstract class EraRendererBase {
 	protected preparer: PictographPreparer;
+
+	// Reusable scratch canvas for drawTintedImage. Allocating a fresh
+	// OffscreenCanvas per tint call creates GC pressure in animation hot paths
+	// (multiple props per frame), so we keep one and grow it on demand.
+	private tintScratch: OffscreenCanvas | null = null;
 
 	constructor(preparer: PictographPreparer) {
 		this.preparer = preparer;
@@ -50,9 +68,18 @@ export abstract class EraRendererBase {
 		const blueMotion = this.handToMotionData(data.blueHand, MotionColor.BLUE, data.gridMode);
 		const redMotion = this.handToMotionData(data.redHand, MotionColor.RED, data.gridMode);
 
+		const letter = asLetter(data.letter);
+		if (letter === null) {
+			console.warn(
+				`[EraRendererBase] Pictograph data carries an unrecognised letter "${data.letter}"; preparation may produce a placeholder.`
+			);
+		}
+
 		return {
 			id: `retro_${data.letter}_${Date.now()}`,
-			letter: data.letter as unknown as Letter,
+			// Narrowed via asLetter(); when unrecognised, fall through with the raw
+			// value (preparer treats unknown letters as glyph-less, callers get a placeholder)
+			letter: letter ?? (data.letter as Letter),
 			motions: {
 				[MotionColor.BLUE]: blueMotion,
 				[MotionColor.RED]: redMotion,
@@ -103,7 +130,12 @@ export abstract class EraRendererBase {
 				redPropType: PropType.STAFF,
 			});
 			return prepared._prepared ?? null;
-		} catch {
+		} catch (error) {
+			// Keep the null contract so callers fall back to renderPlaceholder (the
+			// rendered error state), but surface the failure so it isn't invisible
+			// during debugging. No toast here: prepare() runs per-prop in animation
+			// hot paths, so a toast would spam; the placeholder is the user-facing state.
+			console.error(`[EraRendererBase] Failed to prepare pictograph "${data.letter}":`, error);
 			return null;
 		}
 	}
@@ -262,14 +294,29 @@ export abstract class EraRendererBase {
 		height: number,
 		color: string
 	): void {
-		const offscreen = new OffscreenCanvas(Math.ceil(width), Math.ceil(height));
-		const offCtx = offscreen.getContext("2d");
+		const w = Math.ceil(width);
+		const h = Math.ceil(height);
+
+		// Reuse one scratch canvas across calls; grow it only when the current
+		// draw needs more room than the last (canvas resize clears its bitmap).
+		let scratch = this.tintScratch;
+		if (!scratch || scratch.width < w || scratch.height < h) {
+			scratch = new OffscreenCanvas(Math.max(w, scratch?.width ?? 0), Math.max(h, scratch?.height ?? 0));
+			this.tintScratch = scratch;
+		}
+
+		const offCtx = scratch.getContext("2d");
 
 		if (!offCtx) {
 			// Fallback: draw without tint if OffscreenCanvas is unavailable
 			ctx.drawImage(img, x, y, width, height);
 			return;
 		}
+
+		// Clear the region we are about to reuse (the scratch canvas may be larger
+		// than this draw and may hold pixels from a previous, bigger tint).
+		offCtx.globalCompositeOperation = "source-over";
+		offCtx.clearRect(0, 0, scratch.width, scratch.height);
 
 		// Draw the image at natural size into the scratch canvas
 		offCtx.drawImage(img, 0, 0, width, height);
@@ -279,8 +326,8 @@ export abstract class EraRendererBase {
 		offCtx.fillStyle = color;
 		offCtx.fillRect(0, 0, width, height);
 
-		// Composite the tinted scratch canvas onto the main canvas
-		ctx.drawImage(offscreen, x, y);
+		// Composite only the used sub-region of the scratch canvas onto the main canvas
+		ctx.drawImage(scratch, 0, 0, w, h, x, y, width, height);
 	}
 
 	// -------------------------------------------------------------------------
