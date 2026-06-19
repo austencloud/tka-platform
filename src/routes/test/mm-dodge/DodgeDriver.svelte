@@ -116,27 +116,51 @@
   const _shL = new Vector3();
   const _shR = new Vector3();
 
-  // Reach-lean: how aggressively the torso bends forward to close a hand's reach
-  // shortfall, and the cap on that bend.
-  const LEAN_GAIN = 3.0;
-  const MAX_LEAN = 1.15; // ~66 deg
+  // Reach = a STEP toward the under-reach prop (feet follow the prop, body stays
+  // balanced) plus a modest residual lean. The step does most of the reaching so
+  // the spine never folds over stationary feet.
+  const STEP_FRACTION = 0.8; // fraction of the reach shortfall closed by stepping
+  const STEP_CAP = 0.6; // max auto-step (m) toward a prop
+  const LEAN_GAIN = 2.0;
+  const MAX_LEAN = 0.5; // ~29 deg residual lean for what the step leaves
 
-  /** Push the whole upper body forward toward the props by an amount that closes
-   *  the worse hand's reach shortfall, so the hands stay glued instead of the
-   *  staff floating. Runs AFTER the staves are placed, BEFORE arm IK. */
-  function applyReachLean(): void {
-    if (!leftArm || !rightArm || !spineBone) return;
+  interface ReachAssist {
+    stepX: number;
+    stepZ: number;
+    pitch: number;
+  }
+
+  /** Compute the reach assist at the BASE stance (bx,bz) — not the stepped
+   *  position, so it is a stable function of base + props. Steps the feet toward
+   *  whichever prop is hardest to reach, then leans for the residual. */
+  function computeReach(bx: number, bz: number): ReachAssist {
+    const none: ReachAssist = { stepX: 0, stepZ: 0, pitch: 0 };
+    if (!leftArm || !rightArm || !rig) return none;
     const reach = (leftArm.upperLength + leftArm.lowerLength) * 0.99;
+    const root = rig.root.position;
     leftArm.root.getWorldPosition(_shL);
     rightArm.root.getWorldPosition(_shR);
+    // Shift shoulders from the current root back to the BASE root in XZ.
+    _shL.x += bx - root.x;
+    _shL.z += bz - root.z;
+    _shR.x += bx - root.x;
+    _shR.z += bz - root.z;
     const dL = _shL.distanceTo(blueStaff.position);
     const dR = _shR.distanceTo(redStaff.position);
     const deficit = Math.max(dL, dR) - reach;
-    if (deficit <= 0.001) return; // arms reach unaided
-    const pitch = Math.min(deficit * LEAN_GAIN, MAX_LEAN);
-    _pitchQ.setFromAxisAngle(_pitchAxis, pitch);
-    spineBone.quaternion.multiply(_pitchQ); // forward bow about the spine's local X
-    spineBone.updateMatrixWorld(true);
+    if (deficit <= 0.001) return none;
+    // Step toward the harder-to-reach prop (in XZ), from that shoulder.
+    const worstSh = dL >= dR ? _shL : _shR;
+    const worstGrip = dL >= dR ? blueStaff.position : redStaff.position;
+    let dx = worstGrip.x - worstSh.x;
+    let dz = worstGrip.z - worstSh.z;
+    const len = Math.hypot(dx, dz) || 1;
+    const stepDist = Math.min(deficit * STEP_FRACTION, STEP_CAP);
+    const stepX = (dx / len) * stepDist;
+    const stepZ = (dz / len) * stepDist;
+    const residual = Math.max(0, deficit - stepDist);
+    const pitch = Math.min(residual * LEAN_GAIN, MAX_LEAN);
+    return { stepX, stepZ, pitch };
   }
 
   /** Build a two-bone arm chain (Arm->ForeArm->Hand) from bind-pose offsets,
@@ -331,19 +355,34 @@
     ensureSolved();
     const dt = Math.min(delta, 1 / 15);
 
-    // Desired stance: MANUAL (user-scrubbed) overrides AUTO (solver). Neutral
-    // when the dodge is off and not in manual mode. (Forward lean is no longer a
-    // static stance value — it is computed dynamically by applyReachLean below.)
-    let tx = 0, tz = 0, tyaw = 0;
+    // Place the staves first (fixed world choreography; they do NOT follow the
+    // body), so the reach computation sees this frame's grips.
+    progress = (progress + dt / LOOP_SEC) % 1;
+    placeStaff(blueStaff, blueConfig, progress);
+    placeStaff(redStaff, redConfig, progress);
+
+    // Base stance: MANUAL (user-scrubbed) overrides AUTO (solver); neutral when
+    // the dodge is off and not in manual mode.
+    let bx = 0, bz = 0, byaw = 0;
     if (manualMode) {
-      tx = manualX;
-      tz = manualZ;
-      tyaw = (manualYawDeg * Math.PI) / 180;
+      bx = manualX;
+      bz = manualZ;
+      byaw = (manualYawDeg * Math.PI) / 180;
     } else if (dodgeOn && solution) {
-      tx = solution.stance.footOffsetX;
-      tz = solution.stance.footOffsetZ;
-      tyaw = solution.stance.rootYawRad;
+      bx = solution.stance.footOffsetX;
+      bz = solution.stance.footOffsetZ;
+      byaw = solution.stance.rootYawRad;
     }
+
+    // Reach = a modest lean PLUS a coupled forward foot-step, so the WHOLE body
+    // (feet included) moves to reach the props and stays balanced — instead of
+    // folding the spine over stationary feet.
+    const reach = computeReach(bx, bz);
+    const reachPitch = reach.pitch;
+    const tx = bx + reach.stepX;
+    const tz = bz + reach.stepZ;
+    const tyaw = byaw;
+
     // Re-issue the targets only when they change (setTargetFacing resets the
     // turn-cross detector, so calling it every frame would break the turn).
     if (tx !== lastTx || tz !== lastTz || tyaw !== lastTyaw) {
@@ -356,15 +395,12 @@
 
     controller.update(dt);
 
-    // Advance the prop clock and place the staves imperatively (the props are
-    // the fixed world-space choreography; they do NOT follow the body).
-    progress = (progress + dt / LOOP_SEC) % 1;
-    placeStaff(blueStaff, blueConfig, progress);
-    placeStaff(redStaff, redConfig, progress);
-
-    // Lean the torso forward toward the props so the hands can reach them, then
-    // pin each hand to its grip via arm IK. Hands stay glued; the body reaches.
-    applyReachLean();
+    // Residual forward lean (modest), then pin each hand to its grip via arm IK.
+    if (spineBone && reachPitch > 0.001) {
+      _pitchQ.setFromAxisAngle(_pitchAxis, reachPitch);
+      spineBone.quaternion.multiply(_pitchQ);
+      spineBone.updateMatrixWorld(true);
+    }
     if (leftArm && leftElbowHinge) solveArm(leftArm, leftElbowHinge, blueStaff, true);
     if (rightArm && rightElbowHinge) solveArm(rightArm, rightElbowHinge, redStaff, false);
 
