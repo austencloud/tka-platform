@@ -329,6 +329,22 @@
   const blueMotion = $derived(displayData?.motions?.[MotionColor.BLUE]);
   const redMotion = $derived(displayData?.motions?.[MotionColor.RED]);
 
+  // Prop type for the rendered pictograph. Two callers, opposite needs:
+  //  - Choreo-card Fix Arrows (onDone set) stamps the card's EFFECTIVE prop onto
+  //    motion.propType via withEffectivePropTypes, so the stored value IS the
+  //    prop to render — pass it through so the preview matches the card bake.
+  //  - Step Editor (onDone unset) passes raw sequence data whose motion.propType
+  //    is the baked/stored prop (often staff), NOT the user's live selection.
+  //    Passing it would override the live prop (e.g. club). Leave undefined so
+  //    PictographContainer falls back to global settings — identical to how the
+  //    Step Editor's own PictographContainer resolves the prop.
+  const bluePropTypeForRender = $derived(
+    onDone ? stepData?.motions?.[MotionColor.BLUE]?.propType : undefined
+  );
+  const redPropTypeForRender = $derived(
+    onDone ? stepData?.motions?.[MotionColor.RED]?.propType : undefined
+  );
+
   // Get formatted data for AI
   async function getCopyAllData(): Promise<string> {
     return await formatAllForAI(
@@ -445,8 +461,8 @@
                   pictographData={displayData}
                   arrowsClickable={true}
                   disableTransitions={true}
-                  bluePropTypeOverride={stepData?.motions?.blue?.propType}
-                  redPropTypeOverride={stepData?.motions?.red?.propType}
+                  bluePropTypeOverride={bluePropTypeForRender}
+                  redPropTypeOverride={redPropTypeForRender}
                 />
               </div>
             {/if}
