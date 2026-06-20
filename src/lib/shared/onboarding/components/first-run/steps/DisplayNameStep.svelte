@@ -8,30 +8,24 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
   interface Props {
-    initialValue?: string;
     onNext: (displayName: string) => void;
     onBack?: () => void;
     onSkip: () => void;
   }
 
-  const { initialValue = "", onNext, onBack, onSkip }: Props = $props();
+  const { onNext, onBack, onSkip }: Props = $props();
 
   // Get existing display name from auth (Google/email signup already collected this)
   const authDisplayName = $derived(authState.user?.displayName || "");
 
-  // Pre-fill with auth name, or use any previously entered value
   let displayName = $state("");
   let isEditing = $state(false);
   let inputElement: HTMLInputElement | null = $state(null);
 
-  // Sync with initialValue or authDisplayName (initial load only, not while editing)
+  // Pre-fill with the auth display name (initial load only, not while editing)
   $effect(() => {
-    if (!isEditing) {
-      if (initialValue) {
-        displayName = initialValue;
-      } else if (authDisplayName && !displayName) {
-        displayName = authDisplayName;
-      }
+    if (!isEditing && authDisplayName && !displayName) {
+      displayName = authDisplayName;
     }
   });
 
