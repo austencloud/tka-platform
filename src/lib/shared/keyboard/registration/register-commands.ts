@@ -3,6 +3,8 @@
  *
  * Registers all commands available in the command palette.
  *
+ * Side-effectful registration/orchestration — lives in registration/, not utils/.
+ *
  * Domain: Keyboard Shortcuts - Command Registration
  */
 

@@ -262,10 +262,17 @@ import type { ShortcutWithBinding } from "../../services/types";
     gap: 12px;
     padding: 16px 12px;
     margin-bottom: 8px;
-    background: rgba(0, 0, 0, 0.3);
+    background: var(
+      --theme-panel-bg,
+      color-mix(in srgb, var(--theme-shadow, #000) 30%, transparent)
+    );
     backdrop-filter: blur(16px);
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid
+      var(
+        --theme-stroke,
+        color-mix(in srgb, var(--theme-text, #fff) 8%, transparent)
+      );
     flex-shrink: 0;
   }
 
@@ -288,7 +295,10 @@ import type { ShortcutWithBinding } from "../../services/types";
     width: 100%;
     height: var(--min-touch-target);
     padding: 0 44px 0 42px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(
+      --theme-card-bg,
+      color-mix(in srgb, var(--theme-text, #fff) 6%, transparent)
+    );
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     color: var(--theme-text);
@@ -321,7 +331,10 @@ import type { ShortcutWithBinding } from "../../services/types";
     width: var(--min-touch-target); /* WCAG AA touch target */
     height: var(--min-touch-target);
     padding: 0;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(
+      --theme-card-bg,
+      color-mix(in srgb, var(--theme-text, #fff) 10%, transparent)
+    );
     border: none;
     border-radius: 8px;
     color: var(--theme-text-dim, var(--theme-text-dim));
@@ -330,7 +343,10 @@ import type { ShortcutWithBinding } from "../../services/types";
   }
 
   .clear-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(
+      --theme-card-hover-bg,
+      color-mix(in srgb, var(--theme-text, #fff) 15%, transparent)
+    );
     color: var(--theme-text, var(--theme-text));
   }
 

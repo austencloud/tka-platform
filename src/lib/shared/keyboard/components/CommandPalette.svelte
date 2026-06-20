@@ -33,13 +33,16 @@
   $effect(() => {
     if (commandPaletteState.isOpen) {
       // Focus the input when opened
-      setTimeout(() => {
+      const focusTimer = setTimeout(() => {
         inputElement?.focus();
       }, 50);
 
       // Load initial results (recent commands)
       performSearch("");
+
+      return () => clearTimeout(focusTimer);
     }
+    return undefined;
   });
 
   // Perform search when query changes
@@ -389,6 +392,6 @@
     background: var(--theme-card-bg, var(--theme-card-bg));
     border-radius: 3px;
     font-family: monospace;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
   }
 </style>

@@ -250,7 +250,7 @@
   .shortcuts-help-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: color-mix(in srgb, var(--theme-shadow, #000) 70%, transparent);
     backdrop-filter: blur(8px);
     z-index: var(--z-tooltip);
     display: flex;
@@ -264,12 +264,18 @@
     max-width: 900px;
     max-height: 90vh;
     /* Dark glass panel */
-    background: rgba(0, 0, 0, 0.5);
+    background: var(
+      --theme-panel-bg,
+      color-mix(in srgb, var(--theme-shadow, #000) 50%, transparent)
+    );
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--theme-stroke);
     border-radius: 20px;
-    box-shadow: var(--theme-panel-shadow, 0 20px 60px rgba(0, 0, 0, 0.5));
+    box-shadow: var(
+      --theme-panel-shadow,
+      0 20px 60px color-mix(in srgb, var(--theme-shadow, #000) 50%, transparent)
+    );
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -380,7 +386,7 @@
   }
 
   .shortcuts-help__item-keys {
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     padding: 0.25rem 0.5rem;
     background: color-mix(
       in srgb,

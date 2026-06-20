@@ -3,6 +3,9 @@
  *
  * Registers all global keyboard shortcuts that are available app-wide.
  *
+ * Side-effectful registration/orchestration (touches auth, navigation, settings,
+ * toast, props) — lives in registration/, not utils/.
+ *
  * Domain: Keyboard Shortcuts - Registration
  */
 

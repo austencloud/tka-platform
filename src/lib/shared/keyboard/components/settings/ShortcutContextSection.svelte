@@ -76,7 +76,10 @@
   .context-section {
     border-radius: 16px;
     overflow: hidden;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(
+      --theme-panel-bg,
+      color-mix(in srgb, var(--theme-shadow, #000) 40%, transparent)
+    );
     backdrop-filter: blur(16px);
     border: 1px solid var(--theme-stroke);
   }
@@ -96,7 +99,10 @@
   }
 
   .section-header:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(
+      --theme-card-bg,
+      color-mix(in srgb, var(--theme-text, #fff) 4%, transparent)
+    );
   }
 
   .section-icon {
@@ -158,7 +164,10 @@
     font-size: var(--font-size-compact);
     font-weight: 600;
     color: var(--theme-text-dim, var(--theme-text-dim));
-    background: rgba(255, 255, 255, 0.06);
+    background: var(
+      --theme-card-bg,
+      color-mix(in srgb, var(--theme-text, #fff) 6%, transparent)
+    );
     border-radius: 6px;
     font-variant-numeric: tabular-nums;
   }
@@ -178,7 +187,11 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: 6px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid
+      var(
+        --theme-stroke,
+        color-mix(in srgb, var(--theme-text, #fff) 6%, transparent)
+      );
   }
 
   /* Two columns on wider screens */

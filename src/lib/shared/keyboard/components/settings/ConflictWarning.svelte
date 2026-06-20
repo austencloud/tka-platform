@@ -150,7 +150,7 @@
     background: color-mix(
       in srgb,
       var(--semantic-error, var(--semantic-error)) 85%,
-      #000
+      var(--theme-shadow, #000)
     );
   }
 

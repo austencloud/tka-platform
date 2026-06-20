@@ -3,6 +3,8 @@
  *
  * Registers keyboard shortcuts specific to the CREATE module.
  *
+ * Side-effectful registration/orchestration — lives in registration/, not utils/.
+ *
  * Domain: Keyboard Shortcuts - CREATE Module
  */
 

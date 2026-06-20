@@ -139,6 +139,10 @@
     white-space: nowrap;
 
     /* Subtle depth */
+    /* NOTE: the inset rgba(255,255,255,...) highlights below are an intentional
+       3D-keycap specular effect (top-edge light catch). They are deliberately
+       pure-white translucent regardless of theme — not a tokenizable surface
+       color — so they are kept as literal rgba per audit guidance. */
     box-shadow:
       0 1px 3px var(--theme-shadow),
       inset 0 1px 0 rgba(255, 255, 255, 0.08);

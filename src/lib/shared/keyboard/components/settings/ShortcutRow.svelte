@@ -85,7 +85,10 @@
     width: 100%;
     height: 44px;
     padding: 0 14px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(
+      --theme-card-bg,
+      color-mix(in srgb, var(--theme-text, #fff) 3%, transparent)
+    );
     border: none;
     border-radius: 8px;
     border-left: 3px solid transparent;
@@ -96,12 +99,15 @@
   }
 
   .shortcut-row:hover {
-    background: rgba(255, 255, 255, 0.07);
+    background: var(
+      --theme-card-hover-bg,
+      color-mix(in srgb, var(--theme-text, #fff) 7%, transparent)
+    );
     border-left-color: var(--theme-accent, var(--theme-accent-strong));
   }
 
   .shortcut-row:active {
-    background: rgba(255, 255, 255, 0.09);
+    background: color-mix(in srgb, var(--theme-text, #fff) 9%, transparent);
   }
 
   .shortcut-row.customized {

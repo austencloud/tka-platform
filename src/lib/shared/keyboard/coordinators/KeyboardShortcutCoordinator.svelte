@@ -16,10 +16,10 @@
   import type { CommandPalette } from '$lib/shared/keyboard/services/command-palette'
   import { keyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
   import { getActiveModule } from "../../application/state/ui/ui-state.svelte";
-  import { registerGlobalShortcuts } from "../utils/register-global-shortcuts";
-  import { registerCommandPaletteCommands } from "../utils/register-commands";
-  import { registerCreateShortcuts } from "../utils/register-create-shortcuts";
-  import { register3DViewerShortcuts } from "../utils/register-3d-viewer-shortcuts";
+  import { registerGlobalShortcuts } from "../registration/register-global-shortcuts";
+  import { registerCommandPaletteCommands } from "../registration/register-commands";
+  import { registerCreateShortcuts } from "../registration/register-create-shortcuts";
+  import { register3DViewerShortcuts } from "../registration/register-3d-viewer-shortcuts";
 
   // Services
   let shortcutManager: KeyboardShortcutManager | null = null;

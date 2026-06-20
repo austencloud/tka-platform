@@ -3,6 +3,8 @@
  *
  * Registers 3D viewer shortcuts at app startup for display in Settings.
  * Actual handlers are bound dynamically when the viewer mounts.
+ *
+ * Side-effectful registration/orchestration — lives in registration/, not utils/.
  */
 
 import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'

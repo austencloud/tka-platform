@@ -8,7 +8,6 @@
   Captures keyboard events and converts them to key combo strings.
 -->
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
   import KeyboardKeyDisplay from "./KeyboardKeyDisplay.svelte";
   import ConflictWarning from "./ConflictWarning.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
@@ -113,8 +112,10 @@
   // Focus input when modal opens
   $effect(() => {
     if (isOpen && inputRef) {
-      setTimeout(() => inputRef?.focus(), 100);
+      const focusTimer = setTimeout(() => inputRef?.focus(), 100);
+      return () => clearTimeout(focusTimer);
     }
+    return undefined;
   });
 
   const hasCapture = $derived(!!capturedCombo && parsedCapture);
@@ -170,6 +171,7 @@
             class:has-value={hasCapture}
             onclick={startCapture}
             type="button"
+            aria-label="Capture a new shortcut key combination"
           >
             {#if isCapturing}
               <span class="capture-prompt">Press any key combination...</span>
@@ -281,6 +283,7 @@
             class:has-value={hasCapture}
             onclick={startCapture}
             type="button"
+            aria-label="Capture a new shortcut key combination"
           >
             {#if isCapturing}
               <span class="capture-prompt">Press any key combination...</span>
@@ -346,7 +349,7 @@
   .capture-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: color-mix(in srgb, var(--theme-shadow, #000) 60%, transparent);
     backdrop-filter: blur(4px);
     z-index: var(--z-tooltip);
     display: flex;
@@ -359,7 +362,10 @@
     width: 100%;
     max-width: 420px;
     /* Dark glass panel */
-    background: rgba(0, 0, 0, 0.5);
+    background: var(
+      --theme-panel-bg,
+      color-mix(in srgb, var(--theme-shadow, #000) 50%, transparent)
+    );
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--theme-stroke);
@@ -586,7 +592,11 @@
   }
 
   .btn-primary:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--theme-accent-strong) 85%, #000);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent-strong) 85%,
+      var(--theme-shadow, #000)
+    );
   }
 
   .btn-primary:disabled {
