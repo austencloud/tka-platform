@@ -34,6 +34,7 @@
     village: () => import("$lib/features/village/VillageLabTab.svelte"),
     "pov-pattern": () => import("./tabs/PovPatternLab.svelte"),
     "collision-lab": () => import("./tabs/collision-lab/CollisionLab.svelte"),
+    dodge: () => import("./tabs/dodge/DodgeTab.svelte"),
     "spatial-lab": () => import("./tabs/spatial-lab/SpatialLab.svelte"),
     stickers: () => import("$lib/features/sticker-lab/StickerLab.svelte"),
     "path-mandalas": () => import("./tabs/PathMandalaLab.svelte"),

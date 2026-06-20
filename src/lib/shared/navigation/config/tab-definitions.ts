@@ -1198,6 +1198,17 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
   },
   {
+    id: "dodge",
+    groupId: "physical",
+    labelKey: "tab_lab_dodge",
+    descKey: "tab_desc_lab_dodge",
+    label: "Dodge",
+    icon: '<i class="fas fa-person-running" style="color: #22c55e;" aria-hidden="true"></i>',
+    description: "Step a performer clear of a prop while the hands stay on it",
+    color: "#22c55e",
+    gradient: "linear-gradient(135deg, #4ade80 0%, #22c55e 100%)",
+  },
+  {
     id: "spatial-lab",
     groupId: "physical",
     labelKey: "tab_lab_spatial_lab",
