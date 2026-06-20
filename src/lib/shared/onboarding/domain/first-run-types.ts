@@ -15,17 +15,12 @@
  */
 export interface FirstRunData {
   displayName: string;
-  pronouns: string;
 }
 
 /**
  * Step identifiers for the first-run wizard
  */
-export type FirstRunStep =
-  | "betaDiscovery"
-  | "welcome"
-  | "displayName"
-  | "auth";
+export type FirstRunStep = "displayName";
 
 /**
  * Configuration for a first-run wizard step
@@ -42,27 +37,9 @@ export interface FirstRunStepConfig {
  */
 export const FIRST_RUN_STEPS: FirstRunStepConfig[] = [
   {
-    id: "betaDiscovery",
-    title: "Welcome to the beta",
-    subtitle: "Acknowledge beta status",
-    canSkip: false,
-  },
-  {
-    id: "welcome",
-    title: "Welcome to TKA Composer",
-    subtitle: "The visual language for flow arts",
-    canSkip: false,
-  },
-  {
     id: "displayName",
     title: "What should we call you?",
     subtitle: "This is how you'll appear in the community",
     canSkip: true,
-  },
-  {
-    id: "auth",
-    title: "Create your account",
-    subtitle: "Save your preferences and start creating",
-    canSkip: false,
   },
 ];

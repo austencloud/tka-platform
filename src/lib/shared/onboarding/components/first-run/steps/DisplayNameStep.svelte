@@ -6,33 +6,23 @@
 -->
 <script lang="ts">
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     initialValue?: string;
-    initialPronouns?: string;
-    onNext: (displayName: string, pronouns: string) => void;
-    onBack: () => void;
+    onNext: (displayName: string) => void;
+    onBack?: () => void;
     onSkip: () => void;
   }
 
-  const { initialValue = "", initialPronouns = "", onNext, onBack, onSkip }: Props = $props();
+  const { initialValue = "", onNext, onBack, onSkip }: Props = $props();
 
   // Get existing display name from auth (Google/email signup already collected this)
   const authDisplayName = $derived(authState.user?.displayName || "");
 
   // Pre-fill with auth name, or use any previously entered value
   let displayName = $state("");
-  let pronouns = $state("");
   let isEditing = $state(false);
   let inputElement: HTMLInputElement | null = $state(null);
-
-  // Pronoun presets
-  const PRONOUN_PRESETS = $derived([
-    { key: "he/him", label: t("pronoun_preset_he_him") },
-    { key: "she/her", label: t("pronoun_preset_she_her") },
-    { key: "they/them", label: t("pronoun_preset_they_them") },
-  ]);
 
   // Sync with initialValue or authDisplayName (initial load only, not while editing)
   $effect(() => {
@@ -42,13 +32,6 @@
       } else if (authDisplayName && !displayName) {
         displayName = authDisplayName;
       }
-    }
-  });
-
-  // Sync pronouns from initial value
-  $effect(() => {
-    if (initialPronouns && !pronouns) {
-      pronouns = initialPronouns;
     }
   });
 
@@ -66,26 +49,18 @@
   function handleSubmit(e: Event) {
     e.preventDefault();
     if (currentName) {
-      onNext(currentName, pronouns.trim());
+      onNext(currentName);
     }
   }
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Enter" && currentName) {
       e.preventDefault();
-      onNext(currentName, pronouns.trim());
+      onNext(currentName);
     }
     if (e.key === "Escape") {
       isEditing = false;
       displayName = authDisplayName;
-    }
-  }
-
-  function selectPronounPreset(preset: string) {
-    if (pronouns.trim() === preset) {
-      pronouns = "";
-    } else {
-      pronouns = preset;
     }
   }
 
@@ -145,45 +120,19 @@
       {/if}
     {/if}
 
-    <!-- Pronouns (optional) -->
-    <div class="pronouns-section">
-      <div class="pronouns-label">
-        <span>{t("profile_pronouns_label")}</span>
-        <span class="optional-tag">{t("profile_optional")}</span>
-      </div>
-      <div class="pronoun-chips" role="group" aria-label="Pronoun presets">
-        {#each PRONOUN_PRESETS as preset}
-          <button
-            type="button"
-            class="pronoun-chip"
-            class:selected={pronouns.trim() === preset.key}
-            onclick={() => selectPronounPreset(preset.key)}
-          >
-            {preset.label}
-          </button>
-        {/each}
-      </div>
-      <input
-        type="text"
-        class="pronouns-input"
-        bind:value={pronouns}
-        maxlength="50"
-        placeholder={t("profile_pronouns_placeholder")}
-        spellcheck="false"
-      />
-    </div>
-
     <p class="hint">You can change this anytime in settings</p>
 
     <div class="button-row">
-      <button
-        type="button"
-        class="back-button"
-        onclick={onBack}
-        aria-label="Go back"
-      >
-        <i class="fas fa-arrow-left" aria-hidden="true"></i>
-      </button>
+      {#if onBack}
+        <button
+          type="button"
+          class="back-button"
+          onclick={onBack}
+          aria-label="Go back"
+        >
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        </button>
+      {/if}
 
       <button type="submit" class="next-button" disabled={!currentName}>
         Continue <i class="fas fa-arrow-right" aria-hidden="true"></i>
@@ -343,84 +292,6 @@
     );
   }
 
-  /* Pronouns section */
-  .pronouns-section {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-    margin-top: 4px;
-  }
-
-  .pronouns-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-  }
-
-  .optional-tag {
-    font-size: 0.75rem;
-    font-weight: 400;
-    font-style: italic;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-  }
-
-  .pronoun-chips {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .pronoun-chip {
-    padding: 6px 16px;
-    border-radius: 20px;
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-  }
-
-  .pronoun-chip:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
-    color: var(--theme-text, white);
-  }
-
-  .pronoun-chip.selected {
-    background: color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 25%, transparent);
-    border-color: var(--theme-accent-strong, #8b5cf6);
-    color: var(--theme-accent, #a78bfa);
-  }
-
-  .pronouns-input {
-    width: 100%;
-    padding: 10px 16px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    color: white;
-    font-size: 0.9rem;
-    text-align: center;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .pronouns-input::placeholder {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-  }
-
-  .pronouns-input:focus {
-    outline: none;
-    border-color: var(--theme-accent, #a78bfa);
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 8%, transparent);
-  }
-
   .hint {
     font-size: 0.875rem;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
@@ -544,9 +415,7 @@
     .next-button,
     .skip-link,
     .edit-button,
-    .cancel-edit,
-    .pronoun-chip,
-    .pronouns-input {
+    .cancel-edit {
       transition: none;
     }
 
