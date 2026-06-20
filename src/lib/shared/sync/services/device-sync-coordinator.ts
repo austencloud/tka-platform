@@ -553,7 +553,10 @@ export class DeviceSyncCoordinator {
 			this.sequenceCache.set(
 				this._roomState.sequence.id,
 				this._roomState.sequence.data
-			).catch(() => {});
+			).catch((error) => {
+				// Fire-and-forget: cache write failure is non-fatal, but surface it for debugging.
+				console.warn('[DeviceSync] Failed to cache welcomed sequence:', error);
+			});
 		}
 
 		this.updateConnectionState({
@@ -884,6 +887,12 @@ export class DeviceSyncCoordinator {
 						this.broadcast(stateRequest);
 					} catch (error) {
 						console.error('[DeviceSync] Reconnection failed:', error);
+						// Surface an error state so the UI doesn't hang on 'Reconnecting...'
+						// if the adapter never fires a recovery event.
+						this.updateConnectionState({
+							status: 'error',
+							errorMessage: 'Reconnection failed'
+						});
 					}
 				}
 			});

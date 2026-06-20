@@ -133,7 +133,10 @@ export class SequenceLocalCache {
       });
 
       // Auto-prune if over limit (async, non-blocking)
-      this.prune(this.maxSizeBytes).catch(() => {});
+      this.prune(this.maxSizeBytes).catch((error) => {
+        // Fire-and-forget: prune failure is non-fatal, but surface it for debugging.
+        console.warn("[SequenceLocalCache] auto-prune failed:", error);
+      });
     } catch (error) {
       console.warn("[SequenceLocalCache] set failed:", error);
     }
