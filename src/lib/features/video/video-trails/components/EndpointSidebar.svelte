@@ -387,12 +387,12 @@
   }
 
   .endpoint-row:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
   }
 
   .endpoint-row.selected {
     border-color: var(--theme-accent, #f43f5e);
-    background: rgba(244, 63, 94, 0.1);
+    background: color-mix(in srgb, var(--theme-accent, #f43f5e) 10%, transparent);
   }
 
   .ep-dot {
@@ -408,7 +408,7 @@
   }
 
   .ep-status {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     flex-shrink: 0;
   }
 
@@ -449,7 +449,7 @@
   }
 
   .ep-occlude-btn:hover {
-    background: rgba(239, 68, 68, 0.15);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
     color: var(--semantic-error, #ef4444);
   }
 
@@ -481,7 +481,7 @@
   }
 
   .action-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
@@ -522,7 +522,7 @@
   .progress-track {
     height: 6px;
     border-radius: 3px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
     overflow: hidden;
   }
 

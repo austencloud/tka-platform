@@ -3,7 +3,7 @@
 import { getDetectionCorrector } from "$lib/features/video/video-trails/get-detection-corrector";
 import { getVideoTipAdapter } from "$lib/features/video/video-trails/get-video-tip-adapter";
 import { getVideoTrailsRepository } from "$lib/features/video/video-trails/get-video-trails-repository";
-  import { onDestroy } from "svelte";
+  import { onDestroy, type Component } from "svelte";
   import { createVideoTrailsState } from "./state/video-trails-state.svelte";
   import { setVideoTrailsContext } from "./context/video-trails-context";
   import type { VideoTrailsView } from "./domain/types";
@@ -21,9 +21,9 @@ import { getVideoTrailsRepository } from "$lib/features/video/video-trails/get-v
     { id: "library", label: "Library", icon: "fa-folder-open" },
   ];
 
-  let WorkspaceView: any = $state(null);
-  let DetectionStudioView: any = $state(null);
-  let LibraryView: any = $state(null);
+  let WorkspaceView: Component | null = $state(null);
+  let DetectionStudioView: Component | null = $state(null);
+  let LibraryView: Component | null = $state(null);
 
   $effect(() => {
     switch (trailsState.activeView) {

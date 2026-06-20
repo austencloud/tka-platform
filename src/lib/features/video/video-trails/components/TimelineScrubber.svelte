@@ -93,7 +93,7 @@
     height: 5px;
     margin: 0 8px;
     border-radius: 2px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
   }
 
   .marker-dot {
@@ -109,7 +109,7 @@
     display: flex;
     gap: 10px;
     justify-content: center;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
   }
 

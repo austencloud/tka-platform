@@ -350,7 +350,7 @@
 
   .toolbar-btn:hover:not(:disabled) {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
   }
 
   .toolbar-btn:disabled {
@@ -364,7 +364,7 @@
   }
 
   .toolbar-btn.save-btn:hover:not(:disabled) {
-    background: rgba(244, 63, 94, 0.1);
+    background: color-mix(in srgb, var(--theme-accent, #f43f5e) 10%, transparent);
   }
 
   .search-wrapper {
@@ -567,7 +567,7 @@
 
   .action-btn:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
   }
 
   .action-btn.primary {
@@ -576,7 +576,7 @@
   }
 
   .action-btn.primary:hover {
-    background: rgba(244, 63, 94, 0.1);
+    background: color-mix(in srgb, var(--theme-accent, #f43f5e) 10%, transparent);
   }
 
   .action-btn.danger {
@@ -594,10 +594,10 @@
     gap: 8px;
     padding: 8px 12px;
     border-radius: 6px;
-    background: rgba(250, 204, 21, 0.08);
-    border: 1px solid rgba(250, 204, 21, 0.2);
+    background: color-mix(in srgb, var(--semantic-warning, #facc15) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning, #facc15) 20%, transparent);
     font-size: var(--font-size-compact, 12px);
-    color: rgba(250, 204, 21, 0.8);
+    color: color-mix(in srgb, var(--semantic-warning, #facc15) 80%, transparent);
   }
 
   .detail-grid {

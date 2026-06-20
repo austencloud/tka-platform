@@ -428,7 +428,7 @@
 
   .bar-container {
     height: 10px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
     border-radius: 3px;
     overflow: hidden;
   }
@@ -511,7 +511,7 @@
     padding: 8px 12px;
     border-radius: 6px;
     border: 1px solid var(--theme-accent, #f43f5e);
-    background: rgba(244, 63, 94, 0.15);
+    background: color-mix(in srgb, var(--theme-accent, #f43f5e) 15%, transparent);
     color: var(--theme-accent, #f43f5e);
     font-size: var(--font-size-min, 14px);
     cursor: pointer;
@@ -519,7 +519,7 @@
   }
 
   .export-btn:hover:not(:disabled) {
-    background: rgba(244, 63, 94, 0.25);
+    background: color-mix(in srgb, var(--theme-accent, #f43f5e) 25%, transparent);
   }
 
   .export-btn:disabled {
@@ -533,13 +533,13 @@
   /* Secondary export button - muted variant */
   .export-btn-secondary {
     border-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 12px);
   }
 
   .export-btn-secondary:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, #fff);
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
   }

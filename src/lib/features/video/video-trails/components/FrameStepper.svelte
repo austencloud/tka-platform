@@ -114,7 +114,7 @@
 
   .step-btn:hover:not(:disabled) {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
   }
 
   .step-btn:disabled {
@@ -157,12 +157,12 @@
 
   .slow-play-btn:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
   }
 
   .slow-play-btn.active {
     border-color: var(--theme-accent, #f43f5e);
-    background: rgba(244, 63, 94, 0.15);
+    background: color-mix(in srgb, var(--theme-accent, #f43f5e) 15%, transparent);
     color: var(--theme-accent, #f43f5e);
   }
 
@@ -182,11 +182,11 @@
   kbd {
     display: inline-block;
     padding: 1px 5px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 3px;
     font-family: inherit;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     line-height: 1.4;
   }
 </style>

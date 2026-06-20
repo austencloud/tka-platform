@@ -460,7 +460,7 @@
   .tool-group {
     display: flex;
     gap: 2px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border-radius: 6px;
     padding: 2px;
   }
@@ -481,13 +481,13 @@
 
   .tool-btn:hover {
     color: var(--theme-text, #ffffff);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
   }
 
   .tool-btn.active {
     color: var(--theme-accent, #f43f5e);
-    background: rgba(244, 63, 94, 0.12);
-    border-color: rgba(244, 63, 94, 0.3);
+    background: color-mix(in srgb, var(--theme-accent, #f43f5e) 12%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #f43f5e) 30%, transparent);
   }
 
   .tool-btn.compact {
@@ -538,7 +538,7 @@
     padding: 2px 8px;
     border: none;
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;

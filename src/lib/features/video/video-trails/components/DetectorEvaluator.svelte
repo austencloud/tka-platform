@@ -402,7 +402,7 @@
     padding: 8px 12px;
     border-radius: 6px;
     border: 1px solid var(--theme-accent, #f43f5e);
-    background: rgba(244, 63, 94, 0.15);
+    background: color-mix(in srgb, var(--theme-accent, #f43f5e) 15%, transparent);
     color: var(--theme-accent, #f43f5e);
     font-size: var(--font-size-min, 14px);
     cursor: pointer;
@@ -410,7 +410,7 @@
   }
 
   .run-btn:hover:not(:disabled) {
-    background: rgba(244, 63, 94, 0.25);
+    background: color-mix(in srgb, var(--theme-accent, #f43f5e) 25%, transparent);
   }
 
   .run-btn:disabled {
@@ -469,7 +469,7 @@
     flex-direction: column;
     gap: 2px;
     padding: 8px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 6px;
   }
@@ -488,7 +488,7 @@
   }
 
   .metric-cell .metric-sub {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
   }
 
@@ -535,7 +535,7 @@
     gap: 6px;
     width: 100%;
     padding: 6px 8px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: none;
     color: var(--theme-text, #fff);
     font-size: var(--font-size-compact, 12px);
@@ -545,7 +545,7 @@
   }
 
   .frame-row:hover {
-    background: rgba(255, 255, 255, 0.07);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.07));
   }
 
   .frame-num {
@@ -565,23 +565,23 @@
     display: inline-block;
     padding: 1px 5px;
     border-radius: 3px;
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     line-height: 1.4;
   }
 
   .badge.bad {
-    background: rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
     color: var(--semantic-error, #ef4444);
   }
 
   .badge.warn {
-    background: rgba(234, 179, 8, 0.2);
+    background: color-mix(in srgb, var(--semantic-warning, #eab308) 20%, transparent);
     color: var(--semantic-warning, #eab308);
   }
 
   .badge.good {
-    background: rgba(34, 197, 94, 0.2);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent);
     color: var(--semantic-success, #22c55e);
   }
 
@@ -600,7 +600,7 @@
 
   .frame-detail {
     padding: 8px;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--theme-overlay-bg, rgba(0, 0, 0, 0.2));
     overflow-x: auto;
   }
 

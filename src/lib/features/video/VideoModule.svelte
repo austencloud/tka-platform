@@ -11,9 +11,10 @@
 <script lang="ts">
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { VIDEO_TABS } from "$lib/shared/navigation/config/tab-definitions";
+  import type { Component } from "svelte";
 
   // Dynamic tab imports - lazy-load each tab component
-  const tabComponents: Record<string, () => Promise<{ default: any }>> = {
+  const tabComponents: Record<string, () => Promise<{ default: Component }>> = {
     "video-trails": () => import("./video-trails/VideoTrailsLab.svelte"),
     "video-lab": () => import("./video-lab/VideoLab.svelte"),
     skel2tka: () => import("$lib/features/skel2tka/Skel2TKALab.svelte"),
@@ -23,40 +24,22 @@
   const activeTab = $derived(navigationState.activeTab || VIDEO_TABS[0]?.id || "video-trails");
 
   // Load the active tab component
-  let TabComponent = $state<any>(null);
+  let TabComponent = $state<Component | null>(null);
   let loadError = $state<string | null>(null);
 
   $effect(() => {
     const loader = tabComponents[activeTab];
     if (loader) {
       loadError = null;
-      try {
-        const result = loader();
-        if (result && typeof result.then === "function") {
-          result
-            .then((mod: { default: any }) => {
-              TabComponent = mod.default;
-            })
-            .catch((err: Error) => {
-              console.error(`Failed to load video tab "${activeTab}":`, err);
-              loadError = `Failed to load "${activeTab}" tab`;
-              TabComponent = null;
-            });
-        } else {
-          const mod = result as unknown as { default: any };
-          if (mod && mod.default) {
-            TabComponent = mod.default;
-          } else {
-            console.error(`Unexpected loader result for "${activeTab}":`, result);
-            loadError = `Failed to load "${activeTab}" tab`;
-            TabComponent = null;
-          }
-        }
-      } catch (err) {
-        console.error(`Error calling loader for "${activeTab}":`, err);
-        loadError = `Failed to load "${activeTab}" tab`;
-        TabComponent = null;
-      }
+      loader()
+        .then((mod) => {
+          TabComponent = mod.default;
+        })
+        .catch((err: Error) => {
+          console.error(`Failed to load video tab "${activeTab}":`, err);
+          loadError = `Failed to load "${activeTab}" tab`;
+          TabComponent = null;
+        });
     } else {
       if (navigationState.currentModule === "video") {
         loadError = `Unknown tab: ${activeTab}`;
