@@ -108,11 +108,16 @@ export class LibraryRecycleBin {
   }
 
   async purgeSequence(sequenceId: string): Promise<void> {
-    const existing = await this.getSequence(sequenceId);
+    // getSequence filters out soft-deleted docs, so a non-null result means the
+    // sequence is still ACTIVE (not in the recycle bin). An active sequence must
+    // be soft-deleted before it can be purged. (A null result means it's either
+    // soft-deleted or absent — both fall through to the getDoc check below, which
+    // confirms it's actually in the bin via isDeleted before deleting.)
+    const stillActive = await this.getSequence(sequenceId);
 
-    if (existing) {
+    if (stillActive) {
       throw new LibraryError(
-        "Cannot purge a sequence that is not in the recycle bin. Soft-delete it first.",
+        "Cannot purge an active sequence. Soft-delete it first to move it to the recycle bin.",
         "INVALID_DATA",
         sequenceId
       );
