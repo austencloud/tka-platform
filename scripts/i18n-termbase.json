@@ -1,0 +1,26 @@
+{
+  "_doc": "Pinned TKA domain-term translations. POLICY (research-backed 2026-06-20): brand/proper-noun identity stays Latin in EVERY locale (_keepEnglish). All other domain terms render in native script — Latin-script locales keep the English word where it reads fine (es/fr/de/pt/it), CJK transliterate (ja/ko katakana/hangul), Chinese translates to meaning, Cyrillic/Arabic transliterate or translate. ko/ar + some zh term-of-art words marked TODO/low-confidence — need a native pass.",
+  "_keepEnglish": ["TKA", "LOOP", "Scribe", "Claude Code", "VTG", "Kinetic Archive", "TKA-OS", "DAW", "Win95", "DOS"],
+  "terms": {
+    "Sequence":   { "es": "secuencia",  "fr": "séquence",   "de": "Sequenz",    "pt": "sequência",  "it": "sequenza",   "ja": "シーケンス",   "ko": "TODO", "zh": "序列",   "ar": "TODO", "ru": "последовательность" },
+    "Codex":      { "es": "códice",     "fr": "codex",      "de": "Codex",      "pt": "códice",     "it": "codice",     "ja": "図鑑",         "ko": "TODO", "zh": "图鉴",   "ar": "TODO", "ru": "кодекс", "_note": "book/compendium — NOT código (=code, false friend)" },
+    "Path":       { "es": "ruta",       "fr": "trajet",     "de": "Pfad",       "pt": "rota",       "it": "percorso",   "ja": "経路",         "ko": "TODO", "zh": "路径",   "ar": "TODO", "ru": "путь", "_note": "PIN — model drifted ruta vs camino" },
+    "Step":       { "es": "paso",       "fr": "étape",      "de": "Schritt",    "pt": "passo",      "it": "passo",      "ja": "ステップ",     "ko": "TODO", "zh": "步骤",   "ar": "TODO", "ru": "шаг", "_note": "Austen prefers 'step' not 'beat'" },
+    "Letter":     { "es": "letra",      "fr": "lettre",     "de": "Buchstabe",  "pt": "letra",      "it": "lettera",    "ja": "文字",         "ko": "TODO", "zh": "字母",   "ar": "TODO", "ru": "буква" },
+    "Pictograph": { "es": "pictograma", "fr": "pictogramme","de": "Piktogramm", "pt": "pictograma", "it": "pittogramma","ja": "ピクトグラフ", "ko": "TODO", "zh": "象形图", "ar": "TODO", "ru": "пиктограмма" },
+    "Hand":       { "es": "mano",       "fr": "main",       "de": "Hand",       "pt": "mão",        "it": "mano",       "ja": "手",           "ko": "TODO", "zh": "手",     "ar": "TODO", "ru": "рука" },
+    "Grid":       { "es": "cuadrícula", "fr": "grille",     "de": "Gitter",     "pt": "grade",      "it": "griglia",    "ja": "グリッド",     "ko": "TODO", "zh": "网格",   "ar": "TODO", "ru": "сетка", "_note": "PIN one — drifted Cuadrícula vs Rejilla" },
+    "Variation":  { "es": "variación",  "fr": "variante",   "de": "Variation",  "pt": "variação",   "it": "variazione", "ja": "バリエーション","ko": "TODO", "zh": "变体",   "ar": "TODO", "ru": "вариация" },
+    "Turn":       { "es": "giro",       "fr": "tour",       "de": "Drehung",    "pt": "giro",       "it": "giro",       "ja": "ターン",       "ko": "TODO", "zh": "旋转",   "ar": "TODO", "ru": "поворот", "_note": "TKA turn = 180° rotation unit" },
+    "Color":      { "es": "color",      "fr": "couleur",    "de": "Farbe",      "pt": "cor",        "it": "colore",     "ja": "色",           "ko": "TODO", "zh": "颜色",   "ar": "TODO", "ru": "цвет" },
+
+    "Box":        { "_review": "GRID MODE proper noun, rendered as 'square mode'.", "es": "Cuadrado", "fr": "Carré",  "de": "Quadrat", "pt": "Quadrado", "it": "Quadrato", "ja": "ボックス", "ko": "TODO", "zh": "方形", "ar": "TODO", "ru": "квадрат" },
+    "Diamond":    { "_review": "GRID MODE proper noun. Endorsed Rombo/Losange.", "es": "Rombo", "fr": "Losange", "de": "Raute", "pt": "Losango", "it": "Rombo", "ja": "ダイヤモンド", "ko": "TODO", "zh": "菱形", "ar": "TODO", "ru": "ромб" },
+
+    "Prop":       { "_policy": "term-of-art: Latin in Latin-script locales, native in CJK/Cyrillic", "es": "Prop", "fr": "Prop", "de": "Prop", "pt": "Prop", "it": "Prop", "ja": "プロップ", "ko": "TODO", "zh": "道具", "ar": "TODO", "ru": "реквизит" },
+    "Staff":      { "_policy": "the staff prop (pole/rod), not personnel/staff-list", "es": "Staff", "fr": "Staff", "de": "Staff", "pt": "Staff", "it": "Staff", "ja": "棒", "ko": "TODO", "zh": "棍", "ar": "TODO", "ru": "шест" },
+    "Double-Staff": { "_policy": "TKA canonical prop name", "es": "Double-Staff", "fr": "Double-Staff", "de": "Double-Staff", "pt": "Double-Staff", "it": "Double-Staff", "ja": "ダブルスタッフ", "ko": "TODO", "zh": "双棍", "ar": "TODO", "ru": "двойной шест" },
+    "Dash":       { "_policy": "motion type proper noun; Latin in Latin-script, transliterate CJK/Cyrillic; zh uncertain", "es": "Dash", "fr": "Dash", "de": "Dash", "pt": "Dash", "it": "Dash", "ja": "ダッシュ", "ko": "TODO", "zh": "TODO", "ar": "TODO", "ru": "дэш" },
+    "Mirror":     { "_review": "Transform verb/noun.", "es": "reflejar", "fr": "refléter", "de": "spiegeln", "pt": "espelhar", "it": "rispecchiare", "ja": "反転", "ko": "TODO", "zh": "镜像", "ar": "TODO", "ru": "отразить" }
+  }
+}
