@@ -78,6 +78,7 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   import { Autosaver } from "../services/autosaver";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+  import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte";
   import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
@@ -414,6 +415,15 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
               savedPanel as any
             );
           }
+        }
+
+        // First-time guided-build offer: only when the user landed on an empty
+        // Create (no deep-linked sequence, no restored work). Skippable and
+        // self-suppressing after the first decision (appEntryState persists it).
+        const hasSequence =
+          !!CreateModuleState?.sequenceState.currentSequence?.steps?.length;
+        if (!hasDeepLink && !hasSequence) {
+          appEntryState.offerCreateTutorial();
         }
 
         // Detect if we're on mobile for responsive dialog rendering

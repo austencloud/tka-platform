@@ -12,7 +12,7 @@
  * Persisted to localStorage + Firebase (same pattern as first-run-state).
  */
 
-import { AUTO_TOURS_ENABLED } from "../domain/onboarding-flags";
+import { AUTO_TOURS_ENABLED, CREATE_TUTORIAL_ENABLED } from "../domain/onboarding-flags";
 
 export type AppEntryPhase =
   | "wizard-active"
@@ -117,6 +117,21 @@ function createAppEntryState() {
      */
     isTutorialPrompt(): boolean {
       return state.phase === "tutorial-prompt";
+    },
+
+    /**
+     * Offer the guided build (opt-in) the first time a user lands on an empty
+     * Create. No-op if already completed, already mid-tutorial/prompt, or the
+     * flag is off. Declining (declineTutorial) marks entry complete, so it
+     * never re-pops across reloads.
+     */
+    offerCreateTutorial() {
+      if (!CREATE_TUTORIAL_ENABLED) return;
+      if (state.hasCompleted) return;
+      if (state.phase === "create-tutorial" || state.phase === "tutorial-prompt") {
+        return;
+      }
+      state.phase = "tutorial-prompt";
     },
 
     /**

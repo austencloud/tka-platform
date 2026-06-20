@@ -10,3 +10,11 @@
  * and the Settings "replay tutorial" path (appEntryState.replay) still works.
  */
 export const AUTO_TOURS_ENABLED = false;
+
+/**
+ * The guided-build "Create tutorial" is finished and ship-ready, unlike the
+ * fuse-tour and step-editor coach marks still gated by AUTO_TOURS_ENABLED.
+ * This flag enables ONLY the create-tutorial offer (guest first-touch in Create
+ * + Settings replay), independent of the other two tours.
+ */
+export const CREATE_TUTORIAL_ENABLED = true;
