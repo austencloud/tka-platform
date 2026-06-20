@@ -52,8 +52,14 @@ export class QRCodeGenerator {
   /** Memory-only map of decoded QR images, keyed by dataUrl. The SVG render
    *  is cached persistently (`imageCache`); this avoids re-decoding the same
    *  dataURL into an `HTMLImageElement` within a session (e.g. every card in a
-   *  deck that shares a payload). */
+   *  deck that shares a payload). Bounded with insertion-order LRU eviction so a
+   *  long-lived tab generating QR codes for many distinct sequences can't
+   *  accumulate decoded images indefinitely. */
   private readonly decodedImages = new Map<string, HTMLImageElement>();
+
+  /** Cap on `decodedImages` entries. Comfortably above a single deck render's
+   *  distinct-payload count; evicts the oldest entry past the cap. */
+  private static readonly MAX_DECODED_IMAGES = 256;
 
   constructor(
     private readonly shortCodeManager: ShortCodeManager,
@@ -249,15 +255,26 @@ export class QRCodeGenerator {
     });
 
     // Reuse an already-decoded image for the same dataURL (deck cards sharing a
-    // payload decode once).
+    // payload decode once). Re-insert on hit so the entry is treated as most
+    // recently used by the insertion-order eviction below.
     const existing = this.decodedImages.get(result.dataUrl);
-    if (existing) return existing;
+    if (existing) {
+      this.decodedImages.delete(result.dataUrl);
+      this.decodedImages.set(result.dataUrl, existing);
+      return existing;
+    }
 
     // Convert data URL to HTMLImageElement
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
         this.decodedImages.set(result.dataUrl, img);
+        // Evict the oldest entry once over the cap (Map iterates in insertion
+        // order, so the first key is the least recently used).
+        if (this.decodedImages.size > QRCodeGenerator.MAX_DECODED_IMAGES) {
+          const oldest = this.decodedImages.keys().next().value;
+          if (oldest !== undefined) this.decodedImages.delete(oldest);
+        }
         resolve(img);
       };
       img.onerror = () => reject(new Error("Failed to load QR code as image"));

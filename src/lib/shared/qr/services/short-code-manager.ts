@@ -129,13 +129,16 @@ export class ShortCodeManager {
   }
 
   /**
-   * Generate a random short code
+   * Generate a random short code of the given length.
+   *
+   * Length is a per-call parameter (not instance state) so a collision-bump in
+   * one createShortCode call can't permanently raise the code length for every
+   * future call on the same instance. Concurrent calls each escalate their own
+   * local length independently.
    */
-  private codeLength = MIN_CODE_LENGTH;
-
-  private generateCode(): string {
+  private generateCode(codeLength: number): string {
     let code = "";
-    for (let i = 0; i < this.codeLength; i++) {
+    for (let i = 0; i < codeLength; i++) {
       code += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
     }
     return code;
@@ -351,7 +354,16 @@ export class ShortCodeManager {
           if (!existingData.ownerId && sequence.ownerId) updates.ownerId = sequence.ownerId;
           if (!existingData.sequenceId && sequence.id) updates.sequenceId = sequence.id;
           if (Object.keys(updates).length > 0) {
-            await updateDoc(existingRef, updates).catch(() => {});
+            // Best-effort backfill — a failure (e.g. permission-denied for the
+            // current user) must not block returning the existing code. But it
+            // does degrade direct-load resolution of unpublished sequences, so
+            // surface it instead of swallowing silently.
+            await updateDoc(existingRef, updates).catch((error) => {
+              console.warn(
+                `[ShortCode] Failed to backfill ownerId/sequenceId on "${existingCode}":`,
+                error
+              );
+            });
           }
         }
       }
@@ -414,9 +426,13 @@ export class ShortCodeManager {
     const maxAttemptsPerLength = 10;
     const maxCodeLength = MIN_CODE_LENGTH + 2;
 
-    while (this.codeLength <= maxCodeLength) {
+    // Per-call escalating length. Starts at the minimum every call so a bump
+    // triggered by this sequence's collisions never leaks into other calls.
+    let codeLength = MIN_CODE_LENGTH;
+
+    while (codeLength <= maxCodeLength) {
       for (let attempts = 0; attempts < maxAttemptsPerLength; attempts++) {
-        const code = this.generateCode();
+        const code = this.generateCode(codeLength);
         const docRef = doc(firestore, SHORTCODES_COLLECTION, code);
 
         try {
@@ -440,8 +456,8 @@ export class ShortCodeManager {
         };
       }
 
-      this.codeLength++;
-      console.warn(`[ShortCode] Exhausted ${maxAttemptsPerLength} attempts at length ${this.codeLength - 1}, bumping to ${this.codeLength}`);
+      codeLength++;
+      console.warn(`[ShortCode] Exhausted ${maxAttemptsPerLength} attempts at length ${codeLength - 1}, bumping to ${codeLength}`);
     }
 
     throw new Error("Failed to generate unique short code after exhausting all length tiers");

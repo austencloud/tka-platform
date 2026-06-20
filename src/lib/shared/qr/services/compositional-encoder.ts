@@ -175,7 +175,15 @@ export class CompositionalEncoder {
         startPosition: restoredStartPos ?? originalSequence.startPosition,
         startingPosition: restoredStartPos ?? originalSequence.startingPosition,
       };
-    } catch {
+    } catch (error) {
+      // Reconstruction failed (executor or decode error). The null return is
+      // correct — the caller falls back to flat encoding — but log it so
+      // round-trip mismatch bugs are visible during development instead of
+      // silently degrading every recipe to flat.
+      console.warn(
+        "[CompositionalEncoder] reconstruct() failed - falling back to flat:",
+        error
+      );
       return null;
     }
   }
