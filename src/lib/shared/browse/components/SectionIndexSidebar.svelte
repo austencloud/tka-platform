@@ -1,5 +1,6 @@
 <script lang="ts">
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import type { SequenceSection } from "$lib/shared/browse/domain/models/browse-models";
 
   const TKA_LETTER_RE = /^[a-zA-ZͰ-Ͽ⊕]-?$/;
@@ -21,6 +22,11 @@
 
   interface YearGroup {
     year: string;
+    markers: Marker[];
+  }
+
+  interface LevelGroup {
+    level: number;
     markers: Marker[];
   }
 
@@ -76,12 +82,50 @@
     const beatMatch = core.match(/^(\d+)\s*(?:steps?|beats?)$/i);
     if (beatMatch?.[1]) return beatMatch[1];
 
+    // Difficulty sections render as "Level N" → show just the number.
+    const levelMatch = core.match(/^Level\s+(\d+)$/i);
+    if (levelMatch?.[1]) return levelMatch[1];
+
     if (core.length <= 4) return core;
     return core.slice(0, 4);
   }
 
+  /** Level-sorted: every section carries a numeric `level` (difficulty grouping). */
+  const isLevelSorted = $derived(
+    sections.length > 0 && sections.every(s => typeof s.level === "number")
+  );
+
+  /** Level-sorted: group by level (header) with letter markers underneath. */
+  const levelGroups = $derived.by((): LevelGroup[] => {
+    if (!isLevelSorted) return [];
+
+    const groups: LevelGroup[] = [];
+    for (const section of sections) {
+      const level = section.level!;
+      let group = groups.find(g => g.level === level);
+      if (!group) {
+        group = { level, markers: [] };
+        groups.push(group);
+      }
+      const label = section.groupLabel ?? "";
+      if (!group.markers.some(m => m.label === label)) {
+        group.markers.push({ label, title: section.title });
+      }
+    }
+    groups.sort((a, b) => a.level - b.level);
+    return groups;
+  });
+
+  /** Which (level, letter) is currently active? */
+  const activeLevelInfo = $derived.by((): { level: number; label: string } | undefined => {
+    if (!activeSection || !isLevelSorted) return undefined;
+    const s = sections.find(x => x.title === activeSection);
+    return s ? { level: s.level!, label: s.groupLabel ?? "" } : undefined;
+  });
+
   /** Is the sort mode date-based? Check if any section has a relative-time or date title */
   const isDateSorted = $derived.by(() => {
+    if (isLevelSorted) return false;
     return sections.some(s => {
       const core = s.title.replace(/^[^\w\d]*/u, "").replace(/\s*\([^)]*\)/gi, "").trim();
       return isRelativeTime(s.title) || /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(core);
@@ -114,7 +158,7 @@
 
   /** Non-date-sorted: flat markers (letters, beat counts, levels) */
   const flatMarkers = $derived.by((): Marker[] => {
-    if (isDateSorted) return [];
+    if (isDateSorted || isLevelSorted) return [];
 
     const result: Marker[] = [];
     const seen = new Set<string>();
@@ -154,8 +198,11 @@
 
   // Scroll the active marker into view within the sidebar track
   $effect(() => {
-    if (!activeMonthLabel || !trackEl) return;
-    const activeBtn = trackEl.querySelector(".month-btn.active, .marker.active") as HTMLElement;
+    if (!trackEl) return;
+    if (!activeMonthLabel && !activeLevelInfo) return;
+    const activeBtn = trackEl.querySelector(
+      ".month-btn.active, .marker.active, .letter-marker.active"
+    ) as HTMLElement;
     if (activeBtn) {
       const trackRect = trackEl.getBoundingClientRect();
       const btnRect = activeBtn.getBoundingClientRect();
@@ -168,7 +215,33 @@
 
 <nav class="section-sidebar" aria-label="Section navigation">
   <div class="track" bind:this={trackEl}>
-    {#if isDateSorted}
+    {#if isLevelSorted}
+      <!-- Level-sorted: colored level badge headers with letter markers below -->
+      {#each levelGroups as group (group.level)}
+        <div class="level-group" class:active-level={activeLevelInfo?.level === group.level}>
+          <div class="level-header">
+            <DifficultyBadge level={group.level} size="30px" />
+          </div>
+          <div class="letter-list">
+            {#each group.markers as marker (marker.label)}
+              <button
+                class="letter-marker"
+                class:active={activeLevelInfo?.level === group.level && activeLevelInfo?.label === marker.label}
+                onclick={() => handleClick(marker.title)}
+                title={marker.title}
+                aria-label="Jump to Level {group.level} {marker.label}"
+              >
+                {#if TKA_LETTER_RE.test(marker.label)}
+                  <TKAWordGlyph word={marker.label} height={24} />
+                {:else}
+                  {marker.label}
+                {/if}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/each}
+    {:else if isDateSorted}
       <!-- Date-sorted: Year headers with months grouped below -->
       {#each yearGroups as group (group.year)}
         <div class="year-group" class:active-year={activeYear === group.year}>
@@ -358,6 +431,106 @@
     outline-offset: -2px;
   }
 
+  /* ── Level groups (level-sorted mode) ── */
+
+  .level-group {
+    padding: 0 0 6px;
+  }
+
+  .level-group + .level-group {
+    margin-top: 8px;
+    border-top: 1px solid color-mix(in srgb, var(--theme-text, white) 6%, transparent);
+    padding-top: 10px;
+  }
+
+  .level-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 8px 8px;
+  }
+
+  /* Lift the active level's badge so it reads as the current group. */
+  .level-group.active-level .level-header :global(.difficulty-badge) {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-text, white) 30%, transparent);
+  }
+
+  .letter-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .letter-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 38px;
+    padding: 5px 10px;
+    border: none;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+    cursor: pointer;
+    font-size: var(--font-size-base, 16px);
+    font-weight: 600;
+    line-height: 1;
+    user-select: none;
+    white-space: nowrap;
+    position: relative;
+    transition:
+      color 180ms ease,
+      background 180ms ease;
+  }
+
+  .letter-marker:hover {
+    color: var(--theme-text, #fff);
+    background: color-mix(in srgb, var(--theme-text, white) 5%, transparent);
+  }
+
+  .letter-marker.active {
+    color: var(--theme-accent, #818cf8);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
+  }
+
+  .letter-marker.active::before {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 2px;
+    bottom: 2px;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+    background: var(--theme-accent, #6366f1);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+  }
+
+  .letter-marker :global(.glyph img) {
+    filter: brightness(0) invert(1);
+    opacity: 0.55;
+    transition: opacity 180ms ease;
+  }
+
+  .letter-marker:hover :global(.glyph img),
+  .letter-marker.active :global(.glyph img) {
+    opacity: 1;
+  }
+
+  .letter-marker :global(.dash-bar) {
+    opacity: 0.55;
+    transition: opacity 180ms ease;
+  }
+
+  .letter-marker:hover :global(.dash-bar),
+  .letter-marker.active :global(.dash-bar) {
+    opacity: 1;
+  }
+
+  .letter-marker:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: -2px;
+  }
+
   /* ── Flat markers (non-date sort modes) ── */
 
   .marker {
@@ -441,7 +614,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .month-btn,
-    .marker {
+    .marker,
+    .letter-marker {
       transition: none !important;
     }
   }

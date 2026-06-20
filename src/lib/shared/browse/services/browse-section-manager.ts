@@ -15,6 +15,30 @@ import type {
 } from "$lib/shared/browse/domain/models/browse-models";
 import { sortSequencesByKineticAlphabet } from "$lib/shared/browse/utils/kinetic-alphabet-sort";
 import { deriveWord } from '$lib/shared/foundation/services/word-deriver';
+import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
+
+/** Numeric difficulty (1–3). Prefers the stored `level`, else computes from steps. */
+function resolveLevel(sequence: SequenceData): number {
+  if (typeof sequence.level === "number") return sequence.level;
+  if (sequence.steps?.length) return calculateDifficultyLevel([...sequence.steps]);
+  return 1;
+}
+
+const TYPE6_LETTERS = ["α", "β", "γ", "ζ", "η", "τ", "⊕"];
+
+/** First-letter label in the kinetic alphabet ("A", "W-", "α"…). */
+function deriveLetter(sequence: SequenceData): string {
+  const word = deriveWord(sequence);
+  const firstChar = word.charAt(0);
+  // Type 6 letters keep their glyph; Type 1–5 uppercase.
+  const char = TYPE6_LETTERS.includes(firstChar) ? firstChar : firstChar.toUpperCase();
+  const secondChar = word.charAt(1);
+  return secondChar === "-" ? `${char}-` : char;
+}
+
+function stepCountOf(sequence: SequenceData): number {
+  return sequence.sequenceLength ?? sequence.steps?.length ?? 0;
+}
 
 export function organizeSections(
   sequences: SequenceData[],
@@ -124,30 +148,10 @@ function getGroupKey(
   groupBy: SectionConfig["groupBy"]
 ): string {
   switch (groupBy) {
-    case "letter": {
-      // Sub-group by letter AND beat count for consistent row heights
-      // Handle letter types: "W" vs "W-" (type 3 letters)
-      // Type 6 letters: α, β, γ, ζ, η, τ, ⊕
-      const word = deriveWord(sequence);
-      const firstChar = word.charAt(0);
-      const TYPE6_LETTERS = ["α", "β", "γ", "ζ", "η", "τ", "⊕"];
-
-      let char: string;
-      if (TYPE6_LETTERS.includes(firstChar)) {
-        // Type 6 letter - keep as-is
-        char = firstChar;
-      } else {
-        // Type 1-5, uppercase it
-        char = firstChar.toUpperCase();
-      }
-
-      const secondChar = word.charAt(1);
-      const letter = secondChar === "-" ? `${char}-` : char;
-      // Use sequenceLength if available, otherwise fall back to steps array length
-      const stepCount = sequence.sequenceLength ?? sequence.steps?.length ?? 0;
-      // Use pipe separator to avoid conflict with dash in letter names
-      return `${letter}|${stepCount}`;
-    }
+    case "letter":
+      // Sub-group by letter AND beat count for consistent row heights.
+      // Pipe separator avoids conflict with dash in letter names ("W-").
+      return `${deriveLetter(sequence)}|${stepCountOf(sequence)}`;
 
     case "length": {
       const word = deriveWord(sequence);
@@ -156,7 +160,9 @@ function getGroupKey(
     }
 
     case "difficulty":
-      return sequence.difficultyLevel ?? "Unknown";
+      // Two-axis: level → letter → beat count, so the grid/sidebar can render a
+      // level banner with letter subsections beneath. Key: "1|A|4".
+      return `${resolveLevel(sequence)}|${deriveLetter(sequence)}|${stepCountOf(sequence)}`;
 
     case "author":
       return sequence.author ?? "Unknown Author";
@@ -196,6 +202,14 @@ function createSections(
       sortOrder: getSectionSortOrder(key, config.groupBy),
     };
 
+    // Difficulty key is "level|letter|steps" — expose the level + letter so the
+    // grid banner and sidebar can build the level→letter hierarchy structurally.
+    if (config.groupBy === "difficulty") {
+      const [levelStr = "", letter = ""] = key.split("|");
+      section.level = parseInt(levelStr, 10) || 1;
+      section.groupLabel = letter;
+    }
+
     sections.push(section);
   });
 
@@ -229,14 +243,11 @@ function createSectionTitle(
       return `${key} (${countText})`;
 
     case "difficulty": {
-      const difficultyEmoji =
-        {
-          beginner: "🟢",
-          intermediate: "🟡",
-          advanced: "🔴",
-          Unknown: "⚪",
-        }[key] ?? "⚪";
-      return `${difficultyEmoji} ${key} (${countText})`;
+      // key is "level|letter|steps" — title carries level + letter (kept unique
+      // per section for the scroll anchor); the grid renders the colored badge.
+      const [lvl = "", letter = "", stepStr = "0"] = key.split("|");
+      const steps = parseInt(stepStr, 10) || 0;
+      return `Level ${lvl} · ${letter} (${steps} steps) (${countText})`;
     }
 
     case "author":
@@ -277,21 +288,7 @@ function sortSequencesInSection(
 
     case BrowseSortMethod.DIFFICULTY_LEVEL:
       return sorted.sort((a, b) => {
-        const getDifficultyOrder = (level?: string) => {
-          switch (level) {
-            case "beginner":
-              return 1;
-            case "intermediate":
-              return 2;
-            case "advanced":
-              return 3;
-            default:
-              return 0;
-          }
-        };
-        const diffCompare =
-          getDifficultyOrder(a.difficultyLevel) -
-          getDifficultyOrder(b.difficultyLevel);
+        const diffCompare = resolveLevel(a) - resolveLevel(b);
         // Secondary sort by length for visual consistency
         if (diffCompare === 0) {
           return getLength(a) - getLength(b);
@@ -440,14 +437,13 @@ function getSectionSortOrder(
     }
 
     case "difficulty": {
-      // Difficulty order
-      const difficultyOrder = {
-        beginner: 1,
-        intermediate: 2,
-        advanced: 3,
-        Unknown: 4,
-      };
-      return difficultyOrder[key as keyof typeof difficultyOrder] || 999;
+      // key is "level|letter|steps" — order by level, then kinetic-alphabet
+      // letter, then beat count.
+      const [lvlStr = "", letter = "", stepStr = "0"] = key.split("|");
+      const level = parseInt(lvlStr, 10) || 9;
+      const letterIndex = KINETIC_ALPHABET_ORDER.indexOf(letter);
+      const beatOrder = parseInt(stepStr, 10) || 0;
+      return level * 1_000_000 + (letterIndex + 1) * 1000 + beatOrder;
     }
 
     case "author":

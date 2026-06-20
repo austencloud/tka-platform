@@ -63,6 +63,14 @@ function getMaxColumnsForWidth(width: number): number {
 	return 5;
 }
 
+/** Default column count for a user who has never chosen a zoom level (e.g.
+ *  signed-out guests). Fills the container to its readable density instead of
+ *  defaulting to 2 — on a 4K monitor 2 columns left cards huge and the grid
+ *  sparse. Mirrors the per-breakpoint max so wide screens open denser. */
+function getDefaultColumnsForWidth(width: number): number {
+	return getMaxColumnsForWidth(width);
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -168,11 +176,28 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
 	// Section state
 	let _sectionsEnabled = $state(config.sections ?? false);
-	let _sectionGroupBy = $state<SectionGroupBy>(config.defaultSectionGroupBy ?? "letter");
+	// Manual section-grouping override. When null (the default), grouping follows
+	// the active sort method so the left section index always reflects the chosen
+	// sort. A non-null value pins grouping regardless of sort. `config.defaultSectionGroupBy`
+	// seeds the override only when a host explicitly wants to pin a grouping.
+	let _sectionGroupByOverride = $state<SectionGroupBy | null>(
+		config.defaultSectionGroupBy ?? null
+	);
 
-	// Layout state
+	// Layout state.
+	// Has the user (or a prior session / host config) explicitly picked a column
+	// count? If not, the count auto-adapts to the measured container width so a
+	// fresh guest on a 4K monitor opens dense instead of stuck at 2 columns.
+	const hasExplicitColumns =
+		persisted?.columns !== undefined ||
+		config.initialColumns !== undefined ||
+		settingsService.settings.gridZoomLevel !== undefined;
+	let userHasChosenColumns = hasExplicitColumns;
 	let columns = $state<number>(
-		persisted?.columns ?? config.initialColumns ?? settingsService.settings.gridZoomLevel ?? 2
+		persisted?.columns ??
+			config.initialColumns ??
+			settingsService.settings.gridZoomLevel ??
+			MIN_COLUMNS_DEFAULT
 	);
 	let containerWidth = $state(0);
 	let isTransitioning = $state(false);
@@ -208,10 +233,32 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
 	// --- Derived: sections ---
 
+	// Sort method → section grouping. Keeps the left section index in lockstep
+	// with the toolbar sort: sorting by Level buckets into difficulty sections,
+	// by Date into date sections, by Length into length sections, A–Z into letters.
+	const SORT_TO_SECTION_GROUP: Record<BrowseSortMethod, SectionGroupBy> = {
+		[BrowseSortMethod.ALPHABETICAL]: "letter",
+		[BrowseSortMethod.DATE_ADDED]: "date",
+		[BrowseSortMethod.DIFFICULTY_LEVEL]: "difficulty",
+		[BrowseSortMethod.SEQUENCE_LENGTH]: "length",
+		[BrowseSortMethod.AUTHOR]: "author",
+		[BrowseSortMethod.POPULARITY]: "letter",
+	};
+
+	const effectiveSectionGroupBy = $derived.by((): SectionGroupBy => {
+		if (_sectionGroupByOverride) return _sectionGroupByOverride;
+		let groupBy = SORT_TO_SECTION_GROUP[sortMethod] ?? "letter";
+		// Hands mode has no letter/difficulty semantics — fall back to length.
+		if (_viewMode.subject === "hands" && (groupBy === "letter" || groupBy === "difficulty")) {
+			groupBy = "length";
+		}
+		return groupBy;
+	});
+
 	const sections = $derived.by((): SequenceSection[] => {
 		if (!_sectionsEnabled || !sectionsReady) return [];
 		const sectionConfig: SectionConfig = {
-			groupBy: _sectionGroupBy,
+			groupBy: effectiveSectionGroupBy,
 			sortMethod,
 			showEmptySections: false,
 			expandedSections: new Set<string>(),
@@ -513,7 +560,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			return _sectionsEnabled;
 		},
 		get sectionGroupBy() {
-			return _sectionGroupBy;
+			return effectiveSectionGroupBy;
 		},
 
 		get viewMode() {
@@ -650,6 +697,8 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
 		// --- Layout ---
 		setColumns(newColumns: number): void {
+			// Any direct set is an explicit user choice — stop auto-adapting to width.
+			userHasChosenColumns = true;
 			const max = getMaxColumnsForWidth(containerWidth);
 			const clamped = Math.max(minColumns, Math.min(max, newColumns));
 			if (clamped !== columns) {
@@ -662,6 +711,18 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 		updateContainerWidth(width: number): void {
 			if (width <= 0 || width === containerWidth) return;
 			containerWidth = width;
+
+			// Guest / no explicit choice: adapt the count to the container width so
+			// a 4K monitor opens dense instead of stuck at the minimum. Don't write
+			// it to settings — leave gridZoomLevel unset so it keeps adapting.
+			if (!userHasChosenColumns) {
+				const target = Math.max(minColumns, getDefaultColumnsForWidth(width));
+				if (target !== columns) {
+					columns = target;
+				}
+				return;
+			}
+
 			const max = getMaxColumnsForWidth(width);
 			if (columns > max) {
 				columns = max;
@@ -683,17 +744,15 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 		},
 
 		setSectionGroupBy(groupBy: SectionGroupBy): void {
-			_sectionGroupBy = groupBy;
+			// Pin grouping as an explicit override; pass "none" semantics via null is
+			// not exposed here, so callers clear by re-selecting the sort-driven group.
+			_sectionGroupByOverride = groupBy;
 		},
 
 		setViewMode(mode: BrowseViewMode): void {
-			const wasHands = _viewMode.subject === "hands";
+			// Grouping follows sort + view subject via effectiveSectionGroupBy, so no
+			// manual groupBy bookkeeping is needed here anymore.
 			_viewMode = mode;
-			if (mode.subject === "hands" && _sectionGroupBy === "letter") {
-				_sectionGroupBy = "length";
-			} else if (wasHands && mode.subject === "props" && _sectionGroupBy === "length") {
-				_sectionGroupBy = "letter";
-			}
 		},
 
 		// --- Cache ---

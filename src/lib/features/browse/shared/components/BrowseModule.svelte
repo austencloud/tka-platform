@@ -58,7 +58,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     persistKey: "tka-browse-gallery",
     initialSource: "community",
     sections: true,
-    defaultSectionGroupBy: "letter",
+    // No defaultSectionGroupBy: the left section index follows the active sort
+    // (A–Z → letters, Level → difficulty, Date → dates, Length → lengths).
     allowSourceToggle: true,
     sources: ["community", "my-library"],
   });

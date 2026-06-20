@@ -40,6 +40,12 @@ export interface SequenceSection {
   sequences: SequenceData[];
   isExpanded: boolean;
   sortOrder: number;
+  /** Numeric difficulty level (1–3) when grouped by difficulty. Drives the
+   *  level→letter hierarchy in the grid banner and the section-index sidebar. */
+  level?: number;
+  /** Short label for the section within its parent group (e.g. the letter
+   *  "A" under a level). Lets the grid/sidebar avoid parsing the title. */
+  groupLabel?: string;
 }
 
 // Simple display state for components that need it

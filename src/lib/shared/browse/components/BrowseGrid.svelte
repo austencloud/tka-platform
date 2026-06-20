@@ -2,6 +2,8 @@
   import { onDestroy } from "svelte";
   import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import SectionHeader from "$lib/shared/browse/components/SectionHeader.svelte";
+  import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
+  import type { SequenceSection } from "$lib/shared/browse/domain/models/browse-models";
   import VirtualizedSequenceGrid, {
     type VirtualGridApi,
   } from "$lib/shared/browse/components/VirtualizedSequenceGrid.svelte";
@@ -47,6 +49,44 @@
     const word = sequence.word || sequence.name;
     if (!word) return [sequence];
     return variationMap.get(word.trim()) ?? [sequence];
+  }
+
+  // Level-sorted sections render a colored "Level N" banner (blue/silver/gold)
+  // with letter subsections beneath. Annotate each section with whether it
+  // starts a new level and that level's total count.
+  interface SectionRow {
+    section: SequenceSection;
+    isLevel: boolean;
+    showBanner: boolean;
+    level: number;
+    levelTotal: number;
+  }
+  const sectionRows = $derived.by((): SectionRow[] => {
+    const secs = engine.sections as SequenceSection[];
+    const isLevel = secs.length > 0 && secs.every((s) => typeof s.level === "number");
+    const totals = new Map<number, number>();
+    if (isLevel) {
+      for (const s of secs) totals.set(s.level!, (totals.get(s.level!) ?? 0) + s.count);
+    }
+    let prevLevel: number | undefined;
+    const rows: SectionRow[] = [];
+    for (const s of secs) {
+      const showBanner = isLevel && s.level !== prevLevel;
+      rows.push({
+        section: s,
+        isLevel,
+        showBanner,
+        level: s.level ?? 0,
+        levelTotal: isLevel ? (totals.get(s.level!) ?? 0) : 0,
+      });
+      prevLevel = s.level;
+    }
+    return rows;
+  });
+
+  /** Strip the "Level N · " prefix so the per-letter sub-header shows just the letter. */
+  function letterTitle(title: string): string {
+    return title.replace(/^Level\s+\d+\s+·\s+/u, "");
   }
 
   const handPathMode = $derived(engine.viewMode.subject === "hands");
@@ -124,9 +164,18 @@
 {:else if engine.sectionsEnabled && engine.sections.length > 0}
   <!-- Sectioned: group by section with headers -->
   <div class="sections-container">
-    {#each engine.sections as section (section.id)}
-      <div class="sequence-section" data-section={section.title}>
-        <SectionHeader title={section.title} />
+    {#each sectionRows as row (row.section.id)}
+      {@const section = row.section}
+      {#if row.showBanner}
+        <div class="level-banner">
+          <DifficultyBadge level={row.level} size="34px" />
+          <span class="level-banner-title">Level {row.level}</span>
+          <span class="level-banner-count">{row.levelTotal}</span>
+          <div class="level-banner-divider"></div>
+        </div>
+      {/if}
+      <div class="sequence-section" class:under-level={row.isLevel} data-section={section.title}>
+        <SectionHeader title={row.isLevel ? letterTitle(section.title) : section.title} />
 
         {#if section.sequences.length > 0}
           <div
@@ -195,6 +244,54 @@
   .sequence-section {
     display: flex;
     flex-direction: column;
+  }
+
+  /* Letter subsections sit slightly indented beneath their level banner. */
+  .sequence-section.under-level {
+    padding-left: var(--spacing-sm, 8px);
+  }
+
+  .level-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+    margin-top: var(--spacing-lg, 20px);
+    margin-bottom: var(--spacing-xs, 4px);
+  }
+
+  .level-banner:first-child {
+    margin-top: 0;
+  }
+
+  .level-banner-title {
+    font-size: var(--font-size-lg, 20px);
+    font-weight: 800;
+    color: var(--theme-text, #fff);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  .level-banner-count {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    background: rgba(255, 255, 255, 0.08);
+    padding: 2px 10px;
+    border-radius: 12px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .level-banner-divider {
+    flex: 1;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(
+      to right,
+      var(--theme-stroke, rgba(255, 255, 255, 0.12)) 0%,
+      transparent 100%
+    );
+    min-width: 40px;
   }
 
   .sequences-grid.grid-view {
