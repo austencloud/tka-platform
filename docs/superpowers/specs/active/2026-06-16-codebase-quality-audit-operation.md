@@ -1,10 +1,9 @@
 # Codebase-Quality Audit Operation — Rolling Spec / Resume Doc
 
 **Date:** 2026-06-16 (last wave 2026-06-19)
-**Status:** IN PROGRESS — 7 waves complete. Coverage **~101 scopes** audited
-cumulatively (77 prior + 24 in wave 7). Wave-7 evaluator grade spread (pre-fix,
-24 scopes): **A+ 0 · A 9 · B 12 · C 3 · F 0** worst-dim; all C-grade dims had
-their issues fixed + committed this wave. Resume from "How to run the next wave".
+**Status:** IN PROGRESS — 8 waves complete. Coverage **~115 scopes** audited
+cumulatively (77 prior + 24 wave 7 + 14 wave 8). Resume from "How to run the
+next wave".
 **NOTE on the live tracker:** `.audit-tracker.json` was deleted + gitignored
 (commit `1c56bb225b`), so `audit-tracker.cjs stats` now regenerates FRESH (it
 shows only the current session's records, not the cumulative 101). **This wave
@@ -167,6 +166,30 @@ B→A+ (and others) since their `utils/` were pure-function modules.
   21 commits. ONE `npm run check` gate: 4 self-referential return-type errors
   (watch fixers added `: FeedState`/`: WatchFeedState` atop `ReturnType<>` aliases)
   fixed by dropping the redundant annotations → **0 errors, 5 pre-existing warnings**.
+- **Wave 8 (2026-06-19):** 14 scopes, 116 issues (1 systemic). Targets: video,
+  landing-preview, skel2tka, moderation, library, shared/{voice-control,
+  gamification, keyboard, onboarding, export-panel, feedback, qr, comparison}.
+  **shared/render-graph audited but FLAG-ONLY** (Perf C: per-frame GPU buffer +
+  Float32Array allocs in WebGPU trail/fire/overlay executors) — NOT fixed, it's
+  parallel-session effect turf + risky hot-path rewrite. Themes: 200+ hardcoded
+  colors→tokens (landing-preview, voice-control, onboarding 71, video ~50);
+  18 silent async-edit failures→toasts (landing-preview); moderation added
+  client-side `ensureAdmin()` guards on appeal resolve/read (defense-in-depth,
+  Firestore rules still must enforce — `// SECURITY:` noted); gamification
+  sequential `setDoc` loop→`writeBatch`; comparison dual-singleton consolidation +
+  hash fast-path skip (53k-seq perf); keyboard moved 4 side-effectful `register-*`
+  out of `utils/`→`registration/` (git mv); feedback renamed 3 banned `Service`
+  classes (FeedbackService→Repository, FeedbackStatusService→Manager,
+  NotificationService→Notifier — class ids confined to scope, singletons untouched)
+  + tightened notification schema `z.string()`→`z.enum`; objectURL moved out of a
+  `$derived` (skel2tka); 44px touch targets; dialog a11y; timer cleanups.
+  13 commits. ONE `npm run check` gate: 14 errors (2 self-ref return types;
+  notifier rename missed its `new NotificationService()` export line → cascaded
+  implicit-any to features/feedback + shared/inbox consumers; voice-control
+  `boolean|undefined` indexing; 2 keyboard `$effect` non-returning paths) → fixed
+  (export line, `?? false`, drop annotations, `return undefined`) → re-ran
+  **0 errors, 5 pre-existing warnings**. The cascade implicit-anys auto-resolved
+  once the notifier export name was corrected.
 
 ## Standing flags (deferred, NOT yet fixed)
 
@@ -200,6 +223,19 @@ B→A+ (and others) since their `utils/` were pure-function modules.
     `render-mandala-overlay-layer.ts`.
   - Recorded tracker grades are the EVALUATOR (pre-fix) grades; a re-grade pass
     would lift most wave-7 C→A and many B→A since the issues were fixed.
+- **Wave 8 deferrals:**
+  - `shared/render-graph` Perf **C** — per-frame GPU `GPUBuffer` (per tip/pass) +
+    `Float32Array` allocations in `WebGPUTrailExecutor`/`WebGPUFireExecutor`/
+    `WebGPUOverlayEffectsExecutor`, plus `graph.passes` spread+sort every
+    `executeFrame()` (both WebGPU + WebGL2). FLAG-ONLY: parallel session owns
+    effects/fire; pre-allocate ring buffers + cache sorted passes when that
+    session is done. Audited, NOT committed.
+  - `features/library` `LibrarySaveService` banned `Service` suffix — rename
+    DEFERRED (importers in `features/create` + `shared/library`, parallel turf).
+    Left `// NOTE:`. The getter `getLibrarySaveService` name is fine as-is.
+  - Several scopes left English strings with `i18n NOTE` comments (moderation
+    validation/toast msgs, skel2tka added one key) — new `messages/en.json` keys
+    were out of per-scope edit range; named the keys to add.
 
 ## Standing corrections (evaluator over-flags to NOT action)
 
@@ -221,14 +257,19 @@ Always `git commit -- <explicit scope paths>`, never a bare commit (shared index
 
 1. `node scripts/audit-tracker.cjs --json` → pick ~12 new non-overlapping targets.
    (Tracker JSON is fresh — cross-check the wave log above for what's already done.)
-   **Wave-8 candidates** (not yet audited; verify sizes via collect-evidence):
+   **Wave-9 candidates** (not yet audited; verify sizes via collect-evidence):
    `features/learn/quiz` (51 — sub-scope it), `features/learn/components` (138 —
-   pick leaves), `features/learn/codex`✗done, `features/lab/effects-lab` (20 —
-   COORDINATE: parallel session owns effects), `features/lab/tabs` (72 — sub-scope),
-   `features/retro/win95/components` (56 — sub-scope), `features/retro/win95/services`,
-   `features/store` (re-do CQ B from wave 6), `features/village/services|state|domain`,
-   plus any remaining `shared/*` leaves. Skip everything in the wave log above and
-   their `*/components`.
+   pick leaves), `features/learn/math-foundations`, `features/lab/tabs` (72 —
+   sub-scope), `features/retro/win95/components` (56 — sub-scope),
+   `features/retro/win95/{services,adapters,state}`, `features/store` (re-do CQ B),
+   `features/village/{services,state,domain}`, `features/tika` (53 — sub-scope),
+   `features/feedback` (99 — sub-scope), `features/loop-labeler` (86 — sub-scope),
+   `shared/{settings,navigation,sync,share,sequence-engine,persistence,offline,
+   video-collaboration,mobile,gamification done✗}` leaves. **shared/render-graph
+   needs a Perf-only fix pass AFTER the parallel effects session lands** (see
+   deferrals). AVOID parallel turf: effects, camera/UnifiedCameraController, fire,
+   ceremony, auth, api routes, sequence-viewer, browse/creators, render. Skip
+   everything in the wave log above and their `*/components`.
 2. Run the pipeline above (steps 2-9).
 3. Update this doc's coverage line + wave log after committing.
 
