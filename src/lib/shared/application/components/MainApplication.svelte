@@ -113,6 +113,7 @@ import type { SheetType } from "../../navigation/services/types";
   // ensureGuestIdentity). The AuthDrawer must mount for both — an anonymous
   // guest tapping "Create Account" upgrades the anon session in place.
   const isGuest = $derived(!authState.isAuthenticated || authState.isAnonymous);
+  const isFullAccount = $derived(authState.isFullAccount);
   const authLoading = $derived(authState.loading);
 
   // Track whether MainInterface has been shown at least once.
@@ -532,14 +533,14 @@ import type { SheetType } from "../../navigation/services/types";
          the app with "Loading preferences..." - that looks like a full page
          reload right after sign-in. Only block the UI for genuine first-run
          users whose local state isn't set up yet. -->
-    {#if isAuthenticated && !firstRunState.isDone() && (firstRunState.syncInProgress || !firstRunState.cloudSynced)}
+    {#if isFullAccount && !firstRunState.isDone() && (firstRunState.syncInProgress || !firstRunState.cloudSynced)}
       <div class="fullscreen-overlay">
         <div class="auth-loading">
           <div class="auth-loading-spinner"></div>
           <p>Loading preferences...</p>
         </div>
       </div>
-    {:else if isAuthenticated && (!firstRunState.isDone() || firstRunState.shouldShow)}
+    {:else if isFullAccount && (!firstRunState.isDone() || firstRunState.shouldShow)}
       <div class="fullscreen-overlay">
         {#await import("../../onboarding/components/first-run/FirstRunWizard.svelte") then mod}
           {#if appEntryState.phase === "wizard-exiting"}
@@ -563,7 +564,7 @@ import type { SheetType } from "../../navigation/services/types";
           {/if}
         {/await}
       </div>
-    {:else if isAuthenticated && appEntryState.isCreateTutorial()}
+    {:else if appEntryState.isCreateTutorial()}
       <div class="fullscreen-overlay">
         {#await import("../../onboarding/components/create-tutorial/CreateTutorialWizard.svelte") then mod}
           <mod.default
@@ -575,7 +576,7 @@ import type { SheetType } from "../../navigation/services/types";
     {/if}
 
     <!-- Tutorial prompt overlays the main app so the user sees the real layout behind it -->
-    {#if isAuthenticated && appEntryState.isTutorialPrompt()}
+    {#if appEntryState.isTutorialPrompt()}
       {#await import("../../onboarding/components/create-tutorial/TutorialPrompt.svelte") then mod}
         <mod.default
           onAccept={() => appEntryState.acceptTutorial()}
@@ -611,6 +612,11 @@ import type { SheetType } from "../../navigation/services/types";
     <!-- Gamification Toast Notifications -->
     <AchievementNotificationToast />
     <XPToast />
+
+    <!-- One-time beta notice (guest + member, once per device) -->
+    {#await import("../../onboarding/components/BetaNoticeToast.svelte") then mod}
+      <mod.default />
+    {/await}
 
     <!-- Inbox Subscriptions (for badge counts) -->
     <InboxSubscriptionProvider />
