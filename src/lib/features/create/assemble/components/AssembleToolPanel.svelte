@@ -18,6 +18,7 @@
   import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
 
   const props: { tabState: AssembleTabState } = $props();
@@ -32,6 +33,12 @@
   const beatCapNudgeTrigger = $derived<AuthNudgeTrigger>(
     accessTier === "guest" ? "beat-cap-guest" : "beat-cap-composer"
   );
+  // Pre-launch: the composer beat-cap nudge pitches the Scribe tier, which
+  // isn't shippable yet. When premium is off, suppress the composer nudge —
+  // the cap still applies. Guests keep their free "up to 16" nudge.
+  const premiumEnabled =
+    typeof __FEATURE_PREMIUM__ !== "undefined" && __FEATURE_PREMIUM__;
+  const beatCapNudgeAllowed = $derived(accessTier === "guest" || premiumEnabled);
 
   /**
    * Called by InteractiveGrid before adding a motion.
@@ -121,17 +128,20 @@
     <BuilderTurnBar {builderState} />
   </div>
 
-  <!-- Beat cap nudge - shown when user tries to exceed their tier's beat limit -->
-  {#if showBeatCapNudge}
-    <div class="beat-cap-nudge-overlay">
-      <AuthNudge
-        trigger={beatCapNudgeTrigger}
-        onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show("signup"); }}
-        onLogin={() => { showBeatCapNudge = false; authDrawerState.show("signin"); }}
-        onDismiss={() => { showBeatCapNudge = false; }}
-      />
-    </div>
-  {/if}
+  <!-- Beat cap nudge - shown when user tries to exceed their tier's beat limit.
+       Backdrop click / Escape dismiss via BaseModal. -->
+  <BaseModal
+    open={showBeatCapNudge && beatCapNudgeAllowed}
+    size="fit"
+    onclose={() => { showBeatCapNudge = false; }}
+  >
+    <AuthNudge
+      trigger={beatCapNudgeTrigger}
+      onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show("signup"); }}
+      onLogin={() => { showBeatCapNudge = false; authDrawerState.show("signin"); }}
+      onDismiss={() => { showBeatCapNudge = false; }}
+    />
+  </BaseModal>
 </div>
 
 <style>
@@ -144,17 +154,6 @@
     position: relative;
     padding: 0 12px 12px;
     gap: 8px;
-  }
-
-  .beat-cap-nudge-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 100;
-    pointer-events: all;
   }
 
   .header-section,

@@ -39,6 +39,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   // Card components
   import GridModeCard from "./cards/GridModeCard.svelte";
@@ -111,6 +112,13 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   const beatCapNudgeTrigger = $derived<AuthNudgeTrigger>(
     accessTier === "guest" ? "beat-cap-guest" : "beat-cap-composer"
   );
+  // Pre-launch: the composer beat-cap nudge pitches the Scribe tier, which
+  // isn't shippable yet. When premium is off, suppress the composer nudge —
+  // the stepper already hard-caps at 16. Guests keep their free "up to 16"
+  // nudge regardless.
+  const premiumEnabled =
+    typeof __FEATURE_PREMIUM__ !== "undefined" && __FEATURE_PREMIUM__;
+  const beatCapNudgeAllowed = $derived(accessTier === "guest" || premiumEnabled);
 
   // Get card colors based on current background (reactive to background changes)
   let cardColors = $derived(getCardColors(settingsService.settings.backgroundType ?? BackgroundType.WINTER));
@@ -497,16 +505,18 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
     </div>
   {/each}
 
-  {#if showBeatCapNudge}
-    <div class="beat-cap-nudge-overlay">
-      <AuthNudge
-        trigger={beatCapNudgeTrigger}
-        onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show("signup"); }}
-        onLogin={() => { showBeatCapNudge = false; authDrawerState.show("signin"); }}
-        onDismiss={() => { showBeatCapNudge = false; }}
-      />
-    </div>
-  {/if}
+  <BaseModal
+    open={showBeatCapNudge && beatCapNudgeAllowed}
+    size="fit"
+    onclose={() => { showBeatCapNudge = false; }}
+  >
+    <AuthNudge
+      trigger={beatCapNudgeTrigger}
+      onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show("signup"); }}
+      onLogin={() => { showBeatCapNudge = false; authDrawerState.show("signin"); }}
+      onDismiss={() => { showBeatCapNudge = false; }}
+    />
+  </BaseModal>
 </div>
 
 
@@ -596,18 +606,6 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
       padding-inline: 0; /* Remove mobile padding on desktop */
       align-self: center; /* Center vertically when height is constrained */
     }
-  }
-
-  .beat-cap-nudge-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 100;
-    pointer-events: all;
-    border-radius: 16px;
   }
 
   @media (prefers-reduced-motion: reduce) {

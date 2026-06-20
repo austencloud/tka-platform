@@ -82,6 +82,7 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
   import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
   import { createPanelHeightTracker } from "../state/managers/panel-height-tracker.svelte";
@@ -806,17 +807,21 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
     }}
   />
 
-  <!-- Beat cap nudge - shown when user tries to exceed their tier's beat limit -->
-  {#if showBeatCapNudge}
-    <div class="beat-cap-nudge-overlay">
-      <AuthNudge
-        trigger={beatCapNudgeTrigger}
-        onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show("signup"); }}
-        onLogin={() => { showBeatCapNudge = false; authDrawerState.show("signin"); }}
-        onDismiss={() => { showBeatCapNudge = false; }}
-      />
-    </div>
-  {/if}
+  <!-- Beat cap nudge - shown when user tries to exceed their tier's beat limit.
+       Backdrop click / Escape dismiss via BaseModal; the card itself never
+       propagates to the backdrop. -->
+  <BaseModal
+    open={showBeatCapNudge}
+    size="fit"
+    onclose={() => { showBeatCapNudge = false; }}
+  >
+    <AuthNudge
+      trigger={beatCapNudgeTrigger}
+      onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show("signup"); }}
+      onLogin={() => { showBeatCapNudge = false; authDrawerState.show("signin"); }}
+      onDismiss={() => { showBeatCapNudge = false; }}
+    />
+  </BaseModal>
 
   <!-- Sequence Transfer Confirmation Dialog -->
   <TransferConfirmDialog
@@ -884,16 +889,4 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
     font-size: var(--font-size-sm, 13px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
-
-  .beat-cap-nudge-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 100;
-    pointer-events: all;
-  }
-
 </style>
