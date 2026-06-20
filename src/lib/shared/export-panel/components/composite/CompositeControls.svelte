@@ -16,7 +16,6 @@
 <script lang="ts">
   import { getExportPanelState } from "../../state/export-panel-state.svelte";
 
-  // FIX: Use 'hubState' instead of 'state' to avoid collision with $state rune
   const hubState = getExportPanelState();
 
   function toggleOrientation() {

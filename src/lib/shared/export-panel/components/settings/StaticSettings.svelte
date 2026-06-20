@@ -136,6 +136,7 @@
     <button
       class="toggle-btn"
       class:active={showCreatorName}
+      aria-pressed={showCreatorName}
       onclick={() => toggleSetting("name")}
     >
       Name
@@ -143,6 +144,7 @@
     <button
       class="toggle-btn"
       class:active={showNotes}
+      aria-pressed={showNotes}
       onclick={() => toggleSetting("notes")}
     >
       Notes
@@ -150,6 +152,7 @@
     <button
       class="toggle-btn birthday-btn"
       class:active={showBirthday}
+      aria-pressed={showBirthday}
       onclick={() => toggleSetting("birthday")}
       aria-label="Birthday date"
       title="Birthday date"

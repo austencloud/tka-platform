@@ -710,8 +710,8 @@
   }
 
   .cancel-button {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: color-mix(in srgb, #fff 10%, transparent);
+    border-color: color-mix(in srgb, #fff 20%, transparent);
     padding: 8px 12px;
   }
 
@@ -721,8 +721,8 @@
   }
 
   .secondary {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: color-mix(in srgb, #fff 10%, transparent);
+    border-color: color-mix(in srgb, #fff 20%, transparent);
   }
 
   .settings-button {

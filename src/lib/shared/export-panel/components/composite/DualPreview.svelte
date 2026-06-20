@@ -17,7 +17,6 @@
   import { getExportPanelState } from "../../state/export-panel-state.svelte";
   import MediaPieceCard from "./MediaPieceCard.svelte";
 
-  // FIX: Use 'hubState' instead of 'state' to avoid collision with $state rune
   const hubState = getExportPanelState();
   const isHorizontal = $derived(
     hubState.compositeLayout.orientation === "horizontal"

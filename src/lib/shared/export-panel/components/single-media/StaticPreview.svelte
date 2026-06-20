@@ -20,6 +20,7 @@
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { onMount } from "svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
 
   const hubState = getExportPanelState();
   const imageSettings = getImageCompositionManager();
@@ -31,6 +32,10 @@
   let renderService = $state<SequenceRenderer | null>(null);
   let renderVersion = $state(0); // Increment to trigger re-render
   let rendererAttempt = $state(0); // Increment to retry renderer acquisition
+  // Monotonic token: every preview request bumps this, and only the response
+  // matching the latest token is allowed to write state. A slow request from an
+  // older settings snapshot can no longer clobber a newer preview.
+  let previewRequestId = 0;
 
   // Local reactive copies of settings (for UI)
   let addWord = $state(imageSettings.addWord);
@@ -103,6 +108,7 @@
     }
 
     // Generate preview with user's saved settings
+    const requestId = ++previewRequestId;
     isLoading = true;
     previewError = null;
 
@@ -127,10 +133,13 @@
         },
       })
       .then((dataUrl) => {
+        // Drop stale responses: a newer request superseded this one.
+        if (requestId !== previewRequestId) return;
         previewDataUrl = dataUrl;
         isLoading = false;
       })
       .catch((error) => {
+        if (requestId !== previewRequestId) return;
         console.error("Preview generation failed:", error);
         previewError =
           error instanceof Error ? error.message : "Preview failed";
@@ -195,57 +204,50 @@
     {/if}
   </div>
 
-  <!-- Quick Settings Chips -->
+  <!-- Quick Settings Chips: independent boolean toggles → FilterChipBase mode="toggle" -->
   <div class="settings-chips">
-    <button
-      class="chip"
-      class:active={darkMode}
+    <FilterChipBase
+      label="Dark Mode"
+      mode="toggle"
+      size="sm"
+      active={darkMode}
       onclick={toggleDarkMode}
-      aria-pressed={darkMode}
-      title="Toggle dark mode for export (overrides global setting)"
-    >
-      Dark Mode
-    </button>
-    <button
-      class="chip"
-      class:active={addWord}
+    />
+    <FilterChipBase
+      label="Word"
+      mode="toggle"
+      size="sm"
+      active={addWord}
       onclick={toggleWord}
-      aria-pressed={addWord}
-    >
-      Word
-    </button>
-    <button
-      class="chip"
-      class:active={addStepNumbers}
+    />
+    <FilterChipBase
+      label="Beat #s"
+      mode="toggle"
+      size="sm"
+      active={addStepNumbers}
       onclick={toggleStepNumbers}
-      aria-pressed={addStepNumbers}
-    >
-      Beat #s
-    </button>
-    <button
-      class="chip"
-      class:active={includeStartPosition}
+    />
+    <FilterChipBase
+      label="Start Pos"
+      mode="toggle"
+      size="sm"
+      active={includeStartPosition}
       onclick={toggleStartPosition}
-      aria-pressed={includeStartPosition}
-    >
-      Start Pos
-    </button>
-    <button
-      class="chip"
-      class:active={addDifficultyLevel}
+    />
+    <FilterChipBase
+      label="Difficulty"
+      mode="toggle"
+      size="sm"
+      active={addDifficultyLevel}
       onclick={toggleDifficulty}
-      aria-pressed={addDifficultyLevel}
-    >
-      Difficulty
-    </button>
-    <button
-      class="chip"
-      class:active={addUserInfo}
+    />
+    <FilterChipBase
+      label="User Info"
+      mode="toggle"
+      size="sm"
+      active={addUserInfo}
       onclick={toggleUserInfo}
-      aria-pressed={addUserInfo}
-    >
-      User Info
-    </button>
+    />
   </div>
 </div>
 
@@ -345,46 +347,7 @@
     border-radius: 12px;
   }
 
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px 16px;
-    min-height: var(--min-touch-target); /* WCAG 2.1 AA touch target minimum */
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 24px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .chip:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text, white);
-  }
-
-  .chip.active {
-    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
-    color: white;
-  }
-
-  .chip.active:hover {
-    background: color-mix(in srgb, var(--theme-accent) 35%, transparent);
-    border-color: var(--theme-accent);
-  }
-
-  .chip:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
-  /* Mobile: horizontal scroll if needed, but maintain touch targets */
+  /* Mobile: horizontal scroll if needed; FilterChipBase keeps its own touch targets */
   @media (max-width: 600px) {
     .settings-chips {
       padding: 10px;
@@ -393,18 +356,10 @@
       flex-wrap: nowrap;
       -webkit-overflow-scrolling: touch;
     }
-
-    .chip {
-      padding: 10px 14px;
-      min-height: var(--min-touch-target); /* Maintain WCAG touch target on mobile */
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
   }
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .chip,
     .retry-button {
       transition: none;
     }

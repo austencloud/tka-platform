@@ -86,7 +86,7 @@
   .export-button:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow:
-      0 6px 20px rgba(0, 0, 0, 0.4),
+      0 6px 20px color-mix(in srgb, #000 40%, transparent),
       0 0 0 1px var(--theme-accent-glow);
     animation: pulse 1.5s ease-in-out infinite;
   }
@@ -111,12 +111,12 @@
     left: 0;
     width: 100%;
     height: 4px;
-    background: rgba(0, 0, 0, 0.2);
+    background: color-mix(in srgb, #000 20%, transparent);
   }
 
   .progress-fill {
     height: 100%;
-    background: rgba(255, 255, 255, 0.8);
+    background: color-mix(in srgb, #fff 80%, transparent);
     transition: width var(--duration-emphasis) ease;
   }
 
@@ -125,12 +125,12 @@
     0%,
     100% {
       box-shadow:
-        0 6px 20px rgba(0, 0, 0, 0.4),
+        0 6px 20px color-mix(in srgb, #000 40%, transparent),
         0 0 0 1px var(--theme-accent-glow);
     }
     50% {
       box-shadow:
-        0 6px 24px rgba(0, 0, 0, 0.5),
+        0 6px 24px color-mix(in srgb, #000 50%, transparent),
         0 0 20px var(--theme-accent-glow);
     }
   }

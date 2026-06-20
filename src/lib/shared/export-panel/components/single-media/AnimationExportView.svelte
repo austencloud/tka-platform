@@ -254,6 +254,7 @@
   }
 
   .cancel-button {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -265,6 +266,18 @@
     color: var(--theme-text-dim);
     cursor: pointer;
     transition: all var(--duration-normal) ease;
+  }
+
+  /* Expand the interactive hit-area to the WCAG 44px floor without
+     growing the visible 28px box (keeps the compact progress header layout). */
+  .cancel-button::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
   }
 
   .cancel-button:hover {

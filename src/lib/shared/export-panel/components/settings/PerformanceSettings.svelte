@@ -15,7 +15,6 @@
 <script lang="ts">
   import { getExportPanelState } from "../../state/export-panel-state.svelte";
 
-  // FIX: Use 'hubState' instead of 'state' to avoid collision with $state rune
   const hubState = getExportPanelState();
   let availableCameras = $state<MediaDeviceInfo[]>([]);
   let cameraPermissionGranted = $state(false);
@@ -92,6 +91,7 @@
       <button
         class="mode-option"
         class:active={hubState.performanceSettings.mode === "record"}
+        aria-pressed={hubState.performanceSettings.mode === "record"}
         onclick={handleModeToggle}
       >
         <i class="fas fa-video" aria-hidden="true"></i>
@@ -105,6 +105,7 @@
       <button
         class="mode-option"
         class:active={hubState.performanceSettings.mode === "upload"}
+        aria-pressed={hubState.performanceSettings.mode === "upload"}
         onclick={handleModeToggle}
       >
         <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>

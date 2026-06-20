@@ -133,7 +133,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: color-mix(in srgb, #000 50%, transparent);
     z-index: 200;
     display: flex;
     justify-content: flex-end;
@@ -148,7 +148,7 @@
     height: 100%;
     background: var(--theme-panel-bg);
     border-left: 1px solid var(--theme-stroke);
-    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.5);
+    box-shadow: -4px 0 24px color-mix(in srgb, #000 50%, transparent);
     animation: slideIn var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 

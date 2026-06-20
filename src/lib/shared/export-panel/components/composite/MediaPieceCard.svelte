@@ -210,7 +210,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.3);
+    background: color-mix(in srgb, #000 30%, transparent);
     opacity: 0;
     transition: opacity var(--duration-normal) ease;
   }
@@ -222,7 +222,7 @@
   .play-overlay i {
     font-size: var(--font-size-2xl);
     color: white;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 2px 4px color-mix(in srgb, #000 30%, transparent);
   }
 
   /* Static preview */
@@ -258,7 +258,7 @@
     align-items: center;
     gap: 4px;
     padding: 4px 10px;
-    background: rgba(0, 0, 0, 0.7);
+    background: color-mix(in srgb, #000 70%, transparent);
     backdrop-filter: blur(8px);
     border: 1px solid var(--theme-stroke);
     border-radius: 16px;

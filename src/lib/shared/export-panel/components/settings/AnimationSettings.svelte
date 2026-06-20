@@ -17,7 +17,6 @@
   import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   import type { VideoFps } from "$lib/shared/animation-panel/state/export-options-state.svelte";
 
-  // FIX: Use 'hubState' instead of 'state' to avoid collision with $state rune
   const hubState = getExportPanelState();
   const exportOptions = getExportOptionsState();
 

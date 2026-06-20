@@ -30,7 +30,6 @@
     onExport?: () => void;
   } = $props();
 
-  // FIX: Use 'hubState' instead of 'state' to avoid collision with $state rune
   const hubState = getExportPanelState();
   let exporting = $state(false);
 
