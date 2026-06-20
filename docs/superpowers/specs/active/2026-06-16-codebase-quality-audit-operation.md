@@ -1,9 +1,14 @@
 # Codebase-Quality Audit Operation — Rolling Spec / Resume Doc
 
 **Date:** 2026-06-16 (last wave 2026-06-19)
-**Status:** IN PROGRESS — 8 waves complete. Coverage **~115 scopes** audited
-cumulatively (77 prior + 24 wave 7 + 14 wave 8). Resume from "How to run the
-next wave".
+**Status:** IN PROGRESS — 9 waves complete. Coverage **~129 scopes** audited
+cumulatively (77 prior + 24 wave 7 + 14 wave 8 + 14 wave 9). Resume from "How to
+run the next wave".
+**Wave 9 introduced a `safeClass` split:** evaluators tag each issue safe
+(token/a11y/cleanup/dead-code/non-runtime-type) vs unsafe (logic/rename/
+algorithm/architecture). Only safe-class is auto-fixed; unsafe is flagged for
+deliberate human triage. The 47 wave-9 unsafe findings (incl. real bugs) live in
+`docs/superpowers/specs/active/2026-06-19-wave9-flagged-findings.md`.
 **NOTE on the live tracker:** `.audit-tracker.json` was deleted + gitignored
 (commit `1c56bb225b`), so `audit-tracker.cjs stats` now regenerates FRESH (it
 shows only the current session's records, not the cumulative 101). **This wave
@@ -183,13 +188,42 @@ B→A+ (and others) since their `utils/` were pure-function modules.
   NotificationService→Notifier — class ids confined to scope, singletons untouched)
   + tightened notification schema `z.string()`→`z.enum`; objectURL moved out of a
   `$derived` (skel2tka); 44px touch targets; dialog a11y; timer cleanups.
-  13 commits. ONE `npm run check` gate: 14 errors (2 self-ref return types;
+  WAVE 9 SAFE/UNSAFE NOTE moved to header. 13 commits. ONE `npm run check` gate: 14 errors (2 self-ref return types;
   notifier rename missed its `new NotificationService()` export line → cascaded
   implicit-any to features/feedback + shared/inbox consumers; voice-control
   `boolean|undefined` indexing; 2 keyboard `$effect` non-returning paths) → fixed
   (export line, `?? false`, drop annotations, `return undefined`) → re-ran
   **0 errors, 5 pre-existing warnings**. The cascade implicit-anys auto-resolved
   once the notifier export name was corrected.
+- **Wave 9 (2026-06-19) — SAFE-CLASS-ONLY mode:** 14 scopes, 102 issues (55
+  safe, 47 unsafe-flagged). Trigger: realized prior waves auto-committed
+  behaviorally-risky logic changes (comparison hash fast-path, singleton
+  consolidations, Service renames) verified only by typecheck, never runtime —
+  and the test suite for those areas is pre-existing-broken (village/comparison
+  tests import stale `engine/VillageOrchestrator` PascalCase / `comparison/
+  implementations/` paths that don't exist; 22/23 fail to import). So wave 9
+  fixers were constrained to safe-class only; every logic/rename/algorithm/
+  architecture finding was flagged, not touched. Targets: shared/{sync, share,
+  sequence-engine, persistence, offline, mobile, multi-grid, lan-sync, library,
+  device}, features/{learn/math-foundations, retro/win95/services,
+  retro/win95/adapters, village/services}. Safe fixes landed: surface swallowed
+  errors (sync reconnect stuck-state, mobile fullscreen, win95 ctx.resume);
+  aria-labels + compact text + scoped accent tokens (multi-grid, mobile,
+  math-foundations); reduced-motion guards; removed dead barrel + 4 committed
+  build artifacts + dead `drawHandDots` (sequence-engine/win95); deduped pure
+  `isReversal()`; unbiased Fisher-Yates via existing shared helper; additive
+  `dispose()` for a resize listener (device). Fixers correctly REFUSED several
+  mis-tagged "safe" fixes that were actually behavioral (lan-sync `.add()` on a
+  native — not Svelte — Set would break reactivity; village `recordDeath` is
+  actually called by population-system; offline error-message needs a new state
+  field; device singleton/type-merge changes module surface). 11 commits (3
+  scopes had no safe edits). ONE `npm run check` gate: 1 error (persistence fixer
+  removed a double-cast that the `Record<string,unknown>`→domain conversion
+  genuinely requires) → restored the `as unknown as` bridge → **0 errors, 5
+  pre-existing warnings**. The 47 unsafe findings — incl. the sync `isPlaying`/
+  `playing` field typo that breaks multi-device sync, village Box-Muller `NaN`
+  traits, lan-sync dead mismatch-check, share GIF stub, win95 DoomLoader missing
+  SRI — are in the flagged-findings doc for deliberate triage, NOT auto-fixed.
 
 ## Standing flags (deferred, NOT yet fixed)
 
