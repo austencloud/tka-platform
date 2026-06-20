@@ -12,9 +12,9 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
   }>();
 
   const user = $derived(authState.user);
-  const isAuthenticated = $derived(authState.isAuthenticated);
+  const isFullAccount = $derived(authState.isFullAccount);
   const displayName = $derived(
-    user?.displayName || user?.email || "Sign In"
+    user?.displayName || user?.email || "Account"
   );
   const photoURL = $derived(user?.photoURL ?? null);
 
@@ -27,12 +27,18 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
     } catch {
       // Ignore if not available
     }
-    onclick?.();
+    if (isFullAccount) {
+      onclick?.();
+    } else {
+      // Guests get the auth sheet straight away (Sign up / Log in tabs),
+      // not the account menu popover.
+      authDrawerState.show("signup");
+    }
   }
 </script>
 
 {#if variant === "drawer"}
-  {#if onclick && isAuthenticated}
+  {#if isFullAccount && onclick}
     <button
       class="account-row drawer interactive"
       onclick={handleClick}
@@ -42,7 +48,7 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
       <span class="account-label">{displayName}</span>
       <i class="fas fa-chevron-right drawer-chevron" aria-hidden="true"></i>
     </button>
-  {:else if isAuthenticated}
+  {:else if isFullAccount}
     <div class="account-row drawer">
       <RobustAvatar src={photoURL} name={displayName} customSize={32} />
       <span class="account-label">{displayName}</span>
@@ -55,14 +61,14 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
         // Close the containing drawer (e.g. mobile nav) before the auth drawer
         // opens, so we never stack two full-height sheets on top of each other.
         onclick?.();
-        authDrawerState.show();
+        authDrawerState.show("signup");
       }}
-      aria-label="Create account"
+      aria-label="Sign in"
     >
       <div class="avatar-guest drawer-size">
         <i class="fas fa-user-plus" aria-hidden="true"></i>
       </div>
-      <span class="account-label sign-up-label">Sign up</span>
+      <span class="account-label sign-up-label">Sign in</span>
     </button>
   {/if}
 {:else}
@@ -70,10 +76,11 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
     class="account-row"
     class:collapsed={variant === "collapsed"}
     onclick={handleClick}
-    aria-label={isAuthenticated ? "Account menu" : "Sign in"}
-    aria-haspopup="menu"
+    aria-label={isFullAccount ? "Account menu" : "Sign in"}
+    title={variant === "collapsed" && !isFullAccount ? "Sign in" : undefined}
+    aria-haspopup={isFullAccount ? "menu" : undefined}
   >
-    {#if isAuthenticated}
+    {#if isFullAccount}
       <RobustAvatar
         src={photoURL}
         name={displayName}
@@ -81,13 +88,15 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
       />
     {:else}
       <div class="avatar-guest" class:collapsed={variant === "collapsed"}>
-        <i class="fas fa-user" aria-hidden="true"></i>
+        <i class="fas fa-user-plus" aria-hidden="true"></i>
       </div>
     {/if}
 
     {#if variant !== "collapsed"}
-      <span class="account-label">{displayName}</span>
-      <i class="fas fa-chevron-up chevron" aria-hidden="true"></i>
+      <span class="account-label">{isFullAccount ? displayName : "Sign in"}</span>
+      {#if isFullAccount}
+        <i class="fas fa-chevron-up chevron" aria-hidden="true"></i>
+      {/if}
     {/if}
   </button>
 {/if}
