@@ -110,17 +110,17 @@ function xhrPutOnce(
     xhr.onerror = () => {
       let host = "unknown";
       try { host = new URL(url).host; } catch { /* ignore */ }
-      const err = new Error(
+      const err: Error & { isNetworkError?: boolean } = new Error(
         `Network error during upload to ${host}. ` +
         `This usually means CORS is not configured on the R2 bucket to allow PUT from ${location.origin}. ` +
         `Check the bucket's CORS settings in the Cloudflare dashboard.`
       );
-      (err as unknown as Record<string, unknown>).isNetworkError = true;
+      err.isNetworkError = true;
       reject(err);
     };
     xhr.ontimeout = () => {
-      const err = new Error("Upload timed out");
-      (err as unknown as Record<string, unknown>).isNetworkError = true;
+      const err: Error & { isNetworkError?: boolean } = new Error("Upload timed out");
+      err.isNetworkError = true;
       reject(err);
     };
 
