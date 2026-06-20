@@ -758,7 +758,11 @@ export const authState: AuthStateHandle = {
     return _state.user?.isAnonymous ?? false;
   },
   get isFullAccount() {
-    return isFullAccountUser(this.isAuthenticated, this.isAnonymous);
+    // Read _state directly (like every sibling getter) so the result is correct
+    // even if this getter is ever invoked with a different receiver.
+    const isAuthenticated = _state.user !== null;
+    const isAnonymous = _state.user?.isAnonymous ?? false;
+    return isFullAccountUser(isAuthenticated, isAnonymous);
   },
 
   // Effective user helpers (as properties)
