@@ -143,9 +143,13 @@
    *  ground raycast on a Place-mode click. */
   function onPlace(x: number, z: number) {
     if (!placeMode) return;
-    manualX = +x.toFixed(3);
-    manualZ = +z.toFixed(3);
-    manualYawDeg = +faceCenterDeg(x, z).toFixed(0);
+    // Clamp to the visible ±2 grid — a near-horizon click hits the infinite
+    // floor plane far out, which would fling the avatar off-grid.
+    const cx = Math.max(-2, Math.min(2, x));
+    const cz = Math.max(-2, Math.min(2, z));
+    manualX = +cx.toFixed(3);
+    manualZ = +cz.toFixed(3);
+    manualYawDeg = +faceCenterDeg(cx, cz).toFixed(0);
     manualMode = true;
     dodgeOn = false;
     puppetMode = false;
@@ -454,11 +458,11 @@
       <div class="sliders">
         <label class="slider">
           <span class="slabel">Step X <b>{manualX.toFixed(2)} m</b></span>
-          <input type="range" min="-1" max="1" step="0.01" bind:value={manualX} />
+          <input type="range" min="-2" max="2" step="0.01" bind:value={manualX} />
         </label>
         <label class="slider">
           <span class="slabel">Step Z <b>{manualZ.toFixed(2)} m</b></span>
-          <input type="range" min="-1" max="1" step="0.01" bind:value={manualZ} />
+          <input type="range" min="-2" max="2" step="0.01" bind:value={manualZ} />
         </label>
         <label class="slider">
           <span class="slabel">Face <b>{manualYawDeg.toFixed(0)}°</b></span>

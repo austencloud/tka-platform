@@ -98,10 +98,15 @@
   const _hit = new Vector3();
   let placeCanvas: HTMLCanvasElement | null = null;
 
-  function onPlaceClick(e: MouseEvent): void {
-    if (!placeMode) return;
-    const cam = camera.current;
-    const canvas = placeCanvas ?? renderer?.current?.domElement;
+  // pointerdown in the CAPTURE phase: camera-controls listens on the same canvas
+  // and can cancel a synthesized 'click', so we take the raw pointerdown before
+  // it (capture runs first) and gate on the LEFT button only (right-drag still
+  // orbits). Left is mapped to ACTION.NONE in Place mode, so this never fights an
+  // orbit.
+  function onPlacePointerDown(e: PointerEvent): void {
+    if (!placeMode || e.button !== 0) return;
+    const cam = camera?.current ?? null;
+    const canvas = placeCanvas;
     if (!cam || !canvas) return;
     const rect = canvas.getBoundingClientRect();
     _ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -112,12 +117,28 @@
     }
   }
 
-  onMount(() => {
-    placeCanvas = renderer?.current?.domElement ?? null;
-    placeCanvas?.addEventListener("click", onPlaceClick);
-  });
+  let placeListenerAttached = false;
+  /** Attach the place-click listener once the canvas exists. The Threlte
+   *  `renderer.current` store populates lazily on this page (null at mount AND
+   *  at the first solved frame), so fall back to the DOM canvas — the dodge page
+   *  has exactly one. Polled from useTask until it lands. */
+  function attachPlaceListener(): void {
+    if (placeListenerAttached) return;
+    const rObj = (renderer?.current ?? null) as { domElement?: HTMLCanvasElement } | null;
+    const c =
+      rObj?.domElement ??
+      (typeof document !== "undefined"
+        ? (document.querySelector("canvas") as HTMLCanvasElement | null)
+        : null);
+    if (!c) return;
+    placeCanvas = c;
+    c.addEventListener("pointerdown", onPlacePointerDown, { capture: true });
+    placeListenerAttached = true;
+  }
+
+  onMount(attachPlaceListener);
   onDestroy(() => {
-    placeCanvas?.removeEventListener("click", onPlaceClick);
+    placeCanvas?.removeEventListener("pointerdown", onPlacePointerDown, { capture: true } as EventListenerOptions);
   });
 
   // Which Object3D the puppet gizmo drives, and in which mode — selection-time
@@ -457,6 +478,7 @@
   function ensureSolved(): void {
     if (didSolve || !rig || !controller) return;
     didSolve = true;
+    attachPlaceListener(); // renderer canvas is guaranteed ready by the first frame
     shoulderY = readShoulderY(rig);
     restFacing = controller.state.facing;
     spineBone = rig.getBone("Spine");
@@ -603,6 +625,7 @@
   useTask((delta) => {
     if (!controller || !rig) return;
     ensureSolved();
+    if (!placeListenerAttached) attachPlaceListener();
     const dt = Math.min(delta, 1 / 15);
 
     // Place the staves first (fixed world choreography; they do NOT follow the
