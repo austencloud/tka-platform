@@ -70,7 +70,6 @@ export type ModuleId =
   | "arena" // Community pairwise ranking
   | "festivals" // Festival Hub - discover and apply to flow festivals
   | "museum" // The Archive - walkable museum with 2D/3D flip
-  | "archive" // The Kinetic Archive - 3D indoor scene destination
   | "retro" // Retro module: TKA-OS desktop, ASCII pictograph, pixel pictograph
   | "levels" // Level progression labs: L4-L7 + Poi
   | "hand-paths" // Hand path explorer and builder (graduated from Lab Mar 2026)

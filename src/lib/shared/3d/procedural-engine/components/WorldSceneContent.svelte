@@ -61,7 +61,8 @@
   import { createMuseumState } from "$lib/shared/museum/state/museum-state.svelte";
   import { setActiveMuseumState } from "$lib/shared/museum/state/museum-state-bridge.svelte";
 
-  // Archive (The Kinetic Archive) - standalone via ArchiveDestination + IndoorScene
+  // Archive realm (ARCHIVE_WING1_CONFIG) - procedural indoor scene via IndoorScene.
+  // (The standalone archive feature module was deleted Jun 2026; museum supersedes it.)
 
   import {
     Mesh,
@@ -1049,4 +1050,4 @@
   {/await}
 {/if}
 
-<!-- Archive: The Kinetic Archive is now standalone via ArchiveDestination + IndoorScene -->
+<!-- Archive realm: procedural indoor scene (ARCHIVE_WING1_CONFIG) via IndoorScene -->

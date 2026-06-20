@@ -46,9 +46,12 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   // Museum renamed from museum-2d to museum (Mar 2026)
   "museum-2d": "museum",
   // Realm module dissolved (Apr 2026) - deep links redirect to museum (the most
-  // polished former destination). Campground + 3D Controls moved to Lab;
-  // Archive promoted to its own main module.
+  // polished former destination). Campground + 3D Controls moved to Lab.
   realm: "museum",
+  // Archive module deleted (Jun 2026) - it was a single-room Rapier-FPS prototype
+  // of the walkable museum that the museum module superseded on a different engine.
+  // Old /archive deep links redirect to museum (both are "The Kinetic Archive").
+  archive: "museum",
   "mandala-generator": "mandala",
   "mandala-collection": "mandala",
   "background-builder": "lab",
@@ -288,17 +291,6 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Explore The Kinetic Archive - walk the museum, flip into 3D",
     isMain: true,
     sections: ARCHIVE_TABS,
-  },
-  {
-    id: "archive",
-    labelKey: "module_archive",
-    descKey: "module_desc_archive",
-    label: "Archive",
-    icon: '<i class="fas fa-scroll" style="color: #c8a050;" aria-hidden="true"></i>',
-    color: "#c8a050",
-    description: "Walk through 40,000 years of kinetic history",
-    isMain: true,
-    sections: [],
   },
   {
     id: "retro",

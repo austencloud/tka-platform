@@ -126,7 +126,6 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   arena: false, // Arena pairwise ranking (unreleased)
   festivals: true, // Festival Hub (admin-only via feature flags)
   retro: false, // Retro module (graduated from Lab)
-  archive: false, // The Kinetic Archive - 3D indoor scene (admin-only)
   levels: false, // Level progression labs (L4-L7 + Poi, graduated from Lab)
   "hand-paths": false, // Hand path explorer + builder (graduated from Lab)
   video: false, // Video analysis, trails, effects (graduated from Lab)

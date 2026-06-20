@@ -205,8 +205,6 @@
     retro: () => import("../../features/retro/RetroModule.svelte"),
     // The Archive - tile-based museum explorer
     museum: () => import("../../features/museum/MuseumModule.svelte"),
-    // The Kinetic Archive - 3D indoor scene (promoted from realm destination, Apr 2026)
-    archive: () => import("../../features/archive/ArchiveDestination.svelte"),
     mandala: () => import("../../features/mandala/MandalaModule.svelte"),
     "background-builder": () => import("../../features/lab/LabModule.svelte"),
     "landing-preview": () => import("../../features/lab/LabModule.svelte"),

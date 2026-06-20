@@ -681,8 +681,7 @@ export function initializeNavigationHistory() {
     const isHmrRemount =
       typeof sessionStorage !== "undefined" &&
       sessionStorage.getItem("tka-nav-session-active") === "1";
-    const isHeavyweight =
-      pathNav.moduleId === "museum" || pathNav.moduleId === "archive";
+    const isHeavyweight = pathNav.moduleId === "museum";
 
     // Block direct-URL access to adminOnly modules for non-admins. The nav-surface
     // filter (getModuleDefinitions) hides them, but parsePathNavigation resolves

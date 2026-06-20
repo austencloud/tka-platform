@@ -115,11 +115,6 @@ export const FEATURES: FeatureDefinition[] = [
     modulePaths: ["features/museum/"],
   },
   {
-    id: "archive",
-    tier: "shipped",
-    modulePaths: ["features/archive/"],
-  },
-  {
     id: "festivals",
     tier: "shipped",
     modulePaths: ["features/festivals/"],
