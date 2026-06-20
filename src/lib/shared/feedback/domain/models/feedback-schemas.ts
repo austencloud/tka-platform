@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import { firestoreDate } from "$lib/shared/firestore";
+import { NOTIFICATION_TYPES } from "$lib/shared/feedback/domain/models/notification-models";
 
 // --- Enums / Literals ---
 
@@ -214,7 +215,9 @@ export const UserNotificationSchema = z
   .object({
     id: z.string(),
     userId: z.string(),
-    type: z.string(),
+    // Validate the discriminant against the known NotificationType union so the
+    // narrow union cast in notifier.ts is sound, not a `as unknown` paper-over.
+    type: z.enum(NOTIFICATION_TYPES),
     message: z.string(),
     createdAt: firestoreDate,
     read: z.boolean(),

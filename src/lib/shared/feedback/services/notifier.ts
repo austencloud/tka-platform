@@ -1,5 +1,5 @@
 /**
- * NotificationService
+ * Notifier
  *
  * Manages tester notifications for feedback updates.
  */
@@ -28,7 +28,7 @@ import { UserNotificationSchema } from "$lib/shared/feedback/domain/models/feedb
 const USERS_COLLECTION = "users";
 const NOTIFICATIONS_SUBCOLLECTION = "notifications";
 
-export class NotificationService {
+export class Notifier {
   private unsubscribe: (() => void) | null = null;
 
   /**
@@ -66,8 +66,10 @@ export class NotificationService {
           limit: maxCount,
         },
       );
-      // Cast validated Zod output to UserNotification union
-      return items as unknown as UserNotification[];
+      // firestoreList returns the flat schema shape (all per-variant fields
+      // optional); the validated `type` literal is the discriminant, so a single
+      // assertion to the union is sound here — no `as unknown` double-cast.
+      return items as UserNotification[];
     } catch (error) {
       console.error("[Notifier] Failed to get notifications:", error);
       toast.error("Failed to load notifications.");
@@ -363,4 +365,4 @@ export class NotificationService {
 }
 
 // Export singleton instance
-export const notificationService = new NotificationService();
+export const notificationService = new Notifier();

@@ -29,6 +29,12 @@ import { conversationService } from "$lib/shared/messaging/services/conversation
 import { messagingService } from "$lib/shared/messaging/services/messenger";
 import { captureDeviceContext } from "$lib/shared/feedback/utils/device-context-capturer";
 
+// Account that receives the feedback DM thread. This is a Firebase Auth UID, not
+// a credential — it ships in the client bundle, and that's fine: all access is
+// gated by server-side Firestore security rules, never by hiding this id. Used
+// only to (a) route the "new feedback" message and (b) skip self-messaging when
+// the admin submits feedback. The same UID is mirrored in config/feedback.config.js
+// and several scripts; if the admin account ever changes, update all call sites.
 const ADMIN_USER_ID = "PBp3GSBO6igCKPwJyLZNmVEmamI3";
 const COLLECTION_NAME = "feedback";
 

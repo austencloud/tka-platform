@@ -6,7 +6,9 @@ const api = {
 	delete: contributorLoader.deleteContributor,
 };
 
-export function getContributorLoader() {
+export type ContributorLoader = typeof api;
+
+export function getContributorLoader(): ContributorLoader {
 	if (!browser) throw new Error('getContributorLoader() is browser-only');
 	return api;
 }

@@ -5,27 +5,35 @@
  */
 
 /**
+ * All notification type discriminants. Single source of truth — the
+ * NotificationType union and the Zod schema's `type` field both derive from
+ * this so they can never drift apart.
+ */
+export const NOTIFICATION_TYPES = [
+  // Feedback-related notifications
+  "feedback-resolved", // Admin marked feedback as resolved
+  "feedback-in-progress", // Admin started working on feedback
+  "feedback-needs-info", // Admin needs more info from tester
+  "feedback-response", // Admin sent a message
+  // Sequence engagement notifications
+  "sequence-liked", // Someone liked your sequence
+  // Social notifications
+  "user-followed", // Someone followed you
+  "achievement-unlocked", // User unlocked an achievement
+  // Messaging notifications
+  "message-received", // Someone sent you a direct message
+  // Admin notifications
+  "admin-new-user-signup", // A new user signed up (admin-only)
+  // System notifications
+  "system-announcement", // Important system announcements
+  // Moderation notifications
+  "moderation-warning", // User received a moderation warning
+] as const;
+
+/**
  * Notification type classification
  */
-export type NotificationType =
-  // Feedback-related notifications
-  | "feedback-resolved" // Admin marked feedback as resolved
-  | "feedback-in-progress" // Admin started working on feedback
-  | "feedback-needs-info" // Admin needs more info from tester
-  | "feedback-response" // Admin sent a message
-  // Sequence engagement notifications
-  | "sequence-liked" // Someone liked your sequence
-  // Social notifications
-  | "user-followed" // Someone followed you
-  | "achievement-unlocked" // User unlocked an achievement
-  // Messaging notifications
-  | "message-received" // Someone sent you a direct message
-  // Admin notifications
-  | "admin-new-user-signup" // A new user signed up (admin-only)
-  // System notifications
-  | "system-announcement" // Important system announcements
-  // Moderation notifications
-  | "moderation-warning"; // User received a moderation warning
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 /**
  * Base notification interface

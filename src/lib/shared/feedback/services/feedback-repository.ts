@@ -1,12 +1,12 @@
 /**
- * FeedbackService
+ * FeedbackRepository
  *
- * Facade for feedback operations. Delegates to focused services:
- * - FeedbackSubmissionService: submit, upload, messaging
- * - FeedbackQueryService: load, get, user queries
- * - FeedbackStatusService: status updates, defer, delete
- * - FeedbackTesterWorkflowService: admin/tester interactions
- * - FeedbackSubscriptionService: real-time subscriptions
+ * Facade for feedback operations. Delegates to focused modules:
+ * - feedback-submission-service: submit, upload, messaging
+ * - feedback-querier: load, get, user queries
+ * - FeedbackStatusManager: status updates, defer, delete
+ * - FeedbackTesterWorkflow: admin/tester interactions
+ * - feedback-subscriber: real-time subscriptions
  *
  * This facade maintains backwards compatibility with the original API.
  */
@@ -27,7 +27,7 @@ import * as feedbackSubmissionModule from "$lib/shared/feedback/services/feedbac
 import * as feedbackQuerierModule from "$lib/shared/feedback/services/feedback-querier";
 import {
   feedbackStatusService,
-  type FeedbackStatusService,
+  type FeedbackStatusManager,
 } from "$lib/shared/feedback/services/feedback-status-manager";
 import {
   getFeedbackTesterWorkflow,
@@ -35,9 +35,9 @@ import {
 } from "$lib/shared/feedback/services/IFeedbackTesterWorkflow";
 import * as feedbackSubscriberModule from "$lib/shared/feedback/services/feedback-subscriber";
 
-export class FeedbackService {
+export class FeedbackRepository {
   constructor(
-    private readonly statusService: FeedbackStatusService = feedbackStatusService,
+    private readonly statusService: FeedbackStatusManager = feedbackStatusService,
   ) {}
 
   private get testerWorkflow(): IFeedbackTesterWorkflow {
@@ -213,4 +213,4 @@ export class FeedbackService {
 }
 
 // Export singleton instance (maintains backwards compatibility)
-export const feedbackService = new FeedbackService();
+export const feedbackService = new FeedbackRepository();

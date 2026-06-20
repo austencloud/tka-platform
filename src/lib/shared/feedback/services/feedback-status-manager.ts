@@ -1,5 +1,5 @@
 /**
- * FeedbackStatusService
+ * FeedbackStatusManager
  *
  * Handles feedback status updates, deferrals, and deletions.
  */
@@ -21,7 +21,7 @@ import { getFeedback } from "./feedback-querier";
 
 const COLLECTION_NAME = "feedback";
 
-export class FeedbackStatusService {
+export class FeedbackStatusManager {
   constructor() {}
 
   async updateStatus(
@@ -231,4 +231,4 @@ export class FeedbackStatusService {
 }
 
 // Export singleton instance
-export const feedbackStatusService = new FeedbackStatusService();
+export const feedbackStatusService = new FeedbackStatusManager();
