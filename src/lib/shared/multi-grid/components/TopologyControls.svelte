@@ -106,7 +106,12 @@
   <div class="section-label">Playback</div>
   <div class="playback-section">
     <div class="playback-row">
-      <button class="control-button" onclick={onStepBack} title="Previous pair">
+      <button
+        class="control-button"
+        onclick={onStepBack}
+        title="Previous pair"
+        aria-label="Previous pair"
+      >
         <i class="fas fa-step-backward"></i>
       </button>
       <button
@@ -114,10 +119,16 @@
         class:playing={isPlaying}
         onclick={onTogglePlay}
         title={isPlaying ? "Pause" : "Play"}
+        aria-label={isPlaying ? "Pause" : "Play"}
       >
         <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}"></i>
       </button>
-      <button class="control-button" onclick={onStepForward} title="Next pair">
+      <button
+        class="control-button"
+        onclick={onStepForward}
+        title="Next pair"
+        aria-label="Next pair"
+      >
         <i class="fas fa-step-forward"></i>
       </button>
     </div>
@@ -136,6 +147,8 @@
         value={playbackSpeed}
         oninput={(e) => onSpeedChange(Number((e.target as HTMLInputElement).value))}
         class="speed-slider"
+        aria-label="Playback speed (interval per pair)"
+        aria-valuetext={speedLabel}
       />
     </div>
   </div>
@@ -195,6 +208,8 @@
 
 <style>
   .topology-controls {
+    /* Scoped module accent — change here, not at 11 call sites */
+    --multi-grid-accent: #10b981;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -240,8 +255,8 @@
   }
 
   .preset-button.active {
-    border-color: #10b981;
-    background: rgba(16, 185, 129, 0.1);
+    border-color: var(--multi-grid-accent);
+    background: color-mix(in srgb, var(--multi-grid-accent) 10%, transparent);
   }
 
   .preset-button i {
@@ -251,7 +266,7 @@
 
   .preset-button.active i {
     opacity: 1;
-    color: #10b981;
+    color: var(--multi-grid-accent);
   }
 
   .preset-label {
@@ -275,7 +290,7 @@
   .info-value {
     font-size: 18px;
     font-weight: 700;
-    color: #10b981;
+    color: var(--multi-grid-accent);
   }
 
   .info-label {
@@ -321,9 +336,9 @@
   }
 
   .play-button.playing {
-    border-color: #10b981;
-    background: rgba(16, 185, 129, 0.15);
-    color: #10b981;
+    border-color: var(--multi-grid-accent);
+    background: color-mix(in srgb, var(--multi-grid-accent) 15%, transparent);
+    color: var(--multi-grid-accent);
   }
 
   .pair-counter {
@@ -360,7 +375,7 @@
     appearance: none;
     width: 14px;
     height: 14px;
-    background: #10b981;
+    background: var(--multi-grid-accent);
     border-radius: 50%;
     cursor: pointer;
   }
@@ -368,7 +383,7 @@
   .speed-slider::-moz-range-thumb {
     width: 14px;
     height: 14px;
-    background: #10b981;
+    background: var(--multi-grid-accent);
     border-radius: 50%;
     border: none;
     cursor: pointer;
@@ -437,7 +452,7 @@
 
   .grid-id {
     font-weight: 700;
-    color: #10b981;
+    color: var(--multi-grid-accent);
     text-transform: uppercase;
   }
 
@@ -448,7 +463,7 @@
   .grid-pos {
     opacity: 0.4;
     font-family: monospace;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .toggle-button {
@@ -471,8 +486,8 @@
   }
 
   .toggle-button.active {
-    border-color: #10b981;
-    background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
+    border-color: var(--multi-grid-accent);
+    background: color-mix(in srgb, var(--multi-grid-accent) 10%, transparent);
+    color: var(--multi-grid-accent);
   }
 </style>
