@@ -353,3 +353,12 @@ static/models/**/_tmp_*.glb
 
 # Module-audit scratch (8-dimension audit JSON reports + debug chrome profile)
 .audit-evidence/
+
+# Perf trace dumps (create-boot traces, logs, throwaway PNGs)
+.perf-traces/
+
+# One-off migration backups (Firestore exports taken before a data migration)
+scripts/migrations/backups/
+
+# Machine-translation drafts pending native review (written by i18n-localize.cjs)
+scripts/i18n-drafts/
