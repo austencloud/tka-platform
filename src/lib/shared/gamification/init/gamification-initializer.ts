@@ -7,6 +7,7 @@
 import { getAchievementManager } from "../get-achievement-manager";
 import { getDailyChallengeManager } from "../get-daily-challenge-manager";
 import { getStreakTracker } from "../get-streak-tracker";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { XPEventMetadata } from "../domain/models/achievement-models";
 
 // ITI containers are loaded synchronously, no need for async loading
@@ -57,7 +58,10 @@ export async function initializeGamification(): Promise<void> {
     }
   } catch (error) {
     console.error("❌ Failed to initialize gamification:", error);
-    // Don't throw - allow app to continue even if gamification fails
+    // Surface a non-blocking error so a silent gamification failure is at least
+    // observable to the user. Still don't throw — the app must continue running
+    // even when XP/streaks/achievements can't initialize.
+    toast.error("Couldn't load XP and achievements. Some progress may not be tracked.");
   }
 }
 
@@ -84,6 +88,9 @@ export async function trackXP(
     await achievementService.trackAction(action, metadata);
   } catch (error) {
     console.error("Failed to track XP:", error);
-    // Don't throw - silently fail
+    // Surface a non-blocking error so the user knows this action's XP wasn't
+    // recorded. Still don't throw — the caller's primary action must succeed
+    // regardless of whether XP tracking does.
+    toast.error("Couldn't record XP for that action.");
   }
 }

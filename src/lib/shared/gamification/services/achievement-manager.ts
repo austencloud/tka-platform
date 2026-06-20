@@ -19,6 +19,7 @@ import {
   Timestamp,
   orderBy,
   limit,
+  writeBatch,
 } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../../auth/firebase";
 import { db } from "../../persistence/database/tka-database";
@@ -146,7 +147,16 @@ export class AchievementManager {
         (a) => !existingAchievementIds.has(a.id)
       );
 
-      // Batch create missing achievements
+      if (missingAchievements.length === 0) {
+        return;
+      }
+
+      // Write all missing achievements in a single atomic Firestore batch
+      // instead of one sequential setDoc per achievement (was 22+ round-trips).
+      // ALL_ACHIEVEMENTS is well under the 500-op batch limit.
+      const batch = writeBatch(firestore);
+      const localRecords: UserAchievement[] = [];
+
       for (const achievement of missingAchievements) {
         const achievementDocRef = doc(
           firestore,
@@ -162,18 +172,18 @@ export class AchievementManager {
           notificationShown: false,
         };
 
-        await setDoc(achievementDocRef, {
+        batch.set(achievementDocRef, {
           ...userAchievement,
           unlockedAt: serverTimestamp(),
         });
 
-        // Cache locally
-        await db.userAchievements.add({
-          id: achievement.id,
-          ...userAchievement,
-        });
+        localRecords.push({ id: achievement.id, ...userAchievement });
       }
 
+      await batch.commit();
+
+      // Cache locally in a single bulk write
+      await db.userAchievements.bulkAdd(localRecords);
     } catch (error) {
       console.error(
         "❌ [AchievementManager] Failed to initialize user achievements:",

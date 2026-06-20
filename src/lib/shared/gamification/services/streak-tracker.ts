@@ -240,9 +240,13 @@ export class StreakTracker {
 
     const streak = await this.getCurrentStreak();
 
-    // Calculate total days active (current streak + any historical activity)
-    // For now, just use current streak as approximation
-    const totalDaysActive = streak.currentStreak;
+    // TODO: This is an approximation. The UserStreak record does not persist a
+    // true count of all distinct active days — only currentStreak, longestStreak,
+    // lastActivityDate, and streakStartDate (see achievement-models.ts UserStreak).
+    // longestStreak is the best available lower bound (it survives a broken streak,
+    // unlike currentStreak which resets to 0). A real total requires either a new
+    // persisted field or counting XP-event days. Don't treat this as exact.
+    const totalDaysActive = Math.max(streak.currentStreak, streak.longestStreak);
 
     return {
       currentStreak: streak.currentStreak,

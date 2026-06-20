@@ -13,22 +13,37 @@
 
   // Auto-remove toasts after display time
   $effect(() => {
+    // Track every timer scheduled this run so they can be cancelled if the
+    // queue changes (toast force-removed externally) or the component unmounts
+    // before they fire — otherwise the callbacks mutate state for toasts that
+    // may already be gone.
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+
     for (const toast of xpToastQueue) {
       if (!exitingToasts.has(toast.id)) {
-        // Start exit animation after 2.5 seconds
-        setTimeout(() => {
+        // Start exit animation after 1.5 seconds
+        const exitTimer = setTimeout(() => {
+          timers.delete(exitTimer);
           exitingToasts.add(toast.id);
           exitingToasts = new Set(exitingToasts);
 
           // Actually remove after animation completes
-          setTimeout(() => {
+          const removeTimer = setTimeout(() => {
+            timers.delete(removeTimer);
             removeXPToast(toast.id);
             exitingToasts.delete(toast.id);
             exitingToasts = new Set(exitingToasts);
           }, 300);
+          timers.add(removeTimer);
         }, 1500);
+        timers.add(exitTimer);
       }
     }
+
+    return () => {
+      for (const id of timers) clearTimeout(id);
+      timers.clear();
+    };
   });
 </script>
 

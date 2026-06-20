@@ -6,7 +6,7 @@
    * Automatically appears and disappears with smooth animations.
    */
 
-  import { onMount } from "svelte";
+  import { onDestroy } from "svelte";
   import type { AchievementNotification } from "../domain/models/achievement-models";
   import {
     notificationQueue,
@@ -17,6 +17,14 @@
   let activeNotification = $state<AchievementNotification | null>(null);
   let isVisible = $state(false);
   let timeout: ReturnType<typeof setTimeout> | null = null;
+  // Track every pending hide/transition timer so a fast unmount can cancel
+  // them — otherwise their callbacks fire against torn-down state.
+  const pendingTimers = new Set<ReturnType<typeof setTimeout>>();
+
+  function track(id: ReturnType<typeof setTimeout>) {
+    pendingTimers.add(id);
+    return id;
+  }
 
   // Watch notification queue
   $effect(() => {
@@ -37,32 +45,36 @@
 
     // Auto-hide after 5 seconds
     if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => {
-      hideNotification();
-    }, 5000);
+    timeout = track(
+      setTimeout(() => {
+        hideNotification();
+      }, 5000)
+    );
   }
 
   function hideNotification() {
     isVisible = false;
 
     // Wait for animation to complete before clearing
-    setTimeout(() => {
-      activeNotification = null;
-      // Show next notification if any
-      if (notificationQueue.length > 0) {
-        setTimeout(showNextNotification, 300);
-      }
-    }, 300);
+    track(
+      setTimeout(() => {
+        activeNotification = null;
+        // Show next notification if any
+        if (notificationQueue.length > 0) {
+          track(setTimeout(showNextNotification, 300));
+        }
+      }, 300)
+    );
   }
 
   function handleClick() {
     hideNotification();
   }
 
-  onMount(() => {
-    return () => {
-      if (timeout) clearTimeout(timeout);
-    };
+  onDestroy(() => {
+    if (timeout) clearTimeout(timeout);
+    for (const id of pendingTimers) clearTimeout(id);
+    pendingTimers.clear();
   });
 </script>
 
@@ -244,6 +256,7 @@
   /* Reduced Motion */
   @media (prefers-reduced-motion: reduce) {
     .toast-container,
+    .toast,
     .toast-icon,
     .toast-close {
       animation: none;
