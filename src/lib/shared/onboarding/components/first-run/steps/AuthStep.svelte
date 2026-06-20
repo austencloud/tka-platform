@@ -21,6 +21,7 @@
 
   let authMode = $state<"signin" | "signup">("signup");
   let showEmailAuth = $state(false);
+  let facebookError = $state<string | null>(null);
 
   // Watch for authentication to complete
   const isAuthenticated = $derived(authState.isAuthenticated);
@@ -35,10 +36,14 @@
   });
 
   async function handleFacebookAuth() {
+    facebookError = null;
     try {
       await signInWithFacebook();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Facebook auth failed:", error);
+      const message =
+        error instanceof Error ? error.message : "Please try again.";
+      facebookError = `Facebook sign-in failed. ${message}`;
     }
   }
 </script>
@@ -68,6 +73,13 @@
 
   <div class="auth-container">
     <SocialAuthCompact mode={authMode} onFacebookAuth={handleFacebookAuth} />
+
+    {#if facebookError}
+      <p class="auth-error" role="alert" in:fade={{ duration: 150 }}>
+        <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+        <span>{facebookError}</span>
+      </p>
+    {/if}
 
     {#if !showEmailAuth}
       <button class="email-toggle" onclick={() => (showEmailAuth = true)}>
@@ -106,11 +118,11 @@
     width: 100%;
     text-align: center;
     padding: 24px;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--theme-panel-bg, rgba(0, 0, 0, 0.6));
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .icon-container {
@@ -169,8 +181,33 @@
   }
 
   .benefit i {
-    color: #22c55e;
+    color: var(--semantic-success, #22c55e);
     font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .auth-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin: 0;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 12%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    color: var(--semantic-error, #ef4444);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    text-align: left;
+  }
+
+  .auth-error i {
     flex-shrink: 0;
   }
 
@@ -271,8 +308,8 @@
   }
 
   .back-button:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: white;
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, white);
   }
 
   /* Mobile */

@@ -19,6 +19,7 @@
 
   let animateIn = $state(false);
   let hapticService: HapticFeedback | null = null;
+  let cardEl = $state<HTMLDivElement | null>(null);
 
   onMount(() => {
     try {
@@ -28,6 +29,9 @@
     }
     requestAnimationFrame(() => {
       animateIn = true;
+      // Move focus into the dialog so screen readers announce it and
+      // keyboard users start inside the prompt.
+      cardEl?.focus();
     });
   });
 
@@ -40,15 +44,31 @@
     hapticService?.trigger("selection");
     onSkip();
   }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      handleSkip();
+    }
+  }
 </script>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <div class="tutorial-prompt-backdrop" class:animate-in={animateIn}>
-  <div class="prompt-card">
+  <div
+    class="prompt-card"
+    bind:this={cardEl}
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tutorial-prompt-title"
+    tabindex="-1"
+  >
     <div class="icon-circle">
       <i class="fas fa-compass" aria-hidden="true"></i>
     </div>
 
-    <h2 class="prompt-title">Quick tour?</h2>
+    <h2 id="tutorial-prompt-title" class="prompt-title">Quick tour?</h2>
     <p class="prompt-body">
       Build a short sequence step by step. Takes about a minute.
     </p>
@@ -99,6 +119,12 @@
   .animate-in .prompt-card {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+
+  /* Programmatic focus target (tabindex=-1) — the card is the dialog
+     container, not an interactive control, so suppress the focus ring. */
+  .prompt-card:focus {
+    outline: none;
   }
 
   .icon-circle {

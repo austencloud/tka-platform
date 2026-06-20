@@ -53,11 +53,11 @@
     width: 100%;
     text-align: center;
     padding: 32px;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--theme-panel-bg, rgba(0, 0, 0, 0.6));
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .logo-container {
@@ -160,7 +160,7 @@
   .quick-start-button {
     padding: 12px 20px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 10px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 0.95rem;
@@ -170,8 +170,8 @@
   }
 
   .quick-start-button:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     color: var(--theme-text, rgba(255, 255, 255, 0.9));
   }
 

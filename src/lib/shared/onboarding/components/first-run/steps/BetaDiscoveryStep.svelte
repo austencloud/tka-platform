@@ -56,11 +56,11 @@
     width: 100%;
     text-align: center;
     padding: 32px;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--theme-panel-bg, rgba(0, 0, 0, 0.6));
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .icon-container {
@@ -101,8 +101,8 @@
     gap: 12px;
     padding: 12px 20px;
     min-height: var(--min-touch-target, 44px);
-    background: rgba(255, 255, 255, 0.04);
-    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 12px;
     cursor: pointer;
     transition: all var(--duration-normal, 0.2s) ease;
@@ -115,8 +115,8 @@
   }
 
   .acknowledge-pill:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .acknowledge-pill:focus-visible {
@@ -145,7 +145,7 @@
     height: 24px;
     min-width: 24px;
     border-radius: 6px;
-    border: 2px solid rgba(255, 255, 255, 0.25);
+    border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
     background: transparent;
     color: white;
     font-size: 0.75rem;

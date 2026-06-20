@@ -206,11 +206,11 @@
     width: 100%;
     text-align: center;
     padding: 32px;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--theme-panel-bg, rgba(0, 0, 0, 0.6));
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .icon-container {
@@ -282,8 +282,8 @@
     justify-content: center;
     width: 36px;
     height: 36px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 8px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 0.85rem;
@@ -292,9 +292,9 @@
   }
 
   .edit-button:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
-    color: white;
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
+    color: var(--theme-text, white);
   }
 
   .cancel-edit {
@@ -312,8 +312,8 @@
   }
 
   .cancel-edit:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text, white);
   }
 
   .name-input {
@@ -378,8 +378,8 @@
   .pronoun-chip {
     padding: 6px 16px;
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 0.85rem;
     font-weight: 500;
@@ -388,9 +388,9 @@
   }
 
   .pronoun-chip:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.25);
-    color: white;
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    color: var(--theme-text, white);
   }
 
   .pronoun-chip.selected {
@@ -449,8 +449,8 @@
   }
 
   .back-button:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: white;
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, white);
   }
 
   .next-button {

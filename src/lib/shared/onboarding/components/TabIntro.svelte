@@ -14,7 +14,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { fly, fade } from "svelte/transition";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
@@ -54,6 +54,7 @@
   let isVisible = $state(false);
   let hapticService: HapticFeedback | null = $state(null);
   let currentPageIndex = $state(0);
+  let entranceTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Derived
   const currentPage = $derived(pages[currentPageIndex]);
@@ -80,10 +81,19 @@
 
     // Show intro if not seen before
     if (!hasSeenIntro) {
-      // Small delay for smoother entrance after tab renders
-      setTimeout(() => {
+      // Small delay for smoother entrance after tab renders. Store the handle
+      // so we can cancel it if the component unmounts before it fires.
+      entranceTimer = setTimeout(() => {
         isVisible = true;
+        entranceTimer = null;
       }, 100);
+    }
+  });
+
+  onDestroy(() => {
+    if (entranceTimer !== null) {
+      clearTimeout(entranceTimer);
+      entranceTimer = null;
     }
   });
 
@@ -356,8 +366,8 @@
     padding: 12px 16px;
     margin-top: 8px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     font-size: 0.9375rem;
     line-height: 1.5;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
@@ -365,7 +375,7 @@
 
   .intro-tip i {
     flex-shrink: 0;
-    color: #f59e0b;
+    color: var(--semantic-warning, #f59e0b);
     font-size: 0.875rem;
     margin-top: 2px;
   }
@@ -382,13 +392,13 @@
     padding: 0;
     border: none;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     cursor: pointer;
     transition: all var(--duration-normal) ease;
   }
 
   .dot:hover {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.4));
   }
 
   .dot.active {

@@ -167,7 +167,7 @@
     width: calc(100% - 32px);
     padding: 20px;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     border-radius: 16px;
     text-align: center;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
@@ -222,7 +222,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
     transition: all 0.2s ease;
   }
 
@@ -232,7 +232,7 @@
   }
 
   .dot.completed {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.4));
   }
 
   .tour-actions {
@@ -247,7 +247,7 @@
   .skip-btn {
     padding: 8px 16px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     border-radius: 8px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 0.85rem;
@@ -256,9 +256,9 @@
   }
 
   .skip-btn:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.25);
-    color: white;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    color: var(--theme-text, white);
   }
 
   .next-btn {

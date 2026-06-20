@@ -10,6 +10,7 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { FirstRunStep } from "../../domain/first-run-types";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -138,13 +139,20 @@
       if (pronouns.trim()) {
         authState.updatePronouns(pronouns.trim()).catch((err) => {
           console.error("Failed to save pronouns:", err);
+          toast.warning("Couldn't save your pronouns. Set them later in Settings.");
         });
       }
     } catch (error) {
       console.error("Failed to apply first-run settings:", error);
+      // Surface a brief, non-blocking notice. Completion is intentional:
+      // these preferences have safe defaults and remain editable in Settings,
+      // so a save failure should never trap a new user in the wizard.
+      toast.warning(
+        "Couldn't save some preferences. You can update them later in Settings."
+      );
     }
 
-    // Complete onboarding
+    // Complete onboarding regardless of settings-save outcome (see above).
     onComplete();
   }
 
@@ -237,7 +245,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--theme-panel-bg, rgba(0, 0, 0, 0.4));
     z-index: var(--z-priority);
     overflow-y: auto;
   }
@@ -249,7 +257,7 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .progress-fill {
@@ -265,7 +273,7 @@
     right: 16px;
     padding: 8px 16px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 8px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 0.875rem;
@@ -274,9 +282,9 @@
   }
 
   .skip-button:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
     color: var(--theme-text, rgba(255, 255, 255, 0.9));
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
 
   /* Step container */
@@ -324,12 +332,12 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.08);
-    border: 2px solid rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     cursor: pointer;
     transition: all var(--duration-normal) ease;
     padding: 0;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     font-size: 0.9rem;
   }
 
@@ -338,9 +346,9 @@
   }
 
   .dot:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.3);
-    color: rgba(255, 255, 255, 0.7);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
 
   .dot.active {
@@ -355,9 +363,9 @@
   }
 
   .dot.completed {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.4);
-    color: rgba(255, 255, 255, 0.7);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.4));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
 
   /* Mobile */

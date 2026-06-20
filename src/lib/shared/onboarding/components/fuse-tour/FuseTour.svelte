@@ -29,7 +29,7 @@
   const STOP_CONTENT: StopContent[] = [
     {
       icon: "fa-fire",
-      iconColor: "#f97316",
+      iconColor: "var(--tour-accent)",
       title: "Fuse",
       description:
         "Pick a blue prop path and a red prop path, then merge them into one complete sequence.",
@@ -37,7 +37,7 @@
     },
     {
       icon: "fa-columns",
-      iconColor: "#f97316",
+      iconColor: "var(--tour-accent)",
       title: "Blue on the left, red on the right",
       description:
         "Both step in sync. The grid shows notation, the animation shows motion.",
@@ -45,14 +45,14 @@
     },
     {
       icon: "fa-shuffle",
-      iconColor: "#f97316",
+      iconColor: "var(--tour-accent)",
       title: "Try shuffling",
       description: "Tap a Shuffle button to see a different prop path.",
       buttonText: "",
     },
     {
       icon: "fa-fire",
-      iconColor: "#f97316",
+      iconColor: "var(--tour-accent)",
       title: "Fuse them together",
       description: "When you like both sides, tap Fuse.",
       buttonText: "",
@@ -159,6 +159,12 @@
   /* ── Base layout ─────────────────────────────────────────────────── */
 
   .tour-content {
+    /* Module-scoped tour accent — the deliberate Fuse orange, tokenized so it
+       tracks the theme warning ramp while keeping the hex as fallback. */
+    --tour-accent: var(--semantic-warning, #f97316);
+    --tour-accent-light: var(--semantic-warning, #fb923c);
+    --tour-accent-dark: var(--semantic-warning, #ea580c);
+
     display: flex;
     align-items: center;
     width: 100%;
@@ -276,17 +282,17 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
     transition: background 0.2s ease, transform 0.2s ease;
   }
 
   .dot.active {
-    background: #f97316;
+    background: var(--tour-accent);
     transform: scale(1.25);
   }
 
   .dot.completed {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.4));
   }
 
   /* ── Action buttons ──────────────────────────────────────────────── */
@@ -301,7 +307,7 @@
     padding: 12px 24px;
     min-height: 48px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     border-radius: 10px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-sm, 14px);
@@ -310,15 +316,20 @@
   }
 
   .skip-btn:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.25);
-    color: white;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    color: var(--theme-text, white);
   }
 
   .next-btn {
     padding: 12px 28px;
     min-height: 48px;
-    background: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
+    background: linear-gradient(
+      135deg,
+      var(--tour-accent-light) 0%,
+      var(--tour-accent) 50%,
+      var(--tour-accent-dark) 100%
+    );
     border: none;
     border-radius: 10px;
     color: white;
@@ -344,7 +355,7 @@
     gap: 8px;
     padding: 12px 24px;
     min-height: 48px;
-    color: #f97316;
+    color: var(--tour-accent);
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
     animation: pulse 1.5s ease-in-out infinite;
