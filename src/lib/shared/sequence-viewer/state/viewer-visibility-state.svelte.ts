@@ -13,8 +13,16 @@ export class SequenceViewerVisibilityState {
   blueMotion = $state(true);
   redMotion = $state(true);
 
+  /**
+   * @param allowNone When true, both motions may be hidden at once (the landing
+   * spinner wants prop existence as a fully independent variable). Default
+   * false preserves the viewer's invariant that at least one motion stays
+   * visible — toggling off the last visible one flips the other back on.
+   */
+  constructor(private readonly allowNone = false) {}
+
   setBlueMotion(visible: boolean): void {
-    if (!visible && !this.redMotion) {
+    if (!visible && !this.redMotion && !this.allowNone) {
       this.blueMotion = false;
       this.redMotion = true;
       return;
@@ -23,7 +31,7 @@ export class SequenceViewerVisibilityState {
   }
 
   setRedMotion(visible: boolean): void {
-    if (!visible && !this.blueMotion) {
+    if (!visible && !this.blueMotion && !this.allowNone) {
       this.redMotion = false;
       this.blueMotion = true;
       return;

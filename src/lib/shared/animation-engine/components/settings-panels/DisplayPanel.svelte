@@ -2,14 +2,21 @@
 	import { onDestroy } from "svelte";
 	import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
 	import { getAnimationVisibilityContext } from "../../state/animation-visibility-context";
+	import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
 
 	let {
-		variant = "chips",
+		/** Show per-color prop (Left/Right) chips. Only surfaces without a header
+		 *  motion-visibility control set this (landing spinner). When true and the
+		 *  viewer-visibility context is present, the two prop chips replace the
+		 *  master "Props" toggle. */
+		showMotionVisibility = false,
 	}: {
-		variant?: "chips" | "rows";
+		showMotionVisibility?: boolean;
 	} = $props();
 
 	const vm = getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
+	const viewerVis = tryGetViewerVisibilityContext();
+	const showPropChips = $derived(showMotionVisibility && viewerVis !== null);
 
 	let gridVisible = $state(vm.isGridVisible());
 	let tkaGlyph = $state(vm.getVisibility("tkaGlyph"));
@@ -38,176 +45,76 @@
 		vm.setGridMode(gridVisible ? "none" : "8point");
 	}
 
-	const toggles: { key: "tkaGlyph" | "stepNumbers" | "props" | "wordHeader" | "progressBar" | "bluePathLines" | "redPathLines"; label: string; icon: string }[] = [
-		{ key: "tkaGlyph", label: "TKA Glyph", icon: "fa-font" },
-		{ key: "stepNumbers", label: "Step #", icon: "fa-list-ol" },
-		{ key: "props", label: "Props", icon: "fa-wand-magic" },
-		{ key: "wordHeader", label: "Word", icon: "fa-heading" },
-		{ key: "progressBar", label: "Progress", icon: "fa-bars-progress" },
-		{ key: "bluePathLines", label: "Blue path", icon: "fa-route" },
-		{ key: "redPathLines", label: "Red path", icon: "fa-route" },
+	// One unified list of visibility chips so they render as a single cohesive
+	// grid (the panel's native .rt-chip vocabulary). `accent` tints the active
+	// fill (prop + path chips echo the blue/red prop colors).
+	interface Chip {
+		id: string;
+		label: string;
+		icon?: string;
+		accent?: string;
+		active: () => boolean;
+		toggle: () => void;
+	}
+
+	// Left/Right are label-only; the blue/red active fill is the affordance
+	// (same read as the viewer-header MotionColorChips).
+	const propChips: Chip[] = [
+		{
+			id: "left", label: "Left", accent: "var(--prop-blue, #2196f3)",
+			active: () => viewerVis!.blueMotion, toggle: () => viewerVis!.toggleBlue(),
+		},
+		{
+			id: "right", label: "Right", accent: "var(--prop-red, #f44336)",
+			active: () => viewerVis!.redMotion, toggle: () => viewerVis!.toggleRed(),
+		},
 	];
 
-	function getToggleValue(key: string): boolean {
-		switch (key) {
-			case "tkaGlyph": return tkaGlyph;
-			case "stepNumbers": return stepNumbers;
-			case "props": return propsVisible;
-			case "wordHeader": return wordHeader;
-			case "progressBar": return progressBar;
-			case "bluePathLines": return bluePathLines;
-			case "redPathLines": return redPathLines;
-			default: return false;
-		}
-	}
+	const masterPropsChip: Chip = {
+		id: "props", label: "Props", icon: "fas fa-wand-magic",
+		active: () => propsVisible, toggle: () => vm.toggleVisibility("props"),
+	};
+
+	const displayChips: Chip[] = [
+		{ id: "grid", label: "Grid", icon: "fas fa-border-all", active: () => gridVisible, toggle: toggleGrid },
+		{ id: "tkaGlyph", label: "TKA Glyph", icon: "fas fa-font", active: () => tkaGlyph, toggle: () => vm.toggleVisibility("tkaGlyph") },
+		{ id: "stepNumbers", label: "Step #", icon: "fas fa-list-ol", active: () => stepNumbers, toggle: () => vm.toggleVisibility("stepNumbers") },
+		{ id: "wordHeader", label: "Word", icon: "fas fa-heading", active: () => wordHeader, toggle: () => vm.toggleVisibility("wordHeader") },
+		{ id: "progressBar", label: "Progress", icon: "fas fa-bars-progress", active: () => progressBar, toggle: () => vm.toggleVisibility("progressBar") },
+		{ id: "bluePathLines", label: "Blue path", icon: "fas fa-route", accent: "var(--prop-blue, #2196f3)", active: () => bluePathLines, toggle: () => vm.toggleVisibility("bluePathLines") },
+		{ id: "redPathLines", label: "Red path", icon: "fas fa-route", accent: "var(--prop-red, #f44336)", active: () => redPathLines, toggle: () => vm.toggleVisibility("redPathLines") },
+	];
+
+	// Prop chips (Left/Right) lead when shown; otherwise the master Props toggle
+	// stands in. Grid + the rest follow as one grid.
+	const chips: Chip[] = $derived([
+		...(showPropChips ? propChips : [masterPropsChip]),
+		...displayChips,
+	]);
 </script>
 
-{#if variant === "rows"}
-	<div class="display-rows">
-		<button
-			class="toggle-row"
-			type="button"
-			aria-pressed={gridVisible}
-			onclick={toggleGrid}
-		>
-			<i class="fas fa-border-all row-icon" aria-hidden="true"></i>
-			<span class="row-label">Grid</span>
-			<span class="toggle-indicator" class:on={gridVisible}></span>
-		</button>
-
-		{#each toggles as toggle}
-			{@const isOn = getToggleValue(toggle.key)}
-			<button
-				class="toggle-row"
-				type="button"
-				aria-pressed={isOn}
-				onclick={() => vm.toggleVisibility(toggle.key)}
-			>
-				<i class="fas {toggle.icon} row-icon" aria-hidden="true"></i>
-				<span class="row-label">{toggle.label}</span>
-				<span class="toggle-indicator" class:on={isOn}></span>
-			</button>
-		{/each}
-	</div>
-{:else}
-	<div class="display-chips">
+<div class="vis-grid">
+	{#each chips as chip (chip.id)}
 		<button
 			class="rt-chip"
 			type="button"
-			aria-pressed={gridVisible}
-			onclick={toggleGrid}
-		>Grid</button>
-
-		{#each toggles as toggle}
-			<button
-				class="rt-chip"
-				type="button"
-				aria-pressed={getToggleValue(toggle.key)}
-				onclick={() => vm.toggleVisibility(toggle.key)}
-			>{toggle.label}</button>
-		{/each}
-	</div>
-{/if}
+			aria-pressed={chip.active()}
+			style={chip.accent ? `--rail-accent: ${chip.accent};` : undefined}
+			onclick={chip.toggle}
+		>
+			{#if chip.icon}<i class={chip.icon} aria-hidden="true"></i>{/if}
+			<span>{chip.label}</span>
+		</button>
+	{/each}
+</div>
 
 <style>
-	.display-chips {
-		display: flex;
-		flex-wrap: wrap;
+	/* Even auto-fitting columns: fills the panel width with uniform chips and
+	   wraps cleanly instead of leaving a ragged trailing gap. Matches the
+	   panel's native .rt-chip family (Tempo presets, Motion paths, export). */
+	.vis-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
 		gap: 6px;
-	}
-
-	.display-rows {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.toggle-row {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		width: 100%;
-		min-height: var(--min-touch-target, 44px);
-		padding: 8px 12px;
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: 8px;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-		font-size: var(--font-size-compact, 12px);
-		font-weight: 500;
-		cursor: pointer;
-		transition: all var(--duration-fast, 100ms) ease;
-	}
-
-	.toggle-row:hover {
-		background: color-mix(in srgb, var(--theme-text) 6%, transparent);
-		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-		color: var(--theme-text, white);
-	}
-
-	.toggle-row[aria-pressed="true"] {
-		color: var(--theme-text, white);
-	}
-
-	.toggle-row:focus-visible {
-		outline: 2px solid var(--theme-accent, #6366f1);
-		outline-offset: 2px;
-	}
-
-	.row-icon {
-		width: 16px;
-		text-align: center;
-		font-size: 12px;
-		opacity: 0.6;
-		flex-shrink: 0;
-	}
-
-	.toggle-row[aria-pressed="true"] .row-icon {
-		opacity: 1;
-		color: var(--theme-accent, #8b5cf6);
-	}
-
-	.row-label {
-		flex: 1;
-		text-align: left;
-	}
-
-	.toggle-indicator {
-		width: 32px;
-		height: 18px;
-		border-radius: 9px;
-		background: rgba(255, 255, 255, 0.15);
-		position: relative;
-		flex-shrink: 0;
-		transition: background var(--duration-fast, 100ms) ease;
-	}
-
-	.toggle-indicator::after {
-		content: "";
-		position: absolute;
-		top: 2px;
-		left: 2px;
-		width: 14px;
-		height: 14px;
-		border-radius: 50%;
-		background: rgba(255, 255, 255, 0.5);
-		transition: transform var(--duration-fast, 100ms) ease, background var(--duration-fast, 100ms) ease;
-	}
-
-	.toggle-indicator.on {
-		background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
-	}
-
-	.toggle-indicator.on::after {
-		transform: translateX(14px);
-		background: var(--theme-accent, #8b5cf6);
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.toggle-row,
-		.toggle-indicator,
-		.toggle-indicator::after {
-			transition: none;
-		}
 	}
 </style>

@@ -65,4 +65,33 @@ describe("SequenceViewerVisibilityState", () => {
     s.setRedMotion(false);
     expect(s.soloColor).toBe("blue");
   });
+
+  describe("allowNone (landing spinner — prop existence is a free variable)", () => {
+    it("permits hiding the last visible motion (both off)", () => {
+      const s = new SequenceViewerVisibilityState(true);
+      s.setBlueMotion(false);
+      s.setRedMotion(false);
+      expect(s.blueMotion).toBe(false);
+      expect(s.redMotion).toBe(false);
+    });
+
+    it("toggles each color independently with both able to be off", () => {
+      const s = new SequenceViewerVisibilityState(true);
+      s.toggleBlue(); // blue off
+      s.toggleRed(); // red off — not flipped back on
+      expect(s.blueMotion).toBe(false);
+      expect(s.redMotion).toBe(false);
+      s.toggleBlue(); // blue back on
+      expect(s.blueMotion).toBe(true);
+      expect(s.redMotion).toBe(false);
+    });
+
+    it("default (allowNone=false) still flips the other on", () => {
+      const s = new SequenceViewerVisibilityState();
+      s.setBlueMotion(false);
+      s.setRedMotion(false);
+      expect(s.redMotion).toBe(false);
+      expect(s.blueMotion).toBe(true);
+    });
+  });
 });

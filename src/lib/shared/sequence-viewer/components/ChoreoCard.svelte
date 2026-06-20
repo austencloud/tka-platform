@@ -221,7 +221,7 @@
   // Visibility settings from user preferences (reactive)
   const visibilitySettings = $derived(getSettings().visibility);
   const showNonRadial = $derived(visibilitySettings?.nonRadialPoints ?? true);
-  const handPointVis = $derived<"all" | "active">(visibilitySettings?.handPointVisibility ?? "all");
+  const handPointVis = $derived<"all" | "active" | "none">(visibilitySettings?.handPointVisibility ?? "all");
   const showTKA = $derived(visibilitySettings?.tkaGlyph ?? true);
   const showReversals = $derived(visibilitySettings?.reversalIndicators ?? true);
 

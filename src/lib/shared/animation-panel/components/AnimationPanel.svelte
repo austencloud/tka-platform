@@ -77,6 +77,11 @@
      *  panel sits outside the takeover scrim, so its inline bar would be a second,
      *  redundant progress UI. Default true preserves standalone consumers. */
     showInlineExportProgress?: boolean;
+    /** Show per-color prop visibility (Left/Right) chips in the Display section.
+     *  Only surfaces WITHOUT a header motion-visibility control should set this
+     *  (the landing spinner). Viewer/export already own Left/Right in their
+     *  header, so they leave it false to avoid a duplicate. */
+    showMotionVisibility?: boolean;
   }
 
   let {
@@ -99,6 +104,7 @@
     onCancel,
     secondaryActions = [],
     showInlineExportProgress = true,
+    showMotionVisibility = false,
   }: Props = $props();
 
   const exportButtonLabel = $derived(renderMode === '3d' ? 'Record Scene' : 'Download Animation');
@@ -392,7 +398,7 @@
     <div class="section-pad">
       <div class="rt-section" role="region" aria-labelledby="display-visibility-label">
         <span class="rt-section-label" id="display-visibility-label">Visibility</span>
-        <DisplayPanel variant={layout === "sidebar" ? "rows" : "chips"} />
+        <DisplayPanel {showMotionVisibility} />
       </div>
       <div class="rt-section" role="region" aria-labelledby="display-paths-label">
         <span class="rt-section-label" id="display-paths-label">Motion paths</span>

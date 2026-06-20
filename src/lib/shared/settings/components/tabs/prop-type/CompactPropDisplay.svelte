@@ -11,14 +11,14 @@
 <script lang="ts">
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "./prop-type-registry";
+  import {
+    hasBigVariant,
+    isBigVariant,
+  } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  // Canonical chirality-flippable set (buugeng family + trigeng) — asymmetric
+  // props whose handedness can be mirrored.
+  import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-
-  // Buugeng family - asymmetric props that can be flipped
-  const BUUGENG_FAMILY = new Set([
-    PropType.BUUGENG,
-    PropType.BIGBUUGENG,
-    PropType.FRACTALGENG,
-  ]);
 
   let {
     bluePropType,
@@ -27,6 +27,7 @@
     blueBuugengFlipped = false,
     redBuugengFlipped = false,
     onToggleFlip,
+    onToggleBig,
   } = $props<{
     bluePropType: PropType;
     redPropType: PropType;
@@ -34,13 +35,19 @@
     blueBuugengFlipped?: boolean;
     redBuugengFlipped?: boolean;
     onToggleFlip?: (hand: "blue" | "red") => void;
+    onToggleBig?: (hand: "blue" | "red") => void;
   }>();
 
   // Display info
   const blueInfo = $derived(getPropTypeDisplayInfo(bluePropType));
   const redInfo = $derived(getPropTypeDisplayInfo(redPropType));
-  const blueIsBuugeng = $derived(BUUGENG_FAMILY.has(bluePropType));
-  const redIsBuugeng = $derived(BUUGENG_FAMILY.has(redPropType));
+  const blueIsBuugeng = $derived(isBuugengFamilyProp(bluePropType));
+  const redIsBuugeng = $derived(isBuugengFamilyProp(redPropType));
+  // Size modifier (standard ⇄ big)
+  const blueHasBig = $derived(hasBigVariant(bluePropType));
+  const redHasBig = $derived(hasBigVariant(redPropType));
+  const blueIsBig = $derived(isBigVariant(bluePropType));
+  const redIsBig = $derived(isBigVariant(redPropType));
 </script>
 
 <div class="compact-prop-display" class:dual={catDogMode}>
@@ -68,15 +75,28 @@
     <span class="prop-name">{blueInfo.label}</span>
 
     <span class="action-buttons">
+      {#if blueHasBig}
+        <button
+          class="action-btn"
+          class:active={blueIsBig}
+          onclick={() => onToggleBig?.("blue")}
+          aria-label="Toggle big size"
+          aria-pressed={blueIsBig}
+          title="Big version"
+        >
+          <i
+            class="fas fa-up-right-and-down-left-from-center"
+            aria-hidden="true"
+          ></i>
+        </button>
+      {/if}
       {#if blueIsBuugeng}
         <button
           class="action-btn"
           class:active={blueBuugengFlipped}
-          onclick={(e) => {
-            e.stopPropagation();
-            onToggleFlip?.("blue");
-          }}
+          onclick={() => onToggleFlip?.("blue")}
           aria-label="Flip buugeng"
+          aria-pressed={blueBuugengFlipped}
           title="Flip prop (asymmetric)"
         >
           <i class="fas fa-arrows-left-right" aria-hidden="true"></i>
@@ -105,15 +125,28 @@
       <span class="prop-name">{redInfo.label}</span>
 
       <span class="action-buttons">
+        {#if redHasBig}
+          <button
+            class="action-btn"
+            class:active={redIsBig}
+            onclick={() => onToggleBig?.("red")}
+            aria-label="Toggle big size"
+            aria-pressed={redIsBig}
+            title="Big version"
+          >
+            <i
+              class="fas fa-up-right-and-down-left-from-center"
+              aria-hidden="true"
+            ></i>
+          </button>
+        {/if}
         {#if redIsBuugeng}
           <button
             class="action-btn"
             class:active={redBuugengFlipped}
-            onclick={(e) => {
-              e.stopPropagation();
-              onToggleFlip?.("red");
-            }}
+            onclick={() => onToggleFlip?.("red")}
             aria-label="Flip buugeng"
+            aria-pressed={redBuugengFlipped}
             title="Flip prop (asymmetric)"
           >
             <i class="fas fa-arrows-left-right" aria-hidden="true"></i>

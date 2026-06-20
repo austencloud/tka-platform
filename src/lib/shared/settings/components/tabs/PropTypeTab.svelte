@@ -12,6 +12,7 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { AppSettings, PropPreset } from "../../domain/app-settings";
   import { PropType } from "../../../pictograph/prop/domain/enums/prop-type";
+  import { toggleBigVariant } from "../../../pictograph/prop/domain/prop-type-display-registry";
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import { onMount, onDestroy } from "svelte";
@@ -303,6 +304,26 @@
     updateCurrentPreset();
   }
 
+  // Size modifier — swap the hand's prop between standard and big.
+  function handleToggleBig(hand: "blue" | "red") {
+    hapticService?.trigger("selection");
+
+    if (hand === "blue") {
+      const next = toggleBigVariant(selectedBluePropType);
+      selectedBluePropType = next;
+      onUpdate?.({ key: "bluePropType", value: next });
+      if (!catDogMode) {
+        selectedRedPropType = next;
+        onUpdate?.({ key: "redPropType", value: next });
+      }
+    } else {
+      const next = toggleBigVariant(selectedRedPropType);
+      selectedRedPropType = next;
+      onUpdate?.({ key: "redPropType", value: next });
+    }
+    updateCurrentPreset();
+  }
+
   // Buugeng flip toggle
   function handleToggleFlip(hand: "blue" | "red") {
     hapticService?.trigger("selection");
@@ -344,6 +365,7 @@
         {blueBuugengFlipped}
         {redBuugengFlipped}
         onToggleFlip={handleToggleFlip}
+        onToggleBig={handleToggleBig}
       />
     </div>
 
@@ -464,8 +486,7 @@
   @media (min-width: 900px) {
     .prop-type-tab {
       flex-direction: row;
-      align-items: stretch;
-      overflow: hidden;
+      align-items: flex-start;
       gap: 20px;
     }
   }
@@ -497,8 +518,6 @@
   @media (min-width: 900px) {
     .controls-panel {
       flex: 0 0 clamp(380px, 28vw, 520px);
-      min-height: 0;
-      overflow-y: auto;
       padding: clamp(20px, 5cqi, 32px);
       gap: clamp(16px, 4cqi, 28px);
       border-radius: 16px;
@@ -518,9 +537,6 @@
   @media (min-width: 900px) {
     .selection-panel {
       flex: 1;
-      min-height: 0;
-      height: 100%;
-      overflow-y: auto;
     }
   }
 

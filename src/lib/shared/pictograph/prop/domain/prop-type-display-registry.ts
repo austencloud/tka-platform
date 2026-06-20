@@ -446,6 +446,47 @@ export function getBasePropsByCategory(): Map<PropCategory, PropType[]> {
   return result;
 }
 
+// ---------------------------------------------------------------------------
+// Size modifier (props-tab Phase 2) — standard ⇄ big pairs
+// ---------------------------------------------------------------------------
+
+/**
+ * Standard → Big size-variant pairs. Drives the "Big" modifier toggle on the
+ * prop readout: a prop can be flipped to its big version (and back) without
+ * hunting the Big section. Note minihoop pairs with bighoop.
+ */
+const STANDARD_TO_BIG: Partial<Record<PropType, PropType>> = {
+  [PropType.STAFF]: PropType.BIGSTAFF,
+  [PropType.CLUB]: PropType.BIGCLUB,
+  [PropType.TRIAD]: PropType.BIGTRIAD,
+  [PropType.MINIHOOP]: PropType.BIGHOOP,
+  [PropType.BUUGENG]: PropType.BIGBUUGENG,
+  [PropType.EIGHTRINGS]: PropType.BIGEIGHTRINGS,
+  [PropType.TORCH]: PropType.BIGTORCH,
+  [PropType.CHICKEN]: PropType.BIGCHICKEN,
+  [PropType.DOUBLESTAR]: PropType.BIGDOUBLESTAR,
+};
+
+const BIG_TO_STANDARD: Partial<Record<PropType, PropType>> = Object.fromEntries(
+  Object.entries(STANDARD_TO_BIG).map(([std, big]) => [big, std]),
+) as Partial<Record<PropType, PropType>>;
+
+/** Whether a prop has a standard⇄big counterpart (either direction). */
+export function hasBigVariant(propType: PropType): boolean {
+  return propType in STANDARD_TO_BIG || propType in BIG_TO_STANDARD;
+}
+
+/** Whether a prop is currently the big size. */
+export function isBigVariant(propType: PropType): boolean {
+  return propType in BIG_TO_STANDARD;
+}
+
+/** Toggle a prop between its standard and big size. Returns it unchanged if it
+ *  has no size counterpart. */
+export function toggleBigVariant(propType: PropType): PropType {
+  return STANDARD_TO_BIG[propType] ?? BIG_TO_STANDARD[propType] ?? propType;
+}
+
 /**
  * Flat prop-picker sections (props-tab redesign, 2026-06-18).
  *

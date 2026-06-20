@@ -29,6 +29,8 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   import { setAnimationScopeContext } from "$lib/shared/animation-engine/state/animation-scope-context";
   import { setAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { SequenceViewerVisibilityState } from "$lib/shared/sequence-viewer/state/viewer-visibility-state.svelte";
+  import { setViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -51,6 +53,14 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   const visibilityManager = setAnimationVisibilityContext(scope.visibility);
   const effectsConfigState = setEffectsConfigContext(scope.effects);
   visibilityManager.effectsConfigState = effectsConfigState;
+
+  // Per-color PROP visibility (the spinning prop + its trail), independent of
+  // the path-line chips. Reuses the sequence viewer's exact mechanism:
+  // CanvasSurface reads this context and calls engine.setMotionVisibility, and
+  // the render loop gates each prop + its trail on it. allowNone=true so a
+  // visitor can hide both props (path lines still available) — the landing
+  // wants prop existence as its own free variable.
+  setViewerVisibilityContext(new SequenceViewerVisibilityState(true));
 
   // BPM state - local to this landing section
   let bpm = $state(60);
@@ -87,7 +97,10 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
       effectsConfigState.setActiveEffect("trails");
 
       const browseLoader = getBrowseLoader();
-      const pc = createAnimationPlaybackController();
+      // Pass the scope's visibility manager so prop interpolation (path shape /
+      // motion-aware paths) reads from THIS surface's scope — keeps the spinning
+      // props on the same path the path-line overlay draws, scoped + ephemeral.
+      const pc = createAnimationPlaybackController(scope.visibility);
 
       const spinnerOrch = new EndlessSpinnerOrchestrator(
         browseLoader as any,
@@ -375,6 +388,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
             onPropChange={handlePropChange}
             onBpmChange={handleBpmChange}
             onPlaybackToggle={togglePlayPause}
+            showMotionVisibility={true}
           />
         {/if}
       </div>
@@ -392,6 +406,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
             onPropChange={handlePropChange}
             onBpmChange={handleBpmChange}
             onPlaybackToggle={togglePlayPause}
+            showMotionVisibility={true}
           />
         </div>
       {/if}
