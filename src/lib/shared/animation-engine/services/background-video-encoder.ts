@@ -20,6 +20,8 @@ export interface BackgroundExportConfig {
   totalFrames: number;
   /** "h264" (default, 4:2:0) or "av1" (4:4:4, near-exact parity). */
   codec?: "h264" | "av1";
+  /** Mux fragmented MP4 (MSE-appendable) instead of progressive. Default false. */
+  fragmented?: boolean;
 }
 import type {
   ExportWorkerMessage,
@@ -109,6 +111,7 @@ export class BackgroundVideoEncoder {
           bitrate: config.bitrate,
           totalFrames: config.totalFrames,
           codec: config.codec,
+          fragmented: config.fragmented,
         },
       });
     });

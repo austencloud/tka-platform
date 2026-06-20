@@ -36,6 +36,7 @@ import type { VideoExportFormat, VideoExportProgress, VideoEffectOverrides, IVid
 export type { VideoExportFormat, VideoExportProgress, VideoResolution, VideoEffectOverrides, VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
 import type { BackgroundVideoEncoder } from "$lib/shared/animation-engine/services/background-video-encoder";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 import { fireCacheInvalidation } from "$lib/shared/animation-engine/state/fire-invalidation-signal.svelte";
 import { getExportDimensions, calculateBitrate } from "$lib/shared/animation-engine/domain/video-export-calculations";
 import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
@@ -208,6 +209,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         // longer the default — 10-bit AV1 encode is unsupported on most
         // mobile/Safari, where configure() could stall and hang the export.
         codec: options.codec ?? "h264",
+        fragmented: options.fragmented,
       });
     } else {
       // Legacy inline exporter for WebM
@@ -461,6 +463,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         showBluePathLines,
         showRedPathLines,
         sequenceSteps: steps,
+        frameOverlayDraw: options.frameOverlayDraw,
       };
       const frameCompositor = new ExportFrameCompositor(
         compositorConfig,
@@ -485,6 +488,63 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // overlay has initialized (above).
       if (import.meta.env.DEV) trailDiag?.enable();
 
+      // Seamless-loop trail warm-up. A FADE trail baked from a cold start ramps
+      // up over its fade window, so frame 0 carries less trail than the last
+      // frame and the looped MP4 pops at the seam. Pre-roll whole loop periods
+      // (rendered into the offscreen engine, NOT encoded) so the captured period
+      // begins in trail steady-state; for a seamlessly-loopable closed path the
+      // first and last captured frames then match → seamless loop. The engine's
+      // virtual clock is continuous across warm-up + capture (below), so the
+      // trail fade timing carries over; the encoder timestamps still start at 0.
+      // Seamless-loop captures sample motion phases at frame MIDPOINTS (+0.5)
+      // so neither endpoint snapshot is hit: phase 0 renders playbackPosition
+      // exactly 1.0 (the static start-position pose, OFF the continuous motion
+      // curve → a one-frame flash at every loop seam) and phase == period would
+      // duplicate it at the tail. Midpoint sampling keeps captures strictly
+      // inside (0, period), so the start snapshot is never captured AND the wrap
+      // (last → first) is exactly one frame-step. The warm-up below uses the SAME
+      // offset so the primed trail history aligns with the captured phases (no
+      // half-step trail discontinuity at frame 0).
+      const phaseOffset = options.seamlessTrailLoop ? totalFrames / 2 + 0.5 : 0;
+
+      let warmupFrames = 0;
+      if (
+        options.seamlessTrailLoop &&
+        !isCompositeMode &&
+        isLoopable &&
+        offscreen &&
+        totalFrames > 0
+      ) {
+        const fadeMs = animationSettings.trail.fadeDurationMs ?? 2000;
+        const periodMs = (totalFrames / fps) * 1000;
+        const warmupLoops = Math.ceil(fadeMs / Math.max(1, periodMs)) + 1;
+        warmupFrames = warmupLoops * totalFrames;
+        for (let w = 0; w < warmupFrames; w++) {
+          if (this.shouldCancel) {
+            throw new Error("Export cancelled");
+          }
+          const timeProgress = ((w + phaseOffset) / totalFrames) * totalDurationWithHolds;
+          const virtualTimeMs = (w / fps) * 1000;
+          panelState.setVirtualTime(virtualTimeMs);
+
+          const motionStart = startPositionDuration;
+          const motionEnd = motionStart + motionLoopUnits;
+          let warmBeat: number;
+          if (startPositionDuration > 0 && timeProgress < motionStart) {
+            warmBeat = timeProgress / startPositionDuration;
+          } else if (endPositionHoldDuration > 0 && timeProgress >= motionEnd) {
+            warmBeat = steps.length + 1;
+          } else {
+            const motionTime = timeProgress - motionStart;
+            const wrapped = totalDurationUnits > 0 ? motionTime % totalDurationUnits : 0;
+            warmBeat = this.timeToBeat(wrapped, cumulativeDurations, stepDurations) + 1;
+          }
+          offscreen.renderFrame(warmBeat, virtualTimeMs);
+          // Yield occasionally so a long warm-up doesn't jank the main thread.
+          if (w % 30 === 29) await this.waitForAnimationFrame();
+        }
+      }
+
       for (let i = 0; i < totalFrames; i++) {
         if (this.shouldCancel) {
           throw new Error("Export cancelled");
@@ -496,10 +556,15 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         // The animation engine uses beat 0 = start position, beat 1+ = motion steps.
         // Using calculateStateForStep instead of jumpToStep because jumpToStep
         // clamps at totalSteps, which truncates the last step's fractional progress.
-        const timeProgress = (i / totalFrames) * totalDurationWithHolds;
+        // Frame-midpoint phase (see phaseOffset above): keeps seamless-loop
+        // captures strictly inside (0, period) so the start snapshot is never
+        // hit and the wrap is exactly one frame-step.
+        const timeProgress = ((i + phaseOffset) / totalFrames) * totalDurationWithHolds;
 
-        // Calculate deterministic virtual time for this frame (in ms)
-        const virtualTimeMs = (i / fps) * 1000;
+        // Calculate deterministic virtual time for this frame (in ms). Continue
+        // past any seamless-loop warm-up so the offscreen engine's trail fade
+        // clock stays continuous; the encoder timestamp (below) still starts at 0.
+        const virtualTimeMs = ((warmupFrames + i) / fps) * 1000;
         panelState.setVirtualTime(virtualTimeMs);
 
         let playbackPosition: number;

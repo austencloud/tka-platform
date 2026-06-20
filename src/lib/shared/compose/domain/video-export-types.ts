@@ -49,6 +49,27 @@ export interface VideoExportOrchestratorOptions {
   previewDarkMode?: boolean | null;
   /** Whether non-radial grid points are shown (matches the live grid). */
   showNonRadialPoints?: boolean;
+  /**
+   * Optional per-frame overlay drawn on top of the composited animation frame
+   * (after the black flatten + canvas layers + path lines), in the output-square
+   * coordinate space. `sizePx` is the square animation area side in output px.
+   * Used to bake a static overlay (e.g. the Mandala Rosetta's glowing mandala)
+   * into the clip. Omitted by the normal viewer export.
+   */
+  frameOverlayDraw?: (ctx: CanvasRenderingContext2D, sizePx: number) => void;
+  /**
+   * Pre-roll whole loop periods (rendered, NOT encoded) before capture so a FADE
+   * trail begins in steady state instead of ramping up from empty — making the
+   * single MP4 loop seamlessly with no trail pop at the seam. Only meaningful for
+   * a seamlessly-loopable, non-composite, pure-motion export (no start/end hold).
+   */
+  seamlessTrailLoop?: boolean;
+  /**
+   * Mux fragmented MP4 (moof fragments) instead of progressive (moov+mdat).
+   * Fragmented MP4 is appendable to a MediaSource SourceBuffer for gap-free MSE
+   * looping. Default false (progressive — max compatibility for downloads).
+   */
+  fragmented?: boolean;
   onCleanup?: () => void;
 }
 

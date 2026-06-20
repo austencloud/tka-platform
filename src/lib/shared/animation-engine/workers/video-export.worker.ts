@@ -150,6 +150,12 @@ export interface ExportConfig {
    * the cost of slower (often software) encode. WebCodecs path only.
    */
   codec?: "h264" | "av1";
+  /**
+   * When true, mux fragmented MP4 (moof fragments) instead of progressive
+   * (moov+mdat). Fragmented MP4 is appendable to a MediaSource SourceBuffer,
+   * enabling gap-free MSE looping. Default false (progressive, max-compat).
+   */
+  fragmented?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -331,7 +337,7 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
   // Create mediabunny MP4 output with in-memory fast-start
   videoSource = new EncodedVideoPacketSource(useAv1 ? "av1" : "avc");
   output = new Output({
-    format: new Mp4OutputFormat({ fastStart: "in-memory" }),
+    format: new Mp4OutputFormat({ fastStart: config.fragmented ? "fragmented" : "in-memory" }),
     target: new BufferTarget(),
   });
   output.addVideoTrack(videoSource, { frameRate: config.fps });
