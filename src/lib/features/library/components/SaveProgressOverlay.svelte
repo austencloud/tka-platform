@@ -127,7 +127,7 @@
   .save-progress-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.85);
+    background: var(--theme-overlay, rgba(0, 0, 0, 0.85));
     backdrop-filter: blur(8px);
     z-index: 100;
     display: flex;
@@ -209,7 +209,7 @@
     margin: 0;
     font-size: var(--font-size-lg);
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text, rgba(255, 255, 255, 0.95));
   }
 
   /* Compact Mode */
@@ -227,7 +227,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(139, 92, 246, 0.15);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent-strong, #8b5cf6) 15%,
+      transparent
+    );
     border-radius: 50%;
   }
 
@@ -240,7 +244,7 @@
     margin: 0;
     font-size: var(--font-size-lg);
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text, rgba(255, 255, 255, 0.95));
   }
 
   /* Progress Steps */
@@ -261,11 +265,19 @@
   }
 
   .step.completed {
-    background: rgba(34, 197, 94, 0.1);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #16a34a) 10%,
+      transparent
+    );
   }
 
   .step.active {
-    background: rgba(139, 92, 246, 0.15);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent-strong, #8b5cf6) 15%,
+      transparent
+    );
   }
 
   .step.pending {
@@ -296,7 +308,7 @@
   }
 
   .step.pending .step-indicator {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     color: var(--theme-text-dim);
   }
 
@@ -326,7 +338,7 @@
 
   .step-label {
     font-size: var(--font-size-compact);
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.8));
     transition: color var(--duration-emphasis) ease;
   }
 
@@ -335,7 +347,7 @@
   }
 
   .step.active .step-label {
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text, rgba(255, 255, 255, 0.95));
     font-weight: 500;
   }
 
@@ -350,7 +362,7 @@
   .beat-progress-bar {
     flex: 1;
     height: 8px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 4px;
     overflow: hidden;
   }
@@ -359,12 +371,13 @@
     height: 100%;
     background: linear-gradient(
       90deg,
-      var(--theme-accent-strong, var(--theme-accent-strong)) 0%,
-      #a78bfa 100%
+      var(--theme-accent-strong, #8b5cf6) 0%,
+      var(--theme-accent, #a78bfa) 100%
     );
     border-radius: 4px;
     transition: width var(--duration-fast) ease-out;
-    box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 8px
+      color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 50%, transparent);
   }
 
   .beat-progress-text {
@@ -379,7 +392,7 @@
   .progress-bar-container {
     width: 100%;
     height: 4px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 2px;
     overflow: hidden;
   }
@@ -423,14 +436,15 @@
     height: 72px;
     background: linear-gradient(
       135deg,
-      var(--semantic-success, var(--semantic-success)),
-      #16a34a
+      var(--semantic-success, #22c55e),
+      color-mix(in srgb, var(--semantic-success, #16a34a) 80%, black)
     );
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8px 32px rgba(34, 197, 94, 0.4);
+    box-shadow: 0 8px 32px
+      color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
   }
 
   .success-circle i {

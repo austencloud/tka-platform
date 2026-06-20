@@ -32,6 +32,15 @@ import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
 import type { Sharer } from "../../../shared/share/services/sharer";
 import type { R2VideoUploader } from "../../../shared/share/services/r2-video-uploader";
 import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
+
+/** How long the "Saved!" success state lingers before the overlay dismisses. */
+const SUCCESS_STATE_LINGER_MS = 800;
+
+// NOTE: The 'Service' suffix violates the service-naming rule (should be e.g.
+// LibrarySaveCoordinator). Rename deferred: this class is imported as a type by
+// out-of-scope files (features/create/shared/state/save-panel-state.svelte.ts,
+// SaveToLibraryPanel.svelte) and referenced in the shared library contract.
+// Renaming would force cross-scope churn into parallel-session areas.
 export class LibrarySaveService {
   private readonly shareService: Sharer | null;
   private readonly uploadService: R2VideoUploader | null;
@@ -132,7 +141,7 @@ export class LibrarySaveService {
     emitProgress(6);
 
     // Brief pause to show success state
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, SUCCESS_STATE_LINGER_MS));
 
     return { sequenceId, thumbnailUrl };
   }

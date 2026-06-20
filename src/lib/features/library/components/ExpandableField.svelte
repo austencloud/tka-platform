@@ -63,7 +63,7 @@
     padding: 12px 18px;
     min-height: var(--min-touch-target);
     background: transparent;
-    border: 1.5px dashed rgba(255, 255, 255, 0.25);
+    border: 1.5px dashed var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
     border-radius: 24px;
     color: var(--theme-text-dim);
     font-size: var(--font-size-base, 16px);
@@ -72,7 +72,7 @@
   }
 
   .expand-chip:hover {
-    border-color: rgba(255, 255, 255, 0.4);
+    border-color: color-mix(in srgb, var(--theme-text, #fff) 40%, transparent);
     color: var(--theme-text);
     background: var(--theme-card-bg);
   }
@@ -84,7 +84,7 @@
   .expandable-field {
     width: 100%;
     padding: 12px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--theme-stroke);
     border-radius: 10px;
     margin-top: 4px;
@@ -119,7 +119,7 @@
   }
 
   .collapse-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     color: var(--theme-text);
   }
 </style>
