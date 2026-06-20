@@ -137,15 +137,15 @@
     }
   }
 
-  /** Floor click in Place mode: step the avatar to the clicked point, facing
-   *  center. Drives the existing (static) manual path — no per-frame trajectory,
-   *  so no jitter. Fine-tune after with the Step / Face sliders. */
-  function onFloorClick(e: { point?: { x: number; z: number }; stopPropagation?: () => void }) {
-    if (!placeMode || !e.point) return;
-    e.stopPropagation?.();
-    manualX = +e.point.x.toFixed(3);
-    manualZ = +e.point.z.toFixed(3);
-    manualYawDeg = +faceCenterDeg(e.point.x, e.point.z).toFixed(0);
+  /** Place a step at floor (x,z): step the avatar there, facing center. Drives
+   *  the existing (static) manual path — no per-frame trajectory, so no jitter.
+   *  Fine-tune after with the Step / Face sliders. Called by DodgeDriver's
+   *  ground raycast on a Place-mode click. */
+  function onPlace(x: number, z: number) {
+    if (!placeMode) return;
+    manualX = +x.toFixed(3);
+    manualZ = +z.toFixed(3);
+    manualYawDeg = +faceCenterDeg(x, z).toFixed(0);
     manualMode = true;
     dodgeOn = false;
     puppetMode = false;
@@ -305,7 +305,7 @@
     <T.DirectionalLight position={[5, 10, 5]} intensity={1.1} />
     <T.DirectionalLight position={[-5, 5, -5]} intensity={0.3} />
 
-    <T.Mesh rotation.x={-Math.PI / 2} receiveShadow onclick={onFloorClick}>
+    <T.Mesh rotation.x={-Math.PI / 2} receiveShadow>
       <T.PlaneGeometry args={[20, 20]} />
       <T.MeshStandardMaterial color="#2a2a33" />
     </T.Mesh>
@@ -333,6 +333,8 @@
       {puppetPart}
       puppetGizmoMode={gizmoMode}
       onGizmoDrag={(d) => (gizmoDragging = d)}
+      {placeMode}
+      {onPlace}
       {onClearance}
     />
   </Canvas>

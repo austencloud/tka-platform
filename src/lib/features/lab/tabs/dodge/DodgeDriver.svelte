@@ -14,13 +14,9 @@
    * Deferred (correctness-first bar): per-frame arm-IK so the hands grip the
    * moving staves, and a full swept-volume wireframe gizmo.
    */
-  import { T, useTask } from "@threlte/core";
-  import { TransformControls, interactivity } from "@threlte/extras";
-
-  // Activate pointer raycasting for the canvas so the floor's onclick (place the
-  // step where the user clicks) fires. One call per canvas; coexists with the
-  // puppet TransformControls gizmo.
-  interactivity();
+  import { T, useTask, useThrelte } from "@threlte/core";
+  import { TransformControls } from "@threlte/extras";
+  import { onMount, onDestroy } from "svelte";
   import {
     Euler,
     Mesh,
@@ -30,6 +26,9 @@
     SphereGeometry,
     Quaternion,
     Vector3,
+    Vector2,
+    Raycaster,
+    Plane as ThreePlane,
     type Bone,
   } from "three";
   import type { MmLocomotionController } from "$lib/features/stage/locomotion/motion-matching/mm-locomotion-controller";
@@ -64,6 +63,8 @@
     puppetPart,
     puppetGizmoMode,
     onGizmoDrag,
+    placeMode,
+    onPlace,
     onClearance,
   }: {
     controller: MmLocomotionController | null;
@@ -80,8 +81,44 @@
     puppetPart: "body" | "chest" | "head" | "lfoot" | "rfoot";
     puppetGizmoMode: "translate" | "rotate";
     onGizmoDrag: (dragging: boolean) => void;
+    placeMode: boolean;
+    onPlace: (x: number, z: number) => void;
     onClearance: (clearanceM: number, solution: DodgeSolution | null) => void;
   } = $props();
+
+  // Click-to-place raycast: in Place mode a left-click on the floor casts a ray
+  // from the camera and intersects the ground plane (y=0), reporting the world
+  // (x,z) so the parent can step the avatar there. Manual DOM listener on the
+  // renderer canvas — the same proven pattern as Viewer3DScene (the @threlte
+  // interactivity() plugin doesn't get the event past camera-controls here).
+  const { camera, renderer } = useThrelte();
+  const _raycaster = new Raycaster();
+  const _ndc = new Vector2();
+  const _groundPlane = new ThreePlane(new Vector3(0, 1, 0), 0);
+  const _hit = new Vector3();
+  let placeCanvas: HTMLCanvasElement | null = null;
+
+  function onPlaceClick(e: MouseEvent): void {
+    if (!placeMode) return;
+    const cam = camera.current;
+    const canvas = placeCanvas ?? renderer?.current?.domElement;
+    if (!cam || !canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    _ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    _ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    _raycaster.setFromCamera(_ndc, cam);
+    if (_raycaster.ray.intersectPlane(_groundPlane, _hit)) {
+      onPlace(_hit.x, _hit.z);
+    }
+  }
+
+  onMount(() => {
+    placeCanvas = renderer?.current?.domElement ?? null;
+    placeCanvas?.addEventListener("click", onPlaceClick);
+  });
+  onDestroy(() => {
+    placeCanvas?.removeEventListener("click", onPlaceClick);
+  });
 
   // Which Object3D the puppet gizmo drives, and in which mode — selection-time
   // reactivity only (NOT per-frame), so it stays clear of the render-loop ban on
