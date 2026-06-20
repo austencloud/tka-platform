@@ -177,6 +177,7 @@
     scale = 1, // Match legacy default scale
     visible = true,
     previewMode = false,
+    animateVisibility = false,
     onToggle = undefined,
     // Dark Mode override for export (when set, applies filter override)
     darkMode = undefined,
@@ -195,6 +196,8 @@
     visible?: boolean;
     /** Preview mode: show at 50% opacity when off instead of hidden */
     previewMode?: boolean;
+    /** Keep mounted while hidden so the opacity fade can play (live DOM only, not export) */
+    animateVisibility?: boolean;
     /** Callback when glyph is clicked to toggle visibility */
     onToggle?: () => void;
     /** Dark Mode override for export. When set, applies filter override. */
@@ -389,7 +392,7 @@
      Preview mode allows rendering at reduced opacity even when not visible.
      CRITICAL: When darkMode is explicitly set (for export), we apply inline style
      because CSS filter won't be captured in outerHTML. -->
-{#if hasLetter && dimensionsLoaded && (visible || previewMode)}
+{#if hasLetter && dimensionsLoaded && (visible || previewMode || animateVisibility)}
   <g
     class="tka-glyph"
     class:visible={visible && imageReady}
@@ -432,6 +435,7 @@
           letterHeight={effectiveDimensions.height}
           {visible}
           {previewMode}
+          {animateVisibility}
           darkMode={effectiveDarkMode}
         />
       {/if}

@@ -175,7 +175,7 @@ export function buildRenderOptions(params: {
   redPropType: PropType | undefined;
   catDogModeEnabled: boolean;
   showNonRadial: boolean;
-  handPointVis: "all" | "active";
+  handPointVis: "all" | "active" | "none";
   showTKA: boolean;
   showReversals: boolean;
   showTnD: boolean;

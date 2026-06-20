@@ -76,7 +76,7 @@ export interface LayerRenderOptions {
 
   // Grid options (affect base layer only)
   showNonRadialPoints: boolean;
-  handPointVisibility: "all" | "active";
+  handPointVisibility: "all" | "active" | "none";
 
   // Prop type overrides
   bluePropType?: PropType;

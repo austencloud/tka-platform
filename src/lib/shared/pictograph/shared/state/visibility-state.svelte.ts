@@ -29,7 +29,7 @@ interface VisibilitySettings {
   positionsGlyph: boolean;
   showGrid: boolean; 
   nonRadialPoints: boolean;
-  handPointVisibility: "all" | "active"; 
+  handPointVisibility: "all" | "active" | "none";
   stepNumbers: boolean;
 }
 
@@ -259,11 +259,11 @@ export class VisibilityStateManager {
     this.debouncedPersistSettings();
   }
 
-  getHandPointVisibility(): "all" | "active" {
+  getHandPointVisibility(): "all" | "active" | "none" {
     return this.settings.handPointVisibility;
   }
 
-  setHandPointVisibility(mode: "all" | "active"): void {
+  setHandPointVisibility(mode: "all" | "active" | "none"): void {
     this.settings.handPointVisibility = mode;
     this.notifyObservers(["all"]);
     this.debouncedPersistSettings();

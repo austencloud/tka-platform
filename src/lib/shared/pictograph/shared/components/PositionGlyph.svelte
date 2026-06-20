@@ -17,6 +17,7 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     hasValidData = true,
     visible = true,
     previewMode = false,
+    animateVisibility = false,
     onToggle = undefined,
     centerX = 475,
   } = $props<{
@@ -32,6 +33,8 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     visible?: boolean;
     /** Preview mode: show at 50% opacity when off instead of hidden */
     previewMode?: boolean;
+    /** Keep mounted while hidden so the opacity fade can play (live DOM only, not export) */
+    animateVisibility?: boolean;
     /** Callback when glyph is clicked to toggle visibility */
     onToggle?: () => void;
     /** Center X position for horizontal centering (expandedWidth / 2) */
@@ -54,8 +57,9 @@ Based on legacy start_to_end_pos_glyph.py implementation.
   // CSS classes don't carry over - only the raw SVG markup is captured.
   // Preview mode allows rendering at reduced opacity even when not visible.
   const shouldRender = $derived.by(() => {
-    // Don't render if not visible (unless in preview mode which shows dimmed)
-    if (!visible && !previewMode) {
+    // Don't render if not visible (unless in preview mode which shows dimmed,
+    // or animateVisibility which keeps it mounted in the live DOM to fade out)
+    if (!visible && !previewMode && !animateVisibility) {
       return false;
     }
     if (!hasValidData || !startPosition || !endPosition) {

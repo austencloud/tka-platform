@@ -67,6 +67,9 @@ Usage:
     stepNumber = null,
     showStepNumber = false,
     previewMode = false,
+    // Keep overlays mounted while hidden so opacity fades can play (live DOM only).
+    // Export omits this so hidden overlays still hard-unmount for raw SVG capture.
+    animateVisibility = false,
     // Grid mode override (if provided, takes precedence over calculated mode)
     gridModeOverride = null,
     // Show only one hand's prop/arrow (null = show both)
@@ -113,13 +116,15 @@ Usage:
     showTnD?: boolean;
     showElemental?: boolean;
     showPositions?: boolean;
-    /** Hand point visibility mode: "all" shows all 8 points, "active" shows only where props are */
-    handPointVisibility?: "all" | "active";
+    /** Hand point visibility mode: "all" shows all 8 points, "active" shows only where props are, "none" hides all */
+    handPointVisibility?: "all" | "active" | "none";
     /** Active locations for filtering hand points when in "active" mode */
     activeLocations?: GridLocation[];
     stepNumber?: number | null;
     showStepNumber?: boolean;
     previewMode?: boolean;
+    /** Keep overlays mounted while hidden so opacity fades play (live DOM, not export) */
+    animateVisibility?: boolean;
     gridModeOverride?: GridMode | null;
     visibleHand?: "blue" | "red" | null;
     arrowsClickable?: boolean;
@@ -340,7 +345,7 @@ Usage:
     <!-- Core content (grid, props, arrows) - centered in expanded viewBox -->
     <g transform="translate({coreContentOffset}, 0)">
       <!-- Grid -->
-      {#if showGrid || previewMode}
+      {#if showGrid || previewMode || animateVisibility}
         <GridSvg
           {gridMode}
           {showNonRadialPoints}
@@ -448,6 +453,7 @@ Usage:
             pictographData={pictograph}
             visible={showTKA}
             {previewMode}
+            {animateVisibility}
             {darkMode}
             onToggle={onToggleTKA}
           />
@@ -462,6 +468,7 @@ Usage:
           pictographData={pictograph}
           visible={showTKA}
           {previewMode}
+          {animateVisibility}
           standalone={false}
           onToggle={onToggleTKA}
         />
@@ -476,6 +483,7 @@ Usage:
             {letterDimensions}
             visible={showTKA}
             {previewMode}
+            {animateVisibility}
             {darkMode}
           />
         </g>
@@ -485,6 +493,7 @@ Usage:
       <StepNumber
         {stepNumber}
         showStepNumber={shouldShowBeatNumber}
+        {animateVisibility}
         {isStartPosition}
         {hasValidData}
         {darkMode}
@@ -510,6 +519,7 @@ Usage:
           {hasValidData}
           visible={showElemental || showTnD}
           {previewMode}
+          {animateVisibility}
           onToggle={onToggleElemental ?? onToggleTnD}
           xOffset={rightGlyphOffset}
         />
@@ -524,6 +534,7 @@ Usage:
           {hasValidData}
           visible={showPositions}
           {previewMode}
+          {animateVisibility}
           onToggle={onTogglePositions}
           centerX={expandedWidth / 2}
         />

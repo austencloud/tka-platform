@@ -514,6 +514,9 @@ export class LayerCompositor {
     const activeLocations = this.getActiveHandLocations(pictograph, options.handPointVisibility, gridMode);
 
     for (const [location, point] of Object.entries(gridPoints.handPoints)) {
+      if (options.handPointVisibility === "none") {
+        continue;
+      }
       if (options.handPointVisibility === "active" && !activeLocations.has(location)) {
         continue;
       }
@@ -536,9 +539,12 @@ export class LayerCompositor {
 
   private getActiveHandLocations(
     pictograph: PreparedPictographData,
-    handPointVisibility: "all" | "active",
+    handPointVisibility: "all" | "active" | "none",
     gridMode: GridMode = GridMode.DIAMOND
   ): Set<string> {
+    if (handPointVisibility === "none") {
+      return new Set();
+    }
     if (handPointVisibility === "all") {
       return gridMode === GridMode.BOX
         ? new Set(["ne", "se", "sw", "nw"]) 

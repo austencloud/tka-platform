@@ -15,6 +15,7 @@
     scale = 1,
     visible = true,
     previewMode = false,
+    animateVisibility = false,
     darkMode = undefined,
   } = $props<{
     /** Direction from parsed turns tuple: "s" (same), "o" (opp), or null */
@@ -33,6 +34,8 @@
     visible?: boolean;
     /** Show at reduced opacity when not visible */
     previewMode?: boolean;
+    /** Keep mounted while hidden so the opacity fade can play (live DOM only, not export) */
+    animateVisibility?: boolean;
     /** Dark mode override for export. When set, overrides visibility manager state. */
     darkMode?: boolean;
   }>();
@@ -103,7 +106,7 @@
 </script>
 
 <!-- Direction Dot - only render when direction is same or opp -->
-{#if shouldShow && (visible || previewMode)}
+{#if shouldShow && (visible || previewMode || animateVisibility)}
   <g
     class="direction-dot"
     class:visible

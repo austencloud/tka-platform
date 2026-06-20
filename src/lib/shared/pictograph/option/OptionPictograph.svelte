@@ -29,7 +29,7 @@
   let showTnD = $state(vm.getGlyphVisibility("tndGlyph"));
   let showElemental = $state(vm.getGlyphVisibility("elementalGlyph"));
   let showPositions = $state(vm.getGlyphVisibility("positionsGlyph"));
-  let handPointVisibility = $state<"all" | "active">(vm.getHandPointVisibility());
+  let handPointVisibility = $state<"all" | "active" | "none">(vm.getHandPointVisibility());
 
   function syncAll() {
     showGrid = vm.getGridVisibility();

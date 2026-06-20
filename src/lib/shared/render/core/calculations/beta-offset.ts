@@ -332,6 +332,13 @@ export function calculateBetaOffset(
     (bothRadial && redEndOri?.toLowerCase() !== blueEndOri?.toLowerCase()) ||
     (bothNonRadial && redEndOri?.toLowerCase() !== blueEndOri?.toLowerCase());
 
+  // Gate 3b: both radial but opposing orientations (one "in", one "out") → no offset.
+  // Props pointing opposite radial directions at the same beta location cannot be
+  // meaningfully separated along a shared axis; skip offset for all prop types.
+  if (bothRadial && sameTypeButDifferentOrientation) {
+    return { x: 0, y: 0 };
+  }
+
   const bothAreBuugengFamily =
     isBuugengFamilyProp(actualBluePropType) &&
     isBuugengFamilyProp(actualRedPropType);

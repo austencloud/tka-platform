@@ -15,6 +15,7 @@
     letterHeight = 100,
     visible = true,
     previewMode = false,
+    animateVisibility = false,
     darkMode = false,
   } = $props<{
     /** Width of the letter this dash follows */
@@ -25,6 +26,8 @@
     visible?: boolean;
     /** Show at reduced opacity when not visible */
     previewMode?: boolean;
+    /** Keep mounted while hidden so the opacity fade can play (live DOM only, not export) */
+    animateVisibility?: boolean;
     /** Dark mode: render the dash off-white instead of black. */
     darkMode?: boolean;
   }>();
@@ -56,8 +59,9 @@
   });
 </script>
 
-<!-- Dash - only render when visible (or in preview mode) -->
-{#if visible || previewMode}
+<!-- Dash - only render when visible (or in preview mode). animateVisibility keeps
+     it mounted while hidden so the opacity fade can play in the live DOM. -->
+{#if visible || previewMode || animateVisibility}
   <g
     class="letter-dash"
     class:visible

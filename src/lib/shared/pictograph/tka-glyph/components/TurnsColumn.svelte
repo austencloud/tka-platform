@@ -38,6 +38,7 @@ Props:
     pictographData = undefined,
     visible = true,
     previewMode = false,
+    animateVisibility = false,
     standalone = false,
     x = 50,
     y = 800,
@@ -56,6 +57,8 @@ Props:
     visible?: boolean;
     /** Preview mode: show at 40% opacity when off instead of hidden */
     previewMode?: boolean;
+    /** Keep mounted while hidden so the opacity fade can play (live DOM only, not export) */
+    animateVisibility?: boolean;
     /** When true, positions at left edge instead of right of letter */
     standalone?: boolean;
     /** Base X position */
@@ -236,7 +239,7 @@ Props:
      NOTE: We check visibility here (not just CSS) because when exporting to SVG/image,
      CSS classes don't carry over - only the raw SVG markup is captured.
      We wait for valid dimensions to avoid positioning flash when letter loads. -->
-{#if (visible || previewMode) && (dimensionsReady || (letterDimensions.width !== 100 || letterDimensions.height !== 100) || (effectiveLetterDimensions.width !== 100 || effectiveLetterDimensions.height !== 100))}
+{#if (visible || previewMode || animateVisibility) && (dimensionsReady || (letterDimensions.width !== 100 || letterDimensions.height !== 100) || (effectiveLetterDimensions.width !== 100 || effectiveLetterDimensions.height !== 100))}
   <g
     class="turns-column"
     class:visible

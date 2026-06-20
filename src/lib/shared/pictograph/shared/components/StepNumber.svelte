@@ -13,6 +13,7 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
   let {
     stepNumber = null,
     showStepNumber = true,
+    animateVisibility = false,
     isStartPosition = false,
     hasValidData = true,
     darkMode = undefined,
@@ -21,6 +22,8 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     stepNumber?: number | null;
     /** Whether to show the step number */
     showStepNumber?: boolean;
+    /** Keep mounted while hidden so the opacity fade can play (live DOM only, not export) */
+    animateVisibility?: boolean;
     /** Whether this is a start position (no step number) */
     isStartPosition?: boolean;
     /** Whether the pictograph has valid data */
@@ -52,20 +55,26 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     effectiveDarkMode ? "#ffffff" : "#231f20"
   );
 
-  // Only render beat number if conditions are met
-  // Beat number 0 is excluded so it falls through to show "Start" text
-  // Beat number -2 is excluded so it falls through to show "End" text
-  const shouldRender = $derived.by(() => {
+  // Whether this step is a real numeric step (the kind the Step Numbers toggle controls).
+  // Beat number 0 is excluded so it falls through to show "Start" text;
+  // Beat number -2 is excluded so it falls through to show "End" text.
+  const isNumericStep = $derived.by(() => {
     return (
-      showStepNumber &&
       !isStartPosition &&
       hasValidData &&
       stepNumber !== null &&
       stepNumber !== -1 &&
-      stepNumber !== 0 && // Exclude 0 so it shows "Start" instead
-      stepNumber !== -2 // Exclude -2 so it shows "End" instead
+      stepNumber !== 0 &&
+      stepNumber !== -2
     );
   });
+
+  // Mount the numeric step number when it should show, OR keep it mounted while
+  // hidden when animateVisibility is set so the opacity fade can play in the live
+  // DOM. Export omits animateVisibility, so hidden numbers still hard-unmount.
+  const shouldRender = $derived(
+    isNumericStep && (showStepNumber || animateVisibility)
+  );
 
   // Show "Start" text for beat number 0 (start position)
   // Note: showStepNumber is false for start positions, but we still want to show "Start" text
@@ -112,6 +121,7 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
 {#if shouldRender}
   <text
     class="beat-number"
+    class:visible={showStepNumber}
     class:animating={isAnimating}
     x="50"
     y="50"
@@ -129,6 +139,7 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
 {:else if shouldRenderStartText}
   <text
     class="beat-number"
+    class:visible={true}
     class:animating={isAnimating}
     x="50"
     y="50"
@@ -146,6 +157,7 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
 {:else if shouldRenderEndText}
   <text
     class="beat-number"
+    class:visible={true}
     class:animating={isAnimating}
     x="50"
     y="50"
@@ -163,9 +175,18 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
 {/if}
 
 <style>
-  /* Smooth color transitions for dark mode toggle */
+  /* Fade in/out on visibility toggle + smooth fill for dark mode.
+     Default hidden; .visible drives the opacity transition. Start/End text
+     always carry .visible so they stay fully opaque. */
   .beat-number {
-    transition: fill var(--duration-fast) ease-out;
+    opacity: 0;
+    transition:
+      opacity var(--duration-fast) ease-out,
+      fill var(--duration-fast) ease-out;
+  }
+
+  .beat-number.visible {
+    opacity: 1;
   }
 
   /* Scale-pulse animation when step number changes */
@@ -187,6 +208,9 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
 
   /* Respect reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
+    .beat-number {
+      transition: none;
+    }
     .beat-number.animating {
       animation: none;
     }

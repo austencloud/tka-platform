@@ -40,7 +40,7 @@ export interface PreviewCellRenderOptions {
   showNonRadialPoints?: boolean;
 
   /** Hand point visibility mode */
-  handPointVisibility?: "all" | "active";
+  handPointVisibility?: "all" | "active" | "none";
 
   /** Show TKA letter glyph */
   showTKA?: boolean;

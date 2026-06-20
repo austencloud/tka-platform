@@ -27,7 +27,7 @@ export interface BaseLayerKeyComponents {
 
 export interface GridPointsLayerKeyComponents {
   showNonRadialPoints: boolean;
-  handPointVisibility: "all" | "active";
+  handPointVisibility: "all" | "active" | "none";
   gridMode: string;
   darkMode: boolean;
   size: number;

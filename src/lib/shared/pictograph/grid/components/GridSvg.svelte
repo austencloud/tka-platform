@@ -39,8 +39,8 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     onToggleNonRadial?: () => void;
     /** Dark Mode override for export. When set, applies inline colors. */
     darkMode?: boolean;
-    /** Hand point visibility mode: "all" shows all, "active" shows only where props are */
-    handPointVisibility?: "all" | "active";
+    /** Hand point visibility mode: "all" shows all, "active" shows only where props are, "none" hides all */
+    handPointVisibility?: "all" | "active" | "none";
     /** Locations where props are positioned (used when handPointVisibility="active") */
     activeLocations?: GridLocation[];
   }>();
@@ -57,8 +57,10 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     se_box_hand_point: GridLocation.SOUTHEAST,
     sw_box_hand_point: GridLocation.SOUTHWEST,
     nw_box_hand_point: GridLocation.NORTHWEST,
-    // Center hand point (for centric mode)
-    center_point: GridLocation.CENTER,
+    // NOTE: center_point intentionally excluded. The center is a structural grid
+    // landmark, not a hand indicator — it must follow the grid toggle only, never
+    // the hand-points toggle. (handPointVisibility="active" would otherwise set it
+    // opacity 0 since CENTER is not in activeLocations for normal pictographs.)
   };
 
   // State
@@ -165,7 +167,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     showNonRadial: boolean,
     isPreviewMode: boolean,
     exportDarkMode?: boolean,
-    handPointMode: "all" | "active" = "all",
+    handPointMode: "all" | "active" | "none" = "all",
     activeHandLocations?: GridLocation[]
   ): string {
     // SKEWED mode: minimal processing - CSS handles everything
@@ -200,6 +202,11 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
       // Apply hand point filtering for skewed mode
       if (handPointMode === "active" && activeHandLocations && activeHandLocations.length > 0) {
         modifiedSvg = applyHandPointFiltering(modifiedSvg, activeHandLocations, isPreviewMode);
+      }
+
+      // "none" mode export: inline-hide all hand points (CSS class handles live DOM)
+      if (handPointMode === "none" && exportDarkMode !== undefined) {
+        modifiedSvg = hideAllHandPointsInline(modifiedSvg);
       }
 
       return modifiedSvg;
@@ -383,7 +390,27 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
       modifiedSvg = applyHandPointFiltering(modifiedSvg, activeHandLocations, isPreviewMode);
     }
 
+    // "none" mode export: inline-hide all hand points (CSS class handles live DOM)
+    if (handPointMode === "none" && exportDarkMode !== undefined) {
+      modifiedSvg = hideAllHandPointsInline(modifiedSvg);
+    }
+
     return modifiedSvg;
+  }
+
+  /**
+   * Hide ALL hand points by inlining opacity="0" (for export, where CSS classes
+   * are not captured in the serialized SVG). Live DOM uses the
+   * .hide-all-hand-points container class instead, so the fade transition plays.
+   */
+  function hideAllHandPointsInline(svgContent: string): string {
+    return svgContent.replace(
+      /(<circle[^>]*class="[^"]*normal-hand-point[^"]*"[^/>]*)(\/?>)/g,
+      (match, opening, closing) => {
+        const cleaned = opening.replace(/\s*opacity="[^"]*"/g, "");
+        return `${cleaned} opacity="0"${closing}`;
+      }
+    );
   }
 
   /**
@@ -552,6 +579,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   class:skewed-mode={gridMode === GridMode.SKEWED}
   class:show-non-radial={showNonRadialPoints}
   class:hide-inactive-hand-points={handPointVisibility === "active"}
+  class:hide-all-hand-points={handPointVisibility === "none"}
   class:preview-mode={previewMode}
   class:interactive-non-radial={onToggleNonRadial !== undefined}
   class:dark-mode-override={darkMode === true}
@@ -742,6 +770,16 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 
   /* When filtering is active, dim inactive hand points */
   :global(.grid-container.hide-inactive-hand-points .hand-point-inactive) {
+    opacity: 0.4;
+  }
+
+  /* "none" mode - hide ALL hand points (fades via .normal-hand-point transition) */
+  :global(.grid-container.hide-all-hand-points .normal-hand-point) {
+    opacity: 0;
+  }
+
+  /* Preview mode: show hidden hand points at 40% instead of fully off */
+  :global(.grid-container.preview-mode.hide-all-hand-points .normal-hand-point) {
     opacity: 0.4;
   }
 

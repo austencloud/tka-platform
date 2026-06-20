@@ -30,10 +30,10 @@ function buildGridChildren(vm: VisibilityStateManager): ContextMenuItem[] {
     },
     {
       id: "toggle-hand-points",
-      label: "All Hand Points",
-      checked: vm.getHandPointVisibility() === "all",
+      label: "Hand Points",
+      checked: vm.getHandPointVisibility() !== "none",
       keepOpen: true,
-      action: () => vm.setHandPointVisibility(vm.getHandPointVisibility() === "all" ? "active" : "all"),
+      action: () => vm.setHandPointVisibility(vm.getHandPointVisibility() === "none" ? "all" : "none"),
     },
     {
       id: "toggle-non-radial",
@@ -62,25 +62,11 @@ function buildGlyphChildren(vm: VisibilityStateManager): ContextMenuItem[] {
       action: () => vm.setGlyphVisibility("tndGlyph", !vm.getRawGlyphVisibility("tndGlyph")),
     },
     {
-      id: "toggle-elemental-glyph",
-      label: "Elemental",
-      checked: vm.getRawGlyphVisibility("elementalGlyph"),
-      keepOpen: true,
-      action: () => vm.setGlyphVisibility("elementalGlyph", !vm.getRawGlyphVisibility("elementalGlyph")),
-    },
-    {
       id: "toggle-positions-glyph",
       label: "Positions",
       checked: vm.getRawGlyphVisibility("positionsGlyph"),
       keepOpen: true,
       action: () => vm.setGlyphVisibility("positionsGlyph", !vm.getRawGlyphVisibility("positionsGlyph")),
-    },
-    {
-      id: "toggle-reversals",
-      label: "Reversals",
-      checked: vm.getRawGlyphVisibility("reversalIndicators"),
-      keepOpen: true,
-      action: () => vm.setGlyphVisibility("reversalIndicators", !vm.getRawGlyphVisibility("reversalIndicators")),
     },
   ];
 }

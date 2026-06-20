@@ -148,7 +148,6 @@ with pre-prepared data for better performance.
   const stepNumber = $derived(stepData?.stepNumber ?? null);
   const duration = $derived(stepData?.duration ?? 1);
   const isStartPosition = $derived(stepNumber === 0);
-  const showStepNumber = $derived(stepNumber !== null && !isStartPosition);
 
   // Visibility manager (for glyph visibility)
   const visibilityManager = getVisibilityStateManager();
@@ -167,8 +166,15 @@ with pre-prepared data for better performance.
     elementalGlyph: visibilityManager.getGlyphVisibility("elementalGlyph"),
     positionsGlyph: visibilityManager.getGlyphVisibility("positionsGlyph"),
     handPointVisibility: visibilityManager.getHandPointVisibility(),
+    stepNumbers: visibilityManager.getStepNumbersVisibility(),
     darkMode: animVisibilityManager.isDarkMode(),
   });
+
+  // Step numbers honor the global visibility toggle (right-click → Step Numbers).
+  // Start positions never show a number; 0/null already excluded downstream.
+  const showStepNumber = $derived(
+    stepNumber !== null && !isStartPosition && syncedVisibility.stepNumbers
+  );
 
   function handleVisibilityChange() {
     // Re-read ALL visibility values to ensure we have fresh state
@@ -182,6 +188,7 @@ with pre-prepared data for better performance.
       elementalGlyph: visibilityManager.getGlyphVisibility("elementalGlyph"),
       positionsGlyph: visibilityManager.getGlyphVisibility("positionsGlyph"),
       handPointVisibility: visibilityManager.getHandPointVisibility(),
+      stepNumbers: visibilityManager.getStepNumbersVisibility(),
       darkMode: syncedVisibility.darkMode, // Keep dark mode unchanged
     };
   }
@@ -208,6 +215,12 @@ with pre-prepared data for better performance.
     darkMode !== undefined ? darkMode : syncedVisibility.darkMode
   );
 
+  // Keep overlays mounted while hidden (so opacity fades can play) ONLY in the
+  // live interactive DOM. Export sets `darkMode` explicitly for color inlining,
+  // and print uses `printMode`; both capture static SVG and must hard-unmount
+  // hidden overlays so they don't leak into the raw markup.
+  const liveAnimateVisibility = $derived(darkMode === undefined && !printMode);
+
   // Effective visibility values - use prop overrides if set, otherwise true (motion always visible)
   const effectiveBlueMotion = $derived(
     showBlueMotion !== undefined ? showBlueMotion : true
@@ -223,8 +236,11 @@ with pre-prepared data for better performance.
     showTKA !== undefined ? showTKA : syncedVisibility.tkaGlyph
   );
 
+  // Reversals are an essential part of the notation — always shown unless an
+  // explicit prop override (e.g. export options) hides them. The right-click
+  // toggle was removed so a stale persisted "off" can't leave them out.
   const effectiveShowReversals = $derived(
-    showReversals !== undefined ? showReversals : syncedVisibility.reversalIndicators
+    showReversals !== undefined ? showReversals : true
   );
 
   const effectiveShowNonRadialPoints = $derived(
@@ -236,8 +252,13 @@ with pre-prepared data for better performance.
     showTnD !== undefined ? showTnD : syncedVisibility.tndGlyph
   );
 
+  // The Elemental and TnD glyphs are one fused glyph in the renderer
+  // (visible = showElemental || showTnD). The right-click menu exposes a single
+  // "TnD" toggle, so in the global/interactive path both halves follow tndGlyph —
+  // toggling TnD fully shows/hides the glyph. Explicit prop overrides still win
+  // for external callers (export, TnD decks) that drive elemental directly.
   const effectiveShowElemental = $derived(
-    showElemental !== undefined ? showElemental : syncedVisibility.elementalGlyph
+    showElemental !== undefined ? showElemental : syncedVisibility.tndGlyph
   );
 
   const effectiveShowPositions = $derived(
@@ -245,9 +266,9 @@ with pre-prepared data for better performance.
   );
 
   // Hand point visibility mode - prop override forces show-all or hide-inactive, else use global
-  const effectiveHandPointVisibility = $derived<"all" | "active">(
+  const effectiveHandPointVisibility = $derived<"all" | "active" | "none">(
     showHandPoints !== undefined
-      ? (showHandPoints ? "all" : "active")
+      ? (showHandPoints ? "all" : "none")
       : syncedVisibility.handPointVisibility
   );
 
@@ -432,6 +453,7 @@ with pre-prepared data for better performance.
         {stepNumber}
         {showStepNumber}
         {previewMode}
+        animateVisibility={liveAnimateVisibility}
         gridModeOverride={overrideGridMode}
         {visibleHand}
         {arrowsClickable}
@@ -470,6 +492,7 @@ with pre-prepared data for better performance.
             {stepNumber}
             {showStepNumber}
             {previewMode}
+            animateVisibility={liveAnimateVisibility}
             gridModeOverride={overrideGridMode}
             {visibleHand}
             {arrowsClickable}
