@@ -15,7 +15,7 @@ const pictographs = (
   lettersData as unknown as { pictographs: Record<string, PictographData> }
 ).pictographs;
 
-const POS_GLYPH: Record<string, string> = { alpha: "α", beta: "β", gamma: "Γ" };
+const POS_GLYPH: Record<string, string> = { alpha: "α", beta: "β", gamma: "γ" };
 
 function posBase(p: unknown): string {
   const s = String(p ?? "");
@@ -134,7 +134,7 @@ export const SHEET1: CodexSheetDef = {
         gbox([c("W-0", "W"), c("X-0", "X")], "OPEN"),
         gbox([c("Y-0", "Y"), c("Z-0", "Z")], "CLOSE"),
         gbox([c("Σ-0", "Σ", "Sigma"), c("Δ-0", "Δ", "Delta")], "CLOSE"),
-        gbox([c("Θ-0", "θ", "Theta"), c("Ω-0", "Ω", "Omega")], "OPEN"),
+        gbox([c("Θ-0", "Θ", "Theta"), c("Ω-0", "Ω", "Omega")], "OPEN"),
       ],
     },
   ],
@@ -152,7 +152,7 @@ export const SHEET2: CodexSheetDef = {
       boxes: [
         gbox([c("W--0", "W-"), c("X--0", "X-")]),
         gbox([c("Y--0", "Y-"), c("Z--0", "Z-")]),
-        gbox([c("Θ--0", "θ-"), c("Ω--0", "Ω-")]),
+        gbox([c("Θ--0", "Θ-"), c("Ω--0", "Ω-")]),
         gbox([c("Σ--0", "Σ-"), c("Δ--0", "Δ-")]),
       ],
     },
@@ -180,7 +180,7 @@ export const SHEET2: CodexSheetDef = {
       divider: true,
       boxes: [
         cbox(
-          [c("α-0", "α", "Alpha"), c("β-0", "β", "Beta"), c("γ-0", "Γ", "Gamma")],
+          [c("α-0", "α", "Alpha"), c("β-0", "β", "Beta"), c("γ-0", "γ", "Gamma")],
           true,
         ),
       ],

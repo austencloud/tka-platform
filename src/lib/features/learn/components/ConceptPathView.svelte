@@ -108,8 +108,14 @@ Shows:
   let premiumNudgeVisible = $state(false);
   let pendingPremiumConcept = $state<LearnConcept | null>(null);
 
+  // Pre-launch: premium isn't shippable yet, so nothing is premium-gated when
+  // the flag is off — non-foundation categories open freely with no Scribe
+  // nudge or premium badge. Gating returns at launch via __FEATURE_PREMIUM__.
+  const premiumEnabled =
+    typeof __FEATURE_PREMIUM__ !== "undefined" && __FEATURE_PREMIUM__;
+
   function isPremiumGatedCategory(category: ConceptCategory): boolean {
-    return category !== "foundation";
+    return premiumEnabled && category !== "foundation";
   }
 
   function handleConceptStart(concept: LearnConcept) {
