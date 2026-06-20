@@ -19,6 +19,7 @@ import {
 	Timestamp
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
+import { authState } from '$lib/shared/auth/state/auth-state.svelte';
 import type {
 	ContentAppeal,
 	CreateAppealData,
@@ -27,6 +28,26 @@ import type {
 } from '../domain/models/content-moderation-models';
 
 const APPEALS_COLLECTION = 'contentAppeals';
+
+/**
+ * Defense-in-depth admin guard for moderation-only operations.
+ *
+ * Mirrors ReportResolver.ensureAdmin(). authState.isAdmin is backed by the
+ * Firebase `admin` custom claim. This is a client-side guard layered on top of
+ * Firestore security rules (which remain the authoritative server-side
+ * enforcement); it prevents non-admin code paths from reaching admin-only reads
+ * and writes and surfaces a clear error rather than relying solely on a rules
+ * rejection.
+ *
+ * SECURITY: This is NOT a substitute for server-side authorization. The
+ * contentAppeals Firestore security rules MUST restrict status changes and
+ * full-collection pending reads to admins; this guard hardens the client path.
+ */
+function ensureAdmin(): void {
+	if (!authState.isAdmin) {
+		throw new Error('Only admins can perform this action');
+	}
+}
 
 /** Firestore document structure for appeals */
 interface AppealDocument {
@@ -135,6 +156,7 @@ export async function getAppeal(appealId: string): Promise<ContentAppeal | null>
 }
 
 export async function getPendingAppeals(): Promise<ContentAppeal[]> {
+	ensureAdmin();
 	const firestore = await getFirestoreInstance();
 	const appealsRef = collection(firestore, APPEALS_COLLECTION);
 
@@ -153,6 +175,7 @@ export async function resolveAppeal(
 	adminId: string,
 	data: ResolveAppealData
 ): Promise<ContentAppeal> {
+	ensureAdmin();
 	const firestore = await getFirestoreInstance();
 	const appealRef = doc(firestore, APPEALS_COLLECTION, appealId);
 

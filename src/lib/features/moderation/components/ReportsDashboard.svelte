@@ -4,7 +4,7 @@
 	import { REPORT_STATUSES, REPORT_CATEGORIES, type ReportStatus, type ReportCategory } from '../domain/models/report-models';
 	import ReportCard from './ReportCard.svelte';
 	import ReportDetailPanel from './ReportDetailPanel.svelte';
-	import { t } from '$lib/shared/i18n/i18n.svelte';
+	import { t, tDynamic } from '$lib/shared/i18n/i18n.svelte';
 
 	const statusTabs: { key: ReportStatus | 'all'; labelKey: string }[] = [
 		{ key: 'all', labelKey: 'moderation_tab_all' },
@@ -113,7 +113,7 @@
 							role="tab"
 							aria-selected={activeTab === tab.key}
 						>
-							<span class="tab-label">{t(tab.labelKey as any)}</span>
+							<span class="tab-label">{tDynamic(tab.labelKey, { silent: true })}</span>
 							{#if getTabCount(tab.key) > 0}
 								<span class="tab-count">{getTabCount(tab.key)}</span>
 							{/if}
@@ -243,7 +243,7 @@
 		display: inline-flex;
 		align-items: center;
 		padding: 4px 12px;
-		background: rgba(239, 68, 68, 0.15);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
 		border-radius: var(--radius-full, 9999px);
 		font-size: var(--font-size-min, 14px);
 		font-weight: 600;

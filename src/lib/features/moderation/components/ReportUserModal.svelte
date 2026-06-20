@@ -388,8 +388,8 @@
 		align-items: center;
 		gap: var(--spacing-sm, 8px);
 		padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
-		background: rgba(239, 68, 68, 0.1);
-		border: 1px solid rgba(239, 68, 68, 0.3);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+		border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
 		border-radius: var(--radius-md, 8px);
 		color: var(--semantic-error, #ef4444);
 		font-size: var(--font-size-min, 14px);
@@ -449,7 +449,7 @@
 	}
 
 	.btn-danger:hover:not(:disabled) {
-		background: #dc2626;
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 88%, black);
 	}
 
 	/* Success State */
@@ -468,7 +468,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgba(34, 197, 94, 0.1);
+		background: color-mix(in srgb, var(--semantic-success, #22c55e) 10%, transparent);
 		border-radius: 50%;
 		color: var(--semantic-success, #22c55e);
 		font-size: 32px;

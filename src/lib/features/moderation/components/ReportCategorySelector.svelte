@@ -135,12 +135,12 @@
 	.category-option:focus-visible,
 	.category-option.focused {
 		border-color: var(--theme-accent, #3b82f6);
-		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+		box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-accent, #3b82f6) 30%, transparent);
 	}
 
 	.category-option.selected {
 		border-color: var(--theme-accent, #3b82f6);
-		background: rgba(59, 130, 246, 0.1);
+		background: color-mix(in srgb, var(--theme-accent, #3b82f6) 10%, transparent);
 	}
 
 	.category-icon {

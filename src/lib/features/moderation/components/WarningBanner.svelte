@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { doc, onSnapshot, type Unsubscribe } from 'firebase/firestore';
   import { getFirestoreInstance } from '$lib/shared/auth/firebase';
   import { authState, getEffectiveUserId } from '$lib/shared/auth/state/auth-state.svelte';
   import { acknowledgeWarning } from '../services/warning-acknowledger';
   import { t } from '$lib/shared/i18n/i18n.svelte';
+  import { toast } from '$lib/shared/toast/state/toast-state.svelte';
 
   let isAcknowledging = $state(false);
   let hasActiveWarning = $state(false);
@@ -19,6 +19,9 @@
       // The subscription will update hasActiveWarning automatically
     } catch (error) {
       console.error('Failed to acknowledge warning:', error);
+      // i18n NOTE: needs a dedicated key (e.g. moderation_acknowledge_failed) added to
+      // messages/en.json, which is outside this feature's edit scope.
+      toast.error('Could not acknowledge the warning. Please try again.');
     } finally {
       isAcknowledging = false;
     }
@@ -69,13 +72,15 @@
       }
       hasActiveWarning = false;
     }
-  });
 
-  onMount(() => {
+    // Tear down the snapshot listener whenever the effect re-runs (userId change)
+    // or the component unmounts, so a rapid auth change can't leave a stale
+    // subscription open. subscribeToWarningStatus resolves async, so guard on
+    // the current ref at cleanup time.
     return () => {
-      // Cleanup subscription on unmount
       if (unsubscribe) {
         unsubscribe();
+        unsubscribe = null;
       }
     };
   });
@@ -101,6 +106,7 @@
       class="acknowledge-button"
       onclick={handleAcknowledge}
       disabled={isAcknowledging}
+      aria-label={t('moderation_acknowledge')}
     >
       {#if isAcknowledging}
         <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
@@ -123,7 +129,11 @@
     justify-content: space-between;
     gap: 1rem;
     padding: 0.75rem 1rem;
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--semantic-error, #ef4444) 88%, black) 0%,
+      color-mix(in srgb, var(--semantic-error, #ef4444) 72%, black) 100%
+    );
     color: white;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }

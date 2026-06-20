@@ -35,6 +35,17 @@
 	let appealReason = $state('');
 	let isSubmitting = $state(false);
 	let submitError = $state<string | null>(null);
+	let closeTimer: ReturnType<typeof setTimeout> | null = null;
+
+	$effect(() => {
+		// Clear any pending close timer if the component unmounts.
+		return () => {
+			if (closeTimer !== null) {
+				clearTimeout(closeTimer);
+				closeTimer = null;
+			}
+		};
+	});
 
 	// Category labels for display
 	const categoryLabels: Record<string, string> = {
@@ -46,7 +57,13 @@
 
 	function handleClose() {
 		isOpen = false;
-		setTimeout(onClose, 250);
+		if (closeTimer !== null) {
+			clearTimeout(closeTimer);
+		}
+		closeTimer = setTimeout(() => {
+			closeTimer = null;
+			onClose();
+		}, 250);
 	}
 
 	async function handleSubmit() {
@@ -92,7 +109,7 @@
 			title={t('moderation_appeal_title')}
 			subtitle={t('moderation_appeal_subtitle')}
 			icon="fa-gavel"
-			iconColor="#f59e0b"
+			iconColor="var(--semantic-warning, #f59e0b)"
 			onClose={handleClose}
 			id="appeal-modal-title"
 		/>
@@ -193,10 +210,10 @@
 		font-weight: 700;
 		font-family: var(--font-mono, monospace);
 		letter-spacing: 2px;
-		background: rgba(239, 68, 68, 0.1);
-		border: 1px solid rgba(239, 68, 68, 0.3);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+		border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
 		border-radius: 8px;
-		color: #fca5a5;
+		color: color-mix(in srgb, var(--semantic-error, #ef4444) 55%, white);
 	}
 
 	/* Reasons list */
@@ -214,7 +231,7 @@
 		align-items: center;
 		gap: 12px;
 		padding: 8px 12px;
-		background: rgba(255, 255, 255, 0.03);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
 		border-radius: 6px;
 	}
 
@@ -222,9 +239,9 @@
 		padding: 2px 8px;
 		font-size: var(--font-size-compact, 12px);
 		font-weight: 600;
-		background: rgba(239, 68, 68, 0.2);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
 		border-radius: 4px;
-		color: #fca5a5;
+		color: color-mix(in srgb, var(--semantic-error, #ef4444) 55%, white);
 	}
 
 	.reason-term {
@@ -239,14 +256,14 @@
 		align-items: flex-start;
 		gap: 12px;
 		padding: 12px 14px;
-		background: rgba(59, 130, 246, 0.1);
-		border: 1px solid rgba(59, 130, 246, 0.2);
+		background: color-mix(in srgb, var(--semantic-info, #3b82f6) 10%, transparent);
+		border: 1px solid color-mix(in srgb, var(--semantic-info, #3b82f6) 20%, transparent);
 		border-radius: 8px;
 	}
 
 	.info-icon {
 		flex-shrink: 0;
-		color: #60a5fa;
+		color: color-mix(in srgb, var(--semantic-info, #3b82f6) 65%, white);
 		margin-top: 2px;
 	}
 
@@ -272,7 +289,7 @@
 		font-family: inherit;
 		line-height: 1.5;
 		color: var(--theme-text, rgba(255, 255, 255, 0.9));
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
 		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 8px;
 		resize: vertical;
@@ -299,11 +316,11 @@
 		align-items: center;
 		gap: 10px;
 		padding: 10px 14px;
-		background: rgba(239, 68, 68, 0.1);
-		border: 1px solid rgba(239, 68, 68, 0.3);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+		border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
 		border-radius: 8px;
 		font-size: var(--font-size-min, 14px);
-		color: #fca5a5;
+		color: color-mix(in srgb, var(--semantic-error, #ef4444) 55%, white);
 	}
 
 	/* Footer buttons */
@@ -321,12 +338,12 @@
 	}
 
 	button.secondary {
-		background: rgba(255, 255, 255, 0.1);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
 		color: var(--theme-text, rgba(255, 255, 255, 0.9));
 	}
 
 	button.secondary:hover:not(:disabled) {
-		background: rgba(255, 255, 255, 0.15);
+		background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.15));
 	}
 
 	button.primary {

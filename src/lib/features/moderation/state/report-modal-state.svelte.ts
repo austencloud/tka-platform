@@ -106,6 +106,10 @@ export function setSuccess(): void {
  * Validate the form before submission.
  */
 export function validateForm(): boolean {
+	// i18n NOTE: These messages should route through t() with dedicated keys
+	// (moderation_validation_select_category / _description_required / _description_too_long),
+	// but those keys must be added to messages/en.json (outside this feature's edit scope).
+	// Until then, English strings are used directly to avoid showing raw key names to users.
 	if (!_state.selectedCategory) {
 		_state.error = 'Please select a category';
 		return false;

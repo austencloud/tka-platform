@@ -277,7 +277,7 @@
 		align-items: center;
 		gap: var(--spacing-xs, 4px);
 		padding: 6px 12px;
-		background: rgba(34, 197, 94, 0.15);
+		background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
 		border-radius: var(--radius-md, 8px);
 		font-size: var(--font-size-min, 14px);
 		font-weight: 500;
@@ -286,7 +286,7 @@
 	}
 
 	.resolution-badge.severity-high {
-		background: rgba(239, 68, 68, 0.15);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
 		color: var(--semantic-error, #ef4444);
 	}
 

@@ -78,7 +78,7 @@
 
 	.report-card.selected {
 		border-color: var(--theme-accent, #3b82f6);
-		background: rgba(59, 130, 246, 0.08);
+		background: color-mix(in srgb, var(--theme-accent, #3b82f6) 8%, transparent);
 	}
 
 	.card-header {

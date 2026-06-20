@@ -163,17 +163,17 @@
 
 	.resolution-option.selected {
 		border-color: var(--theme-accent, #3b82f6);
-		background: rgba(59, 130, 246, 0.1);
+		background: color-mix(in srgb, var(--theme-accent, #3b82f6) 10%, transparent);
 	}
 
 	.resolution-option.severity-high:hover {
-		border-color: rgba(239, 68, 68, 0.4);
-		background: rgba(239, 68, 68, 0.05);
+		border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 5%, transparent);
 	}
 
 	.resolution-option.severity-high.selected {
 		border-color: var(--semantic-error, #ef4444);
-		background: rgba(239, 68, 68, 0.1);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
 	}
 
 	.resolution-option i {
@@ -271,6 +271,6 @@
 	}
 
 	.btn-danger:hover:not(:disabled) {
-		background: #dc2626;
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 88%, black);
 	}
 </style>
