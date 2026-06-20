@@ -10,6 +10,7 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
    * Uses the unified VideoEditorOverlay for all editing modes.
    */
   import { onMount } from "svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getVideoCache } from "$lib/shared/video";
   import VideoEditorOverlay from "./video-editor/VideoEditorOverlay.svelte";
@@ -236,6 +237,9 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
       editingVideo = null;
     } catch (e) {
       console.error("Failed to save:", e);
+      toast.error(
+        `Failed to save changes. ${e instanceof Error ? e.message : "Please try again."}`
+      );
     } finally {
       saving = false;
     }
@@ -248,6 +252,9 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
       updateLocalVideo(video.shortcode, { featured: newValue });
     } catch (e) {
       console.error("Failed to toggle featured:", e);
+      toast.error(
+        `Failed to update featured status. ${e instanceof Error ? e.message : "Please try again."}`
+      );
     }
   }
 
@@ -578,11 +585,11 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
   }
 
   .stat.uncategorized .stat-value {
-    color: #ef4444;
+    color: var(--semantic-error, #ef4444);
   }
 
   .stat.cached .stat-value {
-    color: #10b981;
+    color: var(--semantic-success, #10b981);
   }
 
   .stat.with-word .stat-value {

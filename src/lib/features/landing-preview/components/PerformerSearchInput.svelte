@@ -5,6 +5,7 @@
   or adding external performers by Instagram handle or name.
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { searchUsers } from "$lib/shared/user-search/services/user-searcher";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
@@ -136,6 +137,15 @@
     showResults = false;
   }
 
+  // Cancel a pending debounced search if the component unmounts mid-flight,
+  // so the callback can't fire on a destroyed component.
+  onDestroy(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+      searchTimeout = null;
+    }
+  });
+
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Enter") {
       if (isInstagramQuery && instagramHandle) {
@@ -254,7 +264,7 @@
   .search-icon {
     position: absolute;
     left: 16px;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     font-size: var(--font-size-sm, 14px);
     pointer-events: none;
   }
@@ -285,7 +295,7 @@
   }
 
   .search-input::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   .search-hint {
@@ -313,7 +323,7 @@
     padding: 10px 16px;
     background: transparent;
     border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.05));
     cursor: pointer;
     transition: all 0.15s ease;
     text-align: left;
@@ -362,7 +372,7 @@
   }
 
   .result-name {
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text, rgba(255, 255, 255, 0.95));
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     white-space: nowrap;
@@ -372,7 +382,7 @@
 
   .result-email,
   .result-username {
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-compact, 12px);
     white-space: nowrap;
     overflow: hidden;

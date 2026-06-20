@@ -130,7 +130,7 @@
   }
 
   .chip:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
@@ -153,7 +153,7 @@
     height: 18px;
     padding: 0 4px;
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
     font-size: 10px;
     font-weight: 600;
   }
@@ -232,6 +232,6 @@
   }
 
   .add-form-btn.cancel:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.12));
   }
 </style>

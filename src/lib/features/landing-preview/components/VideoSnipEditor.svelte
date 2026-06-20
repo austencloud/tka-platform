@@ -300,7 +300,7 @@
     background: rgba(0, 0, 0, 0.95);
     display: flex;
     flex-direction: column;
-    color: white;
+    color: var(--theme-text, white);
   }
 
   .snip-header {
@@ -308,7 +308,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 16px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .snip-header h2 {
@@ -322,8 +322,8 @@
     height: 40px;
     border-radius: 50%;
     border: none;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, white);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -332,7 +332,7 @@
   }
 
   .close-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .video-container {
@@ -355,7 +355,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
   }
 
   .playback-controls {
@@ -368,9 +368,9 @@
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, white);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -380,8 +380,8 @@
   }
 
   .control-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
 
   .control-btn.play-btn {
@@ -400,7 +400,7 @@
   .timeline {
     position: relative;
     height: 48px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     cursor: pointer;
     touch-action: none;
@@ -410,7 +410,7 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    background: rgba(99, 102, 241, 0.3);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
     border-radius: 8px;
   }
 
@@ -487,24 +487,24 @@
 
   .time-value {
     padding: 4px 8px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
     border-radius: 4px;
   }
 
   .in-time {
-    color: #a5b4fc;
+    color: var(--theme-accent-light, #a5b4fc);
   }
 
   .out-time {
-    color: #a5b4fc;
+    color: var(--theme-accent-light, #a5b4fc);
   }
 
   .time-separator {
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   .duration {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 14px;
   }
 
@@ -522,23 +522,23 @@
     gap: 8px;
     padding: 10px 16px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, white);
     cursor: pointer;
     font-size: 14px;
     transition: all 0.15s ease;
   }
 
   .mark-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-color: var(--theme-accent, #6366f1);
   }
 
   .current-time {
     font-family: monospace;
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     min-width: 60px;
     text-align: center;
   }
@@ -549,21 +549,21 @@
     justify-content: flex-end;
     gap: 12px;
     padding: 16px 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .cancel-btn {
     padding: 12px 24px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     background: transparent;
-    color: white;
+    color: var(--theme-text, white);
     cursor: pointer;
     font-size: 14px;
   }
 
   .cancel-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
   }
 
   .apply-btn {

@@ -5,6 +5,7 @@
    * Focused panel for renaming videos that still have Instagram shortcode names.
    * Also allows optionally linking to a matching sequence.
    */
+  import { onDestroy } from "svelte";
   import type { VideoEditorController } from "../../../state/video-editor-controller.svelte";
   import type { ShowcaseVideo, MatchedSequence } from "../../../types";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
@@ -110,6 +111,14 @@
       showSuggestions = false;
     }
   }
+
+  // Cancel a pending debounced suggestion search if the panel unmounts.
+  onDestroy(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+      searchTimeout = null;
+    }
+  });
 
   function handleTitleKeydown(e: KeyboardEvent) {
     if (showSuggestions && titleSuggestions.length > 0) {
@@ -453,7 +462,7 @@
   }
 
   .optional-badge {
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     padding: 2px 6px;
     border-radius: 4px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
@@ -568,7 +577,7 @@
 
   .candidate-card:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
   }
 
   .candidate-card.exact {
@@ -660,7 +669,7 @@
   }
 
   .action-btn.secondary:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, rgba(255, 255, 255, 0.7));
   }
 

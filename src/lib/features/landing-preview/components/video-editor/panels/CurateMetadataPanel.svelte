@@ -216,7 +216,7 @@
   }
 
   .action-btn.secondary:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, rgba(255, 255, 255, 0.7));
   }
 

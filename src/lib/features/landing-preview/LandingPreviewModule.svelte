@@ -29,10 +29,12 @@
   ];
 
   // Lazy-load the public page content components
-  // These are the actual route components - we embed them directly
+  // These are the actual route components - we embed them directly.
+  // The landing route was removed; its loader resolves to a typed `null`
+  // component so the tab renders the "Failed to load page" fallback instead of
+  // crashing — no `as any` suppression hiding the missing route.
   const pageLoaders = {
-    // landing page route was removed - stub to prevent build failure
-    landing: () => Promise.resolve({ default: null as any }),
+    landing: (): Promise<{ default: null }> => Promise.resolve({ default: null }),
     about: () => import("../../../routes/(public)/about/+page.svelte"),
     roots: () => import("../../../routes/(public)/roots/+page.svelte"),
     terms: () => import("../../../routes/(public)/terms/+page.svelte"),

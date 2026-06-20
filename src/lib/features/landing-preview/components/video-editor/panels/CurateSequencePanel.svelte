@@ -4,6 +4,7 @@
    *
    * Left panel for curate mode - sequence/word selection with larger thumbnails.
    */
+  import { onDestroy } from "svelte";
   import LinkedSequenceChip from "../../LinkedSequenceChip.svelte";
   import type { VideoEditorController } from "../../../state/video-editor-controller.svelte";
   import type { ShowcaseVideo, MatchedSequence } from "../../../types";
@@ -146,6 +147,14 @@
       cancelEditTitle();
     }
   }
+
+  // Cancel a pending debounced suggestion search if the panel unmounts.
+  onDestroy(() => {
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = null;
+    }
+  });
 
   function handleTitleBlur() {
     const titleToSave = editedTitle;
@@ -338,7 +347,7 @@
   }
 
   .title-display:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
@@ -368,7 +377,7 @@
     font-size: 18px;
     font-weight: 600;
     color: var(--theme-text, white);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 2px solid var(--theme-accent, #6366f1);
     border-radius: 10px;
     padding: 12px 16px;
@@ -394,8 +403,8 @@
     top: calc(100% + 6px);
     left: 0;
     right: 0;
-    background: rgba(18, 18, 28, 0.98);
-    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 10px;
     overflow: hidden;
     z-index: 100;

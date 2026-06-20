@@ -108,7 +108,7 @@
 
   <!-- Action buttons -->
   <div class="action-buttons-row">
-    <button class="icon-btn" onclick={onRefresh} disabled={loading} title="Refresh">
+    <button class="icon-btn" onclick={onRefresh} disabled={loading} title="Refresh" aria-label="Refresh videos">
       <i class="fas fa-sync-alt" class:fa-spin={loading} aria-hidden="true"></i>
     </button>
 
@@ -139,8 +139,16 @@
 </div>
 
 <!-- Filter chips -->
+<!--
+  Keep-Separate (chip-primitives.md): the Category and Performer bars below stay
+  hand-built. They carry per-option colors (`--chip-color: {cat.color}`), render
+  dynamic runtime lists, and host an inline add-action (the dashed add-chip).
+  SegmentedControl can't express per-option colors or a dynamic/add-able set, so
+  this is the legitimate exception. The pure boolean toggles (Has Word / Featured)
+  below DO use the FilterChipBase primitive.
+-->
 <div class="filter-chips-container">
-  <!-- Category chips -->
+  <!-- Category chips (hand-built per Keep-Separate above: per-color + dynamic + add-action) -->
   <div class="chip-group">
     <span class="chip-label">Category</span>
     <div class="chips">
@@ -358,7 +366,7 @@
   }
 
   .clear-search:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.1));
     color: var(--theme-text);
   }
 
@@ -522,9 +530,9 @@
     align-items: center;
     gap: 16px;
     padding: 10px 16px;
-    background: rgba(99, 102, 241, 0.1);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
     border-radius: 10px;
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
   }
 
   .filter-count {
@@ -548,8 +556,8 @@
   }
 
   .clear-all:hover {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    color: var(--semantic-error, #ef4444);
   }
 
   /* Add category popup */

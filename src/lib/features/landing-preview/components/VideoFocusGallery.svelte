@@ -6,7 +6,7 @@
    * Click thumbnail to switch the main video.
    * This is the "not overwhelming" option - shows one video prominently.
    */
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
 
   interface Video {
     url: string;
@@ -23,6 +23,7 @@
   let activeIndex = $state(0);
   let mainVideoRef: HTMLVideoElement | null = $state(null);
   let thumbnailVideos: HTMLVideoElement[] = $state([]);
+  let playTimeout: ReturnType<typeof setTimeout> | null = null;
 
   const activeVideo = $derived.by(() => {
     const video = videos[activeIndex] ?? videos[0];
@@ -41,10 +42,19 @@
     if (index === activeIndex) return;
     activeIndex = index;
     // Play the new main video after DOM updates
-    setTimeout(() => {
+    if (playTimeout) clearTimeout(playTimeout);
+    playTimeout = setTimeout(() => {
       mainVideoRef?.play().catch(() => {});
     }, 50);
   }
+
+  // Cancel a pending deferred play() if the component unmounts in the window.
+  onDestroy(() => {
+    if (playTimeout) {
+      clearTimeout(playTimeout);
+      playTimeout = null;
+    }
+  });
 
   // Action to set up thumbnail video refs
   function thumbnailRef(el: HTMLVideoElement, index: number) {
@@ -227,7 +237,7 @@
     }
 
     .thumb-label {
-      font-size: 9px;
+      font-size: var(--font-size-compact, 12px);
     }
   }
 </style>

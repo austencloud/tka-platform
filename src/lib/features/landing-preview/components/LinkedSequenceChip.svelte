@@ -79,11 +79,11 @@
   }
 
   .thumbnail-placeholder {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     font-size: 14px;
   }
 
@@ -98,7 +98,7 @@
   .word {
     font-weight: 600;
     font-size: 14px;
-    color: white;
+    color: var(--theme-text, white);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -106,7 +106,7 @@
 
   .owner {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   .remove-btn {
@@ -114,8 +114,8 @@
     height: 28px;
     border-radius: 50%;
     border: none;
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.5);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -126,8 +126,8 @@
   }
 
   .remove-btn:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    color: var(--semantic-error, #ef4444);
   }
 
   .remove-btn:disabled {

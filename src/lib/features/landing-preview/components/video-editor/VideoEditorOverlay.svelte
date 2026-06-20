@@ -213,7 +213,7 @@
     position: fixed;
     inset: 0;
     z-index: var(--z-toast);
-    background: #0a0a12;
+    background: var(--theme-panel-bg, #0a0a12);
     display: flex;
     flex-direction: column;
   }
@@ -253,7 +253,7 @@
   }
 
   .back-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.12));
     color: var(--theme-text, white);
   }
 

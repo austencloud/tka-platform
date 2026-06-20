@@ -4,6 +4,7 @@
    *
    * Info panel content for curate mode - bulk curation with navigation.
    */
+  import { onDestroy } from "svelte";
   import CategoryField from "../fields/CategoryField.svelte";
   import PerformerField from "../fields/PerformerField.svelte";
   import SequenceLinkField from "../fields/SequenceLinkField.svelte";
@@ -158,6 +159,14 @@
       cancelEditTitle();
     }
   }
+
+  // Cancel a pending debounced suggestion search if the panel unmounts.
+  onDestroy(() => {
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = null;
+    }
+  });
 
   function handleTitleBlur() {
     // Capture the current edited title immediately before any async operations
@@ -366,7 +375,7 @@
   }
 
   .video-word-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
   }
 
   .video-word-btn .edit-hint {
@@ -388,7 +397,7 @@
     color: var(--theme-text, white);
     letter-spacing: -0.5px;
     text-align: center;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 2px solid var(--theme-accent, #6366f1);
     border-radius: 8px;
     padding: 6px 12px;
@@ -421,8 +430,8 @@
     top: calc(100% + 6px);
     left: 0;
     right: 0;
-    background: rgba(18, 18, 28, 0.98);
-    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 10px;
     overflow: hidden;
     z-index: 100;
@@ -590,7 +599,7 @@
   }
 
   .action-btn.secondary:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, rgba(255, 255, 255, 0.7));
   }
 

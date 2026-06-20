@@ -444,7 +444,7 @@
     position: fixed;
     inset: 0;
     z-index: var(--z-toast);
-    background: #0d0d14;
+    background: var(--theme-panel-bg, #0d0d14);
     display: flex;
     flex-direction: column;
   }
@@ -455,7 +455,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 16px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .header-btn {
@@ -463,8 +463,8 @@
     height: 44px;
     border-radius: 50%;
     border: none;
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.6);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -474,12 +474,12 @@
   }
 
   .header-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: white;
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.12));
+    color: var(--theme-text, white);
   }
 
   .header-btn.apply {
-    background: #10b981;
+    background: var(--semantic-success, #10b981);
     color: white;
   }
 
@@ -490,7 +490,7 @@
   .header-title {
     font-size: 16px;
     font-weight: 600;
-    color: white;
+    color: var(--theme-text, white);
   }
 
   /* Crop stage */
@@ -642,7 +642,7 @@
     justify-content: center;
     gap: 8px;
     padding: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .aspect-btn {
@@ -652,9 +652,9 @@
     gap: 4px;
     padding: 10px 16px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     font-size: 12px;
     transition: all 0.15s;
@@ -665,14 +665,14 @@
   }
 
   .aspect-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: white;
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, white);
   }
 
   .aspect-btn.selected {
-    background: rgba(99, 102, 241, 0.2);
-    border-color: #6366f1;
-    color: #a5b4fc;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
+    border-color: var(--theme-accent, #6366f1);
+    color: var(--theme-accent-light, #a5b4fc);
   }
 
   /* Zoom bar */
@@ -688,9 +688,9 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -700,8 +700,8 @@
   }
 
   .zoom-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-    color: white;
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, white);
   }
 
   .zoom-btn:disabled {
@@ -713,7 +713,7 @@
     width: 150px;
     height: 4px;
     border-radius: 2px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     appearance: none;
     cursor: pointer;
   }
@@ -739,7 +739,7 @@
   .zoom-value {
     width: 50px;
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     text-align: right;
   }
 
@@ -748,7 +748,7 @@
     display: flex;
     gap: 10px;
     padding: 16px 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .action-btn {
@@ -766,13 +766,13 @@
   }
 
   .action-btn.secondary {
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.6);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   .action-btn.secondary:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: white;
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, white);
   }
 
   .action-btn.primary {
@@ -827,12 +827,12 @@
   .zoom-btn:focus-visible,
   .action-btn:focus-visible,
   .play-pause-btn:focus-visible {
-    outline: 2px solid #6366f1;
+    outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
   }
 
   .zoom-slider:focus-visible {
-    outline: 2px solid #6366f1;
+    outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 4px;
   }
 

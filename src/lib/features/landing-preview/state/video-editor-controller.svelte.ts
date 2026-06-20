@@ -21,6 +21,18 @@ import type * as videoCuratorPersisterModule from "../services/video-curator-per
 type VideoCuratorPersister = typeof videoCuratorPersisterModule;
 import type { SequenceMatcher } from "../services/sequence-matcher";
 import type { VideoCache } from "$lib/shared/video/services/video-cache";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+
+/**
+ * Logs an editing failure to the console and surfaces it to the user as an
+ * error toast. Async editing ops mutate persisted Firestore state, so a silent
+ * failure leaves the UI showing stale/optimistic data with no signal.
+ */
+function reportEditError(action: string, e: unknown): void {
+  console.error(`Failed to ${action}:`, e);
+  const detail = e instanceof Error ? e.message : "Please try again.";
+  toast.error(`Failed to ${action}. ${detail}`);
+}
 
 export type VideoEditorMode = "closed" | "browse" | "curate" | "link" | "rename";
 
@@ -350,7 +362,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
         searchSequencesForCurrentVideo();
       }
     } catch (e) {
-      console.error("Failed to set category:", e);
+      reportEditError("set category", e);
     } finally {
       saving = false;
     }
@@ -399,7 +411,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
       await persister.updateVideo(currentVideo.shortcode, { performers: newPerformers });
       updateLocalVideo(currentVideo.shortcode, { performers: newPerformers });
     } catch (e) {
-      console.error("Failed to toggle performer:", e);
+      reportEditError("update performers", e);
     } finally {
       saving = false;
     }
@@ -418,7 +430,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
     try {
       await persister.saveQuickPerformers(quickPerformers);
     } catch (e) {
-      console.error("Failed to save quick performers:", e);
+      reportEditError("save quick performers", e);
     }
     showAddPerformer = false;
   }
@@ -428,7 +440,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
     try {
       await persister.saveQuickPerformers(quickPerformers);
     } catch (e) {
-      console.error("Failed to remove quick performer:", e);
+      reportEditError("remove quick performer", e);
     }
   }
 
@@ -525,7 +537,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
       sequenceSearchQuery = "";
       matchedSequences = [];
     } catch (e) {
-      console.error("Failed to link sequence:", e);
+      reportEditError("link sequence", e);
     } finally {
       saving = false;
     }
@@ -539,7 +551,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
       await persister.updateVideo(currentVideo.shortcode, { linkedSequences: updatedLinks });
       updateLocalVideo(currentVideo.shortcode, { linkedSequences: updatedLinks });
     } catch (e) {
-      console.error("Failed to unlink sequence:", e);
+      reportEditError("unlink sequence", e);
     } finally {
       saving = false;
     }
@@ -578,7 +590,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
         searchSequencesForCurrentVideo();
       }
     } catch (e) {
-      console.error("Failed to update title:", e);
+      reportEditError("update title", e);
     }
   }
 
@@ -590,7 +602,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
       updateLocalVideo(currentVideo.shortcode, { excluded: true });
       goNext();
     } catch (e) {
-      console.error("Failed to exclude video:", e);
+      reportEditError("exclude video", e);
     } finally {
       saving = false;
     }
@@ -617,7 +629,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
       updateLocalVideo(currentVideo.shortcode, { crop: cropData });
       closeCropMode();
     } catch (e) {
-      console.error("Failed to save crop:", e);
+      reportEditError("save crop", e);
     } finally {
       saving = false;
     }
@@ -630,7 +642,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
       await persister.updateVideo(currentVideo.shortcode, { crop: undefined });
       updateLocalVideo(currentVideo.shortcode, { crop: undefined });
     } catch (e) {
-      console.error("Failed to clear crop:", e);
+      reportEditError("clear crop", e);
     } finally {
       saving = false;
     }
@@ -652,7 +664,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
       updateLocalVideo(currentVideo.shortcode, { snip: snipData });
       closeSnipMode();
     } catch (e) {
-      console.error("Failed to save snip:", e);
+      reportEditError("save snip", e);
     } finally {
       saving = false;
     }
@@ -665,7 +677,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
       await persister.updateVideo(currentVideo.shortcode, { snip: undefined });
       updateLocalVideo(currentVideo.shortcode, { snip: undefined });
     } catch (e) {
-      console.error("Failed to clear snip:", e);
+      reportEditError("clear snip", e);
     } finally {
       saving = false;
     }
