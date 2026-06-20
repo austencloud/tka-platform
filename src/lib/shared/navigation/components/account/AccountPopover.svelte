@@ -23,7 +23,7 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   }>();
 
   const user = $derived(authState.user);
-  const isAuthenticated = $derived(authState.isAuthenticated);
+  const isFullAccount = $derived(authState.isFullAccount);
   const displayName = $derived(
     user?.displayName || user?.email || "Guest"
   );
@@ -131,9 +131,9 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   });
 
   // Profile completeness nudges - each disappears once the user completes the action
-  const needsPhoto = $derived(isAuthenticated && !photoURL);
+  const needsPhoto = $derived(isFullAccount && !photoURL);
   const needsProp = $derived(
-    isAuthenticated && propState && !propState.loading && !propState.favoriteProp
+    isFullAccount && propState && !propState.loading && !propState.favoriteProp
   );
   const hasNudges = $derived(needsPhoto || needsProp);
 
@@ -152,7 +152,7 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
     style={popoverStyle}
   >
     <!-- Identity header - clickable when authenticated, navigates to Settings > Account -->
-    {#if isAuthenticated}
+    {#if isFullAccount}
       <button
         class="identity-header interactive"
         onclick={handleNavigateToProfile}
@@ -174,7 +174,7 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
       </button>
     {:else}
       <div class="identity-header">
-        {#if isAuthenticated}
+        {#if isFullAccount}
           <RobustAvatar
             src={photoURL}
             name={displayName}
@@ -195,7 +195,7 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
       </div>
     {/if}
 
-    {#if isAuthenticated && hasNudges}
+    {#if isFullAccount && hasNudges}
       <div class="nudges-section">
         {#if needsPhoto}
           <button
@@ -234,7 +234,7 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 
     <!-- Actions -->
     <div class="actions">
-      {#if isAuthenticated}
+      {#if isFullAccount}
         <button
           class="action-button sign-out"
           role="menuitem"
