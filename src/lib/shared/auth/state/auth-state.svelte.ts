@@ -33,6 +33,7 @@ import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
 
 import { featureFlagService } from "../services/post-hog-feature-flag-service.svelte";
 import type { UserRole } from "../domain/models/user-role";
+import { isFullAccountUser } from "../domain/access-tier";
 import { identifyUser, resetUser, captureEvent } from "../../analytics/services/posthog";
 import { getScanSourceCode } from "../../analytics/scan-attribution";
 
@@ -701,6 +702,7 @@ export interface AuthStateHandle {
   readonly role: UserRole;
   readonly isAuthenticated: boolean;
   readonly isAnonymous: boolean;
+  readonly isFullAccount: boolean;
 
   // Effective user helpers (as properties)
   readonly effectiveUserId: string | null;
@@ -754,6 +756,9 @@ export const authState: AuthStateHandle = {
   },
   get isAnonymous() {
     return _state.user?.isAnonymous ?? false;
+  },
+  get isFullAccount() {
+    return isFullAccountUser(this.isAuthenticated, this.isAnonymous);
   },
 
   // Effective user helpers (as properties)
