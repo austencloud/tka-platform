@@ -204,15 +204,16 @@ export function createNavigationState() {
 
               if (validTab && urlTab) {
                 activeTab = urlTab;
+              } else if (normalizedModule === "create") {
+                // Bare /create always lands on the default tab (construct),
+                // never a remembered sub-tab like assemble.
+                activeTab = DEFAULT_CREATE_TAB;
               } else {
                 const savedTab = loadModuleTab(normalizedModule);
                 if (savedTab && urlModuleDefinition.sections.some((s) => s.id === savedTab)) {
                   activeTab = savedTab;
                 } else {
-                  activeTab =
-                    normalizedModule === "create"
-                      ? DEFAULT_CREATE_TAB
-                      : urlModuleDefinition.sections[0]?.id || "";
+                  activeTab = urlModuleDefinition.sections[0]?.id || "";
                 }
               }
             } else {
