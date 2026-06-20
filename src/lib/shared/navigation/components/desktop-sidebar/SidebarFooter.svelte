@@ -10,6 +10,11 @@
   import { PropType } from "../../../pictograph/prop/domain/enums/prop-type";
   import AccountRow from "../account/AccountRow.svelte";
   import { inboxState } from "../../../inbox/state/inbox-state.svelte";
+  import { authState } from "../../../auth/state/auth-state.svelte";
+
+  // Inbox is a member-only surface (unfinished, and not relevant to guests).
+  // Anonymous guests are authenticated but not full accounts — gate on this.
+  const isFullAccount = $derived(authState.isFullAccount);
 
   let { isCollapsed, onSettingsClick, isInSettings = false, onAccountClick, accountSectionElement = $bindable(null) } = $props<{
     isCollapsed: boolean;
@@ -115,31 +120,33 @@
       {/if}
     </button>
 
-    <!-- Inbox Button -->
-    <button
-      class="footer-button inbox-button"
-      class:collapsed={isCollapsed}
-      class:has-unread={hasUnread}
-      onclick={handleInboxClick}
-      aria-label="Open inbox{hasUnread ? `, ${inboxState.totalUnreadCount} unread` : ''}"
-    >
-      <div class="button-icon inbox-icon-wrapper">
-        <i class="fas fa-inbox" aria-hidden="true"></i>
-        {#if hasUnread}
-          <span class="unread-badge" aria-hidden="true">
-            {badgeCount}
-          </span>
+    <!-- Inbox Button (members only) -->
+    {#if isFullAccount}
+      <button
+        class="footer-button inbox-button"
+        class:collapsed={isCollapsed}
+        class:has-unread={hasUnread}
+        onclick={handleInboxClick}
+        aria-label="Open inbox{hasUnread ? `, ${inboxState.totalUnreadCount} unread` : ''}"
+      >
+        <div class="button-icon inbox-icon-wrapper">
+          <i class="fas fa-inbox" aria-hidden="true"></i>
+          {#if hasUnread}
+            <span class="unread-badge" aria-hidden="true">
+              {badgeCount}
+            </span>
+          {/if}
+        </div>
+        {#if !isCollapsed}
+          <span class="button-label">Inbox</span>
+          {#if hasUnread}
+            <span class="unread-label-badge">
+              {badgeCount}
+            </span>
+          {/if}
         {/if}
-      </div>
-      {#if !isCollapsed}
-        <span class="button-label">Inbox</span>
-        {#if hasUnread}
-          <span class="unread-label-badge">
-            {badgeCount}
-          </span>
-        {/if}
-      {/if}
-    </button>
+      </button>
+    {/if}
 
     <!-- Network Status Indicator -->
     <NetworkStatusIndicator variant="desktop" />
