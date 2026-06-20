@@ -2,17 +2,19 @@
 // Kept separate from the rune state factory so it is unit-testable without a
 // Svelte runtime. The factory (codex-explorer-state.svelte.ts) owns the
 // $effect that calls these and touches localStorage.
+//
+// Dark mode is intentionally NOT persisted here — it is the user's GLOBAL
+// setting, owned by the animation visibility manager.
 
 export const CODEX_EXPLORER_STORAGE_KEY = "codex-explorer-prefs";
-const CODEX_EXPLORER_PREFS_VERSION = 1;
+const CODEX_EXPLORER_PREFS_VERSION = 2;
 
 export type CodexExplorerGridMode = "diamond" | "box";
 
 export interface CodexExplorerVisibility {
+  showGlyph: boolean;
   showGrid: boolean;
   showTKA: boolean;
-  showTnD: boolean;
-  showElemental: boolean;
   showPositions: boolean;
   showReversals: boolean;
   showNonRadialPoints: boolean;
@@ -22,18 +24,16 @@ export interface CodexExplorerPrefs {
   version: number;
   selectedLetter: string;
   gridMode: CodexExplorerGridMode;
-  isDarkMode: boolean;
-  blueTurnsOverride: number | null;
-  redTurnsOverride: number | null;
   visibility: CodexExplorerVisibility;
+  /** PanelGroup flex ratios for the codex | variations split. */
+  splitSizes: number[];
 }
 
 export function defaultCodexExplorerVisibility(): CodexExplorerVisibility {
   return {
+    showGlyph: true,
     showGrid: true,
     showTKA: true,
-    showTnD: false,
-    showElemental: true,
     showPositions: false,
     showReversals: false,
     showNonRadialPoints: false,
@@ -43,12 +43,10 @@ export function defaultCodexExplorerVisibility(): CodexExplorerVisibility {
 export function defaultCodexExplorerPrefs(): CodexExplorerPrefs {
   return {
     version: CODEX_EXPLORER_PREFS_VERSION,
-    selectedLetter: "W",
+    selectedLetter: "A",
     gridMode: "diamond",
-    isDarkMode: false,
-    blueTurnsOverride: null,
-    redTurnsOverride: null,
     visibility: defaultCodexExplorerVisibility(),
+    splitSizes: [5, 6],
   };
 }
 
@@ -73,15 +71,17 @@ export function restoreCodexExplorerPrefs(raw: string | null): CodexExplorerPref
   }
   const p = parsed as Partial<CodexExplorerPrefs>;
   const d = defaultCodexExplorerPrefs();
+  const splitSizes =
+    Array.isArray(p.splitSizes) &&
+    p.splitSizes.length === 2 &&
+    p.splitSizes.every((n) => typeof n === "number" && n > 0)
+      ? (p.splitSizes as number[])
+      : d.splitSizes;
   return {
     version: CODEX_EXPLORER_PREFS_VERSION,
     selectedLetter: typeof p.selectedLetter === "string" ? p.selectedLetter : d.selectedLetter,
     gridMode: p.gridMode === "box" ? "box" : "diamond",
-    isDarkMode: typeof p.isDarkMode === "boolean" ? p.isDarkMode : d.isDarkMode,
-    blueTurnsOverride:
-      typeof p.blueTurnsOverride === "number" ? p.blueTurnsOverride : null,
-    redTurnsOverride:
-      typeof p.redTurnsOverride === "number" ? p.redTurnsOverride : null,
     visibility: { ...d.visibility, ...(p.visibility ?? {}) },
+    splitSizes,
   };
 }

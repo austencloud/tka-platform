@@ -8,21 +8,18 @@ import {
 
 describe("codex explorer persistence", () => {
   const sample: CodexExplorerPrefs = {
-    version: 1,
+    version: 2,
     selectedLetter: "Σ-",
     gridMode: "box",
-    isDarkMode: true,
-    blueTurnsOverride: 1,
-    redTurnsOverride: null,
     visibility: {
+      showGlyph: false,
       showGrid: true,
       showTKA: false,
-      showTnD: true,
-      showElemental: true,
-      showPositions: false,
+      showPositions: true,
       showReversals: false,
-      showNonRadialPoints: false,
+      showNonRadialPoints: true,
     },
+    splitSizes: [4, 7],
   };
 
   it("round-trips a full prefs object", () => {
@@ -40,14 +37,19 @@ describe("codex explorer persistence", () => {
   });
 
   it("returns defaults when the version mismatches", () => {
-    const stale = JSON.stringify({ ...sample, version: 0 });
+    const stale = JSON.stringify({ ...sample, version: 1 });
     expect(restoreCodexExplorerPrefs(stale)).toEqual(defaultCodexExplorerPrefs());
   });
 
   it("fills missing visibility keys from defaults", () => {
-    const partial = JSON.stringify({ ...sample, visibility: { showGrid: false } });
+    const partial = JSON.stringify({ ...sample, visibility: { showGlyph: false } });
     const restored = restoreCodexExplorerPrefs(partial);
-    expect(restored.visibility.showGrid).toBe(false);
+    expect(restored.visibility.showGlyph).toBe(false);
     expect(restored.visibility.showTKA).toBe(defaultCodexExplorerPrefs().visibility.showTKA);
+  });
+
+  it("rejects malformed splitSizes and falls back to default", () => {
+    const bad = JSON.stringify({ ...sample, splitSizes: [1, 2, 3] });
+    expect(restoreCodexExplorerPrefs(bad).splitSizes).toEqual(defaultCodexExplorerPrefs().splitSizes);
   });
 });

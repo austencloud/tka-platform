@@ -23,23 +23,17 @@ export function createCodexExplorerState() {
 
   let selectedLetter = $state(initial.selectedLetter);
   let gridMode = $state<CodexExplorerGridMode>(initial.gridMode);
-  let isDarkMode = $state(initial.isDarkMode);
-  let blueTurnsOverride = $state<number | null>(initial.blueTurnsOverride);
-  let redTurnsOverride = $state<number | null>(initial.redTurnsOverride);
   let visibility = $state<CodexExplorerVisibility>({ ...initial.visibility });
-  // Session-only, never persisted.
-  let searchTerm = $state("");
+  let splitSizes = $state<number[]>([...initial.splitSizes]);
 
-  // Debounced persistence of the durable subset.
+  // Debounced persistence of the durable subset (dark mode is global, elsewhere).
   $effect(() => {
     const serialized = serializeCodexExplorerPrefs({
-      version: 1,
+      version: 2,
       selectedLetter,
       gridMode,
-      isDarkMode,
-      blueTurnsOverride,
-      redTurnsOverride,
       visibility: $state.snapshot(visibility),
+      splitSizes: $state.snapshot(splitSizes),
     });
     const timer = setTimeout(() => {
       try {
@@ -67,32 +61,14 @@ export function createCodexExplorerState() {
     get gridModeEnum() {
       return gridModeEnum(gridMode);
     },
-    get isDarkMode() {
-      return isDarkMode;
-    },
-    set isDarkMode(v: boolean) {
-      isDarkMode = v;
-    },
-    get blueTurnsOverride() {
-      return blueTurnsOverride;
-    },
-    set blueTurnsOverride(v: number | null) {
-      blueTurnsOverride = v;
-    },
-    get redTurnsOverride() {
-      return redTurnsOverride;
-    },
-    set redTurnsOverride(v: number | null) {
-      redTurnsOverride = v;
-    },
     get visibility() {
       return visibility;
     },
-    get searchTerm() {
-      return searchTerm;
+    get splitSizes() {
+      return splitSizes;
     },
-    set searchTerm(v: string) {
-      searchTerm = v;
+    set splitSizes(v: number[]) {
+      splitSizes = v;
     },
     toggleVisibility(key: keyof CodexExplorerVisibility) {
       visibility = { ...visibility, [key]: !visibility[key] };

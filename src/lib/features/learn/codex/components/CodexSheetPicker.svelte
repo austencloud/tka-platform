@@ -154,7 +154,7 @@
 
 <style>
   .sheet {
-    --cell: 76px;
+    --cell: 96px;
     display: flex;
     flex-direction: column;
     gap: 16px;
