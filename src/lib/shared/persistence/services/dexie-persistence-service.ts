@@ -187,7 +187,7 @@ export async function loadTabState<T = unknown>(tabId: TabId): Promise<T | null>
 
 export async function saveBrowseState(state: CompleteBrowseState): Promise<void> {
   try {
-    await saveUserWork(UserWorkType.Browse_STATE, "browse", state);
+    await saveUserWork(UserWorkType.BROWSE_STATE, "browse", state);
   } catch (error) {
     console.error("❌ Failed to save Browse state:", error);
     throw error;
@@ -197,7 +197,7 @@ export async function saveBrowseState(state: CompleteBrowseState): Promise<void>
 export async function loadBrowseState(): Promise<CompleteBrowseState | null> {
   try {
     return (await loadUserWork(
-      UserWorkType.Browse_STATE,
+      UserWorkType.BROWSE_STATE,
       "browse"
     )) as CompleteBrowseState | null;
   } catch (error) {
@@ -301,7 +301,12 @@ export async function clearAllData(): Promise<void> {
   }
 }
 
-export async function getStorageInfo() {
+export async function getStorageInfo(): Promise<{
+  sequences: number;
+  pictographs: number;
+  userWork: number;
+  projects: number;
+}> {
   try {
     return {
       sequences: await db.sequences.count(),

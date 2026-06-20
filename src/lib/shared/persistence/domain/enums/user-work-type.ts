@@ -25,7 +25,7 @@ export enum UserWorkType {
   /**
    * Browse view state (filters, sorts, scroll position)
    */
-  Browse_STATE = "Browse-state",
+  BROWSE_STATE = "Browse-state",
 }
 
 /**

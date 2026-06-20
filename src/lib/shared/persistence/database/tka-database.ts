@@ -187,7 +187,29 @@ export async function clearAllData(): Promise<void> {
 /**
  * Get database info for debugging
  */
-export async function getDatabaseInfo() {
+export async function getDatabaseInfo(): Promise<{
+  sequences: number;
+  pictographs: number;
+  userWork: number;
+  userProjects: number;
+  settings: number;
+  userAchievements: number;
+  userXP: number;
+  xpEvents: number;
+  dailyChallenges: number;
+  userChallengeProgress: number;
+  userStreaks: number;
+  achievementNotifications: number;
+  weeklyChallenges: number;
+  userWeeklyProgress: number;
+  skillProgressions: number;
+  userSkillProgress: number;
+  trainPerformances: number;
+  trainCalibrationProfiles: number;
+  compositions: number;
+  galleryCache: number;
+  galleryCacheMeta: number;
+}> {
   const info = {
     sequences: await db.sequences.count(),
     pictographs: await db.pictographs.count(),

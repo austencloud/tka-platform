@@ -44,13 +44,12 @@ export class FilterPersister {
       if (!parsed) return null;
 
       // Validate the loaded state structure
-      const state = parsed as unknown as SimpleBrowseState;
       if (
-        typeof state.filterType === "string" &&
-        state.filterValue !== undefined &&
-        typeof state.sortMethod === "string"
+        typeof parsed.filterType === "string" &&
+        parsed.filterValue !== undefined &&
+        typeof parsed.sortMethod === "string"
       ) {
-        return state;
+        return parsed as unknown as SimpleBrowseState;
       }
 
       console.warn("Invalid browse state structure, returning null");
