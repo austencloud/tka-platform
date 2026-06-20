@@ -19,6 +19,18 @@ Controls moved below the grid for better UX
   import AdvancedStartPositionPicker from "./AdvancedStartPositionPicker.svelte";
   import OrientationCycler from "./OrientationCycler.svelte";
   import PictographGrid from "./PictographGrid.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte";
+
+  // Guests (not full accounts) get an easy, always-available way to replay the
+  // guided build right where it starts — they can't reach the Settings replay
+  // path as readily as members can.
+  const isGuest = $derived(!authState.isFullAccount);
+
+  function handleShowGuide() {
+    hapticService?.trigger("selection");
+    appEntryState.replay();
+  }
 
   // Local storage key for persisting picker preferences
   const STORAGE_KEY = "tka-start-position-picker-prefs";
@@ -211,6 +223,13 @@ Controls moved below the grid for better UX
 <div class="start-pos-picker" data-testid="start-position-picker">
   <p class="workspace-hint">Choose your start position</p>
 
+  {#if isGuest}
+    <button class="guide-link" onclick={handleShowGuide}>
+      <i class="fas fa-circle-question" aria-hidden="true"></i>
+      New here? Show me how
+    </button>
+  {/if}
+
   <!-- Animated transition container - keyed on view mode only (grid mode animates in-place) -->
   <div class="picker-view">
     {#key showAdvancedPicker}
@@ -340,6 +359,47 @@ Controls moved below the grid for better UX
     padding: clamp(8px, 1.5vmin, 12px) 1rem;
     margin: 0;
     letter-spacing: 0.02em;
+  }
+
+  .guide-link {
+    flex-shrink: 0;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: -4px 0 4px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 35%, transparent);
+    border-radius: 999px;
+    color: var(--theme-accent, #818cf8);
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      background var(--duration-fast) ease,
+      border-color var(--duration-fast) ease;
+  }
+
+  .guide-link:hover {
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 55%, transparent);
+  }
+
+  .guide-link:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
+    outline-offset: 2px;
+  }
+
+  .guide-link i {
+    font-size: 0.85em;
+    opacity: 0.85;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .guide-link {
+      transition: none;
+    }
   }
 
   /* ============================================
