@@ -19,6 +19,7 @@
     Euler,
     Mesh,
     CylinderGeometry,
+    Matrix4,
     MeshStandardMaterial,
     SphereGeometry,
     Quaternion,
@@ -247,10 +248,22 @@
     return sum / n;
   }
 
-  /** Measure a StanceSimulator body model from the REAL rig so the solve uses
-   *  the avatar's true handedness (left shoulder at +X here), arm reach, and
-   *  torso heights — not idealized anthropometrics. Frame: Y=0 at the shoulder
-   *  line, X=0 centerline, matching the prop-target frame. */
+  /** Measure a StanceSimulator body model from the REAL rig: real shoulder width,
+   *  arm reach, and torso heights — not idealized anthropometrics.
+   *
+   *  CRITICAL: measure in ROOT-LOCAL space, never world. The rig is already
+   *  translated + turned by the locomotion controller by the time the one-shot
+   *  solve fires, so a WORLD-space read contaminates every coordinate with the
+   *  root transform — e.g. both shoulders collapse onto the same side, yielding a
+   *  broken asymmetric body and a different (garbage) stance every reload.
+   *  Root-local strips the root transform, so the measurement is pose/position-
+   *  invariant and deterministic.
+   *
+   *  Frame: canonical StanceSimulator convention (Y=0 at the shoulder line, X=0
+   *  centerline, character RIGHT = +X, forward = +Z) — the same frame the swept
+   *  prop targets and the idealized fallback live in. We force symmetric shoulders
+   *  (±halfWidth) rather than copying the rig's raw handedness so the solve's
+   *  side assignment matches the target frame the whole pipeline is validated in. */
   function measureRigBody(r: RigBinding): RestPoseGeometry | null {
     const get = (n: string) => r.getBone(n);
     const hips = get("Hips"), s1 = get("Spine1"), s2 = get("Spine2"),
@@ -260,20 +273,23 @@
       rf = get("RightForeArm"), rh = get("RightHand");
     if (!hips || !s1 || !s2 || !neck || !head || !la || !ra || !lf || !lh || !rf || !rh) return null;
     r.root.updateMatrixWorld(true);
-    const w = (b: typeof hips) => b.getWorldPosition(new Vector3());
-    const wHips = w(hips), wS1 = w(s1), wS2 = w(s2), wNeck = w(neck), wHead = w(head);
-    const wLa = w(la), wRa = w(ra), wLf = w(lf), wLh = w(lh), wRf = w(rf), wRh = w(rh);
-    const shoulderYW = (wLa.y + wRa.y) / 2;
-    const upper = (wLa.distanceTo(wLf) + wRa.distanceTo(wRf)) / 2;
-    const lower = (wLf.distanceTo(wLh) + wRf.distanceTo(wRh)) / 2;
+    const toLocal = new Matrix4().copy(r.root.matrixWorld).invert();
+    // Root-local position of a bone (world → root frame).
+    const L = (b: typeof hips) => b.getWorldPosition(new Vector3()).applyMatrix4(toLocal);
+    const lHips = L(hips), lS1 = L(s1), lS2 = L(s2), lNeck = L(neck), lHead = L(head);
+    const lLa = L(la), lRa = L(ra), lLf = L(lf), lLh = L(lh), lRf = L(rf), lRh = L(rh);
+    const shoulderY = (lLa.y + lRa.y) / 2;
+    const halfWidth = Math.abs(lLa.x - lRa.x) / 2;
+    const upper = (lLa.distanceTo(lLf) + lRa.distanceTo(lRf)) / 2;
+    const lower = (lLf.distanceTo(lLh) + lRf.distanceTo(lRh)) / 2;
     return {
-      hipsY: wHips.y - shoulderYW,
-      spine1: new Vector3(0, wS1.y - shoulderYW, 0),
-      spine2: new Vector3(0, wS2.y - shoulderYW, 0),
-      neck: new Vector3(0, wNeck.y - shoulderYW, 0),
-      head: new Vector3(0, wHead.y - shoulderYW, 0),
-      leftShoulder: new Vector3(wLa.x, 0, 0),
-      rightShoulder: new Vector3(wRa.x, 0, 0),
+      hipsY: lHips.y - shoulderY,
+      spine1: new Vector3(0, lS1.y - shoulderY, 0),
+      spine2: new Vector3(0, lS2.y - shoulderY, 0),
+      neck: new Vector3(0, lNeck.y - shoulderY, 0),
+      head: new Vector3(0, lHead.y - shoulderY, 0),
+      leftShoulder: new Vector3(-halfWidth, 0, 0),
+      rightShoulder: new Vector3(halfWidth, 0, 0),
       upperArmLength: upper,
       forearmLength: lower,
       footHalfWidth: 0.1,
@@ -305,6 +321,7 @@
     footSphere.visible = true;
     if (typeof window !== "undefined") {
       (window as unknown as { __dodgeSolution?: DodgeSolution }).__dodgeSolution = solution;
+      (window as unknown as { __dodgeBody?: RestPoseGeometry }).__dodgeBody = body;
       (window as unknown as { __dodgeClearance?: () => number }).__dodgeClearance = liveClearance;
       // Distance (m) of each hand bone from its prop grip — 0 = fully attached.
       (window as unknown as { __dodgeHandGap?: () => { left: number; right: number } }).__dodgeHandGap =
@@ -314,6 +331,28 @@
         });
       (window as unknown as { __dodgeSweeps?: { blue: SimPropTarget[]; red: SimPropTarget[] } }).__dodgeSweeps =
         { blue: blueSweep, red: redSweep };
+      // Live pose snapshot: where the rig actually is vs the solved stance, plus
+      // each arm's actual extension (hand-shoulder dist / arm length).
+      (window as unknown as { __dodgeLive?: () => unknown }).__dodgeLive = () => {
+        if (!rig || !leftArm || !rightArm) return null;
+        const v = (o: { getWorldPosition: (t: Vector3) => Vector3 }) => o.getWorldPosition(new Vector3());
+        const shL = v(leftArm.root), shR = v(rightArm.root);
+        const haL = v(leftArm.effector), haR = v(rightArm.effector);
+        const lenL = leftArm.upperLength + leftArm.lowerLength;
+        const lenR = rightArm.upperLength + rightArm.lowerLength;
+        return {
+          rootPos: { x: rig.root.position.x, y: rig.root.position.y, z: rig.root.position.z },
+          facing: controller?.state.facing, restFacing,
+          liveStance: liveStance(),
+          armLenL: +lenL.toFixed(3), armLenR: +lenR.toFixed(3),
+          extL: +(shL.distanceTo(haL) / lenL).toFixed(3),
+          extR: +(shR.distanceTo(haR) / lenR).toFixed(3),
+          shToStaffL: +shL.distanceTo(blueStaff.position).toFixed(3),
+          shToStaffR: +shR.distanceTo(redStaff.position).toFixed(3),
+          handToStaffL: +haL.distanceTo(blueStaff.position).toFixed(3),
+          handToStaffR: +haR.distanceTo(redStaff.position).toFixed(3),
+        };
+      };
       // Evaluate an arbitrary stance against the swept volume (grid-search probe).
       (window as unknown as { __dodgeEval?: (x: number, z: number, yawDeg: number, pitchRad?: number) => unknown }).__dodgeEval =
         (x: number, z: number, yawDeg: number, pitchRad = 0) => {
@@ -324,7 +363,7 @@
           for (const c of r.collisions) {
             if (c.zone === "prop-through-torso" || c.zone === "prop-through-head") body = Math.max(body, c.depth);
           }
-          return { feasible: r.feasible, reachBlue: r.reachShortfall.blue, reachRed: r.reachShortfall.red, body, bal: r.balanceMargin };
+          return { feasible: r.feasible, reachBlue: r.reachShortfall.blue, reachRed: r.reachShortfall.red, body, bal: r.balanceMargin, stretchBlue: r.reachStretch.blue, stretchRed: r.reachStretch.red };
         };
     }
   }
