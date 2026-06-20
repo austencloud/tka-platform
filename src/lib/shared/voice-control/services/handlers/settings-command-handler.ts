@@ -11,6 +11,17 @@ import type { EffectType } from '../../../animation-engine/domain/types/tip-effe
 
 type SettingOwner = "animVis" | "pictVis" | "appSettings";
 
+/**
+ * Minimal structural view of a visibility manager as a bag of boolean settings
+ * keyed by string. The animation/pictograph managers expose typed accessors for
+ * their well-known fields, but voice routing addresses them by dynamic string key
+ * (`SettingRoute.property`), so we describe just the surface this handler touches
+ * and narrow each manager to it once instead of casting at every access site.
+ */
+interface BooleanSettingBag {
+  [property: string]: boolean;
+}
+
 interface SettingRoute {
   owner: SettingOwner;
   /** Property name on the state manager */
@@ -100,11 +111,11 @@ export class SettingsCommandHandler implements IVoiceCommandHandler {
     const { owner, property, displayName } = route;
 
     if (owner === "animVis") {
-      const mgr = getAnimationVisibilityManager();
-      (mgr as unknown as Record<string, unknown>)[property] = value;
+      const mgr = getAnimationVisibilityManager() as unknown as BooleanSettingBag;
+      mgr[property] = value;
     } else if (owner === "pictVis") {
-      const mgr = getVisibilityStateManager();
-      (mgr as unknown as Record<string, unknown>)[property] = value;
+      const mgr = getVisibilityStateManager() as unknown as BooleanSettingBag;
+      mgr[property] = value;
     } else if (owner === "appSettings") {
       settingsService.updateSettings({ [property]: value });
     }
@@ -117,13 +128,14 @@ export class SettingsCommandHandler implements IVoiceCommandHandler {
     const { owner, property } = route;
 
     if (owner === "animVis") {
-      const mgr = getAnimationVisibilityManager();
-      return (mgr as unknown as Record<string, unknown>)[property] as boolean;
+      const mgr = getAnimationVisibilityManager() as unknown as BooleanSettingBag;
+      return mgr[property] ?? false;
     } else if (owner === "pictVis") {
-      const mgr = getVisibilityStateManager();
-      return (mgr as unknown as Record<string, unknown>)[property] as boolean;
+      const mgr = getVisibilityStateManager() as unknown as BooleanSettingBag;
+      return mgr[property] ?? false;
     } else if (owner === "appSettings") {
-      return (settingsService.settings as unknown as Record<string, unknown>)[property] as boolean;
+      const settings = settingsService.settings as unknown as BooleanSettingBag;
+      return settings[property] ?? false;
     }
 
     return false;

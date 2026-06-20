@@ -281,6 +281,9 @@
 
 <style>
   .help-backdrop {
+    /* Scoped state palette — mapped to the global success token, hex fallback. */
+    --vc-active: var(--semantic-success, #22c55e);
+
     position: fixed;
     inset: 0;
     z-index: var(--z-toast);
@@ -334,7 +337,7 @@
   }
 
   .help-title-icon {
-    color: #22c55e;
+    color: var(--vc-active);
     font-size: 16px;
   }
 
@@ -403,14 +406,14 @@
     color: var(--theme-text, rgba(255, 255, 255, 0.9));
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    font-size: 11px;
+    font-size: 0.75rem;
   }
 
   .group-icon {
     width: 16px;
     text-align: center;
     font-size: 12px;
-    color: var(--theme-accent, #22c55e);
+    color: var(--theme-accent, var(--vc-active));
     opacity: 0.8;
   }
 
@@ -430,7 +433,7 @@
   .command-phrase {
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
-    color: #22c55e;
+    color: var(--vc-active);
     white-space: nowrap;
     flex-shrink: 0;
   }

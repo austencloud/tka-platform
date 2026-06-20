@@ -105,12 +105,22 @@ function displayValue(param: string, value: string | number): string {
   return String(value);
 }
 
+/**
+ * Keys of UIGenerationConfig that this handler reads/writes. Every PARAM_META
+ * entry corresponds to one of these, so narrowing to the config's own keyspace
+ * lets us index it without bypassing the type system.
+ */
+type ConfigParamKey = keyof UIGenerationConfig;
+
 /** Read a config field by key name */
 function getConfigValue(
   config: UIGenerationConfig,
   key: string
 ): string | number | undefined {
-  return (config as unknown as Record<string, string | number>)[key];
+  const value = config[key as ConfigParamKey];
+  return typeof value === "string" || typeof value === "number"
+    ? value
+    : undefined;
 }
 
 export class GeneratorCommandHandler implements IVoiceCommandHandler {
@@ -122,7 +132,8 @@ export class GeneratorCommandHandler implements IVoiceCommandHandler {
     key: string,
     value: string | number
   ): void {
-    ref.updateConfig({ [key]: value } as Partial<UIGenerationConfig>);
+    const update: Partial<UIGenerationConfig> = { [key as ConfigParamKey]: value };
+    ref.updateConfig(update);
   }
 
   async execute(command: VoiceCommand): Promise<CommandResult> {

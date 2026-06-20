@@ -130,6 +130,16 @@
 
 <style>
   .voice-indicator {
+    /* Scoped state palette — mapped to the global semantic tokens, hex fallback.
+       Lighter *-text variants are the 400-weight text/icon shades. */
+    --vc-active: var(--semantic-success, #22c55e);
+    --vc-active-text: #4ade80;
+    --vc-error: var(--semantic-error, #ef4444);
+    --vc-error-text: #f87171;
+    --vc-info: var(--semantic-info, #3b82f6);
+    --vc-info-text: #60a5fa;
+    --vc-processing: var(--semantic-warning, #f59e0b);
+
     position: fixed;
     bottom: 24px;
     left: 24px;
@@ -157,16 +167,16 @@
     align-items: center;
     justify-content: center;
     font-size: 15px;
-    background: rgba(34, 197, 94, 0.08);
-    color: rgba(34, 197, 94, 0.5);
-    border: 1.5px solid rgba(34, 197, 94, 0.15);
+    background: color-mix(in srgb, var(--vc-active) 8%, transparent);
+    color: color-mix(in srgb, var(--vc-active) 50%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--vc-active) 15%, transparent);
     transition: all 0.3s ease;
   }
 
   .wake-word:hover .wake-dot {
-    background: rgba(34, 197, 94, 0.14);
-    color: rgba(34, 197, 94, 0.7);
-    border-color: rgba(34, 197, 94, 0.25);
+    background: color-mix(in srgb, var(--vc-active) 14%, transparent);
+    color: color-mix(in srgb, var(--vc-active) 70%, transparent);
+    border-color: color-mix(in srgb, var(--vc-active) 25%, transparent);
   }
 
   /* Inactive: dimmer, tappable to activate voice control */
@@ -201,10 +211,10 @@
     border-radius: 26px;
     background: conic-gradient(
       from 0deg,
-      #22c55e,
-      #3b82f6,
+      var(--vc-active),
+      var(--vc-info),
       #8b5cf6,
-      #22c55e
+      var(--vc-active)
     );
     animation: glow-spin 3s linear infinite;
     opacity: 0.7;
@@ -235,8 +245,8 @@
     align-items: center;
     justify-content: center;
     font-size: 15px;
-    background: rgba(34, 197, 94, 0.15);
-    color: #22c55e;
+    background: color-mix(in srgb, var(--vc-active) 15%, transparent);
+    color: var(--vc-active);
     flex-shrink: 0;
   }
 
@@ -244,7 +254,7 @@
     position: absolute;
     inset: -3px;
     border-radius: 50%;
-    border: 2px solid rgba(34, 197, 94, 0.4);
+    border: 2px solid color-mix(in srgb, var(--vc-active) 40%, transparent);
     animation: mic-ring 2s ease-out infinite;
   }
 
@@ -298,18 +308,18 @@
   }
 
   .feedback-success .feedback-pill {
-    background: rgba(34, 197, 94, 0.12);
-    border: 1.5px solid rgba(34, 197, 94, 0.25);
+    background: color-mix(in srgb, var(--vc-active) 12%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--vc-active) 25%, transparent);
   }
 
   .feedback-error .feedback-pill {
-    background: rgba(239, 68, 68, 0.12);
-    border: 1.5px solid rgba(239, 68, 68, 0.25);
+    background: color-mix(in srgb, var(--vc-error) 12%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--vc-error) 25%, transparent);
   }
 
   .feedback-info .feedback-pill {
-    background: rgba(59, 130, 246, 0.12);
-    border: 1.5px solid rgba(59, 130, 246, 0.25);
+    background: color-mix(in srgb, var(--vc-info) 12%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--vc-info) 25%, transparent);
   }
 
   .feedback-icon {
@@ -324,18 +334,18 @@
   }
 
   .feedback-success .feedback-icon {
-    background: rgba(34, 197, 94, 0.2);
-    color: #4ade80;
+    background: color-mix(in srgb, var(--vc-active) 20%, transparent);
+    color: var(--vc-active-text);
   }
 
   .feedback-error .feedback-icon {
-    background: rgba(239, 68, 68, 0.2);
-    color: #f87171;
+    background: color-mix(in srgb, var(--vc-error) 20%, transparent);
+    color: var(--vc-error-text);
   }
 
   .feedback-info .feedback-icon {
-    background: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
+    background: color-mix(in srgb, var(--vc-info) 20%, transparent);
+    color: var(--vc-info-text);
   }
 
   .feedback-text {
@@ -345,15 +355,15 @@
   }
 
   .feedback-success .feedback-text {
-    color: #4ade80;
+    color: var(--vc-active-text);
   }
 
   .feedback-error .feedback-text {
-    color: #f87171;
+    color: var(--vc-error-text);
   }
 
   .feedback-info .feedback-text {
-    color: #60a5fa;
+    color: var(--vc-info-text);
   }
 
   @keyframes feedback-enter {
@@ -366,12 +376,12 @@
      ═══════════════════════════════════════════════════════════ */
 
   .processing .mic-icon {
-    background: rgba(245, 158, 11, 0.15);
-    color: rgba(245, 158, 11, 0.9);
+    background: color-mix(in srgb, var(--vc-processing) 15%, transparent);
+    color: color-mix(in srgb, var(--vc-processing) 90%, transparent);
   }
 
   .processing .mic-pulse {
-    border-color: rgba(245, 158, 11, 0.4);
+    border-color: color-mix(in srgb, var(--vc-processing) 40%, transparent);
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -379,9 +389,9 @@
      ═══════════════════════════════════════════════════════════ */
 
   .error .wake-dot {
-    background: rgba(239, 68, 68, 0.1);
-    color: rgba(239, 68, 68, 0.6);
-    border-color: rgba(239, 68, 68, 0.15);
+    background: color-mix(in srgb, var(--vc-error) 10%, transparent);
+    color: color-mix(in srgb, var(--vc-error) 60%, transparent);
+    border-color: color-mix(in srgb, var(--vc-error) 15%, transparent);
   }
 
   /* ═══════════════════════════════════════════════════════════
