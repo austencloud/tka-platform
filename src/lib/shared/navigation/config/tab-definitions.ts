@@ -1094,17 +1094,6 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #c084fc 0%, #a78bfa 100%)",
   },
   {
-    id: "pictograph-explorer",
-    groupId: "notation",
-    labelKey: "tab_lab_pictograph_explorer",
-    descKey: "tab_desc_lab_pictograph_explorer",
-    label: "Pictograph Explorer",
-    icon: '<i class="fas fa-shapes" aria-hidden="true"></i>',
-    description: "Render every variation of a letter; flip Diamond/Box to reclassify the elemental glyph",
-    color: "#50c878",
-    gradient: "linear-gradient(135deg, #6ee7a8 0%, #50c878 100%)",
-  },
-  {
     id: "phrase-effort",
     groupId: "choreography",
     labelKey: "tab_lab_phrase_effort",

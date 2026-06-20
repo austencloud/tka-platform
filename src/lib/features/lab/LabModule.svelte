@@ -38,7 +38,7 @@
     "spatial-lab": () => import("./tabs/spatial-lab/SpatialLab.svelte"),
     stickers: () => import("$lib/features/sticker-lab/StickerLab.svelte"),
     "path-mandalas": () => import("./tabs/PathMandalaLab.svelte"),
-    "pictograph-explorer": () => import("./tabs/pictograph-explorer/PictographExplorerLab.svelte"),
+    // pictograph-explorer graduated to the learn Codex tab as the unified CodexExplorer (Jun 2026)
     // hand-path-explorer, hand-path-builder graduated to Hand Paths module (Mar 2026)
     // video-trails, video-lab graduated to Video module (Mar 2026)
   };

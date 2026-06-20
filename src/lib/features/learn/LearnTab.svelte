@@ -19,7 +19,7 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
   import { cubicOut } from "svelte/easing";
   import ConceptPathView from "./components/ConceptPathView.svelte";
   import ConceptDetailView from "./components/ConceptDetailView.svelte";
-  import CodexTab from "./codex/components/CodexTab.svelte";
+  import CodexExplorer from "./codex/components/CodexExplorer.svelte";
   import QuizTab from "./quiz/components/QuizTab.svelte";
   import TikaTab from "$lib/features/tika/TikaModule.svelte";
   import GuideTab from "./guide/GuideTab.svelte";
@@ -214,7 +214,7 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
         {:else if isModeActive("play")}
           <QuizTab />
         {:else if isModeActive("codex")}
-          <CodexTab />
+          <CodexExplorer />
         {:else if isModeActive("tika")}
           <TikaTab />
         {:else if isModeActive("guide")}
