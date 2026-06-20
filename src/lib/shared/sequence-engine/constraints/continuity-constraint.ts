@@ -6,6 +6,7 @@
  */
 
 import { ConstraintType, type ConstraintMode } from "./constraint-types";
+import { isReversal } from "./reversal-util";
 import type {
   IVariationConstraint,
   ConstraintContext,
@@ -14,24 +15,6 @@ import type {
 } from "./types";
 
 export type ContinuityMode = "maximize" | "enforce" | "allow";
-
-/**
- * Check if a rotation direction change represents a reversal.
- */
-function isReversal(prev: string, current: string): boolean {
-  if (
-    prev === "no_rot" ||
-    prev === "noRotation" ||
-    current === "no_rot" ||
-    current === "noRotation"
-  ) {
-    return false;
-  }
-  return (
-    (prev === "cw" && current === "ccw") ||
-    (prev === "ccw" && current === "cw")
-  );
-}
 
 /**
  * Calculate continuity score between two consecutive steps.

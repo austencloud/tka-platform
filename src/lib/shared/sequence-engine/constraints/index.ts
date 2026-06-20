@@ -8,6 +8,9 @@
 export * from "./constraint-types";
 export * from "./types";
 
+// Shared helpers
+export { isReversal } from "./reversal-util";
+
 // Constraint implementations
 export { ContinuityConstraint, type ContinuityMode } from "./continuity-constraint";
 export { ReversalConstraint, type ReversalMode } from "./reversal-constraint";
