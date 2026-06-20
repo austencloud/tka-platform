@@ -32,7 +32,12 @@ Write-Line ""
 
 # --- Cloudflare tunnel (dev.tkaflowarts.com) ---------------------------------
 $cloudflared = $null
-$cmd = Get-Command cloudflared -ErrorAction SilentlyContinue
+# Only a real .exe works with Start-Process. Get-Command can resolve to the npm
+# shim (cloudflared.ps1, an ExternalScript) which Start-Process rejects with
+# "%1 is not a valid Win32 application." Take an Application whose source ends in
+# .exe; otherwise fall back to the known install path.
+$cmd = Get-Command cloudflared -CommandType Application -ErrorAction SilentlyContinue |
+    Where-Object { $_.Source -like "*.exe" } | Select-Object -First 1
 if ($cmd) { $cloudflared = $cmd.Source }
 elseif (Test-Path "C:\Program Files (x86)\cloudflared\cloudflared.exe") {
     $cloudflared = "C:\Program Files (x86)\cloudflared\cloudflared.exe"

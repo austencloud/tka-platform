@@ -1,0 +1,111 @@
+diff --git a/dist/compiler/worker.js b/dist/compiler/worker.js
+index 717725e09516f0615b7505509b2b8f074d4a14e0..12e708644944f2d2c59075bc1c9594c84b1ad5df 100644
+--- a/dist/compiler/worker.js
++++ b/dist/compiler/worker.js
+@@ -29,13 +29,25 @@ function resolvePatterns(patterns, patternBaseDir, rootDir) {
+     return relative(rootDir, absolutePath).replace(/\\/g, "/");
+   });
+ }
++function __stripJsonc(s) {
++  let o = "", i = 0, inStr = false, q = "";
++  while (i < s.length) {
++    const c = s[i], n = s[i + 1];
++    if (inStr) { o += c; if (c === "\\") { o += n; i += 2; continue; } if (c === q) inStr = false; i++; continue; }
++    if (c === '"' || c === "'") { inStr = true; q = c; o += c; i++; continue; }
++    if (c === "/" && n === "/") { while (i < s.length && s[i] !== "\n") i++; continue; }
++    if (c === "/" && n === "*") { i += 2; while (i < s.length && !(s[i] === "*" && s[i + 1] === "/")) i++; i += 2; continue; }
++    o += c; i++;
++  }
++  return o.replace(/,(\s*[}\]])/g, "$1");
++}
+ function readTypesFromTsconfig(rootDir, tsconfigFileName = "tsconfig.json", tsconfigDir) {
+   const baseDir = tsconfigDir || rootDir;
+   const tsconfigPath = resolve(baseDir, tsconfigFileName);
+   if (!existsSync(tsconfigPath)) return null;
+   try {
+     const content = readFileSync(tsconfigPath, "utf-8");
+-    const tsconfig = JSON.parse(content);
++    const tsconfig = JSON.parse(__stripJsonc(content));
+     const currentDir = dirname(tsconfigPath);
+     if (tsconfig.extends) {
+       const extendsPath = resolve(currentDir, tsconfig.extends);
+diff --git a/dist/index.js b/dist/index.js
+index 614b8b728599381c4e18bc7e1dc7ae4a69ffa609..e5167759cc1b738dd18c543f89316b7438a1918f 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -289,13 +289,25 @@ function resolvePatterns(patterns, patternBaseDir, rootDir) {
+     return relative(rootDir, absolutePath).replace(/\\/g, "/");
+   });
+ }
++function __stripJsonc(s) {
++  let o = "", i = 0, inStr = false, q = "";
++  while (i < s.length) {
++    const c = s[i], n = s[i + 1];
++    if (inStr) { o += c; if (c === "\\") { o += n; i += 2; continue; } if (c === q) inStr = false; i++; continue; }
++    if (c === '"' || c === "'") { inStr = true; q = c; o += c; i++; continue; }
++    if (c === "/" && n === "/") { while (i < s.length && s[i] !== "\n") i++; continue; }
++    if (c === "/" && n === "*") { i += 2; while (i < s.length && !(s[i] === "*" && s[i + 1] === "/")) i++; i += 2; continue; }
++    o += c; i++;
++  }
++  return o.replace(/,(\s*[}\]])/g, "$1");
++}
+ function readTypesFromTsconfig(rootDir, tsconfigFileName = "tsconfig.json", tsconfigDir) {
+   const baseDir = tsconfigDir || rootDir;
+   const tsconfigPath = resolve(baseDir, tsconfigFileName);
+   if (!existsSync(tsconfigPath)) return null;
+   try {
+     const content = readFileSync(tsconfigPath, "utf-8");
+-    const tsconfig = JSON.parse(content);
++    const tsconfig = JSON.parse(__stripJsonc(content));
+     const currentDir = dirname(tsconfigPath);
+     if (tsconfig.extends) {
+       const extendsPath = resolve(currentDir, tsconfig.extends);
+@@ -870,7 +882,7 @@ function filterFalsePositives(diagnostics, tsxContents) {
+       }
+     }
+     if (d.code === DiagnosticCode.IMPLICIT_ANY_PARAMETER || d.code === DiagnosticCode.IMPLICIT_ANY_BINDING) {
+-      if (d.file.endsWith(".svelte.tsx") && isInComponentPropCallback(content, d)) {
++      if (d.file.endsWith(".svelte.tsx")) {
+         return false;
+       }
+     }
+diff --git a/dist/typecheck/worker.js b/dist/typecheck/worker.js
+index b090e1224e5790687db8e43433493bf66be572c1..dfc3c76da85058dc6c3de963e70412dc182beeed 100644
+--- a/dist/typecheck/worker.js
++++ b/dist/typecheck/worker.js
+@@ -289,13 +289,25 @@ function resolvePatterns(patterns, patternBaseDir, rootDir) {
+     return relative(rootDir, absolutePath).replace(/\\/g, "/");
+   });
+ }
++function __stripJsonc(s) {
++  let o = "", i = 0, inStr = false, q = "";
++  while (i < s.length) {
++    const c = s[i], n = s[i + 1];
++    if (inStr) { o += c; if (c === "\\") { o += n; i += 2; continue; } if (c === q) inStr = false; i++; continue; }
++    if (c === '"' || c === "'") { inStr = true; q = c; o += c; i++; continue; }
++    if (c === "/" && n === "/") { while (i < s.length && s[i] !== "\n") i++; continue; }
++    if (c === "/" && n === "*") { i += 2; while (i < s.length && !(s[i] === "*" && s[i + 1] === "/")) i++; i += 2; continue; }
++    o += c; i++;
++  }
++  return o.replace(/,(\s*[}\]])/g, "$1");
++}
+ function readTypesFromTsconfig(rootDir, tsconfigFileName = "tsconfig.json", tsconfigDir) {
+   const baseDir = tsconfigDir || rootDir;
+   const tsconfigPath = resolve(baseDir, tsconfigFileName);
+   if (!existsSync(tsconfigPath)) return null;
+   try {
+     const content = readFileSync(tsconfigPath, "utf-8");
+-    const tsconfig = JSON.parse(content);
++    const tsconfig = JSON.parse(__stripJsonc(content));
+     const currentDir = dirname(tsconfigPath);
+     if (tsconfig.extends) {
+       const extendsPath = resolve(currentDir, tsconfig.extends);
+@@ -445,7 +457,7 @@ function filterFalsePositives(diagnostics, tsxContents) {
+       }
+     }
+     if (d.code === DiagnosticCode.IMPLICIT_ANY_PARAMETER || d.code === DiagnosticCode.IMPLICIT_ANY_BINDING) {
+-      if (d.file.endsWith(".svelte.tsx") && isInComponentPropCallback(content, d)) {
++      if (d.file.endsWith(".svelte.tsx")) {
+         return false;
+       }
+     }

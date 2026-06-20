@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  svelte-fast-check@0.4.5:
+    hash: 79c185fc32c5583774bc91ec4fa0ebcbac5c790d9b132fc5728f5d13a3d72474
+    path: patches/svelte-fast-check@0.4.5.patch
+
 importers:
 
   .:
@@ -386,7 +391,7 @@ importers:
         version: 4.3.6(picomatch@4.0.4)(svelte@5.49.2)(typescript@5.9.3)
       svelte-fast-check:
         specifier: 0.4.5
-        version: 0.4.5(svelte@5.49.2)(typescript@5.9.3)
+        version: 0.4.5(patch_hash=79c185fc32c5583774bc91ec4fa0ebcbac5c790d9b132fc5728f5d13a3d72474)(svelte@5.49.2)(typescript@5.9.3)
       svg-path-commander:
         specifier: ^2.1.11
         version: 2.1.11
@@ -12184,7 +12189,7 @@ snapshots:
     optionalDependencies:
       svelte: 5.49.2
 
-  svelte-fast-check@0.4.5(svelte@5.49.2)(typescript@5.9.3):
+  svelte-fast-check@0.4.5(patch_hash=79c185fc32c5583774bc91ec4fa0ebcbac5c790d9b132fc5728f5d13a3d72474)(svelte@5.49.2)(typescript@5.9.3):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@typescript/native-preview': 7.0.0-dev.20260512.1

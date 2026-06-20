@@ -765,8 +765,13 @@ ${changelogSummary}${changelog.length > 5 ? "\n..." : ""}
 
 Co-Authored-By: Claude <noreply@anthropic.com>`;
 
-  // Create commit
-  execSync(`git commit -m "${commitMessage.replace(/"/g, '\\"')}"`, {
+  // Create commit — scope to the release files via explicit pathspec so a
+  // shared index containing another agent's staged work is NOT swept in.
+  const releasePaths = ["package.json"];
+  if (existsSync("./static/sw.js")) releasePaths.push("static/sw.js");
+  if (existsSync("./static/thumbnails")) releasePaths.push("static/thumbnails");
+  const pathspec = releasePaths.join(" ");
+  execSync(`git commit -m "${commitMessage.replace(/"/g, '\\"')}" -- ${pathspec}`, {
     stdio: "inherit",
   });
 
