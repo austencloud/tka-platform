@@ -32,6 +32,19 @@ export function resolveOptimisticAccessTier(
   return snapshotTier ?? realTier;
 }
 
+/**
+ * A "full account" is an authenticated, non-anonymous user. Anonymous guests
+ * are authenticated (they have a Firebase uid for their cloud library) but are
+ * NOT full accounts — onboarding and account UI must treat them as guests.
+ * This is the same distinction resolveAccessTier draws (anon → "guest").
+ */
+export function isFullAccountUser(
+  isAuthenticated: boolean,
+  isAnonymous: boolean
+): boolean {
+  return isAuthenticated && !isAnonymous;
+}
+
 export function getMaxBeats(tier: AccessTier): number {
   switch (tier) {
     case "guest":
