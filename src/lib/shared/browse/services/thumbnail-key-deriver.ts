@@ -14,7 +14,7 @@ export interface ThumbnailVisibilitySettings {
   showReversals?: boolean;
   showGrid?: boolean;
   showNonRadialPoints?: boolean;
-  handPointVisibility?: "all" | "active";
+  handPointVisibility?: "all" | "active" | "none";
   /** Render QR code in an empty cell (if available) */
   showQRCode?: boolean;
   /** Render as hand path visualization (HAND props, float arrows, no TKA) */

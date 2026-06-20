@@ -8,6 +8,14 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
 import { sortSequencesByKineticAlphabet } from "$lib/shared/browse/utils/kinetic-alphabet-sort";
+import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
+
+/** Numeric difficulty (1–3). Prefers stored `level`, else computes from steps. */
+function resolveLevel(sequence: SequenceData): number {
+  if (typeof sequence.level === "number") return sequence.level;
+  if (sequence.steps?.length) return calculateDifficultyLevel([...sequence.steps]);
+  return 1;
+}
 
 export function sortSequences(
   sequences: SequenceData[],
@@ -70,11 +78,7 @@ function sortByDateAdded(sequences: SequenceData[]): SequenceData[] {
 }
 
 function sortByDifficulty(sequences: SequenceData[]): SequenceData[] {
-  return sequences.sort((a, b) => {
-    const levelA = getDifficultyOrder(a.difficultyLevel);
-    const levelB = getDifficultyOrder(b.difficultyLevel);
-    return levelA - levelB; // Easiest first
-  });
+  return sequences.sort((a, b) => resolveLevel(a) - resolveLevel(b)); // Easiest first
 }
 
 function sortByLength(sequences: SequenceData[]): SequenceData[] {
@@ -107,7 +111,7 @@ function getSectionKey(
     case BrowseSortMethod.ALPHABETICAL:
       return getAlphabeticalSection(sequence);
     case BrowseSortMethod.DIFFICULTY_LEVEL:
-      return sequence.difficultyLevel ?? "Unknown";
+      return String(resolveLevel(sequence));
     case BrowseSortMethod.AUTHOR:
       return sequence.author ?? "Unknown";
     case BrowseSortMethod.SEQUENCE_LENGTH:
@@ -153,19 +157,3 @@ function getLengthSection(sequence: SequenceData): string {
   return "9+ steps";
 }
 
-// ============================================================================
-// Helper Methods
-// ============================================================================
-
-function getDifficultyOrder(difficulty?: string): number {
-  switch (difficulty) {
-    case "beginner":
-      return 1;
-    case "intermediate":
-      return 2;
-    case "advanced":
-      return 3;
-    default:
-      return 0;
-  }
-}

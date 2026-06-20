@@ -366,11 +366,18 @@ export class PublicSequencesLoader {
   private toDate(value: unknown): Date | undefined {
     if (!value) return undefined;
     if (value instanceof Date) return value;
-    // Firestore Timestamp has a toDate() method
-    if (typeof value === "object" && "toDate" in (value as Record<string, unknown>)) {
-      return (value as { toDate(): Date }).toDate();
+    if (typeof value === "object") {
+      const obj = value as Record<string, unknown>;
+      // Live Firestore Timestamp has a toDate() method
+      if (typeof obj.toDate === "function") {
+        return (obj.toDate as () => Date)();
+      }
+      // Serialized Firestore Timestamp ({seconds,nanoseconds} / {_seconds,...})
+      const seconds = (obj.seconds ?? obj._seconds) as number | undefined;
+      if (typeof seconds === "number") return new Date(seconds * 1000);
+      return undefined;
     }
-    // Fallback: try parsing as string/number
+    // Fallback: try parsing as ISO string / epoch number
     const parsed = new Date(value as string | number);
     return isNaN(parsed.getTime()) ? undefined : parsed;
   }

@@ -12,6 +12,28 @@ import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/p
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { GalleryCacheEntry } from "../domain/offline-cache-types";
 
+/**
+ * Normalize a Firestore Timestamp / Date / serialized-timestamp / date string to
+ * an ISO string. Returns undefined when there's no usable date. Runs against the
+ * ORIGINAL doc (with live Timestamp objects) before JSON serialization.
+ */
+function timestampToIso(value: unknown): string | undefined {
+  if (!value) return undefined;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? undefined : value.toISOString();
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    if (typeof obj.toDate === "function") {
+      return (obj.toDate as () => Date)().toISOString();
+    }
+    // Serialized Firestore Timestamp shapes
+    const seconds = (obj.seconds ?? obj._seconds) as number | undefined;
+    if (typeof seconds === "number") return new Date(seconds * 1000).toISOString();
+    return undefined;
+  }
+  const parsed = new Date(value as string | number);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
+}
+
 export class GalleryOfflineCache {
   private converter: GallerySequenceConverter | null = null;
 
@@ -22,12 +44,21 @@ export class GalleryOfflineCache {
   async persist(docs: PublicSequenceIndex[]): Promise<void> {
     const now = Date.now();
     // JSON round-trip strips non-cloneable Firestore objects (Timestamps, etc.)
-    // that IndexedDB's structured clone algorithm rejects.
-    const entries: GalleryCacheEntry[] = docs.map((doc) => ({
-      id: doc.id,
-      data: JSON.parse(JSON.stringify(doc)),
-      cachedAt: now,
-    }));
+    // that IndexedDB's structured clone algorithm rejects. But a bare round-trip
+    // turns Firestore Timestamps into junk ({} / {seconds,nanoseconds}) that the
+    // loader can't read back — every gallery date then reads "Unknown Date".
+    // Convert the known date fields to ISO strings *before* serializing so they
+    // survive the round-trip and rehydrate correctly.
+    const entries: GalleryCacheEntry[] = docs.map((doc) => {
+      const raw = doc as unknown as Record<string, unknown>;
+      const cleaned = JSON.parse(JSON.stringify(doc)) as Record<string, unknown>;
+      for (const field of ["birthday", "publishedAt", "updatedAt", "dateAdded", "createdAt"]) {
+        const iso = timestampToIso(raw[field]);
+        if (iso) cleaned[field] = iso;
+        else delete cleaned[field];
+      }
+      return { id: doc.id, data: cleaned as unknown as PublicSequenceIndex, cachedAt: now };
+    });
 
     await db.transaction("rw", [db.galleryCache, db.galleryCacheMeta], async () => {
       await db.galleryCache.clear();

@@ -27,6 +27,7 @@
   import { invalidateUrl as invalidateCloudUrl } from "$lib/shared/browse/services/cloud-thumbnail-cache";
   import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { deriveWord } from "$lib/shared/foundation/services/word-deriver";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 
@@ -129,11 +130,18 @@
     return { showQRCode: qr, showMandala: mandala, ...(handPathMode && { handPathMode: true }), ...motionOverrides };
   });
 
-  // Derived: sequence name (raw)
+  // Derived: sequence name (raw) — used as the cache-key + source-doc lookup
+  // identity. Kept as word||name so existing cloud/local thumbnail keys and
+  // loadFullSequenceData() lookups stay stable.
   const sequenceName = $derived(sequence.word || sequence.name || "");
 
-  // Derived: simplified display name (removes repeated patterns like "ABCABC" → "ABC")
-  const displayName = $derived(simplifyRepeatedWord(sequenceName));
+  // Derived: simplified display name (removes repeated patterns like "ABCABC" → "ABC").
+  // Use the CONTENT-derived word (steps/stepPairings letters) rather than the raw
+  // stored word/name. Sequences saved without a `word` carry an auto-generated
+  // name like "Sequence 11:46:02 PM"; the glyph renderer keeps only TKA letters,
+  // collapsing that to a nonsense "SPM"/"SAM". deriveWord reads the real letters,
+  // matching what the section bucket and the rendered thumbnail show.
+  const displayName = $derived(simplifyRepeatedWord(deriveWord(sequence)));
 
   // Derived: beat count for aspect ratio calculation
   // Priority: steps array length (if not empty) > sequenceLength field > fallback to 4
