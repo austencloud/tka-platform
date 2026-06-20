@@ -16,12 +16,14 @@ rotating, mirroring, and color-swapping pictographs.
     onColorSwap,
     onOrientationChange,
     currentOrientation = "Diamond",
+    showOrientation = true,
   } = $props<{
     onRotate?: () => void;
     onMirror?: () => void;
     onColorSwap?: () => void;
     onOrientationChange?: (orientation: string) => void;
     currentOrientation?: string;
+    showOrientation?: boolean;
   }>();
 
   // Services
@@ -61,15 +63,17 @@ rotating, mirroring, and color-swapping pictographs.
   <!-- Row with orientation and controls -->
   <div class="control-row">
     <!-- Orientation Selector -->
-    <div class="orientation-wrapper">
-      <SegmentedControl
-        options={orientationOptions}
-        value={currentOrientation}
-        onchange={handleOrientationChange}
-        color="accent"
-        size="sm"
-      />
-    </div>
+    {#if showOrientation}
+      <div class="orientation-wrapper">
+        <SegmentedControl
+          options={orientationOptions}
+          value={currentOrientation}
+          onchange={handleOrientationChange}
+          color="accent"
+          size="sm"
+        />
+      </div>
+    {/if}
 
     <!-- Control Buttons -->
     <div class="control-buttons">
