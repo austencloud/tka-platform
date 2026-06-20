@@ -149,6 +149,12 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   const beatCapNudgeTrigger = $derived<AuthNudgeTrigger>(
     accessTier === "guest" ? "beat-cap-guest" : "beat-cap-composer"
   );
+  // Pre-launch: the composer beat-cap nudge pitches the Scribe tier, which
+  // isn't shippable yet. When premium is off, suppress the composer nudge —
+  // the cap still applies. Guests keep their free "up to 16" nudge.
+  const premiumEnabled =
+    typeof __FEATURE_PREMIUM__ !== "undefined" && __FEATURE_PREMIUM__;
+  const beatCapNudgeAllowed = $derived(accessTier === "guest" || premiumEnabled);
 
   // LOOP completion state
   let showLoopConfirm = $state(false);
@@ -811,7 +817,7 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
        Backdrop click / Escape dismiss via BaseModal; the card itself never
        propagates to the backdrop. -->
   <BaseModal
-    open={showBeatCapNudge}
+    open={showBeatCapNudge && beatCapNudgeAllowed}
     size="fit"
     class="chromeless"
     onclose={() => { showBeatCapNudge = false; }}
