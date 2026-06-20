@@ -13,6 +13,7 @@ import {
   MOTION_QUIZ_QUESTIONS,
   type MotionQuizQuestion,
 } from "$lib/features/learn/domain/constants/motion-quiz-data";
+import { shuffleArray } from "$lib/features/learn/domain/constants/shared-types";
 import { getCodex } from "$lib/features/learn/codex/get-codex";
 import type { Codex } from "../../../learn/codex/services/codex";
 import { getLetterType } from "$lib/shared/foundation/domain/models/letter";
@@ -96,7 +97,7 @@ export interface RetroQuizQuestion {
  * after shuffling the question pool.
  */
 export function loadQuizQuestions(count: number): RetroQuizQuestion[] {
-  const shuffled = [...MOTION_QUIZ_QUESTIONS].sort(() => Math.random() - 0.5);
+  const shuffled = shuffleArray(MOTION_QUIZ_QUESTIONS);
   const selected = shuffled.slice(0, Math.min(count, shuffled.length));
   return selected.map((q: MotionQuizQuestion) => ({
     question: `Left hand: ${q.leftStart}→${q.leftEnd} (${q.leftMotion})\nRight hand: ${q.rightStart}→${q.rightEnd} (${q.rightMotion})\n\nWhat letter type is this?`,

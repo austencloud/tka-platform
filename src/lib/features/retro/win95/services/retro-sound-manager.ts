@@ -392,8 +392,10 @@ export class RetroSoundManager {
 		}
 
 		// Resume a suspended context (happens when created before a user gesture).
+		// resume() rejects if the context is closing; swallow + log rather than
+		// leak an unhandled rejection.
 		if (this.ctx.state === "suspended") {
-			this.ctx.resume();
+			this.ctx.resume().catch(console.warn);
 		}
 
 		return this.ctx;

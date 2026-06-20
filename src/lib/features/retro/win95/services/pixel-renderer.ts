@@ -90,10 +90,6 @@ const GRID_DOT_RADIUS_VB = 25; // Matches modern renderer
 const BLUE_COLOR = "#0000FF";
 const RED_COLOR  = "#FF0000";
 
-// Hand dot in Win16 silver (palette index 7)
-const HAND_DOT_COLOR = "#C0C0C0";
-const HAND_DOT_RADIUS_VB = 22;
-
 // ============================================================================
 // PIXEL RENDERER
 // ============================================================================
@@ -364,33 +360,6 @@ export class PixelRenderer extends EraRendererBase {
 			} catch {
 				// Non-fatal - skip this arrow if asset loading fails
 			}
-		}
-	}
-
-	// --------------------------------------------------------------------------
-	// Hand position dots
-	// --------------------------------------------------------------------------
-
-	/**
-	 * Draw a flat gray circle at each hand position.
-	 * No highlight layers, no shadow - flat Win95 style.
-	 */
-	private drawHandDots(
-		ctx: CanvasRenderingContext2D,
-		prepared: PreparedRenderData,
-		scale: number,
-	): void {
-		ctx.fillStyle = HAND_DOT_COLOR;
-
-		for (const color of ["blue", "red"] as const) {
-			const position = prepared.propPositions[color];
-			if (!position) continue;
-
-			const cx = position.x * scale;
-			const cy = position.y * scale;
-			const r  = HAND_DOT_RADIUS_VB * scale;
-
-			this.fillCircle(ctx, cx, cy, r);
 		}
 	}
 
