@@ -418,11 +418,11 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
         }
 
         // First-time guided-build offer: only when the user landed on an empty
-        // Create (no deep-linked sequence, no restored work). Skippable and
-        // self-suppressing after the first decision (appEntryState persists it).
-        const hasSequence =
-          !!CreateModuleState?.sequenceState.currentSequence?.steps?.length;
-        if (!hasDeepLink && !hasSequence) {
+        // Create (no deep link, no restored work). isWorkspaceEmpty() counts a
+        // start-position-only sequence as non-empty, so a guest who began a
+        // build isn't interrupted. Skippable and self-suppressing after the
+        // first decision (appEntryState persists it).
+        if (!hasDeepLink && CreateModuleState.isWorkspaceEmpty()) {
           appEntryState.offerCreateTutorial();
         }
 
