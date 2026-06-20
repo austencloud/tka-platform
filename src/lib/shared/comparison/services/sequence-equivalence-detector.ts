@@ -71,6 +71,7 @@ interface LocalMotionSignature {
 import type { StepSignatureGenerator } from "./step-signature-generator";
 import type { SpatialTransformDetector } from "./spatial-transform-detector";
 import type { WordCyclicEquivalenceDetector } from "$lib/shared/foundation/utils/word-cyclic-equivalence-detector";
+import type { MotionSignature, StepSignature } from "../domain/models/signatures";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export class SequenceEquivalenceDetector {
@@ -159,21 +160,23 @@ export class SequenceEquivalenceDetector {
         continue;
       }
 
-      // Quick hash comparison for potential matches
+      // The canonical hash is a structural fingerprint (canonical word + step
+      // count + circularity + per-beat signature hashes), not a lossy digest.
+      // It already folds in circular rotation via the canonical word, so equal
+      // hashes mean identical-or-circular-equivalent structure. When the hashes
+      // differ, the identical and pure-circular paths in areEquivalent() cannot
+      // possibly match (they would have produced an equal hash), so we skip them
+      // and only run the rotation-based checks that legitimately bypass the hash:
+      // spatial rotation, plus combined (circular + spatial) for circular pairs.
+      // This is the fast-path skip that matters at 53k+ candidates.
       const candidateHash = this.sequenceCanonicalizer.generateHash(candidate);
-      if (candidateHash === targetHash) {
-        // Hashes match, do full comparison
-        const equivalence = this.areEquivalent(target, candidate);
-        if (equivalence.isEquivalent) {
-          results.push({ sequence: candidate, equivalence });
-        }
-      } else {
-        // Hashes differ, but could still be spatially rotated equivalent
-        // Do full comparison for spatial rotation
-        const equivalence = this.areEquivalent(target, candidate);
-        if (equivalence.isEquivalent) {
-          results.push({ sequence: candidate, equivalence });
-        }
+      const equivalence =
+        candidateHash === targetHash
+          ? this.areEquivalent(target, candidate)
+          : this.checkRotationEquivalence(target, candidate);
+
+      if (equivalence.isEquivalent) {
+        results.push({ sequence: candidate, equivalence });
       }
     }
 
@@ -183,6 +186,36 @@ export class SequenceEquivalenceDetector {
   // ============================================================================
   // PRIVATE HELPERS
   // ============================================================================
+
+  /**
+   * Rotation-only equivalence used as the differing-hash fast path in
+   * findEquivalentSequences. Runs the checks that bypass the canonical hash
+   * (spatial rotation, and combined circular+spatial for circular pairs) while
+   * skipping the identical and pure-circular checks, which a differing hash has
+   * already ruled out.
+   */
+  private checkRotationEquivalence(
+    seqA: SequenceData,
+    seqB: SequenceData
+  ): EquivalenceResult {
+    if (seqA.steps.length !== seqB.steps.length) {
+      return this.notEquivalent();
+    }
+
+    const spatialResult = this.checkSpatialRotation(seqA, seqB);
+    if (spatialResult.isEquivalent) {
+      return spatialResult;
+    }
+
+    if (seqA.isCircular && seqB.isCircular) {
+      const combinedResult = this.checkCombinedTransforms(seqA, seqB);
+      if (combinedResult.isEquivalent) {
+        return combinedResult;
+      }
+    }
+
+    return this.notEquivalent();
+  }
 
   private areIdentical(seqA: SequenceData, seqB: SequenceData): boolean {
     if (seqA.word !== seqB.word) {
@@ -432,19 +465,3 @@ export class SequenceEquivalenceDetector {
     };
   }
 }
-
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
-import { sequenceCanonicalizer } from "./sequence-canonicalizer";
-import { stepSignatureGenerator } from "./step-signature-generator";
-import { spatialTransformDetector } from "./spatial-transform-detector";
-import * as wordCyclicEquivalenceDetector from "$lib/shared/foundation/utils/word-cyclic-equivalence-detector";
-import type { MotionSignature, StepSignature } from '../domain/models/signatures';
-
-export const sequenceEquivalenceDetector = new SequenceEquivalenceDetector(
-  sequenceCanonicalizer,
-  stepSignatureGenerator,
-  spatialTransformDetector,
-  wordCyclicEquivalenceDetector
-);

@@ -578,14 +578,3 @@ export class SequenceAligner {
     };
   }
 }
-
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
-import { stepSignatureGenerator } from "./step-signature-generator";
-import { spatialTransformDetector } from "./spatial-transform-detector";
-
-export const sequenceAligner = new SequenceAligner(
-  stepSignatureGenerator,
-  spatialTransformDetector
-);

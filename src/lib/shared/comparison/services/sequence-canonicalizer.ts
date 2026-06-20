@@ -163,14 +163,3 @@ export class SequenceCanonicalizer {
     return hashes.join(";");
   }
 }
-
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
-import { stepSignatureGenerator } from "./step-signature-generator";
-import * as wordCyclicEquivalenceDetector from "$lib/shared/foundation/utils/word-cyclic-equivalence-detector";
-
-export const sequenceCanonicalizer = new SequenceCanonicalizer(
-  stepSignatureGenerator,
-  wordCyclicEquivalenceDetector
-);

@@ -27,20 +27,6 @@ const LOCATION_TO_ANGLE: Record<GridLocation, number> = {
 };
 
 /**
- * Reverse map: angle to location
- */
-const ANGLE_TO_LOCATION: GridLocation[] = [ // eslint-disable-line @typescript-eslint/no-unused-vars
-  GridLocation.NORTH,
-  GridLocation.NORTHEAST,
-  GridLocation.EAST,
-  GridLocation.SOUTHEAST,
-  GridLocation.SOUTH,
-  GridLocation.SOUTHWEST,
-  GridLocation.WEST,
-  GridLocation.NORTHWEST,
-];
-
-/**
  * All 8 possible spatial transforms (0° to 315° in 45° increments)
  */
 const ALL_TRANSFORMS: readonly SpatialTransform[] = Array.from({ length: 8 }, (_, i) => ({
@@ -160,8 +146,3 @@ export class SpatialTransformDetector {
     return Math.min(cwDistance, 8 - cwDistance);
   }
 }
-
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
-export const spatialTransformDetector = new SpatialTransformDetector();

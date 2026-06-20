@@ -558,14 +558,3 @@ export class SimilarityCalculator {
     return parts.join(". ") + ".";
   }
 }
-
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
-import { stepSignatureGenerator } from "./step-signature-generator";
-import { sequenceAligner } from "./sequence-aligner";
-
-export const similarityCalculator = new SimilarityCalculator(
-  stepSignatureGenerator,
-  sequenceAligner
-);

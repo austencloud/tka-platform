@@ -163,13 +163,20 @@ export class StepSignatureGenerator {
 
     try {
       return getPositionGroup(position);
-    } catch {
-      // If position doesn't match expected format, try parsing
+    } catch (error) {
+      // If position doesn't match expected format, try parsing the prefix.
       if (position.startsWith("alpha")) return GridPositionGroup.ALPHA;
       if (position.startsWith("beta")) return GridPositionGroup.BETA;
       if (position.startsWith("gamma")) return GridPositionGroup.GAMMA;
       if (position.startsWith("zeta")) return GridPositionGroup.ZETA;
       if (position.startsWith("eta")) return GridPositionGroup.ETA;
+      // Nothing matched — the position data is corrupt. Surface it instead of
+      // silently treating every bad value as ALPHA, which would produce wrong
+      // signatures (and wrong comparison results) with no trace.
+      console.warn(
+        `[StepSignatureGenerator] Unrecognized position "${position}"; falling back to ALPHA. Comparison results may be inaccurate.`,
+        error
+      );
       return GridPositionGroup.ALPHA;
     }
   }
@@ -214,10 +221,3 @@ export class StepSignatureGenerator {
     return `${startPosGroup}>${endPosGroup}:${startAngle}-${endAngle}:B[${blueHash}]R[${redHash}]`;
   }
 }
-
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
-import { motionSignatureGenerator } from "./motion-signature-generator";
-
-export const stepSignatureGenerator = new StepSignatureGenerator(motionSignatureGenerator);
