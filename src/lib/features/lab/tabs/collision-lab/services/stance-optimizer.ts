@@ -206,26 +206,47 @@ export class StanceOptimizer {
    * Sweep variant of {@link optimize}: searches for one fixed stance that
    * minimizes worst-case loss across a swept volume (the prop's whole motion).
    * Same multi-start descent + loss as optimize(); only the evaluator differs.
+   *
+   * `opts` is OPT-IN and defaults to plain behaviour:
+   *   - `stancePenalty(stance)` adds a soft, stance-dependent term to the loss
+   *     (e.g. bias toward a preferred standing point + facing). It NEVER sees
+   *     the sim result, so it cannot relax feasibility — reach/collision still
+   *     dominate. Used by the dodge orchestrator to pull the solve into the
+   *     inside-gamma corner. Collision Lab passes nothing and is unaffected.
+   *   - `extraSeeds` are additional descent start points (tried FIRST), so a
+   *     known-good basin (the inside-gamma apex) is always explored.
    */
   optimizeSweep(
     input: OptimizerSweepInput,
     initial: StancePose,
-    bounds: OptimizerBounds
+    bounds: OptimizerBounds,
+    opts?: {
+      stancePenalty?: (stance: StancePose, sim: SimResult) => number;
+      extraSeeds?: StancePose[];
+      reachTolerance?: number;
+    }
   ): OptimizerResult {
     const evaluate = (s: StancePose) => this.simulator.evaluateSweep(s, input.blue, input.red);
+    const penalty = opts?.stancePenalty;
+    const reachTol = opts?.reachTolerance ?? 0;
     let totalEvals = 0;
     let best: DescentResult | null = null;
 
-    for (const yawSeed of YAW_SEEDS_RAD) {
-      if (totalEvals >= MAX_TOTAL_EVALS) break;
-      const seedStance: StancePose = {
+    // Extra (caller-supplied) seeds first, then the symmetric 4-yaw grid.
+    const seeds: StancePose[] = [
+      ...(opts?.extraSeeds ?? []).map((s) => ({ ...s })),
+      ...YAW_SEEDS_RAD.map((yawSeed) => ({
         ...initial,
         rootYawRad: this.wrapAngle(initial.rootYawRad + yawSeed),
-      };
+      })),
+    ];
+
+    for (const seedStance of seeds) {
+      if (totalEvals >= MAX_TOTAL_EVALS) break;
       this.clampInPlace(seedStance, bounds);
       const remaining = MAX_TOTAL_EVALS - totalEvals;
       const budget = Math.min(MAX_EVALS_PER_DESCENT, remaining);
-      const result = this.descend(evaluate, seedStance, bounds, budget);
+      const result = this.descend(evaluate, seedStance, bounds, budget, penalty, reachTol);
       totalEvals += result.evaluations;
       if (!best || result.loss < best.loss) best = result;
       if (best.feasible && best.loss < EARLY_EXIT_LOSS) break;
@@ -241,7 +262,7 @@ export class StanceOptimizer {
       const remaining = MAX_TOTAL_EVALS - totalEvals;
       const budget = Math.min(MAX_EVALS_PER_DESCENT, remaining);
       const start = this.randomStance(bounds, restarts);
-      const attempt = this.descend(evaluate, start, bounds, budget);
+      const attempt = this.descend(evaluate, start, bounds, budget, penalty, reachTol);
       totalEvals += attempt.evaluations;
       if (attempt.loss < best.loss) best = attempt;
       restarts++;
@@ -309,12 +330,21 @@ export class StanceOptimizer {
     evaluate: (s: StancePose) => SimResult,
     start: StancePose,
     bounds: OptimizerBounds,
-    budget: number
+    budget: number,
+    penalty?: (stance: StancePose, sim: SimResult) => number,
+    reachTol = 0
   ): DescentResult {
+    // Score = pure sim loss + optional stance penalty. With no penalty and
+    // reachTol=0 this is exactly lossFrom(sim), so the Collision Lab path is
+    // unchanged. The penalty sees the sim result so it can gate itself (e.g.
+    // only bias FEASIBLE stances, never trading clearance/reach for position).
+    const score = (stance: StancePose, sim: SimResult) =>
+      this.lossFrom(sim, reachTol) + (penalty ? penalty(stance, sim) : 0);
+
     let best: StancePose = { ...start };
     this.clampInPlace(best, bounds);
     let bestSim = evaluate(best);
-    let bestLoss = this.lossFrom(bestSim);
+    let bestLoss = score(best, bestSim);
     let evals = 1;
 
     const step = { ...INITIAL_STEPS };
@@ -330,7 +360,7 @@ export class StanceOptimizer {
           this.clampInPlace(candidate, bounds);
           const sim = evaluate(candidate);
           evals++;
-          const loss = this.lossFrom(sim);
+          const loss = score(candidate, sim);
           if (loss < bestLoss - 1e-6) {
             best = candidate;
             bestLoss = loss;
@@ -366,12 +396,18 @@ export class StanceOptimizer {
   // good stance" judgment.
   // -----------------------------------------------------------------------
 
-  private lossFrom(sim: SimResult): number {
+  private lossFrom(sim: SimResult, reachTol = 0): number {
     let loss = 0;
 
     // Reach shortfall: both hands must touch the props. A shortfall of
     // even 1 cm produces a huge loss (10 units) that dwarfs any other term.
-    loss += W_REACH_SHORTFALL * (sim.reachShortfall.blue + sim.reachShortfall.red);
+    // `reachTol` (opt-in) forgives shortfall the body can physically close via
+    // shrug / clavicle / lean (the same slack the feasibility check allows), so
+    // a near-max-but-reachable stance is not punished as if it were unreachable.
+    const sf =
+      Math.max(0, sim.reachShortfall.blue - reachTol) +
+      Math.max(0, sim.reachShortfall.red - reachTol);
+    loss += W_REACH_SHORTFALL * sf;
 
     // Per-zone collision penalties. Face / head / torso zones are weighted
     // much more heavily than arm-arm or prop-prop overlaps, so the optimizer

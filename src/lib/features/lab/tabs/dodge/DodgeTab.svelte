@@ -88,7 +88,11 @@
 
   let didSetup = false;
 
-  /** A flat floor label (number / compass letter) readable from a top-down view. */
+  /** A flat floor label (number / compass letter) readable from a top-down view.
+   *  The plane lies face-up (rotation.x = -π/2); seen from above with north away
+   *  that maps the glyph's right edge to world +X and its top to world -Z, so the
+   *  glyph renders rotated 180°. Pre-rotate the glyph 180° on the canvas (scale
+   *  x AND y by -1) so it reads upright from a top-down, north-up view. */
   function makeFloorLabel(text: string, color: string, size: number, x: number, z: number): Mesh {
     const cv = document.createElement("canvas");
     cv.width = cv.height = 128;
@@ -97,7 +101,9 @@
     ctx.font = "bold 92px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(text, 64, 64);
+    ctx.translate(cv.width, cv.height);
+    ctx.scale(-1, -1);
+    ctx.fillText(text, cv.width / 2, cv.height / 2);
     const tex = new CanvasTexture(cv);
     const m = new Mesh(
       new PlaneGeometry(size, size),
@@ -109,7 +115,9 @@
   }
 
   /** Numbered quadrant reference + N/E/S/W facing marks on the floor. Quadrants:
-   *  1 = +X/+Z, 2 = -X/+Z, 3 = -X/-Z, 4 = +X/-Z. Floor N = +Z (TKA convention). */
+   *  1 = +X/+Z, 2 = -X/+Z, 3 = -X/-Z, 4 = +X/-Z. Cardinal axes follow the
+   *  canonical FLOOR-plane mapping (plane-transforms.ts): N = +Z, S = -Z,
+   *  E = -X, W = +X — so the rose reads clockwise N→E→S→W from above. */
   function buildFloorReference(): Group {
     const g = new Group();
     const grid = new GridHelper(4, 8, 0x55556a, 0x2c2c3a);
@@ -125,8 +133,8 @@
     const comp: { t: string; x: number; z: number }[] = [
       { t: "N", x: 0, z: 2 },
       { t: "S", x: 0, z: -2 },
-      { t: "E", x: 2, z: 0 },
-      { t: "W", x: -2, z: 0 },
+      { t: "E", x: -2, z: 0 },
+      { t: "W", x: 2, z: 0 },
     ];
     for (const c of comp) g.add(makeFloorLabel(c.t, "#fbbf24", 0.4, c.x, c.z));
     return g;

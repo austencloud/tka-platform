@@ -312,6 +312,20 @@
           left: leftArm ? leftArm.effector.getWorldPosition(new Vector3()).distanceTo(blueStaff.position) : -1,
           right: rightArm ? rightArm.effector.getWorldPosition(new Vector3()).distanceTo(redStaff.position) : -1,
         });
+      (window as unknown as { __dodgeSweeps?: { blue: SimPropTarget[]; red: SimPropTarget[] } }).__dodgeSweeps =
+        { blue: blueSweep, red: redSweep };
+      // Evaluate an arbitrary stance against the swept volume (grid-search probe).
+      (window as unknown as { __dodgeEval?: (x: number, z: number, yawDeg: number, pitchRad?: number) => unknown }).__dodgeEval =
+        (x: number, z: number, yawDeg: number, pitchRad = 0) => {
+          if (!sim) return null;
+          const s: StancePose = { footOffsetX: x, footOffsetZ: z, rootYawRad: (yawDeg * Math.PI) / 180, spinePitchRad: pitchRad };
+          const r = sim.evaluateSweep(s, blueSweep, redSweep);
+          let body = 0;
+          for (const c of r.collisions) {
+            if (c.zone === "prop-through-torso" || c.zone === "prop-through-head") body = Math.max(body, c.depth);
+          }
+          return { feasible: r.feasible, reachBlue: r.reachShortfall.blue, reachRed: r.reachShortfall.red, body, bal: r.balanceMargin };
+        };
     }
   }
 
