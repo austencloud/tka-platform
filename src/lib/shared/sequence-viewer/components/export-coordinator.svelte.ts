@@ -19,6 +19,7 @@ import { sequenceModalExporter, type Video3DExportDependencies } from "$lib/shar
 import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
 import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
 import type { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import type { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/modal-accessibility-helper.svelte";
 type ExportType = "animation" | "image" | "both";
@@ -103,6 +104,11 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       editingPane === 'animation' ? 'animation' : editingPane === 'image' ? 'image' : null;
 
     if (sequenceModalExporter.state.isExporting || !exportType) return;
+
+    // Take-it-home gate: guests play with export settings freely, but pulling
+    // the actual file down requires a free account.
+    if (!ensureFullAccountForExport()) return;
+
     hapticService?.trigger("selection");
 
     const isVideoExport = exportType === "animation";

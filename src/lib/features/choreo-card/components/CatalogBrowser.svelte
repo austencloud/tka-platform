@@ -9,6 +9,7 @@
 
 import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-exporter";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
   import type { Catalog } from "../domain/models/Catalog";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import CatalogInteriorFilterPanel from "./filters/CatalogInteriorFilterPanel.svelte";
@@ -210,6 +211,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 
   async function handleExportPDF(mode: PrintPDFMode = 'combined') {
     if (renderedPairs.length === 0) return;
+    if (!ensureFullAccountForExport()) return;
     isExporting = true;
     exportError = "";
     exportProgress = 0;
@@ -238,6 +240,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 
   async function handleExportZIP() {
     if (renderedPairs.length === 0) return;
+    if (!ensureFullAccountForExport()) return;
     isExporting = true;
     exportError = "";
     exportProgress = 0;

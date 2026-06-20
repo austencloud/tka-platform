@@ -109,7 +109,7 @@
 
 <div class="social-auth-compact">
   <p class="social-compact-label">
-    {mode === "signin" ? "Sign in with" : "Or sign up with"}
+    {mode === "signin" ? "Sign in with" : "Sign up with"}
   </p>
   <div class="social-compact-buttons">
     <button

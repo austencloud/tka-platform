@@ -14,6 +14,7 @@
   import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
   import { onMount } from "svelte";
   import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
+  import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
 
   interface Props {
     sequences: SequenceData[];
@@ -65,6 +66,9 @@
 
   async function handleExport() {
     if (sequences.length === 0 || isExporting) return;
+
+    // Take-it-home gate: a free account is required to download cards.
+    if (!ensureFullAccountForExport()) return;
 
     isExporting = true;
     exportCurrent = 0;

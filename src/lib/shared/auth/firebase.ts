@@ -309,28 +309,27 @@ async function initializeFirestore(): Promise<Firestore> {
   const { getFirestore, initializeFirestore: initFs, memoryLocalCache } =
     await import("firebase/firestore");
 
-  // DEV: Always use memory cache to avoid HMR corruption
+  // DEV: memory cache (avoids HMR corruption) + forced long-polling.
+  // experimentalAutoDetectLongPolling is on by default, but its probe still
+  // opens a WebChannel/QUIC connection first — on flaky local networks those
+  // probes stall and Chrome floods the console with
+  // ERR_QUIC_PROTOCOL_ERROR.QUIC_TOO_MANY_RTOS (the request still 200s after
+  // fallback, so it's pure noise). Forcing long-polling never opens WebChannel,
+  // so the QUIC errors never appear. Must run initFs BEFORE any getFirestore,
+  // or the default WebChannel instance is created without these settings.
   if (import.meta.env?.DEV) {
     try {
-      firestoreInstance = getFirestore(app);
-
-      // Validate instance is usable
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fs = firestoreInstance as any;
-      if (!fs._firestoreClient && !fs._queue) {
-        throw new Error("Corrupted instance detected");
-      }
-
-      debug.success("Firestore instance retrieved (dev)");
+      firestoreInstance = initFs(app, {
+        localCache: memoryLocalCache(),
+        experimentalForceLongPolling: true,
+      });
+      usingMemoryCache = true;
+      debug.success("Firestore initialized with memory cache + long-polling (dev)");
     } catch {
-      try {
-        firestoreInstance = initFs(app, { localCache: memoryLocalCache() });
-        usingMemoryCache = true;
-        debug.success("Firestore initialized with memory cache (dev)");
-      } catch {
-        firestoreInstance = getFirestore(app);
-        debug.warn("Firestore fallback to getFirestore");
-      }
+      // Already initialized (HMR) — reuse the existing instance, which already
+      // carries the long-polling setting from the first init.
+      firestoreInstance = getFirestore(app);
+      debug.warn("Firestore reused existing instance (dev)");
     }
 
     hmrManager.setFirestore(firestoreInstance);
