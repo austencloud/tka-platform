@@ -93,7 +93,11 @@
 
     <!-- Sticky Footer -->
     <div class="guide-footer">
-      <button class="got-it-btn" onclick={handleClose}>
+      <button
+        class="got-it-btn"
+        onclick={handleClose}
+        aria-label="Dismiss install guide"
+      >
         <i class="fas fa-check" aria-hidden="true"></i>
         <span>Got It</span>
       </button>
@@ -106,7 +110,8 @@
   .guide-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.75);
+    /* Dim scrim behind the sheet; theme-shadow is the closest dark-overlay token. */
+    background: color-mix(in srgb, var(--theme-shadow, #000) 75%, transparent);
     backdrop-filter: blur(8px);
     z-index: var(--z-priority);
   }
@@ -117,7 +122,8 @@
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 10001;
+    /* Sit one layer above the backdrop in the shared z-index scale (see app.css). */
+    z-index: calc(var(--z-priority) + 1);
 
     /* Use dynamic viewport height for true adaptability */
     max-height: 95vh;
@@ -127,7 +133,11 @@
     overflow: hidden;
 
     /* Glass morphism matching app design */
-    background: rgba(26, 26, 46, 0.95);
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #1a1a2e) 95%,
+      transparent
+    );
     backdrop-filter: blur(24px) saturate(180%);
     border-top-left-radius: 20px;
     border-top-right-radius: 20px;
@@ -135,9 +145,9 @@
     border-left: 1px solid var(--theme-stroke);
     border-right: 1px solid var(--theme-stroke);
     box-shadow:
-      0 -8px 32px rgba(0, 0, 0, 0.4),
+      0 -8px 32px color-mix(in srgb, var(--theme-shadow, #000) 40%, transparent),
       0 -2px 8px var(--theme-shadow),
-      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+      0 0 0 1px color-mix(in srgb, var(--theme-text, #fff) 5%, transparent) inset;
 
     padding-bottom: env(safe-area-inset-bottom);
   }
@@ -152,7 +162,7 @@
   .sheet-handle {
     width: var(--min-touch-target);
     height: 5px;
-    background: rgba(255, 255, 255, 0.3);
+    background: color-mix(in srgb, var(--theme-text, #fff) 30%, transparent);
     border-radius: 3px;
     margin: 12px auto 8px;
     flex-shrink: 0;
@@ -161,7 +171,7 @@
   }
 
   .sheet-handle:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: color-mix(in srgb, var(--theme-text, #fff) 50%, transparent);
   }
 
   /* Header */
@@ -187,14 +197,14 @@
 
   .title-icon {
     font-size: var(--font-size-xl);
-    color: rgba(139, 92, 246, 1);
+    color: var(--theme-accent);
   }
 
   .guide-header h2 {
     margin: 0;
     font-size: var(--font-size-lg);
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text);
   }
 
   .compact .guide-header h2 {
@@ -219,7 +229,7 @@
 
   .close-btn:hover {
     background: var(--theme-card-hover-bg);
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text);
   }
 
   /* Scrollable Content */
@@ -242,7 +252,11 @@
     display: flex;
     justify-content: center;
     padding: clamp(10px, 2.5cqh, 16px) clamp(14px, 4cqw, 20px);
-    background: rgba(26, 26, 46, 0.98);
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #1a1a2e) 98%,
+      transparent
+    );
     border-top: 1px solid var(--theme-stroke);
   }
 
@@ -261,7 +275,7 @@
       color-mix(in srgb, var(--theme-accent) 90%, transparent) 100%
     );
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid color-mix(in srgb, var(--theme-text, #fff) 20%, transparent);
     border-radius: clamp(8px, 2cqw, 10px);
     font-size: clamp(13px, 3cqw, 15px);
     font-weight: 600;

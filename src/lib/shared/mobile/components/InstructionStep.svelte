@@ -21,6 +21,13 @@
 <div class="step-card" class:compact>
   <div class="step-header">
     <div class="step-number">{index + 1}</div>
+    <!--
+      SANITIZATION CONTRACT: step.text is rendered with {@html} and MUST remain
+      trusted, static, developer-authored markup. Its only source is the
+      `pwa-install-instructions.ts` config (literal strings with <strong> tags).
+      Never wire step.text to user input, URL params, network responses, or any
+      dynamic source without first sanitizing — doing so opens an XSS surface.
+    -->
     <div class="step-text">{@html step.text}</div>
   </div>
 
@@ -90,7 +97,7 @@
   .step-text {
     flex: 1;
     margin: 0;
-    color: rgba(255, 255, 255, 0.88);
+    color: var(--theme-text);
     line-height: 1.5;
     font-size: clamp(12px, 3cqw, 14px);
   }
@@ -101,7 +108,7 @@
   }
 
   .step-text :global(strong) {
-    color: rgba(255, 255, 255, 0.98);
+    color: var(--theme-text);
     font-weight: 600;
   }
 
@@ -111,7 +118,7 @@
     margin-top: clamp(6px, 1.5cqh, 8px);
     border-radius: clamp(6px, 1.5cqw, 8px);
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--theme-stroke);
     max-width: clamp(152px, 40cqw, 200px);
   }
 
@@ -128,7 +135,7 @@
     justify-content: center;
     gap: clamp(6px, 1.5cqh, 8px);
     padding: clamp(12px, 3cqh, 20px);
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg);
     color: var(--theme-text-dim); /* Improved contrast for WCAG AAA */
     min-height: 80px;
   }

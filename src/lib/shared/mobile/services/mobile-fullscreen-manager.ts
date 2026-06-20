@@ -124,7 +124,10 @@ export class MobileFullscreenManager {
         return false;
       }
     } catch (error) {
-      console.error("PWA install prompt failed:", error);
+      debug.error("PWA install prompt failed", {
+        operation: "promptInstallPWA",
+        error,
+      });
       return false;
     } finally {
       this.deferredPrompt = null;
@@ -176,7 +179,10 @@ export class MobileFullscreenManager {
 
       return true;
     } catch (error) {
-      console.error("Failed to enter fullscreen:", error);
+      debug.error("Failed to enter fullscreen", {
+        operation: "requestFullscreen",
+        error,
+      });
       return false;
     }
   }
@@ -200,7 +206,10 @@ export class MobileFullscreenManager {
 
       return true;
     } catch (error) {
-      console.error("Failed to exit fullscreen:", error);
+      debug.error("Failed to exit fullscreen", {
+        operation: "exitFullscreen",
+        error,
+      });
       return false;
     }
   }
@@ -308,7 +317,10 @@ export class MobileFullscreenManager {
         this.showInstallGuide();
         return true;
       } catch (error) {
-        console.error("Failed to show native install prompt:", error);
+        debug.error("Failed to show native install prompt", {
+          operation: "handleInstallRequest",
+          error,
+        });
         // Fall back to showing guide
         this.showInstallGuide();
         return true;

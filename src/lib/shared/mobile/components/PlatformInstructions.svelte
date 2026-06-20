@@ -76,7 +76,7 @@
   }
 
   .section-heading i {
-    color: rgba(139, 92, 246, 1);
+    color: var(--theme-accent);
     font-size: clamp(14px, 3cqw, 16px);
   }
 
@@ -136,7 +136,7 @@
     display: flex;
     align-items: center;
     gap: clamp(8px, 2cqw, 12px);
-    color: rgba(255, 255, 255, 0.88);
+    color: var(--theme-text);
     font-size: clamp(11px, 2.5cqw, 13px);
     line-height: 1.5;
   }
@@ -147,7 +147,7 @@
   }
 
   .benefit-item i {
-    color: rgba(139, 92, 246, 1);
+    color: var(--theme-accent);
     font-size: clamp(13px, 3cqw, 15px);
     flex-shrink: 0;
   }
