@@ -176,6 +176,10 @@ const BOUNDS: OptimizerBounds = {
     min: (STANCE_BOUNDS.spinePitchDeg.min * Math.PI) / 180,
     max: (STANCE_BOUNDS.spinePitchDeg.max * Math.PI) / 180,
   },
+  torsoTwistRad: {
+    min: (STANCE_BOUNDS.torsoTwistDeg.min * Math.PI) / 180,
+    max: (STANCE_BOUNDS.torsoTwistDeg.max * Math.PI) / 180,
+  },
 };
 
 // ──────────────────────────────────────────────────────────────────────

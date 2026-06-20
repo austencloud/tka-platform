@@ -81,12 +81,14 @@ const INITIAL_STEPS = {
   footOffsetZ: 0.1,
   rootYawRad: 0.25,
   spinePitchRad: 0.1,
+  torsoTwistRad: 0.2,
 };
 const MIN_STEPS = {
   footOffsetX: 0.01,
   footOffsetZ: 0.01,
   rootYawRad: 0.015,
   spinePitchRad: 0.015,
+  torsoTwistRad: 0.015,
 };
 
 // Yaw seed angles (radians). Every seed starts a fresh coordinate descent.
@@ -117,6 +119,7 @@ const STANCE_KEYS: StanceKey[] = [
   "footOffsetZ",
   "rootYawRad",
   "spinePitchRad",
+  "torsoTwistRad",
 ];
 
 /** Internal result of a single coordinate-descent run from one seed. */
@@ -356,7 +359,9 @@ export class StanceOptimizer {
         for (const dir of [-1, 1] as const) {
           if (evals >= budget) break;
           const candidate: StancePose = { ...best };
-          candidate[key] = best[key] + dir * step[key];
+          // `?? 0` defaults torsoTwistRad on seeds that predate the 5th DOF
+          // (e.g. legacy labels) so the arithmetic never hits undefined.
+          candidate[key] = (best[key] ?? 0) + dir * step[key];
           this.clampInPlace(candidate, bounds);
           const sim = evaluate(candidate);
           evals++;
@@ -397,43 +402,7 @@ export class StanceOptimizer {
   // -----------------------------------------------------------------------
 
   private lossFrom(sim: SimResult, reachTol = 0): number {
-    let loss = 0;
-
-    // Reach shortfall: both hands must touch the props. A shortfall of
-    // even 1 cm produces a huge loss (10 units) that dwarfs any other term.
-    // `reachTol` (opt-in) forgives shortfall the body can physically close via
-    // shrug / clavicle / lean (the same slack the feasibility check allows), so
-    // a near-max-but-reachable stance is not punished as if it were unreachable.
-    const sf =
-      Math.max(0, sim.reachShortfall.blue - reachTol) +
-      Math.max(0, sim.reachShortfall.red - reachTol);
-    loss += W_REACH_SHORTFALL * sf;
-
-    // Per-zone collision penalties. Face / head / torso zones are weighted
-    // much more heavily than arm-arm or prop-prop overlaps, so the optimizer
-    // will accept a small forearm cross before it accepts any staff-to-skull
-    // intrusion.
-    for (const c of sim.collisions) {
-      const w = W_ZONE[c.zone] ?? W_ZONE_DEFAULT;
-      loss += w * c.depth;
-    }
-
-    // Balance: negative margin (CoM outside feet) is a penalty; positive
-    // margin is free. We use max(0, -margin) so we only punish imbalance.
-    loss += W_BALANCE * Math.max(0, -sim.balanceMargin);
-
-    // Joint strain.
-    loss += W_JOINT * sim.jointViolationRad;
-
-    // Comfort: near-max extension is mildly discouraged so the optimizer
-    // prefers slightly-bent arms over locked-out arms when both are clear.
-    const avgStretch =
-      (sim.reachStretch.blue + sim.reachStretch.red) / 2;
-    // Only penalize the part above 85% of max reach.
-    const strain = Math.max(0, avgStretch - 0.85);
-    loss += W_STRETCH * strain;
-
-    return loss;
+    return computeStanceLoss(sim, reachTol);
   }
 
   // -----------------------------------------------------------------------
@@ -461,6 +430,11 @@ export class StanceOptimizer {
       bounds.spinePitchRad.min,
       bounds.spinePitchRad.max
     );
+    stance.torsoTwistRad = clamp(
+      stance.torsoTwistRad ?? 0,
+      bounds.torsoTwistRad.min,
+      bounds.torsoTwistRad.max
+    );
   }
 
   /**
@@ -479,8 +453,53 @@ export class StanceOptimizer {
         bounds.spinePitchRad.max,
         rng()
       ),
+      torsoTwistRad: lerp(
+        bounds.torsoTwistRad.min,
+        bounds.torsoTwistRad.max,
+        rng()
+      ),
     };
   }
+}
+
+/**
+ * Per-instant stance loss — the single source of truth for "how good is this
+ * stance against one prop configuration". Exported so the trajectory optimizer
+ * scores each dense sample with the exact same weights the Collision Lab /
+ * dodge fixed-stance solve uses (no duplicated tuning).
+ *
+ * `reachTol` (opt-in) forgives the sub-cm shortfall the live body can close via
+ * shrug / clavicle / lean, matching the simulator's feasibility slack.
+ */
+export function computeStanceLoss(sim: SimResult, reachTol = 0): number {
+  let loss = 0;
+
+  // Reach shortfall: both hands must touch the props. A shortfall of even 1 cm
+  // produces a huge loss that dwarfs any other term.
+  const sf =
+    Math.max(0, sim.reachShortfall.blue - reachTol) +
+    Math.max(0, sim.reachShortfall.red - reachTol);
+  loss += W_REACH_SHORTFALL * sf;
+
+  // Per-zone collision penalties. Face / head / torso zones are weighted much
+  // more heavily than arm-arm or prop-prop overlaps.
+  for (const c of sim.collisions) {
+    const w = W_ZONE[c.zone] ?? W_ZONE_DEFAULT;
+    loss += w * c.depth;
+  }
+
+  // Balance: only negative margin (CoM outside feet) is penalized.
+  loss += W_BALANCE * Math.max(0, -sim.balanceMargin);
+
+  // Joint strain.
+  loss += W_JOINT * sim.jointViolationRad;
+
+  // Comfort: near-max extension is mildly discouraged so slightly-bent arms
+  // beat locked-out arms when both are clear. Only the part above 85% of max.
+  const avgStretch = (sim.reachStretch.blue + sim.reachStretch.red) / 2;
+  loss += W_STRETCH * Math.max(0, avgStretch - 0.85);
+
+  return loss;
 }
 
 function clamp(x: number, lo: number, hi: number): number {

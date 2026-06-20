@@ -124,6 +124,12 @@ export class StanceSimulator {
   private readonly _elbowAxis = new Vector3();
   private readonly _poleDir = new Vector3();
   private readonly _worldUp = new Vector3(0, 1, 0);
+  // Torso oriented-slab scratch: basis (right/forward) recomputed per collision
+  // pass from the current shoulder line, plus closest-point + separation temps.
+  private readonly _torsoRight = new Vector3();
+  private readonly _torsoForward = new Vector3();
+  private readonly _segClosest = new Vector3();
+  private readonly _sep = new Vector3();
 
   constructor(restPose: RestPoseGeometry) {
     this.restPose = restPose;
@@ -293,9 +299,17 @@ export class StanceSimulator {
     const rest = this.restPose;
     const sk = this.skeleton;
 
-    // Yaw rotation matrix components.
+    // Yaw rotation matrix components (hips + lower spine).
     const cy = Math.cos(stance.rootYawRad);
     const sy = Math.sin(stance.rootYawRad);
+
+    // Twisted yaw for the UPPER body. Torso twist is an extra rotation about the
+    // body centerline (the same Y axis as yaw) applied only above spine1, so it
+    // composes additively with rootYaw into a single angle. This turns the
+    // shoulders/chest edge-on without moving the hips or feet.
+    const yawT = stance.rootYawRad + (stance.torsoTwistRad ?? 0);
+    const cyt = Math.cos(yawT);
+    const syt = Math.sin(yawT);
 
     // Pitch rotation matrix components - applied around a local X axis
     // that passes through Spine1, so the spine can hinge forward without
@@ -309,16 +323,19 @@ export class StanceSimulator {
     // with the foot offset and rotate with yaw around their own Y axis.
     this.placeLocalJoint(sk.hips, 0, rest.hipsY, 0, cy, sy, stance);
 
-    // Everything else: pitch first (around spine1 pivot), then yaw, then translate.
+    // Lower spine: pitch + plain yaw (no twist - the twist pivots above here).
     this.transformAndPlace(sk.spine1, rest.spine1, pivotY, cp, sp, cy, sy, stance);
-    this.transformAndPlace(sk.spine2, rest.spine2, pivotY, cp, sp, cy, sy, stance);
-    this.transformAndPlace(sk.neck, rest.neck, pivotY, cp, sp, cy, sy, stance);
-    this.transformAndPlace(sk.head, rest.head, pivotY, cp, sp, cy, sy, stance);
+
+    // Upper body (mid-torso up): pitch + twisted yaw, so the shoulder line and
+    // everything attached to it turns by rootYaw + torsoTwist.
+    this.transformAndPlace(sk.spine2, rest.spine2, pivotY, cp, sp, cyt, syt, stance);
+    this.transformAndPlace(sk.neck, rest.neck, pivotY, cp, sp, cyt, syt, stance);
+    this.transformAndPlace(sk.head, rest.head, pivotY, cp, sp, cyt, syt, stance);
     this.transformAndPlace(
-      sk.leftShoulder, rest.leftShoulder, pivotY, cp, sp, cy, sy, stance
+      sk.leftShoulder, rest.leftShoulder, pivotY, cp, sp, cyt, syt, stance
     );
     this.transformAndPlace(
-      sk.rightShoulder, rest.rightShoulder, pivotY, cp, sp, cy, sy, stance
+      sk.rightShoulder, rest.rightShoulder, pivotY, cp, sp, cyt, syt, stance
     );
   }
 
@@ -538,17 +555,35 @@ export class StanceSimulator {
       }
     }
 
-    // 2. Prop shaft through torso - check each spine sphere.
+    // 2. Prop shaft through torso - oriented ellipsoid per spine point.
+    //    The torso is wide along the shoulder line and thin front-to-back, so
+    //    turning it edge-on (torsoTwist) presents the thin axis to a prop and
+    //    lets a staff skim past that a face-on torso would clip.
+    const torsoHalfWidth = rp.torsoHalfWidth ?? rp.torsoRadius;
+    const torsoHalfDepth = rp.torsoHalfDepth ?? rp.torsoRadius;
+    const torsoHalfHeight = rp.torsoHalfHeight ?? rp.torsoRadius;
+    // Torso basis from the (already twisted) shoulder line: right = L→R
+    // shoulder, forward = right × up. Falls back to world axes if the shoulders
+    // are coincident (degenerate).
+    this._torsoRight.subVectors(sk.rightShoulder, sk.leftShoulder);
+    if (this._torsoRight.lengthSq() > 1e-6) {
+      this._torsoRight.normalize();
+      this._torsoForward.crossVectors(this._torsoRight, this._worldUp).normalize();
+    } else {
+      this._torsoRight.set(1, 0, 0);
+      this._torsoForward.set(0, 0, 1);
+    }
     const spinePoints = [sk.hips, sk.spine1, sk.spine2, sk.neck];
     for (const { label, prop } of propPairs) {
       let worstDepth = 0;
       for (const p of spinePoints) {
-        const d = this.pointToSegmentDistance(p, prop.tipAWorld, prop.tipBWorld);
-        const threshold = rp.torsoRadius + prop.radius;
-        if (d < threshold) {
-          const depth = threshold - d;
-          if (depth > worstDepth) worstDepth = depth;
-        }
+        const depth = this.ellipsoidSegmentDepth(
+          p, prop.tipAWorld, prop.tipBWorld,
+          torsoHalfWidth + prop.radius,
+          torsoHalfHeight + prop.radius,
+          torsoHalfDepth + prop.radius
+        );
+        if (depth > worstDepth) worstDepth = depth;
       }
       if (worstDepth > 0) {
         collisions.push({
@@ -789,6 +824,64 @@ export class StanceSimulator {
   // on our local Vector3 scratches.
   // -----------------------------------------------------------------------
 
+  /**
+   * Penetration depth of a prop segment into an oriented torso ellipsoid
+   * centered on `center`, with half-axes (halfRight, halfUp, halfForward) along
+   * the torso basis (_torsoRight, world up, _torsoForward). Returns 0 when the
+   * closest point on the segment lies outside the ellipsoid. Reduces exactly to
+   * the old isotropic sphere test when the three half-axes are equal.
+   *
+   * Method: take the closest point Q on the segment to the ellipsoid center
+   * (Euclidean — a good approximation for the modest anisotropy here), express
+   * the separation in the torso basis, and compare its length to the ellipsoid
+   * radius in that direction (e = 1/√Σ(componentCos/halfAxis)²).
+   */
+  private ellipsoidSegmentDepth(
+    center: Vector3,
+    segA: Vector3,
+    segB: Vector3,
+    halfRight: number,
+    halfUp: number,
+    halfForward: number
+  ): number {
+    this.closestPointOnSegment(center, segA, segB, this._segClosest);
+    this._sep.subVectors(this._segClosest, center);
+    const dist = this._sep.length();
+    if (dist < 1e-6) return Math.min(halfRight, halfUp, halfForward);
+    const cr = this._sep.dot(this._torsoRight) / dist; // direction cosines
+    const cu = this._sep.dot(this._worldUp) / dist;
+    const cf = this._sep.dot(this._torsoForward) / dist;
+    const nx = cr / halfRight;
+    const ny = cu / halfUp;
+    const nz = cf / halfForward;
+    const e = 1 / Math.sqrt(nx * nx + ny * ny + nz * nz);
+    return dist < e ? e - dist : 0;
+  }
+
+  /** Closest point on segment [segA,segB] to `point`, written into `out`. */
+  private closestPointOnSegment(
+    point: Vector3,
+    segA: Vector3,
+    segB: Vector3,
+    out: Vector3
+  ): void {
+    const abX = segB.x - segA.x;
+    const abY = segB.y - segA.y;
+    const abZ = segB.z - segA.z;
+    const abLenSq = abX * abX + abY * abY + abZ * abZ;
+    if (abLenSq < 1e-8) {
+      out.copy(segA);
+      return;
+    }
+    let t =
+      ((point.x - segA.x) * abX +
+        (point.y - segA.y) * abY +
+        (point.z - segA.z) * abZ) /
+      abLenSq;
+    t = Math.max(0, Math.min(1, t));
+    out.set(segA.x + abX * t, segA.y + abY * t, segA.z + abZ * t);
+  }
+
   private pointToSegmentDistance(
     point: Vector3,
     segA: Vector3,
@@ -889,6 +982,12 @@ export function restPoseFromHeight(heightMeters: number): RestPoseGeometry {
     footHalfWidth: 0.10,
     headRadius: 0.09,
     torsoRadius: 0.12,
+    // Oriented slab: wide across the shoulders, thin front-to-back. Scaled off
+    // body height (≈ 0.078 h wide / 0.053 h deep / 0.067 h tall → 0.14/0.095/0.12
+    // at 1.8 m). The thin depth axis is what edge-on twist exposes to a prop.
+    torsoHalfWidth: 0.078 * h,
+    torsoHalfDepth: 0.053 * h,
+    torsoHalfHeight: 0.067 * h,
     armRadius: 0.04,
   };
 }

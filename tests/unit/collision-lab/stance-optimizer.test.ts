@@ -24,6 +24,7 @@ const DEFAULT_BOUNDS: OptimizerBounds = {
   footOffsetZ: { min: -1.0, max: 1.0 },
   rootYawRad: { min: -Math.PI, max: Math.PI },
   spinePitchRad: { min: -Math.PI / 18, max: (40 * Math.PI) / 180 },
+  torsoTwistRad: { min: -Math.PI / 3, max: Math.PI / 3 },
 };
 
 function makeStaffTarget(grip: Vector3, axis: Vector3): SimPropTarget {

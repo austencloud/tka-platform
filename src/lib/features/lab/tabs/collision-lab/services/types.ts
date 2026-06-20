@@ -40,6 +40,7 @@ export interface OptimizerBounds {
   footOffsetZ: { min: number; max: number };
   rootYawRad: { min: number; max: number };
   spinePitchRad: { min: number; max: number };
+  torsoTwistRad: { min: number; max: number };
 }
 
 /** Result of a full optimization run. */
@@ -118,8 +119,23 @@ export interface RestPoseGeometry {
   footHalfWidth: number;
   /** Radius of the head bounding sphere. */
   headRadius: number;
-  /** Radius of the torso bounding sphere (one per spine point). */
+  /** Radius of the torso bounding sphere (one per spine point). Legacy
+   *  isotropic radius; used as the default for the oriented-slab half-axes
+   *  below when those are not supplied. */
   torsoRadius: number;
+  /**
+   * Oriented-slab torso half-axes (meters). The torso is modeled as an
+   * ellipsoid per spine point, oriented by the shoulder basis:
+   *   - torsoHalfWidth  along the shoulder (right) axis — the WIDE dimension
+   *   - torsoHalfDepth  along the body forward axis — the THIN dimension
+   *   - torsoHalfHeight along up — sized so consecutive spine points tile
+   * Turning the torso edge-on presents torsoHalfDepth to the prop, so a staff
+   * that a face-on torso would clip slips past. Optional: when absent the
+   * simulator falls back to the isotropic `torsoRadius` (old behavior).
+   */
+  torsoHalfWidth?: number;
+  torsoHalfDepth?: number;
+  torsoHalfHeight?: number;
   /** Radius of the arm (upper/forearm) collision cylinders. */
   armRadius: number;
 }

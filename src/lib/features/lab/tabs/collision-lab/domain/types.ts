@@ -80,6 +80,15 @@ export interface StancePose {
   rootYawRad: number;
   /** Forward torso lean in radians (0 = upright, positive = leaned in). */
   spinePitchRad: number;
+  /**
+   * Upper-body twist in radians about the body centerline, layered ON TOP of
+   * rootYaw and applied only to spine2/neck/head/shoulders (hips + feet keep
+   * rootYaw). Lets the torso turn edge-on to skim a prop past its thin axis —
+   * the TKA "turn to pass the prop into the plane behind you" technique. Optional
+   * so pre-existing Collision Lab labels (4-DOF) stay valid; treated as 0 when
+   * absent. Positive = upper body turns left relative to the hips.
+   */
+  torsoTwistRad?: number;
 }
 
 export interface PoseLabel {
@@ -199,9 +208,13 @@ export interface PoseLabelsFile {
  *   arm is on the correct side to reach each prop.
  * - spinePitchDeg: -10° to +40°. A slight back-lean and a substantial
  *   forward-lean cover almost all TKA work. Extreme backbends are rare.
+ * - torsoTwistDeg: ±60°. Thoracic-spine rotation relative to the hips. A
+ *   performer can present the torso edge-on without moving the feet; beyond
+ *   ~60° the shoulders would have to drag the hips around (that's rootYaw's job).
  */
 export const STANCE_BOUNDS = {
   footOffset: { min: -1.0, max: 1.0, step: 0.02 }, // 2 cm steps
   rootYawDeg: { min: -180, max: 180, step: 1 },
   spinePitchDeg: { min: -10, max: 40, step: 1 },
+  torsoTwistDeg: { min: -60, max: 60, step: 1 },
 } as const;

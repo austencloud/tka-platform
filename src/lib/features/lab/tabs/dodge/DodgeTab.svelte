@@ -32,6 +32,7 @@
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
+  import CameraControls from "camera-controls";
   import { createSelfLoadedRigBinding } from "$lib/features/stage/locomotion/motion-matching/self-loaded-rig-binding";
   import { MmLocomotionController } from "$lib/features/stage/locomotion/motion-matching/mm-locomotion-controller";
   import type { RigBinding } from "$lib/features/stage/locomotion/motion-matching/rig-binding";
@@ -85,6 +86,51 @@
   let manualX = $state(0);
   let manualZ = $state(0);
   let manualYawDeg = $state(0);
+
+  // Puppet mode: freeze the prop on a scrubbable timeline and drag the body with
+  // a 3D gizmo (hands auto-lock to the staves) to author a correct-dodge
+  // demonstration. Slice 1: drag/turn the whole root; more anchors + keyframes
+  // come next.
+  let puppetMode = $state(false);
+  let puppetProgress = $state(0);
+  let gizmoMode = $state<"translate" | "rotate">("translate");
+  let puppetPart = $state<"body" | "chest" | "head" | "lfoot" | "rfoot">("body");
+  // True while the puppet gizmo is being dragged — pauses the camera orbit so a
+  // gizmo drag doesn't also spin the camera.
+  let gizmoDragging = $state(false);
+  // Live camera-controls instance — in Puppet mode we remap the mouse so LEFT is
+  // free for the gizmo (camera-controls otherwise eats left-drag before the gizmo
+  // can grab it) and orbit/pan move to right/middle.
+  let camRef = $state<CameraControls | null>(null);
+
+  $effect(() => {
+    if (!camRef) return;
+    if (puppetMode) {
+      camRef.mouseButtons.left = CameraControls.ACTION.NONE; // gizmo owns left-drag
+      camRef.mouseButtons.right = CameraControls.ACTION.ROTATE; // orbit on right
+      camRef.mouseButtons.middle = CameraControls.ACTION.TRUCK; // pan on middle
+    } else {
+      camRef.mouseButtons.left = CameraControls.ACTION.ROTATE;
+      camRef.mouseButtons.right = CameraControls.ACTION.TRUCK;
+      camRef.mouseButtons.middle = CameraControls.ACTION.DOLLY;
+    }
+  });
+
+  const PUPPET_PARTS: { id: typeof puppetPart; label: string }[] = [
+    { id: "body", label: "Body" },
+    { id: "chest", label: "Chest" },
+    { id: "head", label: "Head" },
+    { id: "lfoot", label: "L Foot" },
+    { id: "rfoot", label: "R Foot" },
+  ];
+
+  function togglePuppet() {
+    puppetMode = !puppetMode;
+    if (puppetMode) {
+      dodgeOn = false;
+      manualMode = false;
+    }
+  }
 
   let didSetup = false;
 
@@ -211,7 +257,13 @@
 <div class="page">
   <Canvas>
     <T.PerspectiveCamera makeDefault position={[2.4, 1.6, 3.2]} fov={50}>
-      <OrbitControls enableDamping target={[0, 1, 0]} maxPolarAngle={Math.PI / 2} />
+      <OrbitControls
+        bind:ref={camRef}
+        enableDamping
+        enabled={!gizmoDragging}
+        target={[0, 1, 0]}
+        maxPolarAngle={Math.PI / 2}
+      />
     </T.PerspectiveCamera>
 
     <T.AmbientLight intensity={0.6} />
@@ -241,6 +293,11 @@
       {manualX}
       {manualZ}
       {manualYawDeg}
+      {puppetMode}
+      {puppetProgress}
+      {puppetPart}
+      puppetGizmoMode={gizmoMode}
+      onGizmoDrag={(d) => (gizmoDragging = d)}
       {onClearance}
     />
   </Canvas>
@@ -255,7 +312,7 @@
       class:on={dodgeOn}
       aria-pressed={dodgeOn}
       onclick={toggleDodge}
-      disabled={!controller || manualMode}
+      disabled={!controller || manualMode || puppetMode}
     >
       <span class="dot" class:on={dodgeOn}></span>
       Dodge {dodgeOn ? "ON" : "OFF"}
@@ -267,11 +324,73 @@
       class:on={manualMode}
       aria-pressed={manualMode}
       onclick={() => (manualMode = !manualMode)}
-      disabled={!controller}
+      disabled={!controller || puppetMode}
     >
       <span class="dot" class:on={manualMode}></span>
       Manual {manualMode ? "ON" : "OFF"}
     </button>
+
+    <button
+      type="button"
+      class="toggle"
+      class:on={puppetMode}
+      aria-pressed={puppetMode}
+      onclick={togglePuppet}
+      disabled={!controller}
+    >
+      <span class="dot" class:on={puppetMode}></span>
+      Puppet {puppetMode ? "ON" : "OFF"}
+    </button>
+
+    {#if puppetMode}
+      <div class="sliders">
+        <label class="slider">
+          <span class="slabel">Timeline <b>{(puppetProgress * 100).toFixed(0)}%</b></span>
+          <input type="range" min="0" max="1" step="0.01" bind:value={puppetProgress} />
+        </label>
+
+        <span class="slabel">Drag part</span>
+        <div class="gizmo-modes">
+          {#each PUPPET_PARTS as p (p.id)}
+            <button
+              type="button"
+              class="seg"
+              class:on={puppetPart === p.id}
+              aria-pressed={puppetPart === p.id}
+              onclick={() => (puppetPart = p.id)}
+            >{p.label}</button>
+          {/each}
+        </div>
+
+        {#if puppetPart === "body"}
+          <div class="gizmo-modes">
+            <button
+              type="button"
+              class="seg"
+              class:on={gizmoMode === "translate"}
+              aria-pressed={gizmoMode === "translate"}
+              onclick={() => (gizmoMode = "translate")}
+            >Move</button>
+            <button
+              type="button"
+              class="seg"
+              class:on={gizmoMode === "rotate"}
+              aria-pressed={gizmoMode === "rotate"}
+              onclick={() => (gizmoMode = "rotate")}
+            >Turn</button>
+          </div>
+        {/if}
+
+        <p class="hint">
+          {#if puppetPart === "body"}Move/turn the whole body across the floor.
+          {:else if puppetPart === "chest"}Rotate the chest — lean + twist into the plane.
+          {:else if puppetPart === "head"}Rotate the head.
+          {:else}Drag the orange foot target — the leg bends to follow (plant / weight-shift).{/if}
+          Hands + feet stay locked. Scrub the timeline to pose other moments.
+          <br /><b>Left-drag</b> = gizmo · <b>right-drag</b> = orbit · <b>wheel</b> = zoom.
+        </p>
+      </div>
+    {/if}
 
     {#if manualMode}
       <div class="sliders">
@@ -474,6 +593,37 @@
   .slider input[type="range"] {
     width: 100%;
     accent-color: #22c55e;
+  }
+
+  .gizmo-modes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .seg {
+    flex: 1 1 auto;
+    min-width: 3.1rem;
+    min-height: 36px;
+    border-radius: 7px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+    color: #e8e8f0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .seg.on {
+    background: rgba(125, 211, 252, 0.18);
+    border-color: rgba(125, 211, 252, 0.5);
+  }
+
+  .hint {
+    margin: 0;
+    font-size: 0.7rem;
+    line-height: 1.35;
+    opacity: 0.6;
   }
 
   .action {

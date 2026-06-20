@@ -6,6 +6,8 @@ import {
   REACH_FEASIBILITY_TOLERANCE,
 } from "$lib/features/lab/tabs/collision-lab/services/stance-simulator";
 import { StanceOptimizer } from "$lib/features/lab/tabs/collision-lab/services/stance-optimizer";
+import { TrajectoryOptimizer } from "$lib/features/lab/tabs/collision-lab/services/trajectory-optimizer";
+import { sampleTrajectory } from "$lib/features/lab/tabs/collision-lab/services/stance-trajectory";
 import { OPTIMIZER_BOUNDS } from "$lib/features/lab/tabs/collision-lab/services/pose-target-mapper";
 import type { RestPoseGeometry, SimResult } from "$lib/features/lab/tabs/collision-lab/services/types";
 import type { StancePose } from "$lib/features/lab/tabs/collision-lab/domain/types";
@@ -79,12 +81,6 @@ export function solveDodge(
     return W_PLACE * (dx * dx + dz * dz) + W_FACE * dyaw * dyaw;
   };
 
-  const bodyDepth = (r: { simResult: SimResult }): number => {
-    const torso = r.simResult.collisions.find((c) => c.zone === "prop-through-torso");
-    const head = r.simResult.collisions.find((c) => c.zone === "prop-through-head");
-    return Math.max(torso?.depth ?? 0, head?.depth ?? 0);
-  };
-
   // Plain solve = the original 4-yaw multistart from NEUTRAL (unbiased).
   // Biased solve = same, plus the inside-gamma target as an extra seed and the
   // gated placement/facing preference.
@@ -103,14 +99,25 @@ export function solveDodge(
   // little more torso graze than the wide-open outside stance is fine. When the
   // inside corner is NOT feasible (e.g. a spinning static prop whose corner the
   // swept volume fills), fall back to the unbiased clear stance.
-  const result = biased.feasible ? biased : plain;
+  const fixed = biased.feasible ? biased : plain;
 
-  const worstBodyDepth = bodyDepth(result);
+  // Upgrade the single fixed stance to a moving TRAJECTORY: warm-start every
+  // control keyframe at the fixed solution (so the result is never worse than
+  // today's), then let each sweep instant get its own stance — including torso
+  // twist — so the body turns edge-on and moves through the dodge instead of
+  // holding one max-extended pose. Same inside-gamma bias as the fixed solve.
+  const trajOpt = new TrajectoryOptimizer(sim);
+  const traj = trajOpt.optimize({ blue, red }, fixed.stance, OPTIMIZER_BOUNDS, {
+    reachTolerance: REACH_FEASIBILITY_TOLERANCE,
+    stancePenalty,
+  });
 
   return {
-    stance: result.stance,
-    feasible: result.feasible,
-    loss: result.loss,
-    worstBodyDepth,
+    stance: sampleTrajectory(traj.trajectory, 0.5),
+    trajectory: traj.trajectory,
+    feasible: traj.feasible,
+    loss: traj.loss,
+    worstBodyDepth: traj.worstBodyDepth,
+    meanStretch: traj.meanStretch,
   };
 }
