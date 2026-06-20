@@ -111,8 +111,8 @@ import type { SheetType } from "../../navigation/services/types";
   // Firebase identity (provisioned on first persistable action via
   // ensureGuestIdentity). The AuthDrawer must mount for both — an anonymous
   // guest tapping "Create Account" upgrades the anon session in place.
-  const isGuest = $derived(!authState.isAuthenticated || authState.isAnonymous);
   const isFullAccount = $derived(authState.isFullAccount);
+  const isGuest = $derived(!isFullAccount);
   const authLoading = $derived(authState.loading);
 
   // Track whether MainInterface has been shown at least once.

@@ -174,18 +174,9 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
       </button>
     {:else}
       <div class="identity-header">
-        {#if isFullAccount}
-          <RobustAvatar
-            src={photoURL}
-            name={displayName}
-            size="md"
-            customSize={40}
-          />
-        {:else}
-          <div class="identity-avatar-guest">
-            <i class="fas fa-user" aria-hidden="true"></i>
-          </div>
-        {/if}
+        <div class="identity-avatar-guest">
+          <i class="fas fa-user" aria-hidden="true"></i>
+        </div>
         <div class="identity-info">
           <span class="identity-name">{displayName}</span>
           {#if email}
