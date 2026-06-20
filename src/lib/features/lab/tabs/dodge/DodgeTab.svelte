@@ -103,18 +103,53 @@
   // can grab it) and orbit/pan move to right/middle.
   let camRef = $state<CameraControls | null>(null);
 
+  // Place mode: click the floor to step the avatar there, facing grid center,
+  // hands glued. The honest "get out of the way" dodge — step OUT into the open
+  // quadrant, not into the prop-crossing the auto inside-gamma bias aims for.
+  let placeMode = $state(false);
+
   $effect(() => {
     if (!camRef) return;
-    if (puppetMode) {
-      camRef.mouseButtons.left = CameraControls.ACTION.NONE; // gizmo owns left-drag
-      camRef.mouseButtons.right = CameraControls.ACTION.ROTATE; // orbit on right
-      camRef.mouseButtons.middle = CameraControls.ACTION.TRUCK; // pan on middle
+    // Free left-drag for the gizmo (puppet) or the floor click (place); orbit on
+    // right so a left action doesn't also spin the camera.
+    if (puppetMode || placeMode) {
+      camRef.mouseButtons.left = CameraControls.ACTION.NONE;
+      camRef.mouseButtons.right = CameraControls.ACTION.ROTATE;
+      camRef.mouseButtons.middle = CameraControls.ACTION.TRUCK;
     } else {
       camRef.mouseButtons.left = CameraControls.ACTION.ROTATE;
       camRef.mouseButtons.right = CameraControls.ACTION.TRUCK;
       camRef.mouseButtons.middle = CameraControls.ACTION.DOLLY;
     }
   });
+
+  /** Heading (deg) that points the avatar from (x,z) at the grid center (0,0).
+   *  Forward at yaw θ is (sinθ, cosθ), so looking at the origin is atan2(-x,-z). */
+  function faceCenterDeg(x: number, z: number): number {
+    return (Math.atan2(-x, -z) * 180) / Math.PI;
+  }
+
+  function togglePlace() {
+    placeMode = !placeMode;
+    if (placeMode) {
+      puppetMode = false;
+      dodgeOn = false;
+    }
+  }
+
+  /** Floor click in Place mode: step the avatar to the clicked point, facing
+   *  center. Drives the existing (static) manual path — no per-frame trajectory,
+   *  so no jitter. Fine-tune after with the Step / Face sliders. */
+  function onFloorClick(e: { point?: { x: number; z: number }; stopPropagation?: () => void }) {
+    if (!placeMode || !e.point) return;
+    e.stopPropagation?.();
+    manualX = +e.point.x.toFixed(3);
+    manualZ = +e.point.z.toFixed(3);
+    manualYawDeg = +faceCenterDeg(e.point.x, e.point.z).toFixed(0);
+    manualMode = true;
+    dodgeOn = false;
+    puppetMode = false;
+  }
 
   const PUPPET_PARTS: { id: typeof puppetPart; label: string }[] = [
     { id: "body", label: "Body" },
@@ -270,7 +305,7 @@
     <T.DirectionalLight position={[5, 10, 5]} intensity={1.1} />
     <T.DirectionalLight position={[-5, 5, -5]} intensity={0.3} />
 
-    <T.Mesh rotation.x={-Math.PI / 2} receiveShadow>
+    <T.Mesh rotation.x={-Math.PI / 2} receiveShadow onclick={onFloorClick}>
       <T.PlaneGeometry args={[20, 20]} />
       <T.MeshStandardMaterial color="#2a2a33" />
     </T.Mesh>
@@ -341,6 +376,27 @@
       <span class="dot" class:on={puppetMode}></span>
       Puppet {puppetMode ? "ON" : "OFF"}
     </button>
+
+    <button
+      type="button"
+      class="toggle"
+      class:on={placeMode}
+      aria-pressed={placeMode}
+      onclick={togglePlace}
+      disabled={!controller}
+    >
+      <span class="dot" class:on={placeMode}></span>
+      Place {placeMode ? "ON" : "OFF"}
+    </button>
+
+    {#if placeMode}
+      <p class="hint">
+        Click the floor to step the avatar there, facing the grid center. Try a
+        spot in <b>quadrant 3</b> (toward the 3, away from the props). Fine-tune
+        with the Step / Face sliders below.
+        <br /><b>Left-click</b> = place · <b>right-drag</b> = orbit · <b>wheel</b> = zoom.
+      </p>
+    {/if}
 
     {#if puppetMode}
       <div class="sliders">

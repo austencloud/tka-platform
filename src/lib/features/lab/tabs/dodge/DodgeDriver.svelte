@@ -15,7 +15,12 @@
    * moving staves, and a full swept-volume wireframe gizmo.
    */
   import { T, useTask } from "@threlte/core";
-  import { TransformControls } from "@threlte/extras";
+  import { TransformControls, interactivity } from "@threlte/extras";
+
+  // Activate pointer raycasting for the canvas so the floor's onclick (place the
+  // step where the user clicks) fires. One call per canvas; coexists with the
+  // puppet TransformControls gizmo.
+  interactivity();
   import {
     Euler,
     Mesh,
