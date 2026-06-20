@@ -28,6 +28,7 @@ import { LibraryError } from "$lib/shared/library/domain/library-error";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte.ts";
 import { db } from "$lib/shared/persistence/database/tka-database";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { isFullAccountUser } from "$lib/shared/auth/domain/access-tier";
 import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
 import type { Sharer } from "../../../shared/share/services/sharer";
 import type { R2VideoUploader } from "../../../shared/share/services/r2-video-uploader";
@@ -35,6 +36,9 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
 
 /** How long the "Saved!" success state lingers before the overlay dismisses. */
 const SUCCESS_STATE_LINGER_MS = 800;
+
+/** localStorage flag so the guest "save → create an account" nudge fires once. */
+const GUEST_SAVE_NUDGE_SEEN_KEY = "tka-guest-save-nudge-seen";
 
 // NOTE: The 'Service' suffix violates the service-naming rule (should be e.g.
 // LibrarySaveCoordinator). Rename deferred: this class is imported as a type by
@@ -140,10 +144,37 @@ export class LibrarySaveService {
     // Step 6: Complete
     emitProgress(6);
 
+    // Value-moment nudge: a guest just saved successfully. Encourage account
+    // creation once per device. Members (full accounts) never see this.
+    this.maybeNudgeGuestToSignUp();
+
     // Brief pause to show success state
     await new Promise((resolve) => setTimeout(resolve, SUCCESS_STATE_LINGER_MS));
 
     return { sequenceId, thumbnailUrl };
+  }
+
+  /**
+   * One gentle, non-blocking account nudge after a guest's first successful
+   * save. Guarded to guests (anon / unauthenticated) and once per device.
+   */
+  private maybeNudgeGuestToSignUp(): void {
+    if (typeof window === "undefined") return;
+    const isFullAccount = isFullAccountUser(
+      authState.isAuthenticated,
+      authState.isAnonymous
+    );
+    if (isFullAccount) return;
+    try {
+      if (localStorage.getItem(GUEST_SAVE_NUDGE_SEEN_KEY) === "true") return;
+      localStorage.setItem(GUEST_SAVE_NUDGE_SEEN_KEY, "true");
+    } catch {
+      return; // Private browsing — skip rather than nag every save.
+    }
+    toast.info(
+      "Saved on this device. Create a free account to keep it anywhere.",
+      6000
+    );
   }
 
   getStepLabel(
