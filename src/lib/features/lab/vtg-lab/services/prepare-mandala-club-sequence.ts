@@ -1,0 +1,38 @@
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+
+export type MandalaPathShape = "arc" | "linear" | "concave";
+
+/** The motions map carried by both StartPositionData and StepData (via PictographData). */
+type MotionsMap = PictographData["motions"];
+
+/**
+ * Produce a single-club, single-hand SequenceData: the non-shown hand is
+ * STRIPPED from the start position and every step, and the shown hand's motion
+ * is tagged with club + the path shape. The engine null-guards each hand
+ * (prop-interpolator `if (redMotion)`), so the stripped hand has no prop, no
+ * endpoints, and no path line — a genuine solo animation, not a hidden hand.
+ */
+export function prepareMandalaClubSequence(
+  seq: SequenceData,
+  opts: { show: "blue" | "red"; pathShape: MandalaPathShape },
+): SequenceData {
+  const { show, pathShape } = opts;
+  const tag = (m: MotionData | undefined): MotionData | null =>
+    m ? { ...m, propType: PropType.CLUB, pathShape } : null;
+  const soloMotions = (motions: MotionsMap): MotionsMap => ({
+    blue: show === "blue" ? tag(motions.blue) ?? undefined : undefined,
+    red: show === "red" ? tag(motions.red) ?? undefined : undefined,
+  });
+  // The spread is structurally `T` with a refined `motions`; TS can't narrow a
+  // generic spread back to `T`, so assert it (input shape is otherwise preserved).
+  const apply = <T extends PictographData>(d: T): T =>
+    d.motions ? ({ ...d, motions: soloMotions(d.motions) } as T) : d;
+  return {
+    ...seq,
+    startPosition: seq.startPosition ? apply(seq.startPosition) : seq.startPosition,
+    steps: (seq.steps ?? []).map(apply),
+  } as SequenceData;
+}

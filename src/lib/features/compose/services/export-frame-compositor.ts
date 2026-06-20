@@ -39,6 +39,8 @@ export interface FrameCompositorConfig {
   showBluePathLines: boolean;
   showRedPathLines: boolean;
   sequenceSteps: readonly StepData[];
+  /** Optional static overlay baked on top of each frame (e.g. the mandala). */
+  frameOverlayDraw?: (ctx: CanvasRenderingContext2D, sizePx: number) => void;
 }
 
 interface CrossfadeState {
@@ -196,6 +198,13 @@ export class ExportFrameCompositor {
     // Render path lines (per-hand)
     if (this.config.showBluePathLines || this.config.showRedPathLines) {
       this.renderPathLines(offscreenCtx, actualCanvasSize, clampedStepIndex);
+    }
+
+    // Bake an optional static overlay (mandala) into the square animation area,
+    // on top of grid+prop+trail+path. Drawn in the same translated space as the
+    // path lines so it shares the canvas-square origin.
+    if (this.config.frameOverlayDraw) {
+      this.config.frameOverlayDraw(offscreenCtx, actualCanvasSize);
     }
 
     // Restore context

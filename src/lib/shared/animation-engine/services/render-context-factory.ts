@@ -67,7 +67,23 @@ export class RenderContextFactory {
       engine,
       context,
       dispose() {
+        // Capture canvas refs BEFORE engine teardown (it may detach them).
+        const canvases = Array.from(container.querySelectorAll("canvas"));
         engine.dispose();
+        // Explicitly release every WebGL context the engine created (trail/fire/
+        // charcoal/led overlays). engine.dispose() tears down the renderers but
+        // does NOT call loseContext, so each offscreen export leaks a live GL
+        // context. Chrome caps simultaneous contexts, so a long unattended bake
+        // (hundreds of exports) eventually stalls/crashes as the oldest contexts
+        // are force-lost mid-render. loseContext frees the GPU context now.
+        for (const canvas of canvases) {
+          const gl = (canvas.getContext("webgl2") ||
+            canvas.getContext("webgl")) as
+            | WebGL2RenderingContext
+            | WebGLRenderingContext
+            | null;
+          gl?.getExtension("WEBGL_lose_context")?.loseContext();
+        }
         container.remove();
       },
     };
