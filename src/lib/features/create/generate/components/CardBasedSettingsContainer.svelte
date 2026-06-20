@@ -508,6 +508,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   <BaseModal
     open={showBeatCapNudge && beatCapNudgeAllowed}
     size="fit"
+    class="chromeless"
     onclose={() => { showBeatCapNudge = false; }}
   >
     <AuthNudge

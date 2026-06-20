@@ -813,6 +813,7 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   <BaseModal
     open={showBeatCapNudge}
     size="fit"
+    class="chromeless"
     onclose={() => { showBeatCapNudge = false; }}
   >
     <AuthNudge

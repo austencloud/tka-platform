@@ -319,6 +319,29 @@ dialog.base-modal[data-entered="true"] [data-animate-icon] {
   }
 }
 
+/* ===== Chromeless variant =====
+   The slotted content owns the visible surface (e.g. AuthNudge's card), so the
+   dialog itself is a transparent, content-sized positioning shell — no panel
+   background, border, radius, or shadow. This avoids a "box within a box" when
+   the slotted content is already a styled card. The dimmed/blurred ::backdrop
+   is unaffected. Placed after the size rules so it wins on width. */
+dialog.base-modal.chromeless {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  width: fit-content;
+  max-width: min(420px, calc(100vw - 32px));
+}
+
+@media (max-width: 520px) {
+  dialog.base-modal.chromeless[data-size="fit"] {
+    width: fit-content;
+    max-width: calc(100vw - 32px);
+    border-radius: 0;
+  }
+}
+
 /* ===== Fallback for browsers without @starting-style ===== */
 @supports not (selector(@starting-style {})) {
   dialog.base-modal[data-entered="true"] {

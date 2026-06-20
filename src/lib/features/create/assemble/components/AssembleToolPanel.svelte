@@ -133,6 +133,7 @@
   <BaseModal
     open={showBeatCapNudge && beatCapNudgeAllowed}
     size="fit"
+    class="chromeless"
     onclose={() => { showBeatCapNudge = false; }}
   >
     <AuthNudge
