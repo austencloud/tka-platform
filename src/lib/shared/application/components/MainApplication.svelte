@@ -107,7 +107,6 @@ import type { SheetType } from "../../navigation/services/types";
   const voiceControlEnabled = $derived(settings?.voiceControlEnabled === true);
 
   // Auth state for gating
-  const isAuthenticated = $derived(authState.isAuthenticated);
   // A guest is anyone without a full account: unauthenticated OR an anonymous
   // Firebase identity (provisioned on first persistable action via
   // ensureGuestIdentity). The AuthDrawer must mount for both — an anonymous
@@ -440,8 +439,8 @@ import type { SheetType } from "../../navigation/services/types";
   });
 
   // Note: First-run wizard is shown based on simple state checks in the template:
-  // - !isAuthenticated → guest mode (MainInterface with guest restrictions)
-  // - isAuthenticated && !firstRunState.isDone() → FirstRunWizard
+  // - !isFullAccount → guest mode (MainInterface with guest restrictions)
+  // - isFullAccount && !firstRunState.isDone() → FirstRunWizard
   // No need for triggerIfFirstTime() calls since we check isDone() directly
 
   // Create a serialized key for background settings to detect actual changes
