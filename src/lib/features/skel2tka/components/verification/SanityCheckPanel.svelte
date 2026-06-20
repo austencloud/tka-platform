@@ -32,13 +32,13 @@
   function severityColor(severity: string): string {
     switch (severity) {
       case "pass":
-        return "#22c55e";
+        return "var(--semantic-success, #22c55e)";
       case "warning":
-        return "#f59e0b";
+        return "var(--semantic-warning, #f59e0b)";
       case "fail":
-        return "#ef4444";
+        return "var(--semantic-error, #ef4444)";
       default:
-        return "#6b7280";
+        return "var(--theme-text-muted, #6b7280)";
     }
   }
 
@@ -115,11 +115,11 @@
 
   .overall-warning {
     padding: 8px 12px;
-    background: rgba(239, 68, 68, 0.08);
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
     border-radius: 6px;
     font-size: var(--font-size-compact, 12px);
-    color: rgba(239, 68, 68, 0.8);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 80%, transparent);
     line-height: 1.4;
   }
 
@@ -139,11 +139,11 @@
   }
 
   .check-row.fail {
-    background: rgba(239, 68, 68, 0.05);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 5%, transparent);
   }
 
   .check-row.warning {
-    background: rgba(245, 158, 11, 0.05);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 5%, transparent);
   }
 
   .check-row i {

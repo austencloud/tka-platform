@@ -211,33 +211,33 @@
   }
 
   .verdict-btn.accept {
-    background: rgba(34, 197, 94, 0.1);
-    border-color: rgba(34, 197, 94, 0.3);
-    color: #22c55e;
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
+    color: var(--semantic-success, #22c55e);
   }
 
   .verdict-btn.accept:hover {
-    background: rgba(34, 197, 94, 0.2);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent);
   }
 
   .verdict-btn.corrected {
-    background: rgba(245, 158, 11, 0.1);
-    border-color: rgba(245, 158, 11, 0.3);
-    color: #f59e0b;
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-warning, #f59e0b) 30%, transparent);
+    color: var(--semantic-warning, #f59e0b);
   }
 
   .verdict-btn.corrected:hover {
-    background: rgba(245, 158, 11, 0.2);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 20%, transparent);
   }
 
   .verdict-btn.reject {
-    background: rgba(239, 68, 68, 0.06);
-    border-color: rgba(239, 68, 68, 0.2);
-    color: rgba(239, 68, 68, 0.7);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 6%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, transparent);
   }
 
   .verdict-btn.reject:hover {
-    background: rgba(239, 68, 68, 0.12);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 12%, transparent);
   }
 
   .beat-correction-list {
@@ -275,9 +275,9 @@
   }
 
   .beat-btn.has-correction {
-    border-color: rgba(245, 158, 11, 0.5);
-    background: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
+    border-color: color-mix(in srgb, var(--semantic-warning, #f59e0b) 50%, transparent);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 10%, transparent);
+    color: var(--semantic-warning, #f59e0b);
   }
 
   .correction-summary {
@@ -286,7 +286,7 @@
     gap: 12px;
     padding: 8px 0;
     font-size: var(--font-size-compact, 12px);
-    color: #f59e0b;
+    color: var(--semantic-warning, #f59e0b);
   }
 
   .correction-ui {

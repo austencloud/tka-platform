@@ -113,6 +113,19 @@
     z-index: 1;
   }
 
+  /* Invisible hit-area overlay so the tap target meets the 44px floor
+     without growing the visible 28px glyph. */
+  .position-btn::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    border-radius: 50%;
+  }
+
   .position-btn:hover {
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.3);

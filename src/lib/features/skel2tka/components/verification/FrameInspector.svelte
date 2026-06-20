@@ -47,12 +47,15 @@
     currentFrame?.timestamp ?? currentFrameIndex * frameDuration
   );
 
-  // Create object URL for the video file
-  const videoUrl = $derived(URL.createObjectURL(videoFile));
-
-  // Clean up the object URL when component is destroyed
+  // Create the object URL inside an effect so creation and revocation are paired:
+  // when videoFile changes (or the component is destroyed) the previous URL is
+  // revoked before a new one is made, avoiding leaks. $derived must stay pure, so
+  // this side effect belongs in $effect, not in a derived value.
+  let videoUrl = $state("");
   $effect(() => {
-    const url = videoUrl;
+    const url = URL.createObjectURL(videoFile);
+    videoUrl = url;
+    videoReady = false;
     return () => URL.revokeObjectURL(url);
   });
 
@@ -216,6 +219,11 @@
         width={displayWidth}
         height={displayHeight}
       />
+    {:else}
+      <div class="video-loading" aria-live="polite">
+        <i class="fas fa-circle-notch fa-spin"></i>
+        <span>{t('skel2tka_loading_video')}</span>
+      </div>
     {/if}
   </div>
 
@@ -283,6 +291,23 @@
   video {
     display: block;
     object-fit: contain;
+  }
+
+  .video-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .video-loading i {
+    font-size: 20px;
+    color: var(--theme-accent, #3b82f6);
   }
 
   .controls {

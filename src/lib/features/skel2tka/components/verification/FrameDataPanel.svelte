@@ -143,15 +143,15 @@
   }
 
   .confidence.high {
-    color: #22c55e;
+    color: var(--semantic-success, #22c55e);
   }
 
   .confidence.medium {
-    color: #f59e0b;
+    color: var(--semantic-warning, #f59e0b);
   }
 
   .confidence.low {
-    color: #ef4444;
+    color: var(--semantic-error, #ef4444);
   }
 
   .raw-pos {

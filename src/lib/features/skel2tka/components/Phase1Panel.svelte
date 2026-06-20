@@ -151,8 +151,8 @@
       };
 
       const verifiedBeats: VerifiedStepPosition[] = result.beats.map((step) => {
-        const bluePos = step.positions.find((p: any) => p.hand === "blue");
-        const redPos = step.positions.find((p: any) => p.hand === "red");
+        const bluePos = step.positions.find((p) => p.hand === "blue");
+        const redPos = step.positions.find((p) => p.hand === "red");
 
         // Apply corrections if any
         let blueLocation = bluePos?.location ?? null;
@@ -376,8 +376,8 @@
     align-items: center;
     gap: 8px;
     padding: 12px 16px;
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
     border-radius: 8px;
     color: var(--semantic-error, #ef4444);
     font-size: var(--font-size-min, 14px);
@@ -413,10 +413,10 @@
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    background: rgba(34, 197, 94, 0.08);
-    border: 1px solid rgba(34, 197, 94, 0.2);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent);
     border-radius: 8px;
     font-size: var(--font-size-min, 14px);
-    color: #22c55e;
+    color: var(--semantic-success, #22c55e);
   }
 </style>
