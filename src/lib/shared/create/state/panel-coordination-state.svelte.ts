@@ -71,6 +71,11 @@ const exportPanelPersistence = createPersistenceHelper({
   defaultValue: false,
 });
 
+const stepEditorPanelPersistence = createPersistenceHelper({
+  key: "tka_step_editor_panel_open",
+  defaultValue: false,
+});
+
 /**
  * Start/End position options - passed to the start/end options sheet
  *
@@ -366,7 +371,9 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let targetHand = $state<TargetHand>("both");
 
   // Beat Editor panel state (non-modal - doesn't participate in closeAllPanels)
-  let isStepEditorPanelOpen = $state(false);
+  // Persisted so a dev HMR / page refresh restores the open editor instead of
+  // closing it out from under the user.
+  let isStepEditorPanelOpen = $state(stepEditorPanelPersistence.load());
 
   // Auto-save panel open states
   $effect.root(() => {
@@ -383,6 +390,11 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     $effect(() => {
       void isExportPanelOpen;
       exportPanelPersistence.setupAutoSave(isExportPanelOpen);
+    });
+
+    $effect(() => {
+      void isStepEditorPanelOpen;
+      stepEditorPanelPersistence.setupAutoSave(isStepEditorPanelOpen);
     });
   });
 

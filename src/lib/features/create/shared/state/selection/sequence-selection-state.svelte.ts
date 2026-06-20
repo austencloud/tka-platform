@@ -17,8 +17,17 @@
  */
 
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
 
 export type SelectionMode = "single" | "multi";
+
+// Persist only the single-select step number. The step editor + inspect modal
+// hang off this, so restoring it across a dev HMR / page refresh lets them
+// reopen on the right step instead of empty. Multi-select sets stay transient.
+const selectionPersistence = createPersistenceHelper<number | null>({
+  key: "tka_selected_step_number",
+  defaultValue: null,
+});
 
 export interface SequenceSelectionStateData {
   // Mode
@@ -38,10 +47,18 @@ export interface SequenceSelectionStateData {
 export function createSequenceSelectionState() {
   const state = $state<SequenceSelectionStateData>({
     mode: "single",
-    selectedStepNumber: null,
+    selectedStepNumber: selectionPersistence.load(),
     selectedStepNumbers: new Set<number>(),
     selectedStartPosition: null,
     hasStartPosition: false,
+  });
+
+  // Auto-save the selected step number so HMR / refresh restores it.
+  $effect.root(() => {
+    $effect(() => {
+      void state.selectedStepNumber;
+      selectionPersistence.setupAutoSave(state.selectedStepNumber);
+    });
   });
 
   return {

@@ -31,7 +31,16 @@
   import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
+  import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
   import { onMount } from "svelte";
+
+  // Persist whether the inspect modal is open so a dev HMR / page refresh
+  // restores it instead of closing it. load() re-reads localStorage on every
+  // remount, which is exactly what survives the HMR teardown of this component.
+  const inspectModalPersistence = createPersistenceHelper<boolean>({
+    key: "tka_inspect_modal_open",
+    defaultValue: false,
+  });
 
   interface Props {
     isOpen: boolean;
@@ -104,11 +113,16 @@
     }
   });
 
-  // Reset displayed data when panel closes to avoid stale data on next open
+  // Reset displayed data when panel closes to avoid stale data on next open.
+  // The inspect modal is subordinate to the editor: if the editor isn't open,
+  // force the modal closed so a persisted-open flag can't pop it on the next
+  // step click. On a refresh that restored the editor, isOpen is already true
+  // here, so a restored inspect modal survives.
   $effect(() => {
     if (!isOpen) {
       displayedStepData = null;
       displayedStepNumber = null;
+      showInspectModal = false;
     }
   });
 
@@ -283,9 +297,13 @@
     return () => window.removeEventListener("keydown", handleBetaSwapKeydown);
   });
 
-  // Inspect modal state (admin-only)
-  let showInspectModal = $state(false);
+  // Inspect modal state (admin-only) — persisted across HMR / refresh.
+  let showInspectModal = $state(inspectModalPersistence.load());
 
+  $effect(() => {
+    void showInspectModal;
+    inspectModalPersistence.setupAutoSave(showInspectModal);
+  });
 
   function handleClose() {
     selectedArrowState.clearSelection();
@@ -497,9 +515,10 @@
   </div>
 </CreatePanelDrawer>
 
-<!-- Inspect Modal (admin-only) -->
+<!-- Inspect Modal (admin-only). Guard on a valid step + admin so a persisted
+     open flag can't restore an empty modal or surface it to non-admins. -->
 <PictographInspectModal
-  show={showInspectModal}
+  show={showInspectModal && isAdmin() && !!displayedStepData}
   stepData={displayedStepData}
   onClose={handleCloseInspect}
 />
