@@ -245,14 +245,14 @@
     font-size: 0.75rem;
     padding: 4px 10px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     color: var(--card-accent);
     font-weight: 500;
   }
 
   .intensity-bar {
     height: 8px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 4px;
     margin-bottom: 12px;
     position: relative;
@@ -318,8 +318,8 @@
     align-items: center;
     padding: 16px 24px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .pattern-item .label {
@@ -407,7 +407,7 @@
 
   .member {
     padding: 4px 12px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border-radius: 8px;
     font-size: 0.875rem;
     font-weight: 500;
@@ -470,7 +470,7 @@
 
   .ori-item {
     padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
     border-radius: 8px;
     font-weight: 600;
     font-size: 0.9375rem;
@@ -543,6 +543,15 @@
 
     .pattern-row {
       gap: 12px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion-card {
+      transition: none;
+    }
+    .motion-card:hover {
+      transform: none;
     }
   }
 </style>

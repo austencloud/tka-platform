@@ -170,8 +170,8 @@
     align-items: center;
     padding: 20px 28px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     min-width: 120px;
   }
 
@@ -255,6 +255,15 @@
 
     .operator {
       font-size: 1.5rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .group-card {
+      transition: none;
+    }
+    .group-card:hover {
+      transform: none;
     }
   }
 </style>

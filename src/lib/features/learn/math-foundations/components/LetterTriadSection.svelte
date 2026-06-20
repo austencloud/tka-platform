@@ -139,7 +139,7 @@
   .letter-card:hover {
     border-color: var(--card-accent);
     transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 12px 40px var(--theme-shadow, rgba(0, 0, 0, 0.2));
   }
 
   .letter-card.thesis {
@@ -171,7 +171,7 @@
     font-size: 0.8125rem;
     padding: 6px 12px;
     border-radius: 20px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     color: var(--card-accent);
     font-weight: 500;
   }
@@ -248,9 +248,9 @@
     flex-direction: column;
     align-items: center;
     padding: 16px 24px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .letters {
@@ -291,6 +291,15 @@
     .continuation {
       flex-direction: column;
       gap: 12px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .letter-card {
+      transition: none;
+    }
+    .letter-card:hover {
+      transform: none;
     }
   }
 </style>

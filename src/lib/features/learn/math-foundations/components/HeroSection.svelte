@@ -68,7 +68,11 @@
     font-size: clamp(2.5rem, 6vw, 4rem);
     font-weight: 700;
     margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--theme-text, #fff) 0%,
+      color-mix(in srgb, var(--theme-text, #fff) 70%, transparent) 100%
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

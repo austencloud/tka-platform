@@ -23,6 +23,12 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
  * used in data-driven styling. The CSS mirror lives in
  * ../components/triad-palette.css (.mf-triad-scope) — keep the two in sync.
  */
+// NOTE: These hexes manually mirror the CSS custom properties in
+// ../components/triad-palette.css (.mf-triad-scope: --mf-thesis/--mf-antithesis/
+// --mf-synthesis). That .css file is the canonical source of truth for the triad
+// palette; this object exists only for data-driven inline styles that can't read
+// the CSS variables. If you change a color, update triad-palette.css FIRST, then
+// match it here — there is no automated sync, so any drift is silent.
 export const TRIAD_COLORS = {
   thesis: "#6366f1", // Indigo
   antithesis: "#ec4899", // Pink
