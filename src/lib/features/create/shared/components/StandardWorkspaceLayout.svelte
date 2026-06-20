@@ -390,11 +390,15 @@
   .workspace-hint {
     flex-shrink: 0;
     text-align: center;
-    font-size: clamp(1rem, 2.5vmin, 1.25rem);
+    /* push down off the top edge into the empty space above the cards */
+    margin: clamp(2.5rem, 11vmin, 6.5rem) 0 0;
+    padding: 0 1rem;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(1.4rem, 3.4vmin, 2rem);
     font-weight: 500;
+    line-height: 1.2;
     color: var(--theme-text, #fff);
-    padding: clamp(8px, 1.5vmin, 12px) 1rem;
-    margin: 0;
-    letter-spacing: 0.02em;
+    /* single soft shadow so it stays legible over the busy background */
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
   }
 </style>
