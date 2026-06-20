@@ -131,7 +131,9 @@ export class DefaultArrowPlacementRepository {
     if (email !== ADMIN_EMAIL) {
       throw new Error("Only admin can save default placement overrides");
     }
-    await this.persister.saveValue(gridMode, propType, motionType, placementKey, turns, value, email);
+    // Capture the prior value before the write so the audit row records prev→new.
+    const prev = this.state.getValue(gridMode, propType, motionType, placementKey, turns);
+    await this.persister.saveValue(gridMode, propType, motionType, placementKey, turns, value, email, prev);
   }
 
   /** Persist a single delete (admin only). */
@@ -146,7 +148,9 @@ export class DefaultArrowPlacementRepository {
     if (email !== ADMIN_EMAIL) {
       throw new Error("Only admin can delete default placement overrides");
     }
-    await this.persister.deleteValue(gridMode, propType, motionType, placementKey, turns);
+    // Capture the prior value before the delete so the audit row records it.
+    const prev = this.state.getValue(gridMode, propType, motionType, placementKey, turns);
+    await this.persister.deleteValue(gridMode, propType, motionType, placementKey, turns, email, prev);
     this.state.removeValue(gridMode, propType, motionType, placementKey, turns);
   }
 

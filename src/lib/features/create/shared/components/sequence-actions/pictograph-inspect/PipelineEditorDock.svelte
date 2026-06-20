@@ -27,6 +27,7 @@
   } from "$lib/shared/pictograph/arrow/positioning/special-override/domain/special-arrow-placement";
   import { getDefaultOverrideRepository } from "$lib/shared/pictograph/arrow/positioning/default-override/services/default-override-singleton";
   import { livePipelineEdit } from "./live-pipeline-edit.svelte";
+  import DefaultArrowAdjustmentHistory from "./DefaultArrowAdjustmentHistory.svelte";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
   import { Point } from "fabric";
   import { screenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/screen-space-adjustment-transformer";
@@ -584,6 +585,16 @@
     </span>
 
     <div class="dock-actions">
+      {#if editTarget === "default" && defaultLookup}
+        <DefaultArrowAdjustmentHistory
+          gridMode={defaultLookup.gridMode}
+          propType={defaultLookup.propType}
+          motionType={defaultLookup.motionType}
+          placementKey={defaultLookup.placementKey}
+          turns={defaultLookup.turns}
+          accentColor={colorToken}
+        />
+      {/if}
       {#if editTarget === "special-json" && diagnostics?.specialJson?.firestoreOverride}
         <button class="btn btn-delete" onclick={handleDelete} title="Revert to original"><i class="fas fa-undo" aria-hidden="true"></i> Revert</button>
       {:else if editTarget === "default" && defaultHasValue}

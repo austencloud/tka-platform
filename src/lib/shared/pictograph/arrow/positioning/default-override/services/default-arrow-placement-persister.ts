@@ -2,6 +2,8 @@ import {
   collection,
   doc,
   onSnapshot,
+  serverTimestamp,
+  setDoc,
   updateDoc,
   deleteField,
   FieldPath,
@@ -21,6 +23,18 @@ import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 const logger = createComponentLogger("DefaultArrowPlacementPersister");
 
 const COLLECTION_NAME = "default_arrow_adjustments";
+const HISTORY_COLLECTION_NAME = "default_arrow_adjustment_history";
+
+/** The single field the selected-arrow history query filters on. */
+function buildEntryKey(
+  gridMode: string,
+  propType: string,
+  motionType: string,
+  placementKey: string,
+  turns: string,
+): string {
+  return `${generateDefaultDocId(gridMode, propType, motionType)}|${placementKey}|${turns}`;
+}
 
 export class DefaultArrowPlacementPersister {
   private unsubscribe: Unsubscribe | null = null;
@@ -50,6 +64,7 @@ export class DefaultArrowPlacementPersister {
     turns: string,
     value: PlacementValue,
     userEmail: string,
+    prevValue: PlacementValue | null = null,
   ): Promise<void> {
     const id = generateDefaultDocId(gridMode, propType, motionType);
     try {
@@ -66,9 +81,51 @@ export class DefaultArrowPlacementPersister {
         { merge: true },
       );
       logger.success(`Saved default ${id} ${placementKey}/${turns} → (${value[0]}, ${value[1]})`);
+      this.appendHistory(
+        gridMode, propType, motionType, placementKey, turns,
+        "save", value, prevValue, userEmail,
+      );
     } catch (error) {
       logger.error(`Failed to save default ${id} ${placementKey}/${turns}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Append an immutable audit record. Fire-and-forget — never blocks or fails
+   * the save/delete it records. Mirrors the global persister's appendHistory.
+   */
+  private async appendHistory(
+    gridMode: string,
+    propType: string,
+    motionType: string,
+    placementKey: string,
+    turns: string,
+    action: "save" | "delete",
+    newValue: PlacementValue | null,
+    prevValue: PlacementValue | null,
+    userEmail: string,
+  ): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const historyDoc = doc(collection(firestore, HISTORY_COLLECTION_NAME));
+      await setDoc(historyDoc, {
+        gridMode,
+        propType,
+        motionType,
+        placementKey,
+        turns,
+        entryKey: buildEntryKey(gridMode, propType, motionType, placementKey, turns),
+        action,
+        newX: newValue ? newValue[0] : null,
+        newY: newValue ? newValue[1] : null,
+        prevX: prevValue ? prevValue[0] : null,
+        prevY: prevValue ? prevValue[1] : null,
+        timestamp: serverTimestamp(),
+        updatedBy: userEmail,
+      });
+    } catch (error) {
+      logger.warn("Failed to write default placement history:", error);
     }
   }
 
@@ -79,6 +136,8 @@ export class DefaultArrowPlacementPersister {
     motionType: string,
     placementKey: string,
     turns: string,
+    userEmail: string = "unknown",
+    prevValue: PlacementValue | null = null,
   ): Promise<void> {
     const id = generateDefaultDocId(gridMode, propType, motionType);
     try {
@@ -87,10 +146,15 @@ export class DefaultArrowPlacementPersister {
       // FieldPath, not a dotted string: the `turns` segment ("1.5") contains a dot.
       await updateDoc(docRef, new FieldPath("placements", placementKey, turns), deleteField());
       logger.success(`Deleted default ${id} ${placementKey}/${turns}`);
+      this.appendHistory(
+        gridMode, propType, motionType, placementKey, turns,
+        "delete", null, prevValue, userEmail,
+      );
     } catch (error) {
       // Already at JSON baseline: no Firestore doc/field to remove. `updateDoc`
       // on a nonexistent doc throws not-found — that's a successful no-op here,
-      // not a failure. Swallow it; rethrow anything else.
+      // not a failure. Swallow it; rethrow anything else. No history row: nothing
+      // changed.
       const code = (error as { code?: string })?.code;
       const msg = error instanceof Error ? error.message : String(error);
       if (code === "not-found" || msg.includes("No document to update")) {

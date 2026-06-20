@@ -44,9 +44,16 @@ export function createDefaultArrowPlacementState() {
       // ("{grid}_{motion}") gets propType defaulted to "staff" by the schema, so
       // re-keying to "{grid}_staff_{motion}" makes it reachable by the staff read
       // path (which always computes the 3-part id). Matches setValue/removeValue.
+      //
+      // A legacy 2-part doc and the new 3-part doc both collapse to this id, so
+      // we MERGE rather than last-write-wins: the doc physically stored AT the
+      // canonical id (doc.id === id, i.e. the explicitly prop-scoped write) is
+      // authoritative and its values win; the legacy seed only fills gaps. This
+      // makes reload order-independent — an admin's real save can never be
+      // silently clobbered by a stale seed doc that happens to load after it.
       const id = generateDefaultDocId(doc.gridMode, doc.propType, doc.motionType);
       const newMap = new Map(docsMap);
-      newMap.set(id, doc);
+      newMap.set(id, mergeCollidingDocs(id, docsMap.get(id), doc));
       docsMap = newMap;
     },
 
@@ -115,7 +122,12 @@ export function createDefaultArrowPlacementState() {
       try {
         const newMap = new Map<string, DefaultArrowPlacementDoc>();
         // Canonical 3-part key so legacy 2-part docs decode to the staff path.
-        for (const doc of docs) newMap.set(generateDefaultDocId(doc.gridMode, doc.propType, doc.motionType), doc);
+        // Merge on collision (legacy {grid}_{motion} + new {grid}_staff_{motion}
+        // share an id) so load order can't clobber a real override — see setDoc.
+        for (const doc of docs) {
+          const id = generateDefaultDocId(doc.gridMode, doc.propType, doc.motionType);
+          newMap.set(id, mergeCollidingDocs(id, newMap.get(id), doc));
+        }
         docsMap = newMap;
         loadedDocs = [...docs];
         isInitialized = true;
@@ -139,6 +151,59 @@ export function createDefaultArrowPlacementState() {
 
     setLoading(loading: boolean): void { isLoading = loading; },
     setError(error: string | null): void { lastError = error; },
+  };
+}
+
+function updatedAtMillis(doc: DefaultArrowPlacementDoc): number {
+  const ts = doc.updatedAt as { toMillis?: () => number } | undefined;
+  try {
+    return typeof ts?.toMillis === "function" ? ts.toMillis() : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Collapse two Firestore docs that decode to the same canonical 3-part id (a
+ * legacy 2-part seed + a new prop-scoped override). The AUTHORITATIVE doc — the
+ * one physically stored at the canonical id (`doc.id === canonicalId`) — wins on
+ * every (placementKey, turns) it defines; the other doc only fills gaps. When
+ * neither (or both) is canonical-keyed, the newer `updatedAt` is authoritative.
+ * Result is identity-stamped to the canonical id so the read path finds it.
+ */
+function mergeCollidingDocs(
+  canonicalId: string,
+  existing: DefaultArrowPlacementDoc | undefined,
+  incoming: DefaultArrowPlacementDoc,
+): DefaultArrowPlacementDoc {
+  if (!existing) return incoming;
+
+  const existingIsAuth = existing.id === canonicalId;
+  const incomingIsAuth = incoming.id === canonicalId;
+  let base: DefaultArrowPlacementDoc;
+  let auth: DefaultArrowPlacementDoc;
+  if (existingIsAuth !== incomingIsAuth) {
+    auth = existingIsAuth ? existing : incoming;
+    base = existingIsAuth ? incoming : existing;
+  } else {
+    auth = updatedAtMillis(incoming) >= updatedAtMillis(existing) ? incoming : existing;
+    base = auth === incoming ? existing : incoming;
+  }
+
+  // Two-level overlay: start from base, let auth's keys/turns override.
+  const placements: PlacementsMap = structuredCloneMap(base.placements);
+  for (const [key, byTurns] of Object.entries(auth.placements)) {
+    placements[key] = { ...(placements[key] ?? {}), ...byTurns };
+  }
+
+  return {
+    id: canonicalId,
+    gridMode: auth.gridMode,
+    propType: auth.propType,
+    motionType: auth.motionType,
+    placements,
+    updatedAt: auth.updatedAt,
+    updatedBy: auth.updatedBy,
   };
 }
 

@@ -1,6 +1,14 @@
 {
   "indexes": [
     {
+      "collectionGroup": "default_arrow_adjustment_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "entryKey", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "users",
       "queryScope": "COLLECTION",
       "fields": [

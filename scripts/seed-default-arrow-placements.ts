@@ -3,9 +3,12 @@
  *
  * Usage: npx tsx scripts/seed-default-arrow-placements.ts
  *
- * Reads the 10 static default placement JSON files and writes one Firestore doc
- * per {gridMode}_{motionType} into default_arrow_adjustments. Idempotent — a
- * re-run overwrites the docs back to the committed JSON baseline (clean reset).
+ * Reads the 10 static default placement JSON files (the staff baseline) and
+ * writes one Firestore doc per {gridMode}_staff_{motionType} into
+ * default_arrow_adjustments. The "staff" segment is REQUIRED: the read path
+ * (generateDefaultDocId) and every admin override are prop-scoped, so a 2-part
+ * "{gridMode}_{motionType}" id collides with the canonical 3-part id on reload.
+ * Idempotent — a re-run overwrites the docs back to the committed JSON baseline.
  */
 
 import { initializeApp, cert } from "firebase-admin/app";
@@ -57,9 +60,13 @@ async function main() {
         continue;
       }
       const placements = JSON.parse(fs.readFileSync(file, "utf-8"));
-      const docId = `${gridMode}_${motionType}`;
+      // Staff baseline → canonical 3-part id. propType is stored explicitly so
+      // the doc is self-describing and the read path resolves it directly.
+      const propType = "staff";
+      const docId = `${gridMode}_${propType}_${motionType}`;
       await db.collection(collectionName).doc(docId).set({
         gridMode,
+        propType,
         motionType,
         placements,
         updatedAt: new Date(),
