@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Generate hint — font options</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Spectral:wght@300;400;500&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        /* mimic the ocean-dark create bg */
+        background:
+          radial-gradient(120% 80% at 50% 0%, #14384d 0%, #0c2436 45%, #081722 100%);
+        color: #fff;
+        font-family: system-ui, -apple-system, sans-serif;
+        padding: 48px 24px 96px;
+      }
+      h1 {
+        text-align: center;
+        font-weight: 500;
+        font-size: 15px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.5);
+        margin: 0 0 8px;
+      }
+      .sub {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 13px;
+        margin: 0 0 40px;
+      }
+      .grid {
+        max-width: 880px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .card {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.02);
+        padding: 38px 32px 30px;
+        text-align: center;
+      }
+      .label {
+        font-family: system-ui, sans-serif;
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #5e4ad9;
+        color: #7c8cff;
+        margin: 0 0 22px;
+        font-weight: 600;
+      }
+      .hint {
+        margin: 0;
+        color: #fff;
+        line-height: 1.2;
+        text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+      }
+
+      /* 1 — current (what ships now) */
+      .opt-current {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-weight: 700;
+        font-size: 32px;
+        letter-spacing: -0.01em;
+      }
+
+      /* 2 — quiet sans: lighter weight, the "calm" version */
+      .opt-quiet-sans {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-weight: 500;
+        font-size: 30px;
+        letter-spacing: 0.01em;
+        color: rgba(255, 255, 255, 0.92);
+      }
+
+      /* 3 — Inter, refined sans */
+      .opt-inter {
+        font-family: "Inter", system-ui, sans-serif;
+        font-weight: 500;
+        font-size: 30px;
+        letter-spacing: -0.005em;
+      }
+
+      /* 4 — Instrument Serif (landing voice) */
+      .opt-instrument {
+        font-family: "Instrument Serif", Georgia, serif;
+        font-weight: 400;
+        font-size: 40px;
+        letter-spacing: 0.005em;
+      }
+
+      /* 5 — Instrument Serif italic */
+      .opt-instrument-italic {
+        font-family: "Instrument Serif", Georgia, serif;
+        font-style: italic;
+        font-weight: 400;
+        font-size: 40px;
+      }
+
+      /* 6 — Playfair Display (classy display serif) */
+      .opt-playfair {
+        font-family: "Playfair Display", Georgia, serif;
+        font-weight: 500;
+        font-size: 32px;
+      }
+
+      /* 7 — Fraunces (soft modern serif) */
+      .opt-fraunces {
+        font-family: "Fraunces", Georgia, serif;
+        font-weight: 400;
+        font-size: 32px;
+      }
+
+      /* 8 — Spectral (literary, calm serif) */
+      .opt-spectral {
+        font-family: "Spectral", Georgia, serif;
+        font-weight: 400;
+        font-size: 32px;
+        color: rgba(255, 255, 255, 0.94);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Generate hint — font options</h1>
+    <p class="sub">Same phrase, ocean-dark bg. Pick the one that feels right.</p>
+
+    <div class="grid">
+      <div class="card">
+        <p class="label">1 · Current (ships now) — bold system sans</p>
+        <p class="hint opt-current">Tap Generate to create your sequence</p>
+      </div>
+
+      <div class="card">
+        <p class="label">2 · Quiet system sans — medium weight</p>
+        <p class="hint opt-quiet-sans">Tap Generate to create your sequence</p>
+      </div>
+
+      <div class="card">
+        <p class="label">3 · Inter — refined sans</p>
+        <p class="hint opt-inter">Tap Generate to create your sequence</p>
+      </div>
+
+      <div class="card">
+        <p class="label">4 · Instrument Serif — landing heading voice</p>
+        <p class="hint opt-instrument">Tap Generate to create your sequence</p>
+      </div>
+
+      <div class="card">
+        <p class="label">5 · Instrument Serif — italic</p>
+        <p class="hint opt-instrument-italic">Tap Generate to create your sequence</p>
+      </div>
+
+      <div class="card">
+        <p class="label">6 · Playfair Display — classy display serif</p>
+        <p class="hint opt-playfair">Tap Generate to create your sequence</p>
+      </div>
+
+      <div class="card">
+        <p class="label">7 · Fraunces — soft modern serif</p>
+        <p class="hint opt-fraunces">Tap Generate to create your sequence</p>
+      </div>
+
+      <div class="card">
+        <p class="label">8 · Spectral — calm literary serif</p>
+        <p class="hint opt-spectral">Tap Generate to create your sequence</p>
+      </div>
+    </div>
+  </body>
+</html>

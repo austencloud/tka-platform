@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TKA ↔ VTG: How the Two Systems Relate</title>
+<style>
+  :root {
+    --bg: #0c151b;
+    --panel: #121f29;
+    --ink: #e7eef3;
+    --dim: #9fb2bd;
+    --line: rgba(255,255,255,.09);
+    --accent: #22d3ee;
+    --blue: #60a5fa;
+    --red: #f87171;
+    --violet: #b763cd;
+    --gold: #fbbf24;
+    --green: #75c47a;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: radial-gradient(1200px 700px at 70% -10%, #16323e 0%, var(--bg) 60%) fixed;
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, "Segoe UI", system-ui, sans-serif;
+    padding: 3rem 1.25rem 6rem;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  header.doc { margin-bottom: 2rem; }
+  h1 { font-size: clamp(1.6rem, 4vw, 2.3rem); margin: 0 0 .4rem; letter-spacing: -.01em; }
+  h1 .arrow { color: var(--accent); }
+  .sub { color: var(--dim); font-size: .95rem; max-width: 60ch; }
+  h2 {
+    font-size: 1.25rem; margin: 2.4rem 0 .8rem; padding-top: 1.2rem;
+    border-top: 1px solid var(--line); letter-spacing: -.01em;
+  }
+  h2 .n { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: .5rem; }
+  p { margin: .7rem 0; }
+  ul { margin: .6rem 0; padding-left: 1.3rem; }
+  li { margin: .35rem 0; }
+  strong { color: #fff; }
+  code {
+    background: rgba(255,255,255,.07); padding: .08em .4em; border-radius: 5px;
+    font: .88em ui-monospace, "Cascadia Code", monospace; color: #d6e9f2;
+  }
+  /* source tags */
+  .tag {
+    display: inline-block; font-size: .68rem; font-weight: 700; letter-spacing: .04em;
+    padding: .08em .45em; border-radius: 999px; vertical-align: middle;
+    border: 1px solid currentColor; line-height: 1.5; white-space: nowrap;
+  }
+  .t-vtg { color: var(--gold); }
+  .t-mcp { color: var(--accent); }
+  .t-code { color: var(--green); }
+  .t-you { color: var(--violet); }
+  .t-infer { color: var(--red); }
+  .legend { display: flex; flex-wrap: wrap; gap: .55rem; margin: 1.1rem 0 0; }
+  .legend .item { font-size: .8rem; color: var(--dim); display: inline-flex; gap: .35rem; align-items: center; }
+  .tldr {
+    background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 12px; padding: 1rem 1.2rem; margin: 1.4rem 0;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .92rem; }
+  th, td { text-align: left; padding: .5rem .7rem; border-bottom: 1px solid var(--line); }
+  th { color: var(--accent); font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .callout {
+    background: rgba(247,113,113,.08); border: 1px solid rgba(247,113,113,.3);
+    border-radius: 10px; padding: .8rem 1rem; margin: 1rem 0; font-size: .93rem;
+  }
+  .confirm {
+    background: var(--panel); border: 1px solid var(--gold); border-radius: 12px;
+    padding: 1rem 1.3rem; margin: 1.4rem 0;
+  }
+  .confirm h2 { border: 0; padding: 0; margin: 0 0 .6rem; color: var(--gold); }
+  ol { padding-left: 1.3rem; }
+  ol li { margin: .5rem 0; }
+  .toc { color: var(--dim); font-size: .9rem; columns: 2; column-gap: 2rem; margin: 1.2rem 0; }
+  .toc a { color: var(--blue); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  em { color: var(--ink); font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <h1>TKA <span class="arrow">↔</span> VTG: How the Two Systems Relate</h1>
+  <p class="sub">Working understanding, written for fact-checking. Every claim is tagged with where it comes from — check the red <span class="tag t-infer">infer</span> ones hardest.</p>
+  <div class="legend">
+    <span class="item"><span class="tag t-vtg">VTG</span> Noel Yee primary docs (VTG1 2010 / VTG2 2015)</span>
+    <span class="item"><span class="tag t-mcp">MCP</span> flow-arts knowledge base</span>
+    <span class="item"><span class="tag t-code">code</span> this repo</span>
+    <span class="item"><span class="tag t-you">you</span> Austen's teaching this session</span>
+    <span class="item"><span class="tag t-infer">infer</span> my own deduction</span>
+  </div>
+  <div class="toc">
+    <a href="#s0">0 · TL;DR</a>
+    <a href="#s1">1 · Origins</a>
+    <a href="#s2">2 · Two reference frames</a>
+    <a href="#s3">3 · Orientation: 8 vs 2</a>
+    <a href="#s4">4 · Spin &amp; base rotation</a>
+    <a href="#s5">5 · Turn ratio</a>
+    <a href="#s6">6 · Petals ≠ ratio</a>
+    <a href="#s7">7 · Trammel → oval</a>
+    <a href="#s8">8 · Modality</a>
+    <a href="#s9">9 · What the code does</a>
+    <a href="#s10">10 · Labeling implications</a>
+    <a href="#s11">11 · Confirm these</a>
+  </div>
+</header>
+
+<section id="s0">
+<h2><span class="n">0</span>TL;DR</h2>
+<div class="tldr">
+TKA and VTG describe the same physical prop spinning, but from <strong>opposite design centers</strong> and with <strong>two different reference frames</strong>. The biggest source of confusion: they don't share an origin — TKA measures the prop relative to the <strong>center of the grid</strong>; VTG measures it relative to <strong>gravity (the downbeat, straight down)</strong>. Nearly every "why don't these line up" traces back to that. The <strong>club</strong> (a one-ended prop both systems support) is the clean translation point.
+</div>
+</section>
+
+<section id="s1">
+<h2><span class="n">1</span>Origins: opposite design centers <span class="tag t-you">you</span></h2>
+<ul>
+  <li><strong>TKA was built for two-ended props (staff)</strong>, then adapted to one-ended.</li>
+  <li><strong>VTG was built for one-ended props (poi/club)</strong>, then adapted to two-ended.</li>
+  <li>The <strong>club is the Rosetta stone</strong>: one-ended, exists in both, translates without ambiguity.</li>
+  <li>Consequence: <strong>a two-ended prop doubles the petal count</strong> of a one-ended prop doing the same motion. So petal counts mean the <strong>single-ended (club) count</strong> unless stated.</li>
+</ul>
+</section>
+
+<section id="s2">
+<h2><span class="n">2</span>Two reference frames (the root of all confusion)</h2>
+<ul>
+  <li><strong>TKA is center-referenced.</strong> Orientation = the prop's angle relative to the grid <strong>center</strong>. <span class="tag t-mcp">MCP</span></li>
+  <li><strong>VTG is gravity-referenced.</strong> Its anchor is the <strong>downbeat</strong> — the <strong>south / bottom</strong> of the prop's circle. VTG reads a pattern by <em>when the props cross the downbeat</em>. <span class="tag t-mcp">MCP</span> <span class="tag t-vtg">VTG</span></li>
+  <li>The frames only coincide at specific grid points (line up at south; 90° apart at east; …). So conversion is <strong>position-dependent</strong> — not a constant offset but a per-position rotation (a "conversion table"). <span class="tag t-infer">infer</span></li>
+</ul>
+</section>
+
+<section id="s3">
+<h2><span class="n">3</span>Orientation: 8 points (TKA) vs 2 (VTG)</h2>
+<ul>
+  <li><strong>TKA</strong> — 8-point center-relative cycle: <code>in → clockIn → clock → clockOut → out → counterOut → counter → counterIn</code>. <span class="tag t-mcp">MCP</span></li>
+  <li><strong>VTG has only two orientations: in and out.</strong> <span class="tag t-you">you</span> <span class="tag t-vtg">VTG</span> — the prop glyph is a circle with a line for in vs out; the props axis is <strong>Props Out / Props In / Props In-Out</strong>.</li>
+  <li>The prop <em>passes through</em> clock/counter/interradial angles, but VTG never <strong>names or references</strong> them — transit, not landmarks. Clock, counter, "nonradial" are TKA-only. <span class="tag t-you">you</span></li>
+</ul>
+</section>
+
+<section id="s4">
+<h2><span class="n">4</span>Spin type &amp; base rotation</h2>
+<ul>
+  <li><strong>Inspin (VTG) = prospin / pro (TKA):</strong> prop rotates the <strong>same</strong> direction as the hand's path. <span class="tag t-mcp">MCP</span> <span class="tag t-vtg">VTG</span></li>
+  <li><strong>Antispin = anti:</strong> prop rotates <strong>opposite</strong> the hand's path. <span class="tag t-mcp">MCP</span></li>
+  <li><strong>Base rotation:</strong> TKA turn counts measure <em>additional</em> rotation on an inherent base. At <strong>0 turns</strong>, a curved shift's pro and anti are already <strong>two different states</strong> (pro base preserves center-relative orientation, anti reverses). "0 turns" ≠ "no spin." <span class="tag t-mcp">MCP</span></li>
+  <li><strong>1 TKA turn = 180°</strong> of additional rotation. <span class="tag t-mcp">MCP</span></li>
+</ul>
+</section>
+
+<section id="s5">
+<h2><span class="n">5</span>Turn ratio (props:hands) and the TKA↔VTG turn map</h2>
+<ul>
+  <li><strong>Ratio convention is <code>props:hands</code> (N:1)</strong> = N prop rotations per one hand revolution. Canonical across VTG1, VTG2 Index, VTG2 Ch.1–2: <em>"every one rotation of the hand corresponds to one rotation of the prop"</em> = 1:1. <span class="tag t-vtg">VTG1 p4</span></li>
+  <li>Our app uses props:hands everywhere; the old VTG app's <code>1:3</code> is just the inverse (hands:props) order. We're aligned with Yee. <span class="tag t-code">code</span> <span class="tag t-you">you</span></li>
+</ul>
+<table>
+  <thead><tr><th>TKA turns</th><th>VTG ratio</th></tr></thead>
+  <tbody>
+    <tr><td class="num">0</td><td>1:1</td></tr>
+    <tr><td class="num">0.5</td><td>2:1</td></tr>
+    <tr><td class="num">1</td><td>3:1</td></tr>
+    <tr><td class="num">1.5</td><td>4:1</td></tr>
+    <tr><td class="num">2</td><td>5:1</td></tr>
+    <tr><td class="num">2.5</td><td>6:1</td></tr>
+    <tr><td class="num">3</td><td>7:1</td></tr>
+  </tbody>
+</table>
+<p>Formula: <strong>ratio N = 2·turns + 1</strong> (1 turn = 180° = half a prop revolution added). <span class="tag t-code">code</span> <span class="tag t-infer">infer</span></p>
+</section>
+
+<section id="s6">
+<h2><span class="n">6</span>Petals: a SEPARATE count from ratio</h2>
+<p>The correction that mattered. <strong>Petal count and turn ratio are two different measurements against two different references.</strong> <span class="tag t-you">you</span></p>
+<ul>
+  <li><strong>Petals</strong> are read off the <strong>radial reference</strong>: <strong>out for antispin</strong>, <strong>in for inspin</strong>. This is the <em>flower shape</em>. <span class="tag t-you">you</span></li>
+  <li><strong>Turn ratio / timing</strong> is read off the <strong>downbeat (gravity)</strong> — nothing to do with the petal reference. <span class="tag t-you">you</span></li>
+  <li>They <strong>correlate cleanly</strong> but aren't the same act. Single-ended (club) formulas <span class="tag t-code">code</span>:
+    <ul>
+      <li><strong>Inspin petals = N − 1 = 2·turns</strong> (1:1 → 0 petals = plain circle).</li>
+      <li><strong>Antispin petals = N + 1 = 2·turns + 2</strong> (1:1 → 2; 3:1 → 4).</li>
+      <li>Your example: <strong>4-petal antispin = 3:1 = 1 TKA turn on a club.</strong> ✓</li>
+    </ul>
+  </li>
+  <li><strong>Two-ended props double these counts.</strong> Formulas above are single-ended. <span class="tag t-you">you</span></li>
+</ul>
+<div class="callout">The earlier research agent claimed "4-petal antispin = 4:1" — wrong; it conflated petal count with ratio. Discarded.</div>
+</section>
+
+<section id="s7">
+<h2><span class="n">7</span>The simplest antispin: trammel → oval <span class="tag t-you">you</span></h2>
+<ul>
+  <li>TKA <strong>0 turns</strong> = VTG <strong>1:1</strong> antispin = the "2-petal antispin," but at its smallest form it <strong>doesn't cross itself</strong> — it's a long, thin shape.</li>
+  <li>If the prop tip sat exactly at the grid midpoint (prop length = half the grid), it collapses to a literal <strong>straight line — a trammel</strong> (the Roman device: two points sliding on fixed straight lines).</li>
+  <li>We deliberately <strong>offset the tip</strong> so it renders as a <strong>wide oval</strong> instead of a line — keeping it visually distinct from a <strong>dash</strong> (which also draws a straight line). VTG made the same choice; it's the horizontal/vertical antispin.</li>
+</ul>
+</section>
+
+<section id="s8">
+<h2><span class="n">8</span>Modality: timing &amp; direction (and where TKA extends VTG)</h2>
+<ul>
+  <li><strong>Direction:</strong> same vs opposite — do the two hands orbit the same way or mirrored. <span class="tag t-code">code</span></li>
+  <li><strong>Timing:</strong> measured by <strong>downbeat-crossing phase</strong> between the hands (both at south = together; 180° out = split). <span class="tag t-mcp">MCP</span></li>
+  <li><strong>VTG natively had only Together and Split timing</strong> (× same/opposite) → <strong>4 modes: T/S, T/O, S/S, S/O</strong>, exactly what the notation pages show. <span class="tag t-vtg">VTG</span> <span class="tag t-you">you</span></li>
+  <li><strong>Quarter timing (gamma) is a TKA extension</strong> VTG never classified — Austen added it (Sun/Moon = 90° phase). TKA has <strong>6</strong> modes (adds Quarter-Same, Quarter-Opp) where VTG had 4. <span class="tag t-mcp">MCP</span></li>
+</ul>
+</section>
+
+<section id="s9">
+<h2><span class="n">9</span>What our code already does (the bridge)</h2>
+<ul>
+  <li><strong>The downbeat conversion is already implemented.</strong> <code>tnd-deriver.ts</code> extrapolates each hand's phase <strong>to south</strong> (<code>phaseToSouth(loc, dir)</code>) before reading timing/direction — that <em>is</em> the position-dependent conversion table from §2. Purely geometric. <span class="tag t-code">code</span></li>
+  <li><strong>The mandala is pure geometry:</strong> per beat, <code>staffDelta = ±centerMovement + turns·π</code> (pro = <code>+</code>, anti = <code>−</code>). Shape = prop-spin sign + hand arc (centerMovement) + turns; start orientation sets the rosette's phase. <span class="tag t-code">code</span></li>
+  <li><strong>Two-ended vs one-ended</strong> is the mandala's <code>tipEnds</code> (staff = both tips, club = one). <span class="tag t-code">code</span></li>
+</ul>
+</section>
+
+<section id="s10">
+<h2><span class="n">10</span>Implications for the labeling system</h2>
+<ul>
+  <li>The orientation axis for VTG naming is <strong>in/out only</strong> (spin picks which anchors the petals: out for antispin, in for inspin). Clock/counter get no VTG names. A core's name keys off <strong>(spin, ratio, in-vs-out)</strong> — not a 4-way orientation.</li>
+  <li><strong>Petals</strong> come from the ratio via the single-ended formulas (§6); display doubles for staff.</li>
+  <li><strong>Timing / modality</strong> is the separate downbeat read — it belongs to the <em>two-hand</em> combination, not the single-hand core.</li>
+  <li>So a per-hand <strong>core</strong> = <code>spin × ratio (props:hands) × radial-reference (in/out)</code> → a VTG name + petal count. The two-hand cell adds timing/direction on top.</li>
+</ul>
+</section>
+
+<section id="s11">
+<div class="confirm">
+<h2>11 · Confirm these (most likely to be wrong)</h2>
+<ol>
+  <li><strong>out = antispin reference, in = inspin reference</strong> — for <em>petals only</em>. (You said "true enough.") Correct framing?</li>
+  <li><strong>Petal formulas single-ended:</strong> inspin = 2·turns, antispin = 2·turns + 2; staff doubles both. Right? And is our <code>TURN_RATIO_MAPPINGS</code> petal column already single-ended, or does it assume staff?</li>
+  <li><strong>VTG = 4 modes (T/S, T/O, S/S, S/O); Quarter is a TKA-only addition.</strong> Correct?</li>
+  <li><strong>Ratio N = 2·turns + 1.</strong> Holds for every case you know?</li>
+  <li>Anything in §2 (center vs gravity frame) stated too strongly?</li>
+</ol>
+</div>
+</section>
+
+</div>
+</body>
+</html>
