@@ -11,6 +11,9 @@ export class ViewportManager {
   private _isInitialized: boolean = false;
   private _callbacks: (() => void)[] = [];
   private _resizeTimeout: number | null = null;
+  // Retained so the resize listener can be removed in dispose(). Storing the
+  // reference is purely additive — the listener is still attached identically.
+  private _resizeHandler: (() => void) | null = null;
 
   constructor() {
     // Initialize viewport dimensions if window is available
@@ -80,7 +83,25 @@ export class ViewportManager {
       }, 50); // 50ms debounce delay for snappy response while preventing excessive updates
     };
 
+    this._resizeHandler = handleResize;
     window.addEventListener("resize", handleResize);
+  }
+
+  // Tear down the resize listener and pending debounce timer. Purely additive:
+  // ViewportManager is a module-level singleton that lives for the app's
+  // lifetime, so nothing calls this today and runtime behavior is unchanged.
+  // It exists so a future caller that creates a scoped instance can clean up
+  // without leaking a window listener.
+  dispose(): void {
+    if (this._resizeHandler !== null) {
+      window.removeEventListener("resize", this._resizeHandler);
+      this._resizeHandler = null;
+    }
+    if (this._resizeTimeout !== null) {
+      clearTimeout(this._resizeTimeout);
+      this._resizeTimeout = null;
+    }
+    this._callbacks = [];
   }
 
   // Subscribe to viewport changes
