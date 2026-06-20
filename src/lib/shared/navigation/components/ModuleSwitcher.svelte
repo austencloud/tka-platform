@@ -44,6 +44,11 @@
   const hasUnread = $derived(inboxState.totalUnreadCount > 0);
   const unreadCount = $derived(inboxState.totalUnreadCount);
 
+  // A full account (member) — NOT an anonymous guest, who is technically
+  // authenticated. Inbox / Sign Out / profile navigation are member-only;
+  // guests get the AccountRow "Sign in" entry instead.
+  const isFullAccount = $derived(authState.isFullAccount);
+
   // Responsive settings from DeviceDetector (same as MobileNavigation)
   let responsiveSettings = $state<ResponsiveSettings | null>(null);
 
@@ -198,12 +203,12 @@
         variant="drawer"
         onclick={userPreviewState.isActive
           ? undefined
-          : authState.isAuthenticated
+          : isFullAccount
             ? handleProfileTap
             : closeDrawer}
       />
       <div class="account-footer-actions">
-        {#if authState.isAuthenticated}
+        {#if isFullAccount}
           <button class="drawer-action inbox" onclick={handleInboxClick}>
             <div class="drawer-action-icon-wrapper">
               <i class="fas fa-inbox" aria-hidden="true"></i>
@@ -221,7 +226,7 @@
           <i class="fas fa-cog" aria-hidden="true"></i>
           <span>Settings</span>
         </button>
-        {#if authState.isAuthenticated}
+        {#if isFullAccount}
           <button class="drawer-action sign-out" onclick={handleSignOut}>
             <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
             <span>Sign Out</span>
