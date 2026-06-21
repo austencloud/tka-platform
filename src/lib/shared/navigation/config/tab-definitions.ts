@@ -946,6 +946,16 @@ export const VIDEO_TABS: Section[] = [
     color: "#f43f5e",
     gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
   },
+  {
+    id: "led-notation",
+    labelKey: "tab_video_led_notation",
+    descKey: "tab_desc_video_led_notation",
+    label: "LED Notation",
+    icon: '<i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>',
+    description: "Track LED staff ends in video and transcribe the flow into a TKA sequence",
+    color: "#22d3ee",
+    gradient: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
+  },
 ];
 
 export const SOCIAL_TABS: Section[] = [

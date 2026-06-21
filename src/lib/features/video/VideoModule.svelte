@@ -18,6 +18,8 @@
     "video-trails": () => import("./video-trails/VideoTrailsLab.svelte"),
     "video-lab": () => import("./video-lab/VideoLab.svelte"),
     skel2tka: () => import("$lib/features/skel2tka/Skel2TKALab.svelte"),
+    "led-notation": () =>
+      import("$lib/features/train/prop-tracking-lab/components/PropTrackingLab.svelte"),
   };
 
   // Get current tab, default to first tab
