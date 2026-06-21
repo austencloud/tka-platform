@@ -54,11 +54,12 @@ const MAX_SPEED = 5000;
 /** Maximum fire points across the base blue/red pair (performance cap for the shader) */
 const MAX_TOTAL_TIPS = 16;
 
-/** Additional output cap for overlaid tunnel-layer tips (beyond the base 16).
- *  Bounds an 8-fold + mirror stack of high-tip-count props. Heavy GPU effects
- *  (fire/charcoal) on many tips is a known perf cost the Tunnel View feature
- *  guards separately; this cap just keeps the output array bounded. */
-const MAX_LAYER_TIPS = 256;
+/** Defensive upper bound for overlaid tunnel-layer tips (beyond the base 16).
+ *  The real ceiling is the live layer count (cap scales per frame), so this only
+ *  guards against a pathological layer count — set well above any legitimate
+ *  8-fold + mirror stack so it never truncates a real kaleidoscope. The fire
+ *  splat loop is uncapped, so every emitted tip renders. */
+const MAX_LAYER_TIPS = 2048;
 
 /**
  * If the time between consecutive update() calls exceeds this threshold,
@@ -191,7 +192,16 @@ export class FireTipTracker {
 		// Overlaid tunnel layers: emit tips at propIndex >= 2 so every effect
 		// (which filters by propIndex, "*" matching all) covers the kaleidoscope.
 		if (config.additionalLayers && config.additionalLayers.length > 0) {
-			const cap = MAX_TOTAL_TIPS + MAX_LAYER_TIPS;
+			// Fully render every layer: the cap scales with the live layer count so
+			// no tunnel copy is ever dropped. Each layer emits at most MAX_TOTAL_TIPS
+			// (8 blue + 8 red); the fire splat loop is uncapped and the output array
+			// is dynamic, so the only ceiling is real geometry. The fixed
+			// MAX_LAYER_TIPS is kept only as a defensive upper bound against a
+			// pathological layer count.
+			const cap = Math.min(
+				MAX_TOTAL_TIPS + config.additionalLayers.length * MAX_TOTAL_TIPS,
+				MAX_TOTAL_TIPS + MAX_LAYER_TIPS,
+			);
 			let layerOutputIndex = totalTips;
 			for (let li = 0; li < config.additionalLayers.length; li++) {
 				const layer = config.additionalLayers[li]!;

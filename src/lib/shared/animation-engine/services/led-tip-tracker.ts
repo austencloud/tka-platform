@@ -50,8 +50,11 @@ const MAX_SPEED = 5000;
 /** Maximum LED points across the base blue/red pair (16 per prop) */
 const MAX_TOTAL_TIPS = 32;
 
-/** Additional output cap for overlaid tunnel-layer LEDs (beyond the base 32). */
-const MAX_LAYER_TIPS = 512;
+/** Defensive upper bound for overlaid tunnel-layer LEDs (beyond the base 32).
+ *  The per-frame cap scales with the live layer count, so this only guards a
+ *  pathological count — set well above any real 8-fold + mirror stack so every
+ *  emitted LED renders. */
+const MAX_LAYER_TIPS = 4096;
 
 /** Viewbox size for coordinate calculations (matches PropPositionCalculator) */
 const VIEWBOX_SIZE = 950;
@@ -181,7 +184,12 @@ export class LedTipTracker {
 		// its hand's base color + pattern offset, so colors stay coherent across copies.
 		if (config.additionalLayers && config.additionalLayers.length > 0) {
 			const blueLedCount = blueTipConfig?.points.length ?? 0;
-			const cap = MAX_TOTAL_TIPS + MAX_LAYER_TIPS;
+			// Scale the cap with the live layer count so every kaleidoscope copy's
+			// LEDs render; MAX_LAYER_TIPS stays only as a pathological-count guard.
+			const cap = Math.min(
+				MAX_TOTAL_TIPS + config.additionalLayers.length * MAX_TOTAL_TIPS,
+				MAX_TOTAL_TIPS + MAX_LAYER_TIPS,
+			);
 			let layerOutputIndex = totalTips;
 			for (let li = 0; li < config.additionalLayers.length; li++) {
 				const layer = config.additionalLayers[li]!;
