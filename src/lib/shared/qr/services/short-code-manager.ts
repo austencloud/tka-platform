@@ -23,7 +23,7 @@ import {
   runTransaction,
   type Firestore,
 } from "firebase/firestore";
-import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
+import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import {
   type SequenceData,
   createSequenceData,
@@ -178,20 +178,10 @@ export class ShortCodeManager {
   }
 
   async createShortCode(sequence: SequenceData, options?: ShortCodeURLOptions): Promise<CreateShortCodeResult> {
-    // Guests have no Firebase identity, so the shortcodes write is guaranteed to
-    // fail `permission-denied` — and a passive viewer rendering gallery/QR
-    // thumbnails should never mint global shortcode docs as a side effect. Fall
-    // back to a self-contained offline ("s~...") code: no Firestore round-trip,
-    // and the QR still resolves because the sequence is embedded in the URL.
-    let signedIn = false;
-    try {
-      signedIn = !!getAuthSync().currentUser;
-    } catch {
-      // Auth not initialized — treat as guest.
-    }
-    if (!signedIn) {
-      return this.createOfflineCode(sequence, options);
-    }
+    // Short codes are a signed-in-only operation — every caller gates on auth
+    // before reaching here (guests get no QR at all). There is no guest
+    // short-circuit anymore: the dense self-contained "s~..." QR it minted was
+    // unscannable, so guests simply get nothing rather than a bad code.
 
     // Compute encoderHash for content-based dedup. Two sequences with the
     // same motions always produce the same hash, regardless of word or owner.
@@ -461,19 +451,6 @@ export class ShortCodeManager {
     }
 
     throw new Error("Failed to generate unique short code after exhausting all length tiers");
-  }
-
-  /**
-   * Create an offline-capable code for a sequence.
-   * Embeds all sequence data in the URL, no Firebase lookup needed.
-   */
-  async createOfflineCode(sequence: SequenceData, options?: ShortCodeURLOptions): Promise<CreateShortCodeResult> {
-    const code = await encodeSequenceForQR(sequence);
-    return {
-      code,
-      url: this.buildUrlWithOptions(this.getBaseUrl(), code, options),
-      isNew: true, // Offline codes are always "new" (not stored)
-    };
   }
 
   /**

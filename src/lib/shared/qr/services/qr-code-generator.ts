@@ -194,24 +194,10 @@ export class QRCodeGenerator {
       deckName: options?.deckName,
     };
 
-    // Check if offline mode is requested
-    if (options?.offline) {
-      // Create offline code with embedded sequence data
-      const { code, url: offlineUrl } =
-        await this.shortCodeManager.createOfflineCode(sequence, propOptions);
-
-      // Generate QR code
-      const { svg, dataUrl } = await this.generateQR(offlineUrl, options);
-
-      return {
-        svg,
-        dataUrl,
-        encodedUrl: offlineUrl,
-        shortCode: code, // This will be the s~... code
-      };
-    }
-
-    // Default: Create Firebase-backed short code for smaller QR codes
+    // Every QR is the Firebase short code (tka.run/<code>). The dense "offline"
+    // s~ path that baked the whole sequence into the URL is gone — those QRs
+    // were unscannable and varied in module density. Callers gate guests out
+    // before they ever reach here (guests get no QR at all).
     const { code, url: shortUrl } =
       await this.shortCodeManager.createShortCode(sequence, propOptions);
 

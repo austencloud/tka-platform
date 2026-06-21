@@ -79,37 +79,24 @@ async function mintAndSyncShortCode(sequence: SequenceData, token: number): Prom
 	await waitForAuthSettled();
 	if (token !== _openToken || !_isOpen) return;
 
-	let code: string | null = null;
+	// Short codes are signed-in only. Guests get no shareable `?v=` code — the
+	// dense self-contained "s~..." code that used to fill that gap is gone (it
+	// produced unscannable QRs and unwieldy URLs). A guest's URL bar simply
+	// stays clean; signing in unlocks sharing.
+	if (!authState.isAuthenticated) return;
 
-	// Guests can't write to Firestore (shortcodes require auth — see
-	// firestore.rules). Skip the doomed write and mint a self-contained
-	// inline code directly: no DB clutter, no console noise, works offline.
-	if (!authState.isAuthenticated) {
-		try {
-			const offline = await manager.createOfflineCode(sequence);
-			code = offline.code;
-		} catch (offlineError) {
-			console.warn('[SequenceViewerOverlay] URL sync failed - offline encoding failed.', offlineError);
-			return;
-		}
-	} else {
-		try {
-			const result = await manager.createShortCode(sequence, {
-				embedSequenceData: true,
-			});
-			code = result.code;
-		} catch (firebaseError) {
-			try {
-				const offline = await manager.createOfflineCode(sequence);
-				code = offline.code;
-			} catch (offlineError) {
-				console.warn(
-					'[SequenceViewerOverlay] URL sync failed - neither Firestore nor offline encoding succeeded.',
-					{ firebaseError, offlineError },
-				);
-				return;
-			}
-		}
+	let code: string | null = null;
+	try {
+		const result = await manager.createShortCode(sequence, {
+			embedSequenceData: true,
+		});
+		code = result.code;
+	} catch (firebaseError) {
+		// Firestore write failed (offline / transient) — skip URL sync rather
+		// than fall back to a dense inline code. The overlay still works; only
+		// the shareable `?v=` param is absent.
+		console.warn('[SequenceViewerOverlay] URL sync skipped - short code mint failed.', firebaseError);
+		return;
 	}
 
 	if (!code || token !== _openToken || !_isOpen) return;

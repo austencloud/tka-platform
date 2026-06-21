@@ -30,6 +30,7 @@
   import { deriveWord } from "$lib/shared/foundation/services/word-deriver";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -121,10 +122,18 @@
   const effectiveVisibility = $derived.by<ThumbnailVisibilitySettings | undefined>(() => {
     const needsMotionFilter = showBlueMotion !== true || showRedMotion !== true;
     const motionOverrides = needsMotionFilter ? { showBlueMotion, showRedMotion } : {};
+    // Guests get no QR baked into the thumbnail — only signed-in renders carry a
+    // (Firebase short-code) QR. Because showQRCode is part of the cache key, a
+    // guest's no-QR card keys separately (showQRCode:false) and can never
+    // overwrite the signed-in short-code card in the shared cloud cache.
+    const qrAllowed = authState.isAuthenticated;
     if (visibility) {
-      return (handPathMode || needsMotionFilter) ? { ...visibility, ...(handPathMode && { handPathMode: true }), ...motionOverrides } : visibility;
+      const qrGated = qrAllowed ? visibility : { ...visibility, showQRCode: false };
+      return (handPathMode || needsMotionFilter || !qrAllowed)
+        ? { ...qrGated, ...(handPathMode && { handPathMode: true }), ...motionOverrides }
+        : qrGated;
     }
-    const qr = compositionManager.showQRCode;
+    const qr = qrAllowed && compositionManager.showQRCode;
     const mandala = compositionManager.showMandala;
     if (!qr && !mandala && !handPathMode && !needsMotionFilter) return undefined;
     return { showQRCode: qr, showMandala: mandala, ...(handPathMode && { handPathMode: true }), ...motionOverrides };

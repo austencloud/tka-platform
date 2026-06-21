@@ -311,10 +311,15 @@
     const bProp = bluePropType ? String(bluePropType) : undefined;
     const rProp = redPropType ? String(redPropType) : undefined;
     const vm = encodedViewMode;
-    // Guests generate self-contained inline QR codes (no Firestore write,
-    // no auth, no DB clutter). Signed-in users mint short codes for the
-    // shorter URL + scan analytics.
-    const offline = !authState.isAuthenticated;
+    // Guests get no QR at all. The only guest QR we could mint was the dense
+    // self-contained "s~..." code, which was unscannable — so rather than bake
+    // a bad QR we leave the slot empty until the user signs in. Signed-in users
+    // mint a Firebase short code (tka.run/<code>) for the scannable URL + scan
+    // analytics.
+    if (!authState.isAuthenticated) {
+      qrDataUrl = null;
+      return;
+    }
     const qrGenerator = getQRCodeGenerator();
     if (!qrGenerator || !seq) return;
 
@@ -324,7 +329,6 @@
         margin: 1,
         style: "modern",
         darkMode: isDark,
-        offline,
         bluePropType: bProp,
         redPropType: rProp,
         viewMode: vm,
