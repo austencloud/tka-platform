@@ -119,6 +119,7 @@
     onArtExport?: (args: {
       artType: "mandala" | "tunnel";
       controller: import("../tunnel/tunnel-view-controller.svelte").TunnelViewController;
+      mandalaController: import("../state/mandala-viewer-controller.svelte").MandalaViewerController;
     }) => void;
   }
 

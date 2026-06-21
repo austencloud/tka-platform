@@ -3,6 +3,7 @@
   import TunnelArtView from "../tunnel/TunnelArtView.svelte";
   import ArtSettingsPanel from "./ArtSettingsPanel.svelte";
   import { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
+  import { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { ViewerPlaybackState } from "../domain/viewer-prop-groups";
   import type {
@@ -34,13 +35,16 @@
     /**
      * Resolved viewer export entry. When the type is "tunnel" the caller MUST
      * thread `additionalLayersForBeat` + the all-false `overlayOverrides`
-     * through to the offscreen renderer (the kaleidoscope is pure visual).
-     * Omitted on surfaces (e.g. the QR landing page) that have no live
-     * playback controller / canvas to drive a video export.
+     * through to the offscreen renderer (the kaleidoscope is pure visual). When
+     * the type is "mandala" the caller drives the mandala's OWN export worker via
+     * `mandalaController.startExport()` (a separate pipeline — never the shared
+     * orchestrator). Omitted on surfaces (e.g. the QR landing page) that have no
+     * live playback controller / canvas to drive a video export.
      */
     onArtExport?: (args: {
       artType: ArtType;
       controller: TunnelViewController;
+      mandalaController: MandalaViewerController;
     }) => void;
   } = $props();
 
@@ -59,6 +63,17 @@
   });
   controller.active = true;
 
+  // The mandala controller is owned HERE (not inside MandalaPane) so the same
+  // instance backs the in-pane dock/takeover AND the Art panel's Export button —
+  // the orchestrator drives the mandala's own export worker via
+  // mandalaController.startExport() (a pipeline separate from the shared video
+  // export orchestrator).
+  const mandalaController = new MandalaViewerController({
+    getSequence: () => playback.animationState.sequenceData ?? sequence,
+    getBluePropType: () => bluePropType,
+    getRedPropType: () => redPropType,
+  });
+
   // Playback display state read from the live panel state, so the rail's
   // Playback pane mirrors the 2D transport.
   const stepSize = $derived<StepPlaybackStepSize>(
@@ -66,14 +81,14 @@
   );
 
   function handleExport() {
-    onArtExport?.({ artType, controller });
+    onArtExport?.({ artType, controller, mandalaController });
   }
 </script>
 
 <div class="art-pane">
   <div class="art-body">
     {#if artType === "mandala"}
-      <MandalaPane {sequence} {bluePropType} {redPropType} />
+      <MandalaPane ctrl={mandalaController} {sequence} {bluePropType} {redPropType} />
     {:else}
       <TunnelArtView {sequence} {playback} {controller} {bluePropType} {redPropType} />
     {/if}

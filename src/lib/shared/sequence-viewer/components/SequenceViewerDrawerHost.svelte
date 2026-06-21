@@ -524,6 +524,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                           : ctx.viewerState.splitConfig))}
                       isLoggedIn={ctx.isLoggedIn}
                       onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
+                      onArtExport={ctx.handleArtExport}
                     />
                   {/if}
                   {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}

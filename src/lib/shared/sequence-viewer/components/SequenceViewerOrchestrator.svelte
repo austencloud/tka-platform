@@ -143,6 +143,15 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
      *  video export off the same controller the canvas is using. */
     playbackController: AnimationPlaybackController | null;
 
+    /** Art-mode export entry threaded into ViewerSplitPane -> ArtPane. Tunnel
+     *  routes through the shared video orchestrator with per-beat kaleidoscope
+     *  layers + chrome suppressed; mandala drives its OWN export worker. */
+    handleArtExport: (args: {
+      artType: "mandala" | "tunnel";
+      controller: import("../tunnel/tunnel-view-controller.svelte").TunnelViewController;
+      mandalaController: import("../state/mandala-viewer-controller.svelte").MandalaViewerController;
+    }) => void;
+
     splitPanePlayback: ViewerPlaybackState;
     splitPaneImageComposition: ImageCompositionProps;
     splitPanePropRendering: PropRenderingProps;
@@ -179,6 +188,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
@@ -198,6 +208,10 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import type { PendingActionType } from "$lib/shared/sequence-viewer/services/pending-action-queue";
   import SignInSheet from "./SignInSheet.svelte";
   import GoogleOneTap from "$lib/shared/auth/components/GoogleOneTap.svelte";
+
+  import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/sequence-modal-exporter.svelte";
+  import type { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
+  import type { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
 
   import { createPlaybackController } from "./playback-controller.svelte";
   import { createExportCoordinator } from "./export-coordinator.svelte";
@@ -703,6 +717,85 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     );
   }
 
+  // Art-mode export. Mandala drives its OWN worker (separate pipeline); tunnel
+  // runs the shared video orchestrator with the kaleidoscope's per-beat overlaid
+  // prop layers and ALL chrome suppressed (the tunnel is pure visual).
+  function handleArtExport(args: {
+    artType: "mandala" | "tunnel";
+    controller: TunnelViewController;
+    mandalaController: MandalaViewerController;
+  }) {
+    if (args.artType === "mandala") {
+      // Reuse the mandala's existing export pipeline (its own off-main-thread
+      // worker), the same path the in-pane dock's "Export MP4" button drives.
+      args.mandalaController.startExport();
+      return;
+    }
+
+    // Tunnel: shared orchestrator export. The live 2D AnimatorCanvas is not
+    // mounted in Art mode, so pass a square sourceSizeOverride and let the
+    // offscreen engine render; inject the kaleidoscope's per-beat layers and
+    // suppress every overlay (glyph/header/progress/path lines/grid).
+    if (!playbackControllerRef) {
+      showToast("Animation not ready yet. Wait a moment and try again.", "error");
+      return;
+    }
+    if (!ensureFullAccountForExport()) return;
+
+    const ctrl = args.controller;
+    const opts = exportCoord.exportOptions.getVideoOptions();
+    const squareSize = opts.resolution ?? 1080;
+
+    void sequenceModalExporter.exportAnimation(
+      {
+        fps: opts.fps,
+        loopCount: opts.loopCount,
+        resolution: opts.resolution,
+        includeStartPosition: opts.includeStartPosition,
+        includeEndHold: opts.includeEndHold,
+        sourceSizeOverride: squareSize,
+        additionalLayersForBeat: (beat: number) => ctrl.additionalLayersAt(beat),
+        overlayOverrides: {
+          tkaGlyph: false,
+          stepNumbers: false,
+          wordHeader: false,
+          progressBar: false,
+          bluePathLines: false,
+          redPathLines: false,
+          grid: false,
+        },
+      },
+      {
+        // The 2D animator canvas is unmounted in Art mode; sourceSizeOverride
+        // makes the orchestrator ignore this canvas for sizing, but a non-null
+        // canvas is still required by the signature. A detached square
+        // placeholder satisfies it without touching the live DOM.
+        canvas: createArtExportPlaceholderCanvas(squareSize),
+        playbackController: playbackControllerRef,
+        panelState: modalAnimationState,
+      },
+      {
+        onSuccess: (message: string) => {
+          showToast(message, "success");
+          accessibilityHelper.announce(message, "assertive");
+        },
+        onError: (message: string) => {
+          accessibilityHelper.announce(`Export failed: ${message}`, "assertive");
+        },
+        onHaptic: (type: "success" | "error" | "selection") => {
+          hapticService?.trigger(type);
+        },
+      },
+    );
+  }
+
+  function createArtExportPlaceholderCanvas(size: number): HTMLCanvasElement {
+    const c = document.createElement("canvas");
+    c.width = size;
+    c.height = size;
+    return c;
+  }
+
   async function handleSyncToggle() {
     if (isSyncToggling || !sequence) return;
     isSyncToggling = true;
@@ -1103,6 +1196,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     dismissPreview: exportCoord.dismissPreview,
 
     playbackController: playbackControllerRef,
+    handleArtExport,
 
     splitPanePlayback: {
       animationState: modalAnimationState,

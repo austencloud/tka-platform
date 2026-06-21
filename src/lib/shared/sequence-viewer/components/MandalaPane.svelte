@@ -9,15 +9,22 @@
     sequence: SequenceData;
     bluePropType?: string;
     redPropType?: string;
+    /**
+     * The mandala controller. Owned by ArtPane so the same instance backs both
+     * the in-pane dock/takeover and the Art panel's Export button. Falls back to
+     * a locally-created instance for standalone mounts (e.g. test pages) that
+     * don't supply one.
+     */
+    ctrl?: MandalaViewerController;
   }
 
-  let { sequence, bluePropType, redPropType }: Props = $props();
+  let { sequence, bluePropType, redPropType, ctrl: providedCtrl }: Props = $props();
 
   let stageEl: HTMLDivElement | undefined = $state();
   let containerSize: number = $state(400);
   let dockHeight = $state(76);
 
-  const ctrl = new MandalaViewerController({
+  const ctrl = providedCtrl ?? new MandalaViewerController({
     getSequence: () => sequence,
     getBluePropType: () => bluePropType,
     getRedPropType: () => redPropType,
