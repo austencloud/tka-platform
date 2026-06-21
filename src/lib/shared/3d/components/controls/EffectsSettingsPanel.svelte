@@ -24,7 +24,12 @@
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import { isEffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
-  import { CURATED_KNOBS, formatKnobValue } from "./effect-curated-knobs";
+  import EffectControlStack from "$lib/shared/effects/components/EffectControlStack.svelte";
+  import {
+    EFFECTS_WITH_3D_RENDERER,
+    advancedControls,
+  } from "$lib/shared/effects/domain/effect-control-manifest";
+  import type { EffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
   import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import type { EffectType } from "$lib/shared/effects/domain/effects-config";
 
@@ -45,8 +50,11 @@
   // Grid combines the 12 unified effects + motion (scene-level render modifier).
   // Registry is canonical for order, label, icon, color.
   type EffectKey = EffectType | "motion";
+  // Only effects with a live 3D renderer are listed in the 3D viewer — the
+  // renderer-less effects (zap/echo/water/…) are no-ops here. Motion stays as a
+  // scene-level modifier.
   const effectChips: ReadonlyArray<{ key: EffectKey; label: string; icon: string; color: string }> = [
-    ...EFFECTS.map((e) => ({
+    ...EFFECTS.filter((e) => EFFECTS_WITH_3D_RENDERER.has(e.id as EffectId)).map((e) => ({
       key: e.id as EffectType,
       label: e.label,
       icon: e.icon.replace(/^fa-/, ""),
@@ -127,21 +135,13 @@
     }
     return null;
   });
-  const activeEffect = $derived(
-    activeEffectKey ? effectChips.find((e) => e.key === activeEffectKey) ?? null : null,
+  // The active effect's id (if it's a real effect, not motion) — drives the
+  // shared control stack rendered above the chip grid.
+  const activeEffectId = $derived(
+    activeEffectKey && isEffectId(activeEffectKey) ? (activeEffectKey as EffectId) : null,
   );
-  const curatedKnobs = $derived(
-    activeEffectKey && isEffectId(activeEffectKey) ? CURATED_KNOBS[activeEffectKey] : undefined,
-  );
-
-  function getKnob(key: EffectKey, field: string): number {
-    if (!isEffectId(key)) return 0;
-    return ((config.effect(key) as unknown as Record<string, number>)[field]) ?? 0;
-  }
-  function setKnob(key: EffectKey, field: string, value: number) {
-    if (!isEffectId(key)) return;
-    config.updateEffect(key, { [field]: value } as never);
-  }
+  let showAdvanced = $state(false);
+  const hasAdvanced = $derived(activeEffectId ? advancedControls(activeEffectId).length > 0 : false);
 
   // --- Footer: Copy Diagnostic / Save Defaults / Reset ---
   let copyStatus = $state<"idle" | "copied" | "failed">("idle");
@@ -188,89 +188,25 @@
     {/each}
   </div>
 
-  <!-- Trail Mode + Tracking (params are global/scene-wide). -->
-  {#if isEnabled("trails")}
-    <div class="sub-control">
-      <span class="sub-label">{t("viewer3d_color")}</span>
-      <div class="mode-chips">
+  <!-- Active effect's controls, from the shared manifest (same controls 2D
+       renders). Shown automatically while that effect is on — no double-click. -->
+  {#if activeEffectId}
+    <div class="effect-controls">
+      <EffectControlStack effect={activeEffectId} {config} />
+      {#if hasAdvanced}
         <button
-          class="mode-chip"
-          class:active={config.trails.rainbow}
-          onclick={() => config.updateEffect("trails", { rainbow: true })}
-          aria-label="Trail color: Rainbow"
-          aria-pressed={config.trails.rainbow}
+          type="button"
+          class="advanced-toggle"
+          aria-expanded={showAdvanced}
+          onclick={() => (showAdvanced = !showAdvanced)}
         >
-          Rainbow
+          <i class="fas fa-{showAdvanced ? 'chevron-up' : 'chevron-down'}" aria-hidden="true"></i>
+          Advanced
         </button>
-        <button
-          class="mode-chip"
-          class:active={!config.trails.rainbow}
-          onclick={() => config.updateEffect("trails", { rainbow: false })}
-          aria-label="Trail color: Solid"
-          aria-pressed={!config.trails.rainbow}
-        >
-          Solid
-        </button>
-      </div>
-    </div>
-
-    <div class="sub-control">
-      <span class="sub-label">{t("viewer3d_track")}</span>
-      <div class="mode-chips triple">
-        <button
-          class="mode-chip"
-          class:active={config.trails.trackingMode === "left_end"}
-          onclick={() => config.updateEffect("trails", { trackingMode: "left_end" })}
-          aria-label="Track left end only"
-          aria-pressed={config.trails.trackingMode === "left_end"}
-          title="Track left end only"
-        >
-          Left
-        </button>
-        <button
-          class="mode-chip"
-          class:active={config.trails.trackingMode === "both_ends"}
-          onclick={() => config.updateEffect("trails", { trackingMode: "both_ends" })}
-          aria-label="Track both ends"
-          aria-pressed={config.trails.trackingMode === "both_ends"}
-          title="Track both ends"
-        >
-          Both
-        </button>
-        <button
-          class="mode-chip"
-          class:active={config.trails.trackingMode === "right_end"}
-          onclick={() => config.updateEffect("trails", { trackingMode: "right_end" })}
-          aria-label="Track right end only"
-          aria-pressed={config.trails.trackingMode === "right_end"}
-          title="Track right end only"
-        >
-          Right
-        </button>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Curated per-effect knobs for the active effect (effects with a live 3D
-       renderer). Always visible while that effect is on — no double-click. -->
-  {#if activeEffectKey && curatedKnobs && activeEffect}
-    <div class="curated-knobs" style="--color: {activeEffect.color}">
-      {#each curatedKnobs as knob (knob.field)}
-        <div class="knob-row">
-          <span class="sub-label">{knob.label}</span>
-          <input
-            type="range"
-            min={knob.min}
-            max={knob.max}
-            step={knob.step}
-            value={getKnob(activeEffectKey, knob.field)}
-            oninput={(e) =>
-              activeEffectKey && setKnob(activeEffectKey, knob.field, parseFloat(e.currentTarget.value))}
-            class="intensity-slider"
-          />
-          <span class="knob-value">{formatKnobValue(knob, getKnob(activeEffectKey, knob.field))}</span>
-        </div>
-      {/each}
+        {#if showAdvanced}
+          <EffectControlStack effect={activeEffectId} {config} tiers={["advanced"]} />
+        {/if}
+      {/if}
     </div>
   {/if}
 
@@ -394,85 +330,32 @@
     opacity: 1;
   }
 
-  .sub-control {
+  /* Active effect's control stack, rendered above the chip grid. */
+  .effect-controls {
     margin-top: 0.75rem;
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    flex-direction: column;
+    gap: 0.6rem;
   }
 
-  .sub-label {
-    font-size: var(--font-size-compact, 0.75rem);
-    color: var(--theme-text-dim);
-    flex-shrink: 0;
-  }
-
-  .mode-chips {
+  .advanced-toggle {
+    align-self: flex-start;
     display: flex;
-    gap: 0.25rem;
-    flex: 1;
-  }
-
-  .mode-chips.triple .mode-chip {
-    padding: 0 0.5rem;
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .mode-chip {
-    flex: 1;
-    min-height: 36px;
-    background: var(--theme-panel-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 8px;
+    align-items: center;
+    gap: 0.4rem;
+    background: none;
+    border: none;
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--duration-fast);
+    padding: 0.2rem 0;
   }
-
-  .mode-chip:hover {
-    background: var(--theme-card-hover-bg);
+  .advanced-toggle:hover {
     color: var(--theme-text);
   }
-
-  .mode-chip.active {
-    background: var(--theme-accent);
-    border-color: var(--theme-accent);
-    color: white;
-  }
-
-  .intensity-slider {
-    width: 100%;
-    height: 6px;
-    appearance: none;
-    background: var(--theme-panel-bg);
-    border-radius: 3px;
-    outline: none;
-    cursor: pointer;
-  }
-
-  .intensity-slider::-webkit-slider-thumb {
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    background: var(--color);
-    border-radius: 50%;
-    cursor: pointer;
-    transition: transform var(--duration-instant);
-  }
-
-  .intensity-slider::-webkit-slider-thumb:hover {
-    transform: scale(1.1);
-  }
-
-  .intensity-slider::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    background: var(--color);
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
+  .advanced-toggle i {
+    font-size: 0.7rem;
   }
 
   .active-count {
@@ -480,29 +363,6 @@
     font-size: var(--font-size-compact, 0.75rem);
     color: var(--theme-text-dim);
     text-align: center;
-  }
-
-  /* Curated tuning: one labelled slider + readout per knob. */
-  .curated-knobs {
-    margin-top: 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-
-  .knob-row {
-    display: grid;
-    grid-template-columns: 4.5rem 1fr 3ch;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .knob-value {
-    font-size: var(--font-size-compact, 0.75rem);
-    color: var(--theme-text);
-    text-align: right;
-    /* Stable digit width so dragging never jitters the readout column. */
-    font-variant-numeric: tabular-nums;
   }
 
   /* Footer actions: equal thirds so the Copy label swapping
