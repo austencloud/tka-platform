@@ -16,7 +16,9 @@ export const propCollection = $state<PropCollection>(defaultCollection());
 
 /** Replace the mirrored collection (called by the manager after every change). */
 export function setPropCollection(next: PropCollection): void {
-  propCollection.unlockedPropTypes = next.unlockedPropTypes;
+  // Defensive copy of the array so the rune never aliases the manager's live
+  // collection — a future in-place mutation there can't silently bypass reactivity.
+  propCollection.unlockedPropTypes = [...next.unlockedPropTypes];
   propCollection.creationCount = next.creationCount;
   propCollection.pendingPicks = next.pendingPicks;
 }
