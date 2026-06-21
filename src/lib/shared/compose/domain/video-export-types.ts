@@ -79,6 +79,17 @@ export interface VideoExportOrchestratorOptions {
   additionalLayersForBeat?: (beat: number) => AdditionalLayerProps[];
 
   /**
+   * Square source-size override (px). When set, the export ignores the live
+   * `canvas` arg for sizing and renders a square source of width=height=size
+   * with NO word-header / progress-bar reserved space — and SKIPS the
+   * zero-dimension guard on `canvas`. Used by tunnel/art export, where the live
+   * 2D AnimatorCanvas is not mounted (Art mode's left pane is the mandala/tunnel,
+   * not the animator), so `canvas` is a throwaway placeholder. Omit for normal
+   * sequence export (the live canvas drives the source size as before).
+   */
+  sourceSizeOverride?: number;
+
+  /**
    * Per-export overrides for chrome visibility, merged OVER the global
    * visibility manager (does NOT mutate global state). Used by tunnel export to
    * suppress hand-path lines / grid / glyph / word header / step numbers /

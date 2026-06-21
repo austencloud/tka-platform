@@ -84,17 +84,29 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     // overlayOverrides merge OVER the global visibility manager so the exported
     // aspect ratio matches when tunnel export suppresses the header/progress bar.
     const visibilityManager = getAnimationVisibilityManager();
-    const showWordHeader =
-      options.overlayOverrides?.wordHeader ?? visibilityManager.getVisibility("wordHeader");
-    const showProgressBar =
-      options.overlayOverrides?.progressBar ?? visibilityManager.getVisibility("progressBar");
+    // sourceSizeOverride decouples the source dimensions from the (possibly
+    // unmounted) live canvas — tunnel/art export drives its OWN offscreen
+    // engine, so `canvas` is only a sizing placeholder. A square source with no
+    // header/progress chrome; the zero-dimension guard below is skipped.
+    const sourceSizeOverride = options.sourceSizeOverride;
+    const hasSourceOverride =
+      typeof sourceSizeOverride === "number" && sourceSizeOverride > 0;
+    // Width used for header/progress sizing math. With an override the chrome is
+    // forced off, so this only feeds the (zeroed) height calls.
+    const sourceSizingWidth = hasSourceOverride ? sourceSizeOverride : canvas.width;
+    const showWordHeader = hasSourceOverride
+      ? false
+      : (options.overlayOverrides?.wordHeader ?? visibilityManager.getVisibility("wordHeader"));
+    const showProgressBar = hasSourceOverride
+      ? false
+      : (options.overlayOverrides?.progressBar ?? visibilityManager.getVisibility("progressBar"));
     // Header/progress bar heights at SOURCE resolution - used only for
     // aspect ratio calculation so the output dimensions stay correct.
     const srcHeaderHeight = showWordHeader
-      ? getHeaderHeight(canvas.width)
+      ? getHeaderHeight(sourceSizingWidth)
       : 0;
     const srcProgressBarHeight = showProgressBar
-      ? getProgressBarHeight(canvas.width)
+      ? getProgressBarHeight(sourceSizingWidth)
       : 0;
 
     // Compute header overlays (difficulty badge + LOOP icon strip) once per export.
@@ -132,13 +144,19 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     // Resolve FPS early - used by both encoder paths and frame calculations
     const fps = options.fps ?? VIDEO_EXPORT_FPS;
 
-    // Calculate source dimensions from the live canvas (includes header + progress bar)
-    const sourceWidth = Math.round(canvas.width);
-    const sourceHeight = Math.round(
-      canvas.width + srcHeaderHeight + srcProgressBarHeight
-    );
+    // Calculate source dimensions. Normally from the live canvas (square anim
+    // area + header + progress bar). With sourceSizeOverride the source is a
+    // bare square of that size — the live canvas may be unmounted (tunnel/art).
+    const sourceWidth = hasSourceOverride
+      ? Math.round(sourceSizeOverride!)
+      : Math.round(canvas.width);
+    const sourceHeight = hasSourceOverride
+      ? Math.round(sourceSizeOverride!)
+      : Math.round(canvas.width + srcHeaderHeight + srcProgressBarHeight);
 
-    if (sourceWidth === 0 || sourceHeight === 0) {
+    // Zero-dimension guard only applies to the live-canvas path — an override
+    // supplies its own valid square size, so skip the throw.
+    if (!hasSourceOverride && (sourceWidth === 0 || sourceHeight === 0)) {
       throw new Error(
         `Cannot export: canvas has zero dimensions (${canvas.width}x${canvas.height}). ` +
         "Wait for the animation to load before exporting."

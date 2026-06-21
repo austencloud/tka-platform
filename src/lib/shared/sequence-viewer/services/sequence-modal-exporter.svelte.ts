@@ -9,6 +9,8 @@ import { recordExportThroughput } from "$lib/shared/animation-panel/state/export
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { AnimationPlaybackController } from '$lib/shared/animation-engine/services/animation-playback-controller';
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+import type { VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
+import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
 
 import { tryGetVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
 import { getOffline3DExporter } from "$lib/shared/3d/get-offline-3d-exporter";
@@ -35,6 +37,23 @@ export interface VideoExportOptions {
    * slower but produces a visibly smoother, sharper result. 3D exports only.
    */
   quality?: "standard" | "cinema";
+  /**
+   * Square source-size override (px). Forwarded to the orchestrator so the
+   * export sizes itself off this square instead of the live canvas. Set by the
+   * tunnel/art export, where the live 2D animator canvas is not mounted.
+   */
+  sourceSizeOverride?: number;
+  /**
+   * Per-beat overlaid prop layers injected into the offscreen engine (tunnel
+   * kaleidoscope's extra copies). Forwarded to the orchestrator.
+   */
+  additionalLayersForBeat?: (beat: number) => AdditionalLayerProps[];
+  /**
+   * Per-export chrome-visibility overrides, merged over the global visibility
+   * manager (does NOT mutate global state). Forwarded to the orchestrator so
+   * tunnel/art export can suppress glyph / header / progress / path lines / grid.
+   */
+  overlayOverrides?: VideoExportOrchestratorOptions["overlayOverrides"];
 }
 
 export interface ImageExportOptions {
@@ -210,6 +229,10 @@ export class SequenceModalExporter {
           // default "staff" instead of the live prop.
           bluePropType: settingsService.settings.bluePropType ?? settingsService.settings.propType ?? "staff",
           redPropType: settingsService.settings.redPropType ?? settingsService.settings.propType ?? "staff",
+          // Tunnel/art export pass-throughs (absent for normal sequence export).
+          sourceSizeOverride: options.sourceSizeOverride,
+          additionalLayersForBeat: options.additionalLayersForBeat,
+          overlayOverrides: options.overlayOverrides,
         }
       );
 
