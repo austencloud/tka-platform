@@ -1,4 +1,4 @@
-# Level 1 Guide — Proofing + Reprint Loop
+ # Level 1 Guide — Proofing + Reprint Loop
 
 **Date:** 2026-06-21
 **Status:** Approved (design)
