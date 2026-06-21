@@ -102,8 +102,10 @@ export interface RenderFrameParams {
   fireConfig?: FireOverlayConfig | null;
   /** Whether dark mode is active (used by fire renderer for intensity boost) */
   darkMode?: boolean;
-  /** Prop colors for colored flames: [leftPropColor, rightPropColor] */
-  propColors?: [PropFlameColor, PropFlameColor];
+  /** Prop colors for colored flames, indexed by tip.propIndex.
+   *  [0]=base blue, [1]=base red; extra entries are tunnel-layer colors
+   *  (blue 2+2*li / red 3+2*li) when overlaid layers are present. */
+  propColors?: PropFlameColor[];
   /** LED overlay configuration (null or undefined = disabled) */
   ledConfig?: LedOverlayConfig | null;
   /** Zap (lightning) overlay parameters (null or undefined = disabled) */

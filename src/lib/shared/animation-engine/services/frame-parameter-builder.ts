@@ -15,6 +15,8 @@ import { type TrailSettings, DEFAULT_TRAIL_SETTINGS, TrailMode } from "../domain
 import { TrackingMode } from "../domain/types/trail-types";
 import { DEFAULT_PROP_DIMENSIONS } from "./IPropTextureLoader";
 import { DEFAULT_PROP_FLAME_COLORS } from "../domain/types/fire-types";
+import type { PropFlameColor } from "../domain/types/fire-types";
+import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import type { AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
 import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
@@ -107,6 +109,14 @@ export class FrameParameterBuilder {
 
   // Sequence content hash for detecting beat duration changes
   lastSequenceContentHash: string | null = null;
+
+  // ── Tunnel-layer fire colors cache ──────────────────────────────────
+  // Extended propColors array (base pair + one spectrum color per layer end)
+  // for colored flames on overlaid kaleidoscope copies. Rebuilt only when the
+  // layer count or the base blue/red colors change, then reused each frame.
+  private extendedPropColors: PropFlameColor[] | null = null;
+  private extendedPropColorsLayerCount = -1;
+  private extendedPropColorsBaseRef: PropFlameColor[] | null = null;
 
   // Reusable frame params object to avoid GC pressure (created once, mutated each frame)
   private readonly frameParams: RenderFrameParams = {
@@ -248,8 +258,18 @@ export class FrameParameterBuilder {
     // Fire/charcoal overlay config - pass when either effect is active
     fp.fireConfig = (prevHasFireTips || prevHasCharcoalTips) ? erm.fireConfig : null;
     fp.darkMode = prevDarkMode;
-    // Prop colors for colored flames - read from EffectsConfigState, else default blue/red
-    fp.propColors = effectsConfigState?.fire.propColors ?? DEFAULT_PROP_FLAME_COLORS;
+    // Prop colors for colored flames - read from EffectsConfigState, else default blue/red.
+    // The fire splat indexes this by tip.propIndex, so when the tunnel overlays
+    // layers (propIndex >= 2) we extend the 2-entry base array with a distinct
+    // spectrum color per layer end (tunnelPropColor) so each kaleidoscope copy's
+    // flame matches its prop. No layers → the plain base pair, unchanged.
+    const basePropColors = effectsConfigState?.fire.propColors ?? DEFAULT_PROP_FLAME_COLORS;
+    const layerCount = fp.props.additionalLayers.length;
+    if (layerCount > 0) {
+      fp.propColors = this.getExtendedPropColors(basePropColors, layerCount);
+    } else {
+      fp.propColors = basePropColors;
+    }
 
     // LED overlay config
     fp.ledConfig = erm.ledConfig.enabled ? erm.ledConfig : null;
@@ -527,6 +547,37 @@ export class FrameParameterBuilder {
       return { ...settings, mode: TrailMode.OFF };
     }
     return settings;
+  }
+
+  /**
+   * Build (and cache) the extended fire propColors array for `layerCount`
+   * overlaid tunnel layers. Index 0/1 stay the base blue/red; index 2+2*li /
+   * 3+2*li get the layer's spectrum color (tunnelPropColor rgb01, which is the
+   * same {r,g,b} 0..1 shape as PropFlameColor). Rebuilt only when the layer
+   * count or the base color array identity changes; reused each frame otherwise.
+   */
+  private getExtendedPropColors(
+    base: PropFlameColor[],
+    layerCount: number
+  ): PropFlameColor[] {
+    if (
+      this.extendedPropColors &&
+      this.extendedPropColorsLayerCount === layerCount &&
+      this.extendedPropColorsBaseRef === base
+    ) {
+      return this.extendedPropColors;
+    }
+
+    const out: PropFlameColor[] = [base[0]!, base[1]!];
+    for (let li = 0; li < layerCount; li++) {
+      out[2 + li * 2] = tunnelPropColor(2 + li * 2, layerCount).rgb01;
+      out[3 + li * 2] = tunnelPropColor(3 + li * 2, layerCount).rgb01;
+    }
+
+    this.extendedPropColors = out;
+    this.extendedPropColorsLayerCount = layerCount;
+    this.extendedPropColorsBaseRef = base;
+    return out;
   }
 
   /** Reset cached hand presence (called on dispose). */

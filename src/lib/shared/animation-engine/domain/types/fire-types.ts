@@ -96,8 +96,12 @@ export interface FireFrameInput {
   canvasHeight: number;
   /** Whether dark mode is active (affects intensity) */
   darkMode: boolean;
-  /** Prop colors for colored flames: [leftPropColor, rightPropColor] */
-  propColors?: [PropFlameColor, PropFlameColor];
+  /** Prop colors for colored flames, indexed by tip.propIndex.
+   *  [0]=base blue, [1]=base red; [2+2*li]/[3+2*li]=tunnel-layer blue/red.
+   *  The base pair is always present; extra entries appear only when the
+   *  tunnel stacks overlaid layers, so the fire splat reads a distinct
+   *  spectrum color per kaleidoscope copy. */
+  propColors?: PropFlameColor[];
   /** Set to true on the frame where the animation loops back to the start */
   loopDetected?: boolean;
   /** Playback speed multiplier (1.0 = 60 BPM). Used for cache invalidation - different speeds produce different fire physics. */
