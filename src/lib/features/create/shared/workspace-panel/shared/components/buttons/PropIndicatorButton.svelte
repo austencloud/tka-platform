@@ -11,10 +11,13 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { propDrawerState } from "$lib/shared/settings/state/prop-drawer-state.svelte";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
+  import { propCollection } from "$lib/shared/gamification/state/prop-collection-state.svelte";
+  import { openPropCelebration } from "$lib/shared/gamification/state/prop-celebration-state.svelte";
 
   const settings = $derived(getSettings());
   const bluePropType = $derived(settings.bluePropType ?? PropType.STAFF);
   const displayInfo = $derived(getPropTypeDisplayInfo(bluePropType));
+  const hasPendingPick = $derived(propCollection.pendingPicks > 0);
 
   function shuffleToRandomProp() {
     const allProps = getAllPropTypes();
@@ -43,6 +46,14 @@
     } catch {
       // Haptic not available
     }
+
+    // A pending pick means the user has an unclaimed prop reward — route the tap
+    // to the celebration to redeem it instead of opening the prop drawer.
+    if (hasPendingPick) {
+      openPropCelebration();
+      return;
+    }
+
     propDrawerState.toggle();
   }
 </script>
@@ -55,10 +66,14 @@
   data-testid="prop-indicator-button"
 >
   <PropCompositionPreview propType={bluePropType} size={40} />
+  {#if hasPendingPick}
+    <span class="redeem-dot" aria-label="Claim your new prop"></span>
+  {/if}
 </button>
 
 <style>
   .prop-indicator-button {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -73,6 +88,17 @@
     -webkit-tap-highlight-color: transparent;
     padding: 0;
     filter: brightness(1.3) saturate(1.3);
+  }
+
+  .redeem-dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6d5ef0, #b14ddb);
+    box-shadow: 0 0 0 2px var(--theme-panel-bg, #14141f);
   }
 
   .prop-indicator-button:hover {

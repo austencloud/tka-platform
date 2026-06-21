@@ -92,6 +92,8 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   import { formatLOOPTypeForDisplay } from "$lib/shared/create/services/loop-type-utils";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { UndoOperationType } from "../services/undo-manager";
+  import PropUnlockCelebration from "$lib/shared/gamification/components/PropUnlockCelebration.svelte";
+  import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
 
   const logger = createComponentLogger("CreateModule");
 
@@ -279,6 +281,10 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   // ============================================================================
   onMount(() => {
     let checkIsMobile: (() => void) | null = null;
+
+    // Hydrate the prop-unlock collection on entry so the redemption badge and
+    // celebration reflect the user's pending picks immediately.
+    void getPropUnlockManager().load();
 
     // Run async initialization in an IIFE
     (async () => {
@@ -865,6 +871,10 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
     onCancel={cancelLoopCompletion}
     onDontAskAgainChange={handleSkipLoopConfirmationChange}
   />
+
+  <!-- Prop unlock celebration - opens on milestone or via the prop-button
+       redemption badge; renders above module content at the module root. -->
+  <PropUnlockCelebration />
 {:else}
   <!-- Loading state while async initialization completes -->
   <div class="create-tab create-loading">
