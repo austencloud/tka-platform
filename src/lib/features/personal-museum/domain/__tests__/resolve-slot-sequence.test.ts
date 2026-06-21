@@ -41,4 +41,29 @@ describe("resolveSlotSequence", () => {
     const out = resolveSlotSequence(slots, {}, [], new Set());
     expect(out).toEqual({ s1: null, s2: null, s3: null });
   });
+
+  it("duplicate favorites fill only ONE slot", () => {
+    const out = resolveSlotSequence(["s1", "s2"], {}, ["favA", "favA"], new Set(["favA"]));
+    expect(out).toEqual({ s1: "favA", s2: null });
+  });
+
+  it("favorites overflow: more favorites than open slots fills only the available slots", () => {
+    const out = resolveSlotSequence(
+      ["s1", "s2"],
+      {},
+      ["favA", "favB", "favC"],
+      new Set(["favA", "favB", "favC"]),
+    );
+    expect(out).toEqual({ s1: "favA", s2: "favB" });
+  });
+
+  it("placement for a slot id NOT in slotIds is ignored and not present in output", () => {
+    const out = resolveSlotSequence(
+      ["s1"],
+      { sZ: p("seqQ") },
+      [],
+      new Set(["seqQ"]),
+    );
+    expect(out).toEqual({ s1: null });
+  });
 });

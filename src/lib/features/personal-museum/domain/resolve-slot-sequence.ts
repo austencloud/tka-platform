@@ -33,8 +33,15 @@ export function resolveSlotSequence(
     }
   }
 
-  // Pass 2: auto-fill remaining slots from favorites, skipping already-used.
-  const queue = favoritesOrdered.filter((id) => availableIds.has(id) && !used.has(id));
+  // Pass 2: auto-fill remaining slots from favorites, skipping already-used + duplicates.
+  const seen = new Set<string>(used);
+  const queue: string[] = [];
+  for (const id of favoritesOrdered) {
+    if (availableIds.has(id) && !seen.has(id)) {
+      seen.add(id);
+      queue.push(id);
+    }
+  }
   let qi = 0;
   for (const slot of autoFillSlots) {
     result[slot] = qi < queue.length ? queue[qi++] : null;
