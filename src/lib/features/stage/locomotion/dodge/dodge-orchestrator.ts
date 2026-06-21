@@ -14,7 +14,40 @@ import type { StancePose } from "$lib/features/lab/tabs/collision-lab/domain/typ
 import type { MotionConfig3D } from "$lib/shared/3d/domain/models/motion-data-3d";
 import { buildSweptVolume } from "./swept-volume-builder";
 import { computeInsideGammaTarget } from "./inside-gamma-target";
-import type { DodgeSolution } from "./dodge-types";
+import { SweptTube } from "./swept-tube";
+import { planVacate } from "./dodge-vacate-planner";
+import {
+  DEFAULT_DODGE_KNOB,
+  type DodgeKnob,
+  type DodgePlan,
+  type DodgeSolution,
+} from "./dodge-types";
+
+/**
+ * Plan the dodge analytically: sample both hands' swept tubes, then run the
+ * VacatePlanner to a single deterministic clearing stance. No StanceOptimizer,
+ * no trajectory search — the returned `placement` is a pure function of sweep
+ * progress (held stance in v1), so the live rig never jitters.
+ */
+export function planDodge(
+  blueConfig: MotionConfig3D,
+  redConfig: MotionConfig3D,
+  heightMeters = 1.8,
+  sampleCount = 24,
+  restPoseOverride?: RestPoseGeometry,
+  knob: DodgeKnob = DEFAULT_DODGE_KNOB,
+): DodgePlan {
+  const blueTube = new SweptTube(buildSweptVolume(blueConfig, sampleCount).samples);
+  const redTube = new SweptTube(buildSweptVolume(redConfig, sampleCount).samples);
+  const body = restPoseOverride ?? restPoseFromHeight(heightMeters);
+  const res = planVacate(blueTube, redTube, body, knob);
+  return {
+    placement: () => res.placement,
+    knob,
+    worstBodyDepth: res.worstBodyDepth,
+    feasible: res.feasible,
+  };
+}
 
 const NEUTRAL: StancePose = {
   footOffsetX: 0,
