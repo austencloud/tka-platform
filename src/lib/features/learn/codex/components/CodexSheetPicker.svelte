@@ -235,12 +235,17 @@
     border-radius: 8px;
     background: transparent;
     cursor: pointer;
-    transition: border-color 120ms, transform 120ms;
+    transition: border-color 160ms ease, box-shadow 160ms ease, transform 140ms ease;
   }
   .cell:hover { transform: translateY(-1px); }
   .cell.active {
     border-color: var(--theme-accent, #50c878);
     box-shadow: 0 0 0 1px var(--theme-accent, #50c878);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cell { transition: none; }
+    .cell:hover { transform: none; }
   }
 
   .picto {

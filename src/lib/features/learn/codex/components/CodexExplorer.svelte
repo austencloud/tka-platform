@@ -13,6 +13,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import { fade } from "svelte/transition";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -32,6 +33,10 @@
   // Dark mode is the user's GLOBAL setting.
   const animVis = getAnimationVisibilityManager();
   let isDarkMode = $state(animVis.isDarkMode());
+
+  // Subtle motion: gentle in-fades on content swaps, zeroed under reduced motion.
+  let reduceMotion = $state(false);
+  let fadeMs = $derived(reduceMotion ? 0 : 160);
 
   let allPictographs = $state<PictographData[]>([]);
   let isLoading = $state(true);
@@ -105,7 +110,14 @@
     animVis.setDarkMode(dark);
   }
 
-  onMount(load);
+  onMount(() => {
+    load();
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    reduceMotion = mq.matches;
+    const onChange = () => (reduceMotion = mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  });
 </script>
 
 <!-- ============ Control snippets ============ -->
@@ -164,12 +176,16 @@
 
 {#snippet codexPanel()}
   <div class="codex-pane themed-scrollbar">
-    <CodexSheetPicker
-      selectedLetter={view.selectedLetter}
-      {representatives}
-      darkMode={isDarkMode}
-      onSelect={selectLetter}
-    />
+    {#key view.gridMode}
+      <div in:fade={{ duration: fadeMs }}>
+        <CodexSheetPicker
+          selectedLetter={view.selectedLetter}
+          {representatives}
+          darkMode={isDarkMode}
+          onSelect={selectLetter}
+        />
+      </div>
+    {/key}
   </div>
 {/snippet}
 
@@ -180,7 +196,8 @@
     {:else if shown.length === 0}
       <div class="state">No variations for "{view.selectedLetter}"</div>
     {:else}
-      <div class="pgrid">
+      {#key view.selectedLetter + "|" + view.gridMode}
+      <div class="pgrid" in:fade={{ duration: fadeMs }}>
         {#each shown as v, i (v.id ?? i)}
           <figure class="pcard" class:dark={isDarkMode}>
             <div class="pwrap">
@@ -199,6 +216,7 @@
           </figure>
         {/each}
       </div>
+      {/key}
     {/if}
   </div>
 {/snippet}
@@ -297,6 +315,10 @@
     transition: transform 120ms, box-shadow 120ms;
   }
   .pcard:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28); }
+  @media (prefers-reduced-motion: reduce) {
+    .pcard { transition: none; }
+    .pcard:hover { transform: none; }
+  }
   .pcard.dark { background: #0a0a12; }
   .pwrap { aspect-ratio: 1; width: 100%; }
 
