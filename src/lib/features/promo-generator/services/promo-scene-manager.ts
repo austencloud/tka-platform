@@ -26,39 +26,11 @@ import type {
 /**
  * Default device configurations
  */
-const DEVICE_CONFIGS: Record<DeviceType, DeviceConfig> = {
+const DEVICE_CONFIGS: Partial<Record<DeviceType, DeviceConfig>> = {
   "iphone-16": {
     id: "iphone-16",
     name: "iPhone 16",
     modelPath: "/models/iphone-16.glb",
-    screenMeshName: "Screen",
-    screenAspectRatio: 19.5 / 9,
-  },
-  "iphone-15-pro": {
-    id: "iphone-15-pro",
-    name: "iPhone 15 Pro",
-    modelPath: "/models/iphone-15-pro.glb",
-    screenMeshName: "Screen",
-    screenAspectRatio: 19.5 / 9,
-  },
-  "iphone-14": {
-    id: "iphone-14",
-    name: "iPhone 14",
-    modelPath: "/models/iphone-14.glb",
-    screenMeshName: "Screen",
-    screenAspectRatio: 19.5 / 9,
-  },
-  "pixel-8": {
-    id: "pixel-8",
-    name: "Google Pixel 8",
-    modelPath: "/models/pixel-8.glb",
-    screenMeshName: "Screen",
-    screenAspectRatio: 20 / 9,
-  },
-  "generic-phone": {
-    id: "generic-phone",
-    name: "Generic Phone",
-    modelPath: "/models/generic-phone.glb",
     screenMeshName: "Screen",
     screenAspectRatio: 19.5 / 9,
   },
@@ -383,7 +355,9 @@ export class PromoSceneManager {
   }
 
   getAvailableDevices(): DeviceConfig[] {
-    return Object.values(DEVICE_CONFIGS);
+    return Object.values(DEVICE_CONFIGS).filter(
+      (c): c is DeviceConfig => c !== undefined
+    );
   }
 
   /**

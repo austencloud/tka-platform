@@ -14,11 +14,10 @@ import type * as THREE from "three";
  * Supported device types for mockups
  */
 export type DeviceType =
+  // Only iphone-16.glb ships in static/models (the others were never committed —
+  // "moved to R2" removed them). "custom" marks a user-uploaded .glb/.gltf.
   | "iphone-16"
-  | "iphone-15-pro"
-  | "iphone-14"
-  | "pixel-8"
-  | "generic-phone";
+  | "custom";
 
 /**
  * Device configuration including model path and screen mesh info

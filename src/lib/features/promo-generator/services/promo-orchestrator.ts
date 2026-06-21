@@ -75,10 +75,10 @@ export class PromoOrchestrator {
       if (typeof device === "string" && !device.startsWith("/")) {
         // Custom path
         await this.sceneManager.loadDeviceFromPath(device);
-        this.updateState({ currentDevice: "generic-phone" as DeviceType });
+        this.updateState({ currentDevice: "custom" as DeviceType });
       } else if (typeof device === "string") {
         await this.sceneManager.loadDeviceFromPath(device);
-        this.updateState({ currentDevice: "generic-phone" as DeviceType });
+        this.updateState({ currentDevice: "custom" as DeviceType });
       } else {
         await this.sceneManager.loadDevice(device);
         this.updateState({ currentDevice: device });
