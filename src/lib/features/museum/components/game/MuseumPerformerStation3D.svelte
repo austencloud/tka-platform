@@ -32,6 +32,12 @@
     sequenceId?: string;
     autoPlay?: boolean;
     showGrid?: boolean;
+    /**
+     * Optional injection map for resolving a sequenceId to a user's PRIVATE
+     * library sequence. Checked BEFORE MUSEUM_EXHIBIT_SEQUENCES and the
+     * Firestore fallback. Undefined in the official museum (default behavior).
+     */
+    userSequenceDataMap?: Map<string, SequenceData>;
   }
 
   const props: Props = $props();
@@ -92,6 +98,19 @@
     const id = props.sequenceId; // subscribe to sequenceId reactively via props object
     untrack(() => {
       if (!id || !performerState) return;
+
+      // Injected branch: resolve from a user's private library map first.
+      // Uses the SequenceData directly (no buildSequenceData), mirroring the
+      // Firestore fallback. Only fires when the map actually has this id, so
+      // the official museum (map undefined) is unaffected.
+      const injected = props.userSequenceDataMap?.get(id);
+      if (injected) {
+        resolvedSequence = injected;
+        performerState.loadSequence(injected);
+        performerState.loop = true;
+        if (autoPlay) performerState.play();
+        return;
+      }
 
       const museumSeq = MUSEUM_EXHIBIT_SEQUENCES[id] ?? null;
       if (museumSeq) {

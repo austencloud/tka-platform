@@ -13,6 +13,7 @@
   import { tileKey } from "../../domain/museum-grid-types";
   import { UnifiedCameraController, CameraMode } from "@austencloud/camera-3d";
   import type { AvatarState } from "@austencloud/camera-3d";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { createMuseumPhysicsProvider, MuseumPhysicsProvider } from "../../services/museum-physics-provider";
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import MuseumFurniture from "./MuseumFurniture.svelte";
@@ -113,6 +114,13 @@
     onGeometryReady?: () => void;
     /** False when the museum is mounted-but-hidden (keep-alive) - pause per-frame work */
     visible?: boolean;
+    /**
+     * Optional injection map for resolving performer/formation sequenceIds to a
+     * user's PRIVATE library sequence (personal-museum reuse). Threaded down to
+     * MuseumPerformerStation3D + TelekineticFormation3D, checked there BEFORE
+     * MUSEUM_EXHIBIT_SEQUENCES. Undefined in the official museum (default).
+     */
+    userSequenceData?: Map<string, SequenceData>;
   }
 
   const props: Props = $props();
@@ -1257,6 +1265,7 @@
       worldZ={posOverride?.z ?? performer.tileY * TILE_SIZE}
       sequenceId={performer.sequenceId}
       autoPlay={performer.autoPlay}
+      userSequenceDataMap={props.userSequenceData}
     />
   {:else}
     {@const posOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`performer-station-${performer.id}`) : null}
@@ -1268,6 +1277,7 @@
       sequenceId={performer.sequenceId}
       autoPlay={performer.autoPlay}
       showGrid={true}
+      userSequenceDataMap={props.userSequenceData}
     />
   {/if}
 {/each}

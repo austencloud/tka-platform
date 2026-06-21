@@ -6,6 +6,7 @@
   import { MUSEUM_EXHIBIT_SEQUENCES } from "../../data/museum-exhibit-sequences";
   import { tileKey } from "../../domain/museum-grid-types";
   import type { MuseumGrid, ExhibitDefinition, PerformerDefinition, WingRegion } from "../../domain/museum-grid-types";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { SOLID_TYPES } from "../../services/museum-physics-provider";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import PlacementPickerPanel from "../editor/PlacementPickerPanel.svelte";
@@ -31,6 +32,12 @@
     onWingChange?: (wingId: string | null) => void;
     /** False when the museum is mounted-but-hidden (keep-alive) - pause the scene */
     visible?: boolean;
+    /**
+     * Optional injection map for resolving performer/formation sequenceIds to a
+     * user's PRIVATE library sequence (personal-museum reuse). Passed through to
+     * Museum3DScene. Undefined in the official museum (default behavior).
+     */
+    userSequenceData?: Map<string, SequenceData>;
   }
 
   const props: Props = $props();
@@ -509,6 +516,7 @@
       <Museum3DScene
         grid={props.grid}
         visible={props.visible}
+        userSequenceData={props.userSequenceData}
         {flipRequested}
         {resetRequested}
         {modeChangeRequested}

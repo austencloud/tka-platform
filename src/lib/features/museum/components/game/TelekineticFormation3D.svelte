@@ -10,10 +10,21 @@
     worldZ: number;
     sequenceId?: string;
     autoPlay?: boolean;
+    /**
+     * Optional injection map for resolving a sequenceId to a user's PRIVATE
+     * library sequence. Checked BEFORE MUSEUM_EXHIBIT_SEQUENCES. Undefined in
+     * the official museum (default behavior).
+     */
+    userSequenceDataMap?: Map<string, SequenceData>;
   }
   const props: Props = $props();
 
   const sequence = $derived.by((): SequenceData | null => {
+    // Injected branch: resolve from a user's private library map first. Only
+    // fires when the map has this id, so the official museum is unaffected.
+    const injected = props.sequenceId ? props.userSequenceDataMap?.get(props.sequenceId) : null;
+    if (injected) return injected;
+
     const ms = props.sequenceId ? MUSEUM_EXHIBIT_SEQUENCES[props.sequenceId] : null;
     if (!ms) return null;
     return {
