@@ -23,7 +23,9 @@ function getMaxColumnsForWidth(width: number): number {
 	if (width < 480) return 2;
 	if (width < 800) return 3;
 	if (width < 1200) return 4;
-	return 5;
+	if (width < 1800) return 5;
+	if (width < 2600) return 6;
+	return 7;
 }
 
 // Preserve state across HMR
