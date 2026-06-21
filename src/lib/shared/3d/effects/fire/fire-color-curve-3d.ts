@@ -31,9 +31,9 @@ const PRESETS: Record<Exclude<FireColorPreset, "custom">, FireColorSet> = {
     // the hue holds at orange instead of washing out to a white-yellow blob.
     // A near-white core only appears at the very brightest overlap, rimmed
     // orange — reads as fire, not a floodlight.
-    hot:   hex(255, 138, 46),   // #FF8A2E - orange core
-    warm:  hex(242, 84, 16),    // #F25410 - deep orange body
-    cool:  hex(184, 30, 8),     // #B81E08 - red outer
+    hot:   hex(255, 110, 20),   // #FF6E14 - rich orange core
+    warm:  hex(232, 64, 8),     // #E84008 - deep orange body
+    cool:  hex(168, 20, 4),     // #A81404 - red outer
     smoke: hex(40, 35, 30),     // #28231E - dark smoke
   },
   blue: {
