@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Vector3 } from 'three';
 import { TkaPoseClassifier } from './tka-pose-classifier';
+import { Orientation } from '$lib/shared/pictograph/shared/domain/enums/pictograph-enums';
 
 const c = new TkaPoseClassifier();
 
@@ -26,5 +27,37 @@ describe('TkaPoseClassifier.classifyLocation', () => {
   it('snaps near-boundary angles to the nearest 45deg bucket', () => {
     expect(c.classifyLocation(new Vector3(Math.sin(0.35), Math.cos(0.35), 0))).toBe('n');
     expect(c.classifyLocation(new Vector3(Math.sin(0.6), Math.cos(0.6), 0))).toBe('ne');
+  });
+});
+
+describe('TkaPoseClassifier.classifyOrientation', () => {
+  it('shaft pointing away from center = OUT', () => {
+    const grip = new Vector3(0, 1, 0);
+    const axisOut = new Vector3(0, 1, 0); // points further out (north)
+    expect(c.classifyOrientation(grip, axisOut)).toBe(Orientation.OUT);
+  });
+
+  it('shaft pointing toward center = IN', () => {
+    const grip = new Vector3(0, 1, 0);
+    const axisIn = new Vector3(0, -1, 0); // points back toward center
+    expect(c.classifyOrientation(grip, axisIn)).toBe(Orientation.IN);
+  });
+
+  it('shaft perpendicular, tangent toward +East at North = CLOCK', () => {
+    const grip = new Vector3(0, 1, 0);
+    const axisTangentCW = new Vector3(1, 0, 0);
+    expect(c.classifyOrientation(grip, axisTangentCW)).toBe(Orientation.CLOCK);
+  });
+
+  it('shaft perpendicular, tangent toward -East at North = COUNTER', () => {
+    const grip = new Vector3(0, 1, 0);
+    const axisTangentCCW = new Vector3(-1, 0, 0);
+    expect(c.classifyOrientation(grip, axisTangentCCW)).toBe(Orientation.COUNTER);
+  });
+
+  it('ignores the out-of-plane (Z) component of the shaft', () => {
+    const grip = new Vector3(0, 1, 0);
+    const axisOutTilted = new Vector3(0, 1, 0.5); // tilted toward camera but radial in-plane
+    expect(c.classifyOrientation(grip, axisOutTilted)).toBe(Orientation.OUT);
   });
 });
