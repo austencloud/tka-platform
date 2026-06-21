@@ -10,6 +10,13 @@
 	import VideoCanvas from './VideoCanvas.svelte';
 	import TrajectoryOverlay from './TrajectoryOverlay.svelte';
 	import ControlBar from './ControlBar.svelte';
+	import { ArucoStaffTracker } from '../services/aruco-staff-tracker';
+	import { GridFrameSolver } from '../services/grid-frame-solver';
+	import { framesToNotation } from '../services/notation-pipeline';
+	import { notationToPictographData } from '../services/notation-to-pictograph';
+	import { DEFAULT_MARKER_ASSIGNMENT, type StaffPose3D } from '../domain/notation-3d';
+	import PictographContainer from '$lib/shared/pictograph/shared/components/PictographContainer.svelte';
+	import type { PictographData } from '$lib/shared/pictograph/shared/domain/models/pictograph-data';
 
 	let videoFile = $state<File | null>(null);
 	let videoUrl = $state<string | null>(null);
@@ -126,6 +133,70 @@
 			};
 			video.addEventListener('seeked', handler);
 		});
+	}
+
+	let notationPictographs = $state<PictographData[]>([]);
+	let isNotating = $state(false);
+
+	async function runNotation() {
+		const video = videoElement;
+		if (!video) return;
+		isNotating = true;
+		notationPictographs = [];
+		const assignment = DEFAULT_MARKER_ASSIGNMENT;
+		const tracker = new ArucoStaffTracker(assignment, videoWidth);
+
+		const blueFrames: StaffPose3D[] = [];
+		const redFrames: StaffPose3D[] = [];
+		const blueConf: number[] = [];
+		const redConf: number[] = [];
+
+		const total = Math.floor((videoDuration / 1000) * fps);
+		const dt = 1000 / fps;
+		extractionCanvas ??= document.createElement('canvas');
+		extractionCanvas.width = videoWidth;
+		extractionCanvas.height = videoHeight;
+		extractionCtx ??= extractionCanvas.getContext('2d', { willReadFrequently: true });
+		if (!extractionCtx) {
+			isNotating = false;
+			return;
+		}
+
+		let lastBlue: StaffPose3D | null = null;
+		let lastRed: StaffPose3D | null = null;
+
+		for (let i = 0; i < total; i++) {
+			video.currentTime = (i * dt) / 1000;
+			await waitForSeek(video);
+			extractionCtx.drawImage(video, 0, 0);
+			const frame = extractionCtx.getImageData(0, 0, videoWidth, videoHeight);
+
+			const markers = tracker.detect(frame);
+			const center = markers.find((m) => m.id === assignment.centerRefId);
+			const blue = markers.find((m) => m.id === assignment.blueId);
+			const red = markers.find((m) => m.id === assignment.redId);
+
+			if (center && blue) {
+				lastBlue = GridFrameSolver.solve(blue, GridFrameSolver.gridFromCamera(center));
+				blueConf.push(1);
+			} else {
+				blueConf.push(0);
+			}
+			if (center && red) {
+				lastRed = GridFrameSolver.solve(red, GridFrameSolver.gridFromCamera(center));
+				redConf.push(1);
+			} else {
+				redConf.push(0);
+			}
+
+			// Hold last good pose through short dropouts (segmenter interpolates).
+			if (lastBlue) blueFrames.push(lastBlue);
+			if (lastRed) redFrames.push(lastRed);
+		}
+
+		const beats = framesToNotation(blueFrames, redFrames, blueConf, redConf);
+		notationPictographs = beats.map((b, i) => notationToPictographData(b.blue, b.red, `beat-${i}`));
+		isNotating = false;
 	}
 
 	function toggleKeyframe(frameIndex: number) {
@@ -320,6 +391,22 @@
 					<span class="stat-value">{keyframeCount}</span>
 				</div>
 			</div>
+
+			<div class="notation-actions">
+				<button class="btn-primary" onclick={runNotation} disabled={isNotating}>
+					<i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
+					{isNotating ? 'Notating…' : 'Notate Flow'}
+				</button>
+			</div>
+			{#if notationPictographs.length > 0}
+				<div class="notation-strip">
+					{#each notationPictographs as pd (pd.id)}
+						<div class="notation-cell">
+							<PictographContainer pictographData={pd} disableTransitions />
+						</div>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>
@@ -557,6 +644,27 @@
 	.stat-value {
 		font-size: 1rem;
 		font-weight: 600;
+	}
+
+	.notation-actions {
+		display: flex;
+		justify-content: center;
+		padding: 0.5rem;
+	}
+
+	.notation-strip {
+		display: flex;
+		gap: 0.5rem;
+		overflow-x: auto;
+		padding: 0.5rem;
+		background: var(--theme-card-bg);
+		border-radius: 8px;
+	}
+
+	.notation-cell {
+		flex: 0 0 auto;
+		width: 120px;
+		aspect-ratio: 1;
 	}
 
 	@media (max-width: 600px) {
