@@ -1,5 +1,23 @@
-<script lang="ts">
-  import type { PillId, PillSpec } from "./pill-types";
+<!--
+  IconRailNav.svelte
+
+  Generic vertical icon-bar tablist. The pill id type `T` is a free string
+  union supplied by the consumer (AnimationPanel passes PillId; the Art panel
+  passes its own tunnel/mandala id unions), so this rail is reusable beyond the
+  Download-Animation panel. Each pill renders its FontAwesome `icon`, or — when
+  no icon is given — an accent dot (used by Effort).
+-->
+<script lang="ts" generics="T extends string">
+  interface RailPill {
+    id: T;
+    /** FontAwesome class, e.g. "fa-wand-magic-sparkles". Omit for an accent dot. */
+    icon?: string;
+    label: string;
+    /** Optional one-line summary surfaced in the button title tooltip. */
+    summary?: string;
+    /** Optional accent color override (Effort sets this so the active glow matches). */
+    accentColor?: string;
+  }
 
   let {
     pills,
@@ -7,9 +25,9 @@
     onSelect,
     onNavMount,
   }: {
-    pills: PillSpec[];
-    activeId: PillId | null;
-    onSelect: (id: PillId) => void;
+    pills: RailPill[];
+    activeId: T | null;
+    onSelect: (id: T) => void;
     onNavMount?: (el: HTMLElement | null) => void;
   } = $props();
 
