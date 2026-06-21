@@ -1,7 +1,7 @@
 /**
- * One short loopable demo sequence for the prop-unlock tunnel reveal. Generated
- * once at runtime and cached (module-level promise). The prop rendered on top is
- * swapped per reveal — the motion is shared.
+ * Short loopable demo sequences for the prop-unlock tunnel reveal. The first
+ * reveal uses a cached loop (fast); "remix" generates a fresh random one. The
+ * prop rendered on top is swapped per reveal — the motion is the variable.
  */
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
@@ -10,14 +10,14 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { isSeamlesslyLoopable } from "$lib/features/compose/services/sequence-loopability-checker";
 
-let cached: Promise<SequenceData> | null = null;
-
-export function getPropDemoLoop(): Promise<SequenceData> {
-  return (cached ??= generationOrchestrator
+/** Generate one demo loop. The generation prop is irrelevant — the render prop
+ *  is set on the canvas; only the motion matters here. */
+function generateDemoLoop(): Promise<SequenceData> {
+  return generationOrchestrator
     .generateSequence({
       length: 8,
       gridMode: GridMode.DIAMOND,
-      propType: PropType.STAFF, // generation prop is irrelevant; render prop is set on the canvas
+      propType: PropType.STAFF,
       difficulty: DifficultyLevel.INTERMEDIATE,
       constraintPreset: "smooth",
     })
@@ -30,5 +30,17 @@ export function getPropDemoLoop(): Promise<SequenceData> {
         console.warn("[prop-demo-loop] loopability check failed:", e);
       }
       return seq;
-    }));
+    });
+}
+
+let cached: Promise<SequenceData> | null = null;
+
+/** Cached loop for the first reveal (fast, reused). */
+export function getPropDemoLoop(): Promise<SequenceData> {
+  return (cached ??= generateDemoLoop());
+}
+
+/** A fresh random loop each call — used by the "remix" interaction. */
+export function generateFreshDemoLoop(): Promise<SequenceData> {
+  return generateDemoLoop();
 }

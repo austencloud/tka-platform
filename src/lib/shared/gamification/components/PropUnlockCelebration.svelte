@@ -7,9 +7,10 @@
   import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
   import { rotateSequence } from "$lib/shared/create/services/sequence-transforms";
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
-  import { getPropDemoLoop } from "../data/prop-demo-loop";
+  import { getPropDemoLoop, generateFreshDemoLoop } from "../data/prop-demo-loop";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { EffectType, TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -44,25 +45,67 @@
   let base = $state<SequenceData | null>(null);
   let rotated = $state<SequenceData[]>([]);
   let playheadBeat = $state(0);
+  let isRemixing = $state(false);
   const SPEED = 0.3; // beats per second — validated tunnel cadence
 
-  async function choose(prop: PropType) {
+  // Bumped on every reveal/remix so a slow build can't overwrite a newer one.
+  let revealToken = 0;
+
+  // Effects cycled in on remix — passed as a direct tipEffectMap on the canvas,
+  // NOT the global effects config, so the celebration never clobbers the user's
+  // saved effect settings. Heavy effects (fire/led/charcoal) are omitted.
+  const REMIX_EFFECTS: EffectType[] = [
+    "sparkles", "zap", "bloom", "trails", "water",
+    "echo", "pulse", "silk", "frost", "ink", "petals", "smoke",
+  ];
+  let currentEffect = $state<EffectType>("none");
+  const tipEffectMap = $derived<TipEffectMap | undefined>(
+    currentEffect === "none" ? undefined : { "*": { effect: currentEffect } },
+  );
+
+  function buildAmounts(): number[] {
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    return prefersReduced ? [4] : [2, 4, 6];
+  }
+
+  // Shared loader: builds the rotated tunnel layers; the token guard drops a
+  // stale build if a newer reveal/remix started while this one was awaiting.
+  async function loadReveal(seqPromise: Promise<SequenceData>, token: number) {
+    const seq = await seqPromise;
+    const copies = await Promise.all(
+      buildAmounts().map((amt) => rotateSequence(seq, amt, motionQueryHandler)),
+    );
+    if (token !== revealToken) return;
+    base = seq;
+    rotated = copies;
+    isRemixing = false;
+  }
+
+  function choose(prop: PropType) {
     chosen = prop;
     phase = "reveal";
     base = null;
     rotated = [];
     playheadBeat = 0;
-    const seq = await getPropDemoLoop();
-    const prefersReduced =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const amounts = prefersReduced ? [4] : [2, 4, 6];
-    const copies = await Promise.all(amounts.map((amt) => rotateSequence(seq, amt, motionQueryHandler)));
-    // Guard against a Back→re-choose race: only commit if this is still the
-    // active reveal for the prop we started with.
-    if (chosen !== prop) return;
-    base = seq;
-    rotated = copies;
+    currentEffect = "none"; // first look is the clean tunnel; remix adds effects
+    isRemixing = false;
+    revealToken += 1;
+    void loadReveal(getPropDemoLoop(), revealToken);
+  }
+
+  /** Remix the meet view: a fresh random sequence + a new random effect. */
+  function remix() {
+    if (!chosen || isRemixing) return;
+    isRemixing = true;
+    base = null;
+    rotated = [];
+    playheadBeat = 0;
+    const pool = REMIX_EFFECTS.filter((e) => e !== currentEffect);
+    currentEffect = pool[Math.floor(Math.random() * pool.length)] ?? "sparkles";
+    revealToken += 1;
+    void loadReveal(generateFreshDemoLoop(), revealToken);
   }
 
   onMount(() => {
@@ -115,6 +158,9 @@
     chosen = null;
     base = null;
     rotated = [];
+    currentEffect = "none";
+    isRemixing = false;
+    revealToken += 1;
   }
 
   async function confirm() {
@@ -167,7 +213,19 @@
         >
           <h2 data-animate="1">Meet your {chosenLabel}</h2>
           <div class="stage" data-animate="2">
-            <div class="canvas-box">
+            <div
+              class="canvas-box"
+              role="button"
+              tabindex="0"
+              aria-label="Remix the demo sequence"
+              onclick={remix}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  remix();
+                }
+              }}
+            >
               {#if base}
                 <div
                   class="canvas-holder"
@@ -184,6 +242,7 @@
                   currentStep={baseLayer.stepOneBased}
                   isPlaying={true}
                   {gridMode}
+                  {tipEffectMap}
                   gridVisible={true}
                   hideHeader={true}
                   hideProgressBar={true}
@@ -193,13 +252,17 @@
                   fireConfig={{ disableFrameCache: true }}
                 />
                 </div>
+                <span class="remix-hint">
+                  {currentEffect === "none" ? "Tap to remix ✨" : `✨ ${currentEffect}`}
+                </span>
               {:else}
-                <div class="loading">Summoning…</div>
+                <div class="loading">{isRemixing ? "Remixing…" : "Summoning…"}</div>
               {/if}
             </div>
           </div>
           <div class="actions">
             <button class="back" onclick={reset}>Back</button>
+            <button class="remix" onclick={remix}>Remix</button>
             <button class="confirm" onclick={confirm}>Add to my props</button>
           </div>
         </div>
@@ -308,8 +371,10 @@
     align-items: center;
     justify-content: center;
   }
-  /* Largest centered square that fits the reserved height — never distorts. */
+  /* Largest centered square that fits the reserved height — never distorts.
+     Clickable: tap the meet view to remix a fresh sequence + effect. */
   .canvas-box {
+    position: relative;
     height: 100%;
     aspect-ratio: 1 / 1;
     max-width: 100%;
@@ -317,7 +382,29 @@
     overflow: hidden;
     background: #07070b;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: border-color 0.15s;
   }
+  .canvas-box:hover { border-color: rgba(150, 120, 240, 0.55); }
+  .canvas-box:focus-visible { outline: 2px solid var(--theme-accent, #b14ddb); outline-offset: 2px; }
+  .remix-hint {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    font-size: 0.68rem;
+    letter-spacing: 0.02em;
+    opacity: 0;
+    transition: opacity 0.18s;
+    pointer-events: none;
+    text-transform: capitalize;
+  }
+  .canvas-box:hover .remix-hint,
+  .canvas-box:focus-visible .remix-hint { opacity: 0.9; }
   .loading { width: 100%; height: 100%; display: grid; place-items: center; opacity: 0.5; }
   .actions { display: flex; gap: 10px; justify-content: center; }
   .back, .confirm {
@@ -333,6 +420,10 @@
     background: linear-gradient(135deg, #6d5ef0, #b14ddb);
     border-color: transparent;
     color: #fff;
+  }
+  .remix {
+    background: rgba(150, 120, 240, 0.14);
+    border-color: rgba(150, 120, 240, 0.4);
   }
   @media (prefers-reduced-motion: reduce) {
     .tile { transition: none; }
