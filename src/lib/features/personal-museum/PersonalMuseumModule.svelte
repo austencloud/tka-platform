@@ -22,6 +22,7 @@
   import { PERSONAL_MUSEUM_SLOT_IDS } from "./data/personal-museum-room-graph";
   import { buildPersonalGrid } from "./services/build-personal-grid";
   import { renderFirstStepBitmap } from "./services/plaque-pictograph";
+  import PersonalMuseumAssignPanel from "./components/PersonalMuseumAssignPanel.svelte";
 
   interface Props {
     /** False when mounted-but-hidden (keep-alive). Default true so the module
@@ -193,10 +194,28 @@
     />
   {/await}
 
-  <!-- TODO(Task 11/12): <PersonalMuseumAssignPanel> + <PersonalMuseumInWorldPicker> mount here -->
+  <div class="pm-curate-dock">
+    <PersonalMuseumAssignPanel
+      {museumState}
+      slotIds={PERSONAL_MUSEUM_SLOT_IDS}
+      {seqById}
+      {displayName}
+    />
+  </div>
+  <!-- TODO(Task 12): <PersonalMuseumInWorldPicker> mounts here -->
 {/if}
 
 <style>
+  .pm-curate-dock {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: min(22rem, calc(100vw - 2rem));
+    max-height: calc(100% - 2rem);
+    display: flex;
+    z-index: 5;
+  }
+
   .pm-prompt {
     position: absolute;
     inset: 0;
