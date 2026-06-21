@@ -1,18 +1,18 @@
 <!--
   ArtSettingsPanel.svelte
 
-  Right-edge settings rail for Art mode (Mandala + Tunnel). Mirrors the 2D
-  animation sidebar (`.horizontal-sidebar`) and composes the same GLOBAL panes
-  so every effect / effort / playback / visual control drives the same state as
-  the 2D view — no per-mode state. The Mandala/Tunnel type toggle and the
-  tunnel's fold/mirror/preset controls live here (moved off the canvas).
+  Right-edge settings rail for Art mode. Per-type, NOT a single shared stack:
 
-  Composition (top → bottom):
-    1. Art section  — Mandala|Tunnel SegmentedControl + (tunnel) fold/mirror/presets
-    2. EffectSelector — global effects-config
-    3. EffortPanel    — self-wires to the global visibility manager
-    4. PlaybackPane + VisualPane — same props the 2D HorizontalSidebar passes
-    5. Export button  — calls the `onExport` prop
+    - Mandala: the rail holds ONLY the type toggle. The mandala owns its own
+      control dock (speed / shapes / spin / colors / weight / depth / download),
+      so it needs none of the effect/effort/playback/visual panes.
+    - Tunnel: a compact icon TAB picker (Tunnel · Effect · Playback · Visual)
+      shows ONE pane at a time — mirrors the 2D animation's Playback|Visual
+      switcher rather than dumping every control in an overwhelming stack. The
+      effect/effort/playback/visual panes drive the same GLOBAL state as the 2D
+      view. Export is pinned at the bottom (tunnel only).
+
+  The Mandala/Tunnel toggle lives here (moved off the canvas).
 -->
 <script lang="ts">
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
@@ -32,6 +32,7 @@
   } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
   type ArtType = "mandala" | "tunnel";
+  type TunnelPaneId = "tunnel" | "effect" | "playback" | "visual";
 
   let {
     sequence,
@@ -72,21 +73,31 @@
   // Effects drive the GLOBAL config (shared with the 2D view + 3D viewer).
   const effectsConfig = getEffectsConfigContext();
 
-  // Labels, not icons: SegmentedControl renders icon OR label (never both), so a
-  // bare glyph reads as "no info". The word is the description.
+  // Type toggle: labels, not icons (a bare glyph reads as "no info").
   const artOptions = [
     { value: "mandala" as const, label: "Mandala" },
     { value: "tunnel" as const, label: "Tunnel" },
   ];
 
-  const folds: Fold[] = [2, 4, 8];
+  // Tunnel pane tabs: icon picker, one pane shown at a time. Each pane gets a
+  // name heading below the picker so the icons are never ambiguous.
+  const tunnelPanes: { value: TunnelPaneId; label: string; icon: string }[] = [
+    { value: "tunnel", label: "Tunnel", icon: "fas fa-fan" },
+    { value: "effect", label: "Effect", icon: "fas fa-wand-magic-sparkles" },
+    { value: "playback", label: "Playback", icon: "fas fa-sliders" },
+    { value: "visual", label: "Visual", icon: "fas fa-eye" },
+  ];
+  let pane = $state<TunnelPaneId>("tunnel");
+  const paneLabel = $derived(
+    tunnelPanes.find((p) => p.value === pane)?.label ?? "",
+  );
 
-  // Tunnel preset naming (moved verbatim out of TunnelArtView's controls block).
+  const folds: Fold[] = [2, 4, 8];
   let newName = $state("");
 </script>
 
-<div class="art-settings-panel">
-  <!-- Art section -->
+<div class="art-settings-panel" class:compact={artType === "mandala"}>
+  <!-- Type toggle — always -->
   <div class="panel-section">
     <span class="section-label">Art</span>
     <SegmentedControl
@@ -96,84 +107,83 @@
       color="accent"
       size="sm"
     />
-
-    {#if artType === "tunnel"}
-      <div class="group">
-        <span class="lbl">Fold</span>
-        {#each folds as f (f)}
-          <button class:active={controller.fold === f} onclick={() => controller.setFold(f)}>{f}×</button>
-        {/each}
-        <button class:active={controller.mirror} onclick={() => (controller.mirror = !controller.mirror)}>Mirror</button>
-      </div>
-
-      {#if controller.heavyLoad}
-        <p class="warn">Heavy effect on a large stack — may drop frames on weaker devices.</p>
-      {/if}
-
-      <div class="presets">
-        <input
-          class="name-input"
-          type="text"
-          placeholder="name this look…"
-          bind:value={newName}
-          onkeydown={(e) => { if (e.key === "Enter") { controller.saveCurrentAs(newName); newName = ""; } }}
-        />
-        <button onclick={() => { controller.saveCurrentAs(newName); newName = ""; }}>Save</button>
-        {#each controller.presets as p (p.id)}
-          <div class="chip">
-            <button class="chip-apply" onclick={() => controller.applyPreset(p)}>{p.name}</button>
-            <button class="chip-del" aria-label={`Delete ${p.name}`} onclick={() => controller.deletePreset(p.id)}>×</button>
-          </div>
-        {/each}
-      </div>
-    {/if}
   </div>
 
-  <!-- Effects -->
-  {#if effectsConfig}
+  {#if artType === "tunnel"}
+    <!-- Pane picker (tabs) -->
     <div class="panel-section">
-      <span class="section-label">Effect</span>
-      <EffectSelector
-        activeEffect={effectsConfig.activeEffect}
-        onSelect={(e) => { if (isEffectId(e)) effectsConfig.setActiveEffect(e); }}
+      <SegmentedControl
+        options={tunnelPanes}
+        value={pane}
+        onchange={(v) => (pane = v)}
+        color="accent"
+        size="sm"
       />
     </div>
-  {/if}
 
-  <!-- Effort -->
-  <div class="panel-section">
-    <span class="section-label">Effort</span>
-    <EffortPanel columns={2} />
-  </div>
+    <!-- Active pane -->
+    <div class="panel-section pane-body">
+      <span class="section-label">{paneLabel}</span>
 
-  <!-- Playback -->
-  <div class="panel-section">
-    <span class="section-label">Playback</span>
-    <PlaybackPane
-      bind:bpm
-      {playbackMode}
-      stepPlaybackStepSize={stepSize}
-      {isPlaying}
-      {onBpmChange}
-      {onPlaybackModeChange}
-      onStepPlaybackStepSizeChange={onStepSizeChange}
-      {onPlaybackToggle}
-    />
-  </div>
+      {#if pane === "tunnel"}
+        <div class="group">
+          <span class="lbl">Fold</span>
+          {#each folds as f (f)}
+            <button class:active={controller.fold === f} onclick={() => controller.setFold(f)}>{f}×</button>
+          {/each}
+          <button class:active={controller.mirror} onclick={() => (controller.mirror = !controller.mirror)}>Mirror</button>
+        </div>
 
-  <!-- Visual -->
-  <div class="panel-section">
-    <span class="section-label">Visual</span>
-    <VisualPane propType={null} {bluePropType} {redPropType} />
-  </div>
+        {#if controller.heavyLoad}
+          <p class="warn">Heavy effect on a large stack — may drop frames on weaker devices.</p>
+        {/if}
 
-  <!-- Export -->
-  <div class="panel-section">
+        <div class="presets">
+          <input
+            class="name-input"
+            type="text"
+            placeholder="name this look…"
+            bind:value={newName}
+            onkeydown={(e) => { if (e.key === "Enter") { controller.saveCurrentAs(newName); newName = ""; } }}
+          />
+          <button onclick={() => { controller.saveCurrentAs(newName); newName = ""; }}>Save</button>
+          {#each controller.presets as p (p.id)}
+            <div class="chip">
+              <button class="chip-apply" onclick={() => controller.applyPreset(p)}>{p.name}</button>
+              <button class="chip-del" aria-label={`Delete ${p.name}`} onclick={() => controller.deletePreset(p.id)}>×</button>
+            </div>
+          {/each}
+        </div>
+      {:else if pane === "effect"}
+        {#if effectsConfig}
+          <EffectSelector
+            activeEffect={effectsConfig.activeEffect}
+            onSelect={(e) => { if (isEffectId(e)) effectsConfig.setActiveEffect(e); }}
+          />
+        {/if}
+      {:else if pane === "playback"}
+        <EffortPanel columns={2} />
+        <PlaybackPane
+          bind:bpm
+          {playbackMode}
+          stepPlaybackStepSize={stepSize}
+          {isPlaying}
+          {onBpmChange}
+          {onPlaybackModeChange}
+          onStepPlaybackStepSizeChange={onStepSizeChange}
+          {onPlaybackToggle}
+        />
+      {:else}
+        <VisualPane propType={null} {bluePropType} {redPropType} />
+      {/if}
+    </div>
+
+    <!-- Export pinned at bottom -->
     <button type="button" class="export-btn" onclick={onExport}>
       <i class="fas fa-film" aria-hidden="true"></i>
       <span>Export Video</span>
     </button>
-  </div>
+  {/if}
 </div>
 
 <style>
@@ -196,12 +206,27 @@
     container-name: art-sidebar;
   }
 
+  /* Mandala mode: the rail only carries the type toggle, so it shrinks to fit
+     instead of reserving a 240px column of empty space beside the bloom. */
+  .art-settings-panel.compact {
+    width: auto;
+    min-width: 180px;
+    height: auto;
+    align-self: flex-start;
+  }
+
   .panel-section {
     display: flex;
     flex-direction: column;
     gap: 10px;
     min-height: 0;
     flex-shrink: 0;
+  }
+
+  /* The active pane takes the remaining height so Export pins to the bottom. */
+  .pane-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
   }
 
   .panel-section + .panel-section {
@@ -217,7 +242,7 @@
     font-weight: 600;
   }
 
-  /* Tunnel fold/mirror row + presets — styles moved verbatim from TunnelArtView. */
+  /* Tunnel fold/mirror row + presets. */
   .group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; }
   .group button,
@@ -258,6 +283,7 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
+    flex-shrink: 0;
     transition: filter var(--duration-normal, 200ms) ease;
   }
 
