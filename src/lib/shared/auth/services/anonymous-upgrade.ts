@@ -18,6 +18,7 @@ import {
   type AuthError,
 } from "firebase/auth";
 import { getAuthInstance } from "$lib/shared/auth/firebase";
+import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 // LibrarySequence extends SequenceData, so it's accepted directly by
@@ -84,6 +85,7 @@ export async function notifyUpgradeSignup(): Promise<void> {
     // One non-blocking confirmation so the ~90% no-collision signups aren't left
     // wondering whether their sequences survived the upgrade.
     toast.success("Account created. Your sequences are saved.");
+    void getPropUnlockManager().mergeGuestCollection();
     const displayName =
       user.displayName || user.email?.split("@")[0] || "New User";
     const { notifyNewUserSignup } = await import(
