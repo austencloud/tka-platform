@@ -28,6 +28,8 @@
     PRIMARY_PARAMS,
   } from "$lib/shared/animation-engine/components/effects-panel/effect-primary-param";
   import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
+  import { isEffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import { CURATED_KNOBS, formatKnobValue } from "./effect-curated-knobs";
   import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import type { EffectType } from "$lib/shared/effects/domain/effects-config";
 
@@ -145,6 +147,45 @@
     (config.config.tipEffectMap["*"]?.effect && config.config.tipEffectMap["*"].effect !== "none" ? 1 : 0) +
     (scene3DRender.motion.blur || scene3DRender.motion.speedLines ? 1 : 0),
   );
+
+  // --- Curated per-effect tuning (global scope only) ---
+  // Tuning is global by design (writes the shared EffectsConfig), so the
+  // curated sliders + footer appear only when not scoped to a performer.
+  const isGlobalScope = $derived(!performer && !multi);
+  const curatedKnobs = $derived(
+    expandedEffect && isEffectId(expandedEffect) ? CURATED_KNOBS[expandedEffect] : undefined,
+  );
+
+  function getKnob(key: EffectKey, field: string): number {
+    if (!isEffectId(key)) return 0;
+    return ((config.effect(key) as unknown as Record<string, number>)[field]) ?? 0;
+  }
+  function setKnob(key: EffectKey, field: string, value: number) {
+    if (!isEffectId(key)) return;
+    config.updateEffect(key, { [field]: value } as never);
+  }
+
+  // --- Footer: Copy Diagnostic / Save Defaults / Reset ---
+  let copyStatus = $state<"idle" | "copied" | "failed">("idle");
+  let copyTimer: ReturnType<typeof setTimeout> | null = null;
+
+  async function copyDiagnostic() {
+    const { trails, fire, led, charcoal } = config.config;
+    const json = JSON.stringify({ trails, fire, led, charcoal }, null, 2);
+    try {
+      await navigator.clipboard.writeText(json);
+      copyStatus = "copied";
+    } catch {
+      console.log("[3d-effect-tuning]", json);
+      copyStatus = "failed";
+    }
+    if (copyTimer) clearTimeout(copyTimer);
+    copyTimer = setTimeout(() => (copyStatus = "idle"), 2500);
+  }
+
+  const copyLabel = $derived(
+    copyStatus === "copied" ? "Copied" : copyStatus === "failed" ? "Copy failed" : "Copy Diagnostic",
+  );
 </script>
 
 <section class="effects-settings">
@@ -233,23 +274,46 @@
     </div>
   {/if}
 
-  <!-- Intensity Slider (when an effect is expanded) -->
+  <!-- Tuning controls (when an effect is expanded) -->
   {#if expandedEffect && isEnabled(expandedEffect)}
     {@const effect = effectChips.find((e) => e.key === expandedEffect)!}
-    <div class="intensity-control" style="--color: {effect.color}">
-      <span class="sub-label">{effect.label} Intensity</span>
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.05"
-        value={getIntensity(expandedEffect)}
-        oninput={(e) =>
-          expandedEffect &&
-          setIntensity(expandedEffect, parseFloat(e.currentTarget.value))}
-        class="intensity-slider"
-      />
-    </div>
+    {#if isGlobalScope && curatedKnobs}
+      <!-- Curated per-effect knobs (global scope, effects with a live 3D renderer) -->
+      <div class="curated-knobs" style="--color: {effect.color}">
+        {#each curatedKnobs as knob (knob.field)}
+          <div class="knob-row">
+            <span class="sub-label">{knob.label}</span>
+            <input
+              type="range"
+              min={knob.min}
+              max={knob.max}
+              step={knob.step}
+              value={getKnob(expandedEffect, knob.field)}
+              oninput={(e) =>
+                expandedEffect && setKnob(expandedEffect, knob.field, parseFloat(e.currentTarget.value))}
+              class="intensity-slider"
+            />
+            <span class="knob-value">{formatKnobValue(knob, getKnob(expandedEffect, knob.field))}</span>
+          </div>
+        {/each}
+      </div>
+    {:else}
+      <!-- Fallback single intensity slider (performer scope, or effects with no
+           curated 3D set). -->
+      <div class="intensity-control" style="--color: {effect.color}">
+        <span class="sub-label">{effect.label} Intensity</span>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={getIntensity(expandedEffect)}
+          oninput={(e) =>
+            expandedEffect && setIntensity(expandedEffect, parseFloat(e.currentTarget.value))}
+          class="intensity-slider"
+        />
+      </div>
+    {/if}
   {/if}
 
   <!-- Quick Info -->
@@ -260,6 +324,28 @@
   {:else if globalEnabledCount > 0}
     <div class="active-count">
       {globalEnabledCount} effect{globalEnabledCount > 1 ? "s" : ""} active
+    </div>
+  {/if}
+
+  <!-- Tuning footer: copy current tuning, save as baseline, reset to baseline.
+       Global scope only (tuning is global). -->
+  {#if isGlobalScope}
+    <div class="tune-footer">
+      <button
+        class="footer-btn copy-btn"
+        class:copied={copyStatus === "copied"}
+        class:failed={copyStatus === "failed"}
+        onclick={copyDiagnostic}
+        title="Copy current effect tuning as JSON (paste to bake into defaults)"
+      >
+        {copyLabel}
+      </button>
+      <button class="footer-btn" onclick={() => config.saveAsBaseline()} title="Save current tuning as the default Reset returns to">
+        Save Defaults
+      </button>
+      <button class="footer-btn" onclick={() => config.resetToBaseline()} title="Reset tuning to the saved default">
+        Reset
+      </button>
     </div>
   {/if}
 </section>
@@ -445,6 +531,71 @@
     font-size: var(--font-size-compact, 0.75rem);
     color: var(--theme-text-dim);
     text-align: center;
+  }
+
+  /* Curated tuning: one labelled slider + readout per knob. */
+  .curated-knobs {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .knob-row {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr 3ch;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .knob-value {
+    font-size: var(--font-size-compact, 0.75rem);
+    color: var(--theme-text);
+    text-align: right;
+    /* Stable digit width so dragging never jitters the readout column. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Footer actions: equal thirds so the Copy label swapping
+     ("Copy Diagnostic" → "Copied") can't reflow its neighbours. */
+  .tune-footer {
+    margin-top: 0.75rem;
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .footer-btn {
+    flex: 1;
+    min-width: 0;
+    min-height: 36px;
+    padding: 0 0.4rem;
+    background: var(--theme-panel-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all var(--duration-fast);
+  }
+
+  .footer-btn:hover {
+    background: var(--theme-card-hover-bg);
+    color: var(--theme-text);
+    border-color: var(--theme-stroke-strong);
+  }
+
+  .copy-btn.copied {
+    color: var(--theme-success, #4ade80);
+    border-color: var(--theme-success, #4ade80);
+  }
+
+  .copy-btn.failed {
+    color: var(--theme-danger, #f87171);
+    border-color: var(--theme-danger, #f87171);
   }
 
   @media (max-width: 400px) {
