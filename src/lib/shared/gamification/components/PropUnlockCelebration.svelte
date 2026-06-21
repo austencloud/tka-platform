@@ -21,8 +21,19 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
+  import { scale } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
 
   const DEFAULT_PROP_STATE: PropState = { centerPathAngle: 0, staffRotationAngle: 0 };
+
+  // Morph duration — every state change crossfades/scales rather than snapping.
+  // Collapses to 0 under reduced-motion so the swap is instant but never jarring.
+  function morphMs(): number {
+    return typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? 0
+      : 280;
+  }
 
   let phase = $state<"pick" | "reveal">("pick");
   let chosen = $state<PropType | null>(null);
@@ -125,54 +136,73 @@
 
 <BaseModal open={propCelebration.isOpen} size="fit" class="chromeless" onclose={onClose}>
   <div class="celebration">
-    {#if phase === "pick"}
-      <h2 data-animate="1">You've earned a new prop</h2>
-      <p class="sub" data-animate="2">Pick one to add to your collection.</p>
-      <div class="grid" data-animate="3">
-        {#each locked as prop (prop)}
-          <button class="tile" onclick={() => choose(prop)}>
-            <span class="tile-image">
-              <PropCompositionPreview propType={prop} neutral />
-            </span>
-            <span class="tile-label">{getPropTypeDisplayInfo(prop).label}</span>
-          </button>
-        {/each}
-      </div>
-      {#if isGuest}
-        <button class="keep" data-animate="4" onclick={signUpToKeep}>Sign up to keep your collection</button>
+    <div class="phase-stack">
+      {#if phase === "pick"}
+        <div
+          class="pane"
+          in:scale={{ duration: morphMs(), start: 0.94, opacity: 0, easing: cubicOut }}
+          out:scale={{ duration: morphMs(), start: 0.96, opacity: 0, easing: cubicOut }}
+        >
+          <h2 data-animate="1">You've earned a new prop</h2>
+          <p class="sub" data-animate="2">Pick one to add to your collection.</p>
+          <div class="grid" data-animate="3">
+            {#each locked as prop (prop)}
+              <button class="tile" onclick={() => choose(prop)}>
+                <span class="tile-image">
+                  <PropCompositionPreview propType={prop} neutral />
+                </span>
+                <span class="tile-label">{getPropTypeDisplayInfo(prop).label}</span>
+              </button>
+            {/each}
+          </div>
+          {#if isGuest}
+            <button class="keep" data-animate="4" onclick={signUpToKeep}>Sign up to keep your collection</button>
+          {/if}
+        </div>
+      {:else}
+        <div
+          class="pane"
+          in:scale={{ duration: morphMs(), start: 0.94, opacity: 0, easing: cubicOut }}
+          out:scale={{ duration: morphMs(), start: 0.96, opacity: 0, easing: cubicOut }}
+        >
+          <h2 data-animate="1">Meet your {chosenLabel}</h2>
+          <div class="stage" data-animate="2">
+            {#if base}
+              <div
+                class="canvas-holder"
+                in:scale={{ duration: morphMs(), start: 0.9, opacity: 0, easing: cubicOut }}
+              >
+                <AnimatorCanvas
+                  blueProp={baseLayer.blue}
+                  redProp={baseLayer.red}
+                  {additionalLayers}
+                  bluePropType={chosenPropStr}
+                  redPropType={chosenPropStr}
+                  sequenceData={base}
+                  stepData={baseLayer.step}
+                  currentStep={baseLayer.stepOneBased}
+                  isPlaying={true}
+                  {gridMode}
+                  gridVisible={true}
+                  hideHeader={true}
+                  hideProgressBar={true}
+                  hideTkaGlyph={true}
+                  hideStepNumbers={true}
+                  fillContainer={true}
+                  fireConfig={{ disableFrameCache: true }}
+                />
+              </div>
+            {:else}
+              <div class="loading">Summoning…</div>
+            {/if}
+          </div>
+          <div class="actions">
+            <button class="back" onclick={reset}>Back</button>
+            <button class="confirm" onclick={confirm}>Add to my props</button>
+          </div>
+        </div>
       {/if}
-    {:else}
-      <h2 data-animate="1">Meet your {chosenLabel}</h2>
-      <div class="stage" data-animate="2">
-        {#if base}
-          <AnimatorCanvas
-            blueProp={baseLayer.blue}
-            redProp={baseLayer.red}
-            {additionalLayers}
-            bluePropType={chosenPropStr}
-            redPropType={chosenPropStr}
-            sequenceData={base}
-            stepData={baseLayer.step}
-            currentStep={baseLayer.stepOneBased}
-            isPlaying={true}
-            {gridMode}
-            gridVisible={true}
-            hideHeader={true}
-            hideProgressBar={true}
-            hideTkaGlyph={true}
-            hideStepNumbers={true}
-            fillContainer={true}
-            fireConfig={{ disableFrameCache: true }}
-          />
-        {:else}
-          <div class="loading">Summoning…</div>
-        {/if}
-      </div>
-      <div class="actions">
-        <button class="back" onclick={reset}>Back</button>
-        <button class="confirm" onclick={confirm}>Add to my props</button>
-      </div>
-    {/if}
+    </div>
   </div>
 </BaseModal>
 
@@ -190,6 +220,26 @@
     gap: 14px;
     color: var(--theme-text, #fff);
     text-align: center;
+  }
+  /* Both phases overlay in one reserved box so PICK <-> REVEAL crossfades and
+     scales in place — the morph never moves the frame (no layout shift). */
+  .phase-stack {
+    position: relative;
+    flex: 1 1 auto;
+  }
+  .pane {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transform-origin: center;
+    will-change: transform, opacity;
+  }
+  .canvas-holder {
+    width: 100%;
+    height: 100%;
+    transform-origin: center;
   }
   h2 { margin: 0; font-size: 1.3rem; }
   .sub { margin: 0; opacity: 0.7; font-size: 0.9rem; }
