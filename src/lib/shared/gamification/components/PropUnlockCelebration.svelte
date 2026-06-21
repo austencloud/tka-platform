@@ -134,7 +134,7 @@
   }
 </script>
 
-<BaseModal open={propCelebration.isOpen} size="fit" class="chromeless" onclose={onClose}>
+<BaseModal open={propCelebration.isOpen} size="fit" class="chromeless prop-celebration-modal" onclose={onClose}>
   <div class="celebration">
     <div class="phase-stack">
       {#if phase === "pick"}
@@ -209,6 +209,12 @@
 </BaseModal>
 
 <style>
+  /* The chromeless variant caps the dialog at 420px (built for the small
+     AuthNudge). This modal's prop grid needs more room — raise the cap so the
+     540px panel shows fully and stays centered (extra class beats chromeless). */
+  :global(dialog.base-modal.chromeless.prop-celebration-modal) {
+    max-width: min(560px, calc(100vw - 32px));
+  }
   .celebration {
     width: min(540px, calc(100vw - 32px));
     height: min(640px, calc(100dvh - 48px));
