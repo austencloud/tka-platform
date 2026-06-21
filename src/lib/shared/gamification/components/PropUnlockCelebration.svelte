@@ -5,8 +5,7 @@
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
   import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
-  import { rotateSequence } from "$lib/shared/create/services/sequence-transforms";
-  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
+  import { buildTunnelLayers } from "$lib/shared/sequence-viewer/tunnel/tunnel-layer-builder";
   import { getPropDemoLoop, generateFreshDemoLoop } from "../data/prop-demo-loop";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -85,9 +84,10 @@
     amounts: number[],
   ) {
     const seq = await seqPromise;
-    const copies = await Promise.all(
-      amounts.map((amt) => rotateSequence(seq, amt, motionQueryHandler)),
-    );
+    // Shared with Tunnel View. amounts here are the legacy [2,4,6]/[4] reveal
+    // shapes; map them to a fold so the one builder produces the same layers.
+    const fold = amounts.length >= 3 ? 4 : 2;
+    const copies = await buildTunnelLayers(seq, { fold, mirror: false, effect: "none" });
     if (token !== revealToken) return;
     base = seq;
     rotated = copies;
