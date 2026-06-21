@@ -10,20 +10,19 @@
  */
 
 
+import {
+	MIN_COLUMNS,
+	getMaxColumnsForWidth,
+} from "$lib/shared/browse/services/grid-column-breakpoints";
+
 export interface PinchZoomState {
-	/** Current column count. Mobile: 2-3, Desktop: 2-5 */
+	/** Current column count. Width-adaptive: phones 2-3, 4K up to 7. */
 	columns: number;
 	/** Whether gesture is active */
 	isGesturing: boolean;
 	/** True for ~200ms after column change (for CSS transition timing) */
 	isTransitioning: boolean;
 }
-
-/** Column count limits */
-const MIN_COLUMNS = 2;
-const MAX_COLUMNS_MOBILE = 3;
-const MAX_COLUMNS_DESKTOP = 5;
-const MOBILE_BREAKPOINT = 768;
 
 /** Scale threshold to trigger column change (lower = snappier response) */
 const SCALE_THRESHOLD = 1.15;
@@ -111,9 +110,9 @@ export class PinchZoomGridController {
 	}
 
 	private get maxColumns(): number {
-		return window.innerWidth < MOBILE_BREAKPOINT
-			? MAX_COLUMNS_MOBILE
-			: MAX_COLUMNS_DESKTOP;
+		// Shared width breakpoints (viewport width here; the engine re-clamps to
+		// container width when it receives the emitted count).
+		return getMaxColumnsForWidth(window.innerWidth);
 	}
 
 	setColumnCount(columns: number): void {

@@ -10,23 +10,10 @@
  */
 
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
-
-const MIN_COLUMNS = 2;
-
-/**
- * Per-breakpoint maximum columns. Prevents cards from becoming
- * unreadably small on narrow screens while allowing more density
- * on wider ones. Breakpoints use container width, not viewport,
- * so the grid adapts to its actual available space.
- */
-function getMaxColumnsForWidth(width: number): number {
-	if (width < 480) return 2;
-	if (width < 800) return 3;
-	if (width < 1200) return 4;
-	if (width < 1800) return 5;
-	if (width < 2600) return 6;
-	return 7;
-}
+import {
+	MIN_COLUMNS,
+	getMaxColumnsForWidth,
+} from "$lib/shared/browse/services/grid-column-breakpoints";
 
 // Preserve state across HMR
 function getInitialColumns(): number {

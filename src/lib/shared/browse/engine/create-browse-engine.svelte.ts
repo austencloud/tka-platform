@@ -48,30 +48,11 @@ import {
 	onLibrarySequenceAdded,
 } from "$lib/shared/library/library-events";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const MIN_COLUMNS_DEFAULT = 2;
-
-/** Per-breakpoint maximum columns. Prevents cards from becoming unreadably
- *  small on narrow screens while allowing more density on wider ones. */
-function getMaxColumnsForWidth(width: number): number {
-	if (width < 480) return 2;
-	if (width < 800) return 3;
-	if (width < 1200) return 4;
-	if (width < 1800) return 5;
-	if (width < 2600) return 6;
-	return 7;
-}
-
-/** Default column count for a user who has never chosen a zoom level (e.g.
- *  signed-out guests). Fills the container to its readable density instead of
- *  defaulting to 2 — on a 4K monitor 2 columns left cards huge and the grid
- *  sparse. Mirrors the per-breakpoint max so wide screens open denser. */
-function getDefaultColumnsForWidth(width: number): number {
-	return getMaxColumnsForWidth(width);
-}
+import {
+	MIN_COLUMNS as MIN_COLUMNS_DEFAULT,
+	getMaxColumnsForWidth,
+	getDefaultColumnsForWidth,
+} from "$lib/shared/browse/services/grid-column-breakpoints";
 
 // ---------------------------------------------------------------------------
 // Helpers
