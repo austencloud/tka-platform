@@ -95,3 +95,57 @@ describe('TkaPoseClassifier.classifyShiftType', () => {
     expect(c.classifyShiftType(Math.PI / 2, Math.PI / 2 + 2 * Math.PI)).toBe(MotionType.PRO);
   });
 });
+
+import { RotationDirection } from '$lib/shared/pictograph/shared/domain/enums/pictograph-enums';
+import type { StaffPose3D } from '../domain/notation-3d';
+
+function pose(grip: Vector3, axis: Vector3, roll = 0): StaffPose3D {
+  return { gripPos: grip, axisDir: axis, rollRad: roll };
+}
+
+describe('TkaPoseClassifier.classifyMotion (full per-staff notation)', () => {
+  it('static, no spin = static motion, 0 turns', () => {
+    const start = pose(new Vector3(0, 1, 0), new Vector3(0, 1, 0));
+    const end = pose(new Vector3(0, 1, 0), new Vector3(0, 1, 0));
+    const n = c.classifyMotion('blue', start, end, 0, 0, 1);
+    expect(n.handMotion).toBe('static');
+    expect(n.motionType).toBe(MotionType.STATIC);
+    expect(n.turns).toBe(0);
+    expect(n.startLocation).toBe('n');
+    expect(n.endLocation).toBe('n');
+  });
+
+  it('dash N->S with one extra turn of spin', () => {
+    const start = pose(new Vector3(0, 1, 0), new Vector3(0, 1, 0));
+    const end = pose(new Vector3(0, -1, 0), new Vector3(0, -1, 0));
+    const n = c.classifyMotion('blue', start, end, 0, Math.PI, 1);
+    expect(n.handMotion).toBe('dash');
+    expect(n.motionType).toBe(MotionType.DASH);
+    expect(n.turns).toBe(1);
+    expect(n.rotationDirection).toBe(RotationDirection.COUNTER_CLOCKWISE);
+  });
+
+  it('pro shift N->E at base rotation = 0 turns', () => {
+    const start = pose(new Vector3(0, 1, 0), new Vector3(0, 1, 0));
+    const end = pose(new Vector3(1, 0, 0), new Vector3(1, 0, 0));
+    const n = c.classifyMotion('blue', start, end, -Math.PI / 2, -Math.PI / 2, 1);
+    expect(n.handMotion).toBe('shift');
+    expect(n.motionType).toBe(MotionType.PRO);
+    expect(n.turns).toBe(0);
+  });
+
+  it('anti shift with a half extra turn rounds turns to 0.5', () => {
+    const start = pose(new Vector3(0, 1, 0), new Vector3(0, 1, 0));
+    const end = pose(new Vector3(1, 0, 0), new Vector3(1, 0, 0));
+    const n = c.classifyMotion('blue', start, end, -Math.PI / 2, Math.PI, 1);
+    expect(n.motionType).toBe(MotionType.ANTI);
+    expect(n.turns).toBe(0.5);
+  });
+
+  it('carries the lowest confidence over the beat span', () => {
+    const p = pose(new Vector3(0, 1, 0), new Vector3(0, 1, 0));
+    const n = c.classifyMotion('red', p, p, 0, 0, 0.42);
+    expect(n.confidence).toBeCloseTo(0.42, 5);
+    expect(n.staff).toBe('red');
+  });
+});

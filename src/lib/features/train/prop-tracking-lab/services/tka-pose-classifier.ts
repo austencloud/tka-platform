@@ -1,7 +1,12 @@
 import { Vector3 } from 'three';
 import type { GridLocation } from '../domain/models';
 import { GridMode } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
-import { Orientation, MotionType } from '$lib/shared/pictograph/shared/domain/enums/pictograph-enums';
+import {
+  Orientation,
+  MotionType,
+  RotationDirection,
+} from '$lib/shared/pictograph/shared/domain/enums/pictograph-enums';
+import type { StaffColor, StaffPose3D, StaffMotionNotation } from '../domain/notation-3d';
 
 /** 8 grid locations ordered clockwise from North at 45deg steps. */
 const LOCATIONS: GridLocation[] = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
@@ -86,5 +91,74 @@ export class TkaPoseClassifier {
     return Math.sign(propNetRotation) === Math.sign(arcAngle)
       ? MotionType.PRO
       : MotionType.ANTI;
+  }
+
+  /** Round a turn count to the configured increment (default 0.5). */
+  private roundTurns(raw: number): number {
+    const inc = this.config.turnIncrement;
+    return Math.round(raw / inc) * inc;
+  }
+
+  /** Base prop rotation inherent to a motion type, signed CCW-positive. */
+  private baseRotation(motionType: MotionType, arcAngle: number): number {
+    switch (motionType) {
+      case MotionType.PRO:
+        return arcAngle; // preserves orientation
+      case MotionType.ANTI:
+        return -arcAngle; // reverses orientation
+      default:
+        return 0; // dash, static, float
+    }
+  }
+
+  /**
+   * Full per-staff notation across a beat pair.
+   * @param arcAngle signed CCW-positive hand-arc rotation about center (shift only; 0 otherwise)
+   * @param propNetRotation signed CCW-positive net prop spin over the span
+   * @param confidence lowest per-frame ArUco confidence over the span
+   */
+  classifyMotion(
+    staff: StaffColor,
+    start: StaffPose3D,
+    end: StaffPose3D,
+    arcAngle: number,
+    propNetRotation: number,
+    confidence: number,
+  ): StaffMotionNotation {
+    const startLocation = this.classifyLocation(start.gripPos);
+    const endLocation = this.classifyLocation(end.gripPos);
+    const handMotion = this.classifyHandMotion(startLocation, endLocation);
+
+    let motionType: MotionType;
+    if (handMotion === 'static') motionType = MotionType.STATIC;
+    else if (handMotion === 'dash') motionType = MotionType.DASH;
+    else motionType = this.classifyShiftType(arcAngle, propNetRotation);
+
+    const additional = propNetRotation - this.baseRotation(motionType, arcAngle);
+    const turns =
+      motionType === MotionType.FLOAT
+        ? 0 // float has no turn count
+        : this.roundTurns(Math.abs(additional) / Math.PI);
+
+    let rotationDirection: RotationDirection;
+    if (turns === 0 || motionType === MotionType.FLOAT) {
+      rotationDirection = RotationDirection.NO_ROTATION;
+    } else {
+      rotationDirection =
+        additional >= 0 ? RotationDirection.COUNTER_CLOCKWISE : RotationDirection.CLOCKWISE;
+    }
+
+    return {
+      staff,
+      startLocation,
+      endLocation,
+      handMotion,
+      motionType,
+      rotationDirection,
+      turns,
+      startOrientation: this.classifyOrientation(start.gripPos, start.axisDir),
+      endOrientation: this.classifyOrientation(end.gripPos, end.axisDir),
+      confidence,
+    };
   }
 }
