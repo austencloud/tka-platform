@@ -25,51 +25,58 @@ const PERSONAL_GALLERY: RoomNode = {
     "Your personal gallery — a quiet marble room where your saved sequences hang on the walls. " +
     "Each frame holds a sequence you've collected. The room grows with you.",
   walls: {
+    // North wall: slots 1 & 2
     north: {
       segments: [
-        { type: "gap", minTiles: 2 },
-        { type: "exhibit", refId: "slot-n1", size: "standard", facing: "south" },
-        { type: "gap", minTiles: 2 },
-        { type: "exhibit", refId: "slot-n2", size: "standard", facing: "south" },
-        { type: "gap", minTiles: 2 },
-        { type: "exhibit", refId: "slot-n3", size: "standard", facing: "south" },
-        { type: "gap", minTiles: 2 },
+        { type: "gap", minTiles: 3 },
+        { type: "exhibit", refId: "slot-1", size: "standard", facing: "south" },
+        { type: "gap", minTiles: 4 },
+        { type: "exhibit", refId: "slot-2", size: "standard", facing: "south" },
+        { type: "gap", minTiles: 3 },
       ],
       minMargin: 2,
     },
+    // South wall: slots 3 & 4
     south: {
       segments: [
         { type: "gap", minTiles: 3 },
-        { type: "exhibit", refId: "slot-s1", size: "standard", facing: "north" },
+        { type: "exhibit", refId: "slot-3", size: "standard", facing: "north" },
         { type: "gap", minTiles: 4 },
-        { type: "exhibit", refId: "slot-s2", size: "standard", facing: "north" },
+        { type: "exhibit", refId: "slot-4", size: "standard", facing: "north" },
         { type: "gap", minTiles: 3 },
       ],
       minMargin: 2,
     },
+    // East wall: slot 5
     east: {
       segments: [
-        { type: "gap", minTiles: 3 },
-        { type: "exhibit", refId: "slot-e1", size: "standard", facing: "west" },
         { type: "gap", minTiles: 4 },
-        { type: "exhibit", refId: "slot-e2", size: "standard", facing: "west" },
-        { type: "gap", minTiles: 3 },
+        { type: "exhibit", refId: "slot-5", size: "standard", facing: "west" },
+        { type: "gap", minTiles: 4 },
       ],
       minMargin: 2,
     },
+    // West wall: slot 6
     west: {
       segments: [
-        { type: "gap", minTiles: 3 },
-        { type: "exhibit", refId: "slot-w1", size: "standard", facing: "east" },
         { type: "gap", minTiles: 4 },
-        { type: "exhibit", refId: "slot-w2", size: "standard", facing: "east" },
-        { type: "gap", minTiles: 3 },
+        { type: "exhibit", refId: "slot-6", size: "standard", facing: "east" },
+        { type: "gap", minTiles: 4 },
       ],
       minMargin: 2,
     },
   },
-  minInteriorWidth: 18,
-  minInteriorHeight: 18,
+  performers: [
+    // 2×3 grid spread around center, all facing south
+    { offsetX: -0.3, offsetY: -0.3, facing: "south", refId: "slot-1" },
+    { offsetX: 0.3, offsetY: -0.3, facing: "south", refId: "slot-2" },
+    { offsetX: -0.3, offsetY: 0, facing: "south", refId: "slot-3" },
+    { offsetX: 0.3, offsetY: 0, facing: "south", refId: "slot-4" },
+    { offsetX: -0.3, offsetY: 0.3, facing: "south", refId: "slot-5" },
+    { offsetX: 0.3, offsetY: 0.3, facing: "south", refId: "slot-6" },
+  ],
+  minInteriorWidth: 22,
+  minInteriorHeight: 22,
   furniture: [
     { role: "bench", offsetX: 0, offsetY: 0.1, rotationY: 0 },
     { role: "plant", offsetX: -0.38, offsetY: -0.38 },

@@ -11,9 +11,9 @@ describe("personal museum room graph", () => {
     expect(PERSONAL_MUSEUM_EDGES).toHaveLength(0);
   });
 
-  it("exposes 8-12 exhibit slot ids, all unique", () => {
+  it("exposes 6-12 exhibit slot ids, all unique", () => {
     const ids = PERSONAL_MUSEUM_SLOT_IDS;
-    expect(ids.length).toBeGreaterThanOrEqual(8);
+    expect(ids.length).toBeGreaterThanOrEqual(6);
     expect(ids.length).toBeLessThanOrEqual(12);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -25,5 +25,11 @@ describe("personal museum room graph", () => {
       .filter((s): s is Extract<typeof s, { type: "exhibit" }> => s.type === "exhibit")
       .map((s) => s.refId);
     expect([...PERSONAL_MUSEUM_SLOT_IDS].sort()).toEqual([...exhibitRefIds].sort());
+  });
+
+  it("pairs every exhibit slot with a performer of the same refId", () => {
+    const room = PERSONAL_MUSEUM_ROOMS[0]!;
+    const performerRefIds = (room.performers ?? []).map((p) => p.refId).sort();
+    expect(performerRefIds).toEqual([...PERSONAL_MUSEUM_SLOT_IDS].sort());
   });
 });
