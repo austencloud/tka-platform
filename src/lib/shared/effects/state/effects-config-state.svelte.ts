@@ -53,6 +53,7 @@ import { getSceneUndoManager } from "$lib/shared/3d/undo/get-scene-undo-manager"
 import { charcoalParamsToSemantic } from "$lib/shared/animation-engine/domain/types/charcoal-spark-types";
 
 const STORAGE_KEY = "tka_effects_config";
+const BASELINE_KEY = "tka_effects_baseline";
 const VM_STORAGE_KEY = "animation-visibility-settings";
 
 const EFFECT_IDS = [
@@ -318,6 +319,38 @@ export function createEffectsConfigState(
     scheduleSave();
   }
 
+  // Explicit "this is my normal" snapshot, separate from the live auto-save.
+  // Persisted instances also mirror it to localStorage so it survives reload;
+  // ephemeral instances keep it in memory only.
+  let baselineMem: EffectsConfig | null = null;
+
+  function cloneConfig(c: EffectsConfig): EffectsConfig {
+    try { return structuredClone(c); }
+    catch { return JSON.parse(JSON.stringify(c)); }
+  }
+
+  /** Promote the current tuning to the baseline (what Reset returns to). */
+  function saveAsBaseline() {
+    const snap = cloneConfig(config);
+    baselineMem = snap;
+    if (persist && typeof window !== "undefined") {
+      try { localStorage.setItem(BASELINE_KEY, JSON.stringify(snap)); }
+      catch { /* quota exceeded or private browsing */ }
+    }
+  }
+
+  /** Restore the saved baseline, or factory defaults when none was saved. */
+  function resetToBaseline() {
+    let next = baselineMem;
+    if (!next && persist && typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem(BASELINE_KEY);
+        if (raw) next = migrateEffectsConfig(JSON.parse(raw));
+      } catch { /* malformed/inaccessible baseline */ }
+    }
+    replace(next ?? cloneConfig(DEFAULT_EFFECTS_CONFIG));
+  }
+
   return {
     get config() { return config; },
     get tipEffectMap() { return config.tipEffectMap; },
@@ -353,6 +386,8 @@ export function createEffectsConfigState(
     setTipEffectMap,
     applyPreset,
     replace,
+    saveAsBaseline,
+    resetToBaseline,
   };
 }
 

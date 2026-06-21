@@ -109,6 +109,34 @@ describe("EffectsConfigState", () => {
     });
   });
 
+  describe("baseline (Save Defaults / Reset)", () => {
+    it("saveAsBaseline + resetToBaseline round-trips the saved snapshot", () => {
+      const state = createEffectsConfigState();
+      state.updateEffect("fire", { brightness: 0.3 });
+      state.saveAsBaseline();
+      state.updateEffect("fire", { brightness: 0.9 });
+      state.resetToBaseline();
+      expect(state.fire.brightness).toBe(0.3);
+    });
+
+    it("resetToBaseline with no baseline returns to factory defaults", () => {
+      const state = createEffectsConfigState();
+      state.updateEffect("fire", { brightness: 0.1 });
+      state.resetToBaseline();
+      expect(state.fire.brightness).toBe(1.0);
+    });
+
+    it("baseline is a snapshot, not a live reference", () => {
+      const state = createEffectsConfigState();
+      state.updateEffect("fire", { intensity: 0.4 });
+      state.saveAsBaseline();
+      // mutating after save must not bleed into the baseline
+      state.updateEffect("fire", { intensity: 0.95 });
+      state.resetToBaseline();
+      expect(state.fire.intensity).toBe(0.4);
+    });
+  });
+
   describe("effectLayerOverrides", () => {
     it("getEffectLayer returns 'behind' by default", () => {
       const state = createEffectsConfigState();
