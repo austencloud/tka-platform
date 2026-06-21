@@ -54,6 +54,12 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   // STATE MANAGEMENT (Shared Coordination)
   // ============================================================================
 
+  // `visible` is passed by ModuleRenderer's keep-alive host (browse stays mounted
+  // across module switches; the host toggles display). Browse has no render loop
+  // to pause — off-screen thumbnails already idle via their IntersectionObserver
+  // when display:none — so this is accepted for prop hygiene / future use.
+  const { visible = true }: { visible?: boolean } = $props();
+
   const engine = createBrowseEngine({
     persistKey: "tka-browse-gallery",
     initialSource: "community",

@@ -13,7 +13,12 @@
    */
   import { isModuleActive } from "../application/state/ui/ui-state.svelte";
   import { getIsTransitioning } from "../application/state/ui/ui-state.svelte";
-  import { registerModuleCacheClear } from "../hmr-helper";
+  import {
+    registerModuleCacheClear,
+    resilientLazyImport,
+    recoverFromModuleChunkFailure,
+    clearModuleChunkRecoveryGuard,
+  } from "../hmr-helper";
   import type { Component } from "svelte";
   import { onMount, onDestroy } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
@@ -60,11 +65,16 @@
   const moduleCache = new SvelteMap<string, Component<any>>();
 
   // ── Keep-alive host wiring ────────────────────────────────────────────────
-  // Certain heavy modules (museum = Three.js/Threlte) must survive module
-  // switches instead of being destroyed/recreated by {#key activeModule}.
-  // The controller tracks mount/visibility/eviction; we render those modules in
-  // a persistent host below the keyed block and bypass the keyed path for them.
-  const KEEP_ALIVE_MODULES = ["museum"];
+  // Certain heavy modules must survive module switches instead of being
+  // destroyed/recreated by {#key activeModule}. The controller tracks
+  // mount/visibility/eviction; we render those modules in a persistent host
+  // below the keyed block and bypass the keyed path for them.
+  // - museum: Three.js/Threlte scene is expensive to rebuild.
+  // - browse: remounting throws away the whole gallery (VirtualizedSequenceGrid
+  //   + engine), forcing every thumbnail back through the async cache tiers on
+  //   return — the placeholder→pop-in "everything re-renders" flash. Kept alive,
+  //   the DOM + already-resolved thumbnail URLs persist, so revisits are instant.
+  const KEEP_ALIVE_MODULES = ["museum", "browse"];
 
   // Reactive tick: bumped by the controller's onChange so derived reads re-run.
   let keepAliveVersion = $state(0);
@@ -220,7 +230,8 @@
 
   // Load module with caching
   async function loadModule(
-    moduleName: string
+    moduleName: string,
+    recoverOnFailure = false,
   ): Promise<Component<any> | null> {
     if (!moduleName || !moduleLoaders[moduleName]) return null;
 
@@ -240,7 +251,27 @@
     } catch {
       /* mark API unavailable */
     }
-    const { default: ModuleComponent } = await moduleLoaders[moduleName]();
+    // Dev resilience: another Claude session / editor saving this module's
+    // .svelte file mid-write makes Vite serve an incomplete chunk, so the
+    // dynamic import rejects with "Failed to fetch dynamically imported module".
+    // Retry with backoff first — that recovers the common case in place with no
+    // reload (the server settles within ~1s). Only the ACTIVE module self-heals
+    // with a guarded reload if retries are exhausted; background preloads
+    // (keep-alive museum, idle preload) stay silent so they can't reload the
+    // page out from under the user.
+    let ModuleComponent: Component<any>;
+    try {
+      ({ default: ModuleComponent } = await resilientLazyImport(
+        moduleLoaders[moduleName],
+        4,
+      )());
+    } catch (err) {
+      if (recoverOnFailure) recoverFromModuleChunkFailure(moduleName);
+      throw err;
+    }
+    // Reached only on a clean load — the page is healthy, so re-arm the recovery
+    // guard for any future mid-write edit.
+    clearModuleChunkRecoveryGuard();
     const chunkMs = Math.round(performance.now() - loadStart);
     try {
       performance.mark(`module-chunk:${moduleName}:end`);
@@ -271,7 +302,7 @@
 
   // Reactive module loading based on activeModule
   let modulePromise = $derived(
-    activeModule ? loadModule(activeModule) : Promise.resolve(null)
+    activeModule ? loadModule(activeModule, true) : Promise.resolve(null)
   );
 
   const _snapshotTier = readBootSnapshot()?.tier ?? null;
