@@ -373,6 +373,12 @@ service cloud.firestore {
         allow delete: if isOwner(userId) || isAdmin();
       }
 
+      // Prop unlock collection (single propCollection doc under gamification)
+      match /gamification/{docId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
       // User notifications
       match /notifications/{notificationId} {
         // Admins can read for impersonation/preview mode

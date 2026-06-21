@@ -167,12 +167,13 @@
         >
           <h2 data-animate="1">Meet your {chosenLabel}</h2>
           <div class="stage" data-animate="2">
-            {#if base}
-              <div
-                class="canvas-holder"
-                in:scale={{ duration: morphMs(), start: 0.9, opacity: 0, easing: cubicOut }}
-              >
-                <AnimatorCanvas
+            <div class="canvas-box">
+              {#if base}
+                <div
+                  class="canvas-holder"
+                  in:scale={{ duration: morphMs(), start: 0.9, opacity: 0, easing: cubicOut }}
+                >
+                  <AnimatorCanvas
                   blueProp={baseLayer.blue}
                   redProp={baseLayer.red}
                   {additionalLayers}
@@ -191,10 +192,11 @@
                   fillContainer={true}
                   fireConfig={{ disableFrameCache: true }}
                 />
-              </div>
-            {:else}
-              <div class="loading">Summoning…</div>
-            {/if}
+                </div>
+              {:else}
+                <div class="loading">Summoning…</div>
+              {/if}
+            </div>
           </div>
           <div class="actions">
             <button class="back" onclick={reset}>Back</button>
@@ -208,8 +210,8 @@
 
 <style>
   .celebration {
-    width: min(420px, calc(100vw - 32px));
-    min-height: 520px;
+    width: min(540px, calc(100vw - 32px));
+    height: min(640px, calc(100dvh - 48px));
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 20px;
@@ -244,11 +246,15 @@
   h2 { margin: 0; font-size: 1.3rem; }
   .sub { margin: 0; opacity: 0.7; font-size: 0.9rem; }
   .grid {
+    flex: 1 1 auto;
+    min-height: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+    grid-auto-rows: min-content;
+    align-content: start;
     gap: 10px;
-    max-height: 320px;
     overflow-y: auto;
+    padding-right: 4px;
   }
   .tile {
     aspect-ratio: 1 / 1;
@@ -290,9 +296,17 @@
     text-decoration: underline;
   }
   .stage {
-    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Largest centered square that fits the reserved height — never distorts. */
+  .canvas-box {
+    height: 100%;
     aspect-ratio: 1 / 1;
-    max-height: 340px;
+    max-width: 100%;
     border-radius: 14px;
     overflow: hidden;
     background: #07070b;
