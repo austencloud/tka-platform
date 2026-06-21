@@ -17,12 +17,6 @@ export interface LibraryStats {
   publicSequences: number;
   /** Private sequences */
   privateSequences: number;
-  /** Total collections */
-  totalCollections: number;
-  /** Total acts (playlists) */
-  totalActs: number;
-  /** Total steps across all sequences */
-  totalSteps: number;
 }
 
 export interface LibraryQueryOptions {

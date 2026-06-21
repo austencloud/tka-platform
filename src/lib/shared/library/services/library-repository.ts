@@ -1080,13 +1080,6 @@ export class LibraryRepository {
       forkedSequences: forkedSnapshot.data().count,
       publicSequences: publicSnapshot.data().count,
       privateSequences: privateSnapshot.data().count,
-      // TODO(stub): unimplemented stats — these return a hardcoded 0, NOT a real
-      // count. Callers receive them as if they were accurate LibraryStats, so any
-      // UI displaying these three fields will silently show 0 even when the true
-      // value is nonzero. Wire up before surfacing them anywhere user-facing.
-      totalCollections: 0, // TODO(stub): count from collection service (not implemented)
-      totalActs: 0, // TODO(stub): count from act service (not implemented)
-      totalSteps: 0, // TODO(stub): requires fetching docs or a denormalized counter (not implemented)
     };
   }
 
