@@ -102,6 +102,26 @@ export function getPublicSequencePath(sequenceId: string): string {
 }
 
 // ============================================================================
+// PERSONAL MUSEUM PATHS
+// ============================================================================
+
+/**
+ * Path to a user's personal-museum collection.
+ * @example "users/abc123/personal-museum"
+ */
+export function getPersonalMuseumPath(userId: string): string {
+  return `users/${userId}/personal-museum`;
+}
+
+/**
+ * Path to the single personal-museum doc for a user.
+ * @example "users/abc123/personal-museum/main"
+ */
+export function getPersonalMuseumDocPath(userId: string): string {
+  return `users/${userId}/personal-museum/main`;
+}
+
+// ============================================================================
 // METADATA PATHS (Immutable fork lineage)
 // ============================================================================
 
