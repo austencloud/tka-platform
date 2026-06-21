@@ -51,13 +51,10 @@
   // Bumped on every reveal/remix so a slow build can't overwrite a newer one.
   let revealToken = 0;
 
-  // Effects cycled in on remix — passed as a direct tipEffectMap on the canvas,
-  // NOT the global effects config, so the celebration never clobbers the user's
-  // saved effect settings. Heavy effects (fire/led/charcoal) are omitted.
-  const REMIX_EFFECTS: EffectType[] = [
-    "sparkles", "zap", "bloom", "trails", "water",
-    "echo", "pulse", "silk", "frost", "ink", "petals", "smoke",
-  ];
+  // Per-tip effects are deferred to the Tunnel View feature: today the engine
+  // applies tip effects to the base pair only, so cycling them here decorates
+  // 1 of 4 pairs asymmetrically. Keep the tunnel uniform (no per-tip effect)
+  // until the engine renders effects across all overlaid layers.
   let currentEffect = $state<EffectType>("none");
   const tipEffectMap = $derived<TipEffectMap | undefined>(
     currentEffect === "none" ? undefined : { "*": { effect: currentEffect } },
@@ -116,8 +113,6 @@
     base = null;
     rotated = [];
     playheadBeat = 0;
-    const pool = REMIX_EFFECTS.filter((e) => e !== currentEffect);
-    currentEffect = pool[Math.floor(Math.random() * pool.length)] ?? "sparkles";
     revealToken += 1;
     void loadReveal(generateFreshDemoLoop(), revealToken, remixAmounts());
   }
