@@ -131,6 +131,7 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   video: false, // Video analysis, trails, effects (graduated from Lab)
   social: false, // Social module: community map + nearby spinner sync (graduated from Lab)
   museum: false, // The Archive - walkable museum with 2D/3D flip
+  "personal-museum": false, // Personal Museum - saved sequences on the walls (WIP, Tasks 11/12 pending)
   stage: false, // Stage choreography - multi-performer formation locomotion (unreleased)
   mandala: false, // Mandala creation, collection, meditation, export (unreleased)
   lab: false, // Experimental features lab (admin-only) - consolidates skewlab, poi-lab, background-builder, landing-preview, ml-training

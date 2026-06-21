@@ -74,7 +74,7 @@
   //   + engine), forcing every thumbnail back through the async cache tiers on
   //   return — the placeholder→pop-in "everything re-renders" flash. Kept alive,
   //   the DOM + already-resolved thumbnail URLs persist, so revisits are instant.
-  const KEEP_ALIVE_MODULES = ["museum", "browse"];
+  const KEEP_ALIVE_MODULES = ["museum", "personal-museum", "browse"];
 
   // Reactive tick: bumped by the controller's onChange so derived reads re-run.
   let keepAliveVersion = $state(0);
@@ -215,6 +215,8 @@
     retro: () => import("../../features/retro/RetroModule.svelte"),
     // The Archive - tile-based museum explorer
     museum: () => import("../../features/museum/MuseumModule.svelte"),
+    "personal-museum": () =>
+      import("../../features/personal-museum/PersonalMuseumModule.svelte"),
     mandala: () => import("../../features/mandala/MandalaModule.svelte"),
     "background-builder": () => import("../../features/lab/LabModule.svelte"),
     "landing-preview": () => import("../../features/lab/LabModule.svelte"),

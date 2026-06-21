@@ -293,6 +293,17 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: ARCHIVE_TABS,
   },
   {
+    id: "personal-museum",
+    labelKey: "module_museum",
+    descKey: "module_desc_museum",
+    label: "My Museum",
+    icon: '<i class="fas fa-images" style="color: #f59e0b;" aria-hidden="true"></i>',
+    color: "#f59e0b",
+    description: "Your saved sequences hung on the walls of a private gallery",
+    isMain: true,
+    sections: [],
+  },
+  {
     id: "retro",
     labelKey: "module_retro",
     descKey: "module_desc_retro",
