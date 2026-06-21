@@ -80,10 +80,14 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       exportFormat
     );
 
-    // Check visibility settings early to calculate output dimensions
+    // Check visibility settings early to calculate output dimensions. Per-export
+    // overlayOverrides merge OVER the global visibility manager so the exported
+    // aspect ratio matches when tunnel export suppresses the header/progress bar.
     const visibilityManager = getAnimationVisibilityManager();
-    const showWordHeader = visibilityManager.getVisibility("wordHeader");
-    const showProgressBar = visibilityManager.getVisibility("progressBar");
+    const showWordHeader =
+      options.overlayOverrides?.wordHeader ?? visibilityManager.getVisibility("wordHeader");
+    const showProgressBar =
+      options.overlayOverrides?.progressBar ?? visibilityManager.getVisibility("progressBar");
     // Header/progress bar heights at SOURCE resolution - used only for
     // aspect ratio calculation so the output dimensions stay correct.
     const srcHeaderHeight = showWordHeader
@@ -365,12 +369,20 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         await this.compositeRenderer.cacheStaticGrid();
       }
 
-      // Get additional visibility settings (showWordHeader already checked above)
-      const showTkaGlyph = visibilityManager.getVisibility("tkaGlyph");
-      const showStepNumbers = visibilityManager.getVisibility("stepNumbers");
-      const showBluePathLines = visibilityManager.getVisibility("bluePathLines");
-      const showRedPathLines = visibilityManager.getVisibility("redPathLines");
+      // Get additional visibility settings (showWordHeader already checked above).
+      // Merge any per-export overlayOverrides OVER the global visibility manager
+      // (does NOT mutate global state) so tunnel export can suppress chrome.
+      const ov = options.overlayOverrides;
+      const showTkaGlyph = ov?.tkaGlyph ?? visibilityManager.getVisibility("tkaGlyph");
+      const showStepNumbers = ov?.stepNumbers ?? visibilityManager.getVisibility("stepNumbers");
+      const showBluePathLines = ov?.bluePathLines ?? visibilityManager.getVisibility("bluePathLines");
+      const showRedPathLines = ov?.redPathLines ?? visibilityManager.getVisibility("redPathLines");
       const isDarkMode = visibilityManager.isDarkMode();
+      // Grid is read from the global animation visibility/settings inside the
+      // offscreen engine — there is no per-export grid flag on the offscreen init
+      // or compositor to override here, so overlayOverrides.grid is a no-op at this
+      // seam (the tunnel turns grid off globally via the Art panel). Left explicit
+      // so a future grid-flag path has an obvious home.
 
       // Pre-render complete glyphs (letter + dash + turns column) before the frame loop
       if (showTkaGlyph && steps.length > 0) {
@@ -539,7 +551,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
             const wrapped = totalDurationUnits > 0 ? motionTime % totalDurationUnits : 0;
             warmBeat = this.timeToBeat(wrapped, cumulativeDurations, stepDurations) + 1;
           }
-          offscreen.renderFrame(warmBeat, virtualTimeMs);
+          offscreen.renderFrame(warmBeat, virtualTimeMs, options.additionalLayersForBeat);
           // Yield occasionally so a long warm-up doesn't jank the main thread.
           if (w % 30 === 29) await this.waitForAnimationFrame();
         }
@@ -604,7 +616,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         //  - Composite: the grid renderer consumes the live canvas; update
         //    panel state and let the live render loop paint the new beat.
         if (!isCompositeMode) {
-          offscreen!.renderFrame(playbackPosition, virtualTimeMs);
+          offscreen!.renderFrame(playbackPosition, virtualTimeMs, options.additionalLayersForBeat);
           // Yield to the event loop so the browser repaints (the live canvas keeps
           // animating under the takeover) and the Svelte progress update flushes.
           // The offscreen engine is deterministic and unaffected by the yield.
