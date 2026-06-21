@@ -1,9 +1,67 @@
-# Real Flow → TKA Sequence (ArUco Notation) — Design
+# Real Flow → TKA Sequence (LED Color-End Notation) — Design
 
-**Date:** 2026-06-20
-**Status:** Design (awaiting review)
+**Date:** 2026-06-20 (rev 2026-06-21)
+**Status:** REVISED — ArUco capture front-end retired; LED color-end capture adopted. See "Revision 2026-06-21" below.
 **Builds on:** `src/lib/features/train/prop-tracking-lab/` (2D color-tracking PoC), `src/lib/features/skel2tka/`
 **Relates to:** parked project `TKA Sequence Capture` (the animation half — out of scope here)
+
+---
+
+## Revision 2026-06-21 — capture method pivot (ArUco → LED color ends)
+
+**Why the ArUco approach was wrong.** A flat printed marker cannot stay readable on a
+staff that spins and moves through interactions — it faces away from the camera for
+half of every rotation, motion-blurs, and is occluded by the hand. ArUco suits a slow
+rigid object, not flow. Austen called it correctly.
+
+**The deeper correction (MCP-grounded 2026-06-21).** `get_term_definition("orientation")`:
+orientation = *"the facing direction of a prop relative to the performer's center point"*
+— in (toward center) / out (away) / clock / counter. For a **staff** (a rod, rotationally
+symmetric about its long axis; the thumb/pinky references are its two **ends**, per the
+project framing) that facing direction is **which way the long axis points in the plane**.
+There is **no barber-pole roll DOF** for a staff — nothing TKA tracks twists about the long
+axis. So the "roll crux only ArUco can capture" premise was false. Orientation is fully set
+by **where the two ends point + which end is thumb**. Two tracked endpoints give it directly.
+
+**Capture method (decided with Austen).** LED staves, **one solid color per staff** (blue
+staff one color, red staff another). Per staff per frame: detect the color blob → its two
+extreme points = the two ends. Thumb vs pinky is **not** color-coded (single color), so it
+is recovered by **continuity**: a calibrated start pose fixes which end is thumb at frame 0,
+then each frame the thumb-end is the endpoint nearest its previous position, propagated
+forward. Continuity is load-bearing twice: it gives the in/out **sense** AND makes `axisDir`
+a full 360° vector so **turns** (axisDir angular sweep) are countable. Failure mode: a spin
+rotating >180° between frames aliases the correspondence — mitigated by frame rate + fast
+shutter.
+
+**Camera-count-agnostic architecture (Austen's endgame = 3 cameras, one per plane).** The
+TKA brain consumes only `gripPos` + `axisDir`; it is independent of camera count.
+- **1 camera (v1, wall plane):** LED blobs → 2D endpoints → 2D `axisDir`. In-plane flow only.
+  Ships first; proves the chain on real footage immediately.
+- **3 cameras (v2):** LED blobs per view → multi-view triangulation → 3D endpoints → 3D
+  `axisDir` + plane detection. Works in any plane; eliminates the out-of-plane limitation.
+  (FreeMoCap/Pose2Sim-style triangulation; needs one-time extrinsic calibration.)
+
+**What is KEPT (already built + tested, ~30 tests, unchanged):** `tka-pose-classifier.ts`
+(location, orientation, hand-motion, pro/anti/float, turns — `classifyOrientation(gripPos,
+axisDir)` already computes radial/nonradial from axis-vs-radius, exactly the colored-end
+vector), `notation-to-pictograph.ts` (render bridge), the beat-segmentation structure, and
+`notation-pipeline.ts` (orchestrator).
+
+**What is SWAPPED:**
+- `ArucoStaffTracker` + vendored `js-aruco2` → **`ColorEndTracker`** (per-staff single-color
+  blob → two endpoints + thumb/pinky continuity). Extends the existing `SimplePropTracker`
+  color-histogram approach (one tip → both ends + correspondence).
+- `GridFrameSolver` (6-DOF camera matrix) → **2D `ScreenToGrid` calibration** (mark grid
+  center + a reference radius; map screen px → grid coords). v2 replaces this with the
+  triangulation+plane solver.
+- `StaffPose3D.rollRad` → **dropped.** `accumulateBetween` computes `propNetRotation` from
+  the `axisDir` angular sweep (not roll).
+- Printable ArUco marker sheet → not needed (LED staves).
+
+The sections below are the original ArUco design, retained for provenance. Read them as
+historical; the Revision above governs.
+
+---
 
 ## Problem
 
