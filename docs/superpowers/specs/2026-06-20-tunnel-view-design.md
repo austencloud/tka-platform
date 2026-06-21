@@ -239,3 +239,32 @@ Reused as-is: `AnimatorCanvas`, `rotateSequence`/`mirrorSequence`,
   capturer, which is sufficient; revisit only if gap-free layer trails are needed.
 - **Perf guard thresholds** (§9) to be tuned during implementation against real
   device budgets.
+
+---
+
+## Addendum (2026-06-21) — Tunnel lives under an "Art" mode
+
+Design revision after seeing the first integration: a 2D-pane toggle + bottom
+control strip duplicated the entire animation sidebar (effects/effort/props/
+playback/display/export). Tunnel is generative art *of* the sequence — the same
+family as the Mandala — so it belongs under one umbrella, not as a separate
+viewer mode and not as a 2D overlay.
+
+**Resolution:**
+- The `mandala` viewer mode is relabeled **"Art"** (palette icon). The internal
+  id stays `mandala` (pane + persistence key) to avoid an enum/persistence
+  rename across the high-traffic viewer.
+- `ArtPane.svelte` hosts a **type picker** (`SegmentedControl`: Mandala | Tunnel)
+  over the two art renderers. Future generative outputs add a type here.
+- `TunnelArtView.svelte` renders the kaleidoscope on **its own rAF playhead**
+  (like the Mandala — an art view must not depend on the 2D transport playing).
+- The only tunnel-unique controls are **fold + mirror**. Effects, props, effort,
+  playback, display, export all come from the viewer's **shared effects-config**;
+  the active effect (`effectsConfig.activeEffect`) is applied uniformly across
+  every layer via `{ "*": { effect } }`. No duplicated controls.
+- The AnimationPlayer + ViewerSplitPane 2D-pane integrations are reverted;
+  `TunnelControlStrip` is deleted; `ViewerSplitPane` renders `ArtPane`.
+
+This supersedes §2 (host) and §7 (controls): the host is the **Art pane**, not
+`AnimationPlayer`; the controls are **fold/mirror only**, with everything else
+inherited from the shared sidebar.
