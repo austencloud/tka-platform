@@ -155,13 +155,15 @@ const fragmentShader = /* glsl */ `
     }
 
     // Color slider (uColorBlend): tint the natural fire hue toward the prop
-    // color while keeping the ramp's hot→cool luminance structure, so a tinted
-    // flame still has a bright core and dim edges. 0 = pure fire, 1 = strongly
-    // prop-colored. Capped at 0.85 so it never fully erases the fire. Mirrors
+    // color. propTinted reuses the ramp's luminance (lum) so the flame keeps
+    // its bright-core/dim-edge structure even when fully prop-colored. Blend
+    // ALL the way at uColorBlend=1 — a partial blend would leave residual
+    // orange (high red channel) that, under additive blending, mixes with a
+    // blue prop into purple. Full blend = clean prop-colored flame. Mirrors
     // the 2D fire's colorBlend, which also blends toward propColors.
     float lum = dot(color, vec3(0.299, 0.587, 0.114));
-    vec3 propTinted = vPropColor * lum * 1.6;
-    color = mix(color, propTinted, 0.85 * uColorBlend);
+    vec3 propTinted = vPropColor * lum * 1.7;
+    color = mix(color, propTinted, uColorBlend);
 
     // Emission: hot core, decaying as it cools. The whole curve scales with
     // uEmissiveHot (the brightness lever) - core at full, cooling to 15% - so
