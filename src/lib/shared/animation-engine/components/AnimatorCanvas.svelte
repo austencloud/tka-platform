@@ -69,6 +69,7 @@ Last audit: 2025-12-27
     previewDarkMode = null,
     hideTkaGlyph = false,
     hideStepNumbers = false,
+    hidePathLines = false,
     hideProgressBar = false,
     hideHeader = false,
     isSeamlesslyLoopable = undefined,
@@ -117,6 +118,9 @@ Last audit: 2025-12-27
     previewDarkMode?: boolean | null;
     hideTkaGlyph?: boolean;
     hideStepNumbers?: boolean;
+    /** Force-hide the dotted prop-center path lines regardless of the visibility
+     *  manager (e.g. the Tunnel art view, which never wants path overlays). */
+    hidePathLines?: boolean;
     hideProgressBar?: boolean;
     /** Hide the WordHeader slot (portrait-mobile reclaims this vertical space). */
     hideHeader?: boolean;
@@ -345,6 +349,8 @@ Last audit: 2025-12-27
 
   const effectiveTkaGlyphVisible = $derived(tkaGlyphVisible && !hideTkaGlyph);
   const effectiveBeatNumbersVisible = $derived(stepNumbersVisible && !hideStepNumbers);
+  const effectiveBluePathLinesVisible = $derived(bluePathLinesVisible && !hidePathLines);
+  const effectiveRedPathLinesVisible = $derived(redPathLinesVisible && !hidePathLines);
 
   function handleVisibilityChange() {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
@@ -458,8 +464,8 @@ Last audit: 2025-12-27
       {darkModeEnabled}
       {effectiveTkaGlyphVisible}
       {effectiveBeatNumbersVisible}
-      {bluePathLinesVisible}
-      {redPathLinesVisible}
+      bluePathLinesVisible={effectiveBluePathLinesVisible}
+      redPathLinesVisible={effectiveRedPathLinesVisible}
       {suppress2DOverlays}
       {resizePaused}
       visibilityManagerOverride={visibilityManagerOverride}

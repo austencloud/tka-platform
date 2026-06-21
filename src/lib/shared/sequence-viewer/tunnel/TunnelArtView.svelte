@@ -93,6 +93,7 @@
         hideProgressBar={true}
         hideTkaGlyph={true}
         hideStepNumbers={true}
+        hidePathLines={true}
         fillContainer={true}
         fireConfig={{ disableFrameCache: true }}
       />
