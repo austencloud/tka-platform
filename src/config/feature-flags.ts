@@ -204,11 +204,6 @@ export const FEATURES: FeatureDefinition[] = [
     modulePaths: ["features/promo-generator/"],
   },
   {
-    id: "gallery-generator",
-    tier: "dev",
-    modulePaths: ["features/gallery-generator/"],
-  },
-  {
     id: "hall-of-shame",
     tier: "dev",
     modulePaths: ["features/hall-of-shame/"],
