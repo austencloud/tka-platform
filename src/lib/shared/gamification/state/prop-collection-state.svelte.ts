@@ -1,0 +1,30 @@
+// src/lib/shared/gamification/state/prop-collection-state.svelte.ts
+/**
+ * Reactive mirror of the user's prop collection. The PropUnlockManager is the
+ * writer; UI reads these values. Follows the gamification module's "export
+ * $state + action functions" pattern (see notification-state.svelte.ts).
+ */
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import {
+  defaultCollection,
+  isUnlocked as isUnlockedPure,
+  remainingLocked as remainingLockedPure,
+  type PropCollection,
+} from "../domain/prop-collection";
+
+export const propCollection = $state<PropCollection>(defaultCollection());
+
+/** Replace the mirrored collection (called by the manager after every change). */
+export function setPropCollection(next: PropCollection): void {
+  propCollection.unlockedPropTypes = next.unlockedPropTypes;
+  propCollection.creationCount = next.creationCount;
+  propCollection.pendingPicks = next.pendingPicks;
+}
+
+export function isPropUnlocked(prop: PropType): boolean {
+  return isUnlockedPure(propCollection, prop);
+}
+
+export function remainingLockedProps(): PropType[] {
+  return remainingLockedPure(propCollection);
+}
