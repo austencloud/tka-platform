@@ -27,6 +27,16 @@ export interface FireTipTrackerConfig {
     blue: RenderedPropTransform | null;
     red: RenderedPropTransform | null;
   };
+  /**
+   * Overlaid tunnel layers (rotated/mirrored copies of the base sequence). When
+   * present, the tracker also emits tips for each layer's blue/red props at
+   * propIndex >= 2, so per-tip effects (which filter by propIndex, with "*"
+   * matching any) decorate the whole kaleidoscope instead of just the base
+   * pair. Layers share the base blue/red dimensions + types and use the
+   * fallback position path (no per-layer rendered transforms exist). Absent =
+   * identical legacy behavior.
+   */
+  additionalLayers?: Array<{ blueProp: PropState | null; redProp: PropState | null }>;
 }
 
 export interface FireTipUpdateResult {
@@ -41,8 +51,14 @@ const MIN_DT_SECONDS = 1 / 120;
 /** Maximum velocity magnitude to clamp physics outliers */
 const MAX_SPEED = 5000;
 
-/** Maximum fire points across both props (performance cap for the shader) */
+/** Maximum fire points across the base blue/red pair (performance cap for the shader) */
 const MAX_TOTAL_TIPS = 16;
+
+/** Additional output cap for overlaid tunnel-layer tips (beyond the base 16).
+ *  Bounds an 8-fold + mirror stack of high-tip-count props. Heavy GPU effects
+ *  (fire/charcoal) on many tips is a known perf cost the Tunnel View feature
+ *  guards separately; this cap just keeps the output array bounded. */
+const MAX_LAYER_TIPS = 256;
 
 /**
  * If the time between consecutive update() calls exceeds this threshold,
@@ -78,6 +94,13 @@ export class FireTipTracker {
 
 	/** Output array reused each frame */
 	private outputTips: PropTipData[] = [];
+
+	/**
+	 * Previous-frame positions for overlaid tunnel-layer tips, keyed by
+	 * "<layerIndex>-<b|r>-<tipIndex>". Dynamic (grows to the max layer count
+	 * seen this session) so the fixed 16-slot base pool stays untouched.
+	 */
+	private layerPrevTips = new Map<string, StoredTip>();
 
 	/** Timestamp of the last update() call. Used for gap detection. */
 	private lastUpdateTime = 0;
@@ -165,6 +188,33 @@ export class FireTipTracker {
 			this.invalidateRange(MAX_TOTAL_TIPS / 2, MAX_TOTAL_TIPS);
 		}
 
+		// Overlaid tunnel layers: emit tips at propIndex >= 2 so every effect
+		// (which filters by propIndex, "*" matching all) covers the kaleidoscope.
+		if (config.additionalLayers && config.additionalLayers.length > 0) {
+			const cap = MAX_TOTAL_TIPS + MAX_LAYER_TIPS;
+			let layerOutputIndex = totalTips;
+			for (let li = 0; li < config.additionalLayers.length; li++) {
+				const layer = config.additionalLayers[li]!;
+				// Distinct propIndex per layer/hand: base blue=0, red=1; layer li
+				// blue=2+2*li, red=3+2*li. Only the "*"-vs-specific distinction
+				// matters downstream, so exact values are irrelevant past uniqueness.
+				if (layer.blueProp) {
+					layerOutputIndex = this.emitLayerPropTips(
+						layer.blueProp, config.canvasSize, config.bluePropDimensions,
+						config.bluePropType ?? null, 2 + li * 2, `${li}-b`,
+						currentTime, layerOutputIndex, cap,
+					);
+				}
+				if (layer.redProp) {
+					layerOutputIndex = this.emitLayerPropTips(
+						layer.redProp, config.canvasSize, config.redPropDimensions,
+						config.redPropType ?? null, 3 + li * 2, `${li}-r`,
+						currentTime, layerOutputIndex, cap,
+					);
+				}
+			}
+		}
+
 		this.result.tips = this.outputTips;
 		this.result.gapDetected = gapDetected;
 		return this.result;
@@ -174,6 +224,7 @@ export class FireTipTracker {
 		for (let i = 0; i < this.prevTips.length; i++) {
 			this.prevTips[i]!.valid = false;
 		}
+		this.layerPrevTips.forEach((t) => (t.valid = false));
 		this.outputTips.length = 0;
 		this.lastUpdateTime = 0;
 		this.warmupFramesRemaining = FireTipTracker.WARMUP_FRAMES;
@@ -259,11 +310,59 @@ export class FireTipTracker {
 		return outputIndex;
 	}
 
+	/**
+	 * Emit fire tips for one overlaid tunnel-layer prop. Mirrors emitPropTips but
+	 * always uses the fallback position path (layers have no rendered transform)
+	 * and pulls previous-frame state from the dynamic layerPrevTips map, leaving
+	 * the fixed 16-slot base pool untouched.
+	 */
+	private emitLayerPropTips(
+		prop: PropState,
+		canvasSize: number,
+		propDimensions: { width: number; height: number },
+		propType: string | null,
+		propIndex: number,
+		keyPrefix: string,
+		currentTime: number,
+		outputStartIndex: number,
+		cap: number
+	): number {
+		const tipConfig = getTipPoints(propType);
+		const tipPoints = tipConfig.points;
+		if (tipPoints.length === 0) return outputStartIndex;
+
+		const endpointConfig: PropEndpointConfig = { canvasSize, propDimensions };
+		const center = calculatePropCenter(prop, endpointConfig);
+		const gridScaleFactor = canvasSize / VIEWBOX_SIZE;
+		const angle = prop.staffRotationAngle;
+		const cosA = Math.cos(angle);
+		const sinA = Math.sin(angle);
+
+		let outputIndex = outputStartIndex;
+		for (let i = 0; i < tipPoints.length && outputIndex < cap; i++) {
+			const tp: TipPoint = tipPoints[i]!;
+			const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
+			const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
+
+			const key = `${keyPrefix}-${i}`;
+			let prev = this.layerPrevTips.get(key);
+			if (!prev) {
+				prev = createStoredTip();
+				this.layerPrevTips.set(key, prev);
+			}
+
+			this.emitTip(prev, worldX, worldY, propIndex, i, 1.0, currentTime, outputIndex);
+			outputIndex++;
+		}
+
+		return outputIndex;
+	}
+
 	private emitTip(
 		prev: StoredTip,
 		x: number,
 		y: number,
-		propIndex: 0 | 1,
+		propIndex: number,
 		tipIndex: number,
 		flameScale: number,
 		currentTime: number,

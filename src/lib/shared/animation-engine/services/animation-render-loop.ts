@@ -1057,6 +1057,16 @@ export class AnimationRenderLoop {
         bluePropType: params.bluePropType,
         redPropType: params.redPropType,
         renderedTransforms,
+        // Overlaid tunnel layers get tips too, so per-tip effects cover every
+        // copy in the kaleidoscope (not just the base pair). Absent for normal
+        // single-sequence playback → identical legacy behavior.
+        additionalLayers:
+          props.additionalLayers.length > 0
+            ? props.additionalLayers.map((l) => ({
+                blueProp: effectiveBlueMotionVisible ? l.blueProp : null,
+                redProp: effectiveRedMotionVisible ? l.redProp : null,
+              }))
+            : undefined,
       };
 
       sharedTipResult = this.fireTipTracker!.update(
@@ -1176,6 +1186,14 @@ export class AnimationRenderLoop {
           redPropDimensions: props.redPropDimensions,
           bluePropType: params.bluePropType,
           redPropType: params.redPropType,
+          // LEDs cover overlaid tunnel layers too (parity with fire/charcoal).
+          additionalLayers:
+            props.additionalLayers.length > 0
+              ? props.additionalLayers.map((l) => ({
+                  blueProp: l.blueProp,
+                  redProp: l.redProp,
+                }))
+              : undefined,
         };
 
         const allLedTips = this.ledTipTracker.update(
@@ -1527,6 +1545,18 @@ export class AnimationRenderLoop {
         AnimationRenderLoop.compactByTrailFlag(this.reusableBlueTrailPoints, tipMap);
         AnimationRenderLoop.compactByTrailFlag(this.reusableRedTrailPoints, tipMap);
       }
+    }
+
+    // Overlaid tunnel-layer trails ALWAYS come from the live capturer. The path
+    // cache only stores base prop paths, and the real-time fallback above is
+    // gated off while the trails overlay is active — so without this, layer
+    // trails vanish exactly when trails is the chosen effect. Downstream gating
+    // (effectiveTrailsVisible) hides these when trails isn't active, so filling
+    // unconditionally here is safe.
+    if (this.TrailCapturer) {
+      this.TrailCapturer.fillAdditionalLayerTrails(this.reusableAdditionalLayerTrails);
+    } else {
+      this.reusableAdditionalLayerTrails.length = 0;
     }
 
     return {

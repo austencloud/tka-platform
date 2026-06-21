@@ -52,8 +52,9 @@ export interface PropTipData {
   velocityY: number;
   /** Speed magnitude (viewbox units/second) */
   speed: number;
-  /** 0 = blue prop, 1 = red prop */
-  propIndex: 0 | 1;
+  /** 0 = base blue prop, 1 = base red prop; >= 2 = overlaid tunnel-layer props
+   *  (2+2*layer = layer blue, 3+2*layer = layer red). Effects filter by this. */
+  propIndex: number;
   /** Index of this fire point within the prop's fire point array */
   tipIndex: number;
   /** Relative flame size (affects splat radius and fuel injection) */

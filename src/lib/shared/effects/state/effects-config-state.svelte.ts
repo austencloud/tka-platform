@@ -190,8 +190,15 @@ function loadStoredConfig(): EffectsConfig | null {
   }
 }
 
-export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECTS_CONFIG) {
-  const stored = loadStoredConfig();
+export function createEffectsConfigState(
+  initial: EffectsConfig = DEFAULT_EFFECTS_CONFIG,
+  options: { persist?: boolean } = {},
+) {
+  // persist:false → fully isolated instance (no read from / write to the shared
+  // tka_effects_config key). For ephemeral surfaces (tunnel/effects judges,
+  // landing previews) that must not clobber the user's global effects config.
+  const persist = options.persist ?? true;
+  const stored = persist ? loadStoredConfig() : null;
   let config = $state<EffectsConfig>(stored ?? migrateFromVmStorageOnce(structuredClone(initial)));
   let version = $state(0);
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -212,6 +219,7 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
 
   function scheduleSave() {
     version++;
+    if (!persist) return; // ephemeral instance: bump reactivity, never touch storage
     if (typeof window === "undefined") return;
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {

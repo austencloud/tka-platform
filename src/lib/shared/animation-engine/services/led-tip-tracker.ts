@@ -31,6 +31,14 @@ export interface LedTipTrackerConfig {
 	redPropDimensions: { width: number; height: number };
 	bluePropType?: string;
 	redPropType?: string;
+	/**
+	 * Overlaid tunnel layers. When present, LEDs are also emitted for each
+	 * layer's blue/red props (propIndex >= 2) so the LED effect covers the whole
+	 * kaleidoscope, mirroring FireTipTracker. Layers share the base per-hand base
+	 * colors + dimensions/types and use the fallback position path. Absent =
+	 * identical legacy behavior.
+	 */
+	additionalLayers?: Array<{ blueProp: PropState | null; redProp: PropState | null }>;
 }
 
 /** Minimum dt to avoid velocity spikes on first frame or pauses */
@@ -39,8 +47,11 @@ const MIN_DT_SECONDS = 1 / 120;
 /** Maximum velocity magnitude to clamp physics outliers */
 const MAX_SPEED = 5000;
 
-/** Maximum LED points across both props (16 per prop) */
+/** Maximum LED points across the base blue/red pair (16 per prop) */
 const MAX_TOTAL_TIPS = 32;
+
+/** Additional output cap for overlaid tunnel-layer LEDs (beyond the base 32). */
+const MAX_LAYER_TIPS = 512;
 
 /** Viewbox size for coordinate calculations (matches PropPositionCalculator) */
 const VIEWBOX_SIZE = 950;
@@ -66,6 +77,10 @@ export class LedTipTracker {
 
 	/** Output array reused each frame */
 	private outputTips: LedTipData[] = [];
+
+	/** Previous-frame positions for overlaid tunnel-layer LEDs, keyed by
+	 *  "<layerIndex>-<b|r>-<tipIndex>". Dynamic; leaves the fixed base pool alone. */
+	private layerPrevTips = new Map<string, StoredTip>();
 
 	/** Reusable evaluation context to avoid allocations per LED per frame */
 	private evalCtx: TipEvaluationContext = createReusableContext();
@@ -161,6 +176,34 @@ export class LedTipTracker {
 			this.invalidateRange(MAX_TOTAL_TIPS / 2, MAX_TOTAL_TIPS);
 		}
 
+		// Overlaid tunnel layers: emit LEDs for each layer's props (propIndex >= 2)
+		// so the LED effect blankets the whole kaleidoscope. Each layer prop reuses
+		// its hand's base color + pattern offset, so colors stay coherent across copies.
+		if (config.additionalLayers && config.additionalLayers.length > 0) {
+			const blueLedCount = blueTipConfig?.points.length ?? 0;
+			const cap = MAX_TOTAL_TIPS + MAX_LAYER_TIPS;
+			let layerOutputIndex = totalTips;
+			for (let li = 0; li < config.additionalLayers.length; li++) {
+				const layer = config.additionalLayers[li]!;
+				if (layer.blueProp) {
+					layerOutputIndex = this.emitLayerPropTips(
+						layer.blueProp, config.canvasSize, config.bluePropDimensions,
+						config.bluePropType ?? null, 2 + li * 2, `${li}-b`, currentTime,
+						layerOutputIndex, blueBaseColor, secondaryBaseColor,
+						ledConfig.patternSpeed, totalLedCount, timeSeconds, 0, ledConfig, cap,
+					);
+				}
+				if (layer.redProp) {
+					layerOutputIndex = this.emitLayerPropTips(
+						layer.redProp, config.canvasSize, config.redPropDimensions,
+						config.redPropType ?? null, 3 + li * 2, `${li}-r`, currentTime,
+						layerOutputIndex, redBaseColor, secondaryBaseColor,
+						ledConfig.patternSpeed, totalLedCount, timeSeconds, blueLedCount, ledConfig, cap,
+					);
+				}
+			}
+		}
+
 		// Snapshot current output for next frame's prevFrameTips (used by TKA-aware patterns)
 		this.prevFrameSnapshot = this.outputTips.map((t) => ({
 			x: t.x,
@@ -176,8 +219,105 @@ export class LedTipTracker {
 		for (let i = 0; i < this.prevTips.length; i++) {
 			this.prevTips[i]!.valid = false;
 		}
+		this.layerPrevTips.forEach((t) => (t.valid = false));
 		this.outputTips.length = 0;
 		this.warmupFramesRemaining = LedTipTracker.WARMUP_FRAMES;
+	}
+
+	/**
+	 * Emit LEDs for one overlaid tunnel-layer prop. Mirrors emitPropTips but
+	 * pulls previous-frame state from the dynamic layerPrevTips map (the fixed
+	 * base pool stays untouched) and always uses the fallback position path.
+	 */
+	private emitLayerPropTips(
+		prop: PropState,
+		canvasSize: number,
+		propDimensions: { width: number; height: number },
+		propType: string | null,
+		propIndex: number,
+		keyPrefix: string,
+		currentTime: number,
+		outputStartIndex: number,
+		baseColor: { r: number; g: number; b: number },
+		secondaryBaseColor: { r: number; g: number; b: number },
+		patternSpeed: number,
+		totalLedCount: number,
+		timeSeconds: number,
+		ledGlobalOffset: number,
+		ledConfig: LedOverlayConfig,
+		cap: number
+	): number {
+		const tipConfig = getTipPoints(propType);
+		const points = tipConfig.points;
+		if (points.length === 0) return outputStartIndex;
+
+		const endpointConfig: PropEndpointConfig = { canvasSize, propDimensions };
+		const center = calculatePropCenter(prop, endpointConfig);
+		const gridScaleFactor = canvasSize / VIEWBOX_SIZE;
+		const angle = prop.staffRotationAngle;
+		const cosA = Math.cos(angle);
+		const sinA = Math.sin(angle);
+
+		// LED pattern color is hand-relative; use blue=0 / red=1 for the eval
+		// context regardless of the unique output propIndex.
+		const handIndex: 0 | 1 = ledGlobalOffset === 0 ? 0 : 1;
+
+		let outputIndex = outputStartIndex;
+		for (let i = 0; i < points.length && outputIndex < cap; i++) {
+			const lp = points[i]!;
+			const key = `${keyPrefix}-${i}`;
+			let prev = this.layerPrevTips.get(key);
+			if (!prev) {
+				prev = createStoredTip();
+				this.layerPrevTips.set(key, prev);
+			}
+
+			const worldX = center.x + (lp.dx * cosA - lp.dy * sinA) * gridScaleFactor;
+			const worldY = center.y + (lp.dx * sinA + lp.dy * cosA) * gridScaleFactor;
+
+			let velocityX = 0;
+			let velocityY = 0;
+			let speedMagnitude = 0;
+			if (prev.valid) {
+				const dt = Math.max((currentTime - prev.time) / 1000, MIN_DT_SECONDS);
+				velocityX = (worldX - prev.x) / dt;
+				velocityY = (worldY - prev.y) / dt;
+				speedMagnitude = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+				if (speedMagnitude > MAX_SPEED) {
+					const scale = MAX_SPEED / speedMagnitude;
+					velocityX *= scale;
+					velocityY *= scale;
+					speedMagnitude = MAX_SPEED;
+				}
+			}
+
+			const ctx = this.evalCtx;
+			ctx.time = timeSeconds;
+			ctx.ledIndex = ledGlobalOffset + i;
+			ctx.totalLeds = totalLedCount;
+			ctx.speed = patternSpeed;
+			ctx.primaryColor = baseColor;
+			ctx.secondaryColor = secondaryBaseColor;
+			ctx.propIndex = handIndex;
+			ctx.tipIndex = i;
+			ctx.x = worldX;
+			ctx.y = worldY;
+			ctx.velocityX = velocityX;
+			ctx.velocityY = velocityY;
+			ctx.speedMagnitude = speedMagnitude;
+			ctx.prevFrameTips = this.prevFrameSnapshot;
+			ctx.stepNumber = -1;
+			ctx.totalSteps = 0;
+			const color = evaluatePatternNew(ledConfig.patternId, ctx);
+
+			this.emitTip(
+				prev, worldX, worldY, propIndex, i, 1.0, color, currentTime,
+				outputIndex, velocityX, velocityY, speedMagnitude
+			);
+			outputIndex++;
+		}
+
+		return outputIndex;
 	}
 
 	/**
@@ -300,7 +440,7 @@ export class LedTipTracker {
 		prev: StoredTip,
 		x: number,
 		y: number,
-		propIndex: 0 | 1,
+		propIndex: number,
 		tipIndex: number,
 		brightness: number,
 		color: { r: number; g: number; b: number },

@@ -45,8 +45,8 @@ export interface LedTipData {
   velocityY: number;
   /** Speed magnitude (viewbox units/second) */
   speed: number;
-  /** 0 = blue prop, 1 = red prop */
-  propIndex: 0 | 1;
+  /** 0 = base blue prop, 1 = base red prop; >= 2 = overlaid tunnel-layer props */
+  propIndex: number;
   /** Index of this LED within the prop's LED point array */
   tipIndex: number;
   /** Max output brightness from the LedPoint config, normalized to [0, 1] */
@@ -128,7 +128,13 @@ export interface LedOverlayConfig {
 export const PROP_BLUE = "#2196f3";
 export const PROP_RED = "#f44336";
 
-/** Default LED overlay config - disabled with neutral green glow and solid pattern */
+/**
+ * Default LED overlay config - disabled, solid pattern, prop-matched colors.
+ * colorMode is "prop-matched" so each hand's LEDs take the canonical blue/red
+ * prop identity out of the box (no neon-green wash from a "unified" primary).
+ * brightness defaults to level 3 (0.6) — full-bright (1.0) reads as blinding
+ * against the dark stage.
+ */
 export const DEFAULT_LED_CONFIG: LedOverlayConfig = {
   enabled: false,
   glowRadius: 1.0,
@@ -136,10 +142,10 @@ export const DEFAULT_LED_CONFIG: LedOverlayConfig = {
   trailFadeRate: 0.92,
   patternId: "solid",
   patternSpeed: 1.0,
-  primaryColor: "#00ff88",
+  primaryColor: "#66ccff",
   secondaryColor: "#ffffff",
-  brightness: 1.0,
-  colorMode: "unified",
+  brightness: 0.6,
+  colorMode: "prop-matched",
   blueHandColor: PROP_BLUE,
   redHandColor: PROP_RED,
 };

@@ -83,6 +83,15 @@ export interface ITrailCapturer {
   ): void;
 
   /**
+   * Fill ONLY the overlaid tunnel-layer trail arrays (allocation-free). Layer
+   * trails are always sourced from the live capturer — the path cache holds
+   * base prop paths (propIndex 0/1) only.
+   */
+  fillAdditionalLayerTrails(
+    additionalLayers: Array<{ blue: TrailPoint[]; red: TrailPoint[] }>
+  ): void;
+
+  /**
    * Clear all trail points and reset state
    */
   clearTrails(): void;

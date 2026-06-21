@@ -127,6 +127,12 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   private redLeftRing: TrailPoint[] = [];
   private redRightRing: TrailPoint[] = [];
 
+  // Overlaid tunnel-layer rings (one left/right pair per layer per color). These
+  // composite into the SAME blue/red accumulators as the base pair — so the
+  // memory cost stays at two accumulator canvases regardless of fold count.
+  private blueLayerRings: Array<{ left: TrailPoint[]; right: TrailPoint[] }> = [];
+  private redLayerRings: Array<{ left: TrailPoint[]; right: TrailPoint[] }> = [];
+
   // Track previous tracking mode to detect changes
   private lastTrackingMode: TrackingMode | null = null;
 
@@ -267,6 +273,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       bluePropType,
       redPropType,
       currentTime,
+      additionalLayers,
     } = params;
 
     this.leadingEdge = Math.max(
@@ -290,6 +297,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       this.blueRightRing = [];
       this.redLeftRing = [];
       this.redRightRing = [];
+      this.blueLayerRings = [];
+      this.redLayerRings = [];
     }
     this.lastTrackingMode = trailSettings.trackingMode;
 
@@ -318,6 +327,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     if (blueBecameVisible) {
       this.blueLeftRing = [];
       this.blueRightRing = [];
+      this.blueLayerRings = [];
       if (this.blueAccumClearedWhileHidden && this.blueAccumCtx) {
         this.blueAccumCtx.clearRect(0, 0, this.width, this.height);
       }
@@ -326,6 +336,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     if (redBecameVisible) {
       this.redLeftRing = [];
       this.redRightRing = [];
+      this.redLayerRings = [];
       if (this.redAccumClearedWhileHidden && this.redAccumCtx) {
         this.redAccumCtx.clearRect(0, 0, this.width, this.height);
       }
@@ -371,11 +382,13 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       if (blueBitsChanged) {
         this.blueLeftRing = [];
         this.blueRightRing = [];
+        this.blueLayerRings = [];
         this.blueAccumCtx?.clearRect(0, 0, this.width, this.height);
       }
       if (redBitsChanged) {
         this.redLeftRing = [];
         this.redRightRing = [];
+        this.redLayerRings = [];
         this.redAccumCtx?.clearRect(0, 0, this.width, this.height);
       }
       this.prevTipTrailMask = tipMask;
@@ -393,6 +406,32 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     }
     if (redProp && redCaptureLive) {
       this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft && redLeftTrails, trackRight && redRightTrails, currentTime);
+    }
+
+    // Capture overlaid tunnel-layer tips into per-layer rings (same color/tip
+    // gating as the base pair). These draw into the shared blue/red accumulators.
+    if (additionalLayers && additionalLayers.length > 0) {
+      this.ensureLayerRings(additionalLayers.length);
+      for (let i = 0; i < additionalLayers.length; i++) {
+        const layer = additionalLayers[i]!;
+        const blueRings = this.blueLayerRings[i]!;
+        const redRings = this.redLayerRings[i]!;
+        if (layer.blueProp && layer.hasBlue && blueCaptureLive) {
+          this.capturePropTipsInto(
+            layer.blueProp, canvasSize, bluePropType, 0, blueRings.left, blueRings.right,
+            trackLeft && blueLeftTrails, trackRight && blueRightTrails, currentTime,
+          );
+        }
+        if (layer.redProp && layer.hasRed && redCaptureLive) {
+          this.capturePropTipsInto(
+            layer.redProp, canvasSize, redPropType, 1, redRings.left, redRings.right,
+            trackLeft && redLeftTrails, trackRight && redRightTrails, currentTime,
+          );
+        }
+      }
+    } else if (this.blueLayerRings.length > 0 || this.redLayerRings.length > 0) {
+      this.blueLayerRings = [];
+      this.redLayerRings = [];
     }
 
     const fadeAmount = this.computeFadeAmount(
@@ -423,6 +462,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       canvasSize,
       fadeAmount,
       /* isBlue */ true,
+      this.blueLayerRings,
     );
     this.advanceAccumulator(
       this.redAccumCtx,
@@ -435,6 +475,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       canvasSize,
       fadeAmount,
       /* isBlue */ false,
+      this.redLayerRings,
     );
 
     // Mark each accumulator as "fully cleared while hidden" once its
@@ -490,6 +531,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     canvasSize: number,
     fadeAmount: number,
     isBlue: boolean,
+    extraRings: Array<{ left: TrailPoint[]; right: TrailPoint[] }> = [],
   ): void {
     if (!accumCtx) return;
     if (!hasColor && !envelopeLive) {
@@ -519,6 +561,14 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     const passes: TrailPoint[][] = [];
     if (leftLeading.length >= 2) passes.push(leftLeading);
     if (rightLeading.length >= 2) passes.push(rightLeading);
+
+    // Overlaid tunnel-layer leading edges — drawn into the same accumulator.
+    for (const lr of extraRings) {
+      const l = this.getLeadingEdge(lr.left, canvasSize);
+      if (l.length >= 2) passes.push(l);
+      const r = this.getLeadingEdge(lr.right, canvasSize);
+      if (r.length >= 2) passes.push(r);
+    }
 
     for (const leading of passes) {
       // renderTrails takes a blue ring and a red ring separately - pass
@@ -556,6 +606,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.blueRightRing = [];
     this.redLeftRing = [];
     this.redRightRing = [];
+    this.blueLayerRings = [];
+    this.redLayerRings = [];
     this.blueEnvelope.reset();
     this.redEnvelope.reset();
     this.blueAccumClearedWhileHidden = true;
@@ -576,6 +628,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.blueRightRing = [];
     this.redLeftRing = [];
     this.redRightRing = [];
+    this.blueLayerRings = [];
+    this.redLayerRings = [];
     this.blueAccumClearedWhileHidden = true;
     this.redAccumClearedWhileHidden = true;
     // Always apply warmup - the orchestrator sets angles synchronously but
@@ -611,6 +665,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.blueRightRing = [];
     this.redLeftRing = [];
     this.redRightRing = [];
+    this.blueLayerRings = [];
+    this.redLayerRings = [];
   }
 
   // -------------------------------------------------------------------
@@ -628,6 +684,26 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     canvasSize: number,
     propType: string | null | undefined,
     propIndex: 0 | 1,
+    trackLeft: boolean,
+    trackRight: boolean,
+    currentTime: number
+  ): void {
+    const leftRing = propIndex === 0 ? this.blueLeftRing : this.redLeftRing;
+    const rightRing = propIndex === 0 ? this.blueRightRing : this.redRightRing;
+    this.capturePropTipsInto(
+      prop, canvasSize, propType, propIndex, leftRing, rightRing, trackLeft, trackRight, currentTime,
+    );
+  }
+
+  /** Capture a prop's tip positions into the supplied left/right rings. Shared
+   *  by the base pair (its own rings) and each overlaid tunnel layer. */
+  private capturePropTipsInto(
+    prop: PropState,
+    canvasSize: number,
+    propType: string | null | undefined,
+    propIndex: 0 | 1,
+    leftRing: TrailPoint[],
+    rightRing: TrailPoint[],
     trackLeft: boolean,
     trackRight: boolean,
     currentTime: number
@@ -655,17 +731,27 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
 
     if (trackLeft && leftTipIndex < pts.length) {
       const tp = pts[leftTipIndex]!;
-      const leftRing = propIndex === 0 ? this.blueLeftRing : this.redLeftRing;
       const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
       const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
       this.appendToRing(leftRing, worldX, worldY, canvasSize, propIndex, leftTipIndex, currentTime);
     }
     if (trackRight && rightTipIndex < pts.length) {
       const tp = pts[rightTipIndex]!;
-      const rightRing = propIndex === 0 ? this.blueRightRing : this.redRightRing;
       const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
       const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
       this.appendToRing(rightRing, worldX, worldY, canvasSize, propIndex, rightTipIndex, currentTime);
+    }
+  }
+
+  /** Grow/shrink the per-layer ring pools to match the active layer count. */
+  private ensureLayerRings(count: number): void {
+    while (this.blueLayerRings.length < count) {
+      this.blueLayerRings.push({ left: [], right: [] });
+      this.redLayerRings.push({ left: [], right: [] });
+    }
+    if (this.blueLayerRings.length > count) {
+      this.blueLayerRings.length = count;
+      this.redLayerRings.length = count;
     }
   }
 

@@ -470,6 +470,28 @@ export class TrailCapturer {
     additionalLayers.length = this.additionalLayerBuffers.length;
   }
 
+  /**
+   * Fill ONLY the additional-layer trail arrays (allocation-free). The path
+   * cache holds base prop paths (propIndex 0/1) only, so overlaid tunnel-layer
+   * trails must always be sourced from the live capturer — including when the
+   * trails overlay is active (which short-circuits the base real-time fill).
+   */
+  fillAdditionalLayerTrails(
+    additionalLayers: Array<{ blue: TrailPoint[]; red: TrailPoint[] }>
+  ): void {
+    for (let i = 0; i < this.additionalLayerBuffers.length; i++) {
+      if (!additionalLayers[i]) {
+        additionalLayers[i] = { blue: [], red: [] };
+      }
+      const out = additionalLayers[i]!;
+      out.blue.length = 0;
+      out.red.length = 0;
+      for (const p of this.additionalLayerBuffers[i]!.blue) out.blue.push(p);
+      for (const p of this.additionalLayerBuffers[i]!.red) out.red.push(p);
+    }
+    additionalLayers.length = this.additionalLayerBuffers.length;
+  }
+
   clearTrails(): void {
     this.blueTrailBuffer.clear();
     this.redTrailBuffer.clear();
