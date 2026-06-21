@@ -208,6 +208,22 @@ export class TrailRenderer3D {
     return this.mesh;
   }
 
+  /**
+   * Live-apply tuned config. width/rainbow are read by update() each frame, so
+   * they take effect on the next frame; opacity/color/emissive are material
+   * uniforms set immediately. Buffer-sizing fields (maxPoints/qualityTier) are
+   * not live-updatable and are ignored here.
+   */
+  updateConfig(partial: Partial<TrailRendererConfig>): void {
+    this.config = { ...this.config, ...partial };
+    const mat = this.mesh.material as ShaderMaterial;
+    if (partial.opacity !== undefined) mat.uniforms.uOpacity!.value = partial.opacity;
+    if (partial.emissiveStrength !== undefined) mat.uniforms.uEmissiveStrength!.value = partial.emissiveStrength;
+    if (partial.color !== undefined) {
+      (mat.uniforms.uBaseColor!.value as Color).set(partial.color === "rainbow" ? "#ffffff" : partial.color);
+    }
+  }
+
   addPoint(position: Vector3): void {
     this.sampleCounter++;
     if (this.sampleCounter % this.sampleRate !== 0) return;

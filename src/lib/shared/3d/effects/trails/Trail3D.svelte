@@ -64,6 +64,13 @@
     emissiveStrength,
   });
 
+  // Push live prop changes (thickness/brightness/color/rainbow from the tuning
+  // sliders) into the already-constructed renderer. Without this the renderer
+  // keeps its construction-time config and the sliders appear to do nothing.
+  $effect(() => {
+    renderer.updateConfig({ width, opacity, color, rainbow, emissiveStrength });
+  });
+
   let lightHandle: LightHandle | null = null;
   const lightColor = untrack(() => new Color(color === "rainbow" ? "#ffffff" : color));
 
