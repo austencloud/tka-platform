@@ -24,6 +24,7 @@ import {
   calculatePropCenter,
   type PropEndpointConfig,
 } from "./prop-position-calculator";
+import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 export interface LedTipTrackerConfig {
 	canvasSize: number;
@@ -190,22 +191,29 @@ export class LedTipTracker {
 				MAX_TOTAL_TIPS + config.additionalLayers.length * MAX_TOTAL_TIPS,
 				MAX_TOTAL_TIPS + MAX_LAYER_TIPS,
 			);
+			// Each overlaid layer's LEDs take a distinct spectrum color
+			// (tunnelPropColor.rgb01, same {r,g,b} 0..1 shape as hexToLedColor) so
+			// every kaleidoscope copy is its own color; the base pair (0,1) keeps
+			// the per-hand base color above.
+			const layerCount = config.additionalLayers.length;
 			let layerOutputIndex = totalTips;
-			for (let li = 0; li < config.additionalLayers.length; li++) {
+			for (let li = 0; li < layerCount; li++) {
 				const layer = config.additionalLayers[li]!;
 				if (layer.blueProp) {
+					const blueLayerColor = tunnelPropColor(2 + li * 2, layerCount).rgb01;
 					layerOutputIndex = this.emitLayerPropTips(
 						layer.blueProp, config.canvasSize, config.bluePropDimensions,
 						config.bluePropType ?? null, 2 + li * 2, `${li}-b`, currentTime,
-						layerOutputIndex, blueBaseColor, secondaryBaseColor,
+						layerOutputIndex, blueLayerColor, secondaryBaseColor,
 						ledConfig.patternSpeed, totalLedCount, timeSeconds, 0, ledConfig, cap,
 					);
 				}
 				if (layer.redProp) {
+					const redLayerColor = tunnelPropColor(3 + li * 2, layerCount).rgb01;
 					layerOutputIndex = this.emitLayerPropTips(
 						layer.redProp, config.canvasSize, config.redPropDimensions,
 						config.redPropType ?? null, 3 + li * 2, `${li}-r`, currentTime,
-						layerOutputIndex, redBaseColor, secondaryBaseColor,
+						layerOutputIndex, redLayerColor, secondaryBaseColor,
 						ledConfig.patternSpeed, totalLedCount, timeSeconds, blueLedCount, ledConfig, cap,
 					);
 				}
