@@ -87,8 +87,15 @@ export class TunnelViewController {
       (this.fold === 8 || this.mirror),
   );
 
-  /** Per-layer prop states at the live playhead. Pass AnimationPlayer's
-   *  1-indexed fractional currentStep. */
+  /** Base (un-rotated) sequence prop states at the playhead — the center pair
+   *  of the kaleidoscope. currentStep is 1-indexed fractional (start < 1). */
+  basePropsAt(currentStep: number): { blue: PropState; red: PropState } {
+    const seq = this.#sources.getSequence();
+    if (!seq) return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE } };
+    return this.#propsFor(seq, currentStep);
+  }
+
+  /** Per-layer prop states at the live playhead. 1-indexed fractional currentStep. */
   additionalLayersAt(currentStep: number): AdditionalLayerProps[] {
     if (!this.active) return [];
     return this.#layers.map((seq) => {

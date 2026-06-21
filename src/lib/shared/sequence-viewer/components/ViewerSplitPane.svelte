@@ -15,14 +15,12 @@
   } from "../domain/viewer-prop-groups";
   import type { SplitConfig } from '../services/viewer-state-persistence';
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import TunnelControlStrip from "../tunnel/TunnelControlStrip.svelte";
-  import { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
   import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import RightRail from "./RightRail.svelte";
   import VideoGallery from './VideoGallery.svelte';
-  import MandalaPane from './MandalaPane.svelte';
+  import ArtPane from './ArtPane.svelte';
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
@@ -139,15 +137,6 @@
     isLoggedIn = false,
     onVideoUpload,
   }: Props = $props();
-
-  // Tunnel sub-mode for the 2D animation pane: overlays rotated/mirrored copies
-  // of the sequence into a live kaleidoscope. Rides the existing playback
-  // (currentStep) — no new clock. Effect tuning reuses the effects-config
-  // context this component already owns/inherits (above).
-  const tunnel = new TunnelViewController({
-    getSequence: () => playback.animationState.sequenceData,
-  });
-  const tunnelLayers = $derived(tunnel.additionalLayersAt(playback.currentStep));
 
   // Three.js / Threlte is multi-MB. The 3D canvas + performer hub are only
   // imported once a 3D pane is actually activated, so any chunk that touches
@@ -427,15 +416,6 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
           </div>
         {/if}
 
-        {#if _2dLeftActive}
-          <button
-            class="tunnel-toggle-overlay"
-            class:active={tunnel.active}
-            aria-pressed={tunnel.active}
-            onclick={() => (tunnel.active = !tunnel.active)}
-          >Tunnel</button>
-        {/if}
-
         {#if playback.animationLoading}
           <div class="loading-state">
             <ProgressRing percent={-1} size={32} strokeWidth={3} />
@@ -457,8 +437,6 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
               virtualTime={playback.animationState.virtualTime}
               blueProp={playback.animationState.bluePropState}
               redProp={playback.animationState.redPropState}
-              additionalLayers={tunnel.active ? tunnelLayers : undefined}
-              tipEffectMap={tunnel.tipEffectMap}
               gridMode={sequence?.gridMode}
               letter={playback.currentLetter}
               stepData={playback.currentStepData}
@@ -477,12 +455,6 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
               hideHeader={showMobileTransport}
               tapToToggle={showMobileTransport}
             />
-          </div>
-        {/if}
-
-        {#if tunnel.active && _2dLeftActive}
-          <div class="tunnel-strip-overlay">
-            <TunnelControlStrip controller={tunnel} />
           </div>
         {/if}
 
@@ -543,8 +515,9 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     {/if}
     {#if _mandalaLeftMounted}
       <div class="media-pane content-overlay" class:content-overlay-hidden={!_mandalaLeftShown}>
-        <MandalaPane
+        <ArtPane
           {sequence}
+          {playback}
           bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
           redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : undefined}
         />
@@ -573,8 +546,6 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
               virtualTime={playback.animationState.virtualTime}
               blueProp={playback.animationState.bluePropState}
               redProp={playback.animationState.redPropState}
-              additionalLayers={tunnel.active ? tunnelLayers : undefined}
-              tipEffectMap={tunnel.tipEffectMap}
               gridMode={sequence?.gridMode}
               letter={playback.currentLetter}
               stepData={playback.currentStepData}
@@ -675,8 +646,9 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
       {/if}
       {#if _mandalaRightMounted}
         <div class="media-pane content-overlay" class:content-overlay-hidden={!_mandalaRightShown}>
-          <MandalaPane
+          <ArtPane
             {sequence}
+            {playback}
             bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
             redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : undefined}
           />
@@ -1125,38 +1097,5 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     .pane-close-btn {
       animation: none !important;
     }
-  }
-
-  .tunnel-toggle-overlay {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    z-index: 3;
-    min-height: var(--min-touch-target, 44px);
-    padding: 6px 14px;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    font-size: 13px;
-    cursor: pointer;
-  }
-  .tunnel-toggle-overlay.active {
-    background: var(--theme-accent, #8b5cf6);
-    border-color: transparent;
-  }
-  .tunnel-strip-overlay {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 3;
-    max-height: 55%;
-    overflow-y: auto;
-    padding: 12px;
-    background: rgba(10, 10, 16, 0.82);
-    backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
   }
 </style>
