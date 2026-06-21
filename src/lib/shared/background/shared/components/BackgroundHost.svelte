@@ -69,6 +69,28 @@
 		if (!browser || !containerRef || !controller) return;
 		mounted = true;
 		onReady?.();
+
+		// App-wide cursor flee: the container is pointer-events:none, so listen on
+		// window and map client coords to container-relative px. The canvas is sized
+		// to the container (patchCanvasResolution), so container CSS px == canvas
+		// logical px. setPointer is a no-op for non-ocean backgrounds (their systems
+		// lack setPointer), so this is safe app-wide.
+		const onPointerMove = (e: PointerEvent) => {
+			if (!controller || !containerRef) return;
+			const rect = containerRef.getBoundingClientRect();
+			const x = e.clientX - rect.left;
+			const y = e.clientY - rect.top;
+			const inside = x >= 0 && y >= 0 && x <= rect.width && y <= rect.height;
+			controller.setPointer(x, y, inside);
+		};
+		const onPointerLeaveWin = () => controller?.setPointer(0, 0, false);
+		window.addEventListener('pointermove', onPointerMove, { passive: true });
+		window.addEventListener('pointerleave', onPointerLeaveWin);
+
+		return () => {
+			window.removeEventListener('pointermove', onPointerMove);
+			window.removeEventListener('pointerleave', onPointerLeaveWin);
+		};
 	});
 
 	onDestroy(() => {
