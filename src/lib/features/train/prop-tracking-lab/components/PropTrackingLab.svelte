@@ -10,11 +10,12 @@
 	import VideoCanvas from './VideoCanvas.svelte';
 	import TrajectoryOverlay from './TrajectoryOverlay.svelte';
 	import ControlBar from './ControlBar.svelte';
-	import { ArucoStaffTracker } from '../services/aruco-staff-tracker';
-	import { GridFrameSolver } from '../services/grid-frame-solver';
+	import { ColorEndTracker, type ColorTarget } from '../services/color-end-tracker';
+	import { endpointPairToPose } from '../services/color-flow-pipeline';
+	import { ScreenToGrid } from '../services/screen-to-grid';
 	import { framesToNotation } from '../services/notation-pipeline';
 	import { notationToPictographData } from '../services/notation-to-pictograph';
-	import { DEFAULT_MARKER_ASSIGNMENT, type StaffPose3D } from '../domain/notation-3d';
+	import type { StaffPose3D } from '../domain/notation-3d';
 	import PictographContainer from '$lib/shared/pictograph/shared/components/PictographContainer.svelte';
 	import type { PictographData } from '$lib/shared/pictograph/shared/domain/models/pictograph-data';
 
@@ -63,6 +64,13 @@
 		videoHeight = video.videoHeight;
 
 		fps = 30;
+
+		// Seed grid calibration defaults once dims are known; don't clobber a user adjustment.
+		if (radiusPx === 0) {
+			centerX = videoWidth / 2;
+			centerY = videoHeight / 2;
+			radiusPx = videoHeight / 4;
+		}
 
 		video.currentTime = 0;
 		video.pause();
@@ -137,19 +145,61 @@
 
 	let notationPictographs = $state<PictographData[]>([]);
 	let isNotating = $state(false);
+	// Grid calibration (defaults filled once the video dims are known).
+	let centerX = $state(0);
+	let centerY = $state(0);
+	let radiusPx = $state(0);
+	// Per-staff LED colors (sampled from the video). Defaults are placeholders.
+	let blueColor = $state<ColorTarget>({ r: 0, g: 0, b: 255, tolerance: 60 });
+	let redColor = $state<ColorTarget>({ r: 255, g: 0, b: 0, tolerance: 60 });
+	// Click mode for sampling: null | 'center' | 'radius' | 'blue' | 'red'.
+	let calibMode = $state<null | 'center' | 'radius' | 'blue' | 'red'>(null);
+
+	function reviewVideoClick(ev: MouseEvent) {
+		if (!calibMode || !videoElement) return;
+		const rect = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+		// Map CSS click coords -> video pixel coords (object-fit: contain aware enough for calibration).
+		const sx = (ev.clientX - rect.left) / rect.width;
+		const sy = (ev.clientY - rect.top) / rect.height;
+		const px = Math.round(sx * videoWidth);
+		const py = Math.round(sy * videoHeight);
+		if (calibMode === 'center') {
+			centerX = px;
+			centerY = py;
+		} else if (calibMode === 'radius') {
+			radiusPx = Math.max(1, Math.hypot(px - centerX, py - centerY));
+		} else if (calibMode === 'blue' || calibMode === 'red') {
+			extractionCanvas ??= document.createElement('canvas');
+			extractionCanvas.width = videoWidth;
+			extractionCanvas.height = videoHeight;
+			extractionCtx ??= extractionCanvas.getContext('2d', { willReadFrequently: true });
+			if (extractionCtx) {
+				extractionCtx.drawImage(videoElement, 0, 0);
+				const d = extractionCtx.getImageData(px, py, 1, 1).data;
+				const c: ColorTarget = { r: d[0]!, g: d[1]!, b: d[2]!, tolerance: 60 };
+				if (calibMode === 'blue') blueColor = c;
+				else redColor = c;
+			}
+		}
+		calibMode = null;
+	}
 
 	async function runNotation() {
+		if (!videoElement) return;
 		const video = videoElement;
-		if (!video) return;
 		isNotating = true;
 		notationPictographs = [];
-		const assignment = DEFAULT_MARKER_ASSIGNMENT;
-		const tracker = new ArucoStaffTracker(assignment, videoWidth);
+
+		const cal = new ScreenToGrid({ x: centerX, y: centerY }, radiusPx);
+		const blueTracker = new ColorEndTracker();
+		const redTracker = new ColorEndTracker();
 
 		const blueFrames: StaffPose3D[] = [];
 		const redFrames: StaffPose3D[] = [];
 		const blueConf: number[] = [];
 		const redConf: number[] = [];
+		let lastBlue: StaffPose3D | null = null;
+		let lastRed: StaffPose3D | null = null;
 
 		const total = Math.floor((videoDuration / 1000) * fps);
 		const dt = 1000 / fps;
@@ -162,35 +212,28 @@
 			return;
 		}
 
-		let lastBlue: StaffPose3D | null = null;
-		let lastRed: StaffPose3D | null = null;
-
 		for (let i = 0; i < total; i++) {
 			video.currentTime = (i * dt) / 1000;
 			await waitForSeek(video);
 			extractionCtx.drawImage(video, 0, 0);
 			const frame = extractionCtx.getImageData(0, 0, videoWidth, videoHeight);
 
-			const markers = tracker.detect(frame);
-			const center = markers.find((m) => m.id === assignment.centerRefId);
-			const blue = markers.find((m) => m.id === assignment.blueId);
-			const red = markers.find((m) => m.id === assignment.redId);
-
-			if (center && blue) {
-				lastBlue = GridFrameSolver.solve(blue, GridFrameSolver.gridFromCamera(center));
-				blueConf.push(1);
+			const bluePair = blueTracker.track(frame, blueColor);
+			if (bluePair) {
+				lastBlue = endpointPairToPose(bluePair, cal);
+				blueConf.push(bluePair.confidence);
 			} else {
 				blueConf.push(0);
 			}
-			if (center && red) {
-				lastRed = GridFrameSolver.solve(red, GridFrameSolver.gridFromCamera(center));
-				redConf.push(1);
+			if (lastBlue) blueFrames.push(lastBlue);
+
+			const redPair = redTracker.track(frame, redColor);
+			if (redPair) {
+				lastRed = endpointPairToPose(redPair, cal);
+				redConf.push(redPair.confidence);
 			} else {
 				redConf.push(0);
 			}
-
-			// Hold last good pose through short dropouts (segmenter interpolates).
-			if (lastBlue) blueFrames.push(lastBlue);
 			if (lastRed) redFrames.push(lastRed);
 		}
 
@@ -327,7 +370,12 @@
 	{:else if phase === 'review'}
 		<!-- PHASE 4: Review Results -->
 		<div class="review-section">
-			<div class="video-container">
+			<div
+				class="video-container"
+				class:calibrating={calibMode !== null}
+				onclick={reviewVideoClick}
+				role="presentation"
+			>
 				{#if videoUrl}
 					<video
 						src={videoUrl}
@@ -392,8 +440,26 @@
 				</div>
 			</div>
 
+			<div class="calib-panel">
+				<button class:active={calibMode === 'center'} onclick={() => (calibMode = 'center')}>
+					Set center
+				</button>
+				<button class:active={calibMode === 'radius'} onclick={() => (calibMode = 'radius')}>
+					Set radius
+				</button>
+				<button class:active={calibMode === 'blue'} onclick={() => (calibMode = 'blue')}>
+					Sample blue staff
+				</button>
+				<button class:active={calibMode === 'red'} onclick={() => (calibMode = 'red')}>
+					Sample red staff
+				</button>
+				<span class="calib-readout">
+					center {Math.round(centerX)},{Math.round(centerY)} · r {Math.round(radiusPx)}
+				</span>
+			</div>
+
 			<div class="notation-actions">
-				<button class="btn-primary" onclick={runNotation} disabled={isNotating}>
+				<button class="btn-primary" onclick={runNotation} disabled={isNotating || radiusPx <= 0}>
 					<i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
 					{isNotating ? 'Notating…' : 'Notate Flow'}
 				</button>
@@ -644,6 +710,48 @@
 	.stat-value {
 		font-size: 1rem;
 		font-weight: 600;
+	}
+
+	.video-container.calibrating {
+		cursor: crosshair;
+	}
+
+	.calib-panel {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem;
+		background: var(--theme-card-bg);
+		border-radius: 8px;
+	}
+
+	.calib-panel button {
+		padding: 0.375rem 0.75rem;
+		background: var(--theme-stroke);
+		color: var(--theme-text);
+		border: 1px solid transparent;
+		border-radius: 6px;
+		font-size: var(--font-size-compact);
+		cursor: pointer;
+		transition: background 0.15s, border-color 0.15s;
+	}
+
+	.calib-panel button:hover {
+		border-color: var(--theme-accent);
+	}
+
+	.calib-panel button.active {
+		background: var(--theme-accent);
+		color: white;
+		border-color: var(--theme-accent);
+	}
+
+	.calib-readout {
+		margin-left: auto;
+		font-size: var(--font-size-compact);
+		opacity: 0.7;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.notation-actions {
