@@ -50,6 +50,7 @@ import {
   createTailState,
   type TailState,
 } from "$lib/shared/animation-engine/domain/tail-recession";
+import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 /**
  * Minimum ring capacity. Actual capacity is `max(RING_BUFFER_MIN, tailLength + RING_BUFFER_HEADROOM)`
@@ -490,17 +491,21 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     pushTip(`red-left${redSuffix}`, this.redLeftRing, [rR, rG, rB], this.redLeftTail, redAlpha);
     pushTip(`red-right${redSuffix}`, this.redRightRing, [rR, rG, rB], this.redRightTail, redAlpha);
 
-    // Overlaid tunnel-layer tips. Blue rings get the blue trail color, red
-    // rings the red — matching each layer's source prop. Each end is its own
-    // backend FBO via a layer-indexed tipId; the per-color epoch suffix keeps
-    // FBO recycling consistent with the base pair after a full fade-out.
-    for (let i = 0; i < this.layerRings.length; i++) {
+    // Overlaid tunnel-layer tips. Each layer's blue/red rings get a distinct
+    // spectrum color (tunnelPropColor, parsed via the same hexToRgb) so every
+    // kaleidoscope copy trails in its own color instead of repeating the base
+    // blue/red. Each end is its own backend FBO via a layer-indexed tipId; the
+    // per-color epoch suffix keeps FBO recycling consistent with the base pair.
+    const layerCount = this.layerRings.length;
+    for (let i = 0; i < layerCount; i++) {
       const rings = this.layerRings[i]!;
       const tails = this.layerTails[i]!;
-      pushTip(`L${i}-blue-left${blueSuffix}`, rings.blueLeft, [bR, bG, bB], tails.blueLeft, blueAlpha);
-      pushTip(`L${i}-blue-right${blueSuffix}`, rings.blueRight, [bR, bG, bB], tails.blueRight, blueAlpha);
-      pushTip(`L${i}-red-left${redSuffix}`, rings.redLeft, [rR, rG, rB], tails.redLeft, redAlpha);
-      pushTip(`L${i}-red-right${redSuffix}`, rings.redRight, [rR, rG, rB], tails.redRight, redAlpha);
+      const blueLayerRgb = hexToRgb(tunnelPropColor(2 + i * 2, layerCount).hex);
+      const redLayerRgb = hexToRgb(tunnelPropColor(3 + i * 2, layerCount).hex);
+      pushTip(`L${i}-blue-left${blueSuffix}`, rings.blueLeft, blueLayerRgb, tails.blueLeft, blueAlpha);
+      pushTip(`L${i}-blue-right${blueSuffix}`, rings.blueRight, blueLayerRgb, tails.blueRight, blueAlpha);
+      pushTip(`L${i}-red-left${redSuffix}`, rings.redLeft, redLayerRgb, tails.redLeft, redAlpha);
+      pushTip(`L${i}-red-right${redSuffix}`, rings.redRight, redLayerRgb, tails.redRight, redAlpha);
     }
 
     const payload: TrailPassPayload = { tips };
