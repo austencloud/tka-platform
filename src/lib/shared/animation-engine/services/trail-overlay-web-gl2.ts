@@ -91,6 +91,24 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   private redLeftRing: TrailPoint[] = [];
   private redRightRing: TrailPoint[] = [];
 
+  // Overlaid tunnel-layer rings + tail states (one full set per layer per
+  // color end). Each layer's blue end emits a blue-colored tip and red end a
+  // red-colored tip, so every copy in the kaleidoscope trails in its own
+  // prop color. Pools are grown/shrunk to the active layer count each frame
+  // (ensureLayerState), so memory is bounded by fold count — not unbounded.
+  private layerRings: Array<{
+    blueLeft: TrailPoint[];
+    blueRight: TrailPoint[];
+    redLeft: TrailPoint[];
+    redRight: TrailPoint[];
+  }> = [];
+  private layerTails: Array<{
+    blueLeft: TailState;
+    blueRight: TailState;
+    redLeft: TailState;
+    redRight: TailState;
+  }> = [];
+
   // Per-ring tail recession state. `visibleCount` shrinks from the current
   // leading edge toward 2 while the prop is stationary, so the visible
   // window actually closes from the tail end instead of staying pinned at
@@ -195,6 +213,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       this.blueRightRing = [];
       this.redLeftRing = [];
       this.redRightRing = [];
+      this.resetLayerState();
       this.warmupFramesRemaining = TrailOverlayWebGL2.WARMUP_FRAMES;
     }
   }
@@ -239,6 +258,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       this.blueRightTail = createTailState(leadingEdge);
       this.redLeftTail = createTailState(leadingEdge);
       this.redRightTail = createTailState(leadingEdge);
+      this.resetLayerState();
     }
     this.lastTrackingMode = trailSettings.trackingMode;
 
@@ -259,6 +279,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       this.blueRightRing = [];
       this.blueLeftTail = createTailState(leadingEdge);
       this.blueRightTail = createTailState(leadingEdge);
+      for (let i = 0; i < this.layerRings.length; i++) {
+        this.layerRings[i]!.blueLeft = [];
+        this.layerRings[i]!.blueRight = [];
+        this.layerTails[i]!.blueLeft = createTailState(leadingEdge);
+        this.layerTails[i]!.blueRight = createTailState(leadingEdge);
+      }
       if (this.blueEnvelopeWasZero) {
         this.blueTipEpoch++;
         this.blueEnvelopeWasZero = false;
@@ -269,6 +295,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       this.redRightRing = [];
       this.redLeftTail = createTailState(leadingEdge);
       this.redRightTail = createTailState(leadingEdge);
+      for (let i = 0; i < this.layerRings.length; i++) {
+        this.layerRings[i]!.redLeft = [];
+        this.layerRings[i]!.redRight = [];
+        this.layerTails[i]!.redLeft = createTailState(leadingEdge);
+        this.layerTails[i]!.redRight = createTailState(leadingEdge);
+      }
       if (this.redEnvelopeWasZero) {
         this.redTipEpoch++;
         this.redEnvelopeWasZero = false;
@@ -327,6 +359,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
         this.redRightTail = createTailState(leadingEdge);
         this.redTipEpoch++;
       }
+      if (blueBitsChanged || redBitsChanged) this.resetLayerState();
       this.prevTipTrailMask = tipMask;
     }
 
@@ -347,6 +380,44 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       const r = this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft && redLeftTrails, trackRight && redRightTrails);
       redLeftMoved = r.leftMoved;
       redRightMoved = r.rightMoved;
+    }
+
+    // Capture overlaid tunnel-layer tips into per-layer rings (same color/tip
+    // gating as the base pair). Each layer's blue prop feeds a blue tip, red
+    // prop a red tip — so every kaleidoscope copy trails in its own color.
+    const additionalLayers = params.additionalLayers;
+    const dtMsCapture = Math.max(0, params.deltaTime * 1000);
+    if (additionalLayers && additionalLayers.length > 0) {
+      this.ensureLayerState(additionalLayers.length, leadingEdge);
+      for (let i = 0; i < additionalLayers.length; i++) {
+        const layer = additionalLayers[i]!;
+        const rings = this.layerRings[i]!;
+        const tails = this.layerTails[i]!;
+        let bL = false, bR = false, rL = false, rR = false;
+        if (layer.blueProp && layer.hasBlue && blueCaptureLive) {
+          const m = this.capturePropTipsInto(
+            layer.blueProp, canvasSize, bluePropType, 0, rings.blueLeft, rings.blueRight,
+            trackLeft && blueLeftTrails, trackRight && blueRightTrails,
+          );
+          bL = m.leftMoved; bR = m.rightMoved;
+        }
+        if (layer.redProp && layer.hasRed && redCaptureLive) {
+          const m = this.capturePropTipsInto(
+            layer.redProp, canvasSize, redPropType, 1, rings.redLeft, rings.redRight,
+            trackLeft && redLeftTrails, trackRight && redRightTrails,
+          );
+          rL = m.leftMoved; rR = m.rightMoved;
+        }
+        // Advance every tail each frame (moved=false freezes recession during a
+        // fade-out the same way the base pair does), so layer trails recede
+        // identically whether the prop is moving, stationary, or fading out.
+        tails.blueLeft = advanceTail(tails.blueLeft, rings.blueLeft, bL, dtMsCapture, leadingEdge);
+        tails.blueRight = advanceTail(tails.blueRight, rings.blueRight, bR, dtMsCapture, leadingEdge);
+        tails.redLeft = advanceTail(tails.redLeft, rings.redLeft, rL, dtMsCapture, leadingEdge);
+        tails.redRight = advanceTail(tails.redRight, rings.redRight, rR, dtMsCapture, leadingEdge);
+      }
+    } else if (this.layerRings.length > 0) {
+      this.resetLayerState();
     }
 
     // Advance per-ring tail recession state. Moving frames update the
@@ -419,6 +490,19 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     pushTip(`red-left${redSuffix}`, this.redLeftRing, [rR, rG, rB], this.redLeftTail, redAlpha);
     pushTip(`red-right${redSuffix}`, this.redRightRing, [rR, rG, rB], this.redRightTail, redAlpha);
 
+    // Overlaid tunnel-layer tips. Blue rings get the blue trail color, red
+    // rings the red — matching each layer's source prop. Each end is its own
+    // backend FBO via a layer-indexed tipId; the per-color epoch suffix keeps
+    // FBO recycling consistent with the base pair after a full fade-out.
+    for (let i = 0; i < this.layerRings.length; i++) {
+      const rings = this.layerRings[i]!;
+      const tails = this.layerTails[i]!;
+      pushTip(`L${i}-blue-left${blueSuffix}`, rings.blueLeft, [bR, bG, bB], tails.blueLeft, blueAlpha);
+      pushTip(`L${i}-blue-right${blueSuffix}`, rings.blueRight, [bR, bG, bB], tails.blueRight, blueAlpha);
+      pushTip(`L${i}-red-left${redSuffix}`, rings.redLeft, [rR, rG, rB], tails.redLeft, redAlpha);
+      pushTip(`L${i}-red-right${redSuffix}`, rings.redRight, [rR, rG, rB], tails.redRight, redAlpha);
+    }
+
     const payload: TrailPassPayload = { tips };
     const graph: FrameGraph = {
       passes: [
@@ -469,6 +553,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.blueRightTail = createTailState(DEFAULT_LEADING_EDGE);
     this.redLeftTail = createTailState(DEFAULT_LEADING_EDGE);
     this.redRightTail = createTailState(DEFAULT_LEADING_EDGE);
+    this.resetLayerState();
   }
 
   setVisible(visible: boolean): void {
@@ -493,6 +578,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.blueRightRing = [];
     this.redLeftRing = [];
     this.redRightRing = [];
+    this.resetLayerState();
   }
 
   // -------------------------------------------------------------------
@@ -516,12 +602,33 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     });
   }
 
-  /** Returns which rings received a new point this frame. */
+  /** Returns which rings received a new point this frame. Captures the base
+   *  pair into its own per-color rings (selected by propIndex). */
   private capturePropTips(
     prop: PropState,
     canvasSize: number,
     propType: string | null | undefined,
     propIndex: 0 | 1,
+    trackLeft: boolean,
+    trackRight: boolean,
+  ): { leftMoved: boolean; rightMoved: boolean } {
+    const leftRing = propIndex === 0 ? this.blueLeftRing : this.redLeftRing;
+    const rightRing = propIndex === 0 ? this.blueRightRing : this.redRightRing;
+    return this.capturePropTipsInto(
+      prop, canvasSize, propType, propIndex, leftRing, rightRing, trackLeft, trackRight,
+    );
+  }
+
+  /** Capture a prop's tip positions into the supplied left/right rings. Shared
+   *  by the base pair (its own rings) and each overlaid tunnel layer. Returns
+   *  which ends appended a fresh point this frame. */
+  private capturePropTipsInto(
+    prop: PropState,
+    canvasSize: number,
+    propType: string | null | undefined,
+    propIndex: 0 | 1,
+    leftRing: TrailPoint[],
+    rightRing: TrailPoint[],
     trackLeft: boolean,
     trackRight: boolean,
   ): { leftMoved: boolean; rightMoved: boolean } {
@@ -550,19 +657,44 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
 
     if (trackLeft && leftTipIndex < pts.length) {
       const tp = pts[leftTipIndex]!;
-      const leftRing = propIndex === 0 ? this.blueLeftRing : this.redLeftRing;
       const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
       const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
       leftMoved = this.appendToRing(leftRing, worldX, worldY, canvasSize, propIndex, leftTipIndex);
     }
     if (trackRight && rightTipIndex < pts.length) {
       const tp = pts[rightTipIndex]!;
-      const rightRing = propIndex === 0 ? this.blueRightRing : this.redRightRing;
       const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
       const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
       rightMoved = this.appendToRing(rightRing, worldX, worldY, canvasSize, propIndex, rightTipIndex);
     }
     return { leftMoved, rightMoved };
+  }
+
+  /** Grow/shrink the per-layer ring + tail pools to match the active layer
+   *  count. New layers start empty; trimmed layers are dropped so memory is
+   *  bounded by the current fold count, not the historical maximum. */
+  private ensureLayerState(count: number, leadingEdge: number): void {
+    while (this.layerRings.length < count) {
+      this.layerRings.push({ blueLeft: [], blueRight: [], redLeft: [], redRight: [] });
+      this.layerTails.push({
+        blueLeft: createTailState(leadingEdge),
+        blueRight: createTailState(leadingEdge),
+        redLeft: createTailState(leadingEdge),
+        redRight: createTailState(leadingEdge),
+      });
+    }
+    if (this.layerRings.length > count) {
+      this.layerRings.length = count;
+      this.layerTails.length = count;
+    }
+  }
+
+  /** Drop all per-layer ring + tail state. Called whenever the base pair's
+   *  rings are reset (tracking-mode change, tip-mask change, sequence clears)
+   *  so stale overlaid-layer trails can't survive the invalidation. */
+  private resetLayerState(): void {
+    this.layerRings = [];
+    this.layerTails = [];
   }
 
   /** Returns true if a new point was appended (prop moved enough),
