@@ -39,6 +39,7 @@ import { animationSettings } from "$lib/shared/animation-engine/state/animation-
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
+import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
 
 export interface OffscreenExportInit {
   /** Square canvas size (px) for the offscreen engine. */
@@ -171,8 +172,12 @@ export class OffscreenExportRenderer {
   }
 
   /** Render one export frame at `beatPos` with the export-frame virtual clock (ms). */
-  renderFrame(beatPos: number, virtualTimeMs: number): void {
-    this.renderAt(beatPos, virtualTimeMs);
+  renderFrame(
+    beatPos: number,
+    virtualTimeMs: number,
+    layerProvider?: (beat: number) => AdditionalLayerProps[],
+  ): void {
+    this.renderAt(beatPos, virtualTimeMs, layerProvider);
   }
 
   private resetClock(): void {
@@ -187,12 +192,25 @@ export class OffscreenExportRenderer {
    * the canvas holding the last sub-step. The beat is interpolated linearly by
    * time across the export frame so each 60fps sub-step lands at the right spot.
    */
-  private renderAt(beatPos: number, targetTimeMs: number): void {
+  private renderAt(
+    beatPos: number,
+    targetTimeMs: number,
+    layerProvider?: (beat: number) => AdditionalLayerProps[],
+  ): void {
     if (!this.handle) {
       throw new Error("OffscreenExportRenderer not initialized");
     }
 
-    const prevBeat = this.prevBeatPos ?? beatPos;
+    let prevBeat = this.prevBeatPos ?? beatPos;
+    // Loop-wrap guard. The bake advances beat monotonically, EXCEPT at the
+    // seamless-loop seam where it wraps from the motion's end (high beat) back to
+    // its start (low beat). Linearly interpolating prevBeat→beatPos across that
+    // wrap sweeps the sub-steps BACKWARDS through the entire motion — through the
+    // antipodal pose — in a single frame, stamping a spurious one-frame "bounce
+    // to the opposite point" plus a backwards trail streak at the seam. A normal
+    // per-frame advance is a small fraction of a step; a backwards jump of more
+    // than half a step is a wrap, so snap to the new beat (no back-sweep).
+    if (prevBeat - beatPos > 0.5) prevBeat = beatPos;
     const spanMs = Math.max(0, targetTimeMs - this.prevTargetMs);
     const beatAt = (clockMs: number): number => {
       if (spanMs <= 0) return beatPos;
@@ -206,7 +224,7 @@ export class OffscreenExportRenderer {
     while (this.accumulatorMs >= REFERENCE_STEP_MS) {
       this.internalClockMs += REFERENCE_STEP_MS;
       this.accumulatorMs -= REFERENCE_STEP_MS;
-      this.renderSubStep(beatAt(this.internalClockMs), this.internalClockMs, REFERENCE_STEP_S);
+      this.renderSubStep(beatAt(this.internalClockMs), this.internalClockMs, REFERENCE_STEP_S, layerProvider);
       stepped = true;
     }
 
@@ -217,7 +235,7 @@ export class OffscreenExportRenderer {
     if (!stepped) {
       this.internalClockMs = this.prevTargetMs + spanMs;
       const dtSec = spanMs > 0 ? spanMs / 1000 : REFERENCE_STEP_S;
-      this.renderSubStep(beatPos, this.internalClockMs, dtSec);
+      this.renderSubStep(beatPos, this.internalClockMs, dtSec, layerProvider);
       this.accumulatorMs = 0;
     }
 
@@ -231,7 +249,12 @@ export class OffscreenExportRenderer {
    * frame synchronously with the explicit dt that drives the overlay tail
    * recession + fluid sim.
    */
-  private renderSubStep(beat: number, clockMs: number, dtSeconds: number): void {
+  private renderSubStep(
+    beat: number,
+    clockMs: number,
+    dtSeconds: number,
+    layerProvider?: (beat: number) => AdditionalLayerProps[],
+  ): void {
     const handle = this.handle!;
     this.playback.calculateStateForStep(beat);
 
@@ -246,6 +269,8 @@ export class OffscreenExportRenderer {
       previewDarkMode: this.init.previewDarkMode,
     };
     const props = assembleExportEngineProps(this.panelState, frameCtx);
+
+    if (layerProvider) props.additionalLayers = layerProvider(beat);
 
     // Feed the capturer at the same cadence the WebGL2 overlay captures its own
     // ring, so the canvas2D fallback path (if ever active) stays consistent.
