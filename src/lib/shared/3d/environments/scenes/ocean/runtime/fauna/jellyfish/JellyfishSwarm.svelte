@@ -152,6 +152,10 @@
     const cam = getCam();
     const el = gl?.domElement as HTMLCanvasElement | undefined;
     if (!el || !cam) return;
+    // Window-level listener: only pick when the bare WebGL canvas is the topmost
+    // element under the cursor. Any overlay UI (e.g. the Art pane) becomes the
+    // event target and must swallow the click instead of ringing a jelly behind it.
+    if (event.target !== el) return;
 
     const rect = el.getBoundingClientRect();
     const cx = event.clientX;
@@ -199,6 +203,11 @@
     const el = gl?.domElement as HTMLCanvasElement | undefined;
     if (!el || !cam) return;
     cursorEl = el;
+    // Don't show the jelly hover cursor while the pointer is over overlay UI.
+    if (event.target !== el) {
+      setHoverCursor(false);
+      return;
+    }
 
     const rect = el.getBoundingClientRect();
     const cx = event.clientX;

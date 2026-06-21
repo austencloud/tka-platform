@@ -23,9 +23,11 @@
   type ArtType = "mandala" | "tunnel";
   let artType = $state<ArtType>("mandala");
 
+  // Labels, not icons: SegmentedControl renders icon OR label (never both), so a
+  // bare dharmachakra/fan glyph reads as "no info". The word is the description.
   const options = [
-    { value: "mandala" as const, label: "Mandala", icon: "fa-dharmachakra" },
-    { value: "tunnel" as const, label: "Tunnel", icon: "fa-fan" },
+    { value: "mandala" as const, label: "Mandala" },
+    { value: "tunnel" as const, label: "Tunnel" },
   ];
 </script>
 
