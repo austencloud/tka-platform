@@ -35,6 +35,8 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 	import HorizontalSidebar from "./HorizontalSidebar.svelte";
 	import HorizontalTransportRow from "./HorizontalTransportRow.svelte";
 	import VerticalModeControls from "./VerticalModeControls.svelte";
+	import TunnelControlStrip from "../tunnel/TunnelControlStrip.svelte";
+	import { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
 
 	const DEFAULT_BPM = 60;
 
@@ -112,6 +114,11 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 	// trail's duplicate-stamp guard fires (one stamp per frozen frame). Undefined
 	// during live playback → render loop falls back to its free-running rAF clock.
 	const virtualTime = $derived(animState?.virtualTime);
+
+	// Tunnel sub-mode: overlays rotated/mirrored copies of the sequence into a
+	// live kaleidoscope. Rides the existing transport (currentStep) — no new clock.
+	const tunnel = new TunnelViewController({ getSequence: () => sequenceData });
+	const tunnelLayers = $derived(tunnel.additionalLayersAt(currentStep));
 
 	// Derived: current step data for canvas
 	const stepData = $derived.by(() => {
@@ -282,6 +289,8 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 					<AnimatorCanvas
 						blueProp={bluePropState}
 						redProp={redPropState}
+						additionalLayers={tunnel.active ? tunnelLayers : undefined}
+						tipEffectMap={tunnel.tipEffectMap}
 						gridVisible={true}
 						{gridMode}
 						{letter}
@@ -333,10 +342,20 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 			{/if}
 		{:else}
 			<!-- Vertical mode: original layout -->
+			<div class="tunnel-toggle-row">
+				<button
+					class="tunnel-toggle"
+					class:active={tunnel.active}
+					aria-pressed={tunnel.active}
+					onclick={() => (tunnel.active = !tunnel.active)}
+				>Tunnel</button>
+			</div>
 			<div class="canvas-wrap">
 				<AnimatorCanvas
 					blueProp={bluePropState}
 					redProp={redPropState}
+					additionalLayers={tunnel.active ? tunnelLayers : undefined}
+					tipEffectMap={tunnel.tipEffectMap}
 					gridVisible={true}
 					{gridMode}
 					{letter}
@@ -360,6 +379,10 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 					<ExportProgressOverlay progress={exportProgress} onCancel={cancelExport} />
 				{/if}
 			</div>
+
+			{#if tunnel.active}
+				<TunnelControlStrip controller={tunnel} />
+			{/if}
 
 			{#if showControls}
 				<VerticalModeControls
@@ -428,6 +451,22 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 		background: transparent;
 		padding: 4px;
 		box-sizing: border-box;
+	}
+
+	.tunnel-toggle-row { display: flex; justify-content: center; }
+	.tunnel-toggle {
+		min-height: 44px;
+		padding: 6px 16px;
+		border-radius: 9px;
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+		color: inherit;
+		cursor: pointer;
+	}
+	.tunnel-toggle.active {
+		background: var(--theme-accent, #8b5cf6);
+		border-color: transparent;
+		color: #fff;
 	}
 
 	.state-msg {
