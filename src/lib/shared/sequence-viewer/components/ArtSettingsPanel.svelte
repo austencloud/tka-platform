@@ -17,6 +17,7 @@
   reads consistently with the 2D download panel.
 -->
 <script lang="ts">
+  import { fade, fly } from "svelte/transition";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import IconRailNav from "$lib/shared/animation-panel/pill-nav/IconRailNav.svelte";
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
@@ -111,13 +112,35 @@
     { id: "depth", icon: "fa-wave-square", label: "Depth" },
     { id: "download", icon: "fa-download", label: "Download" },
   ];
-  let mandalaSection = $state<MandalaRailId>("speed");
-  const mandalaSectionLabel = $derived(
-    mandalaRail.find((p) => p.id === mandalaSection)?.label ?? "",
-  );
-
   const folds: Fold[] = [2, 4, 8];
   let newName = $state("");
+
+  // Mandala shows ALL its controls stacked (each is a single compact row, so a
+  // per-section rail would leave the tall panel mostly empty). The rail is kept
+  // for the tunnel, whose sections carry real content.
+  const mandalaStack: { id: MandalaRailId; label: string }[] = mandalaRail.map(
+    ({ id, label }) => ({ id, label }),
+  );
+
+  // Reduced-motion gate for the section transitions.
+  let reduceMotion = $state(false);
+  $effect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    reduceMotion = mq.matches;
+    const onChange = () => (reduceMotion = mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  });
+  // Track switch direction so sections fly in from the side the rail moved.
+  const tunnelOrder = tunnelRail.map((p) => p.id);
+  let flyDir = $state(1);
+  function selectTunnel(id: TunnelRailId): void {
+    const prev = tunnelOrder.indexOf(tunnelSection);
+    const next = tunnelOrder.indexOf(id);
+    flyDir = next >= prev ? 1 : -1;
+    tunnelSection = id;
+  }
 </script>
 
 <div class="art-settings-panel">
@@ -133,127 +156,142 @@
     />
   </div>
 
-  <!-- [ rail | section body ] mirroring AnimationPanel's .sidebar-rail-layout -->
-  <div class="sidebar-rail-layout">
-    {#if artType === "tunnel"}
+  {#if artType === "tunnel"}
+    <!-- Tunnel: vertical rail + centered, animated section body (mirrors AnimationPanel). -->
+    <div class="sidebar-rail-layout">
       <IconRailNav
         pills={tunnelRail}
         activeId={tunnelSection}
-        onSelect={(id) => (tunnelSection = id)}
+        onSelect={selectTunnel}
       />
-    {:else}
-      <IconRailNav
-        pills={mandalaRail}
-        activeId={mandalaSection}
-        onSelect={(id) => (mandalaSection = id)}
-      />
-    {/if}
 
-    <div class="sidebar-main">
-      <div class="panel-scroll">
-        {#if artType === "tunnel"}
-          <h2 class="panel-title">{tunnelSectionLabel}</h2>
+      <div class="sidebar-main">
+        <div class="panel-scroll">
+          <div class="panel-content-center">
+            {#key tunnelSection}
+              <div
+                class="panel-transition"
+                in:fly={{ x: reduceMotion ? 0 : flyDir * 28, duration: reduceMotion ? 0 : 240, delay: reduceMotion ? 0 : 60, opacity: 0 }}
+                out:fly={{ x: reduceMotion ? 0 : flyDir * -20, duration: reduceMotion ? 0 : 130, opacity: 0 }}
+              >
+                <div class="panel-center-inner">
+                  <h2 class="panel-title">{tunnelSectionLabel}</h2>
 
-          {#if tunnelSection === "tunnel"}
-            <div class="section-pad">
-              <div class="group">
-                <span class="lbl">Fold</span>
-                {#each folds as f (f)}
-                  <button class:active={controller.fold === f} onclick={() => controller.setFold(f)}>{f}×</button>
-                {/each}
-                <button class:active={controller.mirror} onclick={() => (controller.mirror = !controller.mirror)}>Mirror</button>
-              </div>
+                  {#if tunnelSection === "tunnel"}
+                    <div class="section-pad">
+                      <div class="group">
+                        <span class="lbl">Fold</span>
+                        {#each folds as f (f)}
+                          <button class:active={controller.fold === f} onclick={() => controller.setFold(f)}>{f}×</button>
+                        {/each}
+                        <button class:active={controller.mirror} onclick={() => (controller.mirror = !controller.mirror)}>Mirror</button>
+                      </div>
 
-              {#if controller.heavyLoad}
-                <p class="warn">Heavy effect on a large stack — may drop frames on weaker devices.</p>
-              {/if}
+                      {#if controller.heavyLoad}
+                        <p class="warn">Heavy effect on a large stack — may drop frames on weaker devices.</p>
+                      {/if}
 
-              <div class="presets">
-                <input
-                  class="name-input"
-                  type="text"
-                  placeholder="name this look…"
-                  bind:value={newName}
-                  onkeydown={(e) => { if (e.key === "Enter") { controller.saveCurrentAs(newName); newName = ""; } }}
-                />
-                <button onclick={() => { controller.saveCurrentAs(newName); newName = ""; }}>Save</button>
-                {#each controller.presets as p (p.id)}
-                  <div class="chip">
-                    <button class="chip-apply" onclick={() => controller.applyPreset(p)}>{p.name}</button>
-                    <button class="chip-del" aria-label={`Delete ${p.name}`} onclick={() => controller.deletePreset(p.id)}>×</button>
-                  </div>
-                {/each}
+                      <div class="presets">
+                        <input
+                          class="name-input"
+                          type="text"
+                          placeholder="name this look…"
+                          bind:value={newName}
+                          onkeydown={(e) => { if (e.key === "Enter") { controller.saveCurrentAs(newName); newName = ""; } }}
+                        />
+                        <button onclick={() => { controller.saveCurrentAs(newName); newName = ""; }}>Save</button>
+                        {#each controller.presets as p (p.id)}
+                          <div class="chip">
+                            <button class="chip-apply" onclick={() => controller.applyPreset(p)}>{p.name}</button>
+                            <button class="chip-del" aria-label={`Delete ${p.name}`} onclick={() => controller.deletePreset(p.id)}>×</button>
+                          </div>
+                        {/each}
+                      </div>
+                    </div>
+                  {:else if tunnelSection === "effects"}
+                    <div class="section-pad">
+                      <EffectsPanel
+                        layout="sidebar"
+                        showPlayback={false}
+                        {bpm}
+                        {onBpmChange}
+                        {isPlaying}
+                        {onPlaybackToggle}
+                      />
+                    </div>
+                  {:else if tunnelSection === "effort"}
+                    <div class="section-pad">
+                      <p class="section-hint">How each beat speeds up and slows down.</p>
+                      <EffortPanel columns={2} showSubtitles />
+                    </div>
+                  {:else if tunnelSection === "playback"}
+                    <div class="section-pad">
+                      <div class="rt-section">
+                        <span class="rt-section-label">Tempo</span>
+                        <TempoControl
+                          {bpm}
+                          {onBpmChange}
+                          showPresets
+                          showPractice={false}
+                          presetsMode="inline"
+                          vertical
+                        />
+                      </div>
+                      <div class="rt-section">
+                        <span class="rt-section-label">Mode</span>
+                        <PlaybackModeToggle
+                          {playbackMode}
+                          {isPlaying}
+                          {onPlaybackModeChange}
+                          {onPlaybackToggle}
+                          showDescriptions
+                        />
+                      </div>
+                    </div>
+                  {:else}
+                    <div class="section-pad">
+                      <DisplayPanel />
+                    </div>
+                  {/if}
+                </div>
               </div>
-            </div>
-          {:else if tunnelSection === "effects"}
-            <div class="section-pad">
-              <EffectsPanel
-                layout="sidebar"
-                showPlayback={false}
-                {bpm}
-                {onBpmChange}
-                {isPlaying}
-                {onPlaybackToggle}
-              />
-            </div>
-          {:else if tunnelSection === "effort"}
-            <div class="section-pad">
-              <p class="section-hint">How each beat speeds up and slows down.</p>
-              <EffortPanel columns={2} showSubtitles />
-            </div>
-          {:else if tunnelSection === "playback"}
-            <div class="section-pad">
-              <div class="rt-section">
-                <span class="rt-section-label">Tempo</span>
-                <TempoControl
-                  {bpm}
-                  {onBpmChange}
-                  showPresets
-                  showPractice={false}
-                  presetsMode="inline"
-                  vertical
-                />
-              </div>
-              <div class="rt-section">
-                <span class="rt-section-label">Mode</span>
-                <PlaybackModeToggle
-                  {playbackMode}
-                  {isPlaying}
-                  {onPlaybackModeChange}
-                  {onPlaybackToggle}
-                  showDescriptions
-                />
-              </div>
-            </div>
-          {:else}
-            <div class="section-pad">
-              <DisplayPanel />
-            </div>
-          {/if}
-        {:else}
-          <h2 class="panel-title">{mandalaSectionLabel}</h2>
-          <div class="section-pad">
-            <MandalaCategoryControl ctrl={mandalaController} category={mandalaSection} />
+            {/key}
           </div>
-        {/if}
-      </div>
+        </div>
 
-      <!-- Pinned footer: export -->
-      <div class="panel-footer">
-        {#if artType === "tunnel"}
+        <div class="panel-footer">
           <button type="button" class="export-btn" onclick={onExport}>
             <i class="fas fa-film" aria-hidden="true"></i>
             <span>Export Video</span>
           </button>
-        {:else}
-          <button type="button" class="export-btn" onclick={() => mandalaController.startExport()}>
-            <i class="fas fa-film" aria-hidden="true"></i>
-            <span>Export MP4</span>
-          </button>
-        {/if}
+        </div>
       </div>
     </div>
-  </div>
+  {:else}
+    <!-- Mandala: every control stacked (no rail). Each control is one compact
+         row, so a per-section rail would leave the tall panel mostly empty. -->
+    <div class="sidebar-main">
+      <div class="panel-scroll mandala-stack" in:fade={{ duration: reduceMotion ? 0 : 180 }}>
+        {#each mandalaStack as cat (cat.id)}
+          <div class="section-pad mandala-cat">
+            <span class="rt-section-label">{cat.label}</span>
+            <MandalaCategoryControl
+              ctrl={mandalaController}
+              category={cat.id}
+              showExportButton={false}
+            />
+          </div>
+        {/each}
+      </div>
+
+      <div class="panel-footer">
+        <button type="button" class="export-btn" onclick={() => mandalaController.startExport()}>
+          <i class="fas fa-film" aria-hidden="true"></i>
+          <span>Export MP4</span>
+        </button>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -319,6 +357,38 @@
   .panel-scroll::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.12);
     border-radius: 3px;
+  }
+
+  /* Tunnel: vertically center the active section in the tall body, and host the
+     keyed in/out fly transition (mirrors AnimationPanel's centered swap). */
+  .panel-content-center {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .panel-transition {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    will-change: opacity, transform;
+    backface-visibility: hidden;
+  }
+  /* auto block margins center the content but collapse to 0 when it overflows,
+     so long sections (Effects) still scroll from the top — no clipping. */
+  .panel-center-inner {
+    margin: auto 0;
+    width: 100%;
+  }
+
+  /* Mandala: stacked categories, each separated by a hairline. */
+  .mandala-stack { padding-bottom: 8px; }
+  .mandala-cat { gap: 10px; }
+  .mandala-cat + .mandala-cat {
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    margin-top: 4px;
   }
 
   .panel-title {

@@ -35,8 +35,11 @@
      * button just calls `ctrl.startExport()`.
      */
     onExport?: () => void;
+    /** Hide the inline "Export MP4" button (the stacked sidebar pins its own
+     *  footer export, so the download section shows config only). Default true. */
+    showExportButton?: boolean;
   }
-  let { ctrl, category, onExport }: Props = $props();
+  let { ctrl, category, onExport, showExportButton = true }: Props = $props();
 
   // Reduced-motion gate for the JS (Svelte) transitions reused from the dock.
   let reduceMotion = $state(false);
@@ -198,9 +201,11 @@
     </div>
     <div class="dl-foot">
       <span class="dl-estimate"><i class="fas fa-clock" aria-hidden="true"></i> {estimateLabel} · {ctrl.exportFrameCount} frames</span>
-      <button class="dl-export" onclick={handleExport}>
-        <i class="fas fa-film" aria-hidden="true"></i> Export MP4
-      </button>
+      {#if showExportButton}
+        <button class="dl-export" onclick={handleExport}>
+          <i class="fas fa-film" aria-hidden="true"></i> Export MP4
+        </button>
+      {/if}
     </div>
   </div>
 {/if}
