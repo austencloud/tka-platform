@@ -21,6 +21,7 @@ import {
 } from "three";
 import { createCharcoalMaterial, type CharcoalMaterialOptions } from "./charcoal-material-3d";
 import { QualityTier } from "../types";
+import type { Charcoal3DParams } from "$lib/shared/effects/translators/webgl3d-types";
 
 /** Per-tier particle pool sizes */
 const POOL_SIZE: Record<QualityTier, number> = {
@@ -117,6 +118,12 @@ export class CharcoalRenderer3D {
   // Ambient emission accumulator (fractional sparks)
   private ambientAccumulator = 0;
 
+  // Tunable scales from the curated FX panel (1.0 = renderer defaults). Mutated
+  // in place by updateConfig; never reallocate the pool.
+  private emitScale = 1.0; // intensity → spark count / rates
+  private spreadScale = 1.0; // spread → plume width + ejection speed
+  private lifeScale = 1.0; // glow → ember lifetime (longer = more glow on screen)
+
   constructor(qualityTier: QualityTier = QualityTier.HIGH) {
     this.qualityTier = qualityTier;
     this.poolSize = POOL_SIZE[qualityTier];
@@ -176,13 +183,16 @@ export class CharcoalRenderer3D {
       // Burst emission on high jerk (direction reversals) - dramatic plume
       if (tip.jerk > BURST_JERK_THRESHOLD) {
         const intensity = Math.min(tip.jerk / BURST_JERK_THRESHOLD, 5);
-        const count = Math.min(Math.floor(BURST_BASE * intensity), BURST_MAX);
+        const count = Math.min(
+          Math.floor(BURST_BASE * intensity * this.emitScale),
+          Math.floor(BURST_MAX * this.emitScale),
+        );
         this.emitBurst(tip, count);
       }
 
       // Idle embers: coals glowing near tips, barely perturbed
       // Ambient trickle during movement
-      const rate = tip.speed > AMBIENT_SPEED_THRESHOLD ? AMBIENT_RATE : IDLE_RATE;
+      const rate = (tip.speed > AMBIENT_SPEED_THRESHOLD ? AMBIENT_RATE : IDLE_RATE) * this.emitScale;
       this.ambientAccumulator += rate * safeDt;
       while (this.ambientAccumulator >= 1) {
         this.emitIdle(tip);
@@ -272,15 +282,17 @@ export class CharcoalRenderer3D {
       p.z = tip.position.z;
 
       // Low velocity inheritance - sparks don't follow the prop, they eject and fall
-      const perturbSpeed = BURST_PERTURB_MIN + Math.random() * (BURST_PERTURB_MAX - BURST_PERTURB_MIN);
-      const angle = (Math.random() - 0.5) * 2 * BURST_SPREAD;
-      const elevation = (Math.random() - 0.5) * 2 * BURST_SPREAD;
+      const perturbSpeed =
+        (BURST_PERTURB_MIN + Math.random() * (BURST_PERTURB_MAX - BURST_PERTURB_MIN)) * this.spreadScale;
+      const spread = BURST_SPREAD * this.spreadScale;
+      const angle = (Math.random() - 0.5) * 2 * spread;
+      const elevation = (Math.random() - 0.5) * 2 * spread;
 
       p.vx = tip.velocityX * BURST_VELOCITY_INHERITANCE + Math.cos(angle) * Math.cos(elevation) * perturbSpeed;
       p.vy = tip.velocityY * BURST_VELOCITY_INHERITANCE + Math.sin(elevation) * perturbSpeed * 0.5 + 0.5;
       p.vz = tip.velocityZ * BURST_VELOCITY_INHERITANCE + Math.sin(angle) * Math.cos(elevation) * perturbSpeed;
 
-      p.life = BURST_LIFETIME_MIN + Math.random() * (BURST_LIFETIME_MAX - BURST_LIFETIME_MIN);
+      p.life = (BURST_LIFETIME_MIN + Math.random() * (BURST_LIFETIME_MAX - BURST_LIFETIME_MIN)) * this.lifeScale;
       p.maxLife = p.life;
       p.size = BURST_SIZE_MIN + Math.random() * (BURST_SIZE_MAX - BURST_SIZE_MIN);
       p.active = true;
@@ -305,12 +317,23 @@ export class CharcoalRenderer3D {
       p.vy = perturbSpeed * 0.3; // slight upward drift before gravity takes over
       p.vz = Math.sin(angle) * perturbSpeed;
 
-      p.life = IDLE_LIFETIME_MIN + Math.random() * (IDLE_LIFETIME_MAX - IDLE_LIFETIME_MIN);
+      p.life = (IDLE_LIFETIME_MIN + Math.random() * (IDLE_LIFETIME_MAX - IDLE_LIFETIME_MIN)) * this.lifeScale;
       p.maxLife = p.life;
       p.size = IDLE_SIZE_MIN + Math.random() * (IDLE_SIZE_MAX - IDLE_SIZE_MIN);
       p.active = true;
       return; // one at a time
     }
+  }
+
+  /**
+   * Apply tuned params from the curated FX panel. intensity → spark count,
+   * spread → plume width, glow → ember lifetime (longer-lived embers read as
+   * more glow). Mutates scale fields the emit loop reads (no pool realloc).
+   */
+  updateConfig(params: Charcoal3DParams): void {
+    this.emitScale = 0.4 + params.intensity * 1.6; // 0.4 .. 2.0
+    this.spreadScale = 0.5 + params.spread; // 0.5 .. 1.5
+    this.lifeScale = 0.5 + params.glow * 1.5; // 0.5 .. 2.0
   }
 
   reset(): void {

@@ -43,6 +43,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
     resolveTrails3D,
     resolveLed3D,
     resolveFire3D,
+    resolveCharcoal3D,
   } from "$lib/shared/effects/translators/webgl3d-translator";
   import { evaluatePattern } from "$lib/shared/animation-engine/domain/patterns/evaluator";
   import { createReusableContext } from "$lib/shared/animation-engine/domain/patterns/context";
@@ -631,6 +632,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
       }
 
       if (charcoalTips.length > 0) {
+        charcoalRenderer.updateConfig(resolveCharcoal3D(effectsState.charcoal));
         charcoalRenderer.update(charcoalTips, dt);
       } else {
         charcoalRenderer.reset();
