@@ -27,7 +27,13 @@ The translator seam already exists for all 16 effects; it just isn't plumbed int
 
 **Out of scope:** the 10 effects whose translator param shapes exist but have **no 3D renderer** (Zap, Echo, Sparkles, Bloom, Water, Bubbles, Petals, Smoke, Ink, Frost). We are not building renderers this round. Their chips will not get an expand panel.
 
-**Known gap to verify during impl (not assume):** what the no-renderer chips currently do in the 3D viewer — no-op vs 2D-overlay fallback. Confirm with a runtime check; surface the finding. Do not silently treat them as working.
+**Known gap — RESOLVED (2026-06-21, from code):** the no-renderer chips are a
+silent no-op in the 3D viewer. `EffectOrchestrator3D` only builds tip arrays for
+the effects that have a renderer (`fireTips`, `charcoalTips`, `blue/redLedTips`,
+`blue/redTrailTips`); an effect with no renderer (water/zap/echo/sparkles/bloom/
+bubbles/petals/smoke/ink/frost) gets no tip array, so toggling it draws nothing —
+no 2D fallback, no error. Curated tuning is therefore correctly limited to the 5
+effects with live renderers.
 
 ## Decisions (locked in brainstorming)
 
