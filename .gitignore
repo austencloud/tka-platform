@@ -2,6 +2,9 @@
 .worktrees/
 .claude/worktrees/
 
+# Guide proofing reference PDFs (old-version backups, local-only, too large for git)
+static/guides/_proof/
+
 # Blender source files (dev-only, too large for git)
 blender/
 
@@ -59,6 +62,12 @@ poi-recon/ignis-extracted/
 .claude-artifacts/
 .claude/scheduled_tasks.lock
 .tmp-*
+
+# Test / debug output artifacts (regenerated; never commit)
+test-output.txt
+*-output.txt
+firestore-debug.log
+*-debug.log
 
 # Dependencies
 node_modules/

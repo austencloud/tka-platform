@@ -30,6 +30,14 @@
       glyph: "cards",
       tags: ["image diff", "1 gate", "back + front"],
     },
+    {
+      href: "/test/guide-proof",
+      title: "Guide Proof",
+      desc: "Level 1 guide PDF: old v0.5 vs current, page by page. Synced scroll + page-offset nudge + overlay opacity. Human proofing, not an automated gate.",
+      accent: "#a78bfa",
+      glyph: "cpu",
+      tags: ["human proof", "old vs new", "pdf"],
+    },
   ];
 </script>
 
