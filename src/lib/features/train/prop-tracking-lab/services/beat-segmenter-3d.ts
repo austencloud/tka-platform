@@ -58,10 +58,19 @@ export function accumulateBetween(
   for (let i = from + 1; i <= to; i++) {
     const prev = frames[i - 1]!;
     const cur = frames[i]!;
-    const aPrev = Math.atan2(prev.gripPos.y, prev.gripPos.x);
-    const aCur = Math.atan2(cur.gripPos.y, cur.gripPos.x);
-    arcAngle += angleDelta(aPrev, aCur);
-    propNetRotation += angleDelta(prev.rollRad, cur.rollRad);
+    // Hand arc: how much the grip vector sweeps about center.
+    arcAngle += angleDelta(
+      Math.atan2(prev.gripPos.y, prev.gripPos.x),
+      Math.atan2(cur.gripPos.y, cur.gripPos.x),
+    );
+    // Prop rotation: how much the staff's facing vector (axisDir) sweeps in the
+    // world plane. A staff has no roll-about-its-own-axis DOF — its rotation IS
+    // the rotation of the long axis. (PRO base = +arc, ANTI base = -arc, spin in
+    // place = pure turns, all consistent with TkaPoseClassifier.baseRotation.)
+    propNetRotation += angleDelta(
+      Math.atan2(prev.axisDir.y, prev.axisDir.x),
+      Math.atan2(cur.axisDir.y, cur.axisDir.x),
+    );
   }
   return { arcAngle, propNetRotation };
 }

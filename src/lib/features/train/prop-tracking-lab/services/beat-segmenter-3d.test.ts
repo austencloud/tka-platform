@@ -3,8 +3,13 @@ import { Vector3 } from 'three';
 import { segmentBeats3D, accumulateBetween } from './beat-segmenter-3d';
 import type { StaffPose3D } from '../domain/notation-3d';
 
-function pose(x: number, y: number, roll = 0): StaffPose3D {
-  return { gripPos: new Vector3(x, y, 0), axisDir: new Vector3(0, 1, 0), rollRad: roll };
+/** axisAngle = world-plane angle of the staff's facing vector (default North). */
+function pose(x: number, y: number, axisAngle = Math.PI / 2): StaffPose3D {
+  return {
+    gripPos: new Vector3(x, y, 0),
+    axisDir: new Vector3(Math.cos(axisAngle), Math.sin(axisAngle), 0),
+    rollRad: 0,
+  };
 }
 
 describe('segmentBeats3D', () => {
@@ -28,17 +33,19 @@ describe('segmentBeats3D', () => {
 
 describe('accumulateBetween', () => {
   it('sums signed arc angle (CCW positive) and net roll between two frame indices', () => {
+    // Grip sweeps N->W (+PI/2 CCW); the staff's facing vector advances +0.2 rad.
     const frames: StaffPose3D[] = [
-      pose(0, 1, 0.0),
-      pose(-0.7, 0.7, 0.1),
-      pose(-1, 0, 0.2),
+      pose(0, 1, Math.PI / 2),
+      pose(-0.7, 0.7, Math.PI / 2 + 0.1),
+      pose(-1, 0, Math.PI / 2 + 0.2),
     ];
     const { arcAngle, propNetRotation } = accumulateBetween(frames, 0, 2);
     expect(arcAngle).toBeCloseTo(Math.PI / 2, 2);
     expect(propNetRotation).toBeCloseTo(0.2, 4);
   });
 
-  it('unwraps roll across the +/-PI seam', () => {
+  it('unwraps prop rotation (axisDir angle) across the +/-PI seam', () => {
+    // Facing-vector angle jumps 3.0 -> -3.0: a +0.283 step across PI, not -6.0.
     const frames: StaffPose3D[] = [pose(0, 1, 3.0), pose(0, 1, -3.0)];
     const { propNetRotation } = accumulateBetween(frames, 0, 1);
     expect(propNetRotation).toBeCloseTo((Math.PI - 3.0) * 2, 3);
