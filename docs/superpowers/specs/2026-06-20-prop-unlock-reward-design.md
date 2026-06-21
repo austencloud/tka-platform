@@ -176,6 +176,12 @@ New component. A two-state celebration modal using `BaseModal class="chromeless"
     → 4 lockstep layers via `additionalLayers`, all rendering the **chosen prop**.
   - Result: a 4-fold undulating kaleidoscope tunnel of that prop.
   - v1 uses the prop's own single color across all 4 rotations (no per-layer tint).
+- **Playhead speed ~0.3 beats/sec for the 4-fold default.** Speed scales inversely
+  with fold density — 4 overlaid copies want a slow drift to read as a gorgeous
+  undulating tunnel; faster looks busy. (Validated 2026-06-20 in the
+  `src/routes/test/prop-tunnel/` harness with real `rotateSequence` +
+  `AnimatorCanvas` + `additionalLayers`: 4-fold@~0.3 confirmed gorgeous; 2-fold
+  comfortable at ~1.0.)
 - Confetti burst on entry.
 - **Confirm** (*"Add to my props"*) → `claimPick(prop)`, success toast, modal closes.
 - **Back** → returns to PICK (pick is not locked until Confirm).
@@ -185,6 +191,7 @@ PICK grid and REVEAL box live in one fixed-size modal frame; State B swaps conte
 inside the reserved box so siblings never move (per `no-layout-shift.md`).
 
 ### Reduced motion / perf
+- 2-fold (180°) is the calmer variant — comfortable at ~1.0 beats/sec.
 - `prefers-reduced-motion` → tunnel steps down to 2-fold (180°) or original-only,
   no confetti, no tile animation.
 - Perf is fine — tunnel mode already runs multi-layer live on a canvas.
