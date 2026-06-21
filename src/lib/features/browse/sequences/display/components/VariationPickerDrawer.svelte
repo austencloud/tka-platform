@@ -2,13 +2,17 @@
   VariationPickerDrawer.svelte
 
   Shown when a user taps a card that has multiple variations (same word).
-  Displays all variations as choreo card thumbnails in a grid.
+  Displays all variations as choreo card thumbnails in a centered modal.
   Tapping one opens the standard sequence viewer with that single sequence.
+
+  Despite the filename it now renders as a centered BaseModal (not a Drawer):
+  fixed-max-width medium cards in an auto-fill grid so a single variation
+  renders at ~340px centered rather than stretched across a 4K viewport.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
+  import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
@@ -52,18 +56,18 @@
   }
 </script>
 
-<Drawer
-  {isOpen}
-  placement="bottom"
+<BaseModal
+  open={isOpen}
   onclose={onClose}
-  onOpenChange={(open) => { if (!open) onClose(); }}
-  ariaLabel={t('browse_choose_variation')}
-  class="variation-picker-drawer"
+  size="lg"
+  class="variation-picker-modal"
 >
-  <DrawerHeader
-    title={t('browse_variations_title', { count: String(variations.length), word })}
-    onClose={onClose}
-  />
+  {#snippet header()}
+    <ModalHeader
+      title={t('browse_variations_title', { count: String(variations.length), word })}
+      onClose={onClose}
+    />
+  {/snippet}
 
   <div class="picker-grid">
     {#each variations as variation (variation.id)}
@@ -81,21 +85,19 @@
       </div>
     {/each}
   </div>
-</Drawer>
+</BaseModal>
 
 <style>
   .picker-grid {
     display: grid;
-    /* Column min scales with viewport: 200px floor on phones, up to 480px on large screens.
-       auto-fit + 1fr max means items expand to fill all available space. */
-    grid-template-columns: repeat(
-      auto-fit,
-      minmax(min(100%, clamp(200px, 20vw, 480px)), 1fr)
-    );
-    gap: clamp(8px, 2vw, 24px);
-    padding: clamp(12px, 3vw, 32px);
-    overflow-y: auto;
-    max-height: 75vh;
+    /* Fixed-max cells (auto-FILL, NOT 1fr): each card stays 300-340px and the
+       row centers. A single variation renders at 340px centered, never stretched
+       across a wide viewport. Fixed-cell sizing also means no reflow when a card's
+       QR slot appears/disappears. */
+    grid-template-columns: repeat(auto-fill, minmax(300px, 340px));
+    justify-content: center;
+    gap: clamp(16px, 2vw, 24px);
+    padding: clamp(16px, 3vw, 32px);
   }
 
   .picker-item {
@@ -113,8 +115,24 @@
     text-overflow: ellipsis;
   }
 
-  :global(.variation-picker-drawer) {
-    --sheet-bg: var(--theme-panel-bg, rgba(18, 18, 28, 0.98)) !important;
-    --sheet-filter: none !important;
+  /* Cap the dialog width at ~1100px (the `lg` default of 640px is too narrow for
+     a multi-column medium-card grid). Body scroll + max-height come from BaseModal. */
+  :global(dialog.base-modal.variation-picker-modal) {
+    width: min(1100px, 92vw);
+  }
+
+  /* Phones: go full-screen so the grid isn't cramped. Mirrors BaseModal's own
+     mobile rule but at the 767px breakpoint per the variations spec. The
+     view-transition-name suppression on mobile lives inside ChoreoCardThumbnail
+     and still applies regardless of this wrapper. */
+  @media (max-width: 767px) {
+    :global(dialog.base-modal.variation-picker-modal) {
+      width: 100%;
+      max-width: none;
+      max-height: 100%;
+      height: 100%;
+      border-radius: 0;
+      margin: 0;
+    }
   }
 </style>
