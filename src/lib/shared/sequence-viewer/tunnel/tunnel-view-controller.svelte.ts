@@ -37,6 +37,12 @@ export class TunnelViewController {
   // Config (a saved preset stores exactly this).
   fold = $state<Fold>(4);
   mirror = $state(false);
+
+  /** Tunnel-specific grid visibility. The kaleidoscope owns this (the global
+   *  Visual/Display toggles don't reach the self-clocked tunnel), so it has its
+   *  own control in the Tunnel section. Default off — the grid is clutter behind
+   *  a dense overlay. */
+  gridVisible = $state(false);
   effect = $state<TunnelConfig["effect"]>("none");
 
   presets = $state<TunnelPreset[]>([]);

@@ -11,6 +11,7 @@
     sequence,
     playback,
     controller,
+    bpm = 60,
     bluePropType,
     redPropType,
   }: {
@@ -18,6 +19,9 @@
     playback: ViewerPlaybackState;
     /** Shared controller owned by ArtPane — its controls live in ArtSettingsPanel. */
     controller: TunnelViewController;
+    /** Global tempo from the sidebar's Playback section. Drives the playhead so
+     *  the tempo selector controls the kaleidoscope (60 BPM = 1 beat/sec). */
+    bpm?: number;
     bluePropType?: string;
     redPropType?: string;
   } = $props();
@@ -33,9 +37,11 @@
   const stepCount = $derived(seq?.steps?.length ?? 0);
 
   // Self-driven playhead (1-indexed fractional, matching the controller's
-  // step convention). Speed scales down as the stack gets busier.
+  // step convention). Driven by the global tempo so the sidebar's tempo selector
+  // controls the kaleidoscope: beats/sec = bpm/60 (60 BPM = 1 beat/sec, matching
+  // the 2D engine's speed convention).
   let step = $state(1);
-  const speed = $derived(controller.fold >= 8 ? 0.25 : controller.fold === 4 ? 0.35 : 0.6);
+  const speed = $derived(Math.max(0, bpm) / 60);
 
   onMount(() => {
     let raf = 0;
@@ -78,7 +84,7 @@
         {gridMode}
         {tipEffectMap}
         effectsConfigState={effectsConfig ?? undefined}
-        gridVisible={false}
+        gridVisible={controller.gridVisible}
         hideHeader={true}
         hideProgressBar={true}
         hideTkaGlyph={true}

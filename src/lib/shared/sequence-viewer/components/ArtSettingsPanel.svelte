@@ -22,7 +22,6 @@
   import IconRailNav from "$lib/shared/animation-panel/pill-nav/IconRailNav.svelte";
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
-  import DisplayPanel from "$lib/shared/animation-engine/components/settings-panels/DisplayPanel.svelte";
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
   import MandalaCategoryControl, {
@@ -40,7 +39,7 @@
 
   type ArtType = "mandala" | "tunnel";
   // Tunnel rail sections (own id union — not the Download panel's PillId).
-  type TunnelRailId = "tunnel" | "effects" | "effort" | "playback" | "visual";
+  type TunnelRailId = "tunnel" | "effects" | "effort" | "playback";
   // Mandala rail sections — same ids + order as the bottom dock's category bar.
   type MandalaRailId = MandalaCategory;
 
@@ -95,7 +94,6 @@
     // Effort uses an accent dot (no icon), matching the Download panel's Effort pill.
     { id: "effort", label: "Effort", accentColor: "#94a3b8" },
     { id: "playback", icon: "fa-play", label: "Playback" },
-    { id: "visual", icon: "fa-eye", label: "Visual" },
   ];
   let tunnelSection = $state<TunnelRailId>("tunnel");
   const tunnelSectionLabel = $derived(
@@ -184,7 +182,14 @@
                         {#each folds as f (f)}
                           <button class:active={controller.fold === f} onclick={() => controller.setFold(f)}>{f}×</button>
                         {/each}
-                        <button class:active={controller.mirror} onclick={() => (controller.mirror = !controller.mirror)}>Mirror</button>
+                      </div>
+                      <div class="group">
+                        <button class:active={controller.mirror} onclick={() => (controller.mirror = !controller.mirror)}>
+                          <i class="fas fa-arrows-left-right" aria-hidden="true"></i> Mirror
+                        </button>
+                        <button class:active={controller.gridVisible} onclick={() => (controller.gridVisible = !controller.gridVisible)}>
+                          <i class="fas fa-border-all" aria-hidden="true"></i> Grid
+                        </button>
                       </div>
 
                       {#if controller.heavyLoad}
@@ -224,7 +229,7 @@
                       <p class="section-hint">How each beat speeds up and slows down.</p>
                       <EffortPanel columns={2} showSubtitles />
                     </div>
-                  {:else if tunnelSection === "playback"}
+                  {:else}
                     <div class="section-pad">
                       <div class="rt-section">
                         <span class="rt-section-label">Tempo</span>
@@ -247,10 +252,6 @@
                           showDescriptions
                         />
                       </div>
-                    </div>
-                  {:else}
-                    <div class="section-pad">
-                      <DisplayPanel />
                     </div>
                   {/if}
                 </div>

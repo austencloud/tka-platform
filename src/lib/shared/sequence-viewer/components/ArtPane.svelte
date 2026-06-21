@@ -98,7 +98,7 @@
         {redPropType}
       />
     {:else}
-      <TunnelArtView {sequence} {playback} {controller} {bluePropType} {redPropType} />
+      <TunnelArtView {sequence} {playback} {controller} {bpm} {bluePropType} {redPropType} />
     {/if}
   </div>
 
