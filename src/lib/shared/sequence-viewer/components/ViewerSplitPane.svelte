@@ -110,6 +110,16 @@
     splitConfig?: SplitConfig;
     isLoggedIn?: boolean;
     onVideoUpload?: () => void;
+    /**
+     * Art-mode video export entry. Resolved by the orchestrator (it owns the
+     * live panelState / playbackController / canvas the offscreen renderer
+     * needs). Omitted on surfaces without those (e.g. QR landing) — the Art
+     * rail's Export button is then inert.
+     */
+    onArtExport?: (args: {
+      artType: "mandala" | "tunnel";
+      controller: import("../tunnel/tunnel-view-controller.svelte").TunnelViewController;
+    }) => void;
   }
 
   let {
@@ -136,6 +146,7 @@
     splitConfig = { leftPane: 'animation', rightPane: 'card' },
     isLoggedIn = false,
     onVideoUpload,
+    onArtExport,
   }: Props = $props();
 
   // Three.js / Threlte is multi-MB. The 3D canvas + performer hub are only
@@ -520,6 +531,12 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
           {playback}
           bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
           redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : undefined}
+          {bpm}
+          {onBpmChange}
+          {playbackMode}
+          {onPlaybackModeChange}
+          onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+          {onArtExport}
         />
       </div>
     {/if}
@@ -651,6 +668,12 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
             {playback}
             bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
             redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : undefined}
+            {bpm}
+            {onBpmChange}
+            {playbackMode}
+            {onPlaybackModeChange}
+            onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+            {onArtExport}
           />
         </div>
       {/if}

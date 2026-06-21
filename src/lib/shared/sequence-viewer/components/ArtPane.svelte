@@ -1,20 +1,47 @@
 <script lang="ts">
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import MandalaPane from "./MandalaPane.svelte";
   import TunnelArtView from "../tunnel/TunnelArtView.svelte";
+  import ArtSettingsPanel from "./ArtSettingsPanel.svelte";
+  import { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { ViewerPlaybackState } from "../domain/viewer-prop-groups";
+  import type {
+    PlaybackMode,
+    StepPlaybackStepSize,
+  } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
   const {
     sequence,
     playback,
     bluePropType,
     redPropType,
+    bpm = 60,
+    onBpmChange = () => {},
+    playbackMode = "continuous",
+    onPlaybackModeChange = () => {},
+    onPlaybackToggle = () => {},
+    onArtExport,
   }: {
     sequence: SequenceData;
     playback: ViewerPlaybackState;
     bluePropType?: string;
     redPropType?: string;
+    bpm?: number;
+    onBpmChange?: (bpm: number) => void;
+    playbackMode?: PlaybackMode;
+    onPlaybackModeChange?: (mode: PlaybackMode) => void;
+    onPlaybackToggle?: () => void;
+    /**
+     * Resolved viewer export entry. When the type is "tunnel" the caller MUST
+     * thread `additionalLayersForBeat` + the all-false `overlayOverrides`
+     * through to the offscreen renderer (the kaleidoscope is pure visual).
+     * Omitted on surfaces (e.g. the QR landing page) that have no live
+     * playback controller / canvas to drive a video export.
+     */
+    onArtExport?: (args: {
+      artType: ArtType;
+      controller: TunnelViewController;
+    }) => void;
   } = $props();
 
   // "Art" is the umbrella mode for generative outputs of the sequence. Mandala
@@ -23,51 +50,90 @@
   type ArtType = "mandala" | "tunnel";
   let artType = $state<ArtType>("mandala");
 
-  // Labels, not icons: SegmentedControl renders icon OR label (never both), so a
-  // bare dharmachakra/fan glyph reads as "no info". The word is the description.
-  const options = [
-    { value: "mandala" as const, label: "Mandala" },
-    { value: "tunnel" as const, label: "Tunnel" },
-  ];
+  // The tunnel controller is owned HERE and shared with both the rendering view
+  // (TunnelArtView) and the controls (ArtSettingsPanel), so the panel's fold /
+  // mirror / preset buttons drive the same instance the canvas reads — and the
+  // export entry can derive per-beat layers from it.
+  const controller = new TunnelViewController({
+    getSequence: () => playback.animationState.sequenceData ?? sequence,
+  });
+  controller.active = true;
+
+  // Playback display state read from the live panel state, so the rail's
+  // Playback pane mirrors the 2D transport.
+  const stepSize = $derived<StepPlaybackStepSize>(
+    playback.animationState.stepPlaybackStepSize ?? 1,
+  );
+
+  function handleExport() {
+    onArtExport?.({ artType, controller });
+  }
 </script>
 
 <div class="art-pane">
-  <div class="art-picker">
-    <SegmentedControl
-      {options}
-      value={artType}
-      onchange={(v) => (artType = v)}
-      color="accent"
-      size="sm"
-    />
-  </div>
-
   <div class="art-body">
     {#if artType === "mandala"}
       <MandalaPane {sequence} {bluePropType} {redPropType} />
     {:else}
-      <TunnelArtView {sequence} {playback} {bluePropType} {redPropType} />
+      <TunnelArtView {sequence} {playback} {controller} {bluePropType} {redPropType} />
     {/if}
   </div>
+
+  <ArtSettingsPanel
+    {sequence}
+    {playback}
+    {controller}
+    {artType}
+    onArtTypeChange={(v) => (artType = v)}
+    onExport={handleExport}
+    {bpm}
+    {playbackMode}
+    {stepSize}
+    isPlaying={playback.isPlaying}
+    {onBpmChange}
+    {onPlaybackModeChange}
+    onStepSizeChange={() => {}}
+    {onPlaybackToggle}
+    bluePropType={bluePropType ?? null}
+    redPropType={redPropType ?? null}
+  />
 </div>
 
 <style>
   .art-pane {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #000;
-  }
-  .art-picker {
-    position: absolute;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 4;
-  }
-  .art-body {
     position: absolute;
     inset: 0;
+    display: flex;
+    gap: clamp(8px, 2cqw, 16px);
+    overflow: hidden;
+    background: #000;
+    padding: clamp(8px, 2cqw, 16px);
+    box-sizing: border-box;
+    container-type: inline-size;
+  }
+  .art-body {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* On narrow viewports the rail stacks under the canvas so the art still has
+     room to breathe rather than being crushed beside a 240px sidebar. */
+  @container (max-width: 620px) {
+    .art-pane {
+      flex-direction: column;
+    }
+    .art-body {
+      flex: 1 1 auto;
+    }
+    .art-pane :global(.art-settings-panel) {
+      width: 100%;
+      min-width: 0;
+      height: auto;
+      max-height: 45%;
+      flex-shrink: 0;
+    }
   }
 </style>
