@@ -1,5 +1,6 @@
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
 
 export type VideoExportFormat = "webm" | "mp4";
 
@@ -70,6 +71,28 @@ export interface VideoExportOrchestratorOptions {
    * looping. Default false (progressive — max compatibility for downloads).
    */
   fragmented?: boolean;
+  /**
+   * Tunnel/art export: per-beat overlaid prop layers injected into the offscreen
+   * engine so the kaleidoscope's extra copies render (and trail) like the base pair.
+   * Omit for normal sequence export.
+   */
+  additionalLayersForBeat?: (beat: number) => AdditionalLayerProps[];
+
+  /**
+   * Per-export overrides for chrome visibility, merged OVER the global
+   * visibility manager (does NOT mutate global state). Used by tunnel export to
+   * suppress hand-path lines / grid / glyph / word header / step numbers /
+   * progress bar — the kaleidoscope is pure visual.
+   */
+  overlayOverrides?: Partial<{
+    tkaGlyph: boolean;
+    stepNumbers: boolean;
+    wordHeader: boolean;
+    progressBar: boolean;
+    bluePathLines: boolean;
+    redPathLines: boolean;
+    grid: boolean;
+  }>;
   onCleanup?: () => void;
 }
 
