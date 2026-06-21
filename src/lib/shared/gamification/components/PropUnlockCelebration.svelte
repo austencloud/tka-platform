@@ -63,19 +63,33 @@
     currentEffect === "none" ? undefined : { "*": { effect: currentEffect } },
   );
 
-  function buildAmounts(): number[] {
-    const prefersReduced =
+  function prefersReducedMotion(): boolean {
+    return (
       typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    return prefersReduced ? [4] : [2, 4, 6];
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    );
+  }
+  // Rotation offsets for the overlaid copies. 4-fold (90/180/270) is the lush
+  // default; a 2-fold (180° only) stack is the lighter look. Reduced-motion
+  // always uses 2-fold; remix occasionally rolls a 2-fold for variety.
+  function defaultAmounts(): number[] {
+    return prefersReducedMotion() ? [4] : [2, 4, 6];
+  }
+  function remixAmounts(): number[] {
+    if (prefersReducedMotion()) return [4];
+    return Math.random() < 0.35 ? [4] : [2, 4, 6];
   }
 
   // Shared loader: builds the rotated tunnel layers; the token guard drops a
   // stale build if a newer reveal/remix started while this one was awaiting.
-  async function loadReveal(seqPromise: Promise<SequenceData>, token: number) {
+  async function loadReveal(
+    seqPromise: Promise<SequenceData>,
+    token: number,
+    amounts: number[],
+  ) {
     const seq = await seqPromise;
     const copies = await Promise.all(
-      buildAmounts().map((amt) => rotateSequence(seq, amt, motionQueryHandler)),
+      amounts.map((amt) => rotateSequence(seq, amt, motionQueryHandler)),
     );
     if (token !== revealToken) return;
     base = seq;
@@ -92,7 +106,7 @@
     currentEffect = "none"; // first look is the clean tunnel; remix adds effects
     isRemixing = false;
     revealToken += 1;
-    void loadReveal(getPropDemoLoop(), revealToken);
+    void loadReveal(getPropDemoLoop(), revealToken, defaultAmounts());
   }
 
   /** Remix the meet view: a fresh random sequence + a new random effect. */
@@ -105,7 +119,7 @@
     const pool = REMIX_EFFECTS.filter((e) => e !== currentEffect);
     currentEffect = pool[Math.floor(Math.random() * pool.length)] ?? "sparkles";
     revealToken += 1;
-    void loadReveal(generateFreshDemoLoop(), revealToken);
+    void loadReveal(generateFreshDemoLoop(), revealToken, remixAmounts());
   }
 
   onMount(() => {
@@ -262,7 +276,9 @@
           </div>
           <div class="actions">
             <button class="back" onclick={reset}>Back</button>
-            <button class="remix" onclick={remix}>Remix</button>
+            <button class="remix" onclick={remix}>
+              <i class="fas fa-shuffle dice" aria-hidden="true"></i> Remix
+            </button>
             <button class="confirm" onclick={confirm}>Add to my props</button>
           </div>
         </div>
@@ -407,23 +423,52 @@
   .canvas-box:focus-visible .remix-hint { opacity: 0.9; }
   .loading { width: 100%; height: 100%; display: grid; place-items: center; opacity: 0.5; }
   .actions { display: flex; gap: 10px; justify-content: center; }
-  .back, .confirm {
+  .actions button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     padding: 10px 18px;
-    border-radius: 10px;
+    border-radius: 11px;
     cursor: pointer;
     font-size: 0.9rem;
+    font-weight: 600;
     border: 1px solid rgba(255, 255, 255, 0.15);
     background: rgba(255, 255, 255, 0.06);
     color: inherit;
+    transition: transform 0.14s ease, background 0.14s ease,
+      border-color 0.14s ease, box-shadow 0.14s ease;
   }
-  .confirm {
+  .actions button:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .actions button:active { transform: translateY(0) scale(0.97); }
+  .actions button:focus-visible {
+    outline: 2px solid var(--theme-accent, #b14ddb);
+    outline-offset: 2px;
+  }
+  .actions .remix {
+    background: rgba(150, 120, 240, 0.16);
+    border-color: rgba(150, 120, 240, 0.45);
+  }
+  .actions .remix:hover {
+    background: rgba(150, 120, 240, 0.3);
+    border-color: rgba(170, 140, 250, 0.75);
+    box-shadow: 0 4px 18px rgba(150, 120, 240, 0.34);
+  }
+  .actions .remix .dice { transition: transform 0.3s ease; }
+  .actions .remix:hover .dice { transform: rotate(-18deg) scale(1.18); }
+  .actions .confirm {
     background: linear-gradient(135deg, #6d5ef0, #b14ddb);
     border-color: transparent;
     color: #fff;
   }
-  .remix {
-    background: rgba(150, 120, 240, 0.14);
-    border-color: rgba(150, 120, 240, 0.4);
+  .actions .confirm:hover { box-shadow: 0 6px 22px rgba(150, 80, 219, 0.45); }
+  @media (prefers-reduced-motion: reduce) {
+    .actions button,
+    .actions .remix .dice { transition: none; }
+    .actions button:hover { transform: none; }
+    .actions .remix:hover .dice { transform: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     .tile { transition: none; }
