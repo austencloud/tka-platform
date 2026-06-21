@@ -274,6 +274,13 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
       blueBaseColor = hexToRgb(resolvedLed.primaryColor);
       redBaseColor = hexToRgb(resolvedLed.primaryColor);
     }
+    // Fire's Color slider tints toward the physical staff color — always the
+    // canonical prop colors, independent of the LED effect's color mode (the
+    // blue/redBaseColor above are LED-derived and would leak LED hues onto the
+    // flame, e.g. green when LED is unified).
+    const firePropBlue = hexToRgb(PROP_COLORS.blue.main);
+    const firePropRed = hexToRgb(PROP_COLORS.red.main);
+
     // Each prop has 2 tips; 2 props total = 4 LEDs for pattern indexing.
     const TOTAL_LEDS = 4;
     const ledTimeSeconds = (performance.now() - _ledStartMs) / 1000;
@@ -439,7 +446,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
             jerk: Math.sqrt(
               tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z,
             ),
-            propColor: blueBaseColor,
+            propColor: firePropBlue,
           });
         }
 
@@ -512,7 +519,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
             jerk: Math.sqrt(
               tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z,
             ),
-            propColor: redBaseColor,
+            propColor: firePropRed,
           });
         }
 

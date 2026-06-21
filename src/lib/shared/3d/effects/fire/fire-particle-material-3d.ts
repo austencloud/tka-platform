@@ -162,7 +162,7 @@ const fragmentShader = /* glsl */ `
     // blue prop into purple. Full blend = clean prop-colored flame. Mirrors
     // the 2D fire's colorBlend, which also blends toward propColors.
     float lum = dot(color, vec3(0.299, 0.587, 0.114));
-    vec3 propTinted = vPropColor * lum * 1.7;
+    vec3 propTinted = vPropColor * lum * 1.15;
     color = mix(color, propTinted, uColorBlend);
 
     // Emission: hot core, decaying as it cools. The whole curve scales with
