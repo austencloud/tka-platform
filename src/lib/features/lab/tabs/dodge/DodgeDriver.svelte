@@ -117,6 +117,11 @@
   const _qHandParent = new Quaternion();
   const _shL = new Vector3();
   const _shR = new Vector3();
+  // Wrist-to-staff grip alignment scratch + the hand's local grip axis.
+  const HAND_GRIP_LOCAL_AXIS = new Vector3(0, 1, 0);
+  const _localGripWorld = new Vector3();
+  const _alignQ = new Quaternion();
+  const _targetHandWorld = new Quaternion();
 
   // Reach = a STEP toward the under-reach prop (feet follow the prop, body stays
   // balanced) plus a modest residual lean. The step does most of the reaching so
@@ -206,8 +211,6 @@
     _staffAxis.set(0, 1, 0).applyQuaternion(staff.quaternion).normalize();
     _pole.set(isLeft ? -1 : 1, -1, 0).normalize();
     const hand = chain.effector;
-    // Capture the natural (clip-posed) wrist orientation before the solve.
-    hand.getWorldQuaternion(_qHandBefore);
     solveLegIK({
       chain,
       footTarget: _grip,
@@ -217,16 +220,21 @@
       poleDirection: _pole,
       weight: 1,
     });
-    // Pin POSITION only. solveLegIK's final block forces the hand to a
-    // ground-basis world orientation whose axis convention does not match this
-    // Mixamo hand bone, twisting the wrist into an alien pose. Restore the
-    // natural orientation so the arm reaches without the robotic wrist (a clean
-    // grip alignment is a later refinement).
+    // Pin POSITION via the IK, then ALIGN the grip to the staff: solveLegIK's
+    // final block forces a ground-basis foot orientation that does not match the
+    // Mixamo hand. Instead, rotate the hand's local grip axis onto the world
+    // staff axis so the staff reads held, not floating. HAND_GRIP_LOCAL_AXIS is
+    // the hand bone's local axis that runs along a gripped staff (Mixamo hands
+    // grip along local +Y; calibrate visually if the grip reads rolled).
+    hand.getWorldQuaternion(_qHandBefore);
+    _localGripWorld.copy(HAND_GRIP_LOCAL_AXIS).applyQuaternion(_qHandBefore).normalize();
+    _alignQ.setFromUnitVectors(_localGripWorld, _staffAxis);
+    _targetHandWorld.copy(_alignQ).multiply(_qHandBefore);
     if (hand.parent) {
       hand.parent.getWorldQuaternion(_qHandParent);
-      hand.quaternion.copy(_qHandParent.invert()).multiply(_qHandBefore);
+      hand.quaternion.copy(_qHandParent.invert()).multiply(_targetHandWorld);
     } else {
-      hand.quaternion.copy(_qHandBefore);
+      hand.quaternion.copy(_targetHandWorld);
     }
     hand.updateMatrixWorld(true);
   }
