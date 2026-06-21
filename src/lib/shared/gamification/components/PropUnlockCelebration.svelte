@@ -42,11 +42,11 @@
     rotated = [];
     playheadBeat = 0;
     const seq = await getPropDemoLoop();
-    const copies = await Promise.all([
-      rotateSequence(seq, 2, motionQueryHandler),
-      rotateSequence(seq, 4, motionQueryHandler),
-      rotateSequence(seq, 6, motionQueryHandler),
-    ]);
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const amounts = prefersReduced ? [4] : [2, 4, 6];
+    const copies = await Promise.all(amounts.map((amt) => rotateSequence(seq, amt, motionQueryHandler)));
     // Guard against a Back→re-choose race: only commit if this is still the
     // active reveal for the prop we started with.
     if (chosen !== prop) return;
@@ -60,7 +60,7 @@
     const tick = (now: number) => {
       const dt = (now - last) / 1000;
       last = now;
-      if (base && base.steps.length > 0) {
+      if (propCelebration.isOpen && base && base.steps.length > 0) {
         playheadBeat = (playheadBeat + dt * SPEED) % base.steps.length;
       }
       raf = requestAnimationFrame(tick);
@@ -179,12 +179,14 @@
 <style>
   .celebration {
     width: min(420px, calc(100vw - 32px));
+    min-height: 520px;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 20px;
     padding: 24px;
     display: flex;
     flex-direction: column;
+    justify-content: flex-start;
     gap: 14px;
     color: var(--theme-text, #fff);
     text-align: center;
@@ -240,6 +242,7 @@
   .stage {
     width: 100%;
     aspect-ratio: 1 / 1;
+    max-height: 340px;
     border-radius: 14px;
     overflow: hidden;
     background: #07070b;
