@@ -54,8 +54,10 @@ to take it home."
   `hideHeader`, `hideProgressBar`, `bluePropType`/`redPropType` strings. Canonical
   small-box looping usage: `PovAnimatorPreview.svelte:98`.
 - **No canned demo sequence ships, and MCP generation is not available at runtime.**
-  The reveal uses **one shipped loopable `SequenceData` constant**, verified once
-  via `isSeamlesslyLoopable()` (`compose/services/sequence-loopability-checker`).
+  The reveal generates **one demo loop once at runtime via `generationOrchestrator`
+  and caches it** (the proven `test/prop-tunnel` path), verified loopable via
+  `isSeamlesslyLoopable()` (`compose/services/sequence-loopability-checker`). No
+  hand-authored `SequenceData` literal.
 
 ---
 
@@ -260,8 +262,12 @@ Exact auth seam (link/sign-in success hook) pinned in planning.
 - `src/lib/shared/gamification/domain/prop-collection.ts` — `PropCollection` type +
   pure milestone/merge helpers
 - `src/lib/shared/gamification/components/PropUnlockCelebration.svelte`
-- One shipped canned loop constant (e.g.
-  `src/lib/shared/gamification/data/prop-demo-loop.ts`), verified loopable.
+- `src/lib/shared/gamification/data/prop-demo-loop.ts` — generates one demo loop
+  once via `generationOrchestrator` and caches it (module-level promise); verified
+  loopable. No hand-authored literal.
+- `src/lib/shared/gamification/state/prop-celebration-state.svelte.ts` — rune state
+  the mounted celebration reads (`isOpen`, `open()`, `close()`); manager + badge
+  drive it.
 
 **Modify:**
 - generate-completion call site → `recordCreation("generate")`
