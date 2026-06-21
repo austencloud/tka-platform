@@ -37,6 +37,7 @@ import {
   createFireParticleMaterial,
   applyFireParticleColors,
   setFireEmissive,
+  setFireColorBlend,
 } from "./fire-particle-material-3d";
 import { SampledCurlGrid2D } from "../smoke/smoke-curl-field";
 import { QualityTier } from "../types";
@@ -117,6 +118,11 @@ interface Particle {
   maxLife: number;
   size: number;
   seed: number;
+  // Prop color this particle inherits at birth (0-1). Drives the Color-slider
+  // tint in the shader; constant for the particle's life.
+  pr: number;
+  pg: number;
+  pb: number;
   active: boolean;
 }
 
@@ -128,6 +134,8 @@ export interface FireTipInput {
   speed: number;
   /** Optional jerk magnitude (units/s^2). Boosts the dynamic light on stalls. */
   jerk?: number;
+  /** Prop color (0-1 RGB) for the Color-slider tint. Defaults to white if omitted. */
+  propColor?: { r: number; g: number; b: number };
 }
 
 export interface FireRendererOptions {
@@ -146,6 +154,10 @@ export class FireRenderer3D {
   private emitRate: number;
   private curlStrength = CURL_STRENGTH;
   private emissiveHot = 0.53;
+  // Intensity also scales particle SIZE so the slider visibly changes the
+  // flame's VOLUME (small contained flame ↔ big fire), distinct from
+  // brightness which only changes the per-particle glow.
+  private sizeScale = 1.0;
 
   private mesh: InstancedMesh | null = null;
   private material: ShaderMaterial | null = null;
@@ -157,6 +169,7 @@ export class FireRenderer3D {
   private lives: Float32Array;
   private seeds: Float32Array;
   private instSizes: Float32Array;
+  private propColors: Float32Array;
 
   // Divergence-free turbulence field, baked + bilinear-sampled.
   private curl = new SampledCurlGrid2D(64, 8, 1 / 4);
@@ -185,6 +198,7 @@ export class FireRenderer3D {
         x: 0, y: 0, z: 0,
         vx: 0, vy: 0, vz: 0,
         age: 0, maxLife: 1, size: 0, seed: 0,
+        pr: 1, pg: 1, pb: 1,
         active: false,
       };
     }
@@ -194,6 +208,7 @@ export class FireRenderer3D {
     this.lives = new Float32Array(this.poolSize);
     this.seeds = new Float32Array(this.poolSize);
     this.instSizes = new Float32Array(this.poolSize);
+    this.propColors = new Float32Array(this.poolSize * 3);
 
     for (let i = 0; i < MAX_FIRE_TIPS; i++) {
       this.emitAccumulator.push(0);
@@ -214,6 +229,7 @@ export class FireRenderer3D {
     geometry.setAttribute("aLife", new InstancedBufferAttribute(this.lives, 1).setUsage(35048));
     geometry.setAttribute("aSeed", new InstancedBufferAttribute(this.seeds, 1).setUsage(35048));
     geometry.setAttribute("aSize", new InstancedBufferAttribute(this.instSizes, 1).setUsage(35048));
+    geometry.setAttribute("aPropColor", new InstancedBufferAttribute(this.propColors, 3).setUsage(35048));
 
     this.material = createFireParticleMaterial({
       colors: getFireColors(this.preset),
@@ -290,6 +306,9 @@ export class FireRenderer3D {
       this.lives[visibleCount] = p.age / p.maxLife;
       this.seeds[visibleCount] = p.seed;
       this.instSizes[visibleCount] = p.size;
+      this.propColors[i3] = p.pr;
+      this.propColors[i3 + 1] = p.pg;
+      this.propColors[i3 + 2] = p.pb;
       visibleCount++;
     }
 
@@ -299,6 +318,7 @@ export class FireRenderer3D {
     (geo.getAttribute("aLife") as InstancedBufferAttribute).needsUpdate = true;
     (geo.getAttribute("aSeed") as InstancedBufferAttribute).needsUpdate = true;
     (geo.getAttribute("aSize") as InstancedBufferAttribute).needsUpdate = true;
+    (geo.getAttribute("aPropColor") as InstancedBufferAttribute).needsUpdate = true;
     this.mesh.count = visibleCount;
 
     // -- Dynamic lights track the tips --
@@ -364,8 +384,13 @@ export class FireRenderer3D {
       const r = Math.random();
       particle.maxLife = LIFE_MIN + r * r * (LIFE_MAX - LIFE_MIN);
       particle.age = 0;
-      particle.size = SIZE_MIN + Math.random() * (SIZE_MAX - SIZE_MIN);
+      // sizeScale (from intensity) sets the flame VOLUME; brightness is separate.
+      particle.size = (SIZE_MIN + Math.random() * (SIZE_MAX - SIZE_MIN)) * this.sizeScale;
       particle.seed = Math.random();
+      const pc = tip.propColor;
+      particle.pr = pc ? pc.r : 1;
+      particle.pg = pc ? pc.g : 1;
+      particle.pb = pc ? pc.b : 1;
       particle.active = true;
     }
 
@@ -389,16 +414,25 @@ export class FireRenderer3D {
 
   /**
    * Apply tuned params from the curated FX panel. Mutates instance fields the
-   * physics loop reads each frame (no pool realloc) plus the material's HDR
-   * emissive. intensity scales the wick emission so the flame body responds;
-   * turbulence scales the curl swirl; emissiveHot is the bloom-blowout lever.
-   * (colorBlend → 3D fire color is not wired yet — discrete presets only.)
+   * physics loop reads each frame (no pool realloc) plus the material uniforms.
+   *
+   *   intensity  → emission rate AND particle size (the flame's VOLUME — how
+   *                much / how big the fire is). Distinct from brightness.
+   *   brightness → emissiveHot, the per-particle HDR glow / bloom lever (how
+   *                HOT each particle reads). Set on the material.
+   *   turbulence → curl swirl strength.
+   *   colorBlend → Color slider; tints the natural fire hue toward the prop
+   *                color in the shader (0 = pure fire, 1 = strongly prop-colored).
    */
   updateConfig(params: Fire3DParams): void {
     this.emitRate = EMIT_RATE[this.qualityTier] * (0.1 + params.intensity * 1.3);
+    this.sizeScale = 0.55 + params.intensity * 0.9;
     this.curlStrength = CURL_STRENGTH * (0.4 + params.turbulence * 1.6);
     this.emissiveHot = params.emissiveHot;
-    if (this.material) setFireEmissive(this.material, this.emissiveHot);
+    if (this.material) {
+      setFireEmissive(this.material, this.emissiveHot);
+      setFireColorBlend(this.material, params.colorBlend);
+    }
   }
 
   setPreset(preset: FireColorPreset): void {

@@ -35,6 +35,7 @@ const vertexShader = /* glsl */ `
   attribute float aLife;
   attribute float aSeed;
   attribute float aSize;
+  attribute vec3 aPropColor;
 
   uniform float uLenBase;
   uniform float uLenPerSpeed;
@@ -44,11 +45,13 @@ const vertexShader = /* glsl */ `
   varying vec2 vUv;
   varying float vLife;
   varying float vSeed;
+  varying vec3 vPropColor;
 
   void main() {
     vUv = uv;
     vLife = aLife;
     vSeed = aSeed;
+    vPropColor = aPropColor;
 
     // Size over life: born small at the wick, swells, frays + shrinks at death.
     float grow = smoothstep(0.0, 0.18, aLife);
@@ -83,11 +86,13 @@ const fragmentShader = /* glsl */ `
   uniform vec3 uCool;
   uniform vec3 uSmoke;
   uniform float uEmissiveHot;
+  uniform float uColorBlend;
   uniform float uTime;
 
   varying vec2 vUv;
   varying float vLife;
   varying float vSeed;
+  varying vec3 vPropColor;
 
   float hash(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
@@ -149,6 +154,15 @@ const fragmentShader = /* glsl */ `
       color = mix(uCool, uSmoke, (vLife - 0.7) / 0.3);
     }
 
+    // Color slider (uColorBlend): tint the natural fire hue toward the prop
+    // color while keeping the ramp's hot→cool luminance structure, so a tinted
+    // flame still has a bright core and dim edges. 0 = pure fire, 1 = strongly
+    // prop-colored. Capped at 0.85 so it never fully erases the fire. Mirrors
+    // the 2D fire's colorBlend, which also blends toward propColors.
+    float lum = dot(color, vec3(0.299, 0.587, 0.114));
+    vec3 propTinted = vPropColor * lum * 1.6;
+    color = mix(color, propTinted, 0.85 * uColorBlend);
+
     // Emission: hot core, decaying as it cools. The whole curve scales with
     // uEmissiveHot (the brightness lever) - core at full, cooling to 15% - so
     // turning brightness down actually tames the flame instead of bottoming
@@ -186,6 +200,7 @@ export function createFireParticleMaterial(
       // Lower per-particle emission: isolated blobs stay faint wisps; the bright
       // core comes from additive overlap where the flame is dense.
       uEmissiveHot: { value: emissiveHot ?? 0.53 },
+      uColorBlend: { value: 0 },
       uTime: { value: 0 },
       // Stretch tuning (world-unit factors of aSize). Shorter + fatter than the
       // first pass so sprites read as soft tongues, not long spikes.
@@ -206,6 +221,11 @@ export function createFireParticleMaterial(
 /** Live-set the HDR core emissive (the bloom-blowout lever) on an existing material. */
 export function setFireEmissive(material: ShaderMaterial, emissiveHot: number): void {
   material.uniforms.uEmissiveHot!.value = emissiveHot;
+}
+
+/** Live-set the prop-color tint amount (the Color slider) on an existing material. */
+export function setFireColorBlend(material: ShaderMaterial, colorBlend: number): void {
+  material.uniforms.uColorBlend!.value = colorBlend;
 }
 
 /** Push a new color set into an existing material's uniforms (preset switch). */

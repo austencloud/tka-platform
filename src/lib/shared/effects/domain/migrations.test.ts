@@ -526,7 +526,9 @@ describe("migrateEffectsConfig", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const out = migrateEffectsConfig(v21 as any);
     expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
-    expect(out.fire.brightness).toBe(1.0);
+    // brightness is a net-new field, seeded from the current default (0.5,
+    // tamed-woodfire — see defaults.ts fire).
+    expect(out.fire.brightness).toBe(0.5);
     // The rest of the user's fire settings survive the merge.
     expect(out.fire.intensity).toBe(0.7);
     expect(out.fire.turbulence).toBe(0.5);

@@ -439,6 +439,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
             jerk: Math.sqrt(
               tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z,
             ),
+            propColor: blueBaseColor,
           });
         }
 
@@ -511,6 +512,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
             jerk: Math.sqrt(
               tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z,
             ),
+            propColor: redBaseColor,
           });
         }
 
