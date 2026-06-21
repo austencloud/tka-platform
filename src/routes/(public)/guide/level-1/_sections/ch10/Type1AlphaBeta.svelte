@@ -28,8 +28,8 @@
   </p>
   <div class="motion-pair">
     <div class="motion-demo">
-      <span class="motion-label">Both hands shift from south</span>
-      <GuideMotionVideo id="t1-together-same" label="Dual-shift: both hands shift from south, beta to beta" />
+      <span class="motion-label">Both hands shift from east to south</span>
+      <GuideMotionVideo id="t1-together-same" label="Dual-shift: both hands shift together from east to south, beta to beta" />
     </div>
   </div>
 

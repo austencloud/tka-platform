@@ -1,0 +1,184 @@
+/* ══════════════════════════════════════════════════════════════
+   Level 1 Guide — Printable document theme
+   Layered ON TOP of guide.css. Only /guide/level-1/print imports it.
+   Re-themes the dark glassmorphic guide to ink-on-white, single column,
+   and sets up clean page breaks for print / Save-as-PDF.
+   Applied on-screen too (this route IS the print document) so the preview
+   matches the printout.
+   ══════════════════════════════════════════════════════════════ */
+
+/* === Container: drop the sidebar gutter + full-bleed grid, go single column === */
+.print-doc.guide-content {
+  display: block;
+  margin: 0 auto;
+  max-width: 7.3in;
+  padding: 0 0.3in 0.6in;
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.print-doc.guide-content > * {
+  grid-column: auto;
+}
+
+/* === Typography → ink === */
+.print-doc h1 {
+  color: #111;
+  padding: 2.2rem 0 1.2rem;
+}
+.print-doc h2 {
+  color: #161616;
+}
+.print-doc h3 {
+  color: #2a2a2a;
+}
+.print-doc p,
+.print-doc ul,
+.print-doc ol,
+.print-doc li {
+  color: #242424;
+}
+.print-doc p strong,
+.print-doc li strong {
+  color: #000;
+}
+
+/* === Sections: white cards, no glass === */
+.print-doc .guide-section {
+  display: block;
+  grid-template-columns: none;
+  background: #fff;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  /* kill the scroll-reveal animation so nothing is mid-fade on paper */
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  break-inside: avoid;
+}
+.print-doc .guide-section > * {
+  grid-column: auto;
+  padding: 0 1.5rem;
+}
+
+/* === Diagrams / figures === */
+.print-doc .guide-diagram img {
+  background: #fafafa;
+  border: 1px solid #e4e4e7;
+}
+.print-doc .guide-diagram figcaption {
+  color: #555;
+}
+
+/* === Pictograph grid labels === */
+.print-doc .guide-pictograph-grid .row-label,
+.print-doc .guide-pictograph-grid .column-header {
+  color: #333;
+}
+.print-doc .guide-pictograph-grid .row-sublabel,
+.print-doc .guide-pictograph .pictograph-label {
+  color: #555;
+}
+.print-doc .pictograph-label {
+  color: #555 !important;
+}
+.print-doc .guide-pictograph .pictograph-wrapper,
+.print-doc .guide-pictograph.bordered .pictograph-wrapper {
+  background: #fff;
+  border-color: #e4e4e7;
+}
+
+/* === Sequence player chrome (static on paper) === */
+.print-doc .guide-sequence-player {
+  background: #fafafa;
+  border: 1px solid #e4e4e7;
+}
+.print-doc .guide-sequence-player .player-label {
+  color: #333;
+}
+
+/* === Cover block === */
+.print-cover {
+  text-align: center;
+  padding: 0.4in 0 0.5in;
+  break-after: page;
+}
+/* Crop the baked bottom byline ("v 0.5") off the cover art (orig 613×793 →
+   keep top 714px). object-position top clips the bottom strip. */
+.print-cover .cover-art-wrap {
+  width: 100%;
+  max-width: 3.6in;
+  aspect-ratio: 613 / 714;
+  margin: 0 auto 1.2rem;
+  overflow: hidden;
+}
+.print-cover .cover-art-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+.print-cover .cover-sub {
+  font-size: 1.1rem;
+  color: #444;
+  margin: 0 0 0.2rem;
+}
+.print-cover .cover-byline {
+  font-size: 0.95rem;
+  color: #666;
+  margin: 0 0 1.8rem;
+}
+.print-cover .read-me {
+  text-align: left;
+  max-width: 6in;
+  margin: 0 auto;
+}
+.print-cover .read-me h2 {
+  color: #161616;
+}
+.print-cover .read-me p {
+  color: #242424;
+  line-height: 1.6;
+  margin: 0 0 0.9rem;
+}
+.print-cover .read-me .sign-off {
+  font-style: italic;
+}
+
+/* === Print page setup + breaks === */
+@media print {
+  @page {
+    size: Letter;
+    margin: 0.6in;
+  }
+  .print-doc.guide-content {
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+  .print-doc .guide-section {
+    border: none;
+    padding: 0.25rem 0 1rem;
+    margin-bottom: 0.5rem;
+    break-inside: avoid;
+  }
+  .print-doc .guide-section > * {
+    padding: 0;
+  }
+  .print-doc h1,
+  .print-doc h2,
+  .print-doc h3 {
+    break-after: avoid;
+  }
+  .print-doc .guide-diagram,
+  .print-doc .guide-pictograph,
+  .print-doc .motion-pair,
+  .print-doc .motion-demo,
+  .print-doc figure {
+    break-inside: avoid;
+  }
+}

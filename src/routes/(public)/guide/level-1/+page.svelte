@@ -10,15 +10,18 @@
 </svelte:head>
 
 <div class="landing">
-  <img
-    class="cover-art"
-    src="/guide/level-1/images/_shared/level-1-front-cover.png"
-    alt="The Kinetic Alphabet Level 1 cover"
-  />
+  <div class="cover-art">
+    <!-- Crop the baked bottom byline ("v 0.5") off the cover art; version is v1.0
+         from the byline text below. -->
+    <img
+      src="/guide/level-1/images/_shared/level-1-front-cover.png"
+      alt="The Kinetic Alphabet Level 1 cover"
+    />
+  </div>
 
   <h1>The Kinetic Alphabet</h1>
   <p class="subtitle">Level 1 - Positions, Motions, Letters & Words</p>
-  <p class="byline">Created by Austen Cloud &middot; v 0.5</p>
+  <p class="byline">Created by Austen Cloud &middot; v1.0</p>
 
   <section class="read-me-first">
     <h2>Read Me First</h2>
@@ -43,10 +46,9 @@
       but they are secondary to the pictographs themselves. It's not necessary to memorize the letters immediately to benefit from this system.
     </p>
     <p>
-      This is a work-in-progress and is continually growing. Whether you fully
-      embrace this system, draw inspiration from certain parts, or follow a different
-      path altogether, I hope the ideas presented here contribute to your creative
-      growth.
+      This system is continually growing. Whether you fully embrace it, draw
+      inspiration from certain parts, or follow a different path altogether, I hope
+      the ideas presented here contribute to your creative growth.
     </p>
     <p>I can't wait to see the unique choreography you'll create!</p>
     <p class="sign-off">
@@ -80,9 +82,13 @@
   </nav>
 
   <section class="download">
-    <h2>PDF Version</h2>
+    <h2>Print &amp; PDF</h2>
     <p>
-      <a href="/guides/level-1.pdf" download>Download Level 1 PDF</a> (v0.5)
+      <a href="/guide/level-1/print">Open the printable version</a> — then use your
+      browser's Print or Save as PDF to hand it out.
+    </p>
+    <p>
+      <a href="/guides/level-1.pdf" download>Download Level 1 PDF</a> (v1.0)
     </p>
   </section>
 </div>
@@ -98,10 +104,21 @@
   .cover-art {
     width: 100%;
     max-width: 400px;
+    aspect-ratio: 613 / 714;
+    margin: 0 auto 2rem;
+    overflow: hidden;
     border-radius: 16px;
-    margin-bottom: 2rem;
     box-shadow: 0 8px 40px oklch(0.05 0.02 270 / 0.5);
     border: 1px solid oklch(0.30 0.04 270 / 0.15);
+    background: #fff;
+  }
+
+  .cover-art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
   }
 
   .subtitle {

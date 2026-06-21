@@ -4,6 +4,7 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/prepared-pictograph-data";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { getGuidePrintMode } from "../_data/guide-data-context";
 
   let {
     data,
@@ -36,9 +37,16 @@
   let wrapperEl: HTMLElement | undefined = $state();
   let isVisible = $state(false);
 
+  // On the /print route every pictograph must render up front (IntersectionObserver
+  // never fires for off-screen cells in a long static document / headless print)
+  // and on a light (ink-on-white) background instead of the default dark fill.
+  const guidePrint = getGuidePrintMode();
+  const eagerEffective = eager || guidePrint;
+  const printModeEffective = printMode || guidePrint;
+
   $effect(() => {
     // Eager mode (print/poster): skip the IntersectionObserver and render immediately.
-    if (eager) {
+    if (eagerEffective) {
       isVisible = true;
       return;
     }
@@ -104,7 +112,7 @@
       <PictographRenderer
         pictograph={prepared}
         {showGrid}
-        {printMode}
+        printMode={printModeEffective}
         {darkMode}
         showTKA={true}
         showReversals={false}

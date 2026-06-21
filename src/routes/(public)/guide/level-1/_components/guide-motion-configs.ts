@@ -24,6 +24,7 @@ import { createSequenceData, type SequenceData } from "$lib/shared/foundation/do
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 export interface GuideMotionLeg {
   start: GridLocation;
@@ -84,11 +85,14 @@ export const GUIDE_MOTION_CONFIGS: GuideMotionConfig[] = [
     blue: { start: GridLocation.WEST, end: GridLocation.SOUTH, motionType: MotionType.PRO },
   },
   {
+    // Genuine beta->beta (Together-Same). Both hands start together at east,
+    // shift together to south. Canonical letter G (beta3->beta5), MCP-verified.
+    // (Previously red S->E / blue S->W, which ends APART at alpha — wrong.)
     id: "t1-together-same",
-    label: "Dual-shift: both hands shift from south, beta to beta",
+    label: "Dual-shift: both hands shift together from east to south, beta to beta",
     showBlue: true,
-    red: { start: GridLocation.SOUTH, end: GridLocation.EAST, motionType: MotionType.PRO },
-    blue: { start: GridLocation.SOUTH, end: GridLocation.WEST, motionType: MotionType.PRO },
+    red: { start: GridLocation.EAST, end: GridLocation.SOUTH, motionType: MotionType.PRO },
+    blue: { start: GridLocation.EAST, end: GridLocation.SOUTH, motionType: MotionType.PRO },
   },
   {
     id: "t1-split-to-together",
@@ -114,11 +118,14 @@ export const GUIDE_MOTION_CONFIGS: GuideMotionConfig[] = [
     blue: { start: GridLocation.SOUTH, end: GridLocation.WEST, motionType: MotionType.PRO },
   },
   {
+    // Genuine gamma opposite-direction (Quarter-Opp): hands cross gamma halves.
+    // Canonical letter M (gamma3->gamma13), MCP-verified: blue N->W, red E->S.
+    // (Previously stayed within one gamma half = same-direction — wrong.)
     id: "t1-gamma-opposite",
     label: "Dual-shift at gamma, hands moving in opposite directions",
     showBlue: true,
-    red: { start: GridLocation.EAST, end: GridLocation.NORTH, motionType: MotionType.PRO },
-    blue: { start: GridLocation.SOUTH, end: GridLocation.EAST, motionType: MotionType.PRO },
+    red: { start: GridLocation.EAST, end: GridLocation.SOUTH, motionType: MotionType.PRO },
+    blue: { start: GridLocation.NORTH, end: GridLocation.WEST, motionType: MotionType.PRO },
   },
 
   // --- Type2Shifts.svelte (2) ---
@@ -273,4 +280,43 @@ export function buildGuideMotionSequence(config: GuideMotionConfig): SequenceDat
     startPosition,
     gridMode: GridMode.DIAMOND,
   });
+}
+
+/**
+ * Static-pictograph form of a motion demo, for print (and any non-animated
+ * context). The motion's single step IS a pictograph: blue + red MotionData with
+ * start/end/type, where the arrow encodes direction and the hand the end point —
+ * exactly how the original printed guide drew motions. Reuses `makeMotion` so the
+ * geometry can never drift from the baked video.
+ */
+export function configToPictographData(config: GuideMotionConfig): PictographData {
+  const { red, blue } = config;
+  // Single-hand demos set showBlue: false — only the moving (red) hand is drawn,
+  // matching the original printed guide. Omitting the blue motion stops the
+  // renderer from drawing a second hand.
+  const redMotion = makeMotion(MotionColor.RED, red.start, red.end, red.motionType);
+  if (!config.showBlue) {
+    return { id: `guide-pic-${config.id}`, gridMode: GridMode.DIAMOND, motions: { red: redMotion } };
+  }
+  const bStart = blue?.start ?? red.start;
+  const bEnd = blue?.end ?? bStart;
+  const bMotion = blue?.motionType ?? MotionType.STATIC;
+  return {
+    id: `guide-pic-${config.id}`,
+    gridMode: GridMode.DIAMOND,
+    motions: {
+      blue: makeMotion(MotionColor.BLUE, bStart, bEnd, bMotion),
+      red: redMotion,
+    },
+  };
+}
+
+const GUIDE_MOTION_BY_ID: ReadonlyMap<string, GuideMotionConfig> = new Map(
+  GUIDE_MOTION_CONFIGS.map((c) => [c.id, c]),
+);
+
+/** Pictograph data for a motion demo by id, or null if the id is unknown. */
+export function getMotionPictographData(id: string): PictographData | null {
+  const config = GUIDE_MOTION_BY_ID.get(id);
+  return config ? configToPictographData(config) : null;
 }

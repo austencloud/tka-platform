@@ -4,6 +4,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 
 const GUIDE_DATA_KEY = Symbol("guide-data");
 const ACTIVE_SECTION_KEY = Symbol("active-section");
+const PRINT_MODE_KEY = Symbol("guide-print-mode");
 
 export function setGuideData(data: GuideChapterData): void {
   setContext(GUIDE_DATA_KEY, data);
@@ -33,4 +34,14 @@ export function setActiveSectionContext(setter: (id: string) => void): void {
 
 export function getActiveSectionSetter(): ((id: string) => void) | null {
   return getContext<((id: string) => void) | null>(ACTIVE_SECTION_KEY) ?? null;
+}
+
+/** Set on the /print route so pictographs render eagerly (no IntersectionObserver,
+ *  which never fires for off-screen elements in a long static print document). */
+export function setGuidePrintMode(): void {
+  setContext(PRINT_MODE_KEY, true);
+}
+
+export function getGuidePrintMode(): boolean {
+  return getContext<boolean>(PRINT_MODE_KEY) ?? false;
 }

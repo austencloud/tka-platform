@@ -19,27 +19,39 @@
   let running = $state(false);
   let doneCount = $derived(rows.filter((r) => r.status === "done").length);
 
+  // Optional ?only=id1,id2 — bake just those configs (keeps a commit to the
+  // demos you actually changed instead of re-encoding all of them).
+  const onlyParam =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("only")
+      : null;
+  const onlyIds = onlyParam ? new Set(onlyParam.split(",").map((s) => s.trim()).filter(Boolean)) : null;
+
+  async function bakeOne(i: number) {
+    const config = GUIDE_MOTION_CONFIGS[i]!;
+    rows[i] = { ...rows[i]!, status: "baking", error: null };
+    try {
+      const blob = await bakeGuideMotion(config);
+      const res = await fetch(`/test/guide-motion-bake?id=${config.id}`, {
+        method: "POST",
+        body: blob,
+      });
+      if (!res.ok) throw new Error(`write failed: ${res.status} ${await res.text()}`);
+      const { bytes } = await res.json();
+      const prev = rows[i]!.url;
+      if (prev) URL.revokeObjectURL(prev);
+      rows[i] = { ...rows[i]!, status: "done", url: URL.createObjectURL(blob), bytes };
+    } catch (e) {
+      rows[i] = { ...rows[i]!, status: "error", error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
   async function bakeAll() {
     if (running) return;
     running = true;
     for (let i = 0; i < GUIDE_MOTION_CONFIGS.length; i++) {
-      const config = GUIDE_MOTION_CONFIGS[i]!;
-      const cur = rows[i]!;
-      rows[i] = { ...cur, status: "baking", error: null };
-      try {
-        const blob = await bakeGuideMotion(config);
-        const res = await fetch(`/test/guide-motion-bake?id=${config.id}`, {
-          method: "POST",
-          body: blob,
-        });
-        if (!res.ok) throw new Error(`write failed: ${res.status} ${await res.text()}`);
-        const { bytes } = await res.json();
-        const prev = rows[i]!.url;
-        if (prev) URL.revokeObjectURL(prev);
-        rows[i] = { ...rows[i]!, status: "done", url: URL.createObjectURL(blob), bytes };
-      } catch (e) {
-        rows[i] = { ...rows[i]!, status: "error", error: e instanceof Error ? e.message : String(e) };
-      }
+      if (onlyIds && !onlyIds.has(GUIDE_MOTION_CONFIGS[i]!.id)) continue;
+      await bakeOne(i);
     }
     running = false;
   }
