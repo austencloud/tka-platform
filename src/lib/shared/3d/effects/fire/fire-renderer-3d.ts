@@ -145,7 +145,7 @@ export class FireRenderer3D {
   // live tune never reallocates the particle pool.
   private emitRate: number;
   private curlStrength = CURL_STRENGTH;
-  private emissiveHot = 1.6;
+  private emissiveHot = 0.53;
 
   private mesh: InstancedMesh | null = null;
   private material: ShaderMaterial | null = null;
@@ -395,7 +395,7 @@ export class FireRenderer3D {
    * (colorBlend → 3D fire color is not wired yet — discrete presets only.)
    */
   updateConfig(params: Fire3DParams): void {
-    this.emitRate = EMIT_RATE[this.qualityTier] * (0.4 + params.intensity * 1.2);
+    this.emitRate = EMIT_RATE[this.qualityTier] * (0.1 + params.intensity * 1.3);
     this.curlStrength = CURL_STRENGTH * (0.4 + params.turbulence * 1.6);
     this.emissiveHot = params.emissiveHot;
     if (this.material) setFireEmissive(this.material, this.emissiveHot);

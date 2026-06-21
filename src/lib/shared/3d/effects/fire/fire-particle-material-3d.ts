@@ -149,9 +149,12 @@ const fragmentShader = /* glsl */ `
       color = mix(uCool, uSmoke, (vLife - 0.7) / 0.3);
     }
 
-    // Emission: blinding core, decaying as it cools. The fray term flickers
-    // the interior brightness so the body churns instead of reading as flat.
-    float emis = mix(uEmissiveHot, 0.2, smoothstep(0.0, 0.78, vLife));
+    // Emission: hot core, decaying as it cools. The whole curve scales with
+    // uEmissiveHot (the brightness lever) - core at full, cooling to 15% - so
+    // turning brightness down actually tames the flame instead of bottoming
+    // out on a hardcoded floor. The fray term flickers the interior brightness
+    // so the body churns instead of reading as flat.
+    float emis = uEmissiveHot * mix(1.0, 0.15, smoothstep(0.0, 0.78, vLife));
     color *= emis * (0.7 + 0.55 * fray);
 
     // Lifetime alpha: quick flash-in, fade out into smoke.
@@ -166,7 +169,7 @@ const fragmentShader = /* glsl */ `
 
 export interface FireParticleMaterialOptions {
   colors: FireColorSet;
-  /** Core emissive multiplier (HDR, drives bloom). Default 3.2. */
+  /** Core emissive multiplier (HDR, drives bloom). Default 0.53 (tamed). */
   emissiveHot?: number;
 }
 
@@ -182,7 +185,7 @@ export function createFireParticleMaterial(
       uSmoke: { value: colors.smoke.clone() },
       // Lower per-particle emission: isolated blobs stay faint wisps; the bright
       // core comes from additive overlap where the flame is dense.
-      uEmissiveHot: { value: emissiveHot ?? 1.6 },
+      uEmissiveHot: { value: emissiveHot ?? 0.53 },
       uTime: { value: 0 },
       // Stretch tuning (world-unit factors of aSize). Shorter + fatter than the
       // first pass so sprites read as soft tongues, not long spikes.

@@ -26,9 +26,13 @@ const hex = (r: number, g: number, b: number) => new Color(r / 255, g / 255, b /
 
 const PRESETS: Record<Exclude<FireColorPreset, "custom">, FireColorSet> = {
   classic: {
-    hot:   hex(255, 240, 220),  // #FFF0DC - white-yellow core
-    warm:  hex(255, 180, 30),   // #FFB41E - bright orange body
-    cool:  hex(220, 50, 10),    // #DC320A - deep red outer
+    // Amber woodfire ramp. Hot stays warm-cream (not white) so additive
+    // overlap saturates toward amber instead of clipping all channels to a
+    // white-yellow blob that greens out over a cool scene. Warm is true fire
+    // orange, not the old bright yellow.
+    hot:   hex(255, 217, 168),  // #FFD9A8 - warm cream core
+    warm:  hex(255, 122, 24),   // #FF7A18 - fire orange body
+    cool:  hex(200, 40, 10),    // #C8280A - deep red outer
     smoke: hex(40, 35, 30),     // #28231E - dark smoke
   },
   blue: {

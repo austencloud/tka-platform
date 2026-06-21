@@ -63,9 +63,11 @@ export function resolveFire3D(
     vortexStrength: intent.turbulence * 3.0,
     shadowCasting: false,
     bloomContribution: intent.intensity * 0.6,
-    // brightness 0 → 0.6 (faint wisp), 1 → 2.0 (hot), 0.4 → 1.16 (tamed,
-    // below the 1.6 legacy default that blew out into bloom).
-    emissiveHot: 0.6 + intent.brightness * 1.4,
+    // brightness 0 → 0.08 (dim ember, stays under the scene bloom threshold
+    // even where the flame is dense), 0.5 → 0.53 (tamed woodfire default), 1 →
+    // 0.98 (hot, blooms). Low floor + the brightness-scaled shader emission
+    // curve mean dragging brightness down actually tames the flame.
+    emissiveHot: 0.08 + intent.brightness * 0.9,
   };
   return { ...intent, ...defaults, ...override };
 }
