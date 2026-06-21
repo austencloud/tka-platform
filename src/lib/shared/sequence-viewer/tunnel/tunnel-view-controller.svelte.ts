@@ -3,6 +3,8 @@ import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
+import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { buildTunnelLayers } from "./tunnel-layer-builder";
 import { stepToIndexProgress, type Fold, type TunnelConfig } from "./tunnel-fold-math";
 import {
@@ -121,7 +123,15 @@ export class TunnelViewController {
     const { idx, progress } = stepToIndexProgress(currentStep, steps.length);
     const step = steps[idx];
     if (!step) return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE } };
-    const r = interpolatePropAngles(step, progress);
+    // Honor the global Effort preset so the sidebar's Effort section shapes the
+    // tunnel's motion — same easing the 2D engine applies to step progress
+    // (sequence-animation-orchestrator). Base + all layers share this currentStep,
+    // so they stay in sync.
+    const easedProgress = applyEffort(
+      getAnimationVisibilityManager().getEffortPreset(),
+      progress,
+    );
+    const r = interpolatePropAngles(step, easedProgress);
     return {
       blue: r.isValid ? (r.blueAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
       red: r.isValid ? (r.redAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
