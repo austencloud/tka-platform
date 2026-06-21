@@ -52,7 +52,7 @@
     {
       key: "alpha",
       title: "Alpha",
-      blurb: "Hands at opposite points — a straight line through the center. As far apart as they go.",
+      blurb: "Hands at opposite points — a straight line through the center.",
       primaryId: "pos-alpha3",
       variationIds: ["pos-alpha1", "pos-alpha2", "pos-alpha3", "pos-alpha4"],
       motionId: "t6-static-alpha",
@@ -60,7 +60,7 @@
     {
       key: "beta",
       title: "Beta",
-      blurb: "Both hands stacked on the same point. The 'together' position.",
+      blurb: "Both hands together at the same point.",
       primaryId: "pos-beta1",
       variationIds: ["pos-beta1", "pos-beta2", "pos-beta3", "pos-beta4"],
       motionId: "t6-static-beta",
@@ -68,7 +68,7 @@
     {
       key: "gamma",
       title: "Gamma",
-      blurb: "Hands on adjacent points — a right angle, an 'L' through the center. One hand leads the other.",
+      blurb: "Hands on adjacent points — a right angle, an 'L' through the center.",
       primaryId: "pos-gamma1",
       variationIds: ["pos-gamma1", "pos-gamma2", "pos-gamma3", "pos-gamma4"],
       motionId: "t6-static-gamma",
@@ -76,7 +76,7 @@
   ];
 
   let current = $state(0);
-  const step = $derived(steps[current]);
+  const step = $derived(steps[current]!);
 
   // ---- layer toggles (react to the layering itself) ----
   let layers = $state({ grid: true, pictograph: true, motion: true, avatar: true });

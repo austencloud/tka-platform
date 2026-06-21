@@ -55,7 +55,7 @@
     busy = true;
     idx = i; jump = i; tSec = stamps[i] ?? 0;
     try {
-      const s = await sink.getSample(stamps[i] + 1e-4);
+      const s = await sink.getSample((stamps[i] ?? 0) + 1e-4);
       if (s) {
         const f = s.toVideoFrame();
         if (canvas.width !== f.displayWidth) canvas.width = f.displayWidth;

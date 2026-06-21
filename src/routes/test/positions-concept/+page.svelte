@@ -49,7 +49,7 @@
   // vtg = old-school VTG timing word (split/together/quarter), subtle nod.
   const steps: PosStep[] = [
     { name: "Alpha", vtg: "Split", kind: "alpha", caption: "Hands at opposite points on the grid." },
-    { name: "Beta", vtg: "Together", kind: "beta", caption: "Both hands at the same point. The 'together' position." },
+    { name: "Beta", vtg: "Together", kind: "beta", caption: "Both hands at the same point." },
     { name: "Gamma", vtg: "Quarter", kind: "gamma", caption: "Hands at neighboring points, a right angle apart." },
   ];
   // Canonical bases (blue,red), grounded in generate-skewed-dataframe.ts + MCP.
@@ -74,13 +74,14 @@
   // Hands from explicit current point indices. Transforms mutate these directly
   // (one-shot algebra), so rotation stays clockwise no matter what came before.
   function handsFor(kind: PosKind, redIdx: number, blueIdx: number) {
-    let red: Pt = PTS[redIdx];
-    let blue: Pt = PTS[blueIdx];
+    const rp = PTS[redIdx]!;
+    let red: Pt = rp;
+    let blue: Pt = PTS[blueIdx]!;
     if (kind === "beta") {
       // both hands share one grid point: constant offset so both props read.
       // red = right hand → right; blue = left hand → left.
-      red = { x: PTS[redIdx].x + BETA_DX, y: PTS[redIdx].y };
-      blue = { x: PTS[redIdx].x - BETA_DX, y: PTS[redIdx].y };
+      red = { x: rp.x + BETA_DX, y: rp.y };
+      blue = { x: rp.x - BETA_DX, y: rp.y };
     }
     // discovery identity + variation count:
     //  alpha = 4 pairs × 2 colorings, beta = 8 points → 8; gamma = 8 pairs × 2 → 16.
@@ -102,7 +103,7 @@
 
   let i = $state(0);
   const isCompare = $derived(i === COMPARE);
-  const step = $derived(steps[Math.min(i, steps.length - 1)]);
+  const step = $derived(steps[Math.min(i, steps.length - 1)]!);
   const lastIdx = steps.length - 1; // gamma
   const FLIP_MS = 600;
   const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
@@ -197,7 +198,7 @@
   function openFocus(idx: number) {
     if (focus === idx) { focus = null; return; } // tap the open card again to close
     focus = idx;
-    const k = steps[idx].kind;
+    const k = steps[idx]!.kind;
     redIdx = BASE[k].red; blueIdx = BASE[k].blue;
     visited = new Set();
     lastAction = "";
@@ -205,22 +206,22 @@
   function doRotate() {
     // clockwise step applied to the live state (PTS ordered clockwise from N → +1)
     redIdx = wrap8(redIdx + 1); blueIdx = wrap8(blueIdx + 1);
-    lastAction = `Rotated clockwise — still ${steps[focus!].name}.`;
+    lastAction = `Rotated clockwise — still ${steps[focus!]!.name}.`;
   }
   function doMirror() {
     const nr = wrap8(8 - redIdx), nb = wrap8(8 - blueIdx); // reflect across the vertical axis
     const noChange = nr === redIdx && nb === blueIdx;
     redIdx = nr; blueIdx = nb;
     lastAction = noChange
-      ? `Mirror does nothing here — this one's symmetric. Still ${steps[focus!].name}.`
-      : `Mirrored — still ${steps[focus!].name}.`;
+      ? `Mirror does nothing here — this one's symmetric. Still ${steps[focus!]!.name}.`
+      : `Mirrored — still ${steps[focus!]!.name}.`;
   }
   function doSwap() {
     const noChange = redIdx === blueIdx; // beta: both hands at one point
     [redIdx, blueIdx] = [blueIdx, redIdx];
     lastAction = noChange
-      ? `Swap does nothing here — both hands share a point. Still ${steps[focus!].name}.`
-      : `Swapped colors — still ${steps[focus!].name}.`;
+      ? `Swap does nothing here — both hands share a point. Still ${steps[focus!]!.name}.`
+      : `Swapped colors — still ${steps[focus!]!.name}.`;
   }
 
   async function go(n: number) {
@@ -522,7 +523,6 @@
   }
   .tbtn:hover { background: rgba(255, 255, 255, 0.1); }
   .tbtn:active { transform: scale(0.96); }
-  .tbtn[aria-pressed="true"] { border-color: #4ea7e8; background: rgba(78, 167, 232, 0.16); color: #cfe7fb; }
   .tbtn:focus-visible { outline: 2px solid #4ea7e8; outline-offset: 2px; }
 
   .tray { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }

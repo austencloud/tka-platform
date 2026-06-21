@@ -279,7 +279,7 @@
   h1 { font-size: 1.25rem; margin: 0 0 0.15rem; }
   .sub {
     color: #9fb2bd; margin: 0; max-width: 130ch; font-size: 0.78rem; line-height: 1.4;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
   .sub strong { color: #fff; }
   .err { max-width: 1600px; margin: 0 auto; color: #f87171; }
