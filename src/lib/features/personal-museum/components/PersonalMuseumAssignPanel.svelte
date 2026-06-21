@@ -15,6 +15,7 @@
    * picker to place it there. Tapping the armed slot again disarms.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import SequencePicker from "./SequencePicker.svelte";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
   import type { PersonalMuseumState } from "../state/personal-museum-state.svelte";
@@ -116,30 +117,13 @@
     <h3>Your sequences</h3>
   </header>
 
-  {#if favorites.length === 0}
-    <p class="picker-empty">Favorite some sequences to hang them here.</p>
-  {:else}
-    <ul class="picker-grid" class:armed={!!armedSlot}>
-      {#each favorites as seqId (seqId)}
-        <li>
-          <button
-            class="pick"
-            type="button"
-            disabled={!armedSlot}
-            aria-label="Place {nameFor(seqId)}"
-            onclick={() => place(seqId)}
-          >
-            <span class="thumb">
-              {#if firstStep(seqId)}
-                <PictographContainer pictographData={firstStep(seqId)} disableTransitions />
-              {/if}
-            </span>
-            <span class="pick-name">{nameFor(seqId)}</span>
-          </button>
-        </li>
-      {/each}
-    </ul>
-  {/if}
+  <SequencePicker
+    sequenceIds={favorites}
+    {seqById}
+    {displayName}
+    onPick={place}
+    disabled={!armedSlot}
+  />
 </section>
 
 <style>
@@ -171,8 +155,7 @@
     padding-top: 1rem;
   }
 
-  .slot-grid,
-  .picker-grid {
+  .slot-grid {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -184,8 +167,7 @@
     position: relative;
   }
 
-  .slot,
-  .pick {
+  .slot {
     width: 100%;
     min-height: var(--min-touch-target, 44px);
     display: flex;
@@ -204,14 +186,12 @@
       transform 150ms ease;
   }
   .slot:focus-visible,
-  .pick:focus-visible,
   .clear:focus-visible {
     outline: 2px solid var(--theme-accent, #f59e0b);
     outline-offset: 2px;
   }
   @media (hover: hover) {
-    .slot:hover,
-    .pick:not(:disabled):hover {
+    .slot:hover {
       border-color: color-mix(in srgb, var(--theme-accent, #f59e0b) 45%, transparent);
     }
   }
@@ -243,8 +223,7 @@
     overflow: hidden;
   }
 
-  .slot-name,
-  .pick-name {
+  .slot-name {
     width: 100%;
     text-align: center;
     font-size: var(--font-size-compact, 12px);
@@ -281,23 +260,8 @@
     cursor: pointer;
   }
 
-  .picker-grid.armed .pick {
-    border-color: color-mix(in srgb, var(--theme-accent, #f59e0b) 30%, transparent);
-  }
-  .pick:disabled {
-    cursor: default;
-    opacity: 0.6;
-  }
-
-  .picker-empty {
-    margin: 0;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(242, 239, 230, 0.7));
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .slot,
-    .pick,
     .clear {
       transition: none;
     }

@@ -43,6 +43,13 @@
      * slots). Passed through to Museum3DScene. Undefined in the official museum.
      */
     plaquePictographs?: Map<string, ImageBitmap>;
+    /**
+     * Optional in-world focus callback (personal-museum curation). Fired when the
+     * player presses E facing an exhibit (refId of the focused slot) and again
+     * with null when the panel/focus is dismissed. Omitted in the official
+     * museum, where it is a no-op and behavior is identical.
+     */
+    onExhibitFocus?: (refId: string | null) => void;
   }
 
   const props: Props = $props();
@@ -359,6 +366,7 @@
         showPanel = false;
         focusedExhibit = null;
         focusedPerformer = null;
+        props.onExhibitFocus?.(null);
         // Re-acquire pointer lock if in FPS mode
         if (isInFPS) {
           const canvas = document.querySelector<HTMLCanvasElement>("canvas");
@@ -368,12 +376,14 @@
         focusedExhibit = facingExhibit;
         focusedPerformer = null;
         showPanel = true;
+        props.onExhibitFocus?.(focusedExhibit.id);
         // Release pointer lock so the user can interact with the panel
         if (document.pointerLockElement) document.exitPointerLock();
       } else if (facingPerformer) {
         focusedPerformer = facingPerformer;
         focusedExhibit = null;
         showPanel = true;
+        props.onExhibitFocus?.(null);
         if (document.pointerLockElement) document.exitPointerLock();
       }
       return;
@@ -389,6 +399,7 @@
         showPanel = false;
         focusedExhibit = null;
         focusedPerformer = null;
+        props.onExhibitFocus?.(null);
         // Re-acquire pointer lock if in FPS mode
         if (isInFPS) {
           const canvas = document.querySelector<HTMLCanvasElement>("canvas");
@@ -577,7 +588,7 @@
   <!-- Overlay panel (right side) -->
   {#if showPanel && focusedExhibit}
     <div class="overlay-panel">
-      <button class="panel-close" aria-label="Close exhibit panel" onclick={() => { showPanel = false; focusedExhibit = null; }}>
+      <button class="panel-close" aria-label="Close exhibit panel" onclick={() => { showPanel = false; focusedExhibit = null; props.onExhibitFocus?.(null); }}>
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
 

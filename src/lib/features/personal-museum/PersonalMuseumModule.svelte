@@ -8,8 +8,10 @@
    * ImageBitmap for the wall plaques, and feeds the scene the injection maps it
    * gained in Tasks 8/9 (userSequenceData + plaquePictographs).
    *
-   * The assignment panel + in-world picker (Tasks 11/12) are NOT wired yet —
-   * a marked placeholder shows where they mount.
+   * The out-of-world assignment panel (Task 11) and the in-world placement
+   * picker (Task 12) both mount here. The in-world picker opens when the player
+   * presses E facing a wall slot — DimensionFlipProof reports the focused slot's
+   * refId via onExhibitFocus, which drives focusedSlot below.
    */
   import { getEffectiveUserId } from "$lib/shared/auth/state/auth-state.svelte";
   import { getFavorites } from "$lib/shared/library/services/collection-manager";
@@ -23,6 +25,7 @@
   import { buildPersonalGrid } from "./services/build-personal-grid";
   import { renderFirstStepBitmap } from "./services/plaque-pictograph";
   import PersonalMuseumAssignPanel from "./components/PersonalMuseumAssignPanel.svelte";
+  import PersonalMuseumInWorldPicker from "./components/PersonalMuseumInWorldPicker.svelte";
 
   interface Props {
     /** False when mounted-but-hidden (keep-alive). Default true so the module
@@ -160,6 +163,10 @@
 
   const ready = $derived(dataLoaded && !loading);
 
+  // ── In-world curation: the wall slot the player is facing (E pressed). ──
+  // Driven by DimensionFlipProof's onExhibitFocus seam; null = picker closed.
+  let focusedSlot = $state<string | null>(null);
+
   // ── Teardown ──
   $effect(() => {
     return () => {
@@ -191,6 +198,7 @@
       startInFps={false}
       {userSequenceData}
       {plaquePictographs}
+      onExhibitFocus={(refId) => (focusedSlot = refId)}
     />
   {/await}
 
@@ -202,7 +210,14 @@
       {displayName}
     />
   </div>
-  <!-- TODO(Task 12): <PersonalMuseumInWorldPicker> mounts here -->
+
+  <PersonalMuseumInWorldPicker
+    {museumState}
+    {focusedSlot}
+    {seqById}
+    {displayName}
+    onClose={() => (focusedSlot = null)}
+  />
 {/if}
 
 <style>
