@@ -99,8 +99,8 @@ describe('TkaPoseClassifier.classifyShiftType', () => {
 import { RotationDirection } from '$lib/shared/pictograph/shared/domain/enums/pictograph-enums';
 import type { StaffPose3D } from '../domain/notation-3d';
 
-function pose(grip: Vector3, axis: Vector3, roll = 0): StaffPose3D {
-  return { gripPos: grip, axisDir: axis, rollRad: roll };
+function pose(grip: Vector3, axis: Vector3): StaffPose3D {
+  return { gripPos: grip, axisDir: axis };
 }
 
 describe('TkaPoseClassifier.classifyMotion (full per-staff notation)', () => {

@@ -21,7 +21,7 @@ describe('notation-3d types', () => {
     const marker: DetectedMarker = {
       id: 1, posCam: new Vector3(0, 0, 500), rotCam: [1, 0, 0, 0, 1, 0, 0, 0, 1], corners: [],
     };
-    const pose: StaffPose3D = { gripPos: new Vector3(), axisDir: new Vector3(0, 1, 0), rollRad: 0 };
+    const pose: StaffPose3D = { gripPos: new Vector3(), axisDir: new Vector3(0, 1, 0) };
     expect(marker.rotCam).toHaveLength(9);
     expect(pose.axisDir.y).toBe(1);
   });

@@ -12,7 +12,7 @@ export function endpointPairToPose(pair: EndpointPair, cal: ScreenToGrid): Staff
   const gripPos = thumb.clone().add(pinky).multiplyScalar(0.5);
   const axisDir = thumb.clone().sub(pinky);
   if (axisDir.lengthSq() > 1e-12) axisDir.normalize();
-  return { gripPos, axisDir, rollRad: 0 };
+  return { gripPos, axisDir };
 }
 
 /**

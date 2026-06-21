@@ -4,7 +4,7 @@ import { framesToNotation } from './notation-pipeline';
 import type { StaffPose3D } from '../domain/notation-3d';
 
 function p(x: number, y: number, axis: Vector3, roll = 0): StaffPose3D {
-  return { gripPos: new Vector3(x, y, 0), axisDir: axis, rollRad: roll };
+  return { gripPos: new Vector3(x, y, 0), axisDir: axis };
 }
 
 describe('framesToNotation', () => {

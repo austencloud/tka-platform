@@ -34,7 +34,6 @@ describe('endpointPairToPose', () => {
     expect(pose.gripPos.y).toBeCloseTo(1, 5);   // midpoint (100,50) -> North
     expect(pose.axisDir.x).toBeCloseTo(0, 5);
     expect(pose.axisDir.y).toBeCloseTo(1, 5);   // thumb above pinky -> points +North (out)
-    expect(pose.rollRad).toBe(0);
   });
 });
 

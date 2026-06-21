@@ -49,14 +49,16 @@ export function createMarkerAssignment(
   return { ...DEFAULT_MARKER_ASSIGNMENT, ...over };
 }
 
-/** A staff's 6-DOF pose expressed in the TKA grid frame. */
+/**
+ * A staff's pose in the TKA grid frame. A staff is rotationally symmetric about
+ * its long axis, so it has no roll-about-axis DOF — `axisDir` (where the long
+ * axis points) fully captures its orientation.
+ */
 export interface StaffPose3D {
-  /** Marker/grip position in grid frame. */
+  /** Grip position in grid frame. */
   gripPos: Vector3;
-  /** Unit vector along the shaft, from grip toward the marked tip, grid frame. */
+  /** Unit vector along the shaft, from grip toward the thumb-reference end. */
   axisDir: Vector3;
-  /** Roll about axisDir (radians), relative to grid-up reference. Range (-PI, PI]. */
-  rollRad: number;
 }
 
 /** A classified beat for one staff. */

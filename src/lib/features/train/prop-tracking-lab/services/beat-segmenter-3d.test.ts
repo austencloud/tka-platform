@@ -8,7 +8,6 @@ function pose(x: number, y: number, axisAngle = Math.PI / 2): StaffPose3D {
   return {
     gripPos: new Vector3(x, y, 0),
     axisDir: new Vector3(Math.cos(axisAngle), Math.sin(axisAngle), 0),
-    rollRad: 0,
   };
 }
 
