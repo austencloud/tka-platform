@@ -110,17 +110,36 @@ of truth, consumed by both the 3D scene and the panels.
 
 ---
 
-## Rendering
+## Rendering — "both" mode (revised 2026-06-21 after integration spike)
 
-- A **personal room graph** — start with **1 fixed room** (~8–12 wall exhibit
-  slots), authored the same way `museum-room-graph.ts` rooms are (wall segment
-  arrays with `type: "exhibit"`). Expandable to ~3 rooms in a later phase by
-  adding nodes + edges; the builder already routes corridors.
-- Feed it through the existing `museum-grid-builder` → `MuseumGrid` →
-  `Museum3DScene`. The scene resolves each exhibit slot's sequence via
-  `resolveSlotSequence`, then renders it with the existing `MuseumPlaque3D`.
-- Plaques render from the user's `LibrarySequence` data exactly as authored
-  exhibits render from `MUSEUM_EXHIBIT_SEQUENCES`.
+The spike (plan Task 7) found the original "framed pictographs on walls"
+assumption did not match the engine: wall plaques are text-only
+(`PlaqueContent = {title, subtitle, body, barter}`, drawn by
+`plaque-texture-generator.ts:generateCanvas`), and sequences are visualized as
+animated 3D performers (`MuseumPerformerStation3D` loops a `sequenceId`).
+
+Decision (user, 2026-06-21): **both** — each curated slot shows an animated
+performer of the sequence AND a framed pictograph on the wall plaque. Each
+personal-museum **slot pairs** a performer station (`grid.performers[]`) with a
+wall exhibit plaque (`grid.exhibits[]`) showing the sequence name + the
+sequence's first-beat pictograph composited into the plaque texture.
+
+Build path: personal room graph -> `buildMuseumGrid` -> override BOTH
+`grid.performers[].sequenceId` and `grid.exhibits[].sequenceId`/`plaque` from
+`resolveSlotSequence` -> `DimensionFlipProof`/`Museum3DScene`.
+
+Two integration seams (both backward-compatible; official museum unchanged via
+defaults):
+- **Performer data injection** — optional `userSequenceData?: Map<string,
+  SequenceData>` prop threaded `Museum3DScene` -> `MuseumPerformerStation3D`,
+  checked before `MUSEUM_EXHIBIT_SEQUENCES` (the existing Firestore fallback
+  resolves only public sequences, not private library docs).
+- **Plaque pictograph** — pre-render the sequence's first step via
+  `Canvas2DDirectRenderer.renderPictograph(step, {size, visibility})` ->
+  `createImageBitmap`, pass the bitmap into an async plaque path that composites
+  it into the plaque `OffscreenCanvas` alongside the text.
+
+Start with **1 fixed room** (~8-12 paired slots); expandable to ~3 rooms later.
 
 ---
 

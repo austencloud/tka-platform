@@ -1097,3 +1097,157 @@ git status --short
 **Type consistency:** `SlotId`, `PersonalMuseumPlacement`, `PersonalMuseumDoc`, `resolveSlotSequence`, `applyAssign/applyClear`, `createPersonalMuseumState`, `buildPersonalGrid`, `applySequenceOverrides` names are used identically across tasks. `buildMuseumGrid(rooms, edges, config)` and `ExhibitDefinition` match the verified source signatures.
 
 **Placeholder scan:** no TBD/TODO in code steps; every code step shows complete code. The three "Note:" callouts ask the implementer to confirm an import path / reuse an existing export against grep — these are verification guards, not missing content.
+
+---
+
+## REVISION 2026-06-21 — "both" mode (after Task 7 spike)
+
+Task 7 (integration spike) ran and found the original rendering assumption wrong:
+museum wall plaques are **text-only** and sequences are shown as **animated
+performers**, not framed pictographs. User chose **both**: each slot shows an
+animated performer AND a framed pictograph on its wall plaque. Tasks 1–6 (data +
+logic: types, reducer, repository, state, room-graph scaffold, grid-override
+helper) are unaffected — a slot is still a slot. Tasks 3 and 6 get reworked for
+paired performer+exhibit slots; Tasks 8–13 below replace the old 8–11.
+
+Confirmed seams (verbatim from spike):
+- Grid builder maps `room.performers[]` → `grid.performers[]` with
+  `id = placement.refId`, `sequenceId` from `ROOM_CONTENT` (undefined for us →
+  we override), `autoPlay` default false (`museum-grid-builder.ts:236-260`).
+- `PerformerPlacement = { offsetX, offsetY, facing, refId }`
+  (`layout-types.ts:17`).
+- Performer sequence resolution: `MuseumPerformerStation3D.svelte:91-118` does
+  `MUSEUM_EXHIBIT_SEQUENCES[id] ?? getBrowseLoader().loadFullSequenceData(id)`.
+  The browse loader resolves public sequences only → private library sequences
+  need injection.
+- Plaque text built at `museum-geometry-builder.ts:333-357` from
+  `exhibitDef.plaque`; rendered by `plaque-texture-generator.ts:generateCanvas`
+  (sync, text-only). Pictograph path:
+  `Canvas2DDirectRenderer.renderPictograph(step, {size, visibility})` (async) →
+  `createImageBitmap` → `ctx.drawImage` onto the plaque canvas.
+
+### Task R3: Rework personal room graph — paired slots
+
+**Files:** Modify `src/lib/features/personal-museum/data/personal-museum-room-graph.ts` + its test.
+
+- [ ] Reduce to **6 paired slots** (`slot-1`..`slot-6`) to avoid crowding 6
+  performers in one room. For EACH slot id, add BOTH:
+  - a wall `exhibit` segment with `refId: "slot-N"` (distribute across walls), and
+  - a `performers` entry on the `RoomNode` `{ offsetX, offsetY, facing, refId: "slot-N" }`
+    with distinct offsets spread around room center (e.g. a 2×3 grid of offsets
+    in [-0.35, 0.35]). Add `minInteriorWidth/Height` large enough (~22) for 6
+    performers + walkways.
+- [ ] Update `PERSONAL_MUSEUM_SLOT_IDS` to derive from the exhibit segments
+  (now 6) — keep the existing derivation; the test's 8–12 bound becomes
+  `>= 6 && <= 12`. Add an assertion that every slot id has a matching performer
+  `refId` (exhibit/performer pairing invariant).
+- [ ] Tests pass (`npm run test:ci -- .../personal-museum-room-graph.test.ts`),
+  `npx tsc --noEmit -p tsconfig.json 2>&1 | grep personal-museum` clean. Commit
+  (explicit pathspec) `feat(personal-museum): pair performer+exhibit slots`.
+
+### Task R6: Rework build-personal-grid — override performers + exhibits
+
+**Files:** Modify `src/lib/features/personal-museum/services/build-personal-grid.ts` + test.
+
+- [ ] Add `applyPerformerOverrides(performers, resolved)`: for each
+  `PerformerDefinition`, set `sequenceId = resolved[p.id] ?? undefined` and
+  `autoPlay = resolved[p.id] ? true : false` (immutable map, no input mutation).
+- [ ] Extend `applySequenceOverrides` for exhibits to ALSO set the plaque title:
+  accept a `slotMeta: Record<string, { name: string }>` and set
+  `plaque = resolved[ex.id] ? { title: slotMeta[ex.id]?.name ?? ex.id, body: "" } : ex.plaque`.
+- [ ] `buildPersonalGrid(resolved, slotMeta)` returns the grid with BOTH
+  `exhibits` and `performers` overridden.
+- [ ] Add tests for `applyPerformerOverrides` (sets sequenceId + autoPlay true on
+  placed, undefined/false on empty; no mutation). Tests pass, tsc clean, commit
+  `feat(personal-museum): override performers + plaque titles in personal grid`.
+
+### Task 8: Performer data injection seam (museum components, backward-compatible)
+
+**Files:** Modify `src/lib/features/museum/components/game/Museum3DScene.svelte`,
+`MuseumPerformerStation3D.svelte`, and the `DimensionFlipProof.svelte` pass-through.
+
+- [ ] Add optional prop `userSequenceData?: Map<string, SequenceData>` to
+  `Museum3DScene` Props (default undefined) and thread it through
+  `DimensionFlipProof` to each `<MuseumPerformerStation3D>` as
+  `userSequenceDataMap={...}`.
+- [ ] In `MuseumPerformerStation3D.svelte` add the same optional prop and change
+  the resolve line (~96) to
+  `props.userSequenceDataMap?.get(id) ?? MUSEUM_EXHIBIT_SEQUENCES[id] ?? null`,
+  and when that hits, `buildSequenceData`/`loadSequence` as today. Official
+  museum passes nothing → identical behavior.
+- [ ] Verify the official museum still renders (load :5173 museum, capture proof
+  per verification rules). `npx tsc ... | grep -E "museum"` no NEW errors.
+- [ ] Commit each museum file change with explicit pathspec,
+  `feat(museum): optional userSequenceData injection for reuse`.
+
+### Task 9: Plaque pictograph compositing
+
+**Files:** Create `src/lib/features/personal-museum/services/plaque-pictograph.ts`;
+modify `plaque-texture-generator.ts` to accept an optional pre-rendered bitmap.
+
+- [ ] `plaque-pictograph.ts`: `async renderFirstStepBitmap(sequence: SequenceData):
+  Promise<ImageBitmap | null>` — take `sequence.steps[0]` (guard empty), call
+  `Canvas2DDirectRenderer.renderPictograph(step, { size: 256, visibility: {...} })`,
+  `createImageBitmap(canvas)`. Reuse the existing `canvas2DDirectRenderer`
+  singleton (grep its export). Do NOT hand-roll pictograph SVG.
+- [ ] Extend `generateCanvas(content, size, cacheKey?, pictograph?: ImageBitmap)`
+  — when `pictograph` provided, `ctx.drawImage` it into a reserved region of the
+  plaque (above the body text). Keep the existing text-only path unchanged when
+  omitted (default undefined → official museum identical).
+- [ ] Thread the bitmap from the personal grid to `MuseumPlaque3D`'s `generator`
+  call: simplest seam is a `Map<refId, ImageBitmap>` the personal host supplies
+  and the plaque render reads by `refId`. Confirm the exact wiring against
+  `Museum3DScene.svelte:1155` (the `generator={generatePlaqueCanvas}` site) and
+  add a per-refId bitmap lookup, default empty (official museum draws no
+  pictograph).
+- [ ] Verify on :5173: a personal plaque shows a pictograph; an official plaque
+  does not. Capture proof. tsc clean. Commit with explicit pathspecs.
+
+### Task 10: Module host + registration
+
+**Files:** Create `src/lib/features/personal-museum/PersonalMuseumModule.svelte`;
+modify `src/lib/shared/navigation/domain/types.ts` (add `"personal-museum"` to
+`ModuleId`), `src/lib/shared/modules/ModuleRenderer.svelte` (loader +
+`KEEP_ALIVE_MODULES`), `src/lib/shared/navigation/config/module-definitions.ts`
+(nav entry, label "My Museum", copy the museum entry's shape).
+
+- [ ] Host flow (gate on `getEffectiveUserId()`; if null, sign-in prompt):
+  1. `const favs = await getFavorites()` (LibrarySequence[], updatedAt desc);
+     `state.setFavorites(favs.map(f => ({ id: f.id, updatedAt: f.updatedAt ?? 0 })))`;
+     `await state.init()`.
+  2. For each resolved sequenceId, fetch full `SequenceData` from the user's
+     library (`libraryRepository.getSequence(id)` — grep its singleton export),
+     building: `userSequenceData: Map<id, SequenceData>`, `slotMeta: Record<slotId,
+     {name}>` (name = derived word / sequence.name), and `pictographBitmaps:
+     Map<refId, ImageBitmap>` via `renderFirstStepBitmap`.
+  3. `grid = buildPersonalGrid(state.resolvedSlots, slotMeta)`.
+  4. Mount `DimensionFlipProof` with `{grid}`, `startInFps`, `userSequenceData`,
+     and the pictograph bitmap map; render `PersonalMuseumAssignPanel` +
+     `PersonalMuseumInWorldPicker`.
+- [ ] Register module (3 edits above). Add to `KEEP_ALIVE_MODULES` (heavy 3D).
+- [ ] `npm run check:fast`; load "My Museum" on :5173, confirm the 3D canvas
+  mounts with a performer + a pictograph plaque. Capture proof. Commit each file
+  with explicit pathspec.
+
+### Task 11: Manual assignment panel
+
+(unchanged from the original Task 9 — reuse `PictographRenderer` for thumbnails,
+`SegmentedControl`/`FilterChipBase` for any bar, `<button>`+toggle only, no
+checkboxes/raw chips; grep-verify the diff. `state.assign/clear`. Live
+`onSnapshot` updates the grid.) Commit `feat(personal-museum): manual assignment
+panel`.
+
+### Task 12: In-world picker overlay
+
+(unchanged from the original Task 10 — subscribe to the scene's focused-exhibit /
+"E" interaction seam: `DimensionFlipProof.svelte:343-368` sets `focusedExhibit`
+and `focusedPerformer` on E. Expose it to the personal host via the minimal
+prop/callback if not already; open the shared sequence picker; `state.assign`.)
+Commit `feat(personal-museum): in-world placement picker`.
+
+### Task 13: Full gate check
+
+Run `npm run check` once into a log; `npm run test:ci -- src/lib/features/personal-museum`;
+manual UAT of all three curation modes + both renderings (performer animates,
+plaque shows name + pictograph) on :5173 with evidence per task. Final commit of
+any remaining own changes (explicit pathspec).
