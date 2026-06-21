@@ -200,6 +200,11 @@ export function createFireParticleMaterial(
   });
 }
 
+/** Live-set the HDR core emissive (the bloom-blowout lever) on an existing material. */
+export function setFireEmissive(material: ShaderMaterial, emissiveHot: number): void {
+  material.uniforms.uEmissiveHot!.value = emissiveHot;
+}
+
 /** Push a new color set into an existing material's uniforms (preset switch). */
 export function applyFireParticleColors(material: ShaderMaterial, colors: FireColorSet): void {
   (material.uniforms.uHot!.value as Color).copy(colors.hot);

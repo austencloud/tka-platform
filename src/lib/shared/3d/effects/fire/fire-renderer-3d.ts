@@ -33,9 +33,14 @@ import {
   type ShaderMaterial,
 } from "three";
 import { getFireColors, type FireColorPreset } from "./fire-color-curve-3d";
-import { createFireParticleMaterial, applyFireParticleColors } from "./fire-particle-material-3d";
+import {
+  createFireParticleMaterial,
+  applyFireParticleColors,
+  setFireEmissive,
+} from "./fire-particle-material-3d";
 import { SampledCurlGrid2D } from "../smoke/smoke-curl-field";
 import { QualityTier } from "../types";
+import type { Fire3DParams } from "$lib/shared/effects/translators/webgl3d-types";
 
 const MAX_FIRE_TIPS = 4;
 
@@ -135,6 +140,13 @@ export class FireRenderer3D {
   private qualityTier: QualityTier;
   private preset: FireColorPreset;
 
+  // Tunable params (seeded from the per-tier constants; overwritten by
+  // updateConfig as the user drags the curated sliders). Mutated in place so a
+  // live tune never reallocates the particle pool.
+  private emitRate: number;
+  private curlStrength = CURL_STRENGTH;
+  private emissiveHot = 1.6;
+
   private mesh: InstancedMesh | null = null;
   private material: ShaderMaterial | null = null;
   private parent: Object3D | null = null;
@@ -164,6 +176,7 @@ export class FireRenderer3D {
     this.qualityTier = qualityTier;
     this.preset = options?.preset ?? "classic";
     this.poolSize = POOL_SIZE[qualityTier];
+    this.emitRate = EMIT_RATE[qualityTier];
     this.lightEnabled = qualityTier !== QualityTier.LOW;
 
     this.particles = new Array(this.poolSize);
@@ -202,7 +215,10 @@ export class FireRenderer3D {
     geometry.setAttribute("aSeed", new InstancedBufferAttribute(this.seeds, 1).setUsage(35048));
     geometry.setAttribute("aSize", new InstancedBufferAttribute(this.instSizes, 1).setUsage(35048));
 
-    this.material = createFireParticleMaterial({ colors: getFireColors(this.preset) });
+    this.material = createFireParticleMaterial({
+      colors: getFireColors(this.preset),
+      emissiveHot: this.emissiveHot,
+    });
     this.mesh = new InstancedMesh(geometry, this.material, this.poolSize);
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 100;
@@ -257,8 +273,8 @@ export class FireRenderer3D {
 
       // Curl-noise swirl in the XY plane (divergence-free => no clumping).
       const swirl = this.curl.sample(p.x * CURL_SCALE, p.y * CURL_SCALE, this.time);
-      p.vx += swirl.vx * CURL_STRENGTH * safeDt;
-      p.vy += swirl.vy * CURL_STRENGTH * safeDt;
+      p.vx += swirl.vx * this.curlStrength * safeDt;
+      p.vy += swirl.vy * this.curlStrength * safeDt;
 
       p.x += p.vx * safeDt;
       p.y += p.vy * safeDt;
@@ -321,7 +337,7 @@ export class FireRenderer3D {
 
     // Combined demand: idle stream (time-rate) + gapless path coverage.
     this.emitAccumulator[i]! +=
-      EMIT_RATE[this.qualityTier] * safeDt + segLen / PATH_SPACING[this.qualityTier];
+      this.emitRate * safeDt + segLen / PATH_SPACING[this.qualityTier];
     let count = Math.floor(this.emitAccumulator[i]!);
     if (count > MAX_SPAWN_PER_TIP) count = MAX_SPAWN_PER_TIP;
     this.emitAccumulator[i]! -= count;
@@ -369,6 +385,20 @@ export class FireRenderer3D {
     this.cursor++;
     if (this.cursor >= this.poolSize) this.cursor = 0;
     return p;
+  }
+
+  /**
+   * Apply tuned params from the curated FX panel. Mutates instance fields the
+   * physics loop reads each frame (no pool realloc) plus the material's HDR
+   * emissive. intensity scales the wick emission so the flame body responds;
+   * turbulence scales the curl swirl; emissiveHot is the bloom-blowout lever.
+   * (colorBlend → 3D fire color is not wired yet — discrete presets only.)
+   */
+  updateConfig(params: Fire3DParams): void {
+    this.emitRate = EMIT_RATE[this.qualityTier] * (0.4 + params.intensity * 1.2);
+    this.curlStrength = CURL_STRENGTH * (0.4 + params.turbulence * 1.6);
+    this.emissiveHot = params.emissiveHot;
+    if (this.material) setFireEmissive(this.material, this.emissiveHot);
   }
 
   setPreset(preset: FireColorPreset): void {
