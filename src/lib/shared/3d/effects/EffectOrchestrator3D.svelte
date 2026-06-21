@@ -278,8 +278,14 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
     // canonical prop colors, independent of the LED effect's color mode (the
     // blue/redBaseColor above are LED-derived and would leak LED hues onto the
     // flame, e.g. green when LED is unified).
+    //
+    // Blue (#3b82f6) reads vividly as-is. The red staff (#ef4444) carries ~0.27
+    // in both green and blue, so under the flame's additive overlap it washes
+    // toward pink and reads muddy. Use a saturated fire-red for the red tint —
+    // still clearly the red staff's color, just pure enough to stay vivid as an
+    // emissive flame.
     const firePropBlue = hexToRgb(PROP_COLORS.blue.main);
-    const firePropRed = hexToRgb(PROP_COLORS.red.main);
+    const firePropRed = hexToRgb("#ff2410");
 
     // Each prop has 2 tips; 2 props total = 4 LEDs for pattern indexing.
     const TOTAL_LEDS = 4;

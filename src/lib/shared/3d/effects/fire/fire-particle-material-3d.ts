@@ -170,12 +170,13 @@ const fragmentShader = /* glsl */ `
     // turning brightness down actually tames the flame instead of bottoming
     // out on a hardcoded floor. The fray term flickers the interior brightness
     // so the body churns instead of reading as flat.
-    float emis = uEmissiveHot * mix(1.0, 0.15, smoothstep(0.0, 0.78, vLife));
+    float emis = uEmissiveHot * mix(1.0, 0.12, smoothstep(0.0, 0.45, vLife));
     color *= emis * (0.7 + 0.55 * fray);
 
-    // Lifetime alpha: quick flash-in, fade out into smoke.
+    // Lifetime alpha: quick flash-in, then fade out EARLY (gone by ~70% of
+    // life) so the small cool particles disappear instead of lingering as haze.
     float fadeIn = smoothstep(0.0, 0.05, vLife);
-    float fadeOut = 1.0 - smoothstep(0.55, 1.0, vLife);
+    float fadeOut = 1.0 - smoothstep(0.3, 0.7, vLife);
     float alpha = shape * fadeIn * fadeOut;
     if (alpha < 0.004) discard;
 

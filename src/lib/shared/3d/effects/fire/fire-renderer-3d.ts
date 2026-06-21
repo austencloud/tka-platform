@@ -102,8 +102,11 @@ const SPREAD = 0.45;
 /** Random positional jitter around the spawn point (tight core at the wick). */
 const CORE_JITTER = 0.025;
 
-const LIFE_MIN = 0.35;
-const LIFE_MAX = 0.95;
+// Short lifetimes keep the flame a tight hot core instead of a long-lived
+// haze. The cool tail particles are what drift up and read as smoke/fog, so we
+// cap max life low and let the shader fade + cool them out well before death.
+const LIFE_MIN = 0.28;
+const LIFE_MAX = 0.55;
 const SIZE_MIN = 0.06;
 const SIZE_MAX = 0.17;
 
