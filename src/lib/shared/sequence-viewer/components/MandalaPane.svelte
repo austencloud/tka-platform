@@ -16,9 +16,22 @@
      * don't supply one.
      */
     ctrl?: MandalaViewerController;
+    /**
+     * Where the mandala's category controls live. "dock" (default) renders the
+     * bottom MandalaControlDock; "external" suppresses it because the controls
+     * are surfaced elsewhere (the Art-mode right sidebar). The bloom always
+     * fills its stage either way.
+     */
+    controlsPlacement?: "dock" | "external";
   }
 
-  let { sequence, bluePropType, redPropType, ctrl: providedCtrl }: Props = $props();
+  let {
+    sequence,
+    bluePropType,
+    redPropType,
+    ctrl: providedCtrl,
+    controlsPlacement = "dock",
+  }: Props = $props();
 
   let stageEl: HTMLDivElement | undefined = $state();
   let containerSize: number = $state(400);
@@ -31,6 +44,10 @@
   });
 
   const takeoverSize = $derived(Math.max(160, containerSize - 32));
+
+  // With the dock suppressed (controls in the sidebar) the stage reclaims the
+  // bottom padding the dock would otherwise reserve.
+  const stagePadBottom = $derived(controlsPlacement === "external" ? 0 : dockHeight + 14);
 
   $effect(() => {
     if (!stageEl) return;
@@ -46,7 +63,7 @@
 </script>
 
 <div class="mandala-pane" style:background={ctrl.bgColor}>
-  <div class="mandala-stage" bind:this={stageEl} style:padding-bottom="{dockHeight + 14}px">
+  <div class="mandala-stage" bind:this={stageEl} style:padding-bottom="{stagePadBottom}px">
     <SequenceMandala
       {sequence}
       animate={!ctrl.paused}
@@ -68,7 +85,9 @@
     />
   </div>
 
-  <MandalaControlDock {ctrl} onHeightChange={(px) => (dockHeight = px)} />
+  {#if controlsPlacement === "dock"}
+    <MandalaControlDock {ctrl} onHeightChange={(px) => (dockHeight = px)} />
+  {/if}
   <MandalaExportTakeover {ctrl} {sequence} {bluePropType} {redPropType} size={takeoverSize} />
 </div>
 

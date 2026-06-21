@@ -88,7 +88,15 @@
 <div class="art-pane">
   <div class="art-body">
     {#if artType === "mandala"}
-      <MandalaPane ctrl={mandalaController} {sequence} {bluePropType} {redPropType} />
+      <!-- controlsPlacement="external": the mandala's controls live in the Art
+           sidebar now, so suppress the bottom dock. -->
+      <MandalaPane
+        ctrl={mandalaController}
+        controlsPlacement="external"
+        {sequence}
+        {bluePropType}
+        {redPropType}
+      />
     {:else}
       <TunnelArtView {sequence} {playback} {controller} {bluePropType} {redPropType} />
     {/if}
@@ -98,6 +106,7 @@
     {sequence}
     {playback}
     {controller}
+    {mandalaController}
     {artType}
     onArtTypeChange={(v) => (artType = v)}
     onExport={handleExport}

@@ -1,30 +1,36 @@
 <!--
   ArtSettingsPanel.svelte
 
-  Right-edge settings rail for Art mode. Per-type, NOT a single shared stack:
+  Right-edge settings rail for Art mode, structured like the 2D Download-Animation
+  panel (AnimationPanel desktop sidebar): a pinned header, then an
+  [IconRailNav | section body] row with a pinned footer.
 
-    - Mandala: the rail holds ONLY the type toggle. The mandala owns its own
-      control dock (speed / shapes / spin / colors / weight / depth / download),
-      so it needs none of the effect/effort/playback/visual panes.
-    - Tunnel: a compact icon TAB picker (Tunnel · Effect · Playback · Visual)
-      shows ONE pane at a time — mirrors the 2D animation's Playback|Visual
-      switcher rather than dumping every control in an overwhelming stack. The
-      effect/effort/playback/visual panes drive the same GLOBAL state as the 2D
-      view. Export is pinned at the bottom (tunnel only).
+    - Pinned header (always): the Mandala|Tunnel SegmentedControl (labels).
+    - Tunnel: vertical IconRailNav (Tunnel / Effects / Effort / Playback / Visual)
+      drives the SAME global state as the 2D view. Footer = Export Video.
+    - Mandala: vertical IconRailNav (Speed / Shape / Spin / Colors / Weight /
+      Depth / Download) — same categories + icons as the bottom dock, rendered
+      via the shared MandalaCategoryControl and driven by the mandala `ctrl`.
+      Footer = Export MP4 (ctrl.startExport()).
 
-  The Mandala/Tunnel toggle lives here (moved off the canvas).
+  Mirrors AnimationPanel's IconRailNav + section body + pinned footer so Art mode
+  reads consistently with the 2D download panel.
 -->
 <script lang="ts">
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
-  import EffectSelector from "$lib/shared/animation-engine/components/effects-panel/EffectSelector.svelte";
+  import IconRailNav from "$lib/shared/animation-panel/pill-nav/IconRailNav.svelte";
+  import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
-  import PlaybackPane from "$lib/shared/animation-engine/components/controls/settings-panel/PlaybackPane.svelte";
-  import VisualPane from "$lib/shared/animation-engine/components/controls/settings-panel/VisualPane.svelte";
-  import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import { isEffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import DisplayPanel from "$lib/shared/animation-engine/components/settings-panels/DisplayPanel.svelte";
+  import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
+  import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
+  import MandalaCategoryControl, {
+    type MandalaCategory,
+  } from "./mandala/MandalaCategoryControl.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { ViewerPlaybackState } from "../domain/viewer-prop-groups";
   import type { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
+  import type { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
   import type { Fold } from "../tunnel/tunnel-fold-math";
   import type {
     PlaybackMode,
@@ -32,12 +38,16 @@
   } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
   type ArtType = "mandala" | "tunnel";
-  type TunnelPaneId = "tunnel" | "effect" | "playback" | "visual";
+  // Tunnel rail sections (own id union — not the Download panel's PillId).
+  type TunnelRailId = "tunnel" | "effects" | "effort" | "playback" | "visual";
+  // Mandala rail sections — same ids + order as the bottom dock's category bar.
+  type MandalaRailId = MandalaCategory;
 
   let {
     sequence,
     playback,
     controller,
+    mandalaController,
     artType,
     onArtTypeChange,
     onExport,
@@ -55,6 +65,7 @@
     sequence: SequenceData;
     playback: ViewerPlaybackState;
     controller: TunnelViewController;
+    mandalaController: MandalaViewerController;
     artType: ArtType;
     onArtTypeChange: (value: ArtType) => void;
     onExport: () => void;
@@ -70,35 +81,48 @@
     redPropType?: string | null;
   } = $props();
 
-  // Effects drive the GLOBAL config (shared with the 2D view + 3D viewer).
-  const effectsConfig = getEffectsConfigContext();
-
   // Type toggle: labels, not icons (a bare glyph reads as "no info").
   const artOptions = [
     { value: "mandala" as const, label: "Mandala" },
     { value: "tunnel" as const, label: "Tunnel" },
   ];
 
-  // Tunnel pane tabs: icon picker, one pane shown at a time. Each pane gets a
-  // name heading below the picker so the icons are never ambiguous.
-  const tunnelPanes: { value: TunnelPaneId; label: string; icon: string }[] = [
-    { value: "tunnel", label: "Tunnel", icon: "fas fa-fan" },
-    { value: "effect", label: "Effect", icon: "fas fa-wand-magic-sparkles" },
-    { value: "playback", label: "Playback", icon: "fas fa-sliders" },
-    { value: "visual", label: "Visual", icon: "fas fa-eye" },
+  // ── Tunnel rail ──
+  const tunnelRail: { id: TunnelRailId; icon?: string; label: string; accentColor?: string }[] = [
+    { id: "tunnel", icon: "fa-fan", label: "Tunnel" },
+    { id: "effects", icon: "fa-wand-magic-sparkles", label: "Effects" },
+    // Effort uses an accent dot (no icon), matching the Download panel's Effort pill.
+    { id: "effort", label: "Effort", accentColor: "#94a3b8" },
+    { id: "playback", icon: "fa-play", label: "Playback" },
+    { id: "visual", icon: "fa-eye", label: "Visual" },
   ];
-  let pane = $state<TunnelPaneId>("tunnel");
-  const paneLabel = $derived(
-    tunnelPanes.find((p) => p.value === pane)?.label ?? "",
+  let tunnelSection = $state<TunnelRailId>("tunnel");
+  const tunnelSectionLabel = $derived(
+    tunnelRail.find((p) => p.id === tunnelSection)?.label ?? "",
+  );
+
+  // ── Mandala rail (same icons + order the bottom dock uses) ──
+  const mandalaRail: { id: MandalaRailId; icon?: string; label: string }[] = [
+    { id: "speed", icon: "fa-gauge-high", label: "Speed" },
+    { id: "shape", icon: "fa-bezier-curve", label: "Shape" },
+    { id: "spin", icon: "fa-arrows-rotate", label: "Spin" },
+    { id: "colors", icon: "fa-palette", label: "Colors" },
+    { id: "weight", icon: "fa-grip-lines", label: "Weight" },
+    { id: "depth", icon: "fa-wave-square", label: "Depth" },
+    { id: "download", icon: "fa-download", label: "Download" },
+  ];
+  let mandalaSection = $state<MandalaRailId>("speed");
+  const mandalaSectionLabel = $derived(
+    mandalaRail.find((p) => p.id === mandalaSection)?.label ?? "",
   );
 
   const folds: Fold[] = [2, 4, 8];
   let newName = $state("");
 </script>
 
-<div class="art-settings-panel" class:compact={artType === "mandala"}>
-  <!-- Type toggle — always -->
-  <div class="panel-section">
+<div class="art-settings-panel">
+  <!-- Pinned header: type toggle — always -->
+  <div class="panel-header">
     <span class="section-label">Art</span>
     <SegmentedControl
       options={artOptions}
@@ -109,81 +133,127 @@
     />
   </div>
 
-  {#if artType === "tunnel"}
-    <!-- Pane picker (tabs) -->
-    <div class="panel-section">
-      <SegmentedControl
-        options={tunnelPanes}
-        value={pane}
-        onchange={(v) => (pane = v)}
-        color="accent"
-        size="sm"
+  <!-- [ rail | section body ] mirroring AnimationPanel's .sidebar-rail-layout -->
+  <div class="sidebar-rail-layout">
+    {#if artType === "tunnel"}
+      <IconRailNav
+        pills={tunnelRail}
+        activeId={tunnelSection}
+        onSelect={(id) => (tunnelSection = id)}
       />
-    </div>
+    {:else}
+      <IconRailNav
+        pills={mandalaRail}
+        activeId={mandalaSection}
+        onSelect={(id) => (mandalaSection = id)}
+      />
+    {/if}
 
-    <!-- Active pane -->
-    <div class="panel-section pane-body">
-      <span class="section-label">{paneLabel}</span>
+    <div class="sidebar-main">
+      <div class="panel-scroll">
+        {#if artType === "tunnel"}
+          <h2 class="panel-title">{tunnelSectionLabel}</h2>
 
-      {#if pane === "tunnel"}
-        <div class="group">
-          <span class="lbl">Fold</span>
-          {#each folds as f (f)}
-            <button class:active={controller.fold === f} onclick={() => controller.setFold(f)}>{f}×</button>
-          {/each}
-          <button class:active={controller.mirror} onclick={() => (controller.mirror = !controller.mirror)}>Mirror</button>
-        </div>
+          {#if tunnelSection === "tunnel"}
+            <div class="section-pad">
+              <div class="group">
+                <span class="lbl">Fold</span>
+                {#each folds as f (f)}
+                  <button class:active={controller.fold === f} onclick={() => controller.setFold(f)}>{f}×</button>
+                {/each}
+                <button class:active={controller.mirror} onclick={() => (controller.mirror = !controller.mirror)}>Mirror</button>
+              </div>
 
-        {#if controller.heavyLoad}
-          <p class="warn">Heavy effect on a large stack — may drop frames on weaker devices.</p>
-        {/if}
+              {#if controller.heavyLoad}
+                <p class="warn">Heavy effect on a large stack — may drop frames on weaker devices.</p>
+              {/if}
 
-        <div class="presets">
-          <input
-            class="name-input"
-            type="text"
-            placeholder="name this look…"
-            bind:value={newName}
-            onkeydown={(e) => { if (e.key === "Enter") { controller.saveCurrentAs(newName); newName = ""; } }}
-          />
-          <button onclick={() => { controller.saveCurrentAs(newName); newName = ""; }}>Save</button>
-          {#each controller.presets as p (p.id)}
-            <div class="chip">
-              <button class="chip-apply" onclick={() => controller.applyPreset(p)}>{p.name}</button>
-              <button class="chip-del" aria-label={`Delete ${p.name}`} onclick={() => controller.deletePreset(p.id)}>×</button>
+              <div class="presets">
+                <input
+                  class="name-input"
+                  type="text"
+                  placeholder="name this look…"
+                  bind:value={newName}
+                  onkeydown={(e) => { if (e.key === "Enter") { controller.saveCurrentAs(newName); newName = ""; } }}
+                />
+                <button onclick={() => { controller.saveCurrentAs(newName); newName = ""; }}>Save</button>
+                {#each controller.presets as p (p.id)}
+                  <div class="chip">
+                    <button class="chip-apply" onclick={() => controller.applyPreset(p)}>{p.name}</button>
+                    <button class="chip-del" aria-label={`Delete ${p.name}`} onclick={() => controller.deletePreset(p.id)}>×</button>
+                  </div>
+                {/each}
+              </div>
             </div>
-          {/each}
-        </div>
-      {:else if pane === "effect"}
-        {#if effectsConfig}
-          <EffectSelector
-            activeEffect={effectsConfig.activeEffect}
-            onSelect={(e) => { if (isEffectId(e)) effectsConfig.setActiveEffect(e); }}
-          />
+          {:else if tunnelSection === "effects"}
+            <div class="section-pad">
+              <EffectsPanel
+                layout="sidebar"
+                showPlayback={false}
+                {bpm}
+                {onBpmChange}
+                {isPlaying}
+                {onPlaybackToggle}
+              />
+            </div>
+          {:else if tunnelSection === "effort"}
+            <div class="section-pad">
+              <p class="section-hint">How each beat speeds up and slows down.</p>
+              <EffortPanel columns={2} showSubtitles />
+            </div>
+          {:else if tunnelSection === "playback"}
+            <div class="section-pad">
+              <div class="rt-section">
+                <span class="rt-section-label">Tempo</span>
+                <TempoControl
+                  {bpm}
+                  {onBpmChange}
+                  showPresets
+                  showPractice={false}
+                  presetsMode="inline"
+                  vertical
+                />
+              </div>
+              <div class="rt-section">
+                <span class="rt-section-label">Mode</span>
+                <PlaybackModeToggle
+                  {playbackMode}
+                  {isPlaying}
+                  {onPlaybackModeChange}
+                  {onPlaybackToggle}
+                  showDescriptions
+                />
+              </div>
+            </div>
+          {:else}
+            <div class="section-pad">
+              <DisplayPanel />
+            </div>
+          {/if}
+        {:else}
+          <h2 class="panel-title">{mandalaSectionLabel}</h2>
+          <div class="section-pad">
+            <MandalaCategoryControl ctrl={mandalaController} category={mandalaSection} />
+          </div>
         {/if}
-      {:else if pane === "playback"}
-        <EffortPanel columns={2} />
-        <PlaybackPane
-          bind:bpm
-          {playbackMode}
-          stepPlaybackStepSize={stepSize}
-          {isPlaying}
-          {onBpmChange}
-          {onPlaybackModeChange}
-          onStepPlaybackStepSizeChange={onStepSizeChange}
-          {onPlaybackToggle}
-        />
-      {:else}
-        <VisualPane propType={null} {bluePropType} {redPropType} />
-      {/if}
-    </div>
+      </div>
 
-    <!-- Export pinned at bottom -->
-    <button type="button" class="export-btn" onclick={onExport}>
-      <i class="fas fa-film" aria-hidden="true"></i>
-      <span>Export Video</span>
-    </button>
-  {/if}
+      <!-- Pinned footer: export -->
+      <div class="panel-footer">
+        {#if artType === "tunnel"}
+          <button type="button" class="export-btn" onclick={onExport}>
+            <i class="fas fa-film" aria-hidden="true"></i>
+            <span>Export Video</span>
+          </button>
+        {:else}
+          <button type="button" class="export-btn" onclick={() => mandalaController.startExport()}>
+            <i class="fas fa-film" aria-hidden="true"></i>
+            <span>Export MP4</span>
+          </button>
+        {/if}
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -191,47 +261,26 @@
   .art-settings-panel {
     display: flex;
     flex-direction: column;
-    gap: clamp(12px, 3cqh, 24px);
-    width: clamp(240px, 32%, 300px);
-    min-width: 240px;
+    width: clamp(280px, 36%, 360px);
+    min-width: 280px;
     height: 100%;
     flex-shrink: 0;
-    padding: clamp(14px, 3cqh, 24px);
     box-sizing: border-box;
     background: var(--theme-card-bg);
     border: 1.5px solid var(--theme-stroke);
     border-radius: 14px;
-    overflow-y: auto;
+    overflow: hidden;
     container-type: size;
     container-name: art-sidebar;
   }
 
-  /* Mandala mode: the rail only carries the type toggle, so it shrinks to fit
-     instead of reserving a 240px column of empty space beside the bloom. */
-  .art-settings-panel.compact {
-    width: auto;
-    min-width: 180px;
-    height: auto;
-    align-self: flex-start;
-  }
-
-  .panel-section {
+  .panel-header {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    min-height: 0;
     flex-shrink: 0;
-  }
-
-  /* The active pane takes the remaining height so Export pins to the bottom. */
-  .pane-body {
-    flex: 1 1 auto;
-    overflow-y: auto;
-  }
-
-  .panel-section + .panel-section {
-    padding-top: clamp(12px, 3cqh, 20px);
-    border-top: 1px solid var(--theme-stroke);
+    padding: clamp(12px, 3cqh, 18px) clamp(14px, 3cqh, 18px);
+    border-bottom: 1px solid var(--theme-stroke);
   }
 
   .section-label {
@@ -242,7 +291,73 @@
     font-weight: 600;
   }
 
-  /* Tunnel fold/mirror row + presets. */
+  /* [ rail | section body ] — mirrors AnimationPanel's .sidebar-rail-layout. */
+  .sidebar-rail-layout {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .sidebar-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .panel-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel-scroll::-webkit-scrollbar { width: 5px; }
+  .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+  .panel-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 3px;
+  }
+
+  .panel-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+    padding: 12px 16px 4px;
+  }
+
+  .section-pad {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 8px 16px 20px;
+  }
+
+  .section-hint {
+    font-size: var(--font-size-compact, 12px);
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    line-height: 1.4;
+    margin: 0;
+    padding: 0 8px;
+  }
+
+  .rt-section { display: flex; flex-direction: column; gap: 8px; }
+  .rt-section-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+  }
+
+  /* Tunnel fold/mirror row + presets (moved here from the old tunnel block). */
   .group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; }
   .group button,
@@ -267,7 +382,13 @@
   .chip-apply { border: none; border-radius: 0; }
   .chip-del { border: none; border-radius: 0; padding: 6px 9px; }
 
-  /* Export button */
+  /* Pinned export footer. */
+  .panel-footer {
+    padding: 12px 16px 16px;
+    flex-shrink: 0;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+  }
+
   .export-btn {
     display: flex;
     align-items: center;
@@ -283,7 +404,6 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    flex-shrink: 0;
     transition: filter var(--duration-normal, 200ms) ease;
   }
 
