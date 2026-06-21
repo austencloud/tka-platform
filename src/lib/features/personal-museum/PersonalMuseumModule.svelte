@@ -48,6 +48,10 @@
   let dataLoaded = $state(false);
   let loading = $state(true);
   let loadError = $state<string | null>(null);
+  // True when the load failed for an auth/permission reason (e.g. signed out, or
+  // getEffectiveUserId returned a non-null but unauthenticated id). We degrade to
+  // the sign-in prompt rather than show a scary Firestore error.
+  let needsAuth = $state(false);
   let loadToken = 0; // guards against overlapping data loads
 
   // ── Reactive injection maps (rebuilt when the resolved slot map changes) ──
@@ -68,6 +72,7 @@
     const token = ++loadToken;
     loading = true;
     loadError = null;
+    needsAuth = false;
 
     (async () => {
       try {
@@ -99,7 +104,14 @@
         loading = false;
       } catch (err) {
         if (token !== loadToken) return;
-        loadError = err instanceof Error ? err.message : "Failed to load your museum.";
+        const msg = err instanceof Error ? err.message : String(err);
+        // A logged-out / unauthenticated session can still yield a non-null id but
+        // be denied by Firestore rules. Treat that as "needs sign-in", not an error.
+        if (/permission|insufficient|unauthenticated|unauthorized|auth/i.test(msg)) {
+          needsAuth = true;
+        } else {
+          loadError = "Failed to load your museum.";
+        }
         loading = false;
       }
     })();
@@ -175,7 +187,7 @@
   });
 </script>
 
-{#if !uid}
+{#if !uid || needsAuth}
   <div class="pm-prompt">
     <i class="fas fa-landmark" aria-hidden="true"></i>
     <p>Sign in to walk your personal museum.</p>
