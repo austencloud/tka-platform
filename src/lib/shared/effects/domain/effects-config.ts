@@ -14,7 +14,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 21;
+export const EFFECTS_CONFIG_VERSION = 22;
 
 export type EffectType =
   | "none"
@@ -51,8 +51,15 @@ export interface TrailsIntent {
 }
 
 export interface FireIntent {
-  /** 0.45-1.0. Overall fire strength. */
+  /** 0.45-1.0. Overall fire strength (drives emission rate / density). */
   intensity: number;
+  /**
+   * 0-1. Core glow. Maps to the 3D material's HDR emissive (uEmissiveHot),
+   * which is what crosses the scene bloom threshold — the blown-out-white
+   * lever. Distinct from intensity (how MUCH fire) vs brightness (how HOT
+   * each particle glows). 1.0 = legacy default.
+   */
+  brightness: number;
   /** 0-1. 0 = natural fire color, 1 = fully prop-colored tint. */
   colorBlend: number;
   /** 0-1. Idle flicker / chaos. */

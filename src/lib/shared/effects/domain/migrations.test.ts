@@ -514,4 +514,34 @@ describe("migrateEffectsConfig", () => {
     expect(out.pulse.trigger).toBe("beat");
     expect(out.pulse.palette).toBe("sonar");
   });
+
+  it("migrates v21 → v22 by seeding fire.brightness default", () => {
+    const v21 = {
+      version: 21,
+      fire: {
+        intensity: 0.7, colorBlend: 0.5, turbulence: 0.5,
+        colorCurve: null, propColors: null, customColors: null,
+      },
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const out = migrateEffectsConfig(v21 as any);
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.fire.brightness).toBe(1.0);
+    // The rest of the user's fire settings survive the merge.
+    expect(out.fire.intensity).toBe(0.7);
+    expect(out.fire.turbulence).toBe(0.5);
+  });
+
+  it("preserves a deliberate fire.brightness through the merge", () => {
+    const current = {
+      version: EFFECTS_CONFIG_VERSION,
+      fire: {
+        intensity: 0.7, brightness: 0.35, colorBlend: 0.5, turbulence: 0.5,
+        colorCurve: null, propColors: null, customColors: null,
+      },
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const out = migrateEffectsConfig(current as any);
+    expect(out.fire.brightness).toBe(0.35);
+  });
 });

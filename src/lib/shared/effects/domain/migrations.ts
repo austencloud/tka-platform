@@ -219,6 +219,10 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // below. `swayAmplitude` is retained for the untouched 3D petal path. No
   // field mutation needed.
 
+  // v21 → v22: fire gains `brightness` (HDR core glow, the bloom-blowout
+  // lever, distinct from intensity). Net-new field; absent values resolve to
+  // DEFAULT_EFFECTS_CONFIG.fire.brightness (1.0) via the merge below.
+
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,

@@ -18,6 +18,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
 
   fire: {
     intensity: 0.7,
+    brightness: 1.0,
     colorBlend: 0.5,
     turbulence: 0.5,
     colorCurve: null,
