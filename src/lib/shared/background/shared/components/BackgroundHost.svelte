@@ -12,6 +12,11 @@
 	import { browser } from '$app/environment';
 	import { onMount, onDestroy } from 'svelte';
 	import { BackgroundType, getBackgroundController } from '@austencloud/backgrounds';
+	import {
+		createJellyfishChime,
+		buildPentatonicNotes,
+		midiToFreq
+	} from '$lib/shared/3d/environments/scenes/ocean/runtime/fauna/jellyfish/jellyfish-chime';
 	import { isBackgroundSuppressed } from '../state/background-suppression.svelte';
 
 	const {
@@ -73,23 +78,49 @@
 		// App-wide cursor flee: the container is pointer-events:none, so listen on
 		// window and map client coords to container-relative px. The canvas is sized
 		// to the container (patchCanvasResolution), so container CSS px == canvas
-		// logical px. setPointer is a no-op for non-ocean backgrounds (their systems
-		// lack setPointer), so this is safe app-wide.
+		// logical px. setPointer is method-optional-chained: it no-ops for
+		// non-ocean backgrounds (their systems lack setPointer) AND for a stale
+		// HMR-persisted controller singleton from a pre-0.6.2 build that predates
+		// the setPointer API. Safe app-wide; a hard reload picks up the new method.
 		const onPointerMove = (e: PointerEvent) => {
 			if (!controller || !containerRef) return;
 			const rect = containerRef.getBoundingClientRect();
 			const x = e.clientX - rect.left;
 			const y = e.clientY - rect.top;
 			const inside = x >= 0 && y >= 0 && x <= rect.width && y <= rect.height;
-			controller.setPointer(x, y, inside);
+			controller.setPointer?.(x, y, inside);
 		};
-		const onPointerLeaveWin = () => controller?.setPointer(0, 0, false);
+		const onPointerLeaveWin = () => controller?.setPointer?.(0, 0, false);
 		window.addEventListener('pointermove', onPointerMove, { passive: true });
 		window.addEventListener('pointerleave', onPointerLeaveWin);
+
+		// Jellyfish "ding": tap a 2D ocean jelly to ring a warm pentatonic bell,
+		// pitch by screen height, pan by screen X — mirrors the 3D JellyfishSwarm.
+		// The chime is a pure-WebAudio synth shared with the 3D scene (no-op when
+		// Web Audio is unavailable). A fixed 16-note table covers the swarm; the
+		// poked jelly's pitch01 indexes it. pokeAt is method-optional-chained, so
+		// this is a safe no-op for non-ocean backgrounds and for a stale
+		// HMR-persisted controller from a pre-0.6.3 build that predates pokeAt.
+		const chime = createJellyfishChime();
+		const notes = buildPentatonicNotes(16);
+		const onPointerDown = (e: PointerEvent) => {
+			if (!controller || !containerRef) return;
+			const rect = containerRef.getBoundingClientRect();
+			const x = e.clientX - rect.left;
+			const y = e.clientY - rect.top;
+			const r = controller.pokeAt?.(x, y);
+			if (r?.hit) {
+				const idx = Math.round(r.pitch01 * (notes.length - 1));
+				chime.play(midiToFreq(notes[idx]!), r.pan);
+			}
+		};
+		window.addEventListener('pointerdown', onPointerDown);
 
 		return () => {
 			window.removeEventListener('pointermove', onPointerMove);
 			window.removeEventListener('pointerleave', onPointerLeaveWin);
+			window.removeEventListener('pointerdown', onPointerDown);
+			chime.dispose();
 		};
 	});
 
