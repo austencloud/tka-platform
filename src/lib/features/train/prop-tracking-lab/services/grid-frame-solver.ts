@@ -31,7 +31,8 @@ export class GridFrameSolver {
 
 /** Row-major 3x3 rotCam + camera translation -> Three.js Matrix4 (camFromMarker). */
 function markerMatrix(m: DetectedMarker): Matrix4 {
-  const r = m.rotCam;
+  // rotCam is contractually a row-major length-9 rotation matrix.
+  const r = m.rotCam as [number, number, number, number, number, number, number, number, number];
   return new Matrix4().set(
     r[0], r[1], r[2], m.posCam.x,
     r[3], r[4], r[5], m.posCam.y,
