@@ -386,6 +386,18 @@
     }
   }
 
+  // Forward canvas-relative cursor position to the ocean system so fish flee.
+  // The canvas backing-store px == offsetX/offsetY here because the canvas is
+  // sized to its container (width/height set in initializeSystem/handleResize)
+  // and CSS-stretched to fill, so offset coords map to logical fish-space px.
+  function handleOceanPointerMove(e: MouseEvent) {
+    backgroundSystem?.setPointer?.(e.offsetX, e.offsetY, true);
+  }
+
+  function handleOceanPointerLeave() {
+    backgroundSystem?.setPointer?.(0, 0, false);
+  }
+
   function handleResize() {
     if (!canvas || !backgroundSystem) return;
 
@@ -919,7 +931,11 @@
         </button>
       </div>
     {/if}
-    <canvas bind:this={canvas}></canvas>
+    <canvas
+      bind:this={canvas}
+      onmousemove={handleOceanPointerMove}
+      onmouseleave={handleOceanPointerLeave}
+    ></canvas>
   </div>
 </div>
 
