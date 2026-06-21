@@ -58,6 +58,12 @@ export interface Fire3DParams extends FireIntent {
   shadowCasting: boolean;
   /** 0-1. Bloom post-process contribution. */
   bloomContribution: number;
+  /**
+   * HDR core emissive multiplier fed to the particle material's uEmissiveHot
+   * uniform. This is what crosses the scene bloom threshold — the lever that
+   * tames the blown-out-white flame. Derived from intent.brightness.
+   */
+  emissiveHot: number;
 }
 
 export interface Led3DParams extends LedIntent {

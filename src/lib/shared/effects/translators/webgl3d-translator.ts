@@ -63,6 +63,9 @@ export function resolveFire3D(
     vortexStrength: intent.turbulence * 3.0,
     shadowCasting: false,
     bloomContribution: intent.intensity * 0.6,
+    // brightness 0 → 0.6 (faint wisp), 1 → 2.0 (hot), 0.4 → 1.16 (tamed,
+    // below the 1.6 legacy default that blew out into bloom).
+    emissiveHot: 0.6 + intent.brightness * 1.4,
   };
   return { ...intent, ...defaults, ...override };
 }
