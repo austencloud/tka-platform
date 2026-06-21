@@ -42,6 +42,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
   import {
     resolveTrails3D,
     resolveLed3D,
+    resolveFire3D,
   } from "$lib/shared/effects/translators/webgl3d-translator";
   import { evaluatePattern } from "$lib/shared/animation-engine/domain/patterns/evaluator";
   import { createReusableContext } from "$lib/shared/animation-engine/domain/patterns/context";
@@ -642,6 +643,10 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
       }
 
       if (fireTips.length > 0) {
+        // Push the user's curated tuning (intensity/turbulence/brightness)
+        // before the physics step. resolveFire3D is a cheap pure spread,
+        // matching the per-frame resolveLed3D idiom above.
+        fireRenderer.updateConfig(resolveFire3D(effectsState.fire));
         fireRenderer.update(fireTips, dt);
       } else {
         fireRenderer.reset();
