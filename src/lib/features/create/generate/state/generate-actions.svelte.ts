@@ -44,6 +44,7 @@ import { orientationCycleExtender } from "$lib/features/create/generate/circular
 
 import { applyPattern as dpApplyPattern } from "$lib/features/create/shared/services/duration-pattern-manager";
 import { getVariationExplorationOrchestrator } from "$lib/features/create/spell/get-variation-exploration-orchestrator";
+import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
 
 // Letters with dash motions (Type 3, 4, and 5)
 const DASH_LETTERS: Set<string> = new Set([
@@ -170,6 +171,7 @@ export function createGenerationActionsState(
       const currentConfig = getConfig?.();
       lastGeneratedConfig = currentConfig ? { ...currentConfig } : null;
       await updateWorkbenchWithSequence(generatedSequence);
+      void getPropUnlockManager().recordCreation("generate");
     } catch (error) {
       generationError =
         error instanceof Error ? error.message : "Unknown generation error";
@@ -409,6 +411,7 @@ export function createGenerationActionsState(
       const currentConfig = getConfig?.();
       lastGeneratedConfig = currentConfig ? { ...currentConfig } : null;
       await updateWorkbenchWithSequence(loopedSequence);
+      void getPropUnlockManager().recordCreation("generate");
     } catch (error) {
       generationError = error instanceof Error ? error.message : "Spell generation failed";
       spellState.setError(generationError);

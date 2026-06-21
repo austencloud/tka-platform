@@ -20,7 +20,7 @@ import { reversalDetector, type ReversalDetector } from "$lib/shared/create/serv
 import { createSequenceState } from "./sequence-state-orchestrator.svelte";
 import type { SequenceState } from "./sequence-state-orchestrator.svelte";
 import { createAssembleState } from "$lib/features/assemble-lab/state/assemble-state.svelte";
-import type { AssembleState } from "$lib/features/assemble-lab/state/assemble-state.svelte";
+import type { AssembleState, BuilderPhase } from "$lib/features/assemble-lab/state/assemble-state.svelte";
 import {
   stepToMotion,
   convertToStartPosition,
@@ -31,6 +31,7 @@ import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 import { createStepData } from "$lib/shared/create/factories/create-step-data";
 import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
 
 export function createAssembleTabState(
   sequenceService?: SequenceRepository,
@@ -76,6 +77,11 @@ export function createAssembleTabState(
   // ============================================================================
 
   let cleanupEffects: (() => void) | null = null;
+
+  // Tracks the previous builder phase so the construct-completion counter fires
+  // exactly once on the transition INTO "complete" (edge-triggered), not on
+  // every reactive tick while the sequence sits in the complete phase.
+  let prevAssemblePhase: BuilderPhase | null = null;
 
   function startReactiveBridge(): void {
     // Prevent double-init
@@ -181,6 +187,18 @@ export function createAssembleTabState(
           tags: [],
           ...(startPositionData && { startingPosition: startPositionData }),
         });
+      });
+
+      // Count one "construct" creation on each transition into the terminal
+      // "complete" phase (when the user finishes assembling both hands). The
+      // prevAssemblePhase guard makes this edge-triggered: it fires once per
+      // completion, not on every reactive tick while phase stays "complete".
+      $effect(() => {
+        const phase = builderState.phase;
+        if (phase === "complete" && prevAssemblePhase !== "complete") {
+          void getPropUnlockManager().recordCreation("construct");
+        }
+        prevAssemblePhase = phase;
       });
     });
   }
