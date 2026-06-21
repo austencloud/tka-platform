@@ -1,7 +1,7 @@
 import { Vector3 } from 'three';
 import type { GridLocation } from '../domain/models';
 import { GridMode } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
-import { Orientation } from '$lib/shared/pictograph/shared/domain/enums/pictograph-enums';
+import { Orientation, MotionType } from '$lib/shared/pictograph/shared/domain/enums/pictograph-enums';
 
 /** 8 grid locations ordered clockwise from North at 45deg steps. */
 const LOCATIONS: GridLocation[] = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
@@ -57,5 +57,34 @@ export class TkaPoseClassifier {
     // Nonradial: clockwise tangent at a location = (radial.y, -radial.x).
     const tangentCW = new Vector3(radial.y, -radial.x, 0);
     return axis2d.dot(tangentCW) >= 0 ? Orientation.CLOCK : Orientation.COUNTER;
+  }
+
+  /** Angular separation (0..4, in 45deg units) between two grid locations. */
+  private locStep(a: GridLocation, b: GridLocation): number {
+    const ia = LOCATIONS.indexOf(a);
+    const ib = LOCATIONS.indexOf(b);
+    const raw = Math.abs(ia - ib) % 8;
+    return Math.min(raw, 8 - raw); // 0..4
+  }
+
+  /** Hand-path family: same->static, opposite(4 steps)->dash, else->shift. */
+  classifyHandMotion(start: GridLocation, end: GridLocation): 'static' | 'shift' | 'dash' {
+    const step = this.locStep(start, end);
+    if (step === 0) return 'static';
+    if (step === 4) return 'dash';
+    return 'shift';
+  }
+
+  /**
+   * Shift prop type from the arc direction vs the prop's net spatial rotation.
+   * Both signed CCW-positive radians. With-arc = pro, against = anti, ~0 spin = float.
+   * Float band = a small absolute-rotation deadzone (the -0.5-turn boundary).
+   */
+  classifyShiftType(arcAngle: number, propNetRotation: number): MotionType {
+    const FLOAT_BAND = Math.PI / 4; // < 45deg net spin over a shift = float
+    if (Math.abs(propNetRotation) < FLOAT_BAND) return MotionType.FLOAT;
+    return Math.sign(propNetRotation) === Math.sign(arcAngle)
+      ? MotionType.PRO
+      : MotionType.ANTI;
   }
 }

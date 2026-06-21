@@ -61,3 +61,37 @@ describe('TkaPoseClassifier.classifyOrientation', () => {
     expect(c.classifyOrientation(grip, axisOutTilted)).toBe(Orientation.OUT);
   });
 });
+
+import { MotionType } from '$lib/shared/pictograph/shared/domain/enums/pictograph-enums';
+
+describe('TkaPoseClassifier.classifyHandMotion', () => {
+  it('same location = static', () => {
+    expect(c.classifyHandMotion('n', 'n')).toBe('static');
+  });
+  it('adjacent (45deg) = shift', () => {
+    expect(c.classifyHandMotion('n', 'ne')).toBe('shift');
+    expect(c.classifyHandMotion('e', 'n')).toBe('shift');
+  });
+  it('opposite (180deg) = dash', () => {
+    expect(c.classifyHandMotion('n', 's')).toBe('dash');
+    expect(c.classifyHandMotion('ne', 'sw')).toBe('dash');
+  });
+  it('90deg cardinal-to-cardinal counts as a shift (diamond adjacency)', () => {
+    expect(c.classifyHandMotion('n', 'e')).toBe('shift');
+  });
+});
+
+describe('TkaPoseClassifier.classifyShiftType', () => {
+  it('prop rotates WITH the arc (propNet ~= arc) = pro', () => {
+    expect(c.classifyShiftType(Math.PI / 2, Math.PI / 2)).toBe(MotionType.PRO);
+  });
+  it('prop rotates AGAINST the arc (propNet ~= -arc) = anti', () => {
+    expect(c.classifyShiftType(Math.PI / 2, -Math.PI / 2)).toBe(MotionType.ANTI);
+  });
+  it('prop holds absolute angle (propNet ~= 0) = float', () => {
+    expect(c.classifyShiftType(Math.PI / 2, 0)).toBe(MotionType.FLOAT);
+  });
+  it('pro with extra spin still classifies pro (sign matches arc)', () => {
+    expect(c.classifyShiftType(Math.PI / 2, Math.PI / 2 + 2 * Math.PI)).toBe(MotionType.PRO);
+  });
+});
