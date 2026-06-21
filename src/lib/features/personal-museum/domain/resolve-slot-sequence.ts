@@ -44,7 +44,7 @@ export function resolveSlotSequence(
   }
   let qi = 0;
   for (const slot of autoFillSlots) {
-    result[slot] = qi < queue.length ? queue[qi++] : null;
+    result[slot] = queue[qi++] ?? null;
   }
 
   return result;
