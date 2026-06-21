@@ -38,6 +38,11 @@
      * Museum3DScene. Undefined in the official museum (default behavior).
      */
     userSequenceData?: Map<string, SequenceData>;
+    /**
+     * Optional per-refId pictograph bitmaps for wall plaques (personal-museum
+     * slots). Passed through to Museum3DScene. Undefined in the official museum.
+     */
+    plaquePictographs?: Map<string, ImageBitmap>;
   }
 
   const props: Props = $props();
@@ -517,6 +522,7 @@
         grid={props.grid}
         visible={props.visible}
         userSequenceData={props.userSequenceData}
+        plaquePictographs={props.plaquePictographs}
         {flipRequested}
         {resetRequested}
         {modeChangeRequested}

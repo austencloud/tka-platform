@@ -168,8 +168,12 @@ export function generateCanvas(
   content: PlaqueContent,
   size: PlaqueSize,
   cacheKey?: string,
+  pictograph?: ImageBitmap,
 ): OffscreenCanvas {
-  if (cacheKey) {
+  // When a pictograph is supplied (personal-museum slots), skip the module
+  // cache entirely so a reassigned slot never serves a stale composite. The
+  // text-only path (official museum) keeps using the cache, byte-identical.
+  if (cacheKey && !pictograph) {
     const cached = cache.get(cacheKey);
     if (cached) return cached;
   }
@@ -220,6 +224,16 @@ export function generateCanvas(
   drawDivider(ctx, config.width, y, padding, theme);
   y += Math.round(16 * scaleFactor);
 
+  // Pictograph (personal-museum slots only) - centered square above the body.
+  // Sized to ~60% of content width, capped so it never crowds the body text.
+  if (pictograph) {
+    const picSize = Math.min(contentWidth * 0.6, config.height * 0.32);
+    const picX = (config.width - picSize) / 2;
+    y += Math.round(12 * scaleFactor);
+    ctx.drawImage(pictograph, picX, y, picSize, picSize);
+    y += picSize + Math.round(12 * scaleFactor);
+  }
+
   // Body text - left-aligned, word-wrapped
   ctx.fillStyle = theme.bodyColor;
   ctx.font = `${fonts.body}px ${theme.bodyFont}`;
@@ -243,7 +257,8 @@ export function generateCanvas(
     ctx.fillText(content.barter, config.width / 2, barterY);
   }
 
-  if (cacheKey) {
+  // Never cache a pictograph composite (see cache-skip note above).
+  if (cacheKey && !pictograph) {
     cache.set(cacheKey, canvas);
   }
 

@@ -121,6 +121,12 @@
      * MUSEUM_EXHIBIT_SEQUENCES. Undefined in the official museum (default).
      */
     userSequenceData?: Map<string, SequenceData>;
+    /**
+     * Optional per-refId pictograph bitmaps composited into wall plaques
+     * (personal-museum slots). Pre-rendered async via renderFirstStepBitmap.
+     * Undefined in the official museum → text-only plaques, cache intact.
+     */
+    plaquePictographs?: Map<string, ImageBitmap>;
   }
 
   const props: Props = $props();
@@ -1171,7 +1177,8 @@
     content={plaque.content}
     size={plaque.size}
     refId={plaque.refId}
-    generator={generatePlaqueCanvas}
+    generator={(content, size, refId) =>
+      generatePlaqueCanvas(content, size, refId, props.plaquePictographs?.get(refId ?? ""))}
   />
 {/each}
 {#each visibleExhibitLights as pos, i (`${pos.x},${pos.z},${i}`)}
