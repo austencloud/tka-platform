@@ -1,12 +1,30 @@
 import { BlendFunction, Effect, EffectAttribute } from "postprocessing";
-import { Uniform, Vector3 } from "three";
+import { Matrix4, Uniform, Vector3, type Camera } from "three";
 
+// World-space refraction caustics.
+//
+// Caustics are reconstructed from the depth buffer into WORLD space and sampled
+// in world XZ (projected along the sun's `lightDir`). That anchors the pattern
+// to the seabed/world surfaces, so it no longer swims across geometry as the
+// camera orbits — the classic "fake screen-space caustics" tell. The Voronoi
+// F1/F2 chromatic math and the depth-based falloff are preserved.
+//
+// The EffectMaterial prelude (postprocessing v6) gives us inside `mainImage`:
+//   readDepth(uv) -> orthographic-normalized depth [0,1]
+//   getViewZ(depth) -> view-space Z (negative, perspective)
+//   cameraNear / cameraFar / vUv / time
+// It does NOT expose projectionMatrixInverse or the camera world matrix to a
+// wrapped Effect, so we add those as our own uniforms and feed them per-frame
+// from the main camera (captured via the `mainCamera` setter the EffectPass
+// drives, refreshed in `update`).
 const fragmentShader = /* glsl */ `
 uniform float causticsScale;
 uniform float causticsSpeed;
 uniform float causticsIntensity;
 uniform float chromaticSpread;
 uniform vec3 lightDir;
+uniform mat4 invProjection;
+uniform mat4 cameraMatrixWorld;
 
 // Voronoi-based caustic pattern with temporal animation
 vec2 hash22(vec2 p) {
@@ -42,6 +60,17 @@ float voronoiCaustic(vec2 p, float t) {
   return smoothstep(0.0, 0.05, md2 - md);
 }
 
+// Reconstruct the world-space position of the surface under this pixel.
+vec3 reconstructWorldPos(vec2 uv, float depth) {
+  // Screen uv + non-linear depth -> clip space.
+  vec4 clip = vec4(vec3(uv, depth) * 2.0 - 1.0, 1.0);
+  // Clip -> view (perspective divide via the projection inverse).
+  vec4 view = invProjection * clip;
+  view /= view.w;
+  // View -> world.
+  return (cameraMatrixWorld * view).xyz;
+}
+
 void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
   float depth = readDepth(uv);
   float linearDepth = depth * 50.0;
@@ -49,8 +78,18 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
   // Caustics strongest near surfaces (shallow depth), fade at distance
   float depthFade = exp(-linearDepth * 0.08);
 
-  // Project UVs along light direction for caustic coordinates
-  vec2 causticsUv = uv * causticsScale;
+  // World position of the lit surface beneath this pixel.
+  vec3 worldPos = reconstructWorldPos(uv, depth);
+
+  // Project the world point along the sun direction onto a horizontal plane so
+  // the caustic coordinate is the seabed footprint of the light shaft. This is
+  // what stops the pattern from sliding with the camera. lightDir points DOWN
+  // (negative Y); guard the divide so a near-horizontal sun can't blow up.
+  float ly = min(lightDir.y, -0.05);
+  vec3 projected = worldPos - lightDir * (worldPos.y / ly);
+
+  // Sample in world XZ. Scale tuned so the previous on-screen density holds.
+  vec2 causticsUv = projected.xz * (causticsScale * 0.12);
   float t = time * causticsSpeed;
 
   // Chromatic aberration: sample caustics at slightly offset scales per channel
@@ -87,6 +126,8 @@ export interface RefractionCausticsOptions {
 }
 
 export class RefractionCausticsEffect extends Effect {
+  private _camera: Camera | null = null;
+
   constructor({
     blendFunction = BlendFunction.NORMAL,
     scale = 8.0,
@@ -104,8 +145,31 @@ export class RefractionCausticsEffect extends Effect {
         ["causticsIntensity", new Uniform(intensity)],
         ["chromaticSpread", new Uniform(chromaticSpread)],
         ["lightDir", new Uniform(lightDirection.clone().normalize())],
+        ["invProjection", new Uniform(new Matrix4())],
+        ["cameraMatrixWorld", new Uniform(new Matrix4())],
       ]),
     });
+  }
+
+  // The EffectPass drives this setter every frame with the composer's main
+  // camera (ScenePostProcessing calls composer.setMainCamera). We capture it so
+  // `update` can pull fresh matrices for world-space reconstruction.
+  override set mainCamera(camera: Camera) {
+    this._camera = camera;
+  }
+
+  // Runs once per frame before the pass renders. Refresh the projection inverse
+  // and camera world matrix so the depth->world reconstruction tracks the
+  // current view.
+  override update(): void {
+    const camera = this._camera;
+    if (!camera) return;
+    (this.uniforms.get("invProjection")!.value as Matrix4).copy(
+      camera.projectionMatrixInverse,
+    );
+    (this.uniforms.get("cameraMatrixWorld")!.value as Matrix4).copy(
+      camera.matrixWorld,
+    );
   }
 
   get causticsIntensity(): number {

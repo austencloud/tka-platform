@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import { onDestroy } from "svelte";
   import { useTask, useThrelte } from "@threlte/core";
-  import { HalfFloatType, Vector2, AgXToneMapping, NoToneMapping } from "three";
+  import { HalfFloatType, Vector2, Color, AgXToneMapping, NoToneMapping } from "three";
   import {
     EffectComposer,
     RenderPass,
@@ -11,7 +11,7 @@
     ChromaticAberrationEffect,
     VignetteEffect,
   } from "postprocessing";
-  // import { GodraysPass } from "three-good-godrays"; // re-enable after depth-copy fix
+  import { GodraysPass } from "three-good-godrays";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
@@ -80,12 +80,6 @@
 
     composer.addPass(new RenderPass(scn, cam));
 
-    // Volumetric god rays — disabled pending depth-copy fix.
-    // GodraysPass adds an extra swap that creates odd parity: the next
-    // depth-reading EffectPass writes to the same target that holds the
-    // depth texture, triggering GL_INVALID_OPERATION feedback-loop errors.
-    // TODO: add a DepthCopyPass or implement god rays as an Effect (not Pass)
-    // to maintain even ping-pong parity.
     if (isOcean) {
       renderer.shadowMap.enabled = true;
       renderer.toneMapping = AgXToneMapping;
@@ -153,6 +147,39 @@
           }),
         ),
       );
+    }
+
+    // Volumetric god rays — the final pass.
+    //
+    // Why last: GodraysPass has needsSwap=true, so inserting it earlier flips
+    // the composer's input/output ping-pong parity by one, which lands a later
+    // depth-reading EffectPass (water absorption / caustics) on the buffer that
+    // owns the scene depth texture — a GL_INVALID_OPERATION framebuffer feedback
+    // loop. As the terminal pass there is no depth-reading pass after it, so the
+    // parity issue can't occur. GodraysPass also self-heals its own compositor
+    // feedback case by blitting depth to a copy target (three-good-godrays
+    // >=0.10), so the hand-rolled DepthCopyPass the old comment asked for is no
+    // longer needed.
+    //
+    // Gated on a shadow-casting sun being present (OceanRuntimeSystems publishes
+    // it to godraysLightStore). The light/camera references stay live because
+    // Three mutates their matrices in place each frame.
+    const sunLight = godraysLightStore.light;
+    if (isOcean && sunLight) {
+      const godrays = new GodraysPass(
+        sunLight,
+        cam as import("three").PerspectiveCamera,
+        {
+          density: 1 / 160,
+          maxDensity: 0.4,
+          color: new Color(0xbfe6ff),
+          raymarchSteps: 60,
+          distanceAttenuation: 2.0,
+          blur: true,
+        },
+      );
+      godrays.renderToScreen = true;
+      composer.addPass(godrays);
     }
 
     renderer.getSize(_sizeVec);
