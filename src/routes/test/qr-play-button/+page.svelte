@@ -17,7 +17,7 @@
 
   let lightHost: HTMLDivElement;
   let darkHost: HTMLDivElement;
-  let cellCanvas: HTMLCanvasElement;
+  let cellNoneCanvas: HTMLCanvasElement;
 
   // The exact image/imageOptions/EC block createQROptions now produces: green
   // triangle, badge matched to the card (derived inside playIconDataUrl).
@@ -38,60 +38,37 @@
     });
   }
 
-  // Mirrors image-composer.renderQRCode: a stepSize cell, QR centered above a
-  // reserved caption strip, "Scan to play" beneath.
-  async function drawCell(isDarkMode: boolean) {
-    const stepSize = 360;
-    const c = cellCanvas;
-    c.width = stepSize;
-    c.height = stepSize;
-    const ctx = c.getContext("2d")!;
-
-    const captionFont = Math.round(stepSize * 0.07);
-    const topMargin = Math.round(stepSize * 0.045);
-    const textGap = Math.round(stepSize * 0.05);
-    const bottomMargin = Math.round(stepSize * 0.05);
-    const sideMargin = Math.round(stepSize * 0.06);
-    const vBudget = stepSize - topMargin - textGap - captionFont - bottomMargin;
-    const hBudget = stepSize - 2 * sideMargin;
-    const qrSize = Math.floor(Math.min(vBudget, hBudget));
-
-    const moduleColor = isDarkMode ? "#ffffff" : "#1a1a2e";
-    const qr = makeQr(moduleColor, isDarkMode ? "#00000000" : "#ffffff");
+  async function qrImage(moduleColor: string, bg: string): Promise<HTMLImageElement> {
+    const qr = makeQr(moduleColor, bg);
     const blob = (await qr.getRawData("svg")) as Blob;
     const svgText = await blob.text();
     const img = new Image();
     img.src = `data:image/svg+xml;base64,${btoa(svgText)}`;
     await img.decode();
-
-    const x = Math.floor((stepSize - qrSize) / 2);
-    const y = topMargin;
-
-    ctx.fillStyle = isDarkMode ? "#000000" : "#ffffff";
-    ctx.fillRect(0, 0, stepSize, stepSize);
-    ctx.drawImage(img, x, y, qrSize, qrSize);
-
-    ctx.save();
-    ctx.font = `600 ${captionFont}px Inter, "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = isDarkMode ? "#ffffff" : "#231f20";
-    ctx.fillText("Scan to play", stepSize / 2, y + qrSize + textGap + captionFont / 2);
-    ctx.restore();
+    return img;
   }
 
-  let darkCell = $state(false);
+  // Final treatment: no caption, QR centered in the cell — mirrors the centered
+  // Start pictograph in the neighbouring cell. Largest square minus side margins.
+  async function drawCellNoCaption(c: HTMLCanvasElement) {
+    const stepSize = 360;
+    c.width = stepSize;
+    c.height = stepSize;
+    const ctx = c.getContext("2d")!;
+    const sideMargin = Math.round(stepSize * 0.055);
+    const qrSize = Math.floor(stepSize - 2 * sideMargin);
+    const img = await qrImage("#1a1a2e", "#ffffff");
+    const xy = Math.floor((stepSize - qrSize) / 2);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, stepSize, stepSize);
+    ctx.drawImage(img, xy, xy, qrSize, qrSize);
+  }
 
   onMount(async () => {
     makeQr("#1a1a2e", "#ffffff").append(lightHost);
     makeQr("#ffffff", "#0b1020").append(darkHost);
-    await drawCell(darkCell);
+    await drawCellNoCaption(cellNoneCanvas);
   });
-
-  async function toggleCell() {
-    darkCell = !darkCell;
-    await drawCell(darkCell);
-  }
 </script>
 
 <svelte:head><title>QR Play Button Preview</title></svelte:head>
@@ -111,11 +88,10 @@
     </figure>
   </div>
 
-  <h2>Printed card cell (QR + caption, as composed)</h2>
-  <button onclick={toggleCell}>Toggle {darkCell ? "→ light" : "→ dark"} card</button>
-  <figure class="cell" class:dark={darkCell}>
-    <canvas bind:this={cellCanvas}></canvas>
-    <figcaption>Exact caption math from image-composer.renderQRCode</figcaption>
+  <h2>Printed card cell (light card, as composed)</h2>
+  <figure class="cell">
+    <canvas bind:this={cellNoneCanvas}></canvas>
+    <figcaption>No caption, QR centered — mirrors renderQRCode</figcaption>
   </figure>
 </div>
 
@@ -129,6 +105,4 @@
   .qr.dark { background: #0b1020; }
   figcaption { margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.75; text-align: center; }
   .cell canvas { border-radius: 12px; }
-  .cell.dark canvas { outline: 1px solid #333; }
-  button { margin: 0.5rem 0; padding: 0.4rem 0.9rem; border-radius: 8px; border: 1px solid #444; background: #1a1f2e; color: #e7e9ee; cursor: pointer; }
 </style>
