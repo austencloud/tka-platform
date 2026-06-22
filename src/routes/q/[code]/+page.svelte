@@ -36,6 +36,7 @@
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
   import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
+  import { loadJourney, shouldShowJourney, rowsToJourneyPoints, type JourneyPoint } from "$lib/shared/qr/journey/journey-loader";
   import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -64,7 +65,7 @@
 
   interface Props {
     data: {
-      geo: { country: string | null; city: string | null };
+      geo: { country: string | null; city: string | null; lat: number | null; lng: number | null };
       meta: {
         word: string | null;
         creator: string | null;
@@ -81,6 +82,7 @@
   type PageState =
     | { kind: "loading" }
     | { kind: "error"; message: string }
+    | { kind: "journey"; word: string; points: JourneyPoint[] }
     | { kind: "playing"; word: string };
 
   let pageState = $state<PageState>({ kind: "loading" });
@@ -496,14 +498,23 @@
       OrchestratorComponent = OrchestratorModule.default;
       ViewerSplitPaneComponent = SplitPaneModule.default;
 
-      if (!isInlineEncoded(shortCode) && isGenuineScan(shortCode)) {
+      // isGenuineScan side-effects sessionStorage and returns false on a 2nd
+      // call — so compute it ONCE and reuse for both telemetry and the journey
+      // gate. Calling it again would always return false.
+      const genuine = !isInlineEncoded(shortCode) && isGenuineScan(shortCode);
+      let journeyPoints: JourneyPoint[] = [];
+
+      if (genuine) {
+        const printId = page.url.searchParams.get("pid") || null;
+        const geo = data?.geo;
+
         captureEvent("card_scanned", {
           short_code: shortCode,
           sequence_word: word,
           deck_id: data?.meta?.deckId || null,
           deck_name: data?.meta?.deckName || null,
-          country: data?.geo?.country || null,
-          city: data?.geo?.city || null,
+          country: geo?.country || null,
+          city: geo?.city || null,
         });
 
         // Persist the scan to Firestore so the in-app Scan Activity tab lights
@@ -513,22 +524,53 @@
         shortCodeManager.incrementScanCount(shortCode).catch(() => {});
         void shortCodeManager
           .logScanEvent(shortCode, {
-            printId: page.url.searchParams.get("pid") || null,
-            country: data?.geo?.country ?? null,
-            city: data?.geo?.city ?? null,
+            printId,
+            country: geo?.country ?? null,
+            city: geo?.city ?? null,
             userAgent: navigator.userAgent,
             screenWidth: window.screen.width,
             screenHeight: window.screen.height,
             referrer: document.referrer || null,
             userId: null, // auth isn't initialized on this bare route
             deviceId: getDeviceId(),
+            lat: geo?.lat ?? null,
+            lng: geo?.lng ?? null,
           })
           .catch(() => {});
+        void shortCodeManager
+          .logJourneyPoint(shortCode, {
+            printId,
+            lat: geo?.lat ?? null,
+            lng: geo?.lng ?? null,
+            city: geo?.city ?? null,
+            country: geo?.country ?? null,
+          })
+          .catch(() => {});
+
+        // Load prior journey + optimistically append this scan (the projection
+        // write above may not have committed yet, and the scanner is the
+        // newest dot).
+        const prior = await loadJourney(shortCode, printId);
+        const thisScan = rowsToJourneyPoints([
+          {
+            lat: geo?.lat ?? null,
+            lng: geo?.lng ?? null,
+            city: geo?.city ?? null,
+            country: geo?.country ?? null,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+        journeyPoints = [...prior, ...thisScan];
       }
 
       stopTrickle();
       setProgress(100);
-      pageState = { kind: "playing", word };
+
+      if (shouldShowJourney({ genuine, pointCount: journeyPoints.length })) {
+        pageState = { kind: "journey", word, points: journeyPoints };
+      } else {
+        pageState = { kind: "playing", word };
+      }
 
       // Clean load → re-arm the module-chunk self-heal so a later mid-write edit
       // can trigger one fresh recovery reload again (the guard is one-shot).
@@ -606,6 +648,14 @@
         </a>
       </div>
     </div>
+  {:else if pageState.kind === "journey"}
+    {#await import("./ScanJourneyInterstitial.svelte") then { default: ScanJourneyInterstitial }}
+      <ScanJourneyInterstitial
+        points={pageState.points}
+        word={pageState.word}
+        onContinue={() => (pageState = { kind: "playing", word: seqWord })}
+      />
+    {/await}
   {:else if pageState.kind === "playing" && OrchestratorComponent && resolvedSeq}
     <OrchestratorComponent
       sequence={resolvedSeq}
