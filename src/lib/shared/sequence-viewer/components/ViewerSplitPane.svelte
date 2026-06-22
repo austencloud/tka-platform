@@ -121,6 +121,13 @@
       controller: import("../tunnel/tunnel-view-controller.svelte").TunnelViewController;
       mandalaController: import("../state/mandala-viewer-controller.svelte").MandalaViewerController;
     }) => void;
+    /**
+     * Hide ALL playback transport (the canvas scrubber AND the portrait mobile
+     * transport bar). For surfaces where another pane already indicates progress
+     * — e.g. the QR scan page's Side-by-Side, where the choreo card's highlighted
+     * step is the progress readout, so a scrubber under the animation is noise.
+     */
+    suppressProgress?: boolean;
   }
 
   let {
@@ -148,6 +155,7 @@
     isLoggedIn = false,
     onVideoUpload,
     onArtExport,
+    suppressProgress = false,
   }: Props = $props();
 
   // Three.js / Threlte is multi-MB. The 3D canvas + performer hub are only
@@ -385,7 +393,7 @@
 data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "vertical" : "horizontal") : undefined}
   data-landscape={layout.isLandscapeMobile || undefined}
   data-focused={layout.focusedPane}
-  data-mobile-transport={showMobileTransport || undefined}
+  data-mobile-transport={(showMobileTransport && !suppressProgress) || undefined}
 >
   <!-- Animation pane -->
   <div
@@ -749,7 +757,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     </div>
   </div>
 
-  {#if showMobileTransport}
+  {#if showMobileTransport && !suppressProgress}
     <div class="mobile-transport-bar" data-swipe-block>
       <UnifiedTimeline playback={mobileTransportAdapter} hidePlay />
     </div>

@@ -48,6 +48,7 @@
   import type { OrchestratorContext } from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
   import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
+  import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/sequence-modal-exporter.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
   import ViewerContentRail from "$lib/shared/sequence-viewer/components/ViewerContentRail.svelte";
@@ -165,6 +166,9 @@
   // ── Export state (drives the QR ExportTakeover overlay + native share) ──
   let isExporting = $state(false);
   let exportProgress = $state<VideoExportProgress | null>(null);
+  // Separate from isExporting so the card-image export's button-busy state never
+  // triggers the video ExportTakeover overlay (different pipeline, much faster).
+  let isCardExporting = $state(false);
 
   // ── Export takeover overlay (dim scrim + progress ring over the live canvas) ──
   const takeoverPhase = $derived<ExportPhase>(
@@ -302,6 +306,39 @@
     } finally {
       isExporting = false;
       exportProgress = null;
+    }
+  }
+
+  // ── Card-image export (the choreo-card customization row's Share/Download) ──
+  // Built from ctx.splitPaneImageComposition (the resolved values the card is
+  // already rendering), so the downloaded PNG matches the on-screen card exactly.
+  // sequenceModalExporter lazily resolves its renderer via getSequenceRenderer().
+  async function handleCardExport(ctx: OrchestratorContext) {
+    if (!resolvedSeq || isCardExporting) return;
+    const ic = ctx.splitPaneImageComposition;
+    isCardExporting = true;
+    try {
+      await sequenceModalExporter.exportImage(
+        {
+          includeStartPosition: ic.showStartPos,
+          showStepNumbers: ic.showStepNumbers,
+          showWord: ic.showWord,
+          showDifficulty: ic.showDifficulty,
+          showCreatorName: ic.showCreatorName,
+          showNotes: ic.showNotes,
+          showQRCode: ic.showQRCode,
+          darkMode: ic.darkMode,
+          columnCount: ic.columnCount,
+        },
+        { sequence: resolvedSeq, userName: ic.userName },
+        {
+          onSuccess: () => {},
+          onError: (m) => console.error("[QR] Card export failed:", m),
+          onHaptic: () => {},
+        }
+      );
+    } finally {
+      isCardExporting = false;
     }
   }
 
@@ -577,7 +614,7 @@
         <div
           class="player-layout"
           class:sidebar-mode={isSidebarLayout}
-          class:with-panel={isSidebarLayout && qrViewerMode === "animation"}
+          class:with-panel={isSidebarLayout && (qrViewerMode === "animation" || qrViewerMode === "card")}
         >
           {#if isSidebarLayout}
             <!-- Landscape / large: vertical side rail to switch views — the same
@@ -610,10 +647,17 @@
                 fullscreenStackVertical: false,
                 isMobile: !isSidebarLayout,
                 isLandscapeMobile: false,
-                focusedPane: qrFocusedPane ?? ctx.editingPane,
-                suppressCloseButton: qrViewerMode !== "split" || ctx.editingPane !== null,
+                // Drive focus ONLY from the QR mode. The orchestrator's
+                // ctx.editingPane derives from the viewer's PERSISTED state
+                // (tka-viewer-mode / exportContext), which leaks across to the
+                // scan page: a scanner whose localStorage holds a stale
+                // export/videos context would get editingPane != null, which in
+                // split focuses the animation pane and HIDES the choreo card.
+                focusedPane: qrFocusedPane,
+                suppressCloseButton: qrViewerMode !== "split",
               }}
               splitConfig={qrSplitConfig}
+              suppressProgress={qrViewerMode === "split"}
               onFocusPane={ctx.enterEditMode}
               onUnfocusPane={ctx.exitEditMode}
               onStepClick={ctx.handleStepClick}
@@ -706,6 +750,24 @@
               {/await}
             </div>
           </div>
+          {:else if qrViewerMode === "card"}
+            <!-- Card mode mirrors the viewer: the choreo-card customization row
+                 (labels / pictograph / columns / theme + share). Its toggles write
+                 the shared image-composition + visibility managers, which feed
+                 ctx.splitPaneImageComposition, so the card updates live. -->
+            <div class="controls-column">
+              <div class="drawer-host">
+                {#await import("$lib/shared/sequence-viewer/components/ExportImagePanel.svelte") then mod}
+                  <mod.default
+                    exportOptions={ctx.exportOptions}
+                    isExporting={isCardExporting}
+                    layout={drawerLayout}
+                    stepCount={resolvedSeq?.steps?.length ?? 0}
+                    onExport={() => handleCardExport(ctx)}
+                  />
+                {/await}
+              </div>
+            </div>
           {/if}
           {#if !isSidebarLayout}
             <!-- Portrait: bottom bar to switch views — the same ViewerModeBottomBar
