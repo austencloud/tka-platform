@@ -67,33 +67,42 @@
   });
 </script>
 
-<div class="journey" role="button" tabindex="0" onclick={onContinue} onkeydown={(e) => e.key === "Enter" && onContinue()}>
-  <div class="globe-wrap">
-    {#if GlobeComp && hasPath}
-      <GlobeComp points={globePoints} {arcs} height={320} />
-    {:else if GlobeComp}
-      <GlobeComp points={globePoints} height={320} />
-    {/if}
-  </div>
+<div class="journey">
+  <button
+    type="button"
+    class="dismiss-layer"
+    aria-label="Continue to the sequence"
+    onclick={onContinue}
+  ></button>
 
-  <div class="headline">
-    {#if hasPath}
-      <p class="lead">This card has traveled</p>
-      <p class="stats">
-        <span class="num">{cities}</span> cities ·
-        <span class="num">{countries}</span> countries ·
-        <span class="num">{distanceKm.toLocaleString()}</span> km
-      </p>
-    {:else}
-      <p class="lead">You're the first to scan this card.</p>
-      <p class="stats subtle">Its journey starts here.</p>
-    {/if}
-    <p class="word">{word}</p>
-  </div>
+  <div class="content">
+    <div class="globe-wrap">
+      {#if GlobeComp && hasPath}
+        <GlobeComp points={globePoints} {arcs} height={320} />
+      {:else if GlobeComp}
+        <GlobeComp points={globePoints} height={320} />
+      {/if}
+    </div>
 
-  <button class="skip" onclick={(e) => { e.stopPropagation(); onContinue(); }}>
-    Tap to continue →
-  </button>
+    <div class="headline">
+      {#if hasPath}
+        <p class="lead">This card has traveled</p>
+        <p class="stats">
+          <span class="num">{cities}</span> cities ·
+          <span class="num">{countries}</span> countries ·
+          <span class="num">{distanceKm.toLocaleString()}</span> km
+        </p>
+      {:else}
+        <p class="lead">You're the first to scan this card.</p>
+        <p class="stats subtle">Its journey starts here.</p>
+      {/if}
+      <p class="word">{word}</p>
+    </div>
+
+    <button type="button" class="skip" onclick={onContinue}>
+      Tap to continue →
+    </button>
+  </div>
 </div>
 
 <style>
@@ -107,8 +116,26 @@
     gap: 1.5rem;
     background: radial-gradient(ellipse at center, #0a0f1f 0%, #050810 70%);
     color: #fff;
-    cursor: pointer;
     padding: 1.5rem;
+  }
+  .dismiss-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    z-index: 0;
+  }
+  .content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
   }
   .globe-wrap {
     width: min(92vw, 420px);
