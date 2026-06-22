@@ -939,6 +939,15 @@ service cloud.firestore {
         allow read: if isAdmin();
         allow update, delete: if false;
       }
+
+      // Public journey projection — PII-free (coords/time/printId only).
+      // Readable by anyone so the scanner-facing card-journey reveal works
+      // without auth; scanEvents above stays admin-only for the full record.
+      match /journeyPoints/{pointId} {
+        allow create: if true;
+        allow read: if true;
+        allow update, delete: if false;
+      }
     }
 
     // Scan event log — collectionGroup read-only for admin live feed.

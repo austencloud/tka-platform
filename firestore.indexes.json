@@ -130,6 +130,14 @@
         { "fieldPath": "priority", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "journeyPoints",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "printId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [

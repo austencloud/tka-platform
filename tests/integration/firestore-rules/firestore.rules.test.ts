@@ -7,7 +7,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { doc, setDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDocs, setDoc } from "firebase/firestore";
 
 let testEnv: RulesTestEnvironment;
 
@@ -197,6 +197,50 @@ describe("full users: community write paths succeed", () => {
     const db = fullCtx().firestore();
     await assertSucceeds(
       setDoc(doc(db, `festivalSubmissions/fs1`), {})
+    );
+  });
+});
+
+describe("journeyPoints: public read + create, no update/delete", () => {
+  const SHORTCODE = "ABCD";
+  const pointData = {
+    printId: "print-abc",
+    lat: 41.8781,
+    lng: -87.6298,
+    city: "Chicago",
+    country: "US",
+    timestamp: new Date(),
+  };
+
+  it("unauthenticated user can read journeyPoints collection", async () => {
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertSucceeds(
+      getDocs(collection(db, "shortcodes", SHORTCODE, "journeyPoints"))
+    );
+  });
+
+  it("unauthenticated user can create a journeyPoint", async () => {
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertSucceeds(
+      addDoc(collection(db, "shortcodes", SHORTCODE, "journeyPoints"), pointData)
+    );
+  });
+
+  it("unauthenticated user cannot update a journeyPoint", async () => {
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertFails(
+      setDoc(
+        doc(db, "shortcodes", SHORTCODE, "journeyPoints", "point1"),
+        { printId: "updated" },
+        { merge: true }
+      )
+    );
+  });
+
+  it("unauthenticated user cannot delete a journeyPoint", async () => {
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertFails(
+      deleteDoc(doc(db, "shortcodes", SHORTCODE, "journeyPoints", "point1"))
     );
   });
 });
