@@ -306,73 +306,41 @@
     max-height: calc(100dvh - 80px);
   }
 
-  /* Letter sheet drawer */
-  :global(.letter-sheet-drawer.drawer-content[data-placement="right"]) {
-    width: var(--drawer-width, min(400px, 40vw));
-    transition:
+  /*
+   * Drawer skins routed through the Drawer.svelte --sheet-* token API instead
+   * of !important property overrides. Custom-prop declarations cascade without
+   * a specificity fight, so no !important is needed. Right-placement top/height
+   * were redundant (already the Drawer.css right defaults) and are dropped.
+   * Shared skin: themed panel bg, hairline left border, square desktop corners,
+   * 16px mobile top corners, side shadow, custom drawer easing.
+   */
+  :global(.letter-sheet-drawer.drawer-content),
+  :global(.options-sheet-drawer.drawer-content),
+  :global(.invite-collaborators-panel.drawer-content) {
+    --sheet-bg: var(--theme-panel-bg);
+    --sheet-border: none;
+    --sheet-border-strong: 1px solid var(--theme-stroke);
+    --sheet-radius-large: 0;
+    --sheet-border-radius-top-left: 16px;
+    --sheet-border-radius-top-right: 16px;
+    --sheet-shadow: -4px 0 24px var(--theme-shadow);
+    --sheet-transition:
       transform 350ms cubic-bezier(0.32, 0.72, 0, 1),
-      opacity 350ms cubic-bezier(0.32, 0.72, 0, 1) !important;
-    top: 0 !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-    background: var(--theme-panel-bg) !important;
-    border: none !important;
-    border-left: 1px solid var(--theme-stroke) !important;
-    border-radius: 0 !important;
-    box-shadow: -4px 0 24px var(--theme-shadow) !important;
+      opacity 350ms cubic-bezier(0.32, 0.72, 0, 1);
   }
 
-  :global(.letter-sheet-drawer.drawer-content[data-placement="bottom"]) {
-    max-height: 80vh !important;
-    border-top-left-radius: 16px !important;
-    border-top-right-radius: 16px !important;
-    background: var(--theme-panel-bg) !important;
+  /* Per-drawer width + mobile-sheet height caps */
+  :global(.letter-sheet-drawer.drawer-content) {
+    --sheet-width: var(--drawer-width, min(400px, 40vw));
+    --sheet-max-height: 80vh;
   }
-
-  /* Options sheet drawer */
-  :global(.options-sheet-drawer.drawer-content[data-placement="right"]) {
-    width: var(--drawer-width, min(500px, 50vw));
-    transition:
-      transform 350ms cubic-bezier(0.32, 0.72, 0, 1),
-      opacity 350ms cubic-bezier(0.32, 0.72, 0, 1) !important;
-    top: 0 !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-    background: var(--theme-panel-bg) !important;
-    border: none !important;
-    border-left: 1px solid var(--theme-stroke) !important;
-    border-radius: 0 !important;
-    box-shadow: -4px 0 24px var(--theme-shadow) !important;
+  :global(.options-sheet-drawer.drawer-content) {
+    --sheet-width: var(--drawer-width, min(500px, 50vw));
+    --sheet-max-height: 85vh;
   }
-
-  :global(.options-sheet-drawer.drawer-content[data-placement="bottom"]) {
-    max-height: 85vh !important;
-    border-top-left-radius: 16px !important;
-    border-top-right-radius: 16px !important;
-    background: var(--theme-panel-bg) !important;
-  }
-
-  /* Invite collaborators panel */
-  :global(.invite-collaborators-panel.drawer-content[data-placement="right"]) {
-    width: var(--drawer-width, min(520px, 45vw));
-    transition:
-      transform 350ms cubic-bezier(0.32, 0.72, 0, 1),
-      opacity 350ms cubic-bezier(0.32, 0.72, 0, 1) !important;
-    top: 0 !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-    background: var(--theme-panel-bg) !important;
-    border: none !important;
-    border-left: 1px solid var(--theme-stroke) !important;
-    border-radius: 0 !important;
-    box-shadow: -4px 0 24px var(--theme-shadow) !important;
-  }
-
-  :global(.invite-collaborators-panel.drawer-content[data-placement="bottom"]) {
-    max-height: 90vh !important;
-    border-top-left-radius: 16px !important;
-    border-top-right-radius: 16px !important;
-    background: var(--theme-panel-bg) !important;
+  :global(.invite-collaborators-panel.drawer-content) {
+    --sheet-width: var(--drawer-width, min(520px, 45vw));
+    --sheet-max-height: 90vh;
   }
 
   .floating-search-trigger {

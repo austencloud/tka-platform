@@ -151,12 +151,20 @@ dialog.drawer-content {
     var(--sheet-border-subtle, 1px solid var(--theme-stroke))
   );
 
-  /* Smooth CSS transitions - using 2026 system tokens */
-  transition:
+  /* Optional drop shadow — none by default; consumers set --sheet-shadow.
+     (Replaces per-consumer `box-shadow: … !important` skins.) */
+  box-shadow: var(--sheet-shadow, none);
+
+  /* Smooth CSS transitions - using 2026 system tokens.
+     Consumers can override the entire transition via --sheet-transition
+     (e.g. a custom easing) without !important. */
+  transition: var(
+    --sheet-transition,
     transform var(--duration-dramatic, 350ms)
       var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
     opacity var(--duration-dramatic, 350ms)
-      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1))
+  );
   will-change: transform;
 
   /* Prevent pull-to-refresh ONLY on this drawer, not globally */
@@ -188,8 +196,10 @@ dialog.drawer-content {
   right: 0;
   width: 100%;
   max-width: 100%;
-  max-height: 100vh;
-  max-height: 100dvh; /* Modern: accounts for iPhone browser chrome */
+  /* Consumers can cap sheet height via --sheet-max-height (replaces
+     per-consumer `max-height: …vh !important` skins). */
+  max-height: var(--sheet-max-height, 100vh);
+  max-height: var(--sheet-max-height, 100dvh); /* Modern: iPhone browser chrome */
   /* Prevent bottom sheets from appearing as tiny slivers on mobile.
      Components can override with their own height/max-height if they
      intentionally want a shorter sheet (e.g. animation settings). */

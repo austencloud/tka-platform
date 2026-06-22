@@ -1,5 +1,15 @@
 /* TKA V2 Modern - Base Styles */
 
+/*
+ * Cascade layer order — earlier name = lower priority. Unlayered styles
+ * (every component <style> block, and the rules in this file below) beat ALL
+ * layered styles, so app/component CSS wins over third-party without !important.
+ * Third-party CSS (98.css retro shell) is imported into layer(thirdparty) at its
+ * import sites so app overrides no longer need !important to win.
+ * Cascade layers: Baseline 2022, supported everywhere.
+ */
+@layer thirdparty, base, components, overrides;
+
 /* Import Desktop Theme for Learn Tab Compatibility */
 
 /* Import Enhanced Panel System Variables - TEMPORARILY DISABLED FOR DEBUGGING */
