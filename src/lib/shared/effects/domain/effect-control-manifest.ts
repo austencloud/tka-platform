@@ -19,6 +19,7 @@ import type { EffectId } from "$lib/shared/effects/state/effects-config-state.sv
 export type ControlType =
   | "slider"
   | "toggle"
+  | "chip"
   | "segmented"
   | "color"
   | "colorPair"
@@ -45,6 +46,8 @@ export interface ControlDescriptor {
   pairFields?: [string, string];
   // palette: named options (swatch optional, cosmetic)
   paletteOptions?: { value: string; label: string; swatch?: string }[];
+  // chip: a boolean rendered as a toggle chip with a preview swatch
+  swatch?: "rainbow";
   // conditional visibility (e.g. tint only when palette === "custom")
   showWhen?: (intent: Record<string, unknown>) => boolean;
 }
@@ -89,7 +92,7 @@ const slider = (
 export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
   trails: [
     { id: "trails-color", label: "Color", type: "colorPair", field: "blueColor", pairFields: ["blueColor", "redColor"], tier: "primary" },
-    { id: "trails-rainbow", label: "Rainbow", type: "toggle", field: "rainbow", tier: "primary" },
+    { id: "trails-rainbow", label: "Rainbow", type: "chip", field: "rainbow", tier: "primary", swatch: "rainbow" },
     slider("trails", "brightness", "Brightness", { min: 0.3, max: 1, tier: "primary" }),
     slider("trails", "thickness", "Thickness", { min: 1, max: 12, step: 1, pct: false, tier: "primary" }),
     { id: "trails-track", label: "Track", type: "segmented", field: "trackingMode", options: TRACK_OPTS, tier: "tracking" },

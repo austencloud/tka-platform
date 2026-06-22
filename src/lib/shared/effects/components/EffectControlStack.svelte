@@ -90,6 +90,23 @@
           <span class="ctl-toggle-dot"></span>
         </button>
       </div>
+    {:else if c.type === "chip"}
+      <div class="ctl-row ctl-row-wide">
+        <span class="ctl-label">{c.label}</span>
+        <button
+          type="button"
+          class="ctl-chip"
+          class:active={get(c.field) === true}
+          aria-pressed={get(c.field) === true}
+          aria-label={c.label}
+          onclick={() => set(c.field, !(get(c.field) as boolean))}
+        >
+          {#if c.swatch === "rainbow"}
+            <span class="swatch rainbow" aria-hidden="true"></span>
+          {/if}
+          {c.label}
+        </button>
+      </div>
     {:else if c.type === "color"}
       <div class="ctl-row">
         <span class="ctl-label">{c.label}</span>
@@ -205,6 +222,56 @@
   .ctl-pair {
     display: flex;
     gap: 0.4rem;
+  }
+
+  /* Rainbow chip — the same chip the 2D EffectsPanel preset strip uses, so the
+     boolean reads as a selectable chip rather than an iOS pill squashed to the
+     touch-target floor. */
+  .ctl-chip {
+    justify-self: start;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all var(--duration-fast, 0.15s) ease;
+  }
+  .ctl-chip:hover {
+    border-color: var(--theme-stroke-strong);
+    color: var(--theme-text);
+  }
+  .ctl-chip.active {
+    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 18%, transparent);
+    border-color: var(--theme-accent, #4a9eff);
+    color: var(--theme-text);
+  }
+  .ctl-chip .swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  /* Literal spectrum hexes — these preview the rainbow itself, not UI chrome. */
+  .ctl-chip .swatch.rainbow {
+    background: conic-gradient(
+      from 0deg,
+      #ef4444,
+      #f59e0b,
+      #eab308,
+      #22c55e,
+      #06b6d4,
+      #3b82f6,
+      #8b5cf6,
+      #ef4444
+    );
   }
 
   .ctl-toggle {
