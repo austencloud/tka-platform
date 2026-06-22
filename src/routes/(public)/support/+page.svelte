@@ -44,8 +44,8 @@
     <p class="eyebrow">The Kinetic Alphabet</p>
     <h1 class="title">Support the work</h1>
     <p class="lede">
-      If this guide helps you, you can support its development. Any amount is
-      genuinely appreciated.
+      <span class="ln">If this guide helps you, you can support its development.</span>
+      <span class="ln">Any amount is genuinely appreciated.</span>
     </p>
 
     <div class="methods">
@@ -117,6 +117,9 @@
     font-size: 1.02rem;
     line-height: 1.55;
     color: #d8d4e8;
+  }
+  .lede .ln {
+    display: block;
   }
 
   .methods {

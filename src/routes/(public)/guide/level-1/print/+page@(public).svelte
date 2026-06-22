@@ -107,8 +107,8 @@
     <div class="frontmatter support">
       <h2 class="fm-h">Support the work</h2>
       <p>
-        If this guide helps you, you can support its development. Any amount is
-        genuinely appreciated.
+        <span class="ln">If this guide helps you, you can support its development.</span>
+        <span class="ln">Any amount is genuinely appreciated.</span>
       </p>
       <figure class="donate">
         <img class="support-qr" src={SUPPORT_QR} alt="Scan to support — {SUPPORT_URL}" />
@@ -319,6 +319,10 @@
     margin: 0 0 1.05rem;
     text-align: justify;
     hyphens: auto;
+  }
+  /* Support page: centred sentence-per-line (each sentence its own line). */
+  .support .ln {
+    display: block;
   }
   /* Fraunces drop cap on the opening paragraph. */
   .rm-lead::first-letter {
