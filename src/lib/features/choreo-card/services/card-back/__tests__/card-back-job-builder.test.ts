@@ -36,6 +36,7 @@ import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 import { computeCardBackLayout } from "../card-back-layout";
 import { deriveCardBackData } from "../../../components/card-back/card-back-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const WIDTH = 1644;
 const HEIGHT = 2244;
@@ -212,7 +213,7 @@ describe("buildBackJob", () => {
     expect(typeof args[3]).toBe("boolean"); // darkMode flag
   });
 
-  it("mirrors SequenceMandala: arc → undefined pathOptions, standard tip dx", async () => {
+  it("staff default: arc → undefined pathOptions (two tips), standard tip dx", async () => {
     const { deps, calls } = makeFakeDeps();
     await buildBackJob(
       makeSequence(),
@@ -223,7 +224,28 @@ describe("buildBackJob", () => {
     // (steps, bluePropType, redPropType, pathOptions, tipOverride)
     expect(args[1]).toBeUndefined();
     expect(args[2]).toBeUndefined();
-    expect(args[3]).toBeUndefined();
+    expect(args[3]).toBeUndefined(); // no prop → staff → two tips
+    expect(args[4]).toEqual({ dx: 120, dy: 0 });
+  });
+
+  it("single-ended prop (club) traces ONE tip: pathOptions { tipEnds: 1 }", async () => {
+    const { deps, calls } = makeFakeDeps();
+    await buildBackJob(
+      makeSequence(),
+      {
+        width: WIDTH,
+        height: HEIGHT,
+        bleedPx: BLEED,
+        theme: "cosmic",
+        bluePropType: PropType.CLUB,
+        redPropType: PropType.CLUB,
+      },
+      deps,
+    );
+    const args = calls.calc![0]!;
+    expect(args[1]).toBe(PropType.CLUB); // prop types forwarded
+    expect(args[2]).toBe(PropType.CLUB);
+    expect(args[3]).toEqual({ tipEnds: 1 }); // one tip, not the staff's two
     expect(args[4]).toEqual({ dx: 120, dy: 0 });
   });
 

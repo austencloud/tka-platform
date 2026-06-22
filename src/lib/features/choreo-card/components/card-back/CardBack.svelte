@@ -27,6 +27,7 @@
   import TurnPatternGlyph from "./TurnPatternGlyph.svelte";
   import ReversalPatternGlyph from "./ReversalPatternGlyph.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
+  import { pairTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
   import MotionTypePills from "../MotionTypePills.svelte";
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
@@ -43,6 +44,12 @@
 
   const d = $derived(deriveCardBackData(sequence));
   const loopDisplay = $derived.by(() => resolveLoopDisplay(sequence));
+
+  // Single-ended prop (club) traces one tip; staff traces both. The mandala
+  // must match the card's prop, else a club card shows the double-staff locus.
+  const bluePropType = $derived(settingsService.settings.bluePropType);
+  const redPropType = $derived(settingsService.settings.redPropType);
+  const tipEnds = $derived(pairTipEnds(bluePropType, redPropType));
 
   const theme = $derived(themeOverride?.visuals ?? getCardBackThemeVisuals(settingsService.settings.backgroundType));
   const themeName = $derived(themeOverride?.name ?? settingsService.settings.backgroundType ?? "cosmic");
@@ -144,6 +151,9 @@
             size={380}
             darkMode={isDarkTheme}
             pathShape="arc"
+            {bluePropType}
+            {redPropType}
+            {tipEnds}
           />
         </div>
       </div>

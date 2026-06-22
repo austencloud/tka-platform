@@ -22,6 +22,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { pairTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 import type { MandalaPaths, MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
 import type { MandalaPathOptions } from "$lib/shared/mandala/services/types";
 import {
@@ -296,17 +297,21 @@ export async function buildBackJob(
   //    so the new path achieves pixel parity with the old DOM render rather
   //    than the filter-free Path2D approximation (renderMandalaToCanvas).
   //
-  //    Mirror SequenceMandala EXACTLY (CardBack.svelte mounts it with
-  //    size=380, style="stroke", show="both", pathShape="arc", no strokeWidth
-  //    [→ 2.5], no tipDx [→ MANDALA_STANDARD_TIP_DX], darkMode={isDarkTheme}):
-  //      - pathShape "arc"  → undefined pathOptions
-  //      - bluePropType/redPropType undefined
+  //    Mirror SequenceMandala (CardBack.svelte mounts it with size=380,
+  //    style="stroke", show="both", pathShape="arc", no strokeWidth [→ 2.5],
+  //    no tipDx [→ MANDALA_STANDARD_TIP_DX], darkMode={isDarkTheme}):
+  //      - pathShape "arc"  → no pathShape key
   //      - tip dx is the standard tip (no animation, no override)
-  const pathOptions: MandalaPathOptions | undefined = undefined; // pathShape "arc"
+  //    Prop-aware: a single-ended prop (club) traces ONE tip, not the staff's
+  //    two. Without this every back drew the double-staff locus regardless of
+  //    the prop the card is rendered with.
+  const tipEnds = pairTipEnds(opts.bluePropType, opts.redPropType);
+  const pathOptions: MandalaPathOptions | undefined =
+    tipEnds === 1 ? { tipEnds: 1 } : undefined;
   const mandalaPaths = d.calculatePaths(
     sequence.steps,
-    undefined,
-    undefined,
+    opts.bluePropType,
+    opts.redPropType,
     pathOptions,
     { dx: MANDALA_STANDARD_TIP_DX, dy: 0 },
   );
