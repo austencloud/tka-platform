@@ -276,6 +276,21 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       additionalLayers,
     } = params;
 
+    // Non-seamless loop wrap: the props teleport from the end position back to
+    // the start. Drop the source rings so the next captured point can't connect
+    // to the stale end-of-sequence tail with a straight line. The accumulator
+    // canvases are left untouched, so the previous trail keeps fading via
+    // destination-out while the fresh trail builds from the start position.
+    // Seamless loops (end == start) flow across the boundary with no teleport.
+    if (params.loopDetected && !params.isSeamlesslyLoopable) {
+      this.blueLeftRing = [];
+      this.blueRightRing = [];
+      this.redLeftRing = [];
+      this.redRightRing = [];
+      this.blueLayerRings = [];
+      this.redLayerRings = [];
+    }
+
     this.leadingEdge = Math.max(
       2,
       Math.floor(trailSettings.tailLength ?? DEFAULT_LEADING_EDGE),

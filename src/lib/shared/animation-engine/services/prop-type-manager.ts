@@ -17,7 +17,7 @@ import type { IAnimationPrecomputer } from "./IAnimationPrecomputer";
 import type { PropTypeChanger } from "./prop-type-changer.svelte";
 import type { FireTipTracker } from "./fire-tip-tracker";
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
-import { TUNNEL_LAYER_COLORS } from "$lib/shared/animation-engine/domain/compose-types";
+import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 import type { AnimationEngineProps } from "./animation-engine.svelte";
 import type { AnimatorState } from "../state/animator-state.svelte";
@@ -34,6 +34,9 @@ export class PropTypeManager {
   // Additional layer texture loading for tunnel mode (indexed by layer)
   additionalLayerTexturesLoaded: boolean[] = [];
   additionalLayerTexturesLoading: boolean[] = [];
+  // Last seen tunnel layer count; spectrum hues depend on it, so a change forces
+  // a sprite regenerate (see handleAdditionalLayers).
+  private lastLayerCount = 0;
 
   // ── Dependencies (injected) ─────────────────────────────────────────
   private settingsService: SettingsState | null = null;
@@ -224,9 +227,19 @@ export class PropTypeManager {
     getFrameParams: FrameParamsProvider
   ): void {
     const additionalLayers = props.additionalLayers ?? [];
+    const layerCount = additionalLayers.length;
 
-    if (additionalLayers.length > 0 && this.animationRenderer) {
-      for (let i = 0; i < additionalLayers.length; i++) {
+    // Spectrum colors fan across the active stack, so they depend on layerCount.
+    // When the fold count changes, every layer's color shifts — drop the cached
+    // sprites so they regenerate at the new hue.
+    if (layerCount !== this.lastLayerCount) {
+      this.lastLayerCount = layerCount;
+      this.additionalLayerTexturesLoaded = [];
+      this.additionalLayerTexturesLoading = [];
+    }
+
+    if (layerCount > 0 && this.animationRenderer) {
+      for (let i = 0; i < layerCount; i++) {
         const layer = additionalLayers[i]!;
         const hasProps = layer.blueProp != null || layer.redProp != null;
 
@@ -237,15 +250,18 @@ export class PropTypeManager {
         ) {
           this.additionalLayerTexturesLoading[i] = true;
 
-          // Use TUNNEL_LAYER_COLORS for this layer (offset by 1 since index 0 = primary layer)
-          const colors = TUNNEL_LAYER_COLORS[i + 1] ?? TUNNEL_LAYER_COLORS[1]!;
+          // Color each layer sprite through the same selective SVG pipeline the
+          // base pair uses (gold sword blade preserved, only the hardware takes
+          // the hue). propIndex convention: layer blue = 2+2i, red = 3+2i.
+          const blueColor = tunnelPropColor(2 + i * 2, layerCount).hex;
+          const redColor = tunnelPropColor(3 + i * 2, layerCount).hex;
 
           this.animationRenderer
             .loadAdditionalLayerPropTextures(
               i,
               state.currentBluePropType,
-              colors.left,
-              colors.right
+              blueColor,
+              redColor
             )
             .then(() => {
               this.additionalLayerTexturesLoaded[i] = true;

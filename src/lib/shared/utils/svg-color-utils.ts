@@ -66,8 +66,20 @@ export function getMotionColor(
  * Prop types that use selective coloring: only neutral (white/gray) fills get colored,
  * dark fills and warm/saturated fills (yellows, golds) are preserved.
  * Used for torches where the shaft stays dark, wick stays yellow, and knob gets hand color.
+ * Sword behaves the same: the yellow blade (wick) stays, the neutral-gray hilt and grip take the hand color.
  */
-export const SELECTIVE_COLOR_PROP_TYPES = ["torch", "bigtorch"] as const;
+export const SELECTIVE_COLOR_PROP_TYPES = [
+  "torch",
+  "bigtorch",
+  "sword",
+  // Sword-style previews (comparison only, not yet shipped prop types). Keeps the
+  // gold wick + dark/white shading; only the neutral-gray hardware takes hand color.
+  "sword-knight",
+  "sword-saber",
+  "sword-flamberge",
+  "sword-khopesh",
+  "sword-claymore",
+] as const;
 
 /**
  * Parse a 6-digit hex color to 0-1 RGB channels.

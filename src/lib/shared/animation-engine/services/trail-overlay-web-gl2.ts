@@ -244,6 +244,17 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       redPropType,
     } = params;
 
+    // Non-seamless loop wrap: the props teleport from the end position back to
+    // the start. Drop the source rings + tails so the next captured point can't
+    // connect to the stale end-of-sequence tail with a straight line. The
+    // accumulator FBOs are left untouched, so the previous trail keeps fading
+    // out on the GPU while the fresh trail builds from the start position.
+    // Seamless loops (end == start) are skipped — their trail flows across the
+    // boundary with no teleport.
+    if (params.loopDetected && !params.isSeamlesslyLoopable) {
+      this.resetRingsAndTails();
+    }
+
     const leadingEdge = Math.max(
       2,
       Math.floor(trailSettings.tailLength ?? DEFAULT_LEADING_EDGE),

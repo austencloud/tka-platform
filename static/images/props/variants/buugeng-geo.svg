@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Buugeng "Geo": clean parametric double-crescent (two half-annuli, true circular
+     arcs) — sharper, more modern silhouette than the organic asset. Body recolors;
+     gloss sheen + dark rim survive recolor. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 155.26">
+<defs>
+	<linearGradient id="gloss" x1="0" y1="0" x2="0" y2="155.26" gradientUnits="userSpaceOnUse">
+		<stop offset="0.04" stop-color="#ffffff" stop-opacity="0"/>
+		<stop offset="0.30" stop-color="#ffffff" stop-opacity="0.9"/>
+		<stop offset="0.48" stop-color="#ffffff" stop-opacity="0.06"/>
+		<stop offset="0.60" stop-color="#000000" stop-opacity="0"/>
+		<stop offset="1" stop-color="#000000" stop-opacity="0.55"/>
+	</linearGradient>
+</defs>
+<path d="M7 77.63 A77 77 0 0 0 161 77.63 L139 77.63 A55 55 0 0 1 29 77.63 Z M139 77.63 A77 77 0 0 1 293 77.63 L271 77.63 A55 55 0 0 0 161 77.63 Z" fill="#2e3191" stroke="#14163a" stroke-width="2"/>
+<path d="M7 77.63 A77 77 0 0 0 161 77.63 L139 77.63 A55 55 0 0 1 29 77.63 Z M139 77.63 A77 77 0 0 1 293 77.63 L271 77.63 A55 55 0 0 0 161 77.63 Z" fill="url(#gloss)"/>
+</svg>

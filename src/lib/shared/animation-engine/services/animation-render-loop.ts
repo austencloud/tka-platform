@@ -967,6 +967,8 @@ export class AnimationRenderLoop {
         bluePropType: params.bluePropType,
         redPropType: params.redPropType,
         tipEffectMap: params.tipEffectMap,
+        loopDetected: this.loopDetectedThisFrame,
+        isSeamlesslyLoopable: params.isSeamlesslyLoopable ?? false,
       });
       }
     } else if (trailOverlay && !effectiveTrailsVisible && this.lastTrailFrameTime > 0) {

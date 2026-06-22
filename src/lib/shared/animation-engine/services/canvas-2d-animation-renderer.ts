@@ -44,7 +44,6 @@ import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/can
 import { Canvas2DFadeManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-fade-manager";
 import { Canvas2DGridFadeManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-grid-fade-manager";
 import { Canvas2DVisibilityFadeManager } from "./canvas2d/canvas-2d-visibility-fade-manager";
-import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 // Constants matching AnimatorCanvas EXACTLY
 const VIEWBOX_SIZE = 950;
@@ -161,14 +160,6 @@ export class Canvas2DAnimationRenderer {
   private tintedGridImageRef: HTMLImageElement | null = null;
   private tintedGridSize = 0;
 
-  // Cached tunnel-layer prop sprites, pre-tinted to their spectrum color. Each
-  // overlaid kaleidoscope copy gets a distinct color (tunnelPropColor); to avoid
-  // re-tinting every frame we cache one offscreen canvas per (image, color, size)
-  // combination, keyed by "<color>|<naturalWidth>x<naturalHeight>@<canvasSize>".
-  // Same offscreen "source-in" recolor as getTintedGrid (iOS-safe, no ctx.filter).
-  // Cleared on dispose so stale sprites can't leak across renderer lifetimes.
-  private tintedPropCache = new Map<string, HTMLCanvasElement>();
-
   constructor() {
     this.appManager = new Canvas2DApplicationManager();
     this.imageLoader = new Canvas2DImageLoader();
@@ -221,43 +212,6 @@ export class Canvas2DAnimationRenderer {
     this.tintedGridCanvas = offscreen;
     this.tintedGridImageRef = gridImage;
     this.tintedGridSize = canvasSize;
-    return offscreen;
-  }
-
-  /**
-   * Return a copy of `image` recolored to `color`, for tunnel-layer props.
-   *
-   * Mirrors getTintedGrid's offscreen "source-in" recolor (iOS-safe; ctx.filter
-   * is silently dropped on iOS Safari): draw the sprite as an alpha mask, then
-   * fill the drawn pixels with the spectrum color so shape/alpha are preserved
-   * while the ink is replaced. Cached per (color, image size) so we tint once
-   * per layer color, not once per frame. The result is drawn at the sprite's
-   * natural resolution; renderProp scales it into the prop box like the raw image.
-   */
-  private getTintedProp(image: HTMLImageElement, color: string): HTMLCanvasElement | null {
-    const w = image.naturalWidth || image.width;
-    const h = image.naturalHeight || image.height;
-    if (w === 0 || h === 0) return null;
-
-    const key = `${color}|${w}x${h}`;
-    const cached = this.tintedPropCache.get(key);
-    if (cached) return cached;
-
-    const offscreen = document.createElement("canvas");
-    offscreen.width = w;
-    offscreen.height = h;
-    const offCtx = offscreen.getContext("2d");
-    if (!offCtx) return null;
-
-    // 1. Draw the prop sprite (its own RGBA) as an alpha mask.
-    offCtx.drawImage(image, 0, 0, w, h);
-    // 2. Recolor only the drawn pixels to the spectrum color, keeping alpha.
-    offCtx.globalCompositeOperation = "source-in";
-    offCtx.fillStyle = color;
-    offCtx.fillRect(0, 0, w, h);
-    offCtx.globalCompositeOperation = "source-over";
-
-    this.tintedPropCache.set(key, offscreen);
     return offscreen;
   }
 
@@ -481,8 +435,7 @@ export class Canvas2DAnimationRenderer {
                 params.bluePropDimensions,
                 canvasSize,
                 params.bluePropFlipped ?? false,
-                params.bluePropType,
-                tunnelPropColor(2 + i * 2, layerCount).hex
+                params.bluePropType
               );
             }
           }
@@ -540,8 +493,7 @@ export class Canvas2DAnimationRenderer {
                 params.redPropDimensions,
                 canvasSize,
                 params.redPropFlipped ?? false,
-                params.redPropType,
-                tunnelPropColor(3 + i * 2, layerCount).hex
+                params.redPropType
               );
             }
           }
@@ -576,16 +528,13 @@ export class Canvas2DAnimationRenderer {
     dimensions: { width: number; height: number },
     canvasSize: number,
     flipped: boolean = false,
-    propType?: string,
-    /** Tunnel-layer spectrum color ("#rrggbb"). undefined = no tint (base pair). */
-    tintColor?: string
+    propType?: string
   ): void {
     if (!image) return;
 
-    // Tunnel-layer props draw a pre-tinted sprite so every kaleidoscope copy is
-    // a distinct spectrum color; the base pair (no tintColor) draws untinted.
-    const drawSource: CanvasImageSource =
-      (tintColor ? this.getTintedProp(image, tintColor) : null) ?? image;
+    // Every prop sprite (base pair and tunnel layers) is already colored through
+    // the selective SVG pipeline, so it draws as-is — no per-pixel recolor.
+    const drawSource: CanvasImageSource = image;
 
     const transform = this.calculatePropTransform(
       propState,
@@ -832,6 +781,5 @@ export class Canvas2DAnimationRenderer {
     this.appManager.destroy();
     this.tintedGridCanvas = null;
     this.tintedGridImageRef = null;
-    this.tintedPropCache.clear();
   }
 }

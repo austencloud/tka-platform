@@ -22,6 +22,16 @@ export interface TrailOverlayRenderParams {
   currentTime: number;
   /** Per-tip effect assignments — gates which tips capture trail points */
   tipEffectMap?: TipEffectMap;
+  /** True on the frame the animation wrapped from end back to start. */
+  loopDetected?: boolean;
+  /**
+   * Whether the sequence's end position equals its start position. When false,
+   * the loop teleports the props, so the overlay must drop its source rings on
+   * `loopDetected` to avoid drawing a straight line from the end position to the
+   * start. When true, end == start, so the trail flows across the boundary and
+   * must NOT be reset.
+   */
+  isSeamlesslyLoopable?: boolean;
 }
 
 export interface ITrailOverlayCanvas {
