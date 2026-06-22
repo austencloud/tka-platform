@@ -73,46 +73,68 @@ export function colorSignature(p: MandalaPaths): ColorSignature {
 	};
 }
 
-const ROTATIONS = 8; // 45deg increments
-const RAD_PER_STEP = Math.PI / 4;
+// ─── Rotation/reflection orbit key (polar, exact by construction) ────────────
+//
+// A 45° rotation scales Cartesian coords by an irrational factor, so rotating
+// points and re-quantizing is only ~99% invariant (boundary points scatter).
+// Instead, quantize each point ONCE into (radius bucket, angle bucket) and let
+// the dihedral group act on the INTEGER angle buckets: a 45° rotation is exactly
+// +ORBIT_ROT_STEP buckets, a reflection is bucket negation. No re-rounding of
+// transformed coordinates, so orbit membership is exact.
 
-function transformPath(d: string, rotSteps: number, reflect: boolean): SVGPathData {
-	const pts = parsePoints(d);
-	const cos = Math.cos(rotSteps * RAD_PER_STEP);
-	const sin = Math.sin(rotSteps * RAD_PER_STEP);
-	const out: MandalaPoint[] = pts.map(({ x, y }) => {
-		const rx = reflect ? -x : x; // mirror across the y-axis before rotating
-		const tx = rx * cos - y * sin;
-		const ty = rx * sin + y * cos;
-		return { x: tx, y: ty };
-	});
-	// Re-emit as an M + straight-segment "d" — only on-curve points matter for
-	// the key, so a polyline encoding is sufficient and parsePoints-compatible.
-	const head = out[0];
-	if (!head) return { d: "", tipIndex: 0 };
-	let s = `M ${head.x.toFixed(2)} ${head.y.toFixed(2)}`;
-	for (let i = 1; i < out.length; i++) {
-		const a = out[i - 1]!;
-		const b = out[i]!;
-		s += ` C ${a.x.toFixed(2)} ${a.y.toFixed(2)}, ${b.x.toFixed(2)} ${b.y.toFixed(2)}, ${b.x.toFixed(2)} ${b.y.toFixed(2)}`;
-	}
-	return { d: s, tipIndex: 0 };
+const ORBIT_RADIAL_GRID = 1; // px per radius bucket
+const ORBIT_ANGLE_BUCKETS = 360; // divisible by 8 (rotation) and even (reflection)
+const ORBIT_ROT_STEP = ORBIT_ANGLE_BUCKETS / 8; // buckets per 45°
+const TWO_PI = Math.PI * 2;
+
+interface PolarToken {
+	r: number; // radius bucket
+	a: number; // angle bucket in [0, ORBIT_ANGLE_BUCKETS)
 }
 
-function transformPaths(p: MandalaPaths, rotSteps: number, reflect: boolean): MandalaPaths {
-	const t = (g: SVGPathData[]) => g.map((path) => transformPath(path.d, rotSteps, reflect));
-	return { blue: t(p.blue), red: t(p.red), purple: t(p.purple) };
-}
-
-/** Rotation/reflection-invariant key: the lexicographic minimum shapeKey over
- *  all 8 rotations × {identity, mirror}. Members of one orbit share this key. */
-export function orbitKey(p: MandalaPaths): string {
-	let min: string | null = null;
-	for (let r = 0; r < ROTATIONS; r++) {
-		for (const reflect of [false, true]) {
-			const k = shapeKey(transformPaths(p, r, reflect));
-			if (min === null || k < min) min = k;
+/** Color-blind set of unique (radius, angle) buckets for every on-curve point. */
+function polarTokens(p: MandalaPaths): PolarToken[] {
+	const seen = new Set<string>();
+	const toks: PolarToken[] = [];
+	for (const group of [p.blue, p.red, p.purple]) {
+		for (const path of group) {
+			for (const pt of parsePoints(path.d)) {
+				const r = Math.round(Math.hypot(pt.x, pt.y) / ORBIT_RADIAL_GRID);
+				const theta = (Math.atan2(pt.y, pt.x) + TWO_PI) % TWO_PI; // [0, 2π)
+				const a = Math.round((theta / TWO_PI) * ORBIT_ANGLE_BUCKETS) % ORBIT_ANGLE_BUCKETS;
+				const key = `${r},${a}`;
+				if (!seen.has(key)) {
+					seen.add(key);
+					toks.push({ r, a });
+				}
+			}
 		}
 	}
-	return min ?? shapeKey(p);
+	return toks;
+}
+
+/** Lexicographic-min canonical string over the 8 rotations × {identity, mirror}
+ *  dihedral group acting on integer angle buckets. Members of one orbit produce
+ *  the same canonical form exactly. */
+function orbitCanonicalForm(toks: readonly PolarToken[]): string {
+	let min: string | null = null;
+	for (let step = 0; step < 8; step++) {
+		for (const reflect of [false, true]) {
+			const mapped = toks.map(({ r, a }) => {
+				const base = reflect ? ORBIT_ANGLE_BUCKETS - a : a;
+				const na = (base + step * ORBIT_ROT_STEP) % ORBIT_ANGLE_BUCKETS;
+				return `${r},${na}`;
+			});
+			mapped.sort();
+			const key = mapped.join(";");
+			if (min === null || key < min) min = key;
+		}
+	}
+	return min ?? "";
+}
+
+/** Rotation/reflection-invariant key: members of one orbit share this exactly.
+ *  Annotation only — never part of the primary shapeKey. */
+export function orbitKey(p: MandalaPaths): string {
+	return hashString(orbitCanonicalForm(polarTokens(p)));
 }
