@@ -21,10 +21,11 @@ export const VIEWER_MODE_OPTIONS: ViewerModeOption[] = [
 	{ id: 'animation', icon: 'fa-play', label: '2D Animation' },
 	{ id: 'animation-3d', icon: 'fa-cube', label: '3D Animation', requiresWebgl2: true },
 	{ id: 'card', icon: 'fa-grip', label: 'Card' },
-	// "Art" umbrella: generative outputs of the sequence (Mandala, Tunnel, …).
-	// The internal id stays 'mandala' (the pane/persistence key) — only the
-	// user-facing label/icon change. See ArtPane.svelte for the type picker.
-	{ id: 'mandala', icon: 'fa-palette', label: 'Art' }
+	// Mandala and Tunnel are separate top-level art modes. Each id is its own
+	// pane/persistence key; the mode rail switches between them directly (no
+	// in-panel toggle). See ArtPane.svelte (fixed artType per pane).
+	{ id: 'mandala', icon: 'fa-dharmachakra', label: 'Mandala' },
+	{ id: 'tunnel', icon: 'fa-fan', label: 'Tunnel' }
 ];
 
 /** Practice is a toggle, not a ViewerMode. Rendered as its own item in both switchers. */
