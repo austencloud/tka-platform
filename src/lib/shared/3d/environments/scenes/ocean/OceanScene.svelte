@@ -93,6 +93,22 @@
       }
     };
   });
+
+  // ── Device-pixel-ratio cap ─────────────────────────────────────────────
+  // maxPixelRatio is defined per quality tier but was never applied to the live
+  // renderer — only the offline exporter capped DPR. Retina phones (DPR 2.5-3)
+  // therefore rendered the full caustic/boid/particle fragment load at native
+  // resolution. Cap it here and restore the prior ratio on teardown so other
+  // scenes are unaffected. Re-runs when the tier (and thus maxPixelRatio) changes.
+  $effect(() => {
+    const r = renderer.current;
+    if (!r) return;
+    const prev = r.getPixelRatio();
+    r.setPixelRatio(Math.min(window.devicePixelRatio, quality.maxPixelRatio));
+    return () => {
+      r.setPixelRatio(prev);
+    };
+  });
 </script>
 
 {#if $environmentGlb}
