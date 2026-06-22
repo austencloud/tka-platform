@@ -268,20 +268,19 @@
 
   /* Base drawer content styling - more opaque for floating over busy content */
   :global(.drawer-content[class*="-panel-container"]) {
-    background: linear-gradient(
+    --sheet-bg: linear-gradient(
       135deg,
       rgba(0, 0, 0, 0.75),
       rgba(0, 0, 0, 0.85)
-    ) !important;
-    backdrop-filter: blur(24px) !important;
-    -webkit-backdrop-filter: blur(24px) !important;
+    );
+    --sheet-filter: blur(24px);
+    /* Ensure panel appears above navigation (z-index: 100) */
+    --sheet-z-index: 150;
     border-top: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow:
       0 -8px 32px rgba(0, 0, 0, 0.5),
       0 -2px 8px var(--theme-shadow),
       inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    /* Ensure panel appears above navigation (z-index: 100) */
-    z-index: 150 !important;
   }
 
   /*
@@ -318,8 +317,8 @@
    * Height is controlled by .create-drawer-body below
    */
   :global(.drawer-content[class*="-panel-container"][data-placement="bottom"]) {
-    /* Override the default 95vh max-height from base Drawer */
-    max-height: 100dvh !important;
+    /* Override the default 100dvh max-height cap from base Drawer */
+    --sheet-max-height: 100dvh;
     /* When --panel-full-height is set, force full viewport height */
     height: var(--panel-full-height, auto);
     display: flex;
@@ -332,13 +331,13 @@
    * Swipe-to-dismiss is handled on the drawer content itself, not the backdrop
    */
   :global(.drawer-overlay[class*="-panel-backdrop"]) {
+    /* Transparent, non-interactive backdrop so clicks pass through to the
+       button panel. Swipe-to-dismiss lives on the drawer content itself. */
+    --sheet-backdrop-bg: transparent;
     --sheet-backdrop-pointer-events: none;
-    background: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    /* Disable pointer events so clicks pass through to button panel */
-    pointer-events: none !important;
-    z-index: 49 !important;
+    --sheet-z-index: 50;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   /*
@@ -359,7 +358,7 @@
    * Uses --desktop-sidebar-width set by MainInterface.svelte
    */
   :global(.has-desktop-sidebar .drawer-overlay[class*="-panel-backdrop"]) {
-    left: var(--desktop-sidebar-width, 220px) !important;
+    left: var(--desktop-sidebar-width, 220px);
   }
 
   /*

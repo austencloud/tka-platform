@@ -261,16 +261,18 @@ with exported sequence cards.
     --sheet-pointer-events: auto;
     max-width: 600px;
     margin: 0 auto;
-    height: auto !important;
     max-height: 85vh;
   }
 
-  /* Slide animations for drawer */
+  /* Auto-size to content. Placement-qualified so it out-specifies the base
+     Drawer's right-placement `height: 100vh` without needing !important. */
   :global(.drawer-content.loop-selection-sheet[data-placement="bottom"]) {
+    height: auto;
     transition: transform var(--duration-dramatic) cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   :global(.drawer-content.loop-selection-sheet[data-placement="right"]) {
+    height: auto;
     transition: transform var(--duration-dramatic) cubic-bezier(0.32, 0.72, 0, 1);
   }
 
