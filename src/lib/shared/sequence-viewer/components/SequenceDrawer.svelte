@@ -298,30 +298,29 @@
     overflow-x: hidden;
   }
 
-  /* Desktop right drawer styling (without side-by-side layout) */
+  /* Desktop right drawer styling (without side-by-side layout).
+     Routed through Drawer.css --sheet-* API; top/height dropped as redundant
+     (match the right-placement defaults). */
   :global(.sequence-panel-drawer.drawer-content[data-placement="right"]:not(.side-by-side-layout)) {
-    width: var(--sheet-width, min(600px, 90vw));
-    transition:
+    --sheet-width: var(--drawer-width, min(600px, 90vw));
+    --sheet-transition:
       transform 350ms cubic-bezier(0.32, 0.72, 0, 1),
       opacity 350ms cubic-bezier(0.32, 0.72, 0, 1),
-      width 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
-    top: 0 !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-    background: color-mix(in srgb, var(--theme-panel-bg) 70%, transparent) !important;
-    backdrop-filter: blur(20px) !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: -2px 0 16px var(--theme-shadow) !important;
+      width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --sheet-bg: color-mix(in srgb, var(--theme-panel-bg) 70%, transparent);
+    --sheet-filter: blur(20px);
+    --sheet-border: none;
+    --sheet-radius-large: 0;
+    --sheet-shadow: -2px 0 16px var(--theme-shadow);
   }
 
   /* Desktop right drawer with side-by-side layout - use tracked panel dimensions */
   :global(.sequence-panel-drawer.drawer-content[data-placement="right"].side-by-side-layout) {
-    background: color-mix(in srgb, var(--theme-panel-bg) 70%, transparent) !important;
-    backdrop-filter: blur(20px) !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: -2px 0 16px var(--theme-shadow) !important;
+    --sheet-bg: color-mix(in srgb, var(--theme-panel-bg) 70%, transparent);
+    --sheet-filter: blur(20px);
+    --sheet-border: none;
+    --sheet-radius-large: 0;
+    --sheet-shadow: -2px 0 16px var(--theme-shadow);
     /* Let Drawer.css handle positioning via --create-panel-* variables */
   }
 
@@ -350,45 +349,46 @@
     opacity: 1;
   }
 
-  /* Transparent backdrop for desktop */
+  /* Transparent backdrop for desktop. backdrop-filter:none dropped (overlay has
+     no backdrop-filter by default); background/pointer-events via --sheet-* API. */
   :global(.drawer-overlay.transparent-backdrop) {
-    background: transparent !important;
-    backdrop-filter: none !important;
-    pointer-events: none !important;
+    --sheet-backdrop-bg: transparent;
+    --sheet-backdrop-pointer-events: none;
   }
 
-  /* Mobile full-height bottom sheet */
+  /* Mobile full-height bottom sheet. height:100dvh overrides the bottom-sheet
+     min-height:50vh default to force a full-height sheet; corners via --sheet-*. */
   :global(.sequence-panel-drawer.drawer-content[data-placement="bottom"]) {
-    max-height: 100vh !important;
-    max-height: 100dvh !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-    border-top-left-radius: 16px !important;
-    border-top-right-radius: 16px !important;
+    --sheet-max-height: 100dvh;
+    --sheet-border-radius-top-left: 16px;
+    --sheet-border-radius-top-right: 16px;
+    height: 100vh;
+    height: 100dvh;
   }
 
-  /* Mobile: Offset when bottom navigation visible */
+  /* Mobile: Offset when bottom navigation visible. max-height via --sheet-*;
+     bottom/height have no --sheet-* var and out-specify Drawer.css base. */
   :global(.sequence-panel-drawer.with-nav-offset.drawer-content[data-placement="bottom"]) {
-    bottom: var(--primary-nav-height, 64px) !important;
-    max-height: calc(100vh - var(--primary-nav-height, 64px)) !important;
-    max-height: calc(100dvh - var(--primary-nav-height, 64px)) !important;
-    height: calc(100vh - var(--primary-nav-height, 64px)) !important;
-    height: calc(100dvh - var(--primary-nav-height, 64px)) !important;
+    --sheet-max-height: calc(100dvh - var(--primary-nav-height, 64px));
+    bottom: var(--primary-nav-height, 64px);
+    height: calc(100vh - var(--primary-nav-height, 64px));
+    height: calc(100dvh - var(--primary-nav-height, 64px));
   }
 
-  /* Mobile: Offset backdrop for nav clicks */
+  /* Mobile: Offset backdrop for nav clicks. No --sheet-* var for inset
+     positioning; consumer selector out-specifies Drawer.css .drawer-overlay. */
   :global(.drawer-overlay.nav-offset-backdrop) {
-    inset: unset !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: var(--primary-nav-height, 64px) !important;
+    inset: unset;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: var(--primary-nav-height, 64px);
   }
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     :global(.sequence-panel-drawer.drawer-content) {
-      transition: none !important;
+      --sheet-transition: none;
     }
   }
 </style>

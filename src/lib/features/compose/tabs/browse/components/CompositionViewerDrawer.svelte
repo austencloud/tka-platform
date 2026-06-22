@@ -199,14 +199,14 @@ import { resolveThumbnail } from "$lib/features/compose/tabs/browse/services/com
 </Drawer>
 
 <style>
-	/* Override Drawer defaults for full-screen composition viewer */
+	/* Override Drawer defaults for full-screen composition viewer.
+	   Routed through the --sheet-* API; the direct border-top-*-radius overrides
+	   are redundant (the radius vars already drive those corners). */
 	:global(.composition-viewer-drawer) {
-		--sheet-bg: var(--theme-panel-bg, #0a0a14) !important;
-		--sheet-filter: none !important;
-		--sheet-border-radius-top-left: 0px !important;
-		--sheet-border-radius-top-right: 0px !important;
-		border-top-left-radius: 0 !important;
-		border-top-right-radius: 0 !important;
+		--sheet-bg: var(--theme-panel-bg, #0a0a14);
+		--sheet-filter: none;
+		--sheet-border-radius-top-left: 0px;
+		--sheet-border-radius-top-right: 0px;
 	}
 
 	.drawer-container {

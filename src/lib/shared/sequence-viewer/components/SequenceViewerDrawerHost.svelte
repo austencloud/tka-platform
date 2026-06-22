@@ -988,12 +988,12 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     }
   }
 
+  /* Routed through the Drawer.css --sheet-* API; the direct border-top-*-radius
+     overrides are redundant (the radius vars already drive those corners). */
   :global(.sequence-viewer-drawer) {
-    --sheet-bg: var(--theme-panel-bg, #0a0a14) !important;
-    --sheet-filter: none !important;
-    --sheet-border-radius-top-left: 0px !important;
-    --sheet-border-radius-top-right: 0px !important;
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
+    --sheet-bg: var(--theme-panel-bg, #0a0a14);
+    --sheet-filter: none;
+    --sheet-border-radius-top-left: 0px;
+    --sheet-border-radius-top-right: 0px;
   }
 </style>
