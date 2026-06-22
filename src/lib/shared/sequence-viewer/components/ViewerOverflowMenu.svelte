@@ -29,6 +29,14 @@
     isSaved?: boolean;
     onSave?: () => void;
     onRemix?: () => void;
+    /** Download the current sequence (QR scan funnel). Renders a Download item. */
+    onDownload?: () => void;
+    /** Swap the Download item to a spinner + "Preparing…" while an export runs. */
+    downloadBusy?: boolean;
+    /** Open the wider app from a guest surface (QR scan funnel). */
+    onOpenApp?: () => void;
+    /** Label for the onOpenApp item. Defaults to "Open TKA". */
+    openAppLabel?: string;
     onCopyData?: () => void;
     copyDataFeedback?: boolean;
     /** When set, a "View in coven hub" item deep-links to /coven?seq=<id>. */
@@ -61,6 +69,10 @@
     isSaved = true,
     onSave,
     onRemix,
+    onDownload,
+    downloadBusy = false,
+    onOpenApp,
+    openAppLabel = "Open TKA",
     onCopyData,
     copyDataFeedback = false,
     sequenceId,
@@ -130,6 +142,21 @@
     }
     if (onRemix) {
       items.push({ label: "Remix", icon: "fa-pen-to-square", action: onRemix, className: "remix" });
+    }
+    if (onDownload) {
+      items.push({
+        label: downloadBusy ? "Preparing…" : "Download",
+        icon: downloadBusy ? "fa-spinner fa-spin" : "fa-download",
+        action: onDownload,
+      });
+    }
+    if (onOpenApp) {
+      items.push({
+        label: openAppLabel,
+        icon: "fa-compass",
+        action: onOpenApp,
+        dividerBefore: items.length > 0,
+      });
     }
     if (onCopyData) {
       items.push({

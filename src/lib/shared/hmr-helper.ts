@@ -11,6 +11,29 @@ let reloadScheduled = false;
 // MIME errors corrupt Svelte's reactivity, so we need to reload
 let mimeErrorDetected = false;
 
+// Timestamp of the most recent Vite HMR update. A runtime crash that lands
+// within a short window after an update is almost always a FAILED HMR APPLY
+// (Vite swapped a parent module but a child dynamic import transiently resolved
+// to undefined → `mod.default` throws). We scope the self-heal below to this
+// window so a genuine app-logic TypeError outside an HMR cycle never triggers a
+// surprise reload.
+let lastHmrUpdateAt = 0;
+const HMR_APPLY_FAILURE_WINDOW_MS = 5000;
+
+// Signature of a failed HMR apply: dereferencing a property off an undefined
+// module record. `default` is the Svelte component export; `render`/`$$`/
+// `component` cover the other shapes a re-imported module is read through.
+const HMR_APPLY_FAILURE_RE =
+  /reading '(default|render|\$\$|component|prototype)'/;
+
+function isHmrApplyFailure(message: string): boolean {
+  return (
+    import.meta.env.DEV &&
+    Date.now() - lastHmrUpdateAt < HMR_APPLY_FAILURE_WINDOW_MS &&
+    HMR_APPLY_FAILURE_RE.test(message)
+  );
+}
+
 /**
  * Check if we're in HMR mode and the page needs a full reload
  */
@@ -61,6 +84,10 @@ export function handleHMRInit() {
   if (import.meta.hot) {
     // Before HMR invalidation, track which files are being updated
     import.meta.hot.on("vite:beforeUpdate", (payload: { updates: Array<{ path: string }> }) => {
+      // Stamp the update so the global error handler can tell a failed HMR apply
+      // apart from an ordinary runtime error (see isHmrApplyFailure).
+      lastHmrUpdateAt = Date.now();
+
       // Clear module cache to prevent stale chunk issues
       clearModuleCache();
 
@@ -143,6 +170,15 @@ function setupGlobalErrorHandler() {
     const message = event.message || "";
     const error = event.error;
 
+    // A `mod.default`-on-undefined crash right after a Vite update is a failed
+    // HMR apply that wedges the page (and spams the console on every refresh).
+    // Self-heal with one guarded fresh reload instead of dead-ending the user.
+    if (isHmrApplyFailure(error?.message || message)) {
+      event.preventDefault();
+      recoverFromModuleChunkFailure("hmr-apply-failure");
+      return;
+    }
+
     // Check for MIME type errors indicating corrupted module loads
     if (
       message.includes("MIME type") ||
@@ -165,6 +201,14 @@ function setupGlobalErrorHandler() {
   window.addEventListener("unhandledrejection", (event) => {
     const reason = event.reason;
     const message = reason?.message || String(reason) || "";
+
+    // Failed HMR apply surfacing as a rejected `{#await import() then mod}`
+    // (mod is undefined → reading 'default' throws). Self-heal, don't spam.
+    if (isHmrApplyFailure(message)) {
+      event.preventDefault();
+      recoverFromModuleChunkFailure("hmr-apply-failure");
+      return;
+    }
 
     // Check for dynamic import failures
     if (

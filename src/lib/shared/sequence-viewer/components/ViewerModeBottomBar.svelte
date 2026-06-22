@@ -7,6 +7,12 @@
 		activeMode: ViewerMode;
 		webgl2Available?: boolean;
 		practiceActive?: boolean;
+		/**
+		 * When false, the Side-by-Side option is dropped. The split view is
+		 * useless on tiny viewports (each pane shrinks below legibility), so the
+		 * QR scan page disables it in its portrait bottom bar.
+		 */
+		allowSplit?: boolean;
 		onSelectMode: (mode: ContentType) => void;
 		onSelectSplit: () => void;
 		onPracticeToggle?: () => void;
@@ -16,12 +22,15 @@
 		activeMode,
 		webgl2Available = true,
 		practiceActive = false,
+		allowSplit = true,
 		onSelectMode,
 		onSelectSplit,
 		onPracticeToggle
 	}: Props = $props();
 
-	const modes = $derived(viewerModeOptions(webgl2Available));
+	const modes = $derived(
+		viewerModeOptions(webgl2Available).filter((m) => allowSplit || m.id !== 'split')
+	);
 
 	function selectMode(id: ViewerMode) {
 		if (id === 'split') onSelectSplit();

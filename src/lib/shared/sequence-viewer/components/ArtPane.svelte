@@ -155,14 +155,19 @@
       flex-direction: column;
     }
     .art-body {
-      flex: 1 1 auto;
+      flex: 1 1 55%;
+      min-height: 0;
     }
+    /* Claim a real share of the column. With height:auto the panel collapsed to
+       ~3px: its inner `.sidebar-main` is flex:1 and needs a DEFINED parent height
+       to fill, so an auto-height panel + a flex-fill child resolves to zero and
+       the canvas ate the whole pane. A flex-basis gives sidebar-main height to
+       fill; the sections scroll internally past it. */
     .art-pane :global(.art-settings-panel) {
       width: 100%;
       min-width: 0;
-      height: auto;
-      max-height: 45%;
-      flex-shrink: 0;
+      flex: 0 0 45%;
+      min-height: 0;
     }
   }
 </style>

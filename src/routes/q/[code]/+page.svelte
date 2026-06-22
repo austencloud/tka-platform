@@ -52,6 +52,7 @@
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
   import ViewerContentRail from "$lib/shared/sequence-viewer/components/ViewerContentRail.svelte";
   import ViewerModeBottomBar from "$lib/shared/sequence-viewer/components/ViewerModeBottomBar.svelte";
+  import ViewerOverflowMenu from "$lib/shared/sequence-viewer/components/ViewerOverflowMenu.svelte";
   import ToastContainer from "$lib/shared/toast/components/ToastContainer.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
   import type { ExportPhase } from "$lib/shared/video-export/components/ExportTakeover.svelte";
@@ -160,16 +161,6 @@
   function selectQrSplit() {
     qrViewerMode = "split";
   }
-
-  // Side-by-Side is dropped on tiny portrait viewports (both panes shrink below
-  // legibility — see the ViewerModeBottomBar allowSplit={false} below). The mode
-  // defaults to "split", so coerce it to 2D Animation whenever we're in the
-  // bottom-bar layout, including a landscape→portrait rotate while split is active.
-  $effect(() => {
-    if (!isSidebarLayout && qrViewerMode === "split") {
-      qrViewerMode = "animation";
-    }
-  });
 
   // ── Export state (drives the QR ExportTakeover overlay + native share) ──
   let isExporting = $state(false);
@@ -286,6 +277,9 @@
         },
         {
           compositeMode: "none",
+          // This page shares/downloads the returned blob itself below
+          // (shareOrDownloadBlob). Suppress the orchestrator's own download.
+          autoDownload: false,
           fps: opts.fps,
           loopCount: opts.loopCount,
           resolution: opts.resolution,
@@ -645,6 +639,21 @@
                   Open TKA
                 </a>
               </div>
+            {:else}
+              <!-- Portrait: the funnel actions live in a floating "…" menu over
+                   the stage — mirroring the viewer's mobile header overflow — so
+                   the panes keep the full body height. Reuses ViewerOverflowMenu. -->
+              <div class="scan-overflow">
+                <ViewerOverflowMenu
+                  variant="header"
+                  dropDown
+                  align="right"
+                  onRemix={openInComposer}
+                  onDownload={() => handleExport(ctx)}
+                  downloadBusy={isExporting}
+                  onOpenApp={() => goto(`/browse/gallery?from=scan&code=${shortCode}`)}
+                />
+              </div>
             {/if}
             <ExportTakeover
               phase={takeoverPhase}
@@ -660,12 +669,12 @@
             </ExportTakeover>
           </div>
 
-          <!-- Desktop matches the viewer: Side-by-Side / Card / Mandala fill the
-               width with no permanent right panel (mandala brings its own dock);
-               the Effects/BPM panel appears only in 2D Animation mode — the same
-               behavior as DrawerHost's animation-export sidebar. Portrait keeps
-               the always-on control drawer. -->
-          {#if !isSidebarLayout || qrViewerMode === "animation"}
+          <!-- Matches the viewer at every breakpoint: the Effects/Props/… panel
+               appears ONLY in 2D Animation mode (where watching the animation
+               while you change props/effects is the point). Split / Card /
+               Mandala / Tunnel fill the body; their funnel actions live in the
+               floating "…" menu over the stage. -->
+          {#if qrViewerMode === "animation"}
           <div class="controls-column">
             <div class="drawer-host">
               {#await import("$lib/shared/animation-panel/components/AnimationPanel.svelte") then mod}
@@ -687,10 +696,12 @@
                   onPlaybackModeChange={ctx.handlePlaybackModeChange}
                   onBpmChange={ctx.handleBpmChange}
                   onExport={() => handleExport(ctx)}
-                  secondaryActions={[
-                    { label: "Remix", icon: "fa-pen", onClick: openInComposer, accent: true },
-                    { label: "Open TKA", href: `/browse/gallery?from=scan&code=${shortCode}`, icon: "fa-compass" },
-                  ]}
+                  secondaryActions={isSidebarLayout
+                    ? [
+                        { label: "Remix", icon: "fa-pen", onClick: openInComposer, accent: true },
+                        { label: "Open TKA", href: `/browse/gallery?from=scan&code=${shortCode}`, icon: "fa-compass" },
+                      ]
+                    : []}
                 />
               {/await}
             </div>
@@ -702,7 +713,6 @@
             <ViewerModeBottomBar
               activeMode={qrViewerMode}
               webgl2Available={false}
-              allowSplit={false}
               onSelectMode={selectQrMode}
               onSelectSplit={selectQrSplit}
             />
@@ -814,6 +824,15 @@
     z-index: 10;
     display: flex;
     gap: 8px;
+  }
+
+  /* Portrait: floating "…" overflow over the stage (zero layout height) so the
+     panes keep the full body. Mirrors the viewer's mobile header overflow. */
+  .scan-overflow {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
   }
 
   .word-loader {
