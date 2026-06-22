@@ -15,7 +15,7 @@
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import Viewer3DCanvas from "./Viewer3DCanvas.svelte";
-  import Viewer3DEffectPills from "./Viewer3DEffectPills.svelte";
+  import MobileSceneControls from "./MobileSceneControls.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
@@ -46,6 +46,9 @@
     onBpmChange: (bpm: number) => void;
     onStepForward: () => void;
     onStepBackward: () => void;
+    /** Immersive toggle. Receives the overlay root for native fullscreen. */
+    immersive?: boolean;
+    onToggleImmersive?: (host: HTMLElement | null) => void;
   }
 
   let {
@@ -61,18 +64,38 @@
     onBpmChange,
     onStepForward,
     onStepBackward,
+    immersive = false,
+    onToggleImmersive,
   }: Props = $props();
+
+  let hostEl = $state<HTMLElement | null>(null);
 </script>
 
-<div class="viewer-3d-fullscreen">
-  <!-- Top bar: word label + close button -->
-  <div class="top-bar">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class="viewer-3d-fullscreen"
+  class:immersive
+  bind:this={hostEl}
+  onclick={immersive ? () => onToggleImmersive?.(hostEl) : undefined}
+>
+  <!-- Top bar: word label + immersive + close -->
+  <div class="top-bar" class:hidden={immersive}>
     {#if word}
       <span class="word-label"><TKAWordGlyph {word} height={14} darkMode /></span>
     {/if}
-    <button class="close-button" onclick={onClose} aria-label="Exit 3D view">
-      ✕
-    </button>
+    <div class="top-actions">
+      <button
+        class="icon-button"
+        onclick={(e) => { e.stopPropagation(); onToggleImmersive?.(hostEl); }}
+        aria-label={immersive ? "Exit immersive" : "Immersive fullscreen"}
+        aria-pressed={immersive}
+      >
+        <i class="fas {immersive ? 'fa-compress' : 'fa-expand'}"></i>
+      </button>
+      <button class="icon-button" onclick={onClose} aria-label="Exit 3D view">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
   </div>
 
   <!-- 3D canvas fills remaining space -->
@@ -85,35 +108,18 @@
       {onBpmChange}
       {bluePropType}
       {redPropType}
+      hideOverlays={true}
     />
   </div>
 
-  <!-- Bottom bar: playback controls + effect pills -->
-  <div class="bottom-bar">
-    <div class="playback-controls">
-      <button
-        class="control-button"
-        onclick={onStepBackward}
-        aria-label="Previous beat"
-      >
-        ⏮
-      </button>
-      <button
-        class="control-button play-button"
-        onclick={onPlaybackToggle}
-        aria-label={isPlaying ? "Pause" : "Play"}
-      >
-        {isPlaying ? "⏸" : "▶"}
-      </button>
-      <button
-        class="control-button"
-        onclick={onStepForward}
-        aria-label="Next beat"
-      >
-        ⏭
-      </button>
-    </div>
-    <Viewer3DEffectPills />
+  <!-- Bottom bar: consolidated controls -->
+  <div class="bottom-bar" class:hidden={immersive}>
+    <MobileSceneControls
+      {isPlaying}
+      {onPlaybackToggle}
+      {onStepForward}
+      {onStepBackward}
+    />
   </div>
 </div>
 
@@ -146,28 +152,6 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     letter-spacing: 0.05em;
-  }
-
-  .close-button {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.2s ease;
-    padding: 0;
-    margin-left: auto;
-  }
-
-  .close-button:hover,
-  .close-button:active {
-    background: rgba(255, 255, 255, 0.2);
   }
 
   /* Canvas fills all remaining space */
@@ -228,4 +212,23 @@
   .control-button:active {
     background: rgba(255, 255, 255, 0.22);
   }
+
+  .top-actions { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+  .icon-button {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.85);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0; font-size: 15px;
+  }
+  .icon-button:active { background: rgba(255, 255, 255, 0.22); }
+  .top-bar.hidden, .bottom-bar.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
+  }
+  .bottom-bar { gap: 14px; }
 </style>
