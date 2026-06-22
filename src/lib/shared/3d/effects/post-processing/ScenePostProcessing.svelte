@@ -19,6 +19,7 @@
   import { UnderwaterDistortionEffect } from "./ocean/underwater-distortion-effect";
   import { RefractionCausticsEffect } from "./ocean/refraction-caustics-effect";
   import { godraysLightStore } from "./godrays-light-store.svelte";
+  import { oceanDebugToggles } from "$lib/shared/3d/environments/scenes/ocean/quality/ocean-debug-toggles.svelte";
   import { getQualityTierDetector } from "../quality/get-quality-tier-detector";
 
   interface Props {
@@ -87,15 +88,20 @@
     }
 
     if (isOcean) {
-      composer.addPass(new EffectPass(cam,
+      // Water absorption (depth tint) always on; caustics (the dancing seabed
+      // light) is dev-toggleable so its contribution can be isolated.
+      const oceanDepthEffects: import("postprocessing").Effect[] = [
         new WaterAbsorptionEffect({
           absorptionR: 0.02,
           absorptionG: 0.005,
           absorptionB: 0.001,
           maxDepth: 50.0,
         }),
-        new RefractionCausticsEffect(),
-      ));
+      ];
+      if (oceanDebugToggles.caustics) {
+        oceanDepthEffects.push(new RefractionCausticsEffect());
+      }
+      composer.addPass(new EffectPass(cam, ...oceanDepthEffects));
     }
 
     const colorEffects: import("postprocessing").Effect[] = [];
@@ -132,7 +138,7 @@
       composer.addPass(new EffectPass(cam, ...colorEffects));
     }
 
-    if (isOcean) {
+    if (isOcean && oceanDebugToggles.underwaterDistortion) {
       composer.addPass(new EffectPass(cam, new UnderwaterDistortionEffect()));
     }
 
@@ -165,7 +171,7 @@
     // it to godraysLightStore). The light/camera references stay live because
     // Three mutates their matrices in place each frame.
     const sunLight = godraysLightStore.light;
-    if (isOcean && sunLight) {
+    if (isOcean && sunLight && oceanDebugToggles.godRays) {
       const godrays = new GodraysPass(
         sunLight,
         cam as import("three").PerspectiveCamera,
@@ -206,6 +212,10 @@
   $effect(() => {
     const cam = camera.current;
     const _godLight = godraysLightStore.light;
+    // Dev A/B toggles — read so flipping one rebuilds the composer pass chain.
+    const _gr = oceanDebugToggles.godRays;
+    const _ca = oceanDebugToggles.caustics;
+    const _ud = oceanDebugToggles.underwaterDistortion;
     if (shouldCompose && cam) {
       buildComposer();
     } else {

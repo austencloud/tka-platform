@@ -12,6 +12,7 @@
   } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
   import type { OceanQualityConfig } from "../quality/ocean-quality";
+  import { oceanDebugToggles } from "../quality/ocean-debug-toggles.svelte";
   import { R2_CDN } from "$lib/shared/3d/constants/r2-cdn";
 
   // The flora scene GLB (~36 MB, geometry-heavy) exceeds Cloudflare Pages' 25 MiB
@@ -191,6 +192,12 @@
   // Keep the sway mask anchored to the live seabed height.
   $effect(() => {
     swayUniforms.uGroundY.value = userProportionsState.groundY;
+  });
+
+  // Dev A/B toggle: zero the amplitude when sway is off (no shader recompile —
+  // the patched program stays, it just displaces by 0).
+  $effect(() => {
+    swayUniforms.uSwayStrength.value = oceanDebugToggles.sway ? SWAY_STRENGTH : 0;
   });
 
   // Advance the shared sway clock; all patched plant materials read uTime.

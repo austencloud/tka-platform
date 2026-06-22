@@ -2,6 +2,7 @@
   import { Vector3 } from "three";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import { oceanQualityOverride } from "$lib/shared/3d/environments/scenes/ocean/quality/ocean-quality-override.svelte";
+  import { oceanDebugToggles } from "$lib/shared/3d/environments/scenes/ocean/quality/ocean-debug-toggles.svelte";
   import type { OceanQualityTier } from "$lib/shared/3d/environments/scenes/ocean/quality/ocean-quality";
 
   const viewer = getViewer3DContext();
@@ -16,6 +17,18 @@
   const activeTier = $derived(oceanQualityOverride.tier);
   function setTier(v: OceanQualityTier | "auto") {
     oceanQualityOverride.tier = v;
+  }
+
+  // Live A/B toggles to isolate which ocean effect causes an observed change.
+  type FxKey = "sway" | "godRays" | "caustics" | "underwaterDistortion";
+  const FX_TOGGLES: Array<{ key: FxKey; label: string }> = [
+    { key: "sway", label: "Sway" },
+    { key: "godRays", label: "God Rays" },
+    { key: "caustics", label: "Caustics" },
+    { key: "underwaterDistortion", label: "Distortion" },
+  ];
+  function toggleFx(key: FxKey) {
+    oceanDebugToggles[key] = !oceanDebugToggles[key];
   }
 
   function copyCameraState(): void {
@@ -63,6 +76,23 @@
           onclick={() => setTier(opt.value)}
         >
           {opt.label}
+        </button>
+      {/each}
+    </div>
+  </div>
+
+  <div class="tier-group" role="group" aria-label="Ocean effects A/B toggles">
+    <span class="tier-label">Ocean FX (A/B)</span>
+    <div class="tier-pills">
+      {#each FX_TOGGLES as fx (fx.key)}
+        <button
+          type="button"
+          class="tier-pill"
+          class:active={oceanDebugToggles[fx.key]}
+          aria-pressed={oceanDebugToggles[fx.key]}
+          onclick={() => toggleFx(fx.key)}
+        >
+          {fx.label}
         </button>
       {/each}
     </div>
