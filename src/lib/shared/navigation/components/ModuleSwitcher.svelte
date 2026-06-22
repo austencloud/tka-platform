@@ -258,39 +258,37 @@
     --sheet-filter: blur(24px) saturate(140%);
     --sheet-border: 1px solid var(--theme-stroke);
     --sheet-radius-large: 20px;
-    box-sizing: border-box !important;
+    box-sizing: border-box;
   }
 
-  /* Bottom placement: Full width, content-adaptive height */
+  /* Bottom placement: Full width, content-adaptive height.
+     left/right/width match the Drawer bottom defaults, so they're dropped.
+     A fixed height is needed (Drawer bottom only sets min/max-height); Drawer
+     doesn't set `height`, so it wins on its own. max-height routes through
+     --sheet-max-height. */
   :global(.module-switcher-drawer[data-placement="bottom"]) {
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
+    --sheet-max-height: 100dvh;
     /* Default: full height on narrow mobile */
-    height: 100vh !important;
-    height: 100dvh !important;
-    max-height: 100vh !important;
-    max-height: 100dvh !important;
+    height: 100vh;
+    height: 100dvh;
   }
 
   /* Widescreen devices (Z-Fold unfolded, tablets): content-sized drawer */
   @media (min-width: 700px) and (min-height: 500px) {
     :global(.module-switcher-drawer[data-placement="bottom"]) {
-      height: auto !important;
-      max-height: 85vh !important;
-      max-height: 85dvh !important;
+      --sheet-max-height: 85dvh;
+      height: auto;
       border-radius: var(--sheet-radius-large, 20px) var(--sheet-radius-large, 20px) 0 0;
     }
   }
 
-  /* Left placement: Full height, partial width */
+  /* Left placement: Full height, partial width.
+     top/bottom/height are the Drawer left defaults (dropped). Width routes
+     through --sheet-width; max-width has no var so it stays (Drawer left
+     doesn't set max-width, so it wins on its own). */
   :global(.module-switcher-drawer[data-placement="left"]) {
-    top: 0 !important;
-    bottom: 0 !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-    width: 320px !important;
-    max-width: 85vw !important;
+    --sheet-width: 320px;
+    max-width: 85vw;
   }
 
   :global(.module-switcher-backdrop) {
@@ -455,7 +453,7 @@
     }
 
     :global(.module-switcher-drawer[data-placement="left"]) {
-      width: 280px !important; /* Slightly narrower in landscape */
+      --sheet-width: 280px; /* Slightly narrower in landscape */
     }
   }
 

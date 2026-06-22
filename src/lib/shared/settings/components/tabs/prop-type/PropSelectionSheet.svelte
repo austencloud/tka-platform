@@ -176,8 +176,7 @@
     height: 100vh;
     height: calc(100dvh - env(safe-area-inset-top, 0px));
     max-width: 480px;
-    left: 0 !important;
-    right: 0 !important;
+    /* left:0/right:0 match the Drawer bottom defaults — dropped. */
     margin-left: auto;
     margin-right: auto;
     border-radius: var(--sheet-radius-large, 20px) var(--sheet-radius-large, 20px) 0 0;

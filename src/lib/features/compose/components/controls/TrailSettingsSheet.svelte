@@ -62,12 +62,10 @@
 <style>
   :global(.trail-settings-sheet) {
     --sheet-width: min(320px, 85vw);
-  }
-
-  :global(.drawer-content.trail-settings-sheet) {
-    bottom: 0 !important;
-    max-height: 100dvh !important;
-    border-radius: 16px 0 0 16px !important;
+    /* Right-placement: 16px on the left (visible) corners. Drawer rounds only
+       the left corners for right placement, so this yields 16px 0 0 16px.
+       bottom:0 + max-height:100dvh were Drawer right-placement defaults. */
+    --sheet-radius-large: 16px;
   }
 
   .sheet-content {

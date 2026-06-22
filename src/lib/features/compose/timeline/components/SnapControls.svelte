@@ -385,14 +385,17 @@
   }
 
   /* Sheet Styles */
-  :global(.drawer-content.snap-settings-sheet) {
-    max-width: 400px;
-    background: linear-gradient(
+  :global(.snap-settings-sheet) {
+    --sheet-bg: linear-gradient(
       135deg,
       rgba(0, 0, 0, 0.3),
       rgba(0, 0, 0, 0.5)
-    ) !important;
-    backdrop-filter: blur(24px) !important;
+    );
+    --sheet-filter: blur(24px);
+  }
+
+  :global(.drawer-content.snap-settings-sheet) {
+    max-width: 400px;
   }
 
   .sheet-content {

@@ -84,14 +84,12 @@
 </Drawer>
 
 <style>
-  /* Bottom Sheet Styles - ~55% height so animation remains visible */
+  /* Bottom Sheet Styles - ~55% height so animation remains visible.
+     --sheet-max-height caps the bottom sheet; --sheet-radius-large rounds the
+     top corners (Drawer bottom leaves the bottom corners square). */
   :global(.settings-sheet-bottom) {
-    --drawer-max-height: 55dvh;
-  }
-
-  :global(.drawer-content.settings-sheet-bottom) {
-    max-height: 55dvh !important;
-    border-radius: 20px 20px 0 0 !important;
+    --sheet-max-height: 55dvh;
+    --sheet-radius-large: 20px;
   }
 
   .sheet-content {
