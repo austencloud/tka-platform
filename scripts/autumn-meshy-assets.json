@@ -1,0 +1,30 @@
+{
+  "stylePrefix": "stylized painterly low-poly fantasy, cohesive art direction, dusk lighting,",
+  "polycount": 30000,
+  "assets": [
+    {
+      "id": "hero-tree-a",
+      "prompt": "ancient gnarled fantasy oak tree, thick twisting trunk, exposed roots, sprawling canopy of crimson and gold autumn leaves, hollow knots",
+      "texturePrompt": "weathered dark bark, crimson-gold autumn foliage with softly glowing emissive leaf edges, dusk ambiance",
+      "textureSize": 2048
+    },
+    {
+      "id": "hero-tree-b",
+      "prompt": "ancient twisted fantasy maple, leaning trunk, knotted bark, broad canopy of amber and red leaves, moss patches",
+      "texturePrompt": "mossy dark bark, amber-red glowing-edge autumn foliage, dusk ambiance",
+      "textureSize": 2048
+    },
+    {
+      "id": "mushroom-grove",
+      "prompt": "cluster of oversized fantasy glowing mushrooms, fat caps, clustered stems, forest floor base with moss and fallen leaves",
+      "texturePrompt": "bioluminescent teal and violet mushroom caps with vein-lit glowing gills, emissive, mossy base, dusk",
+      "textureSize": 2048
+    },
+    {
+      "id": "terrain-shell",
+      "prompt": "circular fantasy forest floor terrain, gentle mounds, a shallow pond depression on one side, leaf litter, exposed roots and rocks, low rim",
+      "texturePrompt": "autumn forest floor, fallen crimson-gold leaves, damp moss, dark soil, dusk",
+      "textureSize": 1024
+    }
+  ]
+}
