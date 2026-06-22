@@ -14,6 +14,7 @@
   import { onMount } from "svelte";
   import EmailLinkingDrawer from "../../../auth/components/EmailLinkingDrawer.svelte";
   import { PROVIDERS, type ProviderId } from "./connected-accounts.providers";
+  import { FACEBOOK_LOGIN_ENABLED } from "$lib/shared/auth/services/auth-providers.config";
   import ConfirmDialog from "../../../foundation/ui/ConfirmDialog.svelte";
 
   // Services
@@ -42,7 +43,10 @@
 
   const availableProviders = $derived(
     (Object.keys(PROVIDERS) as ProviderId[]).filter(
-      (id) => !linkedProviders.includes(id)
+      (id) =>
+        !linkedProviders.includes(id) &&
+        // Facebook linking is hidden until the login flow is verified end to end.
+        (id !== "facebook.com" || FACEBOOK_LOGIN_ENABLED)
     )
   );
 

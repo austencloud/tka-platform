@@ -18,6 +18,7 @@ import {
   type AuthError,
 } from "firebase/auth";
 import { getAuthInstance } from "$lib/shared/auth/firebase";
+import { stashPendingLink } from "$lib/shared/auth/services/pending-credential-link";
 import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -157,6 +158,18 @@ export async function upgradeAnonymousWithFacebook(): Promise<UpgradeResult> {
       if (cred) await signInWithCredential(auth, cred);
       else throw error;
       return { status: "collision-signed-in", importable: drafts };
+    }
+    // The Facebook email already belongs to a DIFFERENT provider's account
+    // (e.g. Google/email). We can't link onto the anon and we don't hold the
+    // existing provider's credential, so stash the pending Facebook credential:
+    // it auto-links once the user signs into that existing account. Rethrow so
+    // the UI guides them there.
+    if (
+      (error as AuthError)?.code === "auth/account-exists-with-different-credential"
+    ) {
+      const cred = FacebookAuthProvider.credentialFromError(error as AuthError);
+      const email = (error as AuthError).customData?.email ?? null;
+      if (cred) stashPendingLink(cred, typeof email === "string" ? email : null);
     }
     throw error;
   }

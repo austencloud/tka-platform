@@ -22,10 +22,11 @@
   import { getAuthInstance } from "../firebase";
   import { upgradeAnonymousWithGoogle } from "$lib/shared/auth/services/anonymous-upgrade";
   import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
+  import { FACEBOOK_LOGIN_ENABLED } from "$lib/shared/auth/services/auth-providers.config";
 
   let { mode = "signin", onFacebookAuth } = $props<{
     mode: "signin" | "signup";
-    onFacebookAuth: () => void;
+    onFacebookAuth?: () => void;
   }>();
 
   let googleError = $state<string | null>(null);
@@ -103,7 +104,7 @@
   }
 
   function handleFacebookClick() {
-    onFacebookAuth();
+    onFacebookAuth?.();
   }
 </script>
 
@@ -128,16 +129,18 @@
         Google
       {/if}
     </button>
-    <button
-      class="social-compact-button social-compact-button--facebook"
-      onclick={handleFacebookClick}
-      aria-label={mode === "signin"
-        ? "Sign in with Facebook"
-        : "Sign up with Facebook"}
-    >
-      <FacebookIcon />
-      Facebook
-    </button>
+    {#if FACEBOOK_LOGIN_ENABLED}
+      <button
+        class="social-compact-button social-compact-button--facebook"
+        onclick={handleFacebookClick}
+        aria-label={mode === "signin"
+          ? "Sign in with Facebook"
+          : "Sign up with Facebook"}
+      >
+        <FacebookIcon />
+        Facebook
+      </button>
+    {/if}
   </div>
   {#if googleError}
     <p class="error-message" role="alert">{googleError}</p>

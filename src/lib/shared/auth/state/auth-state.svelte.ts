@@ -21,6 +21,7 @@
 
 import { getUserDocumentManager } from "$lib/shared/auth/get-user-document-manager";
 import { updateFacebookProfilePictureIfNeeded, updateGoogleProfilePictureIfNeeded } from "$lib/shared/auth/services/profile-picture-manager";
+import { consumePendingLinkForUser } from "$lib/shared/auth/services/pending-credential-link";
 import {
   onAuthStateChanged,
   signOut as firebaseSignOut,
@@ -388,6 +389,21 @@ export async function initializeAuthListener(): Promise<void> {
             console.error("❌ [authState] Failed to update user document:", error);
           });
         }
+
+        // If a Facebook sign-in collided with an existing account, the pending
+        // Facebook credential was stashed. Now that the user signed in with their
+        // existing method, link it on so Facebook works for them next time.
+        consumePendingLinkForUser(user)
+          .then((linkedProviderId) => {
+            if (linkedProviderId === "facebook.com") {
+              void import("$lib/shared/toast/state/toast-state.svelte").then(
+                ({ toast }) => toast.success("Facebook connected to your account.")
+              );
+            }
+          })
+          .catch((error: unknown) => {
+            console.warn("⚠️ [authState] Pending credential link failed:", error);
+          });
 
         updateFacebookProfilePictureIfNeeded(user).catch((error: unknown) => {
           console.warn("⚠️ [authState] Facebook profile picture update failed:", error);

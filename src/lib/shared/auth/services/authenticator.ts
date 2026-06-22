@@ -23,10 +23,27 @@ import {
   signOut as firebaseSignOut,
   unlink,
   updateProfile,
+  type AuthError,
 } from "firebase/auth";
 import { auth, getAuthInstance } from "../firebase";
 import { upgradeAnonymousWithFacebook } from "./anonymous-upgrade";
 import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
+import { clearPendingLink, stashPendingLink } from "./pending-credential-link";
+
+/**
+ * On an "account exists with a different credential" collision, capture the
+ * pending Facebook credential so it can be linked onto the existing account the
+ * next time the user signs in (see pending-credential-link.ts). Always returns
+ * to the caller, which then rethrows so the UI can guide the user.
+ */
+function stashFacebookCollision(error: unknown): void {
+  if ((error as AuthError)?.code !== "auth/account-exists-with-different-credential") {
+    return;
+  }
+  const cred = FacebookAuthProvider.credentialFromError(error as AuthError);
+  const email = (error as AuthError).customData?.email ?? null;
+  if (cred) stashPendingLink(cred, typeof email === "string" ? email : null);
+}
 
 // Dev-only breadcrumb. Google's popup auth handler ships a report-only COOP
 // header, so Chrome logs a browser-level "Cross-Origin-Opener-Policy policy
@@ -50,11 +67,15 @@ export async function signInWithGoogle(): Promise<void> {
     await signInWithDesktopOAuth();
     return;
   }
+  // getAuthInstance(), not the static `auth`: after an HMR app rotation the
+  // static export can be bound to a terminated app, which signInWithPopup
+  // rejects deep inside with auth/argument-error.
+  const authInstance = await getAuthInstance();
   const provider = new GoogleAuthProvider();
   provider.addScope("email");
   provider.addScope("profile");
   notePopupCoop();
-  await signInWithPopup(auth, provider);
+  await signInWithPopup(authInstance, provider);
 }
 
 export async function signInWithGoogleCredential(idToken: string): Promise<void> {
@@ -75,7 +96,15 @@ export async function signInWithFacebook(): Promise<void> {
   provider.addScope("email");
   provider.addScope("public_profile");
   notePopupCoop();
-  await signInWithPopup(authInstance, provider);
+  try {
+    await signInWithPopup(authInstance, provider);
+  } catch (error) {
+    // Email already owned by a Google/email account: stash the pending Facebook
+    // credential so the next sign-in auto-links it, then surface the error so the
+    // UI can tell the user to sign in with their existing method.
+    stashFacebookCollision(error);
+    throw error;
+  }
 }
 
 async function setAuthPersistence(): Promise<void> {
@@ -107,11 +136,15 @@ export async function signUpWithEmail(
 }
 
 export async function signOut(): Promise<void> {
+  // Drop any in-flight pending credential link — it belongs to the session
+  // we're ending.
+  clearPendingLink();
   await firebaseSignOut(auth);
 }
 
 export async function linkGoogleAccount(): Promise<void> {
-  const currentUser = auth.currentUser;
+  const authInstance = await getAuthInstance();
+  const currentUser = authInstance.currentUser;
   if (!currentUser) throw new Error("No user is currently signed in");
 
   const isAlreadyLinked = currentUser.providerData.some((p) => p.providerId === "google.com");
@@ -125,7 +158,9 @@ export async function linkGoogleAccount(): Promise<void> {
 }
 
 export async function linkFacebookAccount(): Promise<void> {
-  const currentUser = auth.currentUser;
+  // getAuthInstance(), not the static `auth`: HMR-safe (see signInWithGoogle).
+  const authInstance = await getAuthInstance();
+  const currentUser = authInstance.currentUser;
   if (!currentUser) throw new Error("No user is currently signed in");
 
   const isAlreadyLinked = currentUser.providerData.some((p) => p.providerId === "facebook.com");

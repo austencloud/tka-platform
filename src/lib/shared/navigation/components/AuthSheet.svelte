@@ -73,8 +73,11 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
       } else if (
         errorCode === "auth/account-exists-with-different-credential"
       ) {
+        // Pending Facebook credential is stashed (authenticator.ts). Guide the
+        // user to their existing method; auth-state auto-links Facebook on the
+        // next successful sign-in.
         facebookError =
-          "An account already exists with this email using a different sign-in method.";
+          "This email is already registered. Sign in with your original method (Google or email) and we'll connect Facebook automatically.";
       } else {
         facebookError =
           error instanceof Error

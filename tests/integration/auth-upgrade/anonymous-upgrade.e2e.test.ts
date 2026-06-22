@@ -37,6 +37,20 @@ vi.mock("$lib/shared/library/get-library-repository", () => ({
   getLibraryRepository: () => h.repo,
 }));
 
+// notifyUpgradeSignup() fires `getPropUnlockManager().mergeGuestCollection()` on
+// the linked path. The real manager pulls in a `.svelte.ts` $state rune module,
+// which can't compile in this plugin-less emulator config. Stub it — the upgrade
+// logic under test doesn't depend on the merge.
+vi.mock("$lib/shared/gamification/get-prop-unlock-manager", () => ({
+  getPropUnlockManager: () => ({ mergeGuestCollection: () => undefined }),
+}));
+
+// toast-state is a `.svelte.ts` $state rune module — same plugin-less-compile
+// problem. notifyUpgradeSignup() calls toast.success() on the linked path.
+vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
+  toast: { success: () => undefined, error: () => undefined },
+}));
+
 // Static imports are fine: vi.mock is hoisted above them, so these resolve to
 // the mocked modules.
 import {
