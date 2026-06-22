@@ -100,72 +100,85 @@ def get_world_max_extent(obj):
     return max(size)
 
 
-placements = []
-skipped = []
-unmapped = []
+def export_placements():
+    """Walk the open scene, write world-space prop transforms to JSON.
 
-for obj in bpy.data.objects:
-    if obj.type != 'MESH':
-        continue
+    Reused by the autosave handler (scripts/blender_ocean_autosave_handler.py) so a
+    Ctrl+S in Blender regenerates placements without a manual headless run. Returns the
+    output dict so callers can inspect counts/unmapped without re-reading the file.
+    """
+    placements = []
+    skipped = []
+    unmapped = []
 
-    name = obj.name
+    for obj in bpy.data.objects:
+        if obj.type != 'MESH':
+            continue
 
-    # Skip non-flora objects
-    if any(name.startswith(p) for p in SKIP_PREFIXES):
-        skipped.append(name)
-        continue
+        name = obj.name
 
-    object_key = match_object_key(name)
-    if object_key is None:
-        unmapped.append(name)
-        continue
+        # Skip non-flora objects
+        if any(name.startswith(p) for p in SKIP_PREFIXES):
+            skipped.append(name)
+            continue
 
-    # World-space max extent = the scale value for a maxExtent-normalized model
-    world_extent = get_world_max_extent(obj)
+        object_key = match_object_key(name)
+        if object_key is None:
+            unmapped.append(name)
+            continue
 
-    # Position (Blender Z-up → WebGL Y-up)
-    loc = obj.matrix_world.translation
-    position = blender_to_webgl_position(loc)
+        # World-space max extent = the scale value for a maxExtent-normalized model
+        world_extent = get_world_max_extent(obj)
 
-    # Quaternion rotation
-    rotation = blender_to_webgl_quaternion(obj)
+        # Position (Blender Z-up → WebGL Y-up)
+        loc = obj.matrix_world.translation
+        position = blender_to_webgl_position(loc)
 
-    # Uniform scale = world max extent (model normalized to 1-unit max extent)
-    scale_val = round(world_extent, 4)
+        # Quaternion rotation
+        rotation = blender_to_webgl_quaternion(obj)
 
-    placements.append({
-        "blender_name": name,
-        "objectKey": object_key,
-        "position": position,
-        "rotation": rotation,
-        "scale": [scale_val, scale_val, scale_val],
-        "world_extent": world_extent,
-    })
+        # Uniform scale = world max extent (model normalized to 1-unit max extent)
+        scale_val = round(world_extent, 4)
 
-# Sort by objectKey for readability
-placements.sort(key=lambda p: (p["objectKey"], p["blender_name"]))
+        placements.append({
+            "blender_name": name,
+            "objectKey": object_key,
+            "position": position,
+            "rotation": rotation,
+            "scale": [scale_val, scale_val, scale_val],
+            "world_extent": world_extent,
+        })
 
-output = {
-    "total": len(placements),
-    "skipped": len(skipped),
-    "unmapped": unmapped,
-    "placements": placements,
-}
+    # Sort by objectKey for readability
+    placements.sort(key=lambda p: (p["objectKey"], p["blender_name"]))
 
-with open(output_path, 'w') as f:
-    json.dump(output, f, indent=2)
+    output = {
+        "total": len(placements),
+        "skipped": len(skipped),
+        "unmapped": unmapped,
+        "placements": placements,
+    }
 
-print(f"\nExported {len(placements)} placements to {output_path}")
-print(f"Skipped {len(skipped)} non-flora objects")
-if unmapped:
-    print(f"\nUnmapped objects ({len(unmapped)}):")
-    for name in sorted(set(unmapped)):
-        print(f"  {name}")
+    with open(output_path, 'w') as f:
+        json.dump(output, f, indent=2)
 
-# Summary by objectKey
-from collections import Counter
-key_counts = Counter(p["objectKey"] for p in placements)
-print(f"\nBreakdown by objectKey:")
-for key, count in sorted(key_counts.items()):
-    extents = [p["world_extent"] for p in placements if p["objectKey"] == key]
-    print(f"  {key:<40} {count:>3}  scale range: {min(extents):.2f} - {max(extents):.2f}m")
+    print(f"\nExported {len(placements)} placements to {output_path}")
+    print(f"Skipped {len(skipped)} non-flora objects")
+    if unmapped:
+        print(f"\nUnmapped objects ({len(unmapped)}):")
+        for name in sorted(set(unmapped)):
+            print(f"  {name}")
+
+    # Summary by objectKey
+    from collections import Counter
+    key_counts = Counter(p["objectKey"] for p in placements)
+    print(f"\nBreakdown by objectKey:")
+    for key, count in sorted(key_counts.items()):
+        extents = [p["world_extent"] for p in placements if p["objectKey"] == key]
+        print(f"  {key:<40} {count:>3}  scale range: {min(extents):.2f} - {max(extents):.2f}m")
+
+    return output
+
+
+if __name__ == "__main__":
+    export_placements()
