@@ -432,7 +432,11 @@
     </div>
   {/if}
 
-  <!-- Hero quick links -->
+  </div><!-- /.carousel-column -->
+  </div><!-- /.hero-body -->
+
+  <!-- Hero quick links — direct child of the hero so mobile can pin them to the
+       very bottom (title top, video as the hero, links at the foot). -->
   <nav class="hero-links" aria-label="Get started">
     <a class="hero-link" href="/guide/level-1">
       <i class="fas fa-book-open" aria-hidden="true"></i>
@@ -447,13 +451,6 @@
       <span>Support</span>
     </a>
   </nav>
-
-  </div><!-- /.carousel-column -->
-
-  <!-- CTA removed: the sticky header's "Open the app" is the single primary
-       action, which lets the video centre. -->
-
-  </div><!-- /.hero-body -->
 </section>
 
 <style>
@@ -513,7 +510,9 @@
     gap: clamp(24px, 4vw, 48px);
     width: 100%;
     max-width: 1400px;
-    flex: 1 1 auto;
+    /* Natural height so the title + video + links sit as one tight group that
+       the parent centres — no grow, which was creating a big gap above the video. */
+    flex: 0 1 auto;
     min-height: 0;
   }
 
@@ -523,18 +522,18 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    flex: 1 1 0;
+    flex: 0 1 auto;
     min-width: 0;
     min-height: 0;
-    max-height: 100%;
   }
 
   /* ── Carousel stage ─────────────────────────────────────────────────────────── */
 
   .carousel-stage {
     position: relative;
-    width: 100%;
-    max-width: min(30vw, 34vh / 0.8);
+    /* Explicit width (not 100%) so the shrink-wrapped column can't collapse it.
+       Height term tuned so the whole hero (title→links) fits a laptop fold. */
+    width: min(34vw, 36vh / 0.8);
     max-height: calc(100vh - 200px);
     aspect-ratio: 4 / 5;
     border-radius: 16px;
@@ -841,17 +840,76 @@
 
   /* ── Responsive ─────────────────────────────────────────────────────────────── */
 
+  /* ── Mobile: title near the top, video as the hero, links pinned to the foot.
+        (On desktop the stack is a centred group; on phones it spreads to fill.) */
   @media (max-width: 768px) {
     .hero-carousel {
-      padding: 76px 16px 40px; /* clear the 56px mobile header */
+      justify-content: space-between;
+      padding: 68px 14px 18px; /* clear the 56px mobile header */
+      gap: 10px;
     }
 
+    .title-block {
+      margin-bottom: 0;
+      flex-shrink: 0;
+    }
+
+    .hero-title {
+      font-size: clamp(1.9rem, 8.5vw, 2.6rem);
+    }
+
+    .hero-tagline {
+      font-size: clamp(0.85rem, 3.4vw, 1.05rem);
+      margin-top: 4px;
+    }
+
+    /* Video fills the middle and is the visual hero. */
     .hero-body {
+      flex: 1 1 auto;
       flex-direction: column;
+      align-items: stretch; /* let the column take full width so the video can grow */
+      min-height: 0;
+    }
+
+    .carousel-column {
+      width: 100%;
+      flex: 1 1 auto;
+      justify-content: center;
+      min-height: 0;
     }
 
     .carousel-stage {
       border-radius: 12px;
+      width: 100%;
+      max-width: min(92vw, 58vh / 0.8);
+      max-height: calc(100dvh - 260px);
+      margin: 0 auto;
+    }
+
+    .carousel-footer {
+      margin-top: 10px;
+    }
+
+    /* Save vertical room so the video stays big. */
+    .credit {
+      display: none;
+    }
+
+    /* Three equal pills across the foot. */
+    .hero-links {
+      width: 100%;
+      flex-wrap: nowrap;
+      gap: 8px;
+      margin-top: 12px;
+      flex-shrink: 0;
+    }
+
+    .hero-link {
+      flex: 1 1 0;
+      justify-content: center;
+      padding: 12px 6px;
+      font-size: 0.82rem;
+      gap: 6px;
     }
 
     /* Always show nav buttons on touch devices - no hover */
@@ -867,13 +925,13 @@
     }
   }
 
-  @media (max-width: 480px) {
-    .hero-carousel {
-      padding: 72px 12px 36px;
+  @media (max-width: 380px) {
+    .hero-link span {
+      font-size: 0.76rem;
     }
 
-    .carousel-stage {
-      border-radius: 10px;
+    .hero-link i {
+      display: none; /* labels alone keep the three pills readable on tiny screens */
     }
   }
 
