@@ -37,7 +37,9 @@
     children: Snippet;
   }
 
-  let { open = $bindable(), title, accentColor = "#4a9eff", backdrop = false, onClose, children }: Props = $props();
+  // open is parent-owned (one-way); the sheet signals dismissal via onClose, so
+  // a plain prop is honest here — it never writes back.
+  let { open, title, accentColor = "#4a9eff", backdrop = false, onClose, children }: Props = $props();
 
   let panelEl = $state<HTMLElement | null>(null);
   const dismiss = createSheetDismiss(onClose, () => panelEl);

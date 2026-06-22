@@ -4,7 +4,7 @@ import {
   requestNativeFullscreen,
   exitNativeFullscreen,
   isNativeFullscreenActive,
-} from "./fullscreen-capabilities";
+} from "../fullscreen-capabilities";
 
 afterEach(() => {
   vi.restoreAllMocks();
