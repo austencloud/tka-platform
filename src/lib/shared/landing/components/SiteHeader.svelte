@@ -45,7 +45,7 @@
 <header class:scrolled>
   <div class="inner">
     <a href="/" class="logo" aria-label="The Kinetic Alphabet — Home">
-      <span class="logo-text">The Kinetic Alphabet</span>
+      <span class="logo-text">TKA</span>
     </a>
 
     <nav class="desktop-nav" aria-label="Main navigation">
@@ -131,8 +131,9 @@
   .logo-text {
     font-family: "Fraunces", Georgia, serif;
     font-style: italic;
-    font-weight: 640;
-    font-size: 1.2rem;
+    font-weight: 700;
+    font-size: 1.5rem;
+    letter-spacing: 0.04em;
     background: linear-gradient(135deg, #6f8cff, #c0a3ff);
     -webkit-background-clip: text;
     background-clip: text;

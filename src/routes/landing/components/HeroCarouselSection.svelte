@@ -320,10 +320,10 @@
 </svelte:head>
 
 <section class="hero-carousel" aria-label="TKA hero introduction">
-  <!-- Title block — brand name lives in the header now; keep an SEO/a11y h1
-       hidden and lead visibly with the tagline so it isn't redundant. -->
+  <!-- Title block — header now shows the compact "TKA", so the hero carries the
+       full name (Fraunces) as the centrepiece, with the tagline beneath. -->
   <div class="title-block">
-    <h1 class="sr-only">The Kinetic Alphabet — a flow arts notation system</h1>
+    <h1 class="hero-title">The Kinetic Alphabet</h1>
     <p class="hero-tagline">Notation for flow arts.</p>
   </div>
 
@@ -455,17 +455,17 @@
     overflow: hidden;
   }
 
-  /* Visually hidden, kept for SEO + screen readers (brand name shows in header). */
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+  /* Hero centrepiece — same Fraunces wonky italic as the guide cover. */
+  .hero-title {
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-weight: 640;
+    font-variation-settings: "opsz" 144, "wght" 640, "SOFT" 0, "WONK" 1;
+    font-size: clamp(2.4rem, 5.5vw, 4rem);
+    line-height: 1.02;
+    letter-spacing: -0.015em;
+    color: #fff;
+    margin: 0;
   }
 
   /* ── Title block ────────────────────────────────────────────────────────────── */
@@ -478,17 +478,15 @@
     animation-delay: 0.1s;
   }
 
-  /* Same Fraunces wonky italic as the guide cover + site header logo. */
+  /* Subtitle beneath the title — quieter, lets the name lead. */
   .hero-tagline {
     font-family: "Fraunces", Georgia, serif;
     font-style: italic;
-    font-weight: 640;
-    font-variation-settings: "opsz" 144, "wght" 640, "SOFT" 0, "WONK" 1;
-    font-size: clamp(1.7rem, 3.4vw, 2.8rem);
-    color: var(--theme-text, #fff);
-    margin: 0;
-    line-height: 1.1;
-    letter-spacing: -0.01em;
+    font-weight: 400;
+    font-size: clamp(1rem, 1.8vw, 1.35rem);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    margin: clamp(6px, 1vw, 12px) 0 0;
+    line-height: 1.3;
   }
 
   /* ── Hero body: centred video ──────────────────────────────────────────────── */
