@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Autumn → Magical Fantasy Forest — Mood Board</title>
+<style>
+  :root {
+    --bg: #07090d;
+    --ink: #eef2f6;
+    --muted: #9aa6b2;
+    --line: rgba(255,255,255,.08);
+    --card-radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  a { color: inherit; }
+
+  header.page {
+    max-width: 1240px; margin: 0 auto; padding: 56px 28px 12px;
+  }
+  header.page h1 { font-size: clamp(28px, 4vw, 46px); margin: 0 0 8px; letter-spacing: -.02em; }
+  header.page p { color: var(--muted); max-width: 70ch; margin: 0; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 18px; color: var(--muted); font-size: 13px; }
+  .legend b { color: var(--ink); }
+
+  .grid {
+    max-width: 1240px; margin: 0 auto; padding: 28px;
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px;
+  }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    border: 1px solid var(--line); border-radius: var(--card-radius);
+    overflow: hidden; background: #0c0f15; position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45);
+  }
+  .card.reco { grid-column: 1 / -1; border-color: rgba(255,179,71,.45);
+    box-shadow: 0 24px 80px rgba(255,150,40,.16), 0 0 0 1px rgba(255,179,71,.25) inset; }
+
+  /* ---------- atmospheric preview pane ---------- */
+  .scene { position: relative; height: 280px; overflow: hidden; }
+  .card.reco .scene { height: 340px; }
+  .scene .sky { position: absolute; inset: 0; }
+  .scene svg.trees { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .scene .fog {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 46%;
+    filter: blur(2px); pointer-events: none;
+  }
+  .scene .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 28%; }
+
+  /* particle layers */
+  .pfield { position: absolute; inset: 0; pointer-events: none; }
+  .dot { position: absolute; border-radius: 50%; }
+
+  @keyframes rise { from { transform: translateY(20px); opacity: 0; }
+    20% { opacity: 1; } 100% { transform: translateY(-300px); opacity: 0; } }
+  @keyframes fall { from { transform: translateY(-30px) rotate(0); opacity: 0; }
+    15% { opacity: 1; } 100% { transform: translateY(320px) rotate(220deg); opacity: 0; } }
+  @keyframes twinkle { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
+  @keyframes drift { 0% { transform: translate(0,0); } 50% { transform: translate(14px,-10px);} 100% { transform: translate(0,0);} }
+
+  .leaf { width: 9px; height: 6px; border-radius: 60% 40% 55% 45%; }
+
+  /* ---------- card body ---------- */
+  .body { padding: 20px 22px 24px; }
+  .body h2 { margin: 0 0 2px; font-size: 21px; letter-spacing: -.01em; }
+  .tag { display: inline-block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 12px; }
+  .reco .tag { color: #ffb347; }
+  .pitch { color: #cdd6df; margin: 0 0 16px; }
+
+  .palette { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .chip { width: 38px; height: 38px; border-radius: 9px; position: relative; border: 1px solid rgba(255,255,255,.12); }
+  .chip span { position: absolute; bottom: -17px; left: 0; right: 0; text-align: center;
+    font-size: 9px; color: var(--muted); }
+
+  dl.meta { display: grid; grid-template-columns: 96px 1fr; gap: 6px 14px; margin: 22px 0 0; font-size: 13.5px; }
+  dl.meta dt { color: var(--muted); }
+  dl.meta dd { margin: 0; color: #d7dee5; }
+  .diff { margin-top: 16px; padding: 11px 13px; border-radius: 11px;
+    background: rgba(255,255,255,.03); border: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+  .diff b { color: #cdd6df; }
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>Autumn → Magical Fantasy Forest</h1>
+  <p>Five directions for the “ocean treatment.” The scene is a 360° backdrop the camera orbits around a performer on a stage platform — so think cohesive enveloping mood, not a path you walk. Previews are CSS approximations of palette + atmosphere, not the final render.</p>
+  <div class="legend">
+    <span><b>Already built &amp; must differ from:</b></span>
+    <span>🌲 Forest — daytime green KayKit woodland + campfire</span>
+    <span>❄️ Winter — snowy pines + frozen mirror pond + campfire</span>
+  </div>
+</header>
+
+<div class="grid">
+
+  <!-- 1. BIOLUMINESCENT NIGHT -->
+  <div class="card">
+    <div class="scene" id="bio">
+      <div class="sky" style="background:
+        radial-gradient(120% 80% at 50% 110%, rgba(0,160,160,.35), transparent 60%),
+        linear-gradient(180deg, #02060f 0%, #041a22 55%, #062a2c 100%);"></div>
+      <svg class="trees" viewBox="0 0 600 280" preserveAspectRatio="none">
+        <g fill="#020a0d">
+          <path d="M60 280 L60 90 Q55 60 70 40 Q85 70 80 95 L80 280Z"/>
+          <path d="M150 280 L150 70 Q140 30 165 15 Q185 45 178 80 L178 280Z"/>
+          <path d="M300 280 L300 110 Q292 70 312 55 Q330 85 322 115 L322 280Z"/>
+          <path d="M470 280 L470 60 Q458 25 485 10 Q505 40 498 75 L498 280Z"/>
+          <path d="M560 280 L560 100 Q552 65 572 50 Q588 80 582 105 L582 280Z"/>
+        </g>
+      </svg>
+      <div class="pfield" id="bio-spores"></div>
+      <div class="fog" style="background:linear-gradient(180deg, transparent, rgba(0,180,160,.18));"></div>
+      <div class="ground" style="background:
+        radial-gradient(60% 120% at 50% 100%, rgba(0,220,180,.25), transparent 70%),
+        linear-gradient(180deg, transparent, #03100f);"></div>
+    </div>
+    <div class="body">
+      <span class="tag">Direction 01 · Night</span>
+      <h2>Bioluminescent Night</h2>
+      <p class="pitch">Pandora at midnight. The forest itself glows — mushroom caps, vein-lit flowers, drifting spores rising through moonlit shafts. Pulses brighter where the performer moves.</p>
+      <div class="palette">
+        <div class="chip" style="background:#041a22"><span>abyss</span></div>
+        <div class="chip" style="background:#00c8b4"><span>glow</span></div>
+        <div class="chip" style="background:#6a5acd"><span>violet</span></div>
+        <div class="chip" style="background:#aef9e6"><span>spore</span></div>
+      </div>
+      <dl class="meta">
+        <dt>Time</dt><dd>Deep night, moonlight shafts</dd>
+        <dt>Hero flora</dt><dd>Glowing mushroom groves, luminous ferns</dd>
+        <dt>Particles</dt><dd>Rising spores, motes, light pollen</dd>
+        <dt>Touchstone</dt><dd>Avatar, Ori, Hollow Knight glow-zones</dd>
+      </dl>
+      <div class="diff"><b>Most differentiated</b> from Forest/Winter (both daytime). Leans hardest on our emissive halation + particle + touch-to-pulse tech from Ocean.</div>
+    </div>
+  </div>
+
+  <!-- 2. GHIBLI -->
+  <div class="card">
+    <div class="scene" id="ghibli">
+      <div class="sky" style="background:
+        radial-gradient(90% 70% at 30% 0%, rgba(255,244,200,.55), transparent 55%),
+        linear-gradient(180deg, #cfe6c0 0%, #8fbf86 45%, #4d7d54 100%);"></div>
+      <!-- god rays -->
+      <div class="pfield" style="background:
+        repeating-linear-gradient(102deg, transparent 0 38px, rgba(255,250,210,.10) 38px 46px);
+        mix-blend-mode: screen;"></div>
+      <svg class="trees" viewBox="0 0 600 280" preserveAspectRatio="none">
+        <g fill="#28401f" opacity=".95">
+          <path d="M0 280 L0 120 Q40 40 110 30 Q90 120 120 140 L140 280Z"/>
+          <path d="M600 280 L600 100 Q560 30 480 24 Q520 120 470 150 L450 280Z"/>
+        </g>
+        <ellipse cx="300" cy="90" rx="150" ry="80" fill="#3c5a2a" opacity=".85"/>
+        <rect x="288" y="120" width="24" height="160" fill="#3a2a1e"/>
+      </svg>
+      <div class="pfield" id="ghibli-pollen"></div>
+      <div class="ground" style="background:linear-gradient(180deg, transparent, #2b421f);"></div>
+    </div>
+    <div class="body">
+      <span class="tag">Direction 02 · Day</span>
+      <h2>Ghibli Enchanted Woodland</h2>
+      <p class="pitch">Princess Mononoke’s forest. Ancient gnarled trees, deep moss, kodama spirits dotting the trunks, fat god rays through a dense canopy. Painterly and alive.</p>
+      <div class="palette">
+        <div class="chip" style="background:#2b421f"><span>moss</span></div>
+        <div class="chip" style="background:#7bb661"><span>leaf</span></div>
+        <div class="chip" style="background:#fff4c8"><span>sun</span></div>
+        <div class="chip" style="background:#e8e3d0"><span>kodama</span></div>
+      </div>
+      <dl class="meta">
+        <dt>Time</dt><dd>Bright day, dappled canopy</dd>
+        <dt>Hero flora</dt><dd>Ancient mossy trees, twisted roots</dd>
+        <dt>Particles</dt><dd>Pollen drift, floating leaves, spirits</dd>
+        <dt>Touchstone</dt><dd>Studio Ghibli, Mononoke kodama</dd>
+      </dl>
+      <div class="diff"><b>Risk:</b> tonally overlaps the existing daytime green Forest scene. Beautiful, but the least distinct of the five.</div>
+    </div>
+  </div>
+
+  <!-- 3. GOLDEN HOUR FAE -->
+  <div class="card">
+    <div class="scene" id="fae">
+      <div class="sky" style="background:
+        radial-gradient(70% 70% at 78% 18%, rgba(255,214,140,.9), transparent 50%),
+        linear-gradient(180deg, #f6c98a 0%, #e89a6b 40%, #9a5b6f 80%, #4a3354 100%);"></div>
+      <svg class="trees" viewBox="0 0 600 280" preserveAspectRatio="none">
+        <g fill="#3b2a3a" opacity=".9">
+          <path d="M40 280 L40 110 Q30 60 60 48 Q82 80 72 115 L72 280Z"/>
+          <path d="M520 280 L520 90 Q510 40 540 30 Q562 70 552 100 L552 280Z"/>
+        </g>
+      </svg>
+      <div class="pfield" id="fae-flies"></div>
+      <!-- pond -->
+      <div class="ground" style="height:32%; background:
+        linear-gradient(180deg, rgba(255,200,140,.5), rgba(120,70,90,.7));
+        box-shadow: inset 0 18px 40px rgba(255,220,160,.4);"></div>
+    </div>
+    <div class="body">
+      <span class="tag">Direction 03 · Golden hour</span>
+      <h2>Golden-Hour Fae Glade</h2>
+      <p class="pitch">Storybook magic hour. A low warm sun, fireflies rising, mushroom fairy rings, dandelion seeds adrift, and a still mirror pond catching the rose-gold sky.</p>
+      <div class="palette">
+        <div class="chip" style="background:#f6c98a"><span>gold</span></div>
+        <div class="chip" style="background:#e89a6b"><span>amber</span></div>
+        <div class="chip" style="background:#9a5b6f"><span>rose</span></div>
+        <div class="chip" style="background:#ffe9b0"><span>fly</span></div>
+      </div>
+      <dl class="meta">
+        <dt>Time</dt><dd>Low warm sun, long shadows</dd>
+        <dt>Hero flora</dt><dd>Fairy-ring mushrooms, dandelions</dd>
+        <dt>Particles</dt><dd>Fireflies, seed fluff, dust</dd>
+        <dt>Touchstone</dt><dd>Fern Gully, fairytale glades</dd>
+      </dl>
+      <div class="diff"><b>Risk:</b> warm + cozy + reflective pond drifts toward Winter’s mood and Forest’s campfire warmth. Lovely but less unique.</div>
+    </div>
+  </div>
+
+  <!-- 4. AUTUMNAL MAGIC -->
+  <div class="card">
+    <div class="scene" id="autumn">
+      <div class="sky" style="background:
+        radial-gradient(80% 60% at 50% 100%, rgba(255,120,40,.3), transparent 60%),
+        linear-gradient(180deg, #1a1230 0%, #3a2140 45%, #6e3326 100%);"></div>
+      <svg class="trees" viewBox="0 0 600 280" preserveAspectRatio="none">
+        <g fill="#1c0f1c">
+          <path d="M80 280 L80 80 Q70 40 95 28 Q118 62 108 95 L108 280Z"/>
+          <path d="M460 280 L460 70 Q448 30 476 18 Q500 55 490 90 L490 280Z"/>
+        </g>
+        <ellipse cx="94" cy="60" rx="70" ry="44" fill="#7a2718" opacity=".8"/>
+        <ellipse cx="478" cy="50" rx="78" ry="48" fill="#9a3a15" opacity=".8"/>
+      </svg>
+      <div class="pfield" id="autumn-leaves"></div>
+      <div class="pfield" id="autumn-wisps"></div>
+      <div class="fog" style="background:linear-gradient(180deg, transparent, rgba(120,40,30,.3));"></div>
+      <div class="ground" style="background:linear-gradient(180deg, transparent, #2a0f12);"></div>
+    </div>
+    <div class="body">
+      <span class="tag">Direction 04 · Dusk</span>
+      <h2>Autumnal Magic</h2>
+      <p class="pitch">Keep the autumn soul, make it enchanted. A glowing crimson-gold canopy at dusk, shimmering falling leaves, will-o-wisps floating between trunks, frost-touched mushrooms.</p>
+      <div class="palette">
+        <div class="chip" style="background:#7a2718"><span>crimson</span></div>
+        <div class="chip" style="background:#d98324"><span>gold</span></div>
+        <div class="chip" style="background:#3a2140"><span>dusk</span></div>
+        <div class="chip" style="background:#ffcaa0"><span>wisp</span></div>
+      </div>
+      <dl class="meta">
+        <dt>Time</dt><dd>Dusk, last light through leaves</dd>
+        <dt>Hero flora</dt><dd>Glowing autumn canopy, mushrooms</dd>
+        <dt>Particles</dt><dd>Shimmer leaves, will-o-wisps</dd>
+        <dt>Touchstone</dt><dd>Witcher woods, autumnal fae</dd>
+      </dl>
+      <div class="diff"><b>Honors the name “Autumn”</b> and stays clear of green Forest + snowy Winter. Strong identity.</div>
+    </div>
+  </div>
+
+  <!-- 5. RECOMMENDED FUSION -->
+  <div class="card reco">
+    <div class="scene" id="reco">
+      <div class="sky" style="background:
+        radial-gradient(60% 50% at 80% 14%, rgba(255,196,120,.55), transparent 50%),
+        radial-gradient(90% 80% at 50% 120%, rgba(0,170,150,.28), transparent 62%),
+        linear-gradient(180deg, #0a0a1e 0%, #2a1838 38%, #5e2a30 72%, #7a3a1e 100%);"></div>
+      <!-- soft god ray from the low sun -->
+      <div class="pfield" style="background:
+        repeating-linear-gradient(110deg, transparent 0 60px, rgba(255,210,150,.06) 60px 70px);
+        mix-blend-mode: screen;"></div>
+      <svg class="trees" viewBox="0 0 600 340" preserveAspectRatio="none">
+        <g fill="#120a1c">
+          <path d="M50 340 L50 90 Q40 44 68 30 Q92 66 82 100 L82 340Z"/>
+          <path d="M300 340 L300 120 Q290 76 314 60 Q336 96 326 128 L326 340Z"/>
+          <path d="M540 340 L540 70 Q528 28 558 14 Q582 52 572 88 L572 340Z"/>
+        </g>
+        <ellipse cx="66" cy="66" rx="74" ry="46" fill="#8a2e16" opacity=".82"/>
+        <ellipse cx="312" cy="96" rx="66" ry="42" fill="#b5571a" opacity=".8"/>
+        <ellipse cx="558" cy="48" rx="80" ry="50" fill="#7a2718" opacity=".82"/>
+      </svg>
+      <div class="pfield" id="reco-leaves"></div>
+      <div class="pfield" id="reco-wisps"></div>
+      <div class="pfield" id="reco-spores"></div>
+      <div class="fog" style="height:50%; background:linear-gradient(180deg, transparent, rgba(60,30,50,.4));"></div>
+      <!-- glowing mushrooms + pond -->
+      <div class="ground" style="height:30%; background:
+        radial-gradient(40% 120% at 30% 100%, rgba(0,220,180,.3), transparent 70%),
+        radial-gradient(50% 120% at 70% 100%, rgba(255,150,60,.3), transparent 70%),
+        linear-gradient(180deg, rgba(40,20,40,.4), #160a14);"></div>
+    </div>
+    <div class="body">
+      <span class="tag">★ Recommended · Fusion</span>
+      <h2>Enchanted Autumn Dusk</h2>
+      <p class="pitch">One mood that absorbs the best of all four. <b>Autumn’s skeleton</b> (crimson-gold canopy, shimmering falling leaves) under a <b>golden-hour-to-dusk sky</b>, with <b>bioluminescent magic</b> layered in — glowing mushroom groves, will-o-wisps drifting between ancient mossy trunks, a still pond mirroring the last light. The performer’s motion pulses the wisps and mushroom glow, the way touching the Ocean jellyfish chimes.</p>
+      <div class="palette">
+        <div class="chip" style="background:#8a2e16"><span>crimson</span></div>
+        <div class="chip" style="background:#d98324"><span>amber</span></div>
+        <div class="chip" style="background:#2a1838"><span>dusk</span></div>
+        <div class="chip" style="background:#00c8b4"><span>glow</span></div>
+        <div class="chip" style="background:#ffd8a0"><span>wisp</span></div>
+      </div>
+      <dl class="meta">
+        <dt>Time</dt><dd>Golden hour collapsing into dusk — warm low sun on one side, bioluminescence waking on the other</dd>
+        <dt>Hero assets</dt><dd>Ancient gnarled trees w/ glowing autumn canopy · luminous mushroom groves · still mirror pond</dd>
+        <dt>Particles</dt><dd>Shimmering falling leaves · rising will-o-wisps · soft spores · fireflies near the pond</dd>
+        <dt>Interaction</dt><dd>Performer motion pulses wisp + mushroom glow (reuses Ocean touch-to-chime pattern)</dd>
+      </dl>
+      <div class="diff">
+        <b>Why this one:</b> keeps the “Autumn” identity (the name still means something), maximally separates from green Forest + snowy Winter, and lands on the night-glow palette where our emissive halation + particle + interaction tech already shines. It’s a single coherent scene — not four — so it’s one Blender pass, not four. The warm/cool split (low sun vs. waking glow) gives the orbit camera something different to reveal from every angle.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer style="max-width:1240px;margin:0 auto;padding:8px 28px 64px;color:var(--muted);font-size:12.5px;">
+  CSS mood approximations — final look comes from Blender-authored GLB + runtime shaders/particles. Pick a direction (or remix) and we brainstorm the asset list + effect breakdown next.
+</footer>
+
+<script>
+  function spawn(id, n, make) {
+    const host = document.getElementById(id);
+    if (!host) return;
+    for (let i = 0; i < n; i++) host.appendChild(make(i));
+  }
+  const rnd = (a,b) => a + Math.random()*(b-a);
+
+  // bioluminescent spores — rising teal motes
+  spawn('bio-spores', 26, () => {
+    const d = document.createElement('div'); d.className='dot';
+    const s = rnd(2,5); d.style.cssText = `width:${s}px;height:${s}px;left:${rnd(0,100)}%;bottom:0;
+      background:#9af9e0;box-shadow:0 0 ${s*3}px #00e6c0;
+      animation:rise ${rnd(7,16)}s linear ${ -rnd(0,16) }s infinite;`;
+    return d;
+  });
+  // ghibli pollen — slow drifting warm motes
+  spawn('ghibli-pollen', 22, () => {
+    const d = document.createElement('div'); d.className='dot';
+    const s = rnd(2,4); d.style.cssText = `width:${s}px;height:${s}px;left:${rnd(0,100)}%;top:${rnd(10,80)}%;
+      background:#fff6d0;box-shadow:0 0 ${s*2}px #fff0b0;opacity:.7;
+      animation:drift ${rnd(5,11)}s ease-in-out ${ -rnd(0,8) }s infinite, twinkle ${rnd(3,6)}s ease-in-out infinite;`;
+    return d;
+  });
+  // fae fireflies — warm rising blinking
+  spawn('fae-flies', 24, () => {
+    const d = document.createElement('div'); d.className='dot';
+    const s = rnd(2,4); d.style.cssText = `width:${s}px;height:${s}px;left:${rnd(0,100)}%;bottom:${rnd(5,20)}%;
+      background:#ffe9a0;box-shadow:0 0 ${s*4}px #ffcf66;
+      animation:rise ${rnd(8,15)}s linear ${ -rnd(0,15) }s infinite, twinkle ${rnd(1.5,3.5)}s ease-in-out infinite;`;
+    return d;
+  });
+  // autumn falling leaves
+  function leaves(id, colors) {
+    spawn(id, 20, () => {
+      const d = document.createElement('div'); d.className='dot leaf';
+      d.style.cssText = `left:${rnd(0,100)}%;top:0;background:${colors[Math.floor(Math.random()*colors.length)]};
+        box-shadow:0 0 4px rgba(0,0,0,.3);
+        animation:fall ${rnd(6,12)}s linear ${ -rnd(0,12) }s infinite;`;
+      return d;
+    });
+  }
+  leaves('autumn-leaves', ['#9a3a15','#d98324','#b5571a','#7a2718']);
+  leaves('reco-leaves', ['#b5571a','#d98324','#8a2e16','#e0a040']);
+  // will-o-wisps — slow drifting glowing orbs
+  function wisps(id, color) {
+    spawn(id, 7, () => {
+      const d = document.createElement('div'); d.className='dot';
+      const s = rnd(4,8); d.style.cssText = `width:${s}px;height:${s}px;left:${rnd(10,90)}%;top:${rnd(35,75)}%;
+        background:${color};box-shadow:0 0 ${s*4}px ${color};
+        animation:drift ${rnd(6,12)}s ease-in-out ${ -rnd(0,8) }s infinite, twinkle ${rnd(2,5)}s ease-in-out infinite;`;
+      return d;
+    });
+  }
+  wisps('autumn-wisps', '#ffcaa0');
+  wisps('reco-wisps', '#ffd8a0');
+  spawn('reco-spores', 16, () => {
+    const d = document.createElement('div'); d.className='dot';
+    const s = rnd(2,4); d.style.cssText = `width:${s}px;height:${s}px;left:${rnd(0,100)}%;bottom:0;
+      background:#9af9e0;box-shadow:0 0 ${s*3}px #00e6c0;opacity:.8;
+      animation:rise ${rnd(9,17)}s linear ${ -rnd(0,17) }s infinite;`;
+    return d;
+  });
+</script>
+</body>
+</html>
