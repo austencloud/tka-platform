@@ -64,17 +64,30 @@ no I/O, fully unit-testable.
   tuned by the round-trip + rotation tests — that tuning is the experiment.**
 - `shapeKey(paths) → string` — **primary key.** Color-blind: merge
   blue+red+purple point-sets, quantize, sort points, hash via `content-hasher`.
+  **Known property (as built):** the key is a hash of the *sorted point set*, so
+  it is stroke-order- and color-independent by design. Two glyphs that visit the
+  exact same quantized point cloud in different draw order collapse to one key.
+  For dense sampled mandala tip-paths this is the intended "the shape is its
+  point cloud" semantics; record it before the production Firestore path builds
+  on it (a future stricter key could fold in connectivity if a real collision
+  ever surfaces).
 - `colorSignature(paths) → { blueOnly, redOnly, comboPurpleRatio }` — the
   annotation honoring the red→blue→purple lens.
-- `orbitKey(paths) → string` — min over {8 × 45° rotations × 2 reflections} of
-  `shapeKey(transform(paths, k))`. Rotation/reflection-invariant. Pure-visual
-  (rotate the geometry, not the motion params — stays consistent with the
-  visual-only fingerprint rule).
-- `typeBucket(paths) → string` — reuse existing `classifyPath` count key, coarse
-  pre-filter.
-- Helpers: `rotatePoints(pts, k)` (k×45° about center), `reflectPoints(pts)`.
+- `orbitKey(paths) → string` — rotation/reflection-invariant key. **As built
+  (exact, not the tolerance-based geometry-rotation the draft proposed):**
+  quantize each point ONCE into `(radiusBucket, angleBucket)` polar tokens, then
+  let the dihedral group act on the *integer angle buckets* — a 45° rotation is
+  exactly `+ANGLE_BUCKETS/8` buckets, a reflection is bucket negation. Take the
+  lexicographic-min canonical token string over the 8×2 group, then hash. Because
+  the float→int rounding happens once on the original glyph and the group acts on
+  integers, orbit membership is exact by construction (no boundary scatter). The
+  earlier "rotate the Cartesian geometry and re-quantize" approach was only ~99%
+  invariant — 45° scales coords by an irrational factor, so re-rounding rotated
+  points scattered boundary cases. Replaced.
+- `typeBucket(paths)` — the coarse `classifyPath` count key was dropped: the
+  primary index is an O(1) map lookup, so a pre-filter bucket adds nothing.
 
-### 2. Index builder — `scripts/build-mandala-index.cjs`
+### 2. Index builder — `scripts/build-mandala-index.ts` (run via tsx)
 
 Walks the catalog (Firestore decks, paginated as shape-fingerprint-test already
 does), runs `calculate()` per sequence, computes the four keys, emits
