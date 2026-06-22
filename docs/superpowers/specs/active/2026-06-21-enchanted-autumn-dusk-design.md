@@ -1,7 +1,8 @@
 # Enchanted Autumn Dusk — 3D Scene Redesign
 
 - **Date:** 2026-06-21
-- **Status:** Design approved (Austen, 2026-06-21). Awaiting spec review → implementation plan.
+- **Status:** Built (scene architecture + runtime complete, 2026-06-22). Hero/fill assets pending.
+- **Asset pivot (2026-06-22):** the low-poly CC0 kit fill read too mathematical. Asset authoring moved to Meshy **image-to-3D** (`model_type: standard`) driven by ChatGPT-curated reference images, replacing both text-to-3D heroes and the low-poly kit fill for everything the camera sees up close. Pipeline: `scripts/generate-autumn-meshy-from-image.mjs` (single + multi-image) + `scripts/autumn-meshy-images.json`. Concept-art prompts: `docs/reference/autumn-meshy-image-prompts.md`. The text-to-3D scripts remain for reference but are superseded. Kit-fill→Meshy swap in `AutumnFlora.svelte` is the follow-up once the first asset batch is generated.
 - **Scope:** Replace the legacy procedural Autumn 3D environment (lollipop cylinder+sphere trees, `Stage3D` box) with a Meshy-authored + CC0-kit "Ocean treatment" scene.
 - **Mandate:** "Take it to the moon like we did with the ocean scene." Direction 4 (Autumnal Magic), glow level **pushed / luminous**.
 - **Mood board:** `static/sketches/2026-06-21-autumn-fantasy-forest-moods.html`
