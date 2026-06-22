@@ -52,9 +52,12 @@ async function forEachDoc(
 async function main() {
 	const filter = process.argv[2];
 	const decksSnap = await db.collection("catalogs").get();
+	// Index EVERY deck with a sequences subcollection — not just collection==="LOOPs".
+	// The TnD turn decks (collection=undefined / "TnD") carry the high-turn dense
+	// mandalas; gating on "LOOPs" silently scanned 8 of 107 decks (all 0-turn).
 	const decks = decksSnap.docs
 		.map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }))
-		.filter((d) => d.collection === "LOOPs" && (!filter || d.id.includes(filter)));
+		.filter((d) => !filter || d.id.includes(filter));
 
 	console.log(`Indexing ${decks.length} decks...`);
 
