@@ -1,16 +1,22 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
   import { onDestroy, untrack } from "svelte";
-  import { SphereGeometry, MeshStandardMaterial, Color, Group, Mesh } from "three";
+  import { SphereGeometry, MeshStandardMaterial, Color, Group, Mesh, type Vector3 } from "three";
   import type { AutumnQualityConfig } from "../../quality/autumn-quality";
 
   interface Props {
     quality: AutumnQualityConfig;
     groundY?: number;
-    onWispMaterials?: (mats: MeshStandardMaterial[]) => void;
+    /**
+     * Emits one entry per wisp pairing its emissive core material with the LIVE
+     * `group.position` Vector3 (mutated in place each frame by the drift task).
+     * The interaction layer reads the moving position for free — no per-frame
+     * copy. baseIntensity is captured downstream from material.emissiveIntensity.
+     */
+    onWispTargets?: (targets: { material: MeshStandardMaterial; position: Vector3 }[]) => void;
   }
 
-  let { quality, groundY = 0, onWispMaterials }: Props = $props();
+  let { quality, groundY = 0, onWispTargets }: Props = $props();
 
   // Warm amber glow shared by every wisp.
   const WISP_COLOR = "#ffd8a0";
@@ -72,13 +78,16 @@
     return built;
   });
 
-  // ── Expose core emissive materials for the interaction layer (Task 11) ──
+  // ── Expose pulse targets for the interaction layer (Task 11/12) ──
   // Fire ONCE from an $effect (never from a derivation — those must stay pure).
+  // Pass the LIVE group.position Vector3 so the pulse follows each drifting wisp.
   let materialsFired = false;
   $effect(() => {
     if (materialsFired) return;
     materialsFired = true;
-    onWispMaterials?.(wisps.map((w) => w.coreMat));
+    onWispTargets?.(
+      wisps.map((w) => ({ material: w.coreMat, position: w.group.position })),
+    );
   });
 
   // ── Drift animation ──────────────────────────────────────────────────
