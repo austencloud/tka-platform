@@ -115,5 +115,5 @@
 <div style="padding: 40px; font-family: system-ui;">
   <h1>Pictograph Renderer</h1>
   <p>{status}</p>
-  <p style="color: #666; font-size: 14px;">Usage: /render?letter=A</p>
+  <p style="color: var(--theme-text-muted, #666); font-size: 14px;">Usage: /render?letter=A</p>
 </div>

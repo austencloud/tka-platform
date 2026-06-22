@@ -385,7 +385,7 @@
           <!-- Vegetation -->
           <div class="state-group">
             <div class="state-title">
-              <i class="fas fa-tree" style="color: #22c55e" aria-hidden="true"></i>
+              <i class="fas fa-tree" style="color: var(--semantic-success, #22c55e)" aria-hidden="true"></i>
               Vegetation
             </div>
             <div class="detail-row">
@@ -409,7 +409,7 @@
           <!-- Physics -->
           <div class="state-group">
             <div class="state-title">
-              <i class="fas fa-shapes" style="color: #f59e0b" aria-hidden="true"></i>
+              <i class="fas fa-shapes" style="color: var(--semantic-warning, #f59e0b)" aria-hidden="true"></i>
               Physics
             </div>
             <div class="detail-row">
