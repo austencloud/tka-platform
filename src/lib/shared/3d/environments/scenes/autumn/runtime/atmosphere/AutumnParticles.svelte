@@ -46,12 +46,12 @@
 {/key}
 
 <!-- ── Spores ─────────────────────────────────────────────────────────────── -->
-<!-- Bioluminescent motes drifting up from the forest floor.                  -->
-<!-- type="dust" keeps them as soft additive circles that read as rising mist. -->
+<!-- Bioluminescent teal motes rising from the forest floor.                  -->
+<!-- type="bubbles" rises (gravity −0.100), additive blending, circle shape.  -->
 {#key quality.sporeCount}
   <T.Group position.y={groundY + sporeAreaHeight * 0.5}>
     <FallingParticles
-      type="dust"
+      type="bubbles"
       count={quality.sporeCount}
       area={{ width: 30, height: sporeAreaHeight, depth: 30 }}
       speed={0.03}
