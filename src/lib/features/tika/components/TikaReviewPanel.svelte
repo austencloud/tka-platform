@@ -277,7 +277,7 @@
 			class:active={activeTab === 'pending'}
 			onclick={() => (activeTab = 'pending')}
 		>
-			<span class="tab-icon" style="color: #f59e0b">
+			<span class="tab-icon" style="color: var(--semantic-warning)">
 				<i class="fas fa-flag" aria-hidden="true"></i>
 			</span>
 			Pending
@@ -301,7 +301,7 @@
 			class:active={activeTab === 'completed'}
 			onclick={() => (activeTab = 'completed')}
 		>
-			<span class="tab-icon" style="color: #22c55e">
+			<span class="tab-icon" style="color: var(--semantic-success)">
 				<i class="fas fa-check-circle" aria-hidden="true"></i>
 			</span>
 			Completed
@@ -313,7 +313,7 @@
 			class:active={activeTab === 'all'}
 			onclick={() => (activeTab = 'all')}
 		>
-			<span class="tab-icon" style="color: #64748b">
+			<span class="tab-icon" style="color: var(--theme-text-muted)">
 				<i class="fas fa-list" aria-hidden="true"></i>
 			</span>
 			All

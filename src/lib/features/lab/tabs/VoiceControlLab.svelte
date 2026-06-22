@@ -352,7 +352,7 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/get-wake-word-det
           class:primary={!recording}
           onclick={toggleRecording}
         >
-          <i class="fas {recording ? 'fa-stop' : 'fa-circle'}" style={recording ? 'color: #ef4444' : 'color: #ef4444'}></i>
+          <i class="fas {recording ? 'fa-stop' : 'fa-circle'}" style="color: var(--semantic-error)"></i>
           {recording ? "Stop Recording" : "Record Session"}
         </button>
 
@@ -392,15 +392,15 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/get-wake-word-det
           </div>
           <div class="state-row">
             <span class="label">Success</span>
-            <span class="value" style="color: #22c55e">{lastSession.stats.successCount}</span>
+            <span class="value" style="color: var(--semantic-success)">{lastSession.stats.successCount}</span>
           </div>
           <div class="state-row">
             <span class="label">Failed</span>
-            <span class="value" style="color: #ef4444">{lastSession.stats.failureCount}</span>
+            <span class="value" style="color: var(--semantic-error)">{lastSession.stats.failureCount}</span>
           </div>
           <div class="state-row">
             <span class="label">Unresolved</span>
-            <span class="value" style="color: #f59e0b">{lastSession.stats.unresolvedCount}</span>
+            <span class="value" style="color: var(--semantic-warning)">{lastSession.stats.unresolvedCount}</span>
           </div>
           <div class="state-row">
             <span class="label">Avg Latency</span>

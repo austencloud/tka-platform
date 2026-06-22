@@ -29,7 +29,7 @@
   <div class="stat-card">
     <div
       class="stat-icon"
-      style="background: rgba(74, 222, 128, 0.2); color: #4ade80;"
+      style="background: color-mix(in srgb, var(--semantic-success) 20%, transparent); color: var(--semantic-success);"
     >
       <i class="fas fa-clock" aria-hidden="true"></i>
     </div>
@@ -53,7 +53,7 @@
   <div class="stat-card">
     <div
       class="stat-icon"
-      style="background: rgba(148, 163, 184, 0.2); color: #94a3b8;"
+      style="background: color-mix(in srgb, var(--theme-text-muted) 20%, transparent); color: var(--theme-text-muted);"
     >
       <i class="fas fa-plus-circle" aria-hidden="true"></i>
     </div>

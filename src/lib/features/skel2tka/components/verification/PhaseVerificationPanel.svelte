@@ -143,7 +143,7 @@
 
       <div class="hand-pickers">
         <div class="picker-group">
-          <span class="picker-label" style="color: #3b82f6;">{t('skel2tka_blue_hand')}</span>
+          <span class="picker-label" style="color: var(--semantic-info);">{t('skel2tka_blue_hand')}</span>
           <span class="detected-value">
             {t('skel2tka_detected_value', { value: detectedBlue?.toUpperCase() ?? t('skel2tka_none') })}
           </span>
@@ -155,7 +155,7 @@
         </div>
 
         <div class="picker-group">
-          <span class="picker-label" style="color: #ef4444;">{t('skel2tka_red_hand')}</span>
+          <span class="picker-label" style="color: var(--semantic-error);">{t('skel2tka_red_hand')}</span>
           <span class="detected-value">
             {t('skel2tka_detected_value', { value: detectedRed?.toUpperCase() ?? t('skel2tka_none') })}
           </span>
