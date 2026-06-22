@@ -68,6 +68,26 @@
   const tipEffectMap = $derived<TipEffectMap | undefined>(
     activeEffect === "none" ? undefined : { "*": { effect: activeEffect } },
   );
+
+  // The Art panel's Trail dials are split across two stores: tracking / length /
+  // mode / fade live on the legacy animationSettings.trail, while the visual
+  // dials (thickness, brightness, colors) write to the unified effects config.
+  // The 2D trail overlay only reads the legacy TrailSettings, so fold the
+  // effects-config visuals back in here — otherwise dragging a dial mutates a
+  // store the renderer never reads. Mirrors resolveTrails2D's intent mapping.
+  const trailSettings = $derived.by(() => {
+    const base = animationSettings.trail;
+    const tr = effectsConfig?.trails;
+    if (!tr) return base;
+    return {
+      ...base,
+      lineWidth: tr.thickness,
+      maxOpacity: tr.brightness,
+      minOpacity: tr.brightness * 0.3,
+      blueColor: tr.blueColor,
+      redColor: tr.redColor,
+    };
+  });
 </script>
 
 <div class="tunnel-art">
@@ -83,7 +103,7 @@
         currentStep={step}
         isPlaying={true}
         {gridMode}
-        trailSettings={animationSettings.trail}
+        {trailSettings}
         {tipEffectMap}
         effectsConfigState={effectsConfig ?? undefined}
         gridVisible={controller.gridVisible}
