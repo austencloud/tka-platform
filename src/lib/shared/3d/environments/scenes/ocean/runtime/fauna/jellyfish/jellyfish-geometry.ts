@@ -696,7 +696,12 @@ export class Medusae {
         },
         transparent: true,
         blending: AdditiveBlending,
-        depthTest: false,
+        // depthTest ON so opaque structures (coral, arches, rocks) occlude the
+        // bell's additive glow halo — without it the halo drew over everything
+        // and jellyfish read as floating in front of solid geometry. depthWrite
+        // stays OFF: an additive glow must not write depth or it occludes what's
+        // behind it.
+        depthTest: true,
         depthWrite: false,
       }),
     );
