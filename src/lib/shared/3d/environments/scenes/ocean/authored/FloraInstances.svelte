@@ -3,9 +3,11 @@
   import { useDraco, useKtx2, useMeshopt } from "@threlte/extras";
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
   import {
+    Box3,
     Mesh,
     MeshStandardMaterial,
     Vector2,
+    Vector3,
     type Object3D,
     type Material,
     type WebGLProgramParametersWithUniforms,
@@ -39,11 +41,23 @@
   gltfLoader.setKTX2Loader(useKtx2("/basis/"));
 
   // ── Procedural vertex sway (current-driven) ──────────────────────────
-  // The flora GLB is one baked mesh set with opaque names and no per-vertex
-  // sway mask, so the rooted-base / swaying-tip look is recovered procedurally:
-  // a world-height mask (above the seabed) gates a two-octave directional
-  // current displacement injected into each plant material's vertex shader.
-  // groundY is the canonical seabed surface (shared with godrays/particles/fish).
+  // The flora GLB is one baked mesh set with opaque names (Mesh_0.067, …) and no
+  // per-vertex sway mask, so we recover the rooted-base / swaying-tip look two ways:
+  //
+  //  1. WHICH meshes sway is decided per-mesh by world-AABB SHAPE, not by name.
+  //     A mesh inspection (scripts/inspect-flora-meshes.cjs) measured every node's
+  //     world-space bounding box and its height-to-footprint aspect (dy / max(dx,dz)).
+  //     The scene splits cleanly: only two upright, slender plant meshes have
+  //     aspect ≥ 1.4 (Mesh_0.067 ≈ 2.13, Mesh_0.005 ≈ 1.59). EVERYTHING bulky —
+  //     coral arches/towers/bommies/columns, photoscanned rocks, the wide flora-
+  //     atlas coral clumps (footprint ~2.0, aspect ≤ 0.85), fish-palette blobs and
+  //     the seabed — sits at aspect ≤ 1.18, the highest of which (Coral_Arch ≈ 1.18)
+  //     is a named structure. The 1.18→1.59 gap is wide and lands on a structure,
+  //     so SWAY_ASPECT_MIN = 1.4 isolates the slender plants with margin.
+  //
+  //  2. Within a swaying plant, a world-height mask (above the seabed) gates a
+  //     two-octave directional current so the base stays planted and only the tip
+  //     moves. groundY is the canonical seabed surface (shared with godrays/fish).
   //
   // Tunables (the live knob is uSwayStrength — gentle current, not a gale):
   //   uTallRef    height above the floor at which a plant reaches full sway.
@@ -51,6 +65,11 @@
   //   uSwayStrength  master amplitude of the horizontal sway in world units.
   const SWAY_STRENGTH = 0.18;
   const TALL_REF = 3.0;
+
+  // Height-to-footprint aspect above which a mesh counts as a slender plant.
+  // Measured by scripts/inspect-flora-meshes.cjs: plants ≥ 1.59, next mesh
+  // (Coral_Arch, a structure) = 1.18. 1.4 sits squarely in the gap.
+  const SWAY_ASPECT_MIN = 1.4;
   // Primary current heading on the XZ plane (normalized): a slow diagonal drift.
   const CURRENT_DIR = new Vector2(0.8, 0.6).normalize();
 
@@ -61,9 +80,6 @@
     uSwayStrength: { value: SWAY_STRENGTH },
     uCurrentDir: { value: CURRENT_DIR },
   };
-
-  // Rocks/sand must stay rooted — never patch their materials.
-  const NO_SWAY_NAME = /rock|sand_rocks/i;
 
   function patchSwayMaterial(mat: MeshStandardMaterial): void {
     if (mat.userData.swayPatched) return;
@@ -133,19 +149,51 @@
     mat.needsUpdate = true;
   }
 
+  // A mesh sways only if its world-space bounding box is taller than it is wide
+  // by SWAY_ASPECT_MIN — i.e. it's a slender upright plant, not a bulky rock,
+  // coral, arch, tower, or structure. Shape is the only reliable signal: the GLB
+  // names are opaque and the one bulky rock isn't enough to gate on.
+  const _box = new Box3();
+  const _size = new Vector3();
+
+  function meshAspect(m: Mesh): number {
+    _box.setFromObject(m);
+    if (_box.isEmpty()) return 0;
+    _box.getSize(_size);
+    const footprint = Math.max(_size.x, _size.z);
+    return footprint > 1e-6 ? _size.y / footprint : Number.POSITIVE_INFINITY;
+  }
+
   function enhanceMaterials(scene: Object3D): void {
+    // World matrices must be current before measuring world-space AABBs.
+    scene.updateWorldMatrix(true, true);
+
+    const swayed: string[] = [];
+    const skipped: string[] = [];
+
     scene.traverse((child) => {
       const m = child as Mesh;
       if (!m.isMesh) return;
-      const isRooted = NO_SWAY_NAME.test(m.name);
+
+      const aspect = meshAspect(m);
+      const isPlant = aspect >= SWAY_ASPECT_MIN;
+      (isPlant ? swayed : skipped).push(`${m.name || "(unnamed)"}=${aspect.toFixed(2)}`);
+
       const mats = Array.isArray(m.material) ? m.material : [m.material];
       for (const mat of mats) {
         if (mat instanceof MeshStandardMaterial) {
           mat.envMapIntensity = 0.3;
-          if (!isRooted) patchSwayMaterial(mat);
+          if (isPlant) patchSwayMaterial(mat);
         }
       }
     });
+
+    if (import.meta.env.DEV) {
+      console.debug(
+        `[FloraInstances] sway aspect≥${SWAY_ASPECT_MIN} → ${swayed.length} swaying, ${skipped.length} rooted`,
+        { swaying: swayed, rooted: skipped },
+      );
+    }
   }
 
   let floraScene = $state<Object3D | null>(null);
