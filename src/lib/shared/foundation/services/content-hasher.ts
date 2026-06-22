@@ -148,6 +148,12 @@ export function hashSequenceContent(
   return hash128(parts.join("~"));
 }
 
+/** Generic deterministic 128-bit string fingerprint (base62, 22 chars).
+ *  For hashing arbitrary canonical strings such as mandala shape keys. */
+export function hashString(input: string): string {
+  return hash128(input);
+}
+
 /** Motion path only: type, rotation direction, start/end locations. Turns,
  *  orientations and reversal flags are intentionally dropped. */
 function serializeMotionSkeleton(m?: MotionData): string {
