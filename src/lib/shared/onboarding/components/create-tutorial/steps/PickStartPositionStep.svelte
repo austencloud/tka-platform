@@ -46,7 +46,7 @@
 
   <div class="picker-container">
     {#await import("$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte") then mod}
-      <mod.default {startPositionState} />
+      <mod.default {startPositionState} embedded />
     {/await}
   </div>
 </div>

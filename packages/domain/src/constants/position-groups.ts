@@ -21,14 +21,14 @@ export const POSITION_DEFINITIONS: Record<PositionName, PositionDefinition> = {
     symbol: "β",
     angle: "0°",
     description: "Both hands are at the same grid point, stacked on top of each other.",
-    gridDescription: "Both props share a single location. This is the 'together' position.",
+    gridDescription: "Both props share a single location.",
     examples: [
       "beta1: Both hands at N (diamond mode)",
       "beta5: Both hands at NE (box mode)",
       "beta3: Both hands at E (diamond mode)",
     ],
     level: 1,
-    keyFact: "The 'together' position. VTG calls this 'tog'.",
+    keyFact: "VTG calls this 'together' phase.",
   },
   gamma: {
     name: "Gamma (γ)",

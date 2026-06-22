@@ -15,6 +15,7 @@ Uses blocklist approach: positions in blockedPositions are excluded.
     GridMode,
     GridPosition,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
@@ -25,10 +26,14 @@ Uses blocklist approach: positions in blockedPositions are excluded.
     blockedPositions = [],
     onBlockedChange,
     gridMode: gridModeProp = GridMode.DIAMOND,
+    blueStartOrientation = Orientation.IN,
+    redStartOrientation = Orientation.IN,
   } = $props<{
     blockedPositions: GridPosition[];
     onBlockedChange: (blocked: GridPosition[]) => void;
     gridMode?: GridMode;
+    blueStartOrientation?: Orientation;
+    redStartOrientation?: Orientation;
   }>();
 
   // State
@@ -95,6 +100,33 @@ Uses blocklist approach: positions in blockedPositions are excluded.
 
   // Count enabled positions
   const enabledCount = $derived(variations.length - blockedPositions.length);
+
+  // Re-orient each variation's props to the chosen start orientation. Start
+  // positions are static holds, so start == end orientation (mirrors how the
+  // engine seeds beat 0). Empty until variations load. New object identity per
+  // orientation change → PictographContainer re-renders.
+  const displayVariations = $derived(
+    variations.map((p) => ({
+      ...p,
+      motions: {
+        ...p.motions,
+        blue: p.motions?.blue
+          ? {
+              ...p.motions.blue,
+              startOrientation: blueStartOrientation,
+              endOrientation: blueStartOrientation,
+            }
+          : p.motions?.blue,
+        red: p.motions?.red
+          ? {
+              ...p.motions.red,
+              startOrientation: redStartOrientation,
+              endOrientation: redStartOrientation,
+            }
+          : p.motions?.red,
+      },
+    }))
+  );
 </script>
 
 <div class="multi-select-grid">
@@ -119,7 +151,7 @@ Uses blocklist approach: positions in blockedPositions are excluded.
 
     <!-- Position grid -->
     <div class="variations-grid">
-      {#each variations as position (position.id)}
+      {#each displayVariations as position (position.id)}
         {@const gridPos = position.startPosition as GridPosition}
         {@const enabled = isEnabled(gridPos)}
         <button

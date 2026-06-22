@@ -10,9 +10,21 @@ Three touch targets: left arrow cycles back, center label opens drawer, right ar
     orientation: Orientation;
     onOrientationChange: (orientation: Orientation) => void;
     color?: "blue" | "red";
+    /**
+     * Center tap opens the global OrientationPickerDrawer (full-width bottom
+     * sheet). Useful in the construct start-position picker; redundant + visually
+     * wrong in compact panels where the arrows already cycle all four cardinals.
+     * Set false to render the center as a static label.
+     */
+    enableDrawer?: boolean;
   }
 
-  const { orientation, onOrientationChange, color }: Props = $props();
+  const {
+    orientation,
+    onOrientationChange,
+    color,
+    enableDrawer = true,
+  }: Props = $props();
 
   const CYCLE_ORDER: Orientation[] = [
     Orientation.IN,
@@ -71,13 +83,22 @@ Three touch targets: left arrow cycles back, center label opens drawer, right ar
     <i class="fas fa-chevron-left" aria-hidden="true"></i>
   </button>
 
-  <button
-    class="cycle-center"
-    onclick={openDrawer}
-    aria-label="{colorLabel} orientation: {currentDisplay.label}. Tap to see all options."
-  >
-    <span class="trigger-label">{currentDisplay.label}</span>
-  </button>
+  {#if enableDrawer}
+    <button
+      class="cycle-center"
+      onclick={openDrawer}
+      aria-label="{colorLabel} orientation: {currentDisplay.label}. Tap to see all options."
+    >
+      <span class="trigger-label">{currentDisplay.label}</span>
+    </button>
+  {:else}
+    <span
+      class="cycle-center cycle-center-static"
+      aria-label="{colorLabel} orientation: {currentDisplay.label}"
+    >
+      <span class="trigger-label">{currentDisplay.label}</span>
+    </span>
+  {/if}
 
   <button
     class="cycle-arrow"
@@ -140,6 +161,15 @@ Three touch targets: left arrow cycles back, center label opens drawer, right ar
     font-weight: 600;
     letter-spacing: 0.3px;
     white-space: nowrap;
+  }
+
+  .cycle-center-static {
+    cursor: default;
+  }
+
+  .cycle-center-static:hover,
+  .cycle-center-static:active {
+    background: none;
   }
 
   @media (hover: hover) {

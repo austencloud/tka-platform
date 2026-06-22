@@ -41,11 +41,17 @@ Controls moved below the grid for better UX
     onNavigateToAdvanced,
     onNavigateToDefault,
     isSideBySideLayout = () => false,
+    embedded = false,
   } = $props<{
     startPositionState?: SimplifiedStartPositionState | null;
     onNavigateToAdvanced?: () => void;
     onNavigateToDefault?: () => void;
     isSideBySideLayout?: () => boolean;
+    // When rendered inside another surface (e.g. the create tutorial), that
+    // surface owns the heading and the "show me how" entry point. Suppress the
+    // picker's own hint + guide link so they don't duplicate — and so the guide
+    // link can't replay the very tutorial it sits inside.
+    embedded?: boolean;
   }>();
 
   // Create simplified state - use $derived to handle prop changes
@@ -221,9 +227,11 @@ Controls moved below the grid for better UX
 </script>
 
 <div class="start-pos-picker" data-testid="start-position-picker">
-  <p class="workspace-hint">Choose your start position</p>
+  {#if !embedded}
+    <p class="workspace-hint">Choose your start position</p>
+  {/if}
 
-  {#if isGuest}
+  {#if isGuest && !embedded}
     <button class="guide-link" onclick={handleShowGuide}>
       <i class="fas fa-circle-question" aria-hidden="true"></i>
       New here? Show me how
@@ -353,12 +361,23 @@ Controls moved below the grid for better UX
   .workspace-hint {
     flex-shrink: 0;
     text-align: center;
-    font-size: clamp(1rem, 2.5vmin, 1.25rem);
-    font-weight: 500;
-    color: var(--theme-text, #fff);
-    padding: clamp(8px, 1.5vmin, 12px) 1rem;
+    /* Drop the hint off the top edge into the whitespace above the grid. Kept
+       modest (vh-bounded) on purpose: reserving a large band here shrinks the
+       grid container and flips PictographGrid's aspect-ratio rule from column
+       to row on tall screens (Fold). */
     margin: 0;
+    padding: clamp(20px, 9vh, 80px) 1rem 0;
+    /* Match the Generate tab hint exactly: Playfair serif, soft shadow, one line.
+       cqi tracks .start-pos-picker's width (container-type: inline-size) so the
+       line scales to fit and never wraps. */
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(1rem, 4.6cqi, 2rem);
+    font-weight: 500;
+    line-height: 1.2;
     letter-spacing: 0.02em;
+    white-space: nowrap;
+    color: var(--theme-text, #fff);
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
   }
 
   .guide-link {
@@ -367,7 +386,9 @@ Controls moved below the grid for better UX
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    margin: -4px 0 4px;
+    /* Clear the serif title's descenders ("p" in "position") above us — no
+       negative pull-up, which collided the pill border into the headline. */
+    margin: 12px 0 4px;
     padding: 6px 12px;
     background: transparent;
     border: 1px solid color-mix(in srgb, var(--theme-accent) 35%, transparent);
