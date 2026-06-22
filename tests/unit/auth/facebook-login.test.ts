@@ -379,9 +379,10 @@ describe("updateFacebookProfilePictureIfNeeded", () => {
 });
 
 describe("kill switch", () => {
-  it("FACEBOOK_LOGIN_ENABLED stays false until the flow is verified end to end", () => {
-    // Re-enabling Facebook login must be an intentional flag flip; this guards
-    // against an accidental re-enable before the F5 external config is confirmed.
-    expect(FACEBOOK_LOGIN_ENABLED).toBe(false);
+  it("FACEBOOK_LOGIN_ENABLED is on (flow verified end to end 2026-06-22)", () => {
+    // Flipping this is an intentional, reviewed change. If Facebook auth
+    // regresses, set it back to false to pull the UI entry points — the guard
+    // exists so the value is never changed by accident.
+    expect(FACEBOOK_LOGIN_ENABLED).toBe(true);
   });
 });
