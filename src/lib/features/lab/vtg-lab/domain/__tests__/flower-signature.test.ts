@@ -5,6 +5,7 @@ import {
   flowerKey,
   flowerLabel,
   flowerTurnPattern,
+  ratioLabel,
 } from "../flower-signature";
 
 describe("flower-signature", () => {
@@ -33,6 +34,13 @@ describe("flower-signature", () => {
     expect(flowerPetals({ style: "anti", turns: 3 })).toBe(8);
   });
 
+  it("labels the VTG ratio as (2·turns+1):1", () => {
+    expect(ratioLabel(0)).toBe("1:1"); // isolation
+    expect(ratioLabel(0.5)).toBe("2:1"); // triquetra when antispin
+    expect(ratioLabel(1)).toBe("3:1");
+    expect(ratioLabel(3)).toBe("7:1");
+  });
+
   it("formats a deck-compatible turn pattern (integers bare, halves X.5)", () => {
     expect(flowerTurnPattern({ turns: 1 })).toBe("1|1");
     expect(flowerTurnPattern({ turns: 0.5 })).toBe("0.5|0.5");
@@ -41,6 +49,6 @@ describe("flower-signature", () => {
   it("builds a stable key and a human label", () => {
     const f = { style: "anti", turns: 0.5, ori: "out", grid: "box", petals: 3 } as const;
     expect(flowerKey(f)).toBe("anti-0.5-out-box");
-    expect(flowerLabel(f)).toBe("Anti 0.5t out box · 3p");
+    expect(flowerLabel(f)).toBe("2:1 out box · 3p"); // VTG ratio-only; style read from axis
   });
 });

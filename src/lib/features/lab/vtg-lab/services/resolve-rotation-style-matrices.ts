@@ -13,6 +13,7 @@ import { allTurnPatterns } from "../domain/tnd-turn-patterns";
 import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRenderer";
 import { TND_BY_FAMILY } from "$lib/features/choreo-card/domain/tnd-element";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 /** Diamond vs box grid — drives which TnD family each seed lands in. */
 export type LabGridMode = "diamond" | "box";
@@ -174,12 +175,28 @@ export async function resolveVariationSequence(
  * timing/direction decks release. `familyId` (e.g. "quarter-opp") → TnDElement.
  * Returns a PNG data URL for ChoreoCard's `preRenderedImageUrl`.
  */
-export async function bakeVariationFront(seq: SequenceData, familyId: string): Promise<string> {
+export async function bakeVariationFront(
+  seq: SequenceData,
+  familyId: string,
+  propType?: PropType,
+): Promise<string> {
   const tndElement = TND_BY_FAMILY[familyId];
   const canvas = await getPrintCardRenderer().renderFront(seq, {
     includeStartPosition: true,
     tndElement,
     showMandala: true,
+    bluePropType: propType,
+    redPropType: propType,
+  });
+  return canvas.toDataURL("image/png");
+}
+
+/** Bake the card BACK (level + LOOP face) — pairs with the front for review. */
+export async function bakeVariationBack(seq: SequenceData, propType?: PropType): Promise<string> {
+  const canvas = await getPrintCardRenderer().renderBack(seq, {
+    includeStartPosition: true,
+    bluePropType: propType,
+    redPropType: propType,
   });
   return canvas.toDataURL("image/png");
 }

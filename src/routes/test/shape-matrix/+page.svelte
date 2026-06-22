@@ -46,7 +46,7 @@
 </div>
 
 {#if data}
-  <ShapeMatrixDrillModal {open} {pair} onClose={() => (open = false)} />
+  <ShapeMatrixDrillModal {open} {pair} {data} onClose={() => (open = false)} />
 {/if}
 
 <style>

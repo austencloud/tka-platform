@@ -47,9 +47,19 @@ export function flowerKey(f: Pick<Flower, "style" | "turns" | "ori" | "grid">): 
   return `${f.style}-${fmtTurn(f.turns)}-${f.ori}-${f.grid}`;
 }
 
+/**
+ * VTG spin ratio for a turn count: (2·turns + 1):1. The numerator is the same
+ * for prospin and antispin at a given turn — the style sets the petal count
+ * (prospin = P−1, antispin = P+1) — so the ratio labels the axis and the
+ * blue/red style is read from the axis itself. E.g. 0.5t → "2:1" (antispin =
+ * 3-petal triquetra). Turns are multiples of 0.5, so 2·turns is always integer.
+ */
+export function ratioLabel(turns: number): string {
+  return `${2 * turns + 1}:1`;
+}
+
 export function flowerLabel(f: Flower): string {
-  const name = f.style === "pro" ? "Pro" : "Anti";
-  return `${name} ${fmtTurn(f.turns)}t ${f.ori} ${f.grid} · ${f.petals}p`;
+  return `${ratioLabel(f.turns)} ${f.ori} ${f.grid} · ${f.petals}p`;
 }
 
 /**

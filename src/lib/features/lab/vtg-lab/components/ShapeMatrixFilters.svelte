@@ -1,6 +1,7 @@
 <script lang="ts">
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { TURN_VALUES } from "$lib/features/choreo-card/domain/turn-pattern-parser";
+  import { ratioLabel } from "../domain/flower-signature";
   import type { AxisFilter, MatrixFilters } from "../domain/filter-flower-axis";
 
   interface Props {
@@ -25,7 +26,6 @@
     { value: "box" as const, label: "□" },
   ];
 
-  const fmt = (t: number) => (Number.isInteger(t) ? String(t) : t.toFixed(1));
 
   function setAxis(which: "blue" | "red", patch: Partial<AxisFilter>) {
     onchange({ ...filters, [which]: { ...filters[which], ...patch } });
@@ -45,15 +45,15 @@
     <div class="seg s-style">
       <SegmentedControl options={STYLE_OPTS} value={f.style} {color} onchange={(v) => setAxis(which, { style: v })} />
     </div>
-    <div class="turns" role="group" aria-label={`${which} turns`}>
+    <div class="turns" role="group" aria-label={`${which} VTG ratios`}>
       {#each TURN_VALUES as t (t)}
         <button
           type="button"
           class="t"
           class:on={f.turns.has(t)}
           aria-pressed={f.turns.has(t)}
-          aria-label={`${which} ${fmt(t)} turns`}
-          onclick={() => toggleTurn(which, t)}>{fmt(t)}</button>
+          aria-label={`${which} ${ratioLabel(t)} ratio`}
+          onclick={() => toggleTurn(which, t)}>{ratioLabel(t)}</button>
       {/each}
     </div>
     <div class="seg s-ori">
