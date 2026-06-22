@@ -745,6 +745,8 @@ export class ShortCodeManager {
       referrer: string | null;
       userId: string | null;
       deviceId: string;
+      lat?: number | null;
+      lng?: number | null;
     }
   ): Promise<void> {
     try {
@@ -756,6 +758,34 @@ export class ShortCodeManager {
       });
     } catch (error) {
       console.error("Failed to log scan event:", error);
+    }
+  }
+
+  /**
+   * Write the PII-free public journey projection for a scan. Separate from
+   * logScanEvent (which is admin-only and carries deviceId/userAgent/referrer)
+   * so the scanner-facing journey can be read publicly without exposing
+   * fingerprinting data. Fire-and-forget — never blocks the scan UX.
+   */
+  async logJourneyPoint(
+    code: string,
+    point: {
+      printId: string | null;
+      lat: number | null;
+      lng: number | null;
+      city: string | null;
+      country: string | null;
+    }
+  ): Promise<void> {
+    try {
+      const firestore = await this.ensureFirestore();
+      const ref = collection(firestore, SHORTCODES_COLLECTION, code, "journeyPoints");
+      await addDoc(ref, {
+        ...point,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Failed to log journey point:", error);
     }
   }
 }
