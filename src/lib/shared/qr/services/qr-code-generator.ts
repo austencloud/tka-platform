@@ -48,10 +48,14 @@ const STYLE_PRESETS: Record<QRStylePreset, QRCodeStyle> = {
   },
 };
 
+/** The play triangle's color — a vivid "go/play" green that reads on either
+ *  badge. Universal play semantics; the badge isolates it from the card palette. */
+export const PLAY_GREEN = "#22c55e";
+
 /**
- * Rough perceived-luminance test so the play triangle always contrasts the
- * badge. Accepts #rgb / #rrggbb (with optional alpha); anything else is treated
- * as dark (white triangle).
+ * Rough perceived-luminance test, used to pick the badge color that matches the
+ * card (white badge on light cards, dark badge on dark cards). Accepts
+ * #rgb / #rrggbb (with optional alpha); anything else is treated as dark.
  */
 function isLightColor(hex: string): boolean {
   const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})/i.exec(hex.trim());
@@ -66,20 +70,24 @@ function isLightColor(hex: string): boolean {
 }
 
 /**
- * Inline SVG data URL: a play triangle in a circular badge, centered in the QR.
- * Badge fill = the QR module color (dark on light cards, white on dark cards);
- * the triangle takes the contrasting color so it reads on either. The overlay
- * is purely visual — it never changes the encoded URL — and the generator bumps
- * error correction to "H" so the obscured modules stay recoverable.
+ * Inline SVG data URL: a green play triangle in a circular badge, centered in
+ * the QR. The badge matches the card (white on light cards, dark on dark cards)
+ * so it blends into the card's whitespace and the green triangle floats in the
+ * cleared center. The overlay is purely visual — it never changes the encoded
+ * URL — and the generator bumps error correction to "H" so the obscured modules
+ * stay recoverable. `moduleColor` is the QR module color; the badge is derived
+ * as its card-matching contrast.
  */
-export function playIconDataUrl(moduleColor: string): string {
-  const badge = moduleColor;
-  const triangle = isLightColor(badge) ? "#1a1a2e" : "#ffffff";
+export function playIconDataUrl(moduleColor: string, triangleColor: string = PLAY_GREEN): string {
+  // Badge matches the card background: light card (dark modules) -> white badge;
+  // dark card (white modules) -> dark badge.
+  const badge = isLightColor(moduleColor) ? "#1a1a2e" : "#ffffff";
+  const triangle = triangleColor;
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">` +
     `<circle cx="50" cy="50" r="50" fill="${badge}"/>` +
-    `<path d="M40 30 L40 70 L72 50 Z" fill="${triangle}" ` +
-    `stroke="${triangle}" stroke-width="8" stroke-linejoin="round"/>` +
+    `<path d="M35 24 L35 76 L80 50 Z" fill="${triangle}" ` +
+    `stroke="${triangle}" stroke-width="6" stroke-linejoin="round"/>` +
     `</svg>`;
   return `data:image/svg+xml;base64,${btoa(svg)}`;
 }

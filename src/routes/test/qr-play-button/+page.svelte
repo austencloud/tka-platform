@@ -19,7 +19,8 @@
   let darkHost: HTMLDivElement;
   let cellCanvas: HTMLCanvasElement;
 
-  // The exact image/imageOptions/EC block createQROptions now produces.
+  // The exact image/imageOptions/EC block createQROptions now produces: green
+  // triangle, badge matched to the card (derived inside playIconDataUrl).
   function makeQr(moduleColor: string, bg: string): QRCodeStyling {
     return new QRCodeStyling({
       width: 360,
@@ -46,11 +47,14 @@
     c.height = stepSize;
     const ctx = c.getContext("2d")!;
 
-    const captionFont = Math.round(stepSize * 0.072);
-    const captionBottomMargin = Math.round(stepSize * 0.05);
-    const captionTopGap = Math.round(stepSize * 0.045);
-    const captionH = captionFont + captionBottomMargin + captionTopGap;
-    const qrSize = Math.floor((stepSize - captionH) * 0.8);
+    const captionFont = Math.round(stepSize * 0.07);
+    const topMargin = Math.round(stepSize * 0.045);
+    const textGap = Math.round(stepSize * 0.05);
+    const bottomMargin = Math.round(stepSize * 0.05);
+    const sideMargin = Math.round(stepSize * 0.06);
+    const vBudget = stepSize - topMargin - textGap - captionFont - bottomMargin;
+    const hBudget = stepSize - 2 * sideMargin;
+    const qrSize = Math.floor(Math.min(vBudget, hBudget));
 
     const moduleColor = isDarkMode ? "#ffffff" : "#1a1a2e";
     const qr = makeQr(moduleColor, isDarkMode ? "#00000000" : "#ffffff");
@@ -61,7 +65,7 @@
     await img.decode();
 
     const x = Math.floor((stepSize - qrSize) / 2);
-    const y = Math.floor((stepSize - captionH - qrSize) / 2);
+    const y = topMargin;
 
     ctx.fillStyle = isDarkMode ? "#000000" : "#ffffff";
     ctx.fillRect(0, 0, stepSize, stepSize);
@@ -72,7 +76,7 @@
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = isDarkMode ? "#ffffff" : "#231f20";
-    ctx.fillText("Scan to play", stepSize / 2, stepSize - captionBottomMargin - captionFont / 2);
+    ctx.fillText("Scan to play", stepSize / 2, y + qrSize + textGap + captionFont / 2);
     ctx.restore();
   }
 

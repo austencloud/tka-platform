@@ -19,7 +19,6 @@ import type { Canvas2DDirectRenderer } from "./canvas-2d-direct-renderer";
 import type { LayerCompositor } from "./layer-compositor";
 import { drawStepNumber } from "./step-number-renderer";
 import type { QRCodeGenerator } from "../../qr/services/qr-code-generator";
-import { getQRCellScale } from "../../qr/qr-cell-scale";
 import { blobToImage, canvasToImage, imageToBlob } from "./image-format-converter";
 import { createRenderCanvas } from "./create-render-canvas";
 import type { RenderCanvas } from "./types";
@@ -721,16 +720,20 @@ export class ImageComposer {
     }
 
     try {
-      const stepCount = sequence.steps?.length ?? 0;
-      // Reserve a caption strip at the bottom of the cell for "Scan to play".
-      // The band = top gap + text height + bottom margin, so the caption sits
-      // with clear breathing room above the cell's bottom edge (not hugging it).
-      // The QR stays square and centered in the region above the band.
-      const captionFont = Math.round(stepSize * 0.072);
-      const captionBottomMargin = Math.round(stepSize * 0.05);
-      const captionTopGap = Math.round(stepSize * 0.045);
-      const captionH = captionFont + captionBottomMargin + captionTopGap;
-      const qrSize = Math.floor((stepSize - captionH) * getQRCellScale(stepCount));
+      // Layout: a large square QR, horizontally centered and top-anchored, with
+      // "Scan to play" below it. The gap above the caption (textGap) and the
+      // margin below it (bottomMargin) are equal, so the text breathes evenly
+      // instead of hugging one side. QR size is the largest square that fits the
+      // vertical budget (after caption) and the horizontal width (after side
+      // margins) — comfortably larger than the old 0.8-cell-scale sizing.
+      const captionFont = Math.round(stepSize * 0.07);
+      const topMargin = Math.round(stepSize * 0.045);
+      const textGap = Math.round(stepSize * 0.05);
+      const bottomMargin = Math.round(stepSize * 0.05);
+      const sideMargin = Math.round(stepSize * 0.06);
+      const vBudget = stepSize - topMargin - textGap - captionFont - bottomMargin;
+      const hBudget = stepSize - 2 * sideMargin;
+      const qrSize = Math.floor(Math.min(vBudget, hBudget));
 
       // Pre-rendered QR is authored at a fixed resolution; drawImage scales it
       // to the cell below. Generated QR is produced at qrSize directly.
@@ -753,7 +756,7 @@ export class ImageComposer {
       const cellLeft = cell.col * stepSize + horizontalOffset;
       const cellTop = cell.row * stepSize + headerHeight;
       const x = cellLeft + Math.floor((stepSize - qrSize) / 2);
-      const y = cellTop + Math.floor((stepSize - captionH - qrSize) / 2);
+      const y = cellTop + topMargin;
 
       ctx.fillStyle = isDarkMode ? "#000000" : "#ffffff";
       ctx.fillRect(cellLeft, cellTop, stepSize, stepSize);
@@ -761,7 +764,8 @@ export class ImageComposer {
       ctx.drawImage(qrImage, x, y, qrSize, qrSize);
 
       // "Scan to play" caption — matches the center play triangle so the card
-      // reads as a play affordance. Styled to match the card's other canvas text.
+      // reads as a play affordance. Sits textGap below the QR with an equal
+      // margin beneath it. Styled to match the card's other canvas text.
       ctx.save();
       ctx.font = `600 ${captionFont}px Inter, "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif`;
       ctx.textAlign = "center";
@@ -770,7 +774,7 @@ export class ImageComposer {
       ctx.fillText(
         "Scan to play",
         cellLeft + stepSize / 2,
-        cellTop + stepSize - captionBottomMargin - captionFont / 2
+        y + qrSize + textGap + captionFont / 2
       );
       ctx.restore();
     } catch (error) {
