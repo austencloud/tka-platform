@@ -160,26 +160,28 @@
   <T is={$heroTreeB.scene} position.x={10} position.y={groundY} position.z={-6} />
 {/if}
 
-<AutumnFlora
-  {quality}
-  {groundY}
-  onProgress={handleFloraProgress}
-  onReady={handleFloraReady}
-  onMushroomTargets={(t) =>
-    (mushroomTargets = t.map((x) => ({
-      material: x.material,
-      position: x.position,
-      baseIntensity: x.material.emissiveIntensity,
-    })))}
-/>
+{#key tier}
+  <AutumnFlora
+    {quality}
+    {groundY}
+    onProgress={handleFloraProgress}
+    onReady={handleFloraReady}
+    onMushroomTargets={(t) =>
+      (mushroomTargets = t.map((x) => ({
+        material: x.material,
+        position: x.position,
+        baseIntensity: x.material.emissiveIntensity,
+      })))}
+  />
 
-<AutumnRuntimeSystems
-  {quality}
-  {groundY}
-  {performerCount}
-  {stageWidth}
-  {stageDepth}
-  {stageZOffset}
-  {pondCenter}
-  {mushroomTargets}
-/>
+  <AutumnRuntimeSystems
+    {quality}
+    {groundY}
+    {performerCount}
+    {stageWidth}
+    {stageDepth}
+    {stageZOffset}
+    {pondCenter}
+    {mushroomTargets}
+  />
+{/key}
