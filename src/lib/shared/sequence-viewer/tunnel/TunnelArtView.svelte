@@ -137,7 +137,7 @@
      empty. */
   .stage {
     position: absolute;
-    inset: -20%;
+    inset: -15%;
     display: flex;
     align-items: center;
     justify-content: center;
