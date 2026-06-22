@@ -72,7 +72,7 @@ function isLightColor(hex: string): boolean {
  * is purely visual — it never changes the encoded URL — and the generator bumps
  * error correction to "H" so the obscured modules stay recoverable.
  */
-function playIconDataUrl(moduleColor: string): string {
+export function playIconDataUrl(moduleColor: string): string {
   const badge = moduleColor;
   const triangle = isLightColor(badge) ? "#1a1a2e" : "#ffffff";
   const svg =
