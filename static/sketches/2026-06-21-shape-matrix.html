@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shape Matrix Lab — layout sketch</title>
+<style>
+  :root {
+    --bg: #0a0f14;
+    --panel: #111922;
+    --line: #1e2a36;
+    --ink: #e8eef4;
+    --muted: #7e93a6;
+    --blue: #22d3ee;
+    --red: #f87171;
+    --cell: 56px;     /* matrix cell size */
+    --head: 56px;     /* header thumb size */
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font: 13px/1.4 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  .app { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+
+  header.bar { display: flex; align-items: center; gap: 16px; padding: 10px 16px;
+    border-bottom: 1px solid var(--line); background: var(--panel); }
+  header.bar h1 { font-size: 14px; margin: 0; font-weight: 650; letter-spacing: .2px; }
+  header.bar .sub { color: var(--muted); font-size: 12px; }
+  .spacer { flex: 1; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { background: transparent; color: var(--muted); border: 0; padding: 6px 12px;
+    cursor: pointer; font: inherit; }
+  .seg button[aria-pressed="true"] { background: #1b2733; color: var(--ink); }
+  .legend { display: flex; gap: 14px; align-items: center; color: var(--muted); font-size: 12px; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: middle; margin-right: 5px; }
+
+  /* main layout swaps based on drill placement */
+  .main { display: grid; min-height: 0; }
+  .main.side { grid-template-columns: 1fr 340px; }
+  .main.bottom { grid-template-rows: 1fr 240px; }
+  .main.hidden { grid-template-columns: 1fr 0; grid-template-rows: 1fr 0; }
+
+  .matrix-wrap { min-width: 0; min-height: 0; overflow: auto; position: relative; }
+
+  /* grid: corner + top header row + left header col + cells, via CSS grid with sticky */
+  table.matrix { border-collapse: separate; border-spacing: 0; }
+  table.matrix th, table.matrix td { padding: 0; }
+  .corner { position: sticky; top: 0; left: 0; z-index: 5; background: var(--panel);
+    width: 130px; min-width: 130px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .corner .ttl { padding: 8px 10px; }
+  .corner .blue { color: var(--blue); } .corner .red { color: var(--red); }
+  thead th.colhead { position: sticky; top: 0; z-index: 4; background: var(--panel);
+    border-bottom: 1px solid var(--line); }
+  th.rowhead { position: sticky; left: 0; z-index: 3; background: var(--panel);
+    border-right: 1px solid var(--line); }
+  .thumb { width: var(--head); height: var(--head); display: block; margin: 2px auto; }
+  .headcap { font-size: 10px; color: var(--muted); text-align: center; padding-bottom: 4px; white-space: nowrap; }
+  .headcap b { color: var(--ink); font-weight: 600; }
+
+  td.cell { width: var(--cell); height: var(--cell); border-right: 1px solid #14202b;
+    border-bottom: 1px solid #14202b; cursor: pointer; position: relative; }
+  td.cell:hover { background: #14202b; }
+  td.cell.sel { outline: 2px solid var(--ink); outline-offset: -2px; z-index: 2; }
+  td.cell svg { display: block; width: 100%; height: 100%; }
+  /* faint group banding every 7 (one style/turns block) */
+  td.cell.band { background: #0d141b; }
+
+  /* drill panel */
+  .drill { background: var(--panel); border-left: 1px solid var(--line); min-width: 0; min-height: 0;
+    display: flex; flex-direction: column; }
+  .main.bottom .drill { border-left: 0; border-top: 1px solid var(--line); }
+  .drill .dhead { padding: 10px 14px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
+  .drill .dhead .big { width: 40px; height: 40px; }
+  .drill .dhead .meta b { font-size: 13px; } .drill .dhead .meta div { color: var(--muted); font-size: 11px; }
+  .drill .body { padding: 12px 14px; overflow: auto; }
+  .drill .hint { color: var(--muted); padding: 24px 14px; text-align: center; }
+  .reals { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .main.bottom .reals { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .real { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #0d141b; }
+  .real .anim { aspect-ratio: 1; display: grid; place-items: center; background: radial-gradient(circle at 50% 45%, #0f1822, #0a0f14); position: relative; }
+  .real .anim svg { width: 78%; height: 78%; }
+  .real .play { position: absolute; right: 6px; bottom: 6px; width: 22px; height: 22px; border-radius: 50%;
+    background: #1b2733cc; display: grid; place-items: center; color: var(--muted); font-size: 11px; }
+  .real .cap { padding: 6px 8px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .real .letter { font-weight: 700; font-size: 16px; }
+  .real .vtg { font-size: 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+  .pos { color: var(--muted); font-size: 10px; }
+  .note { color: var(--muted); font-size: 11px; margin: 2px 0 12px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <h1>Shape Matrix</h1>
+    <span class="sub" id="dims">— flower × flower</span>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--blue)"></span>blue (left hand) = rows</span>
+      <span><span class="dot" style="background:var(--red)"></span>red (right hand) = cols</span>
+    </div>
+    <div class="spacer"></div>
+    <span class="sub">drill-down:</span>
+    <div class="seg" id="placement">
+      <button data-p="side" aria-pressed="true">Side panel</button>
+      <button data-p="bottom" aria-pressed="false">Bottom drawer</button>
+      <button data-p="hidden" aria-pressed="false">Hidden</button>
+    </div>
+  </header>
+
+  <div class="main side" id="main">
+    <div class="matrix-wrap"><table class="matrix" id="tbl"></table></div>
+    <aside class="drill" id="drill">
+      <div class="dhead" id="dhead"><div class="hint" style="padding:0;color:var(--muted)">Click a cell</div></div>
+      <div class="body" id="dbody"><div class="hint">Pick any blue×red square to see the real ways to do it — each as a 2D animation + its TKA letter.</div></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+const STYLES = [
+  { id:"pro",  label:"Pro",  color:"#22d3ee", petals:(t)=>2*t },     // prospin
+  { id:"anti", label:"Anti", color:"#f87171", petals:(t)=>2*t+2 },   // antispin
+];
+const TURNS = [0,0.5,1,1.5,2,2.5,3];
+const ORI = ["in","out"];
+
+// Build the ordered flower axis: style -> turns -> orientation  (2 * 7 * 2 = 28)
+function buildFlowers() {
+  const out = [];
+  for (const s of STYLES) for (const t of TURNS) for (const o of ORI) {
+    out.push({ style:s, turns:t, ori:o, petals:s.petals(t),
+      key:`${s.id}-${String(t).replace(".","_")}-${o}` });
+  }
+  return out;
+}
+const FLOWERS = buildFlowers(); // 28
+
+// Rose-curve path for a flower thumbnail. petals N: r=cos(kθ); N odd -> k=N, N even -> k=N/2 (gives N petals).
+// orientation "out" rotates by 180deg -> odd-petal flowers become visually distinct (up/down), even map onto themselves.
+function rosePath(petals, ori, R=46) {
+  if (petals <= 0) return null; // 0 petals = a dot (pro, 0 turns)
+  const odd = petals % 2 === 1;
+  const k = odd ? petals : petals/2;
+  const rot = ori === "out" ? Math.PI : 0;
+  const steps = 240; let d = "";
+  for (let i=0;i<=steps;i++){
+    const th = (i/steps)*Math.PI*2;
+    const r = Math.abs(Math.cos(k*th)) * R;           // abs -> closed rounded petals
+    const a = th + rot;
+    const x = 50 + r*Math.cos(a), y = 50 + r*Math.sin(a);
+    d += (i?"L":"M") + x.toFixed(1) + " " + y.toFixed(1) + " ";
+  }
+  return d + "Z";
+}
+
+function flowerSVG(f, color, opacity=1, size=null) {
+  const p = rosePath(f.petals, f.ori);
+  const inner = p
+    ? `<path d="${p}" fill="${color}22" stroke="${color}" stroke-width="2" opacity="${opacity}"/>`
+    : `<circle cx="50" cy="50" r="6" fill="${color}" opacity="${opacity}"/>`;
+  // tiny downbeat (south) marker so "ground reference" reads
+  return `<svg viewBox="0 0 100 100"${size?` width="${size}" height="${size}"`:""}>
+    <circle cx="50" cy="92" r="2.2" fill="#33414f"/>${inner}</svg>`;
+}
+
+function overlaySVG(bf, rf) {
+  return `<svg viewBox="0 0 100 100">
+    <circle cx="50" cy="92" r="2" fill="#2a3744"/>
+    ${pathOf(bf, "var(--blue)")}
+    ${pathOf(rf, "var(--red)")}
+  </svg>`;
+}
+function pathOf(f, color){
+  const p = rosePath(f.petals, f.ori);
+  return p ? `<path d="${p}" fill="none" stroke="${color}" stroke-width="2.4" opacity=".85"/>`
+           : `<circle cx="50" cy="50" r="5" fill="${color}"/>`;
+}
+
+const fmtT = t => Number.isInteger(t) ? String(t) : t.toFixed(1);
+const headCap = f => `<b>${f.style.label} ${fmtT(f.turns)}t</b><br>${f.ori} · ${f.petals}p`;
+
+// ---- build the table ----
+function build() {
+  const tbl = document.getElementById("tbl");
+  document.getElementById("dims").textContent =
+    `— ${FLOWERS.length} × ${FLOWERS.length} = ${FLOWERS.length*FLOWERS.length} cells (pro/anti × ${TURNS.length} turns × in/out)`;
+  let html = "<thead><tr>";
+  html += `<th class="corner"><div class="ttl"><span class="blue">blue ↓</span> × <span class="red">red →</span><div class="headcap" style="text-align:left">south-anchored · all in/out shown</div></div></th>`;
+  FLOWERS.forEach((rf,ci)=>{
+    const band = Math.floor(ci/ (TURNS.length*ORI.length)) % 2; // style block band
+    html += `<th class="colhead">${flowerSVG(rf, rf.style.color)}<div class="headcap">${headCap(rf)}</div></th>`;
+  });
+  html += "</tr></thead><tbody>";
+  FLOWERS.forEach((bf,ri)=>{
+    html += "<tr>";
+    html += `<th class="rowhead">${flowerSVG(bf, "var(--blue)")}<div class="headcap">${headCap(bf)}</div></th>`;
+    FLOWERS.forEach((rf,ci)=>{
+      const band = (Math.floor(ri/(TURNS.length*ORI.length)) + Math.floor(ci/(TURNS.length*ORI.length)))%2;
+      html += `<td class="cell${band?" band":""}" data-r="${ri}" data-c="${ci}">${overlaySVG(bf,rf)}</td>`;
+    });
+    html += "</tr>";
+  });
+  html += "</tbody>";
+  tbl.innerHTML = html;
+  tbl.addEventListener("click", e=>{
+    const td = e.target.closest("td.cell"); if(!td) return;
+    document.querySelectorAll("td.cell.sel").forEach(x=>x.classList.remove("sel"));
+    td.classList.add("sel");
+    showDrill(+td.dataset.r, +td.dataset.c);
+  });
+}
+
+// ---- drill-down (placeholder realizations) ----
+// Each shape pairing is realized by several timing/direction variants; we mock 3-5 with VTG tags + letters.
+const VTG = ["SS","TS","SO","TO","QS","QO"];
+const LETTERS = "ABCDEFGHIJKLMNOPQRSTUV".split("");
+function showDrill(ri, ci){
+  const bf = FLOWERS[ri], rf = FLOWERS[ci];
+  const dhead = document.getElementById("dhead");
+  dhead.innerHTML =
+    `<div class="big">${overlaySVG(bf,rf)}</div>
+     <div class="meta"><b>blue ${bf.style.label} ${fmtT(bf.turns)}t ${bf.ori}  ⊕  red ${rf.style.label} ${fmtT(rf.turns)}t ${rf.ori}</b>
+     <div>${bf.petals}p × ${rf.petals}p · south-anchored</div></div>`;
+  // deterministic mock count from indices
+  const n = 3 + ((ri*7+ci) % 3);
+  let cards = "";
+  for (let i=0;i<n;i++){
+    const vtg = VTG[(ri+ci+i)%VTG.length];
+    const letter = LETTERS[(ri*3+ci*5+i)%LETTERS.length];
+    cards += `<div class="real">
+      <div class="anim">${overlaySVG(bf,rf)}<div class="play">▶</div></div>
+      <div class="cap"><span class="letter">${letter}</span><span class="vtg">${vtg}</span></div>
+    </div>`;
+  }
+  document.getElementById("dbody").innerHTML =
+    `<div class="note">Ways to realize this overlay — 2D animation + TKA letter. Timing/direction (tog·split / same·opp) lives here, not in the static cell.</div>
+     <div class="reals">${cards}</div>`;
+}
+
+// ---- placement toggle ----
+document.getElementById("placement").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  document.querySelectorAll("#placement button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+  document.getElementById("main").className = "main " + b.dataset.p;
+});
+
+build();
+</script>
+</body>
+</html>
