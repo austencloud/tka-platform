@@ -371,3 +371,7 @@ scripts/migrations/backups/
 
 # Machine-translation drafts pending native review (written by i18n-localize.cjs)
 scripts/i18n-drafts/
+
+# Local dev TLS certs (mkcert) — HTTP/2 dev server
+.cert/
+static/models/autumn/*_raw.glb
