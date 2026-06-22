@@ -18,7 +18,6 @@
 -->
 <script lang="ts">
   import { fade, fly } from "svelte/transition";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import IconRailNav from "$lib/shared/animation-panel/pill-nav/IconRailNav.svelte";
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
@@ -49,7 +48,6 @@
     controller,
     mandalaController,
     artType,
-    onArtTypeChange,
     onExport,
     bpm = $bindable(60),
     playbackMode = "continuous",
@@ -67,7 +65,6 @@
     controller: TunnelViewController;
     mandalaController: MandalaViewerController;
     artType: ArtType;
-    onArtTypeChange: (value: ArtType) => void;
     onExport: () => void;
     bpm?: number;
     playbackMode?: PlaybackMode;
@@ -81,12 +78,6 @@
     redPropType?: string | null;
   } = $props();
 
-  // Type toggle: labels, not icons (a bare glyph reads as "no info").
-  const artOptions = [
-    { value: "mandala" as const, label: "Mandala" },
-    { value: "tunnel" as const, label: "Tunnel" },
-  ];
-
   // ── Tunnel rail ──
   const tunnelRail: { id: TunnelRailId; icon?: string; label: string; accentColor?: string }[] = [
     { id: "tunnel", icon: "fa-fan", label: "Tunnel" },
@@ -95,7 +86,9 @@
     { id: "effort", label: "Effort", accentColor: "#94a3b8" },
     { id: "playback", icon: "fa-play", label: "Playback" },
   ];
-  let tunnelSection = $state<TunnelRailId>("tunnel");
+  // Active section lives on the controller so it persists with the rest of the
+  // tunnel view state (load/save in TunnelViewController).
+  const tunnelSection = $derived<TunnelRailId>(controller.section);
   const tunnelSectionLabel = $derived(
     tunnelRail.find((p) => p.id === tunnelSection)?.label ?? "",
   );
@@ -137,21 +130,15 @@
     const prev = tunnelOrder.indexOf(tunnelSection);
     const next = tunnelOrder.indexOf(id);
     flyDir = next >= prev ? 1 : -1;
-    tunnelSection = id;
+    controller.section = id;
   }
 </script>
 
 <div class="art-settings-panel">
-  <!-- Pinned header: type toggle — always -->
+  <!-- Pinned header: the current art type (the mode rail switches between
+       Mandala and Tunnel now — no in-panel toggle). -->
   <div class="panel-header">
-    <span class="section-label">Art</span>
-    <SegmentedControl
-      options={artOptions}
-      value={artType}
-      onchange={onArtTypeChange}
-      color="accent"
-      size="sm"
-    />
+    <span class="section-label">{artType === "tunnel" ? "Tunnel" : "Mandala"}</span>
   </div>
 
   {#if artType === "tunnel"}

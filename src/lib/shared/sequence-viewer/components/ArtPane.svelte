@@ -11,9 +11,14 @@
     StepPlaybackStepSize,
   } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
+  // Mandala is the static tip-path bloom; Tunnel is the live kaleidoscope. The
+  // viewer's mode rail picks one — this pane renders the chosen view, fixed.
+  type ArtType = "mandala" | "tunnel";
+
   const {
     sequence,
     playback,
+    artType,
     bluePropType,
     redPropType,
     bpm = 60,
@@ -25,6 +30,9 @@
   }: {
     sequence: SequenceData;
     playback: ViewerPlaybackState;
+    /** Which art view this pane renders. The mode rail switches between Mandala
+     *  and Tunnel now, so the pane no longer hosts an in-panel toggle. */
+    artType: ArtType;
     bluePropType?: string;
     redPropType?: string;
     bpm?: number;
@@ -48,12 +56,6 @@
     }) => void;
   } = $props();
 
-  // "Art" is the umbrella mode for generative outputs of the sequence. Mandala
-  // is the static tip-path bloom; Tunnel is the live kaleidoscope. New art types
-  // drop in here without touching the viewer's mode system.
-  type ArtType = "mandala" | "tunnel";
-  let artType = $state<ArtType>("mandala");
-
   // The tunnel controller is owned HERE and shared with both the rendering view
   // (TunnelArtView) and the controls (ArtSettingsPanel), so the panel's fold /
   // mirror / preset buttons drive the same instance the canvas reads — and the
@@ -61,7 +63,11 @@
   const controller = new TunnelViewController({
     getSequence: () => playback.animationState.sequenceData ?? sequence,
   });
-  controller.active = true;
+  // Only build/animate the kaleidoscope layers when this pane is the tunnel —
+  // a mandala pane keeps a (cheap) controller but doesn't drive the layer build.
+  $effect(() => {
+    controller.active = artType === "tunnel";
+  });
 
   // The mandala controller is owned HERE (not inside MandalaPane) so the same
   // instance backs the in-pane dock/takeover AND the Art panel's Export button —
@@ -108,7 +114,6 @@
     {controller}
     {mandalaController}
     {artType}
-    onArtTypeChange={(v) => (artType = v)}
     onExport={handleExport}
     {bpm}
     {playbackMode}

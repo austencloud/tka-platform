@@ -272,6 +272,22 @@
     }
   });
 
+  let _tunnelLeftMounted = $state(false);
+  let _tunnelLeftShown = $state(false);
+  const _tunnelLeftActive = $derived(splitConfig.leftPane === 'tunnel');
+  $effect(() => {
+    if (_tunnelLeftActive) {
+      if (!_tunnelLeftMounted) {
+        _tunnelLeftMounted = true;
+        requestAnimationFrame(() => { _tunnelLeftShown = true; });
+      } else {
+        _tunnelLeftShown = true;
+      }
+    } else {
+      _tunnelLeftShown = false;
+    }
+  });
+
   let _cardRightMounted = $state(false);
   let _cardRightShown = $state(false);
   const _cardRightActive = $derived(splitConfig.rightPane === 'card');
@@ -317,6 +333,22 @@
       }
     } else {
       _mandalaRightShown = false;
+    }
+  });
+
+  let _tunnelRightMounted = $state(false);
+  let _tunnelRightShown = $state(false);
+  const _tunnelRightActive = $derived(splitConfig.rightPane === 'tunnel');
+  $effect(() => {
+    if (_tunnelRightActive) {
+      if (!_tunnelRightMounted) {
+        _tunnelRightMounted = true;
+        requestAnimationFrame(() => { _tunnelRightShown = true; });
+      } else {
+        _tunnelRightShown = true;
+      }
+    } else {
+      _tunnelRightShown = false;
     }
   });
 
@@ -528,6 +560,24 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     {#if _mandalaLeftMounted}
       <div class="media-pane content-overlay" class:content-overlay-hidden={!_mandalaLeftShown}>
         <ArtPane
+          artType="mandala"
+          {sequence}
+          {playback}
+          bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
+          redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : undefined}
+          {bpm}
+          {onBpmChange}
+          {playbackMode}
+          {onPlaybackModeChange}
+          onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+          {onArtExport}
+        />
+      </div>
+    {/if}
+    {#if _tunnelLeftMounted}
+      <div class="media-pane content-overlay" class:content-overlay-hidden={!_tunnelLeftShown}>
+        <ArtPane
+          artType="tunnel"
           {sequence}
           {playback}
           bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
@@ -665,6 +715,24 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
       {#if _mandalaRightMounted}
         <div class="media-pane content-overlay" class:content-overlay-hidden={!_mandalaRightShown}>
           <ArtPane
+            artType="mandala"
+            {sequence}
+            {playback}
+            bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
+            redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : undefined}
+            {bpm}
+            {onBpmChange}
+            {playbackMode}
+            {onPlaybackModeChange}
+            onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+            {onArtExport}
+          />
+        </div>
+      {/if}
+      {#if _tunnelRightMounted}
+        <div class="media-pane content-overlay" class:content-overlay-hidden={!_tunnelRightShown}>
+          <ArtPane
+            artType="tunnel"
             {sequence}
             {playback}
             bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}

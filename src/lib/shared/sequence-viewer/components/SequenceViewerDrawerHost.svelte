@@ -146,6 +146,9 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     } else if (mode === 'mandala') {
       ctx.viewerState.exitExport();
       ctx.viewerState.setViewerMode('mandala');
+    } else if (mode === 'tunnel') {
+      ctx.viewerState.exitExport();
+      ctx.viewerState.setViewerMode('tunnel');
     }
   }
 
@@ -519,7 +522,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                         ? { leftPane: 'animation', rightPane: 'card' }
                         : (ctx.viewerState.viewerMode === 'card'
                         ? { ...ctx.viewerState.splitConfig, rightPane: 'card' }
-                        : (ctx.viewerState.viewerMode === 'animation' || ctx.viewerState.viewerMode === 'animation-3d' || ctx.viewerState.viewerMode === 'mandala'
+                        : (ctx.viewerState.viewerMode === 'animation' || ctx.viewerState.viewerMode === 'animation-3d' || ctx.viewerState.viewerMode === 'mandala' || ctx.viewerState.viewerMode === 'tunnel'
                           ? { ...ctx.viewerState.splitConfig, leftPane: ctx.viewerState.viewerMode }
                           : ctx.viewerState.splitConfig))}
                       isLoggedIn={ctx.isLoggedIn}
