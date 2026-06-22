@@ -311,6 +311,14 @@
   });
 </script>
 
+<svelte:head>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400..900&display=swap"
+    rel="stylesheet"
+  />
+</svelte:head>
+
 <section class="hero-carousel" aria-label="TKA hero introduction">
   <!-- Title block — brand name lives in the header now; keep an SEO/a11y h1
        hidden and lead visibly with the tagline so it isn't redundant. -->
@@ -470,13 +478,16 @@
     animation-delay: 0.1s;
   }
 
+  /* Same Fraunces wonky italic as the guide cover + site header logo. */
   .hero-tagline {
-    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
-    font-size: clamp(1.5rem, 3vw, 2.4rem);
-    font-weight: 400;
-    color: var(--theme-text, rgba(255, 255, 255, 0.92));
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-weight: 640;
+    font-variation-settings: "opsz" 144, "wght" 640, "SOFT" 0, "WONK" 1;
+    font-size: clamp(1.7rem, 3.4vw, 2.8rem);
+    color: var(--theme-text, #fff);
     margin: 0;
-    line-height: 1.2;
+    line-height: 1.1;
     letter-spacing: -0.01em;
   }
 
@@ -510,8 +521,8 @@
   .carousel-stage {
     position: relative;
     width: 100%;
-    max-width: min(50vw, 55vh / 0.8);
-    max-height: calc(100vh - 220px);
+    max-width: min(34vw, 40vh / 0.8);
+    max-height: calc(100vh - 200px);
     aspect-ratio: 4 / 5;
     border-radius: 16px;
     overflow: hidden;
