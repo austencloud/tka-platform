@@ -637,7 +637,7 @@ ${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)
           name: "Beta (β)",
           angleDegrees: "0°",
           description: "Both hands are at the same grid point, stacked on top of each other.",
-          gridDescription: "Both props share a single location. This is the 'together' position.",
+          gridDescription: "Both props share a single location.",
           examples: [
             "beta1: Both hands at N (diamond mode)",
             "beta5: Both hands at NE (box mode)",

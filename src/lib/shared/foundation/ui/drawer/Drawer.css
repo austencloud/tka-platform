@@ -395,8 +395,11 @@ dialog.drawer-content {
   .drawer-handle {
   position: relative;
   width: var(--min-touch-target);
-  height: 4px;
-  min-height: 10px;
+  height: 5px;
+  /* min-height:10px previously forced the bar to 10px — a fat oval. Dragging
+     works on the whole sheet (touch-action: pan-y), so the handle is visual
+     only; keep it thin like an iOS/Material grabber. */
+  min-height: 0;
   margin: 10px auto 8px;
 }
 
