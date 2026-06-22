@@ -175,44 +175,6 @@
     gap: 12px;
   }
 
-  /* Playback controls row */
-  .playback-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  /* Touch targets meet WCAG AAA (44px) */
-  .control-button {
-    min-width: 44px;
-    min-height: 44px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.2s ease;
-    padding: 0;
-  }
-
-  /* Play/pause button is slightly larger to signal primary action */
-  .play-button {
-    min-width: 48px;
-    min-height: 48px;
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.25);
-    font-size: 18px;
-  }
-
-  .control-button:hover,
-  .control-button:active {
-    background: rgba(255, 255, 255, 0.22);
-  }
-
   .top-actions { display: flex; gap: 8px; align-items: center; margin-left: auto; }
   .icon-button {
     width: 44px;
