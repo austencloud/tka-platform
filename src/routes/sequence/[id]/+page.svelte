@@ -612,6 +612,8 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
                     onBpmChange={ctx.handleBpmChange}
                     onStepForward={ctx.stepFullBeatForward}
                     onStepBackward={ctx.stepFullBeatBackward}
+                    immersive={ctx.immersive}
+                    onToggleImmersive={ctx.toggleImmersive}
                   />
                 {/await}
               {/if}

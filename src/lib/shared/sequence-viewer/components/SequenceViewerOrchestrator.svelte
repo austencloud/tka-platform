@@ -112,6 +112,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     enterEditMode: (pane: 'animation' | 'image' | 'video-upload') => void;
     exitEditMode: () => void;
     enterFullscreen: () => void;
+    immersive: boolean;
+    toggleImmersive: (host: HTMLElement | null) => Promise<void> | void;
     exitFullscreen: () => void;
     handleFullscreenTap: () => void;
     handleExport: () => Promise<void>;
@@ -1168,6 +1170,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     enterEditMode,
     exitEditMode,
     enterFullscreen: fullscreen.enterFullscreen,
+    immersive: fullscreen.immersive,
+    toggleImmersive: fullscreen.toggleImmersive,
     exitFullscreen: fullscreen.exitFullscreen,
     handleFullscreenTap: fullscreen.handleFullscreenTap,
     handleExport,
