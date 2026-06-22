@@ -1229,6 +1229,17 @@ export const LAB_TABS: Section[] = [
     color: "#ec4899",
     gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
   },
+  {
+    id: "viewer-3d",
+    groupId: "physical",
+    labelKey: "tab_lab_viewer_3d",
+    descKey: "tab_desc_lab_viewer_3d",
+    label: "3D Viewer",
+    icon: '<i class="fas fa-cube" style="color: #6a6aff;" aria-hidden="true"></i>',
+    description: "Mobile 3D scene controls — performer + scene menus, playback, immersive",
+    color: "#6a6aff",
+    gradient: "linear-gradient(135deg, #8888ff 0%, #6a6aff 100%)",
+  },
   // coral-lab removed (Jun 2026) — EZ-Tree procedural approach abandoned for Smithsonian CC0 coral models
 ];
 
