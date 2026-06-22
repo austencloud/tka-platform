@@ -23,7 +23,7 @@ for (const a of manifest.assets) {
   execSync([
     "npx gltf-transform optimize", `"${input}" "${output}"`,
     "--texture-compress webp", `--texture-size ${Number(a.textureSize) || 1024}`,
-    "--compress draco", "--simplify true", "--simplify-error 0.001",
+    "--compress meshopt", "--simplify true", "--simplify-error 0.001",
     "--instance true", "--flatten true",
   ].join(" "), { stdio: "inherit" });
   console.log(`-> ${output} (${kb(output)} KB)`);
