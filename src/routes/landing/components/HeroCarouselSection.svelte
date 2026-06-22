@@ -432,6 +432,22 @@
     </div>
   {/if}
 
+  <!-- Hero quick links -->
+  <nav class="hero-links" aria-label="Get started">
+    <a class="hero-link" href="/guide/level-1">
+      <i class="fas fa-book-open" aria-hidden="true"></i>
+      <span>Open the guide</span>
+    </a>
+    <a class="hero-link primary" href="/create" data-sveltekit-reload>
+      <i class="fas fa-rocket" aria-hidden="true"></i>
+      <span>Open the app</span>
+    </a>
+    <a class="hero-link" href="/support">
+      <i class="fas fa-heart" aria-hidden="true"></i>
+      <span>Support</span>
+    </a>
+  </nav>
+
   </div><!-- /.carousel-column -->
 
   <!-- CTA removed: the sticky header's "Open the app" is the single primary
@@ -447,12 +463,11 @@
     align-items: center;
     justify-content: center;
     gap: 0;
-    height: 100vh;
+    min-height: 100vh;
     box-sizing: border-box;
     /* Top padding clears the fixed SiteHeader (64px) so the tagline isn't hidden. */
-    padding: clamp(84px, 11vh, 108px) 24px 24px;
+    padding: clamp(84px, 11vh, 108px) 24px 40px;
     text-align: center;
-    overflow: hidden;
   }
 
   /* Hero centrepiece — same Fraunces wonky italic as the guide cover. */
@@ -519,7 +534,7 @@
   .carousel-stage {
     position: relative;
     width: 100%;
-    max-width: min(34vw, 40vh / 0.8);
+    max-width: min(30vw, 34vh / 0.8);
     max-height: calc(100vh - 200px);
     aspect-ratio: 4 / 5;
     border-radius: 16px;
@@ -731,6 +746,86 @@
     opacity: 0.4;
   }
 
+  /* ── Hero quick links ───────────────────────────────────────────────────────── */
+
+  .hero-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 22px;
+    animation: fade-up 0.7s ease both;
+    animation-delay: 0.6s;
+  }
+
+  .hero-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-family: var(--font-body, system-ui, sans-serif);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: #e8e6f4;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    cursor: pointer;
+    transition:
+      transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 0.18s ease,
+      background 0.18s ease,
+      border-color 0.18s ease;
+  }
+
+  .hero-link i {
+    font-size: 0.9rem;
+    transition: transform 0.18s ease;
+  }
+
+  .hero-link:hover,
+  .hero-link:focus-visible {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.28);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    color: #fff;
+    outline: none;
+  }
+
+  .hero-link:hover i,
+  .hero-link:focus-visible i {
+    transform: scale(1.15) rotate(-4deg);
+  }
+
+  .hero-link:active {
+    transform: translateY(-1px);
+  }
+
+  /* Primary = Open the app */
+  .hero-link.primary {
+    color: #fff;
+    background: linear-gradient(135deg, #6f8cff, #8b6cff);
+    border-color: transparent;
+    box-shadow: 0 4px 18px rgba(111, 140, 255, 0.4);
+  }
+
+  .hero-link.primary:hover,
+  .hero-link.primary:focus-visible {
+    box-shadow: 0 10px 30px rgba(111, 140, 255, 0.55);
+    filter: brightness(1.06);
+  }
+
+  .hero-link.primary i {
+    color: #fff;
+  }
+
+  /* Support heart hint */
+  .hero-link:last-child:hover i {
+    color: #ff8fbf;
+  }
+
   /* ── Entrance animation ─────────────────────────────────────────────────────── */
 
   @keyframes fade-up {
@@ -787,10 +882,16 @@
   @media (prefers-reduced-motion: reduce) {
     .title-block,
     .carousel-stage,
-    .carousel-footer {
+    .carousel-footer,
+    .hero-links {
       animation: none;
       opacity: 1;
       transform: none;
+    }
+
+    .hero-link,
+    .hero-link i {
+      transition: none;
     }
 
     .video-layer {
