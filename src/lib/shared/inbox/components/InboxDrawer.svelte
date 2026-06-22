@@ -681,18 +681,14 @@
 
   :global(.drawer-content.inbox-drawer) {
     --sheet-width: min(480px, 95vw);
-    width: var(--sheet-width) !important;
   }
 
   @media (max-width: 768px) {
     :global(.drawer-content.inbox-drawer) {
       --sheet-width: 100%;
-      width: 100% !important;
       /* Always fill viewport on mobile - list, thread, and compose views */
-      height: 100vh !important;
-      height: 100dvh !important;
-      max-height: none !important;
-      border-radius: 0 !important;
+      --sheet-max-height: none;
+      --sheet-radius-large: 0;
     }
 
     .inbox-container.expanded {

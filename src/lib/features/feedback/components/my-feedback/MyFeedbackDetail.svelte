@@ -443,24 +443,18 @@
       rgba(0, 0, 0, 0.92)
     );
     --sheet-filter: none;
-    background: linear-gradient(
-      135deg,
-      rgba(0, 0, 0, 0.85),
-      rgba(0, 0, 0, 0.92)
-    ) !important;
-    width: var(--sheet-width) !important;
-    z-index: 110 !important;
+    --sheet-z-index: 110;
   }
 
   :global(.drawer-overlay.feedback-detail-backdrop) {
-    z-index: 109 !important;
-    background: rgba(0, 0, 0, 0.5) !important;
+    /* Drawer.css derives overlay z-index as calc(--sheet-z-index - 1) = 109 */
+    --sheet-z-index: 110;
+    --sheet-backdrop-bg: rgba(0, 0, 0, 0.5);
   }
 
   @media (max-width: 768px) {
     :global(.drawer-content.feedback-detail-drawer) {
       --sheet-width: 100%;
-      width: 100% !important;
       max-height: 90vh;
       max-height: 90dvh;
     }
