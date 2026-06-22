@@ -822,7 +822,12 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
                 visibility 0s linear 0s;
   }
 
-  .content-overlay {
+  /* Qualified with `.media-pane` so `position:absolute` beats the later
+     `.media-pane { position:relative; flex:1 }` rule (equal specificity → source
+     order would otherwise win). Without this, two mounted overlays (e.g. Mandala
+     + Tunnel after the mode split) become flex siblings and split the column
+     50/50 instead of overlapping. */
+  .media-pane.content-overlay {
     position: absolute;
     inset: 0;
     z-index: 3;
@@ -831,7 +836,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
                 visibility 0s linear 0s;
   }
 
-  .content-overlay-hidden {
+  .media-pane.content-overlay-hidden {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
