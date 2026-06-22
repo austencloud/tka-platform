@@ -531,7 +531,7 @@
   <!-- Backdrop: click-to-close is a deliberate modal-dismiss affordance; the
        keyboard path (Escape) lives on the focused dialog below, not here. -->
   <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-  <div class="tag-picker-backdrop" onclick={tagFilter.closeTagPicker}>
+  <div class="tag-picker-backdrop" role="presentation" onclick={tagFilter.closeTagPicker}>
     <div
       class="tag-picker-container"
       role="dialog"

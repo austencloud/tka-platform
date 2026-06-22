@@ -129,6 +129,20 @@
     overflow: hidden;
   }
 
+  .segment:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+    border-radius: 6px;
+    z-index: 2;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .indicator,
+    .segment {
+      transition: none;
+    }
+  }
+
   .segment-count {
     display: inline-flex;
     align-items: center;

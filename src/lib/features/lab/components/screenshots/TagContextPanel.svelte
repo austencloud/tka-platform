@@ -38,7 +38,7 @@
 <!-- Backdrop: click-to-close is a deliberate dismiss affordance; the keyboard
      path (Escape) lives on the focused panel below. -->
 <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-<div class="tag-panel-backdrop" onclick={onClose}>
+<div class="tag-panel-backdrop" role="presentation" onclick={onClose}>
   <div
     class="tag-context-panel"
     role="dialog"
