@@ -11,13 +11,17 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { propDrawerState } from "$lib/shared/settings/state/prop-drawer-state.svelte";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
-  import { propCollection } from "$lib/shared/gamification/state/prop-collection-state.svelte";
+  import { propCollection, remainingLockedProps } from "$lib/shared/gamification/state/prop-collection-state.svelte";
   import { openPropCelebration } from "$lib/shared/gamification/state/prop-celebration-state.svelte";
 
   const settings = $derived(getSettings());
   const bluePropType = $derived(settings.bluePropType ?? PropType.STAFF);
   const displayInfo = $derived(getPropTypeDisplayInfo(bluePropType));
-  const hasPendingPick = $derived(propCollection.pendingPicks > 0);
+  // Only badge when there is actually a claimable prop left — covers the
+  // locking-disabled flag and the pool-exhausted case (stale pendingPicks).
+  const hasPendingPick = $derived(
+    propCollection.pendingPicks > 0 && remainingLockedProps().length > 0
+  );
 
   function shuffleToRandomProp() {
     const allProps = getAllPropTypes();

@@ -13,14 +13,13 @@ import {
   recordOne,
   type PropCollection,
 } from "../domain/prop-collection";
-import { milestonesReached } from "../domain/prop-pool";
 import {
   clearGuestCollection,
   loadGuestCollection,
   saveGuestCollection,
 } from "./prop-collection-persistence";
 import { setPropCollection } from "../state/prop-collection-state.svelte";
-import { openPropCelebration } from "../state/prop-celebration-state.svelte";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
 function propCollectionPath(uid: string): string {
   return `users/${uid}/gamification/propCollection`;
@@ -84,17 +83,18 @@ export class PropUnlockManager {
     }
   }
 
-  /** Count one created sequence; fire the celebration on the first milestone. */
+  /** Count one created sequence; toast (never auto-modal) when a pick is earned. */
   async recordCreation(_source: "generate" | "construct"): Promise<void> {
     await this.load();
-    const before = milestonesReached(this.collection.creationCount);
+    const before = this.collection.pendingPicks;
     this.collection = recordOne(this.collection);
-    const after = milestonesReached(this.collection.creationCount);
+    const earnedPick = this.collection.pendingPicks > before;
     await this.persist();
-    // First milestone ever auto-opens the celebration (onboarding delight).
-    // Later milestones rely on the redemption badge — no auto-pop.
-    if (after > before && after === 1) {
-      openPropCelebration();
+    // A reward must never interrupt the sequence the user just made. Toast it
+    // and badge the prop button; they claim from the picker when ready. No
+    // auto-opening modal on generate — that covered the payoff it rewarded.
+    if (earnedPick) {
+      toast.success("You've earned a new prop. Tap the prop button to claim it.", 5000);
     }
   }
 

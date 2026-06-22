@@ -8,6 +8,13 @@
  */
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
+/**
+ * Master switch for the play-to-unlock mechanic. When false, every prop is
+ * selectable from the start and no picks / badges / toasts fire — the whole
+ * celebration machine stays wired. Flip back to true to re-enable earning.
+ */
+export const PROP_LOCKING_ENABLED = false;
+
 /** Everyday spinning props — always open, never stored. */
 export const CORE_PROPS: readonly PropType[] = [
   PropType.STAFF,

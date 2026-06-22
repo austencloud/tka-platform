@@ -4,7 +4,12 @@
  * persistence; these functions are deterministic and unit-tested.
  */
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { CORE_PROPS, UNLOCKABLE_POOL, milestonesReached } from "./prop-pool";
+import {
+  CORE_PROPS,
+  PROP_LOCKING_ENABLED,
+  UNLOCKABLE_POOL,
+  milestonesReached,
+} from "./prop-pool";
 
 export interface PropCollection {
   /** Earned props only — CORE_PROPS are implicit and never stored. */
@@ -18,10 +23,12 @@ export function defaultCollection(): PropCollection {
 }
 
 export function isUnlocked(c: PropCollection, prop: PropType): boolean {
+  if (!PROP_LOCKING_ENABLED) return true;
   return CORE_PROPS.includes(prop) || c.unlockedPropTypes.includes(prop);
 }
 
 export function remainingLocked(c: PropCollection): PropType[] {
+  if (!PROP_LOCKING_ENABLED) return [];
   return UNLOCKABLE_POOL.filter((p) => !c.unlockedPropTypes.includes(p));
 }
 
