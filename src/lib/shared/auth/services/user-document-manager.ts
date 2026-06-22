@@ -58,6 +58,12 @@ export class UserDocumentManager {
    */
   async createOrUpdateUserDocument(user: User): Promise<void> {
     try {
+      // Dev guard: localhost writes straight to production Firestore (no
+      // emulator wired). Skip minting a public profile doc for anonymous guest
+      // sessions during development so dev reloads don't pollute the live
+      // `users` collection. Real (linked) accounts still get their doc in dev.
+      if (user.isAnonymous && !import.meta.env.PROD) return;
+
       const firestore = await getFirestoreInstance();
       const userDocRef = doc(firestore, `users/${user.uid}`);
       const userDoc = await getDoc(userDocRef);
@@ -113,6 +119,9 @@ export class UserDocumentManager {
           pronouns: null,
           // Admin status (default false)
           isAdmin: false,
+          // Guest flag — anonymous sessions are excluded from Browse Creators
+          // until they upgrade to a full account (see anonymous-upgrade.ts).
+          isAnonymous: user.isAnonymous,
         });
 
         // Claim username in /usernames collection (non-blocking)
@@ -151,6 +160,10 @@ export class UserDocumentManager {
           facebookId: providerIds.facebookId || null,
           updatedAt: serverTimestamp(),
           lastActivityDate: serverTimestamp(),
+          // Keep the guest flag current. onAuthStateChanged doesn't reliably
+          // fire on in-place link, so anonymous-upgrade.ts also clears this
+          // explicitly — this just keeps it correct on any later auth refresh.
+          isAnonymous: user.isAnonymous,
         };
 
         // Only overwrite avatar fields when Auth provides a real URL.

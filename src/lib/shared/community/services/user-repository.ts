@@ -79,8 +79,25 @@ interface FirestoreUserData extends DocumentData {
   role?: UserRole;
   isDisabled?: boolean;
   isHidden?: boolean;
+  isAnonymous?: boolean;
   adminLabel?: string;
   adminNotes?: string;
+}
+
+/**
+ * A guest (anonymous Firebase session) is not a real creator and must never
+ * appear in Browse Creators until they upgrade to a full account. The
+ * `isAnonymous` flag is the canonical signal (written on doc create, cleared on
+ * upgrade). The displayName fallback catches legacy/pre-deploy guest docs that
+ * predate the flag — it's safe because createOrUpdateUserDocument always derives
+ * a real name from the provider on upgrade, so a full account is never literally
+ * named "Anonymous User".
+ */
+function isAnonymousGuest(data: {
+  isAnonymous?: boolean | null;
+  displayName?: string | null;
+}): boolean {
+  return data.isAnonymous === true || data.displayName === "Anonymous User";
 }
 
 interface FollowDocument {
@@ -451,6 +468,7 @@ export async function getUsersPaginated(
     for (const docSnap of resultDocs) {
       const data = docSnap.data() as FirestoreUserData;
       if (data.isHidden) continue;
+      if (isAnonymousGuest(data)) continue; // guests aren't real creators yet
       const isFollowing =
         currentUserId !== docSnap.id && followingSet.has(docSnap.id);
       const user = await mapFirestoreToEnhancedProfile(
@@ -490,6 +508,7 @@ export async function getFeaturedCreators(
 
     for (const data of results) {
       if (data.isHidden) continue;
+      if (isAnonymousGuest(data)) continue; // guests aren't real creators yet
       const user = await mapFirestoreToEnhancedProfile(
         data.id,
         data,
@@ -538,6 +557,7 @@ export function subscribeToUsers(
               for (const docSnap of querySnapshot.docs) {
                 const data = docSnap.data() as FirestoreUserData;
                 if (data.isHidden) continue;
+                if (isAnonymousGuest(data)) continue; // guests aren't real creators yet
                 const isFollowing =
                   currentUserId !== docSnap.id && followingSet.has(docSnap.id);
                 const user = await mapFirestoreToEnhancedProfile(

@@ -81,6 +81,22 @@ export async function notifyUpgradeSignup(): Promise<void> {
     const auth = await getAuthInstance();
     const user = auth.currentUser;
     if (!user || user.isAnonymous) return;
+    // Clear the guest flag now that this uid is a full account, so the creator
+    // surfaces in Browse Creators. onAuthStateChanged doesn't reliably fire on
+    // an in-place link, so we do it explicitly. createOrUpdateUserDocument's
+    // update branch writes isAnonymous:false; it also creates the doc if dev
+    // skipped it while the session was anonymous (PROD-only guest-doc guard).
+    try {
+      const { getUserDocumentManager } = await import(
+        "$lib/shared/auth/get-user-document-manager"
+      );
+      await getUserDocumentManager().createOrUpdateUserDocument(user);
+    } catch (error) {
+      console.warn(
+        "⚠️ [anonymous-upgrade] Failed to clear guest flag on user doc:",
+        error
+      );
+    }
     // Guest work was attached to this uid before the link, so it carried over.
     // One non-blocking confirmation so the ~90% no-collision signups aren't left
     // wondering whether their sequences survived the upgrade.

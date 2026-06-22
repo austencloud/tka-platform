@@ -36,6 +36,7 @@ export const UserFirestoreDataSchema = z
     role: z.enum(["user", "premium", "tester", "admin"]).nullish(),
     isDisabled: z.boolean().nullish(),
     isHidden: z.boolean().nullish(),
+    isAnonymous: z.boolean().nullish(),
     adminLabel: z.string().nullish(),
     adminNotes: z.string().nullish(),
   })
