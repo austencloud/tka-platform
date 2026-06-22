@@ -14,12 +14,18 @@
   import "../_styles/guide.css";
   import "../_styles/guide-print.css";
   import { setGuidePrintMode } from "../_data/guide-data-context";
+  import { page } from "$app/state";
+  import GuidePage from "../_components/GuidePage.svelte";
+  import GuideCover from "../_components/GuideCover.svelte";
 
   import PositionsMotions from "../positions-motions/+page.svelte";
   import Letters from "../letters/+page.svelte";
   import Words from "../words/+page.svelte";
 
   setGuidePrintMode();
+
+  // ?theme=home → ink-cheap light cover for home printers; default = navy (foil).
+  const coverTheme = $derived(page.url.searchParams.get("theme") === "home" ? "light" : "navy");
 </script>
 
 <svelte:head>
@@ -28,18 +34,16 @@
 </svelte:head>
 
 <div class="guide-content guide-print-mode print-doc">
-  <header class="print-cover">
-    <!-- Cover art bakes in the title + ring; the bottom strip (old "v 0.5"
-         byline) is cropped off so the version reads v1.0 from the text below. -->
-    <div class="cover-art-wrap">
-      <img
-        src="/guide/level-1/images/_shared/level-1-front-cover.png"
-        alt="The Kinetic Alphabet Level 1 cover"
-      />
-    </div>
-    <p class="cover-sub">Level 1 — Positions, Motions, Letters &amp; Words</p>
-    <p class="cover-byline">Created by Austen Cloud · v1.0</p>
+  <!-- ── Page 1: Cover (real full page) ──────────────────────────────────
+       Cover art bakes in the title + ring; the bottom strip (old "v 0.5"
+       byline) is cropped so the version reads v1.0 from the live caption.
+       TODO(rebuild): rebake the ring fresh from the current renderer. -->
+  <GuidePage fullBleed label="p1 — Cover">
+    <div class="cover-fill"><GuideCover theme={coverTheme} /></div>
+  </GuidePage>
 
+  <!-- ── Page 2: Read Me First (its own page, matching the original) ────── -->
+  <GuidePage label="p2 — Read Me First">
     <div class="read-me">
       <h2>Read Me First</h2>
       <p>
@@ -70,9 +74,23 @@
       </p>
       <p class="sign-off">With love,<br />Austen Cloud</p>
     </div>
-  </header>
+  </GuidePage>
 
+  <!-- ── Pages 3+: chapters (NOT yet converted to GuidePage units) ─────── -->
   <PositionsMotions />
   <Letters />
   <Words />
 </div>
+
+<style>
+  /* Page 1 cover — full-bleed GuideCover. aspect-ratio gives the box a concrete
+     height (width × 11/8.5) so the cover's height:100% layout fills the page. */
+  .cover-fill {
+    width: 100%;
+    aspect-ratio: 8.5 / 11;
+  }
+  .read-me {
+    max-width: 6.2in;
+    margin: 0 auto;
+  }
+</style>

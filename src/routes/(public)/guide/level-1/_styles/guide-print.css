@@ -149,6 +149,21 @@
   font-style: italic;
 }
 
+/* === On-screen page viewer ===
+   The print route is also the WYSIWYG editor. On screen, drop the old white
+   7.3in container (it showed as a strip behind the wider 8.5in page sheets) and
+   lay the GuidePage sheets on a neutral viewer backdrop, centered, like a PDF
+   reader. In print this all collapses (see @media print + GuidePage). */
+@media screen {
+  .print-doc.guide-content {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 40px 0 80px;
+    background: #3c3c44;
+  }
+}
+
 /* === Print page setup + breaks === */
 @media print {
   @page {
