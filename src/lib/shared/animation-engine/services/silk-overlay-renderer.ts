@@ -1,14 +1,12 @@
 import type { Silk2DParams } from "$lib/shared/effects/translators/canvas2d-types";
-import {
-  Silk2DRenderer,
-  type SilkTipInput,
-} from "$lib/shared/effects/renderers/silk-2d-renderer";
+import { Silk2DRenderer } from "$lib/shared/effects/renderers/silk-2d-renderer";
+import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import { EffectRenderer } from "./effects/effect-renderer";
 
 export class SilkOverlayRenderer extends EffectRenderer {
   private renderer = new Silk2DRenderer();
 
-  renderFrame(params: Silk2DParams, tips: SilkTipInput, dt: number, loopDetected?: boolean): void {
+  renderFrame(params: Silk2DParams, tips: EmitterTip[], dt: number, loopDetected?: boolean): void {
     const ctx = this.ctx;
     if (!ctx) return;
     ctx.clearRect(0, 0, this.width, this.height);

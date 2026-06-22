@@ -1,16 +1,8 @@
 import type { Bubbles2DParams } from "../translators/canvas2d-types";
 import type { BubblePalette } from "../domain/bubble-palettes";
 import { oilIridescentRim } from "../domain/bubble-palettes";
-
-export interface BubblesTipInput {
-  bluePosA: { x: number; y: number } | null;
-  bluePosB: { x: number; y: number } | null;
-  redPosA: { x: number; y: number } | null;
-  redPosB: { x: number; y: number } | null;
-}
-
-type TipKey = "bluePosA" | "bluePosB" | "redPosA" | "redPosB";
-const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
+import type { EmitterTip } from "./emitter-tip";
+import { emitterId } from "./emitter-tip";
 
 /**
  * A single live bubble. Lightweight state - position is integrated each
@@ -84,13 +76,13 @@ const TAU = Math.PI * 2;
 export class Bubbles2DRenderer {
   private bubbles: Bubble[] = [];
   private bursts: PopBurst[] = [];
-  private lastTipPos: Partial<Record<TipKey, { x: number; y: number }>> = {};
-  private smoothedVelocity: Partial<Record<TipKey, { vx: number; vy: number }>> = {};
+  private lastTipPos = new Map<string, { x: number; y: number }>();
+  private smoothedVelocity = new Map<string, { vx: number; vy: number }>();
 
   render(
     ctx: CanvasRenderingContext2D,
     params: Bubbles2DParams,
-    tips: BubblesTipInput,
+    emitters: EmitterTip[],
     dt: number,
     scale: number = 1,
   ): void {
@@ -99,29 +91,31 @@ export class Bubbles2DRenderer {
     const poolCap = Math.min(MAX_BUBBLES, params.poolSize ?? MAX_BUBBLES);
 
     // 1. Per-tip velocity smoothing + spawn.
-    for (const key of TIP_KEYS) {
-      const tip = tips[key];
-      if (!tip || !this.isTipEnabled(key, tips, params)) {
-        delete this.lastTipPos[key];
-        delete this.smoothedVelocity[key];
-        continue;
-      }
-      const last = this.lastTipPos[key];
+    const seen = new Set<string>();
+    for (const e of emitters) {
+      if (!this.isEndEnabled(e.end, params)) continue;
+      const id = emitterId(e.propIndex, e.tipIndex);
+      seen.add(id);
+      const last = this.lastTipPos.get(id);
       let vx = 0;
       let vy = 0;
       if (last && dt > 0) {
-        vx = (tip.x - last.x) / dt;
-        vy = (tip.y - last.y) / dt;
+        vx = (e.x - last.x) / dt;
+        vy = (e.y - last.y) / dt;
       }
-      const prev = this.smoothedVelocity[key];
+      const prev = this.smoothedVelocity.get(id);
       const alpha = 1 - Math.pow(0.6, dt * 60);
       const svx = prev ? prev.vx + (vx - prev.vx) * alpha : vx;
       const svy = prev ? prev.vy + (vy - prev.vy) * alpha : vy;
-      if (prev) { prev.vx = svx; prev.vy = svy; } else { this.smoothedVelocity[key] = { vx: svx, vy: svy }; }
+      if (prev) { prev.vx = svx; prev.vy = svy; } else { this.smoothedVelocity.set(id, { vx: svx, vy: svy }); }
       const speedPx = Math.hypot(svx, svy);
-      this.spawnBubbles(params, tip, speedPx, dt, scale, baseR, poolCap);
-      if (last) { last.x = tip.x; last.y = tip.y; } else { this.lastTipPos[key] = { x: tip.x, y: tip.y }; }
+      this.spawnBubbles(params, e, speedPx, dt, scale, baseR, poolCap);
+      if (last) { last.x = e.x; last.y = e.y; } else { this.lastTipPos.set(id, { x: e.x, y: e.y }); }
     }
+
+    // Prune per-tip state for emitters that vanished this frame.
+    for (const id of this.lastTipPos.keys()) if (!seen.has(id)) this.lastTipPos.delete(id);
+    for (const id of this.smoothedVelocity.keys()) if (!seen.has(id)) this.smoothedVelocity.delete(id);
 
     // 2. Integrate + age + cull.
     this.integrateBubbles(dt, scale, params);
@@ -387,22 +381,16 @@ export class Bubbles2DRenderer {
     }
   }
 
-  private isTipEnabled(
-    key: TipKey,
-    tips: BubblesTipInput,
-    params: Bubbles2DParams,
-  ): boolean {
-    if (tips[key] == null) return false;
+  private isEndEnabled(end: "A" | "B", params: Bubbles2DParams): boolean {
     if (params.trackingMode === "both_ends") return true;
-    const isEndA = key === "bluePosA" || key === "redPosA";
-    return params.trackingMode === "left_end" ? isEndA : !isEndA;
+    return params.trackingMode === "left_end" ? end === "A" : end === "B";
   }
 
   dispose(): void {
     this.bubbles = [];
     this.bursts = [];
-    this.lastTipPos = {};
-    this.smoothedVelocity = {};
+    this.lastTipPos.clear();
+    this.smoothedVelocity.clear();
   }
 }
 

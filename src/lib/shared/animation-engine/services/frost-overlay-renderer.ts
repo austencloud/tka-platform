@@ -1,14 +1,12 @@
 import type { Frost2DParams } from "$lib/shared/effects/translators/canvas2d-types";
-import {
-  Frost2DRenderer,
-  type FrostTipInput,
-} from "$lib/shared/effects/renderers/frost-2d-renderer";
+import { Frost2DRenderer } from "$lib/shared/effects/renderers/frost-2d-renderer";
+import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import { EffectRenderer } from "./effects/effect-renderer";
 
 export class FrostOverlayRenderer extends EffectRenderer {
   private renderer = new Frost2DRenderer();
 
-  renderFrame(params: Frost2DParams, tips: FrostTipInput, dt: number): void {
+  renderFrame(params: Frost2DParams, tips: EmitterTip[], dt: number): void {
     const ctx = this.ctx;
     if (!ctx) return;
     ctx.clearRect(0, 0, this.width, this.height);

@@ -20,6 +20,7 @@ import {
 } from "$lib/shared/effects/domain/petal-palettes";
 import { Petals2DRenderer } from "$lib/shared/effects/renderers/petals-2d-renderer";
 import type { Petals2DParams } from "$lib/shared/effects/translators/canvas2d-types";
+import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 
 const TAU = Math.PI * 2;
 
@@ -414,18 +415,13 @@ class BaselineVariant implements PetalVariant {
       fallBaseSpeed: 140,
       blendMode: "source-over",
     };
-    this.r.render(
-      ctx,
-      params,
-      {
-        bluePosA: tips.blueA,
-        bluePosB: tips.blueB,
-        redPosA: tips.redA,
-        redPosB: tips.redB,
-      },
-      dt,
-      1,
-    );
+    const emitters: EmitterTip[] = [
+      tips.blueA && { ...tips.blueA, propIndex: 0, tipIndex: 0, end: "A" as const, color: "#ffb0c8" },
+      tips.blueB && { ...tips.blueB, propIndex: 0, tipIndex: 1, end: "B" as const, color: "#ffb0c8" },
+      tips.redA && { ...tips.redA, propIndex: 1, tipIndex: 0, end: "A" as const, color: "#ffb0c8" },
+      tips.redB && { ...tips.redB, propIndex: 1, tipIndex: 1, end: "B" as const, color: "#ffb0c8" },
+    ].filter(Boolean) as EmitterTip[];
+    this.r.render(ctx, params, emitters, dt, 1);
   }
 
   count(): number {

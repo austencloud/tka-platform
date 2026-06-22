@@ -13,16 +13,14 @@
  */
 
 import type { Bubbles2DParams } from "$lib/shared/effects/translators/canvas2d-types";
-import {
-  Bubbles2DRenderer,
-  type BubblesTipInput,
-} from "$lib/shared/effects/renderers/bubbles-2d-renderer";
+import { Bubbles2DRenderer } from "$lib/shared/effects/renderers/bubbles-2d-renderer";
+import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import { EffectRenderer } from "./effects/effect-renderer";
 
 export class BubblesOverlayRenderer extends EffectRenderer {
   private renderer = new Bubbles2DRenderer();
 
-  renderFrame(params: Bubbles2DParams, tips: BubblesTipInput, dt: number): void {
+  renderFrame(params: Bubbles2DParams, tips: EmitterTip[], dt: number): void {
     const ctx = this.ctx;
     if (!ctx) return;
     ctx.clearRect(0, 0, this.width, this.height);

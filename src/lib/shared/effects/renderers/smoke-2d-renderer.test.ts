@@ -2,6 +2,24 @@ import { describe, it, expect, vi } from "vitest";
 import { Smoke2DRenderer } from "./smoke-2d-renderer";
 import type { Smoke2DParams } from "../translators/canvas2d-types";
 import { SMOKE_PALETTES } from "../domain/smoke-palettes";
+import type { EmitterTip } from "./emitter-tip";
+
+type PosBag = {
+  bluePosA?: { x: number; y: number };
+  bluePosB?: { x: number; y: number };
+  redPosA?: { x: number; y: number };
+  redPosB?: { x: number; y: number };
+};
+
+/** Convert the legacy 4-slot bag to the flat emitter contract (base props). */
+function toEmitters(s: PosBag): EmitterTip[] {
+  const out: EmitterTip[] = [];
+  if (s.bluePosA) out.push({ ...s.bluePosA, propIndex: 0, tipIndex: 0, end: "A", color: "#3a7fd9" });
+  if (s.bluePosB) out.push({ ...s.bluePosB, propIndex: 0, tipIndex: 1, end: "B", color: "#3a7fd9" });
+  if (s.redPosA) out.push({ ...s.redPosA, propIndex: 1, tipIndex: 0, end: "A", color: "#d94f4f" });
+  if (s.redPosB) out.push({ ...s.redPosB, propIndex: 1, tipIndex: 1, end: "B", color: "#d94f4f" });
+  return out;
+}
 
 function makeCtx(): CanvasRenderingContext2D {
   const makeGradient = () => ({ addColorStop: vi.fn() });
@@ -68,12 +86,21 @@ function makeParams(overrides: Partial<Smoke2DParams> = {}): Smoke2DParams {
   };
 }
 
-const ALL_TIPS = {
+const ALL_TIPS = toEmitters({
   bluePosA: { x: 100, y: 400 },
   bluePosB: { x: 120, y: 400 },
   redPosA: { x: 200, y: 400 },
   redPosB: { x: 220, y: 400 },
-};
+});
+
+/** Two base props + one tunnel layer (propIndex 2/3) to prove layer coverage. */
+const WITH_LAYER: EmitterTip[] = [
+  ...ALL_TIPS,
+  { x: 300, y: 400, propIndex: 2, tipIndex: 0, end: "A", color: "#22cc88" },
+  { x: 320, y: 400, propIndex: 2, tipIndex: 1, end: "B", color: "#22cc88" },
+  { x: 400, y: 400, propIndex: 3, tipIndex: 0, end: "A", color: "#cc4488" },
+  { x: 420, y: 400, propIndex: 3, tipIndex: 1, end: "B", color: "#cc4488" },
+];
 
 describe("Smoke2DRenderer", () => {
   it("spawns puffs at rest under ambient emission", () => {
@@ -90,6 +117,27 @@ describe("Smoke2DRenderer", () => {
     // Each alive puff draws an arc fill per frame.
     expect((ctx.fill as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
     expect((ctx.arc as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+  });
+
+  it("spawns from tunnel layer emitters (propIndex >= 2)", () => {
+    const rBase = new Smoke2DRenderer();
+    const rLayered = new Smoke2DRenderer();
+    const ctxBase = makeCtx();
+    const ctxLayered = makeCtx();
+    const params = makeParams({
+      ambientEmission: 1,
+      motionEmission: 0,
+      ambientSpawnRate: 120,
+    });
+    for (let i = 0; i < 30; i++) {
+      rBase.render(ctxBase, params, ALL_TIPS, 1 / 60);
+      rLayered.render(ctxLayered, params, WITH_LAYER, 1 / 60);
+    }
+    const baseFills = (ctxBase.fill as ReturnType<typeof vi.fn>).mock.calls.length;
+    const layeredFills = (ctxLayered.fill as ReturnType<typeof vi.fn>).mock.calls.length;
+    // 8 emitters (4 base + 4 layer ends) vs 4 base ends ⇒ strictly more puffs
+    // drawn. Confirms layer emitters (propIndex >= 2) actually spawn.
+    expect(layeredFills).toBeGreaterThan(baseFills);
   });
 
   it("motion emission increases spawn under tip velocity", () => {
@@ -121,12 +169,12 @@ describe("Smoke2DRenderer", () => {
     const step = 0.02;
     for (let i = 0; i < 20; i++) {
       rA.render(ctxA, restParams, ALL_TIPS, step);
-      const moving = {
+      const moving = toEmitters({
         bluePosA: { x: 100 + i * 30, y: 400 },
         bluePosB: { x: 120 + i * 30, y: 400 },
         redPosA: { x: 200 + i * 30, y: 400 },
         redPosB: { x: 220 + i * 30, y: 400 },
-      };
+      });
       rB.render(ctxB, moveParams, moving, step);
     }
     const aFills = (ctxA.fill as ReturnType<typeof vi.fn>).mock.calls.length;

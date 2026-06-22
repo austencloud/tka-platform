@@ -2,6 +2,24 @@ import { describe, it, expect, vi } from "vitest";
 import { Petals2DRenderer } from "./petals-2d-renderer";
 import type { Petals2DParams } from "../translators/canvas2d-types";
 import { PETAL_PALETTES } from "../domain/petal-palettes";
+import type { EmitterTip } from "./emitter-tip";
+
+type PosBag = {
+  bluePosA?: { x: number; y: number };
+  bluePosB?: { x: number; y: number };
+  redPosA?: { x: number; y: number };
+  redPosB?: { x: number; y: number };
+};
+
+/** Convert the legacy 4-slot bag to the flat emitter contract (base props). */
+function toEmitters(s: PosBag): EmitterTip[] {
+  const out: EmitterTip[] = [];
+  if (s.bluePosA) out.push({ ...s.bluePosA, propIndex: 0, tipIndex: 0, end: "A", color: "#3a7fd9" });
+  if (s.bluePosB) out.push({ ...s.bluePosB, propIndex: 0, tipIndex: 1, end: "B", color: "#3a7fd9" });
+  if (s.redPosA) out.push({ ...s.redPosA, propIndex: 1, tipIndex: 0, end: "A", color: "#d94f4f" });
+  if (s.redPosB) out.push({ ...s.redPosB, propIndex: 1, tipIndex: 1, end: "B", color: "#d94f4f" });
+  return out;
+}
 
 function makeCtx(): CanvasRenderingContext2D {
   const makeGradient = () => ({ addColorStop: vi.fn() });
@@ -63,12 +81,21 @@ function makeParams(overrides: Partial<Petals2DParams> = {}): Petals2DParams {
   };
 }
 
-const ALL_TIPS = {
+const ALL_TIPS = toEmitters({
   bluePosA: { x: 100, y: 100 },
   bluePosB: { x: 120, y: 100 },
   redPosA: { x: 200, y: 100 },
   redPosB: { x: 220, y: 100 },
-};
+});
+
+/** Two base props + one tunnel layer (propIndex 2/3) to prove layer coverage. */
+const WITH_LAYER: EmitterTip[] = [
+  ...ALL_TIPS,
+  { x: 300, y: 100, propIndex: 2, tipIndex: 0, end: "A", color: "#22cc88" },
+  { x: 320, y: 100, propIndex: 2, tipIndex: 1, end: "B", color: "#22cc88" },
+  { x: 400, y: 100, propIndex: 3, tipIndex: 0, end: "A", color: "#cc4488" },
+  { x: 420, y: 100, propIndex: 3, tipIndex: 1, end: "B", color: "#cc4488" },
+];
 
 describe("Petals2DRenderer", () => {
   it("spawns petals at rest under ambient emission", () => {
@@ -88,6 +115,27 @@ describe("Petals2DRenderer", () => {
     expect((ctx.setTransform as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
   });
 
+  it("spawns from tunnel layer emitters (propIndex >= 2)", () => {
+    const rBase = new Petals2DRenderer();
+    const rLayered = new Petals2DRenderer();
+    const ctxBase = makeCtx();
+    const ctxLayered = makeCtx();
+    const params = makeParams({
+      ambientEmission: 1,
+      motionEmission: 0,
+      ambientSpawnRate: 60,
+    });
+    for (let i = 0; i < 60; i++) {
+      rBase.render(ctxBase, params, ALL_TIPS, 1 / 60);
+      rLayered.render(ctxLayered, params, WITH_LAYER, 1 / 60);
+    }
+    const baseFills = (ctxBase.fill as ReturnType<typeof vi.fn>).mock.calls.length;
+    const layeredFills = (ctxLayered.fill as ReturnType<typeof vi.fn>).mock.calls.length;
+    // 4 base ends vs 4 base + 4 layer ends ⇒ strictly more silhouette fills.
+    // Confirms layer emitters (propIndex >= 2) actually spawn petals.
+    expect(layeredFills).toBeGreaterThan(baseFills);
+  });
+
   it("motion emission outpaces ambient emission", () => {
     const ctxA = makeCtx();
     const ctxB = makeCtx();
@@ -99,12 +147,12 @@ describe("Petals2DRenderer", () => {
     const step = 0.02;
     for (let i = 0; i < 40; i++) {
       rA.render(ctxA, restParams, ALL_TIPS, step);
-      const moving = {
+      const moving = toEmitters({
         bluePosA: { x: 100 + i * 30, y: 100 },
         bluePosB: { x: 120 + i * 30, y: 100 },
         redPosA: { x: 200 + i * 30, y: 100 },
         redPosB: { x: 220 + i * 30, y: 100 },
-      };
+      });
       rB.render(ctxB, moveParams, moving, step);
     }
     const aFills = (ctxA.fill as ReturnType<typeof vi.fn>).mock.calls.length;

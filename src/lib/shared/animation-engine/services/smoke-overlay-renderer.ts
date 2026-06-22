@@ -13,16 +13,14 @@
  */
 
 import type { Smoke2DParams } from "$lib/shared/effects/translators/canvas2d-types";
-import {
-  Smoke2DRenderer,
-  type SmokeTipInput,
-} from "$lib/shared/effects/renderers/smoke-2d-renderer";
+import { Smoke2DRenderer } from "$lib/shared/effects/renderers/smoke-2d-renderer";
+import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import { EffectRenderer } from "./effects/effect-renderer";
 
 export class SmokeOverlayRenderer extends EffectRenderer {
   private renderer = new Smoke2DRenderer();
 
-  renderFrame(params: Smoke2DParams, tips: SmokeTipInput, dt: number): void {
+  renderFrame(params: Smoke2DParams, tips: EmitterTip[], dt: number): void {
     const ctx = this.ctx;
     if (!ctx) return;
     ctx.clearRect(0, 0, this.width, this.height);

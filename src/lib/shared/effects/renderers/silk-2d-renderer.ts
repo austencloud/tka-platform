@@ -1,14 +1,6 @@
 import type { Silk2DParams } from "../translators/canvas2d-types";
-
-export interface SilkTipInput {
-  bluePosA: { x: number; y: number } | null;
-  bluePosB: { x: number; y: number } | null;
-  redPosA: { x: number; y: number } | null;
-  redPosB: { x: number; y: number } | null;
-}
-
-type TipKey = "bluePosA" | "bluePosB" | "redPosA" | "redPosB";
-const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
+import type { EmitterTip } from "./emitter-tip";
+import { emitterId } from "./emitter-tip";
 
 interface RibbonSample {
   x: number;
@@ -24,42 +16,55 @@ const TAU = Math.PI * 2;
 
 export class Silk2DRenderer {
   private time = 0;
-  private tipTrails: Partial<Record<TipKey, RibbonSample[]>> = {};
-  private lastTipPos: Partial<Record<TipKey, { x: number; y: number }>> = {};
+  private tipTrails = new Map<string, RibbonSample[]>();
+  private lastTipPos = new Map<string, { x: number; y: number }>();
 
   render(
     ctx: CanvasRenderingContext2D,
     params: Silk2DParams,
-    tips: SilkTipInput,
+    emitters: EmitterTip[],
     dt: number,
     scale: number = 1,
     loopDetected: boolean = false,
   ): void {
     this.time += dt;
 
-    for (const key of TIP_KEYS) {
-      const tip = tips[key];
-      if (!tip || !this.isTipEnabled(key, params)) {
-        // When tips go temporarily null (e.g. warmup frames after a loop
-        // reset), preserve trail data so the ribbon keeps rendering from
-        // existing samples and fades out naturally via lifetimeSeconds.
-        // Only clear lastTipPos so speed isn't computed against a stale pos.
-        const trail = this.tipTrails[key];
+    // Build the set of emitters present + tracking-enabled this frame. Layer
+    // props (propIndex >= 2) flow through identically to the two base props.
+    const present = new Map<string, EmitterTip>();
+    for (const e of emitters) {
+      if (!this.isEndEnabled(e.end, params)) continue;
+      present.set(emitterId(e.propIndex, e.tipIndex), e);
+    }
+
+    // Iterate the union of (present ids) and (existing trail ids) so trails for
+    // emitters that vanished this frame still age out instead of being pruned.
+    const ids = new Set<string>(this.tipTrails.keys());
+    for (const id of present.keys()) ids.add(id);
+
+    for (const id of ids) {
+      const tip = present.get(id);
+      if (!tip) {
+        // Emitter absent/disabled this frame. Preserve trail data so the ribbon
+        // keeps rendering from existing samples and fades out naturally via
+        // lifetimeSeconds; only delete the Map entry once empty. Clear
+        // lastTipPos so speed isn't computed against a stale pos.
+        const trail = this.tipTrails.get(id);
         if (trail) {
           const cutoff = this.time - params.lifetimeSeconds;
           while (trail.length > 0 && trail[0]!.t < cutoff) trail.shift();
           if (trail.length === 0) {
-            delete this.tipTrails[key];
+            this.tipTrails.delete(id);
           }
         }
-        delete this.lastTipPos[key];
+        this.lastTipPos.delete(id);
         continue;
       }
 
-      let trail = this.tipTrails[key];
+      let trail = this.tipTrails.get(id);
       if (!trail) {
         trail = [];
-        this.tipTrails[key] = trail;
+        this.tipTrails.set(id, trail);
       }
 
       if (loopDetected) {
@@ -67,11 +72,11 @@ export class Silk2DRenderer {
         // end-of-sequence back to start. Skip recording this frame's sample
         // to avoid a velocity spike and visible ribbon discontinuity.
         // Update lastTipPos so the next frame computes speed normally.
-        this.lastTipPos[key] = { x: tip.x, y: tip.y };
+        this.lastTipPos.set(id, { x: tip.x, y: tip.y });
         continue;
       }
 
-      const last = this.lastTipPos[key];
+      const last = this.lastTipPos.get(id);
       let speed = 0;
       if (last && dt > 0) {
         speed = Math.hypot(tip.x - last.x, tip.y - last.y) / dt;
@@ -87,7 +92,7 @@ export class Silk2DRenderer {
         last.x = tip.x;
         last.y = tip.y;
       } else {
-        this.lastTipPos[key] = { x: tip.x, y: tip.y };
+        this.lastTipPos.set(id, { x: tip.x, y: tip.y });
       }
     }
 
@@ -98,9 +103,8 @@ export class Silk2DRenderer {
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
 
-      for (const key of TIP_KEYS) {
-        const trail = this.tipTrails[key];
-        if (!trail || trail.length < 3) continue;
+      for (const trail of this.tipTrails.values()) {
+        if (trail.length < 3) continue;
         this.drawRibbon(ctx, params, trail, scale);
       }
     } finally {
@@ -300,15 +304,14 @@ export class Silk2DRenderer {
     }
   }
 
-  private isTipEnabled(key: TipKey, params: Silk2DParams): boolean {
+  private isEndEnabled(end: "A" | "B", params: Silk2DParams): boolean {
     if (params.trackingMode === "both_ends") return true;
-    const isEndA = key === "bluePosA" || key === "redPosA";
-    return params.trackingMode === "left_end" ? isEndA : !isEndA;
+    return params.trackingMode === "left_end" ? end === "A" : end === "B";
   }
 
   dispose(): void {
-    this.tipTrails = {};
-    this.lastTipPos = {};
+    this.tipTrails.clear();
+    this.lastTipPos.clear();
     this.time = 0;
   }
 }

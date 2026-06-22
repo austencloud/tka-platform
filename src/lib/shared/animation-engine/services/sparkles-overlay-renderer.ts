@@ -12,16 +12,14 @@
  */
 
 import type { Sparkles2DParams } from "$lib/shared/effects/translators/canvas2d-types";
-import {
-  Sparkles2DRenderer,
-  type SparklesTipInput,
-} from "$lib/shared/effects/renderers/sparkles-2d-renderer";
+import { Sparkles2DRenderer } from "$lib/shared/effects/renderers/sparkles-2d-renderer";
+import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import { EffectRenderer } from "./effects/effect-renderer";
 
 export class SparklesOverlayRenderer extends EffectRenderer {
   private renderer = new Sparkles2DRenderer();
 
-  renderFrame(params: Sparkles2DParams, tips: SparklesTipInput, dt: number): void {
+  renderFrame(params: Sparkles2DParams, tips: EmitterTip[], dt: number): void {
     const ctx = this.ctx;
     if (!ctx) return;
     ctx.clearRect(0, 0, this.width, this.height);

@@ -1,11 +1,6 @@
 import type { Sparkles2DParams } from "../translators/canvas2d-types";
-
-export interface SparklesTipInput {
-  bluePosA: { x: number; y: number } | null;
-  bluePosB: { x: number; y: number } | null;
-  redPosA: { x: number; y: number } | null;
-  redPosB: { x: number; y: number } | null;
-}
+import type { EmitterTip } from "./emitter-tip";
+import { emitterId } from "./emitter-tip";
 
 interface Particle {
   x: number;
@@ -22,9 +17,6 @@ interface Particle {
   /** Phase offset (radians) for the per-particle alpha twinkle. */
   twinklePhase: number;
 }
-
-type TipKey = "bluePosA" | "bluePosB" | "redPosA" | "redPosB";
-const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
 
 /** Hard ceiling on particle count for perf safety. The live cap is rate-scaled. */
 const MAX_PARTICLES = 1500;
@@ -47,43 +39,44 @@ const BURST_MOTION_THRESHOLD = 0.3;
  */
 export class Sparkles2DRenderer {
   private particles: Particle[] = [];
-  private lastTipPos: Partial<Record<TipKey, { x: number; y: number }>> = {};
+  private lastTipPos = new Map<string, { x: number; y: number }>();
 
   render(
     ctx: CanvasRenderingContext2D,
     params: Sparkles2DParams,
-    tips: SparklesTipInput,
+    emitters: EmitterTip[],
     dt: number,
     scale: number = 1,
   ): void {
-    // 1. Spawn from each enabled tip per current mode.
+    // 1. Spawn from each enabled emitter per current mode. Covers base props
+    //    and every tunnel kaleidoscope layer (propIndex >= 2).
     //    Live cap scales with params.rate so the slider actually controls
     //    on-screen density (not just the spawn rate, which was being masked
     //    by a static cap once rate crossed ~0.08).
-    //    Per-tip allocation prevents the first tip in iteration order from
-    //    consuming the whole budget - without it, sparkles appear to come
+    //    Per-emitter allocation prevents the first emitter in iteration order
+    //    from consuming the whole budget - without it, sparkles appear to come
     //    from only one tip.
     const effectiveMax = Math.max(
       MIN_LIVE_PARTICLES,
       Math.min(MAX_PARTICLES, Math.floor(MAX_PARTICLES * params.rate)),
     );
-    const activeKeys = TIP_KEYS.filter((k) => tips[k] != null);
+    const activeEmitters = emitters.filter((e) => this.isEndEnabled(e.end, params));
     const slotsLeft = Math.max(0, effectiveMax - this.particles.length);
-    const perTipCap = activeKeys.length > 0
-      ? Math.max(0, Math.floor(slotsLeft / activeKeys.length))
+    const perTipCap = activeEmitters.length > 0
+      ? Math.max(0, Math.floor(slotsLeft / activeEmitters.length))
       : 0;
 
-    for (const key of TIP_KEYS) {
-      const tip = tips[key];
-      if (!tip) {
-        delete this.lastTipPos[key];
-        continue;
-      }
-      const last = this.lastTipPos[key];
-      this.spawnFromTip(params, tip, last, dt, perTipCap, scale);
-      const lp = this.lastTipPos[key];
-      if (lp) { lp.x = tip.x; lp.y = tip.y; } else { this.lastTipPos[key] = { x: tip.x, y: tip.y }; }
+    const seen = new Set<string>();
+    for (const e of activeEmitters) {
+      const id = emitterId(e.propIndex, e.tipIndex);
+      seen.add(id);
+      const last = this.lastTipPos.get(id);
+      this.spawnFromTip(params, e, last, dt, perTipCap, scale);
+      if (last) { last.x = e.x; last.y = e.y; } else { this.lastTipPos.set(id, { x: e.x, y: e.y }); }
     }
+    // Prune per-tip state for emitters absent this frame (a layer toggled off
+    // or a tip disabled by tracking-mode) so the Map doesn't grow unbounded.
+    for (const id of this.lastTipPos.keys()) if (!seen.has(id)) this.lastTipPos.delete(id);
 
     // 2. Step physics + cull dead particles (in-place compaction - zero allocation).
     const gravityPx = params.gravity * 200 * scale;
@@ -250,8 +243,17 @@ export class Sparkles2DRenderer {
     return params.color;
   }
 
+  private isEndEnabled(end: "A" | "B", params: Sparkles2DParams): boolean {
+    // Sparkles has no tracking-mode control - all emitter ends spawn. The
+    // optional field is read defensively so the per-emitter filter shape stays
+    // consistent with the other overlay renderers; absent it, every end passes.
+    const trackingMode = (params as { trackingMode?: "left_end" | "right_end" | "both_ends" }).trackingMode;
+    if (!trackingMode || trackingMode === "both_ends") return true;
+    return trackingMode === "left_end" ? end === "A" : end === "B";
+  }
+
   dispose(): void {
     this.particles = [];
-    this.lastTipPos = {};
+    this.lastTipPos.clear();
   }
 }

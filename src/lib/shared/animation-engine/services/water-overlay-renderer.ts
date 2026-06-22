@@ -12,16 +12,14 @@
  */
 
 import type { Water2DParams } from "$lib/shared/effects/translators/canvas2d-types";
-import {
-  Water2DRenderer,
-  type WaterTipInput,
-} from "$lib/shared/effects/renderers/water-2d-renderer";
+import { Water2DRenderer } from "$lib/shared/effects/renderers/water-2d-renderer";
+import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import { EffectRenderer } from "./effects/effect-renderer";
 
 export class WaterOverlayRenderer extends EffectRenderer {
   private renderer = new Water2DRenderer();
 
-  renderFrame(params: Water2DParams, tips: WaterTipInput, dt: number): void {
+  renderFrame(params: Water2DParams, tips: EmitterTip[], dt: number): void {
     const ctx = this.ctx;
     if (!ctx) return;
     ctx.clearRect(0, 0, this.width, this.height);

@@ -1,15 +1,7 @@
 import type { Water2DParams } from "../translators/canvas2d-types";
 import type { WaterPalette } from "../domain/water-palettes";
-
-export interface WaterTipInput {
-  bluePosA: { x: number; y: number } | null;
-  bluePosB: { x: number; y: number } | null;
-  redPosA: { x: number; y: number } | null;
-  redPosB: { x: number; y: number } | null;
-}
-
-type TipKey = "bluePosA" | "bluePosB" | "redPosA" | "redPosB";
-const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
+import type { EmitterTip } from "./emitter-tip";
+import { emitterId } from "./emitter-tip";
 
 /**
  * A single in-flight water droplet. Once released it's on rails - position
@@ -187,8 +179,8 @@ const STYLE_TUNINGS: Record<SpewStyle, StyleTuning> = {
  */
 export class Water2DRenderer {
   private droplets: WaterDroplet[] = [];
-  private lastTipPos: Partial<Record<TipKey, { x: number; y: number }>> = {};
-  private smoothedVelocity: Partial<Record<TipKey, { vx: number; vy: number }>> = {};
+  private lastTipPos = new Map<string, { x: number; y: number }>();
+  private smoothedVelocity = new Map<string, { vx: number; vy: number }>();
   private spriteCache = new DropletSpriteCache();
   private atmosOff: HTMLCanvasElement | OffscreenCanvas | null = null;
   private atmosCtx:
@@ -203,7 +195,7 @@ export class Water2DRenderer {
   render(
     ctx: CanvasRenderingContext2D,
     params: Water2DParams,
-    tips: WaterTipInput,
+    emitters: EmitterTip[],
     dt: number,
     scale: number = 1,
   ): void {
@@ -214,32 +206,31 @@ export class Water2DRenderer {
       params.baseRadius * scale * (1.2 + 0.6 * params.intensity) * tuning.sizeScale;
     const poolCap = Math.min(MAX_DROPLETS, params.poolSize ?? MAX_DROPLETS);
 
-    // 1. Per-tip: smooth velocity + spawn droplets.
-    for (const key of TIP_KEYS) {
-      const tip = tips[key];
-      if (!tip || !this.isTipEnabled(key, tips, params)) {
-        delete this.lastTipPos[key];
-        delete this.smoothedVelocity[key];
-        continue;
-      }
-      const last = this.lastTipPos[key];
+    // 1. Per-emitter: smooth velocity + spawn droplets. Covers base props and
+    //    every tunnel kaleidoscope layer (propIndex >= 2).
+    const seen = new Set<string>();
+    for (const e of emitters) {
+      if (!this.isEndEnabled(e.end, params)) continue;
+      const id = emitterId(e.propIndex, e.tipIndex);
+      seen.add(id);
+      const last = this.lastTipPos.get(id);
       let vx = 0;
       let vy = 0;
       if (last && dt > 0) {
-        vx = (tip.x - last.x) / dt;
-        vy = (tip.y - last.y) / dt;
+        vx = (e.x - last.x) / dt;
+        vy = (e.y - last.y) / dt;
       }
       // EMA smoothing - raw per-frame delta is noisy and makes spawn rate
       // flicker on top of the intended motion curve.
-      const prev = this.smoothedVelocity[key];
+      const prev = this.smoothedVelocity.get(id);
       const alpha = 1 - Math.pow(0.6, dt * 60);
       const svx = prev ? prev.vx + (vx - prev.vx) * alpha : vx;
       const svy = prev ? prev.vy + (vy - prev.vy) * alpha : vy;
-      if (prev) { prev.vx = svx; prev.vy = svy; } else { this.smoothedVelocity[key] = { vx: svx, vy: svy }; }
+      if (prev) { prev.vx = svx; prev.vy = svy; } else { this.smoothedVelocity.set(id, { vx: svx, vy: svy }); }
       const speedPx = Math.hypot(svx, svy);
       this.spawnDroplets(
         params,
-        tip,
+        e,
         svx,
         svy,
         speedPx,
@@ -249,8 +240,12 @@ export class Water2DRenderer {
         poolCap,
         tuning,
       );
-      if (last) { last.x = tip.x; last.y = tip.y; } else { this.lastTipPos[key] = { x: tip.x, y: tip.y }; }
+      if (last) { last.x = e.x; last.y = e.y; } else { this.lastTipPos.set(id, { x: e.x, y: e.y }); }
     }
+    // Prune state for emitters not present this frame (e.g. a layer toggled off
+    // or a tip turned off by tracking-mode) so the Maps don't grow unbounded.
+    for (const id of this.lastTipPos.keys()) if (!seen.has(id)) this.lastTipPos.delete(id);
+    for (const id of this.smoothedVelocity.keys()) if (!seen.has(id)) this.smoothedVelocity.delete(id);
 
     // 2. Age + evict (in-place compaction - zero allocation).
     let writeIdx = 0;
@@ -517,21 +512,15 @@ export class Water2DRenderer {
     }
   }
 
-  private isTipEnabled(
-    key: TipKey,
-    tips: WaterTipInput,
-    params: Water2DParams,
-  ): boolean {
-    if (tips[key] == null) return false;
+  private isEndEnabled(end: "A" | "B", params: Water2DParams): boolean {
     if (params.trackingMode === "both_ends") return true;
-    const isEndA = key === "bluePosA" || key === "redPosA";
-    return params.trackingMode === "left_end" ? isEndA : !isEndA;
+    return params.trackingMode === "left_end" ? end === "A" : end === "B";
   }
 
   dispose(): void {
     this.droplets = [];
-    this.lastTipPos = {};
-    this.smoothedVelocity = {};
+    this.lastTipPos.clear();
+    this.smoothedVelocity.clear();
     this.spriteCache.dispose();
     this.atmosOff = null;
     this.atmosCtx = null;

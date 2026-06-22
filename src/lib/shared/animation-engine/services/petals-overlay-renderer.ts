@@ -13,16 +13,14 @@
  */
 
 import type { Petals2DParams } from "$lib/shared/effects/translators/canvas2d-types";
-import {
-  Petals2DRenderer,
-  type PetalsTipInput,
-} from "$lib/shared/effects/renderers/petals-2d-renderer";
+import { Petals2DRenderer } from "$lib/shared/effects/renderers/petals-2d-renderer";
+import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import { EffectRenderer } from "./effects/effect-renderer";
 
 export class PetalsOverlayRenderer extends EffectRenderer {
   private renderer = new Petals2DRenderer();
 
-  renderFrame(params: Petals2DParams, tips: PetalsTipInput, dt: number): void {
+  renderFrame(params: Petals2DParams, tips: EmitterTip[], dt: number): void {
     const ctx = this.ctx;
     if (!ctx) return;
     ctx.clearRect(0, 0, this.width, this.height);

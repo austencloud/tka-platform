@@ -13,16 +13,14 @@
  */
 
 import type { Ink2DParams } from "$lib/shared/effects/translators/canvas2d-types";
-import {
-  Ink2DRenderer,
-  type InkTipInput,
-} from "$lib/shared/effects/renderers/ink-2d-renderer";
+import { Ink2DRenderer } from "$lib/shared/effects/renderers/ink-2d-renderer";
+import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import { EffectRenderer } from "./effects/effect-renderer";
 
 export class InkOverlayRenderer extends EffectRenderer {
   private renderer = new Ink2DRenderer();
 
-  renderFrame(params: Ink2DParams, tips: InkTipInput, dt: number): void {
+  renderFrame(params: Ink2DParams, tips: EmitterTip[], dt: number): void {
     const ctx = this.ctx;
     if (!ctx) return;
     ctx.clearRect(0, 0, this.width, this.height);

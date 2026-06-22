@@ -1,14 +1,6 @@
 import type { Ink2DParams } from "../translators/canvas2d-types";
-
-export interface InkTipInput {
-  bluePosA: { x: number; y: number } | null;
-  bluePosB: { x: number; y: number } | null;
-  redPosA: { x: number; y: number } | null;
-  redPosB: { x: number; y: number } | null;
-}
-
-type TipKey = "bluePosA" | "bluePosB" | "redPosA" | "redPosB";
-const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
+import type { EmitterTip } from "./emitter-tip";
+import { emitterId } from "./emitter-tip";
 
 const STAMP_SIZE = 64;
 const STAMP_HALF = STAMP_SIZE / 2;
@@ -208,33 +200,37 @@ function jitterHash(seed: number, channel: number): number {
 }
 
 export class Ink2DRenderer {
-  private tips: Record<TipKey, TipState | null> = {
-    bluePosA: null,
-    bluePosB: null,
-    redPosA: null,
-    redPosB: null,
-  };
+  private tips = new Map<string, TipState>();
   private stampCache = new BrushStampCache();
   private droplets: InkDroplet[] = [];
 
   render(
     ctx: CanvasRenderingContext2D,
     params: Ink2DParams,
-    tips: InkTipInput,
+    emitters: EmitterTip[],
     dt: number,
     _scale: number = 1,
   ): void {
-    for (const key of TIP_KEYS) {
-      const pos = tips[key];
-      const enabled = this.isTipEnabled(key, params);
-      if (!pos || !enabled) {
-        // Don't clear state - let existing points sag, break, and age out.
-        // Only clear lastPos so the next appearance doesn't teleport.
-        const state = this.tips[key];
+    // Per-emitter update. Covers base props and every tunnel kaleidoscope
+    // layer (propIndex >= 2).
+    const seen = new Set<string>();
+    for (const e of emitters) {
+      const id = emitterId(e.propIndex, e.tipIndex);
+      seen.add(id);
+      if (!this.isEndEnabled(e.end, params)) {
+        // Tip present but disabled by tracking-mode: don't clear state - let
+        // existing points sag, break, and age out. Only clear lastPos so the
+        // next appearance doesn't teleport.
+        const state = this.tips.get(id);
         if (state) state.lastPos = null;
         continue;
       }
-      this.updateTip(key, pos, params, dt);
+      this.updateTip(id, { x: e.x, y: e.y }, params, dt);
+    }
+    // Emitters absent this frame (layer toggled off, tip off-grid): clear
+    // lastPos so reappearance doesn't teleport, but keep aging the points.
+    for (const [id, state] of this.tips) {
+      if (!seen.has(id)) state.lastPos = null;
     }
     this.applyGravityAndCull(dt, params);
     this.detectBreakup(params);
@@ -244,12 +240,12 @@ export class Ink2DRenderer {
   }
 
   private updateTip(
-    key: TipKey,
+    id: string,
     pos: { x: number; y: number },
     params: Ink2DParams,
     dt: number,
   ): void {
-    let state = this.tips[key];
+    let state = this.tips.get(id);
     if (!state) {
       state = {
         points: [],
@@ -258,7 +254,7 @@ export class Ink2DRenderer {
         smoothedVy: 0,
         emitAccumulator: 0,
       };
-      this.tips[key] = state;
+      this.tips.set(id, state);
       return;
     }
 
@@ -343,9 +339,7 @@ export class Ink2DRenderer {
 
   private applyGravityAndCull(dt: number, params: Ink2DParams): void {
     const gravity = params.gravityPx;
-    for (const key of TIP_KEYS) {
-      const state = this.tips[key];
-      if (!state) continue;
+    for (const state of this.tips.values()) {
       const survivors: InkPoint[] = [];
       for (const p of state.points) {
         p.age += dt;
@@ -361,9 +355,8 @@ export class Ink2DRenderer {
     const threshold = (1 - params.viscosity) * params.breakStretchMax;
     if (threshold <= 0) {
       // viscosity=1: everything breaks immediately - convert all aged points
-      for (const key of TIP_KEYS) {
-        const state = this.tips[key];
-        if (!state || state.points.length < 2) continue;
+      for (const state of this.tips.values()) {
+        if (state.points.length < 2) continue;
         const keep: InkPoint[] = [];
         for (const p of state.points) {
           if (p.age > 0.05) {
@@ -377,9 +370,8 @@ export class Ink2DRenderer {
       return;
     }
 
-    for (const key of TIP_KEYS) {
-      const state = this.tips[key];
-      if (!state || state.points.length < 2) continue;
+    for (const state of this.tips.values()) {
+      if (state.points.length < 2) continue;
 
       // Walk oldest→newest, find first break point
       let breakIdx = -1;
@@ -447,9 +439,8 @@ export class Ink2DRenderer {
       const watercolorScale = palette.watercolor ? 1.8 : 1.0;
       const bleedAlphaMultiplier = palette.watercolor ? 0.3 : 0.18;
 
-      for (const key of TIP_KEYS) {
-        const state = this.tips[key];
-        if (!state || state.points.length === 0) continue;
+      for (const state of this.tips.values()) {
+        if (state.points.length === 0) continue;
 
         // Edge bleed pass
         for (const p of state.points) {
@@ -546,16 +537,13 @@ export class Ink2DRenderer {
     }
   }
 
-  private isTipEnabled(key: TipKey, params: Ink2DParams): boolean {
+  private isEndEnabled(end: "A" | "B", params: Ink2DParams): boolean {
     if (params.trackingMode === "both_ends") return true;
-    const isEndA = key === "bluePosA" || key === "redPosA";
-    return params.trackingMode === "left_end" ? isEndA : !isEndA;
+    return params.trackingMode === "left_end" ? end === "A" : end === "B";
   }
 
   dispose(): void {
-    for (const key of TIP_KEYS) {
-      this.tips[key] = null;
-    }
+    this.tips.clear();
     this.stampCache.dispose();
     this.droplets = [];
   }

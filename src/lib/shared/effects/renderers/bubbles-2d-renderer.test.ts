@@ -2,6 +2,24 @@ import { describe, it, expect, vi } from "vitest";
 import { Bubbles2DRenderer } from "./bubbles-2d-renderer";
 import type { Bubbles2DParams } from "../translators/canvas2d-types";
 import { BUBBLE_PALETTES, oilIridescentRim } from "../domain/bubble-palettes";
+import type { EmitterTip } from "./emitter-tip";
+
+type PosBag = {
+  bluePosA?: { x: number; y: number } | null;
+  bluePosB?: { x: number; y: number } | null;
+  redPosA?: { x: number; y: number } | null;
+  redPosB?: { x: number; y: number } | null;
+};
+
+/** Map the legacy 4-slot bag to the flat EmitterTip[] contract. */
+function toEmitters(bag: PosBag): EmitterTip[] {
+  const out: EmitterTip[] = [];
+  if (bag.bluePosA) out.push({ ...bag.bluePosA, propIndex: 0, tipIndex: 0, end: "A", color: "#4ea3ff" });
+  if (bag.bluePosB) out.push({ ...bag.bluePosB, propIndex: 0, tipIndex: 1, end: "B", color: "#4ea3ff" });
+  if (bag.redPosA) out.push({ ...bag.redPosA, propIndex: 1, tipIndex: 0, end: "A", color: "#ff5a5a" });
+  if (bag.redPosB) out.push({ ...bag.redPosB, propIndex: 1, tipIndex: 1, end: "B", color: "#ff5a5a" });
+  return out;
+}
 
 function makeCtx(): CanvasRenderingContext2D {
   const ctx = {
@@ -55,12 +73,21 @@ function makeParams(overrides: Partial<Bubbles2DParams> = {}): Bubbles2DParams {
   };
 }
 
-const ALL_TIPS = {
+const ALL_TIPS = toEmitters({
   bluePosA: { x: 100, y: 100 },
   bluePosB: { x: 120, y: 100 },
   redPosA: { x: 200, y: 100 },
   redPosB: { x: 220, y: 100 },
-};
+});
+
+// Base tips plus one tunnel kaleidoscope layer (propIndex 2/3).
+const WITH_LAYER: EmitterTip[] = [
+  ...ALL_TIPS,
+  { x: 300, y: 100, propIndex: 2, tipIndex: 0, end: "A", color: "#4ea3ff" },
+  { x: 320, y: 100, propIndex: 2, tipIndex: 1, end: "B", color: "#4ea3ff" },
+  { x: 400, y: 100, propIndex: 3, tipIndex: 0, end: "A", color: "#ff5a5a" },
+  { x: 420, y: 100, propIndex: 3, tipIndex: 1, end: "B", color: "#ff5a5a" },
+];
 
 describe("Bubbles2DRenderer", () => {
   it("spawns bubbles at rest under ambient emission", () => {
@@ -91,12 +118,12 @@ describe("Bubbles2DRenderer", () => {
     const step = 0.02;
     for (let i = 0; i < 40; i++) {
       rA.render(ctxA, restParams, ALL_TIPS, step);
-      const moving = {
+      const moving = toEmitters({
         bluePosA: { x: 100 + i * 30, y: 100 },
         bluePosB: { x: 120 + i * 30, y: 100 },
         redPosA: { x: 200 + i * 30, y: 100 },
         redPosB: { x: 220 + i * 30, y: 100 },
-      };
+      });
       rB.render(ctxB, moveParams, moving, step);
     }
     const aFills = (ctxA.fill as ReturnType<typeof vi.fn>).mock.calls.length;
@@ -182,6 +209,27 @@ describe("Bubbles2DRenderer", () => {
     // Call render again after dispose - should not crash.
     r.render(ctx, params, ALL_TIPS, 1 / 60);
     expect(true).toBe(true);
+  });
+
+  it("spawns from tunnel layer emitters (propIndex >= 2)", () => {
+    const ctxBase = makeCtx();
+    const ctxLayer = makeCtx();
+    const rBase = new Bubbles2DRenderer();
+    const rLayer = new Bubbles2DRenderer();
+    const params = makeParams({
+      ambientEmission: 1,
+      ambientSpawnRate: 60,
+      motionEmission: 0,
+    });
+    for (let i = 0; i < 30; i++) {
+      rBase.render(ctxBase, params, ALL_TIPS, 1 / 60);
+      rLayer.render(ctxLayer, params, WITH_LAYER, 1 / 60);
+    }
+    const baseFills = (ctxBase.fill as ReturnType<typeof vi.fn>).mock.calls.length;
+    const layerFills = (ctxLayer.fill as ReturnType<typeof vi.fn>).mock.calls.length;
+    // The layered run emits from 4 extra tips (propIndex 2/3), so it must
+    // draw strictly more bubble fills than the base-only run.
+    expect(layerFills).toBeGreaterThan(baseFills);
   });
 });
 

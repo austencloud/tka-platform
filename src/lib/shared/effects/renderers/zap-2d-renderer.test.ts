@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
-import { Zap2DRenderer, type ZapTipInput } from "./zap-2d-renderer";
+import { Zap2DRenderer } from "./zap-2d-renderer";
 import type { Zap2DParams } from "../translators/canvas2d-types";
+import type { EmitterTip } from "./emitter-tip";
 
 function makeCtx() {
   const calls = { stroke: 0, fill: 0, quad: 0, arc: 0, fillRect: 0, linearGrad: 0, radialGrad: 0 };
@@ -63,18 +64,22 @@ function makeParams(overrides: Partial<Zap2DParams> = {}): Zap2DParams {
   };
 }
 
-const pair = (): ZapTipInput => ({
-  bluePosA: { x: 100, y: 100 },
-  bluePosB: null,
-  redPosA: { x: 300, y: 100 },
-  redPosB: null,
-});
+type Pt = { x: number; y: number };
+function emit(p: Pt, propIndex: number, tipIndex: number, color = "#88ccff"): EmitterTip {
+  return { ...p, propIndex, tipIndex, end: tipIndex === 0 ? "A" : "B", color };
+}
+
+/** One base circuit: blue end-A ↔ red end-A. */
+const pair = (): EmitterTip[] => [
+  emit({ x: 100, y: 100 }, 0, 0),
+  emit({ x: 300, y: 100 }, 1, 0),
+];
 
 describe("Zap2DRenderer", () => {
-  it("draws nothing when all tips are null", () => {
+  it("draws nothing when there are no emitters", () => {
     const r = new Zap2DRenderer();
     const { ctx, calls } = makeCtx();
-    r.render(ctx, makeParams(), { bluePosA: null, bluePosB: null, redPosA: null, redPosB: null });
+    r.render(ctx, makeParams(), []);
     expect(calls.stroke).toBe(0);
   });
 
@@ -85,6 +90,19 @@ describe("Zap2DRenderer", () => {
       r.render(ctx, makeParams({ branching: 0 }), pair());
       // One bolt = glow + core = 2 strokes (no branches at branching 0, static).
       expect(calls.stroke).toBe(2);
+    });
+
+    it("draws a bolt per tunnel layer family (propIndex >= 2)", () => {
+      const r = new Zap2DRenderer();
+      const { ctx, calls } = makeCtx();
+      // Base pair (blue 0 ↔ red 1) + layer pair (blue 2 ↔ red 3) → 2 bolts.
+      r.render(ctx, makeParams({ branching: 0 }), [
+        ...pair(),
+        emit({ x: 120, y: 300 }, 2, 0),
+        emit({ x: 320, y: 300 }, 3, 0),
+      ]);
+      // 2 bolts × (glow + core) = 4 strokes.
+      expect(calls.stroke).toBe(4);
     });
 
     it("uses a left→right gradient when the two hand colors differ", () => {
@@ -104,12 +122,10 @@ describe("Zap2DRenderer", () => {
 
       // Frame 2: move both endpoints far → high energy.
       const f2 = makeCtx();
-      r.render(f2.ctx, params, {
-        bluePosA: { x: 140, y: 100 },
-        bluePosB: null,
-        redPosA: { x: 260, y: 100 },
-        redPosB: null,
-      });
+      r.render(f2.ctx, params, [
+        emit({ x: 140, y: 100 }, 0, 0),
+        emit({ x: 260, y: 100 }, 1, 0),
+      ]);
       expect(f2.calls.stroke).toBeGreaterThan(f1.calls.stroke);
     });
   });
@@ -128,12 +144,12 @@ describe("Zap2DRenderer", () => {
     it("connects every tip pair and uses violet for cross-prop edges", () => {
       const r = new Zap2DRenderer();
       const { ctx, calls, strokeStyles } = makeCtx();
-      const allTips: ZapTipInput = {
-        bluePosA: { x: 100, y: 100 },
-        bluePosB: { x: 150, y: 200 },
-        redPosA: { x: 300, y: 120 },
-        redPosB: { x: 280, y: 220 },
-      };
+      const allTips: EmitterTip[] = [
+        emit({ x: 100, y: 100 }, 0, 0),
+        emit({ x: 150, y: 200 }, 0, 1),
+        emit({ x: 300, y: 120 }, 1, 0),
+        emit({ x: 280, y: 220 }, 1, 1),
+      ];
       r.render(ctx, makeParams({ style: "web" }), allTips);
       // 4 tips → 6 edges, each glow+core = lots of strokes.
       expect(calls.stroke).toBeGreaterThanOrEqual(12);

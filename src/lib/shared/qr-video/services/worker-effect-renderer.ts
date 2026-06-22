@@ -19,17 +19,18 @@ import {
 } from "$lib/shared/effects/translators/canvas2d-translator";
 
 import { Bloom2DRenderer, type BloomTipInput } from "$lib/shared/effects/renderers/bloom-2d-renderer";
-import { Bubbles2DRenderer, type BubblesTipInput } from "$lib/shared/effects/renderers/bubbles-2d-renderer";
+import { Bubbles2DRenderer } from "$lib/shared/effects/renderers/bubbles-2d-renderer";
 import { Echo2DRenderer, type EchoTipInput } from "$lib/shared/effects/renderers/echo-2d-renderer";
-import { Frost2DRenderer, type FrostTipInput } from "$lib/shared/effects/renderers/frost-2d-renderer";
-import { Ink2DRenderer, type InkTipInput } from "$lib/shared/effects/renderers/ink-2d-renderer";
-import { Petals2DRenderer, type PetalsTipInput } from "$lib/shared/effects/renderers/petals-2d-renderer";
+import { Frost2DRenderer } from "$lib/shared/effects/renderers/frost-2d-renderer";
+import { Ink2DRenderer } from "$lib/shared/effects/renderers/ink-2d-renderer";
+import { Petals2DRenderer } from "$lib/shared/effects/renderers/petals-2d-renderer";
 import { Pulse2DRenderer, type PulseTipInput } from "$lib/shared/effects/renderers/pulse-2d-renderer";
-import { Silk2DRenderer, type SilkTipInput } from "$lib/shared/effects/renderers/silk-2d-renderer";
-import { Smoke2DRenderer, type SmokeTipInput } from "$lib/shared/effects/renderers/smoke-2d-renderer";
-import { Sparkles2DRenderer, type SparklesTipInput } from "$lib/shared/effects/renderers/sparkles-2d-renderer";
-import { Water2DRenderer, type WaterTipInput } from "$lib/shared/effects/renderers/water-2d-renderer";
-import { Zap2DRenderer, type ZapTipInput } from "$lib/shared/effects/renderers/zap-2d-renderer";
+import { Silk2DRenderer } from "$lib/shared/effects/renderers/silk-2d-renderer";
+import { Smoke2DRenderer } from "$lib/shared/effects/renderers/smoke-2d-renderer";
+import { Sparkles2DRenderer } from "$lib/shared/effects/renderers/sparkles-2d-renderer";
+import { Water2DRenderer } from "$lib/shared/effects/renderers/water-2d-renderer";
+import { Zap2DRenderer } from "$lib/shared/effects/renderers/zap-2d-renderer";
+import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 
 import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-trail-renderer";
 import { DEFAULT_TRAIL_SETTINGS, TrailMode, TrailEffect } from "$lib/shared/animation-engine/domain/types/trail-types";
@@ -128,6 +129,20 @@ function computeFourTips(
   };
 }
 
+/**
+ * Convert the QR-export 4-slot tip positions to the flat emitter contract.
+ * The export pipeline only renders the two base props (no tunnel layers), so
+ * this emits propIndex 0 (blue) / 1 (red) with the export's fixed colors.
+ */
+function fourTipsToEmitters(four: FourTipPositions): EmitterTip[] {
+  const out: EmitterTip[] = [];
+  if (four.bluePosA) out.push({ ...four.bluePosA, propIndex: 0, tipIndex: 0, end: "A", color: BLUE_COLOR });
+  if (four.bluePosB) out.push({ ...four.bluePosB, propIndex: 0, tipIndex: 1, end: "B", color: BLUE_COLOR });
+  if (four.redPosA) out.push({ ...four.redPosA, propIndex: 1, tipIndex: 0, end: "A", color: RED_COLOR });
+  if (four.redPosB) out.push({ ...four.redPosB, propIndex: 1, tipIndex: 1, end: "B", color: RED_COLOR });
+  return out;
+}
+
 // ── Trails wrapper ─────────────────────────────────────────────
 
 function createTrailsRenderer(): WorkerEffectRenderer {
@@ -181,10 +196,6 @@ function createTrailsRenderer(): WorkerEffectRenderer {
 
 // ── Canvas2D "quad-tip" effects (smoke, water, bubbles, etc.) ──
 
-type QuadTipInput = SmokeTipInput | WaterTipInput | BubblesTipInput |
-  PetalsTipInput | FrostTipInput | InkTipInput | SparklesTipInput |
-  SilkTipInput | ZapTipInput;
-
 function createQuadTipEffect(
   effectType: Exclude<EffectType, "none" | "trails" | "fire" | "led" | "charcoal" | "bloom" | "echo" | "pulse">,
   canvasSize: number,
@@ -208,35 +219,35 @@ function createQuadTipEffect(
 
   return {
     renderFrame(ctx, cs, blue, red, blueVB, redVB, _fi, dt) {
-      const tips: QuadTipInput = computeFourTips(cs, blue, red, blueVB, redVB);
+      const tips: EmitterTip[] = fourTipsToEmitters(computeFourTips(cs, blue, red, blueVB, redVB));
 
       switch (effectType) {
         case "smoke":
-          (r as Smoke2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips as SmokeTipInput, dt, scale);
+          (r as Smoke2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
           break;
         case "water":
-          (r as Water2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips as WaterTipInput, dt, scale);
+          (r as Water2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
           break;
         case "bubbles":
-          (r as Bubbles2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips as BubblesTipInput, dt, scale);
+          (r as Bubbles2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
           break;
         case "petals":
-          (r as Petals2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips as PetalsTipInput, dt, scale);
+          (r as Petals2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
           break;
         case "frost":
-          (r as Frost2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips as FrostTipInput, dt, scale);
+          (r as Frost2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
           break;
         case "ink":
-          (r as Ink2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips as InkTipInput, dt, scale);
+          (r as Ink2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
           break;
         case "sparkles":
-          (r as Sparkles2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips as SparklesTipInput, dt, scale);
+          (r as Sparkles2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
           break;
         case "silk":
-          (r as Silk2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips as SilkTipInput, dt, scale);
+          (r as Silk2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
           break;
         case "zap":
-          (r as Zap2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips as ZapTipInput, scale);
+          (r as Zap2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, scale);
           break;
       }
     },
@@ -288,10 +299,8 @@ function createEchoRenderer(canvasSize: number): WorkerEffectRenderer {
       const fourTips = computeFourTips(cs, blue, red, blueVB, redVB);
       const currentStep = isStartPosition ? 0 : stepIndex + (frameIndex * dt) % 1;
       const tips: EchoTipInput = {
-        ...fourTips,
+        emitters: fourTipsToEmitters(fourTips),
         currentStep,
-        blueColor: BLUE_COLOR,
-        redColor: RED_COLOR,
       };
       renderer.render(ctx as unknown as CanvasRenderingContext2D, params, tips, scale);
     },

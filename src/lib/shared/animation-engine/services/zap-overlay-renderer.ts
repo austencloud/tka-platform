@@ -14,13 +14,14 @@
  */
 
 import type { Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
-import { Zap2DRenderer, type ZapTipInput } from "$lib/shared/effects/renderers/zap-2d-renderer";
+import { Zap2DRenderer } from "$lib/shared/effects/renderers/zap-2d-renderer";
+import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import { EffectRenderer } from "./effects/effect-renderer";
 
 export class ZapOverlayRenderer extends EffectRenderer {
   private renderer = new Zap2DRenderer();
 
-  renderFrame(params: Zap2DParams, tips: ZapTipInput): void {
+  renderFrame(params: Zap2DParams, tips: EmitterTip[]): void {
     const ctx = this.ctx;
     if (!ctx) return;
 
@@ -29,7 +30,7 @@ export class ZapOverlayRenderer extends EffectRenderer {
     ctx.clearRect(0, 0, this.width, this.height);
 
     // If no tips at all, we already cleared - nothing more to draw.
-    if (!tips.bluePosA && !tips.bluePosB && !tips.redPosA && !tips.redPosB) {
+    if (tips.length === 0) {
       return;
     }
 

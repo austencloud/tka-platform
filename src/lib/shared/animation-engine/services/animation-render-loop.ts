@@ -33,6 +33,8 @@ import { QualityTier } from "../domain/types/quality-types";
 import { effectErrorSignal } from "../state/effect-error-signal.svelte";
 import { resolveEffect } from "../domain/types/tip-effect-types";
 import type { EffectType, TipEffectMap } from "../domain/types/tip-effect-types";
+import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
+import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import type { FireTipUpdateResult } from './fire-tip-tracker';
 import type { FireFrameInput } from '../domain/types/fire-types';
 
@@ -390,33 +392,48 @@ export class AnimationRenderLoop {
   // ---------------------------------------------------------------------------
 
   /**
-   * Build 4-position tip input ({bluePosA, bluePosB, redPosA, redPosB}) from
-   * sharedTipResult. Used by zap, sparkles, echo, water, bubbles, petals,
-   * smoke, ink, frost, silk.
+   * Build the flat emitter list for the per-tip overlay effects. Unlike
+   * buildFourPosTips (4 fixed slots, base props only), this carries every
+   * matching tip including tunnel kaleidoscope layers (propIndex >= 2), each
+   * tagged with its end (for tracking-mode) and its spectrum-gated color (for
+   * prop-colored effects). Color gating mirrors the trail overlay: base props
+   * use the trail colors; layers use the spectrum fan when rainbow is on, base
+   * colors when off.
    */
-  private static buildFourPosTips(
+  private static buildEmitterTips(
     tips: PropTipData[],
     tipMap: TipEffectMap,
-    effect: EffectType
-  ): { bluePosA: { x: number; y: number } | null; bluePosB: { x: number; y: number } | null; redPosA: { x: number; y: number } | null; redPosB: { x: number; y: number } | null } {
-    const result: { bluePosA: { x: number; y: number } | null; bluePosB: { x: number; y: number } | null; redPosA: { x: number; y: number } | null; redPosB: { x: number; y: number } | null } = {
-      bluePosA: null,
-      bluePosB: null,
-      redPosA: null,
-      redPosB: null,
-    };
+    effect: EffectType,
+    params: RenderFrameParams
+  ): EmitterTip[] {
+    const layerCount = params.props.additionalLayers.length;
+    const spectrum = params.props.tunnelSpectrum ?? true;
+    const baseBlue = params.trailSettings.blueColor;
+    const baseRed = params.trailSettings.redColor;
+    const out: EmitterTip[] = [];
     for (const t of tips) {
       if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== effect) continue;
-      const pos = { x: t.x, y: t.y };
-      if (t.propIndex === 0) {
-        if (t.tipIndex === 0) result.bluePosA = pos;
-        else if (t.tipIndex === 1) result.bluePosB = pos;
-      } else if (t.propIndex === 1) {
-        if (t.tipIndex === 0) result.redPosA = pos;
-        else if (t.tipIndex === 1) result.redPosB = pos;
-      }
+      const isBlue = t.propIndex % 2 === 0;
+      const color =
+        t.propIndex <= 1
+          ? isBlue
+            ? baseBlue
+            : baseRed
+          : spectrum
+            ? tunnelPropColor(t.propIndex, layerCount).hex
+            : isBlue
+              ? baseBlue
+              : baseRed;
+      out.push({
+        x: t.x,
+        y: t.y,
+        propIndex: t.propIndex,
+        tipIndex: t.tipIndex,
+        end: t.tipIndex === 0 ? "A" : "B",
+        color,
+      });
     }
-    return result;
+    return out;
   }
 
   /**
@@ -490,7 +507,7 @@ export class AnimationRenderLoop {
       getRenderer: (l) => (l.renderers.get("zap") ?? null) as EffectRenderer | null,
       needsDt: false,
       resetTimeOnInactive: false,
-      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "zap"),
+      buildInput: (ctx) => AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "zap", ctx.params),
       render: (r, cfg, inp) => r.renderFrame(cfg, inp),
     },
     // --- Sparkles: 4-pos, dt ---
@@ -500,7 +517,7 @@ export class AnimationRenderLoop {
       getRenderer: (l) => (l.renderers.get("sparkles") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: false,
-      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "sparkles"),
+      buildInput: (ctx) => AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "sparkles", ctx.params),
       render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
     },
     // --- Echo: 4-pos + currentStep + colors, no dt ---
@@ -511,10 +528,8 @@ export class AnimationRenderLoop {
       needsDt: false,
       resetTimeOnInactive: false,
       buildInput: (ctx) => ({
-        ...AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "echo"),
+        emitters: AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "echo", ctx.params),
         currentStep: ctx.params.currentStep,
-        blueColor: ctx.params.trailSettings.blueColor,
-        redColor: ctx.params.trailSettings.redColor,
       }),
       render: (r, cfg, inp) => r.renderFrame(cfg, inp),
     },
@@ -535,7 +550,7 @@ export class AnimationRenderLoop {
       getRenderer: (l) => (l.renderers.get("water") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
-      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "water"),
+      buildInput: (ctx) => AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "water", ctx.params),
       render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
     },
     // --- Bubbles: 4-pos, dt, resetTimeOnInactive ---
@@ -545,7 +560,7 @@ export class AnimationRenderLoop {
       getRenderer: (l) => (l.renderers.get("bubbles") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
-      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "bubbles"),
+      buildInput: (ctx) => AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "bubbles", ctx.params),
       render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
     },
     // --- Petals: 4-pos, dt, resetTimeOnInactive ---
@@ -555,7 +570,7 @@ export class AnimationRenderLoop {
       getRenderer: (l) => (l.renderers.get("petals") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
-      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "petals"),
+      buildInput: (ctx) => AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "petals", ctx.params),
       render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
     },
     // --- Smoke: 4-pos, dt, resetTimeOnInactive ---
@@ -565,7 +580,7 @@ export class AnimationRenderLoop {
       getRenderer: (l) => (l.renderers.get("smoke") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
-      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "smoke"),
+      buildInput: (ctx) => AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "smoke", ctx.params),
       render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
     },
     // --- Ink: 4-pos, dt, resetTimeOnInactive ---
@@ -575,7 +590,7 @@ export class AnimationRenderLoop {
       getRenderer: (l) => (l.renderers.get("ink") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
-      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "ink"),
+      buildInput: (ctx) => AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "ink", ctx.params),
       render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
     },
     // --- Frost: 4-pos, dt, resetTimeOnInactive ---
@@ -585,7 +600,7 @@ export class AnimationRenderLoop {
       getRenderer: (l) => (l.renderers.get("frost") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
-      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "frost"),
+      buildInput: (ctx) => AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "frost", ctx.params),
       render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
     },
     // --- Silk: 4-pos, dt, resetTimeOnInactive, loopDetected arg ---
@@ -595,7 +610,7 @@ export class AnimationRenderLoop {
       getRenderer: (l) => (l.renderers.get("silk") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
-      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "silk"),
+      buildInput: (ctx) => AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "silk", ctx.params),
       render: (r, cfg, inp, dt, ctx) => r.renderFrame(cfg, inp, dt, ctx.loopDetectedThisFrame && ctx.isSeamlesslyLoopable),
     },
     // --- Pulse: array-of-tips, dt, resetTimeOnInactive, currentStep arg ---

@@ -1,14 +1,6 @@
 import type { Frost2DParams } from "../translators/canvas2d-types";
-
-export interface FrostTipInput {
-  bluePosA: { x: number; y: number } | null;
-  bluePosB: { x: number; y: number } | null;
-  redPosA: { x: number; y: number } | null;
-  redPosB: { x: number; y: number } | null;
-}
-
-type TipKey = "bluePosA" | "bluePosB" | "redPosA" | "redPosB";
-const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
+import type { EmitterTip } from "./emitter-tip";
+import { emitterId } from "./emitter-tip";
 
 // ── Aura particle ───────────────────────────────────────────────────────
 
@@ -56,18 +48,18 @@ const CRYSTAL_FADE_OUT = 0.8;
 export class Frost2DRenderer {
   // Aura particles
   private particles: FrostParticle[] = [];
-  private lastTipPos: Partial<Record<TipKey, { x: number; y: number }>> = {};
-  private smoothedVelocity: Partial<Record<TipKey, { vx: number; vy: number }>> = {};
+  private lastTipPos = new Map<string, { x: number; y: number }>();
+  private smoothedVelocity = new Map<string, { vx: number; vy: number }>();
 
   // Crystal system
   private crystals: FrostCrystal[] = [];
-  private tipTrails: Partial<Record<TipKey, TrailSample[]>> = {};
-  private tipTrailDist: Partial<Record<TipKey, number>> = {};
+  private tipTrails = new Map<string, TrailSample[]>();
+  private tipTrailDist = new Map<string, number>();
 
   render(
     ctx: CanvasRenderingContext2D,
     params: Frost2DParams,
-    tips: FrostTipInput,
+    emitters: EmitterTip[],
     dt: number,
     scale: number = 1,
   ): void {
@@ -76,37 +68,41 @@ export class Frost2DRenderer {
     const crystalCap = Math.min(params.crystalPoolSize ?? 256, 1024);
     const auraOnly = params.resolvedPalette.auraOnly === true;
 
-    for (const key of TIP_KEYS) {
-      const tip = tips[key];
-      if (!tip || !this.isTipEnabled(key, params)) {
-        delete this.lastTipPos[key];
-        delete this.smoothedVelocity[key];
-        delete this.tipTrails[key];
-        delete this.tipTrailDist[key];
-        continue;
-      }
-      const last = this.lastTipPos[key];
+    // Per-emitter: smooth velocity + spawn aura/crystals. Covers base props and
+    // every tunnel kaleidoscope layer (propIndex >= 2).
+    const seen = new Set<string>();
+    for (const e of emitters) {
+      if (!this.isEndEnabled(e.end, params)) continue;
+      const id = emitterId(e.propIndex, e.tipIndex);
+      seen.add(id);
+      const last = this.lastTipPos.get(id);
       let vx = 0;
       let vy = 0;
       if (last && dt > 0) {
-        vx = (tip.x - last.x) / dt;
-        vy = (tip.y - last.y) / dt;
+        vx = (e.x - last.x) / dt;
+        vy = (e.y - last.y) / dt;
       }
-      const prev = this.smoothedVelocity[key];
+      const prev = this.smoothedVelocity.get(id);
       const alpha = 1 - Math.pow(0.6, dt * 60);
       const svx = prev ? prev.vx + (vx - prev.vx) * alpha : vx;
       const svy = prev ? prev.vy + (vy - prev.vy) * alpha : vy;
-      if (prev) { prev.vx = svx; prev.vy = svy; } else { this.smoothedVelocity[key] = { vx: svx, vy: svy }; }
+      if (prev) { prev.vx = svx; prev.vy = svy; } else { this.smoothedVelocity.set(id, { vx: svx, vy: svy }); }
       const speedPx = Math.hypot(svx, svy);
-      this.spawnAuraParticles(params, tip, speedPx, dt, scale, baseRadius, poolCap);
+      this.spawnAuraParticles(params, e, speedPx, dt, scale, baseRadius, poolCap);
 
       // Track trail path for crystal growth
       if (!auraOnly) {
-        this.updateTrailPath(key, tip, params, scale, crystalCap);
+        this.updateTrailPath(id, e, params, scale, crystalCap);
       }
 
-      if (last) { last.x = tip.x; last.y = tip.y; } else { this.lastTipPos[key] = { x: tip.x, y: tip.y }; }
+      if (last) { last.x = e.x; last.y = e.y; } else { this.lastTipPos.set(id, { x: e.x, y: e.y }); }
     }
+    // Prune state for emitters not present this frame (layer toggled off or a
+    // tip disabled by tracking-mode) so the Maps don't grow unbounded.
+    for (const id of this.lastTipPos.keys()) if (!seen.has(id)) this.lastTipPos.delete(id);
+    for (const id of this.smoothedVelocity.keys()) if (!seen.has(id)) this.smoothedVelocity.delete(id);
+    for (const id of this.tipTrails.keys()) if (!seen.has(id)) this.tipTrails.delete(id);
+    for (const id of this.tipTrailDist.keys()) if (!seen.has(id)) this.tipTrailDist.delete(id);
 
     this.integrateParticles(dt);
     this.integrateCrystals(dt);
@@ -123,17 +119,17 @@ export class Frost2DRenderer {
   // ── Trail path tracking ─────────────────────────────────────────────
 
   private updateTrailPath(
-    key: TipKey,
+    id: string,
     tip: { x: number; y: number },
     params: Frost2DParams,
     scale: number,
     crystalCap: number,
   ): void {
-    let trail = this.tipTrails[key];
+    let trail = this.tipTrails.get(id);
     if (!trail) {
       trail = [];
-      this.tipTrails[key] = trail;
-      this.tipTrailDist[key] = 0;
+      this.tipTrails.set(id, trail);
+      this.tipTrailDist.set(id, 0);
     }
 
     const last = trail.length > 0 ? trail[trail.length - 1]! : null;
@@ -147,15 +143,15 @@ export class Frost2DRenderer {
       if (trail.length > MAX_TRAIL_SAMPLES) {
         trail.shift();
       }
-      this.tipTrailDist[key] = (this.tipTrailDist[key] ?? 0) + dist;
+      this.tipTrailDist.set(id, (this.tipTrailDist.get(id) ?? 0) + dist);
     }
 
     // Spawn crystals along trail at spacing intervals
     const spacing = (params.crystalSpacing ?? 18) * scale;
-    const accDist = this.tipTrailDist[key] ?? 0;
+    const accDist = this.tipTrailDist.get(id) ?? 0;
 
     if (accDist >= spacing && this.crystals.length < crystalCap && trail.length >= 2) {
-      this.tipTrailDist[key] = accDist - spacing;
+      this.tipTrailDist.set(id, accDist - spacing);
       this.spawnCrystalAlongTrail(trail, params, scale);
     }
   }
@@ -589,19 +585,18 @@ export class Frost2DRenderer {
     }
   }
 
-  private isTipEnabled(key: TipKey, params: Frost2DParams): boolean {
+  private isEndEnabled(end: "A" | "B", params: Frost2DParams): boolean {
     if (params.trackingMode === "both_ends") return true;
-    const isEndA = key === "bluePosA" || key === "redPosA";
-    return params.trackingMode === "left_end" ? isEndA : !isEndA;
+    return params.trackingMode === "left_end" ? end === "A" : end === "B";
   }
 
   dispose(): void {
     this.particles = [];
     this.crystals = [];
-    this.lastTipPos = {};
-    this.smoothedVelocity = {};
-    this.tipTrails = {};
-    this.tipTrailDist = {};
+    this.lastTipPos.clear();
+    this.smoothedVelocity.clear();
+    this.tipTrails.clear();
+    this.tipTrailDist.clear();
   }
 }
 

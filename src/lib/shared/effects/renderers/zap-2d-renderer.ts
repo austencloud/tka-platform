@@ -1,24 +1,30 @@
 import type { Zap2DParams } from "../translators/canvas2d-types";
+import type { EmitterTip } from "./emitter-tip";
+import { emitterId } from "./emitter-tip";
 
-export interface ZapTipInput {
-  /** Blue prop tip A (canvas px). Null = not visible. */
-  bluePosA: { x: number; y: number } | null;
-  bluePosB: { x: number; y: number } | null;
-  redPosA: { x: number; y: number } | null;
-  redPosB: { x: number; y: number } | null;
-}
-
-type TipKey = "bluePosA" | "bluePosB" | "redPosA" | "redPosB";
 type Pt = { x: number; y: number };
 
-const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
-/** The two "circuit" pairs - blue end ↔ red end - bolts/plasma arc between them. */
-const PAIRS: [TipKey, TipKey][] = [
-  ["bluePosA", "redPosA"],
-  ["bluePosB", "redPosB"],
-];
 /** px/frame tip speed that maps to full discharge energy. */
 const REF_SPEED = 18;
+
+/**
+ * One discharge circuit: a bolt arcs between the blue prop's end (A) and the
+ * matching red prop's same end (B). Base props pair blue 0 ↔ red 1; tunnel
+ * layers pair blue `2li` ↔ red `2li+1` at the same end, so every kaleidoscope
+ * copy gets its own bolt.
+ */
+interface ZapBolt {
+  A: Pt;
+  B: Pt;
+  energy: number;
+}
+
+/** One discharge node (a single tip) for the web mesh + terminal glows. */
+interface ZapNode {
+  p: Pt;
+  isBlue: boolean;
+  speed: number;
+}
 
 interface Spark {
   x: number;
@@ -52,7 +58,7 @@ const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
  */
 export class Zap2DRenderer {
   private frameCount = 0;
-  private prevTip: Partial<Record<TipKey, Pt>> = {};
+  private prevTip = new Map<string, Pt>();
   private sparks: Spark[] = [];
   private static readonly MAX_SPARKS = 400;
   private webPulse = 0;
@@ -60,51 +66,71 @@ export class Zap2DRenderer {
   render(
     ctx: CanvasRenderingContext2D,
     params: Zap2DParams,
-    tips: ZapTipInput,
+    emitters: EmitterTip[],
     scale: number = 1,
   ): void {
     this.frameCount++;
 
-    // Per-endpoint speed (px/frame) from the previous frame's positions.
-    const speeds: Record<TipKey, number> = {
-      bluePosA: this.speedOf("bluePosA", tips.bluePosA),
-      bluePosB: this.speedOf("bluePosB", tips.bluePosB),
-      redPosA: this.speedOf("redPosA", tips.redPosA),
-      redPosB: this.speedOf("redPosB", tips.redPosB),
-    };
+    // Per-emitter speed (px/frame) from the previous frame's positions. Read
+    // before prevTip is updated so velocity reflects the step into this frame.
+    const speed = new Map<string, number>();
+    for (const e of emitters) {
+      speed.set(emitterId(e.propIndex, e.tipIndex), this.speedOf(emitterId(e.propIndex, e.tipIndex), e));
+    }
+
+    // Build the circuit bolts: blue prop end ↔ red prop same-end, per family
+    // layer (familyLayer = floor(propIndex/2)). Covers base + every layer.
+    const byKey = new Map<string, EmitterTip>();
+    for (const e of emitters) byKey.set(`${e.propIndex}:${e.tipIndex}`, e);
+    const bolts: ZapBolt[] = [];
+    for (const e of emitters) {
+      if (e.propIndex % 2 !== 0) continue; // blue side drives the pairing
+      const red = byKey.get(`${e.propIndex + 1}:${e.tipIndex}`);
+      if (!red) continue;
+      const sa = speed.get(emitterId(e.propIndex, e.tipIndex)) ?? 0;
+      const sb = speed.get(emitterId(red.propIndex, red.tipIndex)) ?? 0;
+      bolts.push({
+        A: { x: e.x, y: e.y },
+        B: { x: red.x, y: red.y },
+        energy: clamp01((sa + sb) / (2 * REF_SPEED)),
+      });
+    }
+
+    const nodes: ZapNode[] = emitters.map((e) => ({
+      p: { x: e.x, y: e.y },
+      isBlue: e.propIndex % 2 === 0,
+      speed: speed.get(emitterId(e.propIndex, e.tipIndex)) ?? 0,
+    }));
 
     const style = params.style ?? "branching";
     if (style === "plasma") {
-      this.drawPlasma(ctx, params, tips, speeds, scale);
+      this.drawPlasma(ctx, params, bolts, scale);
     } else if (style === "web") {
-      this.drawWeb(ctx, params, tips, speeds, scale);
+      this.drawWeb(ctx, params, nodes, scale);
     } else {
-      this.drawBranching(ctx, params, tips, speeds, scale);
+      this.drawBranching(ctx, params, bolts, scale);
     }
 
-    // Remember positions for next frame's velocity.
-    for (const key of TIP_KEYS) {
-      const p = tips[key];
-      if (p) this.prevTip[key] = { x: p.x, y: p.y };
-      else delete this.prevTip[key];
+    // Remember positions for next frame's velocity; prune vanished emitters.
+    const seen = new Set<string>();
+    for (const e of emitters) {
+      const id = emitterId(e.propIndex, e.tipIndex);
+      seen.add(id);
+      this.prevTip.set(id, { x: e.x, y: e.y });
     }
+    for (const id of this.prevTip.keys()) if (!seen.has(id)) this.prevTip.delete(id);
   }
 
   dispose(): void {
     this.frameCount = 0;
-    this.prevTip = {};
+    this.prevTip.clear();
     this.sparks = [];
     this.webPulse = 0;
   }
 
-  private speedOf(key: TipKey, p: Pt | null): number {
-    if (!p) return 0;
-    const prev = this.prevTip[key];
+  private speedOf(id: string, p: Pt): number {
+    const prev = this.prevTip.get(id);
     return prev ? Math.hypot(p.x - prev.x, p.y - prev.y) : 0;
-  }
-
-  private pairEnergy(a: TipKey, b: TipKey, speeds: Record<TipKey, number>): number {
-    return clamp01((speeds[a] + speeds[b]) / (2 * REF_SPEED));
   }
 
   // ── Style ①: branching storm lightning ─────────────────────────────
@@ -112,8 +138,7 @@ export class Zap2DRenderer {
   private drawBranching(
     ctx: CanvasRenderingContext2D,
     params: Zap2DParams,
-    tips: ZapTipInput,
-    speeds: Record<TipKey, number>,
+    bolts: ZapBolt[],
     scale: number,
   ): void {
     // Strike flicker: bolts fire bright in a window each `regenEvery` frames,
@@ -122,12 +147,8 @@ export class Zap2DRenderer {
     const inStrike = this.frameCount % regenEvery < Math.max(1, regenEvery * 0.4);
     const strike = inStrike ? 1 : 0.35;
 
-    for (const [ka, kb] of PAIRS) {
-      const A = tips[ka];
-      const B = tips[kb];
-      if (!A || !B) continue;
-
-      const energy = this.pairEnergy(ka, kb, speeds);
+    for (const bolt of bolts) {
+      const { A, B, energy } = bolt;
       const dist = Math.hypot(B.x - A.x, B.y - A.y);
       const strikes = 1 + Math.round(energy * 2); // multi-strike on fast swings
       const grad = this.pairGradient(ctx, A, B, params);
@@ -162,15 +183,11 @@ export class Zap2DRenderer {
   private drawPlasma(
     ctx: CanvasRenderingContext2D,
     params: Zap2DParams,
-    tips: ZapTipInput,
-    speeds: Record<TipKey, number>,
+    bolts: ZapBolt[],
     scale: number,
   ): void {
-    for (const [ka, kb] of PAIRS) {
-      const A = tips[ka];
-      const B = tips[kb];
-      if (!A || !B) continue;
-      const energy = this.pairEnergy(ka, kb, speeds);
+    for (const bolt of bolts) {
+      const { A, B, energy } = bolt;
 
       // 3 overlapping wobbling conduits: bright white core + colored sheaths.
       for (let layer = 0; layer < 3; layer++) {
@@ -180,7 +197,8 @@ export class Zap2DRenderer {
         ctx.save();
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = (params.glowBlur * 2 - layer * 8) * scale;
-        ctx.shadowColor = layer === 0 ? "#cfe0ff" : ka === "bluePosA" || ka === "bluePosB" ? params.leftColor : params.rightColor;
+        // A is always the blue-prop end of the bolt → leftColor sheath.
+        ctx.shadowColor = layer === 0 ? "#cfe0ff" : params.leftColor;
         ctx.strokeStyle = layer === 0 ? "#ffffff" : ctx.shadowColor;
         ctx.globalAlpha = (layer === 0 ? 0.9 : 0.45) * params.intensity;
         ctx.lineWidth = (layer === 0 ? params.lineWidth * 1.6 : params.lineWidth * (5 - layer)) * scale;
@@ -242,27 +260,21 @@ export class Zap2DRenderer {
   private drawWeb(
     ctx: CanvasRenderingContext2D,
     params: Zap2DParams,
-    tips: ZapTipInput,
-    speeds: Record<TipKey, number>,
+    nodes: ZapNode[],
     scale: number,
   ): void {
-    const present = TIP_KEYS.filter((k) => tips[k] != null);
-    const maxSpeed = Math.max(...TIP_KEYS.map((k) => speeds[k]), 0);
+    const maxSpeed = nodes.reduce((m, n) => Math.max(m, n.speed), 0);
     const energy = clamp01(maxSpeed / REF_SPEED);
     this.webPulse = (this.webPulse + 0.012 + energy * 0.03) % 1;
 
-    for (let i = 0; i < present.length; i++) {
-      for (let j = i + 1; j < present.length; j++) {
-        const ka = present[i]!;
-        const kb = present[j]!;
-        const A = tips[ka]!;
-        const B = tips[kb]!;
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const A = nodes[i]!.p;
+        const B = nodes[j]!.p;
         const dist = Math.hypot(B.x - A.x, B.y - A.y);
 
-        const blueA = ka === "bluePosA" || ka === "bluePosB";
-        const blueB = kb === "bluePosA" || kb === "bluePosB";
-        const sameProp = blueA === blueB;
-        const col = sameProp ? (blueA ? params.leftColor : params.rightColor) : "#9d7bff";
+        const sameProp = nodes[i]!.isBlue === nodes[j]!.isBlue;
+        const col = sameProp ? (nodes[i]!.isBlue ? params.leftColor : params.rightColor) : "#9d7bff";
 
         const pts: Pt[] = [{ x: A.x, y: A.y }];
         this.jag(A, B, Math.min(dist * 0.18, 34), pts);
@@ -286,7 +298,7 @@ export class Zap2DRenderer {
       }
     }
 
-    for (const k of present) this.terminal(ctx, tips[k]!, k.startsWith("blue") ? params.leftColor : params.rightColor, scale);
+    for (const n of nodes) this.terminal(ctx, n.p, n.isBlue ? params.leftColor : params.rightColor, scale);
   }
 
   // ── Shared drawing primitives ───────────────────────────────────────
