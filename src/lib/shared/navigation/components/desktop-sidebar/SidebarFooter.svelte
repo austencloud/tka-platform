@@ -120,6 +120,24 @@
       {/if}
     </button>
 
+    <!-- Support Button (opens the donation page in a new tab) -->
+    <a
+      class="footer-button support-button"
+      class:collapsed={isCollapsed}
+      href="/support"
+      target="_blank"
+      rel="noopener noreferrer"
+      data-sveltekit-reload
+      aria-label="Support The Kinetic Alphabet (opens in a new tab)"
+    >
+      <div class="button-icon">
+        <i class="fas fa-heart" aria-hidden="true"></i>
+      </div>
+      {#if !isCollapsed}
+        <span class="button-label">Support</span>
+      {/if}
+    </a>
+
     <!-- Inbox Button (members only) -->
     {#if isFullAccount}
       <button
@@ -245,6 +263,17 @@
     background: var(--theme-card-hover-bg);
     border-color: var(--theme-stroke-strong);
     color: var(--theme-text);
+  }
+
+  /* Support is a link styled as a footer button */
+  .support-button {
+    text-decoration: none;
+  }
+  .support-button .button-icon i {
+    color: #f472b6; /* warm pink heart */
+  }
+  .support-button:hover {
+    border-color: color-mix(in srgb, #f472b6 40%, var(--theme-stroke));
   }
 
   .footer-button.collapsed {

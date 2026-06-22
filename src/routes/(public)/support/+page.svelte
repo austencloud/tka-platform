@@ -9,6 +9,7 @@
    * reads as the book's online extension.
    */
   import { LANDING_DOMAIN } from "../../../config/domains";
+  import SiteHeader from "$lib/shared/landing/components/SiteHeader.svelte";
 
   const METHODS = [
     {
@@ -35,6 +36,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital@0;1&family=Fraunces:ital,opsz,wght@1,9..144,400..700&display=swap" rel="stylesheet" />
 </svelte:head>
+
+<SiteHeader />
 
 <main class="page">
   <section class="card">
@@ -81,7 +84,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 24px 18px;
+    padding: 88px 18px 24px; /* top clears the fixed SiteHeader */
     background: radial-gradient(120% 90% at 50% 0%, #1d1d3a 0%, #14142b 60%, #0f0f22 100%);
     color: #f4f0e4;
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;

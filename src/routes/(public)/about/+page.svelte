@@ -1,6 +1,7 @@
 <script lang="ts">
   import { APP_DOMAIN } from "../../../config/domains";
   import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
+  import SiteHeader from "$lib/shared/landing/components/SiteHeader.svelte";
 
   // Position pictograph light/dark mode (default to light to show existing images)
   let positionLightsOn = $state(true);
@@ -217,6 +218,8 @@
   </script>`}
 </svelte:head>
 
+<SiteHeader />
+
 <div class="about-page">
   <div class="about-container">
     <!-- Header -->
@@ -389,6 +392,7 @@
   .about-page {
     position: relative;
     min-height: 100vh;
+    padding-top: 64px; /* clear the fixed SiteHeader */
     color: #ffffff;
     background: linear-gradient(145deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
     overflow-x: hidden;

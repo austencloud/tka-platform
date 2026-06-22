@@ -1,5 +1,6 @@
 <script lang="ts">
   import { APP_DOMAIN } from "../../../config/domains";
+  import SiteHeader from "$lib/shared/landing/components/SiteHeader.svelte";
 
   // In dev, back goes to /landing; in prod, back goes to /
   const backHref = "/";
@@ -26,6 +27,8 @@
     content="flow arts theory, VTG, Vulcan Tech Gospel, Siteswap, juggling notation, music theory, flow arts notation, dual wielded props, TKA influences"
   />
 </svelte:head>
+
+<SiteHeader />
 
 <div class="roots-page">
   <div class="roots-container">
@@ -211,6 +214,7 @@
   .roots-page {
     position: relative;
     min-height: 100vh;
+    padding-top: 64px; /* clear the fixed SiteHeader */
     background: linear-gradient(145deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
     color: #ffffff;
     overflow-x: hidden;

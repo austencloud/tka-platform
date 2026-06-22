@@ -8,6 +8,7 @@
   import PlayWithItSection from "./landing/components/PlayWithItSection.svelte";
   import GuidesSection from "./landing/components/GuidesSection.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
+  import SiteHeader from "$lib/shared/landing/components/SiteHeader.svelte";
 
   const DEFAULT_BACKGROUND = BackgroundType.COSMIC;
   let mounted = $state(false);
@@ -355,6 +356,7 @@
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <div class="content-layer">
+    <SiteHeader />
     <HeroCarouselSection />
     <main id="main-content">
       <hr class="divider" />

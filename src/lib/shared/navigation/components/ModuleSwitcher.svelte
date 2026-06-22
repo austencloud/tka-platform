@@ -226,6 +226,17 @@
           <i class="fas fa-cog" aria-hidden="true"></i>
           <span>Settings</span>
         </button>
+        <a
+          class="drawer-action support"
+          href="/support"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-sveltekit-reload
+          onclick={closeDrawer}
+        >
+          <i class="fas fa-heart" aria-hidden="true"></i>
+          <span>Support</span>
+        </a>
         {#if isFullAccount}
           <button class="drawer-action sign-out" onclick={handleSignOut}>
             <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
@@ -575,6 +586,16 @@
   .drawer-action.sign-out:hover {
     background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
     border-color: color-mix(in srgb, var(--semantic-error) 40%, transparent);
+  }
+
+  .drawer-action.support {
+    text-decoration: none;
+  }
+  .drawer-action.support i {
+    color: #f472b6; /* warm pink heart */
+  }
+  .drawer-action.support:hover {
+    border-color: color-mix(in srgb, #f472b6 40%, transparent);
   }
 
   /* ============================================================================
