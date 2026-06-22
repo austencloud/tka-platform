@@ -32,6 +32,52 @@
   // be added, without ever reprinting the book.
   const SUPPORT_QR = "/guide/level-1/images/_shared/qr-support.png";
   const SUPPORT_URL = "tkaflowarts.com/support";
+
+  // Table of Contents — Level 1 scope only (1.0–1.2). Entries + sub-entries
+  // transcribed from the original artboard; γ (not Γ) per the facelift
+  // convention. Page numbers intentionally omitted (added programmatically
+  // once pagination is final). 1.3 Single-Turns / 1.4 Double-Turns are
+  // later-level content, not part of this guide.
+  type TocSection = { n: string; title: string; items: { t: string; subs?: string[] }[] };
+  const TOC: TocSection[] = [
+    {
+      n: "1.0",
+      title: "Positions / Motions",
+      items: [
+        { t: "The Grid" },
+        { t: "Hand Positions" },
+        { t: "Hand Motions", subs: ["Type 1 Dual-Shifts - Alpha, Beta", "Gamma / Type 2 Shifts", "Type 3/4 Cross-Shifts and Dashes", "Type 5/6 Dual-Dashes and Statics"] },
+        { t: "Staff Positions" },
+        { t: "Staff Motions" },
+        { t: "Negative Space / Body Turns" },
+      ],
+    },
+    {
+      n: "1.1",
+      title: "Letters",
+      items: [
+        { t: "Base Letters", subs: ["Double Staff", "Clubs", "Buugeng", "Triads", "Fans", "Mini Hoops"] },
+        { t: "Type 1 - Dual-Shifts", subs: ["ABC, GHI", "DJ, EK, FL", "MP, NQ, OR, STUV"] },
+        { t: "Type 2 - Shifts", subs: ["WXYZ, ΣΔθΩ"] },
+        { t: "Type 3 - Cross-Shifts", subs: ["W- X- Y- Z-, Σ- Δ- θ- Ω-"] },
+        { t: "Type 4, 5, 6", subs: ["Φ, Ψ, Λ", "Φ-, Ψ-, Λ-", "α, β, γ"] },
+      ],
+    },
+    {
+      n: "1.2",
+      title: "Words",
+      items: [
+        { t: "Words" },
+        { t: "Permutations" },
+        { t: "Reversals" },
+        { t: "Examples with A, B, C" },
+        { t: "Misc. Permutation Examples" },
+      ],
+    },
+  ];
+  // Layout: 1.0 + 1.2 on the left, the longer 1.1 alone on the right.
+  const TOC_LEFT: TocSection[] = [TOC[0]!, TOC[2]!];
+  const TOC_RIGHT: TocSection[] = [TOC[1]!];
 </script>
 
 <svelte:head>
@@ -103,6 +149,36 @@
         hand marker shows where that hand ends. Read each grid as a single beat.
       </p>
       <p class="sign-off">With love,<br />Austen Cloud</p>
+    </div>
+  </GuidePage>
+
+  <!-- ── Page 5: Table of Contents (Level 1 scope, 1.0–1.2) ─────────────── -->
+  {#snippet tocSection(sec: TocSection)}
+    <section class="toc-sec">
+      <h3 class="toc-sec-h"><span class="toc-num">{sec.n}</span>{sec.title}</h3>
+      <ul class="toc-list">
+        {#each sec.items as it}
+          <li class="toc-item">{it.t}</li>
+          {#if it.subs}
+            {#each it.subs as s}
+              <li class="toc-sub">{s}</li>
+            {/each}
+          {/if}
+        {/each}
+      </ul>
+    </section>
+  {/snippet}
+  <GuidePage label="p5 — Table of Contents">
+    <div class="toc">
+      <h2 class="toc-title">Table of Contents</h2>
+      <div class="toc-cols">
+        <div class="toc-col">
+          {#each TOC_LEFT as sec}{@render tocSection(sec)}{/each}
+        </div>
+        <div class="toc-col">
+          {#each TOC_RIGHT as sec}{@render tocSection(sec)}{/each}
+        </div>
+      </div>
     </div>
   </GuidePage>
 
@@ -202,5 +278,77 @@
   .read-me {
     max-width: 6.2in;
     margin: 0 auto;
+  }
+
+  /* ── Table of Contents ─────────────────────────────────────────────── */
+  .toc {
+    min-height: 9.4in;
+    display: flex;
+    flex-direction: column;
+    padding-top: 0.3in;
+  }
+  .toc-title {
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-variation-settings: "opsz" 144, "wght" 560, "WONK" 1;
+    font-size: 2.7rem;
+    color: #14142b;
+    text-align: center;
+    margin: 0 0 0.55in;
+  }
+  .toc-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.7in;
+    max-width: 6.6in;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .toc-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.42in;
+  }
+  .toc-sec {
+    break-inside: avoid;
+  }
+  .toc-sec-h {
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-variation-settings: "opsz" 144, "wght" 600, "WONK" 1;
+    font-size: 1.45rem;
+    color: #161616;
+    margin: 0 0 0.16in;
+    padding-bottom: 0.07in;
+    border-bottom: 1px solid #d8d4e4;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+  }
+  .toc-num {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 1.15rem;
+    color: #2342c9;
+  }
+  .toc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .toc-item {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 1.28rem;
+    color: #1f1f1f;
+    line-height: 1.55;
+  }
+  .toc-sub {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-style: italic;
+    font-size: 1.08rem;
+    color: #6a6478;
+    line-height: 1.45;
+    padding-left: 1.1em;
   }
 </style>

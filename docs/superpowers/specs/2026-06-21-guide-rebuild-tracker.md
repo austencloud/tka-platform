@@ -53,7 +53,7 @@ Old guide = 47 pages. Mapping → our 3 chapters. Status: ⬜ todo · 🔧 in pr
 | 1 | Cover (Name / title ring) | print cover | ✅ |
 | 2-3 | Drink water / Support author | front matter | ✅ |
 | 4 | Read Me First | print cover pg2 | 🔧 |
-| 5 | Table of Contents | front matter | ⬜ |
+| 5 | Table of Contents | front matter | 🔧 |
 | 6 | 1.0 Positions & Motions (title) | positions-motions | ⬜ |
 | 7 | The Grid | ch10/TheGrid | ⬜ |
 | 8 | Hand Positions (α/β/Γ, 16 picto) | ch10/HandPositions | ⬜ |
@@ -156,3 +156,12 @@ LOOP terminology, per existing section filenames already named Loops*.)
   boxless `qr-support.png` + the URL caption. Per-method QRs
   (`qr-paypal/venmo.png`) deleted — superseded. (Cash App dropped: Austen
   doesn't use it.)
+- 2026-06-22: TABLE OF CONTENTS (p5) built. Scope = Level 1 only (1.0 Positions
+  / Motions, 1.1 Letters, 1.2 Words); the artboard's 1.3 Single-Turns / 1.4
+  Double-Turns are later-level content with no pages here, so omitted (flagged to
+  Austen). Entries + sub-entries transcribed from the original artboard, with the
+  facelift γ-not-Γ convention applied. Layout = two columns (1.0 + 1.2 left, the
+  longer 1.1 right), Fraunces section heads with navy section numbers + a hairline
+  rule, Cormorant entries, muted italic indented sub-entries. Page numbers
+  omitted for now — to be injected programmatically once pagination is final.
+  Verified: fits one 11in page (902/1018px), renders in `print/+page`.
