@@ -31,7 +31,7 @@
 
 <svelte:head>
   <title>Support · The Kinetic Alphabet</title>
-  <meta name="description" content="Support the development of The Kinetic Alphabet. Any amount is genuinely appreciated, and never required." />
+  <meta name="description" content="Support the development of The Kinetic Alphabet. Any amount is genuinely appreciated." />
   <meta name="robots" content="noindex" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital@0;1&family=Fraunces:ital,opsz,wght@1,9..144,400..700&display=swap" rel="stylesheet" />
@@ -45,7 +45,7 @@
     <h1 class="title">Support the work</h1>
     <p class="lede">
       If this guide helps you, you can support its development. Any amount is
-      genuinely appreciated, and never required.
+      genuinely appreciated.
     </p>
 
     <div class="methods">
@@ -66,8 +66,6 @@
         </a>
       {/each}
     </div>
-
-    <p class="suggest">Suggested $20–30 · any amount helps</p>
 
     <footer class="thanks">
       <p>Thank you.</p>
@@ -171,14 +169,6 @@
     font-size: 1.3rem;
     color: var(--accent);
     flex: 0 0 auto;
-  }
-
-  .suggest {
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-style: italic;
-    font-size: 1.05rem;
-    color: #b7b2cf;
-    margin: 1.4rem 0 0;
   }
 
   .thanks {

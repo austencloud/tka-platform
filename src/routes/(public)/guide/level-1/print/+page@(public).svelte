@@ -108,27 +108,29 @@
       <h2 class="fm-h">Support the work</h2>
       <p>
         If this guide helps you, you can support its development. Any amount is
-        genuinely appreciated, and never required.
+        genuinely appreciated.
       </p>
       <figure class="donate">
         <img class="support-qr" src={SUPPORT_QR} alt="Scan to support — {SUPPORT_URL}" />
         <figcaption class="support-url">{SUPPORT_URL}</figcaption>
       </figure>
-      <p class="suggest">Suggested $20–30 · any amount helps</p>
     </div>
   </GuidePage>
 
   <!-- ── Page 4: Read Me First (its own page, matching the original) ─────── -->
   <GuidePage label="p4 — Read Me First">
     <div class="read-me">
-      <h2>Read Me First</h2>
-      <p>
+      <header class="rm-head">
+        <h2 class="rm-title">Read Me First</h2>
+        <span class="rm-flourish" aria-hidden="true"></span>
+      </header>
+      <p class="rm-lead">
         You've come across The Kinetic Alphabet, a notation system designed to
         help you craft and communicate your own unique choreography. This
         grid-based language is designed for music, using pictographs and letters
         that combine like puzzle pieces for each beat. This system has propelled
         my sequence creation to new heights, and I hope it will do the same for
-        you!
+        you.
       </p>
       <p>
         The Kinetic Alphabet is a fusion of elements from VTG (Vulcan Tech
@@ -148,14 +150,17 @@
         In a pictograph, the arrow shows the direction of a hand's motion and the
         hand marker shows where that hand ends. Read each grid as a single beat.
       </p>
-      <p class="sign-off">With love,<br />Austen Cloud</p>
+      <p class="sign-off">With love,<br /><span class="rm-sig">Austen Cloud</span></p>
     </div>
   </GuidePage>
 
   <!-- ── Page 5: Table of Contents (Level 1 scope, 1.0–1.2) ─────────────── -->
   {#snippet tocSection(sec: TocSection)}
     <section class="toc-sec">
-      <h3 class="toc-sec-h"><span class="toc-num">{sec.n}</span>{sec.title}</h3>
+      <h3 class="toc-sec-h">
+        <span class="toc-num">{sec.n}</span>
+        <span class="toc-sec-title">{sec.title}</span>
+      </h3>
       <ul class="toc-list">
         {#each sec.items as it}
           <li class="toc-item">{it.t}</li>
@@ -170,7 +175,10 @@
   {/snippet}
   <GuidePage label="p5 — Table of Contents">
     <div class="toc">
-      <h2 class="toc-title">Table of Contents</h2>
+      <header class="toc-head">
+        <h2 class="toc-title">Table of Contents</h2>
+        <span class="toc-flourish" aria-hidden="true"></span>
+      </header>
       <div class="toc-cols">
         <div class="toc-col">
           {#each TOC_LEFT as sec}{@render tocSection(sec)}{/each}
@@ -267,17 +275,73 @@
     letter-spacing: 0.01em;
     color: #2a2a2a;
   }
-  .suggest {
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-style: italic;
-    font-size: 1.1rem;
-    color: #6a6a6a;
-    margin: 0.4rem 0 0;
-  }
-
+  /* ── Read Me First (authored letter, not a textbook block) ─────────── */
   .read-me {
-    max-width: 6.2in;
+    max-width: 5.9in;
     margin: 0 auto;
+    padding-top: 0.45in;
+  }
+  .rm-head {
+    text-align: center;
+    margin: 0 0 0.5in;
+  }
+  .rm-title {
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-variation-settings: "opsz" 144, "wght" 560, "WONK" 1;
+    font-size: 2.5rem;
+    color: #14142b;
+    margin: 0;
+  }
+  .rm-flourish {
+    display: block;
+    width: 2in;
+    height: 9px;
+    margin: 0.16in auto 0;
+    background: linear-gradient(#c9a227, #c9a227) center / 100% 1px no-repeat;
+    position: relative;
+  }
+  .rm-flourish::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    transform: translate(-50%, -50%) rotate(45deg);
+    background: #14142b;
+  }
+  .read-me p {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 1.32rem;
+    line-height: 1.72;
+    color: #20202a;
+    margin: 0 0 1.05rem;
+    text-align: justify;
+    hyphens: auto;
+  }
+  /* Fraunces drop cap on the opening paragraph. */
+  .rm-lead::first-letter {
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-variation-settings: "opsz" 144, "wght" 620, "WONK" 1;
+    font-size: 3.6em;
+    line-height: 0.74;
+    float: left;
+    margin: 0.04em 0.1em 0 0;
+    color: #2342c9;
+  }
+  .sign-off {
+    text-align: right;
+    margin-top: 0.45in !important;
+    line-height: 1.4;
+  }
+  .rm-sig {
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-variation-settings: "opsz" 144, "wght" 580, "WONK" 1;
+    font-size: 1.7rem;
+    color: #14142b;
   }
 
   /* ── Table of Contents ─────────────────────────────────────────────── */
@@ -285,52 +349,84 @@
     min-height: 9.4in;
     display: flex;
     flex-direction: column;
-    padding-top: 0.3in;
+    padding-top: 0.35in;
+  }
+  .toc-head {
+    text-align: center;
+    margin: 0 0 0.5in;
   }
   .toc-title {
     font-family: "Fraunces", Georgia, serif;
     font-style: italic;
     font-variation-settings: "opsz" 144, "wght" 560, "WONK" 1;
-    font-size: 2.7rem;
+    font-size: 2.8rem;
     color: #14142b;
-    text-align: center;
-    margin: 0 0 0.55in;
+    margin: 0;
   }
+  /* Gold hairline flourish with a centred navy diamond — echoes the cover. */
+  .toc-flourish {
+    display: block;
+    width: 2.4in;
+    height: 9px;
+    margin: 0.16in auto 0;
+    background:
+      linear-gradient(#c9a227, #c9a227) center / 100% 1px no-repeat;
+    position: relative;
+  }
+  .toc-flourish::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    transform: translate(-50%, -50%) rotate(45deg);
+    background: #14142b;
+  }
+  /* Two columns split by a hairline rule. */
   .toc-cols {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.7in;
-    max-width: 6.6in;
+    gap: 0;
+    max-width: 6.7in;
     margin: 0 auto;
     width: 100%;
   }
   .toc-col {
     display: flex;
     flex-direction: column;
-    gap: 0.42in;
+    gap: 0.4in;
+    padding: 0 0.5in;
+  }
+  .toc-col:first-child {
+    border-right: 1px solid #e2def0;
   }
   .toc-sec {
     break-inside: avoid;
   }
+  /* Big editorial section numeral + title on a shared baseline, gold rule. */
   .toc-sec-h {
-    font-family: "Fraunces", Georgia, serif;
-    font-style: italic;
-    font-variation-settings: "opsz" 144, "wght" 600, "WONK" 1;
-    font-size: 1.45rem;
-    color: #161616;
-    margin: 0 0 0.16in;
-    padding-bottom: 0.07in;
-    border-bottom: 1px solid #d8d4e4;
+    margin: 0 0 0.18in;
+    padding-bottom: 0.09in;
+    border-bottom: 1.5px solid #c9a227;
     display: flex;
     align-items: baseline;
-    gap: 0.5em;
+    gap: 0.34em;
   }
   .toc-num {
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-style: normal;
-    font-weight: 600;
-    font-size: 1.15rem;
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-variation-settings: "opsz" 144, "wght" 620, "WONK" 1;
+    font-size: 1.95rem;
+    line-height: 1;
     color: #2342c9;
+  }
+  .toc-sec-title {
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-variation-settings: "opsz" 144, "wght" 580, "WONK" 1;
+    font-size: 1.32rem;
+    color: #14142b;
   }
   .toc-list {
     list-style: none;
@@ -339,16 +435,17 @@
   }
   .toc-item {
     font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 1.28rem;
-    color: #1f1f1f;
-    line-height: 1.55;
+    font-weight: 600;
+    font-size: 1.3rem;
+    color: #18181f;
+    line-height: 1.6;
   }
   .toc-sub {
     font-family: "Cormorant Garamond", Georgia, serif;
     font-style: italic;
-    font-size: 1.08rem;
-    color: #6a6478;
-    line-height: 1.45;
+    font-size: 1.1rem;
+    color: #4a4658;
+    line-height: 1.5;
     padding-left: 1.1em;
   }
 </style>
