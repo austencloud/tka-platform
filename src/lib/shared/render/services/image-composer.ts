@@ -722,8 +722,10 @@ export class ImageComposer {
 
     try {
       const stepCount = sequence.steps?.length ?? 0;
-      const qrSize = Math.floor(stepSize * getQRCellScale(stepCount));
-      const padding = (stepSize - qrSize) / 2;
+      // Reserve a caption strip at the bottom of the cell for "Scan to play".
+      // The QR stays square and centered in the region above it.
+      const captionH = Math.round(stepSize * 0.12);
+      const qrSize = Math.floor((stepSize - captionH) * getQRCellScale(stepCount));
 
       // Pre-rendered QR is authored at a fixed resolution; drawImage scales it
       // to the cell below. Generated QR is produced at qrSize directly.
@@ -743,18 +745,26 @@ export class ImageComposer {
             }
           );
 
-      const x = cell.col * stepSize + horizontalOffset + padding;
-      const y = cell.row * stepSize + headerHeight + padding;
+      const cellLeft = cell.col * stepSize + horizontalOffset;
+      const cellTop = cell.row * stepSize + headerHeight;
+      const x = cellLeft + Math.floor((stepSize - qrSize) / 2);
+      const y = cellTop + Math.floor((stepSize - captionH - qrSize) / 2);
 
       ctx.fillStyle = isDarkMode ? "#000000" : "#ffffff";
-      ctx.fillRect(
-        cell.col * stepSize + horizontalOffset,
-        cell.row * stepSize + headerHeight,
-        stepSize,
-        stepSize
-      );
+      ctx.fillRect(cellLeft, cellTop, stepSize, stepSize);
 
       ctx.drawImage(qrImage, x, y, qrSize, qrSize);
+
+      // "Scan to play" caption — matches the center play triangle so the card
+      // reads as a play affordance. Styled to match the card's other canvas text.
+      ctx.save();
+      const captionFont = Math.round(stepSize * 0.075);
+      ctx.font = `600 ${captionFont}px Inter, "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = isDarkMode ? "#ffffff" : "#231f20";
+      ctx.fillText("Scan to play", cellLeft + stepSize / 2, cellTop + stepSize - captionH / 2);
+      ctx.restore();
     } catch (error) {
       console.error("[ImageComposer] Failed to render QR code:", error);
     }

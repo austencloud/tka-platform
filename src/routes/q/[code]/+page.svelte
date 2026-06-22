@@ -33,11 +33,13 @@
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
+  import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { updateSettings } from "$lib/shared/application/state/app-state.svelte";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
+  import { handleHMRInit, clearModuleChunkRecoveryGuard } from "$lib/shared/hmr-helper";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
@@ -158,6 +160,16 @@
   function selectQrSplit() {
     qrViewerMode = "split";
   }
+
+  // Side-by-Side is dropped on tiny portrait viewports (both panes shrink below
+  // legibility — see the ViewerModeBottomBar allowSplit={false} below). The mode
+  // defaults to "split", so coerce it to 2D Animation whenever we're in the
+  // bottom-bar layout, including a landscape→portrait rotate while split is active.
+  $effect(() => {
+    if (!isSidebarLayout && qrViewerMode === "split") {
+      qrViewerMode = "animation";
+    }
+  });
 
   // ── Export state (drives the QR ExportTakeover overlay + native share) ──
   let isExporting = $state(false);
@@ -365,6 +377,14 @@
       // below AND the in-player prop picker) no-ops with a console warning.
       // Idempotent init wires the singleton so prop changes actually apply.
       await initializeAppServices();
+
+      // The bare /q layout also skips MainInterface, the only caller of
+      // handleHMRInit(). Without it, NONE of the HMR resilience runs on this
+      // route — a failed HMR apply (a dynamic import transiently resolving to
+      // undefined → `mod.default` throws) dead-ends the page and spams the
+      // console on every refresh with no self-heal. Wire it here so /q gets the
+      // same failed-apply recovery + dynamic-import retry as the rest of the app.
+      handleHMRInit();
     }
 
     if (!shortCode) {
@@ -448,11 +468,34 @@
           country: data?.geo?.country || null,
           city: data?.geo?.city || null,
         });
+
+        // Persist the scan to Firestore so the in-app Scan Activity tab lights
+        // up. This is the real card-scan path; unlike the client-only callers
+        // (viewer drawer, /sequence), it has the Cloudflare geo from the server
+        // load (data.geo), so these are the events that carry real country/city.
+        shortCodeManager.incrementScanCount(shortCode).catch(() => {});
+        void shortCodeManager
+          .logScanEvent(shortCode, {
+            printId: page.url.searchParams.get("pid") || null,
+            country: data?.geo?.country ?? null,
+            city: data?.geo?.city ?? null,
+            userAgent: navigator.userAgent,
+            screenWidth: window.screen.width,
+            screenHeight: window.screen.height,
+            referrer: document.referrer || null,
+            userId: null, // auth isn't initialized on this bare route
+            deviceId: getDeviceId(),
+          })
+          .catch(() => {});
       }
 
       stopTrickle();
       setProgress(100);
       pageState = { kind: "playing", word };
+
+      // Clean load → re-arm the module-chunk self-heal so a later mid-write edit
+      // can trigger one fresh recovery reload again (the guard is one-shot).
+      clearModuleChunkRecoveryGuard();
     } catch (err: unknown) {
       stopTrickle();
       pageState = {
@@ -659,6 +702,7 @@
             <ViewerModeBottomBar
               activeMode={qrViewerMode}
               webgl2Available={false}
+              allowSplit={false}
               onSelectMode={selectQrMode}
               onSelectSplit={selectQrSplit}
             />

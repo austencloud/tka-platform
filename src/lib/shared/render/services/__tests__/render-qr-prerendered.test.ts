@@ -10,8 +10,15 @@ function stubCtx() {
     calls,
     ctx: {
       fillStyle: "",
+      font: "",
+      textAlign: "",
+      textBaseline: "",
       fillRect: () => {},
       drawImage: (...args: unknown[]) => calls.push(args),
+      // The "Scan to play" caption draws via save/font/fillText/restore.
+      save: () => {},
+      restore: () => {},
+      fillText: (...args: unknown[]) => calls.push(["fillText", ...args]),
     } as unknown as CanvasRenderingContext2D,
   };
 }

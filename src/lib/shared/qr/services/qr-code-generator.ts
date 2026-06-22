@@ -48,6 +48,42 @@ const STYLE_PRESETS: Record<QRStylePreset, QRCodeStyle> = {
   },
 };
 
+/**
+ * Rough perceived-luminance test so the play triangle always contrasts the
+ * badge. Accepts #rgb / #rrggbb (with optional alpha); anything else is treated
+ * as dark (white triangle).
+ */
+function isLightColor(hex: string): boolean {
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})/i.exec(hex.trim());
+  const raw = m?.[1];
+  if (!raw) return false;
+  const h = raw.length === 3 ? raw.replace(/./g, (c) => c + c) : raw;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  // Rec. 601 luma
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6;
+}
+
+/**
+ * Inline SVG data URL: a play triangle in a circular badge, centered in the QR.
+ * Badge fill = the QR module color (dark on light cards, white on dark cards);
+ * the triangle takes the contrasting color so it reads on either. The overlay
+ * is purely visual — it never changes the encoded URL — and the generator bumps
+ * error correction to "H" so the obscured modules stay recoverable.
+ */
+function playIconDataUrl(moduleColor: string): string {
+  const badge = moduleColor;
+  const triangle = isLightColor(badge) ? "#1a1a2e" : "#ffffff";
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">` +
+    `<circle cx="50" cy="50" r="50" fill="${badge}"/>` +
+    `<path d="M40 30 L40 70 L72 50 Z" fill="${triangle}" ` +
+    `stroke="${triangle}" stroke-width="8" stroke-linejoin="round"/>` +
+    `</svg>`;
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+}
+
 export class QRCodeGenerator {
   /** Memory-only map of decoded QR images, keyed by dataUrl. The SVG render
    *  is cached persistently (`imageCache`); this avoids re-decoding the same
@@ -102,10 +138,22 @@ export class QRCodeGenerator {
       type: "svg",
       data: url,
       margin: margin,
+      // Center play button: every QR resolves to the animated player, so the
+      // triangle implicitly declares "scan to play". hideBackgroundDots clears
+      // the modules behind it and the margin gives a clean ring.
+      image: playIconDataUrl(style.color || "#1a1a2e"),
+      imageOptions: {
+        imageSize: 0.25,
+        margin: 3,
+        hideBackgroundDots: true,
+        crossOrigin: "anonymous",
+      },
       qrOptions: {
         typeNumber: 0, // Auto-detect
         mode: "Byte",
-        errorCorrectionLevel: style.errorCorrectionLevel || "M",
+        // Force "H" (30% recovery) whenever the center image is embedded so the
+        // obscured modules stay recoverable, regardless of the preset's level.
+        errorCorrectionLevel: "H",
       },
       dotsOptions: {
         color: style.color || "#1a1a2e",
