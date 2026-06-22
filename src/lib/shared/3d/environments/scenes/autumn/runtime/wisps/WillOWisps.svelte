@@ -1,0 +1,121 @@
+<script lang="ts">
+  import { T, useTask } from "@threlte/core";
+  import { onDestroy, untrack } from "svelte";
+  import { SphereGeometry, MeshStandardMaterial, Color, Group, Mesh } from "three";
+  import type { AutumnQualityConfig } from "../../quality/autumn-quality";
+
+  interface Props {
+    quality: AutumnQualityConfig;
+    groundY?: number;
+    onWispMaterials?: (mats: MeshStandardMaterial[]) => void;
+  }
+
+  let { quality, groundY = 0, onWispMaterials }: Props = $props();
+
+  // Warm amber glow shared by every wisp.
+  const WISP_COLOR = "#ffd8a0";
+  const BASE_EMISSIVE = 1.2;
+
+  // ── Per-wisp drift state ─────────────────────────────────────────────
+
+  interface Wisp {
+    group: Group;
+    coreMat: MeshStandardMaterial;
+    baseX: number;
+    baseY: number;
+    baseZ: number;
+    speed: number;
+    phase: number;
+    bobAmplitude: number;
+    driftRadius: number;
+  }
+
+  // One shared unit sphere — scaled per-mesh, disposed once.
+  const sharedCoreGeo = untrack(() => new SphereGeometry(1, 16, 16));
+
+  // Build wisp configs/groups/materials ONCE. wispCount: 4 low / 6 med / 9 high.
+  const wisps: Wisp[] = untrack(() => {
+    const count = quality.wispCount;
+    const built: Wisp[] = [];
+    for (let i = 0; i < count; i++) {
+      // Scatter around a ring so wisps drift between the trees.
+      const angle = (i / count) * Math.PI * 2 + i * 0.37;
+      const radius = 4.5 + (i % 3) * 1.6;
+      // Varied hover height between ~1 and ~4 units above the ground.
+      const height = 1 + ((i * 0.618) % 1) * 3;
+      // Small core scale, varied per wisp (0.06–0.12).
+      const scale = 0.06 + ((i * 0.41) % 1) * 0.06;
+
+      const group = new Group();
+
+      const coreMat = new MeshStandardMaterial({
+        color: new Color(WISP_COLOR),
+        emissive: new Color(WISP_COLOR),
+        emissiveIntensity: BASE_EMISSIVE,
+      });
+      const core = new Mesh(sharedCoreGeo, coreMat);
+      core.scale.setScalar(scale);
+      group.add(core);
+
+      built.push({
+        group,
+        coreMat,
+        baseX: Math.cos(angle) * radius,
+        baseY: groundY + height,
+        baseZ: Math.sin(angle) * radius,
+        speed: 0.12 + i * 0.03,
+        phase: i * 1.7,
+        bobAmplitude: 0.3 + i * 0.06,
+        driftRadius: 0.5 + i * 0.08,
+      });
+    }
+    return built;
+  });
+
+  // ── Expose core emissive materials for the interaction layer (Task 11) ──
+  // Fire ONCE from an $effect (never from a derivation — those must stay pure).
+  let materialsFired = false;
+  $effect(() => {
+    if (materialsFired) return;
+    materialsFired = true;
+    onWispMaterials?.(wisps.map((w) => w.coreMat));
+  });
+
+  // ── Drift animation ──────────────────────────────────────────────────
+
+  let elapsed = 0;
+
+  useTask((delta) => {
+    elapsed += delta;
+    for (const wisp of wisps) {
+      const t = elapsed * wisp.speed + wisp.phase;
+      wisp.group.position.set(
+        wisp.baseX + Math.sin(t * 0.7) * wisp.driftRadius,
+        wisp.baseY + Math.sin(t) * wisp.bobAmplitude,
+        wisp.baseZ + Math.cos(t * 0.5) * wisp.driftRadius,
+      );
+    }
+  });
+
+  // ── Cleanup ──────────────────────────────────────────────────────────
+
+  onDestroy(() => {
+    // Shared geometry disposed once; materials disposed per-wisp.
+    sharedCoreGeo.dispose();
+    for (const wisp of wisps) {
+      wisp.coreMat.dispose();
+    }
+  });
+</script>
+
+<!-- Drifting glowing orbs — each an emissive core + a soft warm point light -->
+{#each wisps as wisp (wisp)}
+  <T
+    is={wisp.group}
+    position.x={wisp.baseX}
+    position.y={wisp.baseY}
+    position.z={wisp.baseZ}
+  >
+    <T.PointLight color={WISP_COLOR} intensity={3} distance={5} decay={2} />
+  </T>
+{/each}
