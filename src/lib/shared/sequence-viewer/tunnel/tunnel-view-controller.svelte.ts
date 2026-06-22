@@ -12,6 +12,11 @@ import {
   saveTunnelPresets,
   type TunnelPreset,
 } from "./tunnel-presets";
+import {
+  loadTunnelViewState,
+  saveTunnelViewState,
+  type TunnelViewState,
+} from "./tunnel-view-state";
 
 const DEFAULT_PROP_STATE: PropState = { centerPathAngle: 0, staffRotationAngle: 0 };
 
@@ -36,7 +41,8 @@ export class TunnelViewController {
   // Tunnel sub-mode on/off (speed + play/pause ride the pane's existing transport).
   active = $state(false);
 
-  // Config (a saved preset stores exactly this).
+  // Config (a saved preset stores exactly this). Initialized in the constructor
+  // from the persisted view state so the tunnel reopens in the look the user left.
   fold = $state<Fold>(4);
   mirror = $state(false);
 
@@ -47,6 +53,10 @@ export class TunnelViewController {
   gridVisible = $state(false);
   effect = $state<TunnelConfig["effect"]>("none");
 
+  /** Active rail section in the Art settings panel, persisted with the view
+   *  state so the panel reopens on the section the user last used. */
+  section = $state<TunnelViewState["section"]>("tunnel");
+
   presets = $state<TunnelPreset[]>([]);
 
   #sources: TunnelControllerSources;
@@ -56,6 +66,25 @@ export class TunnelViewController {
   constructor(sources: TunnelControllerSources) {
     this.#sources = sources;
     this.presets = loadTunnelPresets();
+
+    // Restore the last-left look (fold / mirror / grid / section) before any
+    // effect wires up, so persistence reflects the user's prior session.
+    const view = loadTunnelViewState();
+    this.fold = view.fold;
+    this.mirror = view.mirror;
+    this.gridVisible = view.gridVisible;
+    this.section = view.section;
+
+    // Persist the live view state on change (separate from saved presets).
+    $effect(() => {
+      const snapshot: TunnelViewState = {
+        fold: this.fold,
+        mirror: this.mirror,
+        gridVisible: this.gridVisible,
+        section: this.section,
+      };
+      saveTunnelViewState(snapshot);
+    });
 
     // Rebuild the overlaid layers whenever the topology (sequence/fold/mirror)
     // changes. Effect/transport changes do NOT rebuild — they are per-frame.

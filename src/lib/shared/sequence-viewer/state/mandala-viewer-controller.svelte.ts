@@ -32,6 +32,21 @@ const COLOR_CYCLE_BREATHS = 3;
 const BG_COLOR = "#000000";
 
 const EXPORT_STORAGE_KEY = "tka_mandala_export";
+// The mandala's *look* (shape/spin/speed/colors/weight/depth), persisted apart
+// from the export config so the viewer reopens in the look the user last set.
+const VIEW_STORAGE_KEY = "tka_mandala_view_state";
+
+interface MandalaViewState {
+  pathShape: MandalaPathShape;
+  rotation: number;
+  speed: number;
+  depth: number;
+  colorMode: MandalaColorMode;
+  preset: MandalaPresetId;
+  customBlue: string;
+  customRed: string;
+  lineWeight: number;
+}
 // A mandala is thin bright strokes on flat black — it compresses to far less
 // than typical video at the same resolution. Lower bitrates cut entropy-coding
 // work (faster encode) with no visible loss; 4K was wastefully high at 40 Mbps.
@@ -66,6 +81,16 @@ function loadExportConfig(): {
     // fall through to defaults
   }
   return def;
+}
+
+function loadViewState(): Partial<MandalaViewState> {
+  if (typeof localStorage === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(VIEW_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Partial<MandalaViewState>) : {};
+  } catch {
+    return {};
+  }
 }
 
 const PRESET_COLORS: Record<
@@ -178,6 +203,40 @@ export class MandalaViewerController {
     this.exportReps = cfg.reps;
     this.exportResolution = cfg.resolution;
     this.exportFps = cfg.fps;
+
+    // Restore the persisted look (each field guarded so a partial/old payload
+    // falls back to the field default).
+    const view = loadViewState();
+    if (view.pathShape !== undefined) this.pathShape = view.pathShape;
+    if (typeof view.rotation === "number") this.rotation = view.rotation;
+    if (typeof view.speed === "number") this.speed = view.speed;
+    if (typeof view.depth === "number") this.depth = view.depth;
+    if (view.colorMode !== undefined) this.colorMode = view.colorMode;
+    if (view.preset !== undefined) this.preset = view.preset;
+    if (typeof view.customBlue === "string") this.customBlue = view.customBlue;
+    if (typeof view.customRed === "string") this.customRed = view.customRed;
+    if (typeof view.lineWeight === "number") this.lineWeight = view.lineWeight;
+
+    // Persist the look on change (separate key from export config).
+    $effect(() => {
+      const snapshot: MandalaViewState = {
+        pathShape: this.pathShape,
+        rotation: this.rotation,
+        speed: this.speed,
+        depth: this.depth,
+        colorMode: this.colorMode,
+        preset: this.preset,
+        customBlue: this.customBlue,
+        customRed: this.customRed,
+        lineWeight: this.lineWeight,
+      };
+      if (typeof localStorage === "undefined") return;
+      try {
+        localStorage.setItem(VIEW_STORAGE_KEY, JSON.stringify(snapshot));
+      } catch {
+        // ignore storage failures
+      }
+    });
 
     // Persist export config on change.
     $effect(() => {
