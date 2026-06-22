@@ -143,3 +143,16 @@ LOOP terminology, per existing section filenames already named Loops*.)
   (cropped from `D:\…\_GUIDE\source\QR Codes.png`). Compare view added at
   `(public)/guide/level-1/compare` (old v0.5 PDF vs live rebuild, navy/home
   toggle).
+- 2026-06-22: SUPPORT SCHEME PIVOT (Option A). The printed book now carries ONE
+  QR → `tkaflowarts.com/support`, a page Austen owns, instead of per-method QRs.
+  Rationale: print is permanent; a self-owned landing page lets handles change /
+  methods be added without reprinting, keeps TKA branding (not Linktree), and
+  reuses the existing domain. New route `(public)/support/+page.svelte`
+  (prerender, registered in `domains.ts` PUBLIC_PATH_PREFIXES) — mobile-first
+  (QR-scanned on phones), navy/Fraunces to read as the book's online extension,
+  two tappable cards linking to `paypal.com/paypalme/austencloud` and
+  `venmo.com/code?user_id=2250430063050753012` with real brand logos
+  (`static/support/logo-{paypal,venmo}.png`). Book p3 simplified to the single
+  boxless `qr-support.png` + the URL caption. Per-method QRs
+  (`qr-paypal/venmo.png`) deleted — superseded. (Cash App dropped: Austen
+  doesn't use it.)

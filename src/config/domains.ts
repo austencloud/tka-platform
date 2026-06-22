@@ -45,6 +45,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/privacy",
   "/render",
   "/roots",
+  "/support",
   "/terms",
   "/1989",
   "/1995",
