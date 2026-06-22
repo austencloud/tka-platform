@@ -6,6 +6,7 @@
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import type { TunnelViewController } from "./tunnel-view-controller.svelte";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
   const {
     sequence,
@@ -82,6 +83,7 @@
         currentStep={step}
         isPlaying={true}
         {gridMode}
+        trailSettings={animationSettings.trail}
         {tipEffectMap}
         effectsConfigState={effectsConfig ?? undefined}
         gridVisible={controller.gridVisible}
