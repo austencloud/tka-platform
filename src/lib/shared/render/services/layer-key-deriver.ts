@@ -23,6 +23,7 @@ export interface BaseLayerKeyComponents {
   showElemental: boolean;
   showPositions: boolean;
   handPathMode: boolean;
+  showGrid: boolean;
 }
 
 export interface GridPointsLayerKeyComponents {
@@ -31,6 +32,7 @@ export interface GridPointsLayerKeyComponents {
   gridMode: string;
   darkMode: boolean;
   size: number;
+  showGrid: boolean;
 }
 
 export interface TKALayerKeyComponents {
@@ -109,6 +111,7 @@ export function getBaseLayerComponents(
     showElemental: options.showElemental ?? false,
     showPositions: options.showPositions ?? false,
     handPathMode: options.handPathMode ?? false,
+    showGrid: options.showGrid ?? true,
   };
 }
 
@@ -131,6 +134,7 @@ export function getGridPointsLayerComponents(
     gridMode: prepared?.gridMode ?? "diamond",
     darkMode: options.darkMode,
     size: options.size,
+    showGrid: options.showGrid ?? true,
   };
 }
 

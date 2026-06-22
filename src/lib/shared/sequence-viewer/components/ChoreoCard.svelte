@@ -234,7 +234,9 @@
   const vm = getVisibilityStateManager();
   let glyphVisibilityVersion = $state(0);
   function onGlyphVisibilityChanged(): void { glyphVisibilityVersion++; }
-  vm.registerObserver(onGlyphVisibilityChanged, ["glyph"]);
+  // "all" so the master Grid toggle (which notifies ["all"], not ["glyph"])
+  // re-renders the card cells — without it the grid never toggled off.
+  vm.registerObserver(onGlyphVisibilityChanged, ["glyph", "all"]);
   onDestroy(() => {
     vm.unregisterObserver(onGlyphVisibilityChanged);
   });
@@ -265,6 +267,10 @@
   const showPositions = $derived.by(() => {
     void glyphVisibilityVersion;
     return vm.getRawGlyphVisibility("positionsGlyph");
+  });
+  const showGrid = $derived.by(() => {
+    void glyphVisibilityVersion;
+    return vm.getGridVisibility();
   });
 
   // QR code state - generated async, cached by sequence ID + dark mode.
@@ -520,6 +526,7 @@
         redPropType,
         catDogModeEnabled,
         showNonRadial,
+        showGrid,
         handPointVis,
         showTKA,
         showReversals,
@@ -1230,6 +1237,7 @@
     const stnd = showTnD;
     const selm = showElemental;
     const spos = showPositions;
+    const sgrid = showGrid;
     // Read effectiveColumns so the effect fires when the composition manager's
     // column override changes (e.g. via the right-click column picker).
     const effCols = effectiveColumns;
@@ -1239,7 +1247,7 @@
     // Image key: props that affect the actual pictograph images (NOT grid positions).
     // Cell images are rendered at a fixed CELL_SIZE (240px) regardless of column
     // count, so column changes only need relayoutCells() (instant grid repositioning).
-    const gv = `${stnd ? "1" : "0"}${selm ? "1" : "0"}${spos ? "1" : "0"}`;
+    const gv = `${stnd ? "1" : "0"}${selm ? "1" : "0"}${spos ? "1" : "0"}${sgrid ? "1" : "0"}`;
     const imageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${snr}-${hpv}-${stka}-${sr}-${durationKey}-mv:${sbm ? "1" : "0"}${srm ? "1" : "0"}-gv:${gv}`;
     // Layout key: props that only affect grid positions (column count, start position toggle).
     const layoutKey = `${isp}-cols:${effCols}`;

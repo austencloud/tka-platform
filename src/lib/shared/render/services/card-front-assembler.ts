@@ -242,6 +242,7 @@ export function buildCellLayerOptions(
     size: stepSize,
     darkMode: visibility.darkMode ?? false,
     showNonRadialPoints: visibility.showNonRadialPoints ?? false,
+    showGrid: visibility.showGrid ?? true,
     handPointVisibility: handVisibility,
     bluePropType: visibility.bluePropType,
     redPropType: visibility.redPropType,

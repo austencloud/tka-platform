@@ -62,7 +62,7 @@ export function getPreviewCacheKey(
   const resolvedBlue = opts.bluePropType ?? settings.bluePropType ?? "staff";
   const resolvedRed = opts.redPropType ?? settings.redPropType ?? "staff";
   const mv = `${opts.showBlueMotion === false ? "B0" : "B1"}${opts.showRedMotion === false ? "R0" : "R1"}`;
-  const gv = `${opts.showTnD ? "V1" : "V0"}${opts.showElemental ? "E1" : "E0"}${opts.showPositions ? "P1" : "P0"}`;
+  const gv = `${opts.showTnD ? "V1" : "V0"}${opts.showElemental ? "E1" : "E0"}${opts.showPositions ? "P1" : "P0"}${opts.showGrid === false ? "G0" : "G1"}`;
   return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedBlue}-${resolvedRed}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-spl:${spl}-d:${durationFingerprint}-m:${motionFingerprint}-vm:${vmKey}-mv:${mv}-gv:${gv}`;
 }
 
@@ -175,6 +175,7 @@ export function buildRenderOptions(params: {
   redPropType: PropType | undefined;
   catDogModeEnabled: boolean;
   showNonRadial: boolean;
+  showGrid: boolean;
   handPointVis: "all" | "active" | "none";
   showTKA: boolean;
   showReversals: boolean;
@@ -197,6 +198,7 @@ export function buildRenderOptions(params: {
     // rendered as HTML overlays on top of the <img> instead.
     showStepNumbers: false,
     showNonRadialPoints: params.showNonRadial,
+    showGrid: params.showGrid,
     handPointVisibility: params.handPointVis,
     showTKA: params.isSoloMode ? false : params.showTKA,
     showReversals: params.isSoloMode ? false : params.showReversals,

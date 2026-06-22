@@ -130,6 +130,16 @@ export class LOOPDetector implements ILOOPDetector {
     result: LOOPDetectionResult,
     sequence: SequenceEntry
   ): LOOPDetectionResult {
+    // Orientation LOOPs only make sense once the location pass found a real,
+    // repeatable loop structure (circular AND not the odd-length / irregular
+    // "freeform" fallback). detectOrientationPass emits ROTATED from nothing
+    // more than the net start->end orientation delta, so on a freeform or
+    // non-circular sequence it manufactures a phantom LOOP — e.g. a 5-beat
+    // sequence that merely returns to its start position would light up the
+    // header LOOP glyph even though it is not a loop. Gate it.
+    if (!result.isCircular || result.isFreeform) {
+      return result;
+    }
     const orientation = detectOrientationPass(sequence);
     const mergedDetailed = mergeComponents(
       result.componentsDetailed,

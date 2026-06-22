@@ -21,6 +21,7 @@ import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-key
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
 import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
@@ -303,6 +304,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         showNotes: imgShowNotes,
         showQRCode: imgShowQRCode,
         showBirthday: getImageCompositionManager().showBirthday,
+        showGrid: getVisibilityStateManager().getGridVisibility(),
         darkMode: exportOptions.imageDarkMode,
         columnCount: exportOptions.imageColumnCount,
         // Honor the per-step-count start-position layout (Top Row / Left Column)

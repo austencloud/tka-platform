@@ -65,6 +65,7 @@ export interface ImageExportOptions {
   showNotes: boolean;
   showQRCode: boolean;
   showBirthday: boolean;
+  showGrid: boolean;
   darkMode: boolean;
   columnCount: number | null;
   startPositionLayout: "row" | "column";
@@ -358,6 +359,7 @@ export class SequenceModalExporter {
         visibilityOverrides: {
           darkMode: options.darkMode,
           showQRCode: options.showQRCode,
+          showGrid: options.showGrid,
         },
       });
 

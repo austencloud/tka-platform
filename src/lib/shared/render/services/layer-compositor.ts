@@ -135,10 +135,15 @@ export class LayerCompositor {
     timing.baseLayerMs = performance.now() - baseStart;
     cacheStats.baseFromCache = baseResult.fromCache;
 
+    // Grid off hides the hand/non-radial points overlay entirely (the base
+    // grid is suppressed inside renderBaseLayerInternal via visibility.showGrid).
+    const gridOn = options.showGrid !== false;
     const gridPointsStart = performance.now();
-    const gridPointsResult = await this.renderGridPointsOverlay(pictograph, options);
+    const gridPointsResult = gridOn
+      ? await this.renderGridPointsOverlay(pictograph, options)
+      : null;
     timing.gridPointsLayerMs = performance.now() - gridPointsStart;
-    cacheStats.gridPointsFromCache = gridPointsResult.fromCache;
+    cacheStats.gridPointsFromCache = gridPointsResult?.fromCache ?? false;
 
     const motionVisibility = {
       showBlueMotion: options.showBlueMotion,
@@ -182,7 +187,9 @@ export class LayerCompositor {
     }
 
     ctx.drawImage(baseResult.canvas, coreOffset, 0);
-    ctx.drawImage(gridPointsResult.canvas, coreOffset, 0);
+    if (gridPointsResult) {
+      ctx.drawImage(gridPointsResult.canvas, coreOffset, 0);
+    }
     if (tkaResult) {
       ctx.drawImage(tkaResult.canvas, 0, 0);
     }
@@ -444,9 +451,10 @@ export class LayerCompositor {
       size: options.size,
       visibility: {
         darkMode: options.darkMode,
-        showTKA: false, 
-        showReversals: false, 
+        showTKA: false,
+        showReversals: false,
         baseGridOnly: true,
+        showGrid: options.showGrid,
         bluePropType: options.bluePropType,
         redPropType: options.redPropType,
         showBlueMotion: options.showBlueMotion,

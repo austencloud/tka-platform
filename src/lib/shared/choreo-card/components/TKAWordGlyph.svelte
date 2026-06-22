@@ -61,6 +61,15 @@
     display: flex;
     align-items: center;
     overflow: hidden;
+    /* Pin currentColor to the darkMode prop so the dash bar and group dot match
+       the (image-based) letters instead of inheriting the app shell's text
+       color. Without this, a light-mode card inside the dark app shell rendered
+       a white dash on the light header. */
+    color: #231f20;
+  }
+
+  .tka-word-glyph.dark-mode {
+    color: #ffffff;
   }
 
   .token-row {

@@ -494,6 +494,7 @@ export class ImageComposer {
       catDogModeEnabled,
       showStepNumbers: false,
       showNonRadialPoints: visibilitySettings.showNonRadialPoints ?? true,
+      showGrid: visibilitySettings.showGrid ?? true,
       handPointVisibility: (visibilitySettings.handPointVisibility === "none"
         ? "active"
         : visibilitySettings.handPointVisibility ?? "all") as "all" | "active",

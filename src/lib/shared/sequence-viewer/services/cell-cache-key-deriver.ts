@@ -100,6 +100,7 @@ function mapToVisibility(
       showPositions: options.showPositions ?? false,
       showReversals: options.showReversals ?? true,
       showNonRadialPoints: options.showNonRadialPoints ?? true,
+      showGrid: options.showGrid ?? true,
       darkMode: isDark,
       bluePropType: options.bluePropType,
       redPropType: options.catDogModeEnabled

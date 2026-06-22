@@ -77,6 +77,9 @@ export interface LayerRenderOptions {
   // Grid options (affect base layer only)
   showNonRadialPoints: boolean;
   handPointVisibility: "all" | "active" | "none";
+  /** Master grid visibility. When false, the base grid, hand points, and
+   *  non-radial points are all hidden (props/glyphs still render). Default: true. */
+  showGrid?: boolean;
 
   // Prop type overrides
   bluePropType?: PropType;

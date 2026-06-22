@@ -164,12 +164,6 @@
     justify-content: center;
     flex-shrink: 0;
     padding: 0 4px;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
-  }
-
-  .dark-mode .loop-icon-badge {
-    background: rgba(255, 255, 255, 0.1);
   }
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */

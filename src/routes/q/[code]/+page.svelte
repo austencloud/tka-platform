@@ -28,6 +28,7 @@
   import { configureShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
   import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
   import { registerLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
@@ -329,6 +330,7 @@
           showNotes: ic.showNotes,
           showQRCode: ic.showQRCode,
           showBirthday: ic.showBirthday,
+          showGrid: getVisibilityStateManager().getGridVisibility(),
           darkMode: ic.darkMode,
           columnCount: ic.columnCount,
           startPositionLayout: getImageCompositionManager()

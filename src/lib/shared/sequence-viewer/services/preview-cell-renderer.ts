@@ -39,6 +39,10 @@ export interface PreviewCellRenderOptions {
   /** Show non-radial (corner) grid points */
   showNonRadialPoints?: boolean;
 
+  /** Master grid visibility. When false, base grid + hand/non-radial points
+   *  are all hidden. Default: true. */
+  showGrid?: boolean;
+
   /** Hand point visibility mode */
   handPointVisibility?: "all" | "active" | "none";
 
@@ -170,6 +174,7 @@ export async function renderCell(
     widthMultiplier: options.widthMultiplier,
     darkMode: isDark,
     showNonRadialPoints: options.showNonRadialPoints ?? true,
+    showGrid: options.showGrid ?? true,
     handPointVisibility: options.handPointVisibility ?? "all",
     bluePropType: effectiveBlueProp,
     redPropType: effectiveRedProp,
