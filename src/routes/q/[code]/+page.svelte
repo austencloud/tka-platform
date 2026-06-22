@@ -37,6 +37,7 @@
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { updateSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
@@ -136,7 +137,7 @@
   // ViewerContentRail (landscape side rail) and ViewerModeBottomBar (portrait
   // bottom bar) drive, mirroring SequenceViewerDrawerHost. No 3D mode is offered
   // on the scan page: webgl2Available={false} filters 'animation-3d' out of both
-  // switchers, so the only modes are split / animation / card / mandala.
+  // switchers, so the only modes are split / animation / card / mandala / tunnel.
   let qrViewerMode = $state<ViewerMode>("split");
   // Pane layout derived from the mode: mandala swaps the left pane; every other
   // mode is the 2D-animation + choreo-card pairing. Single-view modes focus one
@@ -144,7 +145,9 @@
   const qrSplitConfig = $derived<SplitConfig>(
     qrViewerMode === "mandala"
       ? { leftPane: "mandala", rightPane: "card" }
-      : { leftPane: "animation", rightPane: "card" }
+      : qrViewerMode === "tunnel"
+        ? { leftPane: "tunnel", rightPane: "card" }
+        : { leftPane: "animation", rightPane: "card" }
   );
   const qrFocusedPane = $derived<"animation" | "image" | null>(
     qrViewerMode === "split" ? null : qrViewerMode === "card" ? "image" : "animation"
@@ -356,6 +359,12 @@
       configureShortCodeManager(stubBrowseLoader);
       registerLoopDetector(loopDetector);
       registerLoopDisplayResolver(resolveLoopDisplay);
+
+      // The bare /q layout also skips initializeAppServices(), so the settings
+      // service is null — every updateSettings() (the scanned card's prop seed
+      // below AND the in-player prop picker) no-ops with a console warning.
+      // Idempotent init wires the singleton so prop changes actually apply.
+      await initializeAppServices();
     }
 
     if (!shortCode) {
