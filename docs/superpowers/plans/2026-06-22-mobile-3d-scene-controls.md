@@ -1266,8 +1266,8 @@ git commit -m "test(viewer): mobile 3D controls on-device validation harness" --
 
 - [ ] **Step 1: Run the unit tests**
 
-Run: `npx vitest run src/lib/shared/sequence-viewer/state/fullscreen-capabilities.test.ts src/lib/shared/3d/components/controls/BottomSheet.test.ts`
-Expected: all PASS.
+Run: `npx vitest run --config tests/config/vitest.config.ts src/lib/shared/sequence-viewer/state/__tests__/fullscreen-capabilities.test.ts src/lib/shared/3d/components/controls/__tests__/BottomSheet.test.ts`
+Expected: all PASS. (Tests live under `__tests__/` so the suite include glob `src/**/__tests__/**` actually runs them; use the suite config so they inherit jsdom + setup.)
 
 - [ ] **Step 2: One full type-check (capture once, grep many)**
 
