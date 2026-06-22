@@ -50,7 +50,7 @@ export class PanelPersister {
     if (panelState.isFilterPanelOpen) return "filter";
     if (panelState.isSequenceActionsPanelOpen) return "sequenceActions";
     if (panelState.isLOOPPanelOpen) return "cap";
-    if (panelState.isCustomizePanelOpen) return "customize";
+    if (panelState.isCustomizeOverlayOpen) return "customize";
     if (panelState.isStepEditorPanelOpen) return "stepEditor";
     return null;
   }
@@ -61,7 +61,7 @@ export class PanelPersister {
     panelState.closeFilterPanel();
     panelState.closeSequenceActionsPanel();
     panelState.closeLOOPPanel();
-    panelState.closeCustomizePanel();
+    panelState.closeCustomizeOverlay();
     panelState.closeStepEditorPanel();
   }
 

@@ -25,6 +25,7 @@ import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/c
 import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   GridMode,
   type GridPosition,
@@ -97,27 +98,37 @@ export interface StartEndOptions {
   endPosition: PictographData | null;
   mustContainLetters: Letter[];
   mustNotContainLetters: Letter[];
+  /**
+   * Starting orientation for the blue prop. Defaults to IN ("in/in").
+   * Feeds the engine's blueStartOrientation override (seeds beat 0 +
+   * propagates forward). Undefined = engine default (IN).
+   */
+  blueStartOrientation?: Orientation;
+  /**
+   * Starting orientation for the red prop. Defaults to IN ("in/in").
+   * Feeds the engine's redStartOrientation override.
+   */
+  redStartOrientation?: Orientation;
 }
 
 /** @deprecated Use StartEndOptions instead */
 export type CustomizeOptions = StartEndOptions;
 
 /**
- * Props for the Customize expanded overlay (Style + Rhythm + Start/End)
+ * Props for the Customize expanded overlay (Style + Start/End).
+ * Rhythm was removed pending a finished rhythm-preset design; the generator
+ * still honors config.durationTemplateId, there's just no customize UI for it.
  */
 export interface CustomizeOverlayProps {
   constraintPreset: "smooth" | "mixed" | "choppy";
   handPathMode: "smooth" | "mixed" | "choppy";
   motionTypeFilter: "no-dash" | "prefer-dash" | null;
-  durationTemplateId: string | null;
-  stepCount: number;
   startEndOptions: StartEndOptions | null;
   gridMode: GridMode;
   isFreeformMode: boolean;
   onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
   onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
   onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
-  onDurationTemplateSelect: (id: string | null) => void;
   onStartEndChange: ((options: StartEndOptions) => void) | null;
 }
 
@@ -242,41 +253,6 @@ export interface PanelCoordinationState {
   openCreationMethodPanel(): void;
   closeCreationMethodPanel(): void;
 
-  // Start/End Options Panel State
-  get isStartEndPanelOpen(): boolean;
-  get startEndOptions(): StartEndOptions | null;
-  get startEndOnChange(): ((options: StartEndOptions) => void) | null;
-  get startEndIsFreeformMode(): boolean;
-  get startEndGridMode(): GridMode;
-
-  openStartEndPanel(
-    currentOptions: StartEndOptions,
-    onChange: (options: StartEndOptions) => void,
-    isFreeformMode?: boolean,
-    gridMode?: GridMode
-  ): void;
-  closeStartEndPanel(): void;
-
-  /** @deprecated Use isStartEndPanelOpen instead */
-  get isCustomizePanelOpen(): boolean;
-  /** @deprecated Use startEndOptions instead */
-  get customizeOptions(): StartEndOptions | null;
-  /** @deprecated Use startEndOnChange instead */
-  get customizeOnChange(): ((options: StartEndOptions) => void) | null;
-  /** @deprecated Use startEndIsFreeformMode instead */
-  get customizeIsFreeformMode(): boolean;
-  /** @deprecated Use startEndGridMode instead */
-  get customizeGridMode(): GridMode;
-  /** @deprecated Use openStartEndPanel instead */
-  openCustomizePanel(
-    currentOptions: StartEndOptions,
-    onChange: (options: StartEndOptions) => void,
-    isFreeformMode?: boolean,
-    gridMode?: GridMode
-  ): void;
-  /** @deprecated Use closeStartEndPanel instead */
-  closeCustomizePanel(): void;
-
   // Sequence Viewer State (triggers SequenceViewerDrawerHost on mobile, /sequence/[id] on desktop)
   get isSequenceViewerOpen(): boolean;
 
@@ -305,12 +281,6 @@ export interface PanelCoordinationState {
 
   openCustomizeOverlay(props: CustomizeOverlayProps): void;
   closeCustomizeOverlay(): void;
-
-  // Duration Rhythm Panel State (for generator rhythm preset picker)
-  get isDurationRhythmPanelOpen(): boolean;
-
-  openDurationRhythmPanel(): void;
-  closeDurationRhythmPanel(): void;
 
   // Duration Preview Mode State (for live preview in duration pattern drawer)
   get isDurationPreviewMode(): boolean;
@@ -431,21 +401,9 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   // Preset drawer state
   let isPresetDrawerOpen = $state(false);
 
-  // Customize overlay state (Style + Rhythm + Start/End)
+  // Customize overlay state (Style + Rhythm + Start/End in one overlay)
   let isCustomizeOverlayOpen = $state(false);
   let customizeOverlayProps = $state<CustomizeOverlayProps | null>(null);
-
-  // Duration rhythm panel state (generator rhythm preset picker)
-  let isDurationRhythmPanelOpen = $state(false);
-
-  // Start/End options panel state
-  let isStartEndPanelOpen = $state(false);
-  let startEndOptions = $state<StartEndOptions | null>(null);
-  let startEndOnChange = $state<((options: StartEndOptions) => void) | null>(
-    null
-  );
-  let startEndIsFreeformMode = $state(true); // Default to freeform (shows end position)
-  let startEndGridMode = $state<GridMode>(GridMode.DIAMOND); // Grid mode for position picker
 
   // Sequence Viewer state (triggers SequenceViewerDrawerHost on mobile, /sequence/[id] on desktop)
   let isSequenceViewerOpen = $state(false);
@@ -489,15 +447,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     isCustomizeOverlayOpen = false;
     customizeOverlayProps = null;
 
-    isDurationRhythmPanelOpen = false;
-
     isPresetDrawerOpen = false;
-
-    isStartEndPanelOpen = false;
-    startEndOptions = null;
-    startEndOnChange = null;
-    startEndIsFreeformMode = true;
-    startEndGridMode = GridMode.DIAMOND;
 
     isSequenceViewerOpen = false;
   }
@@ -858,20 +808,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       isPresetDrawerOpen = false;
     },
 
-    // Duration Rhythm Panel Getters
-    get isDurationRhythmPanelOpen() {
-      return isDurationRhythmPanelOpen;
-    },
-
-    openDurationRhythmPanel() {
-      closeAllPanels();
-      isDurationRhythmPanelOpen = true;
-    },
-
-    closeDurationRhythmPanel() {
-      isDurationRhythmPanelOpen = false;
-    },
-
     // Creation Method Panel Getters
     get isCreationMethodPanelOpen() {
       return isCreationMethodPanelOpen;
@@ -884,73 +820,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
 
     closeCreationMethodPanel() {
       isCreationMethodPanelOpen = false;
-    },
-
-    // Start/End Options Panel Getters
-    get isStartEndPanelOpen() {
-      return isStartEndPanelOpen;
-    },
-    get startEndOptions() {
-      return startEndOptions;
-    },
-    get startEndOnChange() {
-      return startEndOnChange;
-    },
-    get startEndIsFreeformMode() {
-      return startEndIsFreeformMode;
-    },
-    get startEndGridMode() {
-      return startEndGridMode;
-    },
-
-    openStartEndPanel(
-      currentOptions: StartEndOptions,
-      onChange: (options: StartEndOptions) => void,
-      isFreeformMode: boolean = true,
-      gridMode: GridMode = GridMode.DIAMOND
-    ) {
-      closeAllPanels();
-      startEndOptions = currentOptions;
-      startEndOnChange = onChange;
-      startEndIsFreeformMode = isFreeformMode;
-      startEndGridMode = gridMode;
-      isStartEndPanelOpen = true;
-    },
-
-    closeStartEndPanel() {
-      isStartEndPanelOpen = false;
-      startEndOptions = null;
-      startEndOnChange = null;
-      startEndIsFreeformMode = true;
-      startEndGridMode = GridMode.DIAMOND;
-    },
-
-    // Deprecated aliases for backwards compatibility
-    get isCustomizePanelOpen() {
-      return isStartEndPanelOpen;
-    },
-    get customizeOptions() {
-      return startEndOptions;
-    },
-    get customizeOnChange() {
-      return startEndOnChange;
-    },
-    get customizeIsFreeformMode() {
-      return startEndIsFreeformMode;
-    },
-    get customizeGridMode() {
-      return startEndGridMode;
-    },
-    openCustomizePanel(
-      currentOptions: StartEndOptions,
-      onChange: (options: StartEndOptions) => void,
-      isFreeformMode: boolean = true,
-      gridMode: GridMode = GridMode.DIAMOND
-    ) {
-      this.openStartEndPanel(currentOptions, onChange, isFreeformMode, gridMode);
-    },
-    closeCustomizePanel() {
-      this.closeStartEndPanel();
     },
 
     // Sequence Viewer Getters
@@ -983,9 +852,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
         isSequenceActionsPanelOpen ||
         isLOOPPanelOpen ||
         isCustomizeOverlayOpen ||
-        isDurationRhythmPanelOpen ||
         isPresetDrawerOpen ||
-        isStartEndPanelOpen ||
         isSequenceViewerOpen
       );
     },

@@ -187,7 +187,7 @@ export function buildCardDescriptors(
   const showPeriodCard = supportsPeriodFour;
   const customizeLoopSpan = showPeriodCard ? 2 : 3;
 
-  // Customize card (absorbs Style + Rhythm + Start/End)
+  // Customize card (absorbs Style + Start/End; Rhythm removed pending design)
   const hasStartEnd = handlers.handleStartEndChange && handlers.startEndOptions;
   if (handlers.handleConstraintPresetChange) {
     cardList.push({
@@ -196,15 +196,12 @@ export function buildCardDescriptors(
         constraintPreset: config.constraintPreset,
         handPathMode: config.handPathMode,
         motionTypeFilter: config.motionTypeFilter,
-        durationTemplateId: config.durationTemplateId,
-        stepCount: config.length,
         startEndOptions: handlers.startEndOptions ?? null,
         gridMode: handlers.currentGridMode,
         isFreeformMode: !loopEnabled,
         onConstraintPresetChange: handlers.handleConstraintPresetChange,
         onHandPathModeChange: handlers.handleHandPathModeChange,
         onMotionTypeFilterChange: handlers.handleMotionTypeFilterChange,
-        onDurationTemplateSelect: handlers.handleDurationTemplateSelect,
         onStartEndChange: hasStartEnd ? handlers.handleStartEndChange : null,
         cardIndex: cardIndex++,
       },

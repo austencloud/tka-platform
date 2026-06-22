@@ -151,6 +151,11 @@ export function uiConfigToGenerationOptions(
     endPosition: startEndOptions?.endPosition ?? undefined,
     mustContainLetters: startEndOptions?.mustContainLetters ?? undefined,
     mustNotContainLetters: startEndOptions?.mustNotContainLetters ?? undefined,
+
+    // Start orientation overrides (engine seeds beat 0 + propagates). Orientation
+    // values are already engine strings ("in"/"clock"/"out"/"counter").
+    blueStartOrientation: startEndOptions?.blueStartOrientation ?? undefined,
+    redStartOrientation: startEndOptions?.redStartOrientation ?? undefined,
   };
   return options;
 }

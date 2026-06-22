@@ -1,19 +1,20 @@
 <!--
 CustomizeExpandedOverlay.svelte - Accordion-based customize panel
-Three collapsible sections: Style, Rhythm, Start Position
+Two collapsible sections: Style, Start Position.
 Only one section open at a time. All content renders inline (no drawer-hopping).
+(Rhythm was removed pending a finished rhythm-preset design.)
 -->
 <script module lang="ts">
   // Persist which accordion section was last open across sessions.
   // Without this, reopening the customize panel in a new session always
-  // defaults to "style" even if the user's last change was to rhythm.
+  // defaults to "style" even if the user's last change was to start positions.
   const SECTION_STORAGE_KEY = "tka-customize-active-section";
-  type AccordionSectionPersisted = "style" | "rhythm" | "startEnd" | null;
+  type AccordionSectionPersisted = "style" | "startEnd" | null;
 
   function loadPersistedSection(): AccordionSectionPersisted {
     try {
       const raw = localStorage.getItem(SECTION_STORAGE_KEY);
-      if (raw === "style" || raw === "rhythm" || raw === "startEnd") return raw;
+      if (raw === "style" || raw === "startEnd") return raw;
       return "style";
     } catch {
       return "style";
@@ -42,57 +43,47 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   import { quintOut } from "svelte/easing";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount, untrack } from "svelte";
-  import { getTemplateById } from "$lib/features/create/shared/domain/templates/duration-templates";
   import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import { GridMode, type GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import {
     detectPresetFromBlocked,
-    getAllPositions,
     getAllowedPositions,
     getBlockedPositionsForPreset,
+    PRESET_LABELS,
     StartPositionPreset,
   } from "../../shared/domain/start-position-presets";
   import StyleExpandPanel from "../StyleExpandPanel.svelte";
-  import PatternItemCard from "$lib/features/create/shared/components/sequence-actions/PatternItemCard.svelte";
-  import {
-    getTemplatesForStepCount,
-  } from "$lib/features/create/shared/domain/templates/duration-templates";
-  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
-  import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import MultiSelectPositionPicker from "$lib/shared/components/position-picker/MultiSelectPositionPicker.svelte";
+  import PositionSection from "$lib/shared/components/position-picker/PositionSection.svelte";
+  import OrientationCycler from "../../../construct/start-position-picker/components/OrientationCycler.svelte";
+  import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-  type AccordionSection = "style" | "rhythm" | "startEnd";
-  type StartPosMode = "all" | "classic" | "specific";
+  type AccordionSection = "style" | "startEnd";
 
   let {
     constraintPreset,
     handPathMode,
     motionTypeFilter,
-    durationTemplateId,
-    stepCount,
     startEndOptions,
     gridMode = GridMode.DIAMOND,
     isFreeformMode = true,
     onConstraintPresetChange,
     onHandPathModeChange,
     onMotionTypeFilterChange,
-    onDurationTemplateSelect,
     onStartEndChange,
     onClose,
   } = $props<{
     constraintPreset: "smooth" | "mixed" | "choppy";
     handPathMode: "smooth" | "mixed" | "choppy";
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
-    durationTemplateId: string | null;
-    stepCount: number;
     startEndOptions: StartEndOptions | null;
     gridMode?: GridMode;
     isFreeformMode?: boolean;
     onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
     onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
     onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
-    onDurationTemplateSelect: (id: string | null) => void;
     onStartEndChange: ((options: StartEndOptions) => void) | null;
     onClose: () => void;
   }>();
@@ -118,55 +109,61 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   let localHandPathMode = $state<"smooth" | "mixed" | "choppy">(untrack(() => handPathMode));
   let localMotionTypeFilter = $state<"no-dash" | "prefer-dash" | null>(untrack(() => motionTypeFilter));
 
-  // ─── Local state for rhythm (instant UI feedback) ───
-  let localDurationTemplateId = $state<string | null>(untrack(() => durationTemplateId));
-
-  // ─── Rhythm display ───
-  const rhythmDisplay = $derived.by(() => {
-    if (!localDurationTemplateId) return "Off";
-    const template = getTemplateById(localDurationTemplateId);
-    return template?.name ?? "Off";
-  });
-
   // ─── Local state for start positions (instant UI feedback) ───
   let localBlockedPositions = $state<GridPosition[]>(
     untrack(() => startEndOptions)?.blockedStartPositions ?? []
   );
-
-  // Determine current mode from blocked positions
-  function detectMode(blocked: GridPosition[]): StartPosMode {
-    if (blocked.length === 0) return "all";
-    const preset = detectPresetFromBlocked(blocked, gridMode);
-    if (preset === StartPositionPreset.CLASSIC) return "classic";
-    return "specific";
-  }
-
-  let startPosMode = $state<StartPosMode>(
-    detectMode(untrack(() => startEndOptions)?.blockedStartPositions ?? [])
+  let localEndPosition = $state<PictographData | null>(
+    untrack(() => startEndOptions)?.endPosition ?? null
   );
 
-  // Which positions are allowed (highlighted) in the current mode
-  const allowedPositions = $derived.by((): Set<GridPosition> => {
-    const allowed = getAllowedPositions(localBlockedPositions, gridMode);
-    return new Set(allowed);
+  // ─── Local state for start orientation (blue + red, default In/In) ───
+  let localBlueOri = $state<Orientation>(
+    untrack(() => startEndOptions)?.blueStartOrientation ?? Orientation.IN
+  );
+  let localRedOri = $state<Orientation>(
+    untrack(() => startEndOptions)?.redStartOrientation ?? Orientation.IN
+  );
+
+  // Compact orientation suffix for the section header — empty when In/In so the
+  // default reads clean. flex:1 right-aligned value grows toward the fixed
+  // chevron, so a wider string never shifts siblings (no-layout-shift rule).
+  const ORI_SHORT: Record<string, string> = {
+    [Orientation.IN]: "In",
+    [Orientation.CLOCK]: "CW",
+    [Orientation.OUT]: "Out",
+    [Orientation.COUNTER]: "CCW",
+  };
+  const oriDisplay = $derived.by(() => {
+    const b = localBlueOri ?? Orientation.IN;
+    const r = localRedOri ?? Orientation.IN;
+    if (b === Orientation.IN && r === Orientation.IN) return "";
+    return ` · ${ORI_SHORT[b] ?? b}/${ORI_SHORT[r] ?? r}`;
   });
 
-  // For "specific" mode: which single position is selected
-  const selectedSpecificPosition = $derived.by((): GridPosition | null => {
-    if (startPosMode !== "specific") return null;
-    return allowedPositions.size === 1 ? [...allowedPositions][0]! : null;
-  });
+  // Current preset (All / Classic 3 / Custom) derived from the blocked list.
+  const currentPreset = $derived(
+    detectPresetFromBlocked(localBlockedPositions, gridMode)
+  );
+
+  // How many positions are enabled (for the section summary).
+  const enabledCount = $derived(
+    getAllowedPositions(localBlockedPositions, gridMode).length
+  );
+
+  // Single-select preset options for the SegmentedControl.
+  const startPresetOptions = [
+    StartPositionPreset.ANY,
+    StartPositionPreset.CLASSIC,
+    StartPositionPreset.CUSTOM,
+  ].map((p) => ({ value: p, label: PRESET_LABELS[p] }));
 
   // ─── Start/End display ───
   const startEndDisplay = $derived.by(() => {
     if (!startEndOptions) return "Any";
-    if (startPosMode === "all") return "Any";
-    if (startPosMode === "classic") return "Classic 3";
-    if (selectedSpecificPosition) {
-      // Show the position name (e.g., "α1")
-      return selectedSpecificPosition;
-    }
-    return "Pick one";
+    if (currentPreset === StartPositionPreset.ANY) return "Any";
+    if (currentPreset === StartPositionPreset.CLASSIC) return "Classic 3";
+    return enabledCount === 1 ? "1 pos" : `${enabledCount} pos`;
   });
 
   // ─── Style summary ───
@@ -183,28 +180,6 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     onClose();
   }
 
-  // ─── Rhythm section state ───
-  let allTemplates = $derived(
-    getTemplatesForStepCount(stepCount)
-  );
-
-  function handleTemplateSelect(templateId: string) {
-    hapticService?.trigger("selection");
-    if (templateId === localDurationTemplateId) {
-      localDurationTemplateId = null;
-      onDurationTemplateSelect(null);
-    } else {
-      localDurationTemplateId = templateId;
-      onDurationTemplateSelect(templateId);
-    }
-  }
-
-  function handleClearRhythm() {
-    hapticService?.trigger("selection");
-    localDurationTemplateId = null;
-    onDurationTemplateSelect(null);
-  }
-
   // ─── Start Position handlers ───
   function applyBlockedPositions(blocked: GridPosition[]) {
     if (!startEndOptions || !onStartEndChange) return;
@@ -216,38 +191,49 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     });
   }
 
-  function handleStartPosModeChange(mode: StartPosMode) {
-    if (!startEndOptions || !onStartEndChange) return;
+  // Preset segment: All clears the blocklist, Classic 3 blocks all but the
+  // classic three, Custom is auto-detected from manual grid toggles (clicking
+  // it directly is a no-op — the grid drives the custom state).
+  function handlePresetSelect(preset: StartPositionPreset) {
+    if (preset === StartPositionPreset.CUSTOM) return;
     hapticService?.trigger("selection");
-    startPosMode = mode;
-
-    if (mode === "all") {
+    if (preset === StartPositionPreset.ANY) {
       applyBlockedPositions([]);
-    } else if (mode === "classic") {
-      const blocked = getBlockedPositionsForPreset(StartPositionPreset.CLASSIC, gridMode);
-      applyBlockedPositions(blocked);
-    } else if (mode === "specific") {
-      // Block all - nothing highlighted until user picks one
-      const allPositions = getAllPositions(gridMode);
-      applyBlockedPositions(allPositions);
+    } else if (preset === StartPositionPreset.CLASSIC) {
+      applyBlockedPositions(
+        getBlockedPositionsForPreset(StartPositionPreset.CLASSIC, gridMode)
+      );
     }
   }
 
-  function handleSpecificPositionSelect(position: GridPosition) {
-    hapticService?.trigger("selection");
-    const allPositions = getAllPositions(gridMode);
-    const blocked = allPositions.filter((p) => p !== position);
+  // Manual multi-select toggles from the shared grid primitive.
+  function handleBlockedChange(blocked: GridPosition[]) {
     applyBlockedPositions(blocked);
-    // Auto-close after picking a specific position
-    onClose();
   }
 
-  // ─── Position grid data ───
-  let positionVariations = $state<PictographData[]>([]);
+  // End position (freeform only).
+  function handleEndPositionChange(position: PictographData | null) {
+    if (!startEndOptions || !onStartEndChange) return;
+    hapticService?.trigger("selection");
+    localEndPosition = position;
+    onStartEndChange({ ...startEndOptions, endPosition: position });
+  }
 
-  onMount(() => {
-    positionVariations = startPositionManager.getAllStartPositionVariations(gridMode);
-  });
+  // Start orientation per prop. Feeds the engine's blue/redStartOrientation
+  // override so the generated sequence begins from the chosen orientation.
+  function handleBlueOriChange(ori: Orientation) {
+    if (!startEndOptions || !onStartEndChange) return;
+    hapticService?.trigger("selection");
+    localBlueOri = ori;
+    onStartEndChange({ ...startEndOptions, blueStartOrientation: ori });
+  }
+
+  function handleRedOriChange(ori: Orientation) {
+    if (!startEndOptions || !onStartEndChange) return;
+    hapticService?.trigger("selection");
+    localRedOri = ori;
+    onStartEndChange({ ...startEndOptions, redStartOrientation: ori });
+  }
 </script>
 
 <div
@@ -309,56 +295,6 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
       {/if}
     </div>
 
-    <!-- ═══ Rhythm Section ═══ -->
-    <div class="accordion-section">
-      <button
-        class="accordion-header"
-        class:active={activeSection === "rhythm"}
-        onclick={() => toggleSection("rhythm")}
-        aria-expanded={activeSection === "rhythm"}
-        aria-controls="section-rhythm"
-      >
-        <span class="accordion-label">Rhythm</span>
-        <span class="accordion-value">{rhythmDisplay}</span>
-        <svg
-          class="accordion-chevron"
-          class:open={activeSection === "rhythm"}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
-      </button>
-
-      {#if activeSection === "rhythm"}
-        <div class="accordion-content" id="section-rhythm" transition:slide={{ duration: 200, easing: quintOut }} onintroend={(e) => (e.target as HTMLElement)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}>
-          <div class="rhythm-templates">
-            <PatternItemCard
-              name="None"
-              description="No rhythm applied"
-              selected={localDurationTemplateId === null}
-              glassColor="#94a3b8"
-              isTemplate
-              onclick={handleClearRhythm}
-            />
-
-            {#each allTemplates as template (template.id)}
-              <PatternItemCard
-                name={template.name}
-                description={template.description}
-                selected={localDurationTemplateId === template.id}
-                glassColor="#14b8a6"
-                isTemplate
-                onclick={() => handleTemplateSelect(template.id)}
-              />
-            {/each}
-          </div>
-        </div>
-      {/if}
-    </div>
-
     <!-- ═══ Start Position Section ═══ -->
     {#if startEndOptions && onStartEndChange}
       <div class="accordion-section">
@@ -370,7 +306,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
           aria-controls="section-start-end"
         >
           <span class="accordion-label">Start Pos.</span>
-          <span class="accordion-value">{startEndDisplay}</span>
+          <span class="accordion-value">{startEndDisplay}{oriDisplay}</span>
           <svg
             class="accordion-chevron"
             class:open={activeSection === "startEnd"}
@@ -385,63 +321,56 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
 
         {#if activeSection === "startEnd"}
           <div class="accordion-content" id="section-start-end" transition:slide={{ duration: 200, easing: quintOut }} onintroend={(e) => (e.target as HTMLElement)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}>
-            <!-- Mode buttons: All / Classic 3 / Specific -->
-            <div class="presets-row">
-              <button
-                class="preset-button"
-                class:active={startPosMode === "all"}
-                onclick={() => handleStartPosModeChange("all")}
-                aria-pressed={startPosMode === "all"}
-              >
-                <span class="preset-label">All</span>
-              </button>
-              <button
-                class="preset-button"
-                class:active={startPosMode === "classic"}
-                onclick={() => handleStartPosModeChange("classic")}
-                aria-pressed={startPosMode === "classic"}
-              >
-                <span class="preset-label">Classic 3</span>
-              </button>
-              <button
-                class="preset-button"
-                class:active={startPosMode === "specific"}
-                onclick={() => handleStartPosModeChange("specific")}
-                aria-pressed={startPosMode === "specific"}
-              >
-                <span class="preset-label">Specific</span>
-              </button>
-            </div>
+            <!-- Preset: All / Classic 3 / Custom (single-select) -->
+            <SegmentedControl
+              options={startPresetOptions}
+              value={currentPreset}
+              onchange={handlePresetSelect}
+              color="accent"
+              size="sm"
+            />
 
-            <!-- Position grid: always visible, interactive only in "specific" mode -->
-            <div class="specific-grid">
-              {#each positionVariations as pos (pos.id)}
-                {@const gridPos = pos.startPosition as GridPosition}
-                {@const isAllowed = allowedPositions.has(gridPos)}
-                {@const isPickable = startPosMode === "specific"}
-                <button
-                  class="specific-cell"
-                  class:allowed={isAllowed}
-                  class:dimmed={!isAllowed}
-                  class:pickable={isPickable}
-                  onclick={() => isPickable && handleSpecificPositionSelect(gridPos)}
-                  style:--letter-border-color={getLetterBorderColorSafe(pos.letter)}
-                  aria-label="Start at {gridPos}"
-                  aria-pressed={isAllowed}
-                  tabindex={isPickable ? 0 : -1}
-                >
-                  <div class="pictograph-wrapper">
-                    <PictographContainer pictographData={pos} />
-                  </div>
-                  {#if isAllowed}
-                    <div class="selected-indicator">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
-                    </div>
-                  {/if}
-                </button>
-              {/each}
+            <!-- Multi-select position grid (shared primitive) -->
+            <MultiSelectPositionPicker
+              blockedPositions={localBlockedPositions}
+              onBlockedChange={handleBlockedChange}
+              blueStartOrientation={localBlueOri}
+              redStartOrientation={localRedOri}
+              {gridMode}
+            />
+
+            <!-- End position (freeform only) -->
+            {#if isFreeformMode}
+              <PositionSection
+                title="End Position"
+                description="Where the sequence ends (optional)"
+                currentPosition={localEndPosition}
+                onPositionChange={handleEndPositionChange}
+                {gridMode}
+              />
+            {/if}
+
+            <!-- Start orientation (blue + red, default In/In) -->
+            <div class="ori-section">
+              <span class="ori-heading">Start Orientation</span>
+              <div class="ori-row">
+                <span class="ori-color-label ori-blue">Blue</span>
+                <OrientationCycler
+                  orientation={localBlueOri}
+                  onOrientationChange={handleBlueOriChange}
+                  color="blue"
+                  enableDrawer={false}
+                />
+              </div>
+              <div class="ori-row">
+                <span class="ori-color-label ori-red">Red</span>
+                <OrientationCycler
+                  orientation={localRedOri}
+                  onOrientationChange={handleRedOriChange}
+                  color="red"
+                  enableDrawer={false}
+                />
+              </div>
             </div>
           </div>
         {/if}
@@ -600,157 +529,45 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     gap: 10px;
   }
 
-  /* ─── Rhythm: Template list ─── */
 
-  .rhythm-templates {
+  /* Start Position controls (SegmentedControl + MultiSelectPositionPicker +
+     PositionSection) bring their own styling from the shared primitives. */
+
+  /* ─── Start orientation (blue + red cyclers) ─── */
+  .ori-section {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
 
-  /* ─── Start Position: Mode buttons ─── */
-
-  .presets-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-  }
-
-  .preset-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 6px;
-    min-height: 40px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 2px solid transparent;
-    border-radius: 10px;
-    cursor: pointer;
-    transition:
-      background var(--duration-normal) ease,
-      border-color var(--duration-normal) ease,
-      box-shadow var(--duration-normal) ease,
-      transform var(--duration-fast, 150ms) ease;
-    color: white;
-    font-family: inherit;
-  }
-
-  .preset-button:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-
-  .preset-button.active {
-    background: rgba(100, 200, 255, 0.15);
-    border-color: rgba(100, 200, 255, 0.6);
-    box-shadow: 0 0 12px rgba(100, 200, 255, 0.2);
-  }
-
-  .preset-button:active {
-    transform: scale(0.96);
-  }
-
-  .preset-label {
+  .ori-heading {
     font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text, white);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255, 255, 255, 0.5);
   }
 
-
-  /* ─── Start Position: Specific single-select grid ─── */
-
-  .specific-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(4, 1fr);
-    gap: 6px;
-  }
-
-  .specific-cell {
-    position: relative;
+  .ori-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    cursor: pointer;
-    padding: 2px;
-    background: rgba(0, 0, 0, 0.15);
-    transition:
-      background var(--duration-normal) ease,
-      border-color var(--duration-normal) ease,
-      opacity var(--duration-normal) ease,
-      box-shadow var(--duration-normal) ease,
-      transform var(--duration-fast, 150ms) ease;
-    overflow: hidden;
-    color: white;
-    font-family: inherit;
-    min-height: 0;
+    gap: 10px;
   }
 
-  /* Allowed (highlighted) positions */
-  .specific-cell.allowed {
-    border-color: var(--letter-border-color, rgba(100, 200, 255, 0.8));
-    background: rgba(100, 200, 255, 0.12);
-    box-shadow: 0 0 10px rgba(100, 200, 255, 0.15);
+  .ori-color-label {
+    flex-shrink: 0;
+    width: 44px;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 700;
+    letter-spacing: 0.3px;
   }
 
-  /* Dimmed (not allowed) positions */
-  .specific-cell.dimmed {
-    opacity: 0.3;
+  .ori-blue {
+    color: var(--prop-blue, #3b82f6);
   }
 
-  /* Non-interactive in all/classic modes */
-  .specific-cell:not(.pickable) {
-    cursor: default;
-    pointer-events: none;
-  }
-
-  /* Hover only for pickable (specific mode) cells */
-  .specific-cell.pickable:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-
-  .specific-cell.pickable:active {
-    transform: scale(0.96);
-  }
-
-  .pictograph-wrapper {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .pictograph-wrapper :global(.pictograph) {
-    width: 100%;
-    height: 100%;
-  }
-
-  .pictograph-wrapper :global(.pictograph svg) {
-    width: 100%;
-    height: 100%;
-  }
-
-  .selected-indicator {
-    position: absolute;
-    bottom: 2px;
-    right: 2px;
-    width: 16px;
-    height: 16px;
-    background: rgba(100, 200, 255, 0.9);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .selected-indicator svg {
-    width: 11px;
-    height: 11px;
-    color: white;
+  .ori-red {
+    color: var(--prop-red, #ef4444);
   }
 
   /* ─── Reduced motion ─── */
@@ -758,9 +575,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   @media (prefers-reduced-motion: reduce) {
     .accordion-header,
     .close-button,
-    .accordion-chevron,
-    .preset-button,
-    .specific-cell {
+    .accordion-chevron {
       transition: none;
     }
   }

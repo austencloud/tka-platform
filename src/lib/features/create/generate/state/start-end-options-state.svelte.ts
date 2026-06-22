@@ -16,6 +16,7 @@ import { settingsService } from "$lib/shared/settings/state/settings-state.svelt
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
 import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 
@@ -27,6 +28,8 @@ interface SerializedSessionOptions {
   endPositionLetter?: string;
   mustContainLetters: string[];
   mustNotContainLetters: string[];
+  blueStartOrientation?: string;
+  redStartOrientation?: string;
   timestamp: number;
 }
 
@@ -43,6 +46,8 @@ function saveSessionOptions(options: StartEndOptions): void {
       mustNotContainLetters: options.mustNotContainLetters.map((l) =>
         l.toString()
       ),
+      blueStartOrientation: options.blueStartOrientation,
+      redStartOrientation: options.redStartOrientation,
       timestamp: Date.now(),
     };
 
@@ -73,6 +78,8 @@ function loadSessionOptions(): Partial<StartEndOptions> | null {
         : null,
       mustContainLetters: (data.mustContainLetters || []) as Letter[],
       mustNotContainLetters: (data.mustNotContainLetters || []) as Letter[],
+      blueStartOrientation: (data.blueStartOrientation as Orientation) ?? Orientation.IN,
+      redStartOrientation: (data.redStartOrientation as Orientation) ?? Orientation.IN,
     };
   } catch (error) {
     console.warn("⚠️ StartEndOptions: Failed to load session options:", error);
@@ -98,6 +105,8 @@ const DEFAULT_OPTIONS: StartEndOptions = {
   endPosition: null,
   mustContainLetters: [],
   mustNotContainLetters: [],
+  blueStartOrientation: Orientation.IN,
+  redStartOrientation: Orientation.IN,
 };
 
 // ===== State Creator =====

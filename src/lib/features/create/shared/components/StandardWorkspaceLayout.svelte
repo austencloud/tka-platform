@@ -394,9 +394,13 @@
     margin: clamp(2.5rem, 11vmin, 6.5rem) 0 0;
     padding: 0 1rem;
     font-family: "Playfair Display", Georgia, serif;
-    font-size: clamp(1.4rem, 3.4vmin, 2rem);
+    /* cqi tracks the tool-panel container width (container-type: size below), so
+       the hint scales to fit on ONE line at any width; nowrap forbids the wrap.
+       Coefficient chosen so the line still fits when the 2rem cap kicks in. */
+    font-size: clamp(1rem, 4.6cqi, 2rem);
     font-weight: 500;
     line-height: 1.2;
+    white-space: nowrap;
     color: var(--theme-text, #fff);
     /* single soft shadow so it stays legible over the busy background */
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);

@@ -41,15 +41,12 @@
           constraintPreset={overlayProps.constraintPreset}
           handPathMode={overlayProps.handPathMode}
           motionTypeFilter={overlayProps.motionTypeFilter}
-          durationTemplateId={overlayProps.durationTemplateId}
-          stepCount={overlayProps.stepCount}
           startEndOptions={overlayProps.startEndOptions}
           gridMode={overlayProps.gridMode}
           isFreeformMode={overlayProps.isFreeformMode}
           onConstraintPresetChange={overlayProps.onConstraintPresetChange}
           onHandPathModeChange={overlayProps.onHandPathModeChange}
           onMotionTypeFilterChange={overlayProps.onMotionTypeFilterChange}
-          onDurationTemplateSelect={overlayProps.onDurationTemplateSelect}
           onStartEndChange={overlayProps.onStartEndChange}
           onClose={onClose}
         />
@@ -72,7 +69,17 @@
     max-height: 85dvh;
   }
 
-  /* Right-side panel on desktop - use full create panel width like LOOP drawer */
+  /* Right-side panel on desktop.
+     Base Drawer.css sizes right+side-by-side drawers to --create-panel-width
+     (the MEASURED generate-panel width). With no sequence the workspace
+     collapses and the generate panel goes full-width, so the customize drawer
+     would blow out to the whole viewport. Cap it: a settings form never needs
+     more than a readable column. min() keeps it from exceeding the panel on
+     narrow windows. */
+  :global(.drawer-content.customize-drawer-sheet.side-by-side-layout[data-placement="right"]) {
+    width: min(var(--create-panel-width, 480px), 520px);
+    max-width: 100%;
+  }
 
   .customize-drawer-content {
     display: flex;

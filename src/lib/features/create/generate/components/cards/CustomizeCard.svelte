@@ -1,6 +1,7 @@
 <!--
-CustomizeCard.svelte - Single card absorbing Style, Rhythm, and Start/End
-Shows summary ("Default" or "Custom"), click opens the expanded overlay
+CustomizeCard.svelte - Single card absorbing Style and Start/End
+Shows summary ("Default" or "Custom"), click opens the expanded overlay.
+(Rhythm was removed pending a finished rhythm-preset design.)
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
@@ -9,27 +10,24 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
   import { onMount, getContext } from "svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import CardHeader from "./shared/CardHeader.svelte";
-  import { getTemplateById } from "$lib/features/create/shared/domain/templates/duration-templates";
   import {
     detectPresetFromBlocked,
     getAllowedPositions,
     StartPositionPreset,
   } from "../../shared/domain/start-position-presets";
+  import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
   let {
     constraintPreset,
     handPathMode,
     motionTypeFilter,
-    durationTemplateId,
-    stepCount,
     startEndOptions,
     gridMode = GridMode.DIAMOND,
     isFreeformMode = true,
     onConstraintPresetChange,
     onHandPathModeChange,
     onMotionTypeFilterChange,
-    onDurationTemplateSelect,
     onStartEndChange,
     color = "linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%)",
     shadowColor = "190deg 75% 50%",
@@ -39,15 +37,12 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
     constraintPreset: "smooth" | "mixed" | "choppy";
     handPathMode: "smooth" | "mixed" | "choppy";
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
-    durationTemplateId: string | null;
-    stepCount: number;
     startEndOptions?: StartEndOptions;
     gridMode?: GridMode;
     isFreeformMode?: boolean;
     onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
     onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
     onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
-    onDurationTemplateSelect: (id: string | null) => void;
     onStartEndChange?: (options: StartEndOptions) => void;
     color?: string;
     shadowColor?: string;
@@ -68,23 +63,20 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
       constraintPreset === "smooth" &&
       handPathMode === "smooth" &&
       (motionTypeFilter === null || motionTypeFilter === "no-dash");
-    const isDefaultRhythm = !durationTemplateId;
+    const isDefaultOri =
+      (startEndOptions?.blueStartOrientation ?? Orientation.IN) === Orientation.IN &&
+      (startEndOptions?.redStartOrientation ?? Orientation.IN) === Orientation.IN;
     const isDefaultStartEnd = !startEndOptions ||
       (startEndOptions.blockedStartPositions.length === 0 &&
-       !startEndOptions.endPosition);
-    return isDefaultStyle && isDefaultRhythm && isDefaultStartEnd;
+       !startEndOptions.endPosition &&
+       isDefaultOri);
+    return isDefaultStyle && isDefaultStartEnd;
   });
 
   // Build summary lines for non-default settings
   const summaryLines = $derived.by((): string[] => {
     if (isAllDefault) return [];
     const lines: string[] = [];
-
-    // Rhythm
-    if (durationTemplateId) {
-      const template = getTemplateById(durationTemplateId);
-      if (template) lines.push(template.name);
-    }
 
     // Start position
     if (startEndOptions && startEndOptions.blockedStartPositions.length > 0) {
@@ -99,6 +91,19 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
       }
     }
 
+    // Start orientation (only when non-default In/In)
+    const blueOri = startEndOptions?.blueStartOrientation ?? Orientation.IN;
+    const redOri = startEndOptions?.redStartOrientation ?? Orientation.IN;
+    if (blueOri !== Orientation.IN || redOri !== Orientation.IN) {
+      const short: Record<string, string> = {
+        [Orientation.IN]: "In",
+        [Orientation.CLOCK]: "CW",
+        [Orientation.OUT]: "Out",
+        [Orientation.COUNTER]: "CCW",
+      };
+      lines.push(`Ori: ${short[blueOri] ?? blueOri}/${short[redOri] ?? redOri}`);
+    }
+
     return lines;
   });
 
@@ -108,15 +113,12 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
       constraintPreset,
       handPathMode,
       motionTypeFilter,
-      durationTemplateId,
-      stepCount,
       startEndOptions: startEndOptions ?? null,
       gridMode,
       isFreeformMode,
       onConstraintPresetChange,
       onHandPathModeChange,
       onMotionTypeFilterChange,
-      onDurationTemplateSelect,
       onStartEndChange: onStartEndChange ?? null,
     });
   }

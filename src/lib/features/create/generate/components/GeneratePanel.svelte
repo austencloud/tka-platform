@@ -25,8 +25,6 @@ Card-based architecture with integrated Generate button:
   import { createSpellModeState } from "../state/spell-mode-state.svelte";
   import CardBasedSettingsContainer from "./CardBasedSettingsContainer.svelte";
   import WordInputOverlay from "./cards/WordInputOverlay.svelte";
-  import StartEndSheet from "./modals/StartEndSheet.svelte";
-  import DurationRhythmSheet from "./modals/DurationRhythmSheet.svelte";
   import LOOPDrawer from "./modals/LOOPDrawer.svelte";
   import CustomizeDrawer from "./modals/CustomizeDrawer.svelte";
   import PresetDrawer from "./presets/PresetDrawer.svelte";
@@ -254,28 +252,10 @@ Card-based architecture with integrated Generate button:
   />
 {/if}
 
-<!-- Start/End position drawer (rendered outside card grid for full-screen coverage) -->
+<!-- Generation panels (rendered outside card grid for full-screen coverage).
+     Start/End + Rhythm are handled inside the unified Customize overlay below;
+     the standalone StartEndSheet / DurationRhythmSheet were removed (orphaned). -->
 {#if panelState}
-  <StartEndSheet
-    isOpen={panelState.isStartEndPanelOpen}
-    options={panelState.startEndOptions}
-    onChange={panelState.startEndOnChange ?? (() => {})}
-    onClose={() => panelState.closeStartEndPanel()}
-    isFreeformMode={panelState.startEndIsFreeformMode}
-    gridMode={panelState.startEndGridMode}
-  />
-
-  <DurationRhythmSheet
-    isOpen={panelState.isDurationRhythmPanelOpen}
-    selectedTemplateId={configState.config.durationTemplateId}
-    stepCount={configState.config.length}
-    onSelect={(id) => {
-      configState.updateConfig({ durationTemplateId: id });
-      panelState.closeDurationRhythmPanel();
-    }}
-    onClose={() => panelState.closeDurationRhythmPanel()}
-  />
-
   <LOOPDrawer
     isOpen={panelState.isLOOPPanelOpen}
     currentType={panelState.loopCurrentType}
