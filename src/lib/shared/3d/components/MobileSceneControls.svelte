@@ -68,7 +68,7 @@
   <button
     class="fab toggle"
     aria-label={playbackVisible ? "Hide playback bar" : "Show playback bar"}
-    aria-pressed={!playbackVisible}
+    aria-expanded={playbackVisible}
     onclick={() => (playbackVisible = !playbackVisible)}
   >
     <i class="fas {playbackVisible ? 'fa-chevron-down' : 'fa-chevron-up'}"></i>
@@ -114,7 +114,9 @@
     padding: 0;
   }
   .ctl.play { min-width: 52px; min-height: 52px; font-size: 18px; background: rgba(255, 255, 255, 0.15); }
-  .fab.toggle { min-width: 38px; min-height: 38px; font-size: 13px; opacity: 0.8; }
+  /* Secondary control: visually lighter (smaller icon + dimmed) but the tap
+     target stays at the 44px project floor. */
+  .fab.toggle { font-size: 13px; opacity: 0.8; }
   .fab.active {
     background: color-mix(in srgb, var(--theme-accent, #4a9eff) 22%, transparent);
     border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 55%, transparent);
