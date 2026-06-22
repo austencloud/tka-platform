@@ -4,7 +4,6 @@
 // (god rays / caustics / underwater distortion). Lets a reviewer isolate exactly
 // which effect is causing an observed change, instead of guessing.
 let _sway = $state(true);
-let _godRays = $state(true);
 let _caustics = $state(true);
 let _underwaterDistortion = $state(true);
 
@@ -14,12 +13,6 @@ export const oceanDebugToggles = {
   },
   set sway(v: boolean) {
     _sway = v;
-  },
-  get godRays() {
-    return _godRays;
-  },
-  set godRays(v: boolean) {
-    _godRays = v;
   },
   get caustics() {
     return _caustics;

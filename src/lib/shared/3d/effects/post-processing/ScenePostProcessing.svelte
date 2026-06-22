@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import { onDestroy } from "svelte";
   import { useTask, useThrelte } from "@threlte/core";
-  import { HalfFloatType, Vector2, Color, AgXToneMapping, NoToneMapping } from "three";
+  import { HalfFloatType, Vector2, AgXToneMapping, NoToneMapping } from "three";
   import {
     EffectComposer,
     RenderPass,
@@ -11,14 +11,12 @@
     ChromaticAberrationEffect,
     VignetteEffect,
   } from "postprocessing";
-  import { GodraysPass } from "three-good-godrays";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import { WaterAbsorptionEffect } from "./ocean/water-absorption-effect";
   import { UnderwaterDistortionEffect } from "./ocean/underwater-distortion-effect";
   import { RefractionCausticsEffect } from "./ocean/refraction-caustics-effect";
-  import { godraysLightStore } from "./godrays-light-store.svelte";
   import { oceanDebugToggles } from "$lib/shared/3d/environments/scenes/ocean/quality/ocean-debug-toggles.svelte";
   import { getQualityTierDetector } from "../quality/get-quality-tier-detector";
 
@@ -155,39 +153,6 @@
       );
     }
 
-    // Volumetric god rays — the final pass.
-    //
-    // Why last: GodraysPass has needsSwap=true, so inserting it earlier flips
-    // the composer's input/output ping-pong parity by one, which lands a later
-    // depth-reading EffectPass (water absorption / caustics) on the buffer that
-    // owns the scene depth texture — a GL_INVALID_OPERATION framebuffer feedback
-    // loop. As the terminal pass there is no depth-reading pass after it, so the
-    // parity issue can't occur. GodraysPass also self-heals its own compositor
-    // feedback case by blitting depth to a copy target (three-good-godrays
-    // >=0.10), so the hand-rolled DepthCopyPass the old comment asked for is no
-    // longer needed.
-    //
-    // Gated on a shadow-casting sun being present (OceanRuntimeSystems publishes
-    // it to godraysLightStore). The light/camera references stay live because
-    // Three mutates their matrices in place each frame.
-    const sunLight = godraysLightStore.light;
-    if (isOcean && sunLight && oceanDebugToggles.godRays) {
-      const godrays = new GodraysPass(
-        sunLight,
-        cam as import("three").PerspectiveCamera,
-        {
-          density: 1 / 160,
-          maxDensity: 0.4,
-          color: new Color(0xbfe6ff),
-          raymarchSteps: 60,
-          distanceAttenuation: 2.0,
-          blur: true,
-        },
-      );
-      godrays.renderToScreen = true;
-      composer.addPass(godrays);
-    }
-
     renderer.getSize(_sizeVec);
     const w = Math.round(_sizeVec.x);
     const h = Math.round(_sizeVec.y);
@@ -211,9 +176,7 @@
 
   $effect(() => {
     const cam = camera.current;
-    const _godLight = godraysLightStore.light;
     // Dev A/B toggles — read so flipping one rebuilds the composer pass chain.
-    const _gr = oceanDebugToggles.godRays;
     const _ca = oceanDebugToggles.caustics;
     const _ud = oceanDebugToggles.underwaterDistortion;
     if (shouldCompose && cam) {

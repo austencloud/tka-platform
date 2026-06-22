@@ -20,10 +20,9 @@
   }
 
   // Live A/B toggles to isolate which ocean effect causes an observed change.
-  type FxKey = "sway" | "godRays" | "caustics" | "underwaterDistortion";
+  type FxKey = "sway" | "caustics" | "underwaterDistortion";
   const FX_TOGGLES: Array<{ key: FxKey; label: string }> = [
     { key: "sway", label: "Sway" },
-    { key: "godRays", label: "God Rays" },
     { key: "caustics", label: "Caustics" },
     { key: "underwaterDistortion", label: "Distortion" },
   ];
