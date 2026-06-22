@@ -96,35 +96,49 @@ export async function rotateClipToBestSeam(
       }
     }
 
-    // Pass 1 — STREAM the clip computing a 64×64 blue-channel signature per
-    // frame (close each frame immediately so the decoder pool never backs up),
-    // plus the presentation timestamps. Cyclic per-frame motion = blue delta
-    // from the previous frame; peak motion = club moving fastest = not posed.
+    // Pass 1 — STREAM the clip locating the SOLID CLUB per frame (close each
+    // frame immediately so the decoder pool never backs up). The club is the
+    // brightest, most blue-saturated, opaque blob (the trail is faint/glowing,
+    // the static mandala overlay is faint lines). Track its centroid Y; the seam
+    // goes at the frame where the club is LOWEST (bottom of frame), the natural
+    // loop-start pose and the OPPOSITE of the "club at north" the seam must avoid.
+    // Pixel deltas are NOT used: a thin vertical club whipping through north is a
+    // motion peak yet exactly the pose we must not land on.
+    const G = 96;
     const sink = new VideoSampleSink(track);
-    const sigs: Uint8ClampedArray[] = [];
     const stamps: number[] = [];
-    const sc = new OffscreenCanvas(64, 64);
+    const clubY: number[] = [];
+    const sc = new OffscreenCanvas(G, G);
     const sx = sc.getContext("2d", { willReadFrequently: true })!;
     for await (const sample of sink.samples()) {
       const vf = sample.toVideoFrame();
-      sx.clearRect(0, 0, 64, 64);
-      sx.drawImage(vf, 0, 0, 64, 64);
-      sigs.push(sx.getImageData(0, 0, 64, 64).data.slice());
+      sx.clearRect(0, 0, G, G);
+      sx.drawImage(vf, 0, 0, G, G);
+      const d = sx.getImageData(0, 0, G, G).data;
+      let sumY = 0;
+      let wsum = 0;
+      for (let y = 0; y < G; y++) {
+        for (let x = 0; x < G; x++) {
+          const i = (y * G + x) * 4;
+          const r = d[i]!, g = d[i + 1]!, b = d[i + 2]!;
+          // Solid club: strongly blue, bright, blue clearly above red.
+          if (b > 200 && b - r > 60 && r + g + b > 320) {
+            const w = b;
+            sumY += y * w;
+            wsum += w;
+          }
+        }
+      }
+      clubY.push(wsum > 0 ? sumY / wsum : -1);
       stamps.push(sample.timestamp);
       vf.close();
       sample.close();
     }
-    const N = sigs.length;
-    const motion = (a: Uint8ClampedArray, b: Uint8ClampedArray) => {
-      let s = 0;
-      for (let i = 0; i < a.length; i += 4) s += Math.abs(a[i + 2] - b[i + 2]);
-      return s;
-    };
+    const N = clubY.length;
     let seamAt = 0;
     let best = -1;
     for (let k = 0; k < N; k++) {
-      const v = motion(sigs[(k - 1 + N) % N]!, sigs[k]!);
-      if (v > best) { best = v; seamAt = k; }
+      if (clubY[k]! > best) { best = clubY[k]!; seamAt = k; } // lowest club = max Y
     }
     const seamTs = stamps[seamAt]!;
 

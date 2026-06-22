@@ -106,7 +106,11 @@
 
     (async () => {
       try {
-        const res = await fetch(src);
+        // `cache: "reload"` bypasses the HTTP cache so a remount always loads
+        // the server's current clip. Without it, a clip re-baked under the same
+        // URL can keep playing the stale copy held in this component's MSE
+        // buffer / the browser cache until a hard reload.
+        const res = await fetch(src, { cache: "reload" });
         if (cancelled) return;
         if (!res.ok) { fallbackPlainLoop(); return; }
         clip = await res.arrayBuffer();
