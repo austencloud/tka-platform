@@ -1083,9 +1083,15 @@ export default defineConfig(({ mode }) => ({
       // → failed HMR → forced full reload → in-flight /data/*.json fetches hang.
       // awaitWriteFinish waits for the file to stop changing before emitting,
       // batching partial writes into one stable change event.
+      // stabilityThreshold raised 120 → 400ms: with multiple concurrent agents
+      // writing src/, a 120ms window let multi-step writes (write→format→rename
+      // spaced >120ms) each emit a separate "stable" event → separate broken-HMR
+      // → separate forced full reload → in-flight requests hang ("stuck at
+      // reloading"). 400ms coalesces an agent's multi-op save into ONE event.
+      // ~300ms slower HMR is imperceptible for manual saves, decisive for storms.
       awaitWriteFinish: {
-        stabilityThreshold: 120,
-        pollInterval: 15,
+        stabilityThreshold: 400,
+        pollInterval: 30,
       },
       // 🚨 HANDLE LEAK FIX: Chokidar creates one fs.watch() per directory.
       // On Windows, each = one kernel handle via ReadDirectoryChangesW.

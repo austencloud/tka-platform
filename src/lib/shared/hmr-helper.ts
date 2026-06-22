@@ -2,6 +2,7 @@
  * HMR Helper - Ensures proper handling of hot module replacements
  * Particularly important for Svelte 5 runes state management
  */
+import { forceFreshReload } from "$lib/shared/foundation/services/force-fresh";
 
 // Track if we've already scheduled a reload to prevent multiple reloads
 let reloadScheduled = false;
@@ -404,10 +405,28 @@ function trackImportFailure() {
   }
 }
 
+/** Pull the module URL out of a "Failed to fetch dynamically imported module:
+ * <url>" rejection (Chrome) or "error loading dynamically imported module: <url>"
+ * (Firefox). Returns null when no URL is present. */
+function extractFailedModuleUrl(err: unknown): string | null {
+  const message = (err as Error)?.message ?? "";
+  const match = message.match(/(https?:\/\/[^\s)]+)/);
+  return match?.[1] ?? null;
+}
+
 /**
  * Wraps a dynamic import factory with retry + backoff for HMR resilience.
  * Dev-only — production throws immediately (stale chunks handled by
  * vite:preloadError in hooks.client.ts).
+ *
+ * The browser caches a FAILED module specifier in its module map
+ * (whatwg/html#6768), so a plain re-`import()` of the same specifier returns the
+ * cached rejection without ever hitting the network — a naive retry is a no-op.
+ * To actually re-fetch, retries re-import the failed URL with a fresh `?t=`
+ * cache-busting query (the same mechanism as vite-plugin-retrying-dynamic-import).
+ * This recovers the common dev case: another Claude session / editor saves a
+ * .svelte file mid-write, the first fetch gets an incomplete chunk, and a moment
+ * later the cache-busted re-fetch gets the finished file — no page reload.
  */
 export function resilientLazyImport<T>(
   loader: () => Promise<T>,
@@ -417,11 +436,22 @@ export function resilientLazyImport<T>(
     if (!import.meta.env.DEV) return loader();
 
     let lastError: unknown;
+    let bustUrl: string | null = null;
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
+        if (bustUrl) {
+          // Re-fetch the failed URL with a unique query to bypass the browser's
+          // cached module-map failure. @vite-ignore: the specifier is a runtime
+          // value, not a literal for Vite to pre-analyze.
+          const sep = bustUrl.includes("?") ? "&" : "?";
+          return (await import(/* @vite-ignore */ `${bustUrl}${sep}t=${Date.now()}`)) as T;
+        }
         return await loader();
       } catch (err) {
         lastError = err;
+        // Capture the URL from the first failure so subsequent attempts can
+        // cache-bust it. Keep the last known URL if a later attempt lacks one.
+        bustUrl = extractFailedModuleUrl(err) ?? bustUrl;
         if (attempt < retries) {
           await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
         }
@@ -431,4 +461,56 @@ export function resilientLazyImport<T>(
     trackImportFailure();
     throw lastError;
   };
+}
+
+// ── Top-level module chunk recovery ──────────────────────────────────────
+// When a whole feature module's chunk fails to load even after retries (common
+// dev trigger: another Claude session / editor saved its .svelte file
+// mid-write), the user is otherwise dead-ended at a full-screen "Failed to load
+// module" + manual Reload button — and that manual reload often means opening a
+// fresh tab. Instead, self-heal with ONE guarded full reload so the page
+// recovers on its own. The sessionStorage guard prevents an infinite reload
+// loop if the failure is a genuine, persistent syntax error: after the first
+// auto-reload the guard stays set until a module loads cleanly, so a real error
+// just shows the manual button (and Vite's overlay) without looping.
+
+const MODULE_CHUNK_RELOAD_KEY = "tka-module-chunk-reload";
+
+/**
+ * Self-heal a top-level module chunk that failed to load after retries.
+ * Call only for the ACTIVE module — background preloads must not reload the page.
+ */
+export function recoverFromModuleChunkFailure(moduleName: string): void {
+  if (typeof window === "undefined" || !import.meta.env.DEV) return;
+  if (reloadScheduled) return;
+  try {
+    // Already auto-reloaded once for an unresolved failure → don't loop.
+    if (sessionStorage.getItem(MODULE_CHUNK_RELOAD_KEY)) return;
+    sessionStorage.setItem(MODULE_CHUNK_RELOAD_KEY, "1");
+  } catch {
+    /* sessionStorage blocked — fall back to the in-memory reloadScheduled guard */
+  }
+  reloadScheduled = true;
+  console.warn(`[HMR] Module chunk "${moduleName}" failed after retries — fresh reload`);
+  // Use a fresh, cache-busted navigation rather than location.reload(): a plain
+  // reload often HANGS here because in-flight /data/*.json fetches stall while
+  // the dev server re-settles after the mid-write save — which is exactly why a
+  // manual reload forces opening a brand-new tab. forceFreshReload() tears down
+  // the SW + caches and navigates to a ?fresh= URL, so the page boots clean and
+  // never gets stuck on the spinner.
+  void forceFreshReload();
+}
+
+/**
+ * Re-arm module-chunk recovery after a clean load. Once any module loads
+ * successfully we know the page is healthy, so a future mid-write edit is
+ * allowed to trigger one fresh recovery reload again.
+ */
+export function clearModuleChunkRecoveryGuard(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(MODULE_CHUNK_RELOAD_KEY);
+  } catch {
+    /* ignore */
+  }
 }
