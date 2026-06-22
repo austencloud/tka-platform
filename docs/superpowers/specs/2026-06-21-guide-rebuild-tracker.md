@@ -165,3 +165,7 @@ LOOP terminology, per existing section filenames already named Loops*.)
   rule, Cormorant entries, muted italic indented sub-entries. Page numbers
   omitted for now — to be injected programmatically once pagination is final.
   Verified: fits one 11in page (902/1018px), renders in `print/+page`.
+- 2026-06-22: SUPPORT SCHEME CONFIRMED. Cross-session conflict surfaced (this
+  session had locked the in-print two-up PayPal/Venmo; a parallel session pivoted
+  to the single-QR → `/support` scheme). Austen confirmed: KEEP the single-QR
+  pivot. The two-up is intentionally superseded; do not restore it.
