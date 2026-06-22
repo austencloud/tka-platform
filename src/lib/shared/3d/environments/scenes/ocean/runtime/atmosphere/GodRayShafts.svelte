@@ -17,14 +17,26 @@
   import { onDestroy } from "svelte";
   import vertexShader from "../../shaders/atmosphere/god-ray.vert?raw";
   import fragmentShader from "../../shaders/atmosphere/god-ray.frag?raw";
+  import { oceanDebugToggles } from "../../quality/ocean-debug-toggles.svelte";
 
-  // ── Hardcoded config (abyss variant) ──────────────────────────────────
+  // ── Config ─────────────────────────────────────────────────────────────
   const COUNT = 14;
-  const RAY_COLOR = "#b8d8e8";
-  const INTENSITY = 0.4;
+  const INTENSITY = 0.3; // gentle (moody mid-depth target)
   const WIDTH = 3.5;
   const HEIGHT = 18;
   const SPEED = 0.3;
+
+  // One coherent sun: shafts lean toward the directional light at [10,30,-20]
+  // (same vector OceanRuntimeSystems uses), tinted to the sun color, with tops
+  // anchored to the water plane. World-space geometry — discrete light columns
+  // that physically cannot become a screen-space haze.
+  const SUN_POS = new Vector3(10, 30, -20);
+  const WATER_Y = 12; // matches WaterSurface (groundY + 12)
+  const LEAN = 0.26; // base column lean toward the sun, radians
+  // Lean axis = horizontal axis perpendicular to the sun's ground azimuth, so
+  // every column tips the same way (toward the sun) regardless of its Y spin.
+  const SUN_AZ = Math.atan2(SUN_POS.x, SUN_POS.z);
+  const LEAN_AXIS = new Vector3(Math.cos(SUN_AZ), 0, -Math.sin(SUN_AZ)).normalize();
 
   interface Props {
     halfRes?: boolean;
@@ -49,8 +61,8 @@
     depthWrite: false,
     uniforms: {
       uTime: { value: 0 },
-      uColorTop: { value: new Color("#d4e8f0") },
-      uColorBottom: { value: new Color(RAY_COLOR) },
+      uColorTop: { value: new Color("#ffffdd") }, // sun color at the surface
+      uColorBottom: { value: new Color("#bcd6e6") }, // cooler where the shaft fades into depth
       uIntensity: { value: INTENSITY },
       uHeight: { value: HEIGHT },
       uGroundY: { value: 0 },
@@ -71,6 +83,8 @@
 
     const mat = new Matrix4();
     const q = new Quaternion();
+    const spinQ = new Quaternion();
+    const leanQ = new Quaternion();
     const s = new Vector3(1, 1, 1);
     const pos = new Vector3();
     const euler = new Euler();
@@ -79,14 +93,20 @@
       const x = (rng() - 0.5) * 22;
       const z = (rng() - 0.5) * 22;
       const rotY = rng() * Math.PI * 2;
-      const tilt = 0.04 + rng() * 0.12;
       const widthScale = 0.5 + rng() * 0.8;
       opacities[i] = 0.4 + rng() * 0.6;
 
-      euler.set(0, rotY, tilt);
-      q.setFromEuler(euler);
+      // Each column keeps its own Y spin (so the planes face many ways and read
+      // as a volume), then all tip toward the one sun by LEAN (+ small jitter).
+      euler.set(0, rotY, 0);
+      spinQ.setFromEuler(euler);
+      leanQ.setFromAxisAngle(LEAN_AXIS, LEAN + (rng() - 0.5) * 0.08);
+      q.copy(leanQ).multiply(spinQ);
+
       s.set(widthScale, 1, 1);
-      pos.set(x, groundY + HEIGHT * 0.5, z);
+      // Anchor the shaft TOP to the water plane (groundY + WATER_Y): center sits
+      // half a height below it, so the column descends from the surface.
+      pos.set(x, groundY + WATER_Y - HEIGHT * 0.5, z);
       mat.compose(pos, q, s);
       inst.setMatrixAt(i, mat);
     }
@@ -107,6 +127,11 @@
 
   $effect(() => {
     material.uniforms.uGroundY!.value = groundY;
+  });
+
+  // Dev A/B toggle — zero intensity when shafts are off (no rebuild).
+  $effect(() => {
+    material.uniforms.uIntensity!.value = oceanDebugToggles.godRayShafts ? INTENSITY : 0;
   });
 
   useTask((delta) => {

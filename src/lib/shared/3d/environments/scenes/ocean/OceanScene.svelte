@@ -1,12 +1,20 @@
 <script lang="ts">
-  import { T, useThrelte } from "@threlte/core";
+  import { T, useThrelte, useTask } from "@threlte/core";
   import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
-  import { FogExp2, Color } from "three";
+  import { FogExp2, Color, PMREMGenerator, Mesh, MeshStandardMaterial } from "three";
+  import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import {
     detectOceanQuality,
     getOceanQualityConfig,
   } from "./quality/ocean-quality";
   import { oceanQualityOverride } from "./quality/ocean-quality-override.svelte";
+  import { oceanDebugToggles } from "./quality/ocean-debug-toggles.svelte";
+  import {
+    causticUniforms,
+    patchCausticsMaterial,
+    DEFAULT_CAUSTIC_STRENGTH,
+  } from "./runtime/atmosphere/seabed-caustics";
   import FloraInstances from "./authored/FloraInstances.svelte";
   import OceanRuntimeSystems from "./runtime/OceanRuntimeSystems.svelte";
   import { getSceneFeatureContext } from "../../../scene-features/context/scene-feature-context";
@@ -83,7 +91,9 @@
   $effect(() => {
     const s = scene.current;
     if (!s) return;
-    const fogColor = new Color("#0d0d10");
+    // Deep blue-teal so distance dissolves into water, not a dead-black void
+    // (was #0d0d10). Pairs with the absorption depth-grade in ScenePostProcessing.
+    const fogColor = new Color("#0a2438");
     s.fog = new FogExp2(fogColor.getHex(), 0.012);
     s.background = fogColor;
     return () => {
@@ -92,6 +102,56 @@
         s.background = null;
       }
     };
+  });
+
+  // ── Image-based lighting ───────────────────────────────────────────────
+  // The scene was flat-lit: every material sets envMapIntensity but
+  // scene.environment was null, so that intensity multiplied nothing. Assign a
+  // cheap PMREM env (low-energy RoomEnvironment) to activate it — soft fresnel /
+  // spec breakup gives the coral a wet look instead of a flat diffuse read.
+  $effect(() => {
+    const r = renderer.current;
+    const s = scene.current;
+    if (!r || !s) return;
+    const pmrem = new PMREMGenerator(r);
+    const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    s.environment = envTex;
+    pmrem.dispose();
+    return () => {
+      if (s.environment === envTex) s.environment = null;
+      envTex.dispose();
+    };
+  });
+
+  // ── Seabed caustics ────────────────────────────────────────────────────
+  // Patch the seabed GLB's materials so the floor catches the same animated
+  // caustic dapple as the flora/structures (FloraInstances patches those).
+  $effect(() => {
+    const g = $environmentGlb;
+    if (!g) return;
+    g.scene.traverse((o) => {
+      const m = o as Mesh;
+      if (!m.isMesh) return;
+      const mats = Array.isArray(m.material) ? m.material : [m.material];
+      for (const mat of mats) {
+        if (mat instanceof MeshStandardMaterial) patchCausticsMaterial(mat);
+      }
+    });
+  });
+
+  // Single caustic clock for every patched material (seabed + flora). Keep the
+  // mask anchored to the live seabed height, and let the dev `caustics` toggle
+  // A/B the cue by zeroing strength (no shader recompile).
+  useTask((delta) => {
+    causticUniforms.uTime.value += delta;
+  });
+  $effect(() => {
+    causticUniforms.uGroundY.value = userProportionsState.groundY;
+  });
+  $effect(() => {
+    causticUniforms.uCausticStrength.value = oceanDebugToggles.caustics
+      ? DEFAULT_CAUSTIC_STRENGTH
+      : 0;
   });
 
   // ── Device-pixel-ratio cap ─────────────────────────────────────────────

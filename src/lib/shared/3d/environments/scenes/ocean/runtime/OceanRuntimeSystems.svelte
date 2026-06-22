@@ -49,9 +49,11 @@
   });
 </script>
 
-<!-- Blender-faithful lighting: near-black world + two warm torch points.
-     Blender world bg is ~0.05 neutral gray → dim neutral ambient, no cyan tint. -->
-<T.AmbientLight intensity={0.15} color="#ffffff" />
+<!-- Underwater ambient: a hemisphere light gives top-down gradient fill (brighter
+     teal from the surface above, darker from the floor below) so the seabed and
+     flora get FORM instead of a flat wash — what a single AmbientLight could not
+     do. Low intensity keeps the moody dark world; torches still carry warm key. -->
+<T.HemisphereLight intensity={0.45} color="#3a6b7a" groundColor="#0a1a14" />
 <!-- Sun kept dim and near-neutral solely to drive the god-ray beam direction;
      Blender has no sun, so this must not wash the dark world. -->
 <T.DirectionalLight

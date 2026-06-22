@@ -92,9 +92,11 @@
         new EffectPass(
           cam,
           new WaterAbsorptionEffect({
-            absorptionR: 0.02,
-            absorptionG: 0.005,
-            absorptionB: 0.001,
+            // Visible Beer-Lambert depth grade (R >> G >> B so red dies first).
+            // Was 0.02/0.005/0.001 — ~20x too weak, the tint was imperceptible.
+            absorptionR: 0.14,
+            absorptionG: 0.05,
+            absorptionB: 0.025,
             maxDepth: 50.0,
           }),
         ),

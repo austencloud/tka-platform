@@ -15,6 +15,7 @@
   import { userProportionsState } from "@austencloud/scene-3d";
   import type { OceanQualityConfig } from "../quality/ocean-quality";
   import { oceanDebugToggles } from "../quality/ocean-debug-toggles.svelte";
+  import { patchCausticsMaterial } from "../runtime/atmosphere/seabed-caustics";
   import { R2_CDN } from "$lib/shared/3d/constants/r2-cdn";
 
   // The flora scene GLB (~36 MB, geometry-heavy) exceeds Cloudflare Pages' 25 MiB
@@ -183,7 +184,12 @@
       for (const mat of mats) {
         if (mat instanceof MeshStandardMaterial) {
           mat.envMapIntensity = 0.3;
+          // Sway FIRST (plants only), then caustics — patchCausticsMaterial chains
+          // the prior onBeforeCompile, so a reed carries both; a structure carries
+          // caustics alone. Caustics fade by height, so the tall reeds barely take
+          // any while the seabed-level coral/rocks catch the full dapple.
           if (isPlant) patchSwayMaterial(mat);
+          patchCausticsMaterial(mat);
         }
       }
     });
