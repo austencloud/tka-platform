@@ -190,10 +190,16 @@
     </div>
   </GuidePage>
 
-  <!-- ── Pages 3+: chapters (NOT yet converted to GuidePage units) ─────── -->
-  <PositionsMotions />
-  <Letters />
-  <Words />
+  <!-- ── Chapters: NOT yet converted to GuidePage units ──────────────────
+       These three still render the legacy continuous flow. Until each is
+       rebuilt into real 8.5×11 GuidePage units (p6+), wrap them in a single
+       page-WIDTH sheet so they read as a draft column on the viewer instead of
+       sprawling to the full viewport width. -->
+  <div class="legacy-chapters">
+    <PositionsMotions />
+    <Letters />
+    <Words />
+  </div>
 </div>
 
 <style>
@@ -202,6 +208,23 @@
   .cover-fill {
     width: 100%;
     aspect-ratio: 8.5 / 11;
+  }
+
+  /* Legacy (un-converted) chapters — clamp to a page-width white sheet on the
+     viewer so they stop sprawling to full viewport width. Interim until each
+     chapter is rebuilt into GuidePage units. */
+  .legacy-chapters {
+    background: #fff;
+    box-sizing: border-box;
+  }
+  @media screen {
+    .legacy-chapters {
+      width: 8.5in;
+      max-width: 8.5in;
+      margin: 28px auto 0;
+      padding: 0.55in 0.65in 0.8in;
+      box-shadow: 0 2px 18px rgba(0, 0, 0, 0.3);
+    }
   }
 
   /* Front-matter pages (white interior, ink-cheap) */
