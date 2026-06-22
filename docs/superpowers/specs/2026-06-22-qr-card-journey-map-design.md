@@ -42,14 +42,7 @@ The raw data for a per-card journey already exists. Every scan event carries `pr
 
 ### Data model change
 
-**`scanEvents` document** gains two optional fields:
-
-```ts
-lat: number | null;   // cf-iplatitude, exact
-lng: number | null;   // cf-iplongitude, exact
-```
-
-Existing events without them resolve to country-centroid coords at read time. No migration — the read layer tolerates `null`.
+Geo gains exact coordinates, surfaced to two writes: the admin `scanEvents` log (optional `lat`/`lng`, future exact pins) and the new public `journeyPoints` projection (see below). Existing rows without coords resolve to country-centroid at read time. No migration — the read layer tolerates `null`.
 
 **`q/[code]/+page.server.ts`** — extend `geo`:
 
@@ -64,21 +57,32 @@ const geo = {
 
 **`logScanEvent`** (`short-code-manager.ts:736`) — extend the `event` param with `lat`/`lng`, write through. The `q/[code]` call site (`+page.svelte:513-523`) passes `data.geo.lat`/`data.geo.lng`. The two client-only call sites (`sequence/[id]`, `SequenceViewerDrawerHost`) keep passing `null` — they aren't physical-card scans and have no server geo.
 
-### Journey read
+### Journey read — public projection, NOT scanEvents
 
-New method on `ShortCodeManager` (or a sibling read module — decide in plan):
+The existing `scanEvents` doc carries `deviceId`, `userAgent`, `referrer`, `screen*` (`short-code-manager.ts:736-760`) and is `allow read: if isAdmin()` (`firestore.rules:937-941`). Making it world-readable to feed the journey would leak scanner fingerprinting data. Instead, write a **separate public projection** that carries only what the reveal needs.
+
+**New subcollection `shortcodes/{code}/journeyPoints/{autoId}`:**
+
+```ts
+{ printId: string | null; lat: number | null; lng: number | null;
+  city: string | null; country: string | null; timestamp: string; }
+```
+
+The scan path writes this in parallel with `scanEvents` (one extra fire-and-forget `addDoc`). `scanEvents` stays admin-only and unchanged.
+
+New read in a focused module (`journey-loader.ts`):
 
 ```ts
 async loadJourney(code: string, printId: string | null): Promise<JourneyPoint[]>
 ```
 
-- `printId` present → `query(scanEvents, where("printId","==",printId), orderBy("timestamp","asc"))`.
-- `printId` null (legacy prints with no `?pid`) → all events for the code, same ordering. This is the "code-level journey" fallback.
-- Each row → `JourneyPoint { lat, lng, city, country, timestamp }`, resolving `lat`/`lng` from the event, falling back to `country-centroids.ts` when null. Drop points with no resolvable location.
+- `printId` present → `query(journeyPoints, where("printId","==",printId), orderBy("timestamp","asc"))`.
+- `printId` null (legacy prints with no `?pid`) → all points for the code, ordered by timestamp. The "code-level journey" fallback.
+- A pure `rowsToJourneyPoints(rows)` resolves coords (event `lat`/`lng`, else `countryCentroid(country)`), drops points with no resolvable location, and is unit-tested in isolation. The Firestore query is a thin wrapper around it.
 
-**Firestore requirements (the one real open item):**
-- Composite index on `scanEvents`: `printId ASC, timestamp ASC` (collection-group or per-subcollection — plan decides based on query shape).
-- **Public-read rule on `scanEvents`.** Today the scan path only *creates* events unauthenticated; reading them publicly is new. Rule must allow read of `shortcodes/{code}/scanEvents` to unauthenticated clients (the scan page is `forceGuest`, `userId: null`).
+**Firestore requirements:**
+- New rule block under `shortcodes/{code}`: `match /journeyPoints/{id} { allow create: if true; allow read: if true; allow update, delete: if false; }`. Mirrors the existing `scanEvents` create-only posture but adds public read on the PII-free projection.
+- Composite index on `journeyPoints`: `printId ASC, timestamp ASC` (the `printId`-filtered + time-ordered query).
 
 ### Journey math — `journey-stats.ts` (new, pure, unit-tested)
 
@@ -167,6 +171,6 @@ decide:
 
 ## Open items for the plan
 
-1. Firestore composite index + public-read rule on `scanEvents` — confirm exact rule scope and index shape.
-2. Cloudflare "visitor location headers" Managed Transform toggle — Austen enables in dashboard (a credential/console action, not code).
-3. Where `loadJourney` lives — on `ShortCodeManager` vs a new read module (lean toward a focused read module to keep the manager from growing).
+1. ~~Public-read on `scanEvents`~~ — **resolved:** use a PII-free public `journeyPoints` projection; `scanEvents` stays admin-only. Composite index on `journeyPoints` (`printId ASC, timestamp ASC`).
+2. Cloudflare "visitor location headers" Managed Transform toggle — Austen enables in dashboard (a credential/console action, not code). Centroid fallback ships without it.
+3. ~~Where `loadJourney` lives~~ — **resolved:** focused `journey-loader.ts` module, not on `ShortCodeManager`. The scan-path projection write lives on the manager (`logJourneyPoint`).
