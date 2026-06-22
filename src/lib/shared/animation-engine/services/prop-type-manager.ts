@@ -18,6 +18,7 @@ import type { PropTypeChanger } from "./prop-type-changer.svelte";
 import type { FireTipTracker } from "./fire-tip-tracker";
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
 import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
+import { getBaseMotionColors } from "./svg-generator";
 
 import type { AnimationEngineProps } from "./animation-engine.svelte";
 import type { AnimatorState } from "../state/animator-state.svelte";
@@ -241,6 +242,12 @@ export class PropTypeManager {
       this.additionalLayerTexturesLoading = [];
     }
 
+    // Spectrum off: every layer staff matches the base pair exactly. The base
+    // pair is the native blue/red SVG (getMotionColor), NOT tunnelPropColor's
+    // anchor — the anchor blue is a touch more violet, which read as "one odd
+    // staff" against the native base. Use the canonical base colors so all four
+    // blues (and reds) are identical.
+    const baseColors = spectrum ? null : getBaseMotionColors();
     if (layerCount > 0 && this.animationRenderer) {
       for (let i = 0; i < layerCount; i++) {
         const layer = additionalLayers[i]!;
@@ -256,10 +263,8 @@ export class PropTypeManager {
           // Color each layer sprite through the same selective SVG pipeline the
           // base pair uses (gold sword blade preserved, only the hardware takes
           // the hue). propIndex convention: layer blue = 2+2i, red = 3+2i.
-          // Spectrum off: collapse every layer to the base blue/red anchor
-          // (familyIndex 0) so all copies match the base pair's plain colors.
-          const blueColor = tunnelPropColor(spectrum ? 2 + i * 2 : 0, layerCount).hex;
-          const redColor = tunnelPropColor(spectrum ? 3 + i * 2 : 1, layerCount).hex;
+          const blueColor = baseColors ? baseColors.blue : tunnelPropColor(2 + i * 2, layerCount).hex;
+          const redColor = baseColors ? baseColors.red : tunnelPropColor(3 + i * 2, layerCount).hex;
 
           this.animationRenderer
             .loadAdditionalLayerPropTextures(

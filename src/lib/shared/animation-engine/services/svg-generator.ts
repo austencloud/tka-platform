@@ -35,6 +35,21 @@ function getCurrentThemeMode(vm?: AnimationVisibilityStateManager): ThemeMode {
 }
 
 /**
+ * The canonical blue/red the base prop pair renders with (theme-aware), so other
+ * surfaces (e.g. the tunnel's spectrum-off layers) can match the base staffs
+ * exactly instead of approximating with a separate palette. Mirrors the color
+ * generateBluePropSvg/generateRedPropSvg bake in for the base pair.
+ */
+export function getBaseMotionColors(darkMode?: boolean): { blue: string; red: string } {
+  const themeMode =
+    darkMode !== undefined ? (darkMode ? "dark" : "light") : getCurrentThemeMode();
+  return {
+    blue: getMotionColor(MotionColor.BLUE, themeMode),
+    red: getMotionColor(MotionColor.RED, themeMode),
+  };
+}
+
+/**
  * Generate grid SVG with support for strict mode points
  * Loads the actual grid SVG files and adds strict-mode class for animation viewer
  * @param gridMode - Type of grid to generate (GridMode.DIAMOND or GridMode.BOX)
