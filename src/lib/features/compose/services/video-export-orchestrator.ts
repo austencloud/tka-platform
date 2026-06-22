@@ -746,12 +746,15 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           //   - PNG crisp, video grainy → encoder (bitrate / 4:2:0) is the culprit
           // Frame index overridable via window.__tka_export_frame_dump; defaults
           // to the timeline midpoint.
+          // Opt-IN only: this used to dump the midpoint frame on EVERY dev
+          // export, which surprised users with a stray PNG (and tripped the
+          // browser's "download multiple files" prompt). Now it fires only when
+          // window.__tka_export_frame_dump is explicitly set to a frame index.
           if (import.meta.env.DEV) {
             const dumpTarget =
-              ((window as unknown as Record<string, unknown>)
-                .__tka_export_frame_dump as number | undefined) ??
-              Math.floor(totalFrames / 2);
-            if (i === dumpTarget) {
+              (window as unknown as Record<string, unknown>)
+                .__tka_export_frame_dump as number | undefined;
+            if (typeof dumpTarget === "number" && i === dumpTarget) {
               // Flatten over opaque black to mirror exactly what the H.264
               // encoder receives: VideoFrame RGBA → encoder drops alpha, so any
               // semi-transparent glow pixel is shown over black. An alpha-
@@ -822,7 +825,12 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         throw new Error("No encoder was initialized");
       }
 
-      await downloadBlob(outputBlob, filename);
+      // Side-effect download is opt-out: callers that capture the returned blob
+      // and run their own download/share pass autoDownload:false to avoid a
+      // second file landing on disk.
+      if (options.autoDownload !== false) {
+        await downloadBlob(outputBlob, filename);
+      }
 
       onProgress({ progress: 1, stage: "complete" });
 

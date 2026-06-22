@@ -218,6 +218,10 @@ export class SequenceModalExporter {
         },
         {
           compositeMode: "none",
+          // The viewer runs its own download (export-coordinator.autoDownloadVideo)
+          // after this resolves, plus shows the preview panel. Suppress the
+          // orchestrator's side-effect download or the file lands twice.
+          autoDownload: false,
           fps: options.fps,
           loopCount: options.loopCount,
           resolution: options.resolution,

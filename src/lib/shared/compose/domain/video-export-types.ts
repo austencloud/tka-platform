@@ -105,6 +105,14 @@ export interface VideoExportOrchestratorOptions {
     grid: boolean;
   }>;
   onCleanup?: () => void;
+  /**
+   * Whether the orchestrator downloads the finished blob itself (side effect).
+   * Default true for back-compat with callers that fire-and-forget the export
+   * (export-panel, AnimationSheetCoordinator). Callers that capture the returned
+   * blob and run their OWN download/share (sequence viewer, QR landing, clip
+   * bakers) MUST pass false — otherwise the file downloads twice.
+   */
+  autoDownload?: boolean;
 }
 
 /**

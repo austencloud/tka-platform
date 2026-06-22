@@ -20,6 +20,9 @@ import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-
 import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
+import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
 import type { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import type { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/modal-accessibility-helper.svelte";
 type ExportType = "animation" | "image" | "both";
@@ -67,9 +70,19 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
   function autoDownloadVideo(effectiveSequence: SequenceData | null) {
     const url = sequenceModalExporter.state.previewBlobUrl;
     if (!url) return;
+    // Match the "Save Again" name (DrawerHost onRedownload): collapse repeated
+    // kernels and map Greek → ASCII so the file is "Ulam-.mp4", not the raw
+    // "UΛ-UΛ-UΛ-UΛ-.mp4".
+    const rawName =
+      effectiveSequence?.displayName ||
+      effectiveSequence?.intendedWord ||
+      effectiveSequence?.word ||
+      "sequence";
+    const safeName =
+      sanitizeFilename(greekToAscii(simplifyRepeatedWord(rawName))) || "sequence";
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${effectiveSequence?.word || "sequence"}.mp4`;
+    a.download = `${safeName}.mp4`;
     document.body.appendChild(a);
     a.click();
     a.remove();

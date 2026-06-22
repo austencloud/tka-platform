@@ -108,6 +108,9 @@ export async function bakeMandalaClips(
         {
           format: "mp4",
           codec: "h264",
+          // Batch bake captures each blob and writes it out itself; the
+          // orchestrator must not dump a stray download per clip.
+          autoDownload: false,
           resolution,
           fps,
           loopCount: 1,
