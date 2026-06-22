@@ -16,7 +16,6 @@
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import { WaterAbsorptionEffect } from "./ocean/water-absorption-effect";
   import { UnderwaterDistortionEffect } from "./ocean/underwater-distortion-effect";
-  import { RefractionCausticsEffect } from "./ocean/refraction-caustics-effect";
   import { oceanDebugToggles } from "$lib/shared/3d/environments/scenes/ocean/quality/ocean-debug-toggles.svelte";
   import { getQualityTierDetector } from "../quality/get-quality-tier-detector";
 
@@ -86,20 +85,20 @@
     }
 
     if (isOcean) {
-      // Water absorption (depth tint) always on; caustics (the dancing seabed
-      // light) is dev-toggleable so its contribution can be isolated.
-      const oceanDepthEffects: import("postprocessing").Effect[] = [
-        new WaterAbsorptionEffect({
-          absorptionR: 0.02,
-          absorptionG: 0.005,
-          absorptionB: 0.001,
-          maxDepth: 50.0,
-        }),
-      ];
-      if (oceanDebugToggles.caustics) {
-        oceanDepthEffects.push(new RefractionCausticsEffect());
-      }
-      composer.addPass(new EffectPass(cam, ...oceanDepthEffects));
+      // Water absorption (depth tint) only. The post-process refraction caustics
+      // overlay was removed — like the god rays it read as a blurry full-screen
+      // haze rather than grounded seabed light.
+      composer.addPass(
+        new EffectPass(
+          cam,
+          new WaterAbsorptionEffect({
+            absorptionR: 0.02,
+            absorptionG: 0.005,
+            absorptionB: 0.001,
+            maxDepth: 50.0,
+          }),
+        ),
+      );
     }
 
     const colorEffects: import("postprocessing").Effect[] = [];
@@ -176,8 +175,7 @@
 
   $effect(() => {
     const cam = camera.current;
-    // Dev A/B toggles — read so flipping one rebuilds the composer pass chain.
-    const _ca = oceanDebugToggles.caustics;
+    // Dev A/B toggle — read so flipping it rebuilds the composer pass chain.
     const _ud = oceanDebugToggles.underwaterDistortion;
     if (shouldCompose && cam) {
       buildComposer();
