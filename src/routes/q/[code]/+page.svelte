@@ -140,6 +140,16 @@
   let ViewerSplitPaneComponent:
     | typeof import("$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte").default
     | null = $state(null);
+  // Journey interstitial lazy-loads only when a genuine scan has prior journey
+  // points. Resolved in the script (not via a template {#await}) so a failed
+  // chunk load can fall through to playing instead of trapping the scanner on a
+  // blank pending screen — mirrors the OrchestratorComponent lazy pattern above.
+  let JourneyComp:
+    | typeof import("./ScanJourneyInterstitial.svelte").default
+    | null = $state(null);
+  function skipJourney() {
+    pageState = { kind: "playing", word: seqWord };
+  }
 
   // View mode for the embedded viewer — the single source of truth that the
   // ViewerContentRail (landscape side rail) and ViewerModeBottomBar (portrait
@@ -452,6 +462,16 @@
       setProgress(35);
       trickleTo(85);
 
+      // Compute the genuine-scan flag ONCE (isGenuineScan side-effects
+      // sessionStorage; a 2nd call returns false) and kick off the journey
+      // read now so it overlaps the heavy resolve/glyph/viewer-chunk load
+      // below instead of blocking after it.
+      const genuine = !isInlineEncoded(shortCode) && isGenuineScan(shortCode);
+      const scanPrintId = page.url.searchParams.get("pid") || null;
+      const journeyPromise: Promise<JourneyPoint[]> = genuine
+        ? loadJourney(shortCode, scanPrintId)
+        : Promise.resolve([]);
+
       const [seq_, OrchestratorModule, SplitPaneModule] = await Promise.all([
         shortCodeManager.resolveShortCode(shortCode),
         getGlyphCache().initialize().then(() =>
@@ -498,14 +518,9 @@
       OrchestratorComponent = OrchestratorModule.default;
       ViewerSplitPaneComponent = SplitPaneModule.default;
 
-      // isGenuineScan side-effects sessionStorage and returns false on a 2nd
-      // call — so compute it ONCE and reuse for both telemetry and the journey
-      // gate. Calling it again would always return false.
-      const genuine = !isInlineEncoded(shortCode) && isGenuineScan(shortCode);
       let journeyPoints: JourneyPoint[] = [];
 
       if (genuine) {
-        const printId = page.url.searchParams.get("pid") || null;
         const geo = data?.geo;
 
         captureEvent("card_scanned", {
@@ -524,7 +539,7 @@
         shortCodeManager.incrementScanCount(shortCode).catch(() => {});
         void shortCodeManager
           .logScanEvent(shortCode, {
-            printId,
+            printId: scanPrintId,
             country: geo?.country ?? null,
             city: geo?.city ?? null,
             userAgent: navigator.userAgent,
@@ -539,7 +554,7 @@
           .catch(() => {});
         void shortCodeManager
           .logJourneyPoint(shortCode, {
-            printId,
+            printId: scanPrintId,
             lat: geo?.lat ?? null,
             lng: geo?.lng ?? null,
             city: geo?.city ?? null,
@@ -550,7 +565,7 @@
         // Load prior journey + optimistically append this scan (the projection
         // write above may not have committed yet, and the scanner is the
         // newest dot).
-        const prior = await loadJourney(shortCode, printId);
+        const prior = await journeyPromise;
         const thisScan = rowsToJourneyPoints([
           {
             lat: geo?.lat ?? null,
@@ -567,6 +582,12 @@
       setProgress(100);
 
       if (shouldShowJourney({ genuine, pointCount: journeyPoints.length })) {
+        // Resolve the interstitial chunk in the script so a failed import
+        // (transient network / chunk mismatch mid-deploy) falls through to
+        // playing instead of hanging the scanner on a blank pending screen.
+        import("./ScanJourneyInterstitial.svelte")
+          .then((m) => (JourneyComp = m.default))
+          .catch(() => skipJourney());
         pageState = { kind: "journey", word, points: journeyPoints };
       } else {
         pageState = { kind: "playing", word };
@@ -649,13 +670,13 @@
       </div>
     </div>
   {:else if pageState.kind === "journey"}
-    {#await import("./ScanJourneyInterstitial.svelte") then { default: ScanJourneyInterstitial }}
-      <ScanJourneyInterstitial
+    {#if JourneyComp}
+      <JourneyComp
         points={pageState.points}
         word={pageState.word}
-        onContinue={() => (pageState = { kind: "playing", word: seqWord })}
+        onContinue={skipJourney}
       />
-    {/await}
+    {/if}
   {:else if pageState.kind === "playing" && OrchestratorComponent && resolvedSeq}
     <OrchestratorComponent
       sequence={resolvedSeq}
