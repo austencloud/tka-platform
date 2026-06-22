@@ -40,6 +40,9 @@ export interface LedTipTrackerConfig {
 	 * identical legacy behavior.
 	 */
 	additionalLayers?: Array<{ blueProp: PropState | null; redProp: PropState | null }>;
+	/** Tunnel rainbow spectrum. When false, overlaid layers inherit the base
+	 *  per-hand LED color instead of a distinct spectrum color. Default true. */
+	tunnelSpectrum?: boolean;
 }
 
 /** Minimum dt to avoid velocity spikes on first frame or pauses */
@@ -196,11 +199,14 @@ export class LedTipTracker {
 			// every kaleidoscope copy is its own color; the base pair (0,1) keeps
 			// the per-hand base color above.
 			const layerCount = config.additionalLayers.length;
+			const spectrum = config.tunnelSpectrum ?? true;
 			let layerOutputIndex = totalTips;
 			for (let li = 0; li < layerCount; li++) {
 				const layer = config.additionalLayers[li]!;
 				if (layer.blueProp) {
-					const blueLayerColor = tunnelPropColor(2 + li * 2, layerCount).rgb01;
+					const blueLayerColor = spectrum
+						? tunnelPropColor(2 + li * 2, layerCount).rgb01
+						: blueBaseColor;
 					layerOutputIndex = this.emitLayerPropTips(
 						layer.blueProp, config.canvasSize, config.bluePropDimensions,
 						config.bluePropType ?? null, 2 + li * 2, `${li}-b`, currentTime,
@@ -209,7 +215,9 @@ export class LedTipTracker {
 					);
 				}
 				if (layer.redProp) {
-					const redLayerColor = tunnelPropColor(3 + li * 2, layerCount).rgb01;
+					const redLayerColor = spectrum
+						? tunnelPropColor(3 + li * 2, layerCount).rgb01
+						: redBaseColor;
 					layerOutputIndex = this.emitLayerPropTips(
 						layer.redProp, config.canvasSize, config.redPropDimensions,
 						config.redPropType ?? null, 3 + li * 2, `${li}-r`, currentTime,

@@ -507,12 +507,20 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // kaleidoscope copy trails in its own color instead of repeating the base
     // blue/red. Each end is its own backend FBO via a layer-indexed tipId; the
     // per-color epoch suffix keeps FBO recycling consistent with the base pair.
+    // Spectrum off: layers inherit the base blue/red trail color ([bR..]/[rR..],
+    // which already carry the user's Choose-a-Look / custom colors) so the whole
+    // kaleidoscope trails in one chosen pair instead of a rainbow.
+    const spectrum = params.tunnelSpectrum ?? true;
     const layerCount = this.layerRings.length;
     for (let i = 0; i < layerCount; i++) {
       const rings = this.layerRings[i]!;
       const tails = this.layerTails[i]!;
-      const blueLayerRgb = hexToRgb(tunnelPropColor(2 + i * 2, layerCount).hex);
-      const redLayerRgb = hexToRgb(tunnelPropColor(3 + i * 2, layerCount).hex);
+      const blueLayerRgb = spectrum
+        ? hexToRgb(tunnelPropColor(2 + i * 2, layerCount).hex)
+        : ([bR, bG, bB] as [number, number, number]);
+      const redLayerRgb = spectrum
+        ? hexToRgb(tunnelPropColor(3 + i * 2, layerCount).hex)
+        : ([rR, rG, rB] as [number, number, number]);
       pushTip(`L${i}-blue-left${blueSuffix}`, rings.blueLeft, blueLayerRgb, tails.blueLeft, blueAlpha);
       pushTip(`L${i}-blue-right${blueSuffix}`, rings.blueRight, blueLayerRgb, tails.blueRight, blueAlpha);
       pushTip(`L${i}-red-left${redSuffix}`, rings.redLeft, redLayerRgb, tails.redLeft, redAlpha);

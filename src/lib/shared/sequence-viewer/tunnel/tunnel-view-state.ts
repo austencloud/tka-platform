@@ -10,6 +10,10 @@ export interface TunnelViewState {
   fold: Fold;
   mirror: boolean;
   gridVisible: boolean;
+  /** Per-prop rainbow spectrum coloring. On = every kaleidoscope copy fans
+   *  across the spectrum; off = layers inherit the base/preset colors so the
+   *  Effects panel's "Choose a Look" / custom colors drive every prop. */
+  spectrum: boolean;
   /** Active rail section in the Art settings panel (Tunnel/Effects/Effort/Playback). */
   section: "tunnel" | "effects" | "effort" | "playback";
 }
@@ -20,6 +24,7 @@ const DEFAULTS: TunnelViewState = {
   fold: 4,
   mirror: false,
   gridVisible: false,
+  spectrum: true,
   section: "tunnel",
 };
 
@@ -41,6 +46,7 @@ export function loadTunnelViewState(): TunnelViewState {
       fold,
       mirror: typeof p.mirror === "boolean" ? p.mirror : DEFAULTS.mirror,
       gridVisible: typeof p.gridVisible === "boolean" ? p.gridVisible : DEFAULTS.gridVisible,
+      spectrum: typeof p.spectrum === "boolean" ? p.spectrum : DEFAULTS.spectrum,
       section,
     };
   } catch {

@@ -962,6 +962,7 @@ export class AnimationRenderLoop {
         hasBlue: !!params.props.blueProp && effectiveBlueMotionVisible,
         hasRed: !!params.props.redProp && effectiveRedMotionVisible,
         additionalLayers: additionalLayerRenderData.length > 0 ? additionalLayerRenderData : undefined,
+        tunnelSpectrum: props.tunnelSpectrum,
         blueProp: params.props.blueProp,
         redProp: params.props.redProp,
         bluePropType: params.bluePropType,
@@ -1196,6 +1197,7 @@ export class AnimationRenderLoop {
                   redProp: l.redProp,
                 }))
               : undefined,
+          tunnelSpectrum: props.tunnelSpectrum ?? true,
         };
 
         const allLedTips = this.ledTipTracker.update(

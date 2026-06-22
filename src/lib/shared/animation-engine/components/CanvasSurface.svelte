@@ -65,6 +65,7 @@ captureEffectDiagnostics to the context menu.
     blueProp,
     redProp,
     additionalLayers = [],
+    tunnelSpectrum = true,
     gridVisible = true,
     gridMode = GridMode.DIAMOND,
     backgroundAlpha = 1,
@@ -108,6 +109,7 @@ captureEffectDiagnostics to the context menu.
     blueProp: PropState | null;
     redProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
+    tunnelSpectrum?: boolean;
     gridVisible?: boolean;
     gridMode?: GridMode | null;
     backgroundAlpha?: number;
@@ -323,6 +325,7 @@ captureEffectDiagnostics to the context menu.
       blueProp,
       redProp,
       additionalLayers,
+      tunnelSpectrum,
       gridVisible,
       gridMode,
       backgroundAlpha,

@@ -117,6 +117,7 @@ export class FrameParameterBuilder {
   private extendedPropColors: PropFlameColor[] | null = null;
   private extendedPropColorsLayerCount = -1;
   private extendedPropColorsBaseRef: PropFlameColor[] | null = null;
+  private extendedPropColorsSpectrum = true;
 
   // Reusable frame params object to avoid GC pressure (created once, mutated each frame)
   private readonly frameParams: RenderFrameParams = {
@@ -132,6 +133,7 @@ export class FrameParameterBuilder {
       additionalLayers: [],
       bluePropDimensions: DEFAULT_PROP_DIMENSIONS,
       redPropDimensions: DEFAULT_PROP_DIMENSIONS,
+      tunnelSpectrum: true,
     },
     visibility: {
       gridVisible: true,
@@ -218,6 +220,7 @@ export class FrameParameterBuilder {
     fp.props.additionalLayers = props.additionalLayers ?? [];
     fp.props.bluePropDimensions = state.bluePropDimensions;
     fp.props.redPropDimensions = state.redPropDimensions;
+    fp.props.tunnelSpectrum = props.tunnelSpectrum ?? true;
 
     // Mutate nested visibility object
     fp.visibility.gridVisible = state.visibilityState.grid;
@@ -266,7 +269,11 @@ export class FrameParameterBuilder {
     const basePropColors = effectsConfigState?.fire.propColors ?? DEFAULT_PROP_FLAME_COLORS;
     const layerCount = fp.props.additionalLayers.length;
     if (layerCount > 0) {
-      fp.propColors = this.getExtendedPropColors(basePropColors, layerCount);
+      fp.propColors = this.getExtendedPropColors(
+        basePropColors,
+        layerCount,
+        fp.props.tunnelSpectrum ?? true,
+      );
     } else {
       fp.propColors = basePropColors;
     }
@@ -558,25 +565,30 @@ export class FrameParameterBuilder {
    */
   private getExtendedPropColors(
     base: PropFlameColor[],
-    layerCount: number
+    layerCount: number,
+    spectrum: boolean
   ): PropFlameColor[] {
     if (
       this.extendedPropColors &&
       this.extendedPropColorsLayerCount === layerCount &&
-      this.extendedPropColorsBaseRef === base
+      this.extendedPropColorsBaseRef === base &&
+      this.extendedPropColorsSpectrum === spectrum
     ) {
       return this.extendedPropColors;
     }
 
+    // Spectrum off: every layer inherits the base blue/red flame color so the
+    // kaleidoscope reads as one look the Effects panel drives, not a rainbow.
     const out: PropFlameColor[] = [base[0]!, base[1]!];
     for (let li = 0; li < layerCount; li++) {
-      out[2 + li * 2] = tunnelPropColor(2 + li * 2, layerCount).rgb01;
-      out[3 + li * 2] = tunnelPropColor(3 + li * 2, layerCount).rgb01;
+      out[2 + li * 2] = spectrum ? tunnelPropColor(2 + li * 2, layerCount).rgb01 : base[0]!;
+      out[3 + li * 2] = spectrum ? tunnelPropColor(3 + li * 2, layerCount).rgb01 : base[1]!;
     }
 
     this.extendedPropColors = out;
     this.extendedPropColorsLayerCount = layerCount;
     this.extendedPropColorsBaseRef = base;
+    this.extendedPropColorsSpectrum = spectrum;
     return out;
   }
 

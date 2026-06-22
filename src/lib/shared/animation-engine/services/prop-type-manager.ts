@@ -37,6 +37,7 @@ export class PropTypeManager {
   // Last seen tunnel layer count; spectrum hues depend on it, so a change forces
   // a sprite regenerate (see handleAdditionalLayers).
   private lastLayerCount = 0;
+  private lastSpectrum = true;
 
   // ── Dependencies (injected) ─────────────────────────────────────────
   private settingsService: SettingsState | null = null;
@@ -228,12 +229,14 @@ export class PropTypeManager {
   ): void {
     const additionalLayers = props.additionalLayers ?? [];
     const layerCount = additionalLayers.length;
+    const spectrum = props.tunnelSpectrum ?? true;
 
-    // Spectrum colors fan across the active stack, so they depend on layerCount.
-    // When the fold count changes, every layer's color shifts — drop the cached
-    // sprites so they regenerate at the new hue.
-    if (layerCount !== this.lastLayerCount) {
+    // Spectrum colors fan across the active stack, so they depend on layerCount
+    // AND the spectrum toggle. When the fold count or the toggle changes, every
+    // layer's color shifts — drop the cached sprites so they regenerate.
+    if (layerCount !== this.lastLayerCount || spectrum !== this.lastSpectrum) {
       this.lastLayerCount = layerCount;
+      this.lastSpectrum = spectrum;
       this.additionalLayerTexturesLoaded = [];
       this.additionalLayerTexturesLoading = [];
     }
@@ -253,8 +256,10 @@ export class PropTypeManager {
           // Color each layer sprite through the same selective SVG pipeline the
           // base pair uses (gold sword blade preserved, only the hardware takes
           // the hue). propIndex convention: layer blue = 2+2i, red = 3+2i.
-          const blueColor = tunnelPropColor(2 + i * 2, layerCount).hex;
-          const redColor = tunnelPropColor(3 + i * 2, layerCount).hex;
+          // Spectrum off: collapse every layer to the base blue/red anchor
+          // (familyIndex 0) so all copies match the base pair's plain colors.
+          const blueColor = tunnelPropColor(spectrum ? 2 + i * 2 : 0, layerCount).hex;
+          const redColor = tunnelPropColor(spectrum ? 3 + i * 2 : 1, layerCount).hex;
 
           this.animationRenderer
             .loadAdditionalLayerPropTextures(

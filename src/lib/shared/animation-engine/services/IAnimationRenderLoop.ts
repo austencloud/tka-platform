@@ -76,6 +76,9 @@ export interface RenderPropsState {
   additionalLayers: AdditionalLayerProps[];
   bluePropDimensions: PropDimensions;
   redPropDimensions: PropDimensions;
+  /** Tunnel rainbow spectrum. When false, overlaid layers inherit the base
+   *  blue/red colors instead of a per-layer spectrum hue. Default true. */
+  tunnelSpectrum: boolean;
 }
 
 /**

@@ -202,6 +202,20 @@
                     </div>
                   {:else if tunnelSection === "effects"}
                     <div class="section-pad">
+                      <div class="group">
+                        <button
+                          class:active={controller.spectrum}
+                          aria-pressed={controller.spectrum}
+                          onclick={() => (controller.spectrum = !controller.spectrum)}
+                        >
+                          <i class="fas fa-rainbow" aria-hidden="true"></i> Rainbow spectrum
+                        </button>
+                      </div>
+                      <p class="section-hint">
+                        {controller.spectrum
+                          ? "Every kaleidoscope copy fans across the spectrum."
+                          : "Props follow the colors you choose below."}
+                      </p>
                       <EffectsPanel
                         layout="sidebar"
                         showPlayback={false}

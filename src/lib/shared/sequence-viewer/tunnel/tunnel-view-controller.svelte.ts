@@ -51,6 +51,12 @@ export class TunnelViewController {
    *  own control in the Tunnel section. Default off — the grid is clutter behind
    *  a dense overlay. */
   gridVisible = $state(false);
+
+  /** Per-prop rainbow spectrum coloring. On (default) = every kaleidoscope copy
+   *  takes its own spectrum color; off = layers inherit the base/preset colors
+   *  so the Effects panel's "Choose a Look" / custom trail colors drive every
+   *  prop. Persisted with the view state. */
+  spectrum = $state(true);
   effect = $state<TunnelConfig["effect"]>("none");
 
   /** Active rail section in the Art settings panel, persisted with the view
@@ -73,6 +79,7 @@ export class TunnelViewController {
     this.fold = view.fold;
     this.mirror = view.mirror;
     this.gridVisible = view.gridVisible;
+    this.spectrum = view.spectrum;
     this.section = view.section;
 
     // Persist the live view state on change (separate from saved presets).
@@ -81,6 +88,7 @@ export class TunnelViewController {
         fold: this.fold,
         mirror: this.mirror,
         gridVisible: this.gridVisible,
+        spectrum: this.spectrum,
         section: this.section,
       };
       saveTunnelViewState(snapshot);
