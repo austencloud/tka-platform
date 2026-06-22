@@ -93,8 +93,9 @@
   }
 
   :global(.drawer-content.location-consent-sheet) {
-    max-height: 80dvh !important;
-    border-radius: 20px 20px 0 0 !important;
+    --sheet-max-height: 80dvh;
+    --sheet-border-radius-top-left: 20px;
+    --sheet-border-radius-top-right: 20px;
   }
 
   .consent-content {
