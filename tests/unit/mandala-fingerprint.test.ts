@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { shapeKey } from "$lib/shared/mandala/services/mandala-fingerprint";
+import { colorSignature, orbitKey } from "$lib/shared/mandala/services/mandala-fingerprint";
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 
 function paths(blue: string[], red: string[], purple: string[] = []): MandalaPaths {
@@ -33,5 +34,40 @@ describe("shapeKey", () => {
 
   it("distinguishes different shapes", () => {
     expect(shapeKey(paths([ARC], []))).not.toBe(shapeKey(paths([LINE], [])));
+  });
+});
+
+describe("colorSignature", () => {
+  it("flags blue-only", () => {
+    const s = colorSignature(paths([ARC], []));
+    expect(s).toMatchObject({ blueOnly: true, redOnly: false });
+    expect(s.comboPurpleRatio).toBe(0);
+  });
+  it("flags red-only", () => {
+    expect(colorSignature(paths([], [ARC]))).toMatchObject({ blueOnly: false, redOnly: true });
+  });
+  it("reports full overlap as comboPurpleRatio 1", () => {
+    expect(colorSignature(paths([ARC], [ARC])).comboPurpleRatio).toBe(1);
+  });
+  it("reports zero overlap as comboPurpleRatio 0 but combo true", () => {
+    const s = colorSignature(paths([ARC], [LINE]));
+    expect(s.blueOnly).toBe(false);
+    expect(s.redOnly).toBe(false);
+    expect(s.comboPurpleRatio).toBe(0);
+  });
+});
+
+describe("orbitKey", () => {
+  it("is rotation-invariant: a glyph and its 45deg rotation share an orbit key", () => {
+    // 45deg rotation of (10,0) about origin = (7.07, 7.07); of (-10,0) = (-7.07,-7.07)
+    const rotArc = "M 7.07 7.07 C 0.00 7.07, -7.07 7.07, -7.07 -7.07";
+    expect(orbitKey(paths([ARC], []))).toBe(orbitKey(paths([rotArc], [])));
+  });
+  it("is reflection-invariant: a glyph and its mirror share an orbit key", () => {
+    const mirrorArc = "M -10.00 0.00 C -5.00 5.00, 0.00 10.00, 10.00 0.00";
+    expect(orbitKey(paths([ARC], []))).toBe(orbitKey(paths([mirrorArc], [])));
+  });
+  it("returns a fixed-width hash string", () => {
+    expect(orbitKey(paths([ARC], []))).toHaveLength(22);
   });
 });
