@@ -128,9 +128,15 @@
     flex-direction: column;
     overflow: hidden;
   }
+  /* Oversize the stage past the pane (140%) and let .tunnel-art clip it. The
+     square canvas then fits the LARGER box, so its backing resolution grows
+     with it — the kaleidoscope fills the available width instead of sitting in
+     a height-bound square with wide black margins, and stays sharp (no CSS
+     upscale). The pattern is roughly circular, so the clipped corners are
+     empty. */
   .stage {
-    flex: 1 1 auto;
-    min-height: 0;
+    position: absolute;
+    inset: -20%;
     display: flex;
     align-items: center;
     justify-content: center;
