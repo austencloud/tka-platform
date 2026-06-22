@@ -8,7 +8,11 @@ import { existsSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-const manifest = JSON.parse(await readFile(resolve("scripts/autumn-meshy-assets.json"), "utf8"));
+const args = process.argv.slice(2);
+const manifestPath = args.includes("--manifest")
+  ? args[args.indexOf("--manifest") + 1]
+  : "scripts/autumn-meshy-assets.json";
+const manifest = JSON.parse(await readFile(resolve(manifestPath), "utf8"));
 const kb = (p) => (statSync(p).size / 1024).toFixed(1);
 
 for (const a of manifest.assets) {

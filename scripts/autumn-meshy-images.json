@@ -1,0 +1,13 @@
+{
+  "imageRoot": "assets/meshy-refs/autumn",
+  "polycount": 50000,
+  "assets": [
+    { "id": "hero-tree-a", "texturePrompt": "gnarled ancient bark, deep crevices, moss patches, crimson-gold autumn canopy with softly glowing emissive leaf edges, dusk", "textureSize": 2048 },
+    { "id": "hero-tree-b", "texturePrompt": "twisted weathered bark, knotholes, amber-red autumn foliage with faint glowing edges, mossy roots, dusk", "textureSize": 2048 },
+    { "id": "mushroom-grove", "texturePrompt": "lifelike bioluminescent mushrooms, teal and violet caps, vein-lit glowing gills, damp mossy base, fallen leaves, dusk", "textureSize": 2048 },
+    { "id": "mossy-boulder", "texturePrompt": "lifelike granite boulder, thick moss, lichen, damp, dusk forest floor", "textureSize": 1024 },
+    { "id": "fallen-log", "texturePrompt": "gnarled mossy fallen log, peeling bark, fungi, damp, dusk", "textureSize": 1024 },
+    { "id": "fern-clump", "texturePrompt": "lush lifelike fern undergrowth clump, deep green fronds, dusk", "textureSize": 1024 },
+    { "id": "terrain-shell", "texturePrompt": "autumn forest floor terrain, fallen crimson-gold leaves, damp moss, exposed roots, dark soil, dusk", "textureSize": 1024 }
+  ]
+}
