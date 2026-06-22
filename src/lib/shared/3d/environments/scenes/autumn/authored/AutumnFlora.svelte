@@ -10,9 +10,10 @@
    *
    * The scene's signature: GLOWING MUSHROOMS. Mushroom GLBs are deep-cloned
    * with their materials cloned and made emissive (teal, with violet across
-   * variants). The cloned emissive materials are exposed back to the caller
-   * via `onMushroomMaterials` so the interaction layer (Task 11) can pulse
-   * `emissiveIntensity` at runtime.
+   * variants). Each cloned emissive material is paired with its mushroom
+   * placement's world position and exposed back to the caller via
+   * `onMushroomTargets` so the interaction layer can pulse `emissiveIntensity`
+   * by proximity at runtime.
    *
    * This component does NOT load the Meshy hero GLBs — those load separately
    * in the orchestrator (Task 13). Props/progress/ready mirror
@@ -24,6 +25,7 @@
   import { onDestroy } from "svelte";
   import {
     Color,
+    Vector3,
     type MeshStandardMaterial,
     type Object3D,
   } from "three";
@@ -37,11 +39,16 @@
     onProgress?: (fraction: number) => void;
     onReady?: () => void;
     /**
-     * Receives the cloned, emissive mushroom materials once the mushroom GLBs
-     * have loaded. The interaction layer (Task 11) holds these and animates
-     * `emissiveIntensity` to make mushrooms pulse on touch. Fired once.
+     * Receives the cloned, emissive mushroom materials paired with their
+     * placement world positions once the mushroom GLBs have loaded. The
+     * interaction layer holds these and animates `emissiveIntensity` to make
+     * mushrooms pulse by proximity. One placement may yield multiple materials
+     * (multi-mesh GLB) — each material is emitted as its own target sharing the
+     * placement position. Fired once.
      */
-    onMushroomMaterials?: (materials: MeshStandardMaterial[]) => void;
+    onMushroomTargets?: (
+      targets: { material: MeshStandardMaterial; position: Vector3 }[],
+    ) => void;
   }
 
   let {
@@ -49,7 +56,7 @@
     groundY,
     onProgress,
     onReady,
-    onMushroomMaterials,
+    onMushroomTargets,
   }: Props = $props();
 
   // ── CC0 kit GLBs (confirmed under static/models/vegetation/) ──────────
@@ -150,12 +157,18 @@
   const VIOLET = new Color("#6a5acd");
   const EMISSIVE_INTENSITY = 0.8;
 
-  // Collected so the caller can pulse them at runtime (Task 11 hook).
-  const collectedMushroomMaterials: MeshStandardMaterial[] = [];
+  // Collected so the caller can pulse them at runtime. Each emissive material
+  // is paired with its placement's world position (one placement → one or more
+  // materials, all sharing that position).
+  const collectedMushroomTargets: {
+    material: MeshStandardMaterial;
+    position: Vector3;
+  }[] = [];
 
-  function emissiveClone(sourceScene: Object3D, variantIndex: number): Object3D {
+  function emissiveClone(sourceScene: Object3D, placementIndex: number): Object3D {
     // Variants alternate the emissive hue so the mushroom patch isn't monochrome.
-    const glow = variantIndex % 2 === 0 ? TEAL : VIOLET;
+    const glow = placementIndex % 2 === 0 ? TEAL : VIOLET;
+    const placement = mushroomPlacements[placementIndex];
     const cloned = sourceScene.clone();
     cloned.traverse((obj) => {
       const m = obj as { isMesh?: boolean; material?: unknown };
@@ -166,7 +179,12 @@
         if (c.emissive) {
           c.emissive.copy(glow);
           c.emissiveIntensity = EMISSIVE_INTENSITY;
-          collectedMushroomMaterials.push(c);
+          if (placement) {
+            collectedMushroomTargets.push({
+              material: c,
+              position: new Vector3(placement.x, groundY, placement.z),
+            });
+          }
         }
         return c;
       });
@@ -186,25 +204,26 @@
     return treePlacements.map((_, i) => scenes[i % scenes.length]!.clone());
   });
 
-  let mushroomMaterialsFired = false;
+  let mushroomTargetsFired = false;
 
   const mushroomClones = $derived.by(() => {
     const scenes = mushroomScenes.filter((s) => s !== null);
     if (scenes.length === 0) return [];
-    collectedMushroomMaterials.length = 0;
+    collectedMushroomTargets.length = 0;
     return mushroomPlacements.map((_, i) =>
       emissiveClone(scenes[i % scenes.length]!, i)
     );
   });
 
-  // Emit the cloned emissive materials to the interaction layer once.
-  // Never call out from inside the derivation — read mushroomClones here so the
-  // derivation evaluates and populates collectedMushroomMaterials first.
+  // Emit the cloned emissive materials (paired with placement positions) to the
+  // interaction layer once. Never call out from inside the derivation — read
+  // mushroomClones here so the derivation evaluates and populates
+  // collectedMushroomTargets first.
   $effect(() => {
-    if (mushroomMaterialsFired) return;
+    if (mushroomTargetsFired) return;
     if (mushroomClones.length === 0) return;
-    mushroomMaterialsFired = true;
-    onMushroomMaterials?.(collectedMushroomMaterials.slice());
+    mushroomTargetsFired = true;
+    onMushroomTargets?.(collectedMushroomTargets.slice());
   });
 
   const rockClones = $derived.by(() => {

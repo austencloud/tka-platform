@@ -4,24 +4,19 @@
   /**
    * One glow target the interaction layer can pulse.
    *
-   * The orchestrator (Task 13) assembles these. Both upstream producers emit
-   * bare `MeshStandardMaterial[]` with NO position:
-   *   - WillOWisps.svelte → onWispMaterials (core mats; their owning Group
-   *     drifts every frame, so a wisp's "position" is its live Group, not a
-   *     fixed point).
-   *   - authored/AutumnFlora.svelte → onMushroomMaterials (cloned emissive mats
-   *     belonging to scattered cloned scene graphs; positions live in the
-   *     mushroom *placement* data, not on the material).
+   * Both upstream producers now emit `{ material, position }` pairs, so each
+   * already carries the world position proximity pulsing needs:
+   *   - WillOWisps.svelte → onWispTargets (core mat + its owning Group's live
+   *     `position` Vector3; the Group drifts every frame, and because it's the
+   *     SAME Vector3 instance, this layer reads the live drifting position for
+   *     free with no per-frame sync).
+   *   - authored/AutumnFlora.svelte → onMushroomTargets (cloned emissive mat +
+   *     the static world position of the mushroom's placement).
    *
-   * So proximity pulsing needs a position paired with each material, and only
-   * the orchestrator holds both halves. It pairs them into PulseTarget[]:
-   *   - mushrooms: pass the mushroom placement world position (static).
-   *   - wisps: pass the wisp Group's `position` Vector3 (mutated in place each
-   *     frame by WillOWisps' drift task) — because it's the SAME Vector3
-   *     instance, this layer reads the live drifting position for free, no sync.
-   *
-   * `baseIntensity` is the material's resting `emissiveIntensity` (wisp 1.2,
-   * mushroom 0.8 at time of writing) — the value glow decays back to.
+   * The orchestrator (AutumnScene) and the runtime composer just thread these
+   * through into PulseTarget[] (adding `baseIntensity` from the material's
+   * resting `emissiveIntensity` — wisp 1.2, mushroom 0.8 at time of writing —
+   * the value glow decays back to). No more pairing of bare materials.
    */
   export interface PulseTarget {
     material: MeshStandardMaterial;

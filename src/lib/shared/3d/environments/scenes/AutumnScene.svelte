@@ -1,211 +1,185 @@
 <script lang="ts">
+  /**
+   * AutumnScene — Enchanted Autumn Dusk
+   *
+   * Orchestrator for the rebuilt autumn environment, mirroring
+   * ocean/OceanScene.svelte. It loads the Meshy hero GLBs (terrain shell, two
+   * hero trees, a mushroom grove), sets the dusk fog + background, detects
+   * device quality, mounts the authored flora and the runtime composer, and
+   * reports scene-feature readiness through the loading curtain.
+   *
+   * The Meshy hero GLBs may not exist yet (their generation is gated on the
+   * user). The scene MUST render flora + runtime without them, so every hero is
+   * mounted behind an `{#if $glb}` guard and readiness is based on FLORA, not
+   * the heroes. A 15s safety valve (copied from ForestScene) lifts the curtain
+   * even if everything stalls — the curtain can never hang.
+   */
+
   import { T, useThrelte } from "@threlte/core";
-  import { FogExp2 } from "three";
-  import SkyGradient from "../primitives/SkyGradient.svelte";
-  import FallingParticles from "../primitives/FallingParticles.svelte";
-  import AutumnForest from "./autumn/AutumnForest.svelte";
-  import AutumnGround from "./autumn/AutumnGround.svelte";
-  import WoodlandStream from "./autumn/WoodlandStream.svelte";
-  import MushroomCluster from "./autumn/MushroomCluster.svelte";
-  import GroundMist from "./autumn/GroundMist.svelte";
-  import {
-    type AutumnSceneConfig,
-    createDefaultAutumnConfig,
-  } from "../domain/models/scene-configs";
+  import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
+  import { FogExp2, Color } from "three";
+  import { onMount } from "svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
-  import Stage3D from "../../components/Stage3D.svelte";
+  import {
+    detectAutumnQuality,
+    getAutumnQualityConfig,
+  } from "./autumn/quality/autumn-quality";
+  import { autumnQualityOverride } from "./autumn/quality/autumn-quality-override.svelte";
+  import AutumnFlora from "./autumn/authored/AutumnFlora.svelte";
+  import AutumnRuntimeSystems from "./autumn/runtime/AutumnRuntimeSystems.svelte";
+  import type { PulseTarget } from "./autumn/runtime/interaction/AutumnInteraction.svelte";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
 
+  // ── Props (match what Environment3D passes) ───────────────────────────
+
   interface Props {
-    config?: AutumnSceneConfig;
+    performerCount?: number;
     stageWidth?: number;
     stageDepth?: number;
     stageZOffset?: number;
   }
 
-  let { config, stageWidth = 6, stageDepth = 4.5, stageZOffset = 0 }: Props = $props();
+  let {
+    performerCount = 1,
+    stageWidth = 6,
+    stageDepth = 6,
+    stageZOffset = 0,
+  }: Props = $props();
 
-  const activeConfig = $derived(config ?? createDefaultAutumnConfig());
+  // ── Quality detection ─────────────────────────────────────────────────
 
-  const { scene, renderer, camera } = useThrelte();
+  const { scene, renderer } = useThrelte();
+
+  const tier = $derived(
+    autumnQualityOverride.tier !== "auto"
+      ? autumnQualityOverride.tier
+      : detectAutumnQuality(renderer.current ?? null),
+  );
+  const quality = $derived(getAutumnQualityConfig(tier));
+
+  // ── Scene feature readiness ────────────────────────────────────────────
 
   const sceneFeatures = getSceneFeatureContext();
 
-  function cubicBez(p0: number, p1: number, p2: number, p3: number, t: number): number {
-    const mt = 1 - t;
-    return mt * mt * mt * p0 + 3 * mt * mt * t * p1 + 3 * mt * t * t * p2 + t * t * t * p3;
-  }
-
-  function isNearStream(px: number, pz: number, margin: number): boolean {
-    for (let i = 0; i <= 20; i++) {
-      const t = i / 20;
-      let sx: number, sz: number;
-      if (t < 0.5) {
-        const u = t * 2;
-        sx = cubicBez(-15, -8, -3, 0, u);
-        sz = cubicBez(-5, -3, 3, 4, u);
-      } else {
-        const u = (t - 0.5) * 2;
-        sx = cubicBez(0, 3, 8, 15, u);
-        sz = cubicBez(4, 5, 2, 8, u);
-      }
-      const dx = px - sx, dz = pz - sz;
-      if (dx * dx + dz * dz < margin * margin) return true;
-    }
-    return false;
-  }
-
-  const treePlacements = $derived.by(() => {
-    return activeConfig.treeRings.flatMap((ring, ringIndex) =>
-      Array.from({ length: ring.count }, (_, i) => {
-        const angleOffset = ringIndex * 0.4;
-        const angle = (i / ring.count) * Math.PI * 2 + angleOffset;
-        const seed = ringIndex * 100 + i;
-        const radiusVariation =
-          ring.radius + Math.sin(seed * 3.7) * ring.radiusJitter;
-        const x = Math.cos(angle) * radiusVariation;
-        const z = Math.sin(angle) * radiusVariation;
-        const scale =
-          ring.scaleBase +
-          Math.abs(Math.sin(seed * 2.3) * ring.scaleVariation);
-        const rotation = angle + Math.PI + Math.sin(seed * 1.7) * 0.3;
-        return { x, z, scale, rotation, seed };
-      })
-    ).filter(t => !isNearStream(t.x, t.z, 2.0));
-  });
-
   const groundY = $derived(userProportionsState.groundY);
 
-  let fogInstance: FogExp2 | null = null;
-  $effect(() => {
-    if (!scene.current) return;
-    const fog = activeConfig.fog;
-    if (!fogInstance) {
-      fogInstance = new FogExp2(fog.color, fog.density);
-      scene.current.fog = fogInstance;
-    } else {
-      fogInstance.color.set(fog.color);
-      fogInstance.density = fog.density;
-    }
-    return () => {
-      if (scene.current) scene.current.fog = null;
-      fogInstance = null;
-    };
+  // ── Hero GLBs (Meshy — best-effort; may 404 until generation runs) ─────
+
+  const terrainGlb = useGltf("/models/autumn/terrain-shell.glb", {
+    meshoptDecoder: useMeshopt(),
+    ktx2Loader: useKtx2("/basis/"),
+  });
+  const heroTreeA = useGltf("/models/autumn/hero-tree-a.glb", {
+    meshoptDecoder: useMeshopt(),
+    ktx2Loader: useKtx2("/basis/"),
+  });
+  const heroTreeB = useGltf("/models/autumn/hero-tree-b.glb", {
+    meshoptDecoder: useMeshopt(),
+    ktx2Loader: useKtx2("/basis/"),
+  });
+  const mushroomGroveGlb = useGltf("/models/autumn/mushroom-grove.glb", {
+    meshoptDecoder: useMeshopt(),
+    ktx2Loader: useKtx2("/basis/"),
   });
 
-  $effect(() => {
-    if (!scene.current || !renderer.current || !camera.current) return;
+  // Hand-picked hero spots: terrain + grove at the clearing origin, the two
+  // hero trees flanking it.
+  const pondCenter: [number, number, number] = $derived([-6, groundY, 5]);
 
-    renderer.current.compile(scene.current, camera.current);
-    sceneFeatures?.reportReady("environment");
+  // ── Readiness: gate on FLORA, not the optional heroes ──────────────────
+  // Hero GLBs are best-effort (may be absent), so they cannot gate the curtain.
+  // Flora reports real loaded/total progress and fires ready when complete;
+  // we fold flora's fraction straight into the environment progress bar.
+
+  let floraFraction = $state(0);
+  let floraLoaded = $state(false);
+
+  function handleFloraProgress(fraction: number) {
+    floraFraction = fraction;
+  }
+
+  function handleFloraReady() {
+    floraLoaded = true;
+    floraFraction = 1;
+  }
+
+  $effect(() => {
+    sceneFeatures?.reportProgress("environment", floraFraction);
+    if (floraLoaded) {
+      sceneFeatures?.reportReady("environment");
+    }
+  });
+
+  // Safety valve: if flora (or anything) stalls, lift the curtain after 15s so
+  // the user is never stuck on a permanent loading screen — even with the hero
+  // GLBs absent. Copied from ForestScene.
+  onMount(() => {
+    const timer = setTimeout(() => {
+      if (sceneFeatures && !sceneFeatures.isReady("environment")) {
+        console.warn("[AutumnScene] loading timed out - lifting curtain");
+        sceneFeatures.reportReady("environment");
+      }
+    }, 15_000);
+    return () => clearTimeout(timer);
+  });
+
+  // ── Mushroom pulse targets (assembled from AutumnFlora) ────────────────
+
+  let mushroomTargets = $state<PulseTarget[]>([]);
+
+  // ── Fog + background (dusk violet) ─────────────────────────────────────
+
+  $effect(() => {
+    const s = scene.current;
+    if (!s) return;
+    const fogColor = new Color("#2a1838");
+    s.fog = new FogExp2(fogColor.getHex(), 0.02);
+    s.background = fogColor;
+    return () => {
+      if (s) {
+        s.fog = null;
+        s.background = null;
+      }
+    };
   });
 </script>
 
-<SkyGradient
-  topColor={activeConfig.sky.topColor}
-  midColor={activeConfig.sky.midColor}
-  bottomColor={activeConfig.sky.bottomColor}
+{#if $terrainGlb}
+  <T is={$terrainGlb.scene} position.y={groundY} />
+{/if}
+
+{#if $mushroomGroveGlb}
+  <T is={$mushroomGroveGlb.scene} position.y={groundY} />
+{/if}
+
+{#if $heroTreeA}
+  <T is={$heroTreeA.scene} position.x={-9} position.y={groundY} position.z={-4} />
+{/if}
+
+{#if $heroTreeB}
+  <T is={$heroTreeB.scene} position.x={10} position.y={groundY} position.z={-6} />
+{/if}
+
+<AutumnFlora
+  {quality}
+  {groundY}
+  onProgress={handleFloraProgress}
+  onReady={handleFloraReady}
+  onMushroomTargets={(t) =>
+    (mushroomTargets = t.map((x) => ({
+      material: x.material,
+      position: x.position,
+      baseIntensity: x.material.emissiveIntensity,
+    })))}
 />
 
-<AutumnGround
-  size={activeConfig.ground.size}
-  baseColor={activeConfig.ground.color}
+<AutumnRuntimeSystems
+  {quality}
+  {groundY}
+  {performerCount}
+  {stageWidth}
+  {stageDepth}
+  {stageZOffset}
+  {pondCenter}
+  {mushroomTargets}
 />
-
-<!-- Fallen leaf wash on ground — warm amber tint -->
-<T.Group position={[0, groundY + 0.005, 0]}>
-  <T.Mesh rotation.x={-Math.PI / 2}>
-    <T.CircleGeometry args={[20, 64]} />
-    <T.MeshStandardMaterial
-      color="#c88040"
-      opacity={0.06}
-      transparent
-      roughness={1}
-      depthWrite={false}
-    />
-  </T.Mesh>
-</T.Group>
-
-<!-- Reflective winding stream -->
-{#if activeConfig.stream.enabled}
-  <WoodlandStream
-    color={activeConfig.stream.color}
-    width={activeConfig.stream.width}
-  />
-{/if}
-
-<!-- Batched procedural trees (InstancedMesh) -->
-<AutumnForest placements={treePlacements} {groundY} />
-
-<!-- Dense falling leaves — close layer -->
-{#key activeConfig.leaves.count}
-  <FallingParticles
-    type={activeConfig.leaves.type}
-    count={activeConfig.leaves.count}
-    area={activeConfig.leaves.area}
-    speed={activeConfig.leaves.speed}
-    colors={activeConfig.leaves.colors}
-    sizeRange={activeConfig.leaves.sizeRange}
-    spin={activeConfig.leaves.spin}
-  />
-{/key}
-
-<!-- Distant leaves — smaller, slower, wider for depth -->
-{#if activeConfig.distantLeaves}
-  {#key activeConfig.distantLeaves.count}
-    <FallingParticles
-      type={activeConfig.distantLeaves.type}
-      count={activeConfig.distantLeaves.count}
-      area={activeConfig.distantLeaves.area}
-      speed={activeConfig.distantLeaves.speed}
-      colors={activeConfig.distantLeaves.colors}
-      sizeRange={activeConfig.distantLeaves.sizeRange}
-      spin={activeConfig.distantLeaves.spin}
-    />
-  {/key}
-{/if}
-
-<!-- Mushroom clusters around clearing -->
-{#if activeConfig.mushrooms.enabled}
-  <MushroomCluster
-    count={activeConfig.mushrooms.count}
-    ringRadius={activeConfig.mushrooms.ringRadius}
-    capColors={activeConfig.mushrooms.capColors}
-    stemColor={activeConfig.mushrooms.stemColor}
-    glowColor={activeConfig.mushrooms.glowColor}
-    glowIntensity={activeConfig.mushrooms.glowIntensity}
-  />
-{/if}
-
-<!-- Low-lying ground mist -->
-{#if activeConfig.mist.enabled}
-  <GroundMist
-    count={activeConfig.mist.count}
-    area={activeConfig.mist.area}
-    color={activeConfig.mist.color}
-    opacity={activeConfig.mist.opacity}
-    speed={activeConfig.mist.speed}
-  />
-{/if}
-
-<T.HemisphereLight
-  color={activeConfig.hemisphereLight.skyColor}
-  groundColor={activeConfig.hemisphereLight.groundColor}
-  intensity={activeConfig.hemisphereLight.intensity}
-/>
-
-<!-- Golden-hour directional sunlight — low angle for warm rim lighting -->
-{#if activeConfig.sunLight?.enabled}
-  {@const sl = activeConfig.sunLight}
-  <T.DirectionalLight
-    color={sl.color}
-    intensity={sl.intensity}
-    position.x={sl.position[0]}
-    position.y={sl.position[1]}
-    position.z={sl.position[2]}
-  />
-{/if}
-
-<T.Group position.z={stageZOffset}>
-  <Stage3D width={stageWidth} depth={stageDepth} />
-</T.Group>
