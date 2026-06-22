@@ -51,7 +51,7 @@ Old guide = 47 pages. Mapping → our 3 chapters. Status: ⬜ todo · 🔧 in pr
 | # | Old page (artboard) | Our home | Status |
 |---|---|---|---|
 | 1 | Cover (Name / title ring) | print cover | ✅ |
-| 2-3 | Drink water / Support author | front matter | ⬜ |
+| 2-3 | Drink water / Support author | front matter | ✅ |
 | 4 | Read Me First | print cover pg2 | 🔧 |
 | 5 | Table of Contents | front matter | ⬜ |
 | 6 | 1.0 Positions & Motions (title) | positions-motions | ⬜ |

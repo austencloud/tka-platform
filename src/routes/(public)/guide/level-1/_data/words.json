@@ -5,7 +5,7 @@
       "letter": "A",
       "startPosition": "alpha3",
       "endPosition": "alpha5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -19,7 +19,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -33,7 +33,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -42,7 +42,7 @@
       "letter": "A",
       "startPosition": "alpha5",
       "endPosition": "alpha7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -56,7 +56,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -70,7 +70,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -79,7 +79,7 @@
       "letter": "A",
       "startPosition": "alpha7",
       "endPosition": "alpha1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -93,7 +93,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -107,7 +107,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -116,7 +116,7 @@
       "letter": "A",
       "startPosition": "alpha1",
       "endPosition": "alpha3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -130,7 +130,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -144,7 +144,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -153,7 +153,7 @@
       "letter": "B",
       "startPosition": "alpha3",
       "endPosition": "alpha5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -167,7 +167,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -181,7 +181,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -190,7 +190,7 @@
       "letter": "B",
       "startPosition": "alpha5",
       "endPosition": "alpha7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -204,7 +204,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -218,7 +218,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -227,7 +227,7 @@
       "letter": "B",
       "startPosition": "alpha7",
       "endPosition": "alpha1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -241,7 +241,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -255,7 +255,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -264,7 +264,7 @@
       "letter": "B",
       "startPosition": "alpha1",
       "endPosition": "alpha3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -278,7 +278,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -292,7 +292,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -301,7 +301,7 @@
       "letter": "C",
       "startPosition": "alpha3",
       "endPosition": "alpha5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -315,7 +315,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -329,7 +329,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -338,7 +338,7 @@
       "letter": "C",
       "startPosition": "alpha5",
       "endPosition": "alpha7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -352,7 +352,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -366,7 +366,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -375,7 +375,7 @@
       "letter": "C",
       "startPosition": "alpha7",
       "endPosition": "alpha1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -389,7 +389,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -403,7 +403,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -412,7 +412,7 @@
       "letter": "C",
       "startPosition": "alpha1",
       "endPosition": "alpha3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -426,7 +426,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -440,7 +440,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -449,7 +449,7 @@
       "letter": "D",
       "startPosition": "beta3",
       "endPosition": "alpha5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -463,7 +463,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -477,7 +477,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -486,7 +486,7 @@
       "letter": "D",
       "startPosition": "beta5",
       "endPosition": "alpha7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -500,7 +500,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -514,7 +514,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -523,7 +523,7 @@
       "letter": "D",
       "startPosition": "beta7",
       "endPosition": "alpha1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -537,7 +537,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -551,7 +551,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -560,7 +560,7 @@
       "letter": "D",
       "startPosition": "beta1",
       "endPosition": "alpha3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -574,7 +574,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -588,7 +588,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -597,7 +597,7 @@
       "letter": "E",
       "startPosition": "beta3",
       "endPosition": "alpha5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -611,7 +611,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -625,7 +625,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -634,7 +634,7 @@
       "letter": "E",
       "startPosition": "beta5",
       "endPosition": "alpha7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -648,7 +648,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -662,7 +662,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -671,7 +671,7 @@
       "letter": "E",
       "startPosition": "beta7",
       "endPosition": "alpha1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -685,7 +685,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -699,7 +699,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -708,7 +708,7 @@
       "letter": "E",
       "startPosition": "beta1",
       "endPosition": "alpha3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -722,7 +722,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -736,7 +736,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -745,7 +745,7 @@
       "letter": "F",
       "startPosition": "beta3",
       "endPosition": "alpha5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -759,7 +759,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -773,7 +773,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -782,7 +782,7 @@
       "letter": "F",
       "startPosition": "beta5",
       "endPosition": "alpha7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -796,7 +796,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -810,7 +810,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -819,7 +819,7 @@
       "letter": "F",
       "startPosition": "beta7",
       "endPosition": "alpha1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -833,7 +833,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -847,7 +847,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -856,7 +856,7 @@
       "letter": "F",
       "startPosition": "beta1",
       "endPosition": "alpha3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -870,7 +870,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -884,7 +884,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -893,7 +893,7 @@
       "letter": "G",
       "startPosition": "beta3",
       "endPosition": "beta5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -907,7 +907,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -921,7 +921,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -930,7 +930,7 @@
       "letter": "G",
       "startPosition": "beta5",
       "endPosition": "beta7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -944,7 +944,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -958,7 +958,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -967,7 +967,7 @@
       "letter": "G",
       "startPosition": "beta7",
       "endPosition": "beta1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -981,7 +981,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -995,7 +995,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1004,7 +1004,7 @@
       "letter": "G",
       "startPosition": "beta1",
       "endPosition": "beta3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -1018,7 +1018,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1032,7 +1032,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1041,7 +1041,7 @@
       "letter": "H",
       "startPosition": "beta3",
       "endPosition": "beta5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1055,7 +1055,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -1069,7 +1069,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1078,7 +1078,7 @@
       "letter": "H",
       "startPosition": "beta5",
       "endPosition": "beta7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1092,7 +1092,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -1106,7 +1106,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1115,7 +1115,7 @@
       "letter": "H",
       "startPosition": "beta7",
       "endPosition": "beta1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1129,7 +1129,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -1143,7 +1143,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1152,7 +1152,7 @@
       "letter": "H",
       "startPosition": "beta1",
       "endPosition": "beta3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1166,7 +1166,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -1180,7 +1180,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1189,7 +1189,7 @@
       "letter": "I",
       "startPosition": "beta3",
       "endPosition": "beta5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1203,7 +1203,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1217,7 +1217,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1226,7 +1226,7 @@
       "letter": "I",
       "startPosition": "beta5",
       "endPosition": "beta7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1240,7 +1240,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1254,7 +1254,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1263,7 +1263,7 @@
       "letter": "I",
       "startPosition": "beta7",
       "endPosition": "beta1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1277,7 +1277,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1291,7 +1291,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1300,7 +1300,7 @@
       "letter": "I",
       "startPosition": "beta1",
       "endPosition": "beta3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1314,7 +1314,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1328,7 +1328,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1337,7 +1337,7 @@
       "letter": "J",
       "startPosition": "alpha3",
       "endPosition": "beta5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -1351,7 +1351,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1365,7 +1365,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1374,7 +1374,7 @@
       "letter": "J",
       "startPosition": "alpha5",
       "endPosition": "beta7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -1388,7 +1388,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1402,7 +1402,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1411,7 +1411,7 @@
       "letter": "J",
       "startPosition": "alpha7",
       "endPosition": "beta1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -1425,7 +1425,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1439,7 +1439,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1448,7 +1448,7 @@
       "letter": "J",
       "startPosition": "alpha1",
       "endPosition": "beta3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -1462,7 +1462,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1476,7 +1476,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1485,7 +1485,7 @@
       "letter": "K",
       "startPosition": "alpha3",
       "endPosition": "beta5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1499,7 +1499,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -1513,7 +1513,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1522,7 +1522,7 @@
       "letter": "K",
       "startPosition": "alpha5",
       "endPosition": "beta7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1536,7 +1536,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -1550,7 +1550,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1559,7 +1559,7 @@
       "letter": "K",
       "startPosition": "alpha7",
       "endPosition": "beta1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1573,7 +1573,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -1587,7 +1587,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1596,7 +1596,7 @@
       "letter": "K",
       "startPosition": "alpha1",
       "endPosition": "beta3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1610,7 +1610,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -1624,7 +1624,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1633,7 +1633,7 @@
       "letter": "L",
       "startPosition": "alpha3",
       "endPosition": "beta5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1647,7 +1647,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1661,7 +1661,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1670,7 +1670,7 @@
       "letter": "L",
       "startPosition": "alpha5",
       "endPosition": "beta7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1684,7 +1684,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1698,7 +1698,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1707,7 +1707,7 @@
       "letter": "L",
       "startPosition": "alpha7",
       "endPosition": "beta1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1721,7 +1721,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1735,7 +1735,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1744,7 +1744,7 @@
       "letter": "L",
       "startPosition": "alpha1",
       "endPosition": "beta3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1758,7 +1758,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1772,7 +1772,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1781,7 +1781,7 @@
       "letter": "M",
       "startPosition": "gamma3",
       "endPosition": "gamma13",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -1795,7 +1795,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1809,7 +1809,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1818,7 +1818,7 @@
       "letter": "M",
       "startPosition": "gamma5",
       "endPosition": "gamma15",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -1832,7 +1832,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1846,7 +1846,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1855,7 +1855,7 @@
       "letter": "M",
       "startPosition": "gamma7",
       "endPosition": "gamma9",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -1869,7 +1869,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1883,7 +1883,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1892,7 +1892,7 @@
       "letter": "M",
       "startPosition": "gamma1",
       "endPosition": "gamma11",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -1906,7 +1906,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -1920,7 +1920,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1929,7 +1929,7 @@
       "letter": "N",
       "startPosition": "gamma3",
       "endPosition": "gamma13",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1943,7 +1943,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -1957,7 +1957,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -1966,7 +1966,7 @@
       "letter": "N",
       "startPosition": "gamma5",
       "endPosition": "gamma15",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -1980,7 +1980,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -1994,7 +1994,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2003,7 +2003,7 @@
       "letter": "N",
       "startPosition": "gamma7",
       "endPosition": "gamma9",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2017,7 +2017,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -2031,7 +2031,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2040,7 +2040,7 @@
       "letter": "N",
       "startPosition": "gamma1",
       "endPosition": "gamma11",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2054,7 +2054,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -2068,7 +2068,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2077,7 +2077,7 @@
       "letter": "O",
       "startPosition": "gamma3",
       "endPosition": "gamma13",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2091,7 +2091,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2105,7 +2105,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2114,7 +2114,7 @@
       "letter": "O",
       "startPosition": "gamma5",
       "endPosition": "gamma15",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2128,7 +2128,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2142,7 +2142,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2151,7 +2151,7 @@
       "letter": "O",
       "startPosition": "gamma7",
       "endPosition": "gamma9",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2165,7 +2165,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2179,7 +2179,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2188,7 +2188,7 @@
       "letter": "O",
       "startPosition": "gamma1",
       "endPosition": "gamma11",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2202,7 +2202,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2216,7 +2216,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2225,7 +2225,7 @@
       "letter": "P",
       "startPosition": "gamma11",
       "endPosition": "gamma5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -2239,7 +2239,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2253,7 +2253,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2262,7 +2262,7 @@
       "letter": "P",
       "startPosition": "gamma13",
       "endPosition": "gamma7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -2276,7 +2276,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2290,7 +2290,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2299,7 +2299,7 @@
       "letter": "P",
       "startPosition": "gamma15",
       "endPosition": "gamma1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -2313,7 +2313,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2327,7 +2327,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2336,7 +2336,7 @@
       "letter": "P",
       "startPosition": "gamma9",
       "endPosition": "gamma3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -2350,7 +2350,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2364,7 +2364,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2373,7 +2373,7 @@
       "letter": "Q",
       "startPosition": "gamma11",
       "endPosition": "gamma5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2387,7 +2387,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -2401,7 +2401,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2410,7 +2410,7 @@
       "letter": "Q",
       "startPosition": "gamma13",
       "endPosition": "gamma7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2424,7 +2424,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -2438,7 +2438,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2447,7 +2447,7 @@
       "letter": "Q",
       "startPosition": "gamma15",
       "endPosition": "gamma1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2461,7 +2461,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -2475,7 +2475,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2484,7 +2484,7 @@
       "letter": "Q",
       "startPosition": "gamma9",
       "endPosition": "gamma3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2498,7 +2498,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -2512,7 +2512,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2521,7 +2521,7 @@
       "letter": "R",
       "startPosition": "gamma11",
       "endPosition": "gamma5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2535,7 +2535,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2549,7 +2549,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2558,7 +2558,7 @@
       "letter": "R",
       "startPosition": "gamma13",
       "endPosition": "gamma7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2572,7 +2572,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2586,7 +2586,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2595,7 +2595,7 @@
       "letter": "R",
       "startPosition": "gamma15",
       "endPosition": "gamma1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2609,7 +2609,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2623,7 +2623,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2632,7 +2632,7 @@
       "letter": "R",
       "startPosition": "gamma9",
       "endPosition": "gamma3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2646,7 +2646,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2660,7 +2660,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2669,7 +2669,7 @@
       "letter": "S",
       "startPosition": "gamma3",
       "endPosition": "gamma5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -2683,7 +2683,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2697,7 +2697,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2706,7 +2706,7 @@
       "letter": "S",
       "startPosition": "gamma5",
       "endPosition": "gamma7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -2720,7 +2720,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2734,7 +2734,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2743,7 +2743,7 @@
       "letter": "S",
       "startPosition": "gamma7",
       "endPosition": "gamma1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -2757,7 +2757,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2771,7 +2771,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2780,7 +2780,7 @@
       "letter": "S",
       "startPosition": "gamma1",
       "endPosition": "gamma3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -2794,7 +2794,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -2808,7 +2808,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2817,7 +2817,7 @@
       "letter": "T",
       "startPosition": "gamma3",
       "endPosition": "gamma5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2831,7 +2831,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -2845,7 +2845,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2854,7 +2854,7 @@
       "letter": "T",
       "startPosition": "gamma5",
       "endPosition": "gamma7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2868,7 +2868,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -2882,7 +2882,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2891,7 +2891,7 @@
       "letter": "T",
       "startPosition": "gamma7",
       "endPosition": "gamma1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2905,7 +2905,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -2919,7 +2919,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2928,7 +2928,7 @@
       "letter": "T",
       "startPosition": "gamma1",
       "endPosition": "gamma3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -2942,7 +2942,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -2956,7 +2956,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -2965,7 +2965,7 @@
       "letter": "U",
       "startPosition": "gamma11",
       "endPosition": "gamma13",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -2979,7 +2979,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -2993,7 +2993,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3002,7 +3002,7 @@
       "letter": "U",
       "startPosition": "gamma13",
       "endPosition": "gamma15",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -3016,7 +3016,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -3030,7 +3030,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3039,7 +3039,7 @@
       "letter": "U",
       "startPosition": "gamma15",
       "endPosition": "gamma9",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -3053,7 +3053,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -3067,7 +3067,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3076,7 +3076,7 @@
       "letter": "U",
       "startPosition": "gamma9",
       "endPosition": "gamma11",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "pro",
@@ -3090,7 +3090,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -3104,7 +3104,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3113,7 +3113,7 @@
       "letter": "V",
       "startPosition": "gamma11",
       "endPosition": "gamma13",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -3127,7 +3127,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3141,7 +3141,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3150,7 +3150,7 @@
       "letter": "V",
       "startPosition": "gamma13",
       "endPosition": "gamma15",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -3164,7 +3164,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3178,7 +3178,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3187,7 +3187,7 @@
       "letter": "V",
       "startPosition": "gamma15",
       "endPosition": "gamma9",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -3201,7 +3201,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3215,7 +3215,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3224,7 +3224,7 @@
       "letter": "V",
       "startPosition": "gamma9",
       "endPosition": "gamma11",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "anti",
@@ -3238,7 +3238,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3252,7 +3252,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3261,7 +3261,7 @@
       "letter": "W",
       "startPosition": "gamma3",
       "endPosition": "alpha5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3275,7 +3275,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3289,7 +3289,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3298,7 +3298,7 @@
       "letter": "W",
       "startPosition": "gamma5",
       "endPosition": "alpha7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3312,7 +3312,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3326,7 +3326,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3335,7 +3335,7 @@
       "letter": "W",
       "startPosition": "gamma7",
       "endPosition": "alpha1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3349,7 +3349,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3363,7 +3363,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3372,7 +3372,7 @@
       "letter": "W",
       "startPosition": "gamma1",
       "endPosition": "alpha3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3386,7 +3386,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3400,7 +3400,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3409,7 +3409,7 @@
       "letter": "X",
       "startPosition": "gamma3",
       "endPosition": "alpha5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3423,7 +3423,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -3437,7 +3437,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3446,7 +3446,7 @@
       "letter": "X",
       "startPosition": "gamma5",
       "endPosition": "alpha7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3460,7 +3460,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -3474,7 +3474,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3483,7 +3483,7 @@
       "letter": "X",
       "startPosition": "gamma7",
       "endPosition": "alpha1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3497,7 +3497,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -3511,7 +3511,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3520,7 +3520,7 @@
       "letter": "X",
       "startPosition": "gamma1",
       "endPosition": "alpha3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3534,7 +3534,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -3548,7 +3548,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3557,7 +3557,7 @@
       "letter": "Y",
       "startPosition": "gamma11",
       "endPosition": "beta5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3571,7 +3571,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3585,7 +3585,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3594,7 +3594,7 @@
       "letter": "Y",
       "startPosition": "gamma13",
       "endPosition": "beta7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3608,7 +3608,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3622,7 +3622,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3631,7 +3631,7 @@
       "letter": "Y",
       "startPosition": "gamma15",
       "endPosition": "beta1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3645,7 +3645,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3659,7 +3659,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3668,7 +3668,7 @@
       "letter": "Y",
       "startPosition": "gamma9",
       "endPosition": "beta3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3682,7 +3682,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3696,7 +3696,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3705,7 +3705,7 @@
       "letter": "Z",
       "startPosition": "gamma11",
       "endPosition": "beta5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3719,7 +3719,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -3733,7 +3733,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3742,7 +3742,7 @@
       "letter": "Z",
       "startPosition": "gamma13",
       "endPosition": "beta7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3756,7 +3756,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -3770,7 +3770,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3779,7 +3779,7 @@
       "letter": "Z",
       "startPosition": "gamma15",
       "endPosition": "beta1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3793,7 +3793,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -3807,7 +3807,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3816,7 +3816,7 @@
       "letter": "Z",
       "startPosition": "gamma9",
       "endPosition": "beta3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3830,7 +3830,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -3844,7 +3844,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3853,7 +3853,7 @@
       "letter": "Σ",
       "startPosition": "alpha3",
       "endPosition": "gamma13",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3867,7 +3867,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3881,7 +3881,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3890,7 +3890,7 @@
       "letter": "Σ",
       "startPosition": "alpha5",
       "endPosition": "gamma15",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3904,7 +3904,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3918,7 +3918,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3927,7 +3927,7 @@
       "letter": "Σ",
       "startPosition": "alpha7",
       "endPosition": "gamma9",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3941,7 +3941,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3955,7 +3955,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -3964,7 +3964,7 @@
       "letter": "Σ",
       "startPosition": "alpha1",
       "endPosition": "gamma11",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -3978,7 +3978,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -3992,7 +3992,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4001,7 +4001,7 @@
       "letter": "Δ",
       "startPosition": "alpha3",
       "endPosition": "gamma13",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -4015,7 +4015,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4029,7 +4029,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4038,7 +4038,7 @@
       "letter": "Δ",
       "startPosition": "alpha5",
       "endPosition": "gamma15",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -4052,7 +4052,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4066,7 +4066,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4075,7 +4075,7 @@
       "letter": "Δ",
       "startPosition": "alpha7",
       "endPosition": "gamma9",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -4089,7 +4089,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4103,7 +4103,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4112,7 +4112,7 @@
       "letter": "Δ",
       "startPosition": "alpha1",
       "endPosition": "gamma11",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -4126,7 +4126,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4140,7 +4140,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4149,7 +4149,7 @@
       "letter": "Θ",
       "startPosition": "beta3",
       "endPosition": "gamma5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -4163,7 +4163,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -4177,7 +4177,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4186,7 +4186,7 @@
       "letter": "Θ",
       "startPosition": "beta5",
       "endPosition": "gamma7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -4200,7 +4200,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -4214,7 +4214,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4223,7 +4223,7 @@
       "letter": "Θ",
       "startPosition": "beta7",
       "endPosition": "gamma1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -4237,7 +4237,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -4251,7 +4251,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4260,7 +4260,7 @@
       "letter": "Θ",
       "startPosition": "beta1",
       "endPosition": "gamma3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -4274,7 +4274,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -4288,7 +4288,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4297,7 +4297,7 @@
       "letter": "Ω",
       "startPosition": "beta3",
       "endPosition": "gamma5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -4311,7 +4311,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4325,7 +4325,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4334,7 +4334,7 @@
       "letter": "Ω",
       "startPosition": "beta5",
       "endPosition": "gamma7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -4348,7 +4348,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4362,7 +4362,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4371,7 +4371,7 @@
       "letter": "Ω",
       "startPosition": "beta7",
       "endPosition": "gamma1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -4385,7 +4385,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4399,7 +4399,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4408,7 +4408,7 @@
       "letter": "Ω",
       "startPosition": "beta1",
       "endPosition": "gamma3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -4422,7 +4422,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4436,7 +4436,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4445,7 +4445,7 @@
       "letter": "W-",
       "startPosition": "gamma11",
       "endPosition": "alpha5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4459,7 +4459,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -4473,7 +4473,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4482,7 +4482,7 @@
       "letter": "W-",
       "startPosition": "gamma13",
       "endPosition": "alpha7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4496,7 +4496,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -4510,7 +4510,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4519,7 +4519,7 @@
       "letter": "W-",
       "startPosition": "gamma15",
       "endPosition": "alpha1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4533,7 +4533,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -4547,7 +4547,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4556,7 +4556,7 @@
       "letter": "W-",
       "startPosition": "gamma9",
       "endPosition": "alpha3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4570,7 +4570,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -4584,7 +4584,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4593,7 +4593,7 @@
       "letter": "X-",
       "startPosition": "gamma11",
       "endPosition": "alpha5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4607,7 +4607,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4621,7 +4621,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4630,7 +4630,7 @@
       "letter": "X-",
       "startPosition": "gamma13",
       "endPosition": "alpha7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4644,7 +4644,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4658,7 +4658,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4667,7 +4667,7 @@
       "letter": "X-",
       "startPosition": "gamma15",
       "endPosition": "alpha1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4681,7 +4681,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4695,7 +4695,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4704,7 +4704,7 @@
       "letter": "X-",
       "startPosition": "gamma9",
       "endPosition": "alpha3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4718,7 +4718,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4732,7 +4732,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4741,7 +4741,7 @@
       "letter": "Y-",
       "startPosition": "gamma3",
       "endPosition": "beta5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4755,7 +4755,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -4769,7 +4769,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4778,7 +4778,7 @@
       "letter": "Y-",
       "startPosition": "gamma5",
       "endPosition": "beta7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4792,7 +4792,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -4806,7 +4806,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4815,7 +4815,7 @@
       "letter": "Y-",
       "startPosition": "gamma7",
       "endPosition": "beta1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4829,7 +4829,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -4843,7 +4843,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4852,7 +4852,7 @@
       "letter": "Y-",
       "startPosition": "gamma1",
       "endPosition": "beta3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4866,7 +4866,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -4880,7 +4880,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4889,7 +4889,7 @@
       "letter": "Z-",
       "startPosition": "gamma3",
       "endPosition": "beta5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4903,7 +4903,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4917,7 +4917,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4926,7 +4926,7 @@
       "letter": "Z-",
       "startPosition": "gamma5",
       "endPosition": "beta7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4940,7 +4940,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4954,7 +4954,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -4963,7 +4963,7 @@
       "letter": "Z-",
       "startPosition": "gamma7",
       "endPosition": "beta1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -4977,7 +4977,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -4991,7 +4991,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5000,7 +5000,7 @@
       "letter": "Z-",
       "startPosition": "gamma1",
       "endPosition": "beta3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5014,7 +5014,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -5028,7 +5028,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5037,7 +5037,7 @@
       "letter": "Σ-",
       "startPosition": "beta3",
       "endPosition": "gamma13",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5051,7 +5051,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -5065,7 +5065,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5074,7 +5074,7 @@
       "letter": "Σ-",
       "startPosition": "beta5",
       "endPosition": "gamma15",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5088,7 +5088,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -5102,7 +5102,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5111,7 +5111,7 @@
       "letter": "Σ-",
       "startPosition": "beta7",
       "endPosition": "gamma9",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5125,7 +5125,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -5139,7 +5139,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5148,7 +5148,7 @@
       "letter": "Σ-",
       "startPosition": "beta1",
       "endPosition": "gamma11",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5162,7 +5162,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -5176,7 +5176,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5185,7 +5185,7 @@
       "letter": "Δ-",
       "startPosition": "beta3",
       "endPosition": "gamma13",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5199,7 +5199,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -5213,7 +5213,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5222,7 +5222,7 @@
       "letter": "Δ-",
       "startPosition": "beta5",
       "endPosition": "gamma15",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5236,7 +5236,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -5250,7 +5250,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5259,7 +5259,7 @@
       "letter": "Δ-",
       "startPosition": "beta7",
       "endPosition": "gamma9",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5273,7 +5273,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -5287,7 +5287,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5296,7 +5296,7 @@
       "letter": "Δ-",
       "startPosition": "beta1",
       "endPosition": "gamma11",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5310,7 +5310,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -5324,7 +5324,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5333,7 +5333,7 @@
       "letter": "Θ-",
       "startPosition": "alpha3",
       "endPosition": "gamma5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5347,7 +5347,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -5361,7 +5361,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5370,7 +5370,7 @@
       "letter": "Θ-",
       "startPosition": "alpha5",
       "endPosition": "gamma7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5384,7 +5384,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -5398,7 +5398,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5407,7 +5407,7 @@
       "letter": "Θ-",
       "startPosition": "alpha7",
       "endPosition": "gamma1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5421,7 +5421,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -5435,7 +5435,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5444,7 +5444,7 @@
       "letter": "Θ-",
       "startPosition": "alpha1",
       "endPosition": "gamma3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5458,7 +5458,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "pro",
@@ -5472,7 +5472,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5481,7 +5481,7 @@
       "letter": "Ω-",
       "startPosition": "alpha3",
       "endPosition": "gamma5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5495,7 +5495,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -5509,7 +5509,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5518,7 +5518,7 @@
       "letter": "Ω-",
       "startPosition": "alpha5",
       "endPosition": "gamma7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5532,7 +5532,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -5546,7 +5546,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5555,7 +5555,7 @@
       "letter": "Ω-",
       "startPosition": "alpha7",
       "endPosition": "gamma1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5569,7 +5569,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -5583,7 +5583,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5592,7 +5592,7 @@
       "letter": "Ω-",
       "startPosition": "alpha1",
       "endPosition": "gamma3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5606,7 +5606,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "anti",
@@ -5620,7 +5620,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5629,7 +5629,7 @@
       "letter": "Φ",
       "startPosition": "beta3",
       "endPosition": "alpha7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -5643,7 +5643,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -5657,7 +5657,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5666,7 +5666,7 @@
       "letter": "Φ",
       "startPosition": "beta1",
       "endPosition": "alpha5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -5680,7 +5680,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -5694,7 +5694,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5703,7 +5703,7 @@
       "letter": "Φ",
       "startPosition": "beta7",
       "endPosition": "alpha3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -5717,7 +5717,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -5731,7 +5731,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5740,7 +5740,7 @@
       "letter": "Φ",
       "startPosition": "beta5",
       "endPosition": "alpha1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -5754,7 +5754,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -5768,7 +5768,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5777,7 +5777,7 @@
       "letter": "Ψ",
       "startPosition": "alpha3",
       "endPosition": "beta7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -5791,7 +5791,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -5805,7 +5805,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5814,7 +5814,7 @@
       "letter": "Ψ",
       "startPosition": "alpha1",
       "endPosition": "beta5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -5828,7 +5828,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -5842,7 +5842,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5851,7 +5851,7 @@
       "letter": "Ψ",
       "startPosition": "alpha7",
       "endPosition": "beta3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -5865,7 +5865,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -5879,7 +5879,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5888,7 +5888,7 @@
       "letter": "Ψ",
       "startPosition": "alpha5",
       "endPosition": "beta1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -5902,7 +5902,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -5916,7 +5916,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5925,7 +5925,7 @@
       "letter": "Λ",
       "startPosition": "gamma3",
       "endPosition": "gamma15",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -5939,7 +5939,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -5953,7 +5953,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5962,7 +5962,7 @@
       "letter": "Λ",
       "startPosition": "gamma9",
       "endPosition": "gamma1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -5976,7 +5976,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "static",
@@ -5990,7 +5990,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -5999,7 +5999,7 @@
       "letter": "Λ",
       "startPosition": "gamma11",
       "endPosition": "gamma7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -6013,7 +6013,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -6027,7 +6027,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6036,7 +6036,7 @@
       "letter": "Λ",
       "startPosition": "gamma5",
       "endPosition": "gamma13",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -6050,7 +6050,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "static",
@@ -6064,7 +6064,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6073,7 +6073,7 @@
       "letter": "Φ-",
       "startPosition": "alpha3",
       "endPosition": "alpha7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -6087,7 +6087,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -6101,7 +6101,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6110,7 +6110,7 @@
       "letter": "Φ-",
       "startPosition": "alpha1",
       "endPosition": "alpha5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -6124,7 +6124,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -6138,7 +6138,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6147,7 +6147,7 @@
       "letter": "Φ-",
       "startPosition": "alpha7",
       "endPosition": "alpha3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -6161,7 +6161,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -6175,7 +6175,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6184,7 +6184,7 @@
       "letter": "Φ-",
       "startPosition": "alpha5",
       "endPosition": "alpha1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -6198,7 +6198,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -6212,7 +6212,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6221,7 +6221,7 @@
       "letter": "Ψ-",
       "startPosition": "beta3",
       "endPosition": "beta7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -6235,7 +6235,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -6249,7 +6249,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6258,7 +6258,7 @@
       "letter": "Ψ-",
       "startPosition": "beta1",
       "endPosition": "beta5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -6272,7 +6272,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -6286,7 +6286,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6295,7 +6295,7 @@
       "letter": "Ψ-",
       "startPosition": "beta7",
       "endPosition": "beta3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -6309,7 +6309,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -6323,7 +6323,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6332,7 +6332,7 @@
       "letter": "Ψ-",
       "startPosition": "beta5",
       "endPosition": "beta1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -6346,7 +6346,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -6360,7 +6360,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6369,7 +6369,7 @@
       "letter": "Λ-",
       "startPosition": "gamma3",
       "endPosition": "gamma7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -6383,7 +6383,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -6397,7 +6397,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6406,7 +6406,7 @@
       "letter": "Λ-",
       "startPosition": "gamma11",
       "endPosition": "gamma15",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -6420,7 +6420,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -6434,7 +6434,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6443,7 +6443,7 @@
       "letter": "Λ-",
       "startPosition": "gamma9",
       "endPosition": "gamma13",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -6457,7 +6457,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -6471,7 +6471,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6480,7 +6480,7 @@
       "letter": "Λ-",
       "startPosition": "gamma1",
       "endPosition": "gamma5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "dash",
@@ -6494,7 +6494,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "dash",
@@ -6508,7 +6508,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6517,7 +6517,7 @@
       "letter": "α",
       "startPosition": "alpha3",
       "endPosition": "alpha3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -6531,7 +6531,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "static",
@@ -6545,7 +6545,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6554,7 +6554,7 @@
       "letter": "α",
       "startPosition": "alpha5",
       "endPosition": "alpha5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -6568,7 +6568,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "static",
@@ -6582,7 +6582,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6591,7 +6591,7 @@
       "letter": "α",
       "startPosition": "alpha1",
       "endPosition": "alpha1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -6605,7 +6605,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "static",
@@ -6619,7 +6619,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6628,7 +6628,7 @@
       "letter": "α",
       "startPosition": "alpha7",
       "endPosition": "alpha7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -6642,7 +6642,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "static",
@@ -6656,7 +6656,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6665,7 +6665,7 @@
       "letter": "β",
       "startPosition": "beta3",
       "endPosition": "beta3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -6679,7 +6679,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "static",
@@ -6693,7 +6693,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6702,7 +6702,7 @@
       "letter": "β",
       "startPosition": "beta5",
       "endPosition": "beta5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -6716,7 +6716,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "static",
@@ -6730,7 +6730,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6739,7 +6739,7 @@
       "letter": "β",
       "startPosition": "beta1",
       "endPosition": "beta1",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -6753,7 +6753,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "static",
@@ -6767,7 +6767,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6776,7 +6776,7 @@
       "letter": "β",
       "startPosition": "beta7",
       "endPosition": "beta7",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -6790,7 +6790,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "static",
@@ -6804,7 +6804,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6813,7 +6813,7 @@
       "letter": "γ",
       "startPosition": "gamma11",
       "endPosition": "gamma11",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -6827,7 +6827,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "static",
@@ -6841,7 +6841,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6850,7 +6850,7 @@
       "letter": "γ",
       "startPosition": "gamma3",
       "endPosition": "gamma3",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -6864,7 +6864,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "static",
@@ -6878,7 +6878,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6887,7 +6887,7 @@
       "letter": "γ",
       "startPosition": "gamma13",
       "endPosition": "gamma13",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -6901,7 +6901,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "static",
@@ -6915,7 +6915,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     },
@@ -6924,7 +6924,7 @@
       "letter": "γ",
       "startPosition": "gamma5",
       "endPosition": "gamma5",
-      "gridMode": "DIAMOND",
+      "gridMode": "diamond",
       "motions": {
         "blue": {
           "motionType": "static",
@@ -6938,7 +6938,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         },
         "red": {
           "motionType": "static",
@@ -6952,7 +6952,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "gridMode": "DIAMOND"
+          "gridMode": "diamond"
         }
       }
     }

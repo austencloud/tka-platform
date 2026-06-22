@@ -42,8 +42,28 @@
     <div class="cover-fill"><GuideCover theme={coverTheme} /></div>
   </GuidePage>
 
-  <!-- ── Page 2: Read Me First (its own page, matching the original) ────── -->
-  <GuidePage label="p2 — Read Me First">
+  <!-- ── Page 2: "drink water" (minimalist front-matter beat, faithful) ──── -->
+  <GuidePage label="p2 — drink water">
+    <div class="frontmatter">
+      <div class="ripple" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p class="drink">drink water</p>
+    </div>
+  </GuidePage>
+
+  <!-- ── Page 3: Support (soft, low-sales per brand educational tone) ─────── -->
+  <GuidePage label="p3 — Support">
+    <div class="frontmatter support">
+      <h2 class="fm-h">Support the work</h2>
+      <p>
+        If this guide helps you, you can support its development. The Kinetic
+        Alphabet grows through the people who use it — a contribution of any size
+        is genuinely appreciated, and never required to keep creating.
+      </p>
+    </div>
+  </GuidePage>
+
+  <!-- ── Page 4: Read Me First (its own page, matching the original) ─────── -->
+  <GuidePage label="p4 — Read Me First">
     <div class="read-me">
       <h2>Read Me First</h2>
       <p>
@@ -89,6 +109,60 @@
     width: 100%;
     aspect-ratio: 8.5 / 11;
   }
+
+  /* Front-matter pages (white interior, ink-cheap) */
+  /* Fill the page so content centers vertically (GuidePage uses min-height, so
+     height:100% collapses — use an explicit min-height inside the 11in page). */
+  .frontmatter {
+    min-height: 9.4in;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 2.2rem;
+  }
+  .drink {
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-variation-settings: "opsz" 144, "wght" 600, "WONK" 1;
+    font-size: 2.8rem;
+    color: #1a1a1a;
+    margin: 0;
+  }
+  .ripple {
+    position: relative;
+    width: 120px;
+    height: 120px;
+  }
+  .ripple span {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    border: 1px solid #b9b3cf;
+    border-radius: 50%;
+  }
+  .ripple span:nth-child(1) { width: 40px; height: 40px; }
+  .ripple span:nth-child(2) { width: 80px; height: 80px; opacity: 0.6; }
+  .ripple span:nth-child(3) { width: 120px; height: 120px; opacity: 0.35; }
+
+  .support .fm-h {
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-variation-settings: "opsz" 144, "wght" 600, "WONK" 1;
+    font-size: 1.9rem;
+    color: #161616;
+    margin: 0;
+  }
+  .support p {
+    max-width: 5.2in;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 1.3rem;
+    line-height: 1.6;
+    color: #2a2a2a;
+    margin: 0;
+  }
+
   .read-me {
     max-width: 6.2in;
     margin: 0 auto;

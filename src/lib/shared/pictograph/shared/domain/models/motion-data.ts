@@ -118,7 +118,11 @@ export function createMotionData(data: Partial<MotionData> = {}): MotionData {
     propType: data.propType ?? PropType.STAFF, // Default - services should override with settings.propType for new motions
     arrowLocation: data.arrowLocation ?? GridLocation.NORTH, // Must be calculated by ArrowLocationCalculator - NEVER default to startLocation!
     color: data.color ?? MotionColor.BLUE, // Single source of truth for color
-    gridMode: data.gridMode ?? GridMode.DIAMOND, // Default to diamond mode for backward compatibility
+    // Normalize to the lowercase canonical enum — serialized/static data (e.g. guide
+    // _data JSON) can carry uppercase "DIAMOND"/"BOX", which 404s the placement file fetch.
+    gridMode: (data.gridMode
+      ? (data.gridMode.toLowerCase() as GridMode)
+      : GridMode.DIAMOND),
 
     arrowPlacementData: data.arrowPlacementData ?? createArrowPlacementData(),
     propPlacementData: data.propPlacementData ?? createPropPlacementData(),
