@@ -129,3 +129,17 @@ LOOP terminology, per existing section filenames already named Loops*.)
   dark coverage warps plain paper, no real foil, usually no borderless). Ship
   navy for digital/pro; `?theme=home` light edition for home. Interior pages
   stay white regardless.
+- 2026-06-22: SUPPORT PAGE (p3) finalized. Two methods only — PayPal + Venmo
+  (Cash App dropped, Austen doesn't use it). Colour brand logos, not mono (the
+  cropped PayPal/Venmo wordmarks have white backgrounds, so CSS ink-tinting
+  produces grey boxes; true mono would need custom transparent wordmarks — not
+  worth it). Layout = two centred columns, each QR → logo centred directly below
+  → italic handle, matching Austen's original donation sheet. Copy rewritten to
+  drop the banned em dash and avoid "The Kinetic Alphabet" mid-sentence (so it
+  can't wrap two lines). Soft "Suggested $20–30 · any amount helps" kept small
+  (anchors an amount without pressure). Assets in
+  `static/guide/level-1/images/_shared/`: `qr-paypal.png` + `qr-venmo.png`
+  (1200px, jsqr round-trip verified) and `logo-paypal.png` + `logo-venmo.png`
+  (cropped from `D:\…\_GUIDE\source\QR Codes.png`). Compare view added at
+  `(public)/guide/level-1/compare` (old v0.5 PDF vs live rebuild, navy/home
+  toggle).

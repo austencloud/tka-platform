@@ -26,6 +26,14 @@
 
   // ?theme=home → ink-cheap light cover for home printers; default = navy (foil).
   const coverTheme = $derived(page.url.searchParams.get("theme") === "home" ? "light" : "navy");
+
+  // Donation methods Austen actually uses. Logos cropped from his source sheet;
+  // QRs round-trip-verified. (Cash App dropped — unused.)
+  const SHARED = "/guide/level-1/images/_shared";
+  const PAY = [
+    { name: "PayPal", qr: `${SHARED}/qr-paypal.png`, logo: `${SHARED}/logo-paypal.png`, handle: "@austencloud" },
+    { name: "Venmo", qr: `${SHARED}/qr-venmo.png`, logo: `${SHARED}/logo-venmo.png`, handle: "@austencloud" },
+  ];
 </script>
 
 <svelte:head>
@@ -55,10 +63,19 @@
     <div class="frontmatter support">
       <h2 class="fm-h">Support the work</h2>
       <p>
-        If this guide helps you, you can support its development. The Kinetic
-        Alphabet grows through the people who use it — a contribution of any size
-        is genuinely appreciated, and never required to keep creating.
+        If this guide helps you, you can support its development. Any amount is
+        genuinely appreciated, and never required.
       </p>
+      <div class="donate">
+        {#each PAY as p}
+          <figure class="pay">
+            <img class="pay-qr" src={p.qr} alt="{p.name} donation QR code" />
+            <img class="pay-logo" src={p.logo} alt="{p.name} logo" />
+            <figcaption class="handle">{p.handle}</figcaption>
+          </figure>
+        {/each}
+      </div>
+      <p class="suggest">Suggested $20–30 · any amount helps</p>
     </div>
   </GuidePage>
 
@@ -161,6 +178,48 @@
     line-height: 1.6;
     color: #2a2a2a;
     margin: 0;
+  }
+  /* Two centred columns; each = QR + brand logo + handle, all centre-aligned so
+     the logo sits directly below its QR (matching the original sheet). */
+  .donate {
+    display: flex;
+    justify-content: center;
+    gap: 1.1in;
+    margin-top: 0.8rem;
+  }
+  .pay {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .pay-qr {
+    width: 1.5in;
+    height: 1.5in;
+    border: 1px solid #e4e0ee;
+    border-radius: 10px;
+    padding: 8px;
+    background: #fff;
+  }
+  /* Fixed-height baseline so both logos align across columns. */
+  .pay-logo {
+    height: 0.34in;
+    width: auto;
+    object-fit: contain;
+  }
+  .handle {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-style: italic;
+    font-size: 1.15rem;
+    color: #3a3a3a;
+  }
+  .suggest {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: #6a6a6a;
+    margin: 0.4rem 0 0;
   }
 
   .read-me {
