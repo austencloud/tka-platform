@@ -6,18 +6,28 @@ import {
 } from "../../../src/lib/shared/sequence-viewer/components/bento/columns-stepper";
 
 describe("columnOptionsFor", () => {
-  it("4 steps hides the awkward 3-column option", () => {
+  it("offers only divisors so every row is full (16 -> 2,4,8)", () => {
+    expect(columnOptionsFor(16)).toEqual([2, 4, 8]);
+  });
+
+  it("4 steps offers only 2 and 4 (3 is not a divisor)", () => {
     expect(columnOptionsFor(4)).toEqual([2, 4]);
   });
 
-  it("caps numeric options at the beat count", () => {
+  it("offers divisors within range for each beat count", () => {
     expect(columnOptionsFor(2)).toEqual([2]);
-    expect(columnOptionsFor(3)).toEqual([2, 3]);
-    expect(columnOptionsFor(6)).toEqual([2, 3, 4, 5, 6]);
+    expect(columnOptionsFor(3)).toEqual([3]);
+    expect(columnOptionsFor(6)).toEqual([2, 3, 6]);
+    expect(columnOptionsFor(12)).toEqual([2, 3, 4, 6]);
   });
 
-  it("clamps to the 8-column ceiling", () => {
-    expect(columnOptionsFor(20)).toEqual([2, 3, 4, 5, 6, 7, 8]);
+  it("clamps to the 8-column ceiling (20 -> divisors <= 8)", () => {
+    expect(columnOptionsFor(20)).toEqual([2, 4, 5]);
+  });
+
+  it("returns [] for prime counts with no divisor in range", () => {
+    expect(columnOptionsFor(13)).toEqual([]);
+    expect(columnOptionsFor(11)).toEqual([]);
   });
 
   it("returns no numeric options for stepCount < 2", () => {
