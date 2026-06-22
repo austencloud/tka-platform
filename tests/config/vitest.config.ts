@@ -23,6 +23,7 @@ export default defineConfig({
       "tests/debug/**/*.{test,spec}.{js,ts}",
       "src/**/__tests__/**/*.{test,spec}.{js,ts}",
       "src/lib/features/train/prop-tracking-lab/**/*.{test,spec}.{js,ts}",
+      "src/lib/shared/**/*.{test,spec}.{js,ts}",
     ],
     exclude: [
       "legacy_app/**/*",

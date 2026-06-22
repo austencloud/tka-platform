@@ -57,6 +57,11 @@ if (typeof (globalThis as { ImageData?: unknown }).ImageData === "undefined") {
   }
   (globalThis as { ImageData?: unknown }).ImageData = ImageDataShim;
 }
+// Store a reference to the real jsdom createElement BEFORE we mock it, so
+// non-canvas calls can delegate to the real implementation and get fully-formed
+// DOM nodes (with append, contains, etc.) rather than our stub objects.
+const _realCreateElement = document.createElement.bind(document);
+
 Object.defineProperty(document, "createElement", {
   writable: true,
   value: vi.fn().mockImplementation((tagName: string) => {
@@ -90,20 +95,11 @@ Object.defineProperty(document, "createElement", {
       return canvas;
     }
 
-    const element = {
-      tagName: tagName.toUpperCase(),
-      style: {},
-      href: "",
-      download: "",
-      click: vi.fn(),
-      appendChild: vi.fn(),
-      removeChild: vi.fn(),
-      remove: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    };
-    return element;
+    // For all non-canvas tags, delegate to the real jsdom createElement so
+    // callers get a proper DOM node with append(), contains(), remove(), etc.
+    // The old stub object broke tests that relied on real DOM tree methods
+    // (e.g. BottomSheet tests that call panel.append(child) / panel.contains()).
+    return _realCreateElement(tagName);
   }),
 });
 
