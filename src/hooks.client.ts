@@ -87,13 +87,21 @@ if (browser && dev && "serviceWorker" in navigator) {
 // saved mid-write by an external editor or cloud agent), Vite leaves an
 // undefined module in the graph and the HMR apply throws an unhandled rejection
 // inside the HMR client (HMRClient.queueUpdate → "reading 'default'"). The
-// affected pane goes dead until a manual refresh — and that refresh often hangs
-// because in-flight /data/*.json fetches stall while the server re-settles.
-// Detect the HMR-client crash signature and do ONE guarded full reload so the
-// page self-heals. The sessionStorage guard prevents an infinite reload loop if
-// the error is a genuine, persistent syntax error (then Vite's overlay shows it).
+// affected pane goes dead until a manual refresh.
+//
+// Recovery does NOT reload immediately: during a multi-agent write storm an
+// instant reload usually lands on a file the agent is STILL mid-writing, so it
+// re-fails and thrashes. Instead we SCHEDULE a reload ~700ms out (longer than the
+// server's 400ms awaitWriteFinish coalescing window). If Vite manages to apply a
+// clean update on its own before then (vite:afterUpdate), the pending reload is
+// cancelled — the page self-healed and no reload is needed. Only if the failure
+// persists past the settle window do we full-reload. The sessionStorage guard
+// caps it to one reload per 4s so a genuinely-broken file (Vite overlay shows the
+// real error) pulses slowly instead of looping.
 if (browser && dev) {
   const HMR_RELOAD_KEY = "tka-hmr-reload";
+  const SETTLE_MS = 700;
+  let pendingReload: ReturnType<typeof setTimeout> | null = null;
 
   const isHmrClientFailure = (reason: unknown): boolean => {
     const stack = (reason as Error)?.stack ?? "";
@@ -102,10 +110,26 @@ if (browser && dev) {
 
   const recoverFromHmrFailure = (reason: unknown): void => {
     if (!isHmrClientFailure(reason)) return;
-    if (sessionStorage.getItem(HMR_RELOAD_KEY)) return; // already tried — don't loop
-    sessionStorage.setItem(HMR_RELOAD_KEY, "1");
-    location.reload();
+    if (sessionStorage.getItem(HMR_RELOAD_KEY)) return; // already reloaded recently
+    if (pendingReload !== null) return; // a reload is already queued
+    console.warn("[hmr-guard] HMR apply failed — reloading in " + SETTLE_MS + "ms unless it self-heals");
+    pendingReload = setTimeout(() => {
+      sessionStorage.setItem(HMR_RELOAD_KEY, "1");
+      location.reload();
+    }, SETTLE_MS);
   };
+
+  // If a later HMR update applies cleanly, the failure was transient (mid-write).
+  // Cancel the scheduled reload — the page already recovered.
+  if (import.meta.hot) {
+    import.meta.hot.on("vite:afterUpdate", () => {
+      if (pendingReload !== null) {
+        clearTimeout(pendingReload);
+        pendingReload = null;
+        console.warn("[hmr-guard] HMR self-healed — reload cancelled");
+      }
+    });
+  }
 
   window.addEventListener("unhandledrejection", (event) =>
     recoverFromHmrFailure(event.reason),

@@ -5,6 +5,7 @@
  * No complex error hierarchies, just basic caching.
  */
 
+import { assetFetch } from "$lib/shared/net/asset-fetch";
 
 export class SimpleJsonCache {
   private cache = new Map<string, unknown>();
@@ -75,7 +76,7 @@ export class SimpleJsonCache {
 
   private async loadJson(path: string): Promise<unknown> {
     try {
-      const response = await fetch(path);
+      const response = await assetFetch(path);
       if (!response.ok) {
         // 404s are expected for missing special placement data - just throw without logging
         if (response.status === 404) {

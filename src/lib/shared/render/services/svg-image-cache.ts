@@ -16,6 +16,7 @@
 // TEMP assembly profiler — DECODE phase tap. Times the SVG→drawable miss path.
 
 import { sanitizeSvgForBitmap } from "./svg-bitmap-sanitize";
+import { assetFetch } from "../../net/asset-fetch";
 
 /** Union type for drawable images (works with canvas drawImage) */
 export type DrawableImage = ImageBitmap | HTMLImageElement;
@@ -254,7 +255,7 @@ export class SvgImageCache {
       });
     }
     // Worker: fetch and handle SVGs specially
-    const response = await fetch(url);
+    const response = await assetFetch(url);
     if (url.endsWith(".svg")) {
       let svgText = await response.text();
       svgText = sanitizeSvgForBitmap(svgText);
@@ -279,7 +280,7 @@ export class SvgImageCache {
   private async browserLoadImageFromUrl(url: string): Promise<HTMLImageElement> {
     if (url.endsWith(".svg") && typeof fetch !== "undefined") {
       try {
-        const response = await fetch(url);
+        const response = await assetFetch(url);
         if (response.ok) {
           const svgText = await response.text();
           return await this.browserSvgToImage(svgText);

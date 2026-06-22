@@ -3,11 +3,13 @@
 ## The Rule
 
 Every URL or localhost link in output to Austen MUST be a clickable markdown
-link with a full `http(s)://` scheme.
+link with a full `https://` scheme. **Always HTTPS — never `http://`**, even for
+localhost (2026-06-22).
 
-- Yes: `[localhost:5173/test/mandala-mobile](http://localhost:5173/test/mandala-mobile)`
+- Yes: `[localhost:5173/test/mandala-mobile](https://localhost:5173/test/mandala-mobile)`
 - No: `localhost:5173/test/mandala-mobile` (bare host:port — not clickable in his terminal)
-- No: `http://localhost:5173/...` as bare text (works in some terminals, inconsistent — wrap it anyway)
+- No: `http://localhost:5173/...` — the vite dev server runs HTTPS/h2, so an
+  `http://` link returns ERR_EMPTY_RESPONSE. Use `https://`.
 
 ## Why
 
@@ -19,8 +21,8 @@ here just to save me that teensy bit of time."*
 ## Scope
 
 All output: localhost dev routes, production domains (tkaflowarts.com, tka.run),
-dashboards, docs, GitHub, anything URL-shaped. Always add the scheme, even for
-localhost (`http://`).
+dashboards, docs, GitHub, anything URL-shaped. Always add the scheme, and always
+make it `https://`, even for localhost.
 
 ## Local files (specs, docs, plans)
 

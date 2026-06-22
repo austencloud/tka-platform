@@ -22,6 +22,7 @@ import {
   type ThemeMode,
 } from "../../../utils/svg-color-utils";
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
+import { assetFetch } from "../../../net/asset-fetch";
 
 
 // ============================================================================
@@ -208,7 +209,7 @@ export class PropSvgLoader {
    * Fetch SVG content from a given path - direct fetch
    */
   async fetchSvgContent(path: string): Promise<string> {
-    const response = await fetch(path);
+    const response = await assetFetch(path);
     if (!response.ok) {
       throw new Error(`Failed to fetch SVG: ${response.status}`);
     }

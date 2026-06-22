@@ -55,7 +55,9 @@ if (-not $cloudflared) {
     # tka-dev is a locally-managed tunnel, so token-based runs get no ingress
     # rules from Cloudflare - without --url every request 503s.
     # -NoNewWindow streams cloudflared logs into this console alongside Vite.
-    $tunnelProc = Start-Process -FilePath $cloudflared -ArgumentList "tunnel", "run", "--token", $token, "--url", "http://localhost:5173" -NoNewWindow -PassThru
+    # Vite dev serves HTTPS/2 (mkcert). Origin must be https; --no-tls-verify
+    # because cloudflared can't load the Windows trust store for the mkcert CA.
+    $tunnelProc = Start-Process -FilePath $cloudflared -ArgumentList "tunnel", "run", "--token", $token, "--no-tls-verify", "--url", "https://localhost:5173" -NoNewWindow -PassThru
 } elseif (Test-Path $certFile) {
     Write-Status "Starting Cloudflare tunnel (dev.tkaflowarts.com) via origin cert..."
     $tunnelProc = Start-Process -FilePath $cloudflared -ArgumentList "tunnel", "run", "tka-dev" -NoNewWindow -PassThru

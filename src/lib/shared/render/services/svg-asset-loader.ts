@@ -13,6 +13,7 @@
 import { getSvgImageCache, type DrawableImage } from "./svg-image-cache";
 import { Letter } from "../../foundation/domain/models/letter";
 import { getLetterImagePath } from "../../pictograph/tka-glyph/utils/letter-image-getter";
+import { assetFetch } from "../../net/asset-fetch";
 
 export interface LetterAsset {
   image: DrawableImage;
@@ -176,7 +177,7 @@ export class SvgAssetLoader {
     try {
       let svgText: string;
       if (typeof fetch !== 'undefined') {
-        const response = await fetch(letterPath);
+        const response = await assetFetch(letterPath);
         if (!response.ok) return null;
         svgText = await response.text();
       } else {

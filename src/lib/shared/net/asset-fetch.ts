@@ -1,0 +1,53 @@
+/**
+ * Timeout-guarded, lightly-retrying fetch for STATIC assets (letter SVGs, prop
+ * SVGs, grid SVGs, placement JSON).
+ *
+ * WHY THIS EXISTS — the dev-server "stuck on Loading…" freeze:
+ *
+ * Heavy routes fire many asset fetches. Each loader previously called raw fetch()
+ * with NO timeout. When a socket stalls (server busy compiling under multi-agent
+ * churn, or a request queued behind Chrome's 6-connection HTTP/1.1 ceiling) a
+ * timeout-less fetch holds that socket OPEN INDEFINITELY. Once enough sockets are
+ * wedged the whole tab hangs on "Loading…" forever; refresh reuses the same dead
+ * keep-alive pool, so only a brand-new tab recovers.
+ *
+ * The fix that actually matters is the TIMEOUT: a stalled request aborts after
+ * TIMEOUT_MS, freeing its socket, so the browser's own request queue drains and
+ * the page self-heals. Chrome already caps concurrency at 6 per origin — a
+ * smaller app-side cap only STARVES legitimate parallel work (e.g. the gallery's
+ * thumbnail render queue, whose renders then blow past their own 15s budget), and
+ * a cap ≥6 is a no-op. So there is deliberately NO concurrency gate here.
+ *
+ * Retry policy: one retry on a genuine network error ("Failed to fetch" — the
+ * transient that a mid-flight HMR reload produces). A TIMEOUT is NOT retried —
+ * under a saturated dev server, retrying a timed-out request only adds load and
+ * makes the saturation worse. A timed-out asset fails fast; the loader falls back
+ * (returns null / loads on demand later).
+ */
+
+// Under the 15s render-queue budget, so a stuck asset fails before it can time
+// out a whole thumbnail render. Prod (HTTP/2, multiplexed) can afford longer.
+const TIMEOUT_MS = import.meta.env.DEV ? 10_000 : 30_000;
+
+function isTimeout(err: unknown): boolean {
+  return err instanceof DOMException && err.name === "TimeoutError";
+}
+
+/**
+ * Fetch a static asset with a timeout + single network-error retry. Drop-in for
+ * the loaders that use `response.ok` / `.text()` / `.json()`.
+ */
+export async function assetFetch(url: string, init?: RequestInit): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      // AbortSignal.timeout aborts with a clean TimeoutError after TIMEOUT_MS,
+      // freeing the socket (the load-bearing freeze fix).
+      return await fetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    } catch (err) {
+      // Don't retry timeouts (amplifies load on a saturated server) or after the
+      // first retry. Only a transient network error gets one more shot.
+      if (isTimeout(err) || attempt >= 1) throw err;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+  }
+}

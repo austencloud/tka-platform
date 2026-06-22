@@ -552,6 +552,49 @@ const screenshotsPlugin = () => ({
   },
 });
 
+/**
+ * 🩺 FREEZE DIAGNOSTIC: logs any dev request that takes >3s to finish, plus a
+ * live in-flight counter. When the page hangs on "Loading…", this tells us WHICH
+ * side is wedged:
+ *   - Slow lines printed for the stuck URLs  → server-side stall (Node busy /
+ *     request queued) — the request reached Vite but didn't get answered.
+ *   - NO slow lines, page still frozen        → client-side connection-pool wedge
+ *     (Chrome's 6-socket HTTP/1.1 ceiling) — the request never left the browser.
+ * Near-zero overhead: one timestamp + counter per request. Set SILENCE_SLOW_REQ=1
+ * to mute.
+ */
+const slowRequestLogPlugin = () => ({
+  name: "slow-request-log",
+  configureServer(server: ViteDevServer) {
+    if (process.env.SILENCE_SLOW_REQ === "1") return;
+    const SLOW_MS = 3000;
+    let inFlight = 0;
+    server.middlewares.use(
+      (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) => {
+        if (req.headers.upgrade === "websocket") return next();
+        const started = Date.now();
+        inFlight++;
+        const peak = inFlight;
+        let settled = false;
+        const done = () => {
+          if (settled) return;
+          settled = true;
+          inFlight--;
+          const ms = Date.now() - started;
+          if (ms >= SLOW_MS) {
+            console.warn(
+              `🐌 [${ms}ms] ${req.method} ${req.url}  (in-flight peaked at ${peak})`
+            );
+          }
+        };
+        res.once("finish", done);
+        res.once("close", done);
+        next();
+      }
+    );
+  },
+});
+
 const webpWasmDevPlugin = () => ({
   name: "webp-wasm-dev-server",
   configureServer(server: ViteDevServer) {
@@ -726,6 +769,21 @@ const classifyChunk = (id: string): string | undefined => {
   return undefined;
 };
 
+// HTTP/2 DEV SERVER: load the mkcert-signed cert if present so Vite serves over
+// HTTP/2 (multiplexed — no 6-connection-per-origin HTTP/1.1 ceiling). That ceiling
+// is the root of the "stuck on Loading…" freeze, render-queue timeouts, and hung
+// HMR-recovery reloads under multi-agent churn: hundreds of module + asset requests
+// funnel through 6 sockets, and a single stalled request starves the rest. HTTP/2
+// gives every request its own stream. Cert generated via .tools/mkcert.exe into
+// .cert/ (gitignored). Absent (fresh clone / CI) → undefined → Vite stays on
+// HTTP/1.1 automatically, so nothing breaks for other checkouts.
+const devCertPath = path.resolve(dirname, ".cert/dev-cert.pem");
+const devKeyPath = path.resolve(dirname, ".cert/dev-key.pem");
+const devHttps =
+  fs.existsSync(devCertPath) && fs.existsSync(devKeyPath)
+    ? { cert: fs.readFileSync(devCertPath), key: fs.readFileSync(devKeyPath) }
+    : undefined;
+
 export default defineConfig(({ mode }) => ({
   esbuild: {
     pure: mode === 'production' ? ['console.log', 'console.debug', 'console.info'] : [],
@@ -771,6 +829,7 @@ export default defineConfig(({ mode }) => ({
     screenshotsPlugin(), // Screenshot gallery for Lab module
     fontCorsPlugin(), // 📱 CORS headers for fonts (mobile debugging)
     devCachePlugin(), // 🚀 2025: Smart caching (no-cache for CSS/JS, cache for SVGs)
+    slowRequestLogPlugin(), // 🩺 Logs >3s dev requests — pinpoints freeze (server vs client side)
     arrowSpriteHmrPlugin(), // 🎯 Auto-reload arrows when sprite is edited in Illustrator
     i18nHmrPlugin(), // 🌐 Auto-reload translations when locale JSON changes
     webpWasmDevPlugin(),
@@ -1063,6 +1122,9 @@ export default defineConfig(({ mode }) => ({
     host: "0.0.0.0",
     port: 5173,
     strictPort: true, // 📱 Mobile debugging requires consistent port (ADB reverse tcp:5173)
+    // HTTP/2 when the mkcert dev cert exists (see devHttps above). Vite enables
+    // HTTP/2 automatically for https servers that have no server.proxy (none here).
+    https: devHttps,
     allowedHosts: [".trycloudflare.com", "dev.tkaflowarts.com"],
     headers: {
       // Enable OAuth popups to communicate with parent window
