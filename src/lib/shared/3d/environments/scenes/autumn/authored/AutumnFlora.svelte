@@ -24,7 +24,6 @@
   import { onDestroy } from "svelte";
   import {
     Color,
-    type Material,
     type MeshStandardMaterial,
     type Object3D,
   } from "three";
@@ -177,21 +176,35 @@
   }
 
   // ── Clone caching — clone (+ glow for mushrooms) ONCE per load ─────────
+  // Invariant: `quality` is read at mount time. The *Placements derivations depend
+  // on quality.*Count; clones re-derive when GLBs load, not when quality changes.
+  // A live quality change after mount would rebuild clones without disposing the
+  // prior set — acceptable because production sets quality once at mount.
   const treeClones = $derived.by(() => {
     const scenes = treeScenes.filter((s) => s !== null);
     if (scenes.length === 0) return [];
     return treePlacements.map((_, i) => scenes[i % scenes.length]!.clone());
   });
 
+  let mushroomMaterialsFired = false;
+
   const mushroomClones = $derived.by(() => {
     const scenes = mushroomScenes.filter((s) => s !== null);
     if (scenes.length === 0) return [];
     collectedMushroomMaterials.length = 0;
-    const clones = mushroomPlacements.map((_, i) =>
+    return mushroomPlacements.map((_, i) =>
       emissiveClone(scenes[i % scenes.length]!, i)
     );
+  });
+
+  // Emit the cloned emissive materials to the interaction layer once.
+  // Never call out from inside the derivation — read mushroomClones here so the
+  // derivation evaluates and populates collectedMushroomMaterials first.
+  $effect(() => {
+    if (mushroomMaterialsFired) return;
+    if (mushroomClones.length === 0) return;
+    mushroomMaterialsFired = true;
     onMushroomMaterials?.(collectedMushroomMaterials.slice());
-    return clones;
   });
 
   const rockClones = $derived.by(() => {
