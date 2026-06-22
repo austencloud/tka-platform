@@ -57,7 +57,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import MultiSelectPositionPicker from "$lib/shared/components/position-picker/MultiSelectPositionPicker.svelte";
   import PositionSection from "$lib/shared/components/position-picker/PositionSection.svelte";
-  import OrientationCycler from "../../../construct/start-position-picker/components/OrientationCycler.svelte";
+  import PropOrientationControl from "../../../shared/components/sequence-actions/PropOrientationControl.svelte";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   type AccordionSection = "style" | "startEnd";
@@ -221,18 +221,18 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
 
   // Start orientation per prop. Feeds the engine's blue/redStartOrientation
   // override so the generated sequence begins from the chosen orientation.
-  function handleBlueOriChange(ori: Orientation) {
+  function handleBlueOriChange(ori: string) {
     if (!startEndOptions || !onStartEndChange) return;
     hapticService?.trigger("selection");
-    localBlueOri = ori;
-    onStartEndChange({ ...startEndOptions, blueStartOrientation: ori });
+    localBlueOri = ori as Orientation;
+    onStartEndChange({ ...startEndOptions, blueStartOrientation: ori as Orientation });
   }
 
-  function handleRedOriChange(ori: Orientation) {
+  function handleRedOriChange(ori: string) {
     if (!startEndOptions || !onStartEndChange) return;
     hapticService?.trigger("selection");
-    localRedOri = ori;
-    onStartEndChange({ ...startEndOptions, redStartOrientation: ori });
+    localRedOri = ori as Orientation;
+    onStartEndChange({ ...startEndOptions, redStartOrientation: ori as Orientation });
   }
 </script>
 
@@ -355,20 +355,18 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
               <span class="ori-heading">Start Orientation</span>
               <div class="ori-row">
                 <span class="ori-color-label ori-blue">Blue</span>
-                <OrientationCycler
+                <PropOrientationControl
+                  color="blue"
                   orientation={localBlueOri}
                   onOrientationChange={handleBlueOriChange}
-                  color="blue"
-                  enableDrawer={false}
                 />
               </div>
               <div class="ori-row">
                 <span class="ori-color-label ori-red">Red</span>
-                <OrientationCycler
+                <PropOrientationControl
+                  color="red"
                   orientation={localRedOri}
                   onOrientationChange={handleRedOriChange}
-                  color="red"
-                  enableDrawer={false}
                 />
               </div>
             </div>

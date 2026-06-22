@@ -32,6 +32,7 @@
     closeOnBackdrop={true}
     ariaLabel="Customize generation settings"
     class="customize-drawer-sheet"
+    backdropClass="customize-backdrop"
     onclose={onClose}
   >
     <div class="customize-drawer-content customize-accent-scope">
@@ -60,6 +61,19 @@
     --sheet-bg: transparent;
     --sheet-border: none;
     --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Outside-click-to-close. The base side-by-side backdrop is constrained to the
+     right (left: --create-panel-left), so it never covers the workspace and an
+     outside click there can't close the panel. Span the backdrop from the
+     sidebar edge to the right so any workspace click hits it and dismisses.
+     Sidebar stays clickable (backdrop starts after it). Higher specificity
+     (3 classes) overrides the base side-by-side + has-desktop-sidebar rules. */
+  :global(.drawer-overlay.customize-backdrop.side-by-side-layout) {
+    left: var(--desktop-sidebar-width, 0);
+    right: 0;
+    top: var(--create-panel-top, 0);
+    bottom: 0;
   }
 
   /* Bottom sheet on mobile - auto-size to content, don't take full screen */
