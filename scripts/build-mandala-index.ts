@@ -6,7 +6,15 @@ import { readFileSync, writeFileSync, mkdirSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { calculate } from "$lib/shared/mandala/services/mandala-geometry-calculator";
-import { buildIndex, type IndexInput } from "$lib/shared/mandala/services/mandala-index-builder";
+import {
+	shapeKey,
+	orbitKey,
+	colorSignature,
+} from "$lib/shared/mandala/services/mandala-fingerprint";
+import type {
+	IndexedRef,
+	MandalaIndex,
+} from "$lib/shared/mandala/services/mandala-index-builder";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -16,20 +24,29 @@ const serviceAccount = JSON.parse(
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 
-async function loadAll(collectionPath: string) {
+// Stream a collection page-by-page, invoking cb per doc. Never retains the full
+// doc set — keeps memory O(page) instead of O(deck) so large decks (22k+ seqs)
+// don't blow the V8 heap.
+async function forEachDoc(
+	collectionPath: string,
+	cb: (doc: FirebaseFirestore.QueryDocumentSnapshot) => void,
+): Promise<number> {
 	const PAGE = 500;
-	const out: FirebaseFirestore.QueryDocumentSnapshot[] = [];
 	let last: FirebaseFirestore.QueryDocumentSnapshot | null = null;
 	let more = true;
+	let count = 0;
 	while (more) {
 		let q = db.collection(collectionPath).orderBy("__name__").limit(PAGE);
 		if (last) q = q.startAfter(last);
 		const snap = await q.get();
-		out.push(...snap.docs);
+		for (const doc of snap.docs) {
+			cb(doc);
+			count++;
+		}
 		last = snap.docs[snap.docs.length - 1] ?? null;
 		more = snap.docs.length === PAGE;
 	}
-	return out;
+	return count;
 }
 
 async function main() {
@@ -40,24 +57,48 @@ async function main() {
 		.filter((d) => d.collection === "LOOPs" && (!filter || d.id.includes(filter)));
 
 	console.log(`Indexing ${decks.length} decks...`);
-	const inputs: IndexInput[] = [];
+
+	// Stream fingerprints straight into the index; never hold MandalaPaths beyond
+	// the current sequence. byOrbit accumulates as Sets, serialized to arrays at end.
+	const byShape: Record<string, IndexedRef[]> = {};
+	const byOrbit: Record<string, Set<string>> = {};
+	let indexed = 0;
+
 	for (const deck of decks) {
-		const docs = await loadAll(`catalogs/${deck.id}/sequences`);
-		for (const doc of docs) {
+		const before = Object.keys(byShape).length;
+		const seen = await forEachDoc(`catalogs/${deck.id}/sequences`, (doc) => {
 			const seq = doc.data() as { steps?: unknown[]; word?: string };
-			if (!seq.steps || seq.steps.length === 0) continue;
+			if (!seq.steps || seq.steps.length === 0) return;
 			try {
 				const paths = calculate(seq.steps as never, "staff", "staff");
-				inputs.push({ ref: { seqId: doc.id, word: seq.word ?? doc.id, deck: deck.id }, paths });
+				if (paths.blue.length === 0 && paths.red.length === 0 && paths.purple.length === 0) return;
+				const sk = shapeKey(paths);
+				const ok = orbitKey(paths);
+				const ref: IndexedRef = {
+					seqId: doc.id,
+					word: seq.word ?? doc.id,
+					deck: deck.id,
+					colorSig: colorSignature(paths),
+					orbitKey: ok,
+				};
+				(byShape[sk] ??= []).push(ref);
+				(byOrbit[ok] ??= new Set<string>()).add(sk);
+				indexed++;
 			} catch {
 				/* skip unrenderable */
 			}
-		}
-		console.log(`  ${deck.id}: ${docs.length} seqs`);
+		});
+		const newGlyphs = Object.keys(byShape).length - before;
+		console.log(`  ${deck.id}: ${seen} seqs (+${newGlyphs} new glyphs)`);
 	}
 
-	const index = buildIndex(inputs);
-	console.log(`${inputs.length} sequences → ${Object.keys(index.byShape).length} distinct glyphs`);
+	const byOrbitOut: Record<string, string[]> = {};
+	for (const [ok, shapes] of Object.entries(byOrbit)) byOrbitOut[ok] = [...shapes];
+	const index: MandalaIndex = { version: 1, byShape, byOrbit: byOrbitOut };
+
+	console.log(
+		`${indexed} sequences → ${Object.keys(byShape).length} distinct glyphs, ${Object.keys(byOrbitOut).length} orbits`,
+	);
 
 	const outPath = resolve(__dirname, "../static/data/mandala-index.json");
 	mkdirSync(dirname(outPath), { recursive: true });
