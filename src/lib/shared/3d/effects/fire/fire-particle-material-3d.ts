@@ -165,12 +165,16 @@ const fragmentShader = /* glsl */ `
     vec3 propTinted = vPropColor * lum * 1.15;
     color = mix(color, propTinted, uColorBlend);
 
-    // Emission: hot core, decaying as it cools. The whole curve scales with
-    // uEmissiveHot (the brightness lever) - core at full, cooling to 15% - so
-    // turning brightness down actually tames the flame instead of bottoming
-    // out on a hardcoded floor. The fray term flickers the interior brightness
-    // so the body churns instead of reading as flat.
-    float emis = uEmissiveHot * mix(1.0, 0.12, smoothstep(0.0, 0.45, vLife));
+    // Emission: a super-hot WICK spike on the youngest particles (the bright
+    // point where the flame is born) that dampens fast, over a dimmer body that
+    // cools as it ages. The whole curve scales with uEmissiveHot (the
+    // brightness lever) so turning brightness down still tames it. The fray
+    // term flickers the interior so the body churns instead of reading flat.
+    //   wick: ~3.3x at birth, gone by 15% of life -> a hot, quickly-damping core
+    //   body: full -> 12%, cooling over the first 45% of life
+    float wick = (1.0 - smoothstep(0.0, 0.15, vLife)) * 2.3;
+    float body = mix(1.0, 0.12, smoothstep(0.0, 0.45, vLife));
+    float emis = uEmissiveHot * (body + wick);
     color *= emis * (0.7 + 0.55 * fray);
 
     // Lifetime alpha: quick flash-in, then fade out EARLY (gone by ~70% of
