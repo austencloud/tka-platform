@@ -127,6 +127,31 @@
 
   let mushroomTargets = $state<PulseTarget[]>([]);
 
+  // ── Grove glow: teal emissive override on the Meshy grove caps ─────────
+  // The Meshy texture is realistic, not self-lit; the scene's bioluminescent
+  // look comes from a runtime emissive override (same idea AutumnFlora uses on
+  // the kit mushrooms). Applied once when the grove GLB lands. Mutates in place
+  // — the grove GLB has a single consumer (this orchestrator), so no leak risk.
+  let groveGlowApplied = false;
+  $effect(() => {
+    const glb = $mushroomGroveGlb;
+    if (!glb || groveGlowApplied) return;
+    groveGlowApplied = true;
+    glb.scene.traverse((o) => {
+      const m = o as unknown as { isMesh?: boolean; material?: unknown };
+      if (!m.isMesh || !m.material) return;
+      const mats = Array.isArray(m.material) ? m.material : [m.material];
+      for (const mat of mats) {
+        const sm = mat as { emissive?: Color; emissiveIntensity?: number; needsUpdate?: boolean };
+        if (sm.emissive) {
+          sm.emissive.set("#00c8b4");
+          sm.emissiveIntensity = 0.45;
+          sm.needsUpdate = true;
+        }
+      }
+    });
+  });
+
   // ── Fog + background (dusk violet) ─────────────────────────────────────
 
   $effect(() => {
@@ -149,7 +174,7 @@
 {/if}
 
 {#if $mushroomGroveGlb}
-  <T is={$mushroomGroveGlb.scene} position.y={groundY} />
+  <T is={$mushroomGroveGlb.scene} position.y={groundY} scale={3} />
 {/if}
 
 {#if $heroTreeA}
