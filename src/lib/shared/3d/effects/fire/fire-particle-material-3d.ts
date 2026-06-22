@@ -170,9 +170,9 @@ const fragmentShader = /* glsl */ `
     // cools as it ages. The whole curve scales with uEmissiveHot (the
     // brightness lever) so turning brightness down still tames it. The fray
     // term flickers the interior so the body churns instead of reading flat.
-    //   wick: ~3.3x at birth, gone by 15% of life -> a hot, quickly-damping core
+    //   wick: ~2.3x at birth, gone by 15% of life -> a hot, quickly-damping core
     //   body: full -> 12%, cooling over the first 45% of life
-    float wick = (1.0 - smoothstep(0.0, 0.15, vLife)) * 2.3;
+    float wick = (1.0 - smoothstep(0.0, 0.15, vLife)) * 1.3;
     float body = mix(1.0, 0.12, smoothstep(0.0, 0.45, vLife));
     float emis = uEmissiveHot * (body + wick);
     color *= emis * (0.7 + 0.55 * fray);

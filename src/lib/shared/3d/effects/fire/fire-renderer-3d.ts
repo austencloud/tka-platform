@@ -53,11 +53,14 @@ const POOL_SIZE: Record<QualityTier, number> = {
   [QualityTier.LOW]: 1000,
 };
 
-/** Continuous emission at the wick (particles/sec per tip) - the idle candle. */
+/** Continuous emission at the wick (particles/sec per tip) - the idle candle.
+ *  High enough that even a stationary tip keeps the pool densely populated;
+ *  density (overlapping particles) is what reads as a continuous flame instead
+ *  of a few sparse blobs floating in a bloom halo. */
 const EMIT_RATE: Record<QualityTier, number> = {
-  [QualityTier.HIGH]: 440,
-  [QualityTier.MEDIUM]: 270,
-  [QualityTier.LOW]: 120,
+  [QualityTier.HIGH]: 1300,
+  [QualityTier.MEDIUM]: 800,
+  [QualityTier.LOW]: 320,
 };
 
 /**
@@ -105,10 +108,11 @@ const CORE_JITTER = 0.025;
 // Short lifetimes keep the flame a tight hot core instead of a long-lived
 // haze. The cool tail particles are what drift up and read as smoke/fog, so we
 // cap max life low and let the shader fade + cool them out well before death.
-const LIFE_MIN = 0.28;
-const LIFE_MAX = 0.55;
-const SIZE_MIN = 0.06;
-const SIZE_MAX = 0.17;
+const LIFE_MIN = 0.32;
+const LIFE_MAX = 0.7;
+// Smaller, more numerous particles = finer flame grain (less "big soft blob").
+const SIZE_MIN = 0.045;
+const SIZE_MAX = 0.12;
 
 interface Particle {
   x: number;
@@ -428,7 +432,7 @@ export class FireRenderer3D {
    *                color in the shader (0 = pure fire, 1 = strongly prop-colored).
    */
   updateConfig(params: Fire3DParams): void {
-    this.emitRate = EMIT_RATE[this.qualityTier] * (0.1 + params.intensity * 1.3);
+    this.emitRate = EMIT_RATE[this.qualityTier] * (0.4 + params.intensity * 1.0);
     this.sizeScale = 0.55 + params.intensity * 0.9;
     this.curlStrength = CURL_STRENGTH * (0.4 + params.turbulence * 1.6);
     this.emissiveHot = params.emissiveHot;
