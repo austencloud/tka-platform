@@ -798,6 +798,13 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Personal Museum - a user's curated wall-slot placements (single doc "main").
+    // Private to the owner in the MVP; an isPublic flag exists for a future
+    // "others can visit" phase, at which point a public-read clause can be added.
+    match /users/{userId}/personal-museum/{docId} {
+      allow read, write: if isOwner(userId);
+    }
+
     // ============================================================================
     // CONTRIBUTORS COLLECTION (Release Notes Attribution)
     // ============================================================================
