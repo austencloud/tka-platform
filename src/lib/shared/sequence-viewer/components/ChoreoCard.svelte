@@ -201,6 +201,7 @@
   let suppressCellWidthUpdates = false;
   let cellWidth = $state(0);
   let prevEffectiveColumns = $state(0);
+  let prevEffectiveRows = $state(0);
   let suppressFlip = $state(false);
   let hasMixedDurations = $state(false);
   let durationRows = $state<TimelineRow[]>([]);
@@ -487,17 +488,25 @@
       }));
   });
 
-  // When the column count changes (start position toggle, column picker),
-  // skip flip animation so cells snap to new positions while the container
-  // resize transition handles the visual smoothness.
+  // When the grid structure changes (start-position toggle inserts/removes a
+  // row, column picker changes column count, layout row/column swap), skip the
+  // flip animation so cells snap to their new positions while only the container
+  // resize transition handles the visual smoothness. Without this, inserting the
+  // start row makes the step rows FLIP-animate against the simultaneous container
+  // resize at a different rate — rows overhang the start row and slide into place.
   $effect(() => {
     const cols = effectiveColumns;
-    if (prevEffectiveColumns > 0 && cols !== prevEffectiveColumns) {
+    const rws = effectiveRows;
+    const structureChanged =
+      (prevEffectiveColumns > 0 && cols !== prevEffectiveColumns) ||
+      (prevEffectiveRows > 0 && rws !== prevEffectiveRows);
+    if (structureChanged) {
       suppressFlip = true;
       // Re-enable flip after the container resize transition completes
       setTimeout(() => { suppressFlip = false; }, 300);
     }
     prevEffectiveColumns = cols;
+    prevEffectiveRows = rws;
   });
 
   /**

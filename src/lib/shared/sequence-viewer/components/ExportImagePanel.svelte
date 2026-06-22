@@ -52,6 +52,7 @@
   const showMandala = $derived.by(() => { void compositionVersion; return imageComposition.showMandala; });
   const showLoopGlyph = $derived.by(() => { void compositionVersion; return imageComposition.showLoopGlyph; });
   const showBirthday = $derived.by(() => { void compositionVersion; return imageComposition.showBirthday; });
+  const showStartPos = $derived.by(() => { void compositionVersion; return imageComposition.includeStartPosition; });
   const startPosLayout = $derived.by(() => {
     void compositionVersion;
     return imageComposition.getStartPositionLayoutForStepCount(stepCount);
@@ -217,8 +218,11 @@
             <div class="rt-chip-row">
               <button type="button" class="rt-chip" aria-pressed={showQRCode} onclick={() => imageComposition.setShowQRCode(!showQRCode)}><i class="fas fa-qrcode" aria-hidden="true"></i> QR</button>
               <button type="button" class="rt-chip" aria-pressed={showMandala} onclick={() => imageComposition.setShowMandala(!showMandala)}><i class="fas fa-asterisk" aria-hidden="true"></i> Mandala</button>
-              <button type="button" class="rt-chip" aria-pressed={startPosLayout === "row"} onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "row")}>Top Row</button>
-              <button type="button" class="rt-chip" aria-pressed={startPosLayout === "column"} onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "column")}>Left Column</button>
+              <button type="button" class="rt-chip" aria-pressed={showStartPos} onclick={() => imageComposition.setIncludeStartPosition(!showStartPos)}>Start</button>
+              {#if showStartPos}
+                <button type="button" class="rt-chip" aria-pressed={startPosLayout === "row"} onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "row")}>Top Row</button>
+                <button type="button" class="rt-chip" aria-pressed={startPosLayout === "column"} onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "column")}>Left Column</button>
+              {/if}
             </div>
           </div>
         {:else if activeTab === "columns"}
@@ -359,18 +363,25 @@
       </div>
 
       <div class="setting-row">
-        <span class="setting-label">Info</span>
+        <span class="setting-label">Start</span>
         <div class="chip-group">
           <button type="button" class="chip"
-            class:active={startPosLayout === "row"}
-            onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "row")}
-            aria-pressed={startPosLayout === "row"}
-          >Top Row</button>
-          <button type="button" class="chip"
-            class:active={startPosLayout === "column"}
-            onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "column")}
-            aria-pressed={startPosLayout === "column"}
-          >Left Column</button>
+            class:active={showStartPos}
+            onclick={() => imageComposition.setIncludeStartPosition(!showStartPos)}
+            aria-pressed={showStartPos}
+          >Show</button>
+          {#if showStartPos}
+            <button type="button" class="chip"
+              class:active={startPosLayout === "row"}
+              onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "row")}
+              aria-pressed={startPosLayout === "row"}
+            >Top Row</button>
+            <button type="button" class="chip"
+              class:active={startPosLayout === "column"}
+              onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "column")}
+              aria-pressed={startPosLayout === "column"}
+            >Left Column</button>
+          {/if}
         </div>
       </div>
 

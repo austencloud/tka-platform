@@ -289,7 +289,6 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
   const authQueue = createAuthActionQueue();
 
-  exportCoord.setExitEditModeCallback(() => exitEditMode());
 
   $effect(() => {
     playback.setOnUrlParamChange(onUrlParamChange);

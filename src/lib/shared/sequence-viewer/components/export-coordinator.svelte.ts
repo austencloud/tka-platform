@@ -20,6 +20,7 @@ import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-
 import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
+import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
@@ -50,9 +51,6 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
   let recordingElapsed = $state(0);
   let recordingTimer: ReturnType<typeof setInterval> | null = null;
   let resolveRecording: (() => void) | null = null;
-
-  // ── Exit edit mode callback (set by orchestrator) ──
-  let _exitEditModeCallback: (() => void) | null = null;
 
   function handleCanvasReady(canvas: HTMLCanvasElement | null) {
     animationCanvas = canvas;
@@ -124,14 +122,15 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
 
     hapticService?.trigger("selection");
 
-    const isVideoExport = exportType === "animation";
     const callbacks = {
       onSuccess: (message: string) => {
         showToast(message, "success");
         accessibilityHelper.announce(message, "assertive");
-        if (!isVideoExport) {
-          _exitEditModeCallback?.();
-        }
+        // Image export keeps the settings panel open so the user can tweak and
+        // re-export. Auto-exiting here used to flip editingPane away from
+        // "image", which dropped the preview card off exportOptions.imageDarkMode
+        // and snapped it back to the global (dark) theme — the "card goes dark
+        // after export" bug. Staying in export mode keeps the preview stable.
       },
       onError: (message: string) => {
         accessibilityHelper.announce(`Export failed: ${message}`, "assertive");
@@ -303,8 +302,14 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         showCreatorName: imgShowCreatorName,
         showNotes: imgShowNotes,
         showQRCode: imgShowQRCode,
+        showBirthday: getImageCompositionManager().showBirthday,
         darkMode: exportOptions.imageDarkMode,
         columnCount: exportOptions.imageColumnCount,
+        // Honor the per-step-count start-position layout (Top Row / Left Column)
+        // the user picked in the export panel. Without this the renderer defaults
+        // to "row" and the downloaded PNG ignored a Left Column selection.
+        startPositionLayout: getImageCompositionManager()
+          .getStartPositionLayoutForStepCount(effectiveSequence.steps.length),
       };
       await sequenceModalExporter.exportImage(
         opts,
@@ -312,10 +317,6 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         callbacks
       );
     }
-  }
-
-  function setExitEditModeCallback(cb: () => void) {
-    _exitEditModeCallback = cb;
   }
 
   function dispose() {
@@ -339,7 +340,6 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     handleExport,
     handleStopRecording,
     dismissPreview,
-    setExitEditModeCallback,
     dispose,
   };
 }

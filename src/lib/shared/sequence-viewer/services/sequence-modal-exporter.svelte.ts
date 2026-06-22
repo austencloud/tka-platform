@@ -64,8 +64,10 @@ export interface ImageExportOptions {
   showCreatorName: boolean;
   showNotes: boolean;
   showQRCode: boolean;
+  showBirthday: boolean;
   darkMode: boolean;
   columnCount: number | null;
+  startPositionLayout: "row" | "column";
 }
 
 /**
@@ -343,15 +345,16 @@ export class SequenceModalExporter {
         addStepNumbers: options.showStepNumbers,
         addWord: options.showWord,
         addDifficultyLevel: options.showDifficulty,
-        addUserInfo: options.showCreatorName || options.showNotes,
+        addUserInfo: options.showCreatorName || options.showNotes || options.showBirthday,
         userName: deps.userName,
         showCreatorName: options.showCreatorName,
         showNotes: options.showNotes,
-        showBirthday: true,
+        showBirthday: options.showBirthday,
         addReversalSymbols: true,
         columnCount: options.columnCount != null
           ? options.columnCount + (options.includeStartPosition ? 1 : 0)
           : undefined,
+        startPositionLayout: options.startPositionLayout,
         visibilityOverrides: {
           darkMode: options.darkMode,
           showQRCode: options.showQRCode,
