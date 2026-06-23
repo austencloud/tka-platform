@@ -18,6 +18,7 @@
 		midiToFreq
 	} from '$lib/shared/3d/environments/scenes/ocean/runtime/fauna/jellyfish/jellyfish-chime';
 	import { isBackgroundSuppressed } from '../state/background-suppression.svelte';
+	import { isConstrainedConnection } from '$lib/shared/platform/network-conditions';
 
 	const {
 		backgroundType = BackgroundType.COSMIC,
@@ -39,6 +40,13 @@
 	const controller = browser ? getBackgroundController() : null;
 	let mounted = $state(false);
 
+	// True while the tab is hidden (switched away, minimized, screen off). The
+	// @austencloud/backgrounds controller runs its rAF regardless of visibility,
+	// so without this it keeps burning CPU and battery painting a canvas nobody
+	// can see. We pause it via the same unmount/mount lever the fullscreen-scene
+	// suppression uses, and resume when the tab comes back.
+	let pageHidden = $state(false);
+
 	// The @austencloud/backgrounds package caps canvas at 960×540 for perf,
 	// but that makes 2D backgrounds look zoomed/blurry on modern displays.
 	// Patch the controller to use full viewport resolution (capped at 1x DPR).
@@ -53,6 +61,18 @@
 		updateCanvasDimensions: () => void;
 	}
 
+	// On a constrained connection (data-saver / slow mobile) the device is usually
+	// a phone fighting a slow radio. Repainting the background at full viewport
+	// resolution every frame steals main-thread time the page needs to stay
+	// responsive while JS chunks and gallery data are still arriving — the exact
+	// window where the user notices stutter. In that case we cap the longest side
+	// so the background stays cheap. The cap mirrors the upstream package's own
+	// perf-first default, so the controller's pointer hit-testing (cursor flee,
+	// jellyfish poke) keeps working with a sub-viewport buffer just as it does by
+	// default. The check runs inside updateCanvasDimensions so it re-evaluates on
+	// every resize — if conditions improve, a later resize restores full res.
+	const CONSTRAINED_MAX_DIMENSION = 960;
+
 	function patchCanvasResolution(ctrl: NonNullable<typeof controller>) {
 		const c = ctrl as unknown as BackgroundControllerPrivate;
 		c.updateCanvasDimensions = function (this: BackgroundControllerPrivate) {
@@ -61,8 +81,16 @@
 			const cont = this.container;
 			if (!cA || !cB || !cont) return;
 			const rect = cont.getBoundingClientRect();
-			const w = Math.max(1, Math.floor(rect.width));
-			const h = Math.max(1, Math.floor(rect.height));
+			let w = Math.max(1, Math.floor(rect.width));
+			let h = Math.max(1, Math.floor(rect.height));
+			if (isConstrainedConnection()) {
+				const longest = Math.max(w, h);
+				if (longest > CONSTRAINED_MAX_DIMENSION) {
+					const scale = CONSTRAINED_MAX_DIMENSION / longest;
+					w = Math.max(1, Math.floor(w * scale));
+					h = Math.max(1, Math.floor(h * scale));
+				}
+			}
 			cA.width = w;
 			cA.height = h;
 			cB.width = w;
@@ -116,10 +144,19 @@
 		};
 		window.addEventListener('pointerdown', onPointerDown);
 
+		// Pause the background's animation loop while the tab is hidden, resume on
+		// return. The lifecycle $effect below reacts to pageHidden.
+		const onVisibilityChange = () => {
+			pageHidden = document.hidden;
+		};
+		pageHidden = document.hidden;
+		document.addEventListener('visibilitychange', onVisibilityChange);
+
 		return () => {
 			window.removeEventListener('pointermove', onPointerMove);
 			window.removeEventListener('pointerleave', onPointerLeaveWin);
 			window.removeEventListener('pointerdown', onPointerDown);
+			document.removeEventListener('visibilitychange', onVisibilityChange);
 			chime.dispose();
 		};
 	});
@@ -141,7 +178,10 @@
 	$effect(() => {
 		if (!mounted || !controller || !containerRef) return;
 
-		if (isBackgroundSuppressed.current) {
+		// Pause when a fullscreen-opaque scene is occluding us, or when the tab is
+		// hidden — in both cases the rAF would otherwise burn CPU painting pixels
+		// nobody can see. unmount() stops the loop; the branch below remounts it.
+		if (isBackgroundSuppressed.current || pageHidden) {
 			if (controller.isReady()) controller.unmount();
 			return;
 		}
