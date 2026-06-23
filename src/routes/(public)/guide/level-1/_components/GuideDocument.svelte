@@ -194,17 +194,20 @@
     display: block;
   }
 
-  /* ── Read Me First (authored letter, not a textbook block) ─────────── */
+  /* ── Read Me First (authored letter, not a textbook block) ─────────────
+     A framed column: margin:auto centres it in the page body so there's even
+     breathing room top, bottom, and both sides — intentionally placed. */
   .read-me {
-    max-width: 5.9in;
-    margin: 0 auto;
+    max-width: 5.4in;
+    margin: auto;
+    padding: 0.2in 0.25in;
   }
   .read-me p {
     font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 1.32rem;
-    line-height: 1.72;
+    font-size: 1.06rem;
+    line-height: 1.56;
     color: #20202a;
-    margin: 0 0 1.05rem;
+    margin: 0 0 0.7rem;
     text-align: justify;
     hyphens: auto;
   }
@@ -226,7 +229,7 @@
   }
   .sign-off {
     text-align: right;
-    margin-top: 0.45in !important;
+    margin-top: 0.3in !important;
     line-height: 1.4;
   }
   .rm-sig {

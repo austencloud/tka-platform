@@ -62,15 +62,16 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0;
-    max-width: 7.3in;
+    /* Stretch across the full page body — no narrow centred cap. */
+    max-width: none;
     margin: 0 auto;
     width: 100%;
   }
   .toc-col {
     display: flex;
     flex-direction: column;
-    gap: 0.4in;
-    padding: 0 0.28in;
+    gap: 0.55in;
+    padding: 0 0.55in;
     min-width: 0;
   }
   .toc-col:first-child {
@@ -112,21 +113,21 @@
     display: flex;
     align-items: baseline;
     gap: 0.4em;
-    line-height: 1.6;
+    line-height: 1.95;
   }
   .toc-label {
     font-family: "Cormorant Garamond", Georgia, serif;
     font-weight: 600;
-    font-size: 1.22rem;
+    font-size: 1.32rem;
     color: #18181f;
     white-space: nowrap;
   }
   .toc-row.sub .toc-label {
     font-weight: 400;
     font-style: italic;
-    font-size: 1.04rem;
+    font-size: 1.12rem;
     color: #4a4658;
-    padding-left: 0.8em;
+    padding-left: 0.9em;
   }
   .toc-lead {
     flex: 1 1 auto;
@@ -136,12 +137,12 @@
   }
   .toc-pg {
     font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 1.15rem;
+    font-size: 1.25rem;
     color: #3a3550;
     font-variant-numeric: tabular-nums;
   }
   .toc-row.sub .toc-pg {
-    font-size: 1.05rem;
+    font-size: 1.12rem;
     color: #6a647a;
   }
 </style>
