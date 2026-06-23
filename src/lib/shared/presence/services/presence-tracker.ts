@@ -17,7 +17,7 @@ import {
   get,
   remove,
 } from "firebase/database";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp as fsServerTimestamp } from "firebase/firestore";
 import posthog from "posthog-js";
 import { database, auth, getFirestoreInstance } from "../../auth/firebase";
 import { BREAKPOINTS } from "../../device/domain/constants/device-constants";
@@ -26,6 +26,7 @@ import type {
   UserPresenceWithId,
   PresenceStats,
   ActivityStatus,
+  PresenceLocation,
 } from "../domain/models/presence-models";
 import { computeActivityStatus } from "../domain/models/presence-models";
 import { ActivityTracker } from "../utils/activity-tracker";
@@ -36,6 +37,7 @@ export class PresenceTracker {
   private presenceRef: ReturnType<typeof ref> | null = null;
   private activityTracker: ActivityTracker | null = null;
   private userDeleted = false;
+  private pendingLocation: PresenceLocation | null = null;
 
   constructor() {}
 
@@ -120,6 +122,46 @@ export class PresenceTracker {
     this.presenceRef = null;
   }
 
+  /**
+   * Provide the caller's IP-derived location (from the layout server load).
+   * Stored and written into the presence record + user doc on initialize().
+   * Null is ignored so a prior good location is never clobbered.
+   */
+  setLocation(location: PresenceLocation | null): void {
+    if (!location) return;
+    this.pendingLocation = location;
+    // If already initialized this session, persist immediately.
+    if (this.initialized) {
+      void this.persistLocation();
+    }
+  }
+
+  /** Write the pending location to the RTDB presence record and the user doc. */
+  private async persistLocation(): Promise<void> {
+    const loc = this.pendingLocation;
+    if (!loc) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // 1) Live location on the presence record (for the map of online users).
+    if (this.presenceRef && this.currentPresence) {
+      this.currentPresence.location = loc;
+      await update(this.presenceRef, { location: loc });
+    }
+
+    // 2) Persistent last-known location on the Firestore user doc.
+    try {
+      const firestore = await getFirestoreInstance();
+      await setDoc(
+        doc(firestore, "users", user.uid),
+        { lastLocation: { ...loc, updatedAt: fsServerTimestamp() } },
+        { merge: true }
+      );
+    } catch (error) {
+      console.warn("[PresenceTracker] lastLocation write failed:", error);
+    }
+  }
+
   async initialize(): Promise<void> {
     if (this.initialized) return;
     if (this.userDeleted) return; // User was deleted, don't reinitialize
@@ -154,6 +196,7 @@ export class PresenceTracker {
       currentTab: null,
       sessionId: this.getSessionId(),
       device: this.detectDevice(),
+      ...(this.pendingLocation ? { location: this.pendingLocation } : {}),
       ...(user.displayName ? { displayName: user.displayName } : {}),
       ...(user.email ? { email: user.email } : {}),
       ...(user.photoURL ? { photoURL: user.photoURL } : {}),
@@ -181,6 +224,11 @@ export class PresenceTracker {
     this.startActivityTracking();
 
     this.initialized = true;
+
+    // Persist last-known location to the user doc (non-blocking).
+    if (this.pendingLocation) {
+      void this.persistLocation();
+    }
   }
 
   /** Start tracking user interactions for activity-based presence */
