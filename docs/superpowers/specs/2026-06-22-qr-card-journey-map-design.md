@@ -1,7 +1,18 @@
 # QR Card Journey Map — Design Spec
 
+> **STATUS UPDATE (2026-06-22, post-implementation):** The scan-flow **interstitial
+> reveal was DROPPED** after Austen reviewed it live — it interrupted the scan
+> payoff (the animation must play instantly, nothing in front of it) and the full
+> globe was over-engineered for now. The cheap data layer was KEPT (lat/lng
+> capture, `logJourneyPoint` public `journeyPoints` projection, rules/index,
+> `journey-stats`/`journey-loader` pure modules) so card travel history accumulates.
+> When resurfaced, the journey will be a **non-blocking** surface reusing the
+> existing **`GlobalUserMap`** (zoomable Google Maps, already accepts `scanMarkers`),
+> NOT the globe.gl globe and NOT in the scan flow. Sections below describe the
+> abandoned interstitial approach — read with that caveat.
+
 **Date:** 2026-06-22
-**Status:** Approved design, ready for implementation plan
+**Status:** Interstitial approach abandoned; data layer shipped. See status note above.
 **Origin:** Feedback items `Fd5LhGdH` (journey map) + `9Qyn4d7U` (scan capture). Verified ~70% built; this is a focused gap-spec, not from-scratch.
 
 ---
