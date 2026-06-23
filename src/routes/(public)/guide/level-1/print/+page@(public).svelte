@@ -63,9 +63,8 @@
   </GuidePage>
 
   <!-- ── Page 3: Support (soft, low-sales per brand educational tone) ─────── -->
-  <GuidePage label="p3 — Support">
+  <GuidePage label="p3 — Support" title="Support the work">
     <div class="frontmatter support">
-      <h2 class="fm-h">Support the work</h2>
       <p>
         <span class="ln">If this guide helps you, you can support its development.</span>
         <span class="ln">Any amount is genuinely appreciated.</span>
@@ -78,12 +77,8 @@
   </GuidePage>
 
   <!-- ── Page 4: Read Me First (its own page, matching the original) ─────── -->
-  <GuidePage label="p4 — Read Me First">
+  <GuidePage label="p4 — Read Me First" title="Read Me First">
     <div class="read-me">
-      <header class="rm-head">
-        <h2 class="rm-title">Read Me First</h2>
-        <span class="rm-flourish" aria-hidden="true"></span>
-      </header>
       <p class="rm-greeting">Greetings, flow arts aficionado!</p>
       <p class="rm-lead">
         You've come across The Kinetic Alphabet, a notation system designed to
@@ -121,7 +116,7 @@
   </GuidePage>
 
   <!-- ── Page 5: Table of Contents (generated from the manifest) ─────────── -->
-  <GuidePage label="p5 — Table of Contents">
+  <GuidePage label="p5 — Table of Contents" title="Table of Contents">
     <GuideTOC />
   </GuidePage>
 
@@ -130,11 +125,11 @@
        Printed page number = manifest index + 1 (first body page = 1). -->
   {#each GUIDE_BODY_PAGES as entry, i}
     {@const Built = BUILT[entry.id]}
-    <GuidePage label={`body p${i + 1} — ${entry.title}`} pageNumber={i + 1}>
+    <GuidePage label={`body p${i + 1} — ${entry.title}`} pageNumber={i + 1} title={entry.title}>
       {#if Built}
         <Built />
       {:else}
-        <PagePlaceholder title={entry.title} />
+        <PagePlaceholder />
       {/if}
     </GuidePage>
   {/each}
@@ -186,14 +181,6 @@
   .ripple span:nth-child(2) { width: 80px; height: 80px; opacity: 0.6; }
   .ripple span:nth-child(3) { width: 120px; height: 120px; opacity: 0.35; }
 
-  .support .fm-h {
-    font-family: "Fraunces", Georgia, serif;
-    font-style: italic;
-    font-variation-settings: "opsz" 144, "wght" 600, "WONK" 1;
-    font-size: 1.9rem;
-    color: #161616;
-    margin: 0;
-  }
   .support p {
     max-width: 5.2in;
     font-family: "Cormorant Garamond", Georgia, serif;
@@ -225,37 +212,6 @@
   .read-me {
     max-width: 5.9in;
     margin: 0 auto;
-    padding-top: 0.45in;
-  }
-  .rm-head {
-    text-align: center;
-    margin: 0 0 0.5in;
-  }
-  .rm-title {
-    font-family: "Fraunces", Georgia, serif;
-    font-style: italic;
-    font-variation-settings: "opsz" 144, "wght" 560, "WONK" 1;
-    font-size: 2.5rem;
-    color: #14142b;
-    margin: 0;
-  }
-  .rm-flourish {
-    display: block;
-    width: 2in;
-    height: 9px;
-    margin: 0.16in auto 0;
-    background: linear-gradient(#c9a227, #c9a227) center / 100% 1px no-repeat;
-    position: relative;
-  }
-  .rm-flourish::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 7px;
-    height: 7px;
-    transform: translate(-50%, -50%) rotate(45deg);
-    background: #14142b;
   }
   .read-me p {
     font-family: "Cormorant Garamond", Georgia, serif;

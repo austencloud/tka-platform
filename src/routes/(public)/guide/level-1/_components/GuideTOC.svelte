@@ -38,10 +38,6 @@
 {/snippet}
 
 <div class="toc">
-  <header class="toc-head">
-    <h2 class="toc-title">Table of Contents</h2>
-    <span class="toc-flourish" aria-hidden="true"></span>
-  </header>
   <div class="toc-cols">
     <div class="toc-col">
       {#each left as g}{@render section(g)}{/each}
@@ -53,42 +49,14 @@
 </div>
 
 <style>
+  /* Header (title + flourish) now lives in GuidePage; the TOC just fills the
+     page body below it. */
   .toc {
-    min-height: 9.4in;
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    padding-top: 0.35in;
-  }
-  .toc-head {
-    text-align: center;
-    margin: 0 0 0.5in;
-  }
-  .toc-title {
-    font-family: "Fraunces", Georgia, serif;
-    font-style: italic;
-    font-variation-settings: "opsz" 144, "wght" 560, "WONK" 1;
-    font-size: 2.8rem;
-    color: #14142b;
-    margin: 0;
-  }
-  /* Gold hairline flourish with a centred navy diamond — echoes the cover. */
-  .toc-flourish {
-    display: block;
-    width: 2.4in;
-    height: 9px;
-    margin: 0.16in auto 0;
-    background: linear-gradient(#c9a227, #c9a227) center / 100% 1px no-repeat;
-    position: relative;
-  }
-  .toc-flourish::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 7px;
-    height: 7px;
-    transform: translate(-50%, -50%) rotate(45deg);
-    background: #14142b;
+    justify-content: center;
   }
   .toc-cols {
     display: grid;
