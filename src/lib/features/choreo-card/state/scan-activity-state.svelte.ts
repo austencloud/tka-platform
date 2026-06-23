@@ -45,8 +45,49 @@ export interface ScanEventRow {
   timestamp: string;
   city: string | null;
   country: string | null;
+  lat: number | null;
+  lng: number | null;
   deviceId: string | null;
   userId: string | null;
+}
+
+/** A scan pin for GlobalUserMap's scanMarkers prop. */
+export interface ScanMapPin {
+  id: string;
+  lat: number;
+  lng: number;
+  label: string;
+  styleClass: "pin" | "pin-new";
+}
+
+function toFiniteOrNull(val: unknown): number | null {
+  const n = typeof val === "string" ? Number.parseFloat(val) : (val as number);
+  return Number.isFinite(n) ? (n as number) : null;
+}
+
+/**
+ * Build scan-origin pins from recent events. Pure so it can be unit-tested
+ * without the reactive singleton. Only events with finite lat/lng are plotted;
+ * the newest located event becomes the pulsing "pin-new". `wordFor` resolves a
+ * human label for a code (falls back to the code itself).
+ */
+export function buildScanMapPins(
+  events: ScanEventRow[],
+  wordFor?: (code: string) => string | undefined
+): ScanMapPin[] {
+  const pins: ScanMapPin[] = [];
+  events.forEach((e, i) => {
+    if (e.lat === null || e.lng === null) return;
+    const place = e.city ?? e.country ?? "";
+    pins.push({
+      id: `${e.code}-${e.timestamp}`,
+      lat: e.lat,
+      lng: e.lng,
+      label: `${wordFor?.(e.code) || e.code}${place ? ` · ${place}` : ""}`,
+      styleClass: i === 0 ? "pin-new" : "pin",
+    });
+  });
+  return pins;
 }
 
 function toISOString(val: unknown): string | null {
@@ -64,7 +105,6 @@ class ScanActivityState {
   loading = $state(true);
   error = $state<string | null>(null);
   scope = $state<"mine" | "all">("mine");
-  searchQuery = $state("");
 
   private unsubCodes: Unsubscribe | null = null;
   private unsubEvents: Unsubscribe | null = null;
@@ -76,47 +116,19 @@ class ScanActivityState {
   private authorCache = new Map<string, { displayName: string; avatarUrl?: string }>();
   private authorInflight = new Map<string, Promise<{ displayName: string; avatarUrl?: string }>>();
 
-  view = $state<"active" | "zero-scan">("active");
-
-  filtered = $derived.by(() => {
-    const q = this.searchQuery.trim().toLowerCase();
-    let base = this.codes;
-    if (this.view === "zero-scan") {
-      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      base = base.filter(
-        (c) => c.scanCount === 0 && new Date(c.createdAt).getTime() < thirtyDaysAgo
-      );
-    }
-    if (!q) return base;
-    return base.filter(
-      (c) => c.word.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
-    );
-  });
-
-  zeroScanCount = $derived(
-    this.codes.filter((c) => {
-      if (c.scanCount !== 0) return false;
-      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      return new Date(c.createdAt).getTime() < thirtyDaysAgo;
-    }).length
+  /**
+   * Scan-origin pins for GlobalUserMap — recent events that carry finite
+   * coordinates. Events without lat/lng (pre-Cloudflare-headers, dev/localhost)
+   * are excluded here and surfaced only as a count, never plotted at a fake
+   * position. Newest located scan renders as the pulsing "pin-new".
+   */
+  mapPins = $derived(
+    buildScanMapPins(this.recentEvents, (code) => this.byCode.get(code)?.word)
   );
 
-  sparklineData = $derived.by(() => {
-    const map = new Map<string, number[]>();
-    const now = Date.now();
-    for (const ev of this.recentEvents) {
-      const ts = new Date(ev.timestamp).getTime();
-      if (!ts) continue;
-      const daysAgo = Math.floor((now - ts) / (24 * 60 * 60 * 1000));
-      if (daysAgo >= 30) continue;
-      const existing = map.get(ev.code) ?? new Array(30).fill(0);
-      existing[29 - daysAgo]!++;
-      map.set(ev.code, existing);
-    }
-    return map;
-  });
+  locatedCount = $derived(this.mapPins.length);
 
-  async subscribe(currentUserId: string | null): Promise<void> {
+  async subscribe(currentUserId: string | null, isAdmin: boolean): Promise<void> {
     this.loading = true;
     this.error = null;
     this.teardown();
@@ -155,6 +167,12 @@ class ScanActivityState {
         }
       );
 
+      // The scanEvents collectionGroup is admin-only (firestore.rules). Reading
+      // it before the admin claim resolves surfaces a "Missing or insufficient
+      // permissions" error. Only subscribe for confirmed admins; non-admins get
+      // an empty live feed instead of a red error.
+      if (!isAdmin) return;
+
       const eventsQ = query(
         collectionGroup(firestore, "scanEvents"),
         orderBy("timestamp", "desc"),
@@ -175,6 +193,8 @@ class ScanActivityState {
               timestamp: toISOString(data.timestamp) ?? "",
               city: data.city ?? null,
               country: data.country ?? null,
+              lat: toFiniteOrNull(data.lat),
+              lng: toFiniteOrNull(data.lng),
               deviceId: data.deviceId ?? null,
               userId: data.userId ?? null,
             });

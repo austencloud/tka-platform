@@ -21,6 +21,7 @@
     apiKey,
     onMapReady = () => {},
     scanMarkers = [],
+    onScanMarkerClick,
     size = "full",
   }: {
     locations: UserLocationWithProfile[];
@@ -35,6 +36,8 @@
       label?: string;
       styleClass?: "pin" | "pin-new";
     }>;
+    /** Fired when a scan-origin pin is clicked (Scan Activity view). */
+    onScanMarkerClick?: (id: string) => void;
     /** Layout variant. "embedded" gives a compact rounded 260px container. */
     size?: "full" | "embedded";
   } = $props();
@@ -195,6 +198,9 @@
         content,
         title: m.label ?? "",
       });
+      if (onScanMarkerClick) {
+        marker.addEventListener("gmp-click", () => onScanMarkerClick(m.id));
+      }
       injectedScanMarkers.push(marker);
     }
   });

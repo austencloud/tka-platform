@@ -1,64 +1,64 @@
 <!--
-  Main Scan Activity view. Orchestrates the live feed card grid,
-  the embedded GlobalUserMap minimap, the top-locations block, and
-  the scan-history drawer. Wired into ChoreoCardTab via the
-  "scan-activity" section id.
+  Scan Activity — map-first view.
+
+  A 2D Google map of where Choreo Card scans have actually occurred (real
+  IP-geolocated coordinates from scanEvents), plus a compact recent-scans
+  list. Clicking a recent row flies the map to that scan; clicking a pin
+  opens the card. Admin-only tab (module is adminOnly).
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { goto } from "$app/navigation";
+  import { env } from "$env/dynamic/public";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { scanActivityState } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
-  import ScanActivityCard from "./ScanActivityCard.svelte";
+  import GlobalUserMap from "$lib/features/community/components/GlobalUserMap.svelte";
   import RecentScansList from "./RecentScansList.svelte";
-  import TopLocationsBlock from "./TopLocationsBlock.svelte";
-  import { countryCentroid } from "./country-centroids";
-
-  // globe.gl bundles its own three + d3 (~heavy). Used only in this map panel,
-  // so load it on demand to keep it off the choreo-card module's first paint.
-  const ScanActivityGlobe = import("./ScanActivityGlobe.svelte").then(
-    (m) => m.default
-  );
 
   const scanState = scanActivityState;
   const isAdmin = $derived(authState.isAdmin === true);
 
-  onDestroy(() => scanState.teardown());
+  const apiKey = $derived(env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "");
+  const hasApiKey = $derived(!!apiKey && apiKey !== "your-google-maps-api-key");
 
+  // Map focus: a clicked recent row wins; otherwise center on the newest
+  // located scan; otherwise let the map default to a world view.
+  let focus = $state<{ lat: number; lng: number } | null>(null);
+  const center = $derived.by(() => {
+    if (focus) return focus;
+    const newest = scanState.mapPins[0];
+    return newest ? { lat: newest.lat, lng: newest.lng } : null;
+  });
+
+  // Subscribe once auth has resolved — gates the admin-only scanEvents read so
+  // it never fires before the admin claim is known (the old "restriction" error).
   $effect(() => {
     void scanState.scope;
-    scanState.subscribe(authState.user?.uid ?? null);
+    if (authState.loading) return;
+    scanState.subscribe(authState.user?.uid ?? null, isAdmin);
     return () => scanState.teardown();
   });
+
+  onDestroy(() => scanState.teardown());
 
   function openCard(code: string) {
     goto(`/q/${code}`);
   }
 
-
-  function hashJitter(s: string): number {
-    let h = 0;
-    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-    return ((h & 0x7fffffff) / 0x7fffffff - 0.5) * 2;
+  // Recent row click → fly the map to that scan's coordinates (if located).
+  function locateCode(code: string) {
+    const pin = scanState.mapPins.find((p) => p.id.startsWith(`${code}-`));
+    if (pin) focus = { lat: pin.lat, lng: pin.lng };
   }
 
-  const globePoints = $derived.by(() => {
-    const pts: { id: string; lat: number; lng: number; label: string; newest?: boolean }[] = [];
-    scanState.recentEvents.slice(0, 40).forEach((e, i) => {
-      const c = countryCentroid(e.country);
-      if (!c) return;
-      const [lat, lng] = c;
-      const jitter = 1.5;
-      pts.push({
-        id: `${e.code}-${i}`,
-        lat: lat + hashJitter(`${e.code}lat`) * jitter,
-        lng: lng + hashJitter(`${e.code}lng`) * jitter,
-        label: `${e.code} · ${e.city ?? e.country ?? ""}`,
-        newest: i === 0,
-      });
-    });
-    return pts;
-  });
+  // Pin id is `${code}-${timestamp}` — recover the code for the open action.
+  function openPin(id: string) {
+    const code = id.slice(0, id.lastIndexOf("-"));
+    if (code) openCard(code);
+  }
+
+  const totalScans = $derived(scanState.recentEvents.length);
+  const coordlessCount = $derived(totalScans - scanState.locatedCount);
 </script>
 
 <div class="shell">
@@ -66,15 +66,8 @@
     <span class="live" aria-hidden="true"></span>
     <h2>Scan Activity</h2>
     <span class="counter">
-      {scanState.codes.length} codes · {scanState.recentEvents.length} recent
+      {totalScans} scan{totalScans === 1 ? "" : "s"} · {scanState.locatedCount} located
     </span>
-    <input
-      class="search"
-      type="search"
-      placeholder="search word or code…"
-      aria-label="Search scans by word or code"
-      bind:value={scanState.searchQuery}
-    />
     <span class="spacer"></span>
     {#if isAdmin}
       <div class="scope" role="radiogroup" aria-label="Scope">
@@ -85,53 +78,55 @@
           All (admin)
         </button>
       </div>
-      <div class="view-toggle" role="radiogroup" aria-label="View">
-        <button role="radio" aria-checked={scanState.view === "active"} class:active={scanState.view === "active"} onclick={() => (scanState.view = "active")}>
-          Active
-        </button>
-        <button role="radio" aria-checked={scanState.view === "zero-scan"} class:active={scanState.view === "zero-scan"} onclick={() => (scanState.view = "zero-scan")}>
-          Zero-scan ({scanState.zeroScanCount})
-        </button>
-      </div>
     {/if}
   </header>
 
   <div class="body">
-    <div class="feed">
-      {#if scanState.loading}
-        <p class="muted">Loading scan activity…</p>
-      {:else if scanState.error}
-        <p class="error">Failed to load: {scanState.error}</p>
-      {:else if scanState.filtered.length === 0}
-        <p class="muted">
-          {#if scanState.searchQuery}No matches for "{scanState.searchQuery}".{:else}Your cards haven't been scanned yet. Share a QR to see activity here.{/if}
-        </p>
-      {:else}
-        <div class="grid">
-          {#each scanState.filtered as entry, i (entry.code)}
-            <ScanActivityCard {entry} sequence={entry.decoded} hot={i === 0} sparkline={scanState.sparklineData.get(entry.code)} onOpen={openCard} />
-          {/each}
-        </div>
-      {/if}
-    </div>
-
-    <aside class="mm">
-      <div class="map-panel">
-        <div class="mhead">
-          <h5>Live map</h5>
-          <span class="count">● {scanState.recentEvents.length} recent</span>
-        </div>
-        {#await ScanActivityGlobe then Globe}
-          <Globe points={globePoints} height={260} />
-        {/await}
-        <RecentScansList events={scanState.recentEvents} onRowClick={openCard} />
+    {#if !hasApiKey}
+      <div class="notice">
+        <i class="fas fa-map-marked-alt" aria-hidden="true"></i>
+        <p>Map unavailable.</p>
+        <p class="sub">Set <code>PUBLIC_GOOGLE_MAPS_API_KEY</code> in <code>.env</code> to enable the scan map.</p>
       </div>
-      <TopLocationsBlock events={scanState.recentEvents} />
-      <a class="link" href="/community?layer=scans">🌍 View all scans on Community map →</a>
-    </aside>
+    {:else}
+      <div class="map">
+        <GlobalUserMap
+          {apiKey}
+          locations={[]}
+          userLocation={center}
+          scanMarkers={scanState.mapPins}
+          onScanMarkerClick={openPin}
+          size="full"
+        />
+
+        {#if scanState.mapPins.length === 0}
+          <div class="overlay-empty">
+            {#if scanState.loading}
+              <p class="muted">Loading scan activity…</p>
+            {:else if scanState.error}
+              <p class="error">Failed to load: {scanState.error}</p>
+            {:else}
+              <p class="muted">No located scans yet.</p>
+              <p class="sub">
+                Pins appear once a card is scanned in the wild and Cloudflare
+                location headers are on.
+                {#if coordlessCount > 0}<br />{coordlessCount} scan{coordlessCount === 1 ? "" : "s"} recorded without a location.{/if}
+              </p>
+            {/if}
+          </div>
+        {/if}
+      </div>
+
+      <aside class="recent">
+        <h5>Recent scans</h5>
+        <RecentScansList events={scanState.recentEvents} onRowClick={locateCode} limit={12} />
+        {#if coordlessCount > 0 && scanState.mapPins.length > 0}
+          <p class="sub">{coordlessCount} not located</p>
+        {/if}
+      </aside>
+    {/if}
   </div>
 </div>
-
 
 <style>
   .shell { display: flex; flex-direction: column; flex: 1; min-width: 0; width: 100%; height: 100%; background: var(--theme-panel-bg, #080a12); }
@@ -140,62 +135,51 @@
     display: flex; align-items: center; gap: 14px;
     padding: 16px 22px; border-bottom: 1px solid var(--theme-stroke, #1a1f2e);
     background: var(--theme-panel-bg, linear-gradient(180deg, #0f1220 0%, #0b0d17 100%));
-    min-height: 64px;
-    flex-wrap: wrap;
+    min-height: 64px; flex-wrap: wrap;
   }
   .live { width: 12px; height: 12px; border-radius: 50%; background: var(--theme-accent, #10b981); box-shadow: 0 0 10px var(--theme-accent, #10b981); animation: livePulse 1.4s infinite; flex-shrink: 0; }
   @keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
   @media (prefers-reduced-motion: reduce) { .live { animation: none; } }
   h2 { margin: 0; color: var(--theme-text, #fff); font-size: 18px; font-weight: 600; }
-  .counter { color: var(--theme-text-dim, #8b93a7); font-size: var(--font-size-sm, 14px); }
-  .search {
-    flex: 1; max-width: 300px; min-height: 44px; padding: 0 14px;
-    background: var(--theme-panel-bg, #0b0d17); border: 1px solid var(--theme-stroke, #222838); border-radius: 6px;
-    color: var(--theme-text-muted, #d0d5e0); font-size: var(--font-size-sm, 14px);
-  }
+  .counter { color: var(--theme-text-dim, #8b93a7); font-size: var(--font-size-sm, 14px); font-variant-numeric: tabular-nums; }
   .spacer { flex: 1; }
-  .scope, .view-toggle { display: flex; background: var(--theme-card-bg, #141824); border-radius: 8px; padding: 4px; border: 1px solid var(--theme-stroke, #222838); }
-  .scope button, .view-toggle button {
+  .scope { display: flex; background: var(--theme-card-bg, #141824); border-radius: 8px; padding: 4px; border: 1px solid var(--theme-stroke, #222838); }
+  .scope button {
     padding: 0 16px; min-height: 44px; border: 0; border-radius: 6px; background: transparent;
     color: var(--theme-text-dim, #8b93a7); font: inherit; font-size: var(--font-size-sm, 14px); cursor: pointer;
   }
-  .scope button.active, .view-toggle button.active { background: rgba(16, 185, 129, 0.15); color: var(--theme-accent, #34d399); box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3); }
-  .scope button:focus-visible, .view-toggle button:focus-visible { outline: 2px solid var(--theme-accent, #34d399); outline-offset: 2px; }
+  .scope button.active { background: rgba(16, 185, 129, 0.15); color: var(--theme-accent, #34d399); box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3); }
+  .scope button:focus-visible { outline: 2px solid var(--theme-accent, #34d399); outline-offset: 2px; }
 
-  .body { display: grid; grid-template-columns: 1fr 300px; gap: 16px; padding: 16px; flex: 1; min-height: 0; overflow-y: auto; }
+  .body { display: grid; grid-template-columns: 1fr 300px; gap: 16px; padding: 16px; flex: 1; min-height: 0; }
 
-  .feed { min-width: 0; min-height: 0; }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 12px;
-    align-content: start;
-  }
-  @media (max-width: 1400px) { .grid { grid-template-columns: repeat(4, 1fr); } }
-  @media (max-width: 1000px) { .grid { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 600px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  .map { position: relative; min-width: 0; min-height: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--theme-stroke, #1a1f2e); }
 
-  .muted { color: var(--theme-text-dim, #6b7491); font-size: var(--font-size-sm, 14px); }
-  .error { color: #fca5a5; font-size: var(--font-size-sm, 14px); }
-
-  .mm { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
-  .map-panel { background: var(--theme-card-bg, #0f1220); border: 1px solid var(--theme-stroke, #1a1f2e); border-radius: 8px; padding: 14px; }
-  .mhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .mhead h5 { margin: 0; color: var(--theme-text-muted, #d0d5e0); font-size: var(--font-size-sm, 14px); font-weight: 600; }
-  .count { color: var(--theme-accent, #34d399); font-size: var(--font-size-sm, 14px); font-weight: 600; }
-
-  .link {
-    display: flex; align-items: center; justify-content: center;
-    padding: 14px; min-height: 44px;
-    background: var(--theme-accent-bg, rgba(16, 185, 129, 0.06));
-    border: 1px dashed var(--theme-accent-border, rgba(16, 185, 129, 0.3));
-    border-radius: 8px;
-    color: var(--theme-accent, #34d399); font-size: var(--font-size-sm, 14px);
-    text-decoration: none;
+  .overlay-empty {
+    position: absolute; inset: 0; display: flex; flex-direction: column; gap: 6px;
+    align-items: center; justify-content: center; text-align: center; padding: 24px;
+    background: color-mix(in srgb, var(--theme-panel-bg, #080a12) 72%, transparent);
+    pointer-events: none;
   }
 
-  @media (max-width: 1100px) {
+  .recent { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; }
+  .recent h5 { margin: 0; color: var(--theme-text-muted, #d0d5e0); font-size: var(--font-size-sm, 14px); font-weight: 600; }
+
+  .notice {
+    grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px;
+    align-items: center; justify-content: center; text-align: center;
+    color: var(--theme-text-muted, rgba(255,255,255,0.7));
+  }
+  .notice i { font-size: 56px; color: var(--theme-accent, #34d399); opacity: 0.3; margin-bottom: 8px; }
+
+  .muted { color: var(--theme-text-dim, #8b93a7); font-size: var(--font-size-sm, 14px); margin: 0; }
+  .error { color: #fca5a5; font-size: var(--font-size-sm, 14px); margin: 0; }
+  .sub { color: var(--theme-text-dim, #6b7491); font-size: var(--font-size-compact, 12px); margin: 0; }
+  .notice code, .sub code { font-family: monospace; color: var(--theme-text-muted, #d0d5e0); }
+
+  @media (max-width: 1000px) {
     .body { grid-template-columns: 1fr; }
-    .mm { order: -1; }
+    .recent { order: 2; max-height: 220px; }
+    .map { min-height: 320px; }
   }
 </style>
