@@ -78,20 +78,25 @@
     padding: 0;
   }
 
-  /* Dedicated header region at the top of every page — centred title + gold
-     flourish, consistent placement so each page reads as a spread of the same
-     book (matches the original's centred page title). */
+  /* Dedicated header BAND pinned to the top of every page — large centred
+     script title + gold flourish, consistent across the book (matches the
+     original, where the page title sits high near the top edge). The band hugs
+     the top of the page body (0.6in page margin), it does not float mid-page. */
   .page-header {
     flex: 0 0 auto;
     text-align: center;
-    margin: 0.15in 0 0.4in;
+    margin: 0 0 0.4in;
   }
   .page-header-title {
-    font-family: "Fraunces", Georgia, serif;
+    /* --guide-header-font lets the whole book's page-header typeface be swapped
+       in one place. Default = Cormorant Garamond italic (chosen for readability
+       over a fancy script; the original's Monotype Corsiva isn't web-licensable
+       and its closest free clone, TeX Gyre Chorus, read too ornate here). */
+    font-family: var(--guide-header-font, "Cormorant Garamond", Georgia, serif);
     font-style: italic;
-    font-variation-settings: "opsz" 144, "wght" 560, "WONK" 1;
-    font-size: 2.5rem;
-    line-height: 1.05;
+    font-weight: 600;
+    font-size: 3.2rem;
+    line-height: 1.0;
     color: #14142b;
     margin: 0;
   }
@@ -99,7 +104,7 @@
     display: block;
     width: 2.1in;
     height: 9px;
-    margin: 0.15in auto 0;
+    margin: 0.18in auto 0;
     background: linear-gradient(#c9a227, #c9a227) center / 100% 1px no-repeat;
     position: relative;
   }
