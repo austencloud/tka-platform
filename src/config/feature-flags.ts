@@ -170,18 +170,30 @@ export const FEATURES: FeatureDefinition[] = [
     modulePaths: ["features/assemble-lab/"],
   },
 
-  // ── Dev (internal tools / experiments / admin — off in prod unless opted in) ─
+  // ── Role-gated production tools ───────────────────────────────────────────
+  // Admin and moderation are NOT dev experiments — they are live production
+  // features for admin-role accounts. They MUST ship in every build so the
+  // runtime gate can reveal them to authorized users on tkaflowarts.com.
+  // Access is enforced at runtime, not compile time:
+  //   - nav visibility: `adminOnly` + effectiveRole==="admin" (module-definitions)
+  //   - /admin routes:  +layout.ts redirects non-admins to "/"
+  //   - server:         Firestore rules + requireAdmin API guards
+  // Leaving them tier:"dev" stripped them from production builds entirely
+  // (__FEATURE_ADMIN__=false → removed from ENABLED_MODULE_DEFINITIONS), which
+  // hid the Admin module from admins too. tier:"shipped" is the durable fix.
   {
     id: "admin",
-    tier: "dev",
+    tier: "shipped",
     modulePaths: ["features/admin/"],
     routePatterns: ["src/routes/admin/"],
   },
   {
     id: "moderation",
-    tier: "dev",
+    tier: "shipped",
     modulePaths: ["features/moderation/"],
   },
+
+  // ── Dev (internal tools / experiments — off in prod unless opted in) ───────
   {
     id: "retro",
     tier: "dev",
