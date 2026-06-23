@@ -9,6 +9,9 @@
   import UserDetailModal from "./UserDetailModal.svelte";
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import { env } from "$env/dynamic/public";
+  import GlobalUserMap from "$lib/features/community/components/GlobalUserMap.svelte";
+  import { buildUserPins } from "$lib/features/admin/services/user-pins";
 import type { UserActivityTracker } from "../services/user-activity-tracker";
 
   // Services
@@ -49,6 +52,12 @@ import type { UserActivityTracker } from "../services/user-activity-tracker";
       : statusFilter === "active"
         ? realUsers.filter((u) => u.activityStatus === "active")
         : realUsers.filter((u) => u.activityStatus !== "active")
+  );
+
+  const userPins = $derived(buildUserPins(users));
+  const mapsApiKey = $derived(env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "");
+  const mapsKeyMissing = $derived(
+    !mapsApiKey || mapsApiKey === "your-google-maps-api-key"
   );
 
   // Unsubscribe function
@@ -206,6 +215,29 @@ import type { UserActivityTracker } from "../services/user-activity-tracker";
           {/each}
         </PanelGrid>
       </div>
+    </section>
+  {/if}
+
+  <!-- User Map: where signed-in users connect from (IP geo) -->
+  {#if !isLoading && userPins.length > 0}
+    <section class="user-map-section" aria-label={t("admin_user_map")}>
+      <header class="user-map-header">
+        <h3 class="user-map-title">{t("admin_user_map")}</h3>
+        <p class="user-map-hint">{t("admin_user_map_hint")}</p>
+      </header>
+      {#if mapsKeyMissing}
+        <p class="user-map-key-missing">{t("admin_user_map_key_missing")}</p>
+      {:else}
+        <div class="user-map-container">
+          <GlobalUserMap
+            locations={[]}
+            userLocation={null}
+            apiKey={mapsApiKey}
+            scanMarkers={userPins}
+            onScanMarkerClick={(id) => selectUser(id)}
+          />
+        </div>
+      {/if}
     </section>
   {/if}
 
@@ -443,5 +475,42 @@ import type { UserActivityTracker } from "../services/user-activity-tracker";
 
   .anon-grid-container {
     padding: 0.5rem 1rem 1rem;
+  }
+
+  .user-map-section {
+    flex-shrink: 0;
+    border-top: 1px solid var(--theme-stroke);
+    padding: 1rem 1.5rem 1.5rem;
+  }
+
+  .user-map-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .user-map-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--theme-text);
+  }
+
+  .user-map-hint {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--theme-text-secondary, var(--theme-text-dim));
+  }
+
+  .user-map-key-missing {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--theme-text-secondary, var(--theme-text-dim));
+  }
+
+  .user-map-container {
+    border-radius: 12px;
+    overflow: hidden;
   }
 </style>
