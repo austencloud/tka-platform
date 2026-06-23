@@ -165,6 +165,9 @@ export class SystemStateManager {
       role: (data["role"] as string) ?? "user",
       isAnonymous: (data["isAnonymous"] as boolean) ?? false,
       attribution: (data["attribution"] as Record<string, unknown> | undefined) ?? null,
+      lastLocation: (data["lastLocation"] as
+        | import("$lib/shared/presence/domain/models/presence-models").PresenceLocation
+        | undefined) ?? null,
     };
   }
 

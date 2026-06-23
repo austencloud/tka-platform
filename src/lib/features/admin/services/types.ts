@@ -51,6 +51,8 @@ export interface CachedUserMetadata {
   isAnonymous: boolean;
   /** Attribution record captured at signup + any self-reported updates. Null for older accounts. */
   attribution: Record<string, unknown> | null;
+  /** Persistent last-known IP location (admin view). */
+  lastLocation?: import("$lib/shared/presence/domain/models/presence-models").PresenceLocation | null;
 }
 export interface CachedChallenge {
   id: string;
