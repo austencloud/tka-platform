@@ -4,6 +4,8 @@
   import { afterNavigate, onNavigate, replaceState } from "$app/navigation";
   import { detectSiteMode, type SiteMode } from "../config/domains";
   import { consumeSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
+  import { getPresenceTracker } from "$lib/shared/presence/get-presence-tracker";
+  import type { LayoutData } from "./$types";
   import "../app.css";
   // Chip toggle tokens - maps --chip-* to TKA design values
   import "@austencloud/chip-toggle/css/tka-tokens.css";
@@ -46,9 +48,16 @@
     }
   });
 
-  let { children } = $props<{
+  let { children, data } = $props<{
     children: Snippet;
+    data: LayoutData;
   }>();
+
+  $effect(() => {
+    if (data?.geo) {
+      getPresenceTracker()?.setLocation(data.geo);
+    }
+  });
 
   /**
    * First-path-segment → module chunk preloader. Keep synchronized with
