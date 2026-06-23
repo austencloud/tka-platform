@@ -36,7 +36,6 @@
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
   import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
-  import { loadJourney, shouldShowJourney, rowsToJourneyPoints, type JourneyPoint } from "$lib/shared/qr/journey/journey-loader";
   import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -82,7 +81,6 @@
   type PageState =
     | { kind: "loading" }
     | { kind: "error"; message: string }
-    | { kind: "journey"; word: string; points: JourneyPoint[] }
     | { kind: "playing"; word: string };
 
   let pageState = $state<PageState>({ kind: "loading" });
@@ -140,17 +138,6 @@
   let ViewerSplitPaneComponent:
     | typeof import("$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte").default
     | null = $state(null);
-  // Journey interstitial lazy-loads only when a genuine scan has prior journey
-  // points. Resolved in the script (not via a template {#await}) so a failed
-  // chunk load can fall through to playing instead of trapping the scanner on a
-  // blank pending screen — mirrors the OrchestratorComponent lazy pattern above.
-  let JourneyComp:
-    | typeof import("./ScanJourneyInterstitial.svelte").default
-    | null = $state(null);
-  function skipJourney() {
-    pageState = { kind: "playing", word: seqWord };
-  }
-
   // View mode for the embedded viewer — the single source of truth that the
   // ViewerContentRail (landscape side rail) and ViewerModeBottomBar (portrait
   // bottom bar) drive, mirroring SequenceViewerDrawerHost. No 3D mode is offered
@@ -462,15 +449,10 @@
       setProgress(35);
       trickleTo(85);
 
-      // Compute the genuine-scan flag ONCE (isGenuineScan side-effects
-      // sessionStorage; a 2nd call returns false) and kick off the journey
-      // read now so it overlaps the heavy resolve/glyph/viewer-chunk load
-      // below instead of blocking after it.
+      // Compute the genuine-scan flag ONCE — isGenuineScan side-effects
+      // sessionStorage, so a 2nd call returns false.
       const genuine = !isInlineEncoded(shortCode) && isGenuineScan(shortCode);
       const scanPrintId = page.url.searchParams.get("pid") || null;
-      const journeyPromise: Promise<JourneyPoint[]> = genuine
-        ? loadJourney(shortCode, scanPrintId)
-        : Promise.resolve([]);
 
       const [seq_, OrchestratorModule, SplitPaneModule] = await Promise.all([
         shortCodeManager.resolveShortCode(shortCode),
@@ -518,8 +500,6 @@
       OrchestratorComponent = OrchestratorModule.default;
       ViewerSplitPaneComponent = SplitPaneModule.default;
 
-      let journeyPoints: JourneyPoint[] = [];
-
       if (genuine) {
         const geo = data?.geo;
 
@@ -562,36 +542,11 @@
           })
           .catch(() => {});
 
-        // Load prior journey + optimistically append this scan (the projection
-        // write above may not have committed yet, and the scanner is the
-        // newest dot).
-        const prior = await journeyPromise;
-        const thisScan = rowsToJourneyPoints([
-          {
-            lat: geo?.lat ?? null,
-            lng: geo?.lng ?? null,
-            city: geo?.city ?? null,
-            country: geo?.country ?? null,
-            timestamp: new Date().toISOString(),
-          },
-        ]);
-        journeyPoints = [...prior, ...thisScan];
       }
 
       stopTrickle();
       setProgress(100);
-
-      if (shouldShowJourney({ genuine, pointCount: journeyPoints.length })) {
-        // Resolve the interstitial chunk in the script so a failed import
-        // (transient network / chunk mismatch mid-deploy) falls through to
-        // playing instead of hanging the scanner on a blank pending screen.
-        import("./ScanJourneyInterstitial.svelte")
-          .then((m) => (JourneyComp = m.default))
-          .catch(() => skipJourney());
-        pageState = { kind: "journey", word, points: journeyPoints };
-      } else {
-        pageState = { kind: "playing", word };
-      }
+      pageState = { kind: "playing", word };
 
       // Clean load → re-arm the module-chunk self-heal so a later mid-write edit
       // can trigger one fresh recovery reload again (the guard is one-shot).
@@ -669,14 +624,6 @@
         </a>
       </div>
     </div>
-  {:else if pageState.kind === "journey"}
-    {#if JourneyComp}
-      <JourneyComp
-        points={pageState.points}
-        word={pageState.word}
-        onContinue={skipJourney}
-      />
-    {/if}
   {:else if pageState.kind === "playing" && OrchestratorComponent && resolvedSeq}
     <OrchestratorComponent
       sequence={resolvedSeq}

@@ -16,20 +16,11 @@
     newest?: boolean;
   }
 
-  interface GlobeArc {
-    startLat: number;
-    startLng: number;
-    endLat: number;
-    endLng: number;
-  }
-
   let {
     points = [],
-    arcs = [],
     height = 260,
   }: {
     points?: GlobePoint[];
-    arcs?: GlobeArc[];
     height?: number;
   } = $props();
 
@@ -62,13 +53,6 @@
       .pointRadius("radius")
       .pointLabel("label")
       .pointsMerge(false)
-      .arcsData(arcs)
-      .arcColor(() => "#34d399")
-      .arcStroke(0.6)
-      .arcAltitudeAutoScale(0.4)
-      .arcDashLength(0.5)
-      .arcDashGap(0.4)
-      .arcDashAnimateTime(2200)
       .width(container.clientWidth)
       .height(height);
 
@@ -88,10 +72,6 @@
 
   $effect(() => {
     globe?.pointsData(enriched);
-  });
-
-  $effect(() => {
-    globe?.arcsData(arcs);
   });
 
   onDestroy(() => {
