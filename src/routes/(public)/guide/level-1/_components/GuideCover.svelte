@@ -99,7 +99,9 @@
     position: relative; height: 100%; width: 100%; box-sizing: border-box;
     container-type: inline-size;
     display: flex; flex-direction: column; align-items: center;
-    padding: 8% 8% 13%;
+    /* Bottom padding trimmed (13%→9%) to reclaim the subtitle's height so the
+       cover stays exactly 8.5×11 (Letter) instead of overflowing taller. */
+    padding: 8% 8% 9%;
   }
   .cover.navy { background: radial-gradient(120% 120% at 50% 30%, #1d1d3a 0%, #14142b 70%, #0f0f22 100%); color: #f4f0e4; }
   .cover.light { background: #faf7ef; color: #1a1a1a; }
@@ -143,10 +145,10 @@
     font-size: calc(7.2cqw * 0.58);
   }
 
-  .emblem { flex: 1 1 auto; min-height: 0; position: relative; width: var(--em); aspect-ratio: 1; display: grid; place-items: center; margin: 4% 0; }
+  .emblem { flex: 1 1 auto; min-height: 0; position: relative; width: var(--em); aspect-ratio: 1; display: grid; place-items: center; margin: 2.2% 0; }
   .layer { position: absolute; inset: 0; display: grid; place-items: center; }
 
-  .forms { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; place-items: center; gap: 3cqw; align-items: center; margin-top: 2%; }
+  .forms { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; place-items: center; gap: 3cqw; align-items: center; margin-top: 1%; }
   .forms .form:nth-child(1) { transform: translateY(3cqw) rotate(-8deg); }
   .forms .form:nth-child(2) { transform: translateY(-2cqw); }
   .forms .form:nth-child(3) { transform: translateY(3cqw) rotate(8deg); }
