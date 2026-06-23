@@ -9,7 +9,7 @@
    * rasterizing — alongside pdf.js canvases (left). Full front-matter parity
    * with the print route comes after this is greenlit.
    */
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import "../_styles/guide.css";
   import "../_styles/guide-print.css";
   import { setGuidePrintMode } from "../_data/guide-data-context";
@@ -31,6 +31,11 @@
   let oldContainer: HTMLDivElement;
   let syncing = false;
   let status = $state("loading…");
+  // The flip-books render client-only: SSR keeps the route's URL valid (so the
+  // app-shell module-state guard doesn't rewrite /book → /create), but the
+  // scaled GuidePage/GuideCover subtree is never hydrated (it threw "Illegal
+  // invocation" on hydrate), so we mount it fresh on the client instead.
+  let mounted = $state(false);
 
   function sync(from: any, to: any, idx: number) {
     if (syncing || !to) return;
@@ -41,6 +46,9 @@
   }
 
   onMount(async () => {
+    // Render the book DOM client-side first, then wire StPageFlip to it.
+    mounted = true;
+    await tick();
     const { PageFlip } = await import("page-flip/dist/js/page-flip.module.js");
     const cfg = {
       width: FLIP_W,
@@ -97,29 +105,31 @@
   </div>
 
   <div class="books">
-    <div class="book-col">
-      <div class="cap">Old — v0.5</div>
-      <div class="flip" bind:this={oldContainer}></div>
-    </div>
-    <div class="book-col">
-      <div class="cap">New — rebuild</div>
-      <!-- Live rebuild pages: each .page holds a real GuidePage scaled to FLIP_W. -->
-      <div class="flip" bind:this={newContainer} style="--s:{SCALE}">
-        <div class="page">
-          <div class="scale"><div class="pg"><GuideCover theme="navy" /></div></div>
-        </div>
-        <div class="page">
-          <div class="scale"><div class="pg"><GuidePage title="Table of Contents"><GuideTOC /></GuidePage></div></div>
-        </div>
-        {#each GUIDE_BODY_PAGES as entry, i}
-          <div class="page">
-            <div class="scale">
-              <div class="pg"><GuidePage title={entry.title} pageNumber={i + 1}><PagePlaceholder /></GuidePage></div>
-            </div>
-          </div>
-        {/each}
+    {#if mounted}
+      <div class="book-col">
+        <div class="cap">Old — v0.5</div>
+        <div class="flip" bind:this={oldContainer}></div>
       </div>
-    </div>
+      <div class="book-col">
+        <div class="cap">New — rebuild</div>
+        <!-- Live rebuild pages: each .page holds a real GuidePage scaled to FLIP_W. -->
+        <div class="flip" bind:this={newContainer} style="--s:{SCALE}">
+          <div class="page">
+            <div class="scale"><div class="pg"><GuideCover theme="navy" /></div></div>
+          </div>
+          <div class="page">
+            <div class="scale"><div class="pg"><GuidePage title="Table of Contents"><GuideTOC /></GuidePage></div></div>
+          </div>
+          {#each GUIDE_BODY_PAGES as entry, i}
+            <div class="page">
+              <div class="scale">
+                <div class="pg"><GuidePage title={entry.title} pageNumber={i + 1}><PagePlaceholder /></GuidePage></div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
   </div>
 </div>
 
