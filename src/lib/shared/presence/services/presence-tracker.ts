@@ -129,6 +129,19 @@ export class PresenceTracker {
    */
   setLocation(location: PresenceLocation | null): void {
     if (!location) return;
+    // Skip identical re-sends. The layout $effect re-fires on every navigation
+    // with the same stable geo, so without this guard each navigation would
+    // issue a redundant RTDB + Firestore write.
+    const p = this.pendingLocation;
+    if (
+      p &&
+      p.city === location.city &&
+      p.country === location.country &&
+      p.lat === location.lat &&
+      p.lng === location.lng
+    ) {
+      return;
+    }
     this.pendingLocation = location;
     // If already initialized this session, persist immediately.
     if (this.initialized) {
