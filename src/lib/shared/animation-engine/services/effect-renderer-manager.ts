@@ -206,14 +206,24 @@ export class EffectRendererManager {
       }
     } else {
       const current = this.renderers.get(id);
+      // Tear down only on the enabled→disabled TRANSITION (renderer still
+      // live). Once torn down, repeated disabled syncs must be no-ops.
+      // plugin.onDisable for fire/charcoal resets the SHARED fireTipTracker,
+      // and CanvasSurface calls setFireConfig every frame, so an unguarded
+      // onDisable here re-armed the tracker's 3-frame warmup every frame —
+      // starving every per-tip effect (bloom, water, sparkles, …) that reads
+      // the tracker (it returned zero tips, so bloom fell back to prop
+      // centers / the hand path). Root-caused 2026-06-23.
       if (current?.isInitialized()) {
         current.dispose();
         this.renderers.delete(id);
+        this.renderLoopService?.updateConfig({
+          renderers: { [id]: null },
+        } as Partial<RenderLoopConfig>);
+        plugin.onDisable?.(this);
+      } else {
+        return; // already disabled — nothing to tear down, no re-render
       }
-      this.renderLoopService?.updateConfig({
-        renderers: { [id]: null },
-      } as Partial<RenderLoopConfig>);
-      plugin.onDisable?.(this);
     }
 
     if (plugin.triggerRender !== false) {
