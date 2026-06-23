@@ -1,7 +1,7 @@
 <!-- UserPresenceCard.svelte - Vertical user card with avatar-based color theming -->
 <script lang="ts">
   import type { UserPresenceWithId } from "$lib/shared/presence/domain/models/presence-models";
-  import { formatActivityTime } from "$lib/shared/presence/domain/models/presence-models";
+  import { formatActivityTime, formatLocationLabel } from "$lib/shared/presence/domain/models/presence-models";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import {
     extractDominantColor,
@@ -21,6 +21,7 @@
 
   // Compute activity status display
   let isActive = $derived(user.activityStatus === "active");
+  let locationLabel = $derived(formatLocationLabel(user.location));
   let lastActivity = $derived(user.lastActivity ?? user.lastSeen);
   let activityText = $derived(formatActivityTime(lastActivity, user.online));
 
@@ -77,6 +78,12 @@
   <div class="info">
     <span class="name">{user.displayName ?? "Unknown"}</span>
     <span class="email">{user.email ?? ""}</span>
+    <span class="geo" class:empty={!locationLabel}>
+      {#if locationLabel}
+        <i class="fas fa-earth-americas" aria-hidden="true"></i>
+        {locationLabel}
+      {/if}
+    </span>
   </div>
 
   <!-- Status section -->
@@ -237,6 +244,29 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .geo {
+    min-height: 16px; /* reserved so cards without location are the same height */
+    font-size: var(--font-size-compact);
+    color: var(--theme-text-secondary, var(--theme-text-dim));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .geo.empty {
+    /* keep the reserved height even with no content */
+    visibility: hidden;
+  }
+
+  .geo i {
+    font-size: var(--font-size-compact);
   }
 
   .status-section {
