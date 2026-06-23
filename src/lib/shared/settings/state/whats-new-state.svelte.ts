@@ -13,7 +13,10 @@
  */
 
 import { getOnboardingPersister } from "$lib/shared/onboarding/get-onboarding-persister";
-import type { AppVersion } from "$lib/shared/versioning/domain/models/version-models";
+import {
+  compareVersions,
+  type AppVersion,
+} from "$lib/shared/versioning/domain/models/version-models";
 import type { OnboardingPersister } from "$lib/shared/onboarding/services/onboarding-persister";
 import * as versionService from "$lib/shared/feedback/services/version-service";
 
@@ -53,21 +56,29 @@ class WhatsNewState {
       return service.hasSeenVersion(version);
     }
 
-    // Fall back to localStorage for synchronous access
+    // Fall back to localStorage for synchronous access.
+    // High-water-mark: seeing version N implies having seen everything <= N,
+    // so a stale build never re-shows notes already dismissed elsewhere.
     if (typeof localStorage === "undefined") return true;
     const lastSeen = localStorage.getItem(STORAGE_KEY);
-    return lastSeen === version;
+    if (!lastSeen) return false;
+    return compareVersions(lastSeen, version) >= 0;
   }
 
   /**
    * Mark current version as seen.
    * Updates localStorage immediately and syncs to Firebase via OnboardingPersister.
+   * Stores the high-water mark — never downgrades to an older version.
    */
   markVersionAsSeen(version: string): void {
     if (typeof localStorage === "undefined") return;
 
-    // Update localStorage immediately for synchronous access
-    localStorage.setItem(STORAGE_KEY, version);
+    // Update localStorage immediately for synchronous access, keeping the
+    // highest version seen so a stale build can't clobber a newer one.
+    const lastSeen = localStorage.getItem(STORAGE_KEY);
+    if (!lastSeen || compareVersions(version, lastSeen) > 0) {
+      localStorage.setItem(STORAGE_KEY, version);
+    }
 
     // Sync to Firebase via service (non-blocking)
     const service = getOnboardingService();

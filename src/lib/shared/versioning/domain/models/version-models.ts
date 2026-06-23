@@ -72,3 +72,34 @@ export interface PrepareReleaseFormErrors {
  * Pre-release version for existing archived feedback
  */
 export const PRE_RELEASE_VERSION = "0.0.0";
+
+/**
+ * Compare two semver-ish version strings numerically.
+ *
+ * Returns -1 if `a < b`, 1 if `a > b`, 0 if equal.
+ *
+ * Numeric-aware (so "0.9.0" < "0.10.0", which a plain string compare gets
+ * wrong). A bare release outranks a pre-release of the same core
+ * ("0.24.0" > "0.24.0-beta"); two pre-releases fall back to string order.
+ */
+export function compareVersions(a: string, b: string): number {
+  const parse = (v: string): { nums: number[]; pre: string | null } => {
+    const [core = "0", pre = null] = v.trim().split("-", 2);
+    const nums = core.split(".").map((n) => parseInt(n, 10) || 0);
+    while (nums.length < 3) nums.push(0);
+    return { nums, pre };
+  };
+
+  const pa = parse(a);
+  const pb = parse(b);
+
+  for (let i = 0; i < 3; i++) {
+    if (pa.nums[i] !== pb.nums[i]) return pa.nums[i]! < pb.nums[i]! ? -1 : 1;
+  }
+
+  // Cores equal: a release (no pre-release) outranks a pre-release.
+  if (pa.pre === pb.pre) return 0;
+  if (pa.pre === null) return 1;
+  if (pb.pre === null) return -1;
+  return pa.pre < pb.pre ? -1 : pa.pre > pb.pre ? 1 : 0;
+}

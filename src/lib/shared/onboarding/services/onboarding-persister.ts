@@ -17,6 +17,7 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import type { OnboardingStatus } from "./types";
+import { compareVersions } from "$lib/shared/versioning/domain/models/version-models";
 import {
   ONBOARDING_COMPLETED_KEY,
   ONBOARDING_COMPLETED_AT_KEY,
@@ -417,13 +418,16 @@ export class OnboardingPersister {
           };
         }
 
-        // Last seen version: prefer the newer version (lexicographically higher)
+        // Last seen version: keep the higher one (numeric semver compare, so
+        // "0.10.0" correctly beats "0.9.0" — a plain string compare gets this
+        // backwards).
         const localVersion = localStatus.lastSeenVersion;
         const cloudVersion = cloudStatus.lastSeenVersion;
         if (localVersion && cloudVersion) {
-          // Compare versions - keep the higher one
           mergedStatus.lastSeenVersion =
-            localVersion > cloudVersion ? localVersion : cloudVersion;
+            compareVersions(localVersion, cloudVersion) >= 0
+              ? localVersion
+              : cloudVersion;
         } else {
           mergedStatus.lastSeenVersion = localVersion || cloudVersion || null;
         }
@@ -444,25 +448,38 @@ export class OnboardingPersister {
 
   /**
    * Check if user has seen the given version in What's New.
+   *
+   * High-water-mark semantics: a user who has already seen version N has
+   * implicitly seen everything <= N. Using `>=` (not `===`) means a stale
+   * build (e.g. a dev server whose baked __APP_VERSION__ lags the deployed
+   * one) won't re-show notes the user already dismissed on a newer surface.
    */
   hasSeenVersion(version: string): boolean {
-    if (this.cachedStatus) {
-      return this.cachedStatus.lastSeenVersion === version;
-    }
+    const lastSeen = this.cachedStatus
+      ? this.cachedStatus.lastSeenVersion
+      : typeof localStorage !== "undefined"
+        ? localStorage.getItem(LAST_SEEN_VERSION_KEY)
+        : // No cache and no localStorage (SSR) — treat as seen to avoid flashing.
+          version;
 
-    // Fall back to localStorage for synchronous access
-    if (typeof localStorage === "undefined") return true;
-    const lastSeen = localStorage.getItem(LAST_SEEN_VERSION_KEY);
-    return lastSeen === version;
+    if (!lastSeen) return false;
+    return compareVersions(lastSeen, version) >= 0;
   }
 
   /**
    * Mark a version as seen in What's New.
+   *
+   * Stores the high-water mark — never downgrades a higher seen version to a
+   * lower one (prevents a stale older build from clobbering a newer surface's
+   * progress and re-triggering the modal on both).
    */
   async markVersionAsSeen(version: string): Promise<void> {
     const status = this.cachedStatus || (await this.loadStatus());
-    status.lastSeenVersion = version;
-    await this.saveStatus(status);
+    const current = status.lastSeenVersion;
+    if (!current || compareVersions(version, current) > 0) {
+      status.lastSeenVersion = version;
+      await this.saveStatus(status);
+    }
   }
 
   /**
