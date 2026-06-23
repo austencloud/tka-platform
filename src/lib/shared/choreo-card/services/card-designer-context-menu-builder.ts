@@ -117,6 +117,3 @@ export function buildChoreoCardContextMenuItems(
 
   return items;
 }
-
-/** @deprecated Use buildChoreoCardContextMenuItems instead */
-export const buildCardDesignerContextMenuItems = buildChoreoCardContextMenuItems;

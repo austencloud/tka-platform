@@ -221,7 +221,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Browse choreography as printable reference cards",
     isMain: true,
     sections: CHOREO_CARD_TABS,
-    adminOnly: true, // Operator-only: catalog browse + deck releaser are admin tools
+    adminOnly: true, // Operator-only: deck releaser is an admin tool
   },
   {
     id: "write",

@@ -645,26 +645,6 @@ export const ARENA_TABS: Section[] = [
 // Choreo Card tabs configuration
 export const CHOREO_CARD_TABS: Section[] = [
   {
-    id: "catalogs",
-    labelKey: "tab_choreo_card_catalogs",
-    descKey: "tab_desc_choreo_card_catalogs",
-    label: "Catalogs",
-    icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
-    description: "Browse sequence catalogs",
-    color: "#8b5cf6",
-    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-  },
-  {
-    id: "designer",
-    labelKey: "tab_choreo_card_designer",
-    descKey: "tab_desc_choreo_card_designer",
-    label: "Card Designer",
-    icon: '<i class="fas fa-pen-ruler" aria-hidden="true"></i>',
-    description: "Design custom choreo cards",
-    color: "#ec4899",
-    gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
-  },
-  {
     id: "scan-activity",
     labelKey: "tab_choreo_card_scan_activity",
     descKey: "tab_desc_choreo_card_scan_activity",
@@ -673,16 +653,6 @@ export const CHOREO_CARD_TABS: Section[] = [
     description: "Live feed of Choreo Card scans worldwide",
     color: "#10b981",
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
-  },
-  {
-    id: "theme-lab",
-    labelKey: "tab_choreo_card_theme_lab",
-    descKey: "tab_desc_choreo_card_theme_lab",
-    label: "Theme Lab",
-    icon: '<i class="fas fa-palette" aria-hidden="true"></i>',
-    description: "Compare card back theme variations side by side",
-    color: "#6366f1",
-    gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
   },
   {
     id: "releaser",
