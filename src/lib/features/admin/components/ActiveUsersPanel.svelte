@@ -24,22 +24,31 @@ import type { UserActivityTracker } from "../services/user-activity-tracker";
   // Filter state: "all" | "active" | "inactive"
   let statusFilter = $state<"all" | "active" | "inactive">("all");
 
-  // Stats computed from activity status
+  // Real (signed-up) accounts — anonymous guest sessions are split out below.
+  let realUsers = $derived(users.filter((u) => u.isAnonymous !== true));
+
+  // Anonymous guests who are active right now (online + interacted < 5 min).
+  // Stale/offline guest sessions are intentionally never shown.
+  let liveAnonUsers = $derived(
+    users.filter((u) => u.isAnonymous === true && u.activityStatus === "active")
+  );
+
+  // Stats computed from real accounts only
   let activeCount = $derived(
-    users.filter((u) => u.activityStatus === "active").length
+    realUsers.filter((u) => u.activityStatus === "active").length
   );
   let inactiveCount = $derived(
-    users.filter((u) => u.activityStatus !== "active").length
+    realUsers.filter((u) => u.activityStatus !== "active").length
   );
-  let totalUsers = $derived(users.length);
+  let totalUsers = $derived(realUsers.length);
 
   // Filtered users based on status filter
   let filteredUsers = $derived(
     statusFilter === "all"
-      ? users
+      ? realUsers
       : statusFilter === "active"
-        ? users.filter((u) => u.activityStatus === "active")
-        : users.filter((u) => u.activityStatus !== "active")
+        ? realUsers.filter((u) => u.activityStatus === "active")
+        : realUsers.filter((u) => u.activityStatus !== "active")
   );
 
   // Unsubscribe function
@@ -147,7 +156,7 @@ import type { UserActivityTracker } from "../services/user-activity-tracker";
         <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
         <span>{error}</span>
       </div>
-    {:else if users.length === 0}
+    {:else if realUsers.length === 0}
       <div class="empty">
         <i class="fas fa-users" aria-hidden="true"></i>
         <span>{t("admin_no_users_found")}</span>
@@ -174,6 +183,31 @@ import type { UserActivityTracker } from "../services/user-activity-tracker";
       </div>
     {/if}
   </div>
+
+  <!-- Anonymous Activity: only guests active right now (no stale sessions) -->
+  {#if !isLoading && liveAnonUsers.length > 0}
+    <section
+      class="anon-activity"
+      aria-label={t("admin_anonymous_activity")}
+    >
+      <header class="anon-header">
+        <div class="anon-title-group">
+          <h3 class="anon-title">{t("admin_anonymous_activity")}</h3>
+          <p class="anon-hint">{t("admin_anonymous_activity_hint")}</p>
+        </div>
+        <span class="anon-count">
+          {t("admin_anonymous_online", { count: liveAnonUsers.length.toString() })}
+        </span>
+      </header>
+      <div class="anon-grid-container themed-scrollbar">
+        <PanelGrid minCardWidth="200px" gap="16px">
+          {#each liveAnonUsers as user (user.userId)}
+            <UserPresenceCard {user} onSelect={() => selectUser(user.userId)} />
+          {/each}
+        </PanelGrid>
+      </div>
+    </section>
+  {/if}
 
   <!-- User Detail Modal -->
   <UserDetailModal
@@ -361,5 +395,53 @@ import type { UserActivityTracker } from "../services/user-activity-tracker";
     padding: 1rem;
     overflow-y: auto;
     height: 100%;
+  }
+
+  .anon-activity {
+    flex-shrink: 0;
+    border-top: 1px solid var(--theme-stroke);
+  }
+
+  .anon-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.5rem 0.5rem;
+  }
+
+  .anon-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .anon-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--theme-text);
+  }
+
+  .anon-hint {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--theme-text-secondary, var(--theme-text-dim));
+  }
+
+  .anon-count {
+    flex-shrink: 0;
+    padding: 0.25rem 0.625rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--semantic-success) 18%, transparent);
+    color: var(--semantic-success);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .anon-grid-container {
+    padding: 0.5rem 1rem 1rem;
   }
 </style>

@@ -47,6 +47,8 @@ export interface CachedUserMetadata {
   createdAt: Date | null;
   disabled: boolean;
   role: string;
+  /** Guest session flag. True for un-upgraded anonymous auth users. */
+  isAnonymous: boolean;
   /** Attribution record captured at signup + any self-reported updates. Null for older accounts. */
   attribution: Record<string, unknown> | null;
 }

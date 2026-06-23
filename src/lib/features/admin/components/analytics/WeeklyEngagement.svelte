@@ -25,15 +25,17 @@
 
   // Metrics derived from user data
   const metrics = $derived(() => {
-    const totalUsers = users.length;
+    // Real accounts only — exclude un-upgraded anonymous guest sessions.
+    const realUsers = users.filter((u) => !u.isAnonymous);
+    const totalUsers = realUsers.length;
 
     // New users this week
-    const newThisWeek = users.filter(
+    const newThisWeek = realUsers.filter(
       (u) => u.createdAt && u.createdAt >= weekAgo
     ).length;
 
     // Active users this week
-    const activeThisWeek = users.filter(
+    const activeThisWeek = realUsers.filter(
       (u) => u.lastActivityDate && u.lastActivityDate >= weekAgo
     ).length;
 

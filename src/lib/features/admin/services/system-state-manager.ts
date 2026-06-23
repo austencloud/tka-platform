@@ -163,6 +163,7 @@ export class SystemStateManager {
       createdAt: createdAtDate,
       disabled: (data["disabled"] as boolean) ?? false,
       role: (data["role"] as string) ?? "user",
+      isAnonymous: (data["isAnonymous"] as boolean) ?? false,
       attribution: (data["attribution"] as Record<string, unknown> | undefined) ?? null,
     };
   }

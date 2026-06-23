@@ -76,7 +76,7 @@ export class UserActivityTracker {
   ): () => void {
     const allFirestoreUsers: Map<
       string,
-      { displayName: string; email: string; photoURL: string | null }
+      { displayName: string; email: string; photoURL: string | null; isAnonymous: boolean }
     > = new Map();
     let presenceUsers: UserPresenceWithId[] = [];
     let isFirestoreReady = false;
@@ -102,6 +102,7 @@ export class UserActivityTracker {
                 displayName: (data["displayName"] as string) ?? "Unknown",
                 email: (data["email"] as string) ?? "",
                 photoURL: (data["photoURL"] as string | null) ?? null,
+                isAnonymous: (data["isAnonymous"] as boolean) ?? false,
               });
             });
 
@@ -153,6 +154,7 @@ export class UserActivityTracker {
             displayName: userData.displayName || presence.displayName,
             email: userData.email || presence.email,
             photoURL: userData.photoURL ?? presence.photoURL,
+            isAnonymous: userData.isAnonymous,
           });
         } else {
           // User exists in Firestore but no presence data - create default
@@ -169,6 +171,7 @@ export class UserActivityTracker {
             currentTab: null,
             sessionId: "",
             device: "desktop",
+            isAnonymous: userData.isAnonymous,
           });
         }
       }

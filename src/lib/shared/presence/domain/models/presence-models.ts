@@ -51,6 +51,9 @@ export interface UserPresence {
 
   /** User's avatar URL */
   photoURL?: string | null;
+
+  /** Guest session flag (admin view). True for un-upgraded anonymous auth users. */
+  isAnonymous?: boolean;
 }
 
 /**
