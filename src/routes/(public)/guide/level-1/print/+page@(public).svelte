@@ -124,13 +124,14 @@
         <h2 class="rm-title">Read Me First</h2>
         <span class="rm-flourish" aria-hidden="true"></span>
       </header>
+      <p class="rm-greeting">Greetings, flow arts aficionado!</p>
       <p class="rm-lead">
         You've come across The Kinetic Alphabet, a notation system designed to
         help you craft and communicate your own unique choreography. This
         grid-based language is designed for music, using pictographs and letters
         that combine like puzzle pieces for each beat. This system has propelled
         my sequence creation to new heights, and I hope it will do the same for
-        you.
+        you!
       </p>
       <p>
         The Kinetic Alphabet is a fusion of elements from VTG (Vulcan Tech
@@ -147,8 +148,13 @@
         the letters immediately to benefit from this system.
       </p>
       <p>
-        In a pictograph, the arrow shows the direction of a hand's motion and the
-        hand marker shows where that hand ends. Read each grid as a single beat.
+        This is a work-in-progress and is continually growing. Whether you fully
+        embrace this system, draw inspiration from certain parts, or follow a
+        different path altogether, I hope the ideas presented here contribute to
+        your creative growth.
+      </p>
+      <p>
+        I can't wait to see the unique choreography you'll create!
       </p>
       <p class="sign-off">With love,<br /><span class="rm-sig">Austen Cloud</span></p>
     </div>
@@ -346,6 +352,12 @@
   /* Support page: centred sentence-per-line (each sentence its own line). */
   .support .ln {
     display: block;
+  }
+  /* Read Me salutation line. */
+  .rm-greeting {
+    text-align: left !important;
+    font-style: italic;
+    margin-bottom: 0.9rem !important;
   }
   /* Fraunces drop cap on the opening paragraph. */
   .rm-lead::first-letter {
