@@ -11,9 +11,112 @@
    * cross from the chrome-less public pages into the app shell.
    */
   import { page } from "$app/state";
+  import { onMount, type Component } from "svelte";
+  import RobustAvatar from "../../components/avatar/RobustAvatar.svelte";
+  import type { authState as AuthStateModule } from "../../auth/state/auth-state.svelte";
 
   let scrolled = $state(false);
   let mobileOpen = $state(false);
+  let accountOpen = $state(false);
+  let accountEl: HTMLDivElement | undefined = $state();
+
+  // Auth-aware header WITHOUT breaking landing-lite. The landing page boots in
+  // firebase-free "landing mode" (see detectSiteMode + +layout.svelte), so we
+  // must NOT statically import authState — that drags the whole Firebase stack
+  // (auth/firestore/db/functions) into the landing bundle via auth-state →
+  // firebase top-level side effects.
+  //
+  // Instead: on mount, run a cheap SDK-free probe for Firebase's auth
+  // persistence IndexedDB. No DB → first-time/signed-out visitor → show
+  // "Sign in", never load Firebase. DB present → returning signed-in user →
+  // lazily load the real authState at idle and populate the avatar.
+  let authApi = $state<typeof AuthStateModule | null>(null);
+  let probeDone = $state(false);
+  let hasPersistedAuth = $state(false);
+
+  // Until the slot is resolved (probe pending, or signed-in but auth still
+  // loading) a reserved-width placeholder holds the space so the CTA never
+  // shifts and "Sign in" never flashes before the avatar (no-layout-shift rule).
+  const authReady = $derived(
+    probeDone && (!hasPersistedAuth || (authApi?.initialized ?? false))
+  );
+  const isFullAccount = $derived(authApi?.isFullAccount ?? false);
+  const user = $derived(authApi?.user ?? null);
+  const displayName = $derived(user?.displayName || user?.email || "You");
+  const email = $derived(user?.email ?? null);
+  const photoURL = $derived(user?.photoURL ?? null);
+
+  // Cheap, SDK-free check: does Firebase's auth-persistence IndexedDB exist?
+  // Its presence means this browser has signed in at least once.
+  async function hasFirebaseAuthDb(): Promise<boolean> {
+    try {
+      if (typeof indexedDB === "undefined") return false;
+      // indexedDB.databases() is available in Chromium/WebKit. If unavailable,
+      // assume auth may exist and let the real init decide.
+      if (typeof indexedDB.databases !== "function") return true;
+      const dbs = await indexedDB.databases();
+      return dbs.some((d) => d.name === "firebaseLocalStorageDb");
+    } catch {
+      return true;
+    }
+  }
+
+  // Load the real authState once (idempotent). Pulls Firebase — only ever
+  // called when there's a reason to (persisted session found, or the user
+  // explicitly clicks Sign in). Assigning authApi first lets the derived
+  // getters track the auth rune as initialize() resolves.
+  let authLoadPromise: Promise<void> | null = null;
+  function ensureAuthLoaded(): Promise<void> {
+    if (!authLoadPromise) {
+      authLoadPromise = (async () => {
+        const mod = await import("../../auth/state/auth-state.svelte");
+        authApi = mod.authState;
+        await mod.authState.initialize();
+      })();
+    }
+    return authLoadPromise;
+  }
+
+  onMount(() => {
+    void (async () => {
+      const persisted = await hasFirebaseAuthDb();
+      hasPersistedAuth = persisted;
+      probeDone = true;
+      if (!persisted) return; // signed out → stay Firebase-free
+      if (typeof requestIdleCallback !== "undefined") {
+        requestIdleCallback(() => void ensureAuthLoaded());
+      } else {
+        setTimeout(() => void ensureAuthLoaded(), 0);
+      }
+    })();
+  });
+
+  // In-place sign in: open the centered AuthModal over the landing page rather
+  // than navigating to /create?sheet=auth (which bumped the user into the app
+  // shell and showed the mobile bottom sheet on desktop). Lazy-loads Firebase
+  // auth + the modal on demand — explicit user intent, so the cost is earned.
+  let authModalOpen = $state(false);
+  let AuthModalComp = $state<Component<{
+    open: boolean;
+    initialMode?: "signin" | "signup";
+    onClose: () => void;
+  }> | null>(null);
+
+  async function openSignIn() {
+    accountOpen = false;
+    mobileOpen = false;
+    await ensureAuthLoaded();
+    if (!AuthModalComp) {
+      AuthModalComp = (await import("../../auth/components/AuthModal.svelte")).default;
+    }
+    authModalOpen = true;
+  }
+
+  // Close the modal as soon as sign-in succeeds; the header then swaps to the
+  // avatar via the same reactive auth state.
+  $effect(() => {
+    if (authModalOpen && authApi?.isAuthenticated) authModalOpen = false;
+  });
 
   const NAV = [
     { label: "About", href: "/about", icon: "fa-circle-info" },
@@ -36,7 +139,30 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape" && mobileOpen) mobileOpen = false;
+    if (e.key === "Escape") {
+      if (accountOpen) accountOpen = false;
+      else if (mobileOpen) mobileOpen = false;
+    }
+  }
+
+  // Close the desktop account menu on any outside pointer.
+  $effect(() => {
+    if (!accountOpen) return;
+    function onPointer(e: PointerEvent) {
+      if (accountEl && !accountEl.contains(e.target as Node)) accountOpen = false;
+    }
+    document.addEventListener("pointerdown", onPointer);
+    return () => document.removeEventListener("pointerdown", onPointer);
+  });
+
+  async function handleSignOut() {
+    accountOpen = false;
+    mobileOpen = false;
+    try {
+      await authApi?.signOut();
+    } catch {
+      // Reactive state swaps back to "Sign in" on success; failure is rare.
+    }
   }
 </script>
 
@@ -55,7 +181,35 @@
           {#if isActive(link.href)}<span class="ind" aria-hidden="true"></span>{/if}
         </a>
       {/each}
-      <a class="signin" href="/create?sheet=auth" data-sveltekit-reload>Sign in</a>
+      {#if !authReady}
+        <span class="auth-slot" aria-hidden="true"></span>
+      {:else if isFullAccount}
+        <div class="account" bind:this={accountEl}>
+          <button
+            class="avatar-btn"
+            aria-haspopup="menu"
+            aria-expanded={accountOpen}
+            aria-label="Account menu"
+            onclick={() => (accountOpen = !accountOpen)}
+          >
+            <RobustAvatar src={photoURL} name={displayName} customSize={32} />
+          </button>
+          {#if accountOpen}
+            <div class="account-menu" role="menu">
+              <div class="acct-identity">
+                <span class="acct-name">{displayName}</span>
+                {#if email}<span class="acct-email">{email}</span>{/if}
+              </div>
+              <button class="acct-signout" role="menuitem" onclick={handleSignOut}>
+                <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                Sign out
+              </button>
+            </div>
+          {/if}
+        </div>
+      {:else}
+        <button type="button" class="signin auth-slot" onclick={openSignIn}>Sign in</button>
+      {/if}
       <a class="cta" href="/create" data-sveltekit-reload>Open the app</a>
     </nav>
 
@@ -100,9 +254,33 @@
         <i class="fas fa-rocket" aria-hidden="true"></i>
         <span>Open the app</span>
       </a>
-      <a class="m-signin" href="/create?sheet=auth" data-sveltekit-reload onclick={close}>Sign in</a>
+      {#if authReady && isFullAccount}
+        <div class="m-identity">
+          <RobustAvatar src={photoURL} name={displayName} customSize={32} />
+          <div class="m-id-info">
+            <span class="m-id-name">{displayName}</span>
+            {#if email}<span class="m-id-email">{email}</span>{/if}
+          </div>
+        </div>
+        <button class="m-signin m-signout" onclick={handleSignOut}>
+          <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+          Sign out
+        </button>
+      {:else if authReady}
+        <button type="button" class="m-signin" onclick={openSignIn}>Sign in</button>
+      {/if}
     </div>
 </nav>
+
+<!-- In-place sign-in modal (centered BaseModal). Lazy-loaded on first Sign in
+     click so the landing page stays Firebase-free until the user opts in. -->
+{#if AuthModalComp}
+  <AuthModalComp
+    open={authModalOpen}
+    initialMode="signin"
+    onClose={() => (authModalOpen = false)}
+  />
+{/if}
 
 <style>
   header {
@@ -185,8 +363,118 @@
     background: linear-gradient(90deg, #6f8cff, #c0a3ff);
   }
 
+  /* Sign in is a <button> (opens the modal in place), styled to read as the
+     muted secondary link it replaced. */
   .signin {
-    color: #9b97bd !important;
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: #9b97bd;
+    background: none;
+    border: none;
+    padding: 0.4rem 0;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  .signin:hover,
+  .signin:focus-visible {
+    color: #fff;
+    outline: none;
+  }
+  /* Reserve the auth slot at the avatar's footprint so swapping
+     placeholder → Sign in / avatar never nudges the CTA. */
+  .auth-slot {
+    display: inline-flex;
+    align-items: center;
+    min-width: 36px;
+    min-height: 32px;
+  }
+
+  .account {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .avatar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    background: none;
+    cursor: pointer;
+    line-height: 0;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .avatar-btn:hover,
+  .avatar-btn:focus-visible {
+    border-color: rgba(176, 163, 255, 0.7);
+    box-shadow: 0 0 0 3px rgba(139, 108, 255, 0.18);
+    outline: none;
+  }
+  .account-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    min-width: 200px;
+    padding: 6px;
+    background: rgb(20, 20, 38);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+    z-index: 210;
+    animation: acct-in 0.16s ease-out;
+  }
+  @keyframes acct-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.98);
+    }
+  }
+  .acct-identity {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .acct-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .acct-email {
+    font-size: 0.78rem;
+    color: #9b97bd;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .acct-signout {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-top: 4px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: #c4c1d8;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .acct-signout:hover,
+  .acct-signout:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ff8a8a;
+    outline: none;
   }
   .cta {
     padding: 0.5rem 1.1rem !important;
@@ -354,9 +642,57 @@
     font-size: 0.95rem;
     font-weight: 500;
     padding: 6px;
+    background: none;
+    border: none;
+    font-family: inherit;
+    cursor: pointer;
   }
   .m-signin:hover {
     color: #d7d4ea;
+  }
+  .m-identity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .m-id-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+  }
+  .m-id-name {
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .m-id-email {
+    font-size: 0.82rem;
+    color: #9b97bd;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .m-signout {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  .m-signout:hover {
+    color: #ff8a8a;
   }
 
   @keyframes m-item-in {
