@@ -289,6 +289,7 @@
     "mediabunny": "^1.44.2",
     "miniplex": "^2.0.0",
     "modern-screenshot": "^4.7.0",
+    "page-flip": "^2.0.7",
     "pdf-lib": "^1.17.1",
     "peerjs": "^1.5.4",
     "posthog-js": "^1.335.3",
