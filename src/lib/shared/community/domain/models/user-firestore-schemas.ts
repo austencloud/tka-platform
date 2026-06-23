@@ -39,6 +39,14 @@ export const UserFirestoreDataSchema = z
     isAnonymous: z.boolean().nullish(),
     adminLabel: z.string().nullish(),
     adminNotes: z.string().nullish(),
+    lastLocation: z
+      .object({
+        city: z.string().nullish(),
+        country: z.string().nullish(),
+        lat: z.number().nullish(),
+        lng: z.number().nullish(),
+      })
+      .nullish(),
   })
   .passthrough();
 

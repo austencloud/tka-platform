@@ -6,6 +6,7 @@
 import type { Achievement } from "$lib/shared/gamification/domain/models/achievement-models";
 import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { PresenceLocation } from "$lib/shared/presence/domain/models/presence-models";
 import type { PinnedItem } from "./pinned-item";
 
 /**
@@ -47,6 +48,10 @@ export interface UserProfile {
 
   // Profile accent color (hex, e.g. "#8b5cf6") for avatar ring and cards
   profileColor?: string;
+
+  /** Coarse IP-derived last-known location (city/country), shown on creator
+   * cards. Public, approximate — not precise geolocation. */
+  location?: PresenceLocation | null;
 
   /** Pinned showcase items (1-6, any content type) */
   pinnedItems?: PinnedItem[];

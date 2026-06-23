@@ -16,6 +16,7 @@
   import { isGoogleAvatarUrl } from "$lib/shared/foundation/utils/google-avatar";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { getEffectiveProp } from "$lib/shared/community/domain/get-effective-prop";
+  import { formatLocationLabel } from "$lib/shared/presence/domain/models/presence-models";
 
   interface Props {
     user: EnhancedUserProfile;
@@ -57,6 +58,9 @@
 
   // Prop identity badge: explicit favorite wins, else the settings-derived prop
   const effectiveProp = $derived(getEffectiveProp(user));
+
+  // Coarse IP-derived location label (e.g. "Berlin, DE"); empty when unknown
+  const locationLabel = $derived(formatLocationLabel(user.location));
 
   /**
    * Handle successful avatar image load - extract color
@@ -140,6 +144,13 @@
       <p class="pronouns">{user.pronouns}</p>
     {/if}
     <p class="username">@{user.username}</p>
+
+    {#if locationLabel}
+      <p class="creator-location">
+        <i class="fas fa-earth-americas" aria-hidden="true"></i>
+        {locationLabel}
+      </p>
+    {/if}
 
     {#if effectiveProp}
       {@const propInfo = getPropTypeDisplayInfo(effectiveProp)}
@@ -342,6 +353,26 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .creator-location {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    margin: 3px 0 0 0;
+    font-size: var(--font-size-compact);
+    color: var(--theme-text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .creator-location i {
+    font-size: var(--font-size-compact);
+    color: var(--card-accent);
+    opacity: 0.75;
   }
 
   /* User stats */

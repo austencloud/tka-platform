@@ -39,6 +39,7 @@ import type {
 } from "../domain/models/enhanced-user-profile";
 import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { PresenceLocation } from "$lib/shared/presence/domain/models/presence-models";
 import {
   UserFirestoreDataSchema,
   UserAchievementFirestoreSchema,
@@ -82,6 +83,7 @@ interface FirestoreUserData extends DocumentData {
   isAnonymous?: boolean;
   adminLabel?: string;
   adminNotes?: string;
+  lastLocation?: PresenceLocation | null;
 }
 
 /**
@@ -221,6 +223,7 @@ async function mapFirestoreToEnhancedProfile(
     const isHidden = data.isHidden ?? false;
     const adminLabel = data.adminLabel ?? undefined;
     const adminNotes = data.adminNotes ?? undefined;
+    const location = (data.lastLocation as PresenceLocation | undefined) ?? null;
 
     const topAchievements = skipAchievements
       ? []
@@ -241,6 +244,7 @@ async function mapFirestoreToEnhancedProfile(
       instagramUsername,
       pronouns,
       profileColor,
+      location,
       propsISpinWith,
       favoriteProp,
       activeProp,
