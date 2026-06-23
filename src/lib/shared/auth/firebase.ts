@@ -29,6 +29,7 @@ import type { Firestore } from "firebase/firestore";
 import type { Database } from "firebase/database";
 import type { FirebaseStorage } from "firebase/storage";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import { resolveAuthDomain } from "./auth-domain";
 import { getFirebaseHMRManager, type FirebaseHMRManager } from "./firebase-hmr-manager";
 import type { Functions } from 'firebase/functions';
 import type { Unsubscribe } from 'firebase/firestore';
@@ -41,11 +42,12 @@ const debug = createComponentLogger("Firebase");
 
 /**
  * Firebase configuration object
- * Uses hardcoded values for reliable deployment across environments
+ * Uses hardcoded values for reliable deployment across environments.
+ * authDomain is resolved per environment — see resolveAuthDomain (auth-domain.ts).
  */
 const firebaseConfig = {
   apiKey: "AIzaSyDKUM9pf0e_KgFjW1OBKChvrU75SnR12v4",
-  authDomain: "the-kinetic-alphabet.firebaseapp.com",
+  authDomain: resolveAuthDomain(),
   databaseURL: "https://the-kinetic-alphabet-default-rtdb.firebaseio.com",
   projectId: "the-kinetic-alphabet",
   storageBucket: "the-kinetic-alphabet.firebasestorage.app",
