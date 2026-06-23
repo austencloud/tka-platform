@@ -17,6 +17,24 @@
  * conversion, add/remove entries — numbers re-derive automatically.
  */
 
+import type { Snippet } from "svelte";
+
+/**
+ * Metadata GuideDocument hands each page to the route's wrapper snippet. The
+ * route decides the frame (stacked GuidePage for print, scaled flip page for
+ * the book); GuideDocument supplies the title, number, full-bleed flag, and the
+ * page's content snippet.
+ */
+export type GuidePageMeta = {
+  /** cover | drink | support | readme | toc | body. */
+  kind: string;
+  title?: string;
+  pageNumber?: number;
+  fullBleed?: boolean;
+  label?: string;
+  content: Snippet;
+};
+
 export type GuideGroup = "1.0" | "1.1" | "1.2";
 
 export type GuidePageEntry = {

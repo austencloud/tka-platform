@@ -5,19 +5,18 @@
    * realistic page-turn + corner fold and InDesign-style facing-page spreads.
    * Flipping one turns the other to the same page (synced).
    *
-   * SPIKE scope: proves StPageFlip drives LIVE GuidePage DOM (right) — no
-   * rasterizing — alongside pdf.js canvases (left). Full front-matter parity
-   * with the print route comes after this is greenlit.
+   * The new edition renders the shared GuideDocument (same page sequence as the
+   * print route, so the two editions stay in lockstep) as live GuidePage DOM —
+   * StPageFlip drives it directly, no rasterizing. The old edition is the v0.5
+   * proof rendered to canvases via pdf.js.
    */
   import { onMount, tick } from "svelte";
   import "../_styles/guide.css";
   import "../_styles/guide-print.css";
   import { setGuidePrintMode } from "../_data/guide-data-context";
-  import GuideCover from "../_components/GuideCover.svelte";
   import GuidePage from "../_components/GuidePage.svelte";
-  import GuideTOC from "../_components/GuideTOC.svelte";
-  import PagePlaceholder from "../_components/PagePlaceholder.svelte";
-  import { GUIDE_BODY_PAGES } from "../_data/guide-manifest";
+  import GuideDocument from "../_components/GuideDocument.svelte";
+  import type { GuidePageMeta } from "../_data/guide-manifest";
 
   setGuidePrintMode();
 
@@ -37,12 +36,15 @@
   // invocation" on hydrate), so we mount it fresh on the client instead.
   let mounted = $state(false);
 
+  const FLIP_MS = 600;
   function sync(from: any, to: any, idx: number) {
     if (syncing || !to) return;
     syncing = true;
     const max = to.getPageCount() - 1;
-    to.turnToPage(Math.max(0, Math.min(idx, max)));
-    requestAnimationFrame(() => (syncing = false));
+    // flip() ANIMATES the other book to the same page (turnToPage would jump);
+    // hold the guard past the animation so the echoed flip event doesn't bounce.
+    to.flip(Math.max(0, Math.min(idx, max)));
+    setTimeout(() => (syncing = false), FLIP_MS + 60);
   }
 
   onMount(async () => {
@@ -93,10 +95,37 @@
     pfNew.on("flip", (e: any) => sync(pfNew, pfOld, e.data));
     pfOld.on("flip", (e: any) => sync(pfOld, pfNew, e.data));
     status = `old ${pfOld.getPageCount()}p · new ${pfNew.getPageCount()}p`;
+
+    // Dev handle so the two books can be driven page-by-page from DevTools while
+    // aligning their contents. goto(n) turns BOTH to the same index.
+    if (import.meta.env.DEV) {
+      (window as any).__books = {
+        old: pfOld,
+        new: pfNew,
+        goto(n: number) {
+          syncing = true;
+          pfOld.turnToPage(Math.min(n, pfOld.getPageCount() - 1));
+          pfNew.turnToPage(Math.min(n, pfNew.getPageCount() - 1));
+          requestAnimationFrame(() => (syncing = false));
+        },
+      };
+    }
   });
 </script>
 
 <svelte:head><title>Guide Book — Level 1</title></svelte:head>
+
+<!-- Wrap each shared-document page as a scaled flip page (native 8.5×11 GuidePage
+     inside a .scale transform, clipped to the flip .page box). -->
+{#snippet bookPage({ title, pageNumber, fullBleed, content }: GuidePageMeta)}
+  <div class="page">
+    <div class="scale">
+      <div class="pg">
+        <GuidePage {title} {pageNumber} {fullBleed}>{@render content()}</GuidePage>
+      </div>
+    </div>
+  </div>
+{/snippet}
 
 <div class="wrap">
   <div class="bar">
@@ -112,21 +141,10 @@
       </div>
       <div class="book-col">
         <div class="cap">New — rebuild</div>
-        <!-- Live rebuild pages: each .page holds a real GuidePage scaled to FLIP_W. -->
+        <!-- Live rebuild pages: shared GuideDocument, each page a real GuidePage
+             scaled into a flip .page. Same sequence as /print. -->
         <div class="flip" bind:this={newContainer} style="--s:{SCALE}">
-          <div class="page">
-            <div class="scale"><div class="pg"><GuideCover theme="navy" /></div></div>
-          </div>
-          <div class="page">
-            <div class="scale"><div class="pg"><GuidePage title="Table of Contents"><GuideTOC /></GuidePage></div></div>
-          </div>
-          {#each GUIDE_BODY_PAGES as entry, i}
-            <div class="page">
-              <div class="scale">
-                <div class="pg"><GuidePage title={entry.title} pageNumber={i + 1}><PagePlaceholder /></GuidePage></div>
-              </div>
-            </div>
-          {/each}
+          <GuideDocument coverTheme="navy" page={bookPage} />
         </div>
       </div>
     {/if}
