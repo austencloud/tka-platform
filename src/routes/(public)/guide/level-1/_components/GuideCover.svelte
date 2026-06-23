@@ -71,6 +71,7 @@
 
   <header class="hero">
     <h1 class="title"><span>The Kinetic</span><span>Alphabet</span></h1>
+    <p class="subtitle">Notation for Flow Arts</p>
     <div class="lvl"><span class="lvl-word">Level</span><span class="lvl-badge">1</span></div>
   </header>
 
@@ -121,6 +122,15 @@
   /* Pure white on navy, pure black on ivory — max legibility (AAA). */
   .cover.navy .title { color: #ffffff; }
   .cover.light .title { color: #000000; }
+
+  /* Subtitle under the title — gold foil on navy, deep gold ink on ivory. */
+  .subtitle {
+    margin: 2.4cqw 0 0; text-align: center;
+    font-family: "Cormorant Garamond", Georgia, serif; font-style: italic;
+    font-size: clamp(16px, 4.6cqw, 34px); letter-spacing: 0.02em;
+  }
+  .cover.navy .subtitle { color: #e9d9a3; }   /* foil gold, ~12:1 on #14142b */
+  .cover.light .subtitle { color: #8a6a14; }  /* deep gold ink on ivory */
 
   .lvl { margin-top: 3.5cqw; display: flex; align-items: center; justify-content: center; gap: 0.5em; }
   .lvl-word { font-family: "Cormorant Garamond", Georgia, serif; font-style: italic; font-size: clamp(15px, 4cqw, 30px); opacity: 0.85; }
