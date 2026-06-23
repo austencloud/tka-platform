@@ -169,3 +169,20 @@ LOOP terminology, per existing section filenames already named Loops*.)
   session had locked the in-print two-up PayPal/Venmo; a parallel session pivoted
   to the single-QR → `/support` scheme). Austen confirmed: KEEP the single-QR
   pivot. The two-up is intentionally superseded; do not restore it.
+- 2026-06-22: READ ME (p4) text corrected — a fabricated "In a pictograph, the
+  arrow shows…" paragraph was removed and the original transcribed verbatim from
+  the artboard (salutation + work-in-progress + "I can't wait to see…" closing).
+- 2026-06-22: PAGE NUMBERING + AUTO-TOC system shipped (spec
+  `2026-06-22-guide-page-numbering-toc-design.md`). Single source of truth =
+  `_data/guide-manifest.ts` (34 body pages, 1 entry = 1 page, number = index+1).
+  `GuideTOC.svelte` generates the TOC (numbers, dot leaders, subs) from it;
+  `GuidePage` renders a recto/verso footer number (odd→right, even→left, page
+  1=recto); `page-number-prefs.svelte.ts` + `PageNumberToggle.svelte` toggle on/
+  off (viewer chrome, default on). Body pages now render from the manifest:
+  built component (registry `BUILT` in print route, empty for now) or
+  `PagePlaceholder`. Legacy continuous chapter dump removed; section components
+  (`TheGrid.svelte` etc.) retained for reuse during conversion. `@page` margin
+  set to 0 so each GuidePage is a true 8.5×11 sheet supplying its own margin
+  (footer prints where it shows). To convert a page (p6+): build its per-page
+  component, register it in `BUILT` under the manifest id — number + TOC are
+  already correct.

@@ -15,14 +15,20 @@
   import "../_styles/guide-print.css";
   import { setGuidePrintMode } from "../_data/guide-data-context";
   import { page } from "$app/state";
+  import type { Component } from "svelte";
   import GuidePage from "../_components/GuidePage.svelte";
   import GuideCover from "../_components/GuideCover.svelte";
-
-  import PositionsMotions from "../positions-motions/+page.svelte";
-  import Letters from "../letters/+page.svelte";
-  import Words from "../words/+page.svelte";
+  import GuideTOC from "../_components/GuideTOC.svelte";
+  import PagePlaceholder from "../_components/PagePlaceholder.svelte";
+  import PageNumberToggle from "../_components/PageNumberToggle.svelte";
+  import { GUIDE_BODY_PAGES } from "../_data/guide-manifest";
 
   setGuidePrintMode();
+
+  // Built per-page components, keyed by manifest id. Empty until chapters are
+  // converted page-by-page (p6+); any id not registered renders a numbered
+  // placeholder. As each body page is rebuilt, add e.g. { "the-grid": TheGridPage }.
+  const BUILT: Record<string, Component> = {};
 
   // ?theme=home → ink-cheap light cover for home printers; default = navy (foil).
   const coverTheme = $derived(page.url.searchParams.get("theme") === "home" ? "light" : "navy");
@@ -32,52 +38,6 @@
   // be added, without ever reprinting the book.
   const SUPPORT_QR = "/guide/level-1/images/_shared/qr-support.png";
   const SUPPORT_URL = "tkaflowarts.com/support";
-
-  // Table of Contents — Level 1 scope only (1.0–1.2). Entries + sub-entries
-  // transcribed from the original artboard; γ (not Γ) per the facelift
-  // convention. Page numbers intentionally omitted (added programmatically
-  // once pagination is final). 1.3 Single-Turns / 1.4 Double-Turns are
-  // later-level content, not part of this guide.
-  type TocSection = { n: string; title: string; items: { t: string; subs?: string[] }[] };
-  const TOC: TocSection[] = [
-    {
-      n: "1.0",
-      title: "Positions / Motions",
-      items: [
-        { t: "The Grid" },
-        { t: "Hand Positions" },
-        { t: "Hand Motions", subs: ["Type 1 Dual-Shifts - Alpha, Beta", "Gamma / Type 2 Shifts", "Type 3/4 Cross-Shifts and Dashes", "Type 5/6 Dual-Dashes and Statics"] },
-        { t: "Staff Positions" },
-        { t: "Staff Motions" },
-        { t: "Negative Space / Body Turns" },
-      ],
-    },
-    {
-      n: "1.1",
-      title: "Letters",
-      items: [
-        { t: "Base Letters", subs: ["Double Staff", "Clubs", "Buugeng", "Triads", "Fans", "Mini Hoops"] },
-        { t: "Type 1 - Dual-Shifts", subs: ["ABC, GHI", "DJ, EK, FL", "MP, NQ, OR, STUV"] },
-        { t: "Type 2 - Shifts", subs: ["WXYZ, ΣΔθΩ"] },
-        { t: "Type 3 - Cross-Shifts", subs: ["W- X- Y- Z-, Σ- Δ- θ- Ω-"] },
-        { t: "Type 4, 5, 6", subs: ["Φ, Ψ, Λ", "Φ-, Ψ-, Λ-", "α, β, γ"] },
-      ],
-    },
-    {
-      n: "1.2",
-      title: "Words",
-      items: [
-        { t: "Words" },
-        { t: "Permutations" },
-        { t: "Reversals" },
-        { t: "Examples with A, B, C" },
-        { t: "Misc. Permutation Examples" },
-      ],
-    },
-  ];
-  // Layout: 1.0 + 1.2 on the left, the longer 1.1 alone on the right.
-  const TOC_LEFT: TocSection[] = [TOC[0]!, TOC[2]!];
-  const TOC_RIGHT: TocSection[] = [TOC[1]!];
 </script>
 
 <svelte:head>
@@ -160,53 +120,27 @@
     </div>
   </GuidePage>
 
-  <!-- ── Page 5: Table of Contents (Level 1 scope, 1.0–1.2) ─────────────── -->
-  {#snippet tocSection(sec: TocSection)}
-    <section class="toc-sec">
-      <h3 class="toc-sec-h">
-        <span class="toc-num">{sec.n}</span>
-        <span class="toc-sec-title">{sec.title}</span>
-      </h3>
-      <ul class="toc-list">
-        {#each sec.items as it}
-          <li class="toc-item">{it.t}</li>
-          {#if it.subs}
-            {#each it.subs as s}
-              <li class="toc-sub">{s}</li>
-            {/each}
-          {/if}
-        {/each}
-      </ul>
-    </section>
-  {/snippet}
+  <!-- ── Page 5: Table of Contents (generated from the manifest) ─────────── -->
   <GuidePage label="p5 — Table of Contents">
-    <div class="toc">
-      <header class="toc-head">
-        <h2 class="toc-title">Table of Contents</h2>
-        <span class="toc-flourish" aria-hidden="true"></span>
-      </header>
-      <div class="toc-cols">
-        <div class="toc-col">
-          {#each TOC_LEFT as sec}{@render tocSection(sec)}{/each}
-        </div>
-        <div class="toc-col">
-          {#each TOC_RIGHT as sec}{@render tocSection(sec)}{/each}
-        </div>
-      </div>
-    </div>
+    <GuideTOC />
   </GuidePage>
 
-  <!-- ── Chapters: NOT yet converted to GuidePage units ──────────────────
-       These three still render the legacy continuous flow. Until each is
-       rebuilt into real 8.5×11 GuidePage units (p6+), wrap them in a single
-       page-WIDTH sheet so they read as a draft column on the viewer instead of
-       sprawling to the full viewport width. -->
-  <div class="legacy-chapters">
-    <PositionsMotions />
-    <Letters />
-    <Words />
-  </div>
+  <!-- ── Body pages: generated from the manifest. Each entry is one numbered
+       page; built pages render their component, the rest a numbered placeholder.
+       Printed page number = manifest index + 1 (first body page = 1). -->
+  {#each GUIDE_BODY_PAGES as entry, i}
+    {@const Built = BUILT[entry.id]}
+    <GuidePage label={`body p${i + 1} — ${entry.title}`} pageNumber={i + 1}>
+      {#if Built}
+        <Built />
+      {:else}
+        <PagePlaceholder title={entry.title} />
+      {/if}
+    </GuidePage>
+  {/each}
 </div>
+
+<PageNumberToggle />
 
 <style>
   /* Page 1 cover — full-bleed GuideCover. aspect-ratio gives the box a concrete
@@ -214,23 +148,6 @@
   .cover-fill {
     width: 100%;
     aspect-ratio: 8.5 / 11;
-  }
-
-  /* Legacy (un-converted) chapters — clamp to a page-width white sheet on the
-     viewer so they stop sprawling to full viewport width. Interim until each
-     chapter is rebuilt into GuidePage units. */
-  .legacy-chapters {
-    background: #fff;
-    box-sizing: border-box;
-  }
-  @media screen {
-    .legacy-chapters {
-      width: 8.5in;
-      max-width: 8.5in;
-      margin: 28px auto 0;
-      padding: 0.55in 0.65in 0.8in;
-      box-shadow: 0 2px 18px rgba(0, 0, 0, 0.3);
-    }
   }
 
   /* Front-matter pages (white interior, ink-cheap) */
@@ -381,110 +298,5 @@
     font-variation-settings: "opsz" 144, "wght" 580, "WONK" 1;
     font-size: 1.7rem;
     color: #14142b;
-  }
-
-  /* ── Table of Contents ─────────────────────────────────────────────── */
-  .toc {
-    min-height: 9.4in;
-    display: flex;
-    flex-direction: column;
-    padding-top: 0.35in;
-  }
-  .toc-head {
-    text-align: center;
-    margin: 0 0 0.5in;
-  }
-  .toc-title {
-    font-family: "Fraunces", Georgia, serif;
-    font-style: italic;
-    font-variation-settings: "opsz" 144, "wght" 560, "WONK" 1;
-    font-size: 2.8rem;
-    color: #14142b;
-    margin: 0;
-  }
-  /* Gold hairline flourish with a centred navy diamond — echoes the cover. */
-  .toc-flourish {
-    display: block;
-    width: 2.4in;
-    height: 9px;
-    margin: 0.16in auto 0;
-    background:
-      linear-gradient(#c9a227, #c9a227) center / 100% 1px no-repeat;
-    position: relative;
-  }
-  .toc-flourish::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 7px;
-    height: 7px;
-    transform: translate(-50%, -50%) rotate(45deg);
-    background: #14142b;
-  }
-  /* Two columns split by a hairline rule. */
-  .toc-cols {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-    max-width: 6.7in;
-    margin: 0 auto;
-    width: 100%;
-  }
-  .toc-col {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4in;
-    padding: 0 0.5in;
-  }
-  .toc-col:first-child {
-    border-right: 1px solid #e2def0;
-  }
-  .toc-sec {
-    break-inside: avoid;
-  }
-  /* Big editorial section numeral + title on a shared baseline, gold rule. */
-  .toc-sec-h {
-    margin: 0 0 0.18in;
-    padding-bottom: 0.09in;
-    border-bottom: 1.5px solid #c9a227;
-    display: flex;
-    align-items: baseline;
-    gap: 0.34em;
-  }
-  .toc-num {
-    font-family: "Fraunces", Georgia, serif;
-    font-style: italic;
-    font-variation-settings: "opsz" 144, "wght" 620, "WONK" 1;
-    font-size: 1.95rem;
-    line-height: 1;
-    color: #2342c9;
-  }
-  .toc-sec-title {
-    font-family: "Fraunces", Georgia, serif;
-    font-style: italic;
-    font-variation-settings: "opsz" 144, "wght" 580, "WONK" 1;
-    font-size: 1.32rem;
-    color: #14142b;
-  }
-  .toc-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  .toc-item {
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-weight: 600;
-    font-size: 1.3rem;
-    color: #18181f;
-    line-height: 1.6;
-  }
-  .toc-sub {
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-style: italic;
-    font-size: 1.1rem;
-    color: #4a4658;
-    line-height: 1.5;
-    padding-left: 1.1em;
   }
 </style>

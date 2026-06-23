@@ -166,9 +166,12 @@
 
 /* === Print page setup + breaks === */
 @media print {
+  /* margin:0 — each GuidePage is a true 8.5×11 sheet and supplies its own 0.6in
+     margin via .page-body padding, so the recto/verso footer prints where it
+     shows on screen. */
   @page {
     size: Letter;
-    margin: 0.6in;
+    margin: 0;
   }
   .print-doc.guide-content {
     max-width: none;
