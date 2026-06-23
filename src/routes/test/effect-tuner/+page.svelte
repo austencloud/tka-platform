@@ -1,24 +1,24 @@
 <!--
   Effect Tuner — pick sensible shipped defaults for all 16 effects (throwaway).
 
-  Renders any of the 16 real effects live on a real AnimatorCanvas, judged in
-  two scenes off the SAME base motion:
-    • Clean  — single blue+red pair (rotated = []). The honest single-effect read.
-    • Tunnel — rotated/mirrored kaleidoscope copies. The additive-overlap gate.
-  Flipping scene reuses base (no regeneration), so a locked default is judged
-  against identical motion in both. Tune with the real per-effect panel, then
-  "Copy default JSON" → paste into DEFAULT_EFFECTS_CONFIG[effect] in
-  src/lib/shared/effects/domain/defaults.ts.
+  Gallery layout for ultrawide: big square stage on the left, the REAL
+  production EffectsPanel on the right (EffectSelector + Choose-a-Look presets +
+  Customize + primary slider) so the tuner shows exactly what the end user sees.
 
-  Real components only, driven by an ISOLATED effects config (persist:false →
-  never touches the user's global tka_effects_config). Default prop = STAFF
-  (2 tip ends) because coverage/blowout only shows with 2-end props. Spec:
-  docs/superpowers/specs/active/2026-06-23-effect-tuner-design.md
+  Two scenes off the SAME base motion (flipping reuses base — no regeneration):
+    • Clean  — single blue+red pair. Honest single-effect read.
+    • Tunnel — rotated/mirrored kaleidoscope copies. Additive-overlap gate.
+  Tune via the panel, then "Copy default JSON" → paste into
+  DEFAULT_EFFECTS_CONFIG[effect] in src/lib/shared/effects/domain/defaults.ts.
+
+  Driven by an ISOLATED effects config (persist:false → never touches the
+  user's global tka_effects_config). Default prop = STAFF (2 tip ends reveal
+  coverage/blowout). Spec: docs/superpowers/specs/active/2026-06-23-effect-tuner-design.md
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { Component } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
   import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
   import { rotateSequence, mirrorSequence } from "$lib/shared/create/services/sequence-transforms";
@@ -30,37 +30,21 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import type { EffectType, TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+  import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 
-  // Isolated effects config + the real per-effect tuning panels.
+  // Isolated effects config — drives the real EffectsPanel via context.
   import {
     createEffectsConfigState,
     isEffectId,
   } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import FirePanel from "$lib/shared/animation-engine/components/settings-panels/FirePanel.svelte";
-  import CharcoalPanel from "$lib/shared/animation-engine/components/settings-panels/CharcoalPanel.svelte";
-  import LedPanel from "$lib/shared/animation-engine/components/settings-panels/LedPanel.svelte";
-  import TrailsPanel from "$lib/shared/animation-engine/components/settings-panels/TrailsPanel.svelte";
-  import ZapCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/ZapCustomize.svelte";
-  import SparklesCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/SparklesCustomize.svelte";
-  import EchoCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/EchoCustomize.svelte";
-  import BloomCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/BloomCustomize.svelte";
-  import WaterCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/WaterCustomize.svelte";
-  import BubblesCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/BubblesCustomize.svelte";
-  import PetalsCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/PetalsCustomize.svelte";
-  import SmokeCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/SmokeCustomize.svelte";
-  import InkCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/InkCustomize.svelte";
-  import FrostCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/FrostCustomize.svelte";
-  import SilkCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/SilkCustomize.svelte";
-  import PulseCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/PulseCustomize.svelte";
 
   const DEFAULT_PROP_STATE: PropState = { centerPathAngle: 0, staffRotationAngle: 0 };
 
   type Fold = 2 | 4 | 8;
   type Scene = "clean" | "tunnel";
 
-  // Isolated effects config — persist:false keeps it off the shared global key.
+  // persist:false → fully isolated; never touches the user's tka_effects_config.
   const effectsConfig = createEffectsConfigState(undefined, { persist: false });
   setEffectsConfigContext(effectsConfig);
 
@@ -69,7 +53,6 @@
   let propType = $state<PropType>(PropType.STAFF); // 2 tip ends → reveals coverage/blowout
   let fold = $state<Fold>(4);
   let mirror = $state(false);
-  let activeEffect = $state<EffectType>("none");
   let speed = $state(0.3); // beats per second
   let isPlaying = $state(true);
   let showGrid = $state(true);
@@ -77,6 +60,7 @@
   let errorMsg = $state<string | null>(null);
   let layerCount = $state(1);
   let copyStatus = $state("");
+  let bpm = $state(120); // EffectsPanel requires it; playback is driven by our own loop
 
   const propChoices: { type: PropType; label: string }[] = [
     { type: PropType.STAFF, label: "Staff" },
@@ -91,38 +75,11 @@
 
   const folds: Fold[] = [2, 4, 8];
 
-  const effectChoices: EffectType[] = [
-    "none", "fire", "charcoal", "led", "trails", "zap", "sparkles", "echo",
-    "bloom", "water", "bubbles", "petals", "smoke", "ink", "frost", "silk", "pulse",
-  ];
-
-  const tipEffectMap = $derived<TipEffectMap | undefined>(
-    activeEffect === "none" ? undefined : { "*": { effect: activeEffect } },
+  // EffectsPanel owns effect selection through the config — read it back.
+  const activeEffect = $derived(effectsConfig.activeEffect);
+  const activeTipEffectMap = $derived<TipEffectMap | undefined>(
+    activeEffect === "none" ? undefined : effectsConfig.tipEffectMap,
   );
-
-  // Active effect → its real tuning panel. Settings-panels (fire/charcoal/led/
-  // trails) take no onBack; the customize views take an onBack (noop here).
-  type PanelEntry = { comp: Component<any>; needsBack: boolean };
-  const EFFECT_PANELS: Record<string, PanelEntry> = {
-    fire: { comp: FirePanel, needsBack: false },
-    charcoal: { comp: CharcoalPanel, needsBack: false },
-    led: { comp: LedPanel, needsBack: false },
-    trails: { comp: TrailsPanel, needsBack: false },
-    zap: { comp: ZapCustomize, needsBack: true },
-    sparkles: { comp: SparklesCustomize, needsBack: true },
-    echo: { comp: EchoCustomize, needsBack: true },
-    bloom: { comp: BloomCustomize, needsBack: true },
-    water: { comp: WaterCustomize, needsBack: true },
-    bubbles: { comp: BubblesCustomize, needsBack: true },
-    petals: { comp: PetalsCustomize, needsBack: true },
-    smoke: { comp: SmokeCustomize, needsBack: true },
-    ink: { comp: InkCustomize, needsBack: true },
-    frost: { comp: FrostCustomize, needsBack: true },
-    silk: { comp: SilkCustomize, needsBack: true },
-    pulse: { comp: PulseCustomize, needsBack: true },
-  };
-  const activePanel = $derived(activeEffect === "none" ? null : EFFECT_PANELS[activeEffect] ?? null);
-  const noBack = () => {};
 
   // ── Sequences ───────────────────────────────────────────────
   let base = $state<SequenceData | null>(null);
@@ -201,6 +158,9 @@
   });
 
   onMount(() => {
+    // Open on a vivid effect so the stage isn't empty on first paint.
+    effectsConfig.setActiveEffect("bloom");
+
     let raf = 0;
     let last = performance.now();
     const tick = (now: number) => {
@@ -250,169 +210,201 @@
 
   // ── Copy the active effect's live intent for paste into defaults.ts ─────────
   function copyDefaultJson() {
-    if (activeEffect === "none" || !isEffectId(activeEffect)) {
+    const fx = effectsConfig.activeEffect;
+    if (fx === "none" || !isEffectId(fx)) {
       copyStatus = "Pick an effect first";
       return;
     }
-    const intent = $state.snapshot(effectsConfig.effect(activeEffect));
+    const intent = $state.snapshot(effectsConfig.effect(fx));
     const json = JSON.stringify(intent, null, 2);
     void navigator.clipboard
       .writeText(json)
-      .then(() => { copyStatus = `Copied ${activeEffect} default (${json.length} chars)`; })
+      .then(() => { copyStatus = `Copied ${fx} default (${json.length} chars)`; })
       .catch(() => { copyStatus = "Clipboard blocked — JSON logged to console"; console.log(json); });
   }
 </script>
 
 <div class="page">
   <header>
-    <h1>Effect Tuner — pick sensible defaults</h1>
+    <h1>Effect Tuner</h1>
     <p class="sub">
-      Judge each effect in Clean, confirm in Tunnel, Copy default JSON → paste
-      into <code>defaults.ts</code>. {scene === "tunnel" ? `${layerCount} layers · ${fold}-fold${mirror ? " + mirror" : ""}` : "single pair"}.
+      Real production panel · judge in Clean, confirm in Tunnel · Copy default JSON →
+      <code>defaults.ts</code>. {scene === "tunnel" ? `${layerCount} layers · ${fold}-fold${mirror ? " + mirror" : ""}` : "single pair"}.
     </p>
   </header>
 
-  <div class="controls">
-    <div class="group">
-      <span class="lbl">Scene</span>
-      <div class="row">
-        <button class:active={scene === "clean"} onclick={() => (scene = "clean")}>Clean</button>
-        <button class:active={scene === "tunnel"} onclick={() => (scene = "tunnel")}>Tunnel</button>
-      </div>
-    </div>
+  <div class="body">
+    <div class="stage-col">
+      <div class="toolbar">
+        <div class="group">
+          <span class="lbl">Scene</span>
+          <div class="row">
+            <button class:active={scene === "clean"} onclick={() => (scene = "clean")}>Clean</button>
+            <button class:active={scene === "tunnel"} onclick={() => (scene = "tunnel")}>Tunnel</button>
+          </div>
+        </div>
 
-    {#if scene === "tunnel"}
-      <div class="group">
-        <span class="lbl">Fold</span>
-        <div class="row">
-          {#each folds as f (f)}
-            <button class:active={fold === f} onclick={() => (fold = f)}>{f}×</button>
-          {/each}
-          <button class:active={mirror} onclick={() => (mirror = !mirror)}>Mirror</button>
+        {#if scene === "tunnel"}
+          <div class="group">
+            <span class="lbl">Fold</span>
+            <div class="row">
+              {#each folds as f (f)}
+                <button class:active={fold === f} onclick={() => (fold = f)}>{f}×</button>
+              {/each}
+              <button class:active={mirror} onclick={() => (mirror = !mirror)}>Mirror</button>
+            </div>
+          </div>
+        {/if}
+
+        <div class="group">
+          <span class="lbl">Prop</span>
+          <div class="row">
+            {#each propChoices as c (c.type)}
+              <button class:active={propType === c.type} onclick={() => (propType = c.type)}>{c.label}</button>
+            {/each}
+          </div>
+        </div>
+
+        <div class="group">
+          <span class="lbl">Speed</span>
+          <input type="range" min="0.1" max="2.5" step="0.1" bind:value={speed} />
+          <span class="val">{speed.toFixed(1)}</span>
+        </div>
+
+        <div class="group">
+          <button class:active={isPlaying} onclick={() => (isPlaying = !isPlaying)}>{isPlaying ? "Pause" : "Play"}</button>
+          <button class:active={showGrid} onclick={() => (showGrid = !showGrid)}>Grid</button>
+          <button onclick={() => void generateBase()}>Regenerate</button>
+        </div>
+
+        <div class="group push">
+          <button class="copy" disabled={activeEffect === "none"} onclick={copyDefaultJson}>Copy default JSON</button>
+          {#if copyStatus}<span class="copy-status">{copyStatus}</span>{/if}
         </div>
       </div>
-    {/if}
 
-    <div class="group">
-      <span class="lbl">Speed</span>
-      <input type="range" min="0.1" max="2.5" step="0.1" bind:value={speed} />
-      <span class="val">{speed.toFixed(1)}</span>
-    </div>
+      <div class="stage-wrap">
+        <div class="stage">
+          {#if base}
+            <AnimatorCanvas
+              blueProp={baseLayer.blue}
+              redProp={baseLayer.red}
+              {additionalLayers}
+              bluePropType={propTypeStr}
+              redPropType={propTypeStr}
+              sequenceData={base}
+              stepData={baseLayer.step}
+              currentStep={baseLayer.stepOneBased}
+              {isPlaying}
+              {gridMode}
+              tipEffectMap={activeTipEffectMap}
+              effectsConfigState={effectsConfig}
+              gridVisible={showGrid}
+              hideHeader={true}
+              hideProgressBar={true}
+              hideTkaGlyph={true}
+              hideStepNumbers={true}
+              fillContainer={true}
+              fireConfig={{ disableFrameCache: true }}
+            />
+          {:else}
+            <div class="placeholder">{status}</div>
+          {/if}
+        </div>
+      </div>
 
-    <div class="group">
-      <button class:active={isPlaying} onclick={() => (isPlaying = !isPlaying)}>{isPlaying ? "Pause" : "Play"}</button>
-      <button class:active={showGrid} onclick={() => (showGrid = !showGrid)}>Grid</button>
-      <button onclick={() => void generateBase()}>Regenerate</button>
-    </div>
-  </div>
-
-  <div class="group">
-    <span class="lbl">Prop</span>
-    <div class="row">
-      {#each propChoices as c (c.type)}
-        <button class:active={propType === c.type} onclick={() => (propType = c.type)}>{c.label}</button>
-      {/each}
-    </div>
-  </div>
-
-  <div class="group effects">
-    <span class="lbl">Effect</span>
-    <div class="row">
-      {#each effectChoices as e (e)}
-        <button class:active={activeEffect === e} onclick={() => (activeEffect = e)}>{e}</button>
-      {/each}
-    </div>
-  </div>
-
-  <div class="group">
-    <button class="copy" disabled={activeEffect === "none"} onclick={copyDefaultJson}>Copy default JSON</button>
-    {#if copyStatus}<span class="copy-status">{copyStatus}</span>{/if}
-  </div>
-
-  {#if activePanel}
-    {@const Panel = activePanel.comp}
-    <div class="effect-panel">
-      {#if activePanel.needsBack}
-        <Panel onBack={noBack} />
-      {:else}
-        <Panel />
+      <div class="status">{status}</div>
+      {#if errorMsg}
+        <pre class="err">{errorMsg}</pre>
       {/if}
     </div>
-  {/if}
 
-  <div class="stage">
-    {#if base}
-      <AnimatorCanvas
-        blueProp={baseLayer.blue}
-        redProp={baseLayer.red}
-        {additionalLayers}
-        bluePropType={propTypeStr}
-        redPropType={propTypeStr}
-        sequenceData={base}
-        stepData={baseLayer.step}
-        currentStep={baseLayer.stepOneBased}
+    <aside class="panel-col">
+      <EffectsPanel
+        {bpm}
+        onBpmChange={(v) => (bpm = v)}
         {isPlaying}
-        {gridMode}
-        {tipEffectMap}
-        effectsConfigState={effectsConfig}
-        gridVisible={showGrid}
-        hideHeader={true}
-        hideProgressBar={true}
-        hideTkaGlyph={true}
-        hideStepNumbers={true}
-        fillContainer={true}
-        fireConfig={{ disableFrameCache: true }}
+        onPlaybackToggle={() => (isPlaying = !isPlaying)}
+        showPlayback={false}
+        showTransport={false}
+        layout="sidebar"
       />
-    {:else}
-      <div class="placeholder">{status}</div>
-    {/if}
+    </aside>
   </div>
-
-  <div class="status">{status}</div>
-  {#if errorMsg}
-    <pre class="err">{errorMsg}</pre>
-  {/if}
 </div>
 
 <style>
   .page {
-    min-height: 100dvh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    padding: 20px;
-    background: radial-gradient(circle at 50% 30%, #14141f 0%, #0a0a0f 70%);
+    background: radial-gradient(circle at 30% 20%, #14141f 0%, #0a0a0f 70%);
     color: #e8e8f0;
     font-family: system-ui, sans-serif;
   }
-  header { text-align: center; }
-  h1 { margin: 0; font-size: 1.4rem; }
-  .sub { margin: 4px 0 0; opacity: 0.6; font-size: 0.85rem; }
+  header { padding: 12px 20px 4px; }
+  h1 { margin: 0; font-size: 1.3rem; }
+  .sub { margin: 3px 0 0; opacity: 0.55; font-size: 0.82rem; }
   .sub code { background: rgba(255 255 255 / 0.1); padding: 1px 5px; border-radius: 5px; }
 
-  .controls {
+  .body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 16px;
+    padding: 8px 16px 16px;
+  }
+
+  .stage-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 12px;
+  }
+
+  .toolbar {
     display: flex;
     flex-wrap: wrap;
-    gap: 18px;
-    justify-content: center;
+    gap: 16px;
     align-items: center;
   }
   .group { display: flex; align-items: center; gap: 8px; }
-  .group.effects { flex-direction: column; gap: 6px; max-width: 760px; }
-  .lbl { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; }
-  .row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .group.push { margin-left: auto; }
+  .lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; }
   .val { font-variant-numeric: tabular-nums; width: 2.2ch; opacity: 0.7; }
   .copy-status { font-size: 0.78rem; opacity: 0.7; font-variant-numeric: tabular-nums; }
 
-  /* Hosts the real per-effect tuning panel. The panel brings its own
-     theme-token styling (with fallbacks), so just give it a constrained card. */
-  .effect-panel {
-    width: min(560px, 100%);
-    padding: 14px 16px;
-    border: 1px solid rgba(150 120 240 / 0.3);
-    border-radius: 12px;
-    background: rgba(20 20 30 / 0.6);
+  .stage-wrap {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    place-items: center;
+  }
+  .stage {
+    width: min(100%, 82vh);
+    aspect-ratio: 1 / 1;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255 255 255 / 0.1);
+    background: #07070b;
+    box-shadow: 0 20px 60px rgba(0 0 0 / 0.5);
+  }
+  .placeholder {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    opacity: 0.5;
+    font-size: 0.9rem;
+  }
+
+  .panel-col {
+    overflow-y: auto;
+    border: 1px solid rgba(255 255 255 / 0.08);
+    border-radius: 14px;
+    background: rgba(18 18 28 / 0.55);
   }
 
   button {
@@ -436,27 +428,9 @@
   button.copy { background: rgba(150 120 240 / 0.18); border-color: rgba(150 120 240 / 0.5); }
   button.copy:hover:not(:disabled) { background: rgba(150 120 240 / 0.3); }
 
-  .stage {
-    width: min(72vmin, 620px);
-    aspect-ratio: 1 / 1;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid rgba(255 255 255 / 0.1);
-    background: #07070b;
-    box-shadow: 0 20px 60px rgba(0 0 0 / 0.5);
-  }
-  .placeholder {
-    width: 100%;
-    height: 100%;
-    display: grid;
-    place-items: center;
-    opacity: 0.5;
-    font-size: 0.9rem;
-  }
-
-  .status { font-size: 0.8rem; opacity: 0.6; font-variant-numeric: tabular-nums; text-align: center; }
+  .status { font-size: 0.78rem; opacity: 0.6; font-variant-numeric: tabular-nums; }
   .err {
-    max-width: 760px;
+    max-width: 100%;
     white-space: pre-wrap;
     background: rgba(220 60 60 / 0.12);
     border: 1px solid rgba(220 60 60 / 0.4);
