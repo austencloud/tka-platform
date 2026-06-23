@@ -94,7 +94,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0;
-    max-width: 6.7in;
+    max-width: 7.3in;
     margin: 0 auto;
     width: 100%;
   }
@@ -102,7 +102,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.4in;
-    padding: 0 0.5in;
+    padding: 0 0.28in;
+    min-width: 0;
   }
   .toc-col:first-child {
     border-right: 1px solid #e2def0;
@@ -148,21 +149,22 @@
   .toc-label {
     font-family: "Cormorant Garamond", Georgia, serif;
     font-weight: 600;
-    font-size: 1.3rem;
+    font-size: 1.22rem;
     color: #18181f;
+    white-space: nowrap;
   }
   .toc-row.sub .toc-label {
     font-weight: 400;
     font-style: italic;
-    font-size: 1.1rem;
+    font-size: 1.04rem;
     color: #4a4658;
-    padding-left: 1.1em;
+    padding-left: 0.8em;
   }
   .toc-lead {
     flex: 1 1 auto;
     border-bottom: 1px dotted #c4bfd6;
     transform: translateY(-0.28em);
-    min-width: 1.5em;
+    min-width: 0.5em;
   }
   .toc-pg {
     font-family: "Cormorant Garamond", Georgia, serif;
