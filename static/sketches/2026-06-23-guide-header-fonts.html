@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Guide header font bake-off</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&family=Fraunces:ital,opsz,wght@1,9..144,400..900&family=Petit+Formal+Script&family=Pinyon+Script&family=Tangerine:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    /* The exact Corsiva clone, self-hosted (GUST license, free for commercial). */
+    @font-face {
+      font-family: "TeX Gyre Chorus";
+      font-style: italic;
+      font-weight: 500;
+      src: url("/fonts/texgyrechorus-mediumitalic.otf") format("opentype");
+      font-display: swap;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #2b2b33;
+      font-family: system-ui, sans-serif;
+      padding: 28px;
+    }
+    .sheet {
+      max-width: 8.5in;
+      margin: 0 auto;
+      background: #fff;
+      padding: 0.55in 0.6in 0.7in;
+      box-shadow: 0 6px 28px rgba(0,0,0,0.45);
+    }
+    .row {
+      padding: 0.34in 0 0.3in;
+      border-bottom: 1px solid #ececf2;
+      text-align: center;
+    }
+    .row:last-child { border-bottom: 0; }
+    .tag {
+      font: 600 11px/1 system-ui, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #9a93ad;
+      margin: 0 0 0.16in;
+    }
+    .tag b { color: #2342c9; font-weight: 700; }
+    /* Header title, sized to match the live guide page (3.2rem). */
+    .title {
+      font-style: italic;
+      font-size: 3.2rem;
+      line-height: 1.0;
+      color: #14142b;
+      margin: 0;
+    }
+    .title.fr { font-variation-settings: "opsz" 144, "wght" 560, "WONK" 1; }
+    /* Smaller line: two more real page titles + a readability check. */
+    .more {
+      font-style: italic;
+      font-size: 1.55rem;
+      color: #3a3550;
+      margin: 0.1in 0 0;
+    }
+    /* Gold flourish + diamond, like the live page. */
+    .flourish {
+      width: 2.1in; height: 9px; margin: 0.14in auto 0; position: relative;
+      background: linear-gradient(#c9a227, #c9a227) center / 100% 1px no-repeat;
+    }
+    .flourish::after {
+      content: ""; position: absolute; left: 50%; top: 50%;
+      width: 7px; height: 7px; transform: translate(-50%, -50%) rotate(45deg);
+      background: #14142b;
+    }
+    .f-chorus  { font-family: "TeX Gyre Chorus", cursive; }
+    .f-petit   { font-family: "Petit Formal Script", cursive; }
+    .f-pinyon  { font-family: "Pinyon Script", cursive; }
+    .f-tang    { font-family: "Tangerine", cursive; }
+    .f-corm    { font-family: "Cormorant Garamond", serif; }
+    .f-fr      { font-family: "Fraunces", serif; }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="row">
+      <p class="tag"><b>A.</b> TeX Gyre Chorus — exact Monotype Corsiva clone (self-host)</p>
+      <p class="title f-chorus">The Grid</p>
+      <div class="flourish"></div>
+      <p class="more f-chorus">Hand Positions &nbsp;·&nbsp; Negative Space / Body Turns</p>
+    </div>
+    <div class="row">
+      <p class="tag"><b>B.</b> Petit Formal Script — nearest Google match</p>
+      <p class="title f-petit">The Grid</p>
+      <div class="flourish"></div>
+      <p class="more f-petit">Hand Positions &nbsp;·&nbsp; Negative Space / Body Turns</p>
+    </div>
+    <div class="row">
+      <p class="tag"><b>C.</b> Cormorant Garamond italic — most readable (not a script)</p>
+      <p class="title f-corm">The Grid</p>
+      <div class="flourish"></div>
+      <p class="more f-corm">Hand Positions &nbsp;·&nbsp; Negative Space / Body Turns</p>
+    </div>
+    <div class="row">
+      <p class="tag"><b>D.</b> Pinyon Script — delicate formal script</p>
+      <p class="title f-pinyon">The Grid</p>
+      <div class="flourish"></div>
+      <p class="more f-pinyon">Hand Positions &nbsp;·&nbsp; Negative Space / Body Turns</p>
+    </div>
+    <div class="row">
+      <p class="tag"><b>E.</b> Tangerine — calligraphic, thin</p>
+      <p class="title f-tang">The Grid</p>
+      <div class="flourish"></div>
+      <p class="more f-tang">Hand Positions &nbsp;·&nbsp; Negative Space / Body Turns</p>
+    </div>
+    <div class="row">
+      <p class="tag"><b>F.</b> Fraunces (current header) — the fancy one</p>
+      <p class="title f-fr fr">The Grid</p>
+      <div class="flourish"></div>
+      <p class="more f-fr fr">Hand Positions &nbsp;·&nbsp; Negative Space / Body Turns</p>
+    </div>
+  </div>
+</body>
+</html>
