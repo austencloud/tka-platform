@@ -35,6 +35,10 @@
   // scaled GuidePage/GuideCover subtree is never hydrated (it threw "Illegal
   // invocation" on hydrate), so we mount it fresh on the client instead.
   let mounted = $state(false);
+  // Books stay hidden until both StPageFlip instances are built, so the user
+  // never sees the raw page stack (esp. the old book's 47 pdf canvases) scroll
+  // past before it collapses into a book.
+  let ready = $state(false);
 
   const FLIP_MS = 600;
   function sync(from: any, to: any, idx: number) {
@@ -74,6 +78,9 @@
     pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
     const dpr = window.devicePixelRatio || 1;
     const doc = await pdfjs.getDocument({ url: OLD_PDF }).promise;
+    // Build all pages OFF-DOM so the growing stack never paints; attach + init
+    // in one synchronous step so StPageFlip collapses it before the next frame.
+    const frag = document.createDocumentFragment();
     for (let i = 1; i <= doc.numPages; i++) {
       const page = await doc.getPage(i);
       const base = page.getViewport({ scale: 1 });
@@ -86,15 +93,17 @@
       const cell = document.createElement("div");
       cell.className = "page";
       cell.appendChild(canvas);
-      oldContainer.appendChild(cell);
+      frag.appendChild(cell);
       await page.render({ canvas, canvasContext: canvas.getContext("2d")!, viewport: vp }).promise;
     }
+    oldContainer.appendChild(frag);
     const pfOld = new PageFlip(oldContainer, cfg);
     pfOld.loadFromHTML(oldContainer.querySelectorAll(".page"));
 
     pfNew.on("flip", (e: any) => sync(pfNew, pfOld, e.data));
     pfOld.on("flip", (e: any) => sync(pfOld, pfNew, e.data));
     status = `old ${pfOld.getPageCount()}p · new ${pfNew.getPageCount()}p`;
+    ready = true; // both books built — reveal them
 
     // Dev handle so the two books can be driven page-by-page from DevTools while
     // aligning their contents. goto(n) turns BOTH to the same index.
@@ -133,7 +142,7 @@
     <span class="status">{status}</span>
   </div>
 
-  <div class="books">
+  <div class="books" class:ready>
     {#if mounted}
       <div class="book-col">
         <div class="cap">Old — v0.5</div>
@@ -148,6 +157,7 @@
         </div>
       </div>
     {/if}
+    {#if !ready}<div class="building">Building book…</div>{/if}
   </div>
 </div>
 
@@ -156,8 +166,12 @@
   .bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; border-bottom: 1px solid #2c2c38; flex: 0 0 auto; }
   .t { font-size: 13px; color: #cfcfe0; }
   .status { font-size: 12px; color: #8a8aa0; }
-  .books { flex: 1 1 auto; min-height: 0; display: flex; gap: 28px; align-items: center; justify-content: center; padding: 24px; }
-  .book-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .books { position: relative; flex: 1 1 auto; min-height: 0; display: flex; gap: 28px; align-items: center; justify-content: center; padding: 24px; }
+  /* Hidden until both StPageFlip books are built, so the raw page stack never
+     flashes; fade in together once ready. */
+  .book-col { display: flex; flex-direction: column; align-items: center; gap: 10px; opacity: 0; transition: opacity 0.35s ease; }
+  .books.ready .book-col { opacity: 1; }
+  .building { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; color: #8a8aa0; pointer-events: none; }
   .cap { font-size: 12px; color: #9a9ab0; }
   /* StPageFlip mounts here; the .page children become flip pages. */
   .flip { background: transparent; }
