@@ -41,10 +41,31 @@ export async function requireFirebaseUser(
       authTime:
         typeof decoded.auth_time === "number" ? decoded.auth_time : undefined,
     };
-  } catch {
-    throw Object.assign(new Error("Invalid or expired token"), {
-      status: 401,
-      code: "invalid_token",
-    });
+  } catch (verifyErr: unknown) {
+    // Surface the real reason instead of collapsing every failure into one opaque
+    // string. firebase-admin throws FirebaseAuthError with a `.code` such as
+    // auth/id-token-expired, auth/id-token-revoked, or auth/argument-error
+    // (project mismatch / malformed token). Without this, "Invalid or expired
+    // token" hides whether the user just needs to re-auth or the server admin
+    // SDK is misconfigured.
+    const firebaseCode =
+      typeof verifyErr === "object" && verifyErr && "code" in verifyErr
+        ? String((verifyErr as { code: unknown }).code)
+        : undefined;
+    const detail =
+      verifyErr instanceof Error ? verifyErr.message : String(verifyErr);
+    console.error(
+      `[requireFirebaseUser] verifyIdToken failed (code=${firebaseCode ?? "unknown"}): ${detail}`,
+    );
+
+    const expired = firebaseCode === "auth/id-token-expired";
+    throw Object.assign(
+      new Error(expired ? "ID token expired — sign in again" : "Invalid or expired token"),
+      {
+        status: 401,
+        code: "invalid_token",
+        firebaseCode,
+      },
+    );
   }
 }

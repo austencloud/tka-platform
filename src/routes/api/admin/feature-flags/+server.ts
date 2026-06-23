@@ -302,6 +302,24 @@ export const PATCH: RequestHandler = async (event) => {
       );
     }
 
+    // Plain status-bearing errors (requireAdmin / requireFirebaseUser throw
+    // Object.assign(new Error, {status, code}) — these carry `status` but no
+    // `body`). Without this branch a genuine 401/403 falls through to the
+    // generic 500 below, so the browser reports "500 Internal Server Error"
+    // for what is really an auth failure.
+    if (typeof err === "object" && err !== null && "status" in err) {
+      const statusErr = err as { status: number; code?: string; firebaseCode?: string };
+      return json(
+        {
+          success: false,
+          message: err instanceof Error ? err.message : "Request failed",
+          code: statusErr.code ?? "AUTH_ERROR",
+          firebaseCode: statusErr.firebaseCode,
+        },
+        { status: statusErr.status }
+      );
+    }
+
     // Regular JS errors (network failures, JSON parse errors, etc.)
     return json(
       {
