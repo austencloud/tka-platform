@@ -11,6 +11,38 @@
  */
 export type ActivityStatus = "active" | "offline";
 
+/** Coarse IP-derived location (admin view). City-level, not precise. */
+export interface PresenceLocation {
+  city: string | null;
+  country: string | null; // ISO-2, e.g. "DE"; CF sentinels ("XX","T1") pass through
+  lat: number | null;
+  lng: number | null;
+}
+
+/** Parse Cloudflare edge geo headers into a PresenceLocation, or null if none present. */
+export function parseCloudflareGeo(headers: Headers): PresenceLocation | null {
+  const parseCoord = (v: string | null): number | null => {
+    if (!v) return null;
+    const n = Number.parseFloat(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  const country = headers.get("cf-ipcountry") || null;
+  const city = headers.get("cf-ipcity") || null;
+  const lat = parseCoord(headers.get("cf-iplatitude"));
+  const lng = parseCoord(headers.get("cf-iplongitude"));
+  const hasGeo = !!(country || city || (lat !== null && lng !== null));
+  return hasGeo ? { city, country, lat, lng } : null;
+}
+
+/** Human label for a location: "City, CC" / "CC" / "". */
+export function formatLocationLabel(loc: PresenceLocation | null | undefined): string {
+  if (!loc) return "";
+  if (loc.city && loc.country) return `${loc.city}, ${loc.country}`;
+  if (loc.country) return loc.country;
+  if (loc.city) return loc.city;
+  return "";
+}
+
 /** How many minutes of inactivity before user is considered inactive/offline */
 export const IDLE_TIMEOUT_MINUTES = 5;
 
@@ -54,6 +86,9 @@ export interface UserPresence {
 
   /** Guest session flag (admin view). True for un-upgraded anonymous auth users. */
   isAnonymous?: boolean;
+
+  /** Coarse IP-derived location from Cloudflare edge headers (admin view). */
+  location?: PresenceLocation;
 }
 
 /**
