@@ -76,7 +76,13 @@ export class UserActivityTracker {
   ): () => void {
     const allFirestoreUsers: Map<
       string,
-      { displayName: string; email: string; photoURL: string | null; isAnonymous: boolean }
+      {
+        displayName: string;
+        email: string;
+        photoURL: string | null;
+        isAnonymous: boolean;
+        lastLocation: import("$lib/shared/presence/domain/models/presence-models").PresenceLocation | null;
+      }
     > = new Map();
     let presenceUsers: UserPresenceWithId[] = [];
     let isFirestoreReady = false;
@@ -103,6 +109,10 @@ export class UserActivityTracker {
                 email: (data["email"] as string) ?? "",
                 photoURL: (data["photoURL"] as string | null) ?? null,
                 isAnonymous: (data["isAnonymous"] as boolean) ?? false,
+                lastLocation:
+                  (data["lastLocation"] as
+                    | import("$lib/shared/presence/domain/models/presence-models").PresenceLocation
+                    | undefined) ?? null,
               });
             });
 
@@ -155,6 +165,7 @@ export class UserActivityTracker {
             email: userData.email || presence.email,
             photoURL: userData.photoURL ?? presence.photoURL,
             isAnonymous: userData.isAnonymous,
+            location: presence.location ?? userData.lastLocation ?? undefined,
           });
         } else {
           // User exists in Firestore but no presence data - create default
@@ -172,6 +183,7 @@ export class UserActivityTracker {
             sessionId: "",
             device: "desktop",
             isAnonymous: userData.isAnonymous,
+            location: userData.lastLocation ?? undefined,
           });
         }
       }
