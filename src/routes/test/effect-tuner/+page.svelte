@@ -38,6 +38,11 @@
     isEffectId,
   } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
+  import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 
   const DEFAULT_PROP_STATE: PropState = { centerPathAngle: 0, staffRotationAngle: 0 };
 
@@ -50,7 +55,6 @@
 
   // ── Knobs ───────────────────────────────────────────────────
   let scene = $state<Scene>("clean");
-  let propType = $state<PropType>(PropType.STAFF); // 2 tip ends → reveals coverage/blowout
   let fold = $state<Fold>(4);
   let mirror = $state(false);
   let speed = $state(0.3); // beats per second
@@ -62,18 +66,35 @@
   let copyStatus = $state("");
   let bpm = $state(120); // EffectsPanel requires it; playback is driven by our own loop
 
-  const propChoices: { type: PropType; label: string }[] = [
-    { type: PropType.STAFF, label: "Staff" },
-    { type: PropType.BIGSTAFF, label: "Big Staff" },
-    { type: PropType.SWORD, label: "Sword" },
-    { type: PropType.BUUGENG, label: "Buugeng" },
-    { type: PropType.DOUBLESTAR, label: "Doublestar" },
-    { type: PropType.TRIQUETRA, label: "Triquetra" },
-    { type: PropType.EIGHTRINGS, label: "Eightrings" },
-    { type: PropType.TORCH, label: "Torch" },
-  ];
-
   const folds: Fold[] = [2, 4, 8];
+
+  // Prop selection flows through the REAL production source of truth
+  // (settingsService) so the trail system + TrailsPanel gating + bilateral
+  // tracking all see the same prop the canvas renders.
+  const propType = $derived<PropType>(settingsService.settings.bluePropType ?? PropType.STAFF);
+
+  function selectProp(p: PropType) {
+    void settingsService.updateSetting("bluePropType", p);
+    void settingsService.updateSetting("redPropType", p);
+    animationSettings.setCurrentPropType(String(p));
+  }
+
+  // trackingMode + tailLength live in animationSettings (NOT effectsConfig), so
+  // AnimatorCanvas only respects them when we pass an explicit trailSettings.
+  // Replicates AnimationPlayer: BOTH_ENDS collapses to one end on unilateral props.
+  const trailSettings = $derived.by(() => {
+    const t = animationSettings.trail;
+    const settings = { ...t };
+    if (settings.trackingMode === TrackingMode.BOTH_ENDS) {
+      const blue = settingsService.settings.bluePropType;
+      const red = settingsService.settings.redPropType;
+      const hasBilateral =
+        (blue != null && isBilateralProp(String(blue))) ||
+        (red != null && isBilateralProp(String(red)));
+      if (!hasBilateral) settings.trackingMode = TrackingMode.RIGHT_END;
+    }
+    return settings;
+  });
 
   // EffectsPanel owns effect selection through the config — read it back.
   const activeEffect = $derived(effectsConfig.activeEffect);
@@ -160,6 +181,8 @@
   onMount(() => {
     // Open on a vivid effect so the stage isn't empty on first paint.
     effectsConfig.setActiveEffect("bloom");
+    // Tell the trail system which prop is active (panel labels + bilateral gate).
+    animationSettings.setCurrentPropType(String(propType));
 
     let raf = 0;
     let last = performance.now();
@@ -234,6 +257,16 @@
   </header>
 
   <div class="body">
+    <aside class="prop-col">
+      <BentoPropGrid
+        selectedPropType={propType}
+        color="blue"
+        title="Prop"
+        variant="panel"
+        onSelect={selectProp}
+      />
+    </aside>
+
     <div class="stage-col">
       <div class="toolbar">
         <div class="group">
@@ -255,15 +288,6 @@
             </div>
           </div>
         {/if}
-
-        <div class="group">
-          <span class="lbl">Prop</span>
-          <div class="row">
-            {#each propChoices as c (c.type)}
-              <button class:active={propType === c.type} onclick={() => (propType = c.type)}>{c.label}</button>
-            {/each}
-          </div>
-        </div>
 
         <div class="group">
           <span class="lbl">Speed</span>
@@ -297,6 +321,7 @@
               currentStep={baseLayer.stepOneBased}
               {isPlaying}
               {gridMode}
+              {trailSettings}
               tipEffectMap={activeTipEffectMap}
               effectsConfigState={effectsConfig}
               gridVisible={showGrid}
@@ -351,9 +376,14 @@
     flex: 1;
     min-height: 0;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-columns: 232px minmax(0, 1fr) 360px;
     gap: 16px;
     padding: 8px 16px 16px;
+  }
+
+  .prop-col {
+    overflow-y: auto;
+    border-radius: 14px;
   }
 
   .stage-col {
