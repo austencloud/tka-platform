@@ -16,6 +16,7 @@
   import GoogleOneTap from "./GoogleOneTap.svelte";
   import SocialAuthCompact from "./SocialAuthCompact.svelte";
   import EmailAuthTabs from "./EmailAuthTabs.svelte";
+  import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
 
   interface Props {
     open: boolean;
@@ -28,11 +29,15 @@
   let authMode = $state<"signin" | "signup">("signup");
   let showEmailAuth = $state(false);
 
+  // Facebook sign-in failure surfaced inline, mirroring AuthSheet/SocialAuthCompact.
+  let facebookError = $state<string | null>(null);
+
   // Sync internal mode whenever the modal opens with a specific initial mode.
   $effect(() => {
     if (open) {
       authMode = initialMode;
       showEmailAuth = false;
+      facebookError = null;
     }
   });
 
@@ -48,8 +53,31 @@
     { icon: "fa-wand-magic-sparkles", label: "Longer sequences, up to 16 beats" },
   ];
 
-  // Facebook auth is handled inside SocialAuthCompact; this satisfies the prop.
-  function handleFacebookAuth() {}
+  // SocialAuthCompact handles Google internally but delegates Facebook to the
+  // parent via onFacebookAuth. Run the popup flow here and surface errors inline,
+  // mirroring AuthSheet.handleFacebookAuth.
+  async function handleFacebookAuth() {
+    facebookError = null;
+    try {
+      await signInWithFacebook();
+    } catch (error: unknown) {
+      console.error("❌ [AuthModal] Facebook auth failed:", error);
+      const errorCode = (error as { code?: string })?.code;
+      if (errorCode === "auth/popup-blocked") {
+        facebookError = "Popup was blocked. Please allow popups for this site.";
+      } else if (errorCode === "auth/popup-closed-by-user") {
+        facebookError = "Sign-in cancelled. Please try again.";
+      } else if (errorCode === "auth/cancelled-popup-request") {
+        facebookError = null; // Silent - user just clicked away
+      } else if (errorCode === "auth/account-exists-with-different-credential") {
+        facebookError =
+          "This email is already registered. Sign in with your original method (Google or email) and we'll connect Facebook automatically.";
+      } else {
+        facebookError =
+          error instanceof Error ? error.message : "Facebook sign-in failed. Please try again.";
+      }
+    }
+  }
 </script>
 
 <BaseModal
@@ -103,6 +131,10 @@
     <!-- Social auth buttons -->
     <SocialAuthCompact mode={authMode} onFacebookAuth={handleFacebookAuth} />
 
+    {#if facebookError}
+      <p class="fb-error" role="alert">{facebookError}</p>
+    {/if}
+
     <!-- Email auth toggle -->
     {#if !showEmailAuth}
       <button class="email-toggle" onclick={() => (showEmailAuth = true)}>
@@ -149,6 +181,13 @@
     gap: 1.25rem;
     padding: 1.75rem 1.5rem 1.5rem;
     position: relative;
+  }
+
+  .fb-error {
+    margin: -0.5rem 0 0;
+    font-size: var(--font-size-compact);
+    color: var(--semantic-error, #ef4444);
+    text-align: center;
   }
 
   /* Close button */
