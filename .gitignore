@@ -15,6 +15,13 @@ blender/
 # Debug artifacts
 debug-screenshots/
 
+# Python bytecode caches (scripts/)
+__pycache__/
+*.pyc
+
+# Throwaway temp screenshots (e.g. _tmp-hdr-grid.png)
+_tmp-*.png
+
 # Test / lint / fix artifacts
 .fast-check/
 eslint-output*.json
