@@ -8,11 +8,24 @@ import * as personalityGenerator from "$lib/features/village/services/personalit
 import { createDefaultConfig } from "$lib/features/village/engine/village-config";
 import { IDLE_THRESHOLD_BASE } from "$lib/features/village/domain/village-constants";
 import type { VillageEventEmitter } from "$lib/features/village/engine/village-event-emitter";
+import { VillageDecisionEngine } from "$lib/features/village/engine/llm/village-decision-engine";
+import type { Season } from "$lib/features/village/domain/village-types";
 
 const mockEmitter: VillageEventEmitter = {
 	emit: () => {},
 	on: () => {},
 };
+
+// SocialSystem now takes a VillageDecisionEngine + a season accessor. A freshly
+// constructed engine defaults to disabled (`enabled === false`) with no pending
+// decisions, so `consumeDecision` returns null and `handleIdle` takes the exact
+// deterministic `rollIdleDecision` path these tests have always exercised — no
+// fabricated mock returns, just the engine's real no-LLM default state.
+function makeDecisionEngine(): VillageDecisionEngine {
+	return new VillageDecisionEngine();
+}
+
+const getCurrentSeason = (): Season => "normal";
 
 function makeEntity(
 	world: ReturnType<typeof createVillageWorld>,
@@ -35,7 +48,7 @@ describe("SocialSystem", () => {
 		const world = createVillageWorld();
 		const entity = makeEntity(world);
 		const config = createDefaultConfig();
-		const system = new SocialSystem(config, mockEmitter);
+		const system = new SocialSystem(config, mockEmitter, makeDecisionEngine(), getCurrentSeason);
 		entity.social.state = "idle";
 		entity.social.idleTimer = 0;
 
@@ -48,7 +61,7 @@ describe("SocialSystem", () => {
 		const world = createVillageWorld();
 		const entity = makeEntity(world);
 		const config = createDefaultConfig();
-		const system = new SocialSystem(config, mockEmitter);
+		const system = new SocialSystem(config, mockEmitter, makeDecisionEngine(), getCurrentSeason);
 		entity.social.state = "idle";
 		entity.social.idleTimer = IDLE_THRESHOLD_BASE + 1;
 		entity.social.interactionCooldown = 0;
@@ -64,7 +77,7 @@ describe("SocialSystem", () => {
 		const world = createVillageWorld();
 		const entity = makeEntity(world);
 		const config = createDefaultConfig();
-		const system = new SocialSystem(config, mockEmitter);
+		const system = new SocialSystem(config, mockEmitter, makeDecisionEngine(), getCurrentSeason);
 		entity.social.state = "idle";
 		entity.social.interactionCooldown = 5;
 
@@ -78,7 +91,7 @@ describe("SocialSystem", () => {
 		const entity1 = makeEntity(world, "A");
 		const entity2 = makeEntity(world, "B");
 		const config = createDefaultConfig();
-		const system = new SocialSystem(config, mockEmitter);
+		const system = new SocialSystem(config, mockEmitter, makeDecisionEngine(), getCurrentSeason);
 
 		// Place far enough apart that they need to walk toward each other
 		entity1.transform.x = 0;
@@ -114,7 +127,7 @@ describe("SocialSystem", () => {
 		const world = createVillageWorld();
 		const entity = makeEntity(world);
 		const config = createDefaultConfig();
-		const system = new SocialSystem(config, mockEmitter);
+		const system = new SocialSystem(config, mockEmitter, makeDecisionEngine(), getCurrentSeason);
 
 		entity.social.state = "wandering";
 		entity.transform.speed = 0;
@@ -128,7 +141,7 @@ describe("SocialSystem", () => {
 		const world = createVillageWorld();
 		const entity = makeEntity(world);
 		const config = createDefaultConfig();
-		const system = new SocialSystem(config, mockEmitter);
+		const system = new SocialSystem(config, mockEmitter, makeDecisionEngine(), getCurrentSeason);
 
 		entity.social.state = "passing";
 
