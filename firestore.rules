@@ -1383,6 +1383,17 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── STORE: SHOP WAITLIST (anyone may join, admin reads) ──
+    // Coming Soon page collects emails for a launch announcement. Open create so
+    // signed-out visitors can join; shape-checked; never client-readable/editable.
+    match /shop_waitlist/{entryId} {
+      allow read: if isAdmin();
+      allow create: if request.resource.data.email is string
+        && request.resource.data.email.size() > 3
+        && request.resource.data.email.size() < 320;
+      allow update, delete: if false;
+    }
+
     // ============================================================================
     // ERROR TELEMETRY (Passive Error Reporting)
     // ============================================================================
