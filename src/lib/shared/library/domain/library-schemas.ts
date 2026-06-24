@@ -8,7 +8,10 @@
  */
 
 import { z } from "zod";
-import { firestoreDate } from "$lib/shared/firestore";
+// Import from the leaf module, not the $lib/shared/firestore barrel: the barrel
+// pulls in the CRUD layer, creating an import cycle that leaves firestoreDate in
+// the temporal dead zone (undefined) when this module evaluates first.
+import { firestoreDate } from "$lib/shared/firestore/firestore-date";
 
 // --- Nested objects ---
 
