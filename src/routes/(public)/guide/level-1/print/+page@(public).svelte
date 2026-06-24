@@ -39,8 +39,8 @@
 
 <!-- Each page = one stacked GuidePage sheet. Page content + order come from the
      shared GuideDocument so /print and /book never drift. -->
-{#snippet printPage({ title, pageNumber, fullBleed, label, eyebrow, content }: GuidePageMeta)}
-  <GuidePage {title} {pageNumber} {fullBleed} {label} {eyebrow}>{@render content()}</GuidePage>
+{#snippet printPage({ title, pageNumber, fullBleed, label, content }: GuidePageMeta)}
+  <GuidePage {title} {pageNumber} {fullBleed} {label}>{@render content()}</GuidePage>
 {/snippet}
 
 <div class="guide-content guide-print-mode print-doc">

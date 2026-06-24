@@ -14,7 +14,7 @@
   import GuideCover from "./GuideCover.svelte";
   import GuideTOC from "./GuideTOC.svelte";
   import PagePlaceholder from "./PagePlaceholder.svelte";
-  import { GUIDE_BODY_PAGES, GROUP_TITLES, type GuidePageMeta } from "../_data/guide-manifest";
+  import { GUIDE_BODY_PAGES, type GuidePageMeta } from "../_data/guide-manifest";
 
   let {
     page,
@@ -106,7 +106,6 @@
 {@render page({ kind: "readme", title: "Read Me First", label: "p4 — Read Me First", content: readmeContent })}
 {@render page({ kind: "toc", title: "Table of Contents", label: "p5 — Table of Contents", content: tocContent })}
 {#each GUIDE_BODY_PAGES as entry, i}
-  {@const sectionFirst = i === 0 || GUIDE_BODY_PAGES[i - 1]?.group !== entry.group}
   {#snippet bodyContent()}
     {@const Built = built[entry.id]}
     {#if Built}<Built />{:else}<PagePlaceholder />{/if}
@@ -115,7 +114,6 @@
     kind: "body",
     title: entry.title,
     pageNumber: i + 1,
-    eyebrow: sectionFirst ? `${entry.group} · ${GROUP_TITLES[entry.group]}` : undefined,
     label: `body p${i + 1} — ${entry.title}`,
     content: bodyContent,
   })}
@@ -129,10 +127,13 @@
     aspect-ratio: 8.5 / 11;
   }
 
-  /* Front-matter pages (white interior, ink-cheap). Explicit min-height so the
-     content centres vertically inside the 11in page. */
+  /* Front-matter pages (white interior, ink-cheap). flex:1 + min-height:0 makes
+     it fill the page body BELOW the header (not a fixed 9.4in that overflows the
+     header and shoves content low), so content centres in the true remaining
+     space — header pinned top, QR/text dead-centre under it. */
   .frontmatter {
-    min-height: 9.4in;
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
