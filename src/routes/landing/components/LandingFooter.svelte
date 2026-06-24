@@ -2,6 +2,11 @@
   import LegalSheet from "$lib/shared/legal/components/LegalSheet.svelte";
   import { APP_DOMAIN } from "../../../config/domains";
 
+  // showCredit hides the "Made by Austen Cloud." line on pages that already
+  // credit the author elsewhere (e.g. /support's signature) to avoid a double
+  // credit. Defaults true so the landing page is unaffected.
+  let { showCredit = true }: { showCredit?: boolean } = $props();
+
   let sheetOpen = $state(false);
   let sheetType = $state<"terms" | "privacy">("terms");
 
@@ -22,7 +27,9 @@
 
 <footer class="footer">
   <div class="container">
-    <p class="credit">Made by Austen Cloud.</p>
+    {#if showCredit}
+      <p class="credit">Made by Austen Cloud.</p>
+    {/if}
     <nav class="footer-links">
       <a href="/about">About</a>
       <a href="/roots">Roots</a>
