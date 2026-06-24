@@ -55,6 +55,7 @@ export { cleanupStagedUploads } from "./cleanupStagedUploads";
 export { backupHealthCheck } from "./backupHealthCheck";
 export { createMerchCheckout } from "./merch/createMerchCheckout";
 export { handleMerchWebhook } from "./merch/handleMerchWebhook";
+export { createDonationCheckout } from "./donation/createDonationCheckout";
 
 const db = admin.firestore();
 

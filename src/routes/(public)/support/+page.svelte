@@ -8,25 +8,101 @@
    * the book AND for someone clicking "Support" in the nav.
    *
    * Lives inside the public chrome (SiteHeader + LandingFooter) over the same
-   * COSMIC background the landing page uses (BackgroundHost in a fixed layer,
-   * content above it), so the page is visually continuous with the rest of the
-   * site and the footer shares the page background. Payment methods (PayPal,
-   * Venmo, Cash App) can change without reprinting the book.
+   * COSMIC background the landing page uses. A suggested-amount selector drives
+   * prefilled deep links (PayPal.me, Venmo web pay, Cash App) and a Stripe
+   * Checkout "pay by card" path (createDonationCheckout function), so the chosen
+   * amount carries straight into whichever method the visitor picks.
    */
   import { onMount } from "svelte";
+  import { slide } from "svelte/transition";
+  import { page } from "$app/state";
   import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
   import SiteHeader from "$lib/shared/landing/components/SiteHeader.svelte";
   import LandingFooter from "../../landing/components/LandingFooter.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
 
   const BG = BackgroundType.COSMIC;
-  let mounted = $state(false);
 
+  // Render BackgroundHost unconditionally (it is SSR-safe: the controller is
+  // browser-gated internally and only inits in onMount). Gating it behind a
+  // page-level `mounted` flag was what let the cosmic drop out and stay gone on
+  // HMR — the gate unmounted the canvas layer and the controller's container
+  // orphaned. Always-rendered, its own $effect re-binds the controller to the
+  // current container. applyThemeForBackground still runs on mount for theming.
   onMount(() => {
     applyThemeForBackground(BG);
-    mounted = true;
   });
+
+  // ── Suggested amounts ──────────────────────────────────────────────────────
+  type Tier = "5" | "15" | "custom";
+  const AMOUNT_OPTIONS: { value: Tier; label: string }[] = [
+    { value: "5", label: "Coffee · $5" },
+    { value: "15", label: "Lunch · $15" },
+    { value: "custom", label: "Custom" },
+  ];
+
+  let tier = $state<Tier>("5");
+  let customDollars = $state<number | null>(null);
+
+  const dollars = $derived(
+    tier === "custom" ? (customDollars ?? 0) : Number(tier)
+  );
+  const validAmount = $derived(dollars >= 1 && dollars <= 1000);
+  // " $5 " when valid, "" when not — keeps a stray "$0" out of labels while a
+  // Custom amount is still empty.
+  const amtLabel = $derived(validAmount ? `$${dollars} ` : "");
+  // PayPal.me and Cash App take the amount as a trailing path segment.
+  const amountPath = $derived(validAmount ? `/${dollars}` : "");
+  const note = encodeURIComponent("Support The Kinetic Alphabet");
+
+  const paypalHref = $derived(
+    `https://www.paypal.com/paypalme/austencloud${amountPath}`
+  );
+  const cashHref = $derived(`https://cash.app/$austencloud${amountPath}`);
+  // Venmo web pay URL prefills the amount on desktop and deep-links to the app
+  // on mobile (recipients = username, not the user_id code).
+  const venmoHref = $derived(
+    `https://venmo.com/?txn=pay&audience=public&recipients=austencloud${
+      validAmount ? `&amount=${dollars}` : ""
+    }&note=${note}`
+  );
+
+  // ── Pay by card (Stripe Checkout) ──────────────────────────────────────────
+  let cardLoading = $state(false);
+  let cardError = $state<string | null>(null);
+
+  // Focus the custom amount field the moment it appears, so picking "Custom" is
+  // immediately ready to type into.
+  function focusInput(node: HTMLInputElement) {
+    node.focus();
+  }
+
+  async function payByCard() {
+    if (!validAmount || cardLoading) return;
+    cardLoading = true;
+    cardError = null;
+    try {
+      // Dynamic import keeps the firebase SDK out of the public/landing bundle.
+      const { createDonationCheckout } = await import(
+        "$lib/shared/support/donation-checkout"
+      );
+      const url = await createDonationCheckout(
+        Math.round(dollars * 100),
+        window.location.origin
+      );
+      window.location.href = url;
+    } catch (e) {
+      console.error("[support] card checkout failed", e);
+      cardError = "Couldn't start card checkout. Try a method below, or again in a moment.";
+      cardLoading = false;
+    }
+  }
+
+  // Stripe returns here on success/cancel.
+  const justDonated = $derived(page.url.searchParams.get("donated") === "1");
+  const checkoutCanceled = $derived(page.url.searchParams.get("canceled") === "1");
 </script>
 
 <svelte:head>
@@ -39,17 +115,26 @@
 </svelte:head>
 
 <div class="support-page">
-  {#if mounted}
-    <div class="background-layer">
-      <BackgroundHost backgroundType={BG} />
-    </div>
-  {/if}
+  <!-- Deep-space fallback behind the cosmic canvas (z-index:-2 < cosmic's -1).
+       Shows when the WebGL cosmic isn't painting (HMR, slow load, WebGL off,
+       reduced motion) so the page never falls back to a flat theme gradient. -->
+  <div class="space-fallback" aria-hidden="true"></div>
+
+  <div class="background-layer">
+    <BackgroundHost backgroundType={BG} />
+  </div>
 
   <div class="content-layer">
     <SiteHeader />
 
     <main class="support">
       <section class="jar-card">
+        {#if justDonated}
+          <p class="donated" role="status">Thank you, truly. Your support means a lot.</p>
+        {:else if checkoutCanceled}
+          <p class="canceled" role="status">Checkout canceled. You weren't charged.</p>
+        {/if}
+
         <h1 class="title">Buy me a coffee</h1>
         <div class="lines">
           <p class="line lead">
@@ -62,13 +147,61 @@
           </p>
         </div>
 
+        <!-- Suggested amount -->
+        <div class="amounts">
+          <SegmentedControl
+            options={AMOUNT_OPTIONS}
+            value={tier}
+            onchange={(v) => (tier = v)}
+            color="accent"
+          />
+          {#if tier === "custom"}
+            <div class="custom-amount" transition:slide={{ duration: 220 }}>
+              <span class="dollar" aria-hidden="true">$</span>
+              <input
+                type="number"
+                min="1"
+                max="1000"
+                step="1"
+                inputmode="numeric"
+                placeholder="Amount"
+                aria-label="Custom amount in dollars"
+                use:focusInput
+                bind:value={customDollars}
+              />
+            </div>
+          {/if}
+        </div>
+
+        <!-- Primary: pay by card (works for everyone, no app needed) -->
+        <button
+          type="button"
+          class="card-cta"
+          onclick={payByCard}
+          disabled={!validAmount || cardLoading}
+        >
+          <i class="fas fa-credit-card" aria-hidden="true"></i>
+          <span>
+            {#if cardLoading}
+              Starting checkout…
+            {:else}
+              Donate{#if validAmount}&nbsp;<span class="amt">${dollars}</span>{/if} by card
+            {/if}
+          </span>
+        </button>
+        {#if cardError}
+          <p class="card-err" role="alert">{cardError}</p>
+        {/if}
+
+        <p class="or">or send{#if validAmount}&nbsp;<span class="amt">${dollars}</span>{/if} directly</p>
+
         <div class="jar">
           <a
             class="pay paypal"
-            href="https://www.paypal.com/paypalme/austencloud"
+            href={paypalHref}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Support via PayPal, @austencloud"
+            aria-label={`Send ${amtLabel}via PayPal, @austencloud`}
           >
             <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"
               ><path
@@ -80,10 +213,10 @@
 
           <a
             class="pay venmo"
-            href="https://venmo.com/code?user_id=2250430063050753012"
+            href={venmoHref}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Support via Venmo, @austencloud"
+            aria-label={`Send ${amtLabel}via Venmo, @austencloud`}
           >
             <svg class="logo logo--venmo" viewBox="0 9.4 24 5.2" aria-hidden="true"
               ><path
@@ -95,10 +228,10 @@
 
           <a
             class="pay cashapp"
-            href="https://cash.app/$austencloud"
+            href={cashHref}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Support via Cash App, $austencloud"
+            aria-label={`Send ${amtLabel}via Cash App, $austencloud`}
           >
             <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"
               ><path
@@ -109,8 +242,8 @@
           </a>
         </div>
 
+        <p class="signoff">With love,</p>
         <p class="sign">Austen Cloud</p>
-        <p class="role">Creator of The Kinetic Alphabet</p>
       </section>
     </main>
 
@@ -132,6 +265,15 @@
     z-index: 0;
   }
 
+  .space-fallback {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background:
+      radial-gradient(120% 80% at 78% 12%, rgba(70, 60, 140, 0.35) 0%, transparent 55%),
+      radial-gradient(130% 100% at 50% -10%, #181b3d 0%, #0c0e20 48%, #06070f 100%);
+  }
+
   .content-layer {
     position: relative;
     z-index: 1;
@@ -151,8 +293,27 @@
 
   .jar-card {
     width: 100%;
-    max-width: 560px;
+    max-width: 480px;
     text-align: center;
+  }
+
+  .donated,
+  .canceled {
+    max-width: 30rem;
+    margin: 0 auto 1.6rem;
+    padding: 0.7rem 1.1rem;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+  .donated {
+    background: rgba(34, 197, 94, 0.14);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    color: #86efac;
+  }
+  .canceled {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.78);
   }
 
   .title {
@@ -173,7 +334,7 @@
     align-items: center;
     gap: 1rem;
     max-width: 30rem;
-    margin: 0 auto 2.5rem;
+    margin: 0 auto 2rem;
   }
   .line {
     margin: 0;
@@ -194,7 +355,6 @@
     color: #b8bdf2;
     font-weight: 500;
   }
-  /* a teeny divider dot between sections */
   .line + .line {
     position: relative;
     padding-top: 1rem;
@@ -211,7 +371,102 @@
     background: rgba(255, 255, 255, 0.28);
   }
 
-  /* three methods, side by side */
+  /* ── amounts ── */
+  .amounts {
+    width: 100%;
+    margin: 0 auto 18px;
+  }
+  .custom-amount {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .custom-amount .dollar {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .custom-amount input {
+    width: 130px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #fff;
+    font-size: 1rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    /* no up/down stepper */
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .custom-amount input::-webkit-outer-spin-button,
+  .custom-amount input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .custom-amount input:focus-visible {
+    outline: none;
+    border-color: var(--theme-accent, #818cf8);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-accent, #818cf8) 40%, transparent);
+  }
+
+  .amt {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── primary: pay by card ── */
+  .card-cta {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+    min-height: 56px;
+    padding: 0 30px;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    color: #fff;
+    font-size: 1.08rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #6f8cff, #8b6cff);
+    box-shadow: 0 14px 34px rgba(110, 100, 255, 0.35);
+    transition:
+      transform 0.16s ease,
+      box-shadow 0.16s ease,
+      filter 0.16s ease;
+  }
+  .card-cta:hover:not(:disabled),
+  .card-cta:focus-visible:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 46px rgba(110, 100, 255, 0.5);
+    filter: saturate(1.08);
+    outline: none;
+  }
+  .card-cta:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .card-cta i {
+    font-size: 1.05rem;
+  }
+  .card-err {
+    margin: 0.7rem auto 0;
+    max-width: 26rem;
+    font-size: 0.85rem;
+    color: #fca5a5;
+  }
+
+  .or {
+    margin: 20px 0 14px;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* ── payment app buttons (glass + brand tint) ── */
   .jar {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -225,13 +480,20 @@
     align-items: center;
     justify-content: center;
     gap: 16px;
-    min-height: 132px;
-    padding: 24px 14px;
+    min-height: 116px;
+    padding: 22px 14px;
     border-radius: 16px;
     text-decoration: none;
     color: var(--theme-text, #fff);
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background:
+      linear-gradient(
+        155deg,
+        color-mix(in srgb, var(--brand) 16%, transparent) 0%,
+        color-mix(in srgb, var(--brand) 5%, transparent) 55%,
+        transparent 100%
+      ),
+      rgba(255, 255, 255, 0.045);
+    border: 1px solid color-mix(in srgb, var(--brand) 24%, rgba(255, 255, 255, 0.12));
     -webkit-backdrop-filter: blur(14px) saturate(1.15);
     backdrop-filter: blur(14px) saturate(1.15);
     box-shadow:
@@ -246,7 +508,14 @@
   .pay:hover,
   .pay:focus-visible {
     transform: translateY(-4px);
-    background: rgba(255, 255, 255, 0.08);
+    background:
+      linear-gradient(
+        155deg,
+        color-mix(in srgb, var(--brand) 28%, transparent) 0%,
+        color-mix(in srgb, var(--brand) 11%, transparent) 60%,
+        transparent 100%
+      ),
+      rgba(255, 255, 255, 0.06);
     border-color: var(--brand);
     box-shadow:
       0 18px 40px rgba(0, 0, 0, 0.42),
@@ -259,7 +528,7 @@
   }
 
   .logo {
-    height: 30px;
+    height: 28px;
     width: auto;
     display: block;
     fill: var(--brand);
@@ -267,7 +536,7 @@
   }
   .logo--venmo {
     height: auto;
-    width: 82px;
+    width: 78px;
   }
   .pay:hover .logo,
   .pay:focus-visible .logo {
@@ -276,7 +545,7 @@
 
   .handle {
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     letter-spacing: 0.01em;
     color: rgba(255, 255, 255, 0.82);
   }
@@ -294,16 +563,16 @@
     --glow: rgba(0, 217, 87, 0.45);
   }
 
+  .signoff {
+    font-size: 0.95rem;
+    margin: 2.4rem 0 0;
+    color: rgba(255, 255, 255, 0.55);
+  }
   .sign {
     font-weight: 600;
-    font-size: 1.25rem;
-    margin: 2.4rem 0 0;
+    font-size: 1.3rem;
+    margin: 0.15rem 0 0;
     color: #818cf8;
-  }
-  .role {
-    font-size: 0.9rem;
-    margin: 0.2rem 0 0;
-    color: rgba(255, 255, 255, 0.5);
   }
 
   @media (max-width: 520px) {
@@ -325,11 +594,13 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pay {
+    .pay,
+    .card-cta {
       transition: none;
     }
     .pay:hover,
-    .pay:focus-visible {
+    .pay:focus-visible,
+    .card-cta:hover:not(:disabled) {
       transform: none;
     }
   }
