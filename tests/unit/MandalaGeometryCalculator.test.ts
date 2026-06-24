@@ -679,10 +679,11 @@ describe("MandalaGeometryCalculator", () => {
       expect(maxDist).toBeGreaterThan(MANDALA_GRID_RADIUS);
     });
 
-    it("MANDALA_STANDARD_TIP_DX is 130 (pin the constant)", () => {
+    it("MANDALA_STANDARD_TIP_DX is 120 (pin the constant)", () => {
       // If someone changes this constant, the visual output changes significantly.
       // Pin it explicitly so any change requires updating the tests too.
-      expect(MANDALA_STANDARD_TIP_DX).toBe(130);
+      // Canonical source: src/lib/shared/mandala/domain/mandala-constants.ts:3 (130→120 in commit 3e6c69a73b).
+      expect(MANDALA_STANDARD_TIP_DX).toBe(120);
     });
   });
 

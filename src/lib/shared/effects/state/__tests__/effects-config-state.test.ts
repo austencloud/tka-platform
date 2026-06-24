@@ -120,10 +120,14 @@ describe("EffectsConfigState", () => {
     });
 
     it("resetToBaseline with no baseline returns to factory defaults", () => {
-      const state = createEffectsConfigState();
+      // persist:false isolates this instance — the sibling saveAsBaseline test above
+      // persists a baseline to localStorage that would otherwise leak in here.
+      const state = createEffectsConfigState(undefined, { persist: false });
       state.updateEffect("fire", { brightness: 0.1 });
       state.resetToBaseline();
-      expect(state.fire.brightness).toBe(1.0);
+      // Factory default for fire.brightness is 0.5 (1.0→0.5 in commit 32a92a4987 "tame 3D fire").
+      // Canonical source: src/lib/shared/effects/domain/defaults.ts:21.
+      expect(state.fire.brightness).toBe(0.5);
     });
 
     it("baseline is a snapshot, not a live reference", () => {

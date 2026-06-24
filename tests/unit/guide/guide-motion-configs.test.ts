@@ -34,7 +34,9 @@ describe("buildGuideMotionSequence", () => {
     expect(red.endLocation).toBe(GridLocation.NORTH);
     expect(red.motionType).toBe(MotionType.PRO);
     expect(red.propType).toBe(PropType.HAND);
-    expect(red.pathShape).toBe("arc");
+    // Guide demos hard-code "linear" for every hand motion (teaches grid points, not arcs).
+    // Canonical source: src/routes/(public)/guide/level-1/_components/guide-motion-configs.ts:215.
+    expect(red.pathShape).toBe("linear");
   });
   it("uses linear pathShape for dashes", () => {
     const config = GUIDE_MOTION_CONFIGS.find((c) => c.id === "hm-dash-we")!;

@@ -22,6 +22,9 @@ describe("generateSpecialOverrideKey — per-arrow discriminator", () => {
     letter: "A",
     turnsTuple: "(0, 1.5)",
     motionType: "pro",
+    // propType is the mandatory 7th key segment (fan vs staff overrides must not bleed).
+    // Canonical source: src/lib/shared/pictograph/arrow/positioning/special-override/domain/special-arrow-placement.ts:75 (added in commit 20f36c5def).
+    propType: "staff",
   };
 
   it("produces DIFFERENT keys for the two arrows of a same-motion-type letter", () => {
