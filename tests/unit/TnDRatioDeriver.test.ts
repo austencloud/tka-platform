@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deriveVtgRatio } from "$lib/features/choreo-card/components/card-back/card-back-data";
+import { deriveTnDRatio } from "$lib/features/choreo-card/components/card-back/card-back-data";
 
 /** Helper: one motion per step, both hands have the given turns */
 function makeUniform(turnValue: number, stepCount: number = 3) {
@@ -25,25 +25,25 @@ function makeMixed(turnValues: number[]) {
   } as any;
 }
 
-describe("deriveVtgRatio", () => {
+describe("deriveTnDRatio", () => {
   it("returns 1:1 for uniform 0 turns", () => {
-    expect(deriveVtgRatio(makeUniform(0))).toBe("1:1");
+    expect(deriveTnDRatio(makeUniform(0))).toBe("1:1");
   });
 
   it("returns 3:1 for uniform 1 turn", () => {
-    expect(deriveVtgRatio(makeUniform(1))).toBe("3:1");
+    expect(deriveTnDRatio(makeUniform(1))).toBe("3:1");
   });
 
   it("returns 5:1 for uniform 2 turns", () => {
-    expect(deriveVtgRatio(makeUniform(2))).toBe("5:1");
+    expect(deriveTnDRatio(makeUniform(2))).toBe("5:1");
   });
 
   it("returns 2:1 for uniform 0.5 turns", () => {
-    expect(deriveVtgRatio(makeUniform(0.5))).toBe("2:1");
+    expect(deriveTnDRatio(makeUniform(0.5))).toBe("2:1");
   });
 
   it("returns null for mixed turn values (typical LOOP)", () => {
-    expect(deriveVtgRatio(makeMixed([0, 1, 0.5, 2]))).toBeNull();
+    expect(deriveTnDRatio(makeMixed([0, 1, 0.5, 2]))).toBeNull();
   });
 
   it("returns null when blue and red hands differ", () => {
@@ -55,15 +55,15 @@ describe("deriveVtgRatio", () => {
         },
       }],
     } as any;
-    expect(deriveVtgRatio(seq)).toBeNull();
+    expect(deriveTnDRatio(seq)).toBeNull();
   });
 
   it("returns 1:1 for sequences with no steps", () => {
-    expect(deriveVtgRatio({ steps: [] } as any)).toBe("1:1");
+    expect(deriveTnDRatio({ steps: [] } as any)).toBe("1:1");
   });
 
   it("returns null for unrecognized uniform turn values", () => {
-    expect(deriveVtgRatio(makeUniform(0.7))).toBeNull();
+    expect(deriveTnDRatio(makeUniform(0.7))).toBeNull();
   });
 
   it("ignores float turns (fl string) and checks remaining", () => {
@@ -83,6 +83,6 @@ describe("deriveVtgRatio", () => {
         },
       ],
     } as any;
-    expect(deriveVtgRatio(seq)).toBe("3:1");
+    expect(deriveTnDRatio(seq)).toBe("3:1");
   });
 });
