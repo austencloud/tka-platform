@@ -207,6 +207,8 @@ vi.mock("firebase/firestore", () => ({
   limit: vi.fn(),
   persistentLocalCache: vi.fn(() => ({})),
   persistentMultipleTabManager: vi.fn(() => ({})),
+  memoryLocalCache: vi.fn(() => ({})),
+  serverTimestamp: vi.fn(() => ({ _methodName: "serverTimestamp" })),
 }));
 
 vi.mock("firebase/database", () => ({
@@ -214,8 +216,16 @@ vi.mock("firebase/database", () => ({
 	ref: vi.fn(),
 	get: vi.fn(),
 	set: vi.fn(),
+	update: vi.fn(),
+	remove: vi.fn(),
 	onValue: vi.fn(),
 	off: vi.fn(),
+	onDisconnect: vi.fn(() => ({
+		update: vi.fn(() => Promise.resolve()),
+		set: vi.fn(() => Promise.resolve()),
+		cancel: vi.fn(() => Promise.resolve()),
+	})),
+	serverTimestamp: vi.fn(() => ({ ".sv": "timestamp" })),
 }));
 
 vi.mock("firebase/functions", () => ({
