@@ -14,7 +14,7 @@
   import GuideCover from "./GuideCover.svelte";
   import GuideTOC from "./GuideTOC.svelte";
   import PagePlaceholder from "./PagePlaceholder.svelte";
-  import { GUIDE_BODY_PAGES, type GuidePageMeta } from "../_data/guide-manifest";
+  import { GUIDE_BODY_PAGES, GROUP_TITLES, type GuidePageMeta } from "../_data/guide-manifest";
 
   let {
     page,
@@ -106,6 +106,7 @@
 {@render page({ kind: "readme", title: "Read Me First", label: "p4 — Read Me First", content: readmeContent })}
 {@render page({ kind: "toc", title: "Table of Contents", label: "p5 — Table of Contents", content: tocContent })}
 {#each GUIDE_BODY_PAGES as entry, i}
+  {@const sectionFirst = i === 0 || GUIDE_BODY_PAGES[i - 1]?.group !== entry.group}
   {#snippet bodyContent()}
     {@const Built = built[entry.id]}
     {#if Built}<Built />{:else}<PagePlaceholder />{/if}
@@ -114,6 +115,7 @@
     kind: "body",
     title: entry.title,
     pageNumber: i + 1,
+    eyebrow: sectionFirst ? `${entry.group} · ${GROUP_TITLES[entry.group]}` : undefined,
     label: `body p${i + 1} — ${entry.title}`,
     content: bodyContent,
   })}

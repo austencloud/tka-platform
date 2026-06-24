@@ -32,6 +32,8 @@ export type GuidePageMeta = {
   pageNumber?: number;
   fullBleed?: boolean;
   label?: string;
+  /** Section line above the title on a section's first page. */
+  eyebrow?: string;
   content: Snippet;
 };
 

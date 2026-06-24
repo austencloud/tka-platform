@@ -126,11 +126,11 @@
 
 <!-- Wrap each shared-document page as a scaled flip page (native 8.5×11 GuidePage
      inside a .scale transform, clipped to the flip .page box). -->
-{#snippet bookPage({ title, pageNumber, fullBleed, content }: GuidePageMeta)}
+{#snippet bookPage({ title, pageNumber, fullBleed, eyebrow, content }: GuidePageMeta)}
   <div class="page">
     <div class="scale">
       <div class="pg">
-        <GuidePage {title} {pageNumber} {fullBleed}>{@render content()}</GuidePage>
+        <GuidePage {title} {pageNumber} {fullBleed} {eyebrow}>{@render content()}</GuidePage>
       </div>
     </div>
   </div>

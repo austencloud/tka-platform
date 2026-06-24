@@ -21,6 +21,7 @@
     label,
     pageNumber,
     title,
+    eyebrow,
   }: {
     children: Snippet;
     /** Edge-to-edge content (cover art etc.) — drops the inner page margin. */
@@ -31,6 +32,9 @@
     pageNumber?: number;
     /** Page header title, rendered in the dedicated header region at the top. */
     title?: string;
+    /** Small section line above the title (e.g. "1.0 · Positions / Motions"),
+        shown on the first page of a section in place of a divider page. */
+    eyebrow?: string;
   } = $props();
 
   // Recto/verso: page 1 = recto (right); odd → right, even → left outer corner.
@@ -43,6 +47,7 @@
   <div class="page-body">
     {#if title}
       <header class="page-header">
+        {#if eyebrow}<p class="page-eyebrow">{eyebrow}</p>{/if}
         <h1 class="page-header-title">{title}</h1>
         <span class="page-header-flourish" aria-hidden="true"></span>
       </header>
@@ -86,6 +91,17 @@
     flex: 0 0 auto;
     text-align: center;
     margin: 0 0 0.4in;
+  }
+  /* Section line above the title on a section's first page (replaces the old
+     standalone divider page). */
+  .page-eyebrow {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-style: italic;
+    font-size: 1rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #9a7b1f;
+    margin: 0 0 0.1in;
   }
   .page-header-title {
     /* --guide-header-font lets the whole book's page-header typeface be swapped
