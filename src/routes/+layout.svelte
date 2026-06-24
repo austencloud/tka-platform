@@ -5,6 +5,7 @@
   import { detectSiteMode, type SiteMode } from "../config/domains";
   import { consumeSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
   import { getPresenceTracker } from "$lib/shared/presence/get-presence-tracker";
+  import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
   import type { LayoutData } from "./$types";
   import "../app.css";
   // Chip toggle tokens - maps --chip-* to TKA design values
@@ -221,10 +222,21 @@
     // Mark container ready so children can render immediately
     containerReady = true;
 
-    // Preload TKA letter glyph images in background (canvas headers fall back to text until ready)
-    import("$lib/shared/render/services/text-renderer")
-      .then(({ textRenderer }) => textRenderer.preloadGlyphImages())
-      .catch(() => {});
+    // Preload TKA letter glyph images (canvas word headers fall back to plain
+    // text until these are ready). Decoding ~70 SVGs into canvas-ready images is
+    // main-thread work, so we defer it to idle instead of racing it against the
+    // first paint and the active module's load. On a slow connection that
+    // contention is exactly what makes the page feel janky on arrival.
+    const preloadGlyphs = () => {
+      import("$lib/shared/render/services/text-renderer")
+        .then(({ textRenderer }) => textRenderer.preloadGlyphImages())
+        .catch(() => {});
+    };
+    if (typeof requestIdleCallback !== "undefined") {
+      requestIdleCallback(preloadGlyphs);
+    } else {
+      setTimeout(preloadGlyphs, 0);
+    }
 
     // Initialize native Capacitor plugins (status bar, keyboard, splash, lifecycle).
     // No-op on web - the isNative check inside returns immediately.
@@ -242,35 +254,49 @@
 
     // Prefetch browse data so it's ready before the user navigates there.
     // Uses requestIdleCallback to avoid competing with the active module's load.
+    //
+    // On a constrained connection (data-saver, slow/congested mobile) we back off
+    // the speculative network work entirely: it's a multi-MB download for tabs the
+    // user may never open, and on 4G it steals bandwidth from whatever they're
+    // actually doing — which is what makes animations stutter on arrival. Both the
+    // gallery and the Creators tab still load on demand when actually opened.
+    const constrainedConnection = isConstrainedConnection();
     const prefetchBrowseData = async () => {
-      // Gallery: warm from IndexedDB cache, sync from Firestore in background
+      // Gallery: always warm from the IndexedDB cache (local, instant). On a
+      // constrained connection, skip the fresh Firestore sync; otherwise sync in
+      // the background so the gallery is up to date before the user opens it.
       try {
         const { getGalleryPrefetcher } = await import("$lib/features/browse/shared/get-gallery-prefetcher");
         const prefetcher = getGalleryPrefetcher();
         if (prefetcher && typeof prefetcher.prefetch === "function") {
-          prefetcher.prefetch().catch((err: unknown) =>
-            console.warn("[Layout] Gallery prefetch failed:", err)
-          );
+          prefetcher
+            .prefetch({ skipNetworkSync: constrainedConnection })
+            .catch((err: unknown) =>
+              console.warn("[Layout] Gallery prefetch failed:", err)
+            );
         }
       } catch (err) {
         console.warn("[Layout] Gallery prefetcher not available:", err);
       }
 
-      // Creators: load creator profiles so the Creators tab is instant
-      import("$lib/features/browse/creators/state/creators-data-state.svelte")
-        .then(({ creatorsDataState }) => {
-          if (!creatorsDataState.isInitialized) {
-            Promise.all([
-              creatorsDataState.loadCreators(),
-              creatorsDataState.loadFeaturedCreators(),
-            ]).catch((err: unknown) =>
-              console.warn("[Layout] Creators prefetch failed:", err)
-            );
-          }
-        })
-        .catch((err: unknown) =>
-          console.warn("[Layout] Creators module import failed:", err)
-        );
+      // Creators: purely speculative warming for the Creators tab. Skip it
+      // entirely on a constrained connection — it loads when the tab is opened.
+      if (!constrainedConnection) {
+        import("$lib/features/browse/creators/state/creators-data-state.svelte")
+          .then(({ creatorsDataState }) => {
+            if (!creatorsDataState.isInitialized) {
+              Promise.all([
+                creatorsDataState.loadCreators(),
+                creatorsDataState.loadFeaturedCreators(),
+              ]).catch((err: unknown) =>
+                console.warn("[Layout] Creators prefetch failed:", err)
+              );
+            }
+          })
+          .catch((err: unknown) =>
+            console.warn("[Layout] Creators module import failed:", err)
+          );
+      }
     };
 
     if (typeof requestIdleCallback !== "undefined") {

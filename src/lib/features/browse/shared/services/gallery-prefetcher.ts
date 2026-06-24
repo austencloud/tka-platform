@@ -43,10 +43,17 @@ export class GalleryPrefetcher {
     return this._prefetchPromise;
   }
 
-  async prefetch(): Promise<void> {
+  /**
+   * @param options.skipNetworkSync When true, warm from the local cache and keep
+   *   listening for local edits, but don't pull fresh data from Firestore. Set on
+   *   a constrained connection: the fresh sync is a speculative multi-MB download
+   *   for a gallery the user may never open, so on slow/metered links we defer it
+   *   until they actually navigate to Browse (which loads on demand).
+   */
+  async prefetch(options: { skipNetworkSync?: boolean } = {}): Promise<void> {
     if (this._prefetchPromise) return this._prefetchPromise;
 
-    this._prefetchPromise = this.doPrefetch();
+    this._prefetchPromise = this.doPrefetch(options);
     try {
       await this._prefetchPromise;
     } finally {
@@ -54,8 +61,12 @@ export class GalleryPrefetcher {
     }
   }
 
-  private async doPrefetch(): Promise<void> {
-    // Phase 1: Warm from IndexedDB (fast - local disk)
+  private async doPrefetch({
+    skipNetworkSync = false,
+  }: { skipNetworkSync?: boolean } = {}): Promise<void> {
+    // Phase 1: Warm from IndexedDB (fast - local disk). Always do this — it's a
+    // local read with no network cost, and it's what makes Browse open instantly
+    // for returning users even on a slow connection.
     try {
       const hasCache = await this.offlineCache.hasCachedData();
       if (hasCache) {
@@ -69,10 +80,15 @@ export class GalleryPrefetcher {
       console.warn("[GalleryPrefetcher] IndexedDB warm failed:", error);
     }
 
-    // Phase 2: Background Firestore sync (non-blocking)
-    this.backgroundSync();
+    // Phase 2: Background Firestore sync (non-blocking). Skipped on a constrained
+    // connection so we don't speculatively download the whole gallery over 4G.
+    if (!skipNetworkSync) {
+      this.backgroundSync();
+    }
 
-    // Phase 3: Subscribe to mutation events for real-time IndexedDB patching
+    // Phase 3: Subscribe to mutation events for real-time IndexedDB patching.
+    // Always do this — it keeps the local cache current as the user edits their
+    // own library, with no network cost.
     this.subscribeToMutationEvents();
   }
 
