@@ -3,7 +3,7 @@
  *
  * Deployed on: tka.run, tka.to
  * Routes: /{code} → OG meta for crawlers, 302 → tkaflowarts.com/q/{code} for humans
- *         /       → 301 → tkaflowarts.com
+ *         /       → 301 → tkaflowarts.com/app
  *
  * SACRED: This worker is the only thing between a printed QR code and the
  * sequence viewer. Every Choreo Card ever printed encodes a TKA.RUN/{code}
@@ -68,7 +68,7 @@ export default {
     const path = url.pathname;
 
     if (path === "/" || path === "") {
-      return Response.redirect("https://tkaflowarts.com", 301);
+      return Response.redirect("https://tkaflowarts.com/app", 301);
     }
 
     const code = path.slice(1);
