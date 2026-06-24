@@ -15,18 +15,13 @@
   import "../_styles/guide-print.css";
   import { setGuidePrintMode } from "../_data/guide-data-context";
   import { page } from "$app/state";
-  import type { Component } from "svelte";
   import GuidePage from "../_components/GuidePage.svelte";
   import GuideDocument from "../_components/GuideDocument.svelte";
   import PageNumberToggle from "../_components/PageNumberToggle.svelte";
   import type { GuidePageMeta } from "../_data/guide-manifest";
+  import { BUILT } from "../_data/built-pages";
 
   setGuidePrintMode();
-
-  // Built per-page components, keyed by manifest id. Empty until chapters are
-  // converted page-by-page (p6+); any id not registered renders a numbered
-  // placeholder. As each body page is rebuilt, add e.g. { "the-grid": TheGridPage }.
-  const BUILT: Record<string, Component> = {};
 
   // ?theme=home → ink-cheap light cover for home printers; default = navy (foil).
   const coverTheme = $derived(page.url.searchParams.get("theme") === "home" ? "light" : "navy");

@@ -106,13 +106,18 @@
 {@render page({ kind: "readme", title: "Read Me First", label: "p4 — Read Me First", content: readmeContent })}
 {@render page({ kind: "toc", title: "Table of Contents", label: "p5 — Table of Contents", content: tocContent })}
 {#each GUIDE_BODY_PAGES as entry, i}
+  {@const isBuilt = !!built[entry.id]}
   {#snippet bodyContent()}
     {@const Built = built[entry.id]}
     {#if Built}<Built />{:else}<PagePlaceholder />{/if}
   {/snippet}
+  <!-- A rebuilt body page paints its OWN layout edge-to-edge (faithful to the
+       proof PDF, title included), so it gets fullBleed + no GuidePage header.
+       Unbuilt pages keep the standard header + placeholder. -->
   {@render page({
     kind: "body",
-    title: entry.title,
+    title: isBuilt ? undefined : entry.title,
+    fullBleed: isBuilt,
     pageNumber: i + 1,
     label: `body p${i + 1} — ${entry.title}`,
     content: bodyContent,

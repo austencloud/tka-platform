@@ -17,6 +17,7 @@
   import GuidePage from "../_components/GuidePage.svelte";
   import GuideDocument from "../_components/GuideDocument.svelte";
   import type { GuidePageMeta } from "../_data/guide-manifest";
+  import { BUILT } from "../_data/built-pages";
 
   setGuidePrintMode();
 
@@ -153,7 +154,7 @@
         <!-- Live rebuild pages: shared GuideDocument, each page a real GuidePage
              scaled into a flip .page. Same sequence as /print. -->
         <div class="flip" bind:this={newContainer} style="--s:{SCALE}">
-          <GuideDocument coverTheme="navy" page={bookPage} />
+          <GuideDocument coverTheme="navy" built={BUILT} page={bookPage} />
         </div>
       </div>
     {/if}
