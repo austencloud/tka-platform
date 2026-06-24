@@ -1,7 +1,13 @@
 <script lang="ts">
   import { LEVEL_METADATA, type LevelNumber } from "$lib/shared/domain/curriculum/level-metadata";
 
-  const levels: LevelNumber[] = [1, 2, 3];
+  // showHeading lets a host page (e.g. /guide) supply its own section heading
+  // and hide this component's, so the two don't stack into a double title.
+  let { showHeading = true }: { showHeading?: boolean } = $props();
+
+  // Level 3 is intentionally omitted — its guide was never finished, so we don't
+  // offer it. Only the completed Level 1 + Level 2 guides ship.
+  const levels: LevelNumber[] = [1, 2];
 
   const guides = levels.map((level) => ({
     level,
@@ -15,37 +21,40 @@
 
 <section class="guides" id="guides">
   <div class="container">
-    <h2>Guides</h2>
-    <p class="section-intro">
-      Learn the notation at your own pace. Download any level to read on your
-      phone, tablet, or screen. Start with Level 1.
-    </p>
+    {#if showHeading}
+      <h2>Guides</h2>
+      <p class="section-intro">
+        Learn the notation at your own pace. Download any level to read on your
+        phone, tablet, or screen. Start with Level 1.
+      </p>
+    {/if}
 
-    <div class="guides-grid">
+    <ul class="guide-list">
       {#each guides as guide}
-        <a
-          class="guide-card"
-          style="--accent: {guide.accent}"
-          href={guide.href}
-          download
-          aria-label="Download Level {guide.level} guide: {guide.title}"
-        >
-          <div class="guide-image">
-            <img
-              src={guide.image}
-              alt="Level {guide.level} pictograph examples"
-              loading="lazy"
-            />
-          </div>
-          <div class="guide-body">
-            <span class="guide-level">Level {guide.level}</span>
-            <h3>{guide.title}</h3>
-            <p>{guide.description}</p>
-            <span class="guide-dl">⬇ Download PDF</span>
-          </div>
-        </a>
+        <li>
+          <a
+            class="guide-card"
+            style="--accent: {guide.accent}"
+            href={guide.href}
+            download
+            aria-label="Download the Level {guide.level} guide: {guide.title} (PDF)"
+          >
+            <span class="cover">
+              <img src={guide.image} alt="" loading="lazy" />
+            </span>
+            <span class="body">
+              <span class="level">Level {guide.level}</span>
+              <span class="title">{guide.title}</span>
+              <span class="desc">{guide.description}</span>
+            </span>
+            <span class="action">
+              <i class="fas fa-arrow-down" aria-hidden="true"></i>
+              <span class="action-label">PDF</span>
+            </span>
+          </a>
+        </li>
       {/each}
-    </div>
+    </ul>
 
     <p class="closing">Start with Level 1. Grab a pair of staves and follow along.</p>
   </div>
@@ -53,7 +62,7 @@
 
 <style>
   .guides {
-    padding: 120px 24px;
+    padding: 96px 24px;
   }
 
   .container {
@@ -62,11 +71,11 @@
   }
 
   h2 {
-    font-family: var(--landing-heading-font, "Instrument Serif", Georgia, serif);
+    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
     font-size: clamp(1.6rem, 4vw, 2.2rem);
     margin-bottom: 12px;
     text-align: center;
-    font-weight: 400;
+    font-weight: 500;
     line-height: 1.2;
   }
 
@@ -77,109 +86,151 @@
     max-width: 480px;
     margin: 0 auto 3rem;
     line-height: 1.7;
+    text-wrap: pretty;
   }
 
-  .guides-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 24px;
+  /* A short, scannable list of guide entries — reads like a chapter list, not a
+     wall of giant pictographs. */
+  .guide-list {
+    list-style: none;
+    margin: 0 auto;
+    padding: 0;
+    max-width: 620px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .guide-list li {
+    margin: 0;
   }
 
   .guide-card {
-    background: rgba(18, 16, 14, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 10px;
-    overflow: hidden;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 20px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
     text-decoration: none;
     color: inherit;
-    min-height: 44px;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease,
+      box-shadow 0.2s ease;
   }
-
-  .guide-card:hover {
-    border-color: rgba(212, 129, 58, 0.25);
-    box-shadow: 0 0 20px rgba(212, 129, 58, 0.15);
+  .guide-card:hover,
+  .guide-card:focus-visible {
+    outline: none;
     transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+    box-shadow: 0 14px 34px -16px color-mix(in srgb, var(--accent) 60%, transparent);
   }
 
-  .guide-image {
-    aspect-ratio: 1;
-    background: rgba(255, 255, 255, 0.95);
+  /* Small "cover" tile — the pictograph as a supporting emblem, not the whole card. */
+  .cover {
+    flex: 0 0 auto;
+    width: 76px;
+    height: 76px;
+    border-radius: 12px;
+    background: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px;
+    padding: 8px;
+    box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.6);
   }
-
-  .guide-image img {
+  .cover img {
     width: 100%;
     height: 100%;
     object-fit: contain;
   }
 
-  .guide-body {
-    padding: 24px;
+  .body {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    flex: 1;
+    gap: 3px;
   }
-
-  .guide-level {
-    font-size: var(--font-size-compact, 12px);
+  .level {
+    font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     color: var(--accent);
   }
-
-  .guide-body h3 {
-    font-size: 1.25rem;
-    margin: 0;
+  .title {
+    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
+    font-size: 1.32rem;
+    font-weight: 500;
+    line-height: 1.2;
+    color: #fff;
+  }
+  .desc {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
   }
 
-  .guide-body p {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-sm, 0.875rem);
-    margin: 0;
-    flex: 1;
-  }
-
-  .guide-dl {
+  /* Download affordance — fills with the level accent on hover so the card reads
+     as something you open. */
+  .action {
+    flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    margin-top: 8px;
-    align-self: flex-start;
+    gap: 7px;
+    align-self: stretch;
+    padding: 0 16px;
+    margin: -16px -20px -16px 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
     font-size: 0.82rem;
-    color: #4a8f8f;
-    padding: 6px 14px;
-    min-height: 44px;
-    border: 1px solid rgba(74, 143, 143, 0.3);
-    border-radius: 6px;
-    transition: background 0.2s ease, border-color 0.2s ease;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: color 0.2s ease, background 0.2s ease;
   }
-
-  .guide-card:hover .guide-dl {
-    background: rgba(74, 143, 143, 0.1);
-    border-color: #4a8f8f;
+  .guide-card:hover .action,
+  .guide-card:focus-visible .action {
+    color: var(--accent);
+  }
+  .action i {
+    transition: transform 0.2s ease;
+  }
+  .guide-card:hover .action i {
+    transform: translateY(2px);
   }
 
   .closing {
     text-align: center;
-    font-size: 1.125rem;
+    font-size: 1.05rem;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    margin-top: 3rem;
+    margin-top: 2.5rem;
+  }
+
+  @media (max-width: 520px) {
+    .guide-card {
+      gap: 14px;
+      padding: 14px 16px;
+    }
+    .cover {
+      width: 60px;
+      height: 60px;
+    }
+    .action {
+      margin-right: -16px;
+      padding: 0 12px;
+    }
+    .action-label {
+      display: none;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .guide-card {
-      transition: none;
-    }
-
-    .guide-dl {
+    .guide-card,
+    .action,
+    .action i {
       transition: none;
     }
   }

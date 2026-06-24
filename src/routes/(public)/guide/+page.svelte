@@ -100,7 +100,7 @@
       </p>
     </section>
 
-    <GuidesSection />
+    <GuidesSection showHeading={false} />
 
     <section class="notify" aria-labelledby="notify-heading">
       <div class="notify-card">
@@ -192,8 +192,8 @@
     font-size: clamp(1.02rem, 2vw, 1.18rem);
     line-height: 1.65;
     color: rgba(236, 233, 245, 0.7);
-    /* Avoid a lone last word (widow). */
-    text-wrap: pretty;
+    /* Balance all three lines so the last one isn't a stray "fully live yet". */
+    text-wrap: balance;
   }
 
   /* ── Old guides ───────────────────────────────────────────────────── */
