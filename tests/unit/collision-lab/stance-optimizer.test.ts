@@ -3,8 +3,8 @@ import { Vector3 } from "three";
 import {
   StanceSimulator,
   restPoseFromHeight,
-} from "$lib/features/lab/tabs/collision-lab/services/implementations/StanceSimulator";
-import { StanceOptimizer } from "$lib/features/lab/tabs/collision-lab/services/implementations/StanceOptimizer";
+} from "$lib/features/lab/tabs/collision-lab/services/stance-simulator";
+import { StanceOptimizer } from "$lib/features/lab/tabs/collision-lab/services/stance-optimizer";
 import type { SimPropTarget } from "$lib/features/lab/tabs/collision-lab/services/contracts/IStanceSimulator";
 import type {
   OptimizerBounds,

@@ -4,7 +4,7 @@ import {
   findPreset,
   validatePreset,
   type LedColorPreset,
-} from "$lib/shared/animation-engine/domain/types/LedColorPresets";
+} from "$lib/shared/animation-engine/domain/types/led-color-presets";
 
 describe("Color Presets", () => {
   it("has 8 built-in presets", () => {

@@ -7,12 +7,12 @@ import {
   RotationDirection,
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { SoloPropData } from "$lib/shared/foundation/domain/models/SoloPropData";
-import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/SoloPropStepData";
-import type { StepPairingData } from "$lib/shared/foundation/domain/models/StepPairingData";
+import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-prop-data";
+import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/solo-prop-step-data";
+import type { StepPairingData } from "$lib/shared/foundation/domain/models/step-pairing-data";
 
 function makeStep(
   startLocation: GridLocation,

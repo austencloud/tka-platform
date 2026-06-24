@@ -7,7 +7,7 @@ import {
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/SoloPropStepData";
+import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/solo-prop-step-data";
 
 function makeStep(
   startLocation: GridLocation,

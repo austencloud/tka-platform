@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { PropSystem } from "$lib/features/village/engine/systems/PropSystem";
+import { PropSystem } from "$lib/features/village/engine/systems/prop-system";
 import {
 	createVillageWorld,
 	createAvatarEntity,
-} from "$lib/features/village/engine/VillageWorld";
+} from "$lib/features/village/engine/village-world";
 import * as personalityGenerator from "$lib/features/village/services/personality-generator";
 import { PROP_WEAR_PROFILES } from "$lib/features/village/domain/village-constants";
 import type {

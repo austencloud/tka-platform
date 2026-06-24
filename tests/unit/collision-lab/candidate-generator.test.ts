@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { CandidateGenerator } from "$lib/features/lab/tabs/collision-lab/services/implementations/CandidateGenerator";
-import { StanceOptimizer } from "$lib/features/lab/tabs/collision-lab/services/implementations/StanceOptimizer";
+import { CandidateGenerator } from "$lib/features/lab/tabs/collision-lab/services/candidate-generator";
+import { StanceOptimizer } from "$lib/features/lab/tabs/collision-lab/services/stance-optimizer";
 import {
   StanceSimulator,
   restPoseFromHeight,
-} from "$lib/features/lab/tabs/collision-lab/services/implementations/StanceSimulator";
+} from "$lib/features/lab/tabs/collision-lab/services/stance-simulator";
 import { STANCE_BOUNDS } from "$lib/features/lab/tabs/collision-lab/domain/types";
 import type {
   OptimizerBounds,

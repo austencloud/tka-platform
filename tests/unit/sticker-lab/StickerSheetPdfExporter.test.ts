@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { PDFDocument } from "pdf-lib";
-import { StickerSheetPdfExporter } from "$lib/features/sticker-lab/services/StickerSheetPdfExporter";
+import { StickerSheetPdfExporter } from "$lib/features/sticker-lab/services/sticker-sheet-pdf-exporter";
 import {
   createDefaultStickerSheet,
   createDefaultStickerUnit,

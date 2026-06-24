@@ -32,8 +32,8 @@ vi.mock("$lib/shared/pictograph/grid/services/implementations/GridPositionDerive
   gridPositionDeriver: { getGridPositionFromLocations: vi.fn() },
 }));
 
-import { SequenceChainingOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceChainingOrchestrator";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { SequenceChainingOrchestrator } from "$lib/shared/animation-engine/services/sequence-chaining-orchestrator";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type {
   IEndlessSpinnerOrchestrator,
   IInfiniteSequenceGenerator,

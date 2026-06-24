@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { interpolateKeyframes } from "$lib/shared/video-export/services/camera-keyframe-interpolator";
-import type { CameraKeyframe } from "$lib/shared/video-export/domain/CameraKeyframe";
+import type { CameraKeyframe } from "$lib/shared/video-export/domain/camera-keyframe";
 
 function makeKeyframe(
   t: number,

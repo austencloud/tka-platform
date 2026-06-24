@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { CanvasLifecycleManager } from "$lib/shared/animation-engine/services/implementations/CanvasLifecycleManager";
+import { CanvasLifecycleManager } from "$lib/shared/animation-engine/services/canvas-lifecycle-manager";
 
 describe("CanvasLifecycleManager", () => {
   it("pauseResize delegates to resizer", () => {

@@ -15,7 +15,7 @@ import { Point } from "fabric";
 import { screenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/screen-space-adjustment-transformer";
 import { directionalTupleProcessor } from "$lib/shared/pictograph/arrow/positioning/calculation/services/directional-tuple-processor";
 import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionType, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 

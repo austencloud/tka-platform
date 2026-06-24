@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Vector3 } from "three";
-import { CharcoalRenderer3D, type CharcoalTipInput } from "$lib/shared/3d/effects/charcoal/CharcoalRenderer3D";
+import { CharcoalRenderer3D, type CharcoalTipInput } from "$lib/shared/3d/effects/charcoal/charcoal-renderer-3d";
 import { QualityTier } from "$lib/shared/3d/effects/types";
 
 function createMockScene(): any {

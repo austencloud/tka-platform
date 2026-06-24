@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createAvatarInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/avatar-instance-state.svelte";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 function makeConfig() {
   return { id: "p1", positionX: 0 };

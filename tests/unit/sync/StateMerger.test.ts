@@ -9,8 +9,8 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { StateMerger } from '$lib/shared/sync/services/implementations/StateMerger';
-import { HybridLogicalClock } from '$lib/shared/sync/services/implementations/HybridLogicalClock';
+import { StateMerger } from '$lib/shared/sync/services/state-merger';
+import { HybridLogicalClock } from '$lib/shared/sync/services/hybrid-logical-clock';
 import type {
 	HLCTimestamp,
 	PlaybackIntent,

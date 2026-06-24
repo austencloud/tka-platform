@@ -24,10 +24,10 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { SpecialPlacementLookup } from "$lib/shared/pictograph/arrow/positioning/placement/services/special-placement-lookup";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { applyBoxMode } from "$lib/features/choreo-card/services/deck-variation";
-import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { generateOrientationKey, resolveEffectiveOriKey, mapToLegacyBucket } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/special-placement-ori-key-generator";
 import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 

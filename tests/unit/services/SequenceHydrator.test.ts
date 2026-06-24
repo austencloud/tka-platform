@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import { encodeSequenceWithCompression, decodeSequenceWithCompression } from "$lib/shared/navigation/services/sequence-encoder";
-import { PositionDeriver } from "$lib/shared/navigation/services/implementations/PositionDeriver";
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
+import { PositionDeriver } from "$lib/shared/navigation/services/position-deriver";
+import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
+import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
 import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
 import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
 
 import {
   createSequenceData,
   type SequenceData,
-} from "$lib/shared/foundation/domain/models/SequenceData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+} from "$lib/shared/foundation/domain/models/sequence-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { ILetterDeriver } from "$lib/shared/navigation/services/contracts/ILetterDeriver";
 import {
   MotionType,
@@ -21,7 +21,7 @@ import {
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 function makeStep(
   stepNumber: number,

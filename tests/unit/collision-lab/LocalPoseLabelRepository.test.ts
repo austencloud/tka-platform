@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { LocalPoseLabelRepository } from "$lib/features/lab/tabs/collision-lab/services/implementations/LocalPoseLabelRepository";
+import { LocalPoseLabelRepository } from "$lib/features/lab/tabs/collision-lab/services/local-pose-label-repository";
 import type {
   PoseLabel,
   PoseLabelsFile,

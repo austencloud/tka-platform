@@ -29,7 +29,7 @@ vi.mock(
 );
 vi.mock("$lib/shared/di/containers/core-container", () => ({}));
 
-import { AnimationEngine } from "../../../src/lib/shared/animation-engine/services/implementations/AnimationEngine.svelte";
+import { AnimationEngine } from "$lib/shared/animation-engine/services/animation-engine.svelte";
 import type { AnimationVisibilityStateManager } from "../../../src/lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 function makeVmStub(effortId: string = "linear"): AnimationVisibilityStateManager {

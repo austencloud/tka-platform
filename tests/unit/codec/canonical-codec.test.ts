@@ -5,7 +5,7 @@ import {
   MotionType, RotationDirection, Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 function motion(over: Record<string, unknown> = {}) {
   return {

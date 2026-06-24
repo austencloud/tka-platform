@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TrailRingBuffer } from "$lib/shared/3d/effects/trails/TrailRenderer3D";
+import { TrailRingBuffer } from "$lib/shared/3d/effects/trails/trail-renderer-3d";
 import { Vector3 } from "three";
 
 describe("TrailRingBuffer", () => {

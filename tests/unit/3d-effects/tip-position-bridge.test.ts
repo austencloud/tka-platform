@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TipPositionBridge3D } from "$lib/shared/3d/effects/TipPositionBridge3D";
+import { TipPositionBridge3D } from "$lib/shared/3d/effects/tip-position-bridge-3d";
 
 function makePropState(x: number, y: number, z: number) {
 	return {

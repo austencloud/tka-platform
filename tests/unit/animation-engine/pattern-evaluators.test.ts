@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { createReusableContext } from "$lib/shared/animation-engine/domain/patterns/context";
 // evaluator.ts auto-initializes the registry on import — no setup needed
 import { evaluatePattern } from "$lib/shared/animation-engine/domain/patterns/evaluator";
-import { evaluatePattern as oldEvaluatePattern, getLedPattern } from "$lib/shared/animation-engine/domain/types/LedPatterns";
+import { evaluatePattern as oldEvaluatePattern, getLedPattern } from "$lib/shared/animation-engine/domain/types/led-patterns";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

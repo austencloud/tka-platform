@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { SequenceExportOptions } from "../../../src/lib/shared/render/domain/models/SequenceExportOptions";
+import type { SequenceExportOptions } from "../../../src/lib/shared/render/domain/models/sequence-export-options";
 import * as DimensionCalculationService from "../../../src/lib/shared/render/services/dimension-calculator";
 
 describe("DimensionCalculationService", () => {

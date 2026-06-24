@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { MandalaGeometryCalculator } from "$lib/shared/mandala/services/implementations/MandalaGeometryCalculator";
+import { MandalaGeometryCalculator } from "$lib/shared/mandala/services/mandala-geometry-calculator";
 import type { StepLike } from "$lib/shared/mandala/services/contracts/IMandalaGeometryCalculator";
 import {
   MANDALA_STANDARD_TIP_DX,

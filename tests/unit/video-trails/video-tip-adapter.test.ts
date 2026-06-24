@@ -1,7 +1,7 @@
 // tests/unit/video-trails/video-tip-adapter.test.ts
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { VideoTipAdapter } from "$lib/features/video/video-trails/services/implementations/VideoTipAdapter";
+import { VideoTipAdapter } from "$lib/features/video/video-trails/services/video-tip-adapter";
 import type { DetectedEndpoint } from "$lib/features/video/video-trails/domain/types";
 
 function makeEndpoint(overrides: Partial<DetectedEndpoint> = {}): DetectedEndpoint {

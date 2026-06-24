@@ -19,7 +19,7 @@ import {
   Period,
 } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 // Minimal SequenceData factory — only the fields the resolver reads. The
 // resolver either calls the detector (needs .steps ≥ 2) or falls back to

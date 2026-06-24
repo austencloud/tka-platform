@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { CanvasFrameCapturer } from "$lib/shared/video-export/services/implementations/CanvasFrameCapturer";
+import { CanvasFrameCapturer } from "$lib/shared/video-export/services/canvas-frame-capturer";
 
 type Globals = {
   VideoFrame: unknown;

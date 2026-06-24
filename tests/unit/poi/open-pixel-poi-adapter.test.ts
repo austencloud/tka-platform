@@ -4,9 +4,9 @@ import {
   buildBrightnessPacket,
   buildSpeedPacket,
   chunkPacket,
-} from "$lib/features/poi/services/implementations/OpenPixelPoiAdapter";
-import { createEmptyPattern, setPixel } from "$lib/shared/poi/domain/StripPattern";
-import { BLE_START_BYTE, BLE_END_BYTE, BleCommCode } from "$lib/features/poi/domain/DeviceTypes";
+} from "$lib/features/poi/services/open-pixel-poi-adapter";
+import { createEmptyPattern, setPixel } from "$lib/shared/poi/domain/strip-pattern";
+import { BLE_START_BYTE, BLE_END_BYTE, BleCommCode } from "$lib/features/poi/domain/device-types";
 
 describe("Open-Pixel-Poi packet building", () => {
   describe("buildPatternPacket", () => {

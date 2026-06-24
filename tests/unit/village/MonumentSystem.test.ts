@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { MonumentSystem } from "$lib/features/village/engine/systems/MonumentSystem";
+import { MonumentSystem } from "$lib/features/village/engine/systems/monument-system";
 import {
 	createVillageWorld,
 	createAvatarEntity,
-} from "$lib/features/village/engine/VillageWorld";
+} from "$lib/features/village/engine/village-world";
 import * as personalityGenerator from "$lib/features/village/services/personality-generator";
 import { MONUMENT_GENERATION_THRESHOLD } from "$lib/features/village/domain/village-constants";
 import type {

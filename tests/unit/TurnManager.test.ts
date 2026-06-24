@@ -17,8 +17,8 @@
 import { describe, it, expect } from "vitest";
 import { updateDashStaticRotationDirections } from "$lib/features/create/generate/shared/services/turn-manager";
 import { PropContinuity } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import {
   MotionType,
   RotationDirection,

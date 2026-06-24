@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { PendingActionQueue } from "$lib/shared/sequence-viewer/services/implementations/PendingActionQueue";
+import { PendingActionQueue } from "$lib/shared/sequence-viewer/services/pending-action-queue";
 
 describe("PendingActionQueue — URL bootstrap and replay", () => {
 	let queue: PendingActionQueue;

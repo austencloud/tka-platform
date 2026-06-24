@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildSignals, resolveCatalogMembership } from "$lib/features/choreo-card/domain/catalog-membership";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
 
 function seq(partial: Partial<SequenceData>): SequenceData {

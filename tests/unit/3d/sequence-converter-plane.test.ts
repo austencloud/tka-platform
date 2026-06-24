@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { motionDataToConfig3D, beatDataToConfigs } from "$lib/shared/3d/services/sequence-converter";
 import { Plane } from "@austencloud/scene-3d";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 describe("SequenceConverter plane passthrough", () => {
   it("reads motion.plane when no modeConfig is active", () => {

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { RecombinationSystem } from "$lib/features/village/engine/systems/RecombinationSystem";
+import { RecombinationSystem } from "$lib/features/village/engine/systems/recombination-system";
 import {
 	createVillageWorld,
 	createAvatarEntity,
-} from "$lib/features/village/engine/VillageWorld";
+} from "$lib/features/village/engine/village-world";
 import * as personalityGenerator from "$lib/features/village/services/personality-generator";
-import { createDefaultConfig } from "$lib/features/village/engine/VillageConfig";
+import { createDefaultConfig } from "$lib/features/village/engine/village-config";
 import type { ISequenceMutator } from "$lib/features/village/services/contracts/ISequenceMutator";
 import type {
 	LearnedSequence,

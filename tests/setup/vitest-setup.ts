@@ -251,12 +251,12 @@ vi.mock("firebase/storage", () => ({
 
 // Mock SequenceData to avoid loading the entire module graph
 vi.mock(
-  "../../src/lib/shared/foundation/domain/models/SequenceData",
+  "../../src/lib/shared/foundation/domain/models/sequence-data",
   async (importOriginal) => {
     // Import the actual implementation to get all exports
     const actual =
       await importOriginal<
-        typeof import("../../src/lib/shared/foundation/domain/models/SequenceData")
+        typeof import("../../src/lib/shared/foundation/domain/models/sequence-data")
       >();
     return actual;
   }

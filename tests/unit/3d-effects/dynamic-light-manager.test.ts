@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { DynamicLightManager } from "$lib/shared/3d/effects/lighting/DynamicLightManager";
+import { DynamicLightManager } from "$lib/shared/3d/effects/lighting/dynamic-light-manager";
 import { Vector3, Color, Scene } from "three";
 import { QualityTier, TIER_CONFIGS } from "$lib/shared/3d/effects/types";
 

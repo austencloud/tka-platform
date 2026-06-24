@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { computeHash } from "$lib/features/library/services/sequence-content-hasher";
 import {
   createSequenceData,
-} from "$lib/shared/foundation/domain/models/SequenceData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+} from "$lib/shared/foundation/domain/models/sequence-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
   RotationDirection,
@@ -11,7 +11,7 @@ import {
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 function makeStep(overrides: Partial<StepData> = {}): StepData {
   const base: StepData = {

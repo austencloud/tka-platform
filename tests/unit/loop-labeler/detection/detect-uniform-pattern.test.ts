@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { detectUniformPattern } from "$lib/features/loop-labeler/services/detection";
-import { stepComparisonOrchestrator } from "$lib/features/loop-labeler/services/comparison/StepComparisonOrchestrator";
+import { stepComparisonOrchestrator } from "$lib/features/loop-labeler/services/comparison/step-comparison-orchestrator";
 import type { ExtractedStep } from "$lib/features/loop-labeler/domain/models/internal-step-models";
 
 function makeStep(

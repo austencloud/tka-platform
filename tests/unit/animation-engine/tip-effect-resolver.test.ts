@@ -4,7 +4,7 @@ import {
   resolveEffort,
   type TipEffectMap,
   type TipEffortMap,
-} from "../../../src/lib/shared/animation-engine/domain/types/TipEffectTypes";
+} from "../../../src/lib/shared/animation-engine/domain/types/tip-effect-types";
 import {
   setCellWide,
   setPerHand,

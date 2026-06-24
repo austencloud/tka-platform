@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
-import { EFFECTS_CONFIG_VERSION } from "$lib/shared/effects/domain/EffectsConfig";
+import { EFFECTS_CONFIG_VERSION } from "$lib/shared/effects/domain/effects-config";
 
 describe("DEFAULT_EFFECTS_CONFIG", () => {
   it("has the current schema version", () => {

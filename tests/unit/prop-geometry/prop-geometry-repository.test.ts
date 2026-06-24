@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { PropGeometryAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/services/implementations/PropGeometryAdjustmentRepository";
-import type { PropGeometryAdjustmentInput, PropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/PropGeometryAdjustment";
+import { PropGeometryAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/services/prop-geometry-adjustment-repository";
+import type { PropGeometryAdjustmentInput, PropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/prop-geometry-adjustment";
 
 // Force admin so the guard passes.
 vi.mock("$lib/shared/auth/state/authState.svelte", () => ({

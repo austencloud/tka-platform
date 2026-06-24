@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { DecaySystem } from "$lib/features/village/engine/systems/DecaySystem";
+import { DecaySystem } from "$lib/features/village/engine/systems/decay-system";
 import {
 	createVillageWorld,
 	createAvatarEntity,
-} from "$lib/features/village/engine/VillageWorld";
+} from "$lib/features/village/engine/village-world";
 import * as personalityGenerator from "$lib/features/village/services/personality-generator";
 import {
 	DECAY_GRACE_PERIOD,

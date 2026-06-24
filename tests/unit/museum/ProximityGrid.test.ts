@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ProximityGrid } from "$lib/features/museum/services/ProximityGrid";
+import { ProximityGrid } from "$lib/features/museum/services/proximity-grid";
 
 describe("ProximityGrid", () => {
   it("returns items within radius", () => {

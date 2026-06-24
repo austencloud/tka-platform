@@ -9,7 +9,7 @@ import {
   MotionColor,
   HandPath,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 // Standard 9-location trace (8 beats) used across multiple tests.
 // Blue: n→e→e→s→s→w→w→n→n  (clockwise around the diamond, back to start)

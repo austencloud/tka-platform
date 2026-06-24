@@ -6,7 +6,7 @@ import {
 } from "../../../src/routes/(public)/guide/level-1/_components/guide-motion-configs";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 describe("GUIDE_MOTION_CONFIGS", () => {

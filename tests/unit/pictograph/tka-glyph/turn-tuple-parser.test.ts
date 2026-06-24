@@ -1,14 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { parseTurnsTuple } from "$lib/shared/pictograph/tka-glyph/utils/turn-tuple-parser";
-import { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionColor,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
 describe("parseTurnsTuple — direct forms", () => {

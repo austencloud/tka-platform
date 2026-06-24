@@ -28,7 +28,7 @@ import {
   onLibrarySequenceUpdated,
   LIBRARY_SEQUENCE_UPDATED_EVENT,
 } from "$lib/shared/library/library-events";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 afterEach(() => {
   // Clean up any lingering listeners between tests

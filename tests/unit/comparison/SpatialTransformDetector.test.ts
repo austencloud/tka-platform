@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { SpatialTransformDetector } from "../../../src/lib/shared/comparison/services/implementations/SpatialTransformDetector";
+import { SpatialTransformDetector } from "$lib/shared/comparison/services/spatial-transform-detector";
 import { GridLocation } from "../../../src/lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 describe("SpatialTransformDetector", () => {

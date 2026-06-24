@@ -8,7 +8,7 @@
 
 import { describe, it, expect } from "vitest";
 import { fuseSequences } from "$lib/features/fuse/services/sequence-fuser";
-import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
+import type { HandPathData } from "$lib/shared/foundation/domain/models/hand-path-data";
 import {
 	GridLocation,
 	GridMode,

@@ -16,8 +16,8 @@ import {
   generateSpecialOverrideKey,
   parseSpecialOverrideKey,
   SpecialArrowPlacementSchema,
-} from "$lib/shared/pictograph/arrow/positioning/special-override/domain/SpecialArrowPlacement";
-import { createSpecialArrowPlacementState } from "$lib/shared/pictograph/arrow/positioning/special-override/state/SpecialArrowPlacementState.svelte";
+} from "$lib/shared/pictograph/arrow/positioning/special-override/domain/special-arrow-placement";
+import { createSpecialArrowPlacementState } from "$lib/shared/pictograph/arrow/positioning/special-override/state/special-arrow-placement-state.svelte";
 
 describe("special override key — propType dimension", () => {
   it("includes propType as the 7th segment", () => {

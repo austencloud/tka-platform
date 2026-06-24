@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { QualityTierDetector } from "$lib/shared/3d/effects/quality/QualityTierDetector";
+import { QualityTierDetector } from "$lib/shared/3d/effects/quality/quality-tier-detector";
 import { QualityTier } from "$lib/shared/3d/effects/types";
 
 describe("QualityTierDetector", () => {

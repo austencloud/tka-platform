@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { computeLayout } from "$lib/features/museum/services/graph-layout-engine";
 import { routeCorridor } from "$lib/features/museum/services/corridor-router";
-import { buildMuseumGrid } from "$lib/features/museum/services/MuseumGridBuilder";
+import { buildMuseumGrid } from "$lib/features/museum/services/museum-grid-builder";
 import { MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG } from "$lib/features/museum/data/museum-room-graph";
 import { tileKey } from "$lib/features/museum/domain/museum-grid-types";
 import { isWalkable } from "$lib/features/museum/domain/tile-registry";

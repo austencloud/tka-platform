@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Vector3 } from "three";
-import { LedRenderer3D, type LedTipInput } from "$lib/shared/3d/effects/led/LedRenderer3D";
+import { LedRenderer3D, type LedTipInput } from "$lib/shared/3d/effects/led/led-renderer-3d";
 import { QualityTier } from "$lib/shared/3d/effects/types";
 
 // Mock Three.js scene — minimal stub

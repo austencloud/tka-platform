@@ -3,7 +3,7 @@ import {
   GridLocation,
   GridPosition,
 } from "../../../src/lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { GridPositionDeriver } from "../../../src/lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 
 describe("GridPositionDeriver", () => {
   let service: GridPositionDeriver;

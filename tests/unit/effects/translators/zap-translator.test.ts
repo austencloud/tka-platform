@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { resolveZap2D } from "../../../../src/lib/shared/effects/translators/canvas2d-translator";
 import { resolveZap3D } from "../../../../src/lib/shared/effects/translators/webgl3d-translator";
-import type { ZapIntent } from "../../../../src/lib/shared/effects/domain/EffectsConfig";
+import type { ZapIntent } from "../../../../src/lib/shared/effects/domain/effects-config";
 
 const baseIntent: ZapIntent = {
   intensity: 0.7,

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { VillageOrchestrator } from "$lib/features/village/engine/VillageOrchestrator";
-import { createDefaultConfig } from "$lib/features/village/engine/VillageConfig";
+import { VillageOrchestrator } from "$lib/features/village/engine/village-orchestrator";
+import { createDefaultConfig } from "$lib/features/village/engine/village-config";
 import type { ISequenceMutator } from "$lib/features/village/services/contracts/ISequenceMutator";
 
 function makeMockMutator(): ISequenceMutator {

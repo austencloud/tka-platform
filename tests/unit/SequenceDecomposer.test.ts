@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { SequenceDecomposer } from "$lib/shared/foundation/services/implementations/SequenceDecomposer";
+import { SequenceDecomposer } from "$lib/shared/foundation/services/sequence-decomposer";
 import { deriveSteps } from "$lib/shared/foundation/services/step-deriver";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   GridLocation,
   GridPosition,
@@ -12,11 +12,11 @@ import {
   RotationDirection,
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 
 function makeMotion(
   startLocation: GridLocation,

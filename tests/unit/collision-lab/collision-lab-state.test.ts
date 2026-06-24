@@ -4,8 +4,8 @@ import { enumerateDiamondInOut } from "$lib/features/lab/tabs/collision-lab/serv
 import {
   StanceSimulator,
   restPoseFromHeight,
-} from "$lib/features/lab/tabs/collision-lab/services/implementations/StanceSimulator";
-import { StanceOptimizer } from "$lib/features/lab/tabs/collision-lab/services/implementations/StanceOptimizer";
+} from "$lib/features/lab/tabs/collision-lab/services/stance-simulator";
+import { StanceOptimizer } from "$lib/features/lab/tabs/collision-lab/services/stance-optimizer";
 import type {
   PoseLabel,
   CollisionSnapshot,

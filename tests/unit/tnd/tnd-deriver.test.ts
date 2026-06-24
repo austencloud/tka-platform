@@ -17,8 +17,8 @@ import {
   GridMode,
   type GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { calculateTnD } from "$lib/shared/pictograph/shared/domain/utils/tnd-calculator";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 

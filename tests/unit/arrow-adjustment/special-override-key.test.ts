@@ -12,8 +12,8 @@ vi.mock("firebase/firestore", () => ({
   doc: vi.fn(),
 }));
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { computeSpecialOverrideKey } from "$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-key";
 
 // Representative pictograph: letter P, box mode, both Pro motions, both staff.

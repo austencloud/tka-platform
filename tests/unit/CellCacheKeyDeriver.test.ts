@@ -11,11 +11,11 @@ vi.mock("$lib/shared/application/state/app-state.svelte", () => ({
   getSettings: () => ({ bluePropType: "staff", redPropType: "staff" }),
 }));
 
-import { CellCacheKeyDeriver } from "$lib/shared/sequence-viewer/services/implementations/CellCacheKeyDeriver";
-import { pictographKeyHasher } from "$lib/shared/render/services/implementations/PictographKeyHasher";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import { CellCacheKeyDeriver } from "$lib/shared/sequence-viewer/services/cell-cache-key-deriver";
+import { pictographKeyHasher } from "$lib/shared/render/services/pictograph-key-hasher";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { PreviewCellRenderOptions } from "$lib/shared/sequence-viewer/services/contracts/types";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { MotionType, MotionColor, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 

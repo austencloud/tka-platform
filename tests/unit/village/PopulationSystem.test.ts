@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { PopulationSystem } from "$lib/features/village/engine/systems/PopulationSystem";
+import { PopulationSystem } from "$lib/features/village/engine/systems/population-system";
 import {
 	createVillageWorld,
 	createAvatarEntity,
-} from "$lib/features/village/engine/VillageWorld";
+} from "$lib/features/village/engine/village-world";
 import * as personalityGenerator from "$lib/features/village/services/personality-generator";
-import { LineageTracker } from "$lib/features/village/services/LineageTracker";
-import { createDefaultConfig } from "$lib/features/village/engine/VillageConfig";
+import { LineageTracker } from "$lib/features/village/services/lineage-tracker";
+import { createDefaultConfig } from "$lib/features/village/engine/village-config";
 import {
 	PASSING_DURATION_TICKS,
 } from "$lib/features/village/domain/village-constants";

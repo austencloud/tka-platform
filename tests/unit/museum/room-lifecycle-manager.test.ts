@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   RoomLifecycleManager,
   RoomState,
-} from "$lib/features/museum/services/RoomLifecycleManager";
+} from "$lib/features/museum/services/room-lifecycle-manager";
 import type { RoomDescriptor } from "$lib/features/museum/domain/room-descriptor";
 import type { RoomEdge } from "$lib/features/museum/domain/layout-types";
 

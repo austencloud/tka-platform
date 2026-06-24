@@ -11,9 +11,9 @@ import { computeRecipeHash } from "$lib/shared/qr/services/compositional-utils";
 import {
   createSequenceData,
   type SequenceData,
-} from "$lib/shared/foundation/domain/models/SequenceData";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+} from "$lib/shared/foundation/domain/models/sequence-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import {
   MotionType,
   RotationDirection,
@@ -21,7 +21,7 @@ import {
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 function makeStep(
   stepNumber: number,

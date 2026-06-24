@@ -11,7 +11,7 @@ import {
   parsePropGeometryKeyString,
   generateCascadingKeys,
   type PropGeometryKey,
-} from "../../src/lib/shared/pictograph/arrow/positioning/prop-geometry/domain/PropGeometryAdjustment";
+} from "../../src/lib/shared/pictograph/arrow/positioning/prop-geometry/domain/prop-geometry-adjustment";
 
 describe("PropGeometryAdjustment", () => {
   const sampleKey: PropGeometryKey = {

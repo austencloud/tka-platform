@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { LifecycleSystem } from "$lib/features/village/engine/systems/LifecycleSystem";
+import { LifecycleSystem } from "$lib/features/village/engine/systems/lifecycle-system";
 import {
 	createVillageWorld,
 	createAvatarEntity,
-} from "$lib/features/village/engine/VillageWorld";
+} from "$lib/features/village/engine/village-world";
 import * as personalityGenerator from "$lib/features/village/services/personality-generator";
-import { createDefaultConfig } from "$lib/features/village/engine/VillageConfig";
+import { createDefaultConfig } from "$lib/features/village/engine/village-config";
 
 function makeEntity(
 	world: ReturnType<typeof createVillageWorld>,

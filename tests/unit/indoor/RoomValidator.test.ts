@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { RoomValidator } from "$lib/shared/3d/indoor/services/implementations/RoomValidator";
-import { RoomGeometryBuilder } from "$lib/shared/3d/indoor/services/implementations/RoomGeometryBuilder";
+import { RoomValidator } from "$lib/shared/3d/indoor/services/room-validator";
+import { RoomGeometryBuilder } from "$lib/shared/3d/indoor/services/room-geometry-builder";
 import type { RoomDefinition, SolvedRoom } from "$lib/shared/3d/indoor/domain/room-types";
 import { snapToGrid } from "$lib/shared/3d/indoor/domain/room-types";
 

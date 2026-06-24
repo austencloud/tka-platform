@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { MotionSignatureGenerator } from "../../../src/lib/shared/comparison/services/implementations/MotionSignatureGenerator";
-import { createMotionData } from "../../../src/lib/shared/pictograph/shared/domain/models/MotionData";
+import { MotionSignatureGenerator } from "$lib/shared/comparison/services/motion-signature-generator";
+import { createMotionData } from "../../../src/lib/shared/pictograph/shared/domain/models/motion-data";
 import { GridLocation, GridMode } from "../../../src/lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionType,
@@ -9,7 +9,7 @@ import {
   MotionColor,
   HandPath,
 } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { PropType } from "../../../src/lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "../../../src/lib/shared/pictograph/prop/domain/enums/prop-type";
 
 describe("MotionSignatureGenerator", () => {
   let generator: MotionSignatureGenerator;

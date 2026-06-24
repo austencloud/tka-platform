@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { RoomGeometryBuilder } from "$lib/shared/3d/indoor/services/implementations/RoomGeometryBuilder";
+import { RoomGeometryBuilder } from "$lib/shared/3d/indoor/services/room-geometry-builder";
 import type { RoomDefinition } from "$lib/shared/3d/indoor/domain/room-types";
 import { GRID_CELL, snapToGrid } from "$lib/shared/3d/indoor/domain/room-types";
 

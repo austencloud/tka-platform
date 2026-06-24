@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { toTrailPassPayload } from "$lib/shared/render-graph/translators/TrailTranslator";
-import type { TrailsIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { toTrailPassPayload } from "$lib/shared/render-graph/translators/trail-translator";
+import type { TrailsIntent } from "$lib/shared/effects/domain/effects-config";
 import { MIN_TAIL_WIDTH_RATIO, FADE_EXPONENT } from "$lib/shared/render-graph/math/trail-mesh";
 
 const baseIntent: TrailsIntent = {

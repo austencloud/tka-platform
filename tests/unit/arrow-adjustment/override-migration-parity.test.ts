@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import type { PictographData } from "../../../src/lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographData } from "../../../src/lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { GridMode } from "../../../src/lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 const getAllPictographVariations = vi.fn();

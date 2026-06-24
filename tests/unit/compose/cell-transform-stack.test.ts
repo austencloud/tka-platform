@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { AppliedTransform } from "$lib/features/compose/compose/domain/types";
 
 vi.mock("$lib/features/compose/tabs/arrange/services/arrange-layer-transformer", () => ({

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { resolvePerformerProp } from "$lib/shared/3d/state/performer-prop-resolution";
 
 describe("resolvePerformerProp", () => {

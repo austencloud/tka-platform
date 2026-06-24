@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { StyleDriftSystem } from "$lib/features/village/engine/systems/StyleDriftSystem";
+import { StyleDriftSystem } from "$lib/features/village/engine/systems/style-drift-system";
 import {
 	createVillageWorld,
 	createAvatarEntity,
-} from "$lib/features/village/engine/VillageWorld";
+} from "$lib/features/village/engine/village-world";
 import * as personalityGenerator from "$lib/features/village/services/personality-generator";
 import type {
 	VillageEventMap,

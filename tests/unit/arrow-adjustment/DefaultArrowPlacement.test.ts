@@ -5,7 +5,7 @@ import {
   flattenPlacements,
   unflattenValue,
   DefaultArrowPlacementDocSchema,
-} from "$lib/shared/pictograph/arrow/positioning/default-override/domain/DefaultArrowPlacement";
+} from "$lib/shared/pictograph/arrow/positioning/default-override/domain/default-arrow-placement";
 
 describe("DefaultArrowPlacement domain", () => {
   it("generates a doc id from gridMode + propType + motionType", () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { RenderContextRegistry } from "$lib/shared/animation-engine/services/implementations/RenderContextRegistry";
+import { RenderContextRegistry } from "$lib/shared/animation-engine/services/render-context-registry";
 
 function makeMockContext(id: string) {
   return {

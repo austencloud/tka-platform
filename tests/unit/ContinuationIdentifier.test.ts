@@ -8,8 +8,8 @@
 
 import { describe, it, expect } from "vitest";
 import { identifyContinuation } from "$lib/features/create/construct/option-picker/services/continuation-identifier";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionColor,

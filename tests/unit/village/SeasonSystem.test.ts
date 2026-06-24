@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { SeasonSystem } from "$lib/features/village/engine/systems/SeasonSystem";
+import { SeasonSystem } from "$lib/features/village/engine/systems/season-system";
 import {
 	createVillageWorld,
 	createAvatarEntity,
-} from "$lib/features/village/engine/VillageWorld";
+} from "$lib/features/village/engine/village-world";
 import * as personalityGenerator from "$lib/features/village/services/personality-generator";
 import {
 	SEASON_DURATION,

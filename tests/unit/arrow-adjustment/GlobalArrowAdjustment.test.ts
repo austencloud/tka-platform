@@ -12,7 +12,7 @@ import {
   parseAdjustmentKeyString,
   getKeyLayer,
   type GlobalAdjustmentKey,
-} from "../../../src/lib/shared/pictograph/arrow/positioning/global/domain/GlobalArrowAdjustment";
+} from "../../../src/lib/shared/pictograph/arrow/positioning/global/domain/global-arrow-adjustment";
 
 describe("Key Serialization", () => {
   describe("generateAdjustmentKeyString", () => {

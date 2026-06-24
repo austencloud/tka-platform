@@ -10,8 +10,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { buildMuseumGrid } from "$lib/features/museum/services/MuseumGridBuilder";
-import { bucketMuseumTiles } from "$lib/features/museum/services/MuseumGeometryBuilder";
+import { buildMuseumGrid } from "$lib/features/museum/services/museum-grid-builder";
+import { bucketMuseumTiles } from "$lib/features/museum/services/museum-geometry-builder";
 import { MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG } from "$lib/features/museum/data/museum-room-graph";
 import type { RoomNode, RoomEdge } from "$lib/features/museum/domain/layout-types";
 

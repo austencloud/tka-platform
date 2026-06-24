@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/CameraKeyframe";
+import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
 
 describe("CameraKeyframeBuffer", () => {
   let buffer: CameraKeyframeBuffer;
