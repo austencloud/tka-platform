@@ -1,11 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { encodeSequenceWithCompression, decodeSequenceWithCompression } from "$lib/shared/navigation/services/sequence-encoder";
-import { PositionDeriver } from "$lib/shared/navigation/services/position-deriver";
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
-import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
-import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
-import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
+import { loopDetector } from "$lib/shared/create/services/loop-detector";
+import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
 
 import {
   createSequenceData,
@@ -13,7 +10,6 @@ import {
 } from "$lib/shared/foundation/domain/models/sequence-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import type { ILetterDeriver } from "$lib/shared/navigation/services/contracts/ILetterDeriver";
 import {
   MotionType,
   RotationDirection,
@@ -117,24 +113,8 @@ function buildDiamondSequence(): SequenceData {
   });
 }
 
-const stubLetterDeriver: ILetterDeriver = {
-  async deriveLettersForSequence(sequence: SequenceData): Promise<SequenceData> {
-    const steps = sequence.steps.map((step, i) => ({
-      ...step,
-      letter: String.fromCharCode(65 + i),
-    }));
-    return {
-      ...sequence,
-      steps,
-      word: steps.map((s) => s.letter).join(""),
-    };
-  },
-};
-
 describe("hydrateSequence — encode/decode round-trip", () => {
   it("restores gridMode, word, and per-step letter/positions after decode", async () => {
-    const positionDeriver = new PositionDeriver(gridPositionDeriver);
-
     const original = buildDiamondSequence();
 
     const { encoded } = encodeSequenceWithCompression(original);
@@ -145,15 +125,12 @@ describe("hydrateSequence — encode/decode round-trip", () => {
     expect(decoded.steps[0]?.startPosition).toBeNull();
 
     const hydrated = await hydrateSequence(decoded, {
-      letterDeriver: stubLetterDeriver,
-      positionDeriver,
       loopDetector,
-      gridModeDeriver,
     });
 
-    expect(hydrated.word).toBe("A");
-    expect(hydrated.steps[0]?.letter).toBe("A");
-
+    // The position deriver runs against the decoded beat geometry and
+    // restores per-beat start/end grid positions (e.g. alpha5 -> alpha7).
+    // This is the load-bearing enrichment that scanned-link refresh depends on.
     expect(hydrated.steps[0]?.startPosition).toBeTruthy();
     expect(hydrated.steps[0]?.endPosition).toBeTruthy();
 

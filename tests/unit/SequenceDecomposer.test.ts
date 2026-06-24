@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { SequenceDecomposer } from "$lib/shared/foundation/services/sequence-decomposer";
+import {
+  extractBlueSoloProp,
+  extractRedSoloProp,
+  extractStepPairings,
+} from "$lib/shared/foundation/services/sequence-decomposer";
 import { deriveSteps } from "$lib/shared/foundation/services/step-deriver";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
@@ -161,37 +165,35 @@ function createTestSequence() {
   });
 }
 
-const decomposer = new SequenceDecomposer();
-
 describe("SequenceDecomposer — extractBlueSoloProp", () => {
   it("returns a SoloPropData with one step per sequence step", () => {
     const sequence = createTestSequence();
-    const blue = decomposer.extractBlueSoloProp(sequence);
+    const blue = extractBlueSoloProp(sequence);
     expect(blue.steps).toHaveLength(sequence.steps.length);
   });
 
   it("preserves blue startLocation from startPosition", () => {
     const sequence = createTestSequence();
-    const blue = decomposer.extractBlueSoloProp(sequence);
+    const blue = extractBlueSoloProp(sequence);
     expect(blue.startLocation).toBe(GridLocation.NORTH);
   });
 
   it("preserves blue startOrientation from startPosition", () => {
     const sequence = createTestSequence();
-    const blue = decomposer.extractBlueSoloProp(sequence);
+    const blue = extractBlueSoloProp(sequence);
     expect(blue.startOrientation).toBe(Orientation.IN);
   });
 
   it("captures step motionType correctly", () => {
     const sequence = createTestSequence();
-    const blue = decomposer.extractBlueSoloProp(sequence);
+    const blue = extractBlueSoloProp(sequence);
     expect(blue.steps[0]?.motionType).toBe(MotionType.PRO);
     expect(blue.steps[1]?.motionType).toBe(MotionType.ANTI);
   });
 
   it("captures step locations correctly", () => {
     const sequence = createTestSequence();
-    const blue = decomposer.extractBlueSoloProp(sequence);
+    const blue = extractBlueSoloProp(sequence);
     expect(blue.steps[0]?.startLocation).toBe(GridLocation.NORTH);
     expect(blue.steps[0]?.endLocation).toBe(GridLocation.EAST);
     expect(blue.steps[1]?.startLocation).toBe(GridLocation.EAST);
@@ -207,7 +209,7 @@ describe("SequenceDecomposer — extractBlueSoloProp", () => {
       { duration: 3 }
     );
     const sequence = createSequenceData({ steps: [step], word: "A" });
-    const blue = decomposer.extractBlueSoloProp(sequence);
+    const blue = extractBlueSoloProp(sequence);
     expect(blue.steps[0]?.duration).toBe(3);
   });
 
@@ -219,7 +221,7 @@ describe("SequenceDecomposer — extractBlueSoloProp", () => {
       GridLocation.NORTH
     );
     const sequence = createSequenceData({ steps: [step], word: "A" });
-    const blue = decomposer.extractBlueSoloProp(sequence);
+    const blue = extractBlueSoloProp(sequence);
     // Falls back to step[0].motions.blue.startLocation
     expect(blue.startLocation).toBe(GridLocation.EAST);
   });
@@ -228,25 +230,25 @@ describe("SequenceDecomposer — extractBlueSoloProp", () => {
 describe("SequenceDecomposer — extractRedSoloProp", () => {
   it("returns a SoloPropData with one step per sequence step", () => {
     const sequence = createTestSequence();
-    const red = decomposer.extractRedSoloProp(sequence);
+    const red = extractRedSoloProp(sequence);
     expect(red.steps).toHaveLength(sequence.steps.length);
   });
 
   it("preserves red startLocation from startPosition", () => {
     const sequence = createTestSequence();
-    const red = decomposer.extractRedSoloProp(sequence);
+    const red = extractRedSoloProp(sequence);
     expect(red.startLocation).toBe(GridLocation.SOUTH);
   });
 
   it("preserves red startOrientation from startPosition", () => {
     const sequence = createTestSequence();
-    const red = decomposer.extractRedSoloProp(sequence);
+    const red = extractRedSoloProp(sequence);
     expect(red.startOrientation).toBe(Orientation.OUT);
   });
 
   it("captures correct step locations for red", () => {
     const sequence = createTestSequence();
-    const red = decomposer.extractRedSoloProp(sequence);
+    const red = extractRedSoloProp(sequence);
     expect(red.steps[0]?.startLocation).toBe(GridLocation.SOUTH);
     expect(red.steps[0]?.endLocation).toBe(GridLocation.WEST);
     expect(red.steps[1]?.startLocation).toBe(GridLocation.WEST);
@@ -257,20 +259,20 @@ describe("SequenceDecomposer — extractRedSoloProp", () => {
 describe("SequenceDecomposer — extractStepPairings", () => {
   it("returns one pairing per step", () => {
     const sequence = createTestSequence();
-    const pairings = decomposer.extractStepPairings(sequence);
+    const pairings = extractStepPairings(sequence);
     expect(pairings).toHaveLength(sequence.steps.length);
   });
 
   it("preserves letter from each step", () => {
     const sequence = createTestSequence();
-    const pairings = decomposer.extractStepPairings(sequence);
+    const pairings = extractStepPairings(sequence);
     expect(pairings[0]?.letter).toBe(Letter.A);
     expect(pairings[1]?.letter).toBe(Letter.B);
   });
 
   it("preserves blueReversal and redReversal", () => {
     const sequence = createTestSequence();
-    const pairings = decomposer.extractStepPairings(sequence);
+    const pairings = extractStepPairings(sequence);
     // Step 2 has blueReversal: true, redReversal: false
     expect(pairings[1]?.blueReversal).toBe(true);
     expect(pairings[1]?.redReversal).toBe(false);
@@ -278,7 +280,7 @@ describe("SequenceDecomposer — extractStepPairings", () => {
 
   it("preserves startPosition and endPosition", () => {
     const sequence = createTestSequence();
-    const pairings = decomposer.extractStepPairings(sequence);
+    const pairings = extractStepPairings(sequence);
     expect(pairings[1]?.startPosition).toBe(GridPosition.BETA1);
     expect(pairings[1]?.endPosition).toBe(GridPosition.GAMMA1);
   });
@@ -292,7 +294,7 @@ describe("SequenceDecomposer — extractStepPairings", () => {
       { letter: undefined }
     );
     const sequence = createSequenceData({ steps: [step], word: "" });
-    const pairings = decomposer.extractStepPairings(sequence);
+    const pairings = extractStepPairings(sequence);
     expect(pairings[0]?.letter).toBeNull();
   });
 });
@@ -301,9 +303,9 @@ describe("SequenceDecomposer — round-trip", () => {
   it("decompose then deriveSteps produces domain-equivalent steps", () => {
     const original = createTestSequence();
 
-    const blue = decomposer.extractBlueSoloProp(original);
-    const red = decomposer.extractRedSoloProp(original);
-    const pairings = decomposer.extractStepPairings(original);
+    const blue = extractBlueSoloProp(original);
+    const red = extractRedSoloProp(original);
+    const pairings = extractStepPairings(original);
 
     const derived = deriveSteps(blue, red, pairings);
 
@@ -356,9 +358,9 @@ describe("SequenceDecomposer — round-trip", () => {
 
     const sequence = createSequenceData({ steps: [step1, step2], word: "AB" });
 
-    const blue = decomposer.extractBlueSoloProp(sequence);
-    const red = decomposer.extractRedSoloProp(sequence);
-    const pairings = decomposer.extractStepPairings(sequence);
+    const blue = extractBlueSoloProp(sequence);
+    const red = extractRedSoloProp(sequence);
+    const pairings = extractStepPairings(sequence);
     const derived = deriveSteps(blue, red, pairings);
 
     expect(derived[0]?.duration).toBe(2);
@@ -389,9 +391,9 @@ describe("SequenceDecomposer — round-trip", () => {
 
     const sequence = createSequenceData({ steps: [step], word: "S" });
 
-    const blue = decomposer.extractBlueSoloProp(sequence);
-    const red = decomposer.extractRedSoloProp(sequence);
-    const pairings = decomposer.extractStepPairings(sequence);
+    const blue = extractBlueSoloProp(sequence);
+    const red = extractRedSoloProp(sequence);
+    const pairings = extractStepPairings(sequence);
     const derived = deriveSteps(blue, red, pairings);
 
     expect(derived[0]?.motions.blue?.motionType).toBe(MotionType.STATIC);
