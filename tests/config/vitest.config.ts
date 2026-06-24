@@ -29,6 +29,10 @@ export default defineConfig({
       "**/node_modules/**/*",
       "tests/e2e/**/*",
       "tests/screenshots/**/*",
+      // Emulator-dependent suites have their own configs (vitest.e2e.config.ts,
+      // vitest.rules.config.ts) run via `npm run test:e2e` / `test:rules` with
+      // Firebase emulators. They cannot pass in the default emulator-less run.
+      "tests/integration/**/*",
     ],
 
     alias: {
