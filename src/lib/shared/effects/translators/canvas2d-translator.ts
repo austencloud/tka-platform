@@ -343,6 +343,9 @@ export function resolveSilk2D(
     lifetimeSeconds: 0.5 + intent.duration * 3.5, // 0.5-4.0s
     motionReferenceSpeed: 3.0,
     blendMode: palette.emissive ? "lighter" : "source-over",
+    bodyLengthPx: 120 + intent.bodyLength * 360, // 120-480px fixed spine length
+    segmentCount: 40,
+    slitherAmpPx: intent.slither * 42,
   };
   return { ...intent, ...defaults, ...override };
 }

@@ -59,6 +59,7 @@ const TRACK_OPTS = [
 ];
 
 const isCustomPalette = (i: Record<string, unknown>) => i.palette === "custom";
+const isSerpent = (i: Record<string, unknown>) => i.form === "serpent";
 
 /** Build a palette descriptor + its conditional custom-tint, the shared shape
  *  every named-palette effect uses for its Primary "Color". */
@@ -255,12 +256,20 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
       { value: "satin", label: "Satin" }, { value: "velvet", label: "Velvet" }, { value: "ethereal", label: "Ethereal" },
       { value: "shadow", label: "Shadow" }, { value: "gold_leaf", label: "Gold" }, { value: "ember", label: "Ember" }, { value: "custom", label: "Custom" },
     ]),
+    { id: "silk-form", label: "Form", type: "segmented", field: "form", tier: "primary", options: [
+      { value: "ribbon", label: "Ribbon" }, { value: "serpent", label: "Serpent" },
+    ] },
+    { id: "silk-creature", label: "Creature", type: "segmented", field: "creature", tier: "primary", showWhen: isSerpent, options: [
+      { value: "snake", label: "Snake" }, { value: "dragon", label: "Dragon" },
+    ] },
     slider("silk", "intensity", "Intensity", { tier: "primary" }),
     slider("silk", "width", "Width", { tier: "primary" }),
-    slider("silk", "flutter", "Flutter", { tier: "primary" }),
+    slider("silk", "flutter", "Flutter", { tier: "primary", showWhen: (i) => !isSerpent(i) }),
     { id: "silk-track", label: "Track", type: "segmented", field: "trackingMode", options: TRACK_OPTS, tier: "tracking" },
-    slider("silk", "duration", "Duration", { tier: "advanced" }),
-    slider("silk", "tautness", "Tautness", { tier: "advanced" }),
+    slider("silk", "bodyLength", "Length", { tier: "advanced", showWhen: isSerpent }),
+    slider("silk", "slither", "Slither", { tier: "advanced", showWhen: isSerpent }),
+    slider("silk", "duration", "Duration", { tier: "advanced", showWhen: (i) => !isSerpent(i) }),
+    slider("silk", "tautness", "Tautness", { tier: "advanced", showWhen: (i) => !isSerpent(i) }),
   ],
   pulse: [
     ...paletteColor("pulse", [

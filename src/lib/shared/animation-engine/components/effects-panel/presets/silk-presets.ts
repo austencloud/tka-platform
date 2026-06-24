@@ -86,6 +86,37 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     },
   },
   {
+    id: "silk-serpent",
+    name: "Serpent",
+    previewColor: "#3aa655",
+    patch: {
+      form: "serpent",
+      creature: "snake",
+      palette: "velvet",
+      intensity: 0.85,
+      width: 0.55,
+      bodyLength: 0.55,
+      slither: 0.55,
+      trackingMode: "right_end",
+    },
+  },
+  {
+    id: "silk-dragon",
+    name: "Dragon",
+    previewColor: "#ff6000",
+    previewColor2: "#ffcc00",
+    patch: {
+      form: "serpent",
+      creature: "dragon",
+      palette: "ember",
+      intensity: 0.9,
+      width: 0.6,
+      bodyLength: 0.7,
+      slither: 0.45,
+      trackingMode: "right_end",
+    },
+  },
+  {
     // "Custom" just opens Customize - empty patch, marks the chip active.
     id: "silk-custom",
     name: "Custom",
@@ -99,6 +130,9 @@ export const SILK_PRESET_GROUP: EffectPresetGroup = {
   presets: SILK_PRESETS,
   getSummary: (state) => {
     const s = state.silk;
+    if (s.form === "serpent") {
+      return `${s.creature} · ${s.palette} · length ${Math.round(s.bodyLength * 100)}% · slither ${Math.round(s.slither * 100)}%`;
+    }
     return `${s.palette} · width ${Math.round(s.width * 100)}% · taut ${Math.round(s.tautness * 100)}%`;
   },
 };

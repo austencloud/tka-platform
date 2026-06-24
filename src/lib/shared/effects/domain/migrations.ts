@@ -223,6 +223,11 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // lever, distinct from intensity). Net-new field; absent values resolve to
   // DEFAULT_EFFECTS_CONFIG.fire.brightness (1.0) via the merge below.
 
+  // v22 → v23: silk gains a serpent form — form/creature/bodyLength/slither.
+  // Net-new fields; absent values resolve to DEFAULT_EFFECTS_CONFIG.silk
+  // (form "ribbon", creature "snake", bodyLength 0.5, slither 0.5) via the merge
+  // below, so every persisted silk config keeps its velocity ribbon.
+
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,

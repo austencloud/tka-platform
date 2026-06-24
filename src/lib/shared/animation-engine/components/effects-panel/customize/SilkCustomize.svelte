@@ -24,6 +24,16 @@
     { id: "right_end", label: "Right" },
     { id: "both_ends", label: "Both" },
   ];
+
+  const FORMS: { id: SilkIntent["form"]; label: string }[] = [
+    { id: "ribbon", label: "Ribbon" },
+    { id: "serpent", label: "Serpent" },
+  ];
+
+  const CREATURES: { id: SilkIntent["creature"]; label: string }[] = [
+    { id: "snake", label: "Snake" },
+    { id: "dragon", label: "Dragon" },
+  ];
 </script>
 
 <div class="customize-view">
@@ -67,6 +77,44 @@
                   })}
               />
             </label>
+          </div>
+        </div>
+      {/if}
+
+      <div class="option-row">
+        <span class="option-label">Form</span>
+        <div class="chip-group" role="radiogroup" aria-label="Silk form">
+          {#each FORMS as f (f.id)}
+            <button
+              class="chip"
+              class:active={state.silk.form === f.id}
+              type="button"
+              role="radio"
+              aria-checked={state.silk.form === f.id}
+              onclick={() => state.updateEffect("silk", { form: f.id })}
+            >
+              {f.label}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      {#if state.silk.form === "serpent"}
+        <div class="option-row">
+          <span class="option-label">Creature</span>
+          <div class="chip-group" role="radiogroup" aria-label="Silk creature">
+            {#each CREATURES as c (c.id)}
+              <button
+                class="chip"
+                class:active={state.silk.creature === c.id}
+                type="button"
+                role="radio"
+                aria-checked={state.silk.creature === c.id}
+                onclick={() => state.updateEffect("silk", { creature: c.id })}
+              >
+                {c.label}
+              </button>
+            {/each}
           </div>
         </div>
       {/if}
@@ -123,6 +171,43 @@
         <span class="slider-value">{Math.round(state.silk.width * 100)}%</span>
       </div>
 
+      {#if state.silk.form === "serpent"}
+        <div class="slider-row">
+          <label for="silk-length">Length</label>
+          <input
+            id="silk-length"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.silk.bodyLength}
+            oninput={(e) =>
+              state.updateEffect("silk", {
+                bodyLength: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value">{Math.round(state.silk.bodyLength * 100)}%</span>
+        </div>
+
+        <div class="slider-row">
+          <label for="silk-slither">Slither</label>
+          <input
+            id="silk-slither"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.silk.slither}
+            oninput={(e) =>
+              state.updateEffect("silk", {
+                slither: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value">{Math.round(state.silk.slither * 100)}%</span>
+        </div>
+      {/if}
+
+      {#if state.silk.form !== "serpent"}
       <div class="slider-row">
         <label for="silk-duration">Duration</label>
         <input
@@ -173,6 +258,7 @@
         />
         <span class="slider-value">{Math.round(state.silk.tautness * 100)}%</span>
       </div>
+      {/if}
     </div>
   {:else}
     <p class="empty">Effect state unavailable.</p>

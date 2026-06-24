@@ -290,6 +290,13 @@ export interface Silk2DParams extends SilkIntent {
   motionReferenceSpeed: number;
   /** Canvas composite op. */
   blendMode?: GlobalCompositeOperation;
+  // ── Serpent form (used only when form === "serpent") ──
+  /** px - fixed total arc-length of the serpent body. */
+  bodyLengthPx: number;
+  /** Number of spine chain nodes (head = node 0). */
+  segmentCount: number;
+  /** px - max lateral undulation amplitude at the tail. */
+  slitherAmpPx: number;
 }
 
 export interface Pulse2DParams extends PulseIntent {

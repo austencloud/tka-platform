@@ -179,6 +179,11 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     palette: "satin",
     customColor: "#c0c0d0",
     trackingMode: "both_ends",
+    // Serpent form — default off so existing silk stays the velocity ribbon.
+    form: "ribbon",
+    creature: "snake",
+    bodyLength: 0.5,
+    slither: 0.5,
   },
 
   pulse: {

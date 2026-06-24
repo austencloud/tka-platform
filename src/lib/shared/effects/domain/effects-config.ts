@@ -14,7 +14,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 22;
+export const EFFECTS_CONFIG_VERSION = 23;
 
 export type EffectType =
   | "none"
@@ -363,6 +363,22 @@ export interface SilkIntent {
   customColor: string;
   /** Which staff end(s) the ribbon tracks. */
   trackingMode: "left_end" | "right_end" | "both_ends";
+  /**
+   * Render mode. "ribbon" = the velocity ribbon (default, unchanged). "serpent"
+   * = a fixed-length creature whose head is the prop tip and whose body follows
+   * and undulates behind it.
+   */
+  form: "ribbon" | "serpent";
+  /**
+   * Serpent ornamentation. "snake" = eyes + flicking forked tongue. "dragon" =
+   * + dorsal spike crest, horns, trailing whiskers. Only used when form ===
+   * "serpent".
+   */
+  creature: "snake" | "dragon";
+  /** 0-1. Serpent body length. Maps to ~120-480px of fixed arc-length. */
+  bodyLength: number;
+  /** 0-1. Serpent undulation amplitude (the wag). Ramps 0 at head → max at tail. */
+  slither: number;
 }
 
 export interface PulseIntent {

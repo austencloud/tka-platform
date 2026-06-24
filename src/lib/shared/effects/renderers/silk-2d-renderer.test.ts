@@ -42,6 +42,7 @@ function makeCtx(): CanvasRenderingContext2D {
     moveTo: vi.fn(),
     lineTo: vi.fn(),
     bezierCurveTo: vi.fn(),
+    quadraticCurveTo: vi.fn(),
     closePath: vi.fn(),
     stroke: vi.fn(),
     arc: vi.fn(),
@@ -72,11 +73,18 @@ function makeParams(overrides: Partial<Silk2DParams> = {}): Silk2DParams {
     palette: "satin",
     customColor: "#c0c0d0",
     trackingMode: "both_ends",
+    form: "ribbon",
+    creature: "snake",
+    bodyLength: 0.5,
+    slither: 0.5,
     resolvedPalette: SATIN,
     baseHalfWidth: 12,
     lifetimeSeconds: 2.0,
     motionReferenceSpeed: 3.0,
     blendMode: "source-over",
+    bodyLengthPx: 300,
+    segmentCount: 40,
+    slitherAmpPx: 20,
     ...overrides,
   };
 }
@@ -194,5 +202,54 @@ describe("Silk2DRenderer", () => {
     }
     r.dispose();
     expect(() => r.render(ctx, params, toEmitters(moveBag(0)), 1 / 60, 1, false)).not.toThrow();
+  });
+
+  it("serpent (snake) form renders without crashing and draws a body", () => {
+    const r = new Silk2DRenderer();
+    const ctx = makeCtx();
+    const params = makeParams({ form: "serpent", creature: "snake", trackingMode: "right_end" });
+    for (let i = 0; i < 30; i++) {
+      r.render(ctx, params, toEmitters(moveBag(i)), 1 / 60, 1, false);
+    }
+    expect((ctx.fill as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+  });
+
+  it("dragon ornaments (horns/crest/whiskers) render without crashing", () => {
+    const r = new Silk2DRenderer();
+    const ctx = makeCtx();
+    const params = makeParams({ form: "serpent", creature: "dragon", trackingMode: "right_end" });
+    expect(() => {
+      for (let i = 0; i < 30; i++) {
+        r.render(ctx, params, toEmitters(moveBag(i)), 1 / 60, 1, false);
+      }
+    }).not.toThrow();
+    // Horns use quadraticCurveTo — confirms the dragon path actually ran.
+    expect((ctx.quadraticCurveTo as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+  });
+
+  it("serpent body keeps drawing once the prop stops (fixed length holds)", () => {
+    const r = new Silk2DRenderer();
+    const ctx = makeCtx();
+    const params = makeParams({ form: "serpent", creature: "snake", trackingMode: "right_end" });
+    for (let i = 0; i < 20; i++) {
+      r.render(ctx, params, toEmitters(moveBag(i)), 1 / 60, 1, false);
+    }
+    // Prop stops dead — feed the SAME tip position. A fixed-length chain still
+    // has a body to draw (a lifetime trail would have faded to nothing).
+    const ctxStill = makeCtx();
+    for (let i = 0; i < 10; i++) {
+      r.render(ctxStill, params, toEmitters(moveBag(20)), 1 / 60, 1, false);
+    }
+    expect((ctxStill.fill as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+  });
+
+  it("serpent loopDetected does not throw", () => {
+    const r = new Silk2DRenderer();
+    const ctx = makeCtx();
+    const params = makeParams({ form: "serpent", trackingMode: "right_end" });
+    for (let i = 0; i < 20; i++) {
+      r.render(ctx, params, toEmitters(moveBag(i)), 1 / 60, 1, false);
+    }
+    expect(() => r.render(ctx, params, toEmitters(moveBag(0)), 1 / 60, 1, true)).not.toThrow();
   });
 });
