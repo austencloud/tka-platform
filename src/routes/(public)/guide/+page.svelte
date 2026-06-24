@@ -1,8 +1,9 @@
 <!--
   /guide — the Guide hub. A standalone page (landing chrome: SiteHeader +
-  LandingFooter) that explains the Level 1 guide is being rewritten for the web,
-  frames the old printable PDFs honestly, surfaces them via the existing
-  GuidesSection component, and offers an announce-me email form.
+  LandingFooter) that explains the whole guide is being rewritten as an
+  interactive web experience, frames the old guides honestly (download to read,
+  not really printable), surfaces them via the existing GuidesSection component,
+  and offers an announce-me email form.
 
   This is NOT the in-progress guide itself. /guide/level-1 and its sub-routes are
   owned by another agent's rewrite and are deliberately not linked from here yet.
@@ -44,7 +45,7 @@
   <title>Guide | The Kinetic Alphabet</title>
   <meta
     name="description"
-    content="The Level 1 guide to The Kinetic Alphabet notation is being rewritten for the web. Print the old PDF guides in the meantime, or get notified when the new guide is out."
+    content="The Kinetic Alphabet guide is being rewritten as an interactive web experience. Download the old PDF guides to read in the meantime, or get notified when the new guide is out."
   />
   <link rel="canonical" href="https://tkaflowarts.com/guide" />
   <meta property="og:type" content="website" />
@@ -52,7 +53,7 @@
   <meta property="og:title" content="Guide | The Kinetic Alphabet" />
   <meta
     property="og:description"
-    content="The Level 1 notation guide is being rewritten for the web. Print the old PDF guides in the meantime, or get notified when the new one is out."
+    content="The Kinetic Alphabet guide is being rewritten as an interactive web experience. Download the old PDF guides to read in the meantime, or get notified when the new one is out."
   />
 </svelte:head>
 
@@ -64,21 +65,20 @@
       <span class="eyebrow">
         <i class="fas fa-book-open" aria-hidden="true"></i> Guide
       </span>
-      <h1 id="guide-intro-heading">The Level 1 guide is being rewritten for the web</h1>
+      <h1 id="guide-intro-heading">The guide is being rewritten as an interactive web experience</h1>
       <p class="lede">
-        We're rebuilding the Level 1 guide as interactive web pages: the grid,
-        all six letter types, and your first words. It is in progress, so the
-        full guide is not live yet.
+        We're rebuilding the whole guide from the ground up as an interactive
+        web experience. It is in progress, so it is not fully live yet.
       </p>
     </div>
   </section>
 
   <section class="old-guides" aria-labelledby="old-guides-heading">
     <div class="inner">
-      <h2 id="old-guides-heading">The old printable guides</h2>
+      <h2 id="old-guides-heading">The old guides</h2>
       <p class="note">
-        These are the old printable guides. They are incomplete and we are in the
-        middle of rewriting the guide for the web. You are welcome to print these
+        These are the old guides. They are incomplete, and the whole guide is
+        being rewritten as an interactive web experience. Download and read them
         in the meantime.
       </p>
     </div>
@@ -155,7 +155,7 @@
     text-align: center;
   }
   .intro .inner {
-    max-width: 640px;
+    max-width: 980px;
   }
 
   .eyebrow {
@@ -189,7 +189,7 @@
     padding-top: 56px;
   }
   .old-guides .inner {
-    max-width: 640px;
+    max-width: 900px;
     text-align: center;
   }
 
@@ -215,7 +215,7 @@
     padding: 40px 0 96px;
   }
   .notify .inner {
-    max-width: 560px;
+    max-width: 720px;
     text-align: center;
   }
 

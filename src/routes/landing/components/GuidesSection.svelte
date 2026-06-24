@@ -15,10 +15,10 @@
 
 <section class="guides" id="guides">
   <div class="container">
-    <h2>Printable guides</h2>
+    <h2>Guides</h2>
     <p class="section-intro">
-      Learn the notation at your own pace. Print these, stick them on your wall,
-      bring them to jams. Start with Level 1.
+      Learn the notation at your own pace. Download any level to read on your
+      phone, tablet, or screen. Start with Level 1.
     </p>
 
     <div class="guides-grid">
