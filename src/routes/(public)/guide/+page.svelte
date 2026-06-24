@@ -183,6 +183,8 @@
     line-height: 1.12;
     margin: 0;
     color: #fff;
+    /* Even out the line lengths so it doesn't break to a ragged "for the web". */
+    text-wrap: balance;
   }
   .lede {
     max-width: 620px;
@@ -190,6 +192,8 @@
     font-size: clamp(1.02rem, 2vw, 1.18rem);
     line-height: 1.65;
     color: rgba(236, 233, 245, 0.7);
+    /* Avoid a lone last word (widow). */
+    text-wrap: pretty;
   }
 
   /* ── Old guides ───────────────────────────────────────────────────── */
@@ -206,6 +210,7 @@
     line-height: 1.15;
     margin: 0 0 14px;
     color: #fff;
+    text-wrap: balance;
   }
   .note {
     font-size: 1.05rem;
@@ -213,6 +218,7 @@
     color: rgba(236, 233, 245, 0.64);
     margin: 0 auto;
     max-width: 580px;
+    text-wrap: pretty;
   }
   /* GuidesSection ships its own 120px vertical padding + heading, so it sits
      directly below the honest-framing note above. */
@@ -244,6 +250,7 @@
     color: rgba(236, 233, 245, 0.6);
     margin: 0 auto 24px;
     max-width: 400px;
+    text-wrap: pretty;
   }
 
   .notify-slot {
