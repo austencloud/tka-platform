@@ -1,15 +1,26 @@
 import type { Timestamp } from "firebase/firestore";
 
+export type ProductType =
+  | "physical-deck"
+  | "sampler-pack"
+  | "digital"
+  | "guide"
+  | "material";
+
+export type ProductStatus = "active" | "draft" | "sold-out";
+
 export interface Product {
   readonly id: string;
   readonly name: string;
   readonly description: string;
-  readonly type: "physical-deck" | "sampler-pack" | "digital";
+  readonly type: ProductType;
   readonly price: number;
-  readonly cardCount: number;
+  /** Only decks/samplers carry a card count; guides and materials don't. */
+  readonly cardCount?: number;
   readonly deckId?: string;
+  /** Empty until a Stripe Price is created for this product (set on publish). */
   readonly stripePriceId: string;
-  readonly status: "active" | "draft" | "sold-out";
+  readonly status: ProductStatus;
   readonly previewImageUrls: string[];
   readonly coverImageUrl?: string;
   readonly sortOrder: number;

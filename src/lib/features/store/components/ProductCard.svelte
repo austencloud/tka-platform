@@ -21,7 +21,9 @@
   />
   <div class="card-info">
     <h3 class="card-name">{product.name}</h3>
-    <p class="card-meta">{product.cardCount} cards</p>
+    {#if product.cardCount}
+      <p class="card-meta">{product.cardCount} cards</p>
+    {/if}
     <p class="card-price">{formattedPrice}</p>
   </div>
 </a>
