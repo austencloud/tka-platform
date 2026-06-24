@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { OrientationCycleDetector } from "$lib/shared/create/services/orientation-cycle-detector";
+import { detectOrientationCycle } from "$lib/shared/create/services/orientation-cycle-detector";
 import { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
@@ -60,8 +59,7 @@ function assertOrientationsReturnToStart(
 }
 
 describe("OrientationCycleExtender for infinite generator chaining", () => {
-  const detector = new OrientationCycleDetector(orientationCalculator);
-  const extender = new OrientationCycleExtender(detector, orientationCalculator);
+  const extender = new OrientationCycleExtender();
 
   it("passes through a sequence that already returns to starting orientation", () => {
     // PRO with 2 turns: even turns = same orientation. Already a complete cycle.
@@ -165,7 +163,7 @@ describe("OrientationCycleExtender for infinite generator chaining", () => {
       ],
     });
 
-    const detection = detector.detectOrientationCycle(mismatchSeq);
+    const detection = detectOrientationCycle(mismatchSeq);
     expect(detection.cycleCount).toBe(2); // Needs 2 reps to return
 
     const extended = extender.extendIfNeeded(mismatchSeq);
@@ -202,7 +200,7 @@ describe("OrientationCycleExtender for infinite generator chaining", () => {
       ],
     });
 
-    const detection = detector.detectOrientationCycle(seq);
+    const detection = detectOrientationCycle(seq);
     expect(detection.cycleCount).toBe(4);
 
     const extended = extender.extendIfNeeded(seq);
@@ -240,7 +238,7 @@ describe("OrientationCycleExtender for infinite generator chaining", () => {
       ],
     });
 
-    const detection = detector.detectOrientationCycle(seq);
+    const detection = detectOrientationCycle(seq);
     expect(detection.cycleCount).toBe(2);
 
     const extended = extender.extendIfNeeded(seq);
@@ -300,7 +298,7 @@ describe("OrientationCycleExtender for infinite generator chaining", () => {
       ],
     });
 
-    const detection = detector.detectOrientationCycle(seq);
+    const detection = detectOrientationCycle(seq);
     expect(detection.cycleCount).toBe(2);
 
     const extended = extender.extendIfNeeded(seq);

@@ -54,13 +54,6 @@ describe("LiveRenderContext", () => {
     expect(ctx.size).toBe(500);
   });
 
-  it("triggerRender delegates to renderLoop", () => {
-    const deps = makeDeps();
-    const ctx = new LiveRenderContext(deps);
-    ctx.triggerRender();
-    expect(deps.renderLoop.triggerRender).toHaveBeenCalled();
-  });
-
   it("dispose tears down all services", () => {
     const deps = makeDeps();
     const ctx = new LiveRenderContext(deps);

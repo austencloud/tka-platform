@@ -13,7 +13,7 @@ const getRenderContext = vi.fn(() => ({
 
 // NOTE: vitest 4 cannot `new` a mock whose implementation is an arrow fn, so the
 // implementation is a regular function returning the fake engine (same contract).
-vi.mock("../AnimationEngine.svelte", () => ({
+vi.mock("../animation-engine.svelte", () => ({
   AnimationEngine: vi.fn(function () { return { initialize, getRenderContext, dispose }; }),
 }));
 

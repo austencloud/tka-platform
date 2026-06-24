@@ -6,7 +6,7 @@ import {
   createDefaultStickerUnit,
   type MandalaPrimitiveRef,
 } from "$lib/features/sticker-lab/domain/sticker-types";
-import type { StickerMandalaLookup } from "$lib/features/sticker-lab/services/contracts/IStickerSheetPdfExporter";
+import type { StickerMandalaLookup } from "$lib/features/sticker-lab/services/types";
 
 // Mock the rasterizer to return a tiny valid PNG (1x1 transparent RGBA).
 // Generated via Node zlib.deflateSync to produce a PNG that pdf-lib's UPNG decoder accepts.
@@ -18,7 +18,7 @@ const ONE_PX_PNG = new Uint8Array([
   0xae, 0x42, 0x60, 0x82,
 ]);
 
-vi.mock("$lib/features/sticker-lab/services/rasterizeSvg", () => ({
+vi.mock("$lib/features/sticker-lab/services/rasterize-svg", () => ({
   rasterizeSvgToPng: vi.fn(async () => ONE_PX_PNG),
 }));
 
