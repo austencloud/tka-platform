@@ -5,7 +5,7 @@ import {
 	ALL_SPECIES,
 	TrophicRole,
 	LocomotionMode,
-} from '$lib/shared/3d/environments/scenes/ocean/fish-species-config';
+} from '$lib/shared/3d/environments/scenes/ocean/runtime/fauna/fish/fish-species';
 
 describe('fish-species-config', () => {
 	it('has exactly 50 species total', () => {

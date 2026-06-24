@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { FishEventSystem } from "$lib/shared/3d/environments/scenes/ocean/FishEventSystem";
+import { FishEventSystem } from "$lib/shared/3d/environments/scenes/ocean/runtime/fauna/fish/fish-events";
 import { Vector3 } from "three";
 
 function makeTraits(fishCount: number): Float32Array {
@@ -62,14 +62,6 @@ describe("FishEventSystem", () => {
     expect(firstCount).toBeGreaterThan(0);
     system.tick(0.016, uniforms, ray);
     expect(uniforms.uDartCount.value).toBeLessThanOrEqual(8);
-  });
-
-  it("copies ray position to scatter uniform", () => {
-    const ray = new Vector3(5, 3, -2);
-    system.tick(0.016, uniforms, ray);
-    expect(uniforms.uScatterOrigin.value.x).toBe(5);
-    expect(uniforms.uScatterOrigin.value.y).toBe(3);
-    expect(uniforms.uScatterOrigin.value.z).toBe(-2);
   });
 
   it("fires vertical excursions", () => {

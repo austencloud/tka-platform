@@ -4,7 +4,7 @@ import {
 	TrophicRole,
 	isThreat,
 	isPrey,
-} from '$lib/shared/3d/environments/scenes/ocean/fish-species-config';
+} from '$lib/shared/3d/environments/scenes/ocean/runtime/fauna/fish/fish-species';
 
 describe('threat matrix', () => {
 	it('apex predator fears nothing', () => {
