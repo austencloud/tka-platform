@@ -444,13 +444,16 @@
     overflow: hidden;
   }
 
-  /* Card text */
+  /* Card text — pinned to the bottom so all six labels align on one baseline
+     regardless of each card's media height (the ChoreoCard in card 5 is taller
+     than the square pictograph frames). margin-top:auto absorbs the slack. */
   h3 {
     font-family: var(--landing-heading-font, "Instrument Serif", Georgia, serif);
     font-size: clamp(0.95rem, 1.8vw, 1.15rem);
     font-weight: 400;
     color: var(--theme-text, #fff);
     margin: 0;
+    margin-top: auto;
     text-align: center;
   }
 
