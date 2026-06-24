@@ -74,8 +74,11 @@
   const propType = $derived<PropType>(settingsService.settings.bluePropType ?? PropType.STAFF);
 
   function selectProp(p: PropType) {
-    void settingsService.updateSetting("bluePropType", p);
-    void settingsService.updateSetting("redPropType", p);
+    // In-memory only (NOT updateSetting) → picking a prop here never persists to
+    // the user's real app settings (no localStorage / Firebase write). The
+    // originals are snapshotted on mount and restored on unmount.
+    settingsService.settings.bluePropType = p;
+    settingsService.settings.redPropType = p;
     animationSettings.setCurrentPropType(String(p));
   }
 
@@ -179,6 +182,17 @@
   });
 
   onMount(() => {
+    // Tuner is a SANDBOX. effectsConfig is already isolated (persist:false →
+    // effect tuning never touches the user's tka_effects_config). Prop + trail
+    // trackingMode/tailLength route through GLOBAL singletons because the trail
+    // system reads them (settingsService / animationSettings, the latter
+    // auto-persists). So snapshot the user's originals now and restore on leave
+    // — tuning here must never stick to their real app.
+    const origBlue = settingsService.settings.bluePropType;
+    const origRed = settingsService.settings.redPropType;
+    const origTrail = { ...animationSettings.trail };
+    const origPropType = animationSettings.currentPropType;
+
     // Open on a vivid effect so the stage isn't empty on first paint.
     effectsConfig.setActiveEffect("bloom");
     // Tell the trail system which prop is active (panel labels + bilateral gate).
@@ -195,7 +209,17 @@
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      // Restore the user's real prop + trail settings. Prop is in-memory;
+      // updateSettings re-persists the original trail, undoing any in-session
+      // auto-save the trail singleton made.
+      settingsService.settings.bluePropType = origBlue;
+      settingsService.settings.redPropType = origRed;
+      animationSettings.updateSettings({ trail: origTrail });
+      animationSettings.setCurrentPropType(origPropType);
+    };
   });
 
   // ── Per-layer prop derivation at the shared playhead ────────
