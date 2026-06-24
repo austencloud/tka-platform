@@ -24,8 +24,8 @@
     {#if showHeading}
       <h2>Guides</h2>
       <p class="section-intro">
-        Learn the notation at your own pace. Download any level to read on your
-        phone, tablet, or screen. Start with Level 1.
+        <span>Learn the notation at your own pace.</span>
+        <span>Download any level to read on your phone, tablet, or screen.</span>
       </p>
     {/if}
 
@@ -79,14 +79,20 @@
     line-height: 1.2;
   }
 
+  /* Same size as the closing line so the two read as one voice. */
   .section-intro {
     text-align: center;
-    font-size: var(--font-size-sm, 0.875rem);
+    font-size: 1.05rem;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    max-width: 480px;
+    max-width: 640px;
     margin: 0 auto 3rem;
     line-height: 1.7;
-    text-wrap: pretty;
+  }
+  /* One sentence per line so the second sentence never breaks mid-line; each
+     still wraps cleanly on its own if the viewport is too narrow. */
+  .section-intro span {
+    display: block;
+    text-wrap: balance;
   }
 
   /* A short, scannable list of guide entries — reads like a chapter list, not a

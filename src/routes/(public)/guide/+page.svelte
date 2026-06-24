@@ -146,7 +146,7 @@
     </section>
   </main>
 
-  <LandingFooter />
+  <LandingFooter showCredit={false} />
 </div>
 
 <style>
