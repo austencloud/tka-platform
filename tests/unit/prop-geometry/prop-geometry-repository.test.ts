@@ -3,7 +3,7 @@ import { PropGeometryAdjustmentRepository } from "$lib/shared/pictograph/arrow/p
 import type { PropGeometryAdjustmentInput, PropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/prop-geometry-adjustment";
 
 // Force admin so the guard passes.
-vi.mock("$lib/shared/auth/state/authState.svelte", () => ({
+vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
   authState: { user: { email: "austencloud@gmail.com" } },
 }));
 

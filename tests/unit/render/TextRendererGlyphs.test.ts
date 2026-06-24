@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { GlyphImageData } from "@tka/render-composition";
 
 // Mock getGlyphCache before importing TextRenderer
-vi.mock("$lib/shared/render/getGlyphCache", () => ({
+vi.mock("$lib/shared/render/get-glyph-cache", () => ({
   getGlyphCache: () => ({
     initialize: vi.fn().mockResolvedValue(undefined),
     getGlyphDataUrl: (letter: string) => {
@@ -29,7 +29,7 @@ vi.stubGlobal("Image", MockImage);
 
 // Import AFTER mocks are set up
 const { TextRenderer } = await import(
-  "$lib/shared/render/services/implementations/TextRenderer"
+  "$lib/shared/render/services/text-renderer"
 );
 
 describe("TextRenderer glyph methods", () => {

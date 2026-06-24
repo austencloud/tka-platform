@@ -11,15 +11,17 @@ vi.mock("$lib/shared/application/state/app-state.svelte", () => ({
   getSettings: () => ({ bluePropType: "staff", redPropType: "staff" }),
 }));
 
-import { CellCacheKeyDeriver } from "$lib/shared/sequence-viewer/services/cell-cache-key-deriver";
-import { pictographKeyHasher } from "$lib/shared/render/services/pictograph-key-hasher";
+import { deriveCacheKey } from "$lib/shared/sequence-viewer/services/cell-cache-key-deriver";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-import type { PreviewCellRenderOptions } from "$lib/shared/sequence-viewer/services/contracts/types";
+import type { PreviewCellRenderOptions } from "$lib/shared/sequence-viewer/services/preview-cell-renderer";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { MotionType, MotionColor, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-const deriver = new CellCacheKeyDeriver(pictographKeyHasher);
+// The class-with-injected-hasher collapsed into a standalone function
+// (the hasher is now imported directly inside the module). Bind it to an
+// object so the existing `deriver.deriveCacheKey(...)` call sites are unchanged.
+const deriver = { deriveCacheKey };
 
 function makeStartPosition(overrides?: {
   bluePropType?: PropType;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { RoomGeometryBuilder } from "$lib/shared/3d/indoor/services/room-geometry-builder";
+import { buildRoom } from "$lib/shared/3d/indoor/services/room-geometry-builder";
 import type { RoomDefinition } from "$lib/shared/3d/indoor/domain/room-types";
 import { GRID_CELL, snapToGrid } from "$lib/shared/3d/indoor/domain/room-types";
 
@@ -29,7 +29,9 @@ function allSnapped(tuple: [number, number, number]): boolean {
 }
 
 describe("RoomGeometryBuilder", () => {
-	const builder = new RoomGeometryBuilder();
+	// The class collapsed into a standalone `buildRoom` function. Bind it to an
+	// object so the existing `builder.build(...)` call sites are unchanged.
+	const builder = { build: buildRoom };
 
 	describe("wall generation", () => {
 		it("generates wall segments for a rectangular room", () => {

@@ -3,13 +3,21 @@ import {
   GridLocation,
   GridPosition,
 } from "../../../src/lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
+import {
+  getGridLocationsFromPosition,
+  getGridPositionFromLocations,
+} from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 
 describe("GridPositionDeriver", () => {
-  let service: GridPositionDeriver;
+  // The class collapsed into standalone functions. Bind them to an object so
+  // the existing `service.*` call sites are unchanged.
+  let service: {
+    getGridLocationsFromPosition: typeof getGridLocationsFromPosition;
+    getGridPositionFromLocations: typeof getGridPositionFromLocations;
+  };
 
   beforeEach(() => {
-    service = new GridPositionDeriver();
+    service = { getGridLocationsFromPosition, getGridPositionFromLocations };
   });
 
   describe("Alpha Positions - Bidirectional Mapping", () => {

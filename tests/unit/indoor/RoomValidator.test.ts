@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { RoomValidator } from "$lib/shared/3d/indoor/services/room-validator";
-import { RoomGeometryBuilder } from "$lib/shared/3d/indoor/services/room-geometry-builder";
+import { validateRoom } from "$lib/shared/3d/indoor/services/room-validator";
+import { buildRoom } from "$lib/shared/3d/indoor/services/room-geometry-builder";
 import type { RoomDefinition, SolvedRoom } from "$lib/shared/3d/indoor/domain/room-types";
 import { snapToGrid } from "$lib/shared/3d/indoor/domain/room-types";
 
@@ -21,8 +21,11 @@ function makeStandardRoom(overrides: Partial<RoomDefinition> = {}): RoomDefiniti
 	};
 }
 
-const builder = new RoomGeometryBuilder();
-const validator = new RoomValidator();
+// Both classes collapsed into standalone functions. Bind them to objects so
+// the existing `builder.build(...)` / `validator.validate(...)` call sites are
+// unchanged. `validateRoom(def, solved)` matches the old `validate(def, solved)`.
+const builder = { build: buildRoom };
+const validator = { validate: validateRoom };
 
 describe("RoomValidator", () => {
 	describe("valid room passes", () => {

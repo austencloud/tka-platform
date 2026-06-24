@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { MandalaGeometryCalculator } from "$lib/shared/mandala/services/mandala-geometry-calculator";
-import type { StepLike } from "$lib/shared/mandala/services/contracts/IMandalaGeometryCalculator";
+import { calculate } from "$lib/shared/mandala/services/mandala-geometry-calculator";
+import type { StepLike } from "$lib/shared/mandala/services/types";
 import {
   MANDALA_STANDARD_TIP_DX,
   ENGINE_GRID_RADIUS,
@@ -428,7 +428,9 @@ const SIXTEEN_BEAT_STEPS = fixtureJson.steps.filter(
 );
 
 describe("MandalaGeometryCalculator", () => {
-  const calc = new MandalaGeometryCalculator();
+  // The class collapsed into a standalone `calculate` function. Bind it to an
+  // object so the existing `calc.calculate(...)` call sites are unchanged.
+  const calc = { calculate };
 
   describe("junction continuity", () => {
     it("produces a single continuous path (one M command) for a 2-beat sequence", () => {
