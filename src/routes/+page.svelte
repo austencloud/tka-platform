@@ -7,6 +7,7 @@
   import LazyHowTkaWorksSection from "./landing/components/LazyHowTkaWorksSection.svelte";
   import PlayWithItSection from "./landing/components/PlayWithItSection.svelte";
   import GuidesSection from "./landing/components/GuidesSection.svelte";
+  import GuideComingSoon from "./landing/components/GuideComingSoon.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
   import SiteHeader from "$lib/shared/landing/components/SiteHeader.svelte";
 
@@ -368,6 +369,10 @@
       <hr class="divider" />
       <div class="scroll-reveal">
         <GuidesSection />
+      </div>
+      <hr class="divider" />
+      <div class="scroll-reveal">
+        <GuideComingSoon />
       </div>
     </main>
     <LandingFooter />

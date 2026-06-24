@@ -121,7 +121,7 @@
   const NAV = [
     { label: "About", href: "/about", icon: "fa-circle-info" },
     { label: "Roots", href: "/roots", icon: "fa-seedling" },
-    { label: "Guide", href: "/guide/level-1", icon: "fa-book-open" },
+    { label: "Guide", href: "/#guide", icon: "fa-book-open" },
     { label: "Support", href: "/support", icon: "fa-heart" },
   ];
 
