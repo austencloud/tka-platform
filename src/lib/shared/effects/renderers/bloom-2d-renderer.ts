@@ -43,6 +43,23 @@ type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
  * This is the only effect named after a real photographic phenomenon, and it
  * now renders that phenomenon: lens bloom.
  */
+
+/**
+ * Perceptual response curve for the Intensity slider.
+ *
+ * The five lens layers are all drawn with additive `lighter` blend, so light
+ * saturates toward white around ~0.15-0.2 alpha. Feeding the raw 0..1 slider
+ * value straight in as alpha makes the bottom ~15% of the track do all the
+ * useful work and everything above it blow out flat white - the slider is
+ * linear in alpha but wildly nonlinear in *perceived* brightness.
+ *
+ * Gamma-shaping the slider value (like a camera exposure curve) makes the
+ * track perceptually linear: medium brightness lands near the 50% mark, "barely
+ * glowing" occupies the low end, and full blowout stays reachable at 100%.
+ * 0.5 ** 2.6 ≈ 0.16, i.e. the slider's midpoint renders at ~16% alpha.
+ */
+const INTENSITY_GAMMA = 2.6;
+
 export class Bloom2DRenderer {
   // Offscreen accumulation buffer holding the decaying long-exposure light.
   private accum: OffscreenCanvas | HTMLCanvasElement | null = null;
@@ -185,7 +202,8 @@ export class Bloom2DRenderer {
       1 -
       params.pulse +
       params.pulse * (0.5 + 0.5 * Math.sin(t * params.pulseRate * Math.PI * 2));
-    const baseAlpha = clamp01(params.intensity * pulseFactor);
+    const shaped = Math.pow(clamp01(params.intensity), INTENSITY_GAMMA);
+    const baseAlpha = clamp01(shaped * pulseFactor);
     if (baseAlpha <= 0 && params.falloff !== "ring") return;
 
     const coreR = Math.max(1, params.radius * scale);

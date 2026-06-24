@@ -241,6 +241,45 @@ describe("Bloom2DRenderer (lens bloom)", () => {
     });
   });
 
+  describe("intensity response curve (perceptual gamma, not linear alpha)", () => {
+    // Halo center stop = withAlpha(color, baseAlpha). Parse the trailing alpha
+    // out of `rgba(r, g, b, a)` to read the rendered brightness.
+    const haloCenterAlpha = (radial: FakeGradient[]): number => {
+      const m = /,\s*([\d.]+)\)\s*$/.exec(radial[0]!.stops[0]!.color);
+      return m ? parseFloat(m[1]!) : NaN;
+    };
+
+    it("midpoint slider renders well below linear (medium ≈ 16%, not 50%)", () => {
+      const r = new Bloom2DRenderer();
+      const { ctx, radial } = makeCtx();
+      r.render(ctx, makeParams({ intensity: 0.5, pulse: 0, spikes: 0 }), [makeTip()]);
+      const a = haloCenterAlpha(radial);
+      expect(a).toBeGreaterThan(0.1);
+      expect(a).toBeLessThan(0.25); // the whole point: NOT 0.5
+    });
+
+    it("full slider still reaches full blowout (alpha 1.0)", () => {
+      const r = new Bloom2DRenderer();
+      const { ctx, radial } = makeCtx();
+      r.render(ctx, makeParams({ intensity: 1, pulse: 0, spikes: 0 }), [makeTip()]);
+      expect(haloCenterAlpha(radial)).toBeCloseTo(1, 2);
+    });
+
+    it("is monotonic: 25% < 50% < 100%", () => {
+      const read = (intensity: number) => {
+        const r = new Bloom2DRenderer();
+        const { ctx, radial } = makeCtx();
+        r.render(ctx, makeParams({ intensity, pulse: 0, spikes: 0 }), [makeTip()]);
+        return haloCenterAlpha(radial);
+      };
+      const lo = read(0.25);
+      const mid = read(0.5);
+      const hi = read(1);
+      expect(lo).toBeLessThan(mid);
+      expect(mid).toBeLessThan(hi);
+    });
+  });
+
   it("uses additive blend and balances save/restore", () => {
     const r = new Bloom2DRenderer();
     const { ctx } = makeCtx();
