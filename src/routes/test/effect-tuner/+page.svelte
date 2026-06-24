@@ -36,6 +36,7 @@
   import {
     createEffectsConfigState,
     isEffectId,
+    type EffectId,
   } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
@@ -43,6 +44,10 @@
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import { getRegistration } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
+  import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+  import type { EffectPreset } from "$lib/shared/animation-engine/components/effects-panel/presets/types";
 
   const DEFAULT_PROP_STATE: PropState = { centerPathAngle: 0, staffRotationAngle: 0 };
 
@@ -104,6 +109,77 @@
   const activeTipEffectMap = $derived<TipEffectMap | undefined>(
     activeEffect === "none" ? undefined : effectsConfig.tipEffectMap,
   );
+
+  // ── Save target: base default vs a specific preset (sticky) ─────────────────
+  // The picker holds its OWN target so a slider tweak (which clears the panel's
+  // active-preset chip) never silently retargets the base default. The chip is
+  // always visible and labelled — "Save to <target>" is never a guess.
+  type SaveTarget = { kind: "default" } | { kind: "preset"; id: string; name: string };
+  type WriteFn = (effectId: string, patch: unknown) => void;
+  type PresetFn = (effectId: string, presetId: string, patch: unknown) => void;
+
+  let saveTarget = $state<SaveTarget>({ kind: "default" });
+  let menuOpen = $state(false);
+
+  // Presets the tuner can write to: exclude "Custom" (previewColor "custom" — its
+  // job is to open a blank Customize panel; a full-patch write would break that).
+  const targetablePresets = $derived<EffectPreset[]>(
+    activeEffect === "none"
+      ? []
+      : (getRegistration(activeEffect)?.presetGroup.presets ?? []).filter(
+          (p) => p.previewColor !== "custom",
+        ),
+  );
+  const targetLabel = $derived(
+    saveTarget.kind === "default" ? "Base default" : saveTarget.name,
+  );
+
+  // Switching effect resets the target to that effect's base default.
+  $effect(() => {
+    activeEffect; // dependency
+    saveTarget = { kind: "default" };
+    menuOpen = false;
+  });
+
+  // Picking a panel "Choose a Look" chip activates a preset → follow it. A tweak
+  // sets activePresets→null; we intentionally ignore that (target stays sticky).
+  $effect(() => {
+    if (activeEffect === "none") return;
+    const id =
+      effectsConfig.activePresets[activeEffect as keyof typeof effectsConfig.activePresets];
+    if (!id) return;
+    const p = targetablePresets.find((pp) => pp.id === id);
+    if (p && !(saveTarget.kind === "preset" && saveTarget.id === id)) {
+      saveTarget = { kind: "preset", id, name: p.name };
+    }
+  });
+
+  function loadBase(fx: EffectId) {
+    (effectsConfig.updateEffect as unknown as WriteFn)(
+      fx,
+      structuredClone(DEFAULT_EFFECTS_CONFIG[fx]),
+    );
+  }
+
+  function selectTarget(t: SaveTarget) {
+    menuOpen = false;
+    const fx = activeEffect;
+    if (fx === "none" || !isEffectId(fx)) return;
+    if (t.kind === "default") {
+      loadBase(fx); // reset live intent to the factory default, clears the preset
+      saveTarget = { kind: "default" };
+      return;
+    }
+    const preset = targetablePresets.find((p) => p.id === t.id);
+    if (!preset?.patch) return;
+    loadBase(fx); // base first so non-patched fields show the true default
+    (effectsConfig.applyPreset as unknown as PresetFn)(
+      fx,
+      t.id,
+      structuredClone(preset.patch),
+    ); // base + patch, also highlights the panel chip
+    saveTarget = t;
+  }
 
   // ── Sequences ───────────────────────────────────────────────
   let base = $state<SequenceData | null>(null);
@@ -266,17 +342,19 @@
       return;
     }
     const intent = $state.snapshot(effectsConfig.effect(fx));
+    const target = saveTarget.kind === "default" ? "default" : { preset: saveTarget.id };
+    const label = saveTarget.kind === "default" ? "base default" : saveTarget.name;
     saving = true;
-    copyStatus = `Saving ${fx}…`;
+    copyStatus = `Saving ${fx} → ${label}…`;
     try {
       const res = await fetch("/test/effect-tuner/save-default", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ effect: fx, intent }),
+        body: JSON.stringify({ target, effect: fx, intent }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.message ?? `${res.status} ${res.statusText}`);
-      copyStatus = `Saved ${fx} as default ✓ — defaults.ts patched`;
+      copyStatus = `Saved ${fx} → ${label} ✓ — ${data.file} ${data.changed ? "patched" : "(no change)"}`;
     } catch (e) {
       copyStatus = `Save failed: ${e instanceof Error ? e.message : String(e)}`;
     } finally {
@@ -355,8 +433,37 @@
         </div>
 
         <div class="group push">
+          <span class="lbl">Save to</span>
+          <FilterChipBase
+            mode="dropdown"
+            label={targetLabel}
+            active={true}
+            disabled={activeEffect === "none"}
+            expanded={menuOpen}
+            onclick={() => (menuOpen = !menuOpen)}
+          >
+            <div class="target-menu">
+              <button
+                class="opt"
+                class:sel={saveTarget.kind === "default"}
+                onclick={() => selectTarget({ kind: "default" })}
+              >
+                <span class="opt-name">Base default</span>
+                <span class="opt-sub">first value users see</span>
+              </button>
+              {#each targetablePresets as p (p.id)}
+                <button
+                  class="opt"
+                  class:sel={saveTarget.kind === "preset" && saveTarget.id === p.id}
+                  onclick={() => selectTarget({ kind: "preset", id: p.id, name: p.name })}
+                >
+                  <span class="opt-name">{p.name}</span>
+                </button>
+              {/each}
+            </div>
+          </FilterChipBase>
           <button class="save" disabled={activeEffect === "none" || saving} onclick={saveAsDefault}>
-            {saving ? "Saving…" : "Save as default"}
+            {saving ? "Saving…" : "Save"}
           </button>
           <button class="copy" disabled={activeEffect === "none"} onclick={copyDefaultJson}>Copy JSON</button>
           {#if copyStatus}<span class="copy-status">{copyStatus}</span>{/if}
@@ -461,6 +568,28 @@
   .row { display: flex; gap: 6px; flex-wrap: wrap; }
   .val { font-variant-numeric: tabular-nums; width: 2.2ch; opacity: 0.7; }
   .copy-status { font-size: 0.78rem; opacity: 0.7; font-variant-numeric: tabular-nums; }
+
+  /* Save-target dropdown menu (rendered into FilterChipBase's popover). */
+  .target-menu { display: flex; flex-direction: column; gap: 2px; min-width: 184px; }
+  button.opt {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    width: 100%;
+    padding: 8px 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    text-align: left;
+  }
+  button.opt:hover { background: color-mix(in srgb, var(--theme-accent, #8b7cf0) 14%, transparent); }
+  button.opt.sel {
+    background: color-mix(in srgb, var(--theme-accent, #8b7cf0) 22%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #8b7cf0) 45%, transparent);
+  }
+  .opt-name { font-size: 0.82rem; font-weight: 600; }
+  .opt-sub { font-size: 0.68rem; opacity: 0.55; }
 
   .stage-wrap {
     flex: 1;
