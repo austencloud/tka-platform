@@ -1,23 +1,34 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { CommandStack, type Command } from "../command-stack.svelte";
 
-function makeCommand(
-	label: string
-): Command & { executed: boolean; undone: boolean } {
-	const cmd = {
+// State is tracked in closure variables rather than on `this`. The CommandStack
+// stores commands in `$state([])` arrays, which deep-proxy their contents — so
+// the command the stack invokes is a Svelte reactive proxy, not this original
+// object, and `this`-based mutations don't read back through the original
+// reference. Closure flags observe the real execute()/undo() calls regardless.
+function makeCommand(label: string): Command & {
+	readonly executed: boolean;
+	readonly undone: boolean;
+} {
+	let executed = false;
+	let undone = false;
+	return {
 		label,
-		executed: false,
-		undone: false,
 		execute() {
-			this.executed = true;
-			this.undone = false;
+			executed = true;
+			undone = false;
 		},
 		undo() {
-			this.undone = true;
-			this.executed = false;
+			undone = true;
+			executed = false;
+		},
+		get executed() {
+			return executed;
+		},
+		get undone() {
+			return undone;
 		},
 	};
-	return cmd;
 }
 
 describe("CommandStack", () => {

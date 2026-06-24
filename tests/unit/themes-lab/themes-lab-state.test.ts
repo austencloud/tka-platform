@@ -10,7 +10,7 @@ vi.stubGlobal("localStorage", {
 
 // Mock settingsService
 const mockUpdateSetting = vi.fn().mockResolvedValue(undefined);
-vi.mock("$lib/shared/settings/state/SettingsState.svelte", () => ({
+vi.mock("$lib/shared/settings/state/settings-state.svelte", () => ({
   settingsService: {
     settings: { backgroundType: "ocean" },
     updateSetting: (...args: unknown[]) => mockUpdateSetting(...args),

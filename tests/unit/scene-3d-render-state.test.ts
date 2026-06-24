@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 
-vi.mock("$lib/shared/3d/undo/getSceneUndoManager", () => ({
+vi.mock("$lib/shared/3d/undo/get-scene-undo-manager", () => ({
   getSceneUndoManager: () => ({
     registerDomain: vi.fn(),
     captureState: vi.fn(),
