@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   parseCloudflareGeo,
   formatLocationLabel,
+  locationsEqual,
 } from "$lib/shared/presence/domain/models/presence-models";
 
 describe("parseCloudflareGeo", () => {
@@ -51,5 +52,32 @@ describe("formatLocationLabel", () => {
   it("empty string when neither", () => {
     expect(formatLocationLabel(null)).toBe("");
     expect(formatLocationLabel({ city: null, country: null, lat: 1, lng: 2 })).toBe("");
+  });
+});
+
+describe("locationsEqual (presence setLocation dedup / no-clobber)", () => {
+  const berlin = { city: "Berlin", country: "DE", lat: 52.52, lng: 13.405 };
+
+  it("treats two absent locations as equal", () => {
+    expect(locationsEqual(null, null)).toBe(true);
+    expect(locationsEqual(null, undefined)).toBe(true);
+  });
+
+  it("a present location is never equal to an absent one (no-clobber guard)", () => {
+    // setLocation(null) early-returns on falsy; this asserts the comparison
+    // never reports a stored location as equal to a missing incoming one.
+    expect(locationsEqual(berlin, null)).toBe(false);
+    expect(locationsEqual(null, berlin)).toBe(false);
+  });
+
+  it("identical field-by-field locations are equal (dedup skips re-write)", () => {
+    expect(locationsEqual(berlin, { ...berlin })).toBe(true);
+  });
+
+  it("any differing field makes them unequal", () => {
+    expect(locationsEqual(berlin, { ...berlin, city: "Munich" })).toBe(false);
+    expect(locationsEqual(berlin, { ...berlin, country: "AT" })).toBe(false);
+    expect(locationsEqual(berlin, { ...berlin, lat: 0 })).toBe(false);
+    expect(locationsEqual(berlin, { ...berlin, lng: 0 })).toBe(false);
   });
 });

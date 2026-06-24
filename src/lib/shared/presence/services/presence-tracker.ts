@@ -28,7 +28,7 @@ import type {
   ActivityStatus,
   PresenceLocation,
 } from "../domain/models/presence-models";
-import { computeActivityStatus } from "../domain/models/presence-models";
+import { computeActivityStatus, locationsEqual } from "../domain/models/presence-models";
 import { ActivityTracker } from "../utils/activity-tracker";
 
 export class PresenceTracker {
@@ -128,20 +128,12 @@ export class PresenceTracker {
    * Null is ignored so a prior good location is never clobbered.
    */
   setLocation(location: PresenceLocation | null): void {
+    // Null never clobbers a prior good location.
     if (!location) return;
     // Skip identical re-sends. The layout $effect re-fires on every navigation
     // with the same stable geo, so without this guard each navigation would
     // issue a redundant RTDB + Firestore write.
-    const p = this.pendingLocation;
-    if (
-      p &&
-      p.city === location.city &&
-      p.country === location.country &&
-      p.lat === location.lat &&
-      p.lng === location.lng
-    ) {
-      return;
-    }
+    if (locationsEqual(this.pendingLocation, location)) return;
     this.pendingLocation = location;
     // If already initialized this session, persist immediately.
     if (this.initialized) {

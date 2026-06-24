@@ -34,6 +34,23 @@ export function parseCloudflareGeo(headers: Headers): PresenceLocation | null {
   return hasGeo ? { city, country, lat, lng } : null;
 }
 
+/** True when two locations carry the same city/country/coords (or are both
+ * absent). Used to skip redundant presence writes when the layout re-sends an
+ * unchanged location on navigation. */
+export function locationsEqual(
+  a: PresenceLocation | null | undefined,
+  b: PresenceLocation | null | undefined
+): boolean {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return (
+    a.city === b.city &&
+    a.country === b.country &&
+    a.lat === b.lat &&
+    a.lng === b.lng
+  );
+}
+
 /** Human label for a location: "City, CC" / "CC" / "". */
 export function formatLocationLabel(loc: PresenceLocation | null | undefined): string {
   if (!loc) return "";
