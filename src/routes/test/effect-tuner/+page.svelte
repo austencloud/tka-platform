@@ -255,7 +255,36 @@
   const propTypeStr = $derived(String(propType));
   const gridMode = $derived(base?.gridMode ?? GridMode.DIAMOND);
 
-  // ── Copy the active effect's live intent for paste into defaults.ts ─────────
+  // ── Save the active effect's live intent straight into defaults.ts ──────────
+  // Posts to the dev-only write-back endpoint, which patches
+  // DEFAULT_EFFECTS_CONFIG[<effect>] in place. Vite then HMR-reloads the file.
+  let saving = $state(false);
+  async function saveAsDefault() {
+    const fx = effectsConfig.activeEffect;
+    if (fx === "none" || !isEffectId(fx)) {
+      copyStatus = "Pick an effect first";
+      return;
+    }
+    const intent = $state.snapshot(effectsConfig.effect(fx));
+    saving = true;
+    copyStatus = `Saving ${fx}…`;
+    try {
+      const res = await fetch("/test/effect-tuner/save-default", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ effect: fx, intent }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.message ?? `${res.status} ${res.statusText}`);
+      copyStatus = `Saved ${fx} as default ✓ — defaults.ts patched`;
+    } catch (e) {
+      copyStatus = `Save failed: ${e instanceof Error ? e.message : String(e)}`;
+    } finally {
+      saving = false;
+    }
+  }
+
+  // ── Copy the active effect's live intent (manual paste fallback) ────────────
   function copyDefaultJson() {
     const fx = effectsConfig.activeEffect;
     if (fx === "none" || !isEffectId(fx)) {
@@ -326,7 +355,10 @@
         </div>
 
         <div class="group push">
-          <button class="copy" disabled={activeEffect === "none"} onclick={copyDefaultJson}>Copy default JSON</button>
+          <button class="save" disabled={activeEffect === "none" || saving} onclick={saveAsDefault}>
+            {saving ? "Saving…" : "Save as default"}
+          </button>
+          <button class="copy" disabled={activeEffect === "none"} onclick={copyDefaultJson}>Copy JSON</button>
           {#if copyStatus}<span class="copy-status">{copyStatus}</span>{/if}
         </div>
       </div>
@@ -481,6 +513,13 @@
   }
   button.copy { background: rgba(150 120 240 / 0.18); border-color: rgba(150 120 240 / 0.5); }
   button.copy:hover:not(:disabled) { background: rgba(150 120 240 / 0.3); }
+  button.save {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border-color: transparent;
+    color: #fff;
+    font-weight: 600;
+  }
+  button.save:hover:not(:disabled) { filter: brightness(1.1); }
 
   .status { font-size: 0.78rem; opacity: 0.6; font-variant-numeric: tabular-nums; }
   .err {
