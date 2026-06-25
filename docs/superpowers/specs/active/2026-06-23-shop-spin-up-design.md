@@ -11,7 +11,10 @@ last_triaged: 2026-06-23
 # Shop Spin-Up — Design Spec
 
 **Date:** 2026-06-23
-**Status:** Draft (awaiting review)
+**Status:** Phase A built + verified 2026-06-24 (rename → /shop, nav, gate, coming-soon
++ waitlist, /store→/shop redirects, webhook product-sync). Remaining: credentialed Stripe
+config + first real product + deploy (Phase B4). `npm run check`, functions build, and a
+full `npm run build` all green; routes verified (/shop 200, /store/* 308).
 
 ---
 
@@ -45,7 +48,7 @@ covers only the delta to spin it up.
 |---|---|
 | Gate | Admin sees the live shop (incl. drafts); public sees Coming Soon. Same URL. |
 | Brand + URL | Unify fully on **Shop** / `/shop`. Rename routes, feature folder, page components, and cloud-function redirect URLs. Add `/store → /shop` redirect. |
-| Product authoring | **Thin in-app admin "Products" tab**, built from existing admin-form primitives, plus a cloud function that creates the Stripe Product + Price so price IDs aren't hand-copied. |
+| Product authoring | **Stripe Dashboard is the product editor** (decision revised 2026-06-24 after audit + research — see Revision below). Products are authored in Stripe; a sync mirrors them into Firestore. No in-app CRUD editor. |
 | Coming Soon | On-brand placeholder **with a "notify me" email capture** → Firestore waitlist. |
 
 ## Philosophy / Tone
@@ -111,10 +114,13 @@ once launched.
 **A6. Coming Soon + waitlist.** New `ShopComingSoon.svelte` in the shop feature, built
 from existing app primitives (text input + button; **no checkbox** per `no-checkboxes`).
 Content: headline, one line naming what's coming (guides, Choreo cards, materials),
-a "notify me" email field, and a link back to the guide/app. On submit, write
-`{ email, createdAt }` to Firestore `shop_waitlist/{autoId}`. Reuse the existing
-Firestore write pattern; validate email client-side; show a confirmed state after
-submit (reserve its space — `no-layout-shift`).
+a "notify me" email field. **No secondary "back" link** — the page carries `SiteHeader`
+(logo → home + full nav), so a footer back-link is redundant and dilutes the single
+email action; a coming-soon page has one job (research 2026-06-24). On submit, write
+`{ email, createdAt, source }` to Firestore `shop_waitlist/{autoId}` via the reusable
+`joinWaitlist(email, source)` helper (the `source` tag lets one collection serve multiple
+announce-me forms). Validate email client-side; show a confirmed state after submit
+(reserve its space — `no-layout-shift`).
 
 **A7. Security rules** (`firestore.rules`):
 - `products`: public read, admin write (already specced; verify present).
@@ -123,37 +129,54 @@ submit (reserve its space — `no-layout-shift`).
   (`request.resource.data.email is string` and size limits); `allow read` admin-only;
   no update/delete from clients.
 
-### Phase B — Add products in dev (the editor)
+### Phase B — Stripe Dashboard is the product editor (revised 2026-06-24)
 
-**B1. Product model extension** (`product.ts`). Today `type` is
-`'physical-deck' | 'sampler-pack' | 'digital'`. Austen sells guides + materials too.
-Extend to `'physical-deck' | 'sampler-pack' | 'digital' | 'guide' | 'material'` and make
-`cardCount` optional (only decks have it; `deckId` is already optional). Add nothing
-speculative beyond what the editor writes.
+**Why revised:** an audit + three research passes (commerce platform / SvelteKit forms /
+storefront UI) concluded the in-app CRUD editor was the wrong build — it duplicates
+Stripe's mature product catalog UI and creates two-system drift (a Firestore product
+authored independently of Stripe, left with an empty/placeholder `stripePriceId`, is not
+purchasable). Verified infra (ground-truth queries 2026-06-24):
+- `firebase.json` already installs `stripe/firestore-stripe-payments@0.3.4` (powers
+  premium subs via `customers/{uid}/subscriptions` + `ext-…-createPortalLink`).
+- The `products` collection currently holds **one hand-seeded deck** with
+  `stripePriceId: "price_placeholder"` (custom flat schema, not Stripe-synced, not
+  purchasable).
 
-**B2. Admin "Products" tab.** Add `{ id: "products", label: "Products",
-icon: "fa-bag-shopping", … }` to `ADMIN_TABS` (`tab-definitions.ts`). Build the editor in
-the admin feature following the **existing admin CRUD pattern** (`AnnouncementForm.svelte`
-+ `AnnouncementManagement.svelte` are the precedent — list + form, not a new pattern):
-- **List:** all products (`loadAllProducts()`), each row shows name, type, price,
-  status badge, sortOrder, edit action.
-- **Form:** name, description, type (use `SegmentedControl` for the single-select type
-  and for status `draft | active | sold-out` — per `chip-primitives`, never a dropdown
-  or checkbox), price (dollars in the UI, stored as cents), optional cardCount, optional
-  deckId, sortOrder, and image upload.
-- **Images:** upload to Firebase Storage reusing the existing upload pattern
-  (`profile-picture-manager.ts` / `image-stager.ts` are the precedents) → write the
-  resulting URL(s) to `coverImageUrl` / `previewImageUrls`.
-- **Write:** create/update the `products/{id}` doc (admin-only per rules).
+So products get authored in the **Stripe Dashboard** (best-in-class editor, $0 extra,
+keeps the existing public `createMerchCheckout` and lowest lock-in — see the design spec
+`2026-06-23` research notes), and a sync mirrors them into Firestore for the storefront.
 
-**B3. Stripe product/price cloud function.** New callable
-`upsertMerchProductPrice({ name, description, unitAmountCents, productId? })` in
-`firebase-functions/src/merch/` that creates (or updates) a Stripe **Product** + **Price**
-via the Stripe SDK (already a dependency in `createMerchCheckout.ts`) and returns
-`{ stripeProductId, stripePriceId }`. The admin form calls it when price/name change, then
-stores `stripePriceId` on the Firestore doc. This is what keeps checkout working
-(`createMerchCheckout` reads `product.stripePriceId`) without anyone hand-copying IDs from
-the Stripe dashboard. Guard the callable to admins (`context.auth.token.admin === true`).
+**B1. Product model** (`product.ts`). Keep the `type` extension to
+`'physical-deck' | 'sampler-pack' | 'digital' | 'guide' | 'material'` and optional
+`cardCount` (these now come from Stripe product **metadata**). `stripePriceId` is the
+product's active Stripe price.
+
+**B2. Sync: extend the existing webhook (chosen over the extension's product-sync).**
+Add `product.created/updated`, `price.created/updated` handling to the **existing**
+`firebase-functions/src/merch/handleMerchWebhook.ts` to upsert a flat Firestore `products`
+doc from each Stripe product + its default price: `{ name, description, price (unit_amount),
+stripePriceId, status (active→active / archived→draft), type/cardCount/deckId/sortOrder
+from product metadata, coverImageUrl from product images }`.
+- Rationale for extending the webhook rather than turning on the installed extension's
+  product-sync: the extension keys products by Stripe id with a `prices` **subcollection**
+  and its **checkout requires an auth'd user** (`customers/{uid}/checkout_sessions`) — which
+  fights this store's deliberately **public, no-auth** `createMerchCheckout`. Extending the
+  webhook keeps the flat schema + the public checkout **unchanged** (~40 lines, reuses the
+  Stripe SDK + webhook already present). Stripe Dashboard is still the editor either way.
+
+**B3. Storefront stays as-is.** `createMerchCheckout` already reads
+`products/{id}.stripePriceId` — unchanged. `loadActiveProducts()` (public) /
+`loadAllProducts()` (admin) unchanged. Delete the one placeholder seed once a real Stripe
+product syncs in.
+
+**B4. Credentialed steps (Austen / Firebase+Stripe access — physical blockers):**
+1. In Stripe Dashboard, forward `product.created`, `product.updated`, `price.created`,
+   `price.updated` events to the existing `handleMerchWebhook` endpoint (the
+   `STRIPE_WEBHOOK_SECRET` is already set — subs work).
+2. Create the first real product(s) in the Stripe Dashboard (name, price, images,
+   metadata: `type`, `cardCount`, `deckId`, `sortOrder`). Or author via the Stripe MCP
+   together. The webhook syncs them into Firestore; the admin shop view shows them.
+3. Deploy: `firebase deploy --only functions:handleMerchWebhook,firestore:rules`.
 
 ---
 
@@ -170,22 +193,25 @@ table above, with import-path fixups across the codebase.
 - `src/lib/features/shop/services/product-loader.ts` — add `loadAllProducts()`. *(extend
   existing module)*
 - `firebase-functions/src/merch/createMerchCheckout.ts` — `/store` → `/shop` URLs.
-- `firestore.rules` — `shop_waitlist` rules; verify `products`/`orders` rules present.
-- `src/lib/shared/navigation/config/tab-definitions.ts` — add `products` to `ADMIN_TABS`.
-- `src/lib/features/shop/domain/models/product.ts` — extend `type`, optional `cardCount`.
+- `firebase-functions/src/merch/handleMerchWebhook.ts` — add `product.*`/`price.*` event
+  handling to sync Stripe products → Firestore (B2). *(extend existing webhook)*
+- `firestore.rules` — `shop_waitlist` rules (done); `products`/`orders` rules verified present.
+- `src/lib/features/shop/domain/models/product.ts` — extend `type`, optional `cardCount` (done).
 
 **Create (each justified — `never-hand-roll`):**
 - `src/lib/features/shop/components/ShopComingSoon.svelte` — grep found no reusable
   coming-soon / waitlist primitive (only unrelated "coming soon" copy strings); built
-  from existing input/button primitives.
+  from existing input/button primitives. *(done)*
+- `src/lib/features/shop/services/waitlist.ts` — `joinWaitlist(email, source)` Firestore
+  write. *(done)*
 - `(public)/store/+page.ts` (+ `[productId]`, `success`) — 308 redirect shims to `/shop`.
-- Admin Products editor component(s) in `features/admin/components/` (e.g.
-  `ProductManagement.svelte` + `ProductForm.svelte`) — follows the existing
-  `Announcement*` admin-CRUD precedent; no off-the-shelf component authors this
-  `products` + Stripe-price schema.
-- `firebase-functions/src/merch/upsertMerchProductPrice.ts` — no existing function
-  creates Stripe products/prices; reuses the Stripe SDK already imported by
-  `createMerchCheckout.ts`.
+
+**Deleted (reversal of the in-app-editor approach, 2026-06-24):** the hand-rolled
+`ProductForm.svelte`, `ProductManagement.svelte`, `product-admin.ts`,
+`product-image-uploader.ts`, and the `upsertMerchProductPrice` function are NOT built —
+Stripe Dashboard + the webhook sync replace them.
+
+**`loadAllProducts()`** stays in `product-loader.ts` (admin store view of drafts). *(done)*
 
 ---
 

@@ -39,6 +39,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/profile/",
   "/demo",
   "/store",
+  "/shop",
   "/about",
   "/delete-account",
   "/notation",

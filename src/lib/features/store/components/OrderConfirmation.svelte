@@ -1,10 +1,8 @@
 <!-- src/lib/features/store/components/OrderConfirmation.svelte -->
 <script lang="ts">
-  import StoreHeader from "./StoreHeader.svelte";
 </script>
 
 <div class="confirmation-page">
-  <StoreHeader />
   <main class="confirmation-content">
     <div class="success-icon">
       <i class="fas fa-check-circle" aria-hidden="true"></i>
@@ -12,14 +10,16 @@
     <h1>Order Confirmed</h1>
     <p>Your deck is on its way. You'll get a receipt from Stripe at the email you provided.</p>
     <p class="note">Orders are packed and shipped within a few business days.</p>
-    <a href="/store" class="back-link">Back to Store</a>
+    <a href="/shop" class="back-link">Back to Shop</a>
   </main>
 </div>
 
 <style>
   .confirmation-page {
     min-height: 100vh;
-    background: var(--theme-panel-bg, #0a0a14);
+    padding-top: 64px; /* clear the fixed SiteHeader */
+    /* Transparent so the /shop cosmic background shows through (no dark panel). */
+    background: transparent;
     color: var(--theme-text, #ffffff);
   }
 

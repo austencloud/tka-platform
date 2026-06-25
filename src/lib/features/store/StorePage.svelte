@@ -6,8 +6,11 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { onMount } from "svelte";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
-  import StoreHeader from "./components/StoreHeader.svelte";
   import ProductCard from "./components/ProductCard.svelte";
+
+  // showDrafts: the admin "play with it" view loads every product including
+  // drafts and sold-out. Public buyers get active-only.
+  let { showDrafts = false }: { showDrafts?: boolean } = $props();
 
   const state = createStoreState(
     getProductLoader(),
@@ -17,18 +20,16 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   setStoreContext({ state });
 
   onMount(() => {
-    state.loadProducts();
+    state.loadProducts(showDrafts);
   });
 </script>
 
 <div class="store-page">
-  <StoreHeader />
-
   <main class="store-content">
     <section class="hero">
-      <h1>TKA Card Decks</h1>
+      <h1>Shop</h1>
       <p class="hero-subtitle">
-        Professional printed cards. Sleeve-compatible. Tradeable. Collectible.
+        Printed Choreo card decks, guides, and flow props. Sleeve-compatible, tradeable, collectible.
       </p>
       <p class="hero-note">
         You can always <a href="/">print your own for free</a>. These are the real deal.
@@ -54,7 +55,9 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
 <style>
   .store-page {
     min-height: 100vh;
-    background: var(--theme-panel-bg, #0a0a14);
+    padding-top: 64px; /* clear the fixed SiteHeader */
+    /* Transparent so the /shop cosmic BackgroundHost shows through. */
+    background: transparent;
     color: var(--theme-text, #ffffff);
   }
 

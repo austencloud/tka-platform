@@ -123,6 +123,7 @@
     { label: "Roots", href: "/roots", icon: "fa-seedling" },
     { label: "Guide", href: "/guide", icon: "fa-book-open" },
     { label: "Support", href: "/support", icon: "fa-heart" },
+    { label: "Shop", href: "/shop", icon: "fa-bag-shopping" },
   ];
 
   function isActive(href: string): boolean {
@@ -170,7 +171,7 @@
 
 <header class:scrolled>
   <div class="inner">
-    <a href="/" class="logo" aria-label="The Kinetic Alphabet — Home">
+    <a href="/" class="logo" aria-label="The Kinetic Alphabet, Home">
       <span class="logo-text">TKA</span>
     </a>
 

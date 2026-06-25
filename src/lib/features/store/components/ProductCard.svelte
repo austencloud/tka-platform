@@ -14,7 +14,7 @@
   );
 </script>
 
-<a href="/store/{product.id}" class="product-card">
+<a href="/shop/{product.id}" class="product-card">
   <CardMockupPreview
     coverImageUrl={product.coverImageUrl}
     productName={product.name}

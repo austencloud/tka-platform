@@ -42,8 +42,8 @@ export const createMerchCheckout = functions.https.onCall(
       mode: "payment",
       line_items: [{ price: product.stripePriceId, quantity: 1 }],
       shipping_address_collection: { allowed_countries: ["US"] },
-      success_url: `${baseUrl}/store/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/store/${productId}`,
+      success_url: `${baseUrl}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/shop/${productId}`,
       metadata: { productId, productName: product.name },
     });
 

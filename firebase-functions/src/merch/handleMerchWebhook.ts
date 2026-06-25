@@ -71,6 +71,44 @@ export const handleMerchWebhook = functions.https.onRequest(
       console.log(`Order created for product ${session.metadata.productId}`);
     }
 
+    // Product sync: the Stripe Dashboard is the product editor. When a product is
+    // created/edited there, mirror it into Firestore so the storefront + the
+    // public createMerchCheckout (which reads products/{id}.stripePriceId) keep
+    // working unchanged. TKA-specific fields ride in Stripe product metadata.
+    if (event.type === "product.created" || event.type === "product.updated") {
+      const product = event.data.object as Stripe.Product;
+      const meta = product.metadata || {};
+      const doc: Record<string, unknown> = {
+        name: product.name,
+        description: product.description ?? "",
+        status: product.active ? "active" : "draft",
+        coverImageUrl: product.images?.[0] ?? "",
+        previewImageUrls: product.images ?? [],
+        type: meta.type || "physical-deck",
+        sortOrder: meta.sortOrder ? Number(meta.sortOrder) : 0,
+      };
+      if (meta.cardCount) doc.cardCount = Number(meta.cardCount);
+      if (meta.deckId) doc.deckId = meta.deckId;
+      // merge: preserve stripePriceId/price set by price.* events (any order).
+      await admin.firestore().collection("products").doc(product.id).set(doc, { merge: true });
+      console.log(`Synced product ${product.id} (${product.name})`);
+    }
+
+    // Price sync: attach the active price to its product doc so checkout can use it.
+    if (event.type === "price.created" || event.type === "price.updated") {
+      const price = event.data.object as Stripe.Price;
+      const productId =
+        typeof price.product === "string" ? price.product : price.product.id;
+      if (price.active) {
+        await admin
+          .firestore()
+          .collection("products")
+          .doc(productId)
+          .set({ stripePriceId: price.id, price: price.unit_amount ?? 0 }, { merge: true });
+        console.log(`Synced price ${price.id} -> product ${productId}`);
+      }
+    }
+
     res.status(200).send("OK");
   }
 );

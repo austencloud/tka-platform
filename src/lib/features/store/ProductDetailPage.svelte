@@ -6,7 +6,6 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { onMount } from "svelte";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
-  import StoreHeader from "./components/StoreHeader.svelte";
   import CardMockupPreview from "./components/CardMockupPreview.svelte";
   import SampleCardCarousel from "./components/SampleCardCarousel.svelte";
   import BuyButton from "./components/BuyButton.svelte";
@@ -36,8 +35,6 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
 </script>
 
 <div class="detail-page">
-  <StoreHeader />
-
   <main class="detail-content">
     {#if state.isLoading}
       <div class="loading">Loading product details...</div>
@@ -54,14 +51,19 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
         </div>
 
         <div class="info-column">
-          <a href="/store" class="back-link">
+          <a href="/shop" class="back-link">
             <i class="fas fa-arrow-left" aria-hidden="true"></i> All Products
           </a>
           <h1>{product.name}</h1>
-          <p class="meta">{product.cardCount} cards, poker size (2.5" x 3.5")</p>
+          {#if product.cardCount}
+            <p class="meta">{product.cardCount} cards, poker size (2.5" x 3.5")</p>
+          {/if}
           <p class="description">{product.description}</p>
           <p class="price">{formattedPrice}</p>
           <BuyButton productId={product.id} />
+          {#if state.checkoutError}
+            <p class="checkout-error" role="alert">{state.checkoutError}</p>
+          {/if}
           <p class="print-note">
             Or <a href="/">sign in</a> and print your own for free.
           </p>
@@ -81,7 +83,9 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
 <style>
   .detail-page {
     min-height: 100vh;
-    background: var(--theme-panel-bg, #0a0a14);
+    padding-top: 64px; /* clear the fixed SiteHeader */
+    /* Transparent so the /shop cosmic background shows through (no dark panel). */
+    background: transparent;
     color: var(--theme-text, #ffffff);
   }
 
@@ -147,6 +151,13 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
     margin-top: 12px;
     text-align: center;
+  }
+
+  .checkout-error {
+    margin-top: 12px;
+    text-align: center;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--semantic-error, #ef4444);
   }
 
   .print-note a {

@@ -85,10 +85,6 @@
         </p>
       {/if}
     </div>
-
-    <a class="back" href="/guide/level-1">
-      <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to the guide
-    </a>
   </div>
 </section>
 
@@ -99,7 +95,8 @@
     align-items: center;
     justify-content: center;
     padding: 96px 24px 64px;
-    background: radial-gradient(120% 90% at 50% 0%, #1d1d3a 0%, #14142b 55%, #0f0f22 100%);
+    /* Transparent so the page's cosmic BackgroundHost shows through. */
+    background: transparent;
     color: var(--theme-text, #fff);
   }
 
@@ -252,21 +249,6 @@
     font-size: 1.2rem;
   }
 
-  .back {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 36px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    text-decoration: none;
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 500;
-    transition: color 0.2s ease;
-  }
-  .back:hover {
-    color: #fff;
-  }
-
   .sr-only {
     position: absolute;
     width: 1px;
@@ -290,8 +272,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .text-input,
-    .notify-btn,
-    .back {
+    .notify-btn {
       transition: none;
     }
   }

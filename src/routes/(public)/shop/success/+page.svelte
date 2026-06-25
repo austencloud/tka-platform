@@ -1,4 +1,5 @@
 <script lang="ts">
+  // Nav + cosmic background come from +layout.svelte.
   import OrderConfirmation from "$lib/features/store/components/OrderConfirmation.svelte";
 </script>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  // Nav + cosmic background come from +layout.svelte.
   import { page } from "$app/state";
   import ProductDetailPage from "$lib/features/store/ProductDetailPage.svelte";
 
@@ -6,7 +7,7 @@
 </script>
 
 <svelte:head>
-  <title>Store | The Kinetic Alphabet</title>
+  <title>Shop | The Kinetic Alphabet</title>
 </svelte:head>
 
 <ProductDetailPage {productId} />

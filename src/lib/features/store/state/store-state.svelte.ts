@@ -2,6 +2,7 @@ import type { Product } from "../domain/models/product";
 
 interface ProductLoader {
   loadActiveProducts(): Promise<Product[]>;
+  loadAllProducts(): Promise<Product[]>;
   loadProduct(productId: string): Promise<Product | null>;
 }
 
@@ -18,12 +19,19 @@ export function createStoreState(
   let isLoading = $state(false);
   let isCheckingOut = $state(false);
   let error = $state<string | null>(null);
+  // Separate from `error` (which is a load error that replaces the page) so a
+  // failed checkout shows inline by the Buy button instead of blanking the product.
+  let checkoutError = $state<string | null>(null);
 
-  async function loadProducts() {
+  // includeAll = admin "play with it" view: drafts + sold-out too. Public
+  // buyers always get the active-only list.
+  async function loadProducts(includeAll = false) {
     isLoading = true;
     error = null;
     try {
-      products = await productLoader.loadActiveProducts();
+      products = includeAll
+        ? await productLoader.loadAllProducts()
+        : await productLoader.loadActiveProducts();
     } catch (e) {
       error = "Failed to load products. Please try again.";
       console.error("[Store] Failed to load products:", e);
@@ -50,12 +58,12 @@ export function createStoreState(
 
   async function startCheckout(productId: string) {
     isCheckingOut = true;
-    error = null;
+    checkoutError = null;
     try {
       const url = await checkoutCreator.createCheckoutSession(productId);
       window.location.href = url;
     } catch (e) {
-      error = "Failed to start checkout. Please try again.";
+      checkoutError = "Checkout isn't available yet. Try again later.";
       console.error("[Store] Checkout failed:", e);
     } finally {
       isCheckingOut = false;
@@ -68,6 +76,7 @@ export function createStoreState(
     get isLoading() { return isLoading; },
     get isCheckingOut() { return isCheckingOut; },
     get error() { return error; },
+    get checkoutError() { return checkoutError; },
     loadProducts,
     loadProduct,
     startCheckout,
