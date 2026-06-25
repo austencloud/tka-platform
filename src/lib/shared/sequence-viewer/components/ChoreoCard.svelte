@@ -103,6 +103,9 @@
     showHighlight?: boolean;               // Enable highlighting (default: false)
     // Click handler for step seeking
     onStepClick?: (stepIndex: number) => void;  // 0-indexed step that was clicked
+    // When provided, the QR's center play badge becomes clickable (interactive
+    // viewer): click switches to the 2D animation view and starts playback.
+    onQrPlayClick?: () => void;
     // When true, the start-position cell is clickable too (seeks to start, index -1)
     clickableStart?: boolean;
     // Layout override
@@ -146,6 +149,7 @@
     highlightedStepIndex = null,
     showHighlight = false,
     onStepClick,
+    onQrPlayClick,
     clickableStart = false,
     columnCount = null,
     forceContain = false,
@@ -1536,6 +1540,7 @@
         {bluePropType}
         {redPropType}
         {onStepClick}
+        {onQrPlayClick}
         {clickableStart}
         onGridScrollRefChange={(el) => { gridScrollRef = el; }}
         {showStepNumbers}

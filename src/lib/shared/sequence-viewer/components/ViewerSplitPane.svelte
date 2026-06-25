@@ -91,6 +91,9 @@
     onFocusPane: (pane: "animation" | "image") => void;
     onUnfocusPane: () => void;
     onStepClick: (stepIndex: number) => void;
+    /** Provided only by the interactive viewer: click the QR play badge in a
+        Card pane to switch to 2D animation and start playback. */
+    onQrPlayClick?: () => void;
     onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
     onChoreoCardContextMenu?: (x: number, y: number) => void;
     onPlaybackToggle?: () => void;
@@ -141,6 +144,7 @@
     onRenderProgress,
     onUnfocusPane,
     onStepClick,
+    onQrPlayClick,
     onCanvasReady,
     onChoreoCardContextMenu,
     onPlaybackToggle,
@@ -534,6 +538,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
           highlightedStepIndex={playback.highlightedStepIndex}
           showHighlight={playback.isPlaying || playback.highlightedStepIndex !== null}
           {onStepClick}
+          {onQrPlayClick}
           clickableStart
           {onRenderProgress}
           showWord={imageComposition.showWord}
@@ -662,6 +667,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
             highlightedStepIndex={layout.focusedPane === "image" ? null : playback.highlightedStepIndex}
             showHighlight={layout.focusedPane === "image" ? false : (playback.isPlaying || playback.highlightedStepIndex !== null)}
             {onStepClick}
+            {onQrPlayClick}
             clickableStart
             {onRenderProgress}
             showWord={imageComposition.showWord}

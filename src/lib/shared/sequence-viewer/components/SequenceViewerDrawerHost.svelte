@@ -152,6 +152,15 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     }
   }
 
+  // QR play badge (Card mode): switch to the 2D animation view and start
+  // playback. handlePlaybackToggle is a toggle, so read isPlayingLocal at click
+  // time and only start when paused — never pauses an already-running anim.
+  function playFromQr(ctx: OrchestratorContext) {
+    const wasPlaying = ctx.isPlayingLocal;
+    selectViewerMode(ctx, 'animation');
+    if (!wasPlaying) ctx.handlePlaybackToggle();
+  }
+
 
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
@@ -509,6 +518,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       onFocusPane={ctx.enterEditMode}
                       onUnfocusPane={ctx.exitEditMode}
                       onStepClick={ctx.handleStepClick}
+                      onQrPlayClick={() => playFromQr(ctx)}
                       onCanvasReady={ctx.handleCanvasReady}
                       {rerenderTrigger}
                       onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}

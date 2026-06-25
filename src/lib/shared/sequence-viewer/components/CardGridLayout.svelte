@@ -81,6 +81,9 @@
     bluePropType: PropType | undefined;
     redPropType: PropType | undefined;
     onStepClick: ((stepIndex: number) => void) | undefined;
+    /** When provided, render a clickable play badge over the QR (interactive
+        viewer only). Click switches to the 2D animation view and starts play. */
+    onQrPlayClick?: () => void;
     /** When true, the start-position cell is clickable too (calls onStepClick(-1)). */
     clickableStart?: boolean;
     onGridScrollRefChange: (el: HTMLDivElement | undefined) => void;
@@ -125,6 +128,7 @@
     bluePropType,
     redPropType,
     onStepClick,
+    onQrPlayClick,
     clickableStart = false,
     onGridScrollRefChange,
     showStepNumbers,
@@ -210,6 +214,26 @@
   {/if}
 {/snippet}
 
+{#snippet qrImageBlock()}
+  {#if onQrPlayClick}
+    <!-- Interactive viewer: wrap the QR so a transparent button can sit over
+         the baked-in play badge (centered 25%, where modules are cleared). The
+         <img> underneath is untouched and still scannable. -->
+    <div class="qr-play-wrapper" style="width:{qrScalePct};height:{qrScalePct}">
+      <img class="qr-code-image qr-fill" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
+      <button
+        type="button"
+        class="qr-play-hit"
+        onclick={onQrPlayClick}
+        aria-label="Play in 2D"
+        title="Play in 2D"
+      ></button>
+    </div>
+  {:else}
+    <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" style="width:{qrScalePct};height:{qrScalePct}" />
+  {/if}
+{/snippet}
+
 {#if hasMixedDurations && durationRows.length > 0}
   <!-- Duration-aware layout: start position as fixed column barrier, step rows to the right -->
   {@const startCell = cells.find(c => c.index === -1)}
@@ -223,7 +247,7 @@
             {#if showQRCode}
               <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: scaleDuration }}>
                 {#if qrDataUrl}
-                  <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" style="width:{qrScalePct};height:{qrScalePct}" />
+                  {@render qrImageBlock()}
                 {/if}
               </div>
             {/if}
@@ -305,7 +329,7 @@
           {@render startCellBlock(startCell)}
           {#if showQRCode && qrDataUrl}
             <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: scaleDuration }}>
-              <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" style="width:{qrScalePct};height:{qrScalePct}" />
+              {@render qrImageBlock()}
             </div>
           {/if}
         </div>
@@ -466,7 +490,7 @@
           transition:scale|local={{ duration: scaleDuration, easing: cubicOut }}
         >
           <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode}>
-            <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" style="width:{qrScalePct};height:{qrScalePct}" />
+            {@render qrImageBlock()}
           </div>
         </div>
       {/if}
@@ -578,7 +602,7 @@
         transition:scale|local={{ duration: scaleDuration, easing: cubicOut }}
       >
         <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode}>
-          <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" style="width:{qrScalePct};height:{qrScalePct}" />
+          {@render qrImageBlock()}
         </div>
       </div>
     {/if}
@@ -828,6 +852,72 @@
     object-fit: contain;
     -webkit-user-drag: none;
     user-select: none;
+  }
+
+  /* Interactive viewer only: clickable play badge over the QR. The wrapper
+     carries the QR's rendered size (qrScalePct of the cell) so the overlay
+     button can be sized as a fraction of the QR image, not the whole cell. */
+  .qr-play-wrapper {
+    position: relative;
+    display: block;
+  }
+
+  .qr-code-image.qr-fill {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Transparent hit area over the baked-in play triangle (centered 25% of the
+     QR). Floored at the 44px touch-target minimum; the button is transparent,
+     so even if it overlaps modules at small sizes the on-screen QR a phone
+     scans is unaffected. */
+  .qr-play-hit {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 25%;
+    height: 25%;
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    transform: translate(-50%, -50%);
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Affordance: a soft accent ring pops in on hover/focus to signal the badge
+     does something. The badge underneath is the play icon — no second glyph. */
+  .qr-play-hit::after {
+    content: "";
+    position: absolute;
+    inset: -16%;
+    border-radius: 50%;
+    border: 2px solid var(--theme-accent, #6366f1);
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
+    opacity: 0;
+    transform: scale(0.82);
+    transition: opacity 160ms ease, transform 160ms ease;
+    pointer-events: none;
+  }
+
+  .qr-play-hit:hover::after,
+  .qr-play-hit:focus-visible::after {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .qr-play-hit:focus-visible {
+    outline: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .qr-play-hit::after {
+      transition: none;
+    }
   }
 
   /* Mandala fill cell - sits in empty col-0 cells and shows blue/red/full path viz. */
