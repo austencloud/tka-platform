@@ -1,7 +1,7 @@
 # Gallery Prefetch — Staleness Gate + Bounded Idle Callback
 
 **Date:** 2026-06-24
-**Status:** Design approved, pending implementation plan
+**Status:** Implemented + runtime-verified 2026-06-24. See **Verification & Corrections** at the end — verification corrected two claims in this spec (the prefetch is app-mode-only; the idle-starvation evidence was measured on the wrong page).
 **Author:** Claude (Opus 4.8) with Austen
 
 ## Problem
@@ -19,12 +19,19 @@ layout's `onMount`. Two perf defects were found while verifying PR #17
 unconditionally — no freshness check, no throttle, no incremental watermark.
 
 PR #17 only skips this on *constrained* connections (`skipNetworkSync`). On every
-normal boot it still re-pulls the whole gallery even when nothing changed since
-the last sync. Cost: ~461 Firestore reads + a multi-MB download per boot, per
-user — real bandwidth, real Firestore read billing, real main-thread time
-competing with the foreground.
+normal **app-mode** boot it still re-pulls the whole gallery even when nothing
+changed since the last sync. Cost: ~461 Firestore reads + a multi-MB download per
+boot, per user — real bandwidth, real Firestore read billing, real main-thread
+time competing with the foreground. (The prefetch runs only in app mode, not on
+the marketing landing routes — see Verification & Corrections.)
 
 ### Defect 2 — boot-window idle starvation (the latency)
+
+> **Corrected after verification:** the measurements below were taken on the
+> landing route `/`, where the prefetch does **not** run (app-mode only). They do
+> not characterize the prefetch's actual scheduling. Fix ② (`{ timeout: 2000 }`)
+> was kept as a harmless precautionary bound for slow devices, not as a
+> proven-necessary fix. See Verification & Corrections.
 
 The prefetch is scheduled with `requestIdleCallback(prefetchBrowseData)` — **no
 `timeout`**. During the boot/load window the main thread is saturated (module
@@ -195,3 +202,51 @@ Low.
 | `tests/unit/gallery-prefetch-staleness.test.ts` (new) | Unit tests for `isSyncStale()` |
 
 No new dependencies, no schema change.
+
+## Verification & Corrections (2026-06-24)
+
+Implemented and runtime-verified the same day. Verification corrected two claims
+made earlier in this spec; recorded here for historical accuracy.
+
+### What was verified (and how)
+
+The gate runs in **app mode only** — `detectSiteMode()` (`src/config/domains.ts`)
+returns `landing` for `/` and `/landing` (and the public-path prefixes), and the
+gallery prefetch lives in the app-mode branch of `+layout.svelte`'s `onMount`.
+The marketing landing route never schedules it. To exercise it, app mode was
+forced with `?mode=app` on an isolated dev server, and a temporary diagnostic
+log printed the gate decision. Three states confirmed:
+
+| Cache state | `isSyncStale` | `backgroundSync` | `lastSyncedAt` |
+|---|---|---|---|
+| empty (cold) | `true` | fires | set to now |
+| fresh (< 15 min) | `false` | skipped | unchanged |
+| stale (> 15 min) | `true` | fires | advanced to now |
+
+Captured log lines: `…skipNetworkSync=false isSyncStale=false → backgroundSync=false`
+(fresh) and `…isSyncStale=true → backgroundSync=true` (stale/cold). The temporary
+log was reverted after verification.
+
+### Correction 1 — the prefetch is app-mode only
+
+This spec's Problem section implied the prefetch runs on "every boot." It runs on
+every **app-mode** boot (e.g. `/create`, `/browse`, `/train`), never on the
+marketing landing routes. The TTL gate's value stands: users reloading app routes
+repeatedly were re-downloading the whole gallery each time.
+
+### Correction 2 — the idle-starvation evidence was off-page
+
+The original "8–27s idle starvation" measurements were taken on `/`, where the
+prefetch is not scheduled at all — so they do not describe the prefetch's real
+timing. In app mode on a warm dev server the prefetch fired at ~3.5s with idle
+callbacks arriving every ~1s (no severe starvation observed). Fix ②
+(`{ timeout: 2000 }`) was kept as a cheap, harmless upper bound that matters most
+on slow devices during app boot (PR #17's audience), but it is **not** an
+evidence-backed fix on tested hardware.
+
+### Correction 3 — the originating symptom was not a bug
+
+The "27h-stale `lastSyncedAt` on prod `/`" that triggered this work is expected
+landing-mode behavior (the prefetch never runs on `/`), not a defect. The
+investigation still surfaced the genuine win (the app-mode every-boot full
+re-download), which is what fix ① addresses.
