@@ -129,6 +129,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     invokeGatedAction: (type: PendingActionType, realHandler: (() => void) | (() => Promise<void>) | undefined) => void;
     handleUnifiedDarkModeToggle: () => void;
     handlePracticeStart: () => void;
+    handlePracticeAdvance: () => void;
     handlePracticeStop: () => void;
     onClose: () => void;
     stepHalfBeatBackward: () => void;
@@ -1186,8 +1187,17 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     invokeGatedAction: (type: PendingActionType, realHandler: (() => void) | (() => Promise<void>) | undefined) =>
       authQueue.invokeGatedAction(type, realHandler, sequence),
     handleUnifiedDarkModeToggle,
-    handlePracticeStart: () => playback.handlePracticeStart(sequence),
-    handlePracticeStop: () => playback.handlePracticeStop(sequence),
+    handlePracticeStart: () => {
+      // Practice needs a live animation to follow. If the current view can't
+      // show one (art-only / card / video), drop into Side-by-Side first.
+      const m = viewerState.viewerMode;
+      if (m === 'card' || m === 'mandala' || m === 'tunnel' || m === 'videos') {
+        viewerState.setViewerMode('split');
+      }
+      playback.handlePracticeStart();
+    },
+    handlePracticeAdvance: () => playback.handlePracticeAdvance(),
+    handlePracticeStop: () => playback.handlePracticeStop(),
     onClose: handleClose,
     stepHalfBeatBackward: playback.stepHalfBeatBackward,
     stepHalfBeatForward: playback.stepHalfBeatForward,

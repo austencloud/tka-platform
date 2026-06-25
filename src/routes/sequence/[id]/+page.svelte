@@ -549,10 +549,12 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
           isOwned={ctx.isOwned}
           isLoggedIn={ctx.isLoggedIn}
           practiceActive={ctx.practiceActive}
+          practiceConfig={ctx.practiceState.userConfig}
           onFavorite={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
           onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
           onEdit={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
           onPracticeToggle={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
+          onPracticeConfigUpdate={ctx.practiceState.updateConfig}
           onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
           onPublish={() => ctx.invokeGatedAction("publish", ctx.handlePublishAction)}
           onUnpublish={ctx.handleUnpublishAction}
@@ -717,6 +719,7 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
           <PracticeProgressIndicator
             progress={ctx.practiceState.progress}
             onStop={ctx.handlePracticeStop}
+            onAdvance={ctx.handlePracticeAdvance}
             variant="floating"
           />
         {/if}

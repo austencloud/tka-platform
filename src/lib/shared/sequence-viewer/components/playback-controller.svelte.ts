@@ -13,7 +13,6 @@
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { AnimationPanelState, AnimationStateKey, PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -187,7 +186,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     _playbackController.seekToStep(targetStep);
   }
 
-  function handlePracticeStart(sequence: SequenceData | null) {
+  function handlePracticeStart() {
     if (!_playbackController) {
       showToast("Animation not ready yet. Wait for it to load.", "info");
       return;
@@ -202,6 +201,8 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     handleBpmChange(startBpm);
 
     _playbackController.onLoopComplete(() => {
+      // Auto mode may return a new BPM here; manual mode returns null and just
+      // raises readyToAdvance, which the progress pill surfaces as "Speed Up".
       const newBpm = practiceOrchestrator.onLoopComplete();
       practiceState.updateProgress(practiceOrchestrator.getProgress());
 
@@ -211,7 +212,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
       }
 
       if (!practiceOrchestrator.isActive()) {
-        handlePracticeStop(sequence);
+        handlePracticeStop();
       }
     });
 
@@ -221,7 +222,25 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     }
   }
 
-  function handlePracticeStop(sequence: SequenceData | null) {
+  /** Manual progression: the user tapped "Speed Up". Bump one level. */
+  function handlePracticeAdvance() {
+    if (!_playbackController) return;
+
+    const newBpm = practiceOrchestrator.advanceLevel();
+    practiceState.updateProgress(practiceOrchestrator.getProgress());
+
+    if (newBpm !== null) {
+      handleBpmChange(newBpm);
+      _hapticService?.trigger("selection");
+    }
+
+    // advanceLevel() returns null at the cap and stops the session.
+    if (!practiceOrchestrator.isActive()) {
+      handlePracticeStop();
+    }
+  }
+
+  function handlePracticeStop() {
     if (!_playbackController) return;
 
     const finalBpm = practiceOrchestrator.stop();
@@ -229,18 +248,12 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
 
     _playbackController.offLoopComplete();
 
-    const seqId = sequence?.id || sequence?.word || "unknown";
-    practiceState.recordPersonalBest(seqId, finalBpm);
-
     practiceState.showCompletion(finalBpm);
     _hapticService?.trigger("success");
 
-    const personalBest = practiceState.getPersonalBest(seqId);
-    const isNewBest = personalBest !== null && finalBpm >= personalBest;
-    const message = isNewBest
-      ? `Practice complete: ${finalBpm} BPM (new best!)`
-      : `Practice complete: ${finalBpm} BPM`;
-    showToast(message, "success");
+    // No "personal best" — we don't track props, so a best BPM would just be
+    // "the highest the slider was dragged to". Honest completion only.
+    showToast(`Practice complete — reached ${finalBpm} BPM`, "success");
   }
 
   // ── Stepping ──
@@ -301,6 +314,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     handlePlaybackModeChange,
     handleStepClick,
     handlePracticeStart,
+    handlePracticeAdvance,
     handlePracticeStop,
     stepHalfBeatBackward,
     stepHalfBeatForward,

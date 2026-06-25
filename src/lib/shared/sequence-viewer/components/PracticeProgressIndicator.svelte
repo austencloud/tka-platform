@@ -11,14 +11,22 @@
   interface Props {
     progress: TempoPracticeProgress;
     onStop: () => void;
+    /** Manual progression: tapped when the level completes to bump tempo. */
+    onAdvance?: () => void;
     variant?: "inline" | "floating";
   }
 
   let {
     progress,
     onStop,
+    onAdvance,
     variant = "inline",
   }: Props = $props();
+
+  // Manual mode parks at the level boundary and waits for a "Speed Up" tap.
+  let canAdvance = $derived(
+    progress.progressionMode === "manual" && progress.readyToAdvance && !!onAdvance
+  );
 
   // BPM intensity color
   let bpmColor = $derived.by(() => {
@@ -69,6 +77,20 @@
           style="width: {levelProgress}%; background: {bpmColor}"
         ></div>
       </div>
+    {/if}
+
+    {#if canAdvance}
+      <button
+        class="practice-advance-btn"
+        onclick={onAdvance}
+        type="button"
+        aria-label="Speed up to the next tempo level"
+      >
+        <i class="fas fa-forward" aria-hidden="true"></i>
+        {#if variant === "inline"}
+          <span>Speed Up</span>
+        {/if}
+      </button>
     {/if}
 
     <button
@@ -241,6 +263,57 @@
   }
 
   /* ===========================
+     SPEED UP BUTTON (manual progression)
+     =========================== */
+
+  .practice-advance-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px 16px;
+    min-height: var(--min-touch-target);
+    min-width: var(--min-touch-target);
+    flex-shrink: 0;
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 16%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
+    border-radius: 10px;
+    color: color-mix(in srgb, var(--semantic-success, #22c55e) 65%, white);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+    animation: practice-advance-pulse 1.8s ease-in-out infinite;
+  }
+
+  .practice-advance-btn i {
+    font-size: 12px;
+  }
+
+  @keyframes practice-advance-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--semantic-success, #22c55e) 28%, transparent); }
+    50% { box-shadow: 0 0 12px 1px color-mix(in srgb, var(--semantic-success, #22c55e) 36%, transparent); }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .practice-advance-btn:hover {
+      background: color-mix(in srgb, var(--semantic-success, #22c55e) 24%, transparent);
+      border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 55%, transparent);
+      color: color-mix(in srgb, var(--semantic-success, #22c55e) 50%, white);
+    }
+  }
+
+  .practice-advance-btn:active {
+    transform: scale(0.95);
+  }
+
+  .practice-advance-btn:focus-visible {
+    outline: 2px solid var(--semantic-success, #22c55e);
+    outline-offset: 2px;
+  }
+
+  /* ===========================
      ACCESSIBILITY
      =========================== */
 
@@ -258,6 +331,15 @@
     }
 
     .practice-stop-btn:active {
+      transform: none;
+    }
+
+    .practice-advance-btn {
+      transition: none;
+      animation: none;
+    }
+
+    .practice-advance-btn:active {
       transform: none;
     }
   }

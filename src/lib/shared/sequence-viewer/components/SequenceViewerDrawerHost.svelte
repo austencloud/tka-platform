@@ -36,6 +36,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import VideoPanel from "./video-panel/VideoPanel.svelte";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
+  import PracticeConfigPopover from "./PracticeConfigPopover.svelte";
   import {
     openSendSequenceSheet,
     buildSequenceSharePayload,
@@ -328,6 +329,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
             isSaved={ctx.isSaved}
             onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
             onRemix={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
+            practiceActive={ctx.practiceActive}
+            onPracticeToggle={isMobileWidth ? () => (ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()) : undefined}
             onCopyData={authState.isAdmin ? handleCopyForClaude : undefined}
             copyDataFeedback={copyClaudeFeedback}
             onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
@@ -380,6 +383,23 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                     >
                       <i class="fas fa-pen-to-square" aria-hidden="true"></i>
                     </button>
+
+                    {#if !isAnyExportActive}
+                      <button
+                        type="button"
+                        class="header-action-btn practice"
+                        class:practice-active={ctx.practiceActive}
+                        onclick={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
+                        aria-label={ctx.practiceActive ? "Stop practice" : "Practice"}
+                        aria-pressed={ctx.practiceActive}
+                      >
+                        <i class="fas {ctx.practiceActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
+                      </button>
+                      <PracticeConfigPopover
+                        config={ctx.practiceState.userConfig}
+                        onUpdate={ctx.practiceState.updateConfig}
+                      />
+                    {/if}
 
                     <span class="header-action-divider"></span>
 
@@ -665,6 +685,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
             <PracticeProgressIndicator
               progress={ctx.practiceState.progress}
               onStop={ctx.handlePracticeStop}
+              onAdvance={ctx.handlePracticeAdvance}
               variant="floating"
             />
           {/if}
@@ -849,6 +870,12 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 
   .header-action-btn.remix {
     color: var(--semantic-warning, #f59e0b);
+  }
+
+  .header-action-btn.practice-active {
+    color: var(--semantic-error, #f87171);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
   }
 
   .header-action-divider {

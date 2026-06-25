@@ -10,6 +10,8 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
   import ViewerOverflowMenu from "./ViewerOverflowMenu.svelte";
+  import PracticeConfigPopover from "./PracticeConfigPopover.svelte";
+  import type { TempoPracticeConfig } from "../services/tempo-practice-orchestrator";
 
   interface Props {
     editingPane: 'animation' | 'image' | 'video-upload' | null;
@@ -31,10 +33,12 @@
     isOwned?: boolean;
     isLoggedIn?: boolean;
     practiceActive?: boolean;
+    practiceConfig?: Partial<TempoPracticeConfig>;
     onFavorite?: () => void;
     onSave?: () => void;
     onEdit?: () => void;
     onPracticeToggle?: () => void;
+    onPracticeConfigUpdate?: (patch: Partial<TempoPracticeConfig>) => void;
     onVideoUpload?: () => void;
     onPublish?: () => void;
     onUnpublish?: () => void;
@@ -56,10 +60,12 @@
     isOwned = false,
     isLoggedIn = false,
     practiceActive = false,
+    practiceConfig,
     onFavorite,
     onSave,
     onEdit,
     onPracticeToggle,
+    onPracticeConfigUpdate,
     onVideoUpload,
     onPublish,
     onUnpublish,
@@ -176,6 +182,22 @@
       </button>
     {/if}
 
+    {#if !isMobile && onPracticeToggle && !editingPane}
+      <button
+        type="button"
+        class="header-action-btn practice"
+        class:practice-active={practiceActive}
+        onclick={onPracticeToggle}
+        aria-label={practiceActive ? "Stop practice" : "Practice"}
+        aria-pressed={practiceActive}
+      >
+        <i class="fas {practiceActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
+      </button>
+      {#if onPracticeConfigUpdate}
+        <PracticeConfigPopover config={practiceConfig ?? {}} onUpdate={onPracticeConfigUpdate} />
+      {/if}
+    {/if}
+
     <span class="header-action-divider"></span>
 
     <MotionVisibilityToggle />
@@ -195,6 +217,8 @@
     <ViewerOverflowMenu
       variant="header"
       sequenceId={sequence?.id}
+      practiceActive={practiceActive}
+      onPracticeToggle={isMobile ? onPracticeToggle : undefined}
       onVideoUpload={isLoggedIn ? onVideoUpload : undefined}
       {isPublished}
       onPublish={isOwned && isSaved ? onPublish : undefined}
@@ -329,6 +353,12 @@
 
   .header-action-btn.remix {
     color: var(--semantic-warning, #f59e0b);
+  }
+
+  .header-action-btn.practice-active {
+    color: var(--semantic-error, #f87171);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
   }
 
   .header-action-divider {
