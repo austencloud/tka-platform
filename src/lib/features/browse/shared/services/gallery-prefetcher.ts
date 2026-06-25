@@ -19,6 +19,7 @@ import {
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { GalleryCacheEntry } from "$lib/shared/offline/domain/offline-cache-types";
 import { db } from "$lib/shared/persistence/database/tka-database";
+import { isGallerySyncStale } from "./gallery-sync-staleness";
 
 export class GalleryPrefetcher {
   private _isWarmed = false;
@@ -81,8 +82,11 @@ export class GalleryPrefetcher {
     }
 
     // Phase 2: Background Firestore sync (non-blocking). Skipped on a constrained
-    // connection so we don't speculatively download the whole gallery over 4G.
-    if (!skipNetworkSync) {
+    // connection so we don't speculatively download the whole gallery over 4G,
+    // AND skipped when the cache was synced within the TTL — re-pulling the whole
+    // publicSequences collection every boot is wasted bandwidth and Firestore
+    // reads when nothing changed since the last sync.
+    if (!skipNetworkSync && (await this.isSyncStale())) {
       this.backgroundSync();
     }
 
@@ -90,6 +94,21 @@ export class GalleryPrefetcher {
     // Always do this — it keeps the local cache current as the user edits their
     // own library, with no network cost.
     this.subscribeToMutationEvents();
+  }
+
+  /**
+   * True when the cached gallery is stale enough to re-sync from Firestore.
+   * Reads the cache's last-sync watermark and compares it to the TTL. Fails
+   * safe to true (sync) when the metadata can't be read, so a cache problem
+   * degrades to the previous always-sync behavior rather than never syncing.
+   */
+  private async isSyncStale(): Promise<boolean> {
+    try {
+      const { lastSyncedAt } = await this.offlineCache.getStats();
+      return isGallerySyncStale(lastSyncedAt, Date.now());
+    } catch {
+      return true;
+    }
   }
 
   private backgroundSync(): void {
