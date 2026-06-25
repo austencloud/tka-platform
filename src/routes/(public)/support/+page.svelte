@@ -7,33 +7,17 @@
    * site header links here too, so it has to read for someone who arrived from
    * the book AND for someone clicking "Support" in the nav.
    *
-   * Lives inside the public chrome (SiteHeader + LandingFooter) over the same
-   * COSMIC background the landing page uses. A suggested-amount selector drives
-   * prefilled deep links (PayPal.me, Venmo web pay, Cash App) and a Stripe
-   * Checkout "pay by card" path (createDonationCheckout function), so the chosen
-   * amount carries straight into whichever method the visitor picks.
+   * The cosmic background + SiteHeader come from the persistent MarketingChrome
+   * (root layout); this page renders its content and its own LandingFooter. A
+   * suggested-amount selector drives prefilled deep links (PayPal.me, Venmo web
+   * pay, Cash App) and a Stripe Checkout "pay by card" path
+   * (createDonationCheckout function), so the chosen amount carries straight into
+   * whichever method the visitor picks.
    */
-  import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import { page } from "$app/state";
-  import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
-  import { BackgroundType } from "@austencloud/backgrounds";
-  import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
-  import SiteHeader from "$lib/shared/landing/components/SiteHeader.svelte";
   import LandingFooter from "../../landing/components/LandingFooter.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
-
-  const BG = BackgroundType.COSMIC;
-
-  // Render BackgroundHost unconditionally (it is SSR-safe: the controller is
-  // browser-gated internally and only inits in onMount). Gating it behind a
-  // page-level `mounted` flag was what let the cosmic drop out and stay gone on
-  // HMR — the gate unmounted the canvas layer and the controller's container
-  // orphaned. Always-rendered, its own $effect re-binds the controller to the
-  // current container. applyThemeForBackground still runs on mount for theming.
-  onMount(() => {
-    applyThemeForBackground(BG);
-  });
 
   // ── Suggested amounts ──────────────────────────────────────────────────────
   type Tier = "5" | "15" | "custom";
@@ -114,20 +98,8 @@
   <meta name="robots" content="noindex" />
 </svelte:head>
 
-<div class="support-page">
-  <!-- Deep-space fallback behind the cosmic canvas (z-index:-2 < cosmic's -1).
-       Shows when the WebGL cosmic isn't painting (HMR, slow load, WebGL off,
-       reduced motion) so the page never falls back to a flat theme gradient. -->
-  <div class="space-fallback" aria-hidden="true"></div>
-
-  <div class="background-layer">
-    <BackgroundHost backgroundType={BG} />
-  </div>
-
-  <div class="content-layer">
-    <SiteHeader />
-
-    <main class="support">
+<div class="support-wrap">
+  <main class="support">
       <section class="jar-card">
         {#if justDonated}
           <p class="donated" role="status">Thank you, truly. Your support means a lot.</p>
@@ -249,35 +221,10 @@
 
     <LandingFooter showCredit={false} />
   </div>
-</div>
 
 <style>
-  .support-page {
-    position: relative;
-    min-height: 100vh;
-    overflow-x: hidden;
-    color: var(--theme-text, #ffffff);
-  }
-
-  .background-layer {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-  }
-
-  .space-fallback {
-    position: fixed;
-    inset: 0;
-    z-index: -2;
-    background:
-      radial-gradient(120% 80% at 78% 12%, rgba(70, 60, 140, 0.35) 0%, transparent 55%),
-      radial-gradient(130% 100% at 50% -10%, #181b3d 0%, #0c0e20 48%, #06070f 100%);
-  }
-
-  .content-layer {
-    position: relative;
-    z-index: 1;
-    min-height: 100vh;
+  .support-wrap {
+    min-height: calc(100vh - 64px); /* fill viewport under the fixed SiteHeader */
     display: flex;
     flex-direction: column;
   }

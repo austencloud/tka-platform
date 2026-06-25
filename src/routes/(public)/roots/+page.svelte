@@ -1,9 +1,5 @@
 <script lang="ts">
-  import CosmicPageShell from "$lib/shared/landing/components/CosmicPageShell.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
-
-  // In dev, back goes to /landing; in prod, back goes to /
-  const backHref = "/";
 
   const externalLinks = {
     // VTG sources
@@ -17,7 +13,7 @@
 </script>
 
 <svelte:head>
-  <title>The Roots of TKA | Standing on Shoulders</title>
+  <title>Roots | The Kinetic Alphabet</title>
   <meta
     name="description"
     content="TKA synthesizes juggling notation, music theory, and flow arts vocabulary into a visual notation system for dual wielded props. Learn about the influences behind The Kinetic Alphabet."
@@ -34,18 +30,10 @@
   />
 </svelte:head>
 
-<CosmicPageShell>
-  <div class="editorial">
-    <a href={backHref} class="back-link">
-      <i class="fas fa-arrow-left" aria-hidden="true"></i>
-      <span>Back</span>
-    </a>
-
+<div class="editorial">
     <header class="editorial-header">
-      <h1 class="page-title">Standing on Shoulders</h1>
-      <p class="page-subtitle">
-        The influences behind <a href={backHref}>The Kinetic Alphabet</a>
-      </p>
+      <h1 class="page-title">Roots</h1>
+      <p class="page-subtitle">What the Kinetic Alphabet is built on</p>
     </header>
 
     <div class="lede">
@@ -172,4 +160,3 @@
       </a>
     </div>
   </div>
-</CosmicPageShell>

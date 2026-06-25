@@ -44,7 +44,7 @@
     </script>
 
     <!-- Dev mode: kill stale service workers BEFORE any module scripts load.
-         hooks.client.ts also does this, but it runs too late — a stale SW can
+         hooks.client.ts also does this, but it runs too late; a stale SW can
          intercept the navigation request that loads the page in the first place,
          creating a deadlock where the page never loads and the SW never unregisters. -->
     <script>

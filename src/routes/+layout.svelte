@@ -2,6 +2,8 @@
   import type { Snippet, Component } from "svelte";
   import { onMount } from "svelte";
   import { afterNavigate, onNavigate, replaceState } from "$app/navigation";
+  import { page } from "$app/state";
+  import MarketingChrome from "$lib/shared/landing/components/MarketingChrome.svelte";
   import { detectSiteMode, type SiteMode } from "../config/domains";
   import { consumeSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
   import { getPresenceTracker } from "$lib/shared/presence/get-presence-tracker";
@@ -53,6 +55,23 @@
     children: Snippet;
     data: LayoutData;
   }>();
+
+  // Marketing routes share one persistent cosmic chrome (MarketingChrome) hosted
+  // here at the root layout, which never unmounts across client-side navigation.
+  // That keeps the COSMIC background + SiteHeader mounted while only the page
+  // content transitions — no flash of the body's saved-theme gradient between
+  // pages. App routes (everything else) render children exactly as before.
+  // Exact marketing pages + whole subtrees (/shop/*) that all render the same
+  // persistent cosmic chrome. Only the /guide HUB is covered — the deeper guide
+  // rewrite routes (/guide/level-*, /guide/codex, print/poster) own their own
+  // chrome and are intentionally excluded.
+  const MARKETING_EXACT = new Set(["/", "/about", "/roots", "/support", "/guide"]);
+  const MARKETING_SUBTREES = ["/shop"];
+  const isMarketing = $derived.by(() => {
+    const p = page.url.pathname;
+    if (MARKETING_EXACT.has(p)) return true;
+    return MARKETING_SUBTREES.some((root) => p === root || p.startsWith(root + "/"));
+  });
 
   $effect(() => {
     if (data?.geo) {
@@ -525,8 +544,16 @@
   {/if}
 
   <!-- Render children always - required for SSR/prerender of public routes.
-       App routes opt out of SSR via their own +layout.ts (ssr = false). -->
-  {@render children()}
+       App routes opt out of SSR via their own +layout.ts (ssr = false).
+       Marketing routes wrap children in the persistent MarketingChrome (one
+       cosmic background + SiteHeader shared across landing/about/roots/support). -->
+  {#if isMarketing}
+    <MarketingChrome>
+      {@render children()}
+    </MarketingChrome>
+  {:else}
+    {@render children()}
+  {/if}
 
   {#if containerReady && FullscreenPromptComp}
     <FullscreenPromptComp />

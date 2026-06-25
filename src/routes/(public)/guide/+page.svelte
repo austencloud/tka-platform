@@ -8,17 +8,13 @@
   owned by another agent's rewrite and are deliberately not linked from here yet.
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
-  import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
-  import { BackgroundType } from "@austencloud/backgrounds";
-  import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
-  import SiteHeader from "$lib/shared/landing/components/SiteHeader.svelte";
   import LandingFooter from "../../landing/components/LandingFooter.svelte";
   import GuidesSection from "../../landing/components/GuidesSection.svelte";
   import { joinWaitlist } from "$lib/features/store/services/waitlist";
 
-  const BG = BackgroundType.COSMIC;
-  let mounted = $state(false);
+  // Cosmic background + SiteHeader are provided by the persistent MarketingChrome
+  // (root layout) so they survive navigation between marketing pages without a
+  // flash. This page only renders its own content + footer.
 
   let email = $state("");
   let status = $state<"idle" | "submitting" | "done" | "error">("idle");
@@ -26,11 +22,6 @@
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const canSubmit = $derived(EMAIL_RE.test(email.trim()) && status !== "submitting");
-
-  onMount(() => {
-    applyThemeForBackground(BG);
-    mounted = true;
-  });
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
@@ -74,14 +65,7 @@
   />
 </svelte:head>
 
-{#if mounted}
-  <div class="bg-layer"><BackgroundHost backgroundType={BG} /></div>
-{/if}
-
-<div class="content">
-  <SiteHeader />
-
-  <main class="guide">
+<main class="guide">
     <section class="hero">
       <h1>The guide is being rewritten for the web</h1>
       <p class="lede">
@@ -146,21 +130,9 @@
     </section>
   </main>
 
-  <LandingFooter showCredit={false} />
-</div>
+<LandingFooter showCredit={false} />
 
 <style>
-  /* Live cosmic background, same as the landing — fixed behind the content. */
-  .bg-layer {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-  }
-  .content {
-    position: relative;
-    z-index: 1;
-  }
-
   .guide {
     font-family: system-ui, -apple-system, sans-serif;
     --landing-heading-font: "Playfair Display", Georgia, serif;
