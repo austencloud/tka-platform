@@ -163,7 +163,7 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
       { value: "solid", label: "Solid" }, { value: "prop-matched", label: "Prop" }, { value: "rainbow", label: "Rainbow" }, { value: "palette", label: "Palette" },
     ] },
     slider("bloom", "intensity", "Intensity", { tier: "primary" }),
-    slider("bloom", "radius", "Radius", { min: 8, max: 200, step: 2, pct: false, tier: "primary" }),
+    slider("bloom", "radius", "Radius", { min: 8, max: 90, step: 2, pct: false, tier: "primary" }),
     { id: "bloom-falloff", label: "Falloff", type: "segmented", field: "falloff", tier: "primary", options: [
       { value: "smooth", label: "Smooth" }, { value: "sharp", label: "Sharp" }, { value: "ring", label: "Ring" },
     ] },
