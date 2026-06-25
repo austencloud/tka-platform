@@ -438,17 +438,9 @@
   <!-- Hero quick links — direct child of the hero so mobile can pin them to the
        very bottom (title top, video as the hero, links at the foot). -->
   <nav class="hero-links" aria-label="Get started">
-    <a class="hero-link" href="/guide/level-1">
-      <i class="fas fa-book-open" aria-hidden="true"></i>
-      <span>Open the guide</span>
-    </a>
     <a class="hero-link primary" href="/create" data-sveltekit-reload>
       <i class="fas fa-rocket" aria-hidden="true"></i>
       <span>Open the app</span>
-    </a>
-    <a class="hero-link" href="/support">
-      <i class="fas fa-heart" aria-hidden="true"></i>
-      <span>Support</span>
     </a>
   </nav>
 </section>
