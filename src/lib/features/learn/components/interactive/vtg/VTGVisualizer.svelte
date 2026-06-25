@@ -49,14 +49,14 @@ Shows how the two hands coordinate across the timing and direction axes.
       color: "#F472B6",
       direction: "Opposite (hands arc opposite ways)",
       timing: "Split (180° apart at the downbeat)",
-      description: "Hands arc opposite ways — they sweep through together and apart; 180° apart at the downbeat",
+      description: "Hands arc opposite ways, sweeping through together and apart; 180° apart at the downbeat",
     },
     TO: {
       name: "Together-Opposite",
       color: "#FB923C",
       direction: "Opposite (hands arc opposite ways)",
       timing: "Together (in sync at the downbeat)",
-      description: "Hands arc opposite ways — they sweep through apart and back; together at the downbeat",
+      description: "Hands arc opposite ways, sweeping through apart and back; together at the downbeat",
     },
     QS: {
       name: "Quarter-Same",
@@ -70,7 +70,7 @@ Shows how the two hands coordinate across the timing and direction axes.
       color: "var(--semantic-warning)",
       direction: "Opposite (hands arc opposite ways)",
       timing: "Quarter (90° apart at the downbeat)",
-      description: "Hands arc opposite ways — they sweep through together and apart; 90° apart at the downbeat",
+      description: "Hands arc opposite ways, sweeping through together and apart; 90° apart at the downbeat",
     },
   };
 
