@@ -104,7 +104,7 @@
         <div class="fill" class:indeterminate={pct === null} style={pct !== null ? `width:${pct}%` : ""}></div>
       </div>
       <span class="ptext">
-        {progress.phase}{#if progress.total} {progress.current ?? 0}/{progress.total}{/if}{#if progress.detail} — {progress.detail}{/if}
+        {progress.phase}{#if progress.total} {progress.current ?? 0}/{progress.total}{/if}{#if progress.detail}: {progress.detail}{/if}
       </span>
     </div>
   {/if}

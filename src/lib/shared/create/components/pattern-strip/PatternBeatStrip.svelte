@@ -89,7 +89,7 @@
               class:inert={lane.inert?.[bi]}
               role="switch"
               aria-checked={v !== base}
-              aria-label="{lane.label} beat {bi + 1}{lane.inert?.[bi] ? ' (no spin — reversal has no effect)' : ''}"
+              aria-label="{lane.label} beat {bi + 1}{lane.inert?.[bi] ? ' (no spin, reversal has no effect)' : ''}"
               title={lane.inert?.[bi]
                 ? "This beat isn't spinning, so a reversal here has no effect"
                 : undefined}
