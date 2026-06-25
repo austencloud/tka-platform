@@ -45,7 +45,7 @@
     if (!hasOrientationCycling || !sequence) return null;
     const cc = sequence.orientationCycleCount!;
     return (
-      `The arrows look slightly different across passes. Half turns shift the orientation each time — ` +
+      `The arrows look slightly different across passes. Half turns shift the orientation each time, ` +
       `some passes start radial, others nonradial. ` +
       (cc === period
         ? `The orientations cycle back home together with the positions.`

@@ -147,7 +147,7 @@ function saveSpellStateInternal(state: Partial<SpellPersistedState>): void {
       if (!hasWarnedQuotaExceeded) {
         hasWarnedQuotaExceeded = true;
         toast.error(
-          "Browser storage is full — your Spell word and settings aren't being saved."
+          "Browser storage is full. Your Spell word and settings aren't being saved."
         );
       }
     } else {
