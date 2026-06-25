@@ -384,22 +384,20 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       <i class="fas fa-pen-to-square" aria-hidden="true"></i>
                     </button>
 
-                    {#if !isAnyExportActive}
-                      <button
-                        type="button"
-                        class="header-action-btn practice"
-                        class:practice-active={ctx.practiceActive}
-                        onclick={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
-                        aria-label={ctx.practiceActive ? "Stop practice" : "Practice"}
-                        aria-pressed={ctx.practiceActive}
-                      >
-                        <i class="fas {ctx.practiceActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
-                      </button>
-                      <PracticeConfigPopover
-                        config={ctx.practiceState.userConfig}
-                        onUpdate={ctx.practiceState.updateConfig}
-                      />
-                    {/if}
+                    <button
+                      type="button"
+                      class="header-action-btn practice"
+                      class:practice-active={ctx.practiceActive}
+                      onclick={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
+                      aria-label={ctx.practiceActive ? "Stop practice" : "Practice"}
+                      aria-pressed={ctx.practiceActive}
+                    >
+                      <i class="fas {ctx.practiceActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
+                    </button>
+                    <PracticeConfigPopover
+                      config={ctx.practiceState.userConfig}
+                      onUpdate={ctx.practiceState.updateConfig}
+                    />
 
                     <span class="header-action-divider"></span>
 

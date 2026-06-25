@@ -182,7 +182,7 @@
       </button>
     {/if}
 
-    {#if !isMobile && onPracticeToggle && !editingPane}
+    {#if !isMobile && onPracticeToggle}
       <button
         type="button"
         class="header-action-btn practice"

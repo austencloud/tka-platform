@@ -1188,10 +1188,12 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       authQueue.invokeGatedAction(type, realHandler, sequence),
     handleUnifiedDarkModeToggle,
     handlePracticeStart: () => {
-      // Practice needs a live animation to follow. If the current view can't
-      // show one (art-only / card / video), drop into Side-by-Side first.
-      const m = viewerState.viewerMode;
-      if (m === 'card' || m === 'mandala' || m === 'tunnel' || m === 'videos') {
+      // Practice needs the clean Side-by-Side view (animation + steps). The
+      // gallery opens cards in export/download views (Card, 2D, 3D all set an
+      // export context), so leave any export and force split unless already there.
+      if (viewerState.viewerMode !== 'split') {
+        viewerState.exitExport();
+        viewerState.setSplitConfig({ leftPane: 'animation', rightPane: 'card' });
         viewerState.setViewerMode('split');
       }
       playback.handlePracticeStart();
