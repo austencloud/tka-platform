@@ -16,12 +16,12 @@
       <GuideDiagram
         src="/guide/level-1/images/compound-words/DJ_TogOpp.png"
         alt="DJ sequence in Tog-Opp"
-        caption="DJ — Tog-Opp"
+        caption="DJ: Tog-Opp"
       />
       <GuideDiagram
         src="/guide/level-1/images/compound-words/DJ_SplitOpp.png"
         alt="DJ sequence in Split-Opp"
-        caption="DJ — Split-Opp"
+        caption="DJ: Split-Opp"
       />
     </div>
 
@@ -29,12 +29,12 @@
       <GuideDiagram
         src="/guide/level-1/images/compound-words/EK_TogOpp.png"
         alt="EK sequence in Tog-Opp"
-        caption="EK — Tog-Opp"
+        caption="EK: Tog-Opp"
       />
       <GuideDiagram
         src="/guide/level-1/images/compound-words/EK_SplitOpp.png"
         alt="EK sequence in Split-Opp"
-        caption="EK — Split-Opp"
+        caption="EK: Split-Opp"
       />
     </div>
 
@@ -42,12 +42,12 @@
       <GuideDiagram
         src="/guide/level-1/images/compound-words/FL_TogOpp.png"
         alt="FL sequence in Tog-Opp"
-        caption="FL — Tog-Opp"
+        caption="FL: Tog-Opp"
       />
       <GuideDiagram
         src="/guide/level-1/images/compound-words/FL_SplitOpp.png"
         alt="FL sequence in Split-Opp"
-        caption="FL — Split-Opp"
+        caption="FL: Split-Opp"
       />
     </div>
   </div>

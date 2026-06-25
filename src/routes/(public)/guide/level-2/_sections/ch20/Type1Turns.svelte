@@ -2,7 +2,7 @@
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
 </script>
 
-<GuideSection id="type-1-turns" title="Type 1 — Dual-Shift (1-Turn)">
+<GuideSection id="type-1-turns" title="Type 1: Dual-Shift (1-Turn)">
   <p>
     When motion types are exactly the same, put left in the high slot and right in the low slot. Here is a breakdown of A¹ (pro|pro) and B¹ (anti|anti).
   </p>

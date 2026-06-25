@@ -11,19 +11,19 @@
 
   <GuideDiagram
     src="/guide/level-1/images/full-rev-caps/CCKE.png"
-    alt="CCKE — Full-reversal LOOP"
+    alt="CCKE: Full-reversal LOOP"
     caption="CCKE"
   />
 
   <GuideDiagram
     src="/guide/level-1/images/full-rev-caps/FLII.png"
-    alt="FLII — Full-reversal LOOP"
+    alt="FLII: Full-reversal LOOP"
     caption="FLII"
   />
 
   <GuideDiagram
     src="/guide/level-1/images/full-rev-caps/DAK.png"
-    alt="DAK — Full-reversal LOOP"
+    alt="DAK: Full-reversal LOOP"
     caption="DAK"
   />
 </GuideSection>

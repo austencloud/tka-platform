@@ -4,7 +4,7 @@
 
 <GuideSection id="turn-shifts" title="Shifts" subtitle="VTG: 1:3">
   <p>
-    <strong>Turns</strong> — A turn is a 180° rotation that occurs during a motion. Let's add a single turn to a shift.
+    <strong>Turns:</strong> A turn is a 180° rotation that occurs during a motion. Let's add a single turn to a shift.
   </p>
 
   <p>
@@ -16,7 +16,7 @@
   <p>Each turn adds a thumb switch.</p>
 
   <p>
-    <strong>Pro</strong> — An isolation has 0 thumb switches, therefore a prospin with a turn has 1 thumb switch (in → out)
+    <strong>Pro:</strong> An isolation has 0 thumb switches, therefore a prospin with a turn has 1 thumb switch (in → out)
   </p>
 
   <p>
@@ -26,6 +26,6 @@
   <!-- TODO: add diagram — antispin with 1 turn breakdown -->
 
   <p>
-    <strong>Anti</strong> — A base antispin has 1 thumb switch. (in → out), therefore an antispin with a turn has 2 thumb switches (in → out → in).
+    <strong>Anti:</strong> A base antispin has 1 thumb switch. (in → out), therefore an antispin with a turn has 2 thumb switches (in → out → in).
   </p>
 </GuideSection>

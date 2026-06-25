@@ -21,7 +21,7 @@
 </script>
 
 <svelte:head>
-  <title>2.0 1-Turns — Level 2 Guide</title>
+  <title>2.0 1-Turns: Level 2 Guide</title>
 </svelte:head>
 
 <h1>1-Turns</h1>

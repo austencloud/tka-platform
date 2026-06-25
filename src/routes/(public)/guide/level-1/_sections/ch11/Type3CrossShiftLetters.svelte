@@ -28,7 +28,7 @@
   ];
 </script>
 
-<GuideSection id="type-3-cross-shift-letters" title="Type 3 — Cross-Shift Letters">
+<GuideSection id="type-3-cross-shift-letters" title="Type 3: Cross-Shift Letters">
   <p>
     Cross-Shifts use the same letters as Shifts, but each letter is followed by a dash
     to indicate that the other hand is dashing into its end position. They are spoken as
@@ -51,12 +51,12 @@
     <GuideDiagram
       src="/guide/level-1/images/type-3/alpha_cross_shifts.png"
       alt="Cross-Shift breakdown for alpha end position"
-      caption="Alpha Cross-Shifts — start → halfway → end"
+      caption="Alpha Cross-Shifts: start → halfway → end"
     />
     <GuideDiagram
       src="/guide/level-1/images/type-3/beta_cross_shifts.png"
       alt="Cross-Shift breakdown for beta end position"
-      caption="Beta Cross-Shifts — start → halfway → end"
+      caption="Beta Cross-Shifts: start → halfway → end"
     />
   </div>
 

@@ -22,11 +22,11 @@
   const scale = $derived(colWidth / (8.5 * 96)); // 8.5in @ 96dpi
 </script>
 
-<svelte:head><title>Codex Parity — book vs render</title></svelte:head>
+<svelte:head><title>Codex Parity: book vs render</title></svelte:head>
 
 <div class="root">
   <header>
-    <h1>Codex Parity — book artboard (left) vs render (right)</h1>
+    <h1>Codex Parity: book artboard (left) vs render (right)</h1>
     <label class="ctl">
       Column width
       <input type="range" min="280" max="640" step="10" bind:value={colWidth} />

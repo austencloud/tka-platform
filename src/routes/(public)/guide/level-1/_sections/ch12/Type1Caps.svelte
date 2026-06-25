@@ -10,14 +10,14 @@
   </p>
   <GuideDiagram
     src="/guide/level-1/images/type-1-caps/DJII.png"
-    alt="DJII — Mirrored LOOP"
-    caption="DJII — Mirrored LOOP"
+    alt="DJII: Mirrored LOOP"
+    caption="DJII: Mirrored LOOP"
   />
 
   <GuideDiagram
     src="/guide/level-1/images/type-1-caps/BBLF.png"
-    alt="BBLF — Swapped & Rotated LOOP"
-    caption="BBLF — Swapped & Rotated LOOP"
+    alt="BBLF: Swapped & Rotated LOOP"
+    caption="BBLF: Swapped & Rotated LOOP"
   />
 
   <p>
@@ -26,7 +26,7 @@
   </p>
   <GuideDiagram
     src="/guide/level-1/images/type-1-caps/KIEC.png"
-    alt="KIEC — Swapped & Mirrored LOOP"
-    caption="KIEC — Swapped & Mirrored LOOP"
+    alt="KIEC: Swapped & Mirrored LOOP"
+    caption="KIEC: Swapped & Mirrored LOOP"
   />
 </GuideSection>

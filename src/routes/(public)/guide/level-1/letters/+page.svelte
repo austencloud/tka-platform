@@ -19,9 +19,9 @@
 </script>
 
 <svelte:head>
-  <title>1.1 Letters — Level 1 Guide — The Kinetic Alphabet</title>
+  <title>1.1 Letters: Level 1 Guide: The Kinetic Alphabet</title>
   <meta name="description" content="Level 1 letter codex for The Kinetic Alphabet. Types 1–6, compound letters, gamma letters, and the full double-staff codex." />
-  <meta property="og:title" content="1.1 Letters — Level 1 Guide" />
+  <meta property="og:title" content="1.1 Letters: Level 1 Guide" />
   <meta property="og:description" content="The complete Level 1 letter codex for double staves. Types 1–6, compounds, gamma letters." />
   <meta property="og:image" content="/guide/level-1/images/_shared/level-1-front-cover.png" />
 </svelte:head>

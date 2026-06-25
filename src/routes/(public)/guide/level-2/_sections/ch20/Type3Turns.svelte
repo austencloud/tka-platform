@@ -2,7 +2,7 @@
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
 </script>
 
-<GuideSection id="type-3-turns" title="Type 3 — Cross-Shift (1-Turn)">
+<GuideSection id="type-3-turns" title="Type 3: Cross-Shift (1-Turn)">
   <p>
     Type 3 hybrids combine a shift with a dash. When we consult PADS, we find that a shift is higher than a dash, therefore:
   </p>

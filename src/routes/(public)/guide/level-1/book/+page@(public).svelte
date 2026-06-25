@@ -123,7 +123,7 @@
   });
 </script>
 
-<svelte:head><title>Guide Book — Level 1</title></svelte:head>
+<svelte:head><title>Guide Book: Level 1</title></svelte:head>
 
 <!-- Wrap each shared-document page as a scaled flip page (native 8.5×11 GuidePage
      inside a .scale transform, clipped to the flip .page box). -->
@@ -139,18 +139,18 @@
 
 <div class="wrap">
   <div class="bar">
-    <span class="t">Book preview — drag a corner to flip · both editions turn together</span>
+    <span class="t">Book preview: drag a corner to flip · both editions turn together</span>
     <span class="status">{status}</span>
   </div>
 
   <div class="books" class:ready>
     {#if mounted}
       <div class="book-col">
-        <div class="cap">Old — v0.5</div>
+        <div class="cap">Old: v0.5</div>
         <div class="flip" bind:this={oldContainer}></div>
       </div>
       <div class="book-col">
-        <div class="cap">New — rebuild</div>
+        <div class="cap">New: rebuild</div>
         <!-- Live rebuild pages: shared GuideDocument, each page a real GuidePage
              scaled into a flip .page. Same sequence as /print. -->
         <div class="flip" bind:this={newContainer} style="--s:{SCALE}">

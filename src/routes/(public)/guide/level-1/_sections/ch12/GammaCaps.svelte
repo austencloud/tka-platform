@@ -12,20 +12,20 @@
 
   <GuideDiagram
     src="/guide/level-1/images/type-1-caps/SOTR.png"
-    alt="SOTR — Rotated LOOP"
-    caption="SOTR — Rotated LOOP"
+    alt="SOTR: Rotated LOOP"
+    caption="SOTR: Rotated LOOP"
   />
 
   <GuideDiagram
     src="/guide/level-1/images/type-1-caps/VPUQ.png"
-    alt="VPUQ — Rotated LOOP"
-    caption="VPUQ — Rotated LOOP"
+    alt="VPUQ: Rotated LOOP"
+    caption="VPUQ: Rotated LOOP"
   />
 
   <GuideDiagram
     src="/guide/level-1/images/type-1-caps/MVNU.png"
-    alt="MVNU — Rotated LOOP"
-    caption="MVNU — Rotated LOOP"
+    alt="MVNU: Rotated LOOP"
+    caption="MVNU: Rotated LOOP"
   />
 
   <p>
