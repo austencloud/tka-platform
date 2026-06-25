@@ -324,6 +324,11 @@ export class LanSyncCoordinator {
 	private handleStateUpdate(update: Partial<SyncedPlaybackState>, timestamp: number): void {
 		// Last-write-wins conflict resolution
 		if (timestamp >= this._playbackState.timestamp) {
+			// Capture the sequence we were on BEFORE the merge — comparing against
+			// the post-merge state always matches `update.sequenceId` (the merge
+			// just wrote it), which silently killed mismatch detection.
+			const previousSequenceId = this._playbackState.sequenceId;
+
 			const newState = {
 				...this._playbackState,
 				...update,
@@ -336,7 +341,7 @@ export class LanSyncCoordinator {
 			// Check for sequence mismatch
 			if (
 				update.sequenceId !== undefined &&
-				update.sequenceId !== this._playbackState.sequenceId
+				update.sequenceId !== previousSequenceId
 			) {
 				for (const callback of this.sequenceMismatchCallbacks) {
 					callback(update.sequenceId);
