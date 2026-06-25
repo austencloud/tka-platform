@@ -476,8 +476,10 @@ export class R2VideoUploader {
       );
     } catch (error) {
       if ((error as Error).name === "AbortError") throw error;
-      console.error("R2VideoUploader: Failed to upload-thumbnail:", error);
-      throw error;
+      // Route through handleError like the sibling upload methods so a failed
+      // sequence-thumbnail upload surfaces an in-app error instead of only a
+      // console log. handleError is `: never` — it preserves the rethrow.
+      return this.handleError(error, "upload-thumbnail", { sequenceId });
     }
   }
 }
