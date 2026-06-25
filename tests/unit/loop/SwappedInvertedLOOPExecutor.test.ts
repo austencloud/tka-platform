@@ -8,7 +8,7 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 import type { StepData } from "../../../src/lib/shared/foundation/domain/models/step-data";
-import { Letter } from "../../../src/lib/shared/foundation/domain/models/Letter";
+import { Letter } from "../../../src/lib/shared/foundation/domain/models/letter";
 import {
   GridLocation,
   GridPosition,
