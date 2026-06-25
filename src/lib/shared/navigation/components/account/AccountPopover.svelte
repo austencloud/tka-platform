@@ -14,6 +14,7 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import {
     handleModuleChange,
   } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import { myPropsDrawerState } from "./my-props-drawer-state.svelte";
   import type { ModuleId } from "../../domain/types";
 
   let { isOpen, onClose, anchorElement } = $props<{
@@ -142,6 +143,17 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
     onClose();
     handleModuleChange("settings" as ModuleId, "profile");
   }
+
+  // Open the My Props drawer (two-phase: "What do you spin?" → "Your go-to?")
+  // right here instead of dumping the user on the settings page. The drawer
+  // renders at the document root via MainInterface, so it survives the popover
+  // closing. propState is non-null whenever the prop nudge is shown.
+  function handlePickProp() {
+    if (!propState) return;
+    triggerHaptic();
+    onClose();
+    myPropsDrawerState.open(propState);
+  }
 </script>
 
 {#if isOpen}
@@ -207,7 +219,7 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
         {#if needsProp}
           <button
             class="nudge-card"
-            onclick={handleNavigateToProfile}
+            onclick={handlePickProp}
             aria-label="Pick your favorite prop"
           >
             <div class="nudge-icon">
