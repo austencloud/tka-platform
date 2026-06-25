@@ -300,7 +300,10 @@
     };
 
     if (typeof requestIdleCallback !== "undefined") {
-      requestIdleCallback(prefetchBrowseData);
+      // timeout bounds the boot-window starvation: during startup the main
+      // thread is saturated, so a no-timeout idle callback can be deferred
+      // 8-27s. 2s caps how late the gallery warm starts.
+      requestIdleCallback(prefetchBrowseData, { timeout: 2000 });
     } else {
       setTimeout(prefetchBrowseData, 0);
     }
