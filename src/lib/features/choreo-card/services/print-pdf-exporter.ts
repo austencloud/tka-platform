@@ -181,7 +181,7 @@ export async function exportHomePrintPDF(
 
 			drawCropMarks(backsPage, layout);
 			drawSheetLabel(backsPage, font, fontBold, sheetSide('BACKS', sheetSlots), sheet + 1, totalSheets, deckName, options.meta?.deckSummary);
-			drawFlipHint(backsPage, font, "BACK SIDE — columns mirrored for long-edge flip");
+			drawFlipHint(backsPage, font, "BACK SIDE: columns mirrored for long-edge flip");
 			onProgress?.(++progressCount, progressTotal);
 		}
 	}
@@ -320,7 +320,7 @@ function addFlipInstructionPage(
 	const cx = LETTER_W / 2;
 	let y = LETTER_H / 2 + 60;
 
-	const title = "STOP — FLIP YOUR PAPER";
+	const title = "STOP: FLIP YOUR PAPER";
 	const titleW = fontBold.widthOfTextAtSize(title, 16);
 	page.drawText(title, { x: cx - titleW / 2, y, size: 16, font: fontBold, color: GUIDE_COLOR });
 
@@ -328,7 +328,7 @@ function addFlipInstructionPage(
 	const steps = [
 		"1.  Remove all printed fronts from the output tray",
 		"2.  Flip the stack on the LONG EDGE",
-		"3.  Reinsert into the paper tray — top edge goes in first",
+		"3.  Reinsert into the paper tray, top edge goes in first",
 		"4.  Print the remaining pages (all backs)",
 	];
 	for (const step of steps) {
@@ -338,7 +338,7 @@ function addFlipInstructionPage(
 	}
 
 	y -= 12;
-	const note = "This page does not print on card stock — it is an instruction separator.";
+	const note = "This page does not print on card stock. It is an instruction separator.";
 	const noteW = font.widthOfTextAtSize(note, 7);
 	page.drawText(note, { x: cx - noteW / 2, y, size: 7, font, color: GUIDE_COLOR });
 }

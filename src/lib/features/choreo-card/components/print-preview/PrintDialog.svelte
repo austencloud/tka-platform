@@ -273,7 +273,7 @@
             <button
               class="action print-action"
               disabled={busy || !printable || cardCount === 0}
-              title={!printable ? "Card images can't be sent to a printer — download instead." : undefined}
+              title={!printable ? "Card images can't be sent to a printer. Download instead." : undefined}
               onclick={handlePrint}
             >
               {#if isPrinting}

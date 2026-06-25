@@ -179,7 +179,7 @@
   <div class="actions">
     <button class="action print-action"
       disabled={busy || !printable || cardCount === 0}
-      title={!printable ? "Card images can't be sent to a printer — download instead." : undefined}
+      title={!printable ? "Card images can't be sent to a printer. Download instead." : undefined}
       onclick={handlePrint}>
       {#if isPrinting}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
       {:else}<i class="fas fa-print" aria-hidden="true"></i>{/if}
