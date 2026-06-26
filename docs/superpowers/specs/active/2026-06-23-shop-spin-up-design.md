@@ -12,9 +12,13 @@ last_triaged: 2026-06-23
 
 **Date:** 2026-06-23
 **Status:** Phase A built + verified 2026-06-24 (rename → /shop, nav, gate, coming-soon
-+ waitlist, /store→/shop redirects, webhook product-sync). Remaining: credentialed Stripe
-config + first real product + deploy (Phase B4). `npm run check`, functions build, and a
-full `npm run build` all green; routes verified (/shop 200, /store/* 308).
++ waitlist, /store→/shop redirects, webhook product-sync). **Checkout wired + verified
+2026-06-26:** restricted Stripe test key in `firebase-functions/.env`, real $30 test
+product (`B8dDCYkEPunFCFVKiaBr`), `createMerchCheckout` deployed → returns a live
+`cs_test` session; worldwide shipping + 3 placeholder rate tiers added (see Out of Scope
+note). Remaining: register webhook events in the Stripe Dashboard (B4); order
+fulfillment + sales tax + go-live are a **new spec** (operations arc). `npm run check`,
+functions build, and a full `npm run build` all green; routes verified (/shop 200, /store/* 308).
 
 ---
 
@@ -218,7 +222,11 @@ Stripe Dashboard + the webhook sync replace them.
 ## Out of Scope
 
 - Shopping cart (one product = direct checkout; unchanged).
-- Buyer accounts, inventory tracking, international shipping (US only; unchanged).
+- Buyer accounts, inventory tracking. *(International shipping is now BUILT — worldwide
+  addresses (237 Stripe-supported countries, `shippingCountries.ts`) + US / Canada /
+  International buyer-selectable placeholder rate tiers in `createMerchCheckout`, shipped
+  2026-06-26. Tune the rates per real package weight. Destination-aware auto-rate selection
+  remains out of scope — Stripe static Checkout lets the buyer pick from the listed rates.)*
 - Live in-store card rendering (static images via the editor for now).
 - Public launch flip (deleting the gate) — a later one-line change when products are ready.
 - Templated order emails (Stripe Dashboard's built-in notification covers launch).
