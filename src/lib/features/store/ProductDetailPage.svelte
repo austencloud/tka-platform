@@ -42,6 +42,10 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
       <div class="error">{state.error}</div>
     {:else if state.selectedProduct}
       {@const product = state.selectedProduct}
+      <a href="/shop" class="back-button">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i> All Products
+      </a>
+
       <div class="detail-layout">
         <div class="preview-column">
           <CardMockupPreview
@@ -51,9 +55,6 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
         </div>
 
         <div class="info-column">
-          <a href="/shop" class="back-link">
-            <i class="fas fa-arrow-left" aria-hidden="true"></i> All Products
-          </a>
           <h1>{product.name}</h1>
           {#if product.cardCount}
             <p class="meta">{product.cardCount} cards, poker size (2.5" x 3.5")</p>
@@ -111,16 +112,32 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
     }
   }
 
-  .back-link {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+  .back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    margin-bottom: 24px;
+    border-radius: 999px;
+    border: 1px solid var(--theme-border, rgba(255, 255, 255, 0.15));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #ffffff);
     text-decoration: none;
-    display: inline-block;
-    margin-bottom: 16px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    transition: background 0.2s, border-color 0.2s;
   }
 
-  .back-link:hover {
-    color: var(--theme-text, #ffffff);
+  .back-button:hover {
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-border-strong, rgba(255, 255, 255, 0.3));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .back-button {
+      transition: none;
+    }
   }
 
   h1 {
