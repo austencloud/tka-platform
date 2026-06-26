@@ -100,6 +100,10 @@
     "tauri:build": "tauri build",
     "tauri:icons": "tauri icon static/pwa/icons/icon-512x512.png",
     "export:deck-bundle": "node scripts/export-deck-bundle.cjs",
+    "r2:cors:list": "wrangler r2 bucket cors list tka-assets",
+    "r2:cors:apply": "wrangler r2 bucket cors set tka-assets --file firebase-functions/r2-cors.json -y",
+    "storage:cors:list": "node scripts/apply-storage-cors.cjs --list",
+    "storage:cors:apply": "node scripts/apply-storage-cors.cjs",
     "optimize:ocean": "bash scripts/optimize-ocean-assets.sh"
   },
   "overrides": {
@@ -228,7 +232,7 @@
     "@ai-sdk/anthropic": "^3.0.13",
     "@ai-sdk/deepseek": "^1.0.33",
     "@ai-sdk/svelte": "^4.0.27",
-    "@austencloud/backgrounds": "^0.6.3",
+    "@austencloud/backgrounds": "^0.6.4",
     "@austencloud/camera-3d": "workspace:*",
     "@austencloud/chip-toggle": "^0.1.0",
     "@austencloud/media-spotlight": "^1.0.2",
