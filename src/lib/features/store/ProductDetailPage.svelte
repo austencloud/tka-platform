@@ -60,6 +60,11 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
           {/if}
           <p class="description">{product.description}</p>
           <p class="price">{formattedPrice}</p>
+          {#if product.preorder}
+            <p class="preorder-note">
+              Pre-order{product.shipBy ? ` — ships ${product.shipBy}` : ""}. You're charged now; it ships when printed.
+            </p>
+          {/if}
           <BuyButton productId={product.id} />
           {#if state.checkoutError}
             <p class="checkout-error" role="alert">{state.checkoutError}</p>
@@ -143,6 +148,13 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
     font-size: 2rem;
     font-weight: 700;
     color: var(--theme-accent, #60a5fa);
+    margin: 0 0 16px;
+  }
+
+  .preorder-note {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-warning, #f59e0b);
     margin: 0 0 16px;
   }
 
