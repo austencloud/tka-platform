@@ -100,6 +100,11 @@ Usage:
     cellIndex = null,
     // Duration multiplier for the step (1 = default, shown when != 1)
     duration = 1,
+    // Fires when the grid SVG has loaded (or errored). The grid loads asynchronously
+    // and independently of the prepared arrow/prop data, so an offscreen/export
+    // parent uses this to gate its readiness signal (otherwise a cold grid cache
+    // can serialize before the grid lines are in the DOM).
+    onGridReady = undefined,
   } = $props<{
     pictograph: PreparedPictographData;
     blueReversal?: boolean;
@@ -149,6 +154,8 @@ Usage:
     cellIndex?: number | null;
     /** Duration multiplier for the step (1 = default one beat, shown when != 1) */
     duration?: number;
+    /** Fires when the grid finishes loading (or errors). Used by export readiness gating. */
+    onGridReady?: () => void;
   }>();
 
   // Expanded viewBox calculations
@@ -354,8 +361,8 @@ Usage:
           {previewMode}
           {darkMode}
           visible={showGrid}
-          onLoaded={() => {}}
-          onError={() => {}}
+          onLoaded={() => onGridReady?.()}
+          onError={() => onGridReady?.()}
           {onToggleNonRadial}
         />
       {/if}
