@@ -8,6 +8,7 @@
   import OceanInteraction from "./interaction/OceanInteraction.svelte";
   import OceanStage from "./OceanStage.svelte";
   import { godraysLightStore } from "../../../../effects/post-processing/godrays-light-store.svelte";
+  import { oceanDebugToggles } from "../quality/ocean-debug-toggles.svelte";
 
   interface Props {
     quality: OceanQualityConfig;
@@ -53,7 +54,7 @@
      teal from the surface above, darker from the floor below) so the seabed and
      flora get FORM instead of a flat wash — what a single AmbientLight could not
      do. Low intensity keeps the moody dark world; torches still carry warm key. -->
-<T.HemisphereLight intensity={0.45} color="#3a6b7a" groundColor="#0a1a14" />
+<T.HemisphereLight intensity={oceanDebugToggles.hemiLight ? 0.45 : 0} color="#3a6b7a" groundColor="#0a1a14" />
 <!-- Sun kept dim and near-neutral solely to drive the god-ray beam direction;
      Blender has no sun, so this must not wash the dark world. -->
 <T.DirectionalLight

@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import { onDestroy } from "svelte";
   import { useTask, useThrelte } from "@threlte/core";
-  import { HalfFloatType, Vector2, AgXToneMapping, NoToneMapping } from "three";
+  import { HalfFloatType, Vector2, Vector3, AgXToneMapping, NoToneMapping } from "three";
   import {
     EffectComposer,
     RenderPass,
@@ -65,6 +65,15 @@
   let lastH = 0;
   const _sizeVec = new Vector2();
 
+  // Water-tint live tuning (dev Water Tint slider). Base = the "1.0" look; the
+  // slider scales the depth coeffs and the scatter veil proportionally, updating
+  // the live effect's uniforms with no composer rebuild.
+  const BASE_ABSORPTION = new Vector3(0.05, 0.018, 0.009);
+  const BASE_SCATTER = new Vector3(0.0, 0.02, 0.04);
+  let waterAbsorption = $state<WaterAbsorptionEffect | null>(null);
+  const _tintCoeff = new Vector3();
+  const _tintScatter = new Vector3();
+
   function buildComposer() {
     disposeComposer();
 
@@ -84,30 +93,31 @@
       renderer.toneMappingExposure = 1.0;
     }
 
-    if (isOcean) {
+    if (isOcean && oceanDebugToggles.waterTint) {
       // Water absorption (depth tint) only. The post-process refraction caustics
       // overlay was removed — like the god rays it read as a blurry full-screen
-      // haze rather than grounded seabed light.
-      composer.addPass(
-        new EffectPass(
-          cam,
-          new WaterAbsorptionEffect({
-            // Visible Beer-Lambert depth grade (R >> G >> B so red dies first).
-            // Was 0.02/0.005/0.001 — ~20x too weak, the tint was imperceptible.
-            absorptionR: 0.14,
-            absorptionG: 0.05,
-            absorptionB: 0.025,
-            maxDepth: 50.0,
-          }),
-        ),
-      );
+      // haze rather than grounded seabed light. Dev `waterTint` toggle A/Bs it,
+      // the Water Tint slider scales BASE_ABSORPTION + BASE_SCATTER live.
+      const s = oceanDebugToggles.waterTintStrength;
+      const fx = new WaterAbsorptionEffect({
+        // Beer-Lambert depth grade (R >> G >> B so red dies first), applied
+        // against TRUE linearized distance (see water-absorption-effect.ts).
+        absorptionR: BASE_ABSORPTION.x * s,
+        absorptionG: BASE_ABSORPTION.y * s,
+        absorptionB: BASE_ABSORPTION.z * s,
+        scatterColor: _tintScatter.copy(BASE_SCATTER).multiplyScalar(s),
+        maxDepth: 50.0,
+      });
+      waterAbsorption = fx;
+      composer.addPass(new EffectPass(cam, fx));
     }
 
     const colorEffects: import("postprocessing").Effect[] = [];
 
     // Ocean keeps its authored bloom toggle; non-ocean scenes bloom only when
-    // the quality tier allows it (HIGH/MEDIUM) so the HDR trail glows.
-    const wantBloom = isOcean ? enableBloom : tierBloom;
+    // the quality tier allows it (HIGH/MEDIUM) so the HDR trail glows. Dev
+    // `bloom` toggle A/Bs the ocean glow (it can read as a washout veil).
+    const wantBloom = isOcean ? enableBloom && oceanDebugToggles.bloom : tierBloom;
     if (wantBloom) {
       colorEffects.push(
         new BloomEffect({
@@ -168,6 +178,7 @@
     if (composer) {
       composer.dispose();
       composer = null;
+      waterAbsorption = null;
       renderer.autoClear = true;
       renderer.shadowMap.enabled = false;
       renderer.toneMapping = NoToneMapping;
@@ -177,13 +188,27 @@
 
   $effect(() => {
     const cam = camera.current;
-    // Dev A/B toggle — read so flipping it rebuilds the composer pass chain.
+    // Dev A/B toggles — read so flipping any of them rebuilds the composer pass
+    // chain (water tint, underwater distortion, bloom are baked at build time).
     const _ud = oceanDebugToggles.underwaterDistortion;
+    const _wt = oceanDebugToggles.waterTint;
+    const _bloom = oceanDebugToggles.bloom;
     if (shouldCompose && cam) {
       buildComposer();
     } else {
       disposeComposer();
     }
+  });
+
+  // Live Water Tint slider — scale the running effect's coeffs + scatter without
+  // rebuilding the composer. Re-runs on slider change and on every rebuild
+  // (waterAbsorption is $state, reassigned in buildComposer).
+  $effect(() => {
+    const s = oceanDebugToggles.waterTintStrength;
+    const fx = waterAbsorption;
+    if (!fx) return;
+    fx.absorptionCoeff = _tintCoeff.copy(BASE_ABSORPTION).multiplyScalar(s);
+    fx.scatterColor = _tintScatter.copy(BASE_SCATTER).multiplyScalar(s);
   });
 
   let prevAutoRender: boolean | null = null;

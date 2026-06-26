@@ -28,8 +28,11 @@ const SUN_DIR_XZ = new Vector2(-10, 20).normalize(); // light travel across the 
 const CAUSTIC_COLOR = new Color("#9fd4e8");
 
 // Soft default for the moody mid-depth target. Live-tunable; the dev `caustics`
-// toggle drives this to 0 to A/B the cue.
-export const DEFAULT_CAUSTIC_STRENGTH = 0.55;
+// toggle drives this to 0 to A/B the cue. Toned down from 0.55 — combined with
+// the water-tint scatter it was washing the seabed out. The live value comes
+// from oceanDebugToggles.causticStrength (dev slider); this is just the uniform's
+// initial value before OceanScene applies the slider.
+export const DEFAULT_CAUSTIC_STRENGTH = 0.1;
 
 // Shared singleton uniforms — ONE clock for every patched material (seabed GLB +
 // flora/structures). Advanced once per frame by OceanScene.
@@ -75,7 +78,11 @@ const CAUSTIC_PARS = /* glsl */ `
     float v2 = cVoronoi(p * 1.4 + vec2(-t * 0.08, t * 0.12) + 3.7, t);
     float v3 = cVoronoi(p * 0.7 + vec2(t * 0.06, -t * 0.09) + 7.3, t);
     float pat = v1 * v2 + v3 * 0.3;
-    return pow(1.0 - pat, 3.5);
+    // pat routinely exceeds 1.0 (v1*v2 of two voronoi distances), so 1.0 - pat
+    // goes negative. pow(negative, 3.5) is undefined in GLSL (log2 of a negative)
+    // → NaN, which poisons totalEmissiveRadiance and gets smeared into black
+    // square blocks by the bloom mipmap blur. Clamp the base non-negative.
+    return pow(max(1.0 - pat, 0.0), 3.5);
   }
 `;
 

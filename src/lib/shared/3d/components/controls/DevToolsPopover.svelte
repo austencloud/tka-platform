@@ -20,12 +20,31 @@
   }
 
   // Live A/B toggles to isolate which ocean effect causes an observed change.
-  type FxKey = "sway" | "caustics" | "godRayShafts" | "underwaterDistortion";
+  type FxKey =
+    | "sway"
+    | "caustics"
+    | "godRayShafts"
+    | "underwaterDistortion"
+    | "fog"
+    | "waterTint"
+    | "hemiLight"
+    | "ibl"
+    | "particles"
+    | "bloom";
   const FX_TOGGLES: Array<{ key: FxKey; label: string }> = [
     { key: "sway", label: "Sway" },
     { key: "caustics", label: "Caustics" },
     { key: "godRayShafts", label: "Shafts" },
     { key: "underwaterDistortion", label: "Distortion" },
+  ];
+  // The veil/flatten suspects — flip these to find what washes the scene out.
+  const WASHOUT_TOGGLES: Array<{ key: FxKey; label: string }> = [
+    { key: "fog", label: "Fog" },
+    { key: "waterTint", label: "Water Tint" },
+    { key: "hemiLight", label: "Hemi Light" },
+    { key: "ibl", label: "IBL" },
+    { key: "particles", label: "Particles" },
+    { key: "bloom", label: "Bloom" },
   ];
   function toggleFx(key: FxKey) {
     oceanDebugToggles[key] = !oceanDebugToggles[key];
@@ -97,6 +116,51 @@
       {/each}
     </div>
   </div>
+
+  <div class="tier-group" role="group" aria-label="Ocean washout A/B toggles">
+    <span class="tier-label">Washout (A/B)</span>
+    <div class="tier-pills washout-pills">
+      {#each WASHOUT_TOGGLES as fx (fx.key)}
+        <button
+          type="button"
+          class="tier-pill"
+          class:active={oceanDebugToggles[fx.key]}
+          aria-pressed={oceanDebugToggles[fx.key]}
+          onclick={() => toggleFx(fx.key)}
+        >
+          {fx.label}
+        </button>
+      {/each}
+    </div>
+  </div>
+
+  <div class="tier-group" role="group" aria-label="Ocean strength sliders">
+    <span class="tier-label">Strength</span>
+    <label class="slider-row">
+      <span class="slider-name">Caustics</span>
+      <input
+        type="range"
+        min="0"
+        max="0.6"
+        step="0.01"
+        value={oceanDebugToggles.causticStrength}
+        oninput={(e) => (oceanDebugToggles.causticStrength = +e.currentTarget.value)}
+      />
+      <span class="slider-val">{oceanDebugToggles.causticStrength.toFixed(2)}</span>
+    </label>
+    <label class="slider-row">
+      <span class="slider-name">Water Tint</span>
+      <input
+        type="range"
+        min="0"
+        max="2"
+        step="0.05"
+        value={oceanDebugToggles.waterTintStrength}
+        oninput={(e) => (oceanDebugToggles.waterTintStrength = +e.currentTarget.value)}
+      />
+      <span class="slider-val">{oceanDebugToggles.waterTintStrength.toFixed(2)}</span>
+    </label>
+  </div>
 </div>
 
 <style>
@@ -146,6 +210,11 @@
     display: flex;
     gap: 4px;
   }
+  /* Six wider labels — wrap to a 3-column grid so none get clipped. */
+  .washout-pills {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
   .tier-pill {
     flex: 1;
     padding: 6px 4px;
@@ -166,5 +235,27 @@
     background: rgba(99, 179, 237, 0.22);
     border-color: rgba(99, 179, 237, 0.55);
     color: white;
+  }
+  .slider-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 36px;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 0;
+  }
+  .slider-name {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .slider-val {
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: rgba(99, 179, 237, 0.95);
+  }
+  .slider-row input[type="range"] {
+    width: 100%;
+    accent-color: rgba(99, 179, 237, 0.9);
+    cursor: pointer;
   }
 </style>

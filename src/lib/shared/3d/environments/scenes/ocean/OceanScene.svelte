@@ -13,7 +13,6 @@
   import {
     causticUniforms,
     patchCausticsMaterial,
-    DEFAULT_CAUSTIC_STRENGTH,
   } from "./runtime/atmosphere/seabed-caustics";
   import FloraInstances from "./authored/FloraInstances.svelte";
   import OceanRuntimeSystems from "./runtime/OceanRuntimeSystems.svelte";
@@ -94,8 +93,10 @@
     // Deep blue-teal so distance dissolves into water, not a dead-black void
     // (was #0d0d10). Pairs with the absorption depth-grade in ScenePostProcessing.
     const fogColor = new Color("#0a2438");
-    s.fog = new FogExp2(fogColor.getHex(), 0.012);
+    // Keep the backdrop colour always; the dev `fog` toggle only removes the
+    // distance haze veil so a reviewer can see how much of the washout it owns.
     s.background = fogColor;
+    s.fog = oceanDebugToggles.fog ? new FogExp2(fogColor.getHex(), 0.012) : null;
     return () => {
       if (s) {
         s.fog = null;
@@ -113,6 +114,12 @@
     const r = renderer.current;
     const s = scene.current;
     if (!r || !s) return;
+    // Dev `ibl` toggle — drop the env entirely to A/B how much the reflective
+    // wash owns the washed-out read.
+    if (!oceanDebugToggles.ibl) {
+      s.environment = null;
+      return;
+    }
     const pmrem = new PMREMGenerator(r);
     const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     s.environment = envTex;
@@ -149,8 +156,9 @@
     causticUniforms.uGroundY.value = userProportionsState.groundY;
   });
   $effect(() => {
+    // Live-tunable via the dev Caustics slider; the toggle still hard-zeroes it.
     causticUniforms.uCausticStrength.value = oceanDebugToggles.caustics
-      ? DEFAULT_CAUSTIC_STRENGTH
+      ? oceanDebugToggles.causticStrength
       : 0;
   });
 
