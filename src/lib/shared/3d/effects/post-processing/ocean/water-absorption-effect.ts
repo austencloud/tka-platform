@@ -7,8 +7,16 @@ uniform vec3 scatterColor;
 uniform float maxDepth;
 
 void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
-  float depth = readDepth(uv);
-  float linearDepth = depth * maxDepth;
+  // readDepth() returns the RAW, non-linear perspective depth — it sits at
+  // ~0.95-0.999 for nearly everything past the near plane. The old
+  // `depth * maxDepth` treated that as linear distance, so almost every pixel
+  // got max-distance absorption and the whole frame (foreground included) was
+  // crushed to the blue scatter colour instead of grading by depth.
+  // getViewZ()/cameraNear/cameraFar are provided by the EffectPass shader;
+  // -viewZ is the true distance from the camera in world units. Clamp to
+  // maxDepth so the far field saturates predictably rather than at cameraFar.
+  float rawDepth = readDepth(uv);
+  float linearDepth = min(-getViewZ(rawDepth), maxDepth);
 
   // Beer-Lambert per-channel absorption — red dies first
   vec3 transmittance = exp(-absorptionCoeff * linearDepth);
