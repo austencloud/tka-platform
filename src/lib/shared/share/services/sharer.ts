@@ -2,6 +2,7 @@ import type { SequenceRenderer } from "$lib/shared/render/services/sequence-rend
 import type { SequenceData } from "../../foundation/domain/models/sequence-data";
 import type { ShareOptions } from "../domain/models/share-options";
 import { PreviewCache } from "./preview-cache";
+import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
 
 export class Sharer {
   private previewCache = new PreviewCache();
@@ -71,7 +72,10 @@ export class Sharer {
     const date = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
     const extension = options.format.toLowerCase();
 
-    const cleanName = sequenceName.replace(/[^a-zA-Z0-9-_]/g, "_");
+    // Keep the real Greek glyphs (Σ, Φ, Λ…). sanitizeFilename preserves Unicode
+    // and strips only illegal path chars — the old [^a-zA-Z0-9-_] regex turned
+    // every Greek letter into "_".
+    const cleanName = sanitizeFilename(sequenceName) || "sequence";
 
     return `${cleanName}_${date}.${extension}`;
   }

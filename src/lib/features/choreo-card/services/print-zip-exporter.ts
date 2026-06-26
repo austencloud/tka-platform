@@ -8,6 +8,7 @@
  */
 
 import type { ZipCardPair } from "./types";
+import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
 
 export async function exportDeckZIP(
   pairs: ZipCardPair[],
@@ -25,7 +26,10 @@ export async function exportDeckZIP(
   for (let i = 0; i < pairs.length; i++) {
     const pair = pairs[i]!;
     const index = String(i + 1).padStart(3, "0");
-    const safeName = pair.label.replace(/[^a-zA-Z0-9_-]/g, "_");
+    // Keep Greek glyphs (Σ, Φ, Λ…) — ZIP entry names are UTF-8. sanitizeFilename
+    // preserves Unicode and strips only illegal path chars; the old
+    // [^a-zA-Z0-9_-] regex flattened every Greek letter to "_".
+    const safeName = sanitizeFilename(pair.label).replace(/\s+/g, "_") || index;
 
     const frontBlob = await canvasToBlob(pair.front);
     fronts.file(`${index}_${safeName}_front.png`, frontBlob);
