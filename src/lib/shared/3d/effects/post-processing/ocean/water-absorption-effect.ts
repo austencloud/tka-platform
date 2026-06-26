@@ -9,7 +9,7 @@ uniform float maxDepth;
 void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
   // readDepth() returns the RAW, non-linear perspective depth — it sits at
   // ~0.95-0.999 for nearly everything past the near plane. The old
-  // `depth * maxDepth` treated that as linear distance, so almost every pixel
+  // 'depth * maxDepth' treated that as linear distance, so almost every pixel
   // got max-distance absorption and the whole frame (foreground included) was
   // crushed to the blue scatter colour instead of grading by depth.
   // getViewZ()/cameraNear/cameraFar are provided by the EffectPass shader;
