@@ -8,7 +8,7 @@ import {
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-prop-data";
 import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/solo-prop-step-data";

@@ -2,10 +2,22 @@ import { describe, it, expect } from "vitest";
 import { TempoPracticeOrchestrator } from "$lib/shared/sequence-viewer/services/tempo-practice-orchestrator";
 
 describe("TempoPracticeOrchestrator", () => {
-  it("defaults to manual progression", () => {
+  it("defaults to auto progression", () => {
     const o = new TempoPracticeOrchestrator();
     o.start();
-    expect(o.getProgress().progressionMode).toBe("manual");
+    expect(o.getProgress().progressionMode).toBe("auto");
+  });
+
+  it("tracks loopsCompleted / loopsRemaining within a level", () => {
+    const o = new TempoPracticeOrchestrator();
+    o.start({ startBpm: 20, roundsPerLevel: 3, progressionMode: "manual" });
+    expect(o.getProgress().loopsRemaining).toBe(3);
+    o.onLoopComplete();
+    expect(o.getProgress().loopsCompleted).toBe(1);
+    expect(o.getProgress().loopsRemaining).toBe(2);
+    o.onLoopComplete();
+    o.onLoopComplete();
+    expect(o.getProgress().loopsRemaining).toBe(0); // level complete
   });
 
   it("auto mode bumps BPM after roundsPerLevel loops", () => {

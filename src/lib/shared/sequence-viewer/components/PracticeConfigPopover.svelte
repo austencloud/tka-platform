@@ -28,7 +28,7 @@
   let startBpm = $derived(config.startBpm ?? 15);
   let increment = $derived(config.increment ?? 5);
   let roundsPerLevel = $derived(config.roundsPerLevel ?? 5);
-  let progressionMode: ProgressionMode = $derived(config.progressionMode ?? "manual");
+  let progressionMode: ProgressionMode = $derived(config.progressionMode ?? "auto");
 
   function clamp(v: number, min: number, max: number) {
     return Math.max(min, Math.min(max, v));

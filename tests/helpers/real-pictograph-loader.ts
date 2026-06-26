@@ -11,7 +11,7 @@
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { CsvLoader } from "$lib/shared/foundation/services/implementations/data/CsvLoader";
 import {
   container,
