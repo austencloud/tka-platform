@@ -106,8 +106,7 @@
             y: p.y + Math.sin(a) * len * dir,
             propIndex: p.idx,
             tipIndex: tipIndex++,
-            blueColor: "#3a8fff",
-            redColor: "#ff4a6a",
+            color: p.idx === 0 ? "#3a8fff" : "#ff4a6a",
           });
         }
       }

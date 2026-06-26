@@ -271,12 +271,12 @@ function createBloomRenderer(canvasSize: number): WorkerEffectRenderer {
       const rt = computeTips(cs, red, redVB);
 
       if (bt) {
-        tips.push({ x: bt.a.x, y: bt.a.y, propIndex: 0, tipIndex: 0, blueColor: BLUE_COLOR, redColor: RED_COLOR });
-        tips.push({ x: bt.b.x, y: bt.b.y, propIndex: 0, tipIndex: 1, blueColor: BLUE_COLOR, redColor: RED_COLOR });
+        tips.push({ x: bt.a.x, y: bt.a.y, propIndex: 0, tipIndex: 0, color: BLUE_COLOR });
+        tips.push({ x: bt.b.x, y: bt.b.y, propIndex: 0, tipIndex: 1, color: BLUE_COLOR });
       }
       if (rt) {
-        tips.push({ x: rt.a.x, y: rt.a.y, propIndex: 1, tipIndex: 2, blueColor: BLUE_COLOR, redColor: RED_COLOR });
-        tips.push({ x: rt.b.x, y: rt.b.y, propIndex: 1, tipIndex: 3, blueColor: BLUE_COLOR, redColor: RED_COLOR });
+        tips.push({ x: rt.a.x, y: rt.a.y, propIndex: 1, tipIndex: 2, color: RED_COLOR });
+        tips.push({ x: rt.b.x, y: rt.b.y, propIndex: 1, tipIndex: 3, color: RED_COLOR });
       }
 
       renderer.render(ctx as unknown as CanvasRenderingContext2D, params, tips, scale);
@@ -324,12 +324,12 @@ function createPulseRenderer(canvasSize: number): WorkerEffectRenderer {
       const rt = computeTips(cs, red, redVB);
 
       if (bt) {
-        tips.push({ x: bt.a.x, y: bt.a.y, propIndex: 0, tipIndex: 0, blueColor: BLUE_COLOR, redColor: RED_COLOR });
-        tips.push({ x: bt.b.x, y: bt.b.y, propIndex: 0, tipIndex: 1, blueColor: BLUE_COLOR, redColor: RED_COLOR });
+        tips.push({ x: bt.a.x, y: bt.a.y, propIndex: 0, tipIndex: 0, color: BLUE_COLOR });
+        tips.push({ x: bt.b.x, y: bt.b.y, propIndex: 0, tipIndex: 1, color: BLUE_COLOR });
       }
       if (rt) {
-        tips.push({ x: rt.a.x, y: rt.a.y, propIndex: 1, tipIndex: 2, blueColor: BLUE_COLOR, redColor: RED_COLOR });
-        tips.push({ x: rt.b.x, y: rt.b.y, propIndex: 1, tipIndex: 3, blueColor: BLUE_COLOR, redColor: RED_COLOR });
+        tips.push({ x: rt.a.x, y: rt.a.y, propIndex: 1, tipIndex: 2, color: RED_COLOR });
+        tips.push({ x: rt.b.x, y: rt.b.y, propIndex: 1, tipIndex: 3, color: RED_COLOR });
       }
 
       const currentStep = isStartPosition ? 0 : stepIndex + (frameIndex * dt) % 1;

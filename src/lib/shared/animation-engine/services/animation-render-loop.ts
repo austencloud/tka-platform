@@ -413,24 +413,13 @@ export class AnimationRenderLoop {
     const out: EmitterTip[] = [];
     for (const t of tips) {
       if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== effect) continue;
-      const isBlue = t.propIndex % 2 === 0;
-      const color =
-        t.propIndex <= 1
-          ? isBlue
-            ? baseBlue
-            : baseRed
-          : spectrum
-            ? tunnelPropColor(t.propIndex, layerCount).hex
-            : isBlue
-              ? baseBlue
-              : baseRed;
       out.push({
         x: t.x,
         y: t.y,
         propIndex: t.propIndex,
         tipIndex: t.tipIndex,
         end: t.tipIndex === 0 ? "A" : "B",
-        color,
+        color: AnimationRenderLoop.resolveTipColor(t.propIndex, layerCount, spectrum, baseBlue, baseRed),
       });
     }
     return out;
@@ -440,29 +429,50 @@ export class AnimationRenderLoop {
    * Build array-of-tips input for bloom and pulse (effects that need
    * {x, y, propIndex, tipIndex, blueColor, redColor}[] with center fallback).
    */
+  /**
+   * Resolve a tip's prop color the way the trail overlay does: the base pair
+   * (propIndex 0/1) uses the trail colors; overlaid tunnel layers (propIndex >= 2)
+   * fan across the spectrum when the rainbow toggle is on, base colors by parity
+   * (even = blue family, odd = red) when off. Shared by buildEmitterTips and
+   * buildArrayTips so every per-tip effect — bloom and pulse included —
+   * color-matches the staff it sits on instead of collapsing every copy to red.
+   */
+  private static resolveTipColor(
+    propIndex: number,
+    layerCount: number,
+    spectrum: boolean,
+    baseBlue: string,
+    baseRed: string
+  ): string {
+    const isBlue = propIndex % 2 === 0;
+    if (propIndex <= 1) return isBlue ? baseBlue : baseRed;
+    return spectrum ? tunnelPropColor(propIndex, layerCount).hex : isBlue ? baseBlue : baseRed;
+  }
+
   private static buildArrayTips(
     tips: PropTipData[],
     tipMap: TipEffectMap,
     effect: EffectType,
     params: RenderFrameParams,
     renderedTransforms: { blue: RenderedPropTransform | null; red: RenderedPropTransform | null } | undefined
-  ): { x: number; y: number; propIndex: 0 | 1; tipIndex: number; blueColor: string; redColor: string }[] {
-    const blueColor = params.trailSettings.blueColor;
-    const redColor = params.trailSettings.redColor;
-    const result: { x: number; y: number; propIndex: 0 | 1; tipIndex: number; blueColor: string; redColor: string }[] = [];
+  ): { x: number; y: number; propIndex: number; tipIndex: number; color: string }[] {
+    const layerCount = params.props.additionalLayers.length;
+    const spectrum = params.props.tunnelSpectrum ?? true;
+    const baseBlue = params.trailSettings.blueColor;
+    const baseRed = params.trailSettings.redColor;
+    const result: { x: number; y: number; propIndex: number; tipIndex: number; color: string }[] = [];
     let globalTipIndex = 0;
     for (const t of tips) {
       if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== effect) continue;
       result.push({
         x: t.x,
         y: t.y,
-        propIndex: t.propIndex as 0 | 1,
+        propIndex: t.propIndex,
         tipIndex: globalTipIndex++,
-        blueColor,
-        redColor,
+        color: AnimationRenderLoop.resolveTipColor(t.propIndex, layerCount, spectrum, baseBlue, baseRed),
       });
     }
-    // Center fallback for props with no tip-tracker output
+    // Center fallback for props with no tip-tracker output (base pair only).
     const blueTransform = renderedTransforms?.blue;
     if (
       params.props.blueProp &&
@@ -475,8 +485,7 @@ export class AnimationRenderLoop {
         y: blueTransform.centerY,
         propIndex: 0,
         tipIndex: globalTipIndex++,
-        blueColor,
-        redColor,
+        color: baseBlue,
       });
     }
     const redTransform = renderedTransforms?.red;
@@ -491,8 +500,7 @@ export class AnimationRenderLoop {
         y: redTransform.centerY,
         propIndex: 1,
         tipIndex: globalTipIndex++,
-        blueColor,
-        redColor,
+        color: baseRed,
       });
     }
     return result;

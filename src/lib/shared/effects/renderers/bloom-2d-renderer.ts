@@ -4,18 +4,19 @@ import type { Bloom2DParams } from "../translators/canvas2d-types";
  * Per-tip input for the bloom overlay. Each tip is an independent light
  * source so palette/color-mode indexing reads naturally off `tipIndex`.
  *
- * `propIndex`: 0 = blue prop, 1 = red prop.
- * `tipIndex`: global tip index 0..3 - used for palette cycling AND as the key
- * for per-tip velocity tracking (frame-to-frame delta).
- * `blueColor` / `redColor` are consumed when `params.colorMode === "prop-matched"`.
+ * `propIndex`: base blue=0, red=1; tunnel layer li blue=2+2*li, red=3+2*li.
+ * `tipIndex`: global tip index - used for palette cycling AND as the key for
+ * per-tip velocity tracking (frame-to-frame delta).
+ * `color`: the tip's resolved prop color (base trail color or tunnel spectrum),
+ * consumed when `params.colorMode === "prop-matched"`. Resolved upstream so a
+ * tunnel copy blooms in the same hue it renders as, not a hardcoded red.
  */
 export interface BloomTipInput {
   x: number;
   y: number;
-  propIndex: 0 | 1;
+  propIndex: number;
   tipIndex: number;
-  blueColor: string;
-  redColor: string;
+  color: string;
 }
 
 type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -403,7 +404,7 @@ export class Bloom2DRenderer {
   private pickColor(params: Bloom2DParams, tip: BloomTipInput, t: number): string {
     switch (params.colorMode) {
       case "prop-matched":
-        return tip.propIndex === 0 ? tip.blueColor : tip.redColor;
+        return tip.color;
       case "rainbow":
         return `hsl(${(t * 60) % 360}, 80%, 60%)`;
       case "palette": {

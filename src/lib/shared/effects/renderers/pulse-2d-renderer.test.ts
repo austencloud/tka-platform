@@ -59,7 +59,7 @@ function params(overrides: Partial<PulseIntent> = {}): Pulse2DParams {
 }
 
 function tip(x: number, y: number): PulseTipInput {
-  return { x, y, propIndex: 0, tipIndex: 0, blueColor: "#3399ff", redColor: "#ff3366" };
+  return { x, y, propIndex: 0, tipIndex: 0, color: "#3399ff" };
 }
 
 const ctxOf = (c: FakeCtx) => c as unknown as CanvasRenderingContext2D;

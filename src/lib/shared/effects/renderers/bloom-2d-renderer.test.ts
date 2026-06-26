@@ -96,8 +96,7 @@ function makeTip(overrides: Partial<BloomTipInput> = {}): BloomTipInput {
     y: 150,
     propIndex: 0,
     tipIndex: 0,
-    blueColor: "#3b82f6",
-    redColor: "#ef4444",
+    color: "#3b82f6",
     ...overrides,
   };
 }
@@ -160,16 +159,20 @@ describe("Bloom2DRenderer (lens bloom)", () => {
       expect(radial[0]!.stops[0]!.color.toLowerCase()).toContain("255, 0, 0");
     });
 
-    it("prop-matched picks blue for propIndex 0, red for propIndex 1", () => {
+    it("prop-matched uses each tip's resolved color, incl. tunnel layers (propIndex >= 2)", () => {
       const r = new Bloom2DRenderer();
       const { ctx, radial } = makeCtx();
       r.render(ctx, makeParams({ colorMode: "prop-matched", spikes: 0 }), [
-        makeTip({ propIndex: 0, blueColor: "#0000ff", redColor: "#ff0000" }),
-        makeTip({ propIndex: 1, blueColor: "#0000ff", redColor: "#ff0000", x: 50, tipIndex: 1 }),
+        makeTip({ propIndex: 0, color: "#0000ff" }),
+        makeTip({ propIndex: 1, color: "#ff0000", x: 50, tipIndex: 1 }),
+        // Tunnel copy: propIndex 2 used to collapse to red via `=== 0`; now its
+        // own resolved color (green) must come through.
+        makeTip({ propIndex: 2, color: "#00ff00", x: 80, tipIndex: 2 }),
       ]);
-      // tip0 → halo at radial[0]; tip1 → halo at radial[2] (each tip: halo+core).
+      // each tip → halo+core; halos land at radial[0], radial[2], radial[4].
       expect(radial[0]!.stops[0]!.color.toLowerCase()).toContain("0, 0, 255");
       expect(radial[2]!.stops[0]!.color.toLowerCase()).toContain("255, 0, 0");
+      expect(radial[4]!.stops[0]!.color.toLowerCase()).toContain("0, 255, 0");
     });
 
     it("palette cycles by tipIndex", () => {

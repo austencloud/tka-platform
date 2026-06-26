@@ -45,10 +45,10 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     intensity: 0.7,
     leftColor: "#88ccff",
     rightColor: "#88ccff",
-    frequency: 12,
+    frequency: 1,
     mode: "arc",
-    branching: 0.3,
-    style: "branching",
+    branching: 0.35,
+    style: "plasma",
   },
 
   sparkles: {

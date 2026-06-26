@@ -17,6 +17,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import { browser } from "$app/environment";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
@@ -47,6 +48,7 @@
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import { getRegistration } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+  import type { EffectsConfig } from "$lib/shared/effects/domain/effects-config";
   import type { EffectPreset } from "$lib/shared/animation-engine/components/effects-panel/presets/types";
 
   const DEFAULT_PROP_STATE: PropState = { centerPathAngle: 0, staffRotationAngle: 0 };
@@ -134,9 +136,16 @@
     saveTarget.kind === "default" ? "Base default" : saveTarget.name,
   );
 
-  // Switching effect resets the target to that effect's base default.
+  // Switching effect resets the target to that effect's base default. The FIRST
+  // run is a no-op (tracker starts null) so a saveTarget restored after a
+  // save-induced reload survives; only a genuine effect switch resets it.
+  let targetEffectTracker: string | null = null;
   $effect(() => {
-    activeEffect; // dependency
+    const ae = activeEffect;
+    if (targetEffectTracker === ae) return;
+    const first = targetEffectTracker === null;
+    targetEffectTracker = ae;
+    if (first) return;
     saveTarget = { kind: "default" };
     menuOpen = false;
   });
@@ -257,6 +266,111 @@
     }
   });
 
+  // ── Survive the save-induced reload ─────────────────────────────────────────
+  // Saving writes effect source (defaults.ts / a preset file); Vite then reloads
+  // this page, which would otherwise snap back to bloom + a fresh random sequence
+  // and throw away where the user was. Mirror the volatile tuner state into
+  // sessionStorage and rehydrate it on the next mount so a save is seamless.
+  const RECOVERY_KEY = "tka_effect_tuner_recovery";
+  const RECOVERY_FRESH_MS = 60_000;
+  let restored = false;
+
+  type Recovery = {
+    v: 1;
+    t: number;
+    scene: Scene;
+    fold: Fold;
+    mirror: boolean;
+    speed: number;
+    showGrid: boolean;
+    isPlaying: boolean;
+    saveTarget: SaveTarget;
+    config: EffectsConfig;
+    base: SequenceData | null;
+  };
+
+  function persistRecovery() {
+    if (!browser) return;
+    try {
+      const payload: Recovery = {
+        v: 1,
+        t: Date.now(),
+        scene,
+        fold,
+        mirror,
+        speed,
+        showGrid,
+        isPlaying,
+        // $state.snapshot returns a deep-readonly Snapshot<T>; cast back to the
+        // mutable shape (structurally identical) for the typed payload literal.
+        saveTarget: $state.snapshot(saveTarget) as SaveTarget,
+        config: $state.snapshot(effectsConfig.config) as EffectsConfig,
+        base: $state.snapshot(base) as SequenceData | null,
+      };
+      sessionStorage.setItem(RECOVERY_KEY, JSON.stringify(payload));
+    } catch {
+      /* quota / non-serializable → recovery just won't fire, never crash */
+    }
+  }
+
+  function readRecovery(): Recovery | null {
+    if (!browser) return null;
+    try {
+      const raw = sessionStorage.getItem(RECOVERY_KEY);
+      if (!raw) return null;
+      const r = JSON.parse(raw) as Recovery;
+      if (r?.v !== 1 || typeof r.t !== "number") return null;
+      if (Date.now() - r.t > RECOVERY_FRESH_MS) {
+        sessionStorage.removeItem(RECOVERY_KEY);
+        return null;
+      }
+      return r;
+    } catch {
+      return null;
+    }
+  }
+
+  // Rehydrate synchronously in the script body — runs before any $effect flush or
+  // onMount, so the topo-effect (above) sees lastTopo already set and skips
+  // regeneration, and the config is in place before the panel first reads it.
+  {
+    const r = readRecovery();
+    if (r) {
+      restored = true;
+      scene = r.scene;
+      fold = r.fold;
+      mirror = r.mirror;
+      speed = r.speed;
+      showGrid = r.showGrid;
+      isPlaying = r.isPlaying;
+      saveTarget = r.saveTarget;
+      if (r.config) effectsConfig.replace(r.config);
+      if (r.base) {
+        base = r.base;
+        lastTopo = `${r.scene}|${r.fold}|${r.mirror}`; // "already built" → no regen
+      }
+    }
+  }
+
+  // Mirror volatile state to sessionStorage (debounced) so any reload — the save
+  // round-trip or a manual refresh — lands back on the same effect/target/motion.
+  let persistTimer: ReturnType<typeof setTimeout> | null = null;
+  $effect(() => {
+    // track the discrete knobs + every config edit + the base sequence
+    void scene;
+    void fold;
+    void mirror;
+    void speed;
+    void showGrid;
+    void isPlaying;
+    void saveTarget;
+    void effectsConfig.version;
+    void base;
+    if (!browser) return;
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = setTimeout(persistRecovery, 250);
+  });
+
   onMount(() => {
     // Tuner is a SANDBOX. effectsConfig is already isolated (persist:false →
     // effect tuning never touches the user's tka_effects_config). Prop + trail
@@ -269,10 +383,20 @@
     const origTrail = { ...animationSettings.trail };
     const origPropType = animationSettings.currentPropType;
 
-    // Open on a vivid effect so the stage isn't empty on first paint.
-    effectsConfig.setActiveEffect("bloom");
+    // Open on a vivid effect so the stage isn't empty on first paint — unless a
+    // prior session was restored, which already set the active effect + config.
+    if (restored) {
+      if (base) void rebuildLayers(); // rebuild tunnel layers from the restored base
+    } else {
+      effectsConfig.setActiveEffect("bloom");
+    }
     // Tell the trail system which prop is active (panel labels + bilateral gate).
     animationSettings.setCurrentPropType(String(propType));
+
+    // A manual refresh also keeps the user's place (the save round-trip is
+    // already covered by the eager persist in saveAsDefault).
+    const onBeforeUnload = () => persistRecovery();
+    if (browser) window.addEventListener("beforeunload", onBeforeUnload);
 
     let raf = 0;
     let last = performance.now();
@@ -288,6 +412,8 @@
 
     return () => {
       cancelAnimationFrame(raf);
+      if (persistTimer) clearTimeout(persistTimer);
+      if (browser) window.removeEventListener("beforeunload", onBeforeUnload);
       // Restore the user's real prop + trail settings. Prop is in-memory;
       // updateSettings re-persists the original trail, undoing any in-session
       // auto-save the trail singleton made.
@@ -346,6 +472,7 @@
     const label = saveTarget.kind === "default" ? "base default" : saveTarget.name;
     saving = true;
     copyStatus = `Saving ${fx} → ${label}…`;
+    persistRecovery(); // flush a fresh snapshot NOW — the write below triggers the reload
     try {
       const res = await fetch("/test/effect-tuner/save-default", {
         method: "POST",

@@ -3,10 +3,11 @@ import type { Pulse2DParams } from "../translators/canvas2d-types";
 export interface PulseTipInput {
   x: number;
   y: number;
-  propIndex: 0 | 1;
+  /** base blue=0, red=1; tunnel layer li blue=2+2*li, red=3+2*li. */
+  propIndex: number;
   tipIndex: number;
-  blueColor: string;
-  redColor: string;
+  /** Resolved prop color (base trail color or tunnel spectrum) for "prop-matched". */
+  color: string;
 }
 
 interface PulseRing {
@@ -370,7 +371,7 @@ export class Pulse2DRenderer {
   private pickColor(params: Pulse2DParams, tip: PulseTipInput): string {
     switch (params.colorMode) {
       case "prop-matched":
-        return tip.propIndex === 0 ? tip.blueColor : tip.redColor;
+        return tip.color;
       case "rainbow":
         return `hsl(${(this.clock * 60) % 360}, 80%, 60%)`;
       case "palette": {
