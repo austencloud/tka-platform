@@ -2,6 +2,7 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
 import { defineString } from "firebase-functions/params";
+import { mapStripeProductToDoc } from "./productSync";
 
 const stripeSecretKey = defineString("STRIPE_SECRET_KEY");
 const stripeWebhookSecret = defineString("STRIPE_WEBHOOK_SECRET");
@@ -77,20 +78,12 @@ export const handleMerchWebhook = functions.https.onRequest(
     // working unchanged. TKA-specific fields ride in Stripe product metadata.
     if (event.type === "product.created" || event.type === "product.updated") {
       const product = event.data.object as Stripe.Product;
-      const meta = product.metadata || {};
-      const doc: Record<string, unknown> = {
-        name: product.name,
-        description: product.description ?? "",
-        status: product.active ? "active" : "draft",
-        coverImageUrl: product.images?.[0] ?? "",
-        previewImageUrls: product.images ?? [],
-        type: meta.type || "physical-deck",
-        sortOrder: meta.sortOrder ? Number(meta.sortOrder) : 0,
-      };
-      if (meta.cardCount) doc.cardCount = Number(meta.cardCount);
-      if (meta.deckId) doc.deckId = meta.deckId;
       // merge: preserve stripePriceId/price set by price.* events (any order).
-      await admin.firestore().collection("products").doc(product.id).set(doc, { merge: true });
+      await admin
+        .firestore()
+        .collection("products")
+        .doc(product.id)
+        .set(mapStripeProductToDoc(product), { merge: true });
       console.log(`Synced product ${product.id} (${product.name})`);
     }
 
