@@ -24,17 +24,50 @@
 
   const S = 816 / 612; // pt → px (4/3)
 
-  // The 16 diamond-mode positions, in α / β / γ order (4 / 4 / 8).
-  const positions = startPositionManager.getAllStartPositionVariations(GridMode.DIAMOND);
+  // The 16 diamond-mode positions, in α / β / γ order (4 / 4 / 8). The manager
+  // bakes propType STAFF onto each motion; force HAND so the prepared motion
+  // carries HAND (what PropSvg's mirror check reads), matching PositionVisualizer.
+  const positions = startPositionManager
+    .getAllStartPositionVariations(GridMode.DIAMOND)
+    .map((p) => ({
+      ...p,
+      motions: {
+        blue: p.motions?.blue ? { ...p.motions.blue, propType: PropType.HAND } : undefined,
+        red: p.motions?.red ? { ...p.motions.red, propType: PropType.HAND } : undefined,
+      },
+    }));
 
   // Mini box geometry, measured off the proof (pt). 99.5pt squares, pitch 120pt.
   const COLS = [75, 195, 315, 435];
   const colX = (i: number): number => COLS[i] ?? 0;
   const SIZE = 99.5;
-  const ROW_A = 157;
-  const ROW_B = 355;
-  const ROW_G1 = 551.5;
-  const ROW_G2 = 657.5;
+
+  // ── Vertical flow (pt) ────────────────────────────────────────────────────
+  // This page is dense (title + intro + 3 figure sections), so positions are
+  // DERIVED from a few spacing knobs instead of hand-placed, giving an even
+  // rhythm: the title sits at the SAME y as The Grid's title (pages stay
+  // consistent), then every major block — intro, Alpha, Beta, Gamma — is
+  // separated by the same GAP, and the trailing bottom margin lands on GAP too.
+  // Tune GAP to breathe the whole page; everything re-derives.
+  const TITLE_Y = 10.6; // identical to The Grid's title run → consistent across pages
+  const TITLE_H = 40;
+  const GAP = 24; // even gap between major blocks
+  const G_IN = 8; // heading→minis and minis→description
+  const ROW_GAP = 6; // between the two Gamma rows
+  const LINE = 18; // intro line height
+
+  const introY = TITLE_Y + TITLE_H + GAP;
+  const introBottom = introY + 2 * LINE + 14;
+  const aHeadY = introBottom + GAP;
+  const ROW_A = aHeadY + 22 + G_IN;
+  const aDescY = ROW_A + SIZE + G_IN;
+  const bHeadY = aDescY + 18 + GAP;
+  const ROW_B = bHeadY + 22 + G_IN;
+  const bDescY = ROW_B + SIZE + G_IN;
+  const gHeadY = bDescY + 18 + GAP;
+  const ROW_G1 = gHeadY + 22 + G_IN;
+  const ROW_G2 = ROW_G1 + SIZE + ROW_GAP;
+  const gDescY = ROW_G2 + SIZE + G_IN;
 
   // Row for the i-th position: α (0–3), β (4–7), γ row1 (8–11), γ row2 (12–15).
   const rowFor = (i: number): number =>
@@ -58,21 +91,21 @@
 
   // Text runs extracted from PDF p8 (top-left origin, points).
   const RUNS: Run[] = [
-    { x: 201.1, y: 8, w: 218.4, h: 40, title: true, t: "Hand Positions" },
+    { x: 201.1, y: TITLE_Y, w: 218.4, h: TITLE_H, title: true, t: "Hand Positions" },
 
-    { x: 64.4, y: 44.2, w: 491.6, h: 15, t: "There are multiple ways to combine two hand points to form a hand position." },
-    { x: 96.4, y: 62.2, w: 235.8, h: 15, t: "Positions can be rotated or mirrored." },
-    { x: 335.4, y: 62.2, w: 188.6, h: 15, b: true, legend: true, t: "Red = Right and Blue = Left." },
-    { x: 42.5, y: 80.2, w: 535.4, h: 15, t: "In The Kinetic Alphabet, our first three positions are called Alpha, Beta, and Gamma." },
+    { x: 64.4, y: introY, w: 491.6, h: 15, t: "There are multiple ways to combine two hand points to form a hand position." },
+    { x: 96.4, y: introY + LINE, w: 235.8, h: 15, t: "Positions can be rotated or mirrored." },
+    { x: 335.4, y: introY + LINE, w: 188.6, h: 15, b: true, legend: true, t: "Red = Right and Blue = Left." },
+    { x: 42.5, y: introY + 2 * LINE, w: 535.4, h: 15, t: "In The Kinetic Alphabet, our first three positions are called Alpha, Beta, and Gamma." },
 
-    { x: 275.0, y: 128.0, w: 54.8, h: 22, sub: true, t: "Alpha" },
-    { x: 75.9, y: 263.8, w: 454.5, h: 18, i: true, t: "In Alpha, the hands occupy the points across from each other." },
+    { x: 275.0, y: aHeadY, w: 54.8, h: 22, sub: true, t: "Alpha" },
+    { x: 75.9, y: aDescY, w: 454.5, h: 18, i: true, t: "In Alpha, the hands occupy the points across from each other." },
 
-    { x: 283.9, y: 326.6, w: 42.4, h: 22, sub: true, t: "Beta" },
-    { x: 150.1, y: 461.5, w: 308.2, h: 18, i: true, t: "In Beta, the hands occupy the same point." },
+    { x: 283.9, y: bHeadY, w: 42.4, h: 22, sub: true, t: "Beta" },
+    { x: 150.1, y: bDescY, w: 308.2, h: 18, i: true, t: "In Beta, the hands occupy the same point." },
 
-    { x: 269.3, y: 520.3, w: 71.5, h: 22, sub: true, t: "Gamma" },
-    { x: 154.1, y: 764.0, w: 301.9, h: 18, i: true, t: "In Gamma, the hands form a right angle." },
+    { x: 269.3, y: gHeadY, w: 71.5, h: 22, sub: true, t: "Gamma" },
+    { x: 154.1, y: gDescY, w: 301.9, h: 18, i: true, t: "In Gamma, the hands form a right angle." },
   ];
 </script>
 

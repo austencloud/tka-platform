@@ -15,20 +15,37 @@
    * canonical prop hand path, placed on the diamond's W/E hand points.
    */
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
-  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
+  import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   const S = 816 / 612; // pt → px (4/3)
 
-  // Canonical prop hand path (static/images/props/hand.svg, viewBox 75×100).
-  const HAND =
-    "M11.17 44.59h3.37V12.7a5.61 5.61 0 1 1 11.2-.01v31.9h3.32V5.72A5.5 5.5 0 0 1 34.66 0a5.55 5.55 0 0 1 5.58 5.77v38.81h3.32V13.56c0-2.99 1.95-5.19 4.97-5.64 3.08-.45 6.18 2.1 6.19 5.15q.02 5.73 0 11.46v38.13c0 .79.16 1.47.94 1.87.85.44 1.73.15 2.27-.77l6.41-10.87c1.64-2.79 4.42-3.73 7.43-2.48 3.04 1.26 4.15 4.73 2.41 7.7L65.3 73.19c-2.17 3.68-4.29 7.4-6.55 11.03a18 18 0 0 1-2.81 3.27 46 46 0 0 1-14.76 9.87c-5.01 2.03-10.23 3.03-15.63 2.51-9.85-.94-17.1-5.78-21.71-14.35A32 32 0 0 1 .26 73a76 76 0 0 1-.25-6.23L0 25.08a5.6 5.6 0 0 1 5.74-5.7 5.5 5.5 0 0 1 5.42 5.41z";
-  // Hand placed centred on a 950-space grid point, scaled up from its 75×100 box.
-  const HS = 1.9;
-  const handTf = (px: number, py: number) => `translate(${px - 37.5 * HS}, ${py - 50 * HS}) scale(${HS})`;
-  const W_HAND = { x: 331.9, y: 475 };
-  const E_HAND = { x: 618.1, y: 475 };
+  // The labelled diagram's two hands ARE a real pictograph: ALPHA3 (blue hand at
+  // West, red hand at East) rendered with the prop forced to HAND, so the hand
+  // size and the red right-hand mirror come from the canonical renderer instead
+  // of a hand-rolled SVG path.
+  const ALPHA3_RAW = startPositionManager
+    .getAllStartPositionVariations(GridMode.DIAMOND)
+    .find((p) => p.startPosition === GridPosition.ALPHA3);
+  // Force the motions' prop to HAND so the prepared motion carries HAND (what
+  // PropSvg's red-hand mirror reads); the manager bakes STAFF by default.
+  const ALPHA3 = ALPHA3_RAW
+    ? {
+        ...ALPHA3_RAW,
+        motions: {
+          blue: ALPHA3_RAW.motions?.blue
+            ? { ...ALPHA3_RAW.motions.blue, propType: PropType.HAND }
+            : undefined,
+          red: ALPHA3_RAW.motions?.red
+            ? { ...ALPHA3_RAW.motions.red, propType: PropType.HAND }
+            : undefined,
+        },
+      }
+    : undefined;
 
-  type Run = { x: number; y: number; w: number; h: number; t: string; b?: boolean; s?: boolean; title?: boolean };
+  type Run = { x: number; y: number; w: number; h: number; t: string; b?: boolean; s?: boolean; title?: boolean; op?: boolean };
 
   // Text runs extracted from PDF p7 (coords = top-left origin, points).
   // b = bold (g_d0_f2), s = script heading (g_d0_f4), title = page title.
@@ -72,23 +89,34 @@
     { x: 287.7, y: 556.8, w: 28.4, h: 20, s: true, t: "Box" },
     { x: 452.8, y: 556.8, w: 83.6, h: 20, s: true, t: "8-point grid" },
 
+    // Operators between the bottom minis: Diamond + Box = 8-point grid.
+    // Centred in the gaps (minis at x 35.5 / 225 / 414.5) on the mini mid-line.
+    { x: 190, y: 650, w: 40, h: 34, op: true, t: "+" },
+    { x: 379.5, y: 650, w: 40, h: 34, op: true, t: "=" },
+
     // Footer line
     { x: 116.5, y: 760.9, w: 379.0, h: 19, t: "We’ll use diamond mode to learn each concept." },
   ];
 
   // Central diagram box (pt, square so the grid stays round) + bottom grid boxes.
-  const DIAG = { x: 300, y: 195, w: 260, h: 260 };
-  const MINI = { y: 580, w: 150, h: 150 };
+  // Measured off the proof: the figure's center lands at (444.3, 360.8)pt with an
+  // outer-point radius of 94.75pt, i.e. a 300pt-square 950-viewBox fit at this
+  // origin. Matching it puts every grid dot exactly where the proof's are, so the
+  // straight callout arrows below line up with the real pictograph's points.
+  const DIAG = { x: 294.3, y: 210.8, w: 300, h: 300 };
+  // Bottom minis measured off the proof: 159.5pt squares at x 35.5 / 225 / 414.5,
+  // top y589 (bottom 748.5, ~12pt above the footer — the proof's tight, even gap).
+  const MINI = { y: 589, w: 159.5, h: 159.5 };
   const minis: { x: number; type: "diamond" | "box" | "merged" }[] = [
-    { x: 40, type: "diamond" },
-    { x: 227, type: "box" },
-    { x: 420, type: "merged" },
+    { x: 35.5, type: "diamond" },
+    { x: 225, type: "box" },
+    { x: 414.5, type: "merged" },
   ];
 </script>
 
 <!-- A square grid figure: white sheet + canonical GridSvg forced to ink (light
      mode). `hands` overlays the two prop hands on the diamond's W/E hand points. -->
-{#snippet figure(type: "diamond" | "box" | "merged", hands = false)}
+{#snippet figure(type: "diamond" | "box" | "merged")}
   <svg class="fig" viewBox="0 0 950 950">
     <rect width="950" height="950" fill="#ffffff" />
     {#if type === "merged"}
@@ -96,10 +124,6 @@
       <GridSvg gridMode={GridMode.BOX} darkMode={false} />
     {:else}
       <GridSvg gridMode={type === "box" ? GridMode.BOX : GridMode.DIAMOND} darkMode={false} />
-    {/if}
-    {#if hands}
-      <path d={HAND} fill="#2e3192" transform={handTf(W_HAND.x, W_HAND.y)} />
-      <path d={HAND} fill="#cc2127" transform={handTf(E_HAND.x, E_HAND.y)} />
     {/if}
   </svg>
 {/snippet}
@@ -110,7 +134,25 @@
     class="diagram"
     style="left:{DIAG.x * S}px; top:{DIAG.y * S}px; width:{DIAG.w * S}px; height:{DIAG.h * S}px"
   >
-    {@render figure("diamond", true)}
+    {#if ALPHA3}
+      <PictographContainer
+        pictographData={ALPHA3}
+        gridMode={GridMode.DIAMOND}
+        bluePropTypeOverride={PropType.HAND}
+        redPropTypeOverride={PropType.HAND}
+        showGrid={true}
+        showTKA={false}
+        showPositions={false}
+        showReversals={false}
+        showTnD={false}
+        showElemental={false}
+        showNonRadialPoints={false}
+        showHandPoints={true}
+        darkMode={false}
+        printMode={true}
+        disableTransitions={true}
+      />
+    {/if}
   </div>
 
   {#each minis as m}
@@ -128,6 +170,7 @@
       class:b={r.b}
       class:s={r.s}
       class:t={r.title}
+      class:op={r.op}
       style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w * S}px; font-size:{r.h * S}px"
       >{r.t}</span
     >
@@ -140,13 +183,14 @@
         <path d="M0,0 L6,3 L0,6 Z" fill="#222" />
       </marker>
     </defs>
-    <!-- hand points → the two hand points -->
-    <path d="M442,309 Q418,320 396,323" />
-    <path d="M453,309 Q468,317 467,323" />
-    <!-- center point → center dot -->
-    <path d="M420,398 Q430,365 430,336" />
-    <!-- outer points → bottom outer dot -->
-    <path d="M512,432 Q472,424 444,409" />
+    <!-- "hand points" → the two hand points (straight, splayed down to W/E hands) -->
+    <path d="M439,322 L410.4,337.2" />
+    <path d="M450,322 L479.6,337.3" />
+    <!-- "center point" → center dot (straight, up-right, head reaching the dot) -->
+    <path d="M415,390 L439,368" />
+    <!-- "outer points" → east + south outer points (two arrows, tails clear of the label) -->
+    <path d="M518,420 L532,377" />
+    <path d="M505,443 L462,450" />
   </svg>
 </div>
 
@@ -168,6 +212,12 @@
   }
   .run.b {
     font-weight: 700;
+  }
+  /* The + / = operators between the bottom minis — heavy, centred in their box. */
+  .run.op {
+    text-align: center;
+    font-weight: 700;
+    color: #1a1a1a;
   }
   /* Script headings (Diamond / Box / 8-point grid) + the page title — the book's
      header typeface. */

@@ -5,4 +5,4 @@
  * on-screen viewer and the printout (numbers default ON; toggle off when you
  * just want to read, not print).
  */
-export const pageNumberPrefs = $state({ show: true });
+export const pageNumberPrefs = $state({ show: false });

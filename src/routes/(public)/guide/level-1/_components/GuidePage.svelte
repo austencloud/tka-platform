@@ -39,7 +39,7 @@
 </script>
 
 <section class="guide-page" class:full-bleed={fullBleed}>
-  {#if label}<span class="page-tag" aria-hidden="true">{label}</span>{/if}
+  {#if label && !fullBleed}<span class="page-tag" aria-hidden="true">{label}</span>{/if}
   <div class="page-body">
     {#if title}
       <header class="page-header">
