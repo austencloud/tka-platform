@@ -7,8 +7,10 @@
 import type { Component } from "svelte";
 import TheGridPage from "../_pages/TheGridPage.svelte";
 import HandPositionsPage from "../_pages/HandPositionsPage.svelte";
+import HandMotionsPage from "../_pages/HandMotionsPage.svelte";
 
 export const BUILT: Record<string, Component> = {
   "the-grid": TheGridPage,
   "hand-positions": HandPositionsPage,
+  "hand-motions": HandMotionsPage,
 };
