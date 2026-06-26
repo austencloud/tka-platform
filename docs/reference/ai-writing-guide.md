@@ -39,6 +39,24 @@ Real mistakes Claude made. Don't repeat them.
 
 ---
 
+## Semicolons (scope, not a ban)
+
+Semicolons are not pretentious by default; context is. In UI microcopy, buttons,
+and marketing lines the conversational register makes a semicolon read stiff, so
+use a period or two short sentences instead. In long-form prose (docs,
+explanations) a semicolon joining two related clauses is fine when it genuinely
+clarifies a complex sentence.
+
+| Context | Rule |
+|---------|------|
+| UI microcopy, buttons, marketing copy | Avoid. Use a period or two short sentences. |
+| Long-form prose / docs | Allowed when it clarifies a genuinely complex sentence. |
+
+BAD (UI nudge): "You pay now; it ships when printed."
+GOOD (UI nudge): "You pay now and it ships once printed."
+
+---
+
 ## Blacklisted Words
 
 | Category | Words |
