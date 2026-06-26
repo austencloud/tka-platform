@@ -67,6 +67,10 @@ export interface ImageExportOptions {
   showCreatorName: boolean;
   showNotes: boolean;
   showQRCode: boolean;
+  /** LOOP mandalas in empty col-0 cells. Mirrors imageComposition.showMandala.
+   *  Read only from visibilityOverrides (no global-vm fallback), so omitting it
+   *  left the downloaded card with mandalas always off despite the toggle. */
+  showMandala: boolean;
   showBirthday: boolean;
   showGrid: boolean;
   darkMode: boolean;
@@ -368,13 +372,17 @@ export class SequenceModalExporter {
           darkMode: options.darkMode,
           showQRCode: options.showQRCode,
           showGrid: options.showGrid,
+          showMandala: options.showMandala,
         },
       });
 
       const seq = deps.sequence;
       const rawName =
         seq.displayName || seq.intendedWord || seq.word || "sequence";
-      const simplified = greekToAscii(simplifyRepeatedWord(rawName));
+      // Keep the real Greek glyphs (Σ, Φ, Λ…) in the filename — sanitizeFilename
+      // preserves Unicode and only strips truly-illegal path chars. Transliterating
+      // to ASCII ("phi") was the old behavior Austen rejected.
+      const simplified = simplifyRepeatedWord(rawName);
       const safeName = sanitizeFilename(simplified) || "sequence";
       const filename = `${safeName}.png`;
 

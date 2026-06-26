@@ -9,6 +9,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
 import type { ShareResult } from "./types";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
 
 export class SequenceImageSharer {
   constructor(private readonly renderer: SequenceRenderer) {}
@@ -98,15 +99,30 @@ export class SequenceImageSharer {
     userName: string
   ): Promise<Blob> {
     const imageSettings = getImageCompositionManager();
+    const stepCount = sequence.steps?.length ?? 0;
+    // The panel's column chip stores STEP columns; the assembler wants the total
+    // including the start-position column, so add +1 when start is shown — the
+    // same adjustment sequence-modal-exporter.exportImage applies.
+    const stepColumns = imageSettings.getColumnCountForStepCount(stepCount);
+    const columnCount =
+      stepColumns != null
+        ? stepColumns + (imageSettings.includeStartPosition ? 1 : 0)
+        : undefined;
 
     return this.renderer.renderSequenceToBlob(sequence, {
       stepSize: 240,
       format: "PNG",
       quality: 1.0,
       includeStartPosition: imageSettings.includeStartPosition,
+      // Previously this path threaded only word/difficulty/footer + darkMode, so
+      // copy/download/share silently ignored the LOOP, mandala, QR, grid, columns
+      // and start-layout toggles the user set in the export panel.
+      startPositionLayout: imageSettings.getStartPositionLayoutForStepCount(stepCount),
+      columnCount,
       addStepNumbers: imageSettings.addStepNumbers,
       addWord: imageSettings.addWord,
       addDifficultyLevel: imageSettings.addDifficultyLevel,
+      showLoopGlyph: imageSettings.showLoopGlyph,
       addUserInfo: imageSettings.addUserInfo,
       userName,
       showCreatorName: imageSettings.showCreatorName,
@@ -115,6 +131,9 @@ export class SequenceImageSharer {
       addReversalSymbols: true,
       visibilityOverrides: {
         darkMode: imageSettings.darkMode,
+        showQRCode: imageSettings.showQRCode,
+        showGrid: getVisibilityStateManager().getGridVisibility(),
+        showMandala: imageSettings.showMandala,
       },
     });
   }

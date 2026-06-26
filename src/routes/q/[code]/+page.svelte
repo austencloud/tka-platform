@@ -329,6 +329,7 @@
           showCreatorName: ic.showCreatorName,
           showNotes: ic.showNotes,
           showQRCode: ic.showQRCode,
+          showMandala: ic.showMandala ?? false,
           showBirthday: ic.showBirthday,
           showGrid: getVisibilityStateManager().getGridVisibility(),
           darkMode: ic.darkMode,

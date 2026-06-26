@@ -403,6 +403,11 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         showCreatorName: imgShowCreatorName,
         showNotes: imgShowNotes,
         showQRCode: imgShowQRCode,
+        // Same as showLoopGlyph: read straight from the composition manager (the
+        // Mandala chip's store). The assembler only honors showMandala via
+        // visibilityOverrides with no global fallback, so without this the
+        // downloaded card never drew mandalas even with the toggle on.
+        showMandala: getImageCompositionManager().showMandala,
         showBirthday: getImageCompositionManager().showBirthday,
         showGrid: getVisibilityStateManager().getGridVisibility(),
         darkMode: exportOptions.imageDarkMode,
