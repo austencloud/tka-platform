@@ -45,8 +45,12 @@ export function createTempoPracticeState() {
     totalRoundsCompleted: 0,
     loopsCompleted: 0,
     loopsRemaining: 5,
-    progressionMode: "auto",
+    progressionMode: "smooth",
     readyToAdvance: false,
+    held: false,
+    startBpm: 15,
+    maxBpm: 300,
+    smoothStep: 1,
   });
 
   // Completion message state

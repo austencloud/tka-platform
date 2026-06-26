@@ -27,8 +27,12 @@
   // Display values fall back to the orchestrator defaults.
   let startBpm = $derived(config.startBpm ?? 15);
   let increment = $derived(config.increment ?? 5);
+  let smoothStep = $derived(config.smoothStep ?? 1);
   let roundsPerLevel = $derived(config.roundsPerLevel ?? 5);
-  let progressionMode: ProgressionMode = $derived(config.progressionMode ?? "auto");
+  // Migrate the legacy "auto" value to the new "smooth" default for display.
+  let progressionMode: ProgressionMode = $derived(
+    ((config.progressionMode as string) === "auto" ? "smooth" : config.progressionMode) ?? "smooth"
+  );
 
   function clamp(v: number, min: number, max: number) {
     return Math.max(min, Math.min(max, v));
@@ -40,14 +44,24 @@
   function setIncrement(next: number) {
     onUpdate({ increment: clamp(next, 1, 30) });
   }
+  function setSmoothStep(next: number) {
+    onUpdate({ smoothStep: clamp(next, 1, 10) });
+  }
   function setRounds(next: number) {
     onUpdate({ roundsPerLevel: clamp(next, 1, 10) });
   }
 
   const MODE_OPTIONS: { value: ProgressionMode; label: string }[] = [
+    { value: "smooth", label: "Smooth" },
+    { value: "stepped", label: "Stepped" },
     { value: "manual", label: "Manual" },
-    { value: "auto", label: "Auto" },
   ];
+
+  const HINTS: Record<ProgressionMode, string> = {
+    smooth: "Tempo rises a little after every loop — barely noticeable, but it adds up.",
+    stepped: "Holds each tempo for a set of loops, then speeds up by the speed step.",
+    manual: "Holds the tempo. You tap Faster on the bar to speed up when you're ready.",
+  };
 </script>
 
 <Popover.Root bind:open>
@@ -74,10 +88,6 @@
             <header class="config-header">Practice ramp</header>
 
             <div class="config-body">
-              {@render stepper("Start tempo", startBpm, "BPM", () => setStartBpm(startBpm - 5), () => setStartBpm(startBpm + 5))}
-              {@render stepper("Speed step", increment, "BPM", () => setIncrement(increment - 1), () => setIncrement(increment + 1))}
-              {@render stepper("Loops per level", roundsPerLevel, "", () => setRounds(roundsPerLevel - 1), () => setRounds(roundsPerLevel + 1))}
-
               <div class="config-row mode-row">
                 <span class="config-label">Progression</span>
                 <div class="mode-control">
@@ -91,11 +101,18 @@
                 </div>
               </div>
 
-              <p class="config-hint">
-                {progressionMode === "manual"
-                  ? "Tempo holds each level. You tap Speed Up when you're ready."
-                  : "Tempo ramps up on its own after each set of loops."}
-              </p>
+              <p class="config-hint">{HINTS[progressionMode]}</p>
+
+              {@render stepper("Start tempo", startBpm, "BPM", () => setStartBpm(startBpm - 5), () => setStartBpm(startBpm + 5))}
+
+              {#if progressionMode === "smooth"}
+                {@render stepper("BPM per loop", smoothStep, "", () => setSmoothStep(smoothStep - 1), () => setSmoothStep(smoothStep + 1))}
+              {:else if progressionMode === "stepped"}
+                {@render stepper("Loops per speed-up", roundsPerLevel, "", () => setRounds(roundsPerLevel - 1), () => setRounds(roundsPerLevel + 1))}
+                {@render stepper("Speed step", increment, "BPM", () => setIncrement(increment - 1), () => setIncrement(increment + 1))}
+              {:else}
+                {@render stepper("Speed step", increment, "BPM", () => setIncrement(increment - 1), () => setIncrement(increment + 1))}
+              {/if}
             </div>
           </div>
         {/if}

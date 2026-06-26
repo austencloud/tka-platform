@@ -352,15 +352,26 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
           <header class="drawer-header">
                 <div class="drawer-header-left-actions">
                   {#if ctx.practiceActive}
-                    <button
-                      type="button"
-                      class="header-action-btn practice-exit"
-                      onclick={ctx.handlePracticeStop}
-                      aria-label="Exit practice mode"
-                    >
-                      <i class="fas fa-arrow-left" aria-hidden="true"></i>
-                      <span>Exit Practice</span>
-                    </button>
+                    <div class="practice-step-nav" role="group" aria-label="Step through the sequence">
+                      <button
+                        type="button"
+                        class="header-action-btn"
+                        onclick={() => ctx.handlePracticeStep(-1)}
+                        aria-label="Previous step"
+                        title="Previous step"
+                      >
+                        <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="header-action-btn"
+                        onclick={() => ctx.handlePracticeStep(1)}
+                        aria-label="Next step"
+                        title="Next step"
+                      >
+                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                      </button>
+                    </div>
                   {:else if isMobileWidth}
                     {@render overflowMenu(true)}
                   {:else}
@@ -548,7 +559,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       onFocusPane={ctx.enterEditMode}
                       onUnfocusPane={ctx.exitEditMode}
                       onStepClick={ctx.handleStepClick}
-                      onQrPlayClick={() => playFromQr(ctx)}
+                      onQrPlayClick={ctx.practiceActive ? undefined : () => playFromQr(ctx)}
                       onCanvasReady={ctx.handleCanvasReady}
                       {rerenderTrigger}
                       onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
@@ -698,7 +709,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
               isPlaying={ctx.isPlayingLocal}
               onBpmChange={ctx.handleBpmChange}
               onPlayPause={ctx.handlePlaybackToggle}
-              onAdvance={ctx.handlePracticeAdvance}
+              onStepLevel={ctx.handlePracticeStepLevel}
+              onToggleHold={ctx.handlePracticeToggleHold}
               onStop={ctx.handlePracticeStop}
             />
           {/if}
@@ -891,18 +903,10 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
   }
 
-  .header-action-btn.practice-exit {
-    gap: 8px;
-    padding: 0 16px;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    color: #fff;
-    background: var(--semantic-error, #ef4444);
-  }
-
-  .header-action-btn.practice-exit:hover {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 85%, white);
-    color: #fff;
+  .practice-step-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .header-action-divider {

@@ -2,6 +2,8 @@
   import MandalaPane from "./MandalaPane.svelte";
   import TunnelArtView from "../tunnel/TunnelArtView.svelte";
   import ArtSettingsPanel from "./ArtSettingsPanel.svelte";
+  import ExportProgressOverlay from "./ExportProgressOverlay.svelte";
+  import { sequenceModalExporter } from "../services/sequence-modal-exporter.svelte";
   import { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
   import { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -89,6 +91,11 @@
   function handleExport() {
     onArtExport?.({ artType, controller, mandalaController });
   }
+
+  // Tunnel export drives the shared sequenceModalExporter (mandala uses its own
+  // worker), so its progress surfaces over the canvas here — the Art pane has no
+  // Download-panel chrome of its own. Cancel maps to the exporter's cancel.
+  const exportState = $derived(sequenceModalExporter.state);
 </script>
 
 <div class="art-pane">
@@ -105,6 +112,13 @@
       />
     {:else}
       <TunnelArtView {sequence} {playback} {controller} {bpm} {bluePropType} {redPropType} />
+    {/if}
+
+    {#if artType === "tunnel" && exportState.isExporting && exportState.progress}
+      <ExportProgressOverlay
+        progress={exportState.progress}
+        onCancel={() => sequenceModalExporter.cancel()}
+      />
     {/if}
   </div>
 

@@ -16,6 +16,7 @@ import type { HapticFeedback } from "$lib/shared/application/services/haptic-fee
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { sequenceModalExporter, type Video3DExportDependencies } from "$lib/shared/sequence-viewer/services/sequence-modal-exporter.svelte";
+import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
 import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
 import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -90,6 +91,99 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
   function dismissPreview() {
     sequenceModalExporter.dismissPreview();
     accessibilityHelper.announce("Ready to export again");
+  }
+
+  // The tunnel (Art mode) export drives the shared offscreen engine with a
+  // square sourceSizeOverride (the live 2D animator canvas is unmounted in Art
+  // mode) + the kaleidoscope's per-beat layers, all chrome suppressed. A bare
+  // square placeholder satisfies the dependency signature without touching the
+  // live DOM.
+  function createArtExportPlaceholderCanvas(size: number): HTMLCanvasElement {
+    const c = document.createElement("canvas");
+    c.width = size;
+    c.height = size;
+    return c;
+  }
+
+  /**
+   * Tunnel (Art-mode) video export. Reuses the SAME delivery path as the 2D
+   * download — visible success/error toasts + auto-download on success. The
+   * orchestrator used to call sequenceModalExporter.exportAnimation directly and
+   * drop the resulting blob (no download, errors only announced to a screen
+   * reader, no progress UI), which read as "Export Video does nothing".
+   */
+  async function exportTunnel(
+    effectiveSequence: SequenceData | null,
+    playbackController: AnimationPlaybackController | null,
+    modalAnimationState: AnimationPanelState,
+    hapticService: HapticFeedback | null,
+    additionalLayersForBeat: (beat: number) => AdditionalLayerProps[],
+  ) {
+    if (sequenceModalExporter.state.isExporting) return;
+
+    // Take-it-home gate: same as the 2D path — pulling the file down needs a
+    // free account.
+    if (!ensureFullAccountForExport()) return;
+
+    if (!playbackController) {
+      showToast("Animation not ready yet. Wait a moment and try again.", "error");
+      return;
+    }
+
+    hapticService?.trigger("selection");
+
+    const opts = exportOptions.getVideoOptions();
+    const squareSize = opts.resolution ?? 1080;
+
+    const callbacks = {
+      onSuccess: (message: string) => {
+        showToast(message, "success");
+        accessibilityHelper.announce(message, "assertive");
+      },
+      onError: (message: string) => {
+        // Visible toast — the old Art path announced to the screen reader only,
+        // so a failed tunnel export looked identical to nothing happening.
+        showToast(message, "error");
+        accessibilityHelper.announce(`Export failed: ${message}`, "assertive");
+      },
+      onHaptic: (type: "success" | "error" | "selection") => {
+        hapticService?.trigger(type);
+      },
+    };
+
+    await sequenceModalExporter.exportAnimation(
+      {
+        fps: opts.fps,
+        loopCount: opts.loopCount,
+        resolution: opts.resolution,
+        includeStartPosition: opts.includeStartPosition,
+        includeEndHold: opts.includeEndHold,
+        sourceSizeOverride: squareSize,
+        additionalLayersForBeat,
+        overlayOverrides: {
+          tkaGlyph: false,
+          stepNumbers: false,
+          wordHeader: false,
+          progressBar: false,
+          bluePathLines: false,
+          redPathLines: false,
+          grid: false,
+        },
+      },
+      {
+        canvas: createArtExportPlaceholderCanvas(squareSize),
+        playbackController,
+        panelState: modalAnimationState,
+      },
+      callbacks,
+    );
+
+    if (
+      sequenceModalExporter.state.previewBlobUrl &&
+      !sequenceModalExporter.state.error
+    ) {
+      autoDownloadVideo(effectiveSequence);
+    }
   }
 
   function handleStopRecording() {
@@ -340,6 +434,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     handleCancelExport,
     handleRetryExport,
     handleExport,
+    exportTunnel,
     handleStopRecording,
     dismissPreview,
     dispose,

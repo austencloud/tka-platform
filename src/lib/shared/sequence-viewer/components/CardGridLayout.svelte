@@ -789,9 +789,19 @@
   /* Clickable cells */
   .pictograph-cell.clickable {
     cursor: pointer;
+    transition: transform 150ms ease, box-shadow 150ms ease, border-color 350ms ease;
   }
 
-  /* No individual cell hover scale in viewer - whole pane scales instead */
+  /* Hover affordance: scale the cell up so it reads as clickable (click to jump
+     to that step). transform is composited — it lifts the cell without shifting
+     any neighbor. z-index keeps the grown cell above its siblings. */
+  @media (hover: hover) and (pointer: fine) {
+    .pictograph-cell.clickable:hover {
+      transform: scale(1.06);
+      z-index: 8;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    }
+  }
 
   .pictograph-cell.clickable:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
@@ -946,6 +956,10 @@
 
     .pictograph-cell.current::after {
       animation: none;
+    }
+
+    .pictograph-cell.clickable:hover {
+      transform: none;
     }
 
     .grid-scroll-container {

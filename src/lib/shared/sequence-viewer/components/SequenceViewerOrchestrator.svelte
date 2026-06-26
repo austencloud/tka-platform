@@ -129,7 +129,9 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     invokeGatedAction: (type: PendingActionType, realHandler: (() => void) | (() => Promise<void>) | undefined) => void;
     handleUnifiedDarkModeToggle: () => void;
     handlePracticeStart: () => void;
-    handlePracticeAdvance: () => void;
+    handlePracticeStepLevel: (dir: 1 | -1) => void;
+    handlePracticeStep: (dir: 1 | -1) => void;
+    handlePracticeToggleHold: () => void;
     handlePracticeStop: () => void;
     onClose: () => void;
     stepHalfBeatBackward: () => void;
@@ -191,7 +193,6 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
@@ -212,7 +213,6 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import SignInSheet from "./SignInSheet.svelte";
   import GoogleOneTap from "$lib/shared/auth/components/GoogleOneTap.svelte";
 
-  import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/sequence-modal-exporter.svelte";
   import type { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
   import type { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
 
@@ -734,68 +734,19 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       return;
     }
 
-    // Tunnel: shared orchestrator export. The live 2D AnimatorCanvas is not
-    // mounted in Art mode, so pass a square sourceSizeOverride and let the
-    // offscreen engine render; inject the kaleidoscope's per-beat layers and
-    // suppress every overlay (glyph/header/progress/path lines/grid).
-    if (!playbackControllerRef) {
-      showToast("Animation not ready yet. Wait a moment and try again.", "error");
-      return;
-    }
-    if (!ensureFullAccountForExport()) return;
-
+    // Tunnel: route through the export coordinator's tunnel pipeline. It drives
+    // the shared offscreen engine (the live 2D AnimatorCanvas is unmounted in
+    // Art mode) with the kaleidoscope's per-beat layers + all chrome suppressed,
+    // AND — unlike the old inline call here — auto-downloads on success, shows a
+    // visible error toast on failure, and surfaces progress (ArtPane overlay).
     const ctrl = args.controller;
-    const opts = exportCoord.exportOptions.getVideoOptions();
-    const squareSize = opts.resolution ?? 1080;
-
-    void sequenceModalExporter.exportAnimation(
-      {
-        fps: opts.fps,
-        loopCount: opts.loopCount,
-        resolution: opts.resolution,
-        includeStartPosition: opts.includeStartPosition,
-        includeEndHold: opts.includeEndHold,
-        sourceSizeOverride: squareSize,
-        additionalLayersForBeat: (beat: number) => ctrl.additionalLayersAt(beat),
-        overlayOverrides: {
-          tkaGlyph: false,
-          stepNumbers: false,
-          wordHeader: false,
-          progressBar: false,
-          bluePathLines: false,
-          redPathLines: false,
-          grid: false,
-        },
-      },
-      {
-        // The 2D animator canvas is unmounted in Art mode; sourceSizeOverride
-        // makes the orchestrator ignore this canvas for sizing, but a non-null
-        // canvas is still required by the signature. A detached square
-        // placeholder satisfies it without touching the live DOM.
-        canvas: createArtExportPlaceholderCanvas(squareSize),
-        playbackController: playbackControllerRef,
-        panelState: modalAnimationState,
-      },
-      {
-        onSuccess: (message: string) => {
-          showToast(message, "success");
-          accessibilityHelper.announce(message, "assertive");
-        },
-        onError: (message: string) => {
-          accessibilityHelper.announce(`Export failed: ${message}`, "assertive");
-        },
-        onHaptic: (type: "success" | "error" | "selection") => {
-          hapticService?.trigger(type);
-        },
-      },
+    void exportCoord.exportTunnel(
+      effectiveSequence,
+      playbackControllerRef,
+      modalAnimationState,
+      hapticService,
+      (beat: number) => ctrl.additionalLayersAt(beat),
     );
-  }
-
-  function createArtExportPlaceholderCanvas(size: number): HTMLCanvasElement {
-    const c = document.createElement("canvas");
-    c.width = size;
-    c.height = size;
-    return c;
   }
 
   async function handleSyncToggle() {
@@ -1198,7 +1149,9 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       }
       playback.handlePracticeStart();
     },
-    handlePracticeAdvance: () => playback.handlePracticeAdvance(),
+    handlePracticeStepLevel: (dir: 1 | -1) => playback.handlePracticeStepLevel(dir),
+    handlePracticeStep: (dir: 1 | -1) => playback.handlePracticeStep(dir),
+    handlePracticeToggleHold: () => playback.handlePracticeToggleHold(),
     handlePracticeStop: () => playback.handlePracticeStop(),
     onClose: handleClose,
     stepHalfBeatBackward: playback.stepHalfBeatBackward,

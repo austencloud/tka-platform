@@ -39,6 +39,9 @@
     onEdit?: () => void;
     onPracticeToggle?: () => void;
     onPracticeConfigUpdate?: (patch: Partial<TempoPracticeConfig>) => void;
+    /** Practice mode: step to the previous/next pictograph. */
+    onStepBack?: () => void;
+    onStepForward?: () => void;
     onVideoUpload?: () => void;
     onPublish?: () => void;
     onUnpublish?: () => void;
@@ -66,6 +69,8 @@
     onEdit,
     onPracticeToggle,
     onPracticeConfigUpdate,
+    onStepBack,
+    onStepForward,
     onVideoUpload,
     onPublish,
     onUnpublish,
@@ -112,7 +117,7 @@
       {/if}
     </button>
 
-    {#if homeHref && !editingPane}
+    {#if homeHref && !editingPane && !practiceActive}
       <!-- Explicit explore-home affordance for QR/share-link visitors. A real
            anchor (not history-back) so it works even with no history stack. -->
       <a
@@ -123,6 +128,29 @@
       >
         <i class="fas fa-compass" aria-hidden="true"></i>
       </a>
+    {/if}
+
+    {#if practiceActive}
+      <div class="practice-step-nav" role="group" aria-label="Step through the sequence">
+        <button
+          type="button"
+          class="header-action-btn"
+          onclick={onStepBack}
+          aria-label="Previous step"
+          title="Previous step"
+        >
+          <i class="fas fa-chevron-left" aria-hidden="true"></i>
+        </button>
+        <button
+          type="button"
+          class="header-action-btn"
+          onclick={onStepForward}
+          aria-label="Next step"
+          title="Next step"
+        >
+          <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
     {/if}
   </div>
 
@@ -148,17 +176,7 @@
   </div>
 
   <div class="header-right">
-    {#if practiceActive}
-      <button
-        type="button"
-        class="header-action-btn practice-exit"
-        onclick={onPracticeToggle}
-        aria-label="Exit practice mode"
-      >
-        <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span>Exit Practice</span>
-      </button>
-    {:else}
+    {#if !practiceActive}
     {#if onFavorite}
       <button
         type="button"
@@ -373,18 +391,10 @@
     border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
   }
 
-  .header-action-btn.practice-exit {
-    gap: 8px;
-    padding: 0 16px;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    color: #fff;
-    background: var(--semantic-error, #ef4444);
-  }
-
-  .header-action-btn.practice-exit:hover {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 85%, white);
-    color: #fff;
+  .practice-step-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .header-action-divider {

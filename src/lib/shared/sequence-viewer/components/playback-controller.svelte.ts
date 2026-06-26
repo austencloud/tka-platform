@@ -222,11 +222,15 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     }
   }
 
-  /** Manual progression: the user tapped "Speed Up". Bump one level. */
-  function handlePracticeAdvance() {
+  /**
+   * The bar's big −/+ : step one level down (dir -1) or up (dir +1). Up at the
+   * cap stops the session (mirrors stepped auto); down floors at the start tempo.
+   */
+  function handlePracticeStepLevel(dir: 1 | -1) {
     if (!_playbackController) return;
 
-    const newBpm = practiceOrchestrator.advanceLevel();
+    const newBpm =
+      dir > 0 ? practiceOrchestrator.advanceLevel() : practiceOrchestrator.decreaseLevel();
     practiceState.updateProgress(practiceOrchestrator.getProgress());
 
     if (newBpm !== null) {
@@ -234,10 +238,16 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
       _hapticService?.trigger("selection");
     }
 
-    // advanceLevel() returns null at the cap and stops the session.
     if (!practiceOrchestrator.isActive()) {
       handlePracticeStop();
     }
+  }
+
+  /** Toggle the tempo hold — freeze the auto-climb at the current speed. */
+  function handlePracticeToggleHold() {
+    practiceOrchestrator.setHeld(!practiceState.progress.held);
+    practiceState.updateProgress(practiceOrchestrator.getProgress());
+    _hapticService?.trigger("selection");
   }
 
   function handlePracticeStop() {
@@ -254,6 +264,21 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     // No "personal best" — we don't track props, so a best BPM would just be
     // "the highest the slider was dragged to". Honest completion only.
     showToast(`Practice complete — reached ${finalBpm} BPM`, "success");
+  }
+
+  /**
+   * Practice step nav (header ‹ ›). Pauses first so the seek is actually
+   * visible — during the looping ramp a bare seek is instantly overwritten by
+   * playback, which made the buttons feel dead. Tap to park on a pictograph,
+   * tap again to step, hit play to resume the ramp.
+   */
+  function handlePracticeStep(dir: 1 | -1) {
+    if (!_playbackController) return;
+    if (isPlayingLocal) _playbackController.togglePlayback();
+    arrivedViaStepping = true;
+    if (dir > 0) _playbackController.stepFullBeatForward();
+    else _playbackController.stepFullBeatBackward();
+    _hapticService?.trigger("selection");
   }
 
   // ── Stepping ──
@@ -314,7 +339,9 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     handlePlaybackModeChange,
     handleStepClick,
     handlePracticeStart,
-    handlePracticeAdvance,
+    handlePracticeStepLevel,
+    handlePracticeStep,
+    handlePracticeToggleHold,
     handlePracticeStop,
     stepHalfBeatBackward,
     stepHalfBeatForward,

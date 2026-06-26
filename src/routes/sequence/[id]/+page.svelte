@@ -555,6 +555,8 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
           onEdit={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
           onPracticeToggle={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
           onPracticeConfigUpdate={ctx.practiceState.updateConfig}
+          onStepBack={() => ctx.handlePracticeStep(-1)}
+          onStepForward={() => ctx.handlePracticeStep(1)}
           onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
           onPublish={() => ctx.invokeGatedAction("publish", ctx.handlePublishAction)}
           onUnpublish={ctx.handleUnpublishAction}
@@ -722,7 +724,8 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
             isPlaying={ctx.isPlayingLocal}
             onBpmChange={ctx.handleBpmChange}
             onPlayPause={ctx.handlePlaybackToggle}
-            onAdvance={ctx.handlePracticeAdvance}
+            onStepLevel={ctx.handlePracticeStepLevel}
+            onToggleHold={ctx.handlePracticeToggleHold}
             onStop={ctx.handlePracticeStop}
           />
         {/if}
