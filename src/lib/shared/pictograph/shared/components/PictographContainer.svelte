@@ -27,7 +27,7 @@ with pre-prepared data for better performance.
 -->
 
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { onMount, untrack, tick } from "svelte";
   import { getVisibilityStateManager } from "../state/visibility-state.svelte";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
   import { getSettings } from "../../../application/state/app-state.svelte";
@@ -94,6 +94,11 @@ with pre-prepared data for better performance.
     cellIndex = null,
     // Musical position string (e.g., "1", "1.5", "2e") for beat number display (timeline mode)
     musicalPosition = undefined,
+    // Fires once after the first successful prepare has been applied and rendered
+    // to the DOM. Lets offscreen/export rendering await readiness deterministically
+    // instead of polling — PictographRenderer does all arrow/prop work synchronously
+    // from prepared data, so once preparedData is committed the SVG content is present.
+    onReady = undefined,
   } = $props<{
     pictographData?: (StepData | PictographData) | null;
     disableTransitions?: boolean;
@@ -135,6 +140,8 @@ with pre-prepared data for better performance.
     cellIndex?: number | null;
     /** Musical position string (e.g., "1", "1.5", "2e") for beat number display in timeline mode */
     musicalPosition?: string;
+    /** Fires once after the first prepared render commits to the DOM (deterministic export readiness signal). */
+    onReady?: () => void;
   }>();
 
   // Extract beat context from StepData if available.
@@ -429,6 +436,19 @@ with pre-prepared data for better performance.
     if (!pictographData) return "empty";
     // Just use id - transforms keep same id, loading different sequence changes id
     return pictographData.id || "no-id";
+  });
+
+  // Deterministic readiness signal for offscreen/export rendering.
+  // This effect runs after the DOM is updated, so once preparedData is committed
+  // PictographRenderer (and its synchronous arrows/props) are in the DOM. tick()
+  // flushes any trailing state before we report. Fires once per mount — export
+  // mounts a fresh container per call, so the one-shot guard is exactly right.
+  let hasReportedReady = false;
+  $effect(() => {
+    if (preparedData && !hasReportedReady && onReady) {
+      hasReportedReady = true;
+      void tick().then(() => onReady());
+    }
   });
 </script>
 
