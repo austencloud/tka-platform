@@ -62,16 +62,13 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
           <p class="price">{formattedPrice}</p>
           {#if product.preorder}
             <p class="preorder-note">
-              Pre-order{product.shipBy ? ` — ships ${product.shipBy}` : ""}. You're charged now; it ships when printed.
+              Pre-order.{product.shipBy ? ` Ships ${product.shipBy}.` : ""} You pay now and it ships once printed.
             </p>
           {/if}
           <BuyButton productId={product.id} />
           {#if state.checkoutError}
             <p class="checkout-error" role="alert">{state.checkoutError}</p>
           {/if}
-          <p class="print-note">
-            Or <a href="/">sign in</a> and print your own for free.
-          </p>
         </div>
       </div>
 
@@ -158,22 +155,11 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
     margin: 0 0 16px;
   }
 
-  .print-note {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-    margin-top: 12px;
-    text-align: center;
-  }
-
   .checkout-error {
     margin-top: 12px;
     text-align: center;
     font-size: var(--font-size-sm, 14px);
     color: var(--semantic-error, #ef4444);
-  }
-
-  .print-note a {
-    color: var(--theme-accent, #60a5fa);
   }
 
   .loading, .error {
