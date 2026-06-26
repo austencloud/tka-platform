@@ -20,7 +20,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import ExportVideoDrawer from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
   import ExportImagePanel from "./ExportImagePanel.svelte";
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
-  import PracticeProgressIndicator from "./PracticeProgressIndicator.svelte";
+  import PracticeBar from "./PracticeBar.svelte";
   import Recording3DOverlay from "./Recording3DOverlay.svelte";
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
@@ -490,9 +490,9 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                   class:record-scene-active={isRecordSceneActive}
                   class:desktop={!isMobileWidth}
                   class:sidebar-collapsed={exportSidebarCollapsed}
-                  class:has-rail={showRail}
+                  class:has-rail={showRail && !ctx.practiceActive}
                 >
-                  {#if showRail}
+                  {#if showRail && !ctx.practiceActive}
                     <ViewerContentRail
                       activeMode={ctx.viewerState.viewerMode}
                       webgl2Available={ctx.viewer3DState.webgl2Available}
@@ -670,7 +670,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                 {/if}
               {/if}
             </div>
-            {#if isMobileWidth && ctx.hasSequence && ctx.effectiveSequence}
+            {#if isMobileWidth && ctx.hasSequence && ctx.effectiveSequence && !ctx.practiceActive}
               <ViewerModeBottomBar
                 activeMode={ctx.viewerState.viewerMode}
                 webgl2Available={ctx.viewer3DState.webgl2Available}
@@ -680,11 +680,14 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
             {/if}
           </div>
           {#if ctx.practiceActive}
-            <PracticeProgressIndicator
+            <PracticeBar
               progress={ctx.practiceState.progress}
-              onStop={ctx.handlePracticeStop}
+              bpm={ctx.bpmLocal}
+              isPlaying={ctx.isPlayingLocal}
+              onBpmChange={ctx.handleBpmChange}
+              onPlayPause={ctx.handlePlaybackToggle}
               onAdvance={ctx.handlePracticeAdvance}
-              variant="floating"
+              onStop={ctx.handlePracticeStop}
             />
           {/if}
 
