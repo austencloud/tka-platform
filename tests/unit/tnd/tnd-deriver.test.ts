@@ -20,7 +20,7 @@ import {
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { calculateTnD } from "$lib/shared/pictograph/shared/domain/utils/tnd-calculator";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 
 const { NORTH, EAST, SOUTH, WEST, NORTHEAST, SOUTHEAST, SOUTHWEST, NORTHWEST } =
   GridLocation;
