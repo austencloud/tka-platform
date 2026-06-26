@@ -139,8 +139,8 @@
       </h2>
     {:else}
       <div class="title-group">
-        <h2 class="sequence-title">Sequence Viewer</h2>
-        {#if isMobile}
+        <h2 class="sequence-title">{practiceActive ? "Practice Mode" : "Sequence Viewer"}</h2>
+        {#if isMobile && !practiceActive}
           <p class="export-hint">Tap to download</p>
         {/if}
       </div>
@@ -148,6 +148,17 @@
   </div>
 
   <div class="header-right">
+    {#if practiceActive}
+      <button
+        type="button"
+        class="header-action-btn practice-exit"
+        onclick={onPracticeToggle}
+        aria-label="Exit practice mode"
+      >
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        <span>Exit Practice</span>
+      </button>
+    {:else}
     {#if onFavorite}
       <button
         type="button"
@@ -225,6 +236,7 @@
       onUnpublish={isOwned && isSaved ? onUnpublish : undefined}
       onDeleteRequest={isOwned && isSaved ? onDeleteRequest : undefined}
     />
+    {/if}
   </div>
 </header>
 
@@ -359,6 +371,20 @@
     color: var(--semantic-error, #f87171);
     background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
     border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+  }
+
+  .header-action-btn.practice-exit {
+    gap: 8px;
+    padding: 0 16px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: #fff;
+    background: var(--semantic-error, #ef4444);
+  }
+
+  .header-action-btn.practice-exit:hover {
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 85%, white);
+    color: #fff;
   }
 
   .header-action-divider {

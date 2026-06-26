@@ -351,7 +351,17 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
         <div class="drawer-viewer-container" class:landscape={isLandscape}>
           <header class="drawer-header">
                 <div class="drawer-header-left-actions">
-                  {#if isMobileWidth}
+                  {#if ctx.practiceActive}
+                    <button
+                      type="button"
+                      class="header-action-btn practice-exit"
+                      onclick={ctx.handlePracticeStop}
+                      aria-label="Exit practice mode"
+                    >
+                      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                      <span>Exit Practice</span>
+                    </button>
+                  {:else if isMobileWidth}
                     {@render overflowMenu(true)}
                   {:else}
                     <button
@@ -421,6 +431,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                   <div class="drawer-header-title">
                     {#if isAnyExportActive}
                       {isVideoExportActive ? (ctx.renderMode === '3d' ? "Record Scene" : "Download Animation") : isImageExportActive ? "Download Card" : "Upload Video"}
+                    {:else if ctx.practiceActive}
+                      Practice Mode
                     {:else}
                       Sequence Viewer
                     {/if}
@@ -466,7 +478,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                     </button>
                   {/if}
 
-                  {#if !isMobileWidth}
+                  {#if !isMobileWidth && !ctx.practiceActive}
                     {@render overflowMenu(false)}
                   {/if}
 
@@ -877,6 +889,20 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     color: var(--semantic-error, #f87171);
     background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
     border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+  }
+
+  .header-action-btn.practice-exit {
+    gap: 8px;
+    padding: 0 16px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: #fff;
+    background: var(--semantic-error, #ef4444);
+  }
+
+  .header-action-btn.practice-exit:hover {
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 85%, white);
+    color: #fff;
   }
 
   .header-action-divider {

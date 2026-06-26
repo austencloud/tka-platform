@@ -1,9 +1,9 @@
 <!--
   PracticeBar.svelte
 
-  Docked cockpit bar for focused practice mode. Replaces the floating progress
-  pill while practice is active: transport + tempo + level progress + level-up,
-  all in one full-width strip at the bottom of the viewer.
+  Docked cockpit bar for focused practice mode. Centered, prominent controls:
+  transport + tempo + level progress + level-up + a clear exit, in one
+  full-width strip at the bottom of the viewer.
 
   Auto mode: the "N to next" countdown drives the ramp (amps at 0); Level Up
   jumps early. Manual mode: holds each level; Level Up glows once ready.
@@ -39,7 +39,6 @@
     if (next !== bpm) onBpmChange(next);
   }
 
-  // Level the user is on (currentLevel counts *completed* levels).
   let levelLabel = $derived(`Lv ${progress.currentLevel + 1}`);
 
   let countdownLabel = $derived.by(() => {
@@ -50,133 +49,174 @@
 </script>
 
 <div class="practice-bar" role="region" aria-label="Practice controls">
-  <button class="pb-btn exit" type="button" onclick={onStop} aria-label="Exit practice">
-    <i class="fas fa-xmark" aria-hidden="true"></i>
-    <span class="pb-label">Exit</span>
-  </button>
-
-  <button
-    class="pb-btn"
-    type="button"
-    onclick={onPlayPause}
-    aria-label={isPlaying ? "Pause" : "Play"}
-  >
-    <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-  </button>
-
-  <div class="pb-tempo" style="--bpm-color: {bpmColor}">
-    <button class="pb-step" type="button" onclick={() => nudge(-1)} disabled={bpm <= BPM_MIN} aria-label="Slower">
-      <i class="fas fa-minus" aria-hidden="true"></i>
+  <div class="pb-group">
+    <button class="pb-exit" type="button" onclick={onStop} aria-label="Exit practice mode">
+      <i class="fas fa-xmark" aria-hidden="true"></i>
+      <span>Exit</span>
     </button>
-    <span class="pb-bpm">
-      <span class="pb-bpm-value">{bpm}</span>
-      <span class="pb-bpm-unit">BPM</span>
-    </span>
-    <button class="pb-step" type="button" onclick={() => nudge(1)} disabled={bpm >= BPM_MAX} aria-label="Faster">
-      <i class="fas fa-plus" aria-hidden="true"></i>
-    </button>
-  </div>
 
-  <div class="pb-progress">
-    <div class="pb-dots" aria-hidden="true">
-      {#each Array(progress.roundsPerLevel) as _, i}
-        <span class="pb-dot" class:filled={i < progress.loopsCompleted}></span>
-      {/each}
+    <span class="pb-divider" aria-hidden="true"></span>
+
+    <button
+      class="pb-play"
+      type="button"
+      onclick={onPlayPause}
+      aria-label={isPlaying ? "Pause" : "Play"}
+    >
+      <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+    </button>
+
+    <div class="pb-tempo" style="--bpm-color: {bpmColor}">
+      <button class="pb-step" type="button" onclick={() => nudge(-1)} disabled={bpm <= BPM_MIN} aria-label="Slower">
+        <i class="fas fa-minus" aria-hidden="true"></i>
+      </button>
+      <span class="pb-bpm">
+        <span class="pb-bpm-value">{bpm}</span>
+        <span class="pb-bpm-unit">BPM</span>
+      </span>
+      <button class="pb-step" type="button" onclick={() => nudge(1)} disabled={bpm >= BPM_MAX} aria-label="Faster">
+        <i class="fas fa-plus" aria-hidden="true"></i>
+      </button>
     </div>
-    <span class="pb-countdown" class:ready={progress.readyToAdvance}>{levelLabel} · {countdownLabel}</span>
-  </div>
 
-  <button
-    class="pb-btn levelup"
-    class:ready={progress.readyToAdvance}
-    type="button"
-    onclick={onAdvance}
-    aria-label="Level up to a faster tempo now"
-  >
-    <i class="fas fa-forward" aria-hidden="true"></i>
-    <span class="pb-label">Level Up</span>
-  </button>
+    <div class="pb-progress">
+      <div class="pb-dots" aria-hidden="true">
+        {#each Array(progress.roundsPerLevel) as _, i}
+          <span class="pb-dot" class:filled={i < progress.loopsCompleted}></span>
+        {/each}
+      </div>
+      <span class="pb-countdown" class:ready={progress.readyToAdvance}>{levelLabel} · {countdownLabel}</span>
+    </div>
+
+    <button
+      class="pb-levelup"
+      class:ready={progress.readyToAdvance}
+      type="button"
+      onclick={onAdvance}
+      aria-label="Level up to a faster tempo now"
+    >
+      <i class="fas fa-forward" aria-hidden="true"></i>
+      <span>Level Up</span>
+    </button>
+  </div>
 </div>
 
 <style>
   .practice-bar {
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
     width: 100%;
-    padding: 8px 12px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
-    background: var(--theme-panel-bg, rgba(12, 14, 22, 0.96));
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.35);
+    padding: 14px 16px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+    background: var(--theme-panel-bg, rgba(12, 14, 22, 0.98));
+    border-top: 2px solid color-mix(in srgb, var(--theme-accent, #8b5cf6) 45%, transparent);
+    box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.45);
     flex-shrink: 0;
     container-type: inline-size;
     container-name: practice-bar;
   }
 
-  .pb-btn {
+  /* Centered control cluster. */
+  .pb-group {
     display: flex;
-    flex-direction: column;
     align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
     justify-content: center;
-    gap: 2px;
-    min-width: var(--min-touch-target);
-    min-height: var(--min-touch-target);
-    padding: 4px 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
-    -webkit-tap-highlight-color: transparent;
+  }
+
+  .pb-divider {
+    width: 1px;
+    height: 36px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.14));
     flex-shrink: 0;
   }
 
-  .pb-btn i {
-    font-size: 15px;
+  /* Shared button base */
+  .pb-exit,
+  .pb-levelup,
+  .pb-play {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 52px;
+    padding: 0 20px;
+    border-radius: 14px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+    border: 2px solid transparent;
+    flex-shrink: 0;
   }
 
+  .pb-exit i,
+  .pb-levelup i { font-size: 16px; }
+
+  .pb-exit:active,
+  .pb-levelup:active,
+  .pb-play:active { transform: scale(0.95); }
+
+  .pb-exit:focus-visible,
+  .pb-levelup:focus-visible,
+  .pb-play:focus-visible,
+  .pb-step:focus-visible { outline: 3px solid var(--theme-accent, #6366f1); outline-offset: 2px; }
+
+  /* Exit — filled red, unmistakable */
+  .pb-exit {
+    background: var(--semantic-error, #ef4444);
+    color: #fff;
+    min-width: 96px;
+  }
   @media (hover: hover) and (pointer: fine) {
-    .pb-btn:hover {
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-      color: var(--theme-text, white);
+    .pb-exit:hover { background: color-mix(in srgb, var(--semantic-error, #ef4444) 85%, white); }
+  }
+
+  /* Play/pause — neutral square */
+  .pb-play {
+    width: 52px;
+    padding: 0;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    color: var(--theme-text, #fff);
+  }
+  .pb-play i { font-size: 18px; }
+  @media (hover: hover) and (pointer: fine) {
+    .pb-play:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1)); }
+  }
+
+  /* Level Up — filled green, prominent */
+  .pb-levelup {
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 22%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 45%, transparent);
+    color: color-mix(in srgb, var(--semantic-success, #22c55e) 55%, white);
+    min-width: 120px;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .pb-levelup:hover {
+      background: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
+      color: #fff;
     }
   }
-
-  .pb-btn:active { transform: scale(0.95); }
-  .pb-btn:focus-visible { outline: 2px solid var(--theme-accent, #6366f1); outline-offset: 2px; }
-
-  .pb-btn.exit {
-    color: var(--semantic-error, #f87171);
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+  .pb-levelup.ready {
+    background: var(--semantic-success, #22c55e);
+    color: #fff;
+    border-color: var(--semantic-success, #22c55e);
+    animation: pb-levelup-pulse 1.5s ease-in-out infinite;
   }
-
-  .pb-btn.levelup {
-    margin-left: auto;
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 12%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
-    color: color-mix(in srgb, var(--semantic-success, #22c55e) 65%, white);
-  }
-
-  .pb-btn.levelup.ready {
-    animation: pb-levelup-pulse 1.6s ease-in-out infinite;
-    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 55%, transparent);
-  }
-
   @keyframes pb-levelup-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent); }
-    50% { box-shadow: 0 0 14px 2px color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent); }
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent); }
+    50% { box-shadow: 0 0 18px 3px color-mix(in srgb, var(--semantic-success, #22c55e) 50%, transparent); }
   }
 
-  /* Tempo group */
+  /* Tempo */
   .pb-tempo {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
     flex-shrink: 0;
   }
 
@@ -184,106 +224,87 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     flex-shrink: 0;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 50%;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: 0.7rem;
+    color: var(--theme-text, #fff);
+    font-size: 0.85rem;
     cursor: pointer;
     transition: all var(--duration-fast, 150ms) ease;
     -webkit-tap-highlight-color: transparent;
   }
-
   @media (hover: hover) and (pointer: fine) {
-    .pb-step:hover:not(:disabled) {
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-      color: var(--theme-text, white);
-    }
+    .pb-step:hover:not(:disabled) { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12)); }
   }
-
-  .pb-step:active:not(:disabled) { transform: scale(0.92); }
+  .pb-step:active:not(:disabled) { transform: scale(0.9); }
   .pb-step:disabled { opacity: 0.3; cursor: not-allowed; }
-  .pb-step:focus-visible { outline: 2px solid var(--theme-accent, #6366f1); outline-offset: 2px; }
 
   .pb-bpm {
     display: flex;
     flex-direction: column;
     align-items: center;
     line-height: 1;
-    min-width: 52px;
+    min-width: 60px;
   }
-
   .pb-bpm-value {
-    font-size: 1.15rem;
-    font-weight: 700;
+    font-size: 1.6rem;
+    font-weight: 800;
     color: var(--bpm-color);
     font-variant-numeric: tabular-nums;
   }
-
   .pb-bpm-unit {
-    font-size: 10px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
-    margin-top: 2px;
+    letter-spacing: 0.6px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    margin-top: 3px;
   }
 
-  /* Progress group — flexes to absorb width changes so siblings don't shift */
+  /* Progress */
   .pb-progress {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 5px;
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
+    gap: 7px;
+    min-width: 120px;
   }
-
-  .pb-dots {
-    display: flex;
-    gap: 5px;
-  }
-
+  .pb-dots { display: flex; gap: 7px; }
   .pb-dot {
-    width: 8px;
-    height: 8px;
+    width: 11px;
+    height: 11px;
     border-radius: 50%;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.12));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.18));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.14));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.22));
     transition: background var(--duration-normal, 200ms) ease;
   }
-
   .pb-dot.filled {
     background: var(--theme-accent, #8b5cf6);
     border-color: var(--theme-accent, #8b5cf6);
   }
-
   .pb-countdown {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
+  .pb-countdown.ready { color: color-mix(in srgb, var(--semantic-success, #22c55e) 55%, white); }
 
-  .pb-countdown.ready {
-    color: color-mix(in srgb, var(--semantic-success, #22c55e) 55%, white);
-  }
-
-  /* Condense on narrow bars: drop button text labels, keep icons. */
-  @container practice-bar (max-width: 520px) {
-    .pb-label { display: none; }
-    .pb-btn { padding: 4px; }
+  /* Narrow: keep labels (obvious) but tighten gaps; let the cluster wrap. */
+  @container practice-bar (max-width: 560px) {
+    .pb-group { gap: 12px; }
+    .pb-divider { display: none; }
+    .pb-progress { order: 5; flex-basis: 100%; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pb-btn, .pb-step, .pb-dot { transition: none; }
-    .pb-btn.levelup.ready { animation: none; }
-    .pb-btn:active, .pb-step:active { transform: none; }
+    .pb-exit, .pb-levelup, .pb-play, .pb-step, .pb-dot { transition: none; }
+    .pb-levelup.ready { animation: none; }
+    .pb-exit:active, .pb-levelup:active, .pb-play:active, .pb-step:active { transform: none; }
   }
 </style>
