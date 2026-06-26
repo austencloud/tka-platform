@@ -110,6 +110,7 @@
           <p class="canceled" role="status">Checkout canceled. You weren't charged.</p>
         {/if}
 
+        <div class="tell">
         <h1 class="title">Buy me a coffee</h1>
         <div class="lines">
           <p class="line lead">
@@ -121,7 +122,9 @@
             Please consider supporting, any amount is deeply appreciated!
           </p>
         </div>
+        </div>
 
+        <div class="act">
         <!-- Suggested amount -->
         <div class="amounts">
           <SegmentedControl
@@ -216,9 +219,12 @@
             <span class="handle">$austencloud</span>
           </a>
         </div>
+        </div>
 
+        <div class="signature">
         <p class="signoff">With love,</p>
         <p class="sign">Austen Cloud</p>
+        </div>
       </section>
     </main>
 
@@ -228,18 +234,25 @@
 <style>
   .support-wrap {
     /* The whole page — card AND footer — lives inside ONE dynamic viewport so a
-       phone shows everything with no scroll. dvh (not vh) tracks the mobile
-       browser chrome so the bottom never hides behind the URL bar; the plain vh
-       line is the fallback for engines without dvh. On desktop the footer pins
-       to the bottom (support grows); mobile re-centres the group below. */
+       phone/tablet shows everything with no scroll. dvh (not vh) tracks the
+       mobile browser chrome so the bottom never hides behind the URL bar; the
+       plain vh line is the fallback for engines without dvh.
+
+       BASE = centre the card+footer as ONE group (app-screen feel): the leftover
+       space splits evenly above the card and below the footer instead of pooling
+       into one dead gap between the signature and the footer. This balances every
+       handheld + tablet (phone, iPad portrait/landscape, Z Fold folded/unfolded).
+       Only true desktop (wide AND tall, see the bottom @media) reverts to a
+       footer pinned at the very bottom, where that reads as expected. */
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
+    justify-content: center;
   }
 
   .support {
-    flex: 1 1 auto;
+    flex: 0 1 auto; /* size to the card; the wrap centres it as a group */
     min-height: 0; /* let the card shrink to fit instead of forcing page scroll */
     box-sizing: border-box;
     /* top clears the 64px fixed SiteHeader; bottom pad is breathing space below
@@ -555,16 +568,6 @@
      phone gets the same compact card, centered, so taller screens simply gain
      breathing room top and bottom — no per-size breakpoint gaps. */
   @media (max-width: 520px) {
-    /* Centre the card + footer as ONE group so the leftover space splits evenly
-       above the card and below the footer, instead of pooling into one dead gap
-       between the signature and the footer (which read top-heavy on phones). */
-    .support-wrap {
-      justify-content: center;
-    }
-    .support {
-      flex: 0 1 auto;
-    }
-
     .title {
       font-size: clamp(1.6rem, 6.8vw, 2.05rem);
       margin-bottom: 0.3rem;
@@ -622,6 +625,69 @@
     }
   }
 
+  /* Tablet / landscape that's SHORTER than a desktop window (iPad landscape
+     1024×768, iPad mini 1133×744, Air/Pro 11 landscape, Z Fold unfolded
+     landscape, short laptops). min-width:521 keeps this OFF phones — they have
+     their own smaller scale above and source order would otherwise let this
+     overwrite it. Mild trim so the full card + footer fits the shorter height
+     and the centred group stays balanced (no scroll, no void). */
+  @media (min-width: 521px) and (max-height: 895px) {
+    .support {
+      padding: 70px 22px clamp(16px, 2.5vh, 30px);
+    }
+    .title {
+      font-size: clamp(1.9rem, 4.6vw, 2.6rem);
+      margin-bottom: 0.4rem;
+    }
+    .lines {
+      gap: 0.45rem;
+      margin-bottom: 1rem;
+    }
+    .line {
+      font-size: 0.98rem;
+      line-height: 1.4;
+    }
+    .line.lead {
+      font-size: 1.05rem;
+    }
+    .line + .line {
+      padding-top: 0.55rem;
+    }
+    .amounts {
+      margin-bottom: 12px;
+    }
+    .card-cta {
+      min-height: 50px;
+    }
+    .or {
+      margin: 12px 0 10px;
+    }
+    .jar {
+      gap: 10px;
+    }
+    .pay {
+      min-height: 0;
+      padding: 13px 8px;
+      gap: 9px;
+    }
+    .logo {
+      height: 23px;
+    }
+    .logo--venmo {
+      width: 60px;
+    }
+    .signoff {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    .sign {
+      font-size: 1.15rem;
+    }
+    .support-wrap :global(.footer) {
+      padding: 10px 20px;
+    }
+  }
+
   /* Small / old phones (iPhone SE, compact Androids ≤ ~690px tall): trim the
      chrome so the whole card + footer still clears the fold (now with the
      @handles kept — they fit at this size and read fuller than bare icons). */
@@ -640,6 +706,134 @@
     }
     .support-wrap :global(.footer-links a) {
       font-size: 0.78rem;
+    }
+  }
+
+  /* SHORT + WIDE (≤540px tall, ≥640px wide): Z Fold 6 folded LANDSCAPE
+     (~1110×452) and phones held sideways. A single column can't fit ~330px of
+     card into ~280px of usable height, so spend the width instead: a 2-column
+     grid puts the "letter" (title + copy + signature) on the left and the
+     donation controls on the right, which halves the vertical stack. The
+     .tell/.act/.signature wrappers are plain blocks everywhere else (DOM order =
+     the portrait single column), and only become grid areas here. */
+  @media (max-height: 540px) and (min-width: 640px) {
+    .support {
+      padding: 70px 26px 14px; /* 70 clears the fixed header; tight bottom */
+    }
+    .jar-card {
+      max-width: 760px;
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      grid-template-areas:
+        "status status"
+        "tell   act"
+        "sign   act";
+      align-items: start;
+      column-gap: clamp(22px, 4vw, 44px);
+      row-gap: 4px;
+      text-align: left;
+    }
+    .donated,
+    .canceled {
+      grid-area: status;
+      margin: 0 0 8px;
+    }
+    .tell {
+      grid-area: tell;
+    }
+    .act {
+      grid-area: act;
+      align-self: center;
+      display: flex;
+      flex-direction: column;
+    }
+    .signature {
+      grid-area: sign;
+      align-self: end;
+    }
+
+    .title {
+      font-size: clamp(1.4rem, 4.4vw, 1.85rem);
+      margin-bottom: 0.35rem;
+    }
+    .lines {
+      gap: 0.3rem;
+      margin: 0;
+      max-width: none;
+      align-items: flex-start;
+    }
+    .line {
+      font-size: 0.82rem;
+      line-height: 1.35;
+      text-align: left;
+    }
+    .line.lead {
+      font-size: 0.9rem;
+    }
+    .line + .line {
+      padding-top: 0.45rem;
+    }
+    .line + .line::before {
+      left: 0;
+      transform: none; /* divider dot to the left edge, not centred */
+    }
+    .amounts {
+      margin: 0 0 10px;
+    }
+    .card-cta {
+      min-height: 46px;
+      font-size: 0.98rem;
+    }
+    .or {
+      margin: 9px 0 8px;
+      font-size: 0.82rem;
+    }
+    .jar {
+      gap: 8px;
+    }
+    .pay {
+      gap: 6px;
+      min-height: 0;
+      padding: 10px 6px;
+    }
+    .logo {
+      height: 19px;
+    }
+    .logo--venmo {
+      width: 52px;
+    }
+    .handle {
+      font-size: 0.68rem;
+    }
+    .signoff {
+      font-size: 0.82rem;
+      margin: 0.5rem 0 0;
+    }
+    .sign {
+      font-size: 1rem;
+    }
+    .support-wrap :global(.footer) {
+      padding: 8px 16px;
+    }
+    .support-wrap :global(.footer-links a) {
+      font-size: 0.76rem;
+      padding: 2px 0;
+    }
+  }
+
+  /* True desktop (mouse, not touch): revert to the footer pinned at the very
+     bottom with the card centred in the space above it — the expected document
+     feel with a cursor. Touch devices (phones, iPads, the Z Fold in every
+     fold/orientation) stay on the centred-group base above, which balances them
+     as an app-screen. Width can't tell a desktop from a large tablet — both run
+     ~1024–1366px wide — but pointer type can: a desktop has a fine pointer that
+     hovers; touch screens report coarse / no-hover. */
+  @media (hover: hover) and (pointer: fine) {
+    .support-wrap {
+      justify-content: flex-start;
+    }
+    .support {
+      flex: 1 1 auto;
     }
   }
 
