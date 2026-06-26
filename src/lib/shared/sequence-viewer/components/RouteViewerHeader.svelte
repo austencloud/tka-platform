@@ -131,6 +131,15 @@
     {/if}
 
     {#if practiceActive}
+      <button
+        type="button"
+        class="header-action-btn practice-exit"
+        onclick={onPracticeToggle}
+        aria-label="Exit practice mode"
+      >
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        <span>Exit Practice</span>
+      </button>
       <div class="practice-step-nav" role="group" aria-label="Step through the sequence">
         <button
           type="button"
@@ -395,6 +404,20 @@
     display: flex;
     align-items: center;
     gap: 4px;
+  }
+
+  .header-action-btn.practice-exit {
+    gap: 8px;
+    padding: 0 16px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: #fff;
+    background: var(--semantic-error, #ef4444);
+  }
+
+  .header-action-btn.practice-exit:hover {
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 85%, white);
+    color: #fff;
   }
 
   .header-action-divider {

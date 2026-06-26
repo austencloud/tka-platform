@@ -726,7 +726,6 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
             onPlayPause={ctx.handlePlaybackToggle}
             onStepLevel={ctx.handlePracticeStepLevel}
             onToggleHold={ctx.handlePracticeToggleHold}
-            onStop={ctx.handlePracticeStop}
           />
         {/if}
       </div>

@@ -5,13 +5,13 @@
   one full-width strip at the bottom of the viewer. Every control shares one
   height (--ctrl-h) so the row reads as a single clean strip:
 
-    Exit | play/pause | [− Level]  [BPM + fine spinner]  [+ Level] | progress
+    play/pause | [Slower]  [− BPM +]  [Faster] | ❄ Hold | caption + fill
 
-  One tempo concept: the big −/+ step a whole level (by the configured speed
-  step), the BPM pill is the readout with a small ±1 fine spinner built in, and
-  the + carries the level-up role (pulses green in Manual once a level
-  completes) — no separate Level Up button to duplicate it. Level is derived
-  from BPM in the orchestrator, so nothing here can desync the "Lv N" readout.
+  One tempo concept: the big Slower/Faster step the tempo by the speed step; the
+  BPM pill is the readout with small ±1 fine steppers (press-and-hold to repeat)
+  flanking it; the + carries the level-up role (pulses green in Manual once a
+  level completes). The number pulses on each bump, and a slim fill bar grows
+  toward the next speed-up. Exit lives in the header, not here.
 -->
 <script lang="ts">
   import type { TempoPracticeProgress } from "../services/tempo-practice-orchestrator";
@@ -26,10 +26,9 @@
     onStepLevel: (dir: 1 | -1) => void;
     /** Freeze/resume the auto-climb at the current speed. */
     onToggleHold: () => void;
-    onStop: () => void;
   }
 
-  let { progress, bpm, isPlaying, onBpmChange, onStepLevel, onToggleHold, onPlayPause, onStop }: Props =
+  let { progress, bpm, isPlaying, onBpmChange, onStepLevel, onToggleHold, onPlayPause }: Props =
     $props();
 
   let bpmColor = $derived.by(() => {
@@ -48,8 +47,40 @@
     if (next !== bpm) onBpmChange(next);
   }
 
+  // Fine ± with press-and-hold to repeat (accelerates after a short delay).
+  let holdTimer: ReturnType<typeof setTimeout> | null = null;
+  let holdInterval: ReturnType<typeof setInterval> | null = null;
+  function startFineHold(dir: 1 | -1) {
+    fine(dir);
+    holdTimer = setTimeout(() => {
+      holdInterval = setInterval(() => fine(dir), 90);
+    }, 450);
+  }
+  function stopFineHold() {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+  }
+
   let isSmooth = $derived(progress.progressionMode === "smooth");
   let isManual = $derived(progress.progressionMode === "manual");
+
+  // Fill toward the next speed-up (smooth has no boundary → a faded full bar).
+  let fillPct = $derived(
+    isSmooth ? 100 : (progress.roundsPerLevel > 0 ? (progress.loopsCompleted / progress.roundsPerLevel) * 100 : 0)
+  );
+
+  // Pulse the BPM number whenever the tempo bumps up, so you feel it tighten.
+  let prevBpm = bpm;
+  let bumped = $state(false);
+  let bumpTimer: ReturnType<typeof setTimeout> | null = null;
+  $effect(() => {
+    if (bpm > prevBpm) {
+      bumped = true;
+      if (bumpTimer) clearTimeout(bumpTimer);
+      bumpTimer = setTimeout(() => (bumped = false), 360);
+    }
+    prevBpm = bpm;
+  });
 
   // The + glows when Manual has parked at a completed level awaiting a tap.
   let upReady = $derived(isManual && progress.readyToAdvance);
@@ -68,13 +99,6 @@
 
 <div class="practice-bar" role="region" aria-label="Practice controls">
   <div class="pb-group">
-    <button class="pb-btn pb-exit" type="button" onclick={onStop} aria-label="Exit practice mode">
-      <i class="fas fa-xmark" aria-hidden="true"></i>
-      <span>Exit</span>
-    </button>
-
-    <span class="pb-divider" aria-hidden="true"></span>
-
     <button
       class="pb-btn pb-play"
       type="button"
@@ -96,11 +120,14 @@
         <span class="pb-level-label">Slower</span>
       </button>
 
-      <div class="pb-readout" role="group" aria-label="Fine tune tempo by 1 BPM">
+      <div class="pb-readout" class:bumped role="group" aria-label="Fine tune tempo by 1 BPM">
         <button
           class="pb-fine-btn"
           type="button"
-          onclick={() => fine(-1)}
+          onpointerdown={() => startFineHold(-1)}
+          onpointerup={stopFineHold}
+          onpointerleave={stopFineHold}
+          onpointercancel={stopFineHold}
           disabled={atFloor}
           aria-label="Slower by 1 BPM"
         >
@@ -113,7 +140,10 @@
         <button
           class="pb-fine-btn"
           type="button"
-          onclick={() => fine(1)}
+          onpointerdown={() => startFineHold(1)}
+          onpointerup={stopFineHold}
+          onpointerleave={stopFineHold}
+          onpointercancel={stopFineHold}
           disabled={atCeiling}
           aria-label="Faster by 1 BPM"
         >
@@ -149,14 +179,15 @@
     <span class="pb-divider" aria-hidden="true"></span>
 
     <div class="pb-progress">
-      {#if !isSmooth}
-        <div class="pb-dots" aria-hidden="true">
-          {#each Array(progress.roundsPerLevel), i}
-            <span class="pb-dot" class:filled={i < progress.loopsCompleted}></span>
-          {/each}
-        </div>
-      {/if}
       <span class="pb-caption" class:ready={progress.readyToAdvance}>{caption}</span>
+      <div class="pb-fill-track" aria-hidden="true">
+        <div
+          class="pb-fill"
+          class:smooth={isSmooth}
+          class:ready={progress.readyToAdvance}
+          style="width:{fillPct}%"
+        ></div>
+      </div>
     </div>
   </div>
 </div>
@@ -212,20 +243,6 @@
   .pb-btn:disabled { opacity: 0.3; cursor: not-allowed; }
   .pb-btn:focus-visible,
   .pb-fine-btn:focus-visible { outline: 3px solid var(--theme-accent, #6366f1); outline-offset: 2px; }
-
-  /* Exit — filled red, unmistakable */
-  .pb-exit {
-    gap: 8px;
-    padding: 0 20px;
-    min-width: 96px;
-    font-size: var(--font-size-min, 14px);
-    background: var(--semantic-error, #ef4444);
-    color: #fff;
-  }
-  .pb-exit i { font-size: 16px; }
-  @media (hover: hover) and (pointer: fine) {
-    .pb-exit:hover { background: color-mix(in srgb, var(--semantic-error, #ef4444) 85%, white); }
-  }
 
   /* Hold — toggle that freezes the climb; lights up when active */
   .pb-hold {
@@ -334,6 +351,15 @@
     font-weight: 800;
     color: var(--bpm-color);
     font-variant-numeric: tabular-nums;
+    display: inline-block;
+  }
+  /* Bump pulse — the number pops when the tempo climbs. Transform only, so it
+     never nudges layout. */
+  .pb-readout.bumped .pb-bpm-value { animation: pb-bump 360ms ease-out; }
+  @keyframes pb-bump {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.22); }
+    100% { transform: scale(1); }
   }
   .pb-bpm-unit {
     font-size: 10px;
@@ -359,6 +385,7 @@
     cursor: pointer;
     transition: all var(--duration-fast, 150ms) ease;
     -webkit-tap-highlight-color: transparent;
+    touch-action: none;
   }
   @media (hover: hover) and (pointer: fine) {
     .pb-fine-btn:hover:not(:disabled) {
@@ -380,19 +407,21 @@
     gap: 7px;
     width: 15rem;
   }
-  .pb-dots { display: flex; gap: 7px; }
-  .pb-dot {
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.14));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.22));
-    transition: background var(--duration-normal, 200ms) ease;
+  .pb-fill-track {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.12));
+    overflow: hidden;
   }
-  .pb-dot.filled {
+  .pb-fill {
+    height: 100%;
+    border-radius: 3px;
     background: var(--theme-accent, #8b5cf6);
-    border-color: var(--theme-accent, #8b5cf6);
+    transition: width var(--duration-normal, 200ms) ease;
   }
+  .pb-fill.smooth { opacity: 0.45; }
+  .pb-fill.ready { background: var(--semantic-success, #22c55e); }
   .pb-caption {
     max-width: 100%;
     font-size: var(--font-size-min, 14px);
@@ -413,8 +442,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pb-btn, .pb-fine-btn, .pb-dot { transition: none; }
+    .pb-btn, .pb-fine-btn, .pb-fill { transition: none; }
     .pb-level.up.ready { animation: none; }
+    .pb-readout.bumped .pb-bpm-value { animation: none; }
     .pb-btn:active, .pb-fine-btn:active { transform: none; }
   }
 </style>
