@@ -115,7 +115,7 @@
           </p>
           <p class="line">Donations play a huge role in making this work possible.</p>
           <p class="line accent">
-            Please consider supporting this work, any amount is deeply appreciated!
+            Please consider supporting, any amount is deeply appreciated!
           </p>
         </div>
 
@@ -224,18 +224,39 @@
 
 <style>
   .support-wrap {
-    min-height: calc(100vh - 64px); /* fill viewport under the fixed SiteHeader */
+    /* The whole page — card AND footer — lives inside ONE dynamic viewport so a
+       phone shows everything with no scroll. dvh (not vh) tracks the mobile
+       browser chrome so the bottom never hides behind the URL bar; the plain vh
+       line is the fallback for engines without dvh. */
+    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
   }
 
   .support {
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0; /* let the card shrink to fit instead of forcing page scroll */
     box-sizing: border-box;
-    padding: 64px 22px 48px; /* top clears the fixed SiteHeader */
+    /* top clears the 64px fixed SiteHeader (min 70 keeps a small gap); both pads
+       ease down on short screens. Kept tight so card + footer clear one viewport. */
+    padding: clamp(70px, 8vh, 84px) 22px clamp(12px, 2vh, 28px);
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* The shared LandingFooter pads 64px top+bottom for the tall landing page; on
+     /support it must fit inside the same viewport as the card, so trim it down
+     and tighten the link row so six links don't wrap into three tall rows. */
+  .support-wrap :global(.footer) {
+    padding: 14px 24px;
+  }
+  .support-wrap :global(.footer-links) {
+    gap: 10px 18px;
+  }
+  .support-wrap :global(.footer-links a) {
+    padding: 4px 0;
   }
 
   .jar-card {
@@ -522,21 +543,93 @@
     color: #818cf8;
   }
 
+  /* Phone: a compact, calmer card. Smaller type and tighter rhythm so the copy
+     reads less crowded AND leaves headroom for the Custom-amount field to open
+     without shoving the footer past the fold. The three payment apps stay a 3-up
+     row (icon over handle) — stacking them to full-width rows added ~170px and
+     was the original scroll culprit. Values are fixed (not vh-scaled): every
+     phone gets the same compact card, centered, so taller screens simply gain
+     breathing room top and bottom — no per-size breakpoint gaps. */
   @media (max-width: 520px) {
+    .title {
+      font-size: clamp(1.6rem, 6.8vw, 2.05rem);
+      margin-bottom: 0.3rem;
+    }
+    .lines {
+      gap: 0.3rem;
+      margin-bottom: 0.7rem;
+    }
+    .line {
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+    .line.lead {
+      font-size: 0.94rem;
+    }
+    .line + .line {
+      padding-top: 0.5rem;
+    }
+    .amounts {
+      margin-bottom: 10px;
+    }
+    .card-cta {
+      min-height: 52px;
+      font-size: 1rem;
+    }
+    .or {
+      margin: 10px 0 8px;
+      font-size: 0.85rem;
+    }
+
     .jar {
-      grid-template-columns: 1fr;
-      max-width: 340px;
-      margin: 0 auto;
+      gap: 10px;
     }
     .pay {
-      flex-direction: row;
-      gap: 16px;
-      min-height: 72px;
-      justify-content: flex-start;
-      padding: 0 22px;
+      gap: 7px;
+      min-height: 0;
+      padding: 12px 6px;
+    }
+    .logo {
+      height: 21px;
+    }
+    .logo--venmo {
+      width: 56px;
     }
     .handle {
-      margin-left: auto;
+      font-size: 0.72rem;
+    }
+
+    .signoff {
+      font-size: 0.9rem;
+      margin-top: 0.85rem;
+    }
+    .sign {
+      font-size: 1.1rem;
+    }
+  }
+
+  /* Small / old phones (iPhone SE, compact Androids ≤ ~690px tall): drop the
+     @handle text — the brand icons + aria-labels still name each app — and trim
+     the chrome a touch more, so even the smallest screen clears the fold with
+     the Custom field open. */
+  @media (max-height: 690px) {
+    .support {
+      padding: 66px 22px 8px;
+    }
+    .handle {
+      display: none;
+    }
+    .title {
+      font-size: clamp(1.45rem, 6vw, 1.75rem);
+    }
+    .pay {
+      padding: 11px 6px;
+    }
+    .support-wrap :global(.footer) {
+      padding: 9px 16px;
+    }
+    .support-wrap :global(.footer-links a) {
+      font-size: 0.78rem;
     }
   }
 

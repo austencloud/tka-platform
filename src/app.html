@@ -60,7 +60,14 @@
     <script>
       (function() {
         var p = window.location.pathname;
-        var isLanding = p === '/' || p === '/landing' || p.startsWith('/embed') || p.startsWith('/q/') || p.startsWith('/sequence/') || p.startsWith('/profile/') || p.startsWith('/demo') || p.startsWith('/guide') || p.startsWith('/1989') || p.startsWith('/1995') || p.startsWith('/1998') || p.startsWith('/2003') || p.startsWith('/privacy') || p.startsWith('/terms') || p.startsWith('/about') || p.startsWith('/roots') || p.startsWith('/delete-account') || p.startsWith('/store');
+        // KEEP IN SYNC with PUBLIC_PATH_PREFIXES + LANDING_PATHS in
+        // src/config/domains.ts (detectSiteMode). Any public/marketing route the
+        // layout boots in landing-lite mode (no Firebase/DI) MUST appear here, or
+        // the #app-loading boot bar is never dismissed (landing mode never calls
+        // __tkaLoadProgress(100)) and the page sits behind it until the 15s
+        // safety-net timeout. /guide is extra here (boots app mode but is
+        // prerendered content, so hide the loader immediately).
+        var isLanding = p === '/' || p === '/landing' || p.startsWith('/embed') || p.startsWith('/q/') || p.startsWith('/sequence/') || p.startsWith('/profile/') || p.startsWith('/demo') || p.startsWith('/guide') || p.startsWith('/1989') || p.startsWith('/1995') || p.startsWith('/1998') || p.startsWith('/2003') || p.startsWith('/privacy') || p.startsWith('/terms') || p.startsWith('/about') || p.startsWith('/roots') || p.startsWith('/delete-account') || p.startsWith('/store') || p.startsWith('/shop') || p.startsWith('/support') || p.startsWith('/notation') || p.startsWith('/render');
         if (isLanding) {
           // Mark landing mode early for loading bar skip below
           window.__tkaIsLanding = true;
