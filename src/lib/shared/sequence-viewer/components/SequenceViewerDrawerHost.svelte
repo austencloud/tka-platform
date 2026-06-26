@@ -20,7 +20,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import ExportVideoDrawer from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
   import ExportImagePanel from "./ExportImagePanel.svelte";
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
-  import PracticeProgressIndicator from "./PracticeProgressIndicator.svelte";
+  import PracticeBar from "./PracticeBar.svelte";
   import Recording3DOverlay from "./Recording3DOverlay.svelte";
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
@@ -351,7 +351,17 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
         <div class="drawer-viewer-container" class:landscape={isLandscape}>
           <header class="drawer-header">
                 <div class="drawer-header-left-actions">
-                  {#if isMobileWidth}
+                  {#if ctx.practiceActive}
+                    <button
+                      type="button"
+                      class="header-action-btn practice-exit"
+                      onclick={ctx.handlePracticeStop}
+                      aria-label="Exit practice mode"
+                    >
+                      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                      <span>Exit Practice</span>
+                    </button>
+                  {:else if isMobileWidth}
                     {@render overflowMenu(true)}
                   {:else}
                     <button
@@ -421,6 +431,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                   <div class="drawer-header-title">
                     {#if isAnyExportActive}
                       {isVideoExportActive ? (ctx.renderMode === '3d' ? "Record Scene" : "Download Animation") : isImageExportActive ? "Download Card" : "Upload Video"}
+                    {:else if ctx.practiceActive}
+                      Practice Mode
                     {:else}
                       Sequence Viewer
                     {/if}
@@ -466,7 +478,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                     </button>
                   {/if}
 
-                  {#if !isMobileWidth}
+                  {#if !isMobileWidth && !ctx.practiceActive}
                     {@render overflowMenu(false)}
                   {/if}
 
@@ -490,9 +502,9 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                   class:record-scene-active={isRecordSceneActive}
                   class:desktop={!isMobileWidth}
                   class:sidebar-collapsed={exportSidebarCollapsed}
-                  class:has-rail={showRail}
+                  class:has-rail={showRail && !ctx.practiceActive}
                 >
-                  {#if showRail}
+                  {#if showRail && !ctx.practiceActive}
                     <ViewerContentRail
                       activeMode={ctx.viewerState.viewerMode}
                       webgl2Available={ctx.viewer3DState.webgl2Available}
@@ -670,7 +682,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                 {/if}
               {/if}
             </div>
-            {#if isMobileWidth && ctx.hasSequence && ctx.effectiveSequence}
+            {#if isMobileWidth && ctx.hasSequence && ctx.effectiveSequence && !ctx.practiceActive}
               <ViewerModeBottomBar
                 activeMode={ctx.viewerState.viewerMode}
                 webgl2Available={ctx.viewer3DState.webgl2Available}
@@ -680,11 +692,14 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
             {/if}
           </div>
           {#if ctx.practiceActive}
-            <PracticeProgressIndicator
+            <PracticeBar
               progress={ctx.practiceState.progress}
-              onStop={ctx.handlePracticeStop}
+              bpm={ctx.bpmLocal}
+              isPlaying={ctx.isPlayingLocal}
+              onBpmChange={ctx.handleBpmChange}
+              onPlayPause={ctx.handlePlaybackToggle}
               onAdvance={ctx.handlePracticeAdvance}
-              variant="floating"
+              onStop={ctx.handlePracticeStop}
             />
           {/if}
 
@@ -874,6 +889,20 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     color: var(--semantic-error, #f87171);
     background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
     border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+  }
+
+  .header-action-btn.practice-exit {
+    gap: 8px;
+    padding: 0 16px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: #fff;
+    background: var(--semantic-error, #ef4444);
+  }
+
+  .header-action-btn.practice-exit:hover {
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 85%, white);
+    color: #fff;
   }
 
   .header-action-divider {

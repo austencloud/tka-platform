@@ -34,7 +34,7 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
   import ExportVideoDrawer from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
   import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
   import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
-  import PracticeProgressIndicator from "$lib/shared/sequence-viewer/components/PracticeProgressIndicator.svelte";
+  import PracticeBar from "$lib/shared/sequence-viewer/components/PracticeBar.svelte";
   import RouteViewerHeader from "$lib/shared/sequence-viewer/components/RouteViewerHeader.svelte";
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
 
@@ -715,12 +715,15 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
           {/if}
         </div>
 
-        {#if !ctx.isFullscreen && ctx.practiceActive}
-          <PracticeProgressIndicator
+        {#if ctx.practiceActive}
+          <PracticeBar
             progress={ctx.practiceState.progress}
-            onStop={ctx.handlePracticeStop}
+            bpm={ctx.bpmLocal}
+            isPlaying={ctx.isPlayingLocal}
+            onBpmChange={ctx.handleBpmChange}
+            onPlayPause={ctx.handlePlaybackToggle}
             onAdvance={ctx.handlePracticeAdvance}
-            variant="floating"
+            onStop={ctx.handlePracticeStop}
           />
         {/if}
       </div>

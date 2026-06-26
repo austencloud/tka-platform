@@ -43,7 +43,9 @@ export function createTempoPracticeState() {
     roundsPerLevel: 5,
     currentLevel: 0,
     totalRoundsCompleted: 0,
-    progressionMode: "manual",
+    loopsCompleted: 0,
+    loopsRemaining: 5,
+    progressionMode: "auto",
     readyToAdvance: false,
   });
 
