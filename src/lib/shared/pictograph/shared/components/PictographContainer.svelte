@@ -302,6 +302,16 @@ with pre-prepared data for better performance.
   let preparedData = $state<PreparedPictographData | null>(null);
   let isLoading = $state(false);
 
+  // Tracks whether the grid SVG has settled. PictographRenderer's GridSvg loads its
+  // grid file asynchronously and independently of the prepared arrow/prop data, so
+  // the export readiness signal below must wait for it too — otherwise a cold grid
+  // cache can serialize the SVG before the grid lines are in the DOM. Fires on both
+  // load and error (an errored grid renders nothing, so it should not block readiness).
+  let gridReady = $state(false);
+  const handleGridReady = () => {
+    gridReady = true;
+  };
+
   // Monotonic counter for preparation ordering.
   // Each $effect run increments this. When a prepare completes, it only applies
   // if no newer prepare has already applied. This prevents stale results (e.g. from
@@ -440,12 +450,15 @@ with pre-prepared data for better performance.
 
   // Deterministic readiness signal for offscreen/export rendering.
   // This effect runs after the DOM is updated, so once preparedData is committed
-  // PictographRenderer (and its synchronous arrows/props) are in the DOM. tick()
-  // flushes any trailing state before we report. Fires once per mount — export
-  // mounts a fresh container per call, so the one-shot guard is exactly right.
+  // PictographRenderer (and its synchronous arrows/props) are in the DOM. The grid,
+  // however, loads asynchronously inside GridSvg, so when it is shown we also wait
+  // for gridReady — otherwise a cold grid cache could serialize before the grid
+  // lines paint. tick() flushes any trailing state before we report. Fires once per
+  // mount — export mounts a fresh container per call, so the one-shot guard is right.
   let hasReportedReady = false;
   $effect(() => {
-    if (preparedData && !hasReportedReady && onReady) {
+    const gridSettled = !effectiveShowGrid || gridReady;
+    if (preparedData && gridSettled && !hasReportedReady && onReady) {
       hasReportedReady = true;
       void tick().then(() => onReady());
     }
@@ -488,6 +501,7 @@ with pre-prepared data for better performance.
         {widthMultiplier}
         {cellIndex}
         {duration}
+        onGridReady={handleGridReady}
       />
     {:else}
       {#key contentKey}
@@ -527,6 +541,7 @@ with pre-prepared data for better performance.
             {widthMultiplier}
             {cellIndex}
             {duration}
+            onGridReady={handleGridReady}
           />
         </div>
       {/key}

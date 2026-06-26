@@ -149,8 +149,14 @@ export async function renderPictographToSVG(
       props: componentProps,
     });
 
-    // Wait until the container reports its first prepared render is in the DOM.
-    await ready;
+    // Wait until the container reports its first prepared render is in the DOM,
+    // with a safety ceiling so a prepare that never settles can't hang this export
+    // — and, in batch jobs, the entire run — forever. The normal path resolves via
+    // `ready` long before the ceiling; the ceiling only fires in the pathological
+    // hang case, where serializing whatever rendered beats blocking indefinitely.
+    // This restores the old polling code's "incomplete beats hung" guarantee without
+    // reintroducing the polling.
+    await Promise.race([ready, readinessCeiling(8000)]);
     await tick();
 
     // Inline external TKAGlyph images (letter glyphs reference SVGs via <image href>).
@@ -189,6 +195,25 @@ export async function renderPictographToSVG(
     // Always clean up container
     document.body.removeChild(container);
   }
+}
+
+/**
+ * Safety ceiling for the readiness signal. Resolves (never rejects) after `ms` so
+ * renderPictographToSVG proceeds with whatever has rendered rather than awaiting a
+ * readiness signal that — in a pathological case (a prepare that never settles) —
+ * never fires. The deterministic `ready` signal wins this race in every normal
+ * case; this only prevents a permanent hang.
+ */
+function readinessCeiling(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.warn(
+        `renderPictographToSVG: readiness signal did not fire within ${ms}ms; ` +
+          `serializing current DOM state (render may be incomplete).`
+      );
+      resolve();
+    }, ms);
+  });
 }
 
 /**
