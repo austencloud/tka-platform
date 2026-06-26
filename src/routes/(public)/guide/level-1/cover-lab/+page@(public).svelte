@@ -7,16 +7,16 @@
   import GuideCover from "../_components/GuideCover.svelte";
 </script>
 
-<svelte:head><title>Cover Lab — Level 1</title></svelte:head>
+<svelte:head><title>Cover Lab: Level 1</title></svelte:head>
 
 <div class="stage">
   <div class="row">
     <div class="col">
-      <div class="cap">Navy — digital / pro print (foil edition)</div>
+      <div class="cap">Navy: digital / pro print (foil edition)</div>
       <div class="sheet"><GuideCover theme="navy" /></div>
     </div>
     <div class="col">
-      <div class="cap">Light — home printer (minimal ink)</div>
+      <div class="cap">Light: home printer (minimal ink)</div>
       <div class="sheet"><GuideCover theme="light" /></div>
     </div>
   </div>

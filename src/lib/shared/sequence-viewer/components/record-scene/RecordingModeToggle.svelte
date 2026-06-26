@@ -21,7 +21,7 @@
     onclick={handleClick}
     role="radio"
     aria-checked={mode === "free"}
-    aria-label="Free camera — record manual camera movement"
+    aria-label="Free camera: record manual camera movement"
   >
     <i class="fas fa-hand-paper segment-icon" aria-hidden="true"></i>
     {#if mode === "free"}
@@ -35,7 +35,7 @@
     onclick={handleClick}
     role="radio"
     aria-checked={mode === "auto-orbit"}
-    aria-label="Orbit — camera auto-orbits during recording"
+    aria-label="Orbit: camera auto-orbits during recording"
   >
     <i class="fas fa-sync-alt segment-icon" aria-hidden="true"></i>
     {#if mode === "auto-orbit"}

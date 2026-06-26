@@ -361,7 +361,7 @@
               class="beta-swap-badge active"
               onclick={() => onBetaSwapToggle?.()}
               title="Beta offset swapped (B to toggle)"
-              aria-label="Beta offset swapped — press B to toggle"
+              aria-label="Beta offset swapped, press B to toggle"
               aria-pressed="true"
             >β⇄</button>
           {:else if isBetaPosition}
@@ -369,7 +369,7 @@
               class="beta-swap-badge"
               onclick={() => onBetaSwapToggle?.()}
               title="Swap beta offset (B)"
-              aria-label="Swap beta offset — press B to toggle"
+              aria-label="Swap beta offset, press B to toggle"
               aria-pressed="false"
             >β⇄</button>
           {/if}

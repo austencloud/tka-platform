@@ -99,7 +99,7 @@
         ></div>
       </div>
       <span class="ptext">
-        {progress.phase}{#if progress.total} {progress.current ?? 0}/{progress.total}{/if}{#if progress.detail} — {progress.detail}{/if}
+        {progress.phase}{#if progress.total} {progress.current ?? 0}/{progress.total}{/if}{#if progress.detail}: {progress.detail}{/if}
       </span>
     </div>
   {/if}
@@ -110,7 +110,7 @@
       class:pass={verdict.verdict === "PASS"}
       class:fail={verdict.verdict === "FAIL"}
     >
-      <span class="v">{verdict.verdict}</span> — {verdict.summary}
+      <span class="v">{verdict.verdict}</span>: {verdict.summary}
       {#if verdict.gates.length}
         <div class="gates">
           {#each verdict.gates as g (g.label)}

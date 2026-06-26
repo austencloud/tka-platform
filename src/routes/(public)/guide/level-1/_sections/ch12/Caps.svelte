@@ -10,12 +10,12 @@
   </p>
   <p>LOOPs have six base transformation types:</p>
   <ul>
-    <li><strong>Rotated</strong> — each repetition's pictographs are rotated (e.g. 90° or 180°) from the previous.</li>
-    <li><strong>Mirrored</strong> — each repetition reflects the previous, changing rotation direction.</li>
-    <li><strong>Swapped</strong> — each repetition swaps the roles of right and left hands.</li>
-    <li><strong>Flipped</strong> — each repetition flips the previous across an axis.</li>
-    <li><strong>Inverted</strong> — each repetition inverts the motion type (pro ↔ anti).</li>
-    <li><strong>Rewound</strong> — each repetition retraces the previous in reverse order.</li>
+    <li><strong>Rotated:</strong> each repetition's pictographs are rotated (e.g. 90° or 180°) from the previous.</li>
+    <li><strong>Mirrored:</strong> each repetition reflects the previous, changing rotation direction.</li>
+    <li><strong>Swapped:</strong> each repetition swaps the roles of right and left hands.</li>
+    <li><strong>Flipped:</strong> each repetition flips the previous across an axis.</li>
+    <li><strong>Inverted:</strong> each repetition inverts the motion type (pro ↔ anti).</li>
+    <li><strong>Rewound:</strong> each repetition retraces the previous in reverse order.</li>
   </ul>
   <p>
     These base types can combine into compound LOOPs like mirrored-swapped or rotated-inverted.

@@ -2,7 +2,7 @@
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
 </script>
 
-<GuideSection id="type-5-turns" title="Type 5 — Dual-Dash (1-Turn)">
+<GuideSection id="type-5-turns" title="Type 5: Dual-Dash (1-Turn)">
   <p>
     In Type 5 motions, both hands are dashing, so there are no hybrids. Since they're the same type (dash|dash), the left goes in the high slot, and the right goes in the low slot.
   </p>

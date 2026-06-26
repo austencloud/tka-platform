@@ -20,9 +20,9 @@
   <!-- TODO: add diagram — comparison of static turn arrow vs prospin turn arrow -->
 
   <p>
-    <strong>Static</strong> — Prop remains at its start position. The arrow forms a half circle with that position.
+    <strong>Static:</strong> Prop remains at its start position. The arrow forms a half circle with that position.
   </p>
   <p>
-    <strong>Shift</strong> — Prop ends at an adjacent position. The arrow forms a half-circle around the empty start position.
+    <strong>Shift:</strong> Prop ends at an adjacent position. The arrow forms a half-circle around the empty start position.
   </p>
 </GuideSection>

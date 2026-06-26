@@ -10,7 +10,7 @@
     Let's look at each type individually.
   </p>
 
-  <h3 class="type-dual-shift">Type 1 — Dual-Shift</h3>
+  <h3 class="type-dual-shift">Type 1: Dual-Shift</h3>
   <div class="codex-grid codex-grid--type1">
     {#each ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"] as letter}
       <figure class="codex-cell">
@@ -24,7 +24,7 @@
     {/each}
   </div>
 
-  <h3 class="type-shift">Type 2 — Shift</h3>
+  <h3 class="type-shift">Type 2: Shift</h3>
   <div class="codex-grid codex-grid--type2">
     {#each ["W", "X", "Y", "Z", "Σ", "Δ", "θ", "Ω"] as letter}
       <figure class="codex-cell">

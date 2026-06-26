@@ -317,7 +317,7 @@
       prop,
     ].filter(Boolean).join("  ·  ");
     return {
-      title: `Deck ${deckRefPadded} — ${count} cards`,
+      title: `Deck ${deckRefPadded}: ${count} cards`,
       subject:
         `LOOP ${loop} · ${rs.selectedLength}-step · L${level}` +
         `${period ? ` · ${period}` : ""} · ${cap(gridMode)} · ${prop} · ${count} cards.` +
@@ -917,7 +917,7 @@
     }
     if (generation !== rs.drawGeneration) return false;
     if (seqs.length === 0) {
-      toast.info("Couldn't generate sequences for these settings — try a different loop type or length.");
+      toast.info("Couldn't generate sequences for these settings. Try a different loop type or length.");
       return false;
     }
     if (seqs.length < target) {
@@ -925,7 +925,7 @@
       // Prioritizing variety (≤2 copies per word) over hitting the number. The
       // lever for more cards is a bigger word space: halved period or a longer
       // length give longer seeds = many more distinct words.
-      toast.info(`Generated ${seqs.length} of ${target} — only ${wordCount.size} distinct words exist for these settings. For more variety try Halved period or a longer length.`);
+      toast.info(`Generated ${seqs.length} of ${target}. Only ${wordCount.size} distinct words exist for these settings. For more variety try Halved period or a longer length.`);
     }
 
     rs.sequences = seqs;
@@ -972,7 +972,7 @@
       return true;
     } catch (e) {
       console.warn("Gallery draw failed:", e);
-      toast.error("Gallery draw failed — check you're signed in.");
+      toast.error("Gallery draw failed. Check you're signed in.");
       return false;
     } finally {
       rs.isLoadingSequences = false;
@@ -1038,7 +1038,7 @@
       prewarmCardPool({ sequences, bluePropType: rs.bluePropType, redPropType: rs.redPropType, theme: rs.theme, iconPaths: [] });
       rs.persist();
       if (!rs.viewingRelease) archiveCurrentDeck();
-      toast.success(`Refreshed — ${sequences.length} sequences from your gallery.`);
+      toast.success(`Refreshed. ${sequences.length} sequences from your gallery.`);
     } catch (e) {
       console.warn("Gallery refresh failed:", e);
       toast.error("Gallery refresh failed.");
@@ -1211,7 +1211,7 @@
 
   function handleReuseRecipe(recipe: DeckRecipe) {
     rs.loadRecipe(recipe);
-    toast.success("Recipe loaded — tweak or press Draw for a fresh deck.");
+    toast.success("Recipe loaded. Tweak or press Draw for a fresh deck.");
   }
 
   async function handleSelectRelease(release: DeckRelease) {

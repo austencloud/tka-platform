@@ -63,7 +63,7 @@
       role="radio"
       aria-checked={value === p}
       aria-label="{p} {p === 1 ? 'copy' : 'copies'} per card{isPerPage ? ', one card per page (recommended)' : a ? (a.perfect ? ', fills every sheet' : `, ${a.blanks} blank cells`) : ''}"
-      title={isPerPage ? "One card per page — a full sheet of this card, cut into identical copies. The default." : a ? (a.perfect ? "Fills every sheet — no wasted cards" : `${a.blanks} blank cells`) : undefined}
+      title={isPerPage ? "One card per page: a full sheet of this card, cut into identical copies. The default." : a ? (a.perfect ? "Fills every sheet, no wasted cards" : `${a.blanks} blank cells`) : undefined}
       onclick={() => onchange(p)}
     >
       <span class="copies-num">{p}</span>

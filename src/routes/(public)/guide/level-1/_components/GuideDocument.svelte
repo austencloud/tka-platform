@@ -51,7 +51,7 @@
       <span class="ln">Any amount is genuinely appreciated.</span>
     </p>
     <figure class="donate">
-      <img class="support-qr" src={SUPPORT_QR} alt="Scan to support — {SUPPORT_URL}" />
+      <img class="support-qr" src={SUPPORT_QR} alt="Scan to support: {SUPPORT_URL}" />
       <figcaption class="support-url">{SUPPORT_URL}</figcaption>
     </figure>
   </div>
@@ -100,11 +100,11 @@
 {/snippet}
 
 <!-- Front matter (unnumbered), then the numbered body pages. ORDER IS CANONICAL. -->
-{@render page({ kind: "cover", fullBleed: true, label: "p1 — Cover", content: coverContent })}
-{@render page({ kind: "drink", label: "p2 — drink water", content: drinkContent })}
-{@render page({ kind: "support", title: "Support the work", label: "p3 — Support", content: supportContent })}
-{@render page({ kind: "readme", title: "Read Me First", label: "p4 — Read Me First", content: readmeContent })}
-{@render page({ kind: "toc", title: "Table of Contents", label: "p5 — Table of Contents", content: tocContent })}
+{@render page({ kind: "cover", fullBleed: true, label: "p1: Cover", content: coverContent })}
+{@render page({ kind: "drink", label: "p2: drink water", content: drinkContent })}
+{@render page({ kind: "support", title: "Support the work", label: "p3: Support", content: supportContent })}
+{@render page({ kind: "readme", title: "Read Me First", label: "p4: Read Me First", content: readmeContent })}
+{@render page({ kind: "toc", title: "Table of Contents", label: "p5: Table of Contents", content: tocContent })}
 {#each GUIDE_BODY_PAGES as entry, i}
   {@const isBuilt = !!built[entry.id]}
   {#snippet bodyContent()}
@@ -119,7 +119,7 @@
     title: isBuilt ? undefined : entry.title,
     fullBleed: isBuilt,
     pageNumber: i + 1,
-    label: `body p${i + 1} — ${entry.title}`,
+    label: `body p${i + 1}: ${entry.title}`,
     content: bodyContent,
   })}
 {/each}

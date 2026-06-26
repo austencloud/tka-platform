@@ -19,7 +19,7 @@
     It would be impossible to execute ACAC without using a prop-reversal. The previous example shows
     the hands moving in a continuous path. Let's change that in the next example by including a
     full-reversal in the middle. In this example, the reversals alternate between left (R) and right
-    (R). This example uses every type of reversal — hand, prop, and full. Challenge yourself to
+    (R). This example uses every type of reversal: hand, prop, and full. Challenge yourself to
     identify where each one occurs.
   </p>
   <GuideDiagram

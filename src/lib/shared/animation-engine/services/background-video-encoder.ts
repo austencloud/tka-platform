@@ -92,7 +92,7 @@ export class BackgroundVideoEncoder {
       this.initTimer = setTimeout(() => {
         if (this.initReject) {
           const err = new Error(
-            "Encoder initialization timed out — the codec configuration did not " +
+            "Encoder initialization timed out. The codec configuration did not " +
             "complete (try a lower resolution/fps, or a different browser)."
           );
           this.initReject(err);

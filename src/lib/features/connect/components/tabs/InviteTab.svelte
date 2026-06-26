@@ -187,7 +187,7 @@
 							<button
 								class="accept-button"
 								onclick={() => handleAcceptInvite(invite)}
-								aria-label={`${t('connect_join')} — ${invite.fromDisplayName}: "${invite.sequenceWord}"`}
+								aria-label={`${t('connect_join')}, ${invite.fromDisplayName}: "${invite.sequenceWord}"`}
 							>
 								<i class="fas fa-check" aria-hidden="true"></i>
 								{t('connect_join')}

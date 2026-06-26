@@ -83,11 +83,11 @@
   });
 </script>
 
-<svelte:head><title>Guide Compare — Level 1</title></svelte:head>
+<svelte:head><title>Guide Compare: Level 1</title></svelte:head>
 
 <div class="wrap">
   <div class="bar">
-    <span class="t">Old v0.5 <b>·</b> New rebuild <span class="hint">— scroll syncs both panes</span></span>
+    <span class="t">Old v0.5 <b>·</b> New rebuild <span class="hint">(scroll syncs both panes)</span></span>
     <div class="ctrls">
       <button class:on={!home} onclick={() => (home = false)}>New: Navy</button>
       <button class:on={home} onclick={() => (home = true)}>New: Home (light)</button>
@@ -95,11 +95,11 @@
   </div>
   <div class="cols">
     <div class="col">
-      <div class="cap">Old — v0.5</div>
+      <div class="cap">Old: v0.5</div>
       <div class="pane left" bind:this={leftEl} onscroll={onLeftScroll}></div>
     </div>
     <div class="col">
-      <div class="cap">New — rebuild ({home ? "home" : "navy"})</div>
+      <div class="cap">New: rebuild ({home ? "home" : "navy"})</div>
       <iframe
         class="pane"
         bind:this={rightFrame}

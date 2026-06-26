@@ -34,7 +34,7 @@
   ];
 </script>
 
-<GuideSection id="type-1-letters" title="Type 1 — Dual-Shift Letters">
+<GuideSection id="type-1-letters" title="Type 1: Dual-Shift Letters">
   <p>
     First we'll look at A, B, and C. Their handpath is Split-Same and they move from
     &#945;&#8596;&#945;:

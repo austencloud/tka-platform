@@ -59,17 +59,17 @@
     <GuideDiagram
       src="/guide/level-1/images/gamma-letters/MP.png"
       alt="MP compound letter"
-      caption="MP — Magic Potion"
+      caption="MP: Magic Potion"
     />
     <GuideDiagram
       src="/guide/level-1/images/gamma-letters/NQ.png"
       alt="NQ compound letter"
-      caption="NQ — Never Quit"
+      caption="NQ: Never Quit"
     />
     <GuideDiagram
       src="/guide/level-1/images/gamma-letters/OR.png"
       alt="OR compound letter"
-      caption="OR — Open Road"
+      caption="OR: Open Road"
     />
   </div>
 

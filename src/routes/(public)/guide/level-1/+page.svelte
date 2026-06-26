@@ -2,9 +2,9 @@
 </script>
 
 <svelte:head>
-  <title>Level 1 Guide — The Kinetic Alphabet</title>
-  <meta name="description" content="The Kinetic Alphabet Level 1 guide — positions, motions, letters, words, and LOOPs for double staves." />
-  <meta property="og:title" content="Level 1 Guide — The Kinetic Alphabet" />
+  <title>Level 1 Guide: The Kinetic Alphabet</title>
+  <meta name="description" content="The Kinetic Alphabet Level 1 guide: positions, motions, letters, words, and LOOPs for double staves." />
+  <meta property="og:title" content="Level 1 Guide: The Kinetic Alphabet" />
   <meta property="og:description" content="A grid-based notation system for object manipulation choreography. Positions, motions, letters, words, and LOOPs." />
   <meta property="og:image" content="/guide/level-1/images/_shared/level-1-front-cover.png" />
 </svelte:head>
@@ -84,7 +84,7 @@
   <section class="download">
     <h2>Print &amp; PDF</h2>
     <p>
-      <a href="/guide/level-1/print">Open the printable version</a> — then use your
+      <a href="/guide/level-1/print">Open the printable version</a>, then use your
       browser's Print or Save as PDF to hand it out.
     </p>
     <p>

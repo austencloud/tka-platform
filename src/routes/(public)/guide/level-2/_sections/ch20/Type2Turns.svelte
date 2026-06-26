@@ -2,7 +2,7 @@
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
 </script>
 
-<GuideSection id="type-2-turns" title="Type 2 — Shift (1-Turn)">
+<GuideSection id="type-2-turns" title="Type 2: Shift (1-Turn)">
   <p>
     Type 2 hybrids combine a shift and a static motion. These two motion types are different, so we use the high/low slots to differentiate them. To determine where they go, remember PADS. Because a shift (pro/anti) is higher than a static motion, we can confidently state that:
   </p>

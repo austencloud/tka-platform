@@ -8,7 +8,7 @@
   </p>
 
   <p>
-    To the right of each letter, there are two slots — high and low. These slots contain numbers that indicate turns.
+    To the right of each letter, there are two slots: high and low. These slots contain numbers that indicate turns.
   </p>
 
   <p>
@@ -29,17 +29,17 @@
   </p>
 
   <p>
-    The letters S and T have another factor — leading/following. In their case, leading is high and following is low.
+    The letters S and T have another factor, leading/following. In their case, leading is high and following is low.
   </p>
 
   <p>There are five hybrids, each shown below in their corresponding high/low slots:</p>
 
   <ul>
-    <li><strong class="type-dual-shift">Type 1 Dual-Shift</strong> — Pro/Anti: C, F, I, L, O, R, U, V</li>
-    <li><strong class="type-dual-shift">Type 2 Shift</strong> — Leading/Following: S, T</li>
-    <li><strong class="type-shift">Type 3 Cross-Shift</strong> — Shift/Static: W, X, Y, Z, Σ, Δ, θ, Ω</li>
-    <li><strong class="type-cross-shift">Type 4 Dash</strong> — Shift/Dash: W-, X-, Y-, Z-, Σ-, Δ-, θ-, Ω-</li>
-    <li><strong class="type-dash">Type 5</strong> — Dash/Static: Φ, Ψ, Λ</li>
+    <li><strong class="type-dual-shift">Type 1 Dual-Shift</strong> (Pro/Anti): C, F, I, L, O, R, U, V</li>
+    <li><strong class="type-dual-shift">Type 2 Shift</strong> (Leading/Following): S, T</li>
+    <li><strong class="type-shift">Type 3 Cross-Shift</strong> (Shift/Static): W, X, Y, Z, Σ, Δ, θ, Ω</li>
+    <li><strong class="type-cross-shift">Type 4 Dash</strong> (Shift/Dash): W-, X-, Y-, Z-, Σ-, Δ-, θ-, Ω-</li>
+    <li><strong class="type-dash">Type 5</strong> (Dash/Static): Φ, Ψ, Λ</li>
   </ul>
 
   <p>

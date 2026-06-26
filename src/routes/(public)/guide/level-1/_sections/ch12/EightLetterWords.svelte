@@ -8,13 +8,13 @@
 
   <GuideDiagram
     src="/guide/level-1/images/8-count-sequences/IIΩXKEΣY.png"
-    alt="IIΩXKEΣY — Rotated LOOP"
-    caption="II&#x3A9;XKE&#x3A3;Y — Rotated LOOP"
+    alt="IIΩXKEΣY: Rotated LOOP"
+    caption="II&#x3A9;XKE&#x3A3;Y: Rotated LOOP"
   />
 
   <GuideDiagram
     src="/guide/level-1/images/8-count-sequences/CΣNZIθUW.png"
-    alt="CΣNZIθUW — Mirrored + Swapped LOOP"
-    caption="C&#x3A3;NZI&#x3B8;UW — Mirrored + Swapped LOOP"
+    alt="CΣNZIθUW: Mirrored + Swapped LOOP"
+    caption="C&#x3A3;NZI&#x3B8;UW: Mirrored + Swapped LOOP"
   />
 </GuideSection>

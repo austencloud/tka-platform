@@ -8,8 +8,8 @@
 </script>
 
 <svelte:head>
-  <title>Double Staff Codex — Printable</title>
-  <meta name="description" content="Printable Kinetic Alphabet base-letter codex for double staves — Types 1–6." />
+  <title>Double Staff Codex: Printable</title>
+  <meta name="description" content="Printable Kinetic Alphabet base-letter codex for double staves. Types 1–6." />
 </svelte:head>
 
 <div class="codex-print-root">
