@@ -137,20 +137,20 @@ function addFlipPage(pdf: PDFDocument, font: PDFFont, fontBold: PDFFont) {
   const page = pdf.addPage([PAGE_W, PAGE_H]);
   const cx = PAGE_W / 2;
   let y = PAGE_H / 2 + 60;
-  const title = "STOP — FLIP YOUR PAPER";
+  const title = "STOP: FLIP YOUR PAPER";
   page.drawText(title, { x: cx - fontBold.widthOfTextAtSize(title, 16) / 2, y, size: 16, font: fontBold, color: GUIDE });
   y -= 36;
   for (const step of [
     "1.  Remove all printed fronts from the output tray",
     "2.  Flip the stack on the LONG EDGE",
-    "3.  Reinsert into the paper tray — top edge goes in first",
+    "3.  Reinsert into the paper tray, top edge goes in first",
     "4.  Print the remaining pages (all backs)",
   ]) {
     page.drawText(step, { x: cx - font.widthOfTextAtSize(step, 10) / 2, y, size: 10, font, color: GUIDE });
     y -= 18;
   }
   y -= 12;
-  const note = "This page does not print on card stock — it is an instruction separator.";
+  const note = "This page does not print on card stock. It is an instruction separator.";
   page.drawText(note, { x: cx - font.widthOfTextAtSize(note, 7) / 2, y, size: 7, font, color: GUIDE });
 }
 
@@ -180,7 +180,7 @@ export async function buildCodexSheetPDF(options: CodexPrintOptions = {}): Promi
     addFlipPage(pdf, font, fontBold);
   }
   if (includeBacks) {
-    drawSide(pdf, font, backImg, copies, true, "BACKS · Types 3–6", "BACK SIDE — columns mirrored for long-edge flip");
+    drawSide(pdf, font, backImg, copies, true, "BACKS · Types 3–6", "BACK SIDE: columns mirrored for long-edge flip");
   }
 
   const bytes = await pdf.save();

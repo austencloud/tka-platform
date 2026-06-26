@@ -70,7 +70,7 @@
 
 <div class="composer-picker">
   <div class="picker-header">
-    <span class="header-label">{sceneName} — Compose</span>
+    <span class="header-label">{sceneName}: Compose</span>
     <button class="exit-btn" onclick={onClose} aria-label="Exit compose mode">
       <i class="fas fa-xmark" aria-hidden="true"></i>
     </button>

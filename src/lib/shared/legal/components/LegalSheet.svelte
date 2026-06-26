@@ -301,9 +301,8 @@
             <h3>7. Cookies and Local Storage</h3>
             <p>
               TKA Composer uses local storage and cookies to maintain your
-              session, remember your preferences, and provide a seamless
-              experience. These are essential for the application to function
-              properly.
+              session and remember your preferences. These are essential for
+              the application to function properly.
             </p>
           </section>
 

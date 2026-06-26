@@ -2,18 +2,18 @@
 </script>
 
 <svelte:head>
-  <title>Level 2 — Turns</title>
-  <meta name="description" content="The Kinetic Alphabet Level 2 guide — adding prop rotations (1-turns and 2-turns) to the base motions." />
+  <title>Level 2: Turns</title>
+  <meta name="description" content="The Kinetic Alphabet Level 2 guide: adding prop rotations (1-turns and 2-turns) to the base motions." />
 </svelte:head>
 
 <div class="landing">
   <h1>The Kinetic Alphabet</h1>
-  <p class="subtitle">Level 2 — Turns</p>
+  <p class="subtitle">Level 2: Turns</p>
   <p class="byline">Created by Austen Cloud</p>
 
   <section class="intro">
     <p>
-      Level 2 introduces turns — 180° and 360° prop rotations layered onto the base motions
+      Level 2 introduces turns: 180° and 360° prop rotations layered onto the base motions
       from Level 1. Each turn adds a thumb switch. The glyph system expands with high/low
       slots, PADS ordering, and rotational-relationship dots.
     </p>
@@ -24,13 +24,13 @@
     <ol>
       <li>
         <a href="/guide/level-2/turns">
-          <strong>2.0 — 1-Turns</strong>
+          <strong>2.0: 1-Turns</strong>
           <span>Shifts, dashes, static turns, glyphs/PADS, Types 1–6 with turns, opening/closing, 1|1 turns</span>
         </a>
       </li>
       <li>
         <a href="/guide/level-2/double-turns">
-          <strong>2.1 — 2-Turns</strong>
+          <strong>2.1: 2-Turns</strong>
           <span>Double-turning shifts, dashes, static, and codex reference pages</span>
         </a>
       </li>

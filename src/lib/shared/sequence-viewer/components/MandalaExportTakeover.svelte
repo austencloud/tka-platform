@@ -96,7 +96,7 @@
           <span class="k">codec</span><span class="v small">{d.codec}</span>
         </div>
         {#if d.encoder === "wasm" || !d.hwSupported}
-          <p class="diag-note">No hardware H.264 — encoding in software. Lower the resolution for a big speedup.</p>
+          <p class="diag-note">No hardware H.264, encoding in software. Lower the resolution for a big speedup.</p>
         {/if}
         <button class="takeover-btn ghost diag-copy" onclick={copyDiag}>
           {copied ? "Copied ✓" : "Copy diagnostics"}

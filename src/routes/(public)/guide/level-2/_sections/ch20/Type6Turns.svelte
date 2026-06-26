@@ -2,7 +2,7 @@
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
 </script>
 
-<GuideSection id="type-6-turns" title="Type 6 — Static (1-Turn)">
+<GuideSection id="type-6-turns" title="Type 6: Static (1-Turn)">
   <p>
     Finally, Type 6 letters have both hands remaining static. Both types are the same (static|static), so the number goes in the high slot by default.
   </p>

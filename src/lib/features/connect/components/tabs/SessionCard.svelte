@@ -67,7 +67,7 @@
 			<button
 				class="join-button"
 				onclick={onJoin}
-				aria-label={`${t('connect_join')} — ${session.hostDisplayName}`}
+				aria-label={`${t('connect_join')}: ${session.hostDisplayName}`}
 			>
 				<i class="fas fa-link" aria-hidden="true"></i>
 				{t('connect_join')}

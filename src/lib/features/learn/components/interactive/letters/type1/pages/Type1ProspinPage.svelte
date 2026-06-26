@@ -27,7 +27,7 @@ Now uses shared Type1LetterLessonPage component
   }: Props = $props();
 </script>
 
-No<Type1LetterLessonPage
+<Type1LetterLessonPage
   config={PROSPIN_PAGE_CONFIG}
   {currentLetter}
   {letterIndex}

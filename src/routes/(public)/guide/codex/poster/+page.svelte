@@ -53,7 +53,7 @@
 </script>
 
 <svelte:head>
-  <title>Codex Wall Poster — dev tool</title>
+  <title>Codex Wall Poster: dev tool</title>
   <!-- Exact tall single page for Print / Save PDF. -->
   {@html `<style>@media print { @page { size: ${PAGE_WIDTH_IN}in ${pageHeightIn}in; margin: 0; } }</style>`}
 </svelte:head>

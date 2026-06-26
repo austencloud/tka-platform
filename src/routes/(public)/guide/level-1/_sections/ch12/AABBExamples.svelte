@@ -3,7 +3,7 @@
   import GuideDiagram from "../../_components/GuideDiagram.svelte";
 </script>
 
-<GuideSection id="aabb-examples" title="Examples — AABB">
+<GuideSection id="aabb-examples" title="Examples: AABB">
   <p>
     Let's practice reversals and permutations. We'll use AABB as an example to explore different
     reversal placements. These start from the same alpha start position. Interpret it from the first

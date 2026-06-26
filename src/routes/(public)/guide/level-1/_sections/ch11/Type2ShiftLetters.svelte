@@ -27,7 +27,7 @@
   ];
 </script>
 
-<GuideSection id="type-2-shifts-letters" title="Type 2 — Shift Letters">
+<GuideSection id="type-2-shifts-letters" title="Type 2: Shift Letters">
   <p>
     So far we've learned how to move between &#945;&#8596;&#945; and between
     &#946;&#8596;&#946; and between &#945;&#8596;&#946;. In order to travel between

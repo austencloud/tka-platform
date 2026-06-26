@@ -180,7 +180,7 @@
                       </div>
 
                       {#if controller.heavyLoad}
-                        <p class="warn">Heavy effect on a large stack — may drop frames on weaker devices.</p>
+                        <p class="warn">Heavy effect on a large stack: may drop frames on weaker devices.</p>
                       {/if}
 
                       <div class="presets">

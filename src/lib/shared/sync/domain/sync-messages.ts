@@ -133,8 +133,8 @@ export function validateSerializedRoomState(data: unknown): data is Serializable
 		throw new Error('Room state missing playback data');
 	}
 	const playback = state.playback as Record<string, unknown>;
-	if (typeof playback.isPlaying !== 'boolean') {
-		throw new Error('Playback missing isPlaying boolean');
+	if (typeof playback.playing !== 'boolean') {
+		throw new Error('Playback missing playing boolean');
 	}
 	if (typeof playback.anchorStep !== 'number') {
 		throw new Error('Playback missing anchorStep number');

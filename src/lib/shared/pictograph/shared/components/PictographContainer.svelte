@@ -27,7 +27,7 @@ with pre-prepared data for better performance.
 -->
 
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { onMount, untrack, tick } from "svelte";
   import { getVisibilityStateManager } from "../state/visibility-state.svelte";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
   import { getSettings } from "../../../application/state/app-state.svelte";
@@ -94,6 +94,11 @@ with pre-prepared data for better performance.
     cellIndex = null,
     // Musical position string (e.g., "1", "1.5", "2e") for beat number display (timeline mode)
     musicalPosition = undefined,
+    // Fires once after the first successful prepare has been applied and rendered
+    // to the DOM. Lets offscreen/export rendering await readiness deterministically
+    // instead of polling — PictographRenderer does all arrow/prop work synchronously
+    // from prepared data, so once preparedData is committed the SVG content is present.
+    onReady = undefined,
   } = $props<{
     pictographData?: (StepData | PictographData) | null;
     disableTransitions?: boolean;
@@ -135,6 +140,8 @@ with pre-prepared data for better performance.
     cellIndex?: number | null;
     /** Musical position string (e.g., "1", "1.5", "2e") for beat number display in timeline mode */
     musicalPosition?: string;
+    /** Fires once after the first prepared render commits to the DOM (deterministic export readiness signal). */
+    onReady?: () => void;
   }>();
 
   // Extract beat context from StepData if available.
@@ -295,6 +302,16 @@ with pre-prepared data for better performance.
   let preparedData = $state<PreparedPictographData | null>(null);
   let isLoading = $state(false);
 
+  // Tracks whether the grid SVG has settled. PictographRenderer's GridSvg loads its
+  // grid file asynchronously and independently of the prepared arrow/prop data, so
+  // the export readiness signal below must wait for it too — otherwise a cold grid
+  // cache can serialize the SVG before the grid lines are in the DOM. Fires on both
+  // load and error (an errored grid renders nothing, so it should not block readiness).
+  let gridReady = $state(false);
+  const handleGridReady = () => {
+    gridReady = true;
+  };
+
   // Monotonic counter for preparation ordering.
   // Each $effect run increments this. When a prepare completes, it only applies
   // if no newer prepare has already applied. This prevents stale results (e.g. from
@@ -430,6 +447,22 @@ with pre-prepared data for better performance.
     // Just use id - transforms keep same id, loading different sequence changes id
     return pictographData.id || "no-id";
   });
+
+  // Deterministic readiness signal for offscreen/export rendering.
+  // This effect runs after the DOM is updated, so once preparedData is committed
+  // PictographRenderer (and its synchronous arrows/props) are in the DOM. The grid,
+  // however, loads asynchronously inside GridSvg, so when it is shown we also wait
+  // for gridReady — otherwise a cold grid cache could serialize before the grid
+  // lines paint. tick() flushes any trailing state before we report. Fires once per
+  // mount — export mounts a fresh container per call, so the one-shot guard is right.
+  let hasReportedReady = false;
+  $effect(() => {
+    const gridSettled = !effectiveShowGrid || gridReady;
+    if (preparedData && gridSettled && !hasReportedReady && onReady) {
+      hasReportedReady = true;
+      void tick().then(() => onReady());
+    }
+  });
 </script>
 
 <div class="pictograph-container" class:loading={isLoading}>
@@ -468,6 +501,7 @@ with pre-prepared data for better performance.
         {widthMultiplier}
         {cellIndex}
         {duration}
+        onGridReady={handleGridReady}
       />
     {:else}
       {#key contentKey}
@@ -507,6 +541,7 @@ with pre-prepared data for better performance.
             {widthMultiplier}
             {cellIndex}
             {duration}
+            onGridReady={handleGridReady}
           />
         </div>
       {/key}

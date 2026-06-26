@@ -212,22 +212,22 @@
   }
   function doRotate() {
     redIdx = wrap8(redIdx + 1); blueIdx = wrap8(blueIdx + 1);
-    lastAction = `Rotated clockwise — still ${steps[focus!]!.name}.`;
+    lastAction = `Rotated clockwise, still ${steps[focus!]!.name}.`;
   }
   function doMirror() {
     const nr = wrap8(8 - redIdx), nb = wrap8(8 - blueIdx);
     const noChange = nr === redIdx && nb === blueIdx;
     redIdx = nr; blueIdx = nb;
     lastAction = noChange
-      ? `Mirror does nothing here — this one's symmetric. Still ${steps[focus!]!.name}.`
-      : `Mirrored — still ${steps[focus!]!.name}.`;
+      ? `Mirror does nothing here. This one's symmetric. Still ${steps[focus!]!.name}.`
+      : `Mirrored, still ${steps[focus!]!.name}.`;
   }
   function doSwap() {
     const noChange = redIdx === blueIdx;
     [redIdx, blueIdx] = [blueIdx, redIdx];
     lastAction = noChange
-      ? `Swap does nothing here — both hands share a point. Still ${steps[focus!]!.name}.`
-      : `Swapped colors — still ${steps[focus!]!.name}.`;
+      ? `Swap does nothing here. Both hands share a point. Still ${steps[focus!]!.name}.`
+      : `Swapped colors, still ${steps[focus!]!.name}.`;
   }
 
   async function go(n: number) {
@@ -341,17 +341,17 @@
 
             {#if phase === "intro"}
               <div class="intro">
-                <p class="intro-lead">Three ways to change a pictograph — and it stays {focusStep.name}:</p>
+                <p class="intro-lead">Three ways to change a pictograph, and it stays {focusStep.name}:</p>
                 <ul class="intro-list">
-                  <li><span class="ic">⟳</span><span><b>Rotate</b> — turn it around the grid.</span></li>
-                  <li><span class="ic">⇄</span><span><b>Mirror</b> — flip it left to right.</span></li>
-                  <li><span class="ic">◐</span><span><b>Swap colors</b> — swap which hand is which.</span></li>
+                  <li><span class="ic">⟳</span><span><b>Rotate</b>: turn it around the grid.</span></li>
+                  <li><span class="ic">⇄</span><span><b>Mirror</b>: flip it left to right.</span></li>
+                  <li><span class="ic">◐</span><span><b>Swap colors</b>: swap which hand is which.</span></li>
                 </ul>
                 <button type="button" class="navbtn primary intro-go" onclick={() => (phase = "play")}>Try it →</button>
               </div>
             {:else}
               <p class="focus-caption">
-                {lastAction || `Rotate, mirror, or swap colors — it stays ${focusStep.name}.`}
+                {lastAction || `Rotate, mirror, or swap colors. It stays ${focusStep.name}.`}
               </p>
 
               <div class="focus-controls">

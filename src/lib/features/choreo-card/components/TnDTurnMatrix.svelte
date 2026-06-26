@@ -118,7 +118,7 @@
           class:selected={isSelected}
           role="gridcell"
           aria-selected={isSelected}
-          aria-label="Blue {blue} red {red}, {c.count} sequences{isSymmetric ? ' (matched)' : ''}{isSelected ? ' — selected' : ''}"
+          aria-label="Blue {blue} red {red}, {c.count} sequences{isSymmetric ? ' (matched)' : ''}{isSelected ? ', selected' : ''}"
           onclick={() => onToggle?.(c.turnPattern)}
         >
           <span class="turn-pair">

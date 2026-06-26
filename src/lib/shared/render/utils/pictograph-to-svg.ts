@@ -133,29 +133,36 @@ export async function renderPictographToSVG(
       }
     }
 
+    // Deterministic readiness: PictographContainer fires onReady once its prepared
+    // data has been committed to the DOM. Arrows and props are derived synchronously
+    // from that prepared data (PictographRenderer does no async work), so when this
+    // resolves the SVG content is fully present — no DOM polling, no timed guesses.
+    let signalReady!: () => void;
+    const ready = new Promise<void>((resolve) => {
+      signalReady = resolve;
+    });
+    componentProps.onReady = signalReady;
+
     // Mount PictographContainer with explicit visibility settings
     const component = mount(PictographContainer, {
       target: container,
       props: componentProps,
     });
 
-    // Wait for component to fully render
+    // Wait until the container reports its first prepared render is in the DOM,
+    // with a safety ceiling so a prepare that never settles can't hang this export
+    // — and, in batch jobs, the entire run — forever. The normal path resolves via
+    // `ready` long before the ceiling; the ceiling only fires in the pathological
+    // hang case, where serializing whatever rendered beats blocking indefinitely.
+    // This restores the old polling code's "incomplete beats hung" guarantee without
+    // reintroducing the polling.
+    await Promise.race([ready, readinessCeiling(8000)]);
     await tick();
 
-    // CRITICAL: Wait for pictograph services to initialize
-    // Services (arrow lifecycle manager, prop loader, etc.) are resolved asynchronously
-    // We must wait for initialization before arrows/props can be calculated
-    await waitForServicesInitialized(container);
-
-    // CRITICAL: Wait for arrow and prop calculations to complete
-    // Arrows and props are calculated asynchronously in effects, and tick() doesn't wait for them
-    // We need to poll until they are actually rendered in the DOM
-    await waitForArrowsAndPropsCalculated(container, pictographData);
-
-    // CRITICAL: Wait for external images (TKAGlyph letter images) to load
-    // The TKAGlyph component uses <image> tags with external SVG references
-    // We need to wait for these to load before capturing the SVG
-    await waitForImagesLoaded(container);
+    // Inline external TKAGlyph images (letter glyphs reference SVGs via <image href>).
+    // The glyph cache fetches and inlines them as data URLs so the serialized SVG is
+    // self-contained. This awaits the actual fetches — it never sleeps.
+    await inlineGlyphImages(container);
 
     // Find the SVG element in the rendered component
     const svgElement = container.querySelector("svg");
@@ -191,149 +198,38 @@ export async function renderPictographToSVG(
 }
 
 /**
- * Wait for pictograph services to initialize
- * Services (ArrowLifecycleManager, PropSvgLoader, etc.) are resolved asynchronously
- * This must complete before arrow/prop calculations can begin
+ * Safety ceiling for the readiness signal. Resolves (never rejects) after `ms` so
+ * renderPictographToSVG proceeds with whatever has rendered rather than awaiting a
+ * readiness signal that — in a pathological case (a prepare that never settles) —
+ * never fires. The deterministic `ready` signal wins this race in every normal
+ * case; this only prevents a permanent hang.
  */
-async function waitForServicesInitialized(
-  container: HTMLElement
-): Promise<void> {
-  // Poll for signs that services are initialized
-  // We can't directly access servicesInitialized flag, but we can detect when
-  // the component is ready to render content
-  let attempts = 0;
-  const maxAttempts = 50; // 5 seconds max
-
-  while (attempts < maxAttempts) {
-    // Check if the SVG has any meaningful content (grid, etc.)
-    const svg = container.querySelector("svg");
-    const hasGrid = svg?.querySelector('.grid-svg, [class*="grid"]');
-
-    // If we have a grid, the component is initialized enough to start rendering
-    if (hasGrid) {
-      // Debug logging disabled to prevent console flooding
-      // console.log(
-      //   `✅ Services initialized (detected after ${attempts * 100}ms)`
-      // );
-
-      // Give effects a moment to start running after service initialization
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      return;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    attempts++;
-  }
-
+function readinessCeiling(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.warn(
+        `renderPictographToSVG: readiness signal did not fire within ${ms}ms; ` +
+          `serializing current DOM state (render may be incomplete).`
+      );
+      resolve();
+    }, ms);
+  });
 }
 
 /**
- * Wait for arrow and prop calculations to complete
- * Arrows and props are calculated asynchronously in Svelte effects, which tick() doesn't wait for
- * We poll the DOM until all expected elements are present, ensuring complete rendering
+ * Inline external TKAGlyph images so the serialized SVG is self-contained.
+ *
+ * TKAGlyph references letter SVGs via <image href="...">. Those hrefs point at
+ * external files, which would not survive serialization to an offscreen string.
+ * The glyph cache fetches each one and returns a data URL we swap in.
+ *
+ * Called only after PictographContainer's onReady has fired, so the <image>
+ * elements are already in the DOM — there is nothing to poll for. The only wait
+ * here is on the actual fetches, via Promise.all.
  */
-async function waitForArrowsAndPropsCalculated(
-  container: HTMLElement,
-  pictographData: StepData | PictographData
-): Promise<void> {
-  // Check if this pictograph should have arrows or props
-  const shouldHaveArrows =
-    pictographData.motions.blue || pictographData.motions.red;
-
-  if (!shouldHaveArrows) {
-    // No motions = no arrows/props expected, return immediately
-    return;
-  }
-
-  // Count expected arrows and props (blue and/or red)
-  let expectedArrowCount = 0;
-  let expectedPropCount = 0;
-  if (pictographData.motions.blue) {
-    expectedArrowCount++;
-    expectedPropCount++;
-  }
-  if (pictographData.motions.red) {
-    expectedArrowCount++;
-    expectedPropCount++;
-  }
-
-  // Poll until arrows and props appear in DOM
-  let attempts = 0;
-  const maxAttempts = 100; // 10 seconds max (100ms intervals)
-
-  // Debug logging disabled to prevent console flooding
-  // console.log(
-  //   `🔍 Waiting for ${expectedArrowCount} arrows and ${expectedPropCount} props...`
-  // );
-
-  while (attempts < maxAttempts) {
-    // Look for arrow SVG elements (they have class "arrow-svg")
-    const arrowGroups = container.querySelectorAll(".arrow-svg");
-
-    // Look for prop SVG elements (they have class "prop-svg")
-    const propGroups = container.querySelectorAll(".prop-svg");
-
-    // Check if we have expected number of arrows and props
-    const hasEnoughArrows = arrowGroups.length >= expectedArrowCount;
-    const hasEnoughProps = propGroups.length >= expectedPropCount;
-
-    if (attempts % 10 === 0 && attempts > 0) {
-      // Debug logging disabled to prevent console flooding
-      // console.log(
-      //   `⏳ Still waiting... (${attempts * 100}ms) arrows: ${arrowGroups.length}/${expectedArrowCount}, props: ${propGroups.length}/${expectedPropCount}`
-      // );
-    }
-
-    if (hasEnoughArrows && hasEnoughProps) {
-      // Debug logging disabled to prevent console flooding
-      // console.log(
-      //   `✅ Arrows and props calculated (found ${arrowGroups.length} arrow groups, ${propGroups.length} prop groups after ${attempts * 100}ms)`
-      // );
-      return;
-    }
-
-    // Wait before next attempt
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    attempts++;
-  }
-
-  // Timeout - log warning but continue (better to have incomplete render than fail completely)
-  const actualArrowGroups = container.querySelectorAll(".arrow-svg").length;
-  const actualPropGroups = container.querySelectorAll(".prop-svg").length;
-  console.warn(
-    `⚠️ Arrow/prop calculation timeout after ${maxAttempts * 100}ms - ` +
-      `expected ${expectedArrowCount} arrows (found ${actualArrowGroups} groups), ` +
-      `expected ${expectedPropCount} props (found ${actualPropGroups} groups)`
-  );
-
-}
-
-/**
- * Wait for all images in the container to load and TKA glyphs to render
- * This ensures TKA glyph images are fully loaded before capturing SVG
- */
-async function waitForImagesLoaded(domContainer: HTMLElement): Promise<void> {
-  // First, wait for TKA glyph elements to appear (they render conditionally)
-  let attempts = 0;
-  const maxAttempts = 50; // 5 seconds max
-
-  while (attempts < maxAttempts) {
-    const tkaGlyphs = domContainer.querySelectorAll(".tka-glyph");
-    const images = domContainer.querySelectorAll("image[href]");
-
-    if (tkaGlyphs.length > 0 && images.length > 0) {
-      break;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    attempts++;
-  }
-
-  // Now wait for the actual images to load
+async function inlineGlyphImages(domContainer: HTMLElement): Promise<void> {
   const images = domContainer.querySelectorAll("image[href]");
-
   if (images.length === 0) {
-    await new Promise((resolve) => setTimeout(resolve, 200));
     return;
   }
 
@@ -362,7 +258,4 @@ async function waitForImagesLoaded(domContainer: HTMLElement): Promise<void> {
   });
 
   await Promise.all(imagePromises);
-
-  // Small delay to ensure rendering is complete (reduced from 200ms since cache is instant)
-  await new Promise((resolve) => setTimeout(resolve, 50));
 }

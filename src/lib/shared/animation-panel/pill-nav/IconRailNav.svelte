@@ -96,7 +96,7 @@
       data-pill-id={pill.id}
       aria-selected={activeId === pill.id}
       aria-label={pill.label}
-      title="{pill.label}{pill.summary ? ` — ${pill.summary}` : ''}"
+      title="{pill.label}{pill.summary ? `: ${pill.summary}` : ''}"
       style:--pill-accent={pill.accentColor ?? null}
       onclick={() => onSelect(pill.id)}
       onkeydown={handleKeydown}

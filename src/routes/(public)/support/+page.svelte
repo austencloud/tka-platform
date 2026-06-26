@@ -45,10 +45,13 @@
     `https://www.paypal.com/paypalme/austencloud${amountPath}`
   );
   const cashHref = $derived(`https://cash.app/$austencloud${amountPath}`);
-  // Venmo web pay URL prefills the amount on desktop and deep-links to the app
-  // on mobile (recipients = username, not the user_id code).
+  // Venmo web pay URL. The recipient MUST be a path segment (venmo.com/<user>),
+  // matching the PayPal/Cash App links above. The `recipients=` query param is
+  // only valid for the native venmo:// scheme — using it on the venmo.com host
+  // leaves the web/app flow with no named recipient, so it drops into the
+  // multi-person "split" picker ("$X each / $Y total"). Path segment avoids that.
   const venmoHref = $derived(
-    `https://venmo.com/?txn=pay&audience=public&recipients=austencloud${
+    `https://venmo.com/austencloud?txn=pay${
       validAmount ? `&amount=${dollars}` : ""
     }&note=${note}`
   );

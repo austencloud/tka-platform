@@ -168,10 +168,10 @@
       <section id="cookies">
         <h2>8. Cookies and Local Storage</h2>
         <p>
-          TKA Composer uses local storage and cookies to maintain your session,
-          remember your preferences, and provide a seamless experience. These
-          are essential for the application to function properly. Cookies are not used
-          for advertising or cross-site tracking.
+          TKA Composer uses local storage and cookies to maintain your session
+          and remember your preferences. These are essential for the application
+          to function properly. Cookies are not used for advertising or cross-site
+          tracking.
         </p>
       </section>
 

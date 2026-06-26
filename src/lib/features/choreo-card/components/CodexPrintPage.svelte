@@ -101,8 +101,8 @@
   <header class="head">
     <h1>Codex Print</h1>
     <p class="lede">
-      The full Double-Staff codex as cut-out reference cards. Four per sheet, double-sided —
-      Types&nbsp;1–2 on the front, Types&nbsp;3–6 on the back — framed in the Choreo Cards rainbow.
+      The full Double-Staff codex as cut-out reference cards. Four per sheet, double-sided:
+      Types&nbsp;1–2 on the front, Types&nbsp;3–6 on the back, framed in the Choreo Cards rainbow.
     </p>
   </header>
 
@@ -158,7 +158,7 @@
               {/each}
             </div>
             <div class="page-guide page-guide-bottom">
-              <span class="guide-text">BACK SIDE — columns mirrored for long-edge flip</span>
+              <span class="guide-text">BACK SIDE: columns mirrored for long-edge flip</span>
               <span class="guide-text">↻ LONG EDGE</span>
             </div>
           </div>

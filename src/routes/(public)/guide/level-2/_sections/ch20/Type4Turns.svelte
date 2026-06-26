@@ -2,7 +2,7 @@
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
 </script>
 
-<GuideSection id="type-4-turns" title="Type 4 — Dash (1-Turn)">
+<GuideSection id="type-4-turns" title="Type 4: Dash (1-Turn)">
   <p>
     Type 4 hybrids combine a dash with a static motion. There is no shift involved. According to PADS, a dash is higher than a static motion.
   </p>

@@ -11,19 +11,19 @@
 
   <GuideDiagram
     src="/guide/level-1/images/type-2-caps/BΣTX.png"
-    alt="BΣTX — Rotated LOOP"
-    caption="B&#x3A3;TX — Rotated LOOP"
+    alt="BΣTX: Rotated LOOP"
+    caption="B&#x3A3;TX: Rotated LOOP"
   />
 
   <GuideDiagram
     src="/guide/level-1/images/type-2-caps/EΔUZ.png"
-    alt="EΔUZ — Rotated LOOP"
-    caption="E&#x394;UZ — Rotated LOOP"
+    alt="EΔUZ: Rotated LOOP"
+    caption="E&#x394;UZ: Rotated LOOP"
   />
 
   <GuideDiagram
     src="/guide/level-1/images/type-2-caps/OYHθ.png"
-    alt="OYHθ — Rotated LOOP"
-    caption="OYH&#x3B8; — Rotated LOOP"
+    alt="OYHθ: Rotated LOOP"
+    caption="OYH&#x3B8;: Rotated LOOP"
   />
 </GuideSection>

@@ -15,17 +15,17 @@
   <div class="word-row">
     <GuideDiagram
       src="/guide/level-1/images/alpha-beta-words/A.png"
-      alt="Word AAAA — four consecutive A letters"
+      alt="Word AAAA, four consecutive A letters"
       caption="AAAA"
     />
     <GuideDiagram
       src="/guide/level-1/images/alpha-beta-words/B.png"
-      alt="Word BBBB — four consecutive B letters"
+      alt="Word BBBB, four consecutive B letters"
       caption="BBBB"
     />
     <GuideDiagram
       src="/guide/level-1/images/alpha-beta-words/C.png"
-      alt="Word CCCC — four consecutive C letters"
+      alt="Word CCCC, four consecutive C letters"
       caption="CCCC"
     />
   </div>
@@ -34,17 +34,17 @@
   <div class="word-row">
     <GuideDiagram
       src="/guide/level-1/images/alpha-beta-words/G.png"
-      alt="Word GGGG — four consecutive G letters"
+      alt="Word GGGG, four consecutive G letters"
       caption="GGGG"
     />
     <GuideDiagram
       src="/guide/level-1/images/alpha-beta-words/H.png"
-      alt="Word HHHH — four consecutive H letters"
+      alt="Word HHHH, four consecutive H letters"
       caption="HHHH"
     />
     <GuideDiagram
       src="/guide/level-1/images/alpha-beta-words/I.png"
-      alt="Word IIII — four consecutive I letters"
+      alt="Word IIII, four consecutive I letters"
       caption="IIII"
     />
   </div>

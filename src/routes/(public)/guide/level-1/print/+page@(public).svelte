@@ -28,7 +28,7 @@
 </script>
 
 <svelte:head>
-  <title>The Kinetic Alphabet — Level 1 (Printable)</title>
+  <title>The Kinetic Alphabet: Level 1 (Printable)</title>
   <meta name="robots" content="noindex" />
 </svelte:head>
 

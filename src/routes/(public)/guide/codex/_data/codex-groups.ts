@@ -110,7 +110,7 @@ export const SHEET1: CodexSheetDef = {
   types: [
     {
       n: 1,
-      word: "Type 1 — ",
+      word: "Type 1: ",
       segs: [
         { t: "Dual", c: TEAL },
         { t: "-Shift", c: NAVY },
@@ -127,7 +127,7 @@ export const SHEET1: CodexSheetDef = {
     },
     {
       n: 2,
-      word: "Type 2 — ",
+      word: "Type 2: ",
       segs: [{ t: "Shift", c: NAVY }],
       divider: true,
       boxes: [
@@ -144,7 +144,7 @@ export const SHEET2: CodexSheetDef = {
   types: [
     {
       n: 3,
-      word: "Type 3 — ",
+      word: "Type 3: ",
       segs: [
         { t: "Cross", c: GREEN },
         { t: "-Shift", c: PURPLE },
@@ -158,14 +158,14 @@ export const SHEET2: CodexSheetDef = {
     },
     {
       n: 4,
-      word: "Type 4 — ",
+      word: "Type 4: ",
       segs: [{ t: "Dash", c: GREEN }],
       divider: true,
       boxes: [cbox([c("Φ-0", "Φ"), c("Ψ-0", "Ψ"), c("Λ-0", "Λ")], true)],
     },
     {
       n: 5,
-      word: "Type 5 — ",
+      word: "Type 5: ",
       segs: [
         { t: "Dual", c: TEAL },
         { t: "-Dash", c: GREEN },
@@ -175,7 +175,7 @@ export const SHEET2: CodexSheetDef = {
     },
     {
       n: 6,
-      word: "Type 6 — ",
+      word: "Type 6: ",
       segs: [{ t: "Static", c: ORANGE }],
       divider: true,
       boxes: [

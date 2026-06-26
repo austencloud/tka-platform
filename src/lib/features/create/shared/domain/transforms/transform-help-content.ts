@@ -134,7 +134,7 @@ export const actionHelpContent: ActionHelpItem[] = [
     color: "#22c55e",
     shortDesc: "Complete to start",
     fullDesc:
-      "Extends your sequence back to its starting position using a LOOP pattern. When the last beat's position matches the first beat's position group, you can choose from different LOOP types (like Mirrored, Swapped, or Rotated) to seamlessly loop your sequence.",
+      "Extends your sequence back to its starting position using a LOOP pattern. When the last beat's position matches the first beat's position group, you can choose from different LOOP types (like Mirrored, Swapped, or Rotated) to loop your sequence.",
     category: "tool",
   },
   {

@@ -284,7 +284,7 @@
         class:active={isActive}
         role="radio"
         aria-checked={isActive}
-        aria-label="{eff.label}{isActive ? ' (active — tap to remove)' : ''}"
+        aria-label="{eff.label}{isActive ? ' (active, tap to remove)' : ''}"
         title={eff.label}
         onclick={() => handleGridTap(eff.value)}
         style:--c={eff.color}

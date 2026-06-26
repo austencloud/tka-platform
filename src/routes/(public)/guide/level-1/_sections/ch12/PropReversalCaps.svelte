@@ -10,14 +10,14 @@
 
   <GuideDiagram
     src="/guide/level-1/images/prop-rev-caps/EΣQY.png"
-    alt="EΣQY — Rotated LOOP with prop-reversal"
-    caption="E&#x3A3;QY — Rotated LOOP"
+    alt="EΣQY: Rotated LOOP with prop-reversal"
+    caption="E&#x3A3;QY: Rotated LOOP"
   />
 
   <GuideDiagram
     src="/guide/level-1/images/prop-rev-caps/TWKθ.png"
-    alt="TWKθ — Rotated LOOP with prop-reversal"
-    caption="TWK&#x3B8; — Rotated LOOP"
+    alt="TWKθ: Rotated LOOP with prop-reversal"
+    caption="TWK&#x3B8;: Rotated LOOP"
   />
 
   <p>
@@ -27,7 +27,7 @@
   </p>
   <GuideDiagram
     src="/guide/level-1/images/prop-rev-caps/BΔMX.png"
-    alt="BΔMX — Rotated LOOP with prop-reversal"
-    caption="B&#x394;MX — Rotated LOOP"
+    alt="BΔMX: Rotated LOOP with prop-reversal"
+    caption="B&#x394;MX: Rotated LOOP"
   />
 </GuideSection>

@@ -8,7 +8,7 @@
   </p>
 
   <p>
-    Fortunately, we have a tool to disambiguate hybrids — the high/low slots. For S and T, high = leading and low = following.
+    Fortunately, we have a tool to disambiguate hybrids: the high/low slots. For S and T, high = leading and low = following.
   </p>
 
   <!-- TODO: add diagram — S-High-One, S-Low-One -->

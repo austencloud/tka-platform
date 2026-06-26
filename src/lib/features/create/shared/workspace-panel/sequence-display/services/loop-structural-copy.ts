@@ -31,7 +31,7 @@ function structureText(beatCount: number, word: string, period: number): string 
   if (period === 4) {
     return `${beatCount} beats. ${word} repeats four times. `;
   }
-  return `${beatCount} beats. ${word} repeats twice — beats 1–${half} and ${half + 1}–${beatCount} use the same letters. `;
+  return `${beatCount} beats. ${word} repeats twice: beats 1–${half} and ${half + 1}–${beatCount} use the same letters. `;
 }
 
 function singleComponentCopy(

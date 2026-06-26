@@ -62,17 +62,17 @@
     <GuideDiagram
       src="/guide/level-1/images/compound-letters/DJ.png"
       alt="DJ compound word sequence"
-      caption="DJ — Disco Jam"
+      caption="DJ: Disco Jam"
     />
     <GuideDiagram
       src="/guide/level-1/images/compound-letters/EK.png"
       alt="EK compound word sequence"
-      caption="EK — Exploding Kitten"
+      caption="EK: Exploding Kitten"
     />
     <GuideDiagram
       src="/guide/level-1/images/compound-letters/FL.png"
       alt="FL compound word sequence"
-      caption="FL — Fruity Loops"
+      caption="FL: Fruity Loops"
     />
   </div>
 </GuideSection>

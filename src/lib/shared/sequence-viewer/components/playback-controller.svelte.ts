@@ -263,7 +263,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
 
     // No "personal best" — we don't track props, so a best BPM would just be
     // "the highest the slider was dragged to". Honest completion only.
-    showToast(`Practice complete — reached ${finalBpm} BPM`, "success");
+    showToast(`Practice complete: reached ${finalBpm} BPM`, "success");
   }
 
   /**

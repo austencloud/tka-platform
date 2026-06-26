@@ -688,9 +688,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
           <div class="progress-bar-fill" style:width="{fraction * 100}%"></div>
           <span class="progress-label">
             {#if preparing}
-              Preparing — resolving codes {prepDone} / {prepTotal}…
+              Preparing: resolving codes {prepDone} / {prepTotal}…
             {:else}
-              Placing pictographs — {Math.floor(piecesDone)} / {piecesTotal} ({renderProgress} / {renderTotal} cards)
+              Placing pictographs: {Math.floor(piecesDone)} / {piecesTotal} ({renderProgress} / {renderTotal} cards)
             {/if}
           </span>
         {/if}
@@ -859,7 +859,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
               {/each}
             </div>
             <div class="page-guide page-guide-bottom">
-              <span class="guide-text">BACK SIDE — columns mirrored for long-edge flip</span>
+              <span class="guide-text">BACK SIDE: columns mirrored for long-edge flip</span>
               <span class="guide-text">↻ LONG EDGE</span>
             </div>
             {#each cropMarks as mark}
