@@ -39,7 +39,7 @@
   const amtLabel = $derived(validAmount ? `$${dollars} ` : "");
   // PayPal.me and Cash App take the amount as a trailing path segment.
   const amountPath = $derived(validAmount ? `/${dollars}` : "");
-  const note = encodeURIComponent("Support The Kinetic Alphabet");
+  const note = encodeURIComponent("Thank you for supporting TKA! 🙏");
 
   const paypalHref = $derived(
     `https://www.paypal.com/paypalme/austencloud${amountPath}`
@@ -227,7 +227,8 @@
     /* The whole page — card AND footer — lives inside ONE dynamic viewport so a
        phone shows everything with no scroll. dvh (not vh) tracks the mobile
        browser chrome so the bottom never hides behind the URL bar; the plain vh
-       line is the fallback for engines without dvh. */
+       line is the fallback for engines without dvh. On desktop the footer pins
+       to the bottom (support grows); mobile re-centres the group below. */
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
@@ -238,9 +239,9 @@
     flex: 1 1 auto;
     min-height: 0; /* let the card shrink to fit instead of forcing page scroll */
     box-sizing: border-box;
-    /* top clears the 64px fixed SiteHeader (min 70 keeps a small gap); both pads
-       ease down on short screens. Kept tight so card + footer clear one viewport. */
-    padding: clamp(70px, 8vh, 84px) 22px clamp(12px, 2vh, 28px);
+    /* top clears the 64px fixed SiteHeader; bottom pad is breathing space below
+       the card (the gap to the footer). */
+    padding: clamp(70px, 8vh, 84px) 22px clamp(28px, 5vh, 52px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -551,6 +552,16 @@
      phone gets the same compact card, centered, so taller screens simply gain
      breathing room top and bottom — no per-size breakpoint gaps. */
   @media (max-width: 520px) {
+    /* Centre the card + footer as ONE group so the leftover space splits evenly
+       above the card and below the footer, instead of pooling into one dead gap
+       between the signature and the footer (which read top-heavy on phones). */
+    .support-wrap {
+      justify-content: center;
+    }
+    .support {
+      flex: 0 1 auto;
+    }
+
     .title {
       font-size: clamp(1.6rem, 6.8vw, 2.05rem);
       margin-bottom: 0.3rem;
@@ -608,16 +619,12 @@
     }
   }
 
-  /* Small / old phones (iPhone SE, compact Androids ≤ ~690px tall): drop the
-     @handle text — the brand icons + aria-labels still name each app — and trim
-     the chrome a touch more, so even the smallest screen clears the fold with
-     the Custom field open. */
+  /* Small / old phones (iPhone SE, compact Androids ≤ ~690px tall): trim the
+     chrome so the whole card + footer still clears the fold (now with the
+     @handles kept — they fit at this size and read fuller than bare icons). */
   @media (max-height: 690px) {
     .support {
-      padding: 66px 22px 8px;
-    }
-    .handle {
-      display: none;
+      padding: 66px 22px clamp(20px, 3.5vh, 40px);
     }
     .title {
       font-size: clamp(1.45rem, 6vw, 1.75rem);

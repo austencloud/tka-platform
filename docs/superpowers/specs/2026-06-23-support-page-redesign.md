@@ -27,7 +27,7 @@ A "buy me a coffee" tip jar that lives inside the real public chrome:
   read as anonymous and erased collaborators). Final body: "The Kinetic Alphabet
   is a continuously growing project, with 4 years of development behind it.
   Donations play a huge role in making this work possible. Please consider
-  supporting this work, any amount is deeply appreciated!" Sign-off: "Austen
+  supporting, any amount is deeply appreciated!" Sign-off: "Austen
   Cloud / Creator of The Kinetic Alphabet" — quietly makes the money-to-creator
   point.
 - Three side-by-side payment buttons with real brand logos (Simple Icons, CC0,
