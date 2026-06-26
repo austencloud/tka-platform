@@ -476,6 +476,10 @@ export class R2VideoUploader {
       );
     } catch (error) {
       if ((error as Error).name === "AbortError") throw error;
+      // Caller (library-save-service) deliberately degrades a thumbnail failure
+      // to a warning toast and still completes the save, so this path only logs
+      // and rethrows — routing through handleError would stack a second,
+      // higher-severity error toast on top of that intentional warning.
       console.error("R2VideoUploader: Failed to upload-thumbnail:", error);
       throw error;
     }
