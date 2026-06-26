@@ -22,7 +22,7 @@
 </script>
 
 <svelte:head>
-  <title>1.2 Words & LOOPs: Level 1 Guide: The Kinetic Alphabet</title>
+  <title>1.2 Words & LOOPs · Level 1 Guide · The Kinetic Alphabet</title>
   <meta name="description" content="Level 1 words, LOOPs, and reversals for The Kinetic Alphabet. AABB patterns, body turns, 16-count sequences, and 8-letter words." />
   <meta property="og:title" content="1.2 Words & LOOPs: Level 1 Guide" />
   <meta property="og:description" content="Words, LOOPs, reversals, and multi-beat sequences for double staves." />

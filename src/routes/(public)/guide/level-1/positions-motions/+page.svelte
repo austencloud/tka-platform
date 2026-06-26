@@ -21,7 +21,7 @@
 </script>
 
 <svelte:head>
-  <title>1.0 Positions & Motions: Level 1 Guide: The Kinetic Alphabet</title>
+  <title>1.0 Positions & Motions · Level 1 Guide · The Kinetic Alphabet</title>
   <meta name="description" content="Level 1 positions and motions for The Kinetic Alphabet. The grid, hand positions, hand motions, Types 1–6, staff positions, and negative space." />
   <meta property="og:title" content="1.0 Positions & Motions: Level 1 Guide" />
   <meta property="og:description" content="The grid, hand positions, six motion types, staff positions, and negative space for double staves." />
