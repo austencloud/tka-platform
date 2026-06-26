@@ -25,6 +25,11 @@
       <p class="card-meta">{product.cardCount} cards</p>
     {/if}
     <p class="card-price">{formattedPrice}</p>
+    {#if product.preorder}
+      <p class="card-preorder">
+        Pre-order{product.shipBy ? ` · ships ${product.shipBy}` : ""}
+      </p>
+    {/if}
   </div>
 </a>
 
@@ -73,5 +78,12 @@
     font-weight: 700;
     margin: 4px 0 0;
     color: var(--theme-accent, #60a5fa);
+  }
+
+  .card-preorder {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    margin: 4px 0 0;
+    color: var(--theme-warning, #f59e0b);
   }
 </style>
