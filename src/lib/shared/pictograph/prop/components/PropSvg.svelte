@@ -149,10 +149,14 @@ even when Svelte recreates the component instance.
     const actualPropType: PropType | string | undefined =
       settingsPropType ?? motionData.propType;
 
-    // Red hand is always mirrored
+    // Red hand is always mirrored (left/right hands are anatomically mirrored).
+    // Also check the prepared motion's own prop type: a per-pictograph override
+    // (export, guide pages) forces HAND onto the motion via the preparer, but the
+    // user's global settings.redPropType would otherwise mask it through
+    // `actualPropType` and leave the red hand looking like an un-mirrored left hand.
     if (
-      actualPropType === PropType.HAND &&
-      motionData.color === MotionColor.RED
+      motionData.color === MotionColor.RED &&
+      (actualPropType === PropType.HAND || motionData.propType === PropType.HAND)
     ) {
       return true;
     }
