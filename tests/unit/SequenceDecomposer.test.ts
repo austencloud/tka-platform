@@ -17,7 +17,7 @@ import {
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";

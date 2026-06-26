@@ -7,7 +7,7 @@
 
 import type { StepBeatData } from "$lib/features/create/shared/domain/models/StepBeatData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 

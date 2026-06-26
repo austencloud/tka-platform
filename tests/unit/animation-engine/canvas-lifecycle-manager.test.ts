@@ -1,11 +1,26 @@
 import { describe, it, expect, vi } from "vitest";
 import { CanvasLifecycleManager } from "$lib/shared/animation-engine/services/canvas-lifecycle-manager";
 
+// CanvasLifecycleManager creates its collaborators internally during
+// initialize(); there are no public setters (the old set*() API was removed in
+// the 2026-05-28 render-context refactor). configure() is the real public seam
+// for the two engine-owned deps (canvasInitializer, effectManager). The
+// internally-created services have no injection point, so for unit-testing the
+// lifecycle delegation (pause / resume / dispose) we seed their private fields
+// directly. private is compile-time only in TS, so the fields are plain
+// instance properties at runtime.
+function injectInternals(
+  mgr: CanvasLifecycleManager,
+  fields: Record<string, unknown>
+): void {
+  Object.assign(mgr, fields);
+}
+
 describe("CanvasLifecycleManager", () => {
   it("pauseResize delegates to resizer", () => {
     const resizer = { pauseObservation: vi.fn(), resumeObservation: vi.fn() };
     const mgr = new CanvasLifecycleManager();
-    mgr.setResizer(resizer as any);
+    injectInternals(mgr, { _resizer: resizer });
     mgr.pauseResize();
     expect(resizer.pauseObservation).toHaveBeenCalled();
   });
@@ -13,7 +28,7 @@ describe("CanvasLifecycleManager", () => {
   it("resumeResize delegates to resizer", () => {
     const resizer = { pauseObservation: vi.fn(), resumeObservation: vi.fn() };
     const mgr = new CanvasLifecycleManager();
-    mgr.setResizer(resizer as any);
+    injectInternals(mgr, { _resizer: resizer });
     mgr.resumeResize();
     expect(resizer.resumeObservation).toHaveBeenCalled();
   });
@@ -34,10 +49,12 @@ describe("CanvasLifecycleManager", () => {
     const effectManager = { dispose: vi.fn() };
     const trailCapturer = { clearTrails: vi.fn() };
     const mgr = new CanvasLifecycleManager();
-    mgr.setResizer(resizer as any);
-    mgr.setRenderLoop(renderLoop as any);
-    mgr.setEffectManager(effectManager as any);
-    mgr.setTrailCapturer(trailCapturer as any);
+    mgr.configure({ effectManager: effectManager as any });
+    injectInternals(mgr, {
+      _resizer: resizer,
+      _renderLoop: renderLoop,
+      _trailCapturer: trailCapturer,
+    });
     mgr.dispose();
     expect(resizer.teardown).toHaveBeenCalled();
     expect(renderLoop.dispose).toHaveBeenCalled();
@@ -48,7 +65,7 @@ describe("CanvasLifecycleManager", () => {
   it("dispose calls unsubscribeVisibility", () => {
     const unsubscribe = vi.fn();
     const mgr = new CanvasLifecycleManager();
-    mgr.setUnsubscribeVisibility(unsubscribe);
+    injectInternals(mgr, { _unsubscribeVisibility: unsubscribe });
     mgr.dispose();
     expect(unsubscribe).toHaveBeenCalled();
   });
@@ -64,14 +81,16 @@ describe("CanvasLifecycleManager", () => {
     const propTexture = { dispose: vi.fn() };
 
     const mgr = new CanvasLifecycleManager();
-    mgr.setVisibilitySyncService(visibilitySync as any);
-    mgr.setGlyphTransitionService(glyphTransition as any);
-    mgr.setSequenceCacheService(sequenceCache as any);
-    mgr.setTrailSettingsSyncService(trailSettingsSync as any);
-    mgr.setPropTypeChangeService(propTypeChange as any);
-    mgr.setPrecomputer(precomputer as any);
-    mgr.setGlyphTextureService(glyphTexture as any);
-    mgr.setPropTextureService(propTexture as any);
+    injectInternals(mgr, {
+      _visibilitySyncService: visibilitySync,
+      _glyphTransitionService: glyphTransition,
+      _sequenceCacheService: sequenceCache,
+      _trailSettingsSyncService: trailSettingsSync,
+      _propTypeChangeService: propTypeChange,
+      _precomputer: precomputer,
+      _glyphTextureService: glyphTexture,
+      _propTextureService: propTexture,
+    });
     mgr.dispose();
 
     expect(visibilitySync.dispose).toHaveBeenCalled();
@@ -90,7 +109,7 @@ describe("CanvasLifecycleManager", () => {
     const onInitialized = vi.fn();
 
     const mgr = new CanvasLifecycleManager();
-    mgr.setCanvasInitializer(canvasInitializer as any);
+    mgr.configure({ canvasInitializer: canvasInitializer as any });
     mgr.dispose({ onCanvasReady, onInitialized });
 
     expect(canvasInitializer.destroy).toHaveBeenCalledWith({
