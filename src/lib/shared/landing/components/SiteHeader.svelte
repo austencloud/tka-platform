@@ -113,9 +113,14 @@
   }
 
   // Close the modal as soon as sign-in succeeds; the header then swaps to the
-  // avatar via the same reactive auth state.
+  // avatar via the same reactive auth state. Gate on isFullAccount, NOT
+  // isAuthenticated: anonymous guests are already "authenticated" (they hold a
+  // Firebase uid for their cloud library), so isAuthenticated is true the moment
+  // the modal opens for a guest — which slammed the modal shut on the same frame
+  // it appeared ("pops forward then disappears backward"). isFullAccount only
+  // flips true on a real, non-anonymous sign-in, which is the actual success.
   $effect(() => {
-    if (authModalOpen && authApi?.isAuthenticated) authModalOpen = false;
+    if (authModalOpen && authApi?.isFullAccount) authModalOpen = false;
   });
 
   const NAV = [
