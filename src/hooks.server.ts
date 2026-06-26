@@ -1,6 +1,10 @@
 // import { getRedirectURL, shouldRedirectToPrimary } from "$config/domains"; // TODO: Fix config path
 import { dev } from "$app/environment";
 import type { Handle, HandleServerError } from "@sveltejs/kit";
+import {
+  isFirebaseAuthHandlerPath,
+  proxyFirebaseAuthHandler,
+} from "$lib/server/auth/firebase-auth-handler-proxy";
 
 /**
  * Check if a request is for a font file that needs CORS headers.
@@ -25,6 +29,16 @@ function isCssRequest(pathname: string): boolean {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
+  // Firebase OAuth handler reverse proxy. MUST run before resolve(): it serves
+  // /__/auth/* first-party on the app host so the Google/Facebook popup completes
+  // (see firebase-auth-handler-proxy.ts). Returning here also skips SvelteKit's
+  // CSRF origin check, which would 403 the cross-origin POSTs Firebase's handler
+  // receives. The functions/__/auth/ Pages Function never ran under
+  // adapter-cloudflare's _worker.js — this is the live path.
+  if (isFirebaseAuthHandlerPath(event.url.pathname)) {
+    return proxyFirebaseAuthHandler(event.request);
+  }
+
   // Handle console forwarding endpoint
   if (dev && event.url.pathname === "/api/console-forward") {
     if (event.request.method === "POST") {
