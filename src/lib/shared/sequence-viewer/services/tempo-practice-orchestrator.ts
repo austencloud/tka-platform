@@ -41,6 +41,10 @@ export interface TempoPracticeProgress {
   currentLevel: number;
   /** Total rounds completed across all levels */
   totalRoundsCompleted: number;
+  /** Loops completed at the current level (0..roundsPerLevel) — drives the dots */
+  loopsCompleted: number;
+  /** Loops left before the level completes (max(0, roundsPerLevel - loopsCompleted)) */
+  loopsRemaining: number;
   /** Active progression mode */
   progressionMode: ProgressionMode;
   /** Manual mode only: the level is complete and waiting for a "Speed Up" tap */
@@ -51,7 +55,7 @@ const DEFAULT_CONFIG: TempoPracticeConfig = {
   increment: 5,
   roundsPerLevel: 5,
   maxBpm: 300,
-  progressionMode: "manual",
+  progressionMode: "auto",
 };
 
 export class TempoPracticeOrchestrator {
@@ -165,6 +169,8 @@ export class TempoPracticeOrchestrator {
       roundsPerLevel: this.config.roundsPerLevel,
       currentLevel: this.currentLevel,
       totalRoundsCompleted: this.totalRoundsCompleted,
+      loopsCompleted: this.currentRound,
+      loopsRemaining: Math.max(0, this.config.roundsPerLevel - this.currentRound),
       progressionMode: this.config.progressionMode,
       readyToAdvance: this.readyToAdvance,
     };

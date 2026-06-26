@@ -21,13 +21,42 @@ import {
   planeAngleToWorldPosition,
   calculatePropQuaternion,
 } from "$lib/shared/3d/domain/constants/plane-transforms";
-import { Plane, computePropRotation } from "@austencloud/scene-3d";
+import { Plane } from "@austencloud/scene-3d";
 import type { PropState3D } from "@austencloud/scene-3d";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const GRID_RADIUS = 0.57;
 const STAFF_HALF = 0.475;
+
+// ── Canonical prop-rotation formula ──────────────────────────────────────────
+//
+// `computePropRotation` is deliberately NOT re-exported from the
+// @austencloud/scene-3d public barrel — only the `Plane` enum and the
+// `PropState3D` type are. The package keeps it internal: every Prop3D component
+// imports it via the relative "./prop3d-transforms" path, and the package
+// `exports` map blocks any deep import past the barrel. Rather than reach past
+// that API boundary (or vendor-edit node_modules, which CI's fresh install would
+// discard), reproduce the canonical formula here. It is byte-identical to the
+// package source — @austencloud/scene-3d
+// src/lib/components/props/prop3d-transforms.ts (computePropRotation) — and to
+// the old local pipeline that generated the JSON fixtures: lay a +Y cylinder
+// horizontal (rotate +π/2 about Z), apply the prop's `worldRotation` (the value
+// this test gets from the local `calculatePropQuaternion`, which is what the
+// test actually validates), then read back the composed Euler. Facing rotation
+// is applied by the PerformerRig parent group, not here — matching the fixtures,
+// which were captured with facingAngle = 0.
+const HORIZONTAL_QUAT = new Quaternion().setFromEuler(
+  new Euler(0, 0, Math.PI / 2),
+);
+
+function computePropRotation(
+  propState: PropState3D,
+): [number, number, number] {
+  const finalQuat = propState.worldRotation.clone().multiply(HORIZONTAL_QUAT);
+  const euler = new Euler().setFromQuaternion(finalQuat);
+  return [euler.x, euler.y, euler.z];
+}
 
 // ── Hierarchy Builder ─────────────────────────────────────────────────────────
 
