@@ -709,13 +709,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       hapticService,
       playback.isPlayingLocal,
       playback.bpmLocal,
-      imgComp.imgShowStartPos,
-      imgComp.imgShowWord,
-      imgComp.imgShowStepNumbers,
-      imgComp.imgShowDifficulty,
-      imgComp.imgShowCreatorName,
-      imgComp.imgShowNotes,
-      imgComp.imgShowQRCode,
+      isHandPath,
     );
   }
 

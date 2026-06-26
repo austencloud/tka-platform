@@ -7,6 +7,7 @@ import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { recordExportThroughput } from "$lib/shared/animation-panel/state/export-timing-tracker";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 import type { AnimationPlaybackController } from '$lib/shared/animation-engine/services/animation-playback-controller';
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
@@ -54,28 +55,6 @@ export interface VideoExportOptions {
    * tunnel/art export can suppress glyph / header / progress / path lines / grid.
    */
   overlayOverrides?: VideoExportOrchestratorOptions["overlayOverrides"];
-}
-
-export interface ImageExportOptions {
-  includeStartPosition: boolean;
-  showStepNumbers: boolean;
-  showWord: boolean;
-  showDifficulty: boolean;
-  /** Header LOOP glyph (top-right). Mirrors imageComposition.showLoopGlyph so the
-   *  downloaded card honors the LOOP / Header toggle instead of always drawing it. */
-  showLoopGlyph: boolean;
-  showCreatorName: boolean;
-  showNotes: boolean;
-  showQRCode: boolean;
-  /** LOOP mandalas in empty col-0 cells. Mirrors imageComposition.showMandala.
-   *  Read only from visibilityOverrides (no global-vm fallback), so omitting it
-   *  left the downloaded card with mandalas always off despite the toggle. */
-  showMandala: boolean;
-  showBirthday: boolean;
-  showGrid: boolean;
-  darkMode: boolean;
-  columnCount: number | null;
-  startPositionLayout: "row" | "column";
 }
 
 /**
@@ -331,8 +310,14 @@ export class SequenceModalExporter {
     }
   }
 
+  /**
+   * Render + deliver a card PNG. `renderOptions` is the complete card-render
+   * option set, built by buildCardRenderOptions() so every export path (viewer,
+   * QR page, share/download) honors the same panel toggles. Only the output
+   * format defaults (stepSize/format/quality) are applied here.
+   */
   async exportImage(
-    options: ImageExportOptions,
+    renderOptions: Partial<SequenceExportOptions>,
     deps: ImageExportDependencies,
     callbacks: ExportCallbacks
   ): Promise<void> {
@@ -349,31 +334,7 @@ export class SequenceModalExporter {
         stepSize: 240,
         format: "PNG",
         quality: 1.0,
-        includeStartPosition: options.includeStartPosition,
-        addStepNumbers: options.showStepNumbers,
-        addWord: options.showWord,
-        addDifficultyLevel: options.showDifficulty,
-        // Forward the LOOP-glyph toggle. The assembler treats `undefined` as
-        // "on" (undefined !== false), so omitting it made the export always
-        // draw the loop label and its header band even with the header toggled
-        // off in the preview.
-        showLoopGlyph: options.showLoopGlyph,
-        addUserInfo: options.showCreatorName || options.showNotes || options.showBirthday,
-        userName: deps.userName,
-        showCreatorName: options.showCreatorName,
-        showNotes: options.showNotes,
-        showBirthday: options.showBirthday,
-        addReversalSymbols: true,
-        columnCount: options.columnCount != null
-          ? options.columnCount + (options.includeStartPosition ? 1 : 0)
-          : undefined,
-        startPositionLayout: options.startPositionLayout,
-        visibilityOverrides: {
-          darkMode: options.darkMode,
-          showQRCode: options.showQRCode,
-          showGrid: options.showGrid,
-          showMandala: options.showMandala,
-        },
+        ...renderOptions,
       });
 
       const seq = deps.sequence;

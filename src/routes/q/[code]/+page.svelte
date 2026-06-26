@@ -27,8 +27,7 @@
   import { ShortCodeManager } from "$lib/shared/qr/services/short-code-manager";
   import { configureShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
-  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-  import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
+  import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
   import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
   import { registerLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
@@ -319,24 +318,14 @@
     const ic = ctx.splitPaneImageComposition;
     isCardExporting = true;
     try {
+      const renderOptions = buildCardRenderOptions(resolvedSeq, {
+        darkMode: ic.darkMode,
+        userName: ic.userName,
+        isHandPath: ic.handPathMode ?? false,
+        columnCount: ic.columnCount,
+      });
       await sequenceModalExporter.exportImage(
-        {
-          includeStartPosition: ic.showStartPos,
-          showStepNumbers: ic.showStepNumbers,
-          showWord: ic.showWord,
-          showDifficulty: ic.showDifficulty,
-          showLoopGlyph: ic.showLoopGlyph ?? true,
-          showCreatorName: ic.showCreatorName,
-          showNotes: ic.showNotes,
-          showQRCode: ic.showQRCode,
-          showMandala: ic.showMandala ?? false,
-          showBirthday: ic.showBirthday,
-          showGrid: getVisibilityStateManager().getGridVisibility(),
-          darkMode: ic.darkMode,
-          columnCount: ic.columnCount,
-          startPositionLayout: getImageCompositionManager()
-            .getStartPositionLayoutForStepCount(resolvedSeq.steps?.length ?? 0),
-        },
+        renderOptions,
         { sequence: resolvedSeq, userName: ic.userName },
         {
           onSuccess: () => {},

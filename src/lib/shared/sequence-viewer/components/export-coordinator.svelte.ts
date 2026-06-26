@@ -21,9 +21,8 @@ import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-
 import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
-import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
 import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
+import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
 import type { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
@@ -198,13 +197,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     hapticService: HapticFeedback | null,
     isPlayingLocal: boolean,
     bpmLocal: number,
-    imgShowStartPos: boolean,
-    imgShowWord: boolean,
-    imgShowStepNumbers: boolean,
-    imgShowDifficulty: boolean,
-    imgShowCreatorName: boolean,
-    imgShowNotes: boolean,
-    imgShowQRCode: boolean,
+    isHandPath: boolean,
   ) {
     const exportType: ExportType | null =
       editingPane === 'animation' ? 'animation' : editingPane === 'image' ? 'image' : null;
@@ -389,37 +382,18 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         showToast("Sequence has no beats to export.", "error");
         return;
       }
-      const opts = {
-        includeStartPosition: imgShowStartPos,
-        showStepNumbers: imgShowStepNumbers,
-        showWord: imgShowWord,
-        showDifficulty: imgShowDifficulty,
-        // Read the LOOP-glyph flag straight from the composition manager (the
-        // source the export panel's Header / LOOP chips write to), same as
-        // showBirthday/showGrid below. The handleExport positional params don't
-        // carry it, so without this the toggle was dropped and the downloaded
-        // card always showed the loop label + header band.
-        showLoopGlyph: getImageCompositionManager().showLoopGlyph,
-        showCreatorName: imgShowCreatorName,
-        showNotes: imgShowNotes,
-        showQRCode: imgShowQRCode,
-        // Same as showLoopGlyph: read straight from the composition manager (the
-        // Mandala chip's store). The assembler only honors showMandala via
-        // visibilityOverrides with no global fallback, so without this the
-        // downloaded card never drew mandalas even with the toggle on.
-        showMandala: getImageCompositionManager().showMandala,
-        showBirthday: getImageCompositionManager().showBirthday,
-        showGrid: getVisibilityStateManager().getGridVisibility(),
+      // All card toggles (word/difficulty/LOOP/mandala/QR/grid/footer/columns/
+      // start-layout) + hand-path suppression come from the one canonical builder,
+      // so the downloaded PNG matches the live ChoreoCard preview. columnCount
+      // uses the export-panel value so it tracks the preview exactly.
+      const renderOptions = buildCardRenderOptions(effectiveSequence, {
         darkMode: exportOptions.imageDarkMode,
+        userName: authState.user?.displayName ?? "",
+        isHandPath,
         columnCount: exportOptions.imageColumnCount,
-        // Honor the per-step-count start-position layout (Top Row / Left Column)
-        // the user picked in the export panel. Without this the renderer defaults
-        // to "row" and the downloaded PNG ignored a Left Column selection.
-        startPositionLayout: getImageCompositionManager()
-          .getStartPositionLayoutForStepCount(effectiveSequence.steps.length),
-      };
+      });
       await sequenceModalExporter.exportImage(
-        opts,
+        renderOptions,
         { sequence: effectiveSequence, userName: authState.user?.displayName ?? "" },
         callbacks
       );

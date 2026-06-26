@@ -165,7 +165,7 @@ export class Sharer {
   private convertToRenderOptions(shareOptions: ShareOptions, sequenceBirthDate?: Date) {
     const dateToUse = sequenceBirthDate ?? new Date();
 
-    return {
+    const base = {
       includeStartPosition: shareOptions.includeStartPosition,
       addStepNumbers: shareOptions.addStepNumbers,
       addReversalSymbols: true, 
@@ -203,6 +203,10 @@ export class Sharer {
       scale: 1.0,
       backgroundColor: shareOptions.backgroundColor,
     };
+
+    // Card-render toggles ShareOptions can't express (LOOP/mandala/QR/grid/
+    // columns/start-layout) ride along here and win over the derived base.
+    return { ...base, ...(shareOptions.renderOverrides ?? {}) };
   }
 
   private convertToPreviewOptions(shareOptions: ShareOptions) {
