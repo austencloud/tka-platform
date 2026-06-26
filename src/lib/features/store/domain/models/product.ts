@@ -23,6 +23,10 @@ export interface Product {
   readonly status: ProductStatus;
   readonly previewImageUrls: string[];
   readonly coverImageUrl?: string;
+  /** True when the deck is sold ahead of printing; pairs with shipBy. From Stripe metadata. */
+  readonly preorder?: boolean;
+  /** Human ship-by label shown on pre-order products, e.g. "September 2026". From Stripe metadata. */
+  readonly shipBy?: string;
   readonly sortOrder: number;
 }
 
