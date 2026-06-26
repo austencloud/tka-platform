@@ -61,6 +61,9 @@ export interface ImageExportOptions {
   showStepNumbers: boolean;
   showWord: boolean;
   showDifficulty: boolean;
+  /** Header LOOP glyph (top-right). Mirrors imageComposition.showLoopGlyph so the
+   *  downloaded card honors the LOOP / Header toggle instead of always drawing it. */
+  showLoopGlyph: boolean;
   showCreatorName: boolean;
   showNotes: boolean;
   showQRCode: boolean;
@@ -346,6 +349,11 @@ export class SequenceModalExporter {
         addStepNumbers: options.showStepNumbers,
         addWord: options.showWord,
         addDifficultyLevel: options.showDifficulty,
+        // Forward the LOOP-glyph toggle. The assembler treats `undefined` as
+        // "on" (undefined !== false), so omitting it made the export always
+        // draw the loop label and its header band even with the header toggled
+        // off in the preview.
+        showLoopGlyph: options.showLoopGlyph,
         addUserInfo: options.showCreatorName || options.showNotes || options.showBirthday,
         userName: deps.userName,
         showCreatorName: options.showCreatorName,

@@ -394,6 +394,12 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         showStepNumbers: imgShowStepNumbers,
         showWord: imgShowWord,
         showDifficulty: imgShowDifficulty,
+        // Read the LOOP-glyph flag straight from the composition manager (the
+        // source the export panel's Header / LOOP chips write to), same as
+        // showBirthday/showGrid below. The handleExport positional params don't
+        // carry it, so without this the toggle was dropped and the downloaded
+        // card always showed the loop label + header band.
+        showLoopGlyph: getImageCompositionManager().showLoopGlyph,
         showCreatorName: imgShowCreatorName,
         showNotes: imgShowNotes,
         showQRCode: imgShowQRCode,

@@ -32,4 +32,28 @@ describe("computeCardFrontLayout", () => {
     expect(layout.startColumn).toBe(1);
     expect(layout.stepsPerRow).toBe(layout.columns - 1);
   });
+
+  // Regression: the download-card export dropped the LOOP/Header toggle, so a
+  // looped sequence always drew the loop label + its header band even with the
+  // header turned off in the preview. The contract: showLoopGlyph:false must
+  // collapse the header band to zero height when word + difficulty are also off.
+  it("draws the loop header band when showLoopGlyph is omitted (default-on)", () => {
+    const seq = { steps: [{ letter: "A" }, { letter: "B" }], loopType: "rotated" } as any;
+    const layout = computeCardFrontLayout(
+      seq,
+      { stepSize: 100, addWord: false, addDifficultyLevel: false },
+      {} as any
+    );
+    expect(layout.headerHeight).toBeGreaterThan(0);
+  });
+
+  it("collapses the header band when the LOOP toggle is off and word/level are off", () => {
+    const seq = { steps: [{ letter: "A" }, { letter: "B" }], loopType: "rotated" } as any;
+    const layout = computeCardFrontLayout(
+      seq,
+      { stepSize: 100, addWord: false, addDifficultyLevel: false, showLoopGlyph: false },
+      {} as any
+    );
+    expect(layout.headerHeight).toBe(0);
+  });
 });

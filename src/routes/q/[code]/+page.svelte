@@ -325,6 +325,7 @@
           showStepNumbers: ic.showStepNumbers,
           showWord: ic.showWord,
           showDifficulty: ic.showDifficulty,
+          showLoopGlyph: ic.showLoopGlyph ?? true,
           showCreatorName: ic.showCreatorName,
           showNotes: ic.showNotes,
           showQRCode: ic.showQRCode,
