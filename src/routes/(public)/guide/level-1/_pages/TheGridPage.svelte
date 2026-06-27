@@ -50,7 +50,7 @@
   // Text runs extracted from PDF p7 (coords = top-left origin, points).
   // b = bold (g_d0_f2), s = script heading (g_d0_f4), title = page title.
   const RUNS: Run[] = [
-    { x: 245.6, y: 22, w: 124.0, h: 56, title: true, t: "The Grid" },
+    { x: 245.6, y: 22, w: 124.0, h: 48, title: true, t: "The Grid" },
 
     // Centered intro block
     { x: 144.7, y: 78.2, w: 322.4, h: 16, t: "The Kinetic Alphabet is based on a 4-point grid." },

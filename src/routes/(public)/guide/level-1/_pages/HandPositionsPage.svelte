@@ -51,7 +51,7 @@
   // Grid's title so pages stay consistent. Tune GAP to breathe the page.
   const TITLE_Y = 22; // top breathing room (matches the proof); consistent across pages
   const TITLE_H = 40; // title layout slot feeding the intro offset
-  const TITLE_FS = 56; // title font size — Tangerine reads small, so larger than the slot
+  const TITLE_FS = 48; // title font size — Tangerine reads small, so larger than the slot
   const GAP = 12; // even gap between major blocks
   const G_IN = 6; // heading→minis and minis→description
   const ROW_GAP = 5; // between the two Gamma rows

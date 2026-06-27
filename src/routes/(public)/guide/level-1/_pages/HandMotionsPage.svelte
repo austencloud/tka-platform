@@ -132,7 +132,7 @@
   };
 
   const RUNS: Run[] = [
-    { x: 208.9, y: 22, w: 208, fs: 56, t: true, txt: "Hand Motions" },
+    { x: 208.9, y: 22, w: 208, fs: 48, t: true, txt: "Hand Motions" },
 
     // Intro (centred)
     { x: 105.7, y: 59.7, w: 404.8, fs: 16, txt: "There are three fundamental hand motions in the Alphabet." },
