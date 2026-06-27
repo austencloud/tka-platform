@@ -29,7 +29,6 @@
 
   let newContainer: HTMLDivElement;
   let oldContainer: HTMLDivElement;
-  let syncing = false;
   let status = $state("loading…");
   // The flip-books render client-only: SSR keeps the route's URL valid (so the
   // app-shell module-state guard doesn't rewrite /book → /create), but the
@@ -40,17 +39,6 @@
   // never sees the raw page stack (esp. the old book's 47 pdf canvases) scroll
   // past before it collapses into a book.
   let ready = $state(false);
-
-  const FLIP_MS = 600;
-  function sync(from: any, to: any, idx: number) {
-    if (syncing || !to) return;
-    syncing = true;
-    const max = to.getPageCount() - 1;
-    // flip() ANIMATES the other book to the same page (turnToPage would jump);
-    // hold the guard past the animation so the echoed flip event doesn't bounce.
-    to.flip(Math.max(0, Math.min(idx, max)));
-    setTimeout(() => (syncing = false), FLIP_MS + 60);
-  }
 
   onMount(async () => {
     // Render the book DOM client-side first, then wire StPageFlip to it.
@@ -101,8 +89,10 @@
     const pfOld = new PageFlip(oldContainer, cfg);
     pfOld.loadFromHTML(oldContainer.querySelectorAll(".page"));
 
-    pfNew.on("flip", (e: any) => sync(pfNew, pfOld, e.data));
-    pfOld.on("flip", (e: any) => sync(pfOld, pfNew, e.data));
+    // The two editions navigate INDEPENDENTLY — front matter differs (the new
+    // rebuild dropped the old intro pages), so page N of one no longer matches
+    // page N of the other. Flipping one must not move the other; compare by
+    // turning each to its own copy of a page.
     status = `old ${pfOld.getPageCount()}p · new ${pfNew.getPageCount()}p`;
     ready = true; // both books built — reveal them
 
@@ -113,11 +103,11 @@
         old: pfOld,
         new: pfNew,
         goto(n: number) {
-          syncing = true;
           pfOld.turnToPage(Math.min(n, pfOld.getPageCount() - 1));
           pfNew.turnToPage(Math.min(n, pfNew.getPageCount() - 1));
-          requestAnimationFrame(() => (syncing = false));
         },
+        gotoOld: (n: number) => pfOld.turnToPage(Math.min(n, pfOld.getPageCount() - 1)),
+        gotoNew: (n: number) => pfNew.turnToPage(Math.min(n, pfNew.getPageCount() - 1)),
       };
     }
   });
@@ -139,7 +129,7 @@
 
 <div class="wrap">
   <div class="bar">
-    <span class="t">Book preview: drag a corner to flip · both editions turn together</span>
+    <span class="t">Book preview: drag a corner to flip · each edition turns independently</span>
     <span class="status">{status}</span>
   </div>
 
