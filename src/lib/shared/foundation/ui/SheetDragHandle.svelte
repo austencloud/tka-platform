@@ -22,10 +22,17 @@
     background: var(--sheet-handle-bg);
     transition: background var(--duration-normal) ease;
     flex-shrink: 0;
+    /* Open-hand affordance: signals the sheet can be grabbed and slid.
+       Matches base Drawer's .drawer-handle (see drawer/Drawer.css). */
+    cursor: grab;
   }
 
   .sheet-drag-handle:hover {
     background: var(--sheet-handle-bg-hover);
+  }
+
+  .sheet-drag-handle:active {
+    cursor: grabbing;
   }
 
   /* Pulse animation on first render to draw attention */
