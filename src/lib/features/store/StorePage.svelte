@@ -29,10 +29,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
     <section class="hero">
       <h1>Shop</h1>
       <p class="hero-subtitle">
-        Printed Choreo card decks, guides, and flow props. Sleeve-compatible, tradeable, collectible.
-      </p>
-      <p class="hero-note">
-        You can always <a href="/">print your own for free</a>. These are the real deal.
+        Printed decks, guides, and props from the Kinetic Alphabet.
       </p>
     </section>
 
@@ -82,16 +79,6 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
     font-size: var(--font-size-lg, 18px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     margin: 0 0 8px;
-  }
-
-  .hero-note {
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-    margin: 0;
-  }
-
-  .hero-note a {
-    color: var(--theme-accent, #60a5fa);
   }
 
   .product-grid {
