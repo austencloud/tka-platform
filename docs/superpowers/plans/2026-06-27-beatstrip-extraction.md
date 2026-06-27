@@ -207,7 +207,9 @@ Lifts the carousel verbatim from `PlayWithItInner.svelte` (snippet ~296-334, sta
   const BUFFER = 3;
   const HERO_SCALE = 1.32;
   const STRIDE = $derived(cellSize + GAP);
-  const FRAME = $derived(cellSize + 26); // gold frame hugs the enlarged hero
+  // Frame must hug the MULTIPLICATIVELY-scaled hero (cellSize * HERO_SCALE), not an
+  // additive offset, or it only fits at cellSize=72. 72*1.32=95.04 → 95 + 3 = 98 (parity).
+  const FRAME = $derived(Math.round(cellSize * HERO_SCALE) + 3);
   const viewportHeight = $derived(FRAME + 26); // headroom above/below the hero
 
   let currentStepNumber = $derived(Math.floor(currentStep ?? 0));
@@ -285,7 +287,7 @@ Lifts the carousel verbatim from `PlayWithItInner.svelte` (snippet ~296-334, sta
             class="beat-cell"
             class:start-cell={cell.isStart}
             class:is-focus={dist === 0}
-            class:clickable={onCellClick !== null}
+            class:clickable={!!onCellClick}
             style="opacity: {cellOpacity(dist)}"
             role={onCellClick ? "button" : undefined}
             tabindex={onCellClick ? 0 : undefined}

@@ -148,11 +148,34 @@
   }
 
   @media (max-width: 600px) {
+    /* On phones the spinner is a full-viewport "moment": heading + spinner +
+       progress foot + beat strip + control dock all fit on screen at once, no
+       scrolling within the section. The section fills the small-viewport height;
+       the top padding clears the fixed 57px site header. The canvas (in
+       PlayWithItInner) flexes to consume whatever the fixed-height strip + dock
+       leave. */
     .play-section {
-      padding: 48px 16px;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      padding: calc(env(safe-area-inset-top, 0px) + 69px) 16px
+        calc(env(safe-area-inset-bottom, 0px) + 14px);
+      gap: 10px;
     }
 
+    h2 {
+      font-size: clamp(1.5rem, 7vw, 2rem);
+      margin: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+    }
+
+    /* Skeleton showcase mirrors the real one's flex-fill so there's no jump. */
     .showcase {
+      flex: 1 1 auto;
+      min-height: 0;
       max-width: 100%;
       border-radius: 12px;
     }

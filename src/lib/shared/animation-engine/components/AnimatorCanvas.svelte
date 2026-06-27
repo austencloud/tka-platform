@@ -33,6 +33,7 @@ Last audit: 2025-12-27
   import CanvasSurface from "./CanvasSurface.svelte";
   import WordHeader from "./layers/WordHeader.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
+  import SequenceProgressBar from "$lib/shared/animation-engine/components/layers/SequenceProgressBar.svelte";
   import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { AnimationEngine } from "../services/animation-engine.svelte";
@@ -98,6 +99,7 @@ Last audit: 2025-12-27
     onToggle3DView = undefined,
     contextId = undefined,
     tapToToggle = false,
+    progressLine = false,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -172,6 +174,11 @@ Last audit: 2025-12-27
      *  a transient play/pause icon. Off by default so views with their own tap
      *  semantics are unaffected. */
     tapToToggle?: boolean;
+    /** Render the minimal, non-interactive progress LINE (SequenceProgressBar —
+     *  the live twin of the baked-in video-export bar) in the progress slot
+     *  instead of the full UnifiedTimeline transport. For embedded/showcase
+     *  players that pair it with tapToToggle. Off by default. */
+    progressLine?: boolean;
   } = $props();
 
   const resolvedContextId = contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
@@ -504,10 +511,19 @@ Last audit: 2025-12-27
 
     <!-- Always mounted, same reason as header-slot above. -->
     <div class="progress-slot">
-      <UnifiedTimeline
-        playback={playbackAdapter}
-        visible={progressBarVisible && !hideProgressBar}
-      />
+      {#if progressLine}
+        <SequenceProgressBar
+          {currentStep}
+          totalSteps={sequenceData?.steps?.length ?? 0}
+          visible={progressBarVisible && !hideProgressBar}
+          darkMode={darkModeEnabled}
+        />
+      {:else}
+        <UnifiedTimeline
+          playback={playbackAdapter}
+          visible={progressBarVisible && !hideProgressBar}
+        />
+      {/if}
     </div>
   </div>
 
