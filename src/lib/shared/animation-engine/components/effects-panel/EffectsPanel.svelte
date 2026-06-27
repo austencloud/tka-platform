@@ -6,6 +6,7 @@
   import EffectPresetsSection from "./EffectPresetsSection.svelte";
   import { EFFECT_COLORS, EFFECT_LABELS, EFFECTS, getRegistration } from "./effect-registry";
   import type { EffectRegistration } from "./effect-registry";
+  import { matchPresetId } from "./presets/match-preset";
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import type { PrimaryParamSpec } from "./effect-primary-param";
@@ -36,16 +37,6 @@
 
   const effectsConfigState = getEffectsConfigContext()!;
 
-  // Preset persistence
-  const PRESET_STORAGE_KEY = "tka_active_effect_presets";
-  function loadPresetMap(): Record<string, string> {
-    try { const raw = localStorage.getItem(PRESET_STORAGE_KEY); if (raw) return JSON.parse(raw); } catch { /* ignore */ }
-    return {};
-  }
-  function savePresetId(effect: string, presetId: string | null): void {
-    try { const map = loadPresetMap(); if (presetId) map[effect] = presetId; else delete map[effect]; localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(map)); } catch { /* ignore */ }
-  }
-
   let customizeOpen = $state(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let CustomizeComponent = $state<Component<any> | null>(null);
@@ -55,10 +46,36 @@
     activeEffect !== "none" ? getRegistration(activeEffect) : undefined
   );
 
+  // Honest highlight: the chip is active only when the LIVE config actually
+  // equals a preset. We patch-match the live config against each preset, and a
+  // chip lights up iff every field it patches matches. Base default (matching no
+  // preset) → null → no phantom highlight.
+  //
+  // The explicit `activePresets[effect]` signal (set by applyPreset, cleared to
+  // null by any manual edit) is consulted ONLY to disambiguate the two presets
+  // that have no static patch to match — the empty-patch "Custom" chips and the
+  // resolvePatch trail/fire customs — so an explicitly-chosen Custom still
+  // highlights. A stale activePresets id whose patch no longer matches the live
+  // config is NOT trusted.
+  //
+  // The old `?? loadPresetMap()` fallback resurrected a stale preset id from a
+  // separate localStorage key (tka_active_effect_presets) that was never cleared
+  // on select — that was the source of the phantom "Supernova" highlight.
   const activePresetId = $derived.by(() => {
-    if (activeEffect === "none") return null;
+    if (activeEffect === "none" || !registration) return null;
+    const effectConfig = effectsConfigState.effect(
+      activeEffect as Parameters<typeof effectsConfigState.effect>[0],
+    ) as unknown as Record<string, unknown>;
+    const matched = matchPresetId(registration.presetGroup, effectConfig);
+    if (matched) return matched;
+    // No static patch matched. Honor an explicitly-chosen patch-less preset
+    // (Custom) — those carry meaning only through the activePresets signal.
     const ap = effectsConfigState.activePresets as Record<string, string | null>;
-    return ap[activeEffect] ?? loadPresetMap()[activeEffect] ?? null;
+    const explicit = ap[activeEffect];
+    if (!explicit) return null;
+    const preset = registration.presetGroup.presets.find((p) => p.id === explicit);
+    const patchless = preset && (!preset.patch || Object.keys(preset.patch).length === 0);
+    return patchless ? explicit : null;
   });
 
   const currentSummary = $derived.by(() => {
@@ -89,7 +106,6 @@
     if (!preset) return;
     const patch = preset.resolvePatch ? preset.resolvePatch() : (preset.patch ?? {});
     effectsConfigState.applyPreset(group.effectType, preset.id, patch);
-    savePresetId(activeEffect, presetId);
   }
 
   async function handleCustomizeOpen(): Promise<void> {
