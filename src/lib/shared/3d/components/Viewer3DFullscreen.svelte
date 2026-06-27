@@ -72,6 +72,8 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- Backdrop tap-to-exit is a redundant convenience; the immersive toggle button (below) is keyboard-accessible. -->
 <div
   class="viewer-3d-fullscreen"
   class:immersive

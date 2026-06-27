@@ -269,7 +269,9 @@
   .track-name {
     flex: 1;
     min-width: 0;
-    cursor: text;
+    /* role="button" (double-click / Enter to rename) — signal it's actionable,
+       not a text-selection target. */
+    cursor: pointer;
   }
 
   .name-text {

@@ -586,31 +586,6 @@
     flex-shrink: 0;
   }
 
-  .level-badge {
-    position: absolute;
-    bottom: -4px;
-    right: -4px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 6px 12px;
-    background: linear-gradient(135deg, var(--semantic-warning) 0%, #d97706 100%);
-    border: 2px solid rgba(0, 0, 0, 0.2);
-    border-radius: 14px;
-    font-size: var(--font-size-sm);
-    font-weight: 700;
-    color: white;
-  }
-
-  .level-badge.small {
-    padding: 3px 6px;
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .level-badge i {
-    font-size: 12px;
-  }
-
   .user-info {
     flex: 1;
     min-width: 0;

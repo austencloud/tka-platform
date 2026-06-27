@@ -234,7 +234,7 @@
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <g
             onpointerdown={(e) => handleMarkPointerDown(e, mark.id, performer.id)}
-            style="cursor: grab; touch-action: none;"
+            style="cursor: {draggingMarkId === mark.id ? 'grabbing' : 'grab'}; touch-action: none;"
             role="button"
             tabindex="0"
             aria-label="Performer {performer.label} origin at {mark.x.toFixed(1)}, {mark.z.toFixed(1)}"
@@ -263,7 +263,7 @@
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <g
             onpointerdown={(e) => handleMarkPointerDown(e, mark.id, performer.id)}
-            style="cursor: grab; touch-action: none;"
+            style="cursor: {draggingMarkId === mark.id ? 'grabbing' : 'grab'}; touch-action: none;"
             role="button"
             tabindex="0"
             aria-label="Performer {performer.label} mark {i} at {mark.x.toFixed(1)}, {mark.z.toFixed(1)}"
