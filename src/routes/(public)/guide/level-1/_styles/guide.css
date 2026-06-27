@@ -9,11 +9,11 @@
 @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&family=Tangerine:wght@400;700&display=swap");
 
 :root {
-  /* Tangerine = chancery (Corsiva's lineage), tall x-height → legible. Interim
-     pick pending Austen's choice from /sketches/2026-06-26-guide-title-fonts.html;
-     swap this one line to change every guide title. */
+  /* Tangerine = chancery (Corsiva's lineage), tall x-height → legible. Chosen
+     2026-06-26 from /sketches/2026-06-26-guide-title-fonts.html. Swap this one
+     line to change every guide title. */
   --guide-script: "Tangerine", "Segoe Script", cursive; /* calligraphic page titles */
-  --guide-script-weight: 700; /* Tangerine has a true bold; set per chosen font */
+  --guide-script-weight: 700; /* Tangerine has a true bold */
   --guide-display: "Cormorant Garamond", Georgia, serif; /* serif body/captions */
 }
 
