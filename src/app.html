@@ -846,40 +846,9 @@
       }
     </script>
     <script>
-      // Sims-style flavor text - shuffled each load for variety
-      var __tkaFlavorMessages = [
-        "Calibrating spin direction...",
-        "Consulting the ancient glyphs...",
-        "Warming up wrists...",
-        "Polishing the diamond grid...",
-        "Reticulating flower patterns...",
-        "Shuffling the alphabet...",
-        "Winding up the props...",
-        "Aligning the cardinal points...",
-        "Counting antispin rotations...",
-        "Negotiating with gravity...",
-        "Debating prospin vs inspin...",
-        "Stretching the time signature...",
-        "Tuning the isolation engine...",
-        "Rehearsing the entrance...",
-        "Checking staff balance...",
-        "Convincing electrons to flow...",
-        "Mapping the kinetic field...",
-        "Syncing the downbeat...",
-        "Charging the glow sticks...",
-        "Meditating on beta position...",
-        "Asking permission from physics...",
-        "Dusting off the notation...",
-        "Summoning the flow state..."
-      ];
-
-      // Fisher-Yates shuffle
-      for (var i = __tkaFlavorMessages.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var tmp = __tkaFlavorMessages[i];
-        __tkaFlavorMessages[i] = __tkaFlavorMessages[j];
-        __tkaFlavorMessages[j] = tmp;
-      }
+      // Single calm status line. No rotating jokes — the real bar below tracks
+      // actual resource load. (Replaced the old Sims-style flavor reel.)
+      var __tkaFlavorMessages = ["Loading the alphabet…"];
 
       var __tkaReadyMessages = [
         "Let's spin.",
