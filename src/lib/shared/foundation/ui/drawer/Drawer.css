@@ -176,51 +176,6 @@ dialog.drawer-content {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
-
-  /* Open-hand affordance across the whole sheet. The swipe-to-dismiss handler
-     attaches to this entire <dialog>, so any non-interactive region is
-     grabbable to slide the panel. Interactive children (buttons → pointer,
-     inputs/textarea → text) set their own cursor and override this. */
-  cursor: grab;
-}
-
-/* Closed hand while actively dragging the sheet. */
-.drawer-content.dragging {
-  cursor: grabbing;
-}
-
-/* Guard: cursor is inherited, so without this an unstyled control inside the
-   sheet would inherit `grab`. Interactive elements the user means to operate
-   keep their own affordance. Normal specificity — any component's own
-   (Svelte-scoped) cursor still wins; this only fills the gaps. */
-.drawer-content button,
-.drawer-content a[href],
-.drawer-content select,
-.drawer-content label,
-.drawer-content [role="button"],
-.drawer-content [role="tab"],
-.drawer-content [role="slider"],
-.drawer-content input[type="range"],
-.drawer-content input[type="button"],
-.drawer-content input[type="submit"],
-.drawer-content input[type="reset"] {
-  cursor: pointer;
-}
-
-.drawer-content
-  input:not([type="range"]):not([type="button"]):not([type="submit"]):not(
-    [type="reset"]
-  ),
-.drawer-content textarea,
-.drawer-content [contenteditable="true"] {
-  cursor: text;
-}
-
-.drawer-content button:disabled,
-.drawer-content input:disabled,
-.drawer-content textarea:disabled,
-.drawer-content [aria-disabled="true"] {
-  cursor: not-allowed;
 }
 
 /* Horizontal touch action for right/left placement */
@@ -409,8 +364,11 @@ dialog.drawer-content {
   cursor: grabbing;
 }
 
-/* Handle for right placement in side-by-side mode - vertical on left edge */
-.drawer-content[data-placement="right"].side-by-side-layout .drawer-handle {
+/* Handle for right placement - vertical on left (inner) edge.
+   Applies to ALL right placements (not only .side-by-side-layout) so a
+   standalone right drawer no longer falls back to the broken centered
+   horizontal bar. */
+.drawer-content[data-placement="right"] .drawer-handle {
   position: absolute;
   top: 50%;
   left: 18px;
@@ -456,6 +414,17 @@ dialog.drawer-content {
      only; keep it thin like an iOS/Material grabber. */
   min-height: 0;
   margin: 10px auto 8px;
+}
+
+/* Side-panel handle gutter: reserve space on the handle edge ONLY when a handle
+   is actually rendered (:has), so the absolutely-positioned vertical bar never
+   overlaps content. Replaces per-panel `.drawer-handle { display: none }` hacks
+   (e.g. the old SequenceActionsPanel override). */
+.drawer-content[data-placement="right"]:has(> .drawer-handle) > .drawer-inner {
+  padding-left: var(--drawer-handle-gutter, 28px);
+}
+.drawer-content[data-placement="left"]:has(> .drawer-handle) > .drawer-inner {
+  padding-right: var(--drawer-handle-gutter, 28px);
 }
 
 /* Inner content container */

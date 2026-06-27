@@ -11,7 +11,6 @@
   import type { CollaborativeVideo } from "../domain/collaborative-video";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import AvatarImage from "$lib/shared/browse/components/AvatarImage.svelte";
 
   const {
@@ -142,7 +141,6 @@
     onClose?.();
   }
 
-  const isBottomPlacement = $derived(placement === "bottom");
 </script>
 
 <Drawer
@@ -150,15 +148,10 @@
   labelledBy="invite-collaborators-title"
   onclose={handleClose}
   closeOnBackdrop={true}
-  showHandle={isBottomPlacement}
   {placement}
   class="invite-collaborators-panel"
 >
   <div class="invite-panel">
-    {#if isBottomPlacement}
-      <SheetDragHandle />
-    {/if}
-
     <!-- Header -->
     <header class="invite-panel__header">
       <div class="header-content">

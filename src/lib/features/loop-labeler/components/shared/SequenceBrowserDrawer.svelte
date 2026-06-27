@@ -93,7 +93,6 @@
 <Drawer
   bind:isOpen
   placement="right"
-  showHandle={false}
   closeOnBackdrop={true}
   closeOnEscape={true}
   onclose={handleClose}

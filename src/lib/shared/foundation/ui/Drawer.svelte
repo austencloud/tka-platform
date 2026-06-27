@@ -40,7 +40,7 @@
     ariaLabel,
     describedBy,
     role = "dialog",
-    showHandle = true,
+    showHandle = undefined,
     class: drawerClass = "",
     backdropClass = "",
     placement = "bottom",
@@ -164,6 +164,11 @@
     // Desktop/side-by-side layout or no layout awareness: use specified placement
     return placement;
   });
+
+  // Handle visibility defaults to dismissibility: the drag handle is the
+  // affordance for a drag-dismissible sheet, so a non-dismissible drawer shows
+  // none. An explicit `showHandle` prop still overrides.
+  const effectiveShowHandle = $derived(showHandle ?? dismissible);
 
   // Internal drag change handler that updates local state AND calls parent callback
   function handleInternalDragChange(
@@ -609,7 +614,7 @@
     style:transform={computedTransform || undefined}
     style:transition={isDragging ? "none" : ""}
   >
-    {#if showHandle}
+    {#if effectiveShowHandle}
       <div class="drawer-handle" aria-hidden="true"></div>
     {/if}
     <div class="drawer-inner">

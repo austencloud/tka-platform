@@ -15,7 +15,6 @@
 
 <script lang="ts">
   import CreatePanelDrawer from "./CreatePanelDrawer.svelte";
-  import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import SaveProgressOverlay from "$lib/features/library/components/SaveProgressOverlay.svelte";
   import ExpandableField from "$lib/features/library/components/ExpandableField.svelte";
   import ContentAppealModal from "$lib/features/moderation/components/ContentAppealModal.svelte";
@@ -118,9 +117,6 @@
   ariaLabel="Add to Gallery"
 >
   <div class="panel-inner" bind:this={panelInnerEl}>
-    {#if s.isBottomSheet}
-      <SheetDragHandle />
-    {/if}
 
     {#if s.isSaving}
       <SaveProgressOverlay

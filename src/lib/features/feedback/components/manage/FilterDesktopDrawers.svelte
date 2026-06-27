@@ -73,7 +73,6 @@
 <Drawer
   bind:isOpen={uiState.isStatusDrawerOpen}
   placement="right"
-  showHandle={false}
   ariaLabel="Status filter"
   class="filter-drawer"
 >
@@ -100,7 +99,6 @@
 <Drawer
   bind:isOpen={uiState.isPriorityDrawerOpen}
   placement="right"
-  showHandle={false}
   ariaLabel="Priority filter"
   class="filter-drawer"
 >

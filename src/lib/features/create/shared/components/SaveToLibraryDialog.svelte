@@ -18,7 +18,6 @@ Allows user to set name, visibility, tags, collections, and notes.
 
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
@@ -123,8 +122,6 @@ Allows user to set name, visibility, tags, collections, and notes.
     role="dialog"
     aria-labelledby="save-to-library-title"
   >
-    <SheetDragHandle />
-
     <!-- Close button -->
     <button
       class="close-button"

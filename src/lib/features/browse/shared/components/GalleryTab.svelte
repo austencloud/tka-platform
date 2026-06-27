@@ -197,7 +197,6 @@
     isOpen={isLetterSheetOpen}
     placement={isMobile ? "bottom" : "right"}
     class="letter-sheet-drawer"
-    showHandle={false}
     onOpenChange={(open) => {
       if (!open) isLetterSheetOpen = false;
     }}
@@ -219,7 +218,6 @@
     isOpen={isOptionsSheetOpen}
     placement={isMobile ? "bottom" : "right"}
     class="options-sheet-drawer"
-    showHandle={false}
     onOpenChange={(open) => {
       if (!open) isOptionsSheetOpen = false;
     }}

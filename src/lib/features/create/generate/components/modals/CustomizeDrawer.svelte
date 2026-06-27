@@ -8,7 +8,6 @@
   import "../customize-accent.css";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { portal } from "./portal";
-  import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import CustomizeExpandedOverlay from "../cards/CustomizeExpandedOverlay.svelte";
   import type { CustomizeOverlayProps } from "../../../shared/state/panel-coordination-state.svelte";
 
@@ -28,7 +27,6 @@
     isOpen={isOpen}
     placement="right"
     respectLayoutMode={true}
-    showHandle={false}
     closeOnBackdrop={true}
     ariaLabel="Customize generation settings"
     class="customize-drawer-sheet"
@@ -36,7 +34,6 @@
     onclose={onClose}
   >
     <div class="customize-drawer-content customize-accent-scope">
-      <SheetDragHandle />
       {#if overlayProps}
         <CustomizeExpandedOverlay
           constraintPreset={overlayProps.constraintPreset}

@@ -431,7 +431,6 @@
   <Drawer
     bind:isOpen={feedbackPanelOpen}
     placement="right"
-    showHandle={false}
     ariaLabel={`Edit feedback: ${selectedFeedback.title}`}
   >
     {#await import("$lib/features/feedback/components/manage/FeedbackDetailPanel.svelte") then mod}

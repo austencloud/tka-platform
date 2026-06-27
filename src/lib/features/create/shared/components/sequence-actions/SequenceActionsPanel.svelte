@@ -197,7 +197,11 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     if (subView === "turnPattern") activeDrawer = "turnPattern";
     else if (subView === "rotation") activeDrawer = "rotationDirection";
     else if (subView === "duration") activeDrawer = "duration";
-    else if (subView === "extend") activeDrawer = "extend";
+    // Note: "extend" is intentionally NOT persisted. Unlike the stateless
+    // pattern editors above, the extend view depends on transient computed
+    // analysis (extensionAnalysis) that is not saved. Persisting it would
+    // restore an empty, stale "no extensions available" view on reopen. Closing
+    // the panel while in extend therefore returns to the actions grid next open.
     else if (helpMode !== "inactive") activeDrawer = "help";
 
     if (activeDrawer) {
@@ -246,14 +250,24 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     if (isOpen && !hasRestoredSubDrawer && subDrawerPersister) {
       hasRestoredSubDrawer = true;
       const restoredSubDrawer = subDrawerPersister.getActiveSubDrawer();
-      if (restoredSubDrawer) {
-        if (restoredSubDrawer === "help") helpMode = "selecting";
-        else if (restoredSubDrawer === "turnPattern") subView = "turnPattern";
-        else if (restoredSubDrawer === "rotationDirection") subView = "rotation";
-        else if (restoredSubDrawer === "duration") subView = "duration";
-        else if (restoredSubDrawer === "extend") subView = "extend";
-        restorationComplete = true;
+      if (restoredSubDrawer === "help") helpMode = "selecting";
+      else if (restoredSubDrawer === "turnPattern") subView = "turnPattern";
+      else if (restoredSubDrawer === "rotationDirection") subView = "rotation";
+      else if (restoredSubDrawer === "duration") subView = "duration";
+      else if (restoredSubDrawer === "extend") {
+        // Extend is transient and never auto-persisted (see auto-save effect),
+        // so a stored "extend" only comes from an explicit launch
+        // (AltHotkeyOverlay's Extend button). Recompute the analysis against the
+        // CURRENT sequence instead of restoring a stale empty view. handleExtend
+        // sets subView="extend" on success, or leaves the actions grid showing
+        // (subView stays null) when the sequence isn't extendable.
+        void handleExtend();
       }
+      // Mark restoration attempted unconditionally. The auto-save effect's clear
+      // branch is gated on this flag; if it only flipped when something was
+      // restored, sessions that opened with no persisted sub-drawer could never
+      // clear stale state written later in the same session.
+      restorationComplete = true;
     }
   });
 
@@ -976,15 +990,6 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     cursor: grabbing;
   }
 
-  /* Desktop side-by-side: drop the vertical edge handle — it overlaps the
-     left-hand lane labels on short panels. Back/X + header grab cover dismiss.
-     Mobile keeps its top pill (a useful bottom-sheet affordance). */
-  :global(
-    .sequence-actions-panel-container[data-placement="right"].side-by-side-layout
-      .drawer-handle
-  ) {
-    display: none;
-  }
 
   .panel-title {
     margin: 0;

@@ -22,7 +22,6 @@ with exported sequence cards.
   import LOOPModeSelector from "./LOOPModeSelector.svelte";
   import LOOPPresetsSection from "./LOOPPresetsSection.svelte";
   import Drawer from "../../../../../shared/foundation/ui/Drawer.svelte";
-  import SheetDragHandle from "../../../../../shared/foundation/ui/SheetDragHandle.svelte";
 
   let { isOpen, selectedComponents, onToggleComponent, onConfirm, onClose } =
     $props<{
@@ -143,14 +142,12 @@ with exported sequence cards.
   onOpenChange={(open) => !open && handleClose()}
   labelledBy="loop-title"
   closeOnBackdrop={true}
-  showHandle={false}
   respectLayoutMode={true}
   placement={drawerPlacement}
   class="loop-selection-sheet"
   backdropClass="loop-selection-backdrop"
 >
   <div class="loop-modal-content" class:desktop-layout={isSideBySideLayout}>
-    <SheetDragHandle class={isSideBySideLayout ? "side-handle" : ""} />
     <LOOPModalHeader
       title="Select LOOP Type"
       onClose={handleClose}

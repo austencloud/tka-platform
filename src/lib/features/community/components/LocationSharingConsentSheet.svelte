@@ -35,7 +35,7 @@
   closeOnBackdrop={false}
   closeOnEscape={false}
   ariaLabel={t('community_consent_aria_label')}
-  showHandle={false}
+  dismissible={false}
   class="location-consent-sheet"
 >
   <div class="consent-content">

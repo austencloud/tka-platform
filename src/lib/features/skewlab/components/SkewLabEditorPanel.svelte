@@ -199,7 +199,6 @@
   bind:isOpen
   placement="right"
   respectLayoutMode={true}
-  showHandle={false}
   closeOnBackdrop={true}
   closeOnEscape={!hasArrowSelected}
   class="skewlab-editor-drawer"

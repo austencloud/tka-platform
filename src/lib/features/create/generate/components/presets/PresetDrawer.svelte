@@ -7,7 +7,6 @@
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { portal } from "../modals/portal";
-  import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import type { FavoriteConfig, CommunityFavorite } from "../../domain/models/favorite-config";
 
   let {
@@ -62,15 +61,12 @@
     {isOpen}
     placement="right"
     respectLayoutMode={true}
-    showHandle={false}
     closeOnBackdrop={true}
     ariaLabel="Browse favorites"
     class="preset-drawer-sheet"
     onclose={onClose}
   >
     <div class="preset-drawer-content">
-      <SheetDragHandle />
-
       <h3 class="drawer-title">Favorites</h3>
 
       <!-- Your Favorite section -->

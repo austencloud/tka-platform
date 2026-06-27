@@ -13,7 +13,6 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { getAuthSync } from "$lib/shared/auth/firebase";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import {
     createVideoFromUpload,
     getVideoFileMetadata,
@@ -242,8 +241,6 @@
   class="video-upload-sheet"
 >
   <div class="upload-sheet__container">
-    <SheetDragHandle />
-
     <!-- Header -->
     <header class="upload-sheet__header">
       <div class="header-content">

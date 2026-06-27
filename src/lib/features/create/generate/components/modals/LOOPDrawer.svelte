@@ -6,7 +6,6 @@
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { portal } from "./portal";
-  import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import LOOPExpandedOverlay from "../cards/LOOPExpandedOverlay.svelte";
   import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
@@ -33,14 +32,12 @@
     isOpen={isOpen}
     placement="right"
     respectLayoutMode={true}
-    showHandle={false}
     closeOnBackdrop={true}
     ariaLabel="Select LOOP Type"
     class="loop-drawer-sheet"
     onclose={onClose}
   >
     <div class="loop-drawer-content">
-      <SheetDragHandle />
       {#if selectedComponents && onChange && currentType}
         <LOOPExpandedOverlay
           {currentType}

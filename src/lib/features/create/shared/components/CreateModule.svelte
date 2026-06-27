@@ -72,7 +72,6 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   // dependency subtrees out of the Create module's eager first-paint graph.
   // See scripts/trace-create-three.cjs for the deferral analysis.
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
-  import { orientationPickerState } from "$lib/features/create/construct/start-position-picker/state/orientation-picker-state.svelte";
   import IndeterminateBar from "$lib/shared/components/loading/IndeterminateBar.svelte";
   import { SessionManager } from "../services/session-manager.svelte";
   import { Autosaver } from "../services/autosaver";
@@ -780,12 +779,6 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
     loader={() => import("./coordinators/SequenceDrawerHost.svelte")}
     active={panelState.isExportPanelOpen}
     prefetch
-  />
-
-  <!-- Orientation Picker Drawer (deferred until first opened) -->
-  <LazyMount
-    loader={() => import("$lib/features/create/construct/start-position-picker/components/OrientationPickerDrawer.svelte")}
-    active={orientationPickerState.isOpen}
   />
 
   <!-- Sequence Actions Coordinator (deferred until first opened) -->
