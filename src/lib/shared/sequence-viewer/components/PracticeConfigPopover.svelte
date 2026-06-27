@@ -4,16 +4,13 @@
   A small settings popover for tuning the practice tempo ramp. Owns its own
   gear trigger so it can sit next to the Practice button in any viewer header.
 
-  Writes through onUpdate (which persists to userConfig). Changes apply on the
-  next practice start; tweaking mid-session is fine, it just affects the next run.
+  One model, no modes: every X loops, raise BPM by Y, optionally up to a goal.
+  Writes through onUpdate (which persists to userConfig). Tweaking mid-session is
+  fine — the bar's inline controls apply live; this sets the next run's defaults.
 -->
 <script lang="ts">
   import { Popover } from "bits-ui";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
-  import type {
-    ProgressionMode,
-    TempoPracticeConfig,
-  } from "../services/tempo-practice-orchestrator";
+  import type { TempoPracticeConfig } from "../services/tempo-practice-orchestrator";
 
   interface Props {
     config: Partial<TempoPracticeConfig>;
@@ -26,14 +23,11 @@
 
   // Display values fall back to the orchestrator defaults.
   let startBpm = $derived(config.startBpm ?? 15);
-  let increment = $derived(config.increment ?? 5);
-  let smoothStep = $derived(config.smoothStep ?? 1);
-  let roundsPerLevel = $derived(config.roundsPerLevel ?? 5);
+  let increment = $derived(config.increment ?? 1);
+  let roundsPerLevel = $derived(config.roundsPerLevel ?? 1);
   let targetBpm = $derived(config.targetBpm ?? 60);
-  // Migrate the legacy "auto" value to the new "smooth" default for display.
-  let progressionMode: ProgressionMode = $derived(
-    ((config.progressionMode as string) === "auto" ? "smooth" : config.progressionMode) ?? "smooth"
-  );
+  let targetEnabled = $derived(config.targetEnabled ?? false);
+  let maxBpm = $derived(config.maxBpm ?? 300);
 
   function clamp(v: number, min: number, max: number) {
     return Math.max(min, Math.min(max, v));
@@ -45,29 +39,23 @@
   function setIncrement(next: number) {
     onUpdate({ increment: clamp(next, 1, 30) });
   }
-  function setSmoothStep(next: number) {
-    onUpdate({ smoothStep: clamp(next, 1, 10) });
-  }
   function setRounds(next: number) {
-    onUpdate({ roundsPerLevel: clamp(next, 1, 10) });
+    onUpdate({ roundsPerLevel: clamp(next, 1, 20) });
   }
   function setTargetBpm(next: number) {
-    onUpdate({ targetBpm: clamp(next, startBpm + 5, config.maxBpm ?? 300) });
+    onUpdate({ targetBpm: clamp(next, startBpm + 5, maxBpm) });
+  }
+  function toggleTarget() {
+    onUpdate({ targetEnabled: !targetEnabled });
   }
 
-  const MODE_OPTIONS: { value: ProgressionMode; label: string }[] = [
-    { value: "smooth", label: "Smooth" },
-    { value: "stepped", label: "Stepped" },
-    { value: "manual", label: "Manual" },
-    { value: "target", label: "Target" },
-  ];
-
-  const HINTS: Record<ProgressionMode, string> = {
-    smooth: "Tempo rises a little after every loop — barely noticeable, but it adds up.",
-    stepped: "Holds each tempo for a set of loops, then speeds up by the speed step.",
-    manual: "Holds the tempo. You tap Faster on the bar to speed up when you're ready.",
-    target: "Climbs gently to your goal tempo, then stops and celebrates.",
-  };
+  // Plain-language summary of the current ramp.
+  let everyPhrase = $derived(roundsPerLevel === 1 ? "every loop" : `every ${roundsPerLevel} loops`);
+  let hint = $derived(
+    targetEnabled
+      ? `Climbs +${increment} BPM ${everyPhrase} up to ${clamp(targetBpm, startBpm + 5, maxBpm)} BPM, then stops.`
+      : `Climbs +${increment} BPM ${everyPhrase} up to ${maxBpm} BPM.`
+  );
 </script>
 
 <Popover.Root bind:open>
@@ -94,34 +82,29 @@
             <header class="config-header">Practice ramp</header>
 
             <div class="config-body">
-              <div class="config-row mode-row">
-                <span class="config-label">Progression</span>
-                <div class="mode-control">
-                  <SegmentedControl
-                    options={MODE_OPTIONS}
-                    value={progressionMode}
-                    onchange={(v) => onUpdate({ progressionMode: v })}
-                    color="accent"
-                    size="sm"
-                  />
-                </div>
+              {@render stepper("Start tempo", startBpm, "BPM", () => setStartBpm(startBpm - 5), () => setStartBpm(startBpm + 5))}
+              {@render stepper("Loops per speed-up", roundsPerLevel, "", () => setRounds(roundsPerLevel - 1), () => setRounds(roundsPerLevel + 1))}
+              {@render stepper("BPM per speed-up", increment, "", () => setIncrement(increment - 1), () => setIncrement(increment + 1))}
+
+              <div class="config-row">
+                <span class="config-label">Stop at a goal</span>
+                <button
+                  type="button"
+                  class="goal-toggle"
+                  class:on={targetEnabled}
+                  onclick={toggleTarget}
+                  aria-pressed={targetEnabled}
+                  aria-label={targetEnabled ? "Goal on" : "Goal off"}
+                >
+                  <span class="goal-knob"></span>
+                </button>
               </div>
 
-              <p class="config-hint">{HINTS[progressionMode]}</p>
-
-              {@render stepper("Start tempo", startBpm, "BPM", () => setStartBpm(startBpm - 5), () => setStartBpm(startBpm + 5))}
-
-              {#if progressionMode === "smooth"}
-                {@render stepper("BPM per loop", smoothStep, "", () => setSmoothStep(smoothStep - 1), () => setSmoothStep(smoothStep + 1))}
-              {:else if progressionMode === "stepped"}
-                {@render stepper("Loops per speed-up", roundsPerLevel, "", () => setRounds(roundsPerLevel - 1), () => setRounds(roundsPerLevel + 1))}
-                {@render stepper("Speed step", increment, "BPM", () => setIncrement(increment - 1), () => setIncrement(increment + 1))}
-              {:else if progressionMode === "target"}
-                {@render stepper("Goal tempo", targetBpm, "BPM", () => setTargetBpm(targetBpm - 5), () => setTargetBpm(targetBpm + 5))}
-                {@render stepper("BPM per loop", smoothStep, "", () => setSmoothStep(smoothStep - 1), () => setSmoothStep(smoothStep + 1))}
-              {:else}
-                {@render stepper("Speed step", increment, "BPM", () => setIncrement(increment - 1), () => setIncrement(increment + 1))}
+              {#if targetEnabled}
+                {@render stepper("Goal tempo", clamp(targetBpm, startBpm + 5, maxBpm), "BPM", () => setTargetBpm(targetBpm - 5), () => setTargetBpm(targetBpm + 5))}
               {/if}
+
+              <p class="config-hint">{hint}</p>
             </div>
           </div>
         {/if}
@@ -291,14 +274,45 @@
     margin-left: 3px;
   }
 
-  .mode-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
+  /* Goal on/off — a switch (button + sliding knob), never a checkbox. */
+  .goal-toggle {
+    position: relative;
+    width: 46px;
+    height: 28px;
+    flex-shrink: 0;
+    padding: 0;
+    border-radius: 999px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
   }
-
-  .mode-control {
-    width: 100%;
+  .goal-toggle .goal-knob {
+    position: absolute;
+    top: 50%;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    transform: translate(0, -50%);
+    transition: transform var(--duration-fast, 150ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)), background var(--duration-fast, 150ms) ease;
+  }
+  .goal-toggle.on {
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 55%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 70%, transparent);
+  }
+  .goal-toggle.on .goal-knob {
+    transform: translate(18px, -50%);
+    background: #fff;
+  }
+  .goal-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .goal-toggle, .goal-toggle .goal-knob { transition: none; }
   }
 
   .config-hint {

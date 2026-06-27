@@ -12,7 +12,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
-  import type { ProgressionMode } from "../services/tempo-practice-orchestrator";
+  import type { TempoPracticeConfig } from "../services/tempo-practice-orchestrator";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type {
     ViewerPlaybackState, ImageCompositionProps, PropRenderingProps, } from "../domain/viewer-prop-groups";
@@ -59,6 +59,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
     practiceActive: boolean;
     practiceState: ReturnType<typeof import("$lib/shared/sequence-viewer/state/tempo-practice-state.svelte").createTempoPracticeState>;
+    practiceViewPrefs: import("$lib/shared/sequence-viewer/state/practice-view-prefs.svelte").PracticeViewPrefs;
 
     bluePropType: PropType | undefined;
     redPropType: PropType | undefined;
@@ -126,7 +127,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handlePracticeStepLevel: (dir: 1 | -1) => void;
     handlePracticeStep: (dir: 1 | -1) => void;
     handlePracticeToggleHold: () => void;
-    handlePracticeSetMode: (mode: ProgressionMode) => void;
+    handlePracticeSetConfig: (patch: Partial<TempoPracticeConfig>) => void;
     handlePracticeStop: () => void;
     onClose: () => void;
     stepHalfBeatBackward: () => void;
@@ -217,6 +218,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import { createFullscreenController } from "../state/fullscreen-controller.svelte";
   import { createLibraryActionHandler } from "../state/library-action-handler.svelte";
   import { createViewerState } from "../state/viewer-state.svelte";
+  import { createPracticeViewPrefs } from "$lib/shared/sequence-viewer/state/practice-view-prefs.svelte";
 
   interface Props {
     sequence: SequenceData | null;
@@ -293,6 +295,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   });
 
   const viewerState = createViewerState();
+  const practiceViewPrefs = createPracticeViewPrefs();
 
   if (viewer3DState.renderMode === '3d' && !viewerState.wants3D) {
     viewerState.setSplitPaneContent('left', 'animation-3d');
@@ -716,16 +719,15 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     // Tunnel: route through the export coordinator's tunnel pipeline. It drives
     // the shared offscreen engine (the live 2D AnimatorCanvas is unmounted in
     // Art mode) with the kaleidoscope's per-beat layers + all chrome suppressed,
-    // AND — unlike the old inline call here — auto-downloads on success, shows a
-    // visible error toast on failure, and surfaces progress (ArtPane overlay).
+    // AND — unlike the old inline call here — surfaces progress + an inline
+    // preview (save/share) via the ArtPane overlay and a visible error toast.
     const ctrl = args.controller;
     void exportCoord.exportTunnel(
-      effectiveSequence,
       playbackControllerRef,
       modalAnimationState,
       hapticService,
       (beat: number) => ctrl.additionalLayersAt(beat),
-      { fold: ctrl.fold, mirror: ctrl.mirror, spectrum: ctrl.spectrum },
+      ctrl.spectrum,
     );
   }
 
@@ -996,6 +998,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
     practiceActive: playback.practiceActive,
     practiceState: playback.practiceState,
+    practiceViewPrefs,
 
     bluePropType: activeBlueProp,
     redPropType: activeRedProp,
@@ -1088,7 +1091,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handlePracticeStepLevel: (dir: 1 | -1) => playback.handlePracticeStepLevel(dir),
     handlePracticeStep: (dir: 1 | -1) => playback.handlePracticeStep(dir),
     handlePracticeToggleHold: () => playback.handlePracticeToggleHold(),
-    handlePracticeSetMode: (mode: ProgressionMode) => playback.handlePracticeSetMode(mode),
+    handlePracticeSetConfig: (patch: Partial<TempoPracticeConfig>) => playback.handlePracticeSetConfig(patch),
     handlePracticeStop: () => playback.handlePracticeStop(),
     onClose: handleClose,
     stepHalfBeatBackward: playback.stepHalfBeatBackward,

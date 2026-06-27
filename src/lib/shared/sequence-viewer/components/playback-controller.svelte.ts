@@ -16,7 +16,7 @@ import type { HapticFeedback } from "$lib/shared/application/services/haptic-fee
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-import { TempoPracticeOrchestrator, type ProgressionMode, type TempoPracticeConfig } from "$lib/shared/sequence-viewer/services/tempo-practice-orchestrator";
+import { TempoPracticeOrchestrator, type TempoPracticeConfig } from "$lib/shared/sequence-viewer/services/tempo-practice-orchestrator";
 import { createTempoPracticeState } from "$lib/shared/sequence-viewer/state/tempo-practice-state.svelte";
 
 export interface PlaybackControllerDeps {
@@ -201,8 +201,8 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     handleBpmChange(startBpm);
 
     _playbackController.onLoopComplete(() => {
-      // Auto mode may return a new BPM here; manual mode returns null and just
-      // raises readyToAdvance, which the progress pill surfaces as "Speed Up".
+      // Returns a new BPM on a speed-up loop (every X loops), else null while the
+      // step is still accumulating its reps.
       const newBpm = practiceOrchestrator.onLoopComplete();
       practiceState.updateProgress(practiceOrchestrator.getProgress());
 
@@ -250,17 +250,8 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     _hapticService?.trigger("selection");
   }
 
-  /** Switch the ramp mode live from the bar's inline picker (preserves the
-   *  current tempo; persists the choice for the next session too). */
-  function handlePracticeSetMode(mode: ProgressionMode) {
-    practiceOrchestrator.setProgressionMode(mode);
-    practiceState.updateConfig({ progressionMode: mode });
-    practiceState.updateProgress(practiceOrchestrator.getProgress());
-    _hapticService?.trigger("selection");
-  }
-
-  /** Apply a live config change from the bar's inline amount controls
-   *  (goal / step / per-loop). Persists for the next session too. */
+  /** Apply a live config change from the bar's inline controls (loops X, step Y,
+   *  goal, target on/off). Persists for the next session too. */
   function handlePracticeSetConfig(patch: Partial<TempoPracticeConfig>) {
     practiceOrchestrator.patchConfig(patch);
     practiceState.updateConfig(patch);
@@ -360,7 +351,6 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     handlePracticeStepLevel,
     handlePracticeStep,
     handlePracticeToggleHold,
-    handlePracticeSetMode,
     handlePracticeSetConfig,
     handlePracticeStop,
     stepHalfBeatBackward,

@@ -661,6 +661,9 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
                 onStepClick={ctx.handleStepClick}
                 onCanvasReady={ctx.handleCanvasReady}
                 onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
+                practiceActive={ctx.practiceActive}
+                practiceCellSize={ctx.practiceViewPrefs.cellSize}
+                practiceCanvasFraction={ctx.practiceViewPrefs.canvasFraction}
               />
               <ChoreoCardContextMenuHost
                 bind:this={choreoCardMenuHost}
@@ -717,16 +720,22 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
           {/if}
         </div>
 
-        {#if ctx.practiceActive}
-          <PracticeBar
-            progress={ctx.practiceState.progress}
-            bpm={ctx.bpmLocal}
-            isPlaying={ctx.isPlayingLocal}
-            onBpmChange={ctx.handleBpmChange}
-            onPlayPause={ctx.handlePlaybackToggle}
-            onStepLevel={ctx.handlePracticeStepLevel}
-            onToggleHold={ctx.handlePracticeToggleHold}
-          />
+        {#if ctx.hasSequence}
+          <!-- Stays mounted; a flow child that pushes the content up (one instant
+               reflow at the slide's near edge) while the bar slides up via
+               composited transform → 60fps. Parked (height 0) + inert when off. -->
+          <div class="practice-bar-rise" class:up={ctx.practiceActive} inert={!ctx.practiceActive}>
+            <PracticeBar
+              progress={ctx.practiceState.progress}
+              bpm={ctx.bpmLocal}
+              isPlaying={ctx.isPlayingLocal}
+              onBpmChange={ctx.handleBpmChange}
+              onPlayPause={ctx.handlePlaybackToggle}
+              onStepLevel={ctx.handlePracticeStepLevel}
+              onToggleHold={ctx.handlePracticeToggleHold}
+              onSetConfig={ctx.handlePracticeSetConfig}
+            />
+          </div>
         {/if}
       </div>
 
@@ -753,11 +762,42 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
 
 <style>
   .sequence-route-page {
+    /* One shared clock for the practice push (matches the drawer host). */
+    --ws-dur: 300ms;
+    --ws-ease: cubic-bezier(0.2, 0, 0, 1);
     display: flex;
     flex-direction: column;
     height: 100vh;
     height: 100dvh;
     overflow: hidden;
+  }
+
+  /* Practice bar pushes content up: flow child, height toggles in one instant
+     reflow at the slide's near edge, visible motion is composited transform. */
+  .practice-bar-rise {
+    flex-shrink: 0;
+    overflow: hidden;
+    height: 0;
+    transform: translateY(100%);
+    opacity: 0;
+    will-change: transform, opacity;
+    transition:
+      transform var(--ws-dur) var(--ws-ease),
+      opacity var(--ws-dur) var(--ws-ease),
+      height 0ms var(--ws-dur);
+  }
+  .practice-bar-rise.up {
+    height: auto;
+    transform: translateY(0);
+    opacity: 1;
+    transition:
+      transform var(--ws-dur) var(--ws-ease),
+      opacity var(--ws-dur) var(--ws-ease),
+      height 0ms 0ms;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .practice-bar-rise { transition: none; }
   }
 
   .route-body-content {

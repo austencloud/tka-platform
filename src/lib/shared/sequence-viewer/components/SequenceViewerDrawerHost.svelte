@@ -2,7 +2,6 @@
 import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
-  import { flyTransition, safeSlide } from "$lib/shared/utils/transitions";
   import { goto, replaceState } from "$app/navigation";
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
@@ -361,7 +360,10 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
         <div class="drawer-viewer-container" class:landscape={isLandscape}>
           <header class="drawer-header">
                 <div class="drawer-header-left-actions">
-                  {#if ctx.practiceActive}
+                  <!-- Both action sets stay mounted and crossfade so entering
+                       practice doesn't flash buttons in/out. inert removes the
+                       hidden layer from focus + pointer + a11y. -->
+                  <div class="left-actions-layer practice" class:active={ctx.practiceActive} inert={!ctx.practiceActive}>
                     <button
                       type="button"
                       class="header-action-btn practice-exit"
@@ -391,70 +393,74 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                         <i class="fas fa-chevron-right" aria-hidden="true"></i>
                       </button>
                     </div>
-                  {:else if isMobileWidth}
-                    {@render overflowMenu(true)}
-                  {:else}
-                    <button
-                      type="button"
-                      class="header-action-btn"
-                      class:favorited={ctx.isFavorite}
-                      onclick={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
-                      aria-label={ctx.isFavorite ? "Remove from favorites" : "Add to favorites"}
-                    >
-                      <i class="fas fa-heart" aria-hidden="true"></i>
-                    </button>
+                  </div>
 
-                    {#if !ctx.isSaved}
-                      <button
-                        type="button"
-                        class="header-action-btn save"
-                        onclick={() => ctx.invokeGatedAction("save", ctx.handleSave)}
-                        aria-label="Save sequence"
-                      >
-                        <i class="fas fa-floppy-disk" aria-hidden="true"></i>
-                      </button>
-                    {/if}
-
-                    <button
-                      type="button"
-                      class="header-action-btn remix"
-                      onclick={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
-                      aria-label="Remix"
-                    >
-                      <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-                    </button>
-
-                    <button
-                      type="button"
-                      class="header-action-btn practice"
-                      class:practice-active={ctx.practiceActive}
-                      onclick={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
-                      aria-label={ctx.practiceActive ? "Stop practice" : "Practice"}
-                      aria-pressed={ctx.practiceActive}
-                    >
-                      <i class="fas {ctx.practiceActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
-                    </button>
-                    <PracticeConfigPopover
-                      config={ctx.practiceState.userConfig}
-                      onUpdate={ctx.practiceState.updateConfig}
-                    />
-
-                    <span class="header-action-divider"></span>
-
-                    <MotionVisibilityToggle />
-
-                    {#if authState.isAdmin}
+                  <div class="left-actions-layer normal" class:active={!ctx.practiceActive} inert={ctx.practiceActive}>
+                    {#if isMobileWidth}
+                      {@render overflowMenu(true)}
+                    {:else}
                       <button
                         type="button"
                         class="header-action-btn"
-                        onclick={handleCopyForClaude}
-                        aria-label="Copy sequence data for Claude"
-                        title="Copy for Claude"
+                        class:favorited={ctx.isFavorite}
+                        onclick={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
+                        aria-label={ctx.isFavorite ? "Remove from favorites" : "Add to favorites"}
                       >
-                        <i class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}" aria-hidden="true"></i>
+                        <i class="fas fa-heart" aria-hidden="true"></i>
                       </button>
+
+                      {#if !ctx.isSaved}
+                        <button
+                          type="button"
+                          class="header-action-btn save"
+                          onclick={() => ctx.invokeGatedAction("save", ctx.handleSave)}
+                          aria-label="Save sequence"
+                        >
+                          <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+                        </button>
+                      {/if}
+
+                      <button
+                        type="button"
+                        class="header-action-btn remix"
+                        onclick={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
+                        aria-label="Remix"
+                      >
+                        <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="header-action-btn practice"
+                        class:practice-active={ctx.practiceActive}
+                        onclick={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
+                        aria-label={ctx.practiceActive ? "Stop practice" : "Practice"}
+                        aria-pressed={ctx.practiceActive}
+                      >
+                        <i class="fas {ctx.practiceActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
+                      </button>
+                      <PracticeConfigPopover
+                        config={ctx.practiceState.userConfig}
+                        onUpdate={ctx.practiceState.updateConfig}
+                      />
+
+                      <span class="header-action-divider"></span>
+
+                      <MotionVisibilityToggle />
+
+                      {#if authState.isAdmin}
+                        <button
+                          type="button"
+                          class="header-action-btn"
+                          onclick={handleCopyForClaude}
+                          aria-label="Copy sequence data for Claude"
+                          title="Copy for Claude"
+                        >
+                          <i class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}" aria-hidden="true"></i>
+                        </button>
+                      {/if}
                     {/if}
-                  {/if}
+                  </div>
                 </div>
 
                 <div class="drawer-header-title-group">
@@ -517,13 +523,10 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                   class:record-scene-active={isRecordSceneActive}
                   class:desktop={!isMobileWidth}
                   class:sidebar-collapsed={exportSidebarCollapsed && !isImageExportActive}
-                  class:has-rail={showRail && !ctx.practiceActive}
+                  class:has-rail={showRail}
                 >
-                  {#if showRail && !ctx.practiceActive}
-                    <div
-                      class="viewer-rail-wrap"
-                      transition:safeSlide={{ axis: "x", duration: prefersReducedMotion ? 0 : 260 }}
-                    >
+                  {#if showRail}
+                    <div class="viewer-rail-wrap" class:collapsed={ctx.practiceActive}>
                       <ViewerContentRail
                         activeMode={ctx.viewerState.viewerMode}
                         webgl2Available={ctx.viewer3DState.webgl2Available}
@@ -588,6 +591,9 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       isLoggedIn={ctx.isLoggedIn}
                       onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
                       onArtExport={ctx.handleArtExport}
+                      practiceActive={ctx.practiceActive}
+                      practiceCellSize={ctx.practiceViewPrefs.cellSize}
+                      practiceCanvasFraction={ctx.practiceViewPrefs.canvasFraction}
                     />
                   {/if}
                   {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
@@ -704,7 +710,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
               {/if}
             </div>
             {#if isMobileWidth && ctx.hasSequence && ctx.effectiveSequence && !ctx.practiceActive}
-              <div transition:safeSlide={{ axis: "y", duration: prefersReducedMotion ? 0 : 220 }}>
+              <div transition:fade={{ duration: prefersReducedMotion ? 0 : 180 }}>
                 <ViewerModeBottomBar
                   activeMode={ctx.viewerState.viewerMode}
                   webgl2Available={ctx.viewer3DState.webgl2Available}
@@ -714,11 +720,16 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
               </div>
             {/if}
           </div>
-          {#if ctx.practiceActive}
+          {#if ctx.hasSequence}
+            <!-- Bottom workstation: stays mounted, a flow child that PUSHES the
+                 content up (so the bottom rows stay visible). Height toggles in
+                 one reflow at the slide's near edge; the visible motion is a
+                 composited translateY → 60fps even while the animator runs.
+                 Parked (height 0) + inert when not practicing. -->
             <div
               class="practice-bar-rise"
-              in:flyTransition={{ y: 36, duration: prefersReducedMotion ? 0 : 260 }}
-              out:flyTransition={{ y: 28, duration: prefersReducedMotion ? 0 : 180 }}
+              class:up={ctx.practiceActive}
+              inert={!ctx.practiceActive}
             >
               <PracticeBar
                 progress={ctx.practiceState.progress}
@@ -728,7 +739,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                 onPlayPause={ctx.handlePlaybackToggle}
                 onStepLevel={ctx.handlePracticeStepLevel}
                 onToggleHold={ctx.handlePracticeToggleHold}
-                onSetMode={ctx.handlePracticeSetMode}
+                onSetConfig={ctx.handlePracticeSetConfig}
               />
             </div>
           {/if}
@@ -759,6 +770,10 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 
 <style>
   .drawer-viewer-container {
+    /* One shared clock so the rail-out and bar-up choreograph in lockstep. */
+    --ws-dur: 300ms;
+    --ws-ease: cubic-bezier(0.2, 0, 0, 1);
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -827,6 +842,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   }
 
   .drawer-header-left-actions {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -949,16 +965,81 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     min-height: 32px;
   }
 
-  /* Rail wrapper: lets the rail collapse its width (safeSlide x) on practice
-     enter instead of snapping out, so the grid column closes smoothly. */
+  /* Rail stays mounted; on practice enter it fades + nudges out (composited)
+     and its grid column collapses in a SINGLE reflow after the fade (masked),
+     instead of resizing the heavy content area every frame. */
   .viewer-rail-wrap {
     display: flex;
     min-height: 0;
     overflow: hidden;
+    max-width: 320px;
+    will-change: opacity, transform;
+    transition: opacity var(--ws-dur) var(--ws-ease), transform var(--ws-dur) var(--ws-ease);
+  }
+  .viewer-rail-wrap.collapsed {
+    opacity: 0;
+    transform: translateX(-12px);
+    max-width: 0;
+    pointer-events: none;
+    transition:
+      opacity var(--ws-dur) var(--ws-ease),
+      transform var(--ws-dur) var(--ws-ease),
+      max-width 0ms var(--ws-dur);
   }
 
+  /* Bottom workstation: a flow child so it PUSHES the content up (bottom rows
+     stay visible — not an overlay). The size change is a single instant reflow
+     at the slide's near edge (height 0↔auto, never animated); everything the eye
+     follows is composited transform/opacity, so it holds 60fps under the 2D
+     animator. On enter the gap opens first (height 0ms 0ms) then the bar slides
+     up into it; on exit it slides down first and the gap closes after (height
+     0ms var(--ws-dur)) — mirrors the rail's collapse-after-fade. */
   .practice-bar-rise {
     flex-shrink: 0;
+    overflow: hidden;
+    height: 0;
+    transform: translateY(100%);
+    opacity: 0;
+    will-change: transform, opacity;
+    transition:
+      transform var(--ws-dur) var(--ws-ease),
+      opacity var(--ws-dur) var(--ws-ease),
+      height 0ms var(--ws-dur);
+  }
+  .practice-bar-rise.up {
+    height: auto;
+    transform: translateY(0);
+    opacity: 1;
+    transition:
+      transform var(--ws-dur) var(--ws-ease),
+      opacity var(--ws-dur) var(--ws-ease),
+      height 0ms 0ms;
+  }
+
+  /* Header action layers crossfade on practice toggle — both stay mounted so
+     buttons don't flash in/out. inert handles focus/pointer/a11y on the hidden
+     layer; the inactive layer is taken out of flow so the container sizes to
+     the active set. */
+  .left-actions-layer {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: opacity 180ms ease;
+  }
+  .left-actions-layer:not(.active) {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawer-viewer-container { --ws-dur: 0ms; }
+    .viewer-rail-wrap,
+    .left-actions-layer,
+    .practice-bar-rise { transition: none; }
   }
 
   .viewer-and-export {

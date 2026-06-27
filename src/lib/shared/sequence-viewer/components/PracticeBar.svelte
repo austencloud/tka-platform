@@ -2,22 +2,20 @@
   PracticeBar.svelte
 
   Docked cockpit bar for focused practice mode. Centered, prominent controls in
-  one full-width strip at the bottom of the viewer. Every control shares one
-  height (--ctrl-h) so the row reads as a single clean strip:
+  one full-width strip at the bottom of the viewer:
 
-    play/pause | [Slower]  [− BPM +]  [Faster] | ❄ Hold | caption + fill
+    play/pause | [Slower]  [− BPM +]  [Faster] | ❄ Hold | config + caption + fill
 
-  One tempo concept: the big Slower/Faster step the tempo by the speed step; the
-  BPM pill is the readout with small ±1 fine steppers (press-and-hold to repeat)
-  flanking it; the + carries the level-up role (pulses green in Manual once a
-  level completes). The number pulses on each bump, and a slim fill bar grows
-  toward the next speed-up. Exit lives in the header, not here.
+  One model, no modes: you set X (loops between speed-ups) and Y (BPM per
+  speed-up), with an optional goal. X=1 is the gentle per-loop creep; X=5,Y=5 is
+  a hold-then-jump staircase. The big Slower/Faster step by Y; the BPM pill has
+  small ±1 fine steppers flanking it. The number pulses on each bump and a slim
+  fill bar grows toward the next speed-up (or the goal). Exit lives in the header.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
-  import type { ProgressionMode, TempoPracticeConfig, TempoPracticeProgress } from "../services/tempo-practice-orchestrator";
+  import type { TempoPracticeConfig, TempoPracticeProgress } from "../services/tempo-practice-orchestrator";
 
   interface Props {
     progress: TempoPracticeProgress;
@@ -25,26 +23,17 @@
     isPlaying: boolean;
     onBpmChange: (bpm: number) => void;
     onPlayPause: () => void;
-    /** Step the tempo by the speed step: +1 up, -1 down. */
+    /** Step the tempo by Y: +1 dir up, -1 down. */
     onStepLevel: (dir: 1 | -1) => void;
     /** Freeze/resume the auto-climb at the current speed. */
     onToggleHold: () => void;
-    /** Switch the ramp mode live (inline picker). Omit to hide the picker. */
-    onSetMode?: (mode: ProgressionMode) => void;
-    /** Apply a live config change (goal / step / per-loop). Omit to hide the
-     *  contextual amount control. */
+    /** Apply a live config change (loops X, step Y, goal, target on/off). Omit to
+     *  hide the inline config controls. */
     onSetConfig?: (patch: Partial<TempoPracticeConfig>) => void;
   }
 
-  let { progress, bpm, isPlaying, onBpmChange, onStepLevel, onToggleHold, onPlayPause, onSetMode, onSetConfig }: Props =
+  let { progress, bpm, isPlaying, onBpmChange, onStepLevel, onToggleHold, onPlayPause, onSetConfig }: Props =
     $props();
-
-  const MODE_OPTIONS: { value: ProgressionMode; label: string }[] = [
-    { value: "smooth", label: "Smooth" },
-    { value: "stepped", label: "Stepped" },
-    { value: "manual", label: "Manual" },
-    { value: "target", label: "Target" },
-  ];
 
   let bpmColor = $derived.by(() => {
     if (bpm <= 30) return "var(--semantic-success, #22c55e)";
@@ -53,8 +42,8 @@
     return "var(--semantic-error, #ef4444)";
   });
 
-  // Floor/ceiling shared by both the level buttons and the fine spinner.
-  // Ceiling = the goal in target mode, else the maxBpm cap (progress.targetBpm
+  // Floor/ceiling shared by the level buttons and the fine spinner. Ceiling =
+  // the goal when a target is set, else the maxBpm cap (progress.targetBpm
   // carries whichever applies).
   let atFloor = $derived(bpm <= progress.startBpm);
   let atCeiling = $derived(bpm >= progress.targetBpm);
@@ -78,39 +67,46 @@
     if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
   }
 
-  let isSmooth = $derived(progress.progressionMode === "smooth");
-  let isManual = $derived(progress.progressionMode === "manual");
-  let isTarget = $derived(progress.progressionMode === "target");
+  // Two knobs + an optional goal. X=1 reads as a continuous creep (no levels).
+  let hasTarget = $derived(progress.targetEnabled);
+  let isCreep = $derived(progress.roundsPerLevel <= 1);
 
-  // Fill semantics by mode: target → real start→goal progress; smooth → a faded
-  // full (breathing) bar; stepped/manual → progress toward the next speed-up.
+  // Inline config steppers (loops X, step Y, goal). Bounds mirror the gear popover.
+  const LOOPS_MIN = 1, LOOPS_MAX = 20, STEP_MIN = 1, STEP_MAX = 30, GOAL_STEP = 5;
+  function cfgLoops(dir: 1 | -1) {
+    const v = Math.max(LOOPS_MIN, Math.min(LOOPS_MAX, progress.roundsPerLevel + dir));
+    if (v !== progress.roundsPerLevel) onSetConfig?.({ roundsPerLevel: v });
+  }
+  function cfgStep(dir: 1 | -1) {
+    const v = Math.max(STEP_MIN, Math.min(STEP_MAX, progress.increment + dir));
+    if (v !== progress.increment) onSetConfig?.({ increment: v });
+  }
+  function cfgGoal(dir: 1 | -1) {
+    const v = Math.max(progress.startBpm + GOAL_STEP, Math.min(progress.maxBpm, progress.goalBpm + dir * GOAL_STEP));
+    if (v !== progress.goalBpm) onSetConfig?.({ targetBpm: v });
+  }
+  function toggleTarget() {
+    onSetConfig?.({ targetEnabled: !progress.targetEnabled });
+  }
+  let loopsAtMin = $derived(progress.roundsPerLevel <= LOOPS_MIN);
+  let loopsAtMax = $derived(progress.roundsPerLevel >= LOOPS_MAX);
+  let stepAtMin = $derived(progress.increment <= STEP_MIN);
+  let stepAtMax = $derived(progress.increment >= STEP_MAX);
+  let goalAtMin = $derived(progress.goalBpm <= progress.startBpm + GOAL_STEP);
+  let goalAtMax = $derived(progress.goalBpm >= progress.maxBpm);
+
+  // Fill semantics: goal set → real start→goal progress; creep (X=1) → a faded
+  // full (breathing) bar; staircase (X>1) → progress toward the next speed-up.
   let fillPct = $derived.by(() => {
-    if (isTarget) {
+    if (hasTarget) {
       const span = progress.targetBpm - progress.startBpm;
       return span > 0 ? Math.max(0, Math.min(100, ((bpm - progress.startBpm) / span) * 100)) : 0;
     }
-    if (isSmooth) return 100;
+    if (isCreep) return 100;
     return progress.roundsPerLevel > 0
       ? (progress.loopsCompleted / progress.roundsPerLevel) * 100
       : 0;
   });
-
-  // The one amount you set inline for the current mode — goal in target, per-loop
-  // in smooth, step in stepped/manual. Bounds mirror the gear popover's clamps.
-  let param = $derived.by(() => {
-    if (isTarget)
-      return { label: "Goal", value: progress.targetBpm, unit: "BPM", min: progress.startBpm + 5, max: progress.maxBpm, step: 5, apply: (v: number) => onSetConfig?.({ targetBpm: v }) };
-    if (isSmooth)
-      return { label: "Per loop", value: progress.smoothStep, unit: "BPM", min: 1, max: 10, step: 1, apply: (v: number) => onSetConfig?.({ smoothStep: v }) };
-    // stepped + manual both advance by the increment ("step")
-    return { label: "Step", value: progress.increment, unit: "BPM", min: 1, max: 30, step: 1, apply: (v: number) => onSetConfig?.({ increment: v }) };
-  });
-  let paramAtFloor = $derived(param.value <= param.min);
-  let paramAtCeiling = $derived(param.value >= param.max);
-  function paramDelta(dir: 1 | -1) {
-    const next = Math.max(param.min, Math.min(param.max, param.value + dir * param.step));
-    if (next !== param.value) param.apply(next);
-  }
 
   // Pulse the BPM number whenever the tempo bumps up, so you feel it tighten.
   let prevBpm = bpm;
@@ -136,9 +132,8 @@
     return () => mq.removeEventListener("change", sync);
   });
 
-  // Celebrate a real milestone: crossing a level boundary (stepped/manual —
-  // currentLevel stays 0 in smooth/target so it won't fire every loop) OR
-  // reaching the goal in target mode.
+  // Celebrate a real milestone: crossing a staircase speed-up (suppressed during
+  // the X=1 creep so it doesn't fire every loop) OR reaching the goal.
   let prevLevel = progress.currentLevel;
   let prevReached = progress.reachedTarget;
   let celebrate = $state(false);
@@ -151,30 +146,36 @@
   $effect(() => {
     const lvl = progress.currentLevel;
     const reached = progress.reachedTarget;
-    if (lvl > prevLevel || (reached && !prevReached)) fireCelebrate();
+    if ((!isCreep && lvl > prevLevel) || (reached && !prevReached)) fireCelebrate();
     prevLevel = lvl;
     prevReached = reached;
   });
 
-  // The + glows when Manual has parked at a completed level awaiting a tap.
-  let upReady = $derived(isManual && progress.readyToAdvance);
-
   let caption = $derived.by(() => {
     if (progress.held) return `Holding at ${bpm} BPM`;
-    if (isTarget) {
+    if (hasTarget) {
       return progress.reachedTarget
         ? `Reached ${bpm} BPM`
         : `Climbing to ${progress.targetBpm} BPM`;
     }
-    if (isSmooth) return `Climbing +${progress.smoothStep} BPM each loop`;
+    if (isCreep) return `Climbing +${progress.increment} BPM each loop`;
     const n = progress.loopsRemaining;
-    const loops = `${n} ${n === 1 ? "loop" : "loops"}`;
-    if (isManual) {
-      return progress.readyToAdvance ? "Ready — tap Faster" : `${loops} to go, then Faster`;
-    }
-    return `Speeds up in ${loops}`;
+    return `Speeds up in ${n} ${n === 1 ? "loop" : "loops"}`;
   });
 </script>
+
+{#snippet cfgStepper(label: string, value: number, unit: string, dec: () => void, inc: () => void, atMin: boolean, atMax: boolean)}
+  <div class="pb-cfg" role="group" aria-label={label}>
+    <span class="pb-cfg-label">{label}</span>
+    <button class="pb-fine-btn" type="button" onclick={dec} disabled={atMin} aria-label="Decrease {label}">
+      <i class="fas fa-minus" aria-hidden="true"></i>
+    </button>
+    <span class="pb-cfg-value">{value}{#if unit}<span class="pb-cfg-unit">{unit}</span>{/if}</span>
+    <button class="pb-fine-btn" type="button" onclick={inc} disabled={atMax} aria-label="Increase {label}">
+      <i class="fas fa-plus" aria-hidden="true"></i>
+    </button>
+  </div>
+{/snippet}
 
 <div class="practice-bar" role="region" aria-label="Practice controls">
   <div class="pb-group">
@@ -241,7 +242,6 @@
 
       <button
         class="pb-btn pb-level up"
-        class:ready={upReady}
         class:celebrate
         type="button"
         onclick={() => onStepLevel(1)}
@@ -265,62 +265,49 @@
       <span>{progress.held ? "Held" : "Hold"}</span>
     </button>
 
-    <span class="pb-divider" aria-hidden="true"></span>
-
-    <div class="pb-progress">
-      {#if onSetMode}
-        <div class="pb-mode">
-          <SegmentedControl
-            options={MODE_OPTIONS}
-            value={progress.progressionMode}
-            onchange={(v) => onSetMode?.(v)}
-            color="accent"
-            size="sm"
-          />
+    {#if onSetConfig}
+      <span class="pb-divider" aria-hidden="true"></span>
+      <div class="pb-config" role="group" aria-label="Speed-up schedule">
+        {@render cfgStepper("Every", progress.roundsPerLevel, "loops", () => cfgLoops(-1), () => cfgLoops(1), loopsAtMin, loopsAtMax)}
+        {@render cfgStepper("+", progress.increment, "BPM", () => cfgStep(-1), () => cfgStep(1), stepAtMin, stepAtMax)}
+        <button
+          class="pb-target-toggle"
+          class:on={hasTarget}
+          type="button"
+          onclick={toggleTarget}
+          aria-pressed={hasTarget}
+        >
+          <i class="fas {hasTarget ? 'fa-flag-checkered' : 'fa-flag'}" aria-hidden="true"></i>
+          <span>Goal</span>
+        </button>
+        <div class="pb-goal-slot" class:hidden={!hasTarget} aria-hidden={!hasTarget} inert={!hasTarget}>
+          {@render cfgStepper("Goal", progress.goalBpm, "BPM", () => cfgGoal(-1), () => cfgGoal(1), goalAtMin, goalAtMax)}
         </div>
-      {/if}
-      {#if onSetConfig}
-        <div class="pb-param" role="group" aria-label={param.label}>
-          <span class="pb-param-label">{param.label}</span>
-          <button
-            class="pb-fine-btn"
-            type="button"
-            onclick={() => paramDelta(-1)}
-            disabled={paramAtFloor}
-            aria-label="Decrease {param.label}"
-          >
-            <i class="fas fa-minus" aria-hidden="true"></i>
-          </button>
-          <span class="pb-param-value">{param.value}{#if param.unit}<span class="pb-param-unit">{param.unit}</span>{/if}</span>
-          <button
-            class="pb-fine-btn"
-            type="button"
-            onclick={() => paramDelta(1)}
-            disabled={paramAtCeiling}
-            aria-label="Increase {param.label}"
-          >
-            <i class="fas fa-plus" aria-hidden="true"></i>
-          </button>
-        </div>
-      {/if}
-      <span class="pb-caption-wrap">
-        {#key caption}
-          <span
-            class="pb-caption"
-            class:ready={progress.readyToAdvance || progress.reachedTarget}
-            in:fade|local={{ duration: reduceMotion ? 0 : 150 }}
-            out:fade|local={{ duration: reduceMotion ? 0 : 150 }}
-          >{caption}</span>
-        {/key}
-      </span>
-      <div class="pb-fill-track" aria-hidden="true">
-        <div
-          class="pb-fill"
-          class:smooth={isSmooth}
-          class:ready={progress.readyToAdvance || progress.reachedTarget}
-          style="width:{fillPct}%"
-        ></div>
       </div>
+    {/if}
+  </div>
+
+  <!-- Status line: caption above a slim fill bar, full-width below the controls.
+       Kept out of the control row so the schedule steppers no longer stack into
+       a tall side column that pushed the whole bar's height up asymmetrically. -->
+  <div class="pb-status">
+    <span class="pb-caption-wrap">
+      {#key caption}
+        <span
+          class="pb-caption"
+          class:ready={progress.reachedTarget}
+          in:fade|local={{ duration: reduceMotion ? 0 : 150 }}
+          out:fade|local={{ duration: reduceMotion ? 0 : 150 }}
+        >{caption}</span>
+      {/key}
+    </span>
+    <div class="pb-fill-track" aria-hidden="true">
+      <div
+        class="pb-fill"
+        class:creep={isCreep && !hasTarget}
+        class:ready={progress.reachedTarget}
+        style="width:{fillPct}%"
+      ></div>
     </div>
   </div>
 </div>
@@ -329,8 +316,10 @@
   .practice-bar {
     --ctrl-h: 56px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 10px;
     width: 100%;
     padding: 14px 16px;
     padding-bottom: calc(14px + env(safe-area-inset-bottom));
@@ -450,16 +439,6 @@
       color: #fff;
     }
   }
-  .pb-level.up.ready {
-    background: var(--semantic-success, #22c55e);
-    color: #fff;
-    border-color: var(--semantic-success, #22c55e);
-    animation: pb-up-pulse 1.5s ease-in-out infinite;
-  }
-  @keyframes pb-up-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent); }
-    50% { box-shadow: 0 0 18px 3px color-mix(in srgb, var(--semantic-success, #22c55e) 50%, transparent); }
-  }
 
   /* BPM readout pill — same height; small ±1 fine steppers flank the number */
   .pb-readout {
@@ -529,48 +508,89 @@
   .pb-fine-btn:active:not(:disabled) { transform: scale(0.9); }
   .pb-fine-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-  /* Progress / status. Fixed width reserved for the longest caption so toggling
-     Hold (or any caption change) never resizes this block — which would recenter
-     the whole bar and snap every control sideways. No shift = nothing to animate. */
-  .pb-progress {
+  /* Schedule config — one inline row alongside the tempo controls: Every X
+     loops · +Y BPM · Goal [stepper]. No longer a tall stacked side column. */
+  .pb-config {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  /* Status line below the controls: caption + slim fill, full-width but capped
+     so the line stays centred and readable. */
+  .pb-status {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 7px;
-    width: 17rem;
+    gap: 6px;
+    width: 100%;
+    max-width: 30rem;
   }
-  .pb-mode { width: 100%; }
-  .pb-param {
+  .pb-cfg {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
+    gap: 6px;
   }
-  .pb-param-label {
+  .pb-cfg-label {
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-    min-width: 3.5rem;
-    text-align: right;
   }
-  .pb-param-value {
-    min-width: 3.25rem;
+  .pb-cfg-value {
+    min-width: 2.75rem;
     text-align: center;
     font-size: 0.95rem;
     font-weight: 800;
     color: var(--theme-text, #fff);
     font-variant-numeric: tabular-nums;
   }
-  .pb-param-unit {
+  .pb-cfg-unit {
     font-size: 9px;
     font-weight: 700;
     opacity: 0.5;
     margin-left: 2px;
   }
+
+  /* Goal toggle — button + indicator (no checkbox); fills when active. */
+  .pb-target-toggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+  .pb-target-toggle:focus-visible { outline: 3px solid var(--theme-accent, #6366f1); outline-offset: 2px; }
+  .pb-target-toggle:active { transform: scale(0.96); }
+  @media (hover: hover) and (pointer: fine) {
+    .pb-target-toggle:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12)); color: var(--theme-text, #fff); }
+  }
+  .pb-target-toggle.on {
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 26%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 55%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #c4b5fd) 80%, white);
+  }
+
+  /* Goal stepper keeps its slot reserved so toggling the goal never shifts the
+     row width/height (visibility, not display). */
+  .pb-goal-slot { display: flex; transition: opacity var(--duration-fast, 150ms) ease; }
+  .pb-goal-slot.hidden { visibility: hidden; opacity: 0; pointer-events: none; }
+
   .pb-fill-track {
     width: 100%;
     height: 6px;
@@ -584,13 +604,13 @@
     background: var(--theme-accent, #8b5cf6);
     transition: width var(--duration-normal, 200ms) ease;
   }
-  /* Smooth-mode fill breathes so the steady climb reads as alive. */
-  .pb-fill.smooth { opacity: 0.45; animation: pb-fill-breathe 2.6s ease-in-out infinite; }
+  /* Creep-mode fill breathes so the steady per-loop climb reads as alive. */
+  .pb-fill.creep { opacity: 0.45; animation: pb-fill-breathe 2.6s ease-in-out infinite; }
   @keyframes pb-fill-breathe {
     0%, 100% { opacity: 0.35; box-shadow: 0 0 4px 0 color-mix(in srgb, var(--theme-accent, #8b5cf6) 35%, transparent); }
     50% { opacity: 0.6; box-shadow: 0 0 12px 1px color-mix(in srgb, var(--theme-accent, #8b5cf6) 60%, transparent); }
   }
-  /* When a level completes the fill settles to full with a playful overshoot. */
+  /* When the goal is reached the fill settles to full with a playful overshoot. */
   .pb-fill.ready {
     background: var(--semantic-success, #22c55e);
     transition: width var(--duration-normal, 200ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
@@ -632,7 +652,7 @@
     justify-content: center;
   }
 
-  /* One-shot celebration when the tempo crosses a level boundary. */
+  /* One-shot celebration when the tempo crosses a staircase speed-up. */
   .pb-level.up.celebrate {
     animation: pb-celebrate 620ms var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
   }
@@ -642,19 +662,18 @@
     100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--semantic-success, #22c55e) 0%, transparent); }
   }
 
-  /* Narrow: tighten gaps, drop dividers, let progress wrap to its own line. */
+  /* Narrow: tighten gaps, drop the divider; the config wraps within the control
+     row and the status line is already full-width below. */
   @container practice-bar (max-width: 600px) {
     .pb-group { gap: 12px; }
     .pb-divider { display: none; }
-    .pb-progress { order: 5; flex-basis: 100%; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pb-btn, .pb-fine-btn, .pb-fill { transition: none; }
-    .pb-level.up.ready,
+    .pb-btn, .pb-fine-btn, .pb-fill, .pb-target-toggle, .pb-goal-slot { transition: none; }
     .pb-level.up.celebrate,
-    .pb-fill.smooth { animation: none; }
+    .pb-fill.creep { animation: none; }
     .pb-readout.bumped .pb-bpm-value { animation: none; }
-    .pb-btn:active, .pb-fine-btn:active { transform: none; }
+    .pb-btn:active, .pb-fine-btn:active, .pb-target-toggle:active { transform: none; }
   }
 </style>

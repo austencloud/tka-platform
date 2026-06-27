@@ -2,105 +2,69 @@ import { describe, it, expect } from "vitest";
 import { TempoPracticeOrchestrator } from "$lib/shared/sequence-viewer/services/tempo-practice-orchestrator";
 
 describe("TempoPracticeOrchestrator", () => {
-  it("defaults to smooth progression", () => {
+  it("defaults to a gentle per-loop creep (X=1, Y=1), no goal", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start();
-    expect(o.getProgress().progressionMode).toBe("smooth");
+    const start = o.start();
+    expect(start).toBe(15);
+    const p = o.getProgress();
+    expect(p.roundsPerLevel).toBe(1);
+    expect(p.increment).toBe(1);
+    expect(p.targetEnabled).toBe(false);
   });
 
-  it("migrates legacy 'auto' configs to the new 'smooth' default", () => {
+  it("X=1 creeps up by Y every loop", () => {
     const o = new TempoPracticeOrchestrator();
-    // Persisted configs from before the rename still carry "auto" — the old
-    // default auto-ramp, which now maps to the gentle smooth default.
-    o.start({ progressionMode: "auto" as never });
-    expect(o.getProgress().progressionMode).toBe("smooth");
-  });
-
-  it("smooth mode raises BPM by smoothStep every loop", () => {
-    const o = new TempoPracticeOrchestrator();
-    const start = o.start({ startBpm: 20, smoothStep: 1, progressionMode: "smooth" });
+    const start = o.start({ startBpm: 20, increment: 1, roundsPerLevel: 1 });
     expect(start).toBe(20);
     expect(o.onLoopComplete()).toBe(21);
     expect(o.onLoopComplete()).toBe(22);
     expect(o.onLoopComplete()).toBe(23);
-    // Smooth has no levels — the readout stays at 0.
-    expect(o.getProgress().currentLevel).toBe(0);
   });
 
-  it("smooth mode stops when it reaches maxBpm", () => {
+  it("X>1 holds for X loops, then bumps by Y (staircase)", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 299, smoothStep: 1, maxBpm: 300, progressionMode: "smooth" });
+    const start = o.start({ startBpm: 20, increment: 5, roundsPerLevel: 3 });
+    expect(start).toBe(20);
+    expect(o.onLoopComplete()).toBeNull(); // round 1
+    expect(o.onLoopComplete()).toBeNull(); // round 2
+    expect(o.onLoopComplete()).toBe(25); // round 3 -> bump by Y
+    expect(o.getProgress().currentBpm).toBe(25);
+  });
+
+  it("stops when the climb reaches maxBpm", () => {
+    const o = new TempoPracticeOrchestrator();
+    o.start({ startBpm: 299, increment: 1, roundsPerLevel: 1, maxBpm: 300 });
     expect(o.onLoopComplete()).toBe(300);
     expect(o.isActive()).toBe(true);
     expect(o.onLoopComplete()).toBeNull(); // capped -> stop
     expect(o.isActive()).toBe(false);
   });
 
-  it("tracks loopsCompleted / loopsRemaining within a level", () => {
+  it("tracks loopsCompleted / loopsRemaining within a step", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, roundsPerLevel: 3, progressionMode: "manual" });
+    o.start({ startBpm: 20, increment: 5, roundsPerLevel: 3 });
     expect(o.getProgress().loopsRemaining).toBe(3);
     o.onLoopComplete();
     expect(o.getProgress().loopsCompleted).toBe(1);
     expect(o.getProgress().loopsRemaining).toBe(2);
     o.onLoopComplete();
-    o.onLoopComplete();
-    expect(o.getProgress().loopsRemaining).toBe(0); // level complete
+    expect(o.getProgress().loopsRemaining).toBe(1);
   });
 
-  it("stepped mode bumps BPM after roundsPerLevel loops", () => {
+  it("advanceLevel bumps one Y, resets the round", () => {
     const o = new TempoPracticeOrchestrator();
-    const start = o.start({ startBpm: 20, increment: 5, roundsPerLevel: 3, progressionMode: "stepped" });
-    expect(start).toBe(20);
-    expect(o.onLoopComplete()).toBeNull(); // round 1
-    expect(o.onLoopComplete()).toBeNull(); // round 2
-    expect(o.onLoopComplete()).toBe(25); // round 3 -> bump
-    const p = o.getProgress();
-    expect(p.currentBpm).toBe(25);
-    expect(p.readyToAdvance).toBe(false);
-  });
-
-  it("manual mode holds BPM and flags readyToAdvance at the round cap", () => {
-    const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, increment: 5, roundsPerLevel: 3, progressionMode: "manual" });
-    expect(o.onLoopComplete()).toBeNull(); // 1
-    expect(o.onLoopComplete()).toBeNull(); // 2
-    expect(o.onLoopComplete()).toBeNull(); // 3 -> ready, no bump
-    const p = o.getProgress();
-    expect(p.currentBpm).toBe(20);
-    expect(p.readyToAdvance).toBe(true);
-    expect(p.currentRound).toBe(3); // clamped, never reads N+1
-  });
-
-  it("manual mode ignores extra loops once parked at the boundary", () => {
-    const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, increment: 5, roundsPerLevel: 2, progressionMode: "manual" });
-    o.onLoopComplete();
-    o.onLoopComplete(); // parked
-    const before = o.getProgress().totalRoundsCompleted;
-    o.onLoopComplete(); // ignored
-    expect(o.getProgress().totalRoundsCompleted).toBe(before);
-    expect(o.getProgress().currentBpm).toBe(20);
-  });
-
-  it("advanceLevel bumps one increment, resets the round, clears the flag", () => {
-    const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, increment: 5, roundsPerLevel: 3, progressionMode: "manual" });
-    o.onLoopComplete();
-    o.onLoopComplete();
-    o.onLoopComplete();
-    expect(o.getProgress().readyToAdvance).toBe(true);
+    o.start({ startBpm: 20, increment: 5, roundsPerLevel: 3 });
+    o.onLoopComplete(); // round 1
     expect(o.advanceLevel()).toBe(25);
     const p = o.getProgress();
     expect(p.currentBpm).toBe(25);
     expect(p.currentRound).toBe(1); // reset to round 1 of the new level
-    expect(p.readyToAdvance).toBe(false);
     expect(p.currentLevel).toBe(1); // derived from BPM
   });
 
-  it("decreaseLevel drops one increment and floors at the start tempo", () => {
+  it("decreaseLevel drops one Y and floors at the start tempo", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, increment: 5, roundsPerLevel: 3, progressionMode: "stepped" });
+    o.start({ startBpm: 20, increment: 5, roundsPerLevel: 3 });
     expect(o.advanceLevel()).toBe(25);
     expect(o.advanceLevel()).toBe(30);
     expect(o.decreaseLevel()).toBe(25);
@@ -113,7 +77,7 @@ describe("TempoPracticeOrchestrator", () => {
 
   it("derives the level from BPM so fine-trim can't desync it", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, increment: 5, progressionMode: "stepped" });
+    o.start({ startBpm: 20, increment: 5, roundsPerLevel: 3 });
     o.advanceLevel(); // 25 -> level 1
     expect(o.getProgress().currentLevel).toBe(1);
     o.adjustBpm(22); // fine-trim down between levels
@@ -123,7 +87,7 @@ describe("TempoPracticeOrchestrator", () => {
 
   it("hold freezes the auto-climb until released", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, smoothStep: 1, progressionMode: "smooth" });
+    o.start({ startBpm: 20, increment: 1, roundsPerLevel: 1 });
     expect(o.onLoopComplete()).toBe(21);
     o.setHeld(true);
     expect(o.getProgress().held).toBe(true);
@@ -136,25 +100,16 @@ describe("TempoPracticeOrchestrator", () => {
 
   it("Faster still works while held", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, increment: 5, smoothStep: 1, progressionMode: "smooth" });
+    o.start({ startBpm: 20, increment: 5, roundsPerLevel: 1 });
     o.setHeld(true);
     expect(o.advanceLevel()).toBe(25); // manual override ignores hold
     expect(o.getProgress().held).toBe(true); // still held at the new speed
     expect(o.onLoopComplete()).toBeNull(); // auto-climb stays frozen
   });
 
-  it("stepped mode stops when it reaches maxBpm", () => {
-    const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 295, increment: 5, roundsPerLevel: 1, maxBpm: 300, progressionMode: "stepped" });
-    expect(o.onLoopComplete()).toBe(300); // 295 -> 300
-    expect(o.isActive()).toBe(true);
-    expect(o.onLoopComplete()).toBeNull(); // capped -> stop
-    expect(o.isActive()).toBe(false);
-  });
-
   it("advanceLevel at the cap stops the session", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 300, increment: 5, roundsPerLevel: 1, maxBpm: 300, progressionMode: "manual" });
+    o.start({ startBpm: 300, increment: 5, roundsPerLevel: 1, maxBpm: 300 });
     expect(o.advanceLevel()).toBeNull();
     expect(o.isActive()).toBe(false);
   });
@@ -166,19 +121,18 @@ describe("TempoPracticeOrchestrator", () => {
     expect(o.decreaseLevel()).toBeNull();
   });
 
-  it("target mode creeps up by smoothStep toward the goal", () => {
+  it("with a goal set, creeps up toward it", () => {
     const o = new TempoPracticeOrchestrator();
-    const start = o.start({ startBpm: 20, smoothStep: 1, targetBpm: 23, progressionMode: "target" });
+    const start = o.start({ startBpm: 20, increment: 1, roundsPerLevel: 1, targetEnabled: true, targetBpm: 23 });
     expect(start).toBe(20);
     expect(o.onLoopComplete()).toBe(21);
     expect(o.onLoopComplete()).toBe(22);
-    expect(o.getProgress().currentLevel).toBe(0); // creeps like smooth, no levels
     expect(o.getProgress().reachedTarget).toBe(false);
   });
 
-  it("target mode stops at the goal and flags reachedTarget", () => {
+  it("stops at the goal and flags reachedTarget", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, smoothStep: 1, targetBpm: 22, progressionMode: "target" });
+    o.start({ startBpm: 20, increment: 1, roundsPerLevel: 1, targetEnabled: true, targetBpm: 22 });
     expect(o.onLoopComplete()).toBe(21);
     expect(o.onLoopComplete()).toBe(22); // lands on the goal
     const p = o.getProgress();
@@ -187,46 +141,46 @@ describe("TempoPracticeOrchestrator", () => {
     expect(o.isActive()).toBe(false); // reaching the goal ends the session
   });
 
-  it("target mode caps the goal at maxBpm", () => {
+  it("caps the effective goal at maxBpm but keeps the raw goalBpm", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, smoothStep: 5, targetBpm: 500, maxBpm: 30, progressionMode: "target" });
-    expect(o.getProgress().targetBpm).toBe(30); // clamped to maxBpm
+    o.start({ startBpm: 20, increment: 5, roundsPerLevel: 1, targetEnabled: true, targetBpm: 500, maxBpm: 30 });
+    const p = o.getProgress();
+    expect(p.targetBpm).toBe(30); // effective ceiling clamped to maxBpm
+    expect(p.goalBpm).toBe(500); // raw configured goal preserved for the readout
     expect(o.onLoopComplete()).toBe(25);
     expect(o.onLoopComplete()).toBe(30); // stops at the cap-as-goal
     expect(o.getProgress().reachedTarget).toBe(true);
   });
 
-  it("progress.targetBpm reflects the cap outside target mode", () => {
+  it("progress.targetBpm reflects the cap when no goal is set", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, maxBpm: 200, progressionMode: "smooth" });
+    o.start({ startBpm: 20, maxBpm: 200, targetEnabled: false });
     expect(o.getProgress().targetBpm).toBe(200);
     expect(o.getProgress().reachedTarget).toBe(false);
   });
 
-  it("patchConfig applies live config changes without restarting", () => {
+  it("patchConfig applies live X/Y changes without restarting", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, increment: 5, progressionMode: "stepped" });
+    o.start({ startBpm: 20, increment: 5, roundsPerLevel: 1 });
     o.patchConfig({ increment: 10 });
     expect(o.getProgress().increment).toBe(10);
     expect(o.advanceLevel()).toBe(30); // uses the new step (20 + 10)
   });
 
+  it("patchConfig toggles the goal live, switching the ceiling", () => {
+    const o = new TempoPracticeOrchestrator();
+    o.start({ startBpm: 20, maxBpm: 100, targetBpm: 60, targetEnabled: false });
+    expect(o.getProgress().targetBpm).toBe(100); // cap
+    o.patchConfig({ targetEnabled: true });
+    expect(o.getProgress().targetBpm).toBe(60); // now the goal
+  });
+
   it("patchConfig clamps targetBpm into range", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, maxBpm: 100, progressionMode: "target" });
+    o.start({ startBpm: 20, maxBpm: 100, targetEnabled: true });
     o.patchConfig({ targetBpm: 999 });
     expect(o.getProgress().targetBpm).toBe(100); // clamped to maxBpm
     o.patchConfig({ targetBpm: 5 });
     expect(o.getProgress().targetBpm).toBe(21); // clamped to startBpm + 1
-  });
-
-  it("setProgressionMode switches the ramp live without restarting", () => {
-    const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, smoothStep: 1, increment: 5, roundsPerLevel: 3, progressionMode: "smooth" });
-    expect(o.onLoopComplete()).toBe(21); // smooth creep
-    o.setProgressionMode("stepped");
-    expect(o.getProgress().progressionMode).toBe("stepped");
-    expect(o.getProgress().currentBpm).toBe(21); // preserved
-    expect(o.onLoopComplete()).toBeNull(); // stepped now: holds for the round set
   });
 });
