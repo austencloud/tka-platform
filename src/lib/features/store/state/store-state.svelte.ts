@@ -12,10 +12,11 @@ interface CheckoutCreator {
 
 export function createStoreState(
   productLoader: ProductLoader,
-  checkoutCreator: CheckoutCreator
+  checkoutCreator: CheckoutCreator,
+  initialProduct: Product | null = null
 ) {
   let products = $state<Product[]>([]);
-  let selectedProduct = $state<Product | null>(null);
+  let selectedProduct = $state<Product | null>(initialProduct);
   let isLoading = $state(false);
   let isCheckingOut = $state(false);
   let error = $state<string | null>(null);

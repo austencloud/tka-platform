@@ -9,16 +9,21 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   import CardMockupPreview from "./components/CardMockupPreview.svelte";
   import SampleCardCarousel from "./components/SampleCardCarousel.svelte";
   import BuyButton from "./components/BuyButton.svelte";
+  import type { Product } from "./domain/models/product";
 
   interface Props {
     productId: string;
+    /** Seeded by the route load() so the detail renders data-ready and the
+        view-transition morph lands cleanly, with no loading-state flash. */
+    initialProduct?: Product | null;
   }
 
-  let { productId }: Props = $props();
+  let { productId, initialProduct = null }: Props = $props();
 
   const state = createStoreState(
     getProductLoader(),
-    getMerchCheckoutCreator()
+    getMerchCheckoutCreator(),
+    initialProduct
   );
 
   setStoreContext({ state });
@@ -30,7 +35,8 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   );
 
   onMount(() => {
-    state.loadProduct(productId);
+    // Already seeded by the route load(); only fetch if we arrived without it.
+    if (!initialProduct) state.loadProduct(productId);
   });
 </script>
 
