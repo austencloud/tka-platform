@@ -36,12 +36,16 @@
   // Recto/verso: page 1 = recto (right); odd → right, even → left outer corner.
   const recto = $derived(pageNumber !== undefined && pageNumber % 2 === 1);
   const showNumber = $derived(pageNumber !== undefined && pageNumberPrefs.show);
+  // Body pages carry a page number; front matter (cover/toc/read-me) does not.
+  // EVERY body page — built or placeholder — gets the calligraphic .guide-title;
+  // only front matter keeps the serif header band + flourish.
+  const isBody = $derived(pageNumber !== undefined);
 </script>
 
 <section class="guide-page" class:full-bleed={fullBleed}>
   {#if label && !fullBleed}<span class="page-tag" aria-hidden="true">{label}</span>{/if}
   <div class="page-body">
-    {#if title && !fullBleed}
+    {#if title && !isBody}
       <!-- Front matter (TOC, Read Me…): title in the serif header band + flourish. -->
       <header class="page-header">
         <h1 class="page-header-title">{title}</h1>
@@ -52,10 +56,10 @@
       {@render children()}
     </div>
   </div>
-  {#if title && fullBleed}
-    <!-- Body page: the manifest title in the shared calligraphic .guide-title,
-         positioned high on the sheet. Rendered HERE (from the manifest) instead
-         of hand-written per page, so the heading and the TOC row can't drift. -->
+  {#if title && isBody}
+    <!-- Every body page (built or placeholder): the manifest title in the shared
+         calligraphic .guide-title, positioned high on the sheet. Rendered HERE
+         (from the manifest) so the heading and the TOC row can't drift. -->
     <div class="guide-title">{title}</div>
   {/if}
   {#if showNumber}
