@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { PulseIntent } from "$lib/shared/effects/domain/effects-config";
+  import OptionChipRow from "../OptionChipRow.svelte";
 
   interface Props {
     onBack: () => void;
@@ -9,38 +10,38 @@
   const { onBack }: Props = $props();
   const state = getEffectsConfigContext();
 
-  const TRIGGERS: { id: PulseIntent["trigger"]; label: string }[] = [
-    { id: "beat", label: "Beat" },
-    { id: "velocity", label: "Velocity" },
-    { id: "continuous", label: "Continuous" },
+  const TRIGGERS: { value: PulseIntent["trigger"]; label: string }[] = [
+    { value: "beat", label: "Beat" },
+    { value: "velocity", label: "Velocity" },
+    { value: "continuous", label: "Continuous" },
   ];
 
-  const STYLES: { id: PulseIntent["style"]; label: string }[] = [
-    { id: "stroke", label: "Stroke" },
-    { id: "glow", label: "Glow" },
+  const STYLES: { value: PulseIntent["style"]; label: string }[] = [
+    { value: "stroke", label: "Stroke" },
+    { value: "glow", label: "Glow" },
   ];
 
-  const PALETTES: { id: PulseIntent["palette"]; label: string; swatch: string }[] = [
-    { id: "sonar", label: "Sonar", swatch: "#38bdf8" },
-    { id: "ripple", label: "Ripple", swatch: "#93c5fd" },
-    { id: "aurora", label: "Aurora", swatch: "#a855f7" },
-    { id: "neon", label: "Neon", swatch: "#f0abfc" },
-    { id: "ember", label: "Ember", swatch: "#ff6000" },
-    { id: "void", label: "Void", swatch: "#404060" },
-    { id: "custom", label: "Custom", swatch: "#ffffff" },
+  const PALETTES: { value: PulseIntent["palette"]; label: string; swatch: string }[] = [
+    { value: "sonar", label: "Sonar", swatch: "#38bdf8" },
+    { value: "ripple", label: "Ripple", swatch: "#93c5fd" },
+    { value: "aurora", label: "Aurora", swatch: "#a855f7" },
+    { value: "neon", label: "Neon", swatch: "#f0abfc" },
+    { value: "ember", label: "Ember", swatch: "#ff6000" },
+    { value: "void", label: "Void", swatch: "#404060" },
+    { value: "custom", label: "Custom", swatch: "#ffffff" },
   ];
 
-  const COLOR_MODES: { id: PulseIntent["colorMode"]; label: string }[] = [
-    { id: "solid", label: "Solid" },
-    { id: "prop-matched", label: "Prop-matched" },
-    { id: "rainbow", label: "Rainbow" },
-    { id: "palette", label: "Palette" },
+  const COLOR_MODES: { value: PulseIntent["colorMode"]; label: string }[] = [
+    { value: "solid", label: "Solid" },
+    { value: "prop-matched", label: "Prop-matched" },
+    { value: "rainbow", label: "Rainbow" },
+    { value: "palette", label: "Palette" },
   ];
 
-  const TRACKING: { id: PulseIntent["trackingMode"]; label: string }[] = [
-    { id: "left_end", label: "Left" },
-    { id: "right_end", label: "Right" },
-    { id: "both_ends", label: "Both" },
+  const TRACKING: { value: PulseIntent["trackingMode"]; label: string }[] = [
+    { value: "left_end", label: "Left" },
+    { value: "right_end", label: "Right" },
+    { value: "both_ends", label: "Both" },
   ];
 </script>
 
@@ -52,82 +53,29 @@
 
   {#if state}
     <div class="pulse-controls">
-      <!-- Trigger -->
-      <div class="option-row">
-        <span class="option-label">Trigger</span>
-        <div class="chip-group" role="radiogroup" aria-label="Pulse trigger mode">
-          {#each TRIGGERS as t (t.id)}
-            <button
-              class="chip"
-              class:active={state.pulse.trigger === t.id}
-              type="button"
-              role="radio"
-              aria-checked={state.pulse.trigger === t.id}
-              onclick={() => state.updateEffect("pulse", { trigger: t.id })}
-            >
-              {t.label}
-            </button>
-          {/each}
-        </div>
-      </div>
+      <OptionChipRow
+        label="Trigger"
+        ariaLabel="Pulse trigger mode"
+        value={state.pulse.trigger}
+        options={TRIGGERS}
+        onChange={(v) => state.updateEffect("pulse", { trigger: v })}
+      />
 
-      <!-- Style -->
-      <div class="option-row">
-        <span class="option-label">Style</span>
-        <div class="chip-group" role="radiogroup" aria-label="Pulse style">
-          {#each STYLES as s (s.id)}
-            <button
-              class="chip"
-              class:active={state.pulse.style === s.id}
-              type="button"
-              role="radio"
-              aria-checked={state.pulse.style === s.id}
-              onclick={() => state.updateEffect("pulse", { style: s.id })}
-            >
-              {s.label}
-            </button>
-          {/each}
-        </div>
-      </div>
+      <OptionChipRow
+        label="Style"
+        ariaLabel="Pulse style"
+        value={state.pulse.style}
+        options={STYLES}
+        onChange={(v) => state.updateEffect("pulse", { style: v })}
+      />
 
-      <!-- Palette -->
-      <div class="option-row">
-        <span class="option-label">Palette</span>
-        <div class="chip-group" role="radiogroup" aria-label="Pulse palette">
-          {#each PALETTES as p (p.id)}
-            <button
-              class="chip swatch-chip"
-              class:active={state.pulse.palette === p.id}
-              type="button"
-              role="radio"
-              aria-checked={state.pulse.palette === p.id}
-              onclick={() => state.updateEffect("pulse", { palette: p.id })}
-            >
-              <span class="swatch" style="background: {p.swatch}" aria-hidden="true"></span>
-              {p.label}
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <!-- Color Mode -->
-      <div class="option-row">
-        <span class="option-label">Color</span>
-        <div class="chip-group" role="radiogroup" aria-label="Pulse color mode">
-          {#each COLOR_MODES as cm (cm.id)}
-            <button
-              class="chip"
-              class:active={state.pulse.colorMode === cm.id}
-              type="button"
-              role="radio"
-              aria-checked={state.pulse.colorMode === cm.id}
-              onclick={() => state.updateEffect("pulse", { colorMode: cm.id })}
-            >
-              {cm.label}
-            </button>
-          {/each}
-        </div>
-      </div>
+      <OptionChipRow
+        label="Palette"
+        ariaLabel="Pulse palette"
+        value={state.pulse.palette}
+        options={PALETTES}
+        onChange={(v) => state.updateEffect("pulse", { palette: v })}
+      />
 
       <!-- Conditional color picker -->
       {#if state.pulse.palette === "custom" || state.pulse.colorMode === "solid"}
@@ -152,24 +100,21 @@
         </div>
       {/if}
 
-      <!-- Tracking -->
-      <div class="option-row">
-        <span class="option-label">Tracking</span>
-        <div class="chip-group" role="radiogroup" aria-label="Pulse tracking mode">
-          {#each TRACKING as t (t.id)}
-            <button
-              class="chip"
-              class:active={state.pulse.trackingMode === t.id}
-              type="button"
-              role="radio"
-              aria-checked={state.pulse.trackingMode === t.id}
-              onclick={() => state.updateEffect("pulse", { trackingMode: t.id })}
-            >
-              {t.label}
-            </button>
-          {/each}
-        </div>
-      </div>
+      <OptionChipRow
+        label="Color"
+        ariaLabel="Pulse color mode"
+        value={state.pulse.colorMode}
+        options={COLOR_MODES}
+        onChange={(v) => state.updateEffect("pulse", { colorMode: v })}
+      />
+
+      <OptionChipRow
+        label="Tracking"
+        ariaLabel="Pulse tracking mode"
+        value={state.pulse.trackingMode}
+        options={TRACKING}
+        onChange={(v) => state.updateEffect("pulse", { trackingMode: v })}
+      />
 
       <!-- Conditional sliders based on trigger -->
       {#if state.pulse.trigger === "beat"}
@@ -408,8 +353,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .back-btn,
-    .chip {
+    .back-btn {
       transition: none;
     }
   }
@@ -418,77 +362,6 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-
-  .option-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-  }
-
-  .option-label {
-    min-width: 70px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    flex-shrink: 0;
-  }
-
-  .chip-group {
-    display: flex;
-    gap: 6px;
-    flex: 1;
-    min-width: 0;
-    flex-wrap: wrap;
-  }
-
-  .chip {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 8px 10px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast, 100ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .chip:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, white);
-  }
-
-  .chip.active {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: var(--theme-accent, #8b5cf6);
-    color: var(--theme-text, white);
-  }
-
-  .chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .swatch-chip {
-    flex: 1 1 40%;
-  }
-
-  .swatch {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .slider-row {

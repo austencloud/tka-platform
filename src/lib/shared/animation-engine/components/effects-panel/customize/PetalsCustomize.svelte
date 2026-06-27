@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { PetalsIntent } from "$lib/shared/effects/domain/effects-config";
+  import OptionChipRow from "../OptionChipRow.svelte";
 
   interface Props {
     onBack: () => void;
@@ -9,19 +10,19 @@
   const { onBack }: Props = $props();
   const state = getEffectsConfigContext();
 
-  const PALETTES: { id: PetalsIntent["palette"]; label: string; swatch: string }[] = [
-    { id: "blossom", label: "Blossom", swatch: "#ffc0d8" },
-    { id: "autumn", label: "Autumn", swatch: "#d84820" },
-    { id: "jungle", label: "Jungle", swatch: "#408840" },
-    { id: "ash", label: "Ash", swatch: "#484848" },
-    { id: "gold", label: "Gold", swatch: "#ffd060" },
-    { id: "custom", label: "Custom", swatch: "#ffffff" },
+  const PALETTES: { value: PetalsIntent["palette"]; label: string; swatch: string }[] = [
+    { value: "blossom", label: "Blossom", swatch: "#ffc0d8" },
+    { value: "autumn", label: "Autumn", swatch: "#d84820" },
+    { value: "jungle", label: "Jungle", swatch: "#408840" },
+    { value: "ash", label: "Ash", swatch: "#484848" },
+    { value: "gold", label: "Gold", swatch: "#ffd060" },
+    { value: "custom", label: "Custom", swatch: "#ffffff" },
   ];
 
-  const TRACKING: { id: PetalsIntent["trackingMode"]; label: string }[] = [
-    { id: "left_end", label: "Left" },
-    { id: "right_end", label: "Right" },
-    { id: "both_ends", label: "Both" },
+  const TRACKING: { value: PetalsIntent["trackingMode"]; label: string }[] = [
+    { value: "left_end", label: "Left" },
+    { value: "right_end", label: "Right" },
+    { value: "both_ends", label: "Both" },
   ];
 </script>
 
@@ -33,25 +34,13 @@
 
   {#if state}
     <div class="petals-controls">
-      <!-- Palette chip row -->
-      <div class="option-row">
-        <span class="option-label">Palette</span>
-        <div class="chip-group" role="radiogroup" aria-label="Petals palette">
-          {#each PALETTES as p (p.id)}
-            <button
-              class="chip swatch-chip"
-              class:active={state.petals.palette === p.id}
-              type="button"
-              role="radio"
-              aria-checked={state.petals.palette === p.id}
-              onclick={() => state.updateEffect("petals", { palette: p.id })}
-            >
-              <span class="swatch" style="background: {p.swatch}" aria-hidden="true"></span>
-              {p.label}
-            </button>
-          {/each}
-        </div>
-      </div>
+      <OptionChipRow
+        label="Palette"
+        ariaLabel="Petals palette"
+        value={state.petals.palette}
+        options={PALETTES}
+        onChange={(v) => state.updateEffect("petals", { palette: v })}
+      />
 
       {#if state.petals.palette === "custom"}
         <div class="color-row">
@@ -71,24 +60,13 @@
         </div>
       {/if}
 
-      <!-- Tracking chip row -->
-      <div class="option-row">
-        <span class="option-label">Tracking</span>
-        <div class="chip-group" role="radiogroup" aria-label="Petals tracking mode">
-          {#each TRACKING as t (t.id)}
-            <button
-              class="chip"
-              class:active={state.petals.trackingMode === t.id}
-              type="button"
-              role="radio"
-              aria-checked={state.petals.trackingMode === t.id}
-              onclick={() => state.updateEffect("petals", { trackingMode: t.id })}
-            >
-              {t.label}
-            </button>
-          {/each}
-        </div>
-      </div>
+      <OptionChipRow
+        label="Tracking"
+        ariaLabel="Petals tracking mode"
+        value={state.petals.trackingMode}
+        options={TRACKING}
+        onChange={(v) => state.updateEffect("petals", { trackingMode: v })}
+      />
 
       <!-- Ambient emission -->
       <div class="slider-row">
@@ -242,8 +220,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .back-btn,
-    .chip {
+    .back-btn {
       transition: none;
     }
   }
@@ -252,77 +229,6 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-
-  .option-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-  }
-
-  .option-label {
-    min-width: 70px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    flex-shrink: 0;
-  }
-
-  .chip-group {
-    display: flex;
-    gap: 6px;
-    flex: 1;
-    min-width: 0;
-    flex-wrap: wrap;
-  }
-
-  .chip {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 8px 10px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast, 100ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .chip:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, white);
-  }
-
-  .chip.active {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: var(--theme-accent, #8b5cf6);
-    color: var(--theme-text, white);
-  }
-
-  .chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .swatch-chip {
-    flex: 1 1 40%;
-  }
-
-  .swatch {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .slider-row {

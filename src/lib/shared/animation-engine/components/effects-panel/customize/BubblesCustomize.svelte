@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { BubblesIntent } from "$lib/shared/effects/domain/effects-config";
+  import OptionChipRow from "../OptionChipRow.svelte";
 
   interface Props {
     onBack: () => void;
@@ -9,19 +10,19 @@
   const { onBack }: Props = $props();
   const state = getEffectsConfigContext();
 
-  const PALETTES: { id: BubblesIntent["palette"]; label: string; swatch: string }[] = [
-    { id: "soap", label: "Soap", swatch: "#c8e0ff" },
-    { id: "champagne", label: "Champagne", swatch: "#f4e8c8" },
-    { id: "oil", label: "Oil", swatch: "#c080ff" },
-    { id: "acid", label: "Acid", swatch: "#b8ff6f" },
-    { id: "spirit", label: "Spirit", swatch: "#c0fff4" },
-    { id: "custom", label: "Custom", swatch: "#ffffff" },
+  const PALETTES: { value: BubblesIntent["palette"]; label: string; swatch: string }[] = [
+    { value: "soap", label: "Soap", swatch: "#c8e0ff" },
+    { value: "champagne", label: "Champagne", swatch: "#f4e8c8" },
+    { value: "oil", label: "Oil", swatch: "#c080ff" },
+    { value: "acid", label: "Acid", swatch: "#b8ff6f" },
+    { value: "spirit", label: "Spirit", swatch: "#c0fff4" },
+    { value: "custom", label: "Custom", swatch: "#ffffff" },
   ];
 
-  const TRACKING: { id: BubblesIntent["trackingMode"]; label: string }[] = [
-    { id: "left_end", label: "Left" },
-    { id: "right_end", label: "Right" },
-    { id: "both_ends", label: "Both" },
+  const TRACKING: { value: BubblesIntent["trackingMode"]; label: string }[] = [
+    { value: "left_end", label: "Left" },
+    { value: "right_end", label: "Right" },
+    { value: "both_ends", label: "Both" },
   ];
 </script>
 
@@ -34,24 +35,13 @@
   {#if state}
     <div class="bubbles-controls">
       <!-- Palette chip row -->
-      <div class="option-row">
-        <span class="option-label">Palette</span>
-        <div class="chip-group" role="radiogroup" aria-label="Bubbles palette">
-          {#each PALETTES as p (p.id)}
-            <button
-              class="chip swatch-chip"
-              class:active={state.bubbles.palette === p.id}
-              type="button"
-              role="radio"
-              aria-checked={state.bubbles.palette === p.id}
-              onclick={() => state.updateEffect("bubbles", { palette: p.id })}
-            >
-              <span class="swatch" style="background: {p.swatch}" aria-hidden="true"></span>
-              {p.label}
-            </button>
-          {/each}
-        </div>
-      </div>
+      <OptionChipRow
+        label="Palette"
+        ariaLabel="Bubbles palette"
+        value={state.bubbles.palette}
+        options={PALETTES}
+        onChange={(v) => state.updateEffect("bubbles", { palette: v })}
+      />
 
       {#if state.bubbles.palette === "custom"}
         <div class="color-row">
@@ -72,23 +62,13 @@
       {/if}
 
       <!-- Tracking chip row -->
-      <div class="option-row">
-        <span class="option-label">Tracking</span>
-        <div class="chip-group" role="radiogroup" aria-label="Bubbles tracking mode">
-          {#each TRACKING as t (t.id)}
-            <button
-              class="chip"
-              class:active={state.bubbles.trackingMode === t.id}
-              type="button"
-              role="radio"
-              aria-checked={state.bubbles.trackingMode === t.id}
-              onclick={() => state.updateEffect("bubbles", { trackingMode: t.id })}
-            >
-              {t.label}
-            </button>
-          {/each}
-        </div>
-      </div>
+      <OptionChipRow
+        label="Tracking"
+        ariaLabel="Bubbles tracking mode"
+        value={state.bubbles.trackingMode}
+        options={TRACKING}
+        onChange={(v) => state.updateEffect("bubbles", { trackingMode: v })}
+      />
 
       <!-- Ambient emission -->
       <div class="slider-row">
@@ -224,8 +204,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .back-btn,
-    .chip {
+    .back-btn {
       transition: none;
     }
   }
@@ -234,77 +213,6 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-
-  .option-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-  }
-
-  .option-label {
-    min-width: 70px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    flex-shrink: 0;
-  }
-
-  .chip-group {
-    display: flex;
-    gap: 6px;
-    flex: 1;
-    min-width: 0;
-    flex-wrap: wrap;
-  }
-
-  .chip {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 8px 10px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast, 100ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .chip:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, white);
-  }
-
-  .chip.active {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: var(--theme-accent, #8b5cf6);
-    color: var(--theme-text, white);
-  }
-
-  .chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .swatch-chip {
-    flex: 1 1 40%;
-  }
-
-  .swatch {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .slider-row {

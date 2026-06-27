@@ -1,5 +1,7 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import type { BloomIntent } from "$lib/shared/effects/domain/effects-config";
+  import OptionChipRow from "../OptionChipRow.svelte";
 
   interface Props {
     onBack: () => void;
@@ -7,6 +9,19 @@
 
   const { onBack }: Props = $props();
   const state = getEffectsConfigContext();
+
+  const COLOR_MODES: { value: BloomIntent["colorMode"]; label: string }[] = [
+    { value: "solid", label: "Solid" },
+    { value: "prop-matched", label: "Prop-Matched" },
+    { value: "rainbow", label: "Rainbow" },
+    { value: "palette", label: "Palette" },
+  ];
+
+  const FALLOFFS: { value: BloomIntent["falloff"]; label: string }[] = [
+    { value: "smooth", label: "Smooth" },
+    { value: "sharp", label: "Sharp" },
+    { value: "ring", label: "Ring" },
+  ];
 
   // Palette row fixed at 5 entries for v1; add/remove deferred.
   function paletteAt(i: number): string {
@@ -30,89 +45,21 @@
 
   {#if state}
     <div class="bloom-controls">
-      <!-- Color mode chip row -->
-      <div class="option-row">
-        <span class="option-label">Color</span>
-        <div class="chip-group" role="radiogroup" aria-label="Bloom color mode">
-          <button
-            class="chip"
-            class:active={state.bloom.colorMode === "solid"}
-            type="button"
-            role="radio"
-            aria-checked={state.bloom.colorMode === "solid"}
-            onclick={() => state.updateEffect("bloom", { colorMode: "solid" })}
-          >
-            Solid
-          </button>
-          <button
-            class="chip"
-            class:active={state.bloom.colorMode === "prop-matched"}
-            type="button"
-            role="radio"
-            aria-checked={state.bloom.colorMode === "prop-matched"}
-            onclick={() => state.updateEffect("bloom", { colorMode: "prop-matched" })}
-          >
-            Prop-Matched
-          </button>
-          <button
-            class="chip"
-            class:active={state.bloom.colorMode === "rainbow"}
-            type="button"
-            role="radio"
-            aria-checked={state.bloom.colorMode === "rainbow"}
-            onclick={() => state.updateEffect("bloom", { colorMode: "rainbow" })}
-          >
-            Rainbow
-          </button>
-          <button
-            class="chip"
-            class:active={state.bloom.colorMode === "palette"}
-            type="button"
-            role="radio"
-            aria-checked={state.bloom.colorMode === "palette"}
-            onclick={() => state.updateEffect("bloom", { colorMode: "palette" })}
-          >
-            Palette
-          </button>
-        </div>
-      </div>
+      <OptionChipRow
+        label="Color"
+        ariaLabel="Bloom color mode"
+        value={state.bloom.colorMode}
+        options={COLOR_MODES}
+        onChange={(v) => state.updateEffect("bloom", { colorMode: v })}
+      />
 
-      <!-- Falloff chip row -->
-      <div class="option-row">
-        <span class="option-label">Falloff</span>
-        <div class="chip-group" role="radiogroup" aria-label="Bloom falloff">
-          <button
-            class="chip"
-            class:active={state.bloom.falloff === "smooth"}
-            type="button"
-            role="radio"
-            aria-checked={state.bloom.falloff === "smooth"}
-            onclick={() => state.updateEffect("bloom", { falloff: "smooth" })}
-          >
-            Smooth
-          </button>
-          <button
-            class="chip"
-            class:active={state.bloom.falloff === "sharp"}
-            type="button"
-            role="radio"
-            aria-checked={state.bloom.falloff === "sharp"}
-            onclick={() => state.updateEffect("bloom", { falloff: "sharp" })}
-          >
-            Sharp
-          </button>
-          <button
-            class="chip"
-            class:active={state.bloom.falloff === "ring"}
-            type="button"
-            role="radio"
-            aria-checked={state.bloom.falloff === "ring"}
-            onclick={() => state.updateEffect("bloom", { falloff: "ring" })}
-          >
-            Ring
-          </button>
-        </div>
-      </div>
+      <OptionChipRow
+        label="Falloff"
+        ariaLabel="Bloom falloff"
+        value={state.bloom.falloff}
+        options={FALLOFFS}
+        onChange={(v) => state.updateEffect("bloom", { falloff: v })}
+      />
 
       {#if state.bloom.colorMode === "solid"}
         <div class="color-row">
@@ -317,8 +264,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .back-btn,
-    .chip {
+    .back-btn {
       transition: none;
     }
   }
@@ -327,65 +273,6 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-
-  .option-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-  }
-
-  .option-label {
-    min-width: 70px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    flex-shrink: 0;
-  }
-
-  .chip-group {
-    display: flex;
-    gap: 6px;
-    flex: 1;
-    min-width: 0;
-    flex-wrap: wrap;
-  }
-
-  .chip {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 8px 8px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast, 100ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .chip:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, white);
-  }
-
-  .chip.active {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: var(--theme-accent, #8b5cf6);
-    color: var(--theme-text, white);
-  }
-
-  .chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
   }
 
   .slider-row {

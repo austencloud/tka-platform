@@ -1,5 +1,19 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import OptionChipRow from "../OptionChipRow.svelte";
+  import type { SparklesIntent } from "$lib/shared/effects/domain/effects-config";
+
+  const MODES: { value: SparklesIntent["mode"]; label: string; icon: string }[] = [
+    { value: "burst", label: "Burst", icon: "fa-bolt" },
+    { value: "stream", label: "Stream", icon: "fa-water" },
+    { value: "trail", label: "Trail", icon: "fa-route" },
+  ];
+
+  const COLOR_MODES: { value: SparklesIntent["colorMode"]; label: string }[] = [
+    { value: "solid", label: "Solid" },
+    { value: "rainbow", label: "Rainbow" },
+    { value: "palette", label: "Palette" },
+  ];
 
   interface Props {
     onBack: () => void;
@@ -30,82 +44,21 @@
 
   {#if state}
     <div class="sparkles-controls">
-      <!-- Mode chip row -->
-      <div class="option-row">
-        <span class="option-label">Mode</span>
-        <div class="chip-group" role="radiogroup" aria-label="Sparkle mode">
-          <button
-            class="chip"
-            class:active={state.sparkles.mode === "burst"}
-            type="button"
-            role="radio"
-            aria-checked={state.sparkles.mode === "burst"}
-            onclick={() => state.updateEffect("sparkles", { mode: "burst" })}
-          >
-            <i class="fas fa-bolt" aria-hidden="true"></i>
-            Burst
-          </button>
-          <button
-            class="chip"
-            class:active={state.sparkles.mode === "stream"}
-            type="button"
-            role="radio"
-            aria-checked={state.sparkles.mode === "stream"}
-            onclick={() => state.updateEffect("sparkles", { mode: "stream" })}
-          >
-            <i class="fas fa-water" aria-hidden="true"></i>
-            Stream
-          </button>
-          <button
-            class="chip"
-            class:active={state.sparkles.mode === "trail"}
-            type="button"
-            role="radio"
-            aria-checked={state.sparkles.mode === "trail"}
-            onclick={() => state.updateEffect("sparkles", { mode: "trail" })}
-          >
-            <i class="fas fa-route" aria-hidden="true"></i>
-            Trail
-          </button>
-        </div>
-      </div>
+      <OptionChipRow
+        label="Mode"
+        ariaLabel="Sparkle mode"
+        value={state.sparkles.mode}
+        options={MODES}
+        onChange={(v) => state.updateEffect("sparkles", { mode: v })}
+      />
 
-      <!-- Color mode chip row -->
-      <div class="option-row">
-        <span class="option-label">Color</span>
-        <div class="chip-group" role="radiogroup" aria-label="Sparkle color mode">
-          <button
-            class="chip"
-            class:active={state.sparkles.colorMode === "solid"}
-            type="button"
-            role="radio"
-            aria-checked={state.sparkles.colorMode === "solid"}
-            onclick={() => state.updateEffect("sparkles", { colorMode: "solid" })}
-          >
-            Solid
-          </button>
-          <button
-            class="chip"
-            class:active={state.sparkles.colorMode === "rainbow"}
-            type="button"
-            role="radio"
-            aria-checked={state.sparkles.colorMode === "rainbow"}
-            onclick={() => state.updateEffect("sparkles", { colorMode: "rainbow" })}
-          >
-            Rainbow
-          </button>
-          <button
-            class="chip"
-            class:active={state.sparkles.colorMode === "palette"}
-            type="button"
-            role="radio"
-            aria-checked={state.sparkles.colorMode === "palette"}
-            onclick={() => state.updateEffect("sparkles", { colorMode: "palette" })}
-          >
-            Palette
-          </button>
-        </div>
-      </div>
+      <OptionChipRow
+        label="Color"
+        ariaLabel="Sparkle color mode"
+        value={state.sparkles.colorMode}
+        options={COLOR_MODES}
+        onChange={(v) => state.updateEffect("sparkles", { colorMode: v })}
+      />
 
       {#if state.sparkles.colorMode === "solid"}
         <div class="color-row">
@@ -241,8 +194,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .back-btn,
-    .chip {
+    .back-btn {
       transition: none;
     }
   }
@@ -251,68 +203,6 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-
-  .option-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-  }
-
-  .option-label {
-    min-width: 70px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    flex-shrink: 0;
-  }
-
-  .chip-group {
-    display: flex;
-    gap: 6px;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .chip {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 8px 8px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast, 100ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .chip:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, white);
-  }
-
-  .chip.active {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: var(--theme-accent, #8b5cf6);
-    color: var(--theme-text, white);
-  }
-
-  .chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .chip i {
-    font-size: 14px;
   }
 
   .slider-row {

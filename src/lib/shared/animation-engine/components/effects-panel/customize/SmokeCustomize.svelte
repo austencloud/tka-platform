@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { SmokeIntent } from "$lib/shared/effects/domain/effects-config";
+  import OptionChipRow from "../OptionChipRow.svelte";
 
   interface Props {
     onBack: () => void;
@@ -13,20 +14,20 @@
   // chip reads identity at a glance. No lifetime slider: lifetime is
   // palette-owned (genie is short, fog is long - that's what makes them
   // those things). Spec §"Intent shape".
-  const PALETTES: { id: SmokeIntent["palette"]; label: string; swatch: string }[] = [
-    { id: "incense", label: "Incense", swatch: "#d8d8d8" },
-    { id: "fog", label: "Fog", swatch: "#c0c0c8" },
-    { id: "genie", label: "Genie", swatch: "#a060ff" },
-    { id: "cursed", label: "Cursed", swatch: "#202020" },
-    { id: "spirit", label: "Spirit", swatch: "#80c8ff" },
-    { id: "campfire", label: "Campfire", swatch: "#805040" },
-    { id: "custom", label: "Custom", swatch: "#ffffff" },
+  const PALETTES: { value: SmokeIntent["palette"]; label: string; swatch: string }[] = [
+    { value: "incense", label: "Incense", swatch: "#d8d8d8" },
+    { value: "fog", label: "Fog", swatch: "#c0c0c8" },
+    { value: "genie", label: "Genie", swatch: "#a060ff" },
+    { value: "cursed", label: "Cursed", swatch: "#202020" },
+    { value: "spirit", label: "Spirit", swatch: "#80c8ff" },
+    { value: "campfire", label: "Campfire", swatch: "#805040" },
+    { value: "custom", label: "Custom", swatch: "#ffffff" },
   ];
 
-  const TRACKING: { id: SmokeIntent["trackingMode"]; label: string }[] = [
-    { id: "left_end", label: "Left" },
-    { id: "right_end", label: "Right" },
-    { id: "both_ends", label: "Both" },
+  const TRACKING: { value: SmokeIntent["trackingMode"]; label: string }[] = [
+    { value: "left_end", label: "Left" },
+    { value: "right_end", label: "Right" },
+    { value: "both_ends", label: "Both" },
   ];
 </script>
 
@@ -39,24 +40,13 @@
   {#if state}
     <div class="smoke-controls">
       <!-- Palette chip row (7 items) -->
-      <div class="option-row">
-        <span class="option-label">Palette</span>
-        <div class="chip-group" role="radiogroup" aria-label="Smoke palette">
-          {#each PALETTES as p (p.id)}
-            <button
-              class="chip swatch-chip"
-              class:active={state.smoke.palette === p.id}
-              type="button"
-              role="radio"
-              aria-checked={state.smoke.palette === p.id}
-              onclick={() => state.updateEffect("smoke", { palette: p.id })}
-            >
-              <span class="swatch" style="background: {p.swatch}" aria-hidden="true"></span>
-              {p.label}
-            </button>
-          {/each}
-        </div>
-      </div>
+      <OptionChipRow
+        label="Palette"
+        ariaLabel="Smoke palette"
+        value={state.smoke.palette}
+        options={PALETTES}
+        onChange={(v) => state.updateEffect("smoke", { palette: v })}
+      />
 
       {#if state.smoke.palette === "custom"}
         <div class="color-row">
@@ -77,23 +67,13 @@
       {/if}
 
       <!-- Tracking chip row -->
-      <div class="option-row">
-        <span class="option-label">Tracking</span>
-        <div class="chip-group" role="radiogroup" aria-label="Smoke tracking mode">
-          {#each TRACKING as t (t.id)}
-            <button
-              class="chip"
-              class:active={state.smoke.trackingMode === t.id}
-              type="button"
-              role="radio"
-              aria-checked={state.smoke.trackingMode === t.id}
-              onclick={() => state.updateEffect("smoke", { trackingMode: t.id })}
-            >
-              {t.label}
-            </button>
-          {/each}
-        </div>
-      </div>
+      <OptionChipRow
+        label="Tracking"
+        ariaLabel="Smoke tracking mode"
+        value={state.smoke.trackingMode}
+        options={TRACKING}
+        onChange={(v) => state.updateEffect("smoke", { trackingMode: v })}
+      />
 
       <!-- Ambient emission -->
       <div class="slider-row">
@@ -229,8 +209,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .back-btn,
-    .chip {
+    .back-btn {
       transition: none;
     }
   }
@@ -239,77 +218,6 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-
-  .option-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-  }
-
-  .option-label {
-    min-width: 70px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    flex-shrink: 0;
-  }
-
-  .chip-group {
-    display: flex;
-    gap: 6px;
-    flex: 1;
-    min-width: 0;
-    flex-wrap: wrap;
-  }
-
-  .chip {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 8px 10px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast, 100ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .chip:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, white);
-  }
-
-  .chip.active {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: var(--theme-accent, #8b5cf6);
-    color: var(--theme-text, white);
-  }
-
-  .chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .swatch-chip {
-    flex: 1 1 40%;
-  }
-
-  .swatch {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .slider-row {

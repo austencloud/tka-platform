@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { InkIntent } from "$lib/shared/effects/domain/effects-config";
+  import OptionChipRow from "../OptionChipRow.svelte";
 
   interface Props {
     onBack: () => void;
@@ -14,20 +15,20 @@
   // blood reads dark red, etc. Palette choice also flips emissive /
   // watercolor flags inside the translator - user doesn't see those as
   // separate knobs.
-  const PALETTES: { id: InkIntent["palette"]; label: string; swatch: string }[] = [
-    { id: "india", label: "India", swatch: "#0a0a0a" },
-    { id: "sumi", label: "Sumi", swatch: "#404040" },
-    { id: "watercolor", label: "Watercolor", swatch: "#4080c0" },
-    { id: "neon", label: "Neon", swatch: "#ff2080" },
-    { id: "blood", label: "Blood", swatch: "#8a1818" },
-    { id: "acid", label: "Acid", swatch: "#7fd94a" },
-    { id: "custom", label: "Custom", swatch: "#ffffff" },
+  const PALETTES: { value: InkIntent["palette"]; label: string; swatch: string }[] = [
+    { value: "india", label: "India", swatch: "#0a0a0a" },
+    { value: "sumi", label: "Sumi", swatch: "#404040" },
+    { value: "watercolor", label: "Watercolor", swatch: "#4080c0" },
+    { value: "neon", label: "Neon", swatch: "#ff2080" },
+    { value: "blood", label: "Blood", swatch: "#8a1818" },
+    { value: "acid", label: "Acid", swatch: "#7fd94a" },
+    { value: "custom", label: "Custom", swatch: "#ffffff" },
   ];
 
-  const TRACKING: { id: InkIntent["trackingMode"]; label: string }[] = [
-    { id: "left_end", label: "Left" },
-    { id: "right_end", label: "Right" },
-    { id: "both_ends", label: "Both" },
+  const TRACKING: { value: InkIntent["trackingMode"]; label: string }[] = [
+    { value: "left_end", label: "Left" },
+    { value: "right_end", label: "Right" },
+    { value: "both_ends", label: "Both" },
   ];
 </script>
 
@@ -40,24 +41,13 @@
   {#if state}
     <div class="ink-controls">
       <!-- Palette chip row (7 items) -->
-      <div class="option-row">
-        <span class="option-label">Palette</span>
-        <div class="chip-group" role="radiogroup" aria-label="Ink palette">
-          {#each PALETTES as p (p.id)}
-            <button
-              class="chip swatch-chip"
-              class:active={state.ink.palette === p.id}
-              type="button"
-              role="radio"
-              aria-checked={state.ink.palette === p.id}
-              onclick={() => state.updateEffect("ink", { palette: p.id })}
-            >
-              <span class="swatch" style="background: {p.swatch}" aria-hidden="true"></span>
-              {p.label}
-            </button>
-          {/each}
-        </div>
-      </div>
+      <OptionChipRow
+        label="Palette"
+        ariaLabel="Ink palette"
+        value={state.ink.palette}
+        options={PALETTES}
+        onChange={(v) => state.updateEffect("ink", { palette: v })}
+      />
 
       {#if state.ink.palette === "custom"}
         <div class="color-row">
@@ -78,23 +68,13 @@
       {/if}
 
       <!-- Tracking chip row -->
-      <div class="option-row">
-        <span class="option-label">Tracking</span>
-        <div class="chip-group" role="radiogroup" aria-label="Ink tracking mode">
-          {#each TRACKING as t (t.id)}
-            <button
-              class="chip"
-              class:active={state.ink.trackingMode === t.id}
-              type="button"
-              role="radio"
-              aria-checked={state.ink.trackingMode === t.id}
-              onclick={() => state.updateEffect("ink", { trackingMode: t.id })}
-            >
-              {t.label}
-            </button>
-          {/each}
-        </div>
-      </div>
+      <OptionChipRow
+        label="Tracking"
+        ariaLabel="Ink tracking mode"
+        value={state.ink.trackingMode}
+        options={TRACKING}
+        onChange={(v) => state.updateEffect("ink", { trackingMode: v })}
+      />
 
       <!-- Ambient emission (hard-capped at 0.3 in renderer) -->
       <div class="slider-row">
@@ -230,8 +210,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .back-btn,
-    .chip {
+    .back-btn {
       transition: none;
     }
   }
@@ -240,77 +219,6 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-
-  .option-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-  }
-
-  .option-label {
-    min-width: 70px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    flex-shrink: 0;
-  }
-
-  .chip-group {
-    display: flex;
-    gap: 6px;
-    flex: 1;
-    min-width: 0;
-    flex-wrap: wrap;
-  }
-
-  .chip {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 8px 10px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast, 100ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .chip:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, white);
-  }
-
-  .chip.active {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: var(--theme-accent, #8b5cf6);
-    color: var(--theme-text, white);
-  }
-
-  .chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .swatch-chip {
-    flex: 1 1 40%;
-  }
-
-  .swatch {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .slider-row {

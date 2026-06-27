@@ -1,5 +1,7 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import OptionChipRow from "../OptionChipRow.svelte";
+  import type { ZapIntent } from "$lib/shared/effects/domain/effects-config";
 
   interface Props {
     onBack: () => void;
@@ -7,6 +9,12 @@
 
   const { onBack }: Props = $props();
   const state = getEffectsConfigContext();
+
+  const STYLES: { value: ZapIntent["style"]; label: string; icon: string }[] = [
+    { value: "branching", label: "Storm", icon: "fa-bolt" },
+    { value: "plasma", label: "Plasma", icon: "fa-fire-flame-simple" },
+    { value: "web", label: "Web", icon: "fa-diagram-project" },
+  ];
 </script>
 
 <div class="customize-view">
@@ -18,44 +26,13 @@
   {#if state}
     <div class="zap-controls">
       <!-- Style (chip row) -->
-      <div class="option-row">
-        <span class="option-label">Style</span>
-        <div class="chip-group" role="radiogroup" aria-label="Zap style">
-          <button
-            class="chip"
-            class:active={state.zap.style === "branching"}
-            type="button"
-            role="radio"
-            aria-checked={state.zap.style === "branching"}
-            onclick={() => state.updateEffect("zap", { style: "branching" })}
-          >
-            <i class="fas fa-bolt" aria-hidden="true"></i>
-            Storm
-          </button>
-          <button
-            class="chip"
-            class:active={state.zap.style === "plasma"}
-            type="button"
-            role="radio"
-            aria-checked={state.zap.style === "plasma"}
-            onclick={() => state.updateEffect("zap", { style: "plasma" })}
-          >
-            <i class="fas fa-fire-flame-simple" aria-hidden="true"></i>
-            Plasma
-          </button>
-          <button
-            class="chip"
-            class:active={state.zap.style === "web"}
-            type="button"
-            role="radio"
-            aria-checked={state.zap.style === "web"}
-            onclick={() => state.updateEffect("zap", { style: "web" })}
-          >
-            <i class="fas fa-diagram-project" aria-hidden="true"></i>
-            Web
-          </button>
-        </div>
-      </div>
+      <OptionChipRow
+        label="Style"
+        ariaLabel="Zap style"
+        value={state.zap.style}
+        options={STYLES}
+        onChange={(v) => state.updateEffect("zap", { style: v })}
+      />
 
       <!-- Intensity -->
       <div class="slider-row">
@@ -231,8 +208,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .back-btn,
-    .chip {
+    .back-btn {
       transition: none;
     }
   }
@@ -242,68 +218,6 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-
-  .option-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-  }
-
-  .option-label {
-    min-width: 70px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    flex-shrink: 0;
-  }
-
-  .chip-group {
-    display: flex;
-    gap: 6px;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .chip {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 8px 8px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast, 100ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .chip:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, white);
-  }
-
-  .chip.active {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: var(--theme-accent, #8b5cf6);
-    color: var(--theme-text, white);
-  }
-
-  .chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .chip i {
-    font-size: 14px;
   }
 
   .slider-row {
