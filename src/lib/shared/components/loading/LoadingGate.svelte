@@ -7,10 +7,11 @@
   import IndeterminateBar from "./IndeterminateBar.svelte";
   import ProgressRing from "./ProgressRing.svelte";
   import ShimmerBlock from "./ShimmerBlock.svelte";
+  import MandalaLoader from "$lib/shared/mandala/components/MandalaLoader.svelte";
 
   interface Props {
     /** Visual variant. Default "bar". */
-    variant?: "bar" | "card" | "skeleton";
+    variant?: "bar" | "card" | "skeleton" | "mandala";
     /** Status message. Callers should provide context-specific text. */
     message?: string;
     /** Accent color override. */
@@ -47,6 +48,9 @@
         <ShimmerBlock width="70%" height="16px" delay={400} />
       </div>
     </div>
+
+  {:else if variant === "mandala"}
+    <MandalaLoader {message} />
   {/if}
 </div>
 
