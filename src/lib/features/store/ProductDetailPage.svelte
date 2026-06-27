@@ -119,6 +119,31 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
     }
   }
 
+  /* Choreographed reveal: the info column fades + rises in on mount, a beat after
+     the cover morph lands (140ms delay). Pure CSS so it needs no reactive state
+     (the local `state` store would shadow the $state rune). Transform/opacity only
+     — compositor, no layout shift. */
+  .info-column {
+    animation: info-reveal 420ms 140ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  @keyframes info-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .info-column {
+      animation: none;
+    }
+  }
+
   .back-button {
     display: inline-flex;
     align-items: center;

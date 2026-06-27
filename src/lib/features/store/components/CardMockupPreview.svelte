@@ -35,6 +35,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Shared morph styling for the grid<->detail view transition (only takes
+       effect on instances that also carry a view-transition-name). */
+    view-transition-class: product-cover;
   }
 
   .cover-image {

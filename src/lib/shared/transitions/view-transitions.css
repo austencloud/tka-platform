@@ -29,6 +29,19 @@
 }
 
 /* ============================================================================
+   SHOP PRODUCT COVER MORPH
+   The card cover carries view-transition-name=product-{id} and
+   view-transition-class=product-cover in both the grid and the detail view, so
+   it morphs between them. A gentle slow-in easing keeps the burst feeling smooth
+   even when the first frame is heavy (the full-viewport cosmic background is
+   costly to snapshot, ~99ms on the opening frame).
+   ============================================================================ */
+::view-transition-group(.product-cover) {
+  animation-duration: 460ms;
+  animation-timing-function: cubic-bezier(0.5, 0, 0.2, 1);
+}
+
+/* ============================================================================
    COMMUNITY PANEL TRANSITIONS
    Smooth slide-fade for community tab switching
    ============================================================================ */
