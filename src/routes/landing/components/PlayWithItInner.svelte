@@ -16,8 +16,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   import { onMount, onDestroy } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import AnimationPanel from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
-  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import { createEndlessPlayback, type EndlessPlaybackState } from "$lib/shared/animation-engine/state/endless-playback-state.svelte";
   import * as propTypeApplier from "$lib/shared/landing/services/prop-type-applier";
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/endless-spinner-orchestrator";
@@ -31,10 +29,9 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { SequenceViewerVisibilityState } from "$lib/shared/sequence-viewer/state/viewer-visibility-state.svelte";
   import { setViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
-  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
+  import BeatStrip from "$lib/shared/timeline/BeatStrip.svelte";
+  import { buildNotationCells, type NotationCell } from "$lib/shared/timeline/notation-cell";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import SequenceProgressBar from "$lib/shared/animation-engine/components/layers/SequenceProgressBar.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // ── Factory state ──────────────────────────────────────────────────────────
@@ -67,7 +64,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   let bpm = $state(60);
 
   // ── Derived values ─────────────────────────────────────────────────────────
-  let currentStepNumber = $derived(Math.floor(playback?.animationState?.currentStep ?? 0));
   let isPlaying = $derived(playback?.animationState?.isPlaying ?? false);
 
   // ── Responsive layout: sidebar panel beside the canvas on wide screens,
@@ -168,127 +164,10 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   }
 
   // ── Notation panel cells ──────────────────────────────────────────────────
-  // Build an array of cells: start position (index 0) + each beat step.
-  // Each cell carries the pictograph data and a display label.
-  interface NotationCell {
-    key: string;
-    data: StepData | StartPositionData;
-    label: string;
-    isStart: boolean;
-    stepNumber: number; // 0 for start, 1-N for beats
-  }
-
-  let notationCells = $derived.by((): NotationCell[] => {
-    const seq = playback?.animationState?.sequenceData;
-    if (!seq?.steps?.length) return [];
-
-    const cells: NotationCell[] = [];
-
-    // Start position cell
-    const startPos = seq.startPosition ?? (seq.steps[0] ? createStartPositionFromBeatStart(seq.steps[0]) : null);
-    if (startPos) {
-      cells.push({
-        key: `start-${seq.id ?? seq.word}`,
-        data: startPos,
-        label: "Start",
-        isStart: true,
-        stepNumber: 0,
-      });
-    }
-
-    // Beat cells
-    for (let i = 0; i < seq.steps.length; i++) {
-      const step = seq.steps[i]!;
-      cells.push({
-        key: `beat-${i}-${step.letter ?? i}`,
-        data: step,
-        label: `${i + 1}`,
-        isStart: false,
-        stepNumber: i + 1,
-      });
-    }
-
-    return cells;
-  });
-
-  // ── Beat strip: focus-locked playhead carousel ─────────────────────────────
-  // Instead of paging a gold selection border across a static grid, we pin the
-  // active pictograph under a single fixed gold focus frame centered in the
-  // strip and slide the whole track left one cell per step. The selection never
-  // moves; the sequence flows past it, so the eye never chases the highlight.
-  const CELL = 72; // cell width/height (px) — uniform; drives the centering math
-  const STRIDE = CELL + 6; // cell + 6px gap = per-slot advance
-  const BUFFER = 3; // off-window cells kept rendered each side
-  const HERO_SCALE = 1.32; // focused pictograph grows above baseline
-  const FRAME = 98; // gold focus frame size (hugs the enlarged hero)
-
-  let beatStripEl = $state<HTMLDivElement | null>(null);
-  let stripContainerWidth = $state(800);
-
-  // Active cell index === currentStepNumber: cell 0 is the start position
-  // (step 0), beat i is step i. Clamp so an out-of-range step can't escape.
-  let activeIndex = $derived(
-    Math.min(Math.max(currentStepNumber, 0), Math.max(0, notationCells.length - 1))
+  let notationCells = $derived<NotationCell[]>(
+    buildNotationCells(playback?.animationState?.sequenceData)
   );
 
-  // Track base offset (centers the 72px cell box) and the larger focus frame,
-  // both centered on the same viewport midpoint.
-  let focusLeft = $derived(stripContainerWidth / 2 - CELL / 2);
-  let frameLeft = $derived(stripContainerWidth / 2 - FRAME / 2);
-
-  // Only mount PictographContainers for the window around the active cell; the
-  // rest are zero-content spacers so every cell still sits at index * STRIDE.
-  let visibleRange = $derived.by(() => {
-    const half = Math.ceil(stripContainerWidth / STRIDE / 2) + BUFFER;
-    return {
-      start: Math.max(0, activeIndex - half),
-      end: Math.min(notationCells.length, activeIndex + half + 1),
-    };
-  });
-
-  // Track translate + snap control. Slides smoothly forward step-by-step; snaps
-  // (transition disabled for that update) when the sequence wraps back to the
-  // start, so we don't get a long reverse sweep across the whole strip.
-  let trackX = $state(0);
-  let animateTrack = $state(false);
-  let prevActiveIndex = -1;
-  $effect(() => {
-    const idx = activeIndex;
-    const left = focusLeft;
-    animateTrack = !(prevActiveIndex === -1 || idx < prevActiveIndex);
-    prevActiveIndex = idx;
-    trackX = left - idx * STRIDE;
-  });
-
-  // Slide duration tracks the beat interval so fast tempos get a shorter, less
-  // visible travel (half a beat, clamped). One CSS var drives slide + fades.
-  let slideDurMs = $derived(
-    Math.round(Math.min(0.42, Math.max(0.12, (60 / Math.max(1, bpm)) * 0.5)) * 1000)
-  );
-
-  // Spotlight: the focused pictograph is the hero (HERO_SCALE); neighbors dim
-  // and shrink with distance so the moving periphery stays quiet.
-  function cellOpacity(dist: number) {
-    if (dist === 0) return 1;
-    return Math.max(0.14, 0.66 - (dist - 1) * 0.18);
-  }
-  function cellScale(dist: number) {
-    if (dist === 0) return HERO_SCALE;
-    return Math.max(0.62, 0.84 - (dist - 1) * 0.09);
-  }
-
-  // Measure the viewport width (drives centering + the virtualization window).
-  $effect(() => {
-    const el = beatStripEl;
-    if (!el) return;
-    stripContainerWidth = el.clientWidth;
-    const ro = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (entry) stripContainerWidth = entry.contentRect.width;
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  });
 </script>
 
 <!-- Beat strip: one definition shared by both layouts. Lives inside the stage
@@ -296,41 +175,13 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
      the stage row on desktop so the whole sequence is visible without scroll. -->
 {#snippet beatStripBlock()}
   {#if playback?.animationState?.sequenceData && notationCells.length > 0}
-    <div class="beat-viewport" bind:this={beatStripEl} style="--slide-dur: {slideDurMs}ms">
-      <!-- Fixed gold focus frame: the active (hero) pictograph always lands here. -->
-      <div class="beat-focus" style="left: {frameLeft}px"></div>
-      <!-- Sliding track: translated so activeIndex sits under the focus frame. -->
-      <div
-        class="beat-track"
-        class:no-anim={!animateTrack}
-        style="transform: translateX({trackX}px)"
-      >
-        {#each notationCells as cell, i (cell.key)}
-          {#if i >= visibleRange.start && i < visibleRange.end}
-            {@const dist = Math.abs(i - activeIndex)}
-            <div
-              class="beat-cell"
-              class:start-cell={cell.isStart}
-              class:is-focus={dist === 0}
-              style="opacity: {cellOpacity(dist)}"
-            >
-              <div class="beat-pictograph" style="transform: scale({cellScale(dist)})">
-                <PictographContainer
-                  pictographData={cell.data}
-                  darkMode={true}
-                  disableTransitions={true}
-                  disableContentTransitions={true}
-                  bluePropTypeOverride={currentPropType}
-                  redPropTypeOverride={currentPropType}
-                />
-              </div>
-            </div>
-          {:else}
-            <div class="beat-cell beat-cell-placeholder" aria-hidden="true"></div>
-          {/if}
-        {/each}
-      </div>
-    </div>
+    <BeatStrip
+      cells={notationCells}
+      currentStep={playback?.animationState?.currentStep ?? 0}
+      {bpm}
+      bluePropType={currentPropType}
+      redPropType={currentPropType}
+    />
   {/if}
 {/snippet}
 
@@ -362,20 +213,8 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
                 effectsConfigState={effectsConfigState}
                 onPlaybackToggle={togglePlayPause}
                 tapToToggle={true}
-                hideProgressBar={true}
+                progressLine={true}
               />
-              {#if playback?.animationState?.sequenceData?.steps?.length}
-                <!-- Minimal export-style progress line: the same thin colored bar
-                     baked into downloaded videos (no scrubber knob, no play button,
-                     no per-beat notches). Play/pause is the canvas tap above. -->
-                <div class="mini-progress">
-                  <SequenceProgressBar
-                    currentStep={playback?.animationState?.currentStep ?? 0}
-                    totalSteps={playback.animationState.sequenceData.steps.length}
-                    darkMode={true}
-                  />
-                </div>
-              {/if}
             </div>
           {:else if animationError}
             <div class="canvas-placeholder">
@@ -509,27 +348,9 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   }
 
   .canvas-wrapper {
-    position: relative;
     width: 100%;
     height: 100%;
     overflow: hidden;
-  }
-
-  /* Export-style progress line pinned to the very bottom of the canvas frame —
-     the same thin colored bar baked into downloaded videos. Display-only
-     (pointer-events off so the canvas tap-to-play still fires through it). */
-  .mini-progress {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 2;
-    pointer-events: none;
-  }
-
-  .mini-progress :global(.progress-bar-container) {
-    background: transparent;
-    padding: 0 10px 6px;
   }
 
   .canvas-placeholder {
@@ -550,123 +371,44 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     opacity: 0.4;
   }
 
-  /* ── Beat strip: focus-locked playhead carousel ─────────────────────────── */
-  .beat-viewport {
-    position: relative;
-    width: 100%;
-    height: 124px; /* headroom for the enlarged hero (98px frame) + breathing room */
-    overflow: hidden;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(0, 0, 0, 0.2);
-    /* Soft edges so cells dissolve at the borders instead of hard-cutting,
-       which quiets the perceived motion churn at the periphery. */
-    -webkit-mask-image: linear-gradient(
-      to right,
-      transparent 0,
-      black 10%,
-      black 90%,
-      transparent 100%
-    );
-    mask-image: linear-gradient(
-      to right,
-      transparent 0,
-      black 10%,
-      black 90%,
-      transparent 100%
-    );
-  }
-
-  /* Sliding track. translateX is set inline; cell i sits at i * STRIDE (78px).
-     Cells are vertically centered in the viewport so the hero can grow up/down. */
-  .beat-track {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    will-change: transform;
-    transition: transform var(--slide-dur, 420ms) cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .beat-track.no-anim {
-    transition: none;
-  }
-
-  /* Fixed gold focus frame — the hero pictograph always lands under it. */
-  .beat-focus {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 98px;
-    height: 98px;
-    border: 2px solid #d4813a;
-    border-radius: 8px;
-    box-shadow: 0 0 16px rgba(212, 129, 58, 0.5);
-    pointer-events: none;
-    z-index: 2;
-    transition: left 0.2s ease;
-  }
-
-  .beat-cell {
-    position: relative;
-    flex: 0 0 72px;
-    width: 72px;
-    height: 72px;
-    border: 1.5px solid rgba(255, 255, 255, 0.08);
-    border-radius: 6px;
-    overflow: hidden;
-    /* opacity (spotlight) is set inline per distance-from-focus. */
-    transition: opacity var(--slide-dur, 420ms) ease;
-  }
-
-  .beat-cell.start-cell {
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-
-  /* Hero cell: let the enlarged pictograph spill out of the 72px box and sit
-     above its neighbors. Border is dropped — the gold frame is the highlight. */
-  .beat-cell.is-focus {
-    overflow: visible;
-    border-color: transparent;
-    z-index: 3;
-  }
-
-  .beat-pictograph {
-    width: 100%;
-    height: 100%;
-    transform-origin: center;
-    /* scale (spotlight) is set inline per distance-from-focus. */
-    transition: transform var(--slide-dur, 420ms) ease;
-  }
-
-  /* Off-window spacer: same footprint, no border/content, holds index * STRIDE. */
-  .beat-cell-placeholder {
-    border-color: transparent;
-    box-shadow: none;
-    background: transparent;
-    pointer-events: none;
-  }
-
   /* ── Responsive ────────────────────────────────────────────────────────── */
   @media (max-width: 600px) {
+    /* Full-viewport fit: the showcase fills the height the section gives it, and
+       the canvas-area flexes to take whatever the fixed-height beat strip +
+       control dock leave — so the whole player lands on one screen. Dropping the
+       forced square lets the canvas square to the available height instead of
+       being width-locked and pushing the dock off-screen. */
+    .play-inner {
+      flex: 1 1 auto;
+      min-height: 0;
+      gap: 10px;
+    }
+
     .showcase {
+      flex: 1 1 auto;
+      min-height: 0;
       max-width: 100%;
       border-radius: 12px;
     }
 
+    .stage-column {
+      min-height: 0;
+    }
+
     .canvas-area {
-      max-height: 400px;
+      aspect-ratio: auto;
+      flex: 1 1 auto;
+      min-height: 0;
+      max-height: none;
+    }
+
+    /* Absolutely fill the flexed area — a percentage-height chain collapses to 0
+       once the square aspect-ratio is gone, so the AnimatorCanvas gets a definite
+       box this way and the WebGL canvas actually sizes/renders. */
+    .canvas-wrapper {
+      position: absolute;
+      inset: 0;
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    /* No sliding/fading motion: the track jumps per step, cells hold full
-       opacity/scale so nothing drifts in the periphery. */
-    .beat-track,
-    .beat-cell,
-    .beat-pictograph {
-      transition: none;
-    }
-  }
 </style>
