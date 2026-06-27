@@ -203,6 +203,23 @@ describe("TempoPracticeOrchestrator", () => {
     expect(o.getProgress().reachedTarget).toBe(false);
   });
 
+  it("patchConfig applies live config changes without restarting", () => {
+    const o = new TempoPracticeOrchestrator();
+    o.start({ startBpm: 20, increment: 5, progressionMode: "stepped" });
+    o.patchConfig({ increment: 10 });
+    expect(o.getProgress().increment).toBe(10);
+    expect(o.advanceLevel()).toBe(30); // uses the new step (20 + 10)
+  });
+
+  it("patchConfig clamps targetBpm into range", () => {
+    const o = new TempoPracticeOrchestrator();
+    o.start({ startBpm: 20, maxBpm: 100, progressionMode: "target" });
+    o.patchConfig({ targetBpm: 999 });
+    expect(o.getProgress().targetBpm).toBe(100); // clamped to maxBpm
+    o.patchConfig({ targetBpm: 5 });
+    expect(o.getProgress().targetBpm).toBe(21); // clamped to startBpm + 1
+  });
+
   it("setProgressionMode switches the ramp live without restarting", () => {
     const o = new TempoPracticeOrchestrator();
     o.start({ startBpm: 20, smoothStep: 1, increment: 5, roundsPerLevel: 3, progressionMode: "smooth" });

@@ -41,6 +41,7 @@ export function createTempoPracticeState() {
     currentBpm: 0,
     currentRound: 0,
     roundsPerLevel: 5,
+    increment: 5,
     currentLevel: 0,
     totalRoundsCompleted: 0,
     loopsCompleted: 0,

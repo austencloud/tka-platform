@@ -17,7 +17,7 @@
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
-  import type { ProgressionMode, TempoPracticeProgress } from "../services/tempo-practice-orchestrator";
+  import type { ProgressionMode, TempoPracticeConfig, TempoPracticeProgress } from "../services/tempo-practice-orchestrator";
 
   interface Props {
     progress: TempoPracticeProgress;
@@ -31,9 +31,12 @@
     onToggleHold: () => void;
     /** Switch the ramp mode live (inline picker). Omit to hide the picker. */
     onSetMode?: (mode: ProgressionMode) => void;
+    /** Apply a live config change (goal / step / per-loop). Omit to hide the
+     *  contextual amount control. */
+    onSetConfig?: (patch: Partial<TempoPracticeConfig>) => void;
   }
 
-  let { progress, bpm, isPlaying, onBpmChange, onStepLevel, onToggleHold, onPlayPause, onSetMode }: Props =
+  let { progress, bpm, isPlaying, onBpmChange, onStepLevel, onToggleHold, onPlayPause, onSetMode, onSetConfig }: Props =
     $props();
 
   const MODE_OPTIONS: { value: ProgressionMode; label: string }[] = [
@@ -91,6 +94,23 @@
       ? (progress.loopsCompleted / progress.roundsPerLevel) * 100
       : 0;
   });
+
+  // The one amount you set inline for the current mode — goal in target, per-loop
+  // in smooth, step in stepped/manual. Bounds mirror the gear popover's clamps.
+  let param = $derived.by(() => {
+    if (isTarget)
+      return { label: "Goal", value: progress.targetBpm, unit: "BPM", min: progress.startBpm + 5, max: progress.maxBpm, step: 5, apply: (v: number) => onSetConfig?.({ targetBpm: v }) };
+    if (isSmooth)
+      return { label: "Per loop", value: progress.smoothStep, unit: "BPM", min: 1, max: 10, step: 1, apply: (v: number) => onSetConfig?.({ smoothStep: v }) };
+    // stepped + manual both advance by the increment ("step")
+    return { label: "Step", value: progress.increment, unit: "BPM", min: 1, max: 30, step: 1, apply: (v: number) => onSetConfig?.({ increment: v }) };
+  });
+  let paramAtFloor = $derived(param.value <= param.min);
+  let paramAtCeiling = $derived(param.value >= param.max);
+  function paramDelta(dir: 1 | -1) {
+    const next = Math.max(param.min, Math.min(param.max, param.value + dir * param.step));
+    if (next !== param.value) param.apply(next);
+  }
 
   // Pulse the BPM number whenever the tempo bumps up, so you feel it tighten.
   let prevBpm = bpm;
@@ -257,6 +277,30 @@
             color="accent"
             size="sm"
           />
+        </div>
+      {/if}
+      {#if onSetConfig}
+        <div class="pb-param" role="group" aria-label={param.label}>
+          <span class="pb-param-label">{param.label}</span>
+          <button
+            class="pb-fine-btn"
+            type="button"
+            onclick={() => paramDelta(-1)}
+            disabled={paramAtFloor}
+            aria-label="Decrease {param.label}"
+          >
+            <i class="fas fa-minus" aria-hidden="true"></i>
+          </button>
+          <span class="pb-param-value">{param.value}{#if param.unit}<span class="pb-param-unit">{param.unit}</span>{/if}</span>
+          <button
+            class="pb-fine-btn"
+            type="button"
+            onclick={() => paramDelta(1)}
+            disabled={paramAtCeiling}
+            aria-label="Increase {param.label}"
+          >
+            <i class="fas fa-plus" aria-hidden="true"></i>
+          </button>
         </div>
       {/if}
       <span class="pb-caption-wrap">
@@ -497,6 +541,36 @@
     width: 17rem;
   }
   .pb-mode { width: 100%; }
+  .pb-param {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+  .pb-param-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    min-width: 3.5rem;
+    text-align: right;
+  }
+  .pb-param-value {
+    min-width: 3.25rem;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--theme-text, #fff);
+    font-variant-numeric: tabular-nums;
+  }
+  .pb-param-unit {
+    font-size: 9px;
+    font-weight: 700;
+    opacity: 0.5;
+    margin-left: 2px;
+  }
   .pb-fill-track {
     width: 100%;
     height: 6px;

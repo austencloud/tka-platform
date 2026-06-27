@@ -52,6 +52,8 @@ export interface TempoPracticeProgress {
   currentRound: number;
   /** How many rounds per level */
   roundsPerLevel: number;
+  /** BPM jump per level (stepped/manual Faster) and the bar's big −/+ step */
+  increment: number;
   /** Derived level: how many increments above the start tempo (0 in smooth mode) */
   currentLevel: number;
   /** Total rounds completed across all levels */
@@ -132,6 +134,22 @@ export class TempoPracticeOrchestrator {
   /** Set the target-mode goal BPM live (clamped above the start tempo). */
   setTargetBpm(bpm: number): void {
     this.config.targetBpm = Math.max(this.config.startBpm + 1, Math.min(bpm, this.config.maxBpm));
+  }
+
+  /** Merge live config changes from the bar's inline controls without
+   *  restarting (goal, step, per-loop, loops-per-level). Preserves currentBpm. */
+  patchConfig(patch: Partial<TempoPracticeConfig>): void {
+    this.config = { ...this.config, ...patch };
+    if (patch.targetBpm !== undefined) {
+      this.config.targetBpm = Math.max(
+        this.config.startBpm + 1,
+        Math.min(this.config.targetBpm, this.config.maxBpm)
+      );
+    }
+    if (patch.progressionMode !== undefined) {
+      this.currentRound = 0;
+      this.readyToAdvance = false;
+    }
   }
 
   /** The ceiling the climb stops at: the goal in target mode, else the cap. */
@@ -259,6 +277,7 @@ export class TempoPracticeOrchestrator {
       // 1-based for display, clamped so manual's parked state never reads N+1.
       currentRound: Math.min(this.currentRound + 1, this.config.roundsPerLevel),
       roundsPerLevel: this.config.roundsPerLevel,
+      increment: this.config.increment,
       // Derived from BPM — never an independent counter that can desync.
       currentLevel:
         mode === "smooth" || mode === "target"
