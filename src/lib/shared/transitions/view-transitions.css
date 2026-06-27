@@ -37,8 +37,23 @@
    costly to snapshot, ~99ms on the opening frame).
    ============================================================================ */
 ::view-transition-group(.product-cover) {
-  animation-duration: 460ms;
-  animation-timing-function: cubic-bezier(0.5, 0, 0.2, 1);
+  animation-duration: 500ms;
+  /* Even ease (the standard curve), NOT a front-loaded decelerate. The old curve
+     (0.16,1,0.3,1) covered ~60% of the distance in the first ~80ms — exactly when
+     the destination page is mounting and the main thread is busiest — so a single
+     dropped frame there ate a huge chunk of motion and read as a skip. An even
+     curve spreads the motion across the whole 500ms, so any early hitch is nearly
+     invisible and the morph reads as butter. (The cosmos is now suppressed on
+     /shop, so the heavy WebGL snapshot is already gone.) */
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Settle the geometry over the full 500ms, but resolve the old->new cross-fade
+   sooner so the cover's content is crisp through the final settle (reads sharp
+   the moment real cover art lands on both sides). */
+::view-transition-old(.product-cover),
+::view-transition-new(.product-cover) {
+  animation-duration: 320ms;
 }
 
 /* ============================================================================
@@ -52,14 +67,18 @@
 }
 
 ::view-transition-old(community-panel) {
-  animation-name: slide-out-left;
+  animation-name: community-slide-out;
 }
 
 ::view-transition-new(community-panel) {
-  animation-name: slide-in-right;
+  animation-name: community-slide-in;
 }
 
-@keyframes slide-out-left {
+/* Uniquely named: a generic `slide-out-left`/`slide-in-right` here collides with
+   the root forward/backward keyframes of the same name below — CSS @keyframes are
+   global and last-defined wins, so the community panel was silently animating the
+   root's values. */
+@keyframes community-slide-out {
   from {
     opacity: 1;
     transform: translateX(0);
@@ -70,7 +89,7 @@
   }
 }
 
-@keyframes slide-in-right {
+@keyframes community-slide-in {
   from {
     opacity: 0;
     transform: translateX(20px);
@@ -240,6 +259,13 @@
     transition: none !important;
   }
 
+  /* Shop product cover: snap instead of morph under reduced motion. */
+  ::view-transition-group(.product-cover),
+  ::view-transition-old(.product-cover),
+  ::view-transition-new(.product-cover) {
+    animation-duration: 1ms !important;
+  }
+
   /* Instant transitions */
   ::view-transition-old(root) {
     opacity: 0;
@@ -254,6 +280,19 @@
   .module-slide-left::view-transition-new(module-content),
   .module-slide-right::view-transition-old(module-content),
   .module-slide-right::view-transition-new(module-content) {
+    animation: none !important;
+  }
+
+  /* Community panel + JS-fallback module transitions: instant under reduced motion. */
+  ::view-transition-old(community-panel),
+  ::view-transition-new(community-panel) {
+    animation: none !important;
+  }
+
+  .module-transition-enter,
+  .module-transition-exit,
+  .module-transition-view.entering,
+  .module-transition-view.exiting {
     animation: none !important;
   }
 }

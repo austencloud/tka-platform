@@ -17,15 +17,35 @@
 
   // View Transitions driver (2026 canonical SvelteKit pattern). The root transition
   // is disabled in view-transitions.css, so only elements carrying a
-  // view-transition-name morph (shop product covers, browse -> sequence). Guards:
-  // feature-detect for graceful fallback, the swipe-dismiss coordination flag, and
-  // same-pathname navigations (the viewer mutates bpm/t/view params constantly and
-  // must not trigger a morph on those). onNavigate never fires on a full-page F5,
-  // which is why the old "refresh deadlock" note was a misdiagnosis.
+  // view-transition-name morph. SCOPED to the navigations that actually have a
+  // morph pair (shop grid <-> product, browse <-> sequence). Every other route
+  // change instant-cuts: unscoped, the API still snapshots the full viewport —
+  // including the fixed cosmic WebGL background (~99ms readback) — on EVERY app
+  // navigation, for no visible benefit (root is disabled). Guards: feature-detect
+  // for graceful fallback, the swipe-dismiss coordination flag, same-pathname (the
+  // viewer mutates bpm/t/view params constantly), and the morph-pair allowlist.
+  // onNavigate never fires on a full-page F5.
+  function navigationMorphs(
+    from: URL | null | undefined,
+    to: URL | null | undefined
+  ): boolean {
+    if (!from || !to) return false;
+    const a = from.pathname;
+    const b = to.pathname;
+    // Shop grid <-> product detail: the product cover morphs (product-{id}).
+    if (a.startsWith("/shop") && b.startsWith("/shop")) return true;
+    // Browse gallery <-> sequence viewer: the thumbnail morphs (sequence-{id}).
+    const seqPair = (x: string, y: string) =>
+      x.startsWith("/browse") && y.startsWith("/sequence");
+    if (seqPair(a, b) || seqPair(b, a)) return true;
+    return false;
+  }
+
   onNavigate((navigation) => {
     if (!document.startViewTransition) return;
     if (consumeSkipNextViewTransition()) return;
     if (navigation.from?.url.pathname === navigation.to?.url.pathname) return;
+    if (!navigationMorphs(navigation.from?.url, navigation.to?.url)) return;
     return new Promise((resolve) => {
       document.startViewTransition(async () => {
         resolve();

@@ -17,22 +17,35 @@
  * and unmounts the controller (stopping its rAF) while any suppressor is active.
  */
 
+import { untrack } from "svelte";
+
 // Active suppressor keys. Keyed (not a bare count) so a scene can register/release
 // idempotently without double-suppress/double-release races between mounts.
 const state = $state({ keys: [] as string[] });
 
-/** Register a suppressor. Idempotent for the same key. */
+// The mutators read state.keys (the .includes idempotency check) and write it.
+// untrack() wraps that read so a caller inside a reactive $effect does NOT pick up
+// state.keys as a dependency — otherwise an effect that calls suppressBackground
+// both subscribes to and mutates the same state and self-invalidates forever
+// (effect_update_depth_exceeded — hit by MarketingChrome's /shop suppress effect).
+// The write still notifies real subscribers like BackgroundHost.isBackgroundSuppressed.
+
+/** Register a suppressor. Idempotent for the same key. Safe to call from a $effect. */
 export function suppressBackground(key: string) {
-  if (!state.keys.includes(key)) {
-    state.keys = [...state.keys, key];
-  }
+  untrack(() => {
+    if (!state.keys.includes(key)) {
+      state.keys = [...state.keys, key];
+    }
+  });
 }
 
 /** Release a suppressor. Idempotent — releasing an unknown key is a no-op. */
 export function releaseBackground(key: string) {
-  if (state.keys.includes(key)) {
-    state.keys = state.keys.filter((k) => k !== key);
-  }
+  untrack(() => {
+    if (state.keys.includes(key)) {
+      state.keys = state.keys.filter((k) => k !== key);
+    }
+  });
 }
 
 /** True when any fullscreen-opaque scene is currently occluding the background. */
