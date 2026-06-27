@@ -4,9 +4,11 @@
    * order, and sub-entry nesting all come from `guide-manifest.ts` — never
    * hand-numbered — so building or reordering a page updates the TOC for free.
    *
-   * Layout mirrors the original: two columns (1.0 + 1.2 left, the longer 1.1
-   * right), Fraunces section heads with big navy numerals + a gold rule, dot
-   * leaders to recto/verso page numbers.
+   * Layout: two columns that read in NATURAL order — fill the left column
+   * top-to-bottom (1.0, then 1.1…), overflow into the right (…1.1, 1.2) via CSS
+   * multi-column flow. The long 1.1 spans the column break instead of jumping
+   * the eye left→right→left. Fraunces section heads with big navy numerals + a
+   * gold rule, dot leaders to recto/verso page numbers.
    */
   import { bodyPagesByGroup, GROUP_TITLES, type GuideGroup } from "../_data/guide-manifest";
 
@@ -14,9 +16,9 @@
   const groups = bodyPagesByGroup() as Group[];
   const byId = (g: GuideGroup) => groups.find((x) => x.group === g);
 
-  // 1.0 + 1.2 on the left, the longer 1.1 alone on the right.
-  const left = [byId("1.0"), byId("1.2")].filter(Boolean) as Group[];
-  const right = [byId("1.1")].filter(Boolean) as Group[];
+  // Single source-ordered flow; CSS columns balance it + break it across two
+  // columns while keeping reading order 1.0 → 1.1 → 1.2.
+  const ordered = [byId("1.0"), byId("1.1"), byId("1.2")].filter(Boolean) as Group[];
 </script>
 
 {#snippet section(g: Group)}
@@ -38,13 +40,8 @@
 {/snippet}
 
 <div class="toc">
-  <div class="toc-cols">
-    <div class="toc-col">
-      {#each left as g}{@render section(g)}{/each}
-    </div>
-    <div class="toc-col">
-      {#each right as g}{@render section(g)}{/each}
-    </div>
+  <div class="toc-flow">
+    {#each ordered as g}{@render section(g)}{/each}
   </div>
 </div>
 
@@ -58,27 +55,24 @@
     flex-direction: column;
     justify-content: center;
   }
-  .toc-cols {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-    /* Stretch across the full page body — no narrow centred cap. */
-    max-width: none;
-    margin: 0 auto;
+  /* Native multi-column flow: content reads down the left column then down the
+     right (column-major), balanced automatically — no manual side assignment. */
+  .toc-flow {
     width: 100%;
-  }
-  .toc-col {
-    display: flex;
-    flex-direction: column;
-    gap: 0.55in;
     padding: 0 0.55in;
-    min-width: 0;
+    column-count: 2;
+    column-gap: 1.1in;
+    column-rule: 1px solid #e2def0;
+    column-fill: balance;
   }
-  .toc-col:first-child {
-    border-right: 1px solid #e2def0;
-  }
+  /* Let the long section (1.1) span the column break so the eye keeps a straight
+     top-to-bottom path; rows stay whole and headers keep their first rows. */
   .toc-sec {
-    break-inside: avoid;
+    break-inside: auto;
+    margin-bottom: 0.55in;
+  }
+  .toc-sec:last-child {
+    margin-bottom: 0;
   }
   .toc-sec-h {
     margin: 0 0 0.18in;
@@ -87,6 +81,7 @@
     display: flex;
     align-items: baseline;
     gap: 0.34em;
+    break-after: avoid; /* never orphan a section head at a column bottom */
   }
   .toc-num {
     font-family: "Fraunces", Georgia, serif;
@@ -107,6 +102,7 @@
     list-style: none;
     margin: 0;
     padding: 0;
+    break-inside: auto; /* the list may continue in the next column */
   }
   /* Row: label · dotted leader · page number. */
   .toc-row {
@@ -114,6 +110,7 @@
     align-items: baseline;
     gap: 0.4em;
     line-height: 1.95;
+    break-inside: avoid; /* never split one entry across the column gap */
   }
   .toc-label {
     font-family: "Cormorant Garamond", Georgia, serif;
