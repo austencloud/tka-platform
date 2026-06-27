@@ -49,9 +49,10 @@
   // two) of minis, then the italic description; a hairline rule splits sections
   // (parsability, matching the proof). The title sits at the SAME y as The
   // Grid's title so pages stay consistent. Tune GAP to breathe the page.
-  const TITLE_Y = 10.6; // identical to The Grid's title run → consistent across pages
-  const TITLE_H = 40;
-  const GAP = 14; // even gap between major blocks
+  const TITLE_Y = 22; // top breathing room (matches the proof); consistent across pages
+  const TITLE_H = 40; // title layout slot feeding the intro offset
+  const TITLE_FS = 56; // title font size — Tangerine reads small, so larger than the slot
+  const GAP = 12; // even gap between major blocks
   const G_IN = 6; // heading→minis and minis→description
   const ROW_GAP = 5; // between the two Gamma rows
   const LINE = 18; // intro line height
@@ -117,7 +118,7 @@
   // centred run (plain clause + spaced bold colour legend) — two separate runs
   // double-centred and left an awkward gap between "mirrored." and "Red".
   const RUNS: Run[] = [
-    { x: 201.1, y: TITLE_Y, w: 218.4, h: TITLE_H, title: true, t: "Hand Positions" },
+    { x: 201.1, y: TITLE_Y, w: 218.4, h: TITLE_FS, title: true, t: "Hand Positions" },
 
     { x: 64.4, y: introY, w: 491.6, h: 15, t: "There are multiple ways to combine two hand points to form a hand position." },
     { x: 64.4, y: introY + LINE, w: 491.6, h: 15, line2: true, t: "" },
