@@ -183,6 +183,16 @@
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
     overflow: hidden;
     z-index: 50;
+    /* Entrance: scale + fade from the trigger corner (side=bottom align=end). */
+    transform-origin: top right;
+    animation: practice-config-in var(--duration-fast, 150ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+  }
+  @keyframes practice-config-in {
+    from { opacity: 0; transform: scale(0.94) translateY(-6px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .practice-config-panel { animation: none; }
   }
 
   .config-header {

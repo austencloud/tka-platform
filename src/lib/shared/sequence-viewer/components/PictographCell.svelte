@@ -115,6 +115,12 @@
     object-fit: cover;
     -webkit-user-drag: none;
     user-select: none;
+    /* Fade the pictograph in when it finishes loading instead of popping. */
+    animation: cellImgIn var(--duration-fast, 150ms) ease;
+  }
+  @keyframes cellImgIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   .cell-spinner-container {
@@ -165,6 +171,26 @@
     }
   }
 
+  /* Showy depth — a soft cast shadow drops in beneath the focused cell. */
+  .pictograph-cell.current::after {
+    content: "";
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    bottom: -9%;
+    height: 16%;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.45);
+    filter: blur(7px);
+    z-index: -1;
+    pointer-events: none;
+    animation: cellShadowIn 0.32s ease-out forwards;
+  }
+  @keyframes cellShadowIn {
+    from { opacity: 0; transform: translateY(-4px) scaleX(0.7); }
+    to { opacity: 1; transform: translateY(0) scaleX(1); }
+  }
+
   /* Played cells dim to distinguish from upcoming */
   .pictograph-cell.played {
     opacity: 0.6;
@@ -184,6 +210,15 @@
     .pictograph-cell.current {
       animation: none;
       transform: scale(1);
+    }
+
+    .cell-image {
+      animation: none;
+    }
+
+    .pictograph-cell.current::after {
+      animation: none;
+      opacity: 1;
     }
   }
 </style>

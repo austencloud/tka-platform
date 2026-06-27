@@ -129,6 +129,16 @@
     user-select: none;
   }
 
+  /* First paint: fade the freshly loaded pictograph in instead of popping. The
+     crossfade/swap variants manage their own opacity, so exclude them. */
+  .cell-image:not(.cell-fade-old):not(.cell-fade-new):not(.cell-swap-new) {
+    animation: cellLoadIn var(--duration-fast, 150ms) ease;
+  }
+  @keyframes cellLoadIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
   /* Cross-fade: old image fades out while new image fades in simultaneously.
      Both images are stacked in the same cell during the transition. */
   .cell-fade-old {
@@ -328,6 +338,9 @@
     .cell-fade-old,
     .cell-image.cell-fade-new {
       transition: none;
+    }
+    .cell-image {
+      animation: none;
     }
   }
 </style>

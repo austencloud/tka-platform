@@ -862,6 +862,12 @@
     object-fit: contain;
     -webkit-user-drag: none;
     user-select: none;
+    /* Fade the QR in once it renders so it doesn't pop inside the cell's scale. */
+    animation: qrImgIn var(--duration-normal, 200ms) ease;
+  }
+  @keyframes qrImgIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   /* Interactive viewer only: clickable play badge over the QR. The wrapper
@@ -927,6 +933,9 @@
   @media (prefers-reduced-motion: reduce) {
     .qr-play-hit::after {
       transition: none;
+    }
+    .qr-code-image {
+      animation: none;
     }
   }
 

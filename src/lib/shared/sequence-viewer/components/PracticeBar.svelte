@@ -14,6 +14,8 @@
   toward the next speed-up. Exit lives in the header, not here.
 -->
 <script lang="ts">
+  import { onMount } from "svelte";
+  import { fade } from "svelte/transition";
   import type { TempoPracticeProgress } from "../services/tempo-practice-orchestrator";
 
   interface Props {
@@ -82,6 +84,33 @@
     prevBpm = bpm;
   });
 
+  // Reduced-motion gate for the JS-driven svelte transitions below (CSS
+  // animations are gated by the @media block in styles).
+  let reduceMotion = $state(false);
+  onMount(() => {
+    const mq = matchMedia("(prefers-reduced-motion: reduce)");
+    reduceMotion = mq.matches;
+    const sync = () => (reduceMotion = mq.matches);
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  });
+
+  // Celebrate crossing a level boundary — a real speed-up, not every smooth
+  // loop (currentLevel stays 0 in smooth mode, so this only fires in
+  // stepped/manual when the tempo actually steps up).
+  let prevLevel = progress.currentLevel;
+  let celebrate = $state(false);
+  let celebrateTimer: ReturnType<typeof setTimeout> | null = null;
+  $effect(() => {
+    const lvl = progress.currentLevel;
+    if (lvl > prevLevel) {
+      celebrate = true;
+      if (celebrateTimer) clearTimeout(celebrateTimer);
+      celebrateTimer = setTimeout(() => (celebrate = false), 620);
+    }
+    prevLevel = lvl;
+  });
+
   // The + glows when Manual has parked at a completed level awaiting a tap.
   let upReady = $derived(isManual && progress.readyToAdvance);
 
@@ -105,7 +134,16 @@
       onclick={onPlayPause}
       aria-label={isPlaying ? "Pause" : "Play"}
     >
-      <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+      <span class="pb-icon-stack">
+        {#key isPlaying}
+          <i
+            class="fas {isPlaying ? 'fa-pause' : 'fa-play'}"
+            aria-hidden="true"
+            in:fade|local={{ duration: reduceMotion ? 0 : 160 }}
+            out:fade|local={{ duration: reduceMotion ? 0 : 160 }}
+          ></i>
+        {/key}
+      </span>
     </button>
 
     <div class="pb-tempo" style="--bpm-color: {bpmColor}">
@@ -154,6 +192,7 @@
       <button
         class="pb-btn pb-level up"
         class:ready={upReady}
+        class:celebrate
         type="button"
         onclick={() => onStepLevel(1)}
         disabled={atCeiling}
@@ -179,7 +218,16 @@
     <span class="pb-divider" aria-hidden="true"></span>
 
     <div class="pb-progress">
-      <span class="pb-caption" class:ready={progress.readyToAdvance}>{caption}</span>
+      <span class="pb-caption-wrap">
+        {#key caption}
+          <span
+            class="pb-caption"
+            class:ready={progress.readyToAdvance}
+            in:fade|local={{ duration: reduceMotion ? 0 : 150 }}
+            out:fade|local={{ duration: reduceMotion ? 0 : 150 }}
+          >{caption}</span>
+        {/key}
+      </span>
       <div class="pb-fill-track" aria-hidden="true">
         <div
           class="pb-fill"
@@ -420,10 +468,26 @@
     background: var(--theme-accent, #8b5cf6);
     transition: width var(--duration-normal, 200ms) ease;
   }
-  .pb-fill.smooth { opacity: 0.45; }
-  .pb-fill.ready { background: var(--semantic-success, #22c55e); }
+  /* Smooth-mode fill breathes so the steady climb reads as alive. */
+  .pb-fill.smooth { opacity: 0.45; animation: pb-fill-breathe 2.6s ease-in-out infinite; }
+  @keyframes pb-fill-breathe {
+    0%, 100% { opacity: 0.35; box-shadow: 0 0 4px 0 color-mix(in srgb, var(--theme-accent, #8b5cf6) 35%, transparent); }
+    50% { opacity: 0.6; box-shadow: 0 0 12px 1px color-mix(in srgb, var(--theme-accent, #8b5cf6) 60%, transparent); }
+  }
+  /* When a level completes the fill settles to full with a playful overshoot. */
+  .pb-fill.ready {
+    background: var(--semantic-success, #22c55e);
+    transition: width var(--duration-normal, 200ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+  }
+
+  /* Caption crossfades on change; the wrap reserves a line so swaps never
+     reflow. The keyed span stacks absolutely inside it. */
+  .pb-caption-wrap { position: relative; display: block; width: 100%; height: 1.25em; }
   .pb-caption {
-    max-width: 100%;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    text-align: center;
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
     color: var(--theme-text, rgba(255, 255, 255, 0.85));
@@ -434,6 +498,34 @@
   }
   .pb-caption.ready { color: color-mix(in srgb, var(--semantic-success, #22c55e) 60%, white); }
 
+  /* Play/pause glyph crossfade — old and new stack and fade so it morphs
+     instead of blinking. */
+  .pb-icon-stack {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+  }
+  .pb-icon-stack i {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* One-shot celebration when the tempo crosses a level boundary. */
+  .pb-level.up.celebrate {
+    animation: pb-celebrate 620ms var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+  }
+  @keyframes pb-celebrate {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--semantic-success, #22c55e) 60%, transparent); }
+    35% { transform: scale(1.16); filter: brightness(1.25); box-shadow: 0 0 22px 6px color-mix(in srgb, var(--semantic-success, #22c55e) 65%, transparent); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--semantic-success, #22c55e) 0%, transparent); }
+  }
+
   /* Narrow: tighten gaps, drop dividers, let progress wrap to its own line. */
   @container practice-bar (max-width: 600px) {
     .pb-group { gap: 12px; }
@@ -443,7 +535,9 @@
 
   @media (prefers-reduced-motion: reduce) {
     .pb-btn, .pb-fine-btn, .pb-fill { transition: none; }
-    .pb-level.up.ready { animation: none; }
+    .pb-level.up.ready,
+    .pb-level.up.celebrate,
+    .pb-fill.smooth { animation: none; }
     .pb-readout.bumped .pb-bpm-value { animation: none; }
     .pb-btn:active, .pb-fine-btn:active { transform: none; }
   }

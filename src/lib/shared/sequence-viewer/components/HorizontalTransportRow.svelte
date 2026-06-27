@@ -5,6 +5,9 @@
   Contains step buttons (half/full beat) and central play/pause button.
 -->
 <script lang="ts">
+	import { onMount } from "svelte";
+	import { fade } from "svelte/transition";
+
 	let {
 		isPlaying,
 		onPlaybackToggle,
@@ -24,6 +27,16 @@
 		onRestartToStart?: () => void;
 		onStepFullFwd: () => void;
 	} = $props();
+
+	// Reduced-motion gate for the play/pause glyph crossfade.
+	let reduceMotion = $state(false);
+	onMount(() => {
+		const mq = matchMedia("(prefers-reduced-motion: reduce)");
+		reduceMotion = mq.matches;
+		const sync = () => (reduceMotion = mq.matches);
+		mq.addEventListener("change", sync);
+		return () => mq.removeEventListener("change", sync);
+	});
 </script>
 
 <div class="horizontal-transport-row">
@@ -57,15 +70,22 @@
 		onclick={onPlaybackToggle}
 		aria-label={isPlaying ? "Pause" : "Play"}
 	>
-		{#if isPlaying}
-			<svg viewBox="0 0 24 24" fill="currentColor">
-				<path d="M6 4h4v16H6zm8 0h4v16h-4z" />
-			</svg>
-		{:else}
-			<svg viewBox="0 0 24 24" fill="currentColor">
-				<path d="M8 5v14l11-7z" />
-			</svg>
-		{/if}
+		<span class="play-icon-stack">
+			{#key isPlaying}
+				<svg
+					viewBox="0 0 24 24"
+					fill="currentColor"
+					in:fade|local={{ duration: reduceMotion ? 0 : 160 }}
+					out:fade|local={{ duration: reduceMotion ? 0 : 160 }}
+				>
+					{#if isPlaying}
+						<path d="M6 4h4v16H6zm8 0h4v16h-4z" />
+					{:else}
+						<path d="M8 5v14l11-7z" />
+					{/if}
+				</svg>
+			{/key}
+		</span>
 	</button>
 
 	<button
@@ -119,6 +139,27 @@
 		border-color: var(--theme-stroke-strong);
 		color: var(--theme-text);
 		transform: scale(1.05);
+	}
+
+	.step-btn:active {
+		transform: scale(0.96);
+	}
+
+	/* Play/pause glyph crossfade — both SVGs stack and fade so it morphs. */
+	.play-icon-stack {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+	}
+
+	.play-icon-stack svg {
+		position: absolute;
+		inset: 0;
+		width: 28px;
+		height: 28px;
 	}
 
 	.play-btn {
