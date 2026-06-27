@@ -24,7 +24,7 @@ import type { EffectPreset, EffectPresetGroup } from "./types";
  * (number/string/boolean/null), string arrays (palettes), or — defensively —
  * shallow objects. No functions, no nested arrays-of-objects live in a patch.
  */
-function valuesEqual(a: unknown, b: unknown): boolean {
+export function valuesEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a === null || b === null || a === undefined || b === undefined) return false;
   if (Array.isArray(a) || Array.isArray(b)) {

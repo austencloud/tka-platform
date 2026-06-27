@@ -17,6 +17,10 @@
 	interface Props {
 		presetGroup: EffectPresetGroup;
 		activePresetId: string | null;
+		/** Sentinel id for the synthetic Default chip (shipped factory default). */
+		defaultChipId?: string;
+		/** Render the snapshot-backed Custom chip disabled (nothing saved yet). */
+		customDisabled?: boolean;
 		onSelectPreset: (presetId: string) => void;
 		onCustomize: () => void;
 		effectLabel: string;
@@ -24,7 +28,7 @@
 		summary: string;
 	}
 
-	const { presetGroup, activePresetId, onSelectPreset, onCustomize, effectLabel, accentColor, summary }: Props = $props();
+	const { presetGroup, activePresetId, defaultChipId, customDisabled = false, onSelectPreset, onCustomize, effectLabel, accentColor, summary }: Props = $props();
 
 	const effectsConfigState = getEffectsConfigContext();
 
@@ -59,15 +63,36 @@
 		role="radiogroup"
 		aria-label="Choose a {effectLabel} preset"
 	>
+		{#if defaultChipId}
+			{@const isDefaultActive = activePresetId === defaultChipId}
+			<button
+				class="preset-card"
+				class:active={isDefaultActive}
+				type="button"
+				role="radio"
+				aria-checked={isDefaultActive}
+				style:--card-accent={accentColor}
+				onclick={() => onSelectPreset(defaultChipId)}
+			>
+				<div class="preview-area">
+					<div class="dot" style:background={accentColor} style:box-shadow="0 0 14px 5px {accentColor}80"></div>
+				</div>
+				<span class="preset-name" class:active-name={isDefaultActive}>Default</span>
+			</button>
+		{/if}
 		{#each presetGroup.presets as preset (preset.id)}
 			{@const isActive = preset.id === activePresetId}
 			{@const isCustom = preset.previewColor === "custom"}
+			{@const isSnapshotCustom = isCustom && !preset.resolvePatch}
+			{@const isDisabled = isSnapshotCustom && customDisabled}
 			<button
 				class="preset-card"
 				class:active={isActive}
+				class:disabled={isDisabled}
 				type="button"
 				role="radio"
 				aria-checked={isActive}
+				disabled={isDisabled}
 				style:--card-accent={accentColor}
 				onclick={() => onSelectPreset(preset.id)}
 			>
@@ -113,6 +138,12 @@
 								style:box-shadow="0 0 14px 5px {preset.previewColor2}80"
 							></div>
 						</div>
+					{:else if isSnapshotCustom}
+						<div
+							class="dot"
+							style:background={accentColor}
+							style:box-shadow={isDisabled ? "none" : `0 0 14px 5px ${accentColor}80`}
+						></div>
 					{:else}
 						<div
 							class="dot"
@@ -229,6 +260,15 @@
 	.preset-card.active {
 		border-color: var(--card-accent);
 		background: color-mix(in srgb, var(--card-accent) 8%, transparent);
+	}
+
+	.preset-card.disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.preset-card.disabled:hover {
+		border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
 	}
 
 	.preset-card:focus-visible {

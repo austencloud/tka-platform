@@ -28,6 +28,8 @@ export type SceneUndoOperationType =
   | "toggle-effect"
   | "update-effect-config"
   | "apply-effect-preset"
+  | "restore-custom-effect"
+  | "reset-effect-default"
   | "set-active-effect"
   | "toggle-motion"
   // Scene

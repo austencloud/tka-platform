@@ -230,6 +230,34 @@ export function createEffectsConfigState(
     }, 300);
   }
 
+  const cloneOne = <T>(v: T): T => {
+    try { return structuredClone(v); }
+    catch { return JSON.parse(JSON.stringify(v)); }
+  };
+
+  // Per-effect "your last hand-tuned look" snapshots. Seeded from the loaded
+  // config and updated on every manual updateEffect (NOT on applyPreset /
+  // restoreCustom / resetToShipped). Backs the Custom restore chip: clicking a
+  // preset is a safe excursion because the pre-preset tuning waits here.
+  // In-memory only — re-seeded from the persisted config on reload. Spec:
+  // docs/superpowers/specs/2026-06-27-core-preset-and-custom-restore-design.md
+  const customSnapshots = $state<Record<string, unknown>>({});
+  for (const id of EFFECT_IDS) {
+    customSnapshots[id] = cloneOne((config as unknown as Record<string, unknown>)[id]);
+  }
+
+  /** Structural deep-equality for effect intents (scalars, string arrays, shallow objects). */
+  function deepEqual(a: unknown, b: unknown): boolean {
+    if (a === b) return true;
+    if (a === null || b === null || typeof a !== "object" || typeof b !== "object") return false;
+    const ak = Object.keys(a as object);
+    const bk = Object.keys(b as object);
+    if (ak.length !== bk.length) return false;
+    return ak.every((k) =>
+      deepEqual((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]),
+    );
+  }
+
   function updateEffect<K extends keyof EffectConfigMap>(
     effectId: K,
     patch: Partial<EffectConfigMap[K]>,
@@ -246,8 +274,46 @@ export function createEffectsConfigState(
       ...patch,
     };
     config.activePresets[effectId as keyof typeof config.activePresets] = null;
+    // A manual edit IS the user's custom look — capture it for the Custom chip.
+    customSnapshots[effectId] = cloneOne((config as unknown as Record<string, unknown>)[effectId]);
     scheduleSave();
     sceneUndo.commitStateCoalescing(`effects-${effectId}`);
+  }
+
+  /** The captured custom snapshot for an effect, or null if none. */
+  function customSnapshot<K extends keyof EffectConfigMap>(id: K): EffectConfigMap[K] | null {
+    return (customSnapshots[id] as EffectConfigMap[K] | undefined) ?? null;
+  }
+
+  /** True once the user has tuned this effect away from the shipped default. */
+  function hasCustom(id: keyof EffectConfigMap): boolean {
+    const snap = customSnapshots[id];
+    if (snap == null) return false;
+    return !deepEqual(snap, (DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>)[id]);
+  }
+
+  /** Restore the captured custom snapshot (the Custom chip). No-op without one. */
+  function restoreCustom<K extends keyof EffectConfigMap>(id: K) {
+    if (!isEffectId(id)) return;
+    const snap = customSnapshots[id];
+    if (snap == null) return;
+    sceneUndo.captureState("restore-custom-effect", `Restore ${id} custom`);
+    (config as unknown as Record<string, unknown>)[id] = cloneOne(snap);
+    config.activePresets[id as keyof typeof config.activePresets] = null;
+    scheduleSave();
+    sceneUndo.commitState();
+  }
+
+  /** Reset an effect to the shipped factory default (the Default chip). */
+  function resetToShipped<K extends keyof EffectConfigMap>(id: K) {
+    if (!isEffectId(id)) return;
+    sceneUndo.captureState("reset-effect-default", `Reset ${id} to default`);
+    (config as unknown as Record<string, unknown>)[id] = cloneOne(
+      (DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>)[id],
+    );
+    config.activePresets[id as keyof typeof config.activePresets] = null;
+    scheduleSave();
+    sceneUndo.commitState();
   }
 
   function setActiveEffect(effect: EffectType) {
@@ -388,6 +454,10 @@ export function createEffectsConfigState(
     replace,
     saveAsBaseline,
     resetToBaseline,
+    customSnapshot,
+    hasCustom,
+    restoreCustom,
+    resetToShipped,
   };
 }
 

@@ -313,6 +313,8 @@ function domainsForOperationType(type: SceneUndoOperationType): DomainKey[] {
       return ["effects"];
     case "update-effect-config":
     case "apply-effect-preset":
+    case "restore-custom-effect":
+    case "reset-effect-default":
     case "set-active-effect":
       return ["effects"];
     case "toggle-motion":

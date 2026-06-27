@@ -1,12 +1,16 @@
 <script lang="ts">
   import type { Snippet, Component } from "svelte";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import { isEffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import { isEffectId, type EffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
   import EffectSelector from "./EffectSelector.svelte";
   import EffectPresetsSection from "./EffectPresetsSection.svelte";
   import { EFFECT_COLORS, EFFECT_LABELS, EFFECTS, getRegistration } from "./effect-registry";
   import type { EffectRegistration } from "./effect-registry";
-  import { matchPresetId } from "./presets/match-preset";
+  import { matchPresetId, valuesEqual } from "./presets/match-preset";
+  import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+  /** Synthetic chip id for the shipped factory default (not a named preset). */
+  const DEFAULT_CHIP_ID = "__default__";
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import type { PrimaryParamSpec } from "./effect-primary-param";
@@ -63,18 +67,34 @@
   // on select — that was the source of the phantom "Supernova" highlight.
   const activePresetId = $derived.by(() => {
     if (activeEffect === "none" || !registration) return null;
-    const effectConfig = effectsConfigState.effect(
-      activeEffect as Parameters<typeof effectsConfigState.effect>[0],
-    ) as unknown as Record<string, unknown>;
+    const fx = activeEffect as EffectId;
+    const effectConfig = effectsConfigState.effect(fx) as unknown as Record<string, unknown>;
+    // 1. Shipped factory default → the synthetic Default chip.
+    const shipped = (DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>)[fx];
+    if (valuesEqual(effectConfig, shipped)) return DEFAULT_CHIP_ID;
+    // 2. A named preset whose static patch the live config matches.
     const matched = matchPresetId(registration.presetGroup, effectConfig);
     if (matched) return matched;
-    // No static patch matched. Honor an explicitly-chosen patch-less preset
-    // (Custom) — those carry meaning only through the activePresets signal.
+    // 3. The snapshot-backed Custom chip (the empty-patch customs, NOT trail/fire
+    //    resolvePatch ones): light it when the live config equals your snapshot.
+    const customPreset = registration.presetGroup.presets.find(
+      (p) => p.previewColor === "custom" && !p.resolvePatch,
+    );
+    if (
+      customPreset &&
+      effectsConfigState.hasCustom(fx) &&
+      valuesEqual(effectConfig, effectsConfigState.customSnapshot(fx) as unknown as Record<string, unknown>)
+    ) {
+      return customPreset.id;
+    }
+    // 4. An explicitly-chosen patch-less / resolvePatch preset (trail/fire custom
+    //    colours) — those carry meaning only through the activePresets signal.
     const ap = effectsConfigState.activePresets as Record<string, string | null>;
     const explicit = ap[activeEffect];
     if (!explicit) return null;
     const preset = registration.presetGroup.presets.find((p) => p.id === explicit);
-    const patchless = preset && (!preset.patch || Object.keys(preset.patch).length === 0);
+    const patchless =
+      preset && (!preset.patch || Object.keys(preset.patch).length === 0 || !!preset.resolvePatch);
     return patchless ? explicit : null;
   });
 
@@ -101,12 +121,33 @@
 
   function handlePresetSelect(presetId: string): void {
     if (!registration) return;
+    if (presetId === DEFAULT_CHIP_ID) {
+      if (isEffectId(activeEffect)) effectsConfigState.resetToShipped(activeEffect);
+      return;
+    }
     const group = registration.presetGroup;
     const preset = group.presets.find(p => p.id === presetId);
     if (!preset) return;
+    // The snapshot-backed Custom chip (empty-patch, not trail/fire) restores your
+    // last hand-tuned look instead of applying a static patch.
+    if (preset.previewColor === "custom" && !preset.resolvePatch) {
+      if (isEffectId(activeEffect)) effectsConfigState.restoreCustom(activeEffect);
+      return;
+    }
     const patch = preset.resolvePatch ? preset.resolvePatch() : (preset.patch ?? {});
     effectsConfigState.applyPreset(group.effectType, preset.id, patch);
   }
+
+  // Whether the active effect's Custom chip is a snapshot-restore that has nothing
+  // saved yet (→ render it disabled). trail/fire resolvePatch customs are never disabled.
+  const customDisabled = $derived.by(() => {
+    if (activeEffect === "none" || !registration) return false;
+    const customPreset = registration.presetGroup.presets.find(
+      (p) => p.previewColor === "custom" && !p.resolvePatch,
+    );
+    if (!customPreset) return false;
+    return !effectsConfigState.hasCustom(activeEffect as EffectId);
+  });
 
   async function handleCustomizeOpen(): Promise<void> {
     if (!registration) return;
@@ -155,6 +196,8 @@
         <EffectPresetsSection
           presetGroup={registration.presetGroup}
           {activePresetId}
+          defaultChipId={DEFAULT_CHIP_ID}
+          {customDisabled}
           onSelectPreset={handlePresetSelect}
           onCustomize={handleCustomizeOpen}
           effectLabel={EFFECT_LABELS[activeEffect] ?? ""}

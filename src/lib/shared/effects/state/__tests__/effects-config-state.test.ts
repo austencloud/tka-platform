@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { DEFAULT_EFFECTS_CONFIG } from "../../domain/defaults";
 
 // Mock the scene undo manager before importing the module under test.
 // Module path is `get-scene-undo-manager` (Phase C kebab rename) — mocking the
@@ -41,6 +42,48 @@ describe("EffectsConfigState", () => {
     it("throws for unknown effect id", () => {
       const state = createEffectsConfigState();
       expect(() => state.updateEffect("bogus" as any, {})).toThrow("Unknown effect id");
+    });
+  });
+
+  describe("custom snapshots + core preset (Default / Custom chips)", () => {
+    it("hasCustom is false at the shipped default", () => {
+      const state = createEffectsConfigState(undefined, { persist: false });
+      expect(state.hasCustom("bloom")).toBe(false);
+    });
+
+    it("updateEffect captures the live config as the custom snapshot", () => {
+      const state = createEffectsConfigState(undefined, { persist: false });
+      state.updateEffect("bloom", { intensity: 0.123 });
+      expect(state.hasCustom("bloom")).toBe(true);
+      expect(state.customSnapshot("bloom")?.intensity).toBe(0.123);
+    });
+
+    it("applyPreset does NOT overwrite the custom snapshot", () => {
+      const state = createEffectsConfigState(undefined, { persist: false });
+      state.updateEffect("bloom", { intensity: 0.123 });
+      state.applyPreset("bloom", "bloom-supernova", { intensity: 1, radius: 50 });
+      expect(state.bloom.intensity).toBe(1); // preset applied to live config
+      expect(state.customSnapshot("bloom")?.intensity).toBe(0.123); // snapshot preserved
+    });
+
+    it("restoreCustom returns the pre-preset tuning", () => {
+      const state = createEffectsConfigState(undefined, { persist: false });
+      state.updateEffect("bloom", { intensity: 0.123, radius: 41 });
+      state.applyPreset("bloom", "bloom-supernova", { intensity: 1, radius: 50 });
+      state.restoreCustom("bloom");
+      expect(state.bloom.intensity).toBe(0.123);
+      expect(state.bloom.radius).toBe(41);
+      expect(state.activePresets.bloom).toBeNull();
+    });
+
+    it("resetToShipped returns factory default and leaves the snapshot intact", () => {
+      const state = createEffectsConfigState(undefined, { persist: false });
+      state.updateEffect("bloom", { intensity: 0.123 });
+      state.resetToShipped("bloom");
+      expect(state.bloom.intensity).toBe(DEFAULT_EFFECTS_CONFIG.bloom.intensity);
+      expect(state.activePresets.bloom).toBeNull();
+      expect(state.hasCustom("bloom")).toBe(true); // your look is still recoverable
+      expect(state.customSnapshot("bloom")?.intensity).toBe(0.123);
     });
   });
 
