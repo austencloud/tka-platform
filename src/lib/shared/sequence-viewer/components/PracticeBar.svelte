@@ -16,7 +16,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
-  import type { TempoPracticeProgress } from "../services/tempo-practice-orchestrator";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import type { ProgressionMode, TempoPracticeProgress } from "../services/tempo-practice-orchestrator";
 
   interface Props {
     progress: TempoPracticeProgress;
@@ -28,10 +29,19 @@
     onStepLevel: (dir: 1 | -1) => void;
     /** Freeze/resume the auto-climb at the current speed. */
     onToggleHold: () => void;
+    /** Switch the ramp mode live (inline picker). Omit to hide the picker. */
+    onSetMode?: (mode: ProgressionMode) => void;
   }
 
-  let { progress, bpm, isPlaying, onBpmChange, onStepLevel, onToggleHold, onPlayPause }: Props =
+  let { progress, bpm, isPlaying, onBpmChange, onStepLevel, onToggleHold, onPlayPause, onSetMode }: Props =
     $props();
+
+  const MODE_OPTIONS: { value: ProgressionMode; label: string }[] = [
+    { value: "smooth", label: "Smooth" },
+    { value: "stepped", label: "Stepped" },
+    { value: "manual", label: "Manual" },
+    { value: "target", label: "Target" },
+  ];
 
   let bpmColor = $derived.by(() => {
     if (bpm <= 30) return "var(--semantic-success, #22c55e)";
@@ -238,6 +248,17 @@
     <span class="pb-divider" aria-hidden="true"></span>
 
     <div class="pb-progress">
+      {#if onSetMode}
+        <div class="pb-mode">
+          <SegmentedControl
+            options={MODE_OPTIONS}
+            value={progress.progressionMode}
+            onchange={(v) => onSetMode?.(v)}
+            color="accent"
+            size="sm"
+          />
+        </div>
+      {/if}
       <span class="pb-caption-wrap">
         {#key caption}
           <span
@@ -473,8 +494,9 @@
     align-items: center;
     justify-content: center;
     gap: 7px;
-    width: 15rem;
+    width: 17rem;
   }
+  .pb-mode { width: 100%; }
   .pb-fill-track {
     width: 100%;
     height: 6px;

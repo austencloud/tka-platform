@@ -16,7 +16,7 @@ import type { HapticFeedback } from "$lib/shared/application/services/haptic-fee
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-import { TempoPracticeOrchestrator } from "$lib/shared/sequence-viewer/services/tempo-practice-orchestrator";
+import { TempoPracticeOrchestrator, type ProgressionMode } from "$lib/shared/sequence-viewer/services/tempo-practice-orchestrator";
 import { createTempoPracticeState } from "$lib/shared/sequence-viewer/state/tempo-practice-state.svelte";
 
 export interface PlaybackControllerDeps {
@@ -250,6 +250,15 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     _hapticService?.trigger("selection");
   }
 
+  /** Switch the ramp mode live from the bar's inline picker (preserves the
+   *  current tempo; persists the choice for the next session too). */
+  function handlePracticeSetMode(mode: ProgressionMode) {
+    practiceOrchestrator.setProgressionMode(mode);
+    practiceState.updateConfig({ progressionMode: mode });
+    practiceState.updateProgress(practiceOrchestrator.getProgress());
+    _hapticService?.trigger("selection");
+  }
+
   function handlePracticeStop() {
     if (!_playbackController) return;
 
@@ -342,6 +351,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     handlePracticeStepLevel,
     handlePracticeStep,
     handlePracticeToggleHold,
+    handlePracticeSetMode,
     handlePracticeStop,
     stepHalfBeatBackward,
     stepHalfBeatForward,
