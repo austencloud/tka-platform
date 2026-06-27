@@ -19,6 +19,8 @@
     currentStep,
     bpm,
     cellSize = 72,
+    anchor = "center",
+    fillHeight = false,
     bluePropType = null,
     redPropType = null,
     beatPulse = false,
@@ -30,6 +32,12 @@
     bpm: number;
     /** Cell width/height in px. Smaller = more read-ahead visible (zoom out). */
     cellSize?: number;
+    /** "start" pins the focus toward the left so upcoming cells fill the space
+     *  to the right and finished moves fall off-screen; "center" keeps it mid. */
+    anchor?: "center" | "start";
+    /** Size cells to fill the container HEIGHT instead of using cellSize — for
+     *  the tall side-by-side practice column where a fixed px reads tiny. */
+    fillHeight?: boolean;
     bluePropType?: PropType | null;
     redPropType?: PropType | null;
     /** Flash the focus frame each time the active step advances. */
@@ -41,9 +49,6 @@
   const GAP = 6;
   const BUFFER = 3;
   const HERO_SCALE = 1.32;
-  const STRIDE = $derived(cellSize + GAP);
-  const FRAME = $derived(Math.round(cellSize * HERO_SCALE) + 3); // gold frame hugs the scaled hero (cellSize 72 → 98)
-  const viewportHeight = $derived(FRAME + 26); // headroom above/below the hero
 
   let currentStepNumber = $derived(Math.floor(currentStep ?? 0));
   let activeIndex = $derived(
@@ -136,8 +141,8 @@
                 darkMode={true}
                 disableTransitions={true}
                 disableContentTransitions={true}
-                bluePropTypeOverride={bluePropType}
-                redPropTypeOverride={redPropType}
+                bluePropTypeOverride={bluePropType ?? undefined}
+                redPropTypeOverride={redPropType ?? undefined}
               />
             </div>
           </div>

@@ -1214,17 +1214,35 @@
   }
 
   /* ========================================
-     PRACTICE MODE: custom canvas/lane split
+     PRACTICE MODE: layout adapts to aspect.
+
+     Portrait / narrow (default): canvas fills the top, the read-ahead strip is
+     a full-width "foot" pinned to the bottom (the landing Infinite Spinner
+     model). The strip row is `auto` so it sizes to BeatStrip's intrinsic
+     height; the canvas takes everything above.
+
+     Wide (desktop ≥768) + landscape mobile: side-by-side — canvas | strip
+     column. A full-width vertical layout wastes a wide screen (the square
+     canvas leaves big side margins), and the goal is to read the strip from
+     afar — so on wide aspects the strip lives beside the canvas. `--canvas-frac`
+     sets the split. Wins over the generic desktop 50/50 rule on specificity
+     (.split-view.practice = two classes) + later source order.
      ======================================== */
   .split-view.practice {
-    grid-template-columns: calc(var(--canvas-frac) * 100%) 1fr;
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
   }
 
-  @media (max-width: 767px) and (orientation: portrait) {
+  @media (min-width: 768px) {
     .split-view.practice {
-      grid-template-columns: 1fr;
-      grid-template-rows: calc(var(--canvas-frac) * 100%) 1fr;
+      grid-template-columns: calc(var(--canvas-frac) * 100%) 1fr;
+      grid-template-rows: 1fr;
     }
+  }
+
+  .split-view.practice[data-landscape="true"] {
+    grid-template-columns: calc(var(--canvas-frac) * 100%) 1fr;
+    grid-template-rows: 1fr;
   }
 
   @media (prefers-reduced-motion: reduce) {

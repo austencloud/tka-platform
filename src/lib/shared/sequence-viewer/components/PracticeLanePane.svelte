@@ -49,12 +49,20 @@
 </div>
 
 <style>
+  /* height:100% serves both layouts via the parent grid row:
+       - foot (portrait, `auto` row): the row is content-sized, so 100% resolves
+         to `auto` → the strip's intrinsic height; the carousel sits as a foot.
+       - side-by-side (wide, `1fr` row): the row is definite, so 100% fills the
+         tall column and the carousel centres vertically in it.
+     Vertical padding gives breathing room; border-box keeps it inside the fill. */
   .practice-lane {
     width: 100%;
     height: 100%;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding-block: 16px;
     overflow: hidden;
     background: rgba(0, 0, 0, 0.25);
   }
