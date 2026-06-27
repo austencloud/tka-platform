@@ -21,29 +21,21 @@ function anchorDownload(blob: Blob, filename: string): Promise<DownloadResult> {
   });
 }
 
+/**
+ * Device-gated save: native share sheet on mobile, straight-to-disk on desktop.
+ *
+ * Thin alias over {@link shareOrDownloadBlob} (the single source of the platform
+ * gate). The gate is load-bearing: desktop Chrome/Edge DO implement
+ * `navigator.share`/`canShare`, so feature-detecting share alone pops the OS
+ * (Windows/macOS) share sheet on desktop — which nobody wants for a file that
+ * should just download. Gate on the DEVICE, not the capability.
+ */
 export async function downloadBlob(
   blob: Blob,
   filename: string,
   _options: DownloadOptions = {}
 ): Promise<DownloadResult> {
-  // Try Web Share API first (mobile native share sheet)
-  if (navigator.share && navigator.canShare) {
-    try {
-      const file = new File([blob], filename, { type: blob.type });
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file] });
-        return { success: true, filename };
-      }
-    } catch (error) {
-      // AbortError = user dismissed share sheet — not an error
-      if (error instanceof DOMException && error.name === "AbortError") {
-        return { success: true, filename };
-      }
-      // Other errors: fall through to anchor download
-    }
-  }
-
-  return anchorDownload(blob, filename);
+  return shareOrDownloadBlob(blob, filename);
 }
 
 /**
