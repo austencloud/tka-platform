@@ -5,6 +5,12 @@ import type {
   MandalaColorMode,
   MandalaPresetId,
 } from "$lib/shared/mandala/domain/mandala-types";
+import {
+  PRESET_COLORS,
+  mixColors,
+  withAlpha,
+  sampleGradient,
+} from "$lib/shared/mandala/domain/mandala-palette";
 import type { MandalaFrameSpec } from "$lib/shared/mandala/services/mandala-frame-renderer";
 import type { MandalaExportOut, MandalaExportDiag } from "$lib/shared/mandala/workers/mandala-export.worker";
 import {
@@ -12,7 +18,7 @@ import {
   recordExportThroughput,
   hasDeviceMetrics,
 } from "$lib/shared/animation-panel/state/export-timing-tracker";
-import { downloadBlob } from "$lib/shared/foundation/services/file-downloader";
+import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
 // Vite emits the compiled export worker and gives back its URL as a string, so
 // we can append a cache-busting version query before instantiating the Worker.
 import exportWorkerUrl from "$lib/shared/mandala/workers/mandala-export.worker.ts?worker&url";
@@ -93,55 +99,8 @@ function loadViewState(): Partial<MandalaViewState> {
   }
 }
 
-const PRESET_COLORS: Record<
-  Exclude<MandalaPresetId, "custom">,
-  { pair: [string, string]; morph: string[] }
-> = {
-  aurora: { pair: ["#00e5ff", "#76ff03"], morph: ["#00e5ff", "#76ff03", "#7c4dff", "#ff4081", "#00e5ff"] },
-  neon: { pair: ["#ff0099", "#00ddff"], morph: ["#ff0099", "#7928ca", "#0055ff", "#00ddff", "#ff0099"] },
-  ember: { pair: ["#ff3d00", "#ffd600"], morph: ["#ff3d00", "#ff9100", "#ffd600", "#ff6d00", "#ff3d00"] },
-  twilight: { pair: ["#aa00ff", "#f50057"], morph: ["#311b92", "#aa00ff", "#f50057", "#ff6d00", "#311b92"] },
-  ice: { pair: ["#4dd0e1", "#b388ff"], morph: ["#e0f7fa", "#4dd0e1", "#1a237e", "#b388ff", "#e0f7fa"] },
-  solar: { pair: ["#ffab00", "#dd2c00"], morph: ["#ffab00", "#ff6d00", "#dd2c00", "#ffea00", "#ffab00"] },
-};
-
-function hexToRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16);
-  return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
-}
-
-function rgbToHex(r: number, g: number, b: number): string {
-  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
-}
-
-function mixColors(a: string, b: string): string {
-  const [ar, ag, ab] = hexToRgb(a);
-  const [br, bg, bb] = hexToRgb(b);
-  return rgbToHex(Math.round((ar + br) / 2), Math.round((ag + bg) / 2), Math.round((ab + bb) / 2));
-}
-
-function withAlpha(hex: string, alpha: number): string {
-  const [r, g, b] = hexToRgb(hex);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-function lerpColor(a: string, b: string, t: number): string {
-  const [ar, ag, ab] = hexToRgb(a);
-  const [br, bg, bb] = hexToRgb(b);
-  return rgbToHex(
-    Math.round(ar + (br - ar) * t),
-    Math.round(ag + (bg - ag) * t),
-    Math.round(ab + (bb - ab) * t),
-  );
-}
-
-function sampleGradient(colors: string[], t: number): string {
-  const segments = colors.length - 1;
-  const scaled = t * segments;
-  const idx = Math.min(Math.floor(scaled), segments - 1);
-  const frac = scaled - idx;
-  return lerpColor(colors[idx]!, colors[idx + 1]!, frac);
-}
+// Flow-color helpers live in the shared mandala-palette module so the viewer
+// and the MandalaLoader render from one source of truth.
 
 /**
  * Shared animation + palette + export state for the mandala viewer.
@@ -448,7 +407,10 @@ export class MandalaViewerController {
           const blob = new Blob([msg.buffer], { type: "video/mp4" });
           const filename = `mandala-${this.pathShape}-${this.preset}-${reps}x.mp4`;
           // Mobile: native share sheet (canShare files). Desktop: anchor download.
-          void downloadBlob(blob, filename);
+          // shareOrDownloadBlob gates on the DEVICE (detectPlatform), not on
+          // navigator.share existence — desktop Chrome/Edge implement the Web
+          // Share API, so feature detection alone pops the Windows share sheet.
+          void shareOrDownloadBlob(blob, filename, { title: "TKA Mandala" });
           this.exportPhase = "complete";
           this.exporting = false;
           this.#disposeWorker();
