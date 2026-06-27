@@ -128,8 +128,7 @@ async function getFollowingIds(userId: string): Promise<Set<string>> {
 async function mapFirestoreToEnhancedProfile(
   userId: string,
   data: FirestoreUserData | UserFirestoreDataParsed,
-  isFollowing = false,
-  skipAchievements = false
+  isFollowing = false
 ): Promise<EnhancedUserProfile | null> {
   try {
     const displayName = data.displayName ?? data.name ?? "Anonymous User";
@@ -225,8 +224,7 @@ async function batchFetchUserProfiles(
       const user = await mapFirestoreToEnhancedProfile(
         docSnap.id,
         data,
-        false,
-        true
+        false
       );
       if (user) {
         users.push(user);
@@ -345,8 +343,7 @@ export async function getUsers(
       const user = await mapFirestoreToEnhancedProfile(
         docSnap.id,
         data,
-        isFollowing,
-        true
+        isFollowing
       );
       if (user) {
         users.push(user);
@@ -415,8 +412,7 @@ export async function getUsersPaginated(
       const user = await mapFirestoreToEnhancedProfile(
         docSnap.id,
         data,
-        isFollowing,
-        true
+        isFollowing
       );
       if (user) {
         users.push(user);
@@ -453,8 +449,7 @@ export async function getFeaturedCreators(
       const user = await mapFirestoreToEnhancedProfile(
         data.id,
         data,
-        false,
-        true
+        false
       );
       if (user) {
         users.push(user);
@@ -504,8 +499,7 @@ export function subscribeToUsers(
                 const user = await mapFirestoreToEnhancedProfile(
                   docSnap.id,
                   data,
-                  isFollowing,
-                  true
+                  isFollowing
                 );
                 if (user) {
                   users.push(user);

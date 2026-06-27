@@ -36,14 +36,6 @@ export interface PreviewUserProfile {
   lastActivityDate?: string;
 }
 
-export interface PreviewGamification {
-  totalXP: number;
-  currentLevel: number;
-  achievementCount: number;
-  currentStreak: number;
-  longestStreak: number;
-}
-
 export interface PreviewSequence {
   id: string;
   name: string;
@@ -61,14 +53,6 @@ export interface PreviewCollection {
   sequenceCount: number;
   isSystem?: boolean;
   createdAt?: string;
-}
-
-export interface PreviewAchievement {
-  id: string;
-  name: string;
-  description?: string;
-  icon?: string;
-  unlockedAt?: string;
 }
 
 export interface PreviewNotification {
@@ -116,10 +100,8 @@ export interface PreviewAuthData {
 
 export interface UserPreviewData {
   profile: PreviewUserProfile | null;
-  gamification: PreviewGamification | null;
   sequences: PreviewSequence[];
   collections: PreviewCollection[];
-  achievements: PreviewAchievement[];
   notifications: PreviewNotification[];
   settings: AppSettings | null;
   authData: PreviewAuthData | null;
@@ -129,7 +111,6 @@ export interface UserPreviewData {
 export type LazySection =
   | "sequences"
   | "collections"
-  | "achievements"
   | "notifications"
   | "authData"
   | "notificationPreferences";
@@ -198,10 +179,8 @@ function getSavedPreviewUserId(): string | null {
 
 const initialData: UserPreviewData = {
   profile: null,
-  gamification: null,
   sequences: [],
   collections: [],
-  achievements: [],
   notifications: [],
   settings: null,
   authData: null,
@@ -252,29 +231,6 @@ async function fetchProfile(
     };
   } catch (err) {
     console.error("[UserPreview] Failed to fetch profile:", err);
-    return null;
-  }
-}
-
-async function fetchGamification(
-  userId: string
-): Promise<PreviewGamification | null> {
-  try {
-    const firestore = await getFirestoreInstance();
-    const userDoc = await getDoc(doc(firestore, "users", userId));
-
-    if (!userDoc.exists()) return null;
-
-    const data = userDoc.data();
-    return {
-      totalXP: data.totalXP || 0,
-      currentLevel: data.currentLevel || 1,
-      achievementCount: data.achievementCount || 0,
-      currentStreak: data.currentStreak || 0,
-      longestStreak: data.longestStreak || 0,
-    };
-  } catch (err) {
-    console.error("[UserPreview] Failed to fetch gamification:", err);
     return null;
   }
 }
@@ -331,34 +287,6 @@ async function fetchCollections(userId: string): Promise<PreviewCollection[]> {
     });
   } catch (err) {
     console.error("[UserPreview] Failed to fetch collections:", err);
-    return [];
-  }
-}
-
-async function fetchAchievements(
-  userId: string
-): Promise<PreviewAchievement[]> {
-  try {
-    const firestore = await getFirestoreInstance();
-    const q = query(
-      collection(firestore, `users/${userId}/achievements`),
-      orderBy("unlockedAt", "desc"),
-      limit(50)
-    );
-    const snap = await getDocs(q);
-
-    return snap.docs.map((docSnap) => {
-      const data = docSnap.data();
-      return {
-        id: docSnap.id,
-        name: data.name || data.achievementId || docSnap.id,
-        description: data.description || undefined,
-        icon: data.icon || undefined,
-        unlockedAt: formatTimestamp(data.unlockedAt) || undefined,
-      };
-    });
-  } catch (err) {
-    console.error("[UserPreview] Failed to fetch achievements:", err);
     return [];
   }
 }
@@ -483,7 +411,7 @@ async function fetchAuthData(userId: string): Promise<PreviewAuthData | null> {
 // ============================================================================
 
 /**
- * Load user preview - initially only loads profile + gamification (lightweight).
+ * Load user preview - initially only loads profile (lightweight).
  * Other sections are lazy-loaded on demand via loadPreviewSection.
  */
 export async function loadUserPreview(
@@ -505,20 +433,16 @@ export async function loadUserPreview(
       // Load all data in parallel
       const [
         profile,
-        gamification,
         sequences,
         collections,
-        achievements,
         notifications,
         settings,
         authData,
         notificationPreferences,
       ] = await Promise.all([
         fetchProfile(userId),
-        fetchGamification(userId),
         fetchSequences(userId),
         fetchCollections(userId),
-        fetchAchievements(userId),
         fetchNotifications(userId),
         fetchSettings(userId),
         fetchAuthData(userId),
@@ -527,10 +451,8 @@ export async function loadUserPreview(
 
       userPreviewState.data = {
         profile,
-        gamification,
         sequences,
         collections,
-        achievements,
         notifications,
         settings,
         authData,
@@ -539,28 +461,24 @@ export async function loadUserPreview(
       userPreviewState.loadedSections = new Set([
         "sequences",
         "collections",
-        "achievements",
         "notifications",
         "authData",
         "notificationPreferences",
       ]);
     } else {
-      // Lazy mode: fetch profile, gamification, settings, and notification preferences initially
+      // Lazy mode: fetch profile, settings, and notification preferences initially
       // These are needed immediately for ProfileTab
-      const [profile, gamification, settings, notificationPreferences] =
+      const [profile, settings, notificationPreferences] =
         await Promise.all([
           fetchProfile(userId),
-          fetchGamification(userId),
           fetchSettings(userId),
           fetchNotificationPreferences(userId),
         ]);
 
       userPreviewState.data = {
         profile,
-        gamification,
         sequences: [],
         collections: [],
-        achievements: [],
         notifications: [],
         settings,
         authData: null,
@@ -599,9 +517,6 @@ export async function loadPreviewSection(section: LazySection): Promise<void> {
         break;
       case "collections":
         userPreviewState.data.collections = await fetchCollections(userId);
-        break;
-      case "achievements":
-        userPreviewState.data.achievements = await fetchAchievements(userId);
         break;
       case "notifications":
         userPreviewState.data.notifications = await fetchNotifications(userId);
@@ -642,9 +557,6 @@ export async function refreshPreviewSection(
         break;
       case "collections":
         userPreviewState.data.collections = await fetchCollections(userId);
-        break;
-      case "achievements":
-        userPreviewState.data.achievements = await fetchAchievements(userId);
         break;
       case "notifications":
         userPreviewState.data.notifications = await fetchNotifications(userId);

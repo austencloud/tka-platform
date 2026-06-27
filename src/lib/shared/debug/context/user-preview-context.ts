@@ -17,10 +17,8 @@ import {
   loadPreviewSection,
   isSectionLoaded,
   type PreviewUserProfile,
-  type PreviewGamification,
   type PreviewSequence,
   type PreviewCollection,
-  type PreviewAchievement,
   type PreviewNotification,
   type LazySection,
 } from "../state/user-preview-state.svelte";
@@ -50,17 +48,11 @@ export interface UserPreviewContext {
   /** The previewed user's profile (or null if not previewing) */
   readonly profile: PreviewUserProfile | null;
 
-  /** The previewed user's gamification data (or null) */
-  readonly gamification: PreviewGamification | null;
-
   /** The previewed user's sequences */
   readonly sequences: PreviewSequence[];
 
   /** The previewed user's collections */
   readonly collections: PreviewCollection[];
-
-  /** The previewed user's achievements */
-  readonly achievements: PreviewAchievement[];
 
   /** The previewed user's notifications */
   readonly notifications: PreviewNotification[];
@@ -77,19 +69,11 @@ export interface UserPreviewContext {
   /** Get the effective email (previewed or actual) */
   getEffectiveEmail(actualEmail: string | null): string | null;
 
-  /** Get effective gamification data (previewed or actual) */
-  getEffectiveGamification(
-    actual: PreviewGamification | null
-  ): PreviewGamification | null;
-
   /** Get effective sequences (previewed or actual) */
   getEffectiveSequences<T>(actual: T[]): T[] | PreviewSequence[];
 
   /** Get effective collections (previewed or actual) */
   getEffectiveCollections<T>(actual: T[]): T[] | PreviewCollection[];
-
-  /** Get effective achievements (previewed or actual) */
-  getEffectiveAchievements<T>(actual: T[]): T[] | PreviewAchievement[];
 
   /** Check if a lazy section has been loaded */
   isSectionLoaded(section: LazySection): boolean;
@@ -128,20 +112,12 @@ function createPreviewContext(): UserPreviewContext {
       return userPreviewState.data.profile;
     },
 
-    get gamification() {
-      return userPreviewState.data.gamification;
-    },
-
     get sequences() {
       return userPreviewState.data.sequences;
     },
 
     get collections() {
       return userPreviewState.data.collections;
-    },
-
-    get achievements() {
-      return userPreviewState.data.achievements;
     },
 
     get notifications() {
@@ -176,15 +152,6 @@ function createPreviewContext(): UserPreviewContext {
       return actualEmail;
     },
 
-    getEffectiveGamification(
-      actual: PreviewGamification | null
-    ): PreviewGamification | null {
-      if (userPreviewState.isActive && userPreviewState.data.gamification) {
-        return userPreviewState.data.gamification;
-      }
-      return actual;
-    },
-
     getEffectiveSequences<T>(actual: T[]): T[] | PreviewSequence[] {
       if (userPreviewState.isActive) {
         return userPreviewState.data.sequences;
@@ -195,13 +162,6 @@ function createPreviewContext(): UserPreviewContext {
     getEffectiveCollections<T>(actual: T[]): T[] | PreviewCollection[] {
       if (userPreviewState.isActive) {
         return userPreviewState.data.collections;
-      }
-      return actual;
-    },
-
-    getEffectiveAchievements<T>(actual: T[]): T[] | PreviewAchievement[] {
-      if (userPreviewState.isActive) {
-        return userPreviewState.data.achievements;
       }
       return actual;
     },
