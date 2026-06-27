@@ -30,7 +30,10 @@ describe("OffscreenExportRenderer layer provider", () => {
       context: { trailCapturer: { captureFrame: () => {} } },
       engine: { renderFrame: () => {} },
     };
-    r.playback = { calculateStateForStep: () => {}, isSeamlesslyLoopable: false };
+    r.playback = {
+      computePropStatesForStep: () => ({ blue: null, red: null }),
+      isSeamlesslyLoopable: false,
+    };
     r.panelState = {};
     r.init = {};
     r.internalClockMs = 0;

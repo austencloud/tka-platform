@@ -11,9 +11,12 @@
     blobUrl: string;
     onDismiss: () => void;
     onRedownload: () => void;
+    /** Label for the save/share action. Defaults to "Save Again" (the 2D path
+     *  auto-downloads first); preview-first callers (tunnel) pass "Save". */
+    saveLabel?: string;
   }
 
-  let { blobUrl, onDismiss, onRedownload }: Props = $props();
+  let { blobUrl, onDismiss, onRedownload, saveLabel = "Save Again" }: Props = $props();
 
   let videoEl = $state<HTMLVideoElement | null>(null);
   let isPlaying = $state(false);
@@ -110,10 +113,10 @@
       type="button"
       class="action-btn secondary"
       onclick={onRedownload}
-      aria-label="Download video again"
+      aria-label={saveLabel}
     >
       <i class="fas fa-download" aria-hidden="true"></i>
-      Save Again
+      {saveLabel}
     </button>
     <button
       type="button"

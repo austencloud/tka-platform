@@ -306,8 +306,8 @@
   .art-settings-panel {
     display: flex;
     flex-direction: column;
-    width: clamp(280px, 36%, 360px);
-    min-width: 280px;
+    width: clamp(300px, 38%, 420px);
+    min-width: 300px;
     height: 100%;
     flex-shrink: 0;
     box-sizing: border-box;

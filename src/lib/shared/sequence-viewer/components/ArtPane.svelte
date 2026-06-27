@@ -1,9 +1,13 @@
 <script lang="ts">
+  import { fade } from "svelte/transition";
   import MandalaPane from "./MandalaPane.svelte";
   import TunnelArtView from "../tunnel/TunnelArtView.svelte";
   import ArtSettingsPanel from "./ArtSettingsPanel.svelte";
-  import ExportProgressOverlay from "./ExportProgressOverlay.svelte";
+  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
+  import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
   import { sequenceModalExporter } from "../services/sequence-modal-exporter.svelte";
+  import { exportVideoFilename } from "../services/export-video-filename";
+  import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
   import { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
   import { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -93,9 +97,51 @@
   }
 
   // Tunnel export drives the shared sequenceModalExporter (mandala uses its own
-  // worker), so its progress surfaces over the canvas here — the Art pane has no
-  // Download-panel chrome of its own. Cancel maps to the exporter's cancel.
+  // worker), so its progress + inline preview surface over the canvas here — the
+  // Art pane has no Download-panel chrome of its own. Cancel maps to the
+  // exporter's cancel.
   const exportState = $derived(sequenceModalExporter.state);
+  const effectiveSeq = $derived(playback.animationState.sequenceData ?? sequence);
+
+  // Map the shared exporter state onto ExportTakeover's phase — the same premium
+  // ring overlay the mandala export uses (conic blue→red sweep), replacing the
+  // plain progress bar. "idle" hides it; tunnel-only (mandala has its own takeover).
+  const tunnelExportPhase = $derived<
+    "idle" | "capturing" | "encoding" | "complete" | "error"
+  >(
+    artType !== "tunnel"
+      ? "idle"
+      : exportState.error
+        ? "error"
+        : exportState.isExporting
+          ? (exportState.progress?.stage ?? "capturing")
+          : "idle",
+  );
+  const tunnelPhaseLabel = $derived(
+    tunnelExportPhase === "capturing"
+      ? "Rendering"
+      : tunnelExportPhase === "encoding"
+        ? "Encoding…"
+        : tunnelExportPhase === "complete"
+          ? "Done"
+          : "",
+  );
+  // Stamp fold/mirror so variant exports of one sequence don't collide.
+  const tunnelSuffix = $derived(
+    `-tunnel-${controller.fold}x${controller.mirror ? "-mirror" : ""}`,
+  );
+
+  // Preview-first save: share sheet on mobile, download on desktop (the platform
+  // gate lives in shareOrDownloadBlob). The blob is recovered from the preview's
+  // object URL so the user picks where it lands instead of a blind auto-download.
+  async function saveTunnelVideo() {
+    const url = exportState.previewBlobUrl;
+    if (!url) return;
+    const blob = await (await fetch(url)).blob();
+    await shareOrDownloadBlob(blob, exportVideoFilename(effectiveSeq, tunnelSuffix), {
+      title: "TKA Tunnel",
+    });
+  }
 </script>
 
 <div class="art-pane">
@@ -114,10 +160,34 @@
       <TunnelArtView {sequence} {playback} {controller} {bpm} {bluePropType} {redPropType} />
     {/if}
 
-    {#if artType === "tunnel" && exportState.isExporting && exportState.progress}
-      <ExportProgressOverlay
-        progress={exportState.progress}
-        onCancel={() => sequenceModalExporter.cancel()}
+    {#if artType === "tunnel" && exportState.previewBlobUrl && !exportState.isExporting}
+      <!-- Preview-first: the rendered kaleidoscope plays inline; the user saves
+           (download on desktop / share sheet on mobile) or dismisses. Nothing
+           hit disk automatically. -->
+      <div class="preview-overlay" transition:fade={{ duration: 180 }}>
+        <VideoPreviewPanel
+          blobUrl={exportState.previewBlobUrl}
+          saveLabel="Save"
+          onRedownload={() => void saveTunnelVideo()}
+          onDismiss={() => sequenceModalExporter.dismissPreview()}
+        />
+      </div>
+    {:else if tunnelExportPhase !== "idle"}
+      <!-- The shared premium ring overlay (same as the mandala export). The live
+           kaleidoscope keeps playing, dimmed + blurred, behind the ring. -->
+      <ExportTakeover
+        phase={tunnelExportPhase}
+        progress={exportState.progress?.progress ?? 0}
+        phaseLabel={tunnelPhaseLabel}
+        error={exportState.error}
+        onCancel={() => {
+          sequenceModalExporter.cancel();
+          sequenceModalExporter.clearError();
+        }}
+        onRetry={() => {
+          sequenceModalExporter.clearError();
+          handleExport();
+        }}
       />
     {/if}
   </div>
@@ -161,6 +231,33 @@
     min-width: 0;
     height: 100%;
     overflow: hidden;
+  }
+
+  /* Inline export preview floated over the canvas. Dim + blur the kaleidoscope
+     behind it so the result reads as the focus. */
+  .preview-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 11;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(8px, 3cqw, 20px);
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(4px);
+    border-radius: inherit;
+    overflow: auto;
+  }
+
+  /* Adapt the shared VideoPreviewPanel (authored as a sidebar-bottom panel) into
+     a floating card here — round all corners, drop the top-divider seam, cap the
+     width, and lift it off the dimmed backdrop. */
+  .preview-overlay :global(.preview-panel) {
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 16px;
+    max-width: min(440px, 100%);
+    width: 100%;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
   }
 
   /* On narrow viewports the rail stacks under the canvas so the art still has

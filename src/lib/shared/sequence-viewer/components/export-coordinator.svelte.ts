@@ -22,8 +22,7 @@ import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-key
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
 import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
-import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
+import { exportVideoFilename } from "$lib/shared/sequence-viewer/services/export-video-filename";
 import type { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import type { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/modal-accessibility-helper.svelte";
 type ExportType = "animation" | "image" | "both";
@@ -73,19 +72,9 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
   ) {
     const url = sequenceModalExporter.state.previewBlobUrl;
     if (!url) return;
-    // Match the "Save Again" name (DrawerHost onRedownload): collapse repeated
-    // kernels so the file is "UΛ-.mp4", not the raw "UΛ-UΛ-UΛ-UΛ-.mp4". Greek
-    // glyphs are kept — sanitizeFilename preserves Unicode.
-    const rawName =
-      effectiveSequence?.displayName ||
-      effectiveSequence?.intendedWord ||
-      effectiveSequence?.word ||
-      "sequence";
-    const safeName =
-      sanitizeFilename(simplifyRepeatedWord(rawName)) || "sequence";
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${safeName}${nameSuffix}.mp4`;
+    a.download = exportVideoFilename(effectiveSequence, nameSuffix);
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -109,27 +98,26 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
   }
 
   /**
-   * Tunnel (Art-mode) video export. Reuses the SAME delivery path as the 2D
-   * download — visible success/error toasts + auto-download on success. The
-   * orchestrator used to call sequenceModalExporter.exportAnimation directly and
-   * drop the resulting blob (no download, errors only announced to a screen
-   * reader, no progress UI), which read as "Export Video does nothing".
+   * Tunnel (Art-mode) video export — preview-first. Renders the kaleidoscope via
+   * the shared offscreen engine (square sourceSizeOverride + per-beat layers +
+   * chrome suppressed), then leaves the result on
+   * sequenceModalExporter.previewBlobUrl for ArtPane to surface inline
+   * (VideoPreviewPanel: play / save / share). NOTHING auto-downloads — the user
+   * picks save/share from the preview. Errors still toast (a failed export must
+   * not look like nothing happened).
    */
   async function exportTunnel(
-    effectiveSequence: SequenceData | null,
     playbackController: AnimationPlaybackController | null,
     modalAnimationState: AnimationPanelState,
     hapticService: HapticFeedback | null,
     additionalLayersForBeat: (beat: number) => AdditionalLayerProps[],
-    // The tunnel knobs: fold + mirror are stamped into the filename so variant
-    // exports of the same sequence don't overwrite each other (e.g.
-    // "Ulam--tunnel-8x-mirror"); spectrum is forwarded to the offscreen engine so
-    // the exported kaleidoscope's colors match the on-screen view.
-    tunnelConfig: { fold: number; mirror: boolean; spectrum: boolean },
+    // Per-prop rainbow spectrum, mirrored from the live tunnel controller so the
+    // offscreen engine colors the kaleidoscope to match the on-screen view.
+    tunnelSpectrum: boolean,
   ) {
     if (sequenceModalExporter.state.isExporting) return;
 
-    // Take-it-home gate: same as the 2D path — pulling the file down needs a
+    // Take-it-home gate: same as the 2D path — producing the file needs a
     // free account.
     if (!ensureFullAccountForExport()) return;
 
@@ -145,12 +133,14 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
 
     const callbacks = {
       onSuccess: (message: string) => {
-        showToast(message, "success");
+        // No success toast — the inline VideoPreviewPanel ("Export complete" +
+        // the playable result) IS the visible signal. A toast would imply the
+        // file was saved, but preview-first saves nothing until the user picks.
         accessibilityHelper.announce(message, "assertive");
       },
       onError: (message: string) => {
-        // Visible toast — the old Art path announced to the screen reader only,
-        // so a failed tunnel export looked identical to nothing happening.
+        // Visible toast — a failed tunnel export must not look like nothing
+        // happened (the old Art path announced to the screen reader only).
         showToast(message, "error");
         accessibilityHelper.announce(`Export failed: ${message}`, "assertive");
       },
@@ -168,7 +158,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         includeEndHold: opts.includeEndHold,
         sourceSizeOverride: squareSize,
         additionalLayersForBeat,
-        tunnelSpectrum: tunnelConfig.spectrum,
+        tunnelSpectrum,
         overlayOverrides: {
           tkaGlyph: false,
           stepNumbers: false,
@@ -186,14 +176,8 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       },
       callbacks,
     );
-
-    if (
-      sequenceModalExporter.state.previewBlobUrl &&
-      !sequenceModalExporter.state.error
-    ) {
-      const suffix = `-tunnel-${tunnelConfig.fold}x${tunnelConfig.mirror ? "-mirror" : ""}`;
-      autoDownloadVideo(effectiveSequence, suffix);
-    }
+    // No auto-download: ArtPane surfaces previewBlobUrl in VideoPreviewPanel and
+    // the user saves/shares from there.
   }
 
   function handleStopRecording() {

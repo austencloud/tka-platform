@@ -17,8 +17,6 @@
     opaque?: boolean;
     /** Optional hero behind the panel (Mandala passes its SequenceMandala). */
     centerpiece?: Snippet;
-    /** Optional floating diagnostics card. */
-    diag?: Snippet;
     /** Optional header inside the panel, above the ring — e.g. the sequence word.
      *  The live canvas (and its own word header) is hidden behind the scrim during
      *  export, so consumers can surface the word here next to the progress ring. */
@@ -34,7 +32,6 @@
     onRetry,
     opaque = false,
     centerpiece,
-    diag,
     title,
   }: Props = $props();
 
@@ -133,10 +130,6 @@
         {/if}
       {/if}
     </div>
-
-    {#if diag && phase !== "error"}
-      <div class="diag-overlay">{@render diag()}</div>
-    {/if}
   </div>
 {/if}
 
@@ -161,7 +154,17 @@
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
-  .takeover-stage { display: flex; align-items: center; justify-content: center; }
+  /* The hero (Mandala) fills the takeover and is taken out of flow so the
+     progress panel centers over it — no column-stack that would crop the
+     mandala at the top. */
+  .takeover-stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 0;
+  }
   .takeover-title {
     display: flex;
     align-items: center;
@@ -170,6 +173,8 @@
     margin-bottom: 2px;
   }
   .takeover-panel {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -255,17 +260,6 @@
     border: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 70%, transparent);
     background: color-mix(in srgb, var(--theme-accent, #6366f1) 35%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
     color: white;
-  }
-  .diag-overlay {
-    position: absolute;
-    top: calc(env(safe-area-inset-top, 0px) + 10px);
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 40;
-    width: min(340px, calc(100% - 24px));
-    max-height: min(70vh, calc(100% - 32px));
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
   }
   @media (hover: hover) {
     .takeover-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 18px color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent); }

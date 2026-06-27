@@ -677,4 +677,22 @@ export class AnimationPlaybackController {
     // Update prop states on the animation panel state
     this.updatePropStatesFromEngine();
   }
+
+  /**
+   * Compute the blue/red prop states for a beat and RETURN them, without syncing
+   * anything the live view observes. The offscreen export renderer drives a frame
+   * per beat; calculateStateForStep would push currentStep + prop states onto the
+   * shared panelState + sharedAnimationState, which the LIVE 2D canvas / beat grid
+   * read — so an in-progress export visibly churned the live view frame-by-frame.
+   *
+   * This runs the SAME orchestrator interpolation (identical output, start
+   * position included), so export frames are byte-for-byte what calculateStateForStep
+   * produced — it just doesn't write the shared playback/UI state. It mutates the
+   * orchestrator's internal calc state only; the export's teardown jumpToStep(snapshot)
+   * restores it, and live playback is paused for the duration, so nothing observes it.
+   */
+  computePropStatesForStep(step: number): { blue: PropState; red: PropState } {
+    this.animationEngine.calculateState(step);
+    return this.animationEngine.getCurrentPropStates();
+  }
 }

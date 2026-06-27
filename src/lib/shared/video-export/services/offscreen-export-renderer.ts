@@ -274,7 +274,14 @@ export class OffscreenExportRenderer {
     layerProvider?: (beat: number) => AdditionalLayerProps[],
   ): void {
     const handle = this.handle!;
-    this.playback.calculateStateForStep(beat);
+    // Resolve this beat's prop states WITHOUT syncing the live playback/UI state.
+    // calculateStateForStep would write currentStep + prop states onto the shared
+    // panelState / sharedAnimationState that the live 2D canvas + beat grid read,
+    // so an in-progress export visibly churned the live view frame-by-frame
+    // (with its chrome) — even though the file is this offscreen engine's canvas.
+    // computePropStatesForStep runs the same orchestrator interpolation (identical
+    // frames, start position included) but writes nothing the live render observes.
+    const sampled = this.playback.computePropStatesForStep(beat);
 
     const frameCtx: ExportFrameContext = {
       virtualTime: clockMs,
@@ -287,6 +294,12 @@ export class OffscreenExportRenderer {
       previewDarkMode: this.init.previewDarkMode,
     };
     const props = assembleExportEngineProps(this.panelState, frameCtx);
+    // Drive the offscreen frame off the sampled states + this beat (the shared
+    // panelState is frozen at the export's start pose, so these overrides — not
+    // panelState's stale values — are what render/capture).
+    props.blueProp = sampled.blue;
+    props.redProp = sampled.red;
+    props.currentStep = beat;
 
     if (layerProvider) props.additionalLayers = layerProvider(beat);
     // Match the live tunnel's spectrum coloring. frame-parameter-builder defaults
