@@ -18,7 +18,7 @@
 		midiToFreq
 	} from '$lib/shared/3d/environments/scenes/ocean/runtime/fauna/jellyfish/jellyfish-chime';
 	import { isBackgroundSuppressed } from '../state/background-suppression.svelte';
-	import { isConstrainedConnection } from '$lib/shared/platform/network-conditions';
+	import { shouldReduceBackgroundResolution } from '$lib/shared/platform/network-conditions';
 
 	const {
 		backgroundType = BackgroundType.COSMIC,
@@ -71,16 +71,22 @@
 		updateCanvasDimensions: () => void;
 	}
 
-	// On a constrained connection (data-saver / slow mobile) the device is usually
-	// a phone fighting a slow radio. Repainting the background at full viewport
-	// resolution every frame steals main-thread time the page needs to stay
-	// responsive while JS chunks and gallery data are still arriving — the exact
-	// window where the user notices stutter. In that case we cap the longest side
-	// so the background stays cheap. The cap mirrors the upstream package's own
-	// perf-first default, so the controller's pointer hit-testing (cursor flee,
-	// jellyfish poke) keeps working with a sub-viewport buffer just as it does by
-	// default. The check runs inside updateCanvasDimensions so it re-evaluates on
-	// every resize — if conditions improve, a later resize restores full res.
+	// On a genuinely low-capability device (explicit data-saver, or a slow 3g-or-worse
+	// radio bucket) the device is usually a phone that can't comfortably repaint the
+	// background at full viewport resolution every frame. In that case we cap the
+	// longest side so the background stays cheap. The cap mirrors the upstream
+	// package's own perf-first default, so the controller's pointer hit-testing
+	// (cursor flee, jellyfish poke) keeps working with a sub-viewport buffer just as
+	// it does by default. The check runs inside updateCanvasDimensions so it
+	// re-evaluates on every resize — if conditions improve, a later resize restores
+	// full res.
+	//
+	// This uses shouldReduceBackgroundResolution(), NOT isConstrainedConnection().
+	// Render resolution must not key off the noisy downlink-Mbps bandwidth estimate
+	// the prefetch heuristic uses: Chrome routinely under-reports downlink to 1–2
+	// Mbps on capable links (and on localhost), and a false positive there caps the
+	// canvas to 960px and stretches it ~2x across the viewport — the whole background
+	// renders zoomed in and blurry, permanently, until the estimate happens to rise.
 	const CONSTRAINED_MAX_DIMENSION = 960;
 
 	function patchCanvasResolution(ctrl: NonNullable<typeof controller>) {
@@ -93,7 +99,7 @@
 			const rect = cont.getBoundingClientRect();
 			let w = Math.max(1, Math.floor(rect.width));
 			let h = Math.max(1, Math.floor(rect.height));
-			if (isConstrainedConnection()) {
+			if (shouldReduceBackgroundResolution()) {
 				const longest = Math.max(w, h);
 				if (longest > CONSTRAINED_MAX_DIMENSION) {
 					const scale = CONSTRAINED_MAX_DIMENSION / longest;

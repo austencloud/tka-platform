@@ -114,3 +114,32 @@ export function isConstrainedConnection(): boolean {
 
 	return false;
 }
+
+/**
+ * True when the background should render at reduced canvas resolution.
+ *
+ * Deliberately distinct from isConstrainedConnection(). That predicate keys off a
+ * noisy *bandwidth* estimate to back off speculative network prefetch, where a
+ * false positive is cheap and recoverable (fetch on demand instead of pre-warming).
+ *
+ * Background canvas resolution is a *render* cost, not a network cost — downlink
+ * Mbps says nothing about whether the GPU can repaint a full-viewport canvas — and
+ * a false positive here is a visible, persistent defect: the canvas paints at a
+ * fraction of the viewport and the browser stretches it up, so the whole background
+ * looks zoomed in and blurry. Chrome's `downlink` routinely under-reports to 1–2
+ * Mbps on perfectly capable links (and on localhost), which would otherwise cap the
+ * background forever. So we cap resolution ONLY on signals that actually correlate
+ * with a device that can't afford a full-res repaint: the user's explicit
+ * data-saver mode, or a genuinely slow radio bucket (3g or worse). A plain '4g'
+ * bucket keeps full resolution regardless of its measured bandwidth number.
+ */
+export function shouldReduceBackgroundResolution(): boolean {
+	const c = getNetworkConditions();
+	if (!c.known) return false;
+
+	if (c.saveData) return true;
+	if (c.effectiveType === 'slow-2g' || c.effectiveType === '2g' || c.effectiveType === '3g')
+		return true;
+
+	return false;
+}

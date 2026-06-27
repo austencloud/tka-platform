@@ -16,6 +16,7 @@ vi.mock("$app/environment", () => ({ browser: true }));
 import {
 	getNetworkConditions,
 	isConstrainedConnection,
+	shouldReduceBackgroundResolution,
 } from "$lib/shared/platform/network-conditions";
 
 type Conn = {
@@ -102,4 +103,43 @@ describe("isConstrainedConnection", () => {
 		setConnection({ effectiveType: "4g", downlink: 0, rtt: 50 });
 		expect(isConstrainedConnection()).toBe(false);
 	});
+});
+
+describe("shouldReduceBackgroundResolution", () => {
+	it("is false when the API is unavailable", () => {
+		setConnection(undefined);
+		expect(shouldReduceBackgroundResolution()).toBe(false);
+	});
+
+	it("keeps full resolution on a healthy 4g connection", () => {
+		setConnection({ effectiveType: "4g", downlink: 10, rtt: 50, saveData: false });
+		expect(shouldReduceBackgroundResolution()).toBe(false);
+	});
+
+	// The bug this guards against: Chrome under-reports downlink to 1–2 Mbps on
+	// capable links (and on localhost). A bandwidth-keyed cap stretches the
+	// background canvas ~2x and renders it zoomed/blurry. Render resolution must
+	// ignore the downlink number on a 4g bucket.
+	it("keeps full resolution on a 4g bucket with a low downlink estimate", () => {
+		setConnection({ effectiveType: "4g", downlink: 1.35, rtt: 100 });
+		expect(shouldReduceBackgroundResolution()).toBe(false);
+	});
+
+	it("keeps full resolution on a 4g bucket with high measured latency", () => {
+		setConnection({ effectiveType: "4g", downlink: 10, rtt: 350 });
+		expect(shouldReduceBackgroundResolution()).toBe(false);
+	});
+
+	it("reduces resolution when the user enabled data-saver", () => {
+		setConnection({ effectiveType: "4g", downlink: 10, rtt: 50, saveData: true });
+		expect(shouldReduceBackgroundResolution()).toBe(true);
+	});
+
+	it.each(["slow-2g", "2g", "3g"])(
+		"reduces resolution on a genuinely slow %s radio bucket",
+		(effectiveType) => {
+			setConnection({ effectiveType, downlink: 10, rtt: 50 });
+			expect(shouldReduceBackgroundResolution()).toBe(true);
+		}
+	);
 });
