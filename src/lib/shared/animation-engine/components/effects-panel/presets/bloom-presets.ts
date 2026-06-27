@@ -7,7 +7,7 @@ export const BLOOM_PRESETS: EffectPreset<"bloom">[] = [
     previewColor: "#ffffff",
     previewColor2: "#a5b4fc",
     patch: {
-      intensity: 1,
+      intensity: 0.9,
       radius: 50,
       color: "#ffffff",
       palette: ["#f472b6", "#fbbf24", "#22d3ee"],

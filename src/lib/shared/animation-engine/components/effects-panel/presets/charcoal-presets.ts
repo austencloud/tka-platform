@@ -29,12 +29,12 @@ export const CHARCOAL_PRESETS: EffectPreset<"charcoal">[] = [
     name: "Hot Coal",
     previewColor: "#ef4444",
     patch: {
-      intensity: 0.8,
-      spread: 0.4,
+      intensity: 0.88,
+      spread: 0.88,
       glow: 0.8,
-      coreColor: [255, 240, 200], // white-hot
-      midColor: [255, 80, 20],    // bright red-orange
-      coolColor: [180, 20, 0],    // deep red
+      coreColor: [255, 240, 200],
+      midColor: [255, 80, 20],
+      coolColor: [180, 20, 0],
     },
   },
   {
