@@ -1,14 +1,17 @@
 <script lang="ts">
   /**
-   * Book preview — the guide as an actual flip-book. Two editions side by side,
-   * Old v0.5 (left) and the live rebuild (right), each a StPageFlip book with
-   * realistic page-turn + corner fold and InDesign-style facing-page spreads.
-   * Flipping one turns the other to the same page (synced).
+   * Guide compare — page-by-page proofing. The OLD v0.5 proof on the left, the
+   * live rebuild on the right, ONE page per side. Step with Prev/Next (or ← →);
+   * no scrolling. The editions no longer share a page count (the rebuild dropped
+   * the old intro pages), so an offset nudge (±) aligns them — set once, then
+   * Next advances both in lockstep.
    *
-   * The new edition renders the shared GuideDocument (same page sequence as the
-   * print route, so the two editions stay in lockstep) as live GuidePage DOM —
-   * StPageFlip drives it directly, no rasterizing. The old edition is the v0.5
-   * proof rendered to canvases via pdf.js.
+   * Left  = the frozen v0.5 PDF rendered to canvases via pdf.js (one shown).
+   * Right = the live GuideDocument (same page sequence as /print), every page
+   *         mounted once and shown one at a time — so it always reflects the
+   *         latest page work with no rebuild step.
+   *
+   * The "Book" button shows the rebuild in actual flip-book form (single book).
    */
   import { onMount, tick } from "svelte";
   import "../_styles/guide.css";
@@ -21,107 +24,159 @@
 
   setGuidePrintMode();
 
-  // One flip page = the guide page (8.5×11) scaled down to fit two books across.
-  const FLIP_W = 400;
-  const FLIP_H = Math.round((FLIP_W * 11) / 8.5); // 518, Letter ratio
-  const SCALE = FLIP_W / 816; // 816px = 8.5in (GuidePage native width)
   const OLD_PDF = "/guides/_proof/level-1-v05.pdf";
+  const PAGE_W = 816; // 8.5in @96dpi (GuidePage native width)
+  const PAGE_H = 1056; // 11in
 
-  let newContainer: HTMLDivElement;
-  let oldContainer: HTMLDivElement;
-  let status = $state("loading…");
-  // The flip-books render client-only: SSR keeps the route's URL valid (so the
-  // app-shell module-state guard doesn't rewrite /book → /create), but the
-  // scaled GuidePage/GuideCover subtree is never hydrated (it threw "Illegal
-  // invocation" on hydrate), so we mount it fresh on the client instead.
-  let mounted = $state(false);
-  // Books stay hidden until both StPageFlip instances are built, so the user
-  // never sees the raw page stack (esp. the old book's 47 pdf canvases) scroll
-  // past before it collapses into a book.
-  let ready = $state(false);
+  let mode = $state<"compare" | "flip">("compare");
+  // Active NEW-page index (0-based). Front matter is cover/drink/support/readme/
+  // toc (5), so 5 = the first body page (The Grid) — open there, already aligned.
+  let idx = $state(5);
+  let offset = $state(1); // old index = new index + offset (front-matter delta)
+  let newCount = $state(0);
+  let oldCount = $state(0);
+  let scale = $state(0.5);
 
-  onMount(async () => {
-    // Render the book DOM client-side first, then wire StPageFlip to it.
-    mounted = true;
-    await tick();
-    const { PageFlip } = await import("page-flip/dist/js/page-flip.module.js");
-    const cfg = {
-      width: FLIP_W,
-      height: FLIP_H,
-      size: "fixed" as const,
-      showCover: true,
-      drawShadow: true,
-      maxShadowOpacity: 0.5,
-      flippingTime: 600,
-      usePortrait: false,
-      mobileScrollSupport: false,
-    };
+  let newWrap = $state<HTMLDivElement>();
+  let leftWrap = $state<HTMLDivElement>();
+  let paneEl = $state<HTMLDivElement>();
+  let flipOpened = $state(false);
 
-    // RIGHT — live rebuild: GuidePage DOM is already in the page; just bind it.
-    const pfNew = new PageFlip(newContainer, cfg);
-    pfNew.loadFromHTML(newContainer.querySelectorAll(".page"));
+  function fit() {
+    if (!paneEl) return;
+    const w = paneEl.clientWidth - 24;
+    const h = paneEl.clientHeight - 44; // minus caption + padding
+    scale = Math.max(0.1, Math.min(w / PAGE_W, h / PAGE_H));
+  }
 
-    // LEFT — old proof: render each PDF page to a canvas inside a .page div.
-    const pdfjs = await import("pdfjs-dist");
-    const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
-    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-    const dpr = window.devicePixelRatio || 1;
-    const doc = await pdfjs.getDocument({ url: OLD_PDF }).promise;
-    // Build all pages OFF-DOM so the growing stack never paints; attach + init
-    // in one synchronous step so StPageFlip collapses it before the next frame.
-    const frag = document.createDocumentFragment();
-    for (let i = 1; i <= doc.numPages; i++) {
-      const page = await doc.getPage(i);
-      const base = page.getViewport({ scale: 1 });
-      const vp = page.getViewport({ scale: (FLIP_W / base.width) * dpr });
-      const canvas = document.createElement("canvas");
-      canvas.width = vp.width;
-      canvas.height = vp.height;
-      canvas.style.width = `${FLIP_W}px`;
-      canvas.style.height = `${FLIP_H}px`;
-      const cell = document.createElement("div");
-      cell.className = "page";
-      cell.appendChild(canvas);
-      frag.appendChild(cell);
-      await page.render({ canvas, canvasContext: canvas.getContext("2d")!, viewport: vp }).promise;
-    }
-    oldContainer.appendChild(frag);
-    const pfOld = new PageFlip(oldContainer, cfg);
-    pfOld.loadFromHTML(oldContainer.querySelectorAll(".page"));
+  const go = (n: number) => (idx = Math.max(0, Math.min((newCount || 1) - 1, n)));
 
-    // The two editions navigate INDEPENDENTLY — front matter differs (the new
-    // rebuild dropped the old intro pages), so page N of one no longer matches
-    // page N of the other. Flipping one must not move the other; compare by
-    // turning each to its own copy of a page.
-    status = `old ${pfOld.getPageCount()}p · new ${pfNew.getPageCount()}p`;
-    ready = true; // both books built — reveal them
-
-    // Dev handle so the two books can be driven page-by-page from DevTools while
-    // aligning their contents. goto(n) turns BOTH to the same index.
-    if (import.meta.env.DEV) {
-      (window as any).__books = {
-        old: pfOld,
-        new: pfNew,
-        goto(n: number) {
-          pfOld.turnToPage(Math.min(n, pfOld.getPageCount() - 1));
-          pfNew.turnToPage(Math.min(n, pfNew.getPageCount() - 1));
-        },
-        gotoOld: (n: number) => pfOld.turnToPage(Math.min(n, pfOld.getPageCount() - 1)),
-        gotoNew: (n: number) => pfNew.turnToPage(Math.min(n, pfNew.getPageCount() - 1)),
-      };
-    }
+  // Show only the active new page.
+  $effect(() => {
+    const w = newWrap;
+    if (!w) return;
+    const i = idx;
+    w.querySelectorAll<HTMLElement>(".cmp-page").forEach((p, k) => {
+      p.style.display = k === i ? "block" : "none";
+    });
   });
+
+  // Show only the matching old page, and keep both panes scaled identically.
+  $effect(() => {
+    const w = leftWrap;
+    if (!w) return;
+    const oi = idx + offset;
+    const s = scale;
+    w.querySelectorAll<HTMLCanvasElement>("canvas").forEach((c, k) => {
+      c.style.display = k === oi ? "block" : "none";
+      c.style.width = `${PAGE_W * s}px`;
+    });
+  });
+
+  function onKey(e: KeyboardEvent) {
+    if (mode !== "compare") return;
+    if (e.key === "ArrowRight") go(idx + 1);
+    else if (e.key === "ArrowLeft") go(idx - 1);
+  }
+
+  onMount(() => {
+    // GuideDocument renders synchronously, so its pages are already in the DOM.
+    newCount = newWrap?.querySelectorAll(".cmp-page").length ?? 0;
+    fit();
+    const ro = new ResizeObserver(fit);
+    if (paneEl) ro.observe(paneEl);
+    window.addEventListener("keydown", onKey);
+
+    // Old proof → one canvas per page (hidden; the effect reveals the active one).
+    (async () => {
+      const pdfjs = await import("pdfjs-dist");
+      const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+      pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+      const dpr = window.devicePixelRatio || 1;
+      const doc = await pdfjs.getDocument({ url: OLD_PDF }).promise;
+      oldCount = doc.numPages;
+      for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const base = page.getViewport({ scale: 1 });
+        const vp = page.getViewport({ scale: (PAGE_W / base.width) * dpr });
+        const canvas = document.createElement("canvas");
+        canvas.width = vp.width;
+        canvas.height = vp.height;
+        canvas.className = "old-page";
+        canvas.style.display = "none";
+        canvas.style.width = `${PAGE_W * scale}px`;
+        leftWrap?.appendChild(canvas);
+        await page.render({ canvas, canvasContext: canvas.getContext("2d")!, viewport: vp }).promise;
+      }
+      // Reveal the active old page now that canvases exist (appends aren't reactive).
+      const oi = idx + offset;
+      leftWrap?.querySelectorAll<HTMLCanvasElement>("canvas").forEach((c, k) => {
+        if (k === oi) c.style.display = "block";
+      });
+    })();
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("keydown", onKey);
+    };
+  });
+
+  // Flip-book (single book of the rebuild), built lazily the first time Book opens.
+  // Returns its destroy synchronously (async actions don't satisfy the Action type).
+  function flipbook(node: HTMLElement) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let pf: any;
+    (async () => {
+      const FLIP_W = 520;
+      const FLIP_H = Math.round((FLIP_W * PAGE_H) / PAGE_W);
+      const { PageFlip } = await import("page-flip/dist/js/page-flip.module.js");
+      await tick();
+      pf = new PageFlip(node, {
+        width: FLIP_W,
+        height: FLIP_H,
+        size: "fixed",
+        showCover: true,
+        drawShadow: true,
+        maxShadowOpacity: 0.5,
+        flippingTime: 600,
+        usePortrait: false,
+        mobileScrollSupport: false,
+      });
+      pf.loadFromHTML(node.querySelectorAll(".page"));
+    })();
+    return {
+      destroy() {
+        try {
+          pf?.destroy();
+        } catch {
+          /* already torn down */
+        }
+      },
+    };
+  }
 </script>
 
-<svelte:head><title>Guide Book: Level 1</title></svelte:head>
+<svelte:head><title>Guide Compare: Level 1</title></svelte:head>
 
-<!-- Wrap each shared-document page as a scaled flip page (native 8.5×11 GuidePage
-     inside a .scale transform, clipped to the flip .page box). -->
-{#snippet bookPage({ title, pageNumber, fullBleed, content }: GuidePageMeta)}
+{#snippet cmpPage(meta: GuidePageMeta)}
+  <div class="cmp-page">
+    <div class="cmp-scale">
+      <div class="pg">
+        <GuidePage title={meta.title} pageNumber={meta.pageNumber} fullBleed={meta.fullBleed}>
+          {@render meta.content()}
+        </GuidePage>
+      </div>
+    </div>
+  </div>
+{/snippet}
+
+{#snippet flipPage(meta: GuidePageMeta)}
   <div class="page">
     <div class="scale">
       <div class="pg">
-        <GuidePage {title} {pageNumber} {fullBleed}>{@render content()}</GuidePage>
+        <GuidePage title={meta.title} pageNumber={meta.pageNumber} fullBleed={meta.fullBleed}>
+          {@render meta.content()}
+        </GuidePage>
       </div>
     </div>
   </div>
@@ -129,45 +184,78 @@
 
 <div class="wrap">
   <div class="bar">
-    <span class="t">Book preview: drag a corner to flip · each edition turns independently</span>
-    <span class="status">{status}</span>
-  </div>
+    <span class="t">Level 1 · {mode === "compare" ? "compare" : "book"}</span>
 
-  <div class="books" class:ready>
-    {#if mounted}
-      <div class="book-col">
-        <div class="cap">Old: v0.5</div>
-        <div class="flip" bind:this={oldContainer}></div>
-      </div>
-      <div class="book-col">
-        <div class="cap">New: rebuild</div>
-        <!-- Live rebuild pages: shared GuideDocument, each page a real GuidePage
-             scaled into a flip .page. Same sequence as /print. -->
-        <div class="flip" bind:this={newContainer} style="--s:{SCALE}">
-          <GuideDocument coverTheme="navy" built={BUILT} page={bookPage} />
-        </div>
+    {#if mode === "compare"}
+      <div class="nav">
+        <button onclick={() => go(idx - 1)} disabled={idx <= 0}>‹ Prev</button>
+        <span class="lbl">new {idx + 1}/{newCount} · old {Math.max(0, idx + offset) + 1}/{oldCount || "…"}</span>
+        <button onclick={() => go(idx + 1)} disabled={idx >= newCount - 1}>Next ›</button>
+        <span class="dim">offset</span>
+        <button class="sm" onclick={() => offset--} title="old page −1">−</button>
+        <button class="sm" onclick={() => offset++} title="old page +1">+</button>
       </div>
     {/if}
-    {#if !ready}<div class="building">Building book…</div>{/if}
+
+    <div class="modes">
+      <button class:on={mode === "compare"} onclick={() => (mode = "compare")}>Compare</button>
+      <button class:on={mode === "flip"} onclick={() => { flipOpened = true; mode = "flip"; }}>Book</button>
+    </div>
   </div>
+
+  <!-- COMPARE — kept mounted (just hidden in book mode) so pdf canvases persist. -->
+  <div class="cmp" style="display:{mode === 'compare' ? 'grid' : 'none'}">
+    <div class="pane" bind:this={paneEl}>
+      <div class="cap">Old: v0.5</div>
+      <div class="oldwrap" bind:this={leftWrap}></div>
+    </div>
+    <div class="pane">
+      <div class="cap">New: rebuild</div>
+      <div class="newwrap" bind:this={newWrap} style="--s:{scale}">
+        <GuideDocument coverTheme="navy" built={BUILT} page={cmpPage} />
+      </div>
+    </div>
+  </div>
+
+  {#if flipOpened}
+    <div class="flipmode" style="display:{mode === 'flip' ? 'flex' : 'none'}">
+      <div class="flip" use:flipbook style="--s:{520 / PAGE_W}">
+        <GuideDocument coverTheme="navy" built={BUILT} page={flipPage} />
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
   .wrap { height: 100vh; display: flex; flex-direction: column; background: #15151c; color: #eaeaf2; font-family: system-ui, sans-serif; overflow: hidden; }
-  .bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; border-bottom: 1px solid #2c2c38; flex: 0 0 auto; }
-  .t { font-size: 13px; color: #cfcfe0; }
-  .status { font-size: 12px; color: #8a8aa0; }
-  .books { position: relative; flex: 1 1 auto; min-height: 0; display: flex; gap: 28px; align-items: center; justify-content: center; padding: 24px; }
-  /* Hidden until both StPageFlip books are built, so the raw page stack never
-     flashes; fade in together once ready. */
-  .book-col { display: flex; flex-direction: column; align-items: center; gap: 10px; opacity: 0; transition: opacity 0.35s ease; }
-  .books.ready .book-col { opacity: 1; }
-  .building { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; color: #8a8aa0; pointer-events: none; }
-  .cap { font-size: 12px; color: #9a9ab0; }
-  /* StPageFlip mounts here; the .page children become flip pages. */
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 16px; border-bottom: 1px solid #2c2c38; flex: 0 0 auto; }
+  .t { font-size: 13px; color: #cfcfe0; flex: 0 0 auto; }
+
+  .nav { display: flex; align-items: center; gap: 8px; }
+  .nav .lbl { font-size: 12px; color: #9a9ab0; min-width: 160px; text-align: center; font-variant-numeric: tabular-nums; }
+  .nav .dim { font-size: 11px; color: #6f6f86; margin-left: 8px; }
+  .bar button { font: 500 12px system-ui; padding: 6px 12px; border-radius: 999px; border: 1px solid #3a3a48; background: #26262f; color: #c8c8db; cursor: pointer; }
+  .bar button:disabled { opacity: 0.4; cursor: default; }
+  .bar button.sm { padding: 6px 10px; }
+  .modes { display: flex; gap: 8px; flex: 0 0 auto; }
+  .modes button.on { background: #3730a3; border-color: #3730a3; color: #fff; }
+
+  /* Compare grid — two equal panes, one page each, no scroll. */
+  .cmp { flex: 1 1 auto; min-height: 0; grid-template-columns: 1fr 1fr; gap: 1px; background: #2c2c38; }
+  .pane { display: flex; flex-direction: column; min-height: 0; background: #1f1f27; padding: 8px 0; }
+  .cap { flex: 0 0 auto; font-size: 12px; color: #9a9ab0; text-align: center; padding-bottom: 6px; }
+  .oldwrap, .newwrap { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .oldwrap :global(canvas.old-page) { display: none; background: #fff; box-shadow: 0 2px 16px rgba(0, 0, 0, 0.45); }
+
+  /* New page: scale the native 816×1056 into a box of the scaled footprint so it
+     centres cleanly (transform alone doesn't shrink layout size). */
+  .cmp-page { display: none; width: calc(816px * var(--s)); height: calc(1056px * var(--s)); overflow: hidden; box-shadow: 0 2px 16px rgba(0, 0, 0, 0.45); }
+  .cmp-scale { width: 816px; height: 1056px; transform: scale(var(--s)); transform-origin: top left; background: #fff; }
+  .pg :global(.guide-page) { margin: 0; box-shadow: none; }
+
+  /* Book (flip) mode — single book of the rebuild. */
+  .flipmode { flex: 1 1 auto; min-height: 0; align-items: center; justify-content: center; padding: 20px; }
   .flip { background: transparent; }
   .flip :global(.page) { background: #fff; overflow: hidden; box-sizing: border-box; }
-  /* Scale a native 8.5×11 GuidePage (816px) down into the flip page box. */
-  .scale { width: 816px; height: 1056px; transform: scale(var(--s)); transform-origin: top left; }
-  .pg :global(.guide-page) { margin: 0; box-shadow: none; }
+  .flip .scale { width: 816px; height: 1056px; transform: scale(var(--s)); transform-origin: top left; }
 </style>
