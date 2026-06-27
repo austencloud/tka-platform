@@ -21,6 +21,7 @@
   import RightRail from "./RightRail.svelte";
   import VideoGallery from './VideoGallery.svelte';
   import ArtPane from './ArtPane.svelte';
+  import PracticeLanePane from "./PracticeLanePane.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
@@ -131,6 +132,12 @@
      * step is the progress readout, so a scrubber under the animation is noise.
      */
     suppressProgress?: boolean;
+    /** When true, renders PracticeLanePane in the right pane instead of the normal preview. */
+    practiceActive?: boolean;
+    /** Cell size (px) forwarded to PracticeLanePane / BeatStrip. */
+    practiceCellSize?: number;
+    /** Fraction of total width given to the animation canvas column in practice mode. */
+    practiceCanvasFraction?: number;
   }
 
   let {
@@ -160,6 +167,9 @@
     onVideoUpload,
     onArtExport,
     suppressProgress = false,
+    practiceActive = false,
+    practiceCellSize = 72,
+    practiceCanvasFraction = 0.38,
   }: Props = $props();
 
   // Three.js / Threlte is multi-MB. The 3D canvas + performer hub are only
@@ -394,7 +404,9 @@
 
 <div
   class="split-view view-container"
-data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "vertical" : "horizontal") : undefined}
+  class:practice={practiceActive}
+  style="--canvas-frac: {practiceCanvasFraction};"
+  data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "vertical" : "horizontal") : undefined}
   data-landscape={layout.isLandscapeMobile || undefined}
   data-focused={layout.focusedPane}
   data-mobile-transport={(showMobileTransport && !suppressProgress) || undefined}
@@ -614,6 +626,17 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
   >
 
     <div class="preview-column-inner" class:focused={layout.focusedPane === "image"}>
+      {#if practiceActive}
+        <PracticeLanePane
+          sequence={playback.animationState.sequenceData}
+          currentStep={playback.currentStep}
+          {bpm}
+          cellSize={practiceCellSize}
+          bluePropType={propRendering.bluePropType}
+          redPropType={propRendering.redPropType}
+          onSeek={onProgressBarSeek ?? null}
+        />
+      {:else}
       {#if _2dRightMounted}
         <div
           class="media-pane animation-pane persistent-2d"
@@ -759,6 +782,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
             {onArtExport}
           />
         </div>
+      {/if}
       {/if}
     </div>
   </div>
@@ -1187,6 +1211,20 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
 
   .error-state {
     color: var(--semantic-error, #f87171);
+  }
+
+  /* ========================================
+     PRACTICE MODE: custom canvas/lane split
+     ======================================== */
+  .split-view.practice {
+    grid-template-columns: calc(var(--canvas-frac) * 100%) 1fr;
+  }
+
+  @media (max-width: 767px) and (orientation: portrait) {
+    .split-view.practice {
+      grid-template-columns: 1fr;
+      grid-template-rows: calc(var(--canvas-frac) * 100%) 1fr;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
