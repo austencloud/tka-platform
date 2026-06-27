@@ -24,8 +24,6 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
 <script lang="ts">
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/settings-state.svelte";
-  import AchievementNotificationToast from "../../gamification/components/AchievementNotificationToast.svelte";
-  import XPToast from "../../gamification/components/XPToast.svelte";
   import WhatsNewChecker from "../../settings/components/WhatsNewChecker.svelte";
   import ErrorModal from "../../error/components/ErrorModal.svelte";
   import ErrorToast from "../../error/components/ErrorToast.svelte";
@@ -226,7 +224,7 @@ import type { SheetType } from "../../navigation/services/types";
       try {
         // Skip full re-initialization on HMR - if app is already initialized,
         // the preserved state from import.meta.hot.data means we don't need to
-        // redo auth, Firestore, settings, theme, or gamification.
+        // redo auth, Firestore, settings, or theme.
         if (getIsInitialized()) {
           // Re-attach sheet router listener (old one was cleaned up on unmount)
           currentSheetType = getCurrentSheet();
@@ -328,23 +326,6 @@ import type { SheetType } from "../../navigation/services/types";
           applyThemeForBackground(bgType);
         }
         bootProfiler.end("app:load-settings+theme");
-
-        // Initialize gamification system (authenticated users only - requires Firestore)
-        if (authState.isAuthenticated) {
-          window.__tkaLoadProgress?.(98, "Initializing achievements...");
-          bootProfiler.mark("app:gamification");
-          try {
-            const { initializeGamification } =
-              await import("../../gamification/init/gamification-initializer");
-            await initializeGamification();
-          } catch (gamError) {
-            console.error(
-              "⚠️ Gamification failed to initialize (non-blocking):",
-              gamError
-            );
-          }
-          bootProfiler.end("app:gamification");
-        }
 
         setInitializationState(true, false, null, 0);
 
@@ -607,10 +588,6 @@ import type { SheetType } from "../../navigation/services/types";
       type={showPrivacySheet ? "privacy" : "terms"}
       onClose={() => closeSheet()}
     />
-
-    <!-- Gamification Toast Notifications -->
-    <AchievementNotificationToast />
-    <XPToast />
 
     <!-- One-time beta notice (guest + member, once per device) -->
     {#await import("../../onboarding/components/BetaNoticeToast.svelte") then mod}

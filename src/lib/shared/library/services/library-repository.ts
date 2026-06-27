@@ -39,7 +39,6 @@ import {
   UserProfileDocSchema,
 } from "$lib/shared/library/domain/library-schemas";
 import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
-import type { AchievementManager } from '$lib/shared/gamification/services/achievement-manager'
 import { detectOrientationCycle } from "$lib/shared/create/services/orientation-cycle-detector";
 import type { IPublicIndexSyncer as PublicIndexSyncer } from "$lib/shared/library/services/IPublicIndexSyncer";
 import type { ConflictResolver } from "$lib/shared/offline/services/conflict-resolver";
@@ -77,7 +76,6 @@ export class LibraryRepository {
   private batchOps: LibraryBatchOperations;
 
   constructor(
-    private achievementService: AchievementManager,
     private publicIndexSyncer: PublicIndexSyncer,
     private conflictResolver?: ConflictResolver
   ) {
@@ -475,15 +473,6 @@ export class LibraryRepository {
         });
     }
 
-    // Post-write: Track XP (async, non-blocking)
-    if (isNewSequence) {
-      this.achievementService
-        .trackAction("sequence_created", {
-          stepCount: sequence.steps.length ?? 0,
-        })
-        .catch((_e) => console.warn("Failed to track achievement:", _e));
-    }
-
     // Notify listeners (browse gallery, etc.) so they can insert immediately
     notifyLibrarySequenceAdded(finalSequence);
 
@@ -858,21 +847,7 @@ export class LibraryRepository {
       throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
     }
 
-    // Only award XP if this is the first time publishing
-    const wasPrivate = existing.visibility !== "public";
-
     await this.setVisibility(sequenceId, "public");
-
-    if (wasPrivate) {
-      try {
-        await this.achievementService.trackAction("sequence_published", {
-          sequenceId,
-          stepCount: existing.steps.length ?? 0,
-        });
-      } catch (_e) {
-        console.warn("Failed to track achievement:", _e);
-      }
-    }
   }
 
   async unpublishSequence(sequenceId: string): Promise<void> {

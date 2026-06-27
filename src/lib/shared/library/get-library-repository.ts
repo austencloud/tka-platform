@@ -1,5 +1,4 @@
 import { LibraryRepository } from './services/library-repository';
-import { getAchievementManager } from '$lib/shared/gamification/get-achievement-manager';
 import { getConflictResolver } from '$lib/shared/offline/get-conflict-resolver';
 import type { IPublicIndexSyncer } from './services/IPublicIndexSyncer';
 
@@ -25,7 +24,6 @@ export function getLibraryRepository(): LibraryRepository {
     );
   }
   return instance ??= new LibraryRepository(
-    getAchievementManager(),
     publicIndexSyncerFactory(),
     getConflictResolver()
   );

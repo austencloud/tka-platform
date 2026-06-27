@@ -14,7 +14,6 @@ import {
   getFirestoreInstance,
   getStorageInstance,
 } from "$lib/shared/auth/firebase";
-import { trackXP } from "$lib/shared/gamification/init/gamification-initializer";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -151,12 +150,6 @@ export async function submitFeedback(
       toast.warning("Feedback submitted but some images failed to upload.");
     }
   }
-
-  // Award XP for submitting feedback (non-blocking)
-  trackXP("feedback_submitted", {
-    feedbackId: docRef.id,
-    feedbackType: formData.type,
-  }).catch((err) => console.warn("Failed to track feedback XP:", err));
 
   // Send message to admin (non-blocking, skip if user is admin)
   const effectiveUserId = effectiveUser.uid;
