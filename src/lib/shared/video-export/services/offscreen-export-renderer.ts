@@ -55,6 +55,12 @@ export interface OffscreenExportInit {
   previewDarkMode: boolean | null;
   /** Whether to draw non-radial grid points (matches the live grid). */
   showNonRadialPoints: boolean;
+  /** Tunnel kaleidoscope: number of overlaid layers to pre-load prop textures
+   *  for. 0 / omitted for normal sequence export. */
+  additionalLayerCount?: number;
+  /** Tunnel per-prop rainbow spectrum (matches the live controller). Drives both
+   *  the pre-loaded layer texture colors and the per-frame render coloring. */
+  tunnelSpectrum?: boolean;
 }
 
 /** Synchronous render passes to converge the fluid sim before capture starts. */
@@ -149,6 +155,18 @@ export class OffscreenExportRenderer {
     const blue = init.bluePropType ?? "staff";
     const red = init.redPropType ?? "staff";
     await this.handle.engine.prepareExportPropTypes(blue, red, darkMode);
+
+    // Tunnel export: pre-load the kaleidoscope's per-layer prop textures. The
+    // engine bypasses PlaybackSync.update (the live path's handleAdditionalLayers,
+    // the only place these load), so without this the overlaid copies have no prop
+    // image and the renderer skips them — the export shows only the base pair.
+    // Mirrors prepareExportPropTypes for the additional layers.
+    if (init.additionalLayerCount && init.additionalLayerCount > 0) {
+      await this.handle.engine.prepareExportAdditionalLayers(
+        init.additionalLayerCount,
+        init.tunnelSpectrum ?? true,
+      );
+    }
 
     if (init.needsFluidWarmup) {
       // Deterministic warmup: render the start position repeatedly so the fluid
@@ -271,6 +289,10 @@ export class OffscreenExportRenderer {
     const props = assembleExportEngineProps(this.panelState, frameCtx);
 
     if (layerProvider) props.additionalLayers = layerProvider(beat);
+    // Match the live tunnel's spectrum coloring. frame-parameter-builder defaults
+    // this to true; an explicit value honors a user who turned spectrum off (and
+    // keeps the per-frame render in sync with the pre-loaded layer texture hues).
+    props.tunnelSpectrum = this.init.tunnelSpectrum ?? true;
 
     // Feed the capturer at the same cadence the WebGL2 overlay captures its own
     // ring, so the canvas2D fallback path (if ever active) stays consistent.

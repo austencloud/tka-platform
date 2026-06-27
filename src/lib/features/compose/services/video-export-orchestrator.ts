@@ -42,7 +42,6 @@ import { getExportDimensions, calculateBitrate } from "$lib/shared/animation-eng
 import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import type { TipEffectMap } from '$lib/shared/animation-engine/domain/types/tip-effect-types';
 
@@ -429,6 +428,12 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // initialize(). The compositor then reads its canvas + sibling overlays
       // instead of the on-screen live canvas.
       if (!isCompositeMode) {
+        // Tunnel export: the per-beat layer set is fixed-size (fold-derived), so
+        // sample it once to tell the offscreen engine how many per-layer prop
+        // textures to pre-load before the frame loop. 0 for normal sequence export.
+        const additionalLayerCount = options.additionalLayersForBeat
+          ? options.additionalLayersForBeat(1).length
+          : 0;
         offscreen = new OffscreenExportRenderer(playbackController, panelState);
         await offscreen.initialize({
           outputCanvasSize,
@@ -445,6 +450,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           // key, so default to true (the prior hardcoded value) for unchanged behavior.
           previewDarkMode: options.previewDarkMode ?? isDarkMode,
           showNonRadialPoints: options.showNonRadialPoints ?? true,
+          additionalLayerCount,
+          tunnelSpectrum: options.tunnelSpectrum,
         });
       }
 
@@ -916,8 +923,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       panelState.sequenceWord ||
       "animation";
     // Collapse repeated kernels ("VΛ-VΛ-VΛ-VΛ-" → "VΛ-") so the filename matches
-    // what WordHeader/WordLabel show on screen, then map Greek → ASCII shorthand.
-    const baseName = greekToAscii(simplifyRepeatedWord(rawName));
+    // what WordHeader/WordLabel show on screen. Greek glyphs are kept as-is —
+    // generateTimestampedFilename sanitizes while preserving Unicode.
+    const baseName = simplifyRepeatedWord(rawName);
     const extensionMap: Record<VideoExportFormat, string> = {
       webm: "webm",
       mp4: "mp4",

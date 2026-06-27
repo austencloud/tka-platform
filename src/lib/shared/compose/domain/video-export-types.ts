@@ -79,6 +79,14 @@ export interface VideoExportOrchestratorOptions {
   additionalLayersForBeat?: (beat: number) => AdditionalLayerProps[];
 
   /**
+   * Tunnel/art export: per-prop rainbow spectrum, mirroring the live tunnel
+   * controller. Drives the pre-loaded per-layer texture colors AND the per-frame
+   * render coloring so the exported kaleidoscope matches what's on screen. Omit
+   * (defaults to true) for normal sequence export.
+   */
+  tunnelSpectrum?: boolean;
+
+  /**
    * Square source-size override (px). When set, the export ignores the live
    * `canvas` arg for sizing and renders a square source of width=height=size
    * with NO word-header / progress-bar reserved space — and SKIPS the

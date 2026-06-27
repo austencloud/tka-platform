@@ -59,6 +59,7 @@
     onPlaybackToggle = () => {},
     bluePropType = null,
     redPropType = null,
+    exporting = false,
   }: {
     sequence: SequenceData;
     playback: ViewerPlaybackState;
@@ -76,6 +77,10 @@
     onPlaybackToggle?: () => void;
     bluePropType?: string | null;
     redPropType?: string | null;
+    /** Freeze the rail while a tunnel export runs — changing fold/mirror/spectrum
+     *  mid-export would desync the live config from the offscreen engine's
+     *  pre-loaded layer textures. Cancel lives on the canvas overlay, not here. */
+    exporting?: boolean;
   } = $props();
 
   // ── Tunnel rail ──
@@ -134,7 +139,7 @@
   }
 </script>
 
-<div class="art-settings-panel">
+<div class="art-settings-panel" class:exporting inert={exporting || undefined}>
   <!-- Pinned header: the current art type (the mode rail switches between
        Mandala and Tunnel now — no in-panel toggle). -->
   <div class="panel-header">
@@ -312,6 +317,20 @@
     overflow: hidden;
     container-type: size;
     container-name: art-sidebar;
+    transition: opacity var(--duration-normal, 200ms) ease;
+  }
+
+  /* Frozen while a tunnel export bakes — `inert` blocks interaction; the dim is
+     the visual signal. Changing fold/mirror/spectrum now would desync from the
+     offscreen engine's pre-loaded layer textures. */
+  .art-settings-panel.exporting {
+    opacity: 0.5;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .art-settings-panel {
+      transition: none;
+    }
   }
 
   .panel-header {

@@ -21,7 +21,6 @@ import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-
 import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
-import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
 import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
@@ -66,22 +65,27 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     handleExportFn();
   }
 
-  function autoDownloadVideo(effectiveSequence: SequenceData | null) {
+  function autoDownloadVideo(
+    effectiveSequence: SequenceData | null,
+    // Appended before ".mp4" to distinguish variant exports of the same
+    // sequence (e.g. the tunnel's "-tunnel-4x"). Already a sanitized literal.
+    nameSuffix = "",
+  ) {
     const url = sequenceModalExporter.state.previewBlobUrl;
     if (!url) return;
     // Match the "Save Again" name (DrawerHost onRedownload): collapse repeated
-    // kernels and map Greek → ASCII so the file is "Ulam-.mp4", not the raw
-    // "UΛ-UΛ-UΛ-UΛ-.mp4".
+    // kernels so the file is "UΛ-.mp4", not the raw "UΛ-UΛ-UΛ-UΛ-.mp4". Greek
+    // glyphs are kept — sanitizeFilename preserves Unicode.
     const rawName =
       effectiveSequence?.displayName ||
       effectiveSequence?.intendedWord ||
       effectiveSequence?.word ||
       "sequence";
     const safeName =
-      sanitizeFilename(greekToAscii(simplifyRepeatedWord(rawName))) || "sequence";
+      sanitizeFilename(simplifyRepeatedWord(rawName)) || "sequence";
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${safeName}.mp4`;
+    a.download = `${safeName}${nameSuffix}.mp4`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -117,6 +121,11 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     modalAnimationState: AnimationPanelState,
     hapticService: HapticFeedback | null,
     additionalLayersForBeat: (beat: number) => AdditionalLayerProps[],
+    // The tunnel knobs: fold + mirror are stamped into the filename so variant
+    // exports of the same sequence don't overwrite each other (e.g.
+    // "Ulam--tunnel-8x-mirror"); spectrum is forwarded to the offscreen engine so
+    // the exported kaleidoscope's colors match the on-screen view.
+    tunnelConfig: { fold: number; mirror: boolean; spectrum: boolean },
   ) {
     if (sequenceModalExporter.state.isExporting) return;
 
@@ -159,6 +168,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         includeEndHold: opts.includeEndHold,
         sourceSizeOverride: squareSize,
         additionalLayersForBeat,
+        tunnelSpectrum: tunnelConfig.spectrum,
         overlayOverrides: {
           tkaGlyph: false,
           stepNumbers: false,
@@ -181,7 +191,8 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       sequenceModalExporter.state.previewBlobUrl &&
       !sequenceModalExporter.state.error
     ) {
-      autoDownloadVideo(effectiveSequence);
+      const suffix = `-tunnel-${tunnelConfig.fold}x${tunnelConfig.mirror ? "-mirror" : ""}`;
+      autoDownloadVideo(effectiveSequence, suffix);
     }
   }
 

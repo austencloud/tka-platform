@@ -3,7 +3,6 @@ import type { Offline3DExporter } from "$lib/shared/3d/services/offline-3d-expor
 import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
 import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
 import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
-import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { recordExportThroughput } from "$lib/shared/animation-panel/state/export-timing-tracker";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -49,6 +48,12 @@ export interface VideoExportOptions {
    * kaleidoscope's extra copies). Forwarded to the orchestrator.
    */
   additionalLayersForBeat?: (beat: number) => AdditionalLayerProps[];
+  /**
+   * Tunnel/art export: per-prop rainbow spectrum (mirrors the live tunnel
+   * controller). Forwarded to the orchestrator so the exported kaleidoscope's
+   * layer colors match the on-screen view. Omit for normal sequence export.
+   */
+  tunnelSpectrum?: boolean;
   /**
    * Per-export chrome-visibility overrides, merged over the global visibility
    * manager (does NOT mutate global state). Forwarded to the orchestrator so
@@ -225,6 +230,7 @@ export class SequenceModalExporter {
           // Tunnel/art export pass-throughs (absent for normal sequence export).
           sourceSizeOverride: options.sourceSizeOverride,
           additionalLayersForBeat: options.additionalLayersForBeat,
+          tunnelSpectrum: options.tunnelSpectrum,
           overlayOverrides: options.overlayOverrides,
         }
       );

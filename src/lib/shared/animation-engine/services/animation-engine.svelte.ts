@@ -406,6 +406,25 @@ export class AnimationEngine {
     await this.propSystem.propPipeline.loadTextures(this.state, darkMode);
   }
 
+  /**
+   * Pre-load the tunnel's additional-layer prop textures before the export frame
+   * loop. Sibling to prepareExportPropTypes — the offscreen engine bypasses
+   * PlaybackSync.update (the live path's handleAdditionalLayers), which is the
+   * ONLY place these per-layer textures are loaded. Without this the kaleidoscope's
+   * overlaid copies have no prop image and the export renders only the base pair.
+   * `spectrum` mirrors the live controller so the layer colors match.
+   */
+  async prepareExportAdditionalLayers(
+    layerCount: number,
+    spectrum: boolean,
+  ): Promise<void> {
+    await this.propSystem.propTypeManager.preloadAdditionalLayerTextures(
+      layerCount,
+      spectrum,
+      this.state.currentBluePropType,
+    );
+  }
+
   /** Render one export frame synchronously and deterministically. `timeMs` is
    *  the frame's virtual time; `dtSeconds` is the fixed sim step (e.g. 1/fps).
    *  Used by the offscreen export driver — no rAF, no live-engine mutation. */

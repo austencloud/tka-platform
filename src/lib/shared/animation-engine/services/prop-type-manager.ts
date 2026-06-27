@@ -242,12 +242,6 @@ export class PropTypeManager {
       this.additionalLayerTexturesLoading = [];
     }
 
-    // Spectrum off: every layer staff matches the base pair exactly. The base
-    // pair is the native blue/red SVG (getMotionColor), NOT tunnelPropColor's
-    // anchor — the anchor blue is a touch more violet, which read as "one odd
-    // staff" against the native base. Use the canonical base colors so all four
-    // blues (and reds) are identical.
-    const baseColors = spectrum ? null : getBaseMotionColors();
     if (layerCount > 0 && this.animationRenderer) {
       for (let i = 0; i < layerCount; i++) {
         const layer = additionalLayers[i]!;
@@ -260,11 +254,8 @@ export class PropTypeManager {
         ) {
           this.additionalLayerTexturesLoading[i] = true;
 
-          // Color each layer sprite through the same selective SVG pipeline the
-          // base pair uses (gold sword blade preserved, only the hardware takes
-          // the hue). propIndex convention: layer blue = 2+2i, red = 3+2i.
-          const blueColor = baseColors ? baseColors.blue : tunnelPropColor(2 + i * 2, layerCount).hex;
-          const redColor = baseColors ? baseColors.red : tunnelPropColor(3 + i * 2, layerCount).hex;
+          const { blue: blueColor, red: redColor } =
+            this.additionalLayerColors(i, layerCount, spectrum);
 
           this.animationRenderer
             .loadAdditionalLayerPropTextures(
@@ -289,6 +280,61 @@ export class PropTypeManager {
         }
       }
     }
+  }
+
+  /**
+   * Canonical per-layer staff colors, shared by the live load path
+   * (handleAdditionalLayers) and the export preload so both color the
+   * kaleidoscope identically. Colors each layer sprite through the same
+   * selective SVG pipeline the base pair uses (gold sword blade preserved, only
+   * the hardware takes the hue). propIndex convention: layer blue = 2+2i,
+   * red = 3+2i.
+   *
+   * Spectrum off: every layer staff matches the base pair exactly — the native
+   * blue/red SVG (getBaseMotionColors), NOT tunnelPropColor's anchor (the anchor
+   * blue is a touch more violet, which read as "one odd staff" against the
+   * native base), so all four blues (and reds) are identical.
+   */
+  private additionalLayerColors(
+    layerIndex: number,
+    layerCount: number,
+    spectrum: boolean,
+  ): { blue: string; red: string } {
+    const baseColors = spectrum ? null : getBaseMotionColors();
+    return {
+      blue: baseColors ? baseColors.blue : tunnelPropColor(2 + layerIndex * 2, layerCount).hex,
+      red: baseColors ? baseColors.red : tunnelPropColor(3 + layerIndex * 2, layerCount).hex,
+    };
+  }
+
+  /**
+   * Pre-load every additional-layer prop texture up front and await them. The
+   * offscreen export engine is driven only through renderFrame() and never runs
+   * PlaybackSync.update → handleAdditionalLayers, so the per-layer images would
+   * otherwise stay null and the renderer would skip the kaleidoscope copies
+   * (canvas-2d-animation-renderer getAdditionalLayerImages) — the export showing
+   * only the base pair. Deterministic: every load resolves before frame 0.
+   */
+  async preloadAdditionalLayerTextures(
+    layerCount: number,
+    spectrum: boolean,
+    propType: string,
+  ): Promise<void> {
+    if (layerCount <= 0 || !this.animationRenderer) return;
+    this.lastLayerCount = layerCount;
+    this.lastSpectrum = spectrum;
+    this.additionalLayerTexturesLoaded = [];
+    this.additionalLayerTexturesLoading = [];
+    await Promise.all(
+      Array.from({ length: layerCount }, (_, i) => {
+        const { blue, red } = this.additionalLayerColors(i, layerCount, spectrum);
+        return this.animationRenderer!
+          .loadAdditionalLayerPropTextures(i, propType, blue, red)
+          .then(() => {
+            this.additionalLayerTexturesLoaded[i] = true;
+          });
+      }),
+    );
   }
 
   /**

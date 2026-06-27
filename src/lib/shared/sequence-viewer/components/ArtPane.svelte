@@ -139,6 +139,7 @@
     {onPlaybackToggle}
     bluePropType={bluePropType ?? null}
     redPropType={redPropType ?? null}
+    exporting={artType === "tunnel" && exportState.isExporting}
   />
 </div>
 
