@@ -16,6 +16,7 @@
   disabled={state.isCheckingOut}
 >
   {#if state.isCheckingOut}
+    <span class="spinner" aria-hidden="true"></span>
     Opening checkout...
   {:else}
     Buy Now
@@ -33,21 +34,54 @@
     background: var(--theme-accent, #60a5fa);
     color: var(--theme-text-on-accent, #fff);
     cursor: pointer;
-    transition: opacity 0.2s;
+    /* Compositor-only: only transform animates per interaction frame. */
+    transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s;
+    will-change: transform;
+  }
+
+  .buy-button:hover:not(:disabled) {
+    opacity: 0.95;
+    transform: translateY(-2px);
+  }
+
+  .buy-button:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+    transition-duration: 0.06s;
+  }
+
+  .buy-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    margin-right: 0.5em;
+    vertical-align: -0.15em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .buy-button {
       transition: none;
     }
-  }
-
-  .buy-button:hover:not(:disabled) {
-    opacity: 0.9;
-  }
-
-  .buy-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    .buy-button:hover:not(:disabled),
+    .buy-button:active:not(:disabled) {
+      transform: none;
+    }
+    .spinner {
+      animation-duration: 1.4s;
+    }
   }
 </style>

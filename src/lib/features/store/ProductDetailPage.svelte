@@ -119,18 +119,42 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
     }
   }
 
-  /* Choreographed reveal: the info column fades + rises in on mount, a beat after
-     the cover morph lands (140ms delay). Pure CSS so it needs no reactive state
-     (the local `state` store would shadow the $state rune). Transform/opacity only
-     — compositor, no layout shift. */
-  .info-column {
-    animation: info-reveal 420ms 140ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  /* Choreographed reveal: the cover lands first (the view-transition morph), then
+     the info column's children cascade in one after another — a staggered show,
+     not a single block fade. Pure CSS so it needs no reactive state (the local
+     `state` store would shadow the $state rune). Transform/opacity only —
+     compositor, no layout shift. The stagger steps by DOM position; optional
+     children (meta, pre-order note, checkout error) just take their slot's delay. */
+  .info-column > * {
+    animation: item-rise 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
-  @keyframes info-reveal {
+  .info-column > :nth-child(1) {
+    animation-delay: 200ms;
+  }
+  .info-column > :nth-child(2) {
+    animation-delay: 260ms;
+  }
+  .info-column > :nth-child(3) {
+    animation-delay: 320ms;
+  }
+  .info-column > :nth-child(4) {
+    animation-delay: 380ms;
+  }
+  .info-column > :nth-child(5) {
+    animation-delay: 440ms;
+  }
+  .info-column > :nth-child(6) {
+    animation-delay: 500ms;
+  }
+  .info-column > :nth-child(n + 7) {
+    animation-delay: 560ms;
+  }
+
+  @keyframes item-rise {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(12px);
     }
     to {
       opacity: 1;
@@ -139,7 +163,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .info-column {
+    .info-column > * {
       animation: none;
     }
   }
@@ -159,6 +183,8 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     transition: background 0.2s, border-color 0.2s;
+    /* Leads the cascade: surfaces just before the info children (120ms). */
+    animation: item-rise 460ms 120ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .back-button:hover {
@@ -169,6 +195,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   @media (prefers-reduced-motion: reduce) {
     .back-button {
       transition: none;
+      animation: none;
     }
   }
 
