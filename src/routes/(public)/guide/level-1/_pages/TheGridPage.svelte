@@ -56,20 +56,7 @@
     { x: 64.9, y: 135.8, w: 482.1, h: 16, b: true, t: "This guide is written in diamond, but everything translates to box." },
     { x: 157.7, y: 174.2, w: 296.4, h: 16, t: "On this grid, there are three types of points:" },
 
-    // Left descriptive column (runs kept separate so bold terms keep their spot)
-    { x: 30.7, y: 239.1, w: 27.8, h: 17, t: "The " },
-    { x: 62.2, y: 239.1, w: 95.4, h: 17, b: true, t: "center point" },
-    { x: 161.3, y: 239.1, w: 103.9, h: 17, t: " is the hub that" },
-    { x: 30.7, y: 259.5, w: 201.7, h: 17, t: "everything revolves around." },
-    { x: 30.7, y: 331.0, w: 61.9, h: 17, t: "The four " },
-    { x: 96.4, y: 331.0, w: 92.8, h: 17, b: true, t: "hand points" },
-    { x: 192.9, y: 331.0, w: 84.0, h: 17, t: " are halfway" },
-    { x: 30.7, y: 351.4, w: 239.8, h: 17, t: "between the center point and the" },
-    { x: 30.7, y: 371.8, w: 92.3, h: 17, t: "outer points." },
-    { x: 30.7, y: 440.7, w: 27.8, h: 17, t: "The " },
-    { x: 62.2, y: 440.7, w: 95.8, h: 17, b: true, t: "outer points" },
-    { x: 161.8, y: 440.7, w: 115.4, h: 17, t: " depict the outer" },
-    { x: 30.7, y: 461.1, w: 123.6, h: 17, t: "edges of the grid." },
+    // Left descriptive column lives in PARAS (single selectable blocks).
 
     // Diagram callout labels
     { x: 432.4, y: 279.9, w: 28.1, h: 13, t: "hand" },
@@ -94,6 +81,15 @@
 
     // Footer line
     { x: 116.5, y: 760.9, w: 379.0, h: 19, t: "We’ll use diamond mode to learn each concept." },
+  ];
+
+  // The three point descriptions as SINGLE selectable text blocks (bold term
+  // inline, explicit line breaks) — not per-word runs that fragment + gap when
+  // selected. Positioned at the proof's first-line origin; lh = proof line pitch.
+  const PARAS = [
+    { x: 30.7, y: 239.1, w: 255, lh: 20.4, html: "The <strong>center point</strong> is the hub that<br>everything revolves around." },
+    { x: 30.7, y: 331.0, w: 255, lh: 20.4, html: "The four <strong>hand points</strong> are halfway<br>between the center point and the<br>outer points." },
+    { x: 30.7, y: 440.7, w: 255, lh: 20.4, html: "The <strong>outer points</strong> depict the outer<br>edges of the grid." },
   ];
 
   // Central diagram box (pt, square so the grid stays round) + bottom grid boxes.
@@ -174,6 +170,16 @@
     >
   {/each}
 
+  <!-- Point descriptions as single selectable blocks (bold term + line breaks). -->
+  {#each PARAS as p}
+    <p
+      class="para"
+      style="left:{p.x * S}px; top:{p.y * S}px; width:{p.w * S}px; font-size:{17 * S}px; line-height:{p.lh * S}px"
+    >
+      {@html p.html}
+    </p>
+  {/each}
+
   <!-- Callout arrows, drawn directly in PDF coordinate space (612×792), on top. -->
   <svg class="arrows" viewBox="0 0 612 792" preserveAspectRatio="none" aria-hidden="true">
     <defs>
@@ -181,9 +187,11 @@
         <path d="M0,0 L6,3 L0,6 Z" fill="#222" />
       </marker>
     </defs>
-    <!-- "hand points" → the two hand points (straight, splayed down to W/E hands) -->
-    <path d="M439,322 L410.4,337.2" />
-    <path d="M450,322 L479.6,337.3" />
+    <!-- "hand points" → the two hand points. Tails start just under the LABEL
+         (y≈310, below the "points" text at ~308) and fork outward around the N
+         hand-point dot, so they read as coming from the text, not the dot. -->
+    <path d="M444,310 L410.4,337.2" />
+    <path d="M449,310 L479.6,337.3" />
     <!-- "center point" → center dot (straight, up-right, head reaching the dot) -->
     <path d="M415,390 L439,368" />
     <!-- "outer points" → east + south outer points (two arrows, tails clear of the label) -->
@@ -210,6 +218,15 @@
   }
   .run.b {
     font-weight: 700;
+  }
+  /* Point descriptions: one flowing block each (selectable as a unit), same
+     serif as the runs; bold term inline, line breaks explicit. */
+  .para {
+    position: absolute;
+    margin: 0;
+    font-family: "Times New Roman", Times, Georgia, serif;
+    color: #141414;
+    text-align: left;
   }
   /* The + / = operators between the bottom minis — heavy, centred in their box. */
   .run.op {
