@@ -49,9 +49,11 @@
   // two) of minis, then the italic description; a hairline rule splits sections
   // (parsability, matching the proof). The title sits at the SAME y as The
   // Grid's title so pages stay consistent. Tune GAP to breathe the page.
-  const TITLE_Y = 22; // top breathing room (matches the proof); consistent across pages
+  // Title size + placement live in guide.css (.guide-title / --guide-title-*),
+  // shared by every page. TITLE_Y/TITLE_H here are only the intro-offset anchor
+  // for THIS page's cascade; keep TITLE_Y ≈ --guide-title-top so intro clears.
+  const TITLE_Y = 22; // ≈ --guide-title-top (22pt) — cascade anchor only
   const TITLE_H = 40; // title layout slot feeding the intro offset
-  const TITLE_FS = 48; // title font size — Tangerine reads small, so larger than the slot
   const GAP = 12; // even gap between major blocks
   const G_IN = 6; // heading→minis and minis→description
   const ROW_GAP = 5; // between the two Gamma rows
@@ -118,8 +120,6 @@
   // centred run (plain clause + spaced bold colour legend) — two separate runs
   // double-centred and left an awkward gap between "mirrored." and "Red".
   const RUNS: Run[] = [
-    { x: 201.1, y: TITLE_Y, w: 218.4, h: TITLE_FS, title: true, t: "Hand Positions" },
-
     { x: 64.4, y: introY, w: 491.6, h: 15, t: "There are multiple ways to combine two hand points to form a hand position." },
     { x: 64.4, y: introY + LINE, w: 491.6, h: 15, line2: true, t: "" },
     { x: 42.5, y: introY + 2 * LINE, w: 535.4, h: 15, t: "In The Kinetic Alphabet, our first three positions are called Alpha, Beta, and Gamma." },
@@ -177,6 +177,8 @@
     <div class="rule" style="left:{64.4 * S}px; top:{dy * S}px; width:{491.6 * S}px"></div>
   {/each}
 
+  <div class="guide-title">Hand Positions</div>
+
   {#each RUNS as r}
     <span
       class="run"
@@ -226,13 +228,7 @@
     font-family: var(--guide-display);
     font-weight: 600;
   }
-  /* Page title only — calligraphic script (font + weight from guide.css vars). */
-  .run.t {
-    font-family: var(--guide-script);
-    font-style: normal;
-    font-weight: var(--guide-script-weight, 400);
-    color: #14142b;
-  }
+  /* Page title is the shared .guide-title (guide.css) — no per-page title rule. */
 
   .mini {
     position: absolute;

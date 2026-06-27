@@ -132,8 +132,6 @@
   };
 
   const RUNS: Run[] = [
-    { x: 208.9, y: 22, w: 208, fs: 48, t: true, txt: "Hand Motions" },
-
     // Intro (centred)
     { x: 105.7, y: 59.7, w: 404.8, fs: 16, txt: "There are three fundamental hand motions in the Alphabet." },
     { x: 167.2, y: 78.9, w: 281.7, fs: 16, txt: "The arrow shows the direction of motion." },
@@ -233,6 +231,8 @@
     </span>
   {/each}
 
+  <div class="guide-title">Hand Motions</div>
+
   {#each RUNS as r}
     <span
       class="run"
@@ -266,13 +266,7 @@
   .run.i {
     font-style: italic;
   }
-  /* Page title — calligraphic script (font + weight from guide.css vars). */
-  .run.t {
-    font-family: var(--guide-script);
-    font-style: normal;
-    font-weight: var(--guide-script-weight, 400);
-    color: #14142b;
-  }
+  /* Page title is the shared .guide-title (guide.css) — no per-page title rule. */
 
   /* Two-tone combination names — bold sans, color per segment (set inline). */
   .combo {

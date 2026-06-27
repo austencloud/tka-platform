@@ -15,6 +15,31 @@
   --guide-script: "Tangerine", "Segoe Script", cursive; /* calligraphic page titles */
   --guide-script-weight: 700; /* Tangerine has a true bold */
   --guide-display: "Cormorant Garamond", Georgia, serif; /* serif body/captions */
+
+  /* Shared page-title treatment — edit HERE to change EVERY guide title's size
+     and placement at once. Values are px on the 816×1056 sheet (1pt = 4/3px):
+     64px = 48pt, 29px ≈ 22pt. */
+  --guide-title-size: 64px; /* 48pt */
+  --guide-title-top: 29px; /* ≈22pt from the top of the sheet */
+  --guide-title-color: #14142b;
+}
+
+/* ONE title style for the whole book: calligraphic script, centred, fixed top.
+   Pages render <div class="guide-title">Name</div> on their absolute sheet
+   layer; nothing per-page about size or position. */
+.guide-title {
+  position: absolute;
+  top: var(--guide-title-top);
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--guide-script);
+  font-style: normal;
+  font-weight: var(--guide-script-weight, 400);
+  font-size: var(--guide-title-size);
+  line-height: 1;
+  color: var(--guide-title-color);
+  white-space: nowrap;
 }
 
 /* ══════════════════════════════════════════

@@ -50,8 +50,6 @@
   // Text runs extracted from PDF p7 (coords = top-left origin, points).
   // b = bold (g_d0_f2), s = script heading (g_d0_f4), title = page title.
   const RUNS: Run[] = [
-    { x: 245.6, y: 22, w: 124.0, h: 48, title: true, t: "The Grid" },
-
     // Centered intro block
     { x: 144.7, y: 78.2, w: 322.4, h: 16, t: "The Kinetic Alphabet is based on a 4-point grid." },
     { x: 105.5, y: 116.6, w: 400.8, h: 16, t: "There are two 4-point grids: box mode and diamond mode." },
@@ -164,6 +162,8 @@
     </div>
   {/each}
 
+  <div class="guide-title">The Grid</div>
+
   {#each RUNS as r}
     <span
       class="run"
@@ -225,14 +225,7 @@
     font-style: italic;
     font-weight: 600;
   }
-  /* Page title only — calligraphic script (font + weight from guide.css vars). */
-  .run.t {
-    font-family: var(--guide-script);
-    font-style: normal;
-    font-weight: var(--guide-script-weight, 400);
-    color: #14142b;
-    text-align: center;
-  }
+  /* Page title is the shared .guide-title (guide.css) — no per-page title rule. */
 
   .diagram,
   .mini {
