@@ -44,8 +44,8 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
       <div class="empty">No products available yet. Check back soon.</div>
     {:else}
       <div class="product-grid">
-        {#each state.products as product (product.id)}
-          <ProductCard {product} />
+        {#each state.products as product, i (product.id)}
+          <ProductCard {product} index={i} />
         {/each}
       </div>
     {/if}

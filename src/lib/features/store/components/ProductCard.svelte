@@ -5,19 +5,26 @@
 
   interface Props {
     product: Product;
+    /** Grid position, used to stagger the entrance animation. */
+    index?: number;
   }
 
-  let { product }: Props = $props();
+  let { product, index = 0 }: Props = $props();
 
   let formattedPrice = $derived(
     `$${(product.price / 100).toFixed(2)}`
   );
 </script>
 
-<a href="/shop/{product.id}" class="product-card">
+<a
+  href="/shop/{product.id}"
+  class="product-card"
+  style:--enter-delay="{index * 40}ms"
+>
   <CardMockupPreview
     coverImageUrl={product.coverImageUrl}
     productName={product.name}
+    viewTransitionName={`product-${product.id}`}
   />
   <div class="card-info">
     <h3 class="card-name">{product.name}</h3>
@@ -43,6 +50,19 @@
     border-radius: 16px;
     padding: 12px;
     transition: background 0.2s;
+    animation: card-enter 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+
+  @keyframes card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .product-card:hover {
@@ -52,6 +72,7 @@
   @media (prefers-reduced-motion: reduce) {
     .product-card {
       transition: none;
+      animation: none;
     }
   }
 

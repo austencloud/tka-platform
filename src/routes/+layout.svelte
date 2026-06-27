@@ -15,14 +15,24 @@
   // Import modern view transitions CSS
   import "$lib/shared/transitions/view-transitions.css";
 
-  // View Transitions — DISABLED pending refresh deadlock investigation.
-  // startViewTransition wraps navigation.complete in a Promise that can
-  // deadlock when SvelteKit intercepts F5 as a same-page navigation.
-  // onNavigate((navigation) => {
-  //   if (!document.startViewTransition) return;
-  //   if (consumeSkipNextViewTransition()) return;
-  //   ...
-  // });
+  // View Transitions driver (2026 canonical SvelteKit pattern). The root transition
+  // is disabled in view-transitions.css, so only elements carrying a
+  // view-transition-name morph (shop product covers, browse -> sequence). Guards:
+  // feature-detect for graceful fallback, the swipe-dismiss coordination flag, and
+  // same-pathname navigations (the viewer mutates bpm/t/view params constantly and
+  // must not trigger a morph on those). onNavigate never fires on a full-page F5,
+  // which is why the old "refresh deadlock" note was a misdiagnosis.
+  onNavigate((navigation) => {
+    if (!document.startViewTransition) return;
+    if (consumeSkipNextViewTransition()) return;
+    if (navigation.from?.url.pathname === navigation.to?.url.pathname) return;
+    return new Promise((resolve) => {
+      document.startViewTransition(async () => {
+        resolve();
+        await navigation.complete;
+      });
+    });
+  });
 
   const OWNED_PARAMS: Record<string, readonly string[]> = {
     // loop-labeler (/test/loop-labeler) uses these for deep-link state.

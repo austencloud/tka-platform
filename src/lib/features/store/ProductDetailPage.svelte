@@ -51,6 +51,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
           <CardMockupPreview
             coverImageUrl={product.coverImageUrl}
             productName={product.name}
+            viewTransitionName={`product-${product.id}`}
           />
         </div>
 

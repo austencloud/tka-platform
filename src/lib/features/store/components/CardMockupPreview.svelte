@@ -3,12 +3,14 @@
   interface Props {
     coverImageUrl?: string;
     productName: string;
+    /** When set, names this element for a cross-route view-transition morph. */
+    viewTransitionName?: string;
   }
 
-  let { coverImageUrl, productName }: Props = $props();
+  let { coverImageUrl, productName, viewTransitionName }: Props = $props();
 </script>
 
-<div class="mockup-container">
+<div class="mockup-container" style:view-transition-name={viewTransitionName}>
   {#if coverImageUrl}
     <img
       src={coverImageUrl}
