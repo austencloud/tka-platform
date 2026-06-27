@@ -15,6 +15,7 @@
   // CreationWorkspaceArea (85-file subtree) only renders once a sequence exists,
   // so its chunk is deferred via LazyMount — empty/first-paint Create loads skip it.
   import CreationToolPanelSlot from "./CreationToolPanelSlot.svelte";
+  import GenerateEmptyState from "../../generate/components/GenerateEmptyState.svelte";
   import type { createCreateModuleState as CreateModuleStateType } from "../state/create-module-state.svelte";
   import type { PanelCoordinationState } from "../state/panel-coordination-state.svelte";
   import type { IToolPanelMethods } from "../types/create-module-types";
@@ -212,7 +213,7 @@
   <!-- Tool Panel -->
   <div class="tool-panel-container" bind:this={toolPanelElement}>
     {#if !hasWorkspaceContent && isGeneratorTab}
-      <p class="workspace-hint">Tap Generate to create your sequence</p>
+      <GenerateEmptyState />
     {/if}
     <CreationToolPanelSlot
       bind:toolPanelRef
@@ -387,22 +388,6 @@
     }
   }
 
-  .workspace-hint {
-    flex-shrink: 0;
-    text-align: center;
-    /* push down off the top edge into the empty space above the cards */
-    margin: clamp(2.5rem, 11vmin, 6.5rem) 0 0;
-    padding: 0 1rem;
-    font-family: "Playfair Display", Georgia, serif;
-    /* cqi tracks the tool-panel container width (container-type: size below), so
-       the hint scales to fit on ONE line at any width; nowrap forbids the wrap.
-       Coefficient chosen so the line still fits when the 2rem cap kicks in. */
-    font-size: clamp(1rem, 4.6cqi, 2rem);
-    font-weight: 500;
-    line-height: 1.2;
-    white-space: nowrap;
-    color: var(--theme-text, #fff);
-    /* single soft shadow so it stays legible over the busy background */
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
-  }
+  /* The Generate-tab empty state (hint + first-run tour offer) now lives in
+     GenerateEmptyState.svelte, rendered inside .tool-panel-container above. */
 </style>

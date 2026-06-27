@@ -20,24 +20,14 @@
   import { fade } from "svelte/transition";
   import { PresenceAnimation } from "../../../../../../shared/ui-animation/animations.svelte";
   import { getCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ClearSequencePanelButton from "./buttons/ClearSequenceButton.svelte";
   import UndoButton from "./buttons/UndoButton.svelte";
   import SequenceActionsButton from "./buttons/SequenceActionsButton.svelte";
   import ViewSequenceButton from "./buttons/ViewSequenceButton.svelte";
-  import GeneratorHelpButton from "./buttons/GeneratorHelpButton.svelte";
   import SaveToLibraryButton from "./buttons/SaveToLibraryButton.svelte";
 
   // Get context - ButtonPanel is ONLY used inside CreateModule, so context is always available
   const { CreateModuleState, panelState } = getCreateModuleContext();
-
-  // Show help button only on generate tab (mobile only - CSS handles desktop hide)
-  const showGeneratorHelp = $derived(navigationState.activeTab === "generate");
-
-  // Hide help button when beat editor or export panel is open (not relevant in those contexts)
-  const shouldHideHelpButton = $derived(
-    panelState.isStepEditorPanelOpen || panelState.isExportPanelOpen
-  );
 
   // Props interface - only event handler callbacks
   const {
@@ -134,17 +124,8 @@
       {/key}
     </div>
 
-    <!-- RIGHT ZONE: Help + Tools + Save (constructive actions) -->
+    <!-- RIGHT ZONE: Tools + Save (constructive actions) -->
     <div class="right-zone">
-      {#if showGeneratorHelp}
-        <div
-          class="mobile-only"
-          class:faded-out={shouldHideHelpButton}
-          transition:presenceTransition
-        >
-          <GeneratorHelpButton onclick={() => panelState.triggerGeneratorHelpMode()} />
-        </div>
-      {/if}
       {#if showSequenceActions && onSequenceActionsClick}
         <div transition:presenceTransition>
           <SequenceActionsButton onclick={onSequenceActionsClick} />
@@ -229,25 +210,6 @@
   .center-zone > div,
   .right-zone > div {
     display: inline-block;
-  }
-
-  /* Mobile-only elements hidden on desktop (side-by-side layout) */
-  /* Use higher specificity to override .right-zone > div { display: inline-block } */
-  @media (min-width: 1024px) {
-    .right-zone > .mobile-only {
-      display: none;
-    }
-  }
-
-  /* Fade out help button when beat editor is open */
-  .faded-out {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--duration-normal) ease-out;
-  }
-
-  .mobile-only:not(.faded-out) {
-    transition: opacity var(--duration-normal) ease-in;
   }
 
   /* Remove mobile tap highlight (blue selection box) */

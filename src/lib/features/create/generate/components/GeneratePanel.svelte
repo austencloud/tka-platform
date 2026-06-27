@@ -141,20 +141,12 @@ Card-based architecture with integrated Generate button:
 
   let hapticService = $state<HapticFeedback | null>(null);
 
-  // Tour trigger
+  // Tour trigger (desktop help button; first-run offer in the empty workspace)
   function handleHelpClick(event?: MouseEvent) {
     event?.stopPropagation();
     hapticService?.trigger("selection");
     generateTourState.start();
   }
-
-  // Listen to mobile help button trigger from ButtonPanel
-  $effect(() => {
-    if (panelState?.shouldEnterGeneratorHelpMode) {
-      generateTourState.start();
-      panelState.clearGeneratorHelpModeTrigger();
-    }
-  });
 
   // ===== Device Service Integration =====
   onMount(() => {

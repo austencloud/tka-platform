@@ -265,11 +265,6 @@ export interface PanelCoordinationState {
   // Derived: Any Panel Open (for UI hiding coordination)
   get isAnyPanelOpen(): boolean;
 
-  // Generator Help Mode (for mobile - triggered from ButtonPanel)
-  get shouldEnterGeneratorHelpMode(): boolean;
-  triggerGeneratorHelpMode(): void;
-  clearGeneratorHelpModeTrigger(): void;
-
   // Preset Drawer State
   get isPresetDrawerOpen(): boolean;
   openPresetDrawer(): void;
@@ -389,9 +384,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
 
   // Creation method panel state
   let isCreationMethodPanelOpen = $state(false);
-
-  // Generator help mode trigger (for mobile - ButtonPanel triggers, GeneratePanel listens)
-  let shouldEnterGeneratorHelpMode = $state(false);
 
   // Duration preview mode state (for live preview in duration pattern drawer)
   let isDurationPreviewMode = $state(false);
@@ -855,19 +847,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
         isPresetDrawerOpen ||
         isSequenceViewerOpen
       );
-    },
-
-    // Generator Help Mode (for mobile - triggered from ButtonPanel)
-    get shouldEnterGeneratorHelpMode() {
-      return shouldEnterGeneratorHelpMode;
-    },
-
-    triggerGeneratorHelpMode() {
-      shouldEnterGeneratorHelpMode = true;
-    },
-
-    clearGeneratorHelpModeTrigger() {
-      shouldEnterGeneratorHelpMode = false;
     },
 
     // Duration Preview Mode

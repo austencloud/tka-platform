@@ -15,6 +15,8 @@
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte.ts";
+  import { generateTourState } from "$lib/shared/onboarding/state/generate-tour-state.svelte";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
   let { currentSettings, onSettingUpdate } = $props<{
     currentSettings: AppSettings;
@@ -60,6 +62,14 @@
   function handleReplayTutorial() {
     hapticService?.trigger("selection");
     appEntryState.replay();
+  }
+
+  function handleReplayGenerateTour() {
+    hapticService?.trigger("selection");
+    // The tour modal is mounted in GeneratePanel, so land on Create > Generate
+    // before starting it; otherwise restart() flips isActive with nothing rendered.
+    navigationState.setCurrentModule("create", "generate");
+    generateTourState.restart();
   }
 
 </script>
@@ -131,6 +141,15 @@
       >
         <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
         <span>Replay create tutorial</span>
+      </button>
+
+      <button
+        type="button"
+        class="guide-button"
+        onclick={handleReplayGenerateTour}
+      >
+        <i class="fas fa-circle-question" aria-hidden="true"></i>
+        <span>Replay generate options tour</span>
       </button>
 
     </div>
