@@ -18,13 +18,21 @@
   import GuidePage from "../_components/GuidePage.svelte";
   import GuideDocument from "../_components/GuideDocument.svelte";
   import PageNumberToggle from "../_components/PageNumberToggle.svelte";
+  import CoordsPanel from "../_components/CoordsPanel.svelte";
   import type { GuidePageMeta } from "../_data/guide-manifest";
   import { BUILT } from "../_data/built-pages";
+  import { guideEdit } from "../_data/guide-edit.svelte";
 
   setGuidePrintMode();
 
   // ?theme=home → ink-cheap light cover for home printers; default = navy (foil).
   const coverTheme = $derived(page.url.searchParams.get("theme") === "home" ? "light" : "navy");
+
+  // ?edit → Illustrator-mode: drag arrows + text, then Copy coords. Full-size
+  // sheets here (no book-scale), so drag math is exact.
+  $effect(() => {
+    guideEdit.on = page.url.searchParams.has("edit");
+  });
 </script>
 
 <svelte:head>
@@ -38,8 +46,9 @@
   <GuidePage {title} {pageNumber} {fullBleed} {label}>{@render content()}</GuidePage>
 {/snippet}
 
-<div class="guide-content guide-print-mode print-doc">
+<div class="guide-content guide-print-mode print-doc" class:editing={guideEdit.on}>
   <GuideDocument {coverTheme} built={BUILT} page={printPage} />
 </div>
 
 <PageNumberToggle />
+<CoordsPanel />

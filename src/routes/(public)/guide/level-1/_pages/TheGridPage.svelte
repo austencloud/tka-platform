@@ -19,6 +19,7 @@
   import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
   import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { guideEdit, ptDrag, registerEditSource } from "../_data/guide-edit.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
 
@@ -49,7 +50,7 @@
 
   // Text runs extracted from PDF p7 (coords = top-left origin, points).
   // b = bold (g_d0_f2), s = script heading (g_d0_f4), title = page title.
-  const RUNS: Run[] = [
+  let RUNS: Run[] = $state([
     // Centered intro block
     { x: 144.7, y: 78.2, w: 322.4, h: 16, t: "The Kinetic Alphabet is based on a 4-point grid." },
     { x: 105.5, y: 116.6, w: 400.8, h: 16, t: "There are two 4-point grids: box mode and diamond mode." },
@@ -81,16 +82,36 @@
 
     // Footer line
     { x: 116.5, y: 760.9, w: 379.0, h: 19, t: "We’ll use diamond mode to learn each concept." },
-  ];
+  ]);
 
   // The three point descriptions as SINGLE selectable text blocks (bold term
   // inline, explicit line breaks) — not per-word runs that fragment + gap when
   // selected. Positioned at the proof's first-line origin; lh = proof line pitch.
-  const PARAS = [
+  let PARAS = $state([
     { x: 30.7, y: 239.1, w: 255, lh: 20.4, html: "The <strong>center point</strong> is the hub that<br>everything revolves around." },
     { x: 30.7, y: 331.0, w: 255, lh: 20.4, html: "The four <strong>hand points</strong> are halfway<br>between the center point and the<br>outer points." },
     { x: 30.7, y: 440.7, w: 255, lh: 20.4, html: "The <strong>outer points</strong> depict the outer<br>edges of the grid." },
-  ];
+  ]);
+
+  // Callout arrows as data (tail x1,y1 → head x2,y2, pt). Rendered as paths;
+  // editable via drag handles in ?edit mode. Replaces the hardcoded path d=.
+  let ARROWS = $state([
+    { id: "hand-L", x1: 444, y1: 310, x2: 410.4, y2: 337.2 },
+    { id: "hand-R", x1: 449, y1: 310, x2: 479.6, y2: 337.3 },
+    { id: "center", x1: 415, y1: 390, x2: 439, y2: 368 },
+    { id: "outer-E", x1: 518, y1: 420, x2: 532, y2: 377 },
+    { id: "outer-S", x1: 505, y1: 443, x2: 462, y2: 450 },
+  ]);
+
+  // Edit mode: dump current coords for CoordsPanel's Copy button.
+  const r1 = (n: number) => Math.round(n * 10) / 10;
+  function dumpCoords(): string {
+    const A = ARROWS.map((a) => `  { id: "${a.id}", x1: ${r1(a.x1)}, y1: ${r1(a.y1)}, x2: ${r1(a.x2)}, y2: ${r1(a.y2)} },`).join("\n");
+    const P = PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n");
+    const R = RUNS.map((r) => `  ${JSON.stringify(r.t).slice(0, 30)}: x: ${r1(r.x)}, y: ${r1(r.y)}`).join("\n");
+    return `ARROWS\n${A}\n\nPARAS\n${P}\n\nRUNS\n${R}`;
+  }
+  $effect(() => registerEditSource("The Grid (p1)", dumpCoords));
 
   // Central diagram box (pt, square so the grid stays round) + bottom grid boxes.
   // Measured off the proof: the figure's center lands at (444.3, 360.8)pt with an
@@ -165,7 +186,9 @@
       class:s={r.s}
       class:t={r.title}
       class:op={r.op}
+      class:edit={guideEdit.on}
       style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w * S}px; font-size:{r.h * S}px"
+      use:ptDrag={{ onMove: (dx, dy) => { r.x += dx; r.y += dy; } }}
       >{r.t}</span
     >
   {/each}
@@ -174,7 +197,9 @@
   {#each PARAS as p}
     <p
       class="para"
+      class:edit={guideEdit.on}
       style="left:{p.x * S}px; top:{p.y * S}px; width:{p.w * S}px; font-size:{17 * S}px; line-height:{p.lh * S}px"
+      use:ptDrag={{ onMove: (dx, dy) => { p.x += dx; p.y += dy; } }}
     >
       {@html p.html}
     </p>
@@ -187,16 +212,38 @@
         <path d="M0,0 L6,3 L0,6 Z" fill="#222" />
       </marker>
     </defs>
-    <!-- "hand points" → the two hand points. Tails start just under the LABEL
-         (y≈310, below the "points" text at ~308) and fork outward around the N
-         hand-point dot, so they read as coming from the text, not the dot. -->
-    <path d="M444,310 L410.4,337.2" />
-    <path d="M449,310 L479.6,337.3" />
-    <!-- "center point" → center dot (straight, up-right, head reaching the dot) -->
-    <path d="M415,390 L439,368" />
-    <!-- "outer points" → east + south outer points (two arrows, tails clear of the label) -->
-    <path d="M518,420 L532,377" />
-    <path d="M505,443 L462,450" />
+    <!-- Arrows from data (tail → head). hand-L/R fork from under the "hand points"
+         label around the N dot; center → center dot; outer-E/S → outer points. -->
+    {#each ARROWS as a}
+      <path d="M{a.x1},{a.y1} L{a.x2},{a.y2}" />
+    {/each}
+    {#if guideEdit.on}
+      <!-- Drag handles: shaft moves both ends, circles move each endpoint. -->
+      {#each ARROWS as a}
+        <line
+          class="edit-shaft"
+          x1={a.x1}
+          y1={a.y1}
+          x2={a.x2}
+          y2={a.y2}
+          use:ptDrag={{ onMove: (dx, dy) => { a.x1 += dx; a.y1 += dy; a.x2 += dx; a.y2 += dy; } }}
+        />
+        <circle
+          class="edit-handle"
+          cx={a.x1}
+          cy={a.y1}
+          r="5"
+          use:ptDrag={{ onMove: (dx, dy) => { a.x1 += dx; a.y1 += dy; } }}
+        />
+        <circle
+          class="edit-handle head"
+          cx={a.x2}
+          cy={a.y2}
+          r="5"
+          use:ptDrag={{ onMove: (dx, dy) => { a.x2 += dx; a.y2 += dy; } }}
+        />
+      {/each}
+    {/if}
   </svg>
 </div>
 
@@ -276,5 +323,30 @@
     stroke: #222;
     stroke-width: 1.1;
     marker-end: url(#ah);
+  }
+
+  /* ── Edit mode (?edit) affordances ───────────────────────────────────────── */
+  .run.edit,
+  .para.edit {
+    outline: 1px dashed rgba(55, 48, 163, 0.45);
+    cursor: move;
+  }
+  /* Fat invisible shaft to grab the whole arrow; handles for each endpoint. The
+     parent .arrows is pointer-events:none, so re-enable on these. */
+  .arrows .edit-shaft {
+    stroke: transparent;
+    stroke-width: 10;
+    pointer-events: stroke;
+    cursor: move;
+  }
+  .arrows .edit-handle {
+    fill: #3730a3;
+    stroke: #fff;
+    stroke-width: 1.2;
+    pointer-events: all;
+    cursor: grab;
+  }
+  .arrows .edit-handle.head {
+    fill: #c026d3;
   }
 </style>

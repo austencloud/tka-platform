@@ -13,18 +13,29 @@
    * matches the extracted x-coordinates, with Georgia/Times fallback off-Windows.
    */
   import { PROOF_TEXT, type ProofRun } from "../_data/proof-text";
+  import { guideEdit, ptDrag, registerEditSource } from "../_data/guide-edit.svelte";
 
   let { id }: { id: string } = $props();
 
   const S = 816 / 612; // pt → px (4/3), same as the bespoke pages
-  const runs: ProofRun[] = PROOF_TEXT[id] ?? [];
+  // Local mutable copy so ?edit drags can reposition runs; renders identically.
+  let runs = $state<ProofRun[]>((PROOF_TEXT[id] ?? []).map((r) => ({ ...r })));
+
+  const r1 = (n: number) => Math.round(n * 10) / 10;
+  $effect(() =>
+    registerEditSource(`Proof: ${id}`, () =>
+      runs.map((r) => `  ${JSON.stringify(r.t).slice(0, 30)}: x: ${r1(r.x)}, y: ${r1(r.y)}`).join("\n")
+    )
+  );
 </script>
 
 <div class="proof-text">
   {#each runs as r, i (i)}
     <span
       class="run s-{r.s}"
+      class:edit={guideEdit.on}
       style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w * S}px; font-size:{r.fs * S}px"
+      use:ptDrag={{ onMove: (dx, dy) => { r.x += dx; r.y += dy; } }}
       >{r.t}</span
     >
   {/each}
@@ -57,5 +68,10 @@
      script rule; sized by the proof, weighted to read as a heading. */
   .s-heading {
     font-weight: 600;
+  }
+  /* ?edit mode: show each run as a draggable block. */
+  .run.edit {
+    outline: 1px dashed rgba(55, 48, 163, 0.45);
+    cursor: move;
   }
 </style>
