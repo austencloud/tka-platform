@@ -21,6 +21,7 @@
   import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
 
@@ -119,7 +120,7 @@
   // Text runs extracted from PDF p8 (top-left origin, points). Line 2 is a single
   // centred run (plain clause + spaced bold colour legend) — two separate runs
   // double-centred and left an awkward gap between "mirrored." and "Red".
-  const RUNS: Run[] = [
+  let RUNS: Run[] = $state([
     { x: 64.4, y: introY, w: 491.6, h: 15, t: "There are multiple ways to combine two hand points to form a hand position." },
     { x: 64.4, y: introY + LINE, w: 491.6, h: 15, line2: true, t: "" },
     { x: 42.5, y: introY + 2 * LINE, w: 535.4, h: 15, t: "In The Kinetic Alphabet, our first three positions are called Alpha, Beta, and Gamma." },
@@ -132,7 +133,15 @@
 
     { x: 269.3, y: gHeadY, w: 71.5, h: 22, sub: true, t: "Gamma" },
     { x: 154.1, y: gDescY, w: 301.9, h: 18, i: true, t: "In Gamma, the hands form a right angle." },
-  ];
+  ]);
+
+  // Edit mode: drag text runs; dump current coords for CoordsPanel's Copy.
+  const r1 = (n: number) => Math.round(n * 10) / 10;
+  $effect(() =>
+    registerEditSource("Hand Positions (p2)", () =>
+      RUNS.map((r) => `  ${JSON.stringify(r.t || "(line 2)").slice(0, 28)}: x: ${r1(r.x)}, y: ${r1(r.y)}`).join("\n")
+    )
+  );
 </script>
 
 <div class="hand-positions">
@@ -177,14 +186,17 @@
     <div class="rule" style="left:{64.4 * S}px; top:{dy * S}px; width:{491.6 * S}px"></div>
   {/each}
 
-  {#each RUNS as r}
+  {#each RUNS as r, i (i)}
     <span
       class="run"
       class:b={r.b}
       class:i={r.i}
       class:sub={r.sub}
       class:t={r.title}
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === `hp-run-${i}`}
       style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w * S}px; font-size:{r.h * S}px"
+      use:ptDrag={pt(`hp-run-${i}`, r.t || "line 2", r)}
     >
       {#if r.line2}
         Positions can be rotated or mirrored.<span class="gap"></span><strong
@@ -214,6 +226,14 @@
   }
   .run.b {
     font-weight: 700;
+  }
+  .run.edit {
+    outline: 1px dashed rgba(55, 48, 163, 0.4);
+    cursor: move;
+  }
+  .run.selected {
+    outline: 1.5px solid #3730a3;
+    outline-offset: 1px;
   }
   /* Italic descriptions use the serif. */
   .run.i {

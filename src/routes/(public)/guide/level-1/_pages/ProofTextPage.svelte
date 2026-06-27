@@ -13,7 +13,7 @@
    * matches the extracted x-coordinates, with Georgia/Times fallback off-Windows.
    */
   import { PROOF_TEXT, type ProofRun } from "../_data/proof-text";
-  import { guideEdit, ptDrag, registerEditSource } from "../_data/guide-edit.svelte";
+  import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
 
   let { id }: { id: string } = $props();
 
@@ -34,8 +34,9 @@
     <span
       class="run s-{r.s}"
       class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === `proof-${id}-run-${i}`}
       style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w * S}px; font-size:{r.fs * S}px"
-      use:ptDrag={{ onMove: (dx, dy) => { r.x += dx; r.y += dy; } }}
+      use:ptDrag={pt(`proof-${id}-run-${i}`, r.t, r)}
       >{r.t}</span
     >
   {/each}
@@ -69,9 +70,13 @@
   .s-heading {
     font-weight: 600;
   }
-  /* ?edit mode: show each run as a draggable block. */
+  /* edit mode: show each run as a draggable block; selected = solid outline. */
   .run.edit {
-    outline: 1px dashed rgba(55, 48, 163, 0.45);
+    outline: 1px dashed rgba(55, 48, 163, 0.4);
     cursor: move;
+  }
+  .run.selected {
+    outline: 1.5px solid #3730a3;
+    outline-offset: 1px;
   }
 </style>

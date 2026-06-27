@@ -19,7 +19,7 @@
   import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
   import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { guideEdit, ptDrag, registerEditSource } from "../_data/guide-edit.svelte";
+  import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
 
@@ -179,7 +179,7 @@
     </div>
   {/each}
 
-  {#each RUNS as r}
+  {#each RUNS as r, i (i)}
     <span
       class="run"
       class:b={r.b}
@@ -187,19 +187,21 @@
       class:t={r.title}
       class:op={r.op}
       class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === `grid-run-${i}`}
       style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w * S}px; font-size:{r.h * S}px"
-      use:ptDrag={{ onMove: (dx, dy) => { r.x += dx; r.y += dy; } }}
+      use:ptDrag={pt(`grid-run-${i}`, r.t, r)}
       >{r.t}</span
     >
   {/each}
 
   <!-- Point descriptions as single selectable blocks (bold term + line breaks). -->
-  {#each PARAS as p}
+  {#each PARAS as p, i (i)}
     <p
       class="para"
       class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === `grid-para-${i}`}
       style="left:{p.x * S}px; top:{p.y * S}px; width:{p.w * S}px; font-size:{17 * S}px; line-height:{p.lh * S}px"
-      use:ptDrag={{ onMove: (dx, dy) => { p.x += dx; p.y += dy; } }}
+      use:ptDrag={pt(`grid-para-${i}`, "paragraph", p)}
     >
       {@html p.html}
     </p>
@@ -218,29 +220,38 @@
       <path d="M{a.x1},{a.y1} L{a.x2},{a.y2}" />
     {/each}
     {#if guideEdit.on}
-      <!-- Drag handles: shaft moves both ends, circles move each endpoint. -->
-      {#each ARROWS as a}
+      <!-- Drag handles: shaft moves both ends; hollow rings move each endpoint
+           (rings, so they don't hide the arrow/arrowhead being adjusted). -->
+      {#each ARROWS as a (a.id)}
         <line
           class="edit-shaft"
           x1={a.x1}
           y1={a.y1}
           x2={a.x2}
           y2={a.y2}
-          use:ptDrag={{ onMove: (dx, dy) => { a.x1 += dx; a.y1 += dy; a.x2 += dx; a.y2 += dy; } }}
+          use:ptDrag={{
+            id: `grid-arrow-${a.id}-shaft`,
+            label: a.id,
+            apply: (dx, dy) => { a.x1 += dx; a.y1 += dy; a.x2 += dx; a.y2 += dy; },
+            snapshot: () => [a.x1, a.y1, a.x2, a.y2],
+            restore: (s) => { a.x1 = s[0] ?? a.x1; a.y1 = s[1] ?? a.y1; a.x2 = s[2] ?? a.x2; a.y2 = s[3] ?? a.y2; },
+          }}
         />
         <circle
           class="edit-handle"
+          class:selected={guideEdit.selectedId === `grid-arrow-${a.id}-tail`}
           cx={a.x1}
           cy={a.y1}
-          r="5"
-          use:ptDrag={{ onMove: (dx, dy) => { a.x1 += dx; a.y1 += dy; } }}
+          r="4"
+          use:ptDrag={pt(`grid-arrow-${a.id}-tail`, `${a.id} tail`, a, "x1", "y1")}
         />
         <circle
           class="edit-handle head"
+          class:selected={guideEdit.selectedId === `grid-arrow-${a.id}-head`}
           cx={a.x2}
           cy={a.y2}
-          r="5"
-          use:ptDrag={{ onMove: (dx, dy) => { a.x2 += dx; a.y2 += dy; } }}
+          r="4"
+          use:ptDrag={pt(`grid-arrow-${a.id}-head`, `${a.id} head`, a, "x2", "y2")}
         />
       {/each}
     {/if}
@@ -328,8 +339,13 @@
   /* ── Edit mode (?edit) affordances ───────────────────────────────────────── */
   .run.edit,
   .para.edit {
-    outline: 1px dashed rgba(55, 48, 163, 0.45);
+    outline: 1px dashed rgba(55, 48, 163, 0.4);
     cursor: move;
+  }
+  .run.selected,
+  .para.selected {
+    outline: 1.5px solid #3730a3;
+    outline-offset: 1px;
   }
   /* Fat invisible shaft to grab the whole arrow; handles for each endpoint. The
      parent .arrows is pointer-events:none, so re-enable on these. */
@@ -339,14 +355,24 @@
     pointer-events: stroke;
     cursor: move;
   }
+  /* Hollow rings: translucent fill keeps them grabbable but see-through, so the
+     arrow + arrowhead under a handle stay visible while adjusting. */
   .arrows .edit-handle {
-    fill: #3730a3;
-    stroke: #fff;
-    stroke-width: 1.2;
+    fill: rgba(55, 48, 163, 0.12);
+    stroke: #3730a3;
+    stroke-width: 1.4;
     pointer-events: all;
     cursor: grab;
   }
   .arrows .edit-handle.head {
+    fill: rgba(192, 38, 211, 0.12);
+    stroke: #c026d3;
+  }
+  .arrows .edit-handle.selected {
+    fill: #3730a3;
+    stroke: #fff;
+  }
+  .arrows .edit-handle.head.selected {
     fill: #c026d3;
   }
 </style>

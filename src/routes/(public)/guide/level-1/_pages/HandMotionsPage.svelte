@@ -30,6 +30,7 @@
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
 
@@ -111,14 +112,14 @@
     static: "oklch(0.60 0.02 270)",
   };
   type Combo = { x: number; y: number; w: number; fs: number; segs: { t: string; c: string }[] };
-  const COMBOS: Combo[] = [
+  let COMBOS: Combo[] = $state([
     { x: 99, y: 527.4, w: 114.2, fs: 25, segs: [{ t: "Dual-", c: C.dualShift }, { t: "Shift", c: C.shift }] },
     { x: 417.8, y: 522.1, w: 52.9, fs: 25, segs: [{ t: "Shift", c: C.shift }] },
     { x: 90.4, y: 611, w: 123.3, fs: 25, segs: [{ t: "Cross-", c: C.crossShift }, { t: "Shift", c: C.shift }] },
     { x: 417, y: 608.5, w: 57.4, fs: 25, segs: [{ t: "Dash", c: C.dash }] },
     { x: 92.8, y: 708.4, w: 119.5, fs: 25, segs: [{ t: "Dual-", c: C.dualDash }, { t: "Dash", c: C.dash }] },
     { x: 415.8, y: 707.3, w: 64, fs: 25, segs: [{ t: "Static", c: C.static }] },
-  ];
+  ]);
 
   type Run = {
     x: number;
@@ -131,7 +132,7 @@
     i?: boolean; // italic body term (captions, "or")
   };
 
-  const RUNS: Run[] = [
+  let RUNS: Run[] = $state([
     // Intro (centred)
     { x: 105.7, y: 59.7, w: 404.8, fs: 16, txt: "There are three fundamental hand motions in the Alphabet." },
     { x: 167.2, y: 78.9, w: 281.7, fs: 16, txt: "The arrow shows the direction of motion." },
@@ -160,7 +161,17 @@
     { x: 328.9, y: 664.5, w: 229.5, fs: 16, txt: "and the other hand remains static" },
     { x: 21.7, y: 738.2, w: 265.3, fs: 16, txt: "Both hands travel to the opposite point" },
     { x: 360, y: 737.9, w: 173.4, fs: 16, txt: "Both hands remain static." },
-  ];
+  ]);
+
+  // Edit mode: drag text runs + combo names; dump coords for CoordsPanel's Copy.
+  const r1 = (n: number) => Math.round(n * 10) / 10;
+  $effect(() =>
+    registerEditSource("Hand Motions (p3)", () => {
+      const R = RUNS.map((r) => `  ${JSON.stringify(r.txt).slice(0, 28)}: x: ${r1(r.x)}, y: ${r1(r.y)}`).join("\n");
+      const C2 = COMBOS.map((c) => `  ${JSON.stringify(c.segs.map((s) => s.t).join("")).slice(0, 20)}: x: ${r1(c.x)}, y: ${r1(c.y)}`).join("\n");
+      return `RUNS\n${R}\n\nCOMBOS\n${C2}`;
+    })
+  );
 </script>
 
 <div class="hand-motions">
@@ -222,22 +233,28 @@
   {/each}
 
   <!-- Six combination names: two-tone colored, bold. -->
-  {#each COMBOS as combo (combo.x + "-" + combo.y)}
+  {#each COMBOS as combo, i (i)}
     <span
       class="combo"
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === `hm-combo-${i}`}
       style="left:{combo.x * S}px; top:{combo.y * S}px; width:{combo.w * S}px; font-size:{combo.fs * S}px"
+      use:ptDrag={pt(`hm-combo-${i}`, combo.segs.map((s) => s.t).join(""), combo)}
     >
       {#each combo.segs as seg}<span style="color:{seg.c}">{seg.t}</span>{/each}
     </span>
   {/each}
 
-  {#each RUNS as r}
+  {#each RUNS as r, i (i)}
     <span
       class="run"
       class:t={r.t}
       class:b={r.b}
       class:i={r.i}
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === `hm-run-${i}`}
       style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w * S}px; font-size:{r.fs * S}px"
+      use:ptDrag={pt(`hm-run-${i}`, r.txt, r)}
       >{r.txt}</span
     >
   {/each}
@@ -263,6 +280,16 @@
   }
   .run.i {
     font-style: italic;
+  }
+  .run.edit,
+  .combo.edit {
+    outline: 1px dashed rgba(55, 48, 163, 0.4);
+    cursor: move;
+  }
+  .run.selected,
+  .combo.selected {
+    outline: 1.5px solid #3730a3;
+    outline-offset: 1px;
   }
   /* Page title is the shared .guide-title (guide.css) — no per-page title rule. */
 

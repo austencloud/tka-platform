@@ -28,11 +28,9 @@
   // ?theme=home → ink-cheap light cover for home printers; default = navy (foil).
   const coverTheme = $derived(page.url.searchParams.get("theme") === "home" ? "light" : "navy");
 
-  // ?edit → Illustrator-mode: drag arrows + text, then Copy coords. Full-size
-  // sheets here (no book-scale), so drag math is exact.
-  $effect(() => {
-    guideEdit.on = page.url.searchParams.has("edit");
-  });
+  // Edit mode (drag arrows + text) is toggled via CoordsPanel — button or the E
+  // key; it seeds from ?edit / localStorage. guideEdit.on drives the .editing
+  // class below.
 </script>
 
 <svelte:head>
