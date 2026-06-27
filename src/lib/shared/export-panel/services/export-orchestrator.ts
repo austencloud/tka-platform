@@ -15,7 +15,6 @@ import type { ExportResult, AnimationExportDependencies, ExportUserInfo } from "
 import type { ShareOptions } from "$lib/shared/share/domain/models/share-options";
 import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/share-options";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
 import { VIDEO_EXPORT_SUCCESS_DELAY_MS } from "$lib/shared/animation-engine/domain/constants/timing";
 import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
@@ -125,13 +124,6 @@ export class ExportOrchestrator {
       showNotes: compositionSettings.showNotes,
       showBirthday: compositionSettings.showBirthday,
       customNotesText: compositionSettings.customNotesText,
-      // ShareOptions can't carry the LOOP/mandala/QR/grid/columns/start-layout
-      // toggles, so funnel them through the canonical builder. Without this the
-      // create-module static export silently dropped all six.
-      renderOverrides: buildCardRenderOptions(sequence, {
-        darkMode: compositionSettings.darkMode,
-        userName: userInfo?.displayName ?? "",
-      }),
     };
 
     // Use native share on mobile, download on desktop

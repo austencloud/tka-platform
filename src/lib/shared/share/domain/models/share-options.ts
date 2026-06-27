@@ -5,21 +5,10 @@
  * Simplified from the over-engineered export options.
  */
 
-import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
-
 export interface ShareOptions {
   // === IMAGE FORMAT ===
   format: "PNG" | "JPEG" | "WebP";
   quality: number; // 0-1 for JPEG/WebP
-
-  /**
-   * Complete card-render options (from buildCardRenderOptions) spread over the
-   * derived options last. ShareOptions itself can't carry the LOOP/mandala/QR/
-   * grid/columns/start-layout toggles, so callers that must honor those (the
-   * create-module static export) pass them here. Omitted by quick-download
-   * consumers, which keep the simple DEFAULT_SHARE_OPTIONS behavior.
-   */
-  renderOverrides?: Partial<SequenceExportOptions>;
 
   // === CONTENT OPTIONS ===
   includeStartPosition: boolean;
