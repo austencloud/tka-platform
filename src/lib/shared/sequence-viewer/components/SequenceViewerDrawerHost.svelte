@@ -1,6 +1,8 @@
 <script lang="ts">
 import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { onMount } from "svelte";
+  import { fade } from "svelte/transition";
+  import { flyTransition, safeSlide } from "$lib/shared/utils/transitions";
   import { goto, replaceState } from "$app/navigation";
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
@@ -44,11 +46,20 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
-  import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { sendToStickerLab } from "$lib/shared/sequence-viewer/services/send-to-sticker-lab";
 
   const overlay = getSequenceOverlayState();
+
+  // Reduced-motion gate for the practice/scene transitions below.
+  let prefersReducedMotion = $state(false);
+  onMount(() => {
+    const mq = matchMedia("(prefers-reduced-motion: reduce)");
+    prefersReducedMotion = mq.matches;
+    const onReduceChange = () => (prefersReducedMotion = mq.matches);
+    mq.addEventListener("change", onReduceChange);
+    return () => mq.removeEventListener("change", onReduceChange);
+  });
 
   function handleSendTo() {
     const seq = overlay.sequence;
@@ -307,7 +318,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
       isMobile={isMobileWidth}
       initialBpm={overlay.initialBpm}
       initialStep={overlay.initialStep}
-      viewingContext={overlay.viewingContext}
       handPathMode={overlay.handPathMode}
       onClose={handleDismiss}
     >
@@ -352,6 +362,15 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
           <header class="drawer-header">
                 <div class="drawer-header-left-actions">
                   {#if ctx.practiceActive}
+                    <button
+                      type="button"
+                      class="header-action-btn practice-exit"
+                      onclick={ctx.handlePracticeStop}
+                      aria-label="Exit practice mode"
+                    >
+                      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                      <span>Exit Practice</span>
+                    </button>
                     <div class="practice-step-nav" role="group" aria-label="Step through the sequence">
                       <button
                         type="button"
@@ -440,43 +459,28 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 
                 <div class="drawer-header-title-group">
                   <div class="drawer-header-title">
-                    {#if isAnyExportActive}
-                      {isVideoExportActive ? (ctx.renderMode === '3d' ? "Record Scene" : "Download Animation") : isImageExportActive ? "Download Card" : "Upload Video"}
-                    {:else if ctx.practiceActive}
-                      Practice Mode
-                    {:else}
-                      Sequence Viewer
-                    {/if}
+                    {#key `${isAnyExportActive}|${ctx.practiceActive}|${isVideoExportActive}|${isImageExportActive}|${ctx.renderMode}`}
+                      <span
+                        class="drawer-header-title-text"
+                        in:fade|local={{ duration: prefersReducedMotion ? 0 : 150 }}
+                      >
+                        {#if isAnyExportActive}
+                          {isVideoExportActive ? (ctx.renderMode === '3d' ? "Record Scene" : "Download Animation") : isImageExportActive ? "Download Card" : "Upload Video"}
+                        {:else if ctx.practiceActive}
+                          Practice Mode
+                        {:else}
+                          Sequence Viewer
+                        {/if}
+                      </span>
+                    {/key}
                   </div>
-                  {#if !isAnyExportActive && ctx.presentation && ctx.sequence?.creatorIntent?.propConfig && (ctx.sequence.creatorIntent.propConfig.bluePropType !== settingsService.settings.bluePropType || ctx.sequence.creatorIntent.propConfig.redPropType !== settingsService.settings.redPropType)}
-                    <button
-                      class="prop-toggle"
-                      class:creator-active={ctx.presentation.source === "creator-intent"}
-                      onclick={ctx.togglePropContext}
-                      title={ctx.presentation.source === "creator-intent"
-                        ? "Showing creator's props. Tap to use yours."
-                        : "Showing your props. Tap to see creator's."}
-                    >
-                      <span class="toggle-label">Props:</span>
-                      <span
-                        class="toggle-option"
-                        class:active={ctx.presentation.source === "creator-intent"}
-                      >
-                        Theirs
-                      </span>
-                      <span class="toggle-divider">|</span>
-                      <span
-                        class="toggle-option"
-                        class:active={ctx.presentation.source === "viewer-settings"}
-                      >
-                        Mine
-                      </span>
-                    </button>
-                  {/if}
                 </div>
 
                 <div class="drawer-header-right-actions">
-                  {#if isAnyExportActive && !isMobileWidth && !isRecordSceneActive}
+                  <!-- Card export settings can't be collapsed on desktop — they're
+                       required to configure the download. Only Download Animation
+                       keeps the hide/show toggle. -->
+                  {#if isAnyExportActive && !isMobileWidth && !isRecordSceneActive && !isImageExportActive}
                     <button
                       type="button"
                       class="header-action-btn"
@@ -512,16 +516,21 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                   class:export-active={isSidebarExportActive}
                   class:record-scene-active={isRecordSceneActive}
                   class:desktop={!isMobileWidth}
-                  class:sidebar-collapsed={exportSidebarCollapsed}
+                  class:sidebar-collapsed={exportSidebarCollapsed && !isImageExportActive}
                   class:has-rail={showRail && !ctx.practiceActive}
                 >
                   {#if showRail && !ctx.practiceActive}
-                    <ViewerContentRail
-                      activeMode={ctx.viewerState.viewerMode}
-                      webgl2Available={ctx.viewer3DState.webgl2Available}
-                      onSelectSplit={() => selectSplitMode(ctx)}
-                      onSelectMode={(mode) => selectViewerMode(ctx, mode)}
-                    />
+                    <div
+                      class="viewer-rail-wrap"
+                      transition:safeSlide={{ axis: "x", duration: prefersReducedMotion ? 0 : 260 }}
+                    >
+                      <ViewerContentRail
+                        activeMode={ctx.viewerState.viewerMode}
+                        webgl2Available={ctx.viewer3DState.webgl2Available}
+                        onSelectSplit={() => selectSplitMode(ctx)}
+                        onSelectMode={(mode) => selectViewerMode(ctx, mode)}
+                      />
+                    </div>
                   {/if}
                   {#if ctx.viewerState.viewerMode === 'videos' && !isSidebarExportActive}
                     <VideoGallery
@@ -623,9 +632,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                                 seq?.intendedWord ||
                                 seq?.word ||
                                 "sequence";
-                              const simplified = greekToAscii(
-                                simplifyRepeatedWord(rawName)
-                              );
+                              const simplified =
+                                simplifyRepeatedWord(rawName);
                               const safeName =
                                 sanitizeFilename(simplified) ||
                                 "sequence";
@@ -657,13 +665,15 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                           />
                         {/if}
                       {:else if isImageExportActive && !isMobileWidth}
+                        <!-- No onClose on desktop: the card export settings are
+                             required to configure the download and must stay put.
+                             Leave the Download Card mode via the content rail. -->
                         <ExportImagePanel
                           exportOptions={ctx.exportOptions}
                           isExporting={ctx.isExporting}
                           stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
                           layout="sidebar"
                           onExport={ctx.handleExport}
-                          onClose={ctx.exitEditMode}
                         />
                       {:else if isVideoUploadActive && overlay.sequence}
                         <VideoPanel
@@ -694,25 +704,33 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
               {/if}
             </div>
             {#if isMobileWidth && ctx.hasSequence && ctx.effectiveSequence && !ctx.practiceActive}
-              <ViewerModeBottomBar
-                activeMode={ctx.viewerState.viewerMode}
-                webgl2Available={ctx.viewer3DState.webgl2Available}
-                onSelectSplit={() => selectSplitMode(ctx)}
-                onSelectMode={(mode) => selectViewerMode(ctx, mode)}
-              />
+              <div transition:safeSlide={{ axis: "y", duration: prefersReducedMotion ? 0 : 220 }}>
+                <ViewerModeBottomBar
+                  activeMode={ctx.viewerState.viewerMode}
+                  webgl2Available={ctx.viewer3DState.webgl2Available}
+                  onSelectSplit={() => selectSplitMode(ctx)}
+                  onSelectMode={(mode) => selectViewerMode(ctx, mode)}
+                />
+              </div>
             {/if}
           </div>
           {#if ctx.practiceActive}
-            <PracticeBar
-              progress={ctx.practiceState.progress}
-              bpm={ctx.bpmLocal}
-              isPlaying={ctx.isPlayingLocal}
-              onBpmChange={ctx.handleBpmChange}
-              onPlayPause={ctx.handlePlaybackToggle}
-              onStepLevel={ctx.handlePracticeStepLevel}
-              onToggleHold={ctx.handlePracticeToggleHold}
-              onStop={ctx.handlePracticeStop}
-            />
+            <div
+              class="practice-bar-rise"
+              in:flyTransition={{ y: 36, duration: prefersReducedMotion ? 0 : 260 }}
+              out:flyTransition={{ y: 28, duration: prefersReducedMotion ? 0 : 180 }}
+            >
+              <PracticeBar
+                progress={ctx.practiceState.progress}
+                bpm={ctx.bpmLocal}
+                isPlaying={ctx.isPlayingLocal}
+                onBpmChange={ctx.handleBpmChange}
+                onPlayPause={ctx.handlePlaybackToggle}
+                onStepLevel={ctx.handlePracticeStepLevel}
+                onToggleHold={ctx.handlePracticeToggleHold}
+                onSetMode={ctx.handlePracticeSetMode}
+              />
+            </div>
           {/if}
 
           {#if deleteConfirmOpen}
@@ -808,47 +826,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     outline-offset: 2px;
   }
 
-  .prop-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: none;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 14px;
-    padding: 3px 12px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    cursor: pointer;
-    transition: border-color 0.15s;
-    line-height: 1.4;
-    pointer-events: auto;
-  }
-
-  .prop-toggle:hover {
-    border-color: var(--theme-accent, #6366f1);
-  }
-
-  .toggle-label {
-    opacity: 0.4;
-    font-weight: 400;
-  }
-
-  .toggle-option {
-    transition: color 0.15s, opacity 0.15s;
-    opacity: 0.5;
-  }
-
-  .toggle-option.active {
-    color: var(--theme-accent, #6366f1);
-    opacity: 1;
-    font-weight: 600;
-  }
-
-  .toggle-divider {
-    opacity: 0.3;
-    font-size: 10px;
-  }
-
   .drawer-header-left-actions {
     display: flex;
     align-items: center;
@@ -909,6 +886,20 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     gap: 4px;
   }
 
+  .header-action-btn.practice-exit {
+    gap: 8px;
+    padding: 0 16px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: #fff;
+    background: var(--semantic-error, #ef4444);
+  }
+
+  .header-action-btn.practice-exit:hover {
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 85%, white);
+    color: #fff;
+  }
+
   .header-action-divider {
     width: 1px;
     height: 20px;
@@ -956,6 +947,18 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   .landscape .header-action-btn {
     min-width: 32px;
     min-height: 32px;
+  }
+
+  /* Rail wrapper: lets the rail collapse its width (safeSlide x) on practice
+     enter instead of snapping out, so the grid column closes smoothly. */
+  .viewer-rail-wrap {
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .practice-bar-rise {
+    flex-shrink: 0;
   }
 
   .viewer-and-export {

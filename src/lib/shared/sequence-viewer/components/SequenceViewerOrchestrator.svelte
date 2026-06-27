@@ -1,7 +1,6 @@
 <script lang="ts" module>
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
 import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/get-sequence-animation-orchestrator";
-import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 // propInterpolator and sequenceConverter are now module-level functions injected directly
 import { getLanSyncCoordinator } from "$lib/shared/lan-sync/get-lan-sync-coordinator";
 import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
@@ -13,10 +12,10 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
+  import type { ProgressionMode } from "../services/tempo-practice-orchestrator";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type {
     ViewerPlaybackState, ImageCompositionProps, PropRenderingProps, } from "../domain/viewer-prop-groups";
-  import type { ResolvedPresentation, ViewingContext } from "../services/presentation-resolver";
   export type ViewMode = "animation" | "image" | "split";
   export type ExportType = "animation" | "image" | "both";
   export type PlaybackSource = "animation" | "video";
@@ -65,11 +64,6 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     redPropType: PropType | undefined;
     catDogModeEnabled: boolean | undefined;
 
-    presentation: ResolvedPresentation | null;
-    togglePropContext: () => void;
-    activeContext: ViewingContext;
-
-    handleSetAsIntended: () => Promise<void>;
     handlePropTypeChange: (propType: PropType) => void;
 
     imgShowWord: boolean;
@@ -132,6 +126,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handlePracticeStepLevel: (dir: 1 | -1) => void;
     handlePracticeStep: (dir: 1 | -1) => void;
     handlePracticeToggleHold: () => void;
+    handlePracticeSetMode: (mode: ProgressionMode) => void;
     handlePracticeStop: () => void;
     onClose: () => void;
     stepHalfBeatBackward: () => void;
@@ -179,7 +174,6 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
   import { generateViewerURL, encodePropForURL } from "$lib/shared/navigation/services/sequence-encoder";
-  import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
@@ -218,7 +212,6 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
   import { createPlaybackController } from "./playback-controller.svelte";
   import { createExportCoordinator } from "./export-coordinator.svelte";
-  import { createPropContextResolver } from "./prop-context-resolver.svelte";
   import { createImageCompositionSync } from "./image-composition-sync.svelte";
   import { createAuthActionQueue } from "./auth-action-queue.svelte";
   import { createFullscreenController } from "../state/fullscreen-controller.svelte";
@@ -234,7 +227,6 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     onClose: () => void;
     onUrlParamChange?: (key: string, value: string) => void;
     blockClicks?: boolean;
-    viewingContext?: ViewingContext;
     handPathMode?: boolean;
     forceGuest?: boolean;
     initialRenderMode?: '2d' | '3d';
@@ -255,7 +247,6 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     onClose,
     onUrlParamChange,
     blockClicks = false,
-    viewingContext = "notation",
     handPathMode = false,
     forceGuest = false,
     initialRenderMode,
@@ -283,8 +274,6 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   const accessibilityHelper = createModalAccessibilityHelper();
 
   const exportCoord = createExportCoordinator({ viewer3DState, accessibilityHelper });
-
-  const propContext = createPropContextResolver({});
 
   const imgComp = createImageCompositionSync();
 
@@ -362,31 +351,27 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   const scene3DRenderState = createScene3DRenderState();
   setScene3DRenderContext(scene3DRenderState);
 
-  const activeContext = $derived(propContext.getActiveContext(viewingContext));
-
-  const presentation = $derived.by((): ResolvedPresentation => {
-    return propContext.resolvePresentation(
-      sequence,
-      activeContext,
-      bluePropType,
-      redPropType,
-      catDogModeEnabled,
-    );
-  });
-
   const isHandPath = $derived(handPathMode || Boolean(sequence?.metadata?.isHandPathVisualization));
-  const activeBlueProp = $derived(isHandPath ? PropType.HAND : presentation.bluePropType);
-  const activeRedProp = $derived(isHandPath ? PropType.HAND : presentation.redPropType);
-  const activeCatDog = $derived(isHandPath ? false : presentation.catDogMode);
+  // Props always come from the viewer's own settings. (The former "Theirs | Mine"
+  // creator-prop toggle was removed — the notation is prop-agnostic, so a sequence
+  // always renders with whatever prop the viewer has chosen.)
+  const activeBlueProp = $derived(isHandPath ? PropType.HAND : (bluePropType ?? PropType.STAFF));
+  const activeRedProp = $derived(isHandPath ? PropType.HAND : (redPropType ?? PropType.STAFF));
+  const activeCatDog = $derived(isHandPath ? false : (catDogModeEnabled ?? false));
 
-  function togglePropContext() {
-    propContext.togglePropContext(activeContext);
+  // Keep the animation engine's prop types in sync with the active props.
+  function syncPropsToOrchestrator(blueProp: PropType, redProp: PropType, ready: boolean) {
+    if (blueProp && redProp && ready) {
+      try {
+        getSequenceAnimationOrchestrator().updatePropTypes(blueProp, redProp);
+      } catch {
+        // Animation services not ready yet - props get picked up on init.
+      }
+    }
   }
 
   $effect(() => {
-    const blue = activeBlueProp;
-    const red = activeRedProp;
-    propContext.syncPropsToOrchestrator(blue, red, animationServicesReady);
+    syncPropsToOrchestrator(activeBlueProp, activeRedProp, animationServicesReady);
   });
 
   const effectiveSequence = $derived(modalAnimationState.sequenceData ?? sequence);
@@ -740,6 +725,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       modalAnimationState,
       hapticService,
       (beat: number) => ctrl.additionalLayersAt(beat),
+      { fold: ctrl.fold, mirror: ctrl.mirror, spectrum: ctrl.spectrum },
     );
   }
 
@@ -829,45 +815,6 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       return;
     }
     enterEditMode("video-upload");
-  }
-
-  async function handleSetAsIntended() {
-    if (!sequence || !isOwned) return;
-    const currentBlue = activeBlueProp;
-    const currentRed = activeRedProp;
-    const currentCatDog = activeCatDog;
-    if (!currentBlue || !currentRed) return;
-
-    try {
-      const libraryRepo = getLibraryRepository();
-      const currentPathShape = getAnimationVisibilityManager().getPathShape();
-      const pathShapeMetadata = currentPathShape !== "arc"
-        ? { ...sequence.metadata, pathShape: currentPathShape }
-        : sequence.metadata;
-      const updatedSequence = createSequenceData({
-        ...sequence,
-        metadata: pathShapeMetadata,
-        creatorIntent: {
-          propConfig: {
-            bluePropType: currentBlue,
-            redPropType: currentRed,
-            catDogMode: currentCatDog ?? false,
-          },
-          ...(sequence?.creatorIntent?.effortTimeline && { effortTimeline: sequence.creatorIntent.effortTimeline }),
-          ...(sequence?.effortTimeline && { effortTimeline: sequence.effortTimeline }),
-        },
-        intendedProp: {
-          bluePropType: currentBlue,
-          redPropType: currentRed,
-          catDogMode: currentCatDog ?? false,
-        },
-      });
-      await libraryRepo.saveSequence(updatedSequence);
-      showToast("Intended prop updated", "success");
-    } catch (error) {
-      console.error("Failed to update intended prop:", error);
-      showToast("Failed to update intended prop", "error");
-    }
   }
 
   function handleShare() {
@@ -1054,14 +1001,9 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     redPropType: activeRedProp,
     catDogModeEnabled: activeCatDog,
 
-    presentation: presentation ?? null,
-    togglePropContext,
-    activeContext,
-
-    handleSetAsIntended,
     handlePropTypeChange: (propType: PropType) => {
       updateSettings({ bluePropType: propType, redPropType: propType });
-      propContext.syncPropsToOrchestrator(propType, propType, animationServicesReady);
+      syncPropsToOrchestrator(propType, propType, animationServicesReady);
       const encoded = encodePropForURL(propType);
       onUrlParamChange?.("bp", encoded);
       onUrlParamChange?.("rp", encoded);
@@ -1146,6 +1088,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handlePracticeStepLevel: (dir: 1 | -1) => playback.handlePracticeStepLevel(dir),
     handlePracticeStep: (dir: 1 | -1) => playback.handlePracticeStep(dir),
     handlePracticeToggleHold: () => playback.handlePracticeToggleHold(),
+    handlePracticeSetMode: (mode: ProgressionMode) => playback.handlePracticeSetMode(mode),
     handlePracticeStop: () => playback.handlePracticeStop(),
     onClose: handleClose,
     stepHalfBeatBackward: playback.stepHalfBeatBackward,

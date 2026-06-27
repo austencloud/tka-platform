@@ -163,7 +163,6 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     openSequenceViewer(sequence, {
       returnPath: `/browse/creators/${userId}`,
       returnLabel: userProfile?.displayName ?? "Creator",
-      viewingContext: "creator-expression",
     });
   }
 

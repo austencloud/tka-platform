@@ -10,7 +10,6 @@
  */
 
 import type { SequenceData } from '$lib/shared/foundation/domain/models/sequence-data';
-import type { ViewingContext } from "./presentation-resolver";
 import { openSequenceOverlay } from '../state/sequence-viewer-overlay-state.svelte';
 import { cellPreWarmer } from './cell-pre-warmer';
 import { getCached } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
@@ -28,8 +27,6 @@ export interface OpenSequenceViewerOptions {
 	initialStep?: number;
 	/** All variations of this sequence (same word). Enables variation navigation. */
 	variations?: SequenceData[];
-	/** Controls how props are resolved: "notation" uses viewer settings, "creator-expression" uses creator's intent. */
-	viewingContext?: ViewingContext;
 	/** When true, renders hand path visualization (HAND props, float arrows, no TKA). */
 	handPathMode?: boolean;
 }
@@ -74,7 +71,6 @@ export function openSequenceViewer(
 		initialBpm: options.initialBpm,
 		initialStep: options.initialStep,
 		variations: options.variations,
-		viewingContext: options.viewingContext,
 		handPathMode: options.handPathMode,
 	});
 }
