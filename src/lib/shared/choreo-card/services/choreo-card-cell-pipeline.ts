@@ -42,6 +42,7 @@ export function getPreviewCacheKey(
   colCount: number | null,
   isDark: boolean,
   spl: "row" | "column" = "column",
+  includeStartPosition: boolean = true,
 ): string {
   const stepLetters = seq.steps?.map(s => s.letter ?? "?").join("") ?? "";
   const durationFingerprint = seq.steps?.map(s => s.duration ?? 1).join(",") ?? "";
@@ -63,7 +64,15 @@ export function getPreviewCacheKey(
   const resolvedRed = opts.redPropType ?? settings.redPropType ?? "staff";
   const mv = `${opts.showBlueMotion === false ? "B0" : "B1"}${opts.showRedMotion === false ? "R0" : "R1"}`;
   const gv = `${opts.showTnD ? "V1" : "V0"}${opts.showElemental ? "E1" : "E0"}${opts.showPositions ? "P1" : "P0"}${opts.showGrid === false ? "G0" : "G1"}`;
-  return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedBlue}-${resolvedRed}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-spl:${spl}-d:${durationFingerprint}-m:${motionFingerprint}-vm:${vmKey}-mv:${mv}-gv:${gv}`;
+  // includeStartPosition changes the cell layout (start cell present + reserved
+  // row/col vs. tightly-packed steps) AND the row/column counts. It MUST be in
+  // the key: the global preview cache is shared across every ChoreoCard, so a
+  // start-off render (viewer with the toggle off) and a start-on render (save
+  // panel default) for the same sequence would otherwise collide — the onMount
+  // probe adopts the other mode's cells while the frame sizes for this mode,
+  // reserving a phantom start row that spreads the step rows apart.
+  const sp = includeStartPosition ? "sp1" : "sp0";
+  return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedBlue}-${resolvedRed}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-spl:${spl}-${sp}-d:${durationFingerprint}-m:${motionFingerprint}-vm:${vmKey}-mv:${mv}-gv:${gv}`;
 }
 
 /**

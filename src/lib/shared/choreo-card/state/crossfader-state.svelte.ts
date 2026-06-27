@@ -87,18 +87,29 @@ export function createCrossfaderState(getInitialDarkMode: () => boolean) {
     lastGridStableKey = keys.gridStableKey;
   }
 
-  /** Check what kind of change occurred */
+  /**
+   * Check what kind of change occurred.
+   *
+   * `darkModeChanged` is load-bearing: neither contentKey nor imageKey encode
+   * dark mode, so a darkMode flip that lands in the SAME reactive flush as a
+   * layout change (e.g. the export panel opening swaps darkMode + columnCount
+   * together) would otherwise classify as "layout-only" — which only
+   * repositions cells and never re-renders the baked PNGs for the new theme,
+   * leaving dark-baked images under a light DOM. Excluding darkModeChanged from
+   * the layout-only fast path forces a full re-render in that case.
+   */
   function classifyChange(
     contentKey: string,
     imageKey: string,
     gridStableKey: string,
     cellsLoaded: boolean,
     hasDurations: boolean,
+    darkModeChanged: boolean,
   ): "dark-mode-only" | "layout-only" | "grid-stable-image" | "full" {
     const contentChanged = contentKey !== lastContentKey;
     const imageChanged = imageKey !== lastImageKey;
     const isDarkModeOnly = !contentChanged && cellsLoaded;
-    const isLayoutOnly = !imageChanged && contentChanged && cellsLoaded && !hasDurations;
+    const isLayoutOnly = !imageChanged && contentChanged && !darkModeChanged && cellsLoaded && !hasDurations;
     const gridStable = gridStableKey === lastGridStableKey && cellsLoaded;
 
     if (isDarkModeOnly) return "dark-mode-only";

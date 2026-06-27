@@ -610,7 +610,7 @@
     // Update the global cache entry with new positions
     const renderOptions = buildRenderOptionsFn();
     const isDark = darkMode;
-    const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout);
+    const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout, includeStartPosition);
     storePreviewInCache(cacheKey, {
       cells: cells.map(c => ({
         index: c.index, label: c.label, imageUrl: c.imageUrl,
@@ -716,7 +716,7 @@
       const isDark = darkMode;
 
       // Check global cache - avoids re-rendering after drag-to-move
-      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout);
+      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout, includeStartPosition);
       const cached = globalPreviewCache.get(cacheKey);
       if (cached && cached.columns === cols && cached.rows === rws) {
         cells = cached.cells.map(c => ({ ...c, isLoaded: true }));
@@ -960,7 +960,7 @@
       const renderOptions = buildRenderOptionsFn();
 
       // Check global cache first - may already have the target mode rendered
-      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout);
+      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout, includeStartPosition);
       const cached = globalPreviewCache.get(cacheKey);
 
       let newUrls: Map<number, string>;
@@ -1093,7 +1093,7 @@
     const isDark = darkMode;
 
     // 1. Clear global in-memory preview cache entry for this sequence
-    const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout);
+    const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout, includeStartPosition);
     globalPreviewCache.delete(cacheKey);
 
     // 2. Delete IndexedDB blobs for all cells of this sequence
@@ -1266,7 +1266,15 @@
     const hasDurations = untrack(() => hasMixedDurations);
     const gridStableKey = `${stepCount}-${durationKey}-cols:${effCols}-isp:${isp}`;
 
-    const changeType = crossfader.classifyChange(contentKey, imageKey, gridStableKey, cellsLoaded, hasDurations);
+    // activeDarkMode holds the LAST applied theme (set by every branch below /
+    // beginCrossfade), so before this run applies it still reflects the prior
+    // value — comparing against the incoming `dm` tells us whether the theme
+    // flipped in THIS change. Load-bearing for the layout-only gate: a darkMode
+    // flip that coincides with a layout change must not take the no-re-render
+    // relayout path (would strand dark-baked PNGs under a light DOM).
+    const darkModeChanged = untrack(() => crossfader.activeDarkMode) !== dm;
+
+    const changeType = crossfader.classifyChange(contentKey, imageKey, gridStableKey, cellsLoaded, hasDurations, darkModeChanged);
 
     lastEffectRenderKey = renderKey;
     crossfader.updateKeys({ contentKey, imageKey, gridStableKey });
@@ -1408,9 +1416,16 @@
     // async - the component renders at least one frame with isLoading=true first.
     if (sequence?.steps?.length) {
       const renderOptions = buildRenderOptionsFn();
-      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, darkMode, startPositionLayout);
+      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, darkMode, startPositionLayout, includeStartPosition);
       const cached = globalPreviewCache.get(cacheKey);
-      if (cached) {
+      // Only adopt a cache hit whose grid dimensions match the frame this
+      // instance will size for. The global cache is shared across every
+      // ChoreoCard; layout inputs not folded into the key (mandala/QR fill)
+      // can still produce an entry laid out for a different row/column count.
+      // Adopting it blindly strands cells in a mismatched frame — the start
+      // row gets reserved but unfilled, spreading the step rows. Mirrors the
+      // same guard in renderAllCells().
+      if (cached && cached.columns === effectiveColumns && cached.rows === effectiveRows) {
         cells = cached.cells.map(c => ({ ...c, isLoaded: true }));
         columns = cached.columns;
         rows = cached.rows;

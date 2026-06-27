@@ -2,7 +2,6 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { libraryState } from "$lib/features/library/state/library-state.svelte";
 import { computeHash as computeSequenceHash } from "$lib/shared/library/services/sequence-content-hasher";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
 import type { ShameCategory } from "$lib/features/hall-of-shame/domain/models/hall-of-shame-models";
 import type { HallOfShameSubmitter } from "$lib/features/hall-of-shame/services/hall-of-shame-submitter";
@@ -26,21 +25,6 @@ export interface SavePanelProps {
   showShareContext: boolean;
   onClose?: () => void;
   onSaveComplete?: (sequenceId: string) => void;
-}
-
-function formatPropType(pt: PropType): string {
-  const map: Record<string, string> = {
-    [PropType.STAFF]: "Staff",
-    [PropType.FAN]: "Fan",
-    [PropType.CLUB]: "Club",
-    [PropType.BUUGENG]: "Buugeng",
-    [PropType.MINIHOOP]: "Mini Hoop",
-    [PropType.TRIAD]: "Triad",
-    [PropType.DOUBLESTAR]: "Double Star",
-    [PropType.BIGDOUBLESTAR]: "Big Double Star",
-    [PropType.QUIAD]: "Quiad",
-  };
-  return map[pt] ?? pt;
 }
 
 export function createSavePanelState(deps: SavePanelDeps) {
@@ -101,16 +85,6 @@ export function createSavePanelState(deps: SavePanelDeps) {
   const sequence = $derived.by(() => activeSequenceState.currentSequence);
 
   const isMobileLayout = $derived(panelWidth < 640);
-
-  const currentSettings = $derived(getSettings());
-  const bluePropType = $derived(currentSettings.bluePropType ?? PropType.STAFF);
-  const redPropType = $derived(currentSettings.redPropType ?? PropType.STAFF);
-  const isSamePropType = $derived(bluePropType === redPropType);
-  const propTypeLabel = $derived(
-    isSamePropType
-      ? formatPropType(bluePropType)
-      : `${formatPropType(bluePropType)} / ${formatPropType(redPropType)}`,
-  );
 
   const currentUser = $derived(authState.user);
   const creatorName = $derived(
@@ -420,7 +394,6 @@ export function createSavePanelState(deps: SavePanelDeps) {
     get isBottomSheet() { return isBottomSheet; },
     get sequence() { return sequence; },
     get isMobileLayout() { return isMobileLayout; },
-    get propTypeLabel() { return propTypeLabel; },
     get currentUser() { return currentUser; },
     get creatorName() { return creatorName; },
     get darkMode() { return darkMode; },

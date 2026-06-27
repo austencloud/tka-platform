@@ -26,6 +26,13 @@
   import { getContentModerator } from "$lib/features/moderation/get-content-moderator";
   import { getHallOfShameSubmitter } from "$lib/features/hall-of-shame/get-hall-of-shame-submitter";
   import { createSavePanelState } from "../state/save-panel-state.svelte";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+
+  // The preview must mirror the artifact the save will actually generate. The
+  // saved thumbnail reads includeStartPosition from these composition settings
+  // (see LibrarySaveService.generateAndUploadThumbnail); without this the
+  // preview hardcoded the start position on while the saved image left it off.
+  const compositionManager = getImageCompositionManager();
 
   interface Props {
     show: boolean;
@@ -147,6 +154,7 @@
                 sequence={{ ...s.sequence, word: s.tkaName }}
                 darkMode={s.darkMode}
                 userName={s.creatorName}
+                includeStartPosition={compositionManager.includeStartPosition}
                 showCreatorName={true}
                 showBirthday={true}
                 showNotes={true}
@@ -162,12 +170,8 @@
           </div>
         {/if}
 
-        <!-- Compact info row: prop type + variation status side by side -->
+        <!-- Compact info row: variation / saved status (fixed-height slot) -->
         <div class="info-row">
-          <span class="info-tag">
-            <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-            {s.propTypeLabel}
-          </span>
           {#if s.isExactDuplicate && !s.isFlagged}
             <span class="info-tag info-tag-saved">
               <i class="fas fa-check-circle" aria-hidden="true"></i>
