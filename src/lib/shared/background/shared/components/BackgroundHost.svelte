@@ -40,6 +40,16 @@
 	const controller = browser ? getBackgroundController() : null;
 	let mounted = $state(false);
 
+	// Layout-readiness gate. Bumped from a deferred frame to re-run the lifecycle
+	// $effect once the container has actually laid out to a real size. See the gate
+	// in that effect for why seeding before layout permanently breaks the cosmic
+	// background. layoutRetries bounds the wait so a legitimately zero-size host
+	// (if one ever exists) still mounts instead of spinning rAF forever.
+	let layoutReadyTick = $state(0);
+	let layoutRetries = 0;
+	let pendingLayoutRaf: number | null = null;
+	const MAX_LAYOUT_RETRIES = 60; // ~1s at 60fps before we give up and mount anyway
+
 	// True while the tab is hidden (switched away, minimized, screen off). The
 	// @austencloud/backgrounds controller runs its rAF regardless of visibility,
 	// so without this it keeps burning CPU and battery painting a canvas nobody
@@ -185,6 +195,33 @@
 			if (controller.isReady()) controller.unmount();
 			return;
 		}
+
+		// Don't mount/seed until the container has laid out to a real size. The
+		// cosmic star & nebula fields are generated ONCE at the system's
+		// initialize() from the canvas dimensions, and they cannot grow back from a
+		// zero-area seed: ParallaxStarSystem.adaptToNewDimensions() adds stars
+		// proportional to the CURRENT count (≈count*0.5 per resize), so an empty
+		// field stays empty no matter how large the canvas later becomes. A mount
+		// that runs before layout — e.g. the HMR-persisted controller singleton
+		// remounting between frames, or createCanvases() measuring the container
+		// before it has been laid out — therefore seeds an empty field and leaves a
+		// permanent gradient-only background (the symptom: "every once in a while it
+		// just gives me the placeholder gradient"). Wait for a real size first.
+		void layoutReadyTick; // dependency: a deferred frame bumps this to re-run us
+		const rect = containerRef.getBoundingClientRect();
+		if ((rect.width < 1 || rect.height < 1) && layoutRetries < MAX_LAYOUT_RETRIES) {
+			// Re-run on the next frame once layout settles. The rAF handle is held on
+			// the component (not returned as effect cleanup) so every branch of this
+			// effect returns void — a mixed void/cleanup return trips noImplicitReturns.
+			if (pendingLayoutRaf !== null) cancelAnimationFrame(pendingLayoutRaf);
+			pendingLayoutRaf = requestAnimationFrame(() => {
+				pendingLayoutRaf = null;
+				layoutRetries += 1;
+				layoutReadyTick += 1;
+			});
+			return;
+		}
+		layoutRetries = 0;
 
 		// mount() is idempotent and container-aware: a no-op when already bound to
 		// this container, a re-bind (unmount + remount) when the container changed.
