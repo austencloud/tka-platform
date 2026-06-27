@@ -43,31 +43,55 @@
   const SIZE = 99.5;
 
   // ── Vertical flow (pt) ────────────────────────────────────────────────────
-  // This page is dense (title + intro + 3 figure sections), so positions are
-  // DERIVED from a few spacing knobs instead of hand-placed, giving an even
-  // rhythm: the title sits at the SAME y as The Grid's title (pages stay
-  // consistent), then every major block — intro, Alpha, Beta, Gamma — is
-  // separated by the same GAP, and the trailing bottom margin lands on GAP too.
-  // Tune GAP to breathe the whole page; everything re-derives.
+  // Dense page (title + intro + 3 glyph-led figure sections), so positions are
+  // DERIVED from a few spacing knobs instead of hand-placed. Each section now
+  // leads with the canonical TKA position glyph, then its name, then a row (or
+  // two) of minis, then the italic description; a hairline rule splits sections
+  // (parsability, matching the proof). The title sits at the SAME y as The
+  // Grid's title so pages stay consistent. Tune GAP to breathe the page.
   const TITLE_Y = 10.6; // identical to The Grid's title run → consistent across pages
   const TITLE_H = 40;
-  const GAP = 24; // even gap between major blocks
-  const G_IN = 8; // heading→minis and minis→description
-  const ROW_GAP = 6; // between the two Gamma rows
+  const GAP = 14; // even gap between major blocks
+  const G_IN = 6; // heading→minis and minis→description
+  const ROW_GAP = 5; // between the two Gamma rows
   const LINE = 18; // intro line height
+  const GLYPH_H = 22; // TKA position glyph height
+  const GH_GAP = 1; // glyph → name
+  const WORD_H = 18; // name line height
+  const DESC_H = 18;
+  const CX = 304; // page-centre x for glyphs + names (pt)
 
   const introY = TITLE_Y + TITLE_H + GAP;
   const introBottom = introY + 2 * LINE + 14;
-  const aHeadY = introBottom + GAP;
-  const ROW_A = aHeadY + 22 + G_IN;
+
+  const aGlyphY = introBottom + GAP;
+  const aHeadY = aGlyphY + GLYPH_H + GH_GAP;
+  const ROW_A = aHeadY + WORD_H + G_IN;
   const aDescY = ROW_A + SIZE + G_IN;
-  const bHeadY = aDescY + 18 + GAP;
-  const ROW_B = bHeadY + 22 + G_IN;
+
+  const bGlyphY = aDescY + DESC_H + GAP;
+  const bHeadY = bGlyphY + GLYPH_H + GH_GAP;
+  const ROW_B = bHeadY + WORD_H + G_IN;
   const bDescY = ROW_B + SIZE + G_IN;
-  const gHeadY = bDescY + 18 + GAP;
-  const ROW_G1 = gHeadY + 22 + G_IN;
+
+  const gGlyphY = bDescY + DESC_H + GAP;
+  const gHeadY = gGlyphY + GLYPH_H + GH_GAP;
+  const ROW_G1 = gHeadY + WORD_H + G_IN;
   const ROW_G2 = ROW_G1 + SIZE + ROW_GAP;
   const gDescY = ROW_G2 + SIZE + G_IN;
+
+  // Hairline rules splitting the sections (mid-gap below each description).
+  const DIVIDERS = [aDescY + DESC_H + GAP / 2, bDescY + DESC_H + GAP / 2];
+
+  // Canonical TKA position glyphs (Type6 letter SVGs, black ink → correct on the
+  // white sheet). γ resolves to the CURRENT gamma glyph automatically — no need
+  // to track the old one. ar = intrinsic width/height; sized to GLYPH_H, centred
+  // on CX. Source dims mirror PositionGlyph.svelte's LETTER_DIMENSIONS.
+  const GLYPHS = [
+    { src: "/images/letters_trimmed/Type6/α.svg", ar: 92.22 / 100, y: aGlyphY },
+    { src: "/images/letters_trimmed/Type6/β.svg", ar: 66.05 / 100, y: bGlyphY },
+    { src: "/images/letters_trimmed/Type6/γ.svg", ar: 79 / 100.11, y: gGlyphY },
+  ];
 
   // Row for the i-th position: α (0–3), β (4–7), γ row1 (8–11), γ row2 (12–15).
   const rowFor = (i: number): number =>
@@ -83,19 +107,20 @@
     i?: boolean;
     sub?: boolean;
     title?: boolean;
-    legend?: boolean;
+    line2?: boolean;
   };
 
   const B = "#2e3192"; // blue = left
   const R = "#cc2127"; // red = right
 
-  // Text runs extracted from PDF p8 (top-left origin, points).
+  // Text runs extracted from PDF p8 (top-left origin, points). Line 2 is a single
+  // centred run (plain clause + spaced bold colour legend) — two separate runs
+  // double-centred and left an awkward gap between "mirrored." and "Red".
   const RUNS: Run[] = [
     { x: 201.1, y: TITLE_Y, w: 218.4, h: TITLE_H, title: true, t: "Hand Positions" },
 
     { x: 64.4, y: introY, w: 491.6, h: 15, t: "There are multiple ways to combine two hand points to form a hand position." },
-    { x: 96.4, y: introY + LINE, w: 235.8, h: 15, t: "Positions can be rotated or mirrored." },
-    { x: 335.4, y: introY + LINE, w: 188.6, h: 15, b: true, legend: true, t: "Red = Right and Blue = Left." },
+    { x: 64.4, y: introY + LINE, w: 491.6, h: 15, line2: true, t: "" },
     { x: 42.5, y: introY + 2 * LINE, w: 535.4, h: 15, t: "In The Kinetic Alphabet, our first three positions are called Alpha, Beta, and Gamma." },
 
     { x: 275.0, y: aHeadY, w: 54.8, h: 22, sub: true, t: "Alpha" },
@@ -136,6 +161,21 @@
     </div>
   {/each}
 
+  <!-- Canonical TKA position glyph leading each section, centred above the name. -->
+  {#each GLYPHS as g}
+    <img
+      class="glyph"
+      src={g.src}
+      alt=""
+      style="left:{(CX - (GLYPH_H * g.ar) / 2) * S}px; top:{g.y * S}px; height:{GLYPH_H * S}px"
+    />
+  {/each}
+
+  <!-- Hairline rules splitting α / β / γ for parsability (matches the proof). -->
+  {#each DIVIDERS as dy}
+    <div class="rule" style="left:{64.4 * S}px; top:{dy * S}px; width:{491.6 * S}px"></div>
+  {/each}
+
   {#each RUNS as r}
     <span
       class="run"
@@ -145,8 +185,10 @@
       class:t={r.title}
       style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w * S}px; font-size:{r.h * S}px"
     >
-      {#if r.legend}
-        <span style="color:{R}">Red = Right</span> and <span style="color:{B}">Blue = Left.</span>
+      {#if r.line2}
+        Positions can be rotated or mirrored.<span class="gap"></span><strong
+          ><span style="color:{R}">Red = Right</span> and <span style="color:{B}">Blue = Left.</span></strong
+        >
       {:else}
         {r.t}
       {/if}
@@ -194,5 +236,24 @@
     position: absolute;
     border: 1px solid #c4c4cc;
     box-sizing: border-box;
+  }
+
+  /* TKA position glyph (Type6 SVG) leading each section. */
+  .glyph {
+    position: absolute;
+    width: auto; /* height drives size; intrinsic ratio sets width */
+  }
+
+  /* Hairline section divider. */
+  .rule {
+    position: absolute;
+    height: 1px;
+    background: #bcbcc6;
+  }
+
+  /* Gap between the rotate/mirror clause and the colour legend on line 2. */
+  .gap {
+    display: inline-block;
+    width: 1.6em;
   }
 </style>

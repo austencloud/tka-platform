@@ -1,3 +1,10 @@
+/* Cormorant Garamond — the guide's display serif (title / Greek subheads /
+   italic captions). Free, OFL-licensed (web + PDF-embed clean), unlike the
+   proof's Monotype Corsiva. Loaded HERE because the print/compare routes use
+   @(public) and bypass the guide +layout — every guide surface imports this
+   file, so this is the one place that reaches all of them. */
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&display=swap");
+
 /* ══════════════════════════════════════════
    Level 1 Guide — Bleeding Edge Design
    Dark glassmorphic, Inter Variable, OKLCH,
