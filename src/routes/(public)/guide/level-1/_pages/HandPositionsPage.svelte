@@ -214,21 +214,22 @@
   .run.b {
     font-weight: 700;
   }
-  /* Italic descriptions + the Greek subheads + the page title use the book's
-     display serif. */
+  /* Italic descriptions use the serif. */
   .run.i {
-    font-family: "Cormorant Garamond", Georgia, serif;
+    font-family: var(--guide-display);
     font-style: italic;
     font-weight: 500;
   }
+  /* Greek subheads — display serif (unchanged from the proof). */
   .run.sub {
-    font-family: "Cormorant Garamond", Georgia, serif;
+    font-family: var(--guide-display);
     font-weight: 600;
   }
+  /* Page title only — calligraphic script (font + weight from guide.css vars). */
   .run.t {
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-style: italic;
-    font-weight: 600;
+    font-family: var(--guide-script);
+    font-style: normal;
+    font-weight: var(--guide-script-weight, 400);
     color: #14142b;
   }
 

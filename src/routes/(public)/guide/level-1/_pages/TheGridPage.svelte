@@ -219,15 +219,17 @@
     font-weight: 700;
     color: #1a1a1a;
   }
-  /* Script headings (Diamond / Box / 8-point grid) + the page title — the book's
-     header typeface. */
-  .run.s,
-  .run.t {
-    font-family: "Cormorant Garamond", Georgia, serif;
+  /* Section headings (Diamond / Box / 8-point grid) — display serif (unchanged). */
+  .run.s {
+    font-family: var(--guide-display);
     font-style: italic;
     font-weight: 600;
   }
+  /* Page title only — calligraphic script (font + weight from guide.css vars). */
   .run.t {
+    font-family: var(--guide-script);
+    font-style: normal;
+    font-weight: var(--guide-script-weight, 400);
     color: #14142b;
     text-align: center;
   }

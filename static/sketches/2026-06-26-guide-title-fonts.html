@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Guide title font picker — Corsiva alternatives</title>
+
+    <!-- Candidate calligraphic scripts (all free / OFL on Google Fonts) + the
+         serif baseline. The reference row uses the LOCAL Monotype Corsiva, which
+         is installed on Windows, so it renders the real thing for comparison. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Allura&family=Cormorant+Garamond:ital,wght@1,600&family=Dancing+Script:wght@600;700&family=Felipa&family=Great+Vibes&family=Petit+Formal+Script&family=Pinyon+Script&family=Tangerine:wght@400;700&display=swap"
+    />
+
+    <style>
+      :root {
+        --ink: #14142b;
+        --paper: #ffffff;
+        --bg: #ece9e3;
+        --muted: #6b6b78;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Inter", system-ui, sans-serif;
+        padding: 32px 20px 80px;
+      }
+      header { max-width: 920px; margin: 0 auto 28px; }
+      h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
+      header p { margin: 0; color: #3a3a44; font-size: 14px; line-height: 1.5; max-width: 70ch; }
+      header code { background: #ddd9d1; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+      .grid { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+      .card {
+        background: var(--paper);
+        border-radius: 14px;
+        padding: 22px 26px 24px;
+        box-shadow: 0 2px 18px rgba(0, 0, 0, 0.12);
+        position: relative;
+      }
+      .card.ref { outline: 2px dashed #b7a98a; }
+      .card.pick { outline: 2px solid #3730a3; }
+      .meta { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+      .name { font-size: 15px; font-weight: 700; letter-spacing: 0.01em; }
+      .tag {
+        font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+        color: #fff; background: var(--muted); padding: 2px 8px; border-radius: 999px;
+      }
+      .tag.chancery { background: #7a6a3a; }
+      .tag.legible { background: #2f7d52; }
+      .tag.elegant { background: #6d4d86; }
+      .tag.ref { background: #b7a98a; color: #2a2517; }
+      .tag.reject { background: #a23b3b; }
+      .tag.serif { background: #444; }
+      .note { font-size: 12.5px; color: var(--muted); margin: 2px 0 0; }
+
+      /* The actual page titles, at the guide's real title size (~53px). */
+      .big { font-size: 54px; line-height: 1.1; color: var(--ink); margin: 4px 0 2px; }
+      .row { font-size: 34px; line-height: 1.25; color: var(--ink); }
+      .small { font-size: 22px; color: #2c2c3a; margin-top: 2px; }
+
+      /* Per-font families. */
+      .f-corsiva  { font-family: "Monotype Corsiva", "Apple Chancery", cursive; }
+      .f-felipa   { font-family: "Felipa", cursive; }
+      .f-tangerine{ font-family: "Tangerine", cursive; font-weight: 700; }
+      .f-petit    { font-family: "Petit Formal Script", cursive; }
+      .f-pinyon   { font-family: "Pinyon Script", cursive; }
+      .f-vibes    { font-family: "Great Vibes", cursive; }
+      .f-dancing  { font-family: "Dancing Script", cursive; font-weight: 700; }
+      .f-allura   { font-family: "Allura", cursive; }
+      .f-alex     { font-family: "Alex Brush", cursive; }
+      .f-cormorant{ font-family: "Cormorant Garamond", serif; font-style: italic; font-weight: 600; }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>Guide title font picker — closest free fonts to Monotype Corsiva</h1>
+      <p>
+        Each card shows the actual guide page titles at the real display size. The first
+        card is the <b>real Monotype Corsiva</b>, rendered from your local Windows font —
+        the reference to match. All others are free / OFL Google Fonts (web + PDF-embed
+        clean). <b>Chancery</b> = same lineage as Corsiva. Tell me the name you like and I
+        set <code>--guide-script</code> to it across the whole guide. Live interim is
+        Tangerine.
+      </p>
+    </header>
+
+    <div class="grid">
+      <!-- REFERENCE: real Monotype Corsiva from the local Windows install. -->
+      <div class="card ref">
+        <div class="meta">
+          <span class="name">Monotype Corsiva</span>
+          <span class="tag ref">reference — your local font</span>
+        </div>
+        <p class="note">The original. Not licensable for the web/PDF, but here to compare against.</p>
+        <div class="big f-corsiva">Hand Positions</div>
+        <div class="row f-corsiva">The Grid &nbsp;·&nbsp; Hand Motions</div>
+        <div class="small f-corsiva">In Gamma, the hands form a right angle.</div>
+      </div>
+
+      <!-- CHANCERY — closest in style to Corsiva. -->
+      <div class="card pick">
+        <div class="meta">
+          <span class="name">Tangerine</span>
+          <span class="tag chancery">chancery</span>
+          <span class="tag legible">most legible</span>
+        </div>
+        <p class="note">16th–17th c. chancery hand, tall x-height → readable at any size. My pick + current live interim.</p>
+        <div class="big f-tangerine">Hand Positions</div>
+        <div class="row f-tangerine">The Grid &nbsp;·&nbsp; Hand Motions</div>
+        <div class="small f-tangerine">In Gamma, the hands form a right angle.</div>
+      </div>
+
+      <div class="card">
+        <div class="meta">
+          <span class="name">Felipa</span>
+          <span class="tag chancery">chancery</span>
+        </div>
+        <p class="note">Italian chancery cursive, contemporary cut — the closest in actual letterform style to Corsiva.</p>
+        <div class="big f-felipa">Hand Positions</div>
+        <div class="row f-felipa">The Grid &nbsp;·&nbsp; Hand Motions</div>
+        <div class="small f-felipa">In Gamma, the hands form a right angle.</div>
+      </div>
+
+      <!-- FORMAL SCRIPTS — legible. -->
+      <div class="card">
+        <div class="meta">
+          <span class="name">Petit Formal Script</span>
+          <span class="tag legible">formal · legible</span>
+        </div>
+        <p class="note">Formal copperplate-ish, even and readable — a safe, classic title face.</p>
+        <div class="big f-petit">Hand Positions</div>
+        <div class="row f-petit">The Grid &nbsp;·&nbsp; Hand Motions</div>
+        <div class="small f-petit">In Gamma, the hands form a right angle.</div>
+      </div>
+
+      <div class="card">
+        <div class="meta">
+          <span class="name">Pinyon Script</span>
+          <span class="tag elegant">formal · vintage</span>
+        </div>
+        <p class="note">Delicate copperplate with vintage charm. Pretty, a touch more ornate than Corsiva.</p>
+        <div class="big f-pinyon">Hand Positions</div>
+        <div class="row f-pinyon">The Grid &nbsp;·&nbsp; Hand Motions</div>
+        <div class="small f-pinyon">In Gamma, the hands form a right angle.</div>
+      </div>
+
+      <div class="card">
+        <div class="meta">
+          <span class="name">Dancing Script</span>
+          <span class="tag legible">very legible</span>
+        </div>
+        <p class="note">Casual bouncy script — the most readable of the lot, but less formal than Corsiva.</p>
+        <div class="big f-dancing">Hand Positions</div>
+        <div class="row f-dancing">The Grid &nbsp;·&nbsp; Hand Motions</div>
+        <div class="small f-dancing">In Gamma, the hands form a right angle.</div>
+      </div>
+
+      <!-- ELEGANT — pretty but more ornamental. -->
+      <div class="card">
+        <div class="meta">
+          <span class="name">Great Vibes</span>
+          <span class="tag elegant">elegant</span>
+        </div>
+        <p class="note">Ornamental and sophisticated. Reads well at title size; flourishy.</p>
+        <div class="big f-vibes">Hand Positions</div>
+        <div class="row f-vibes">The Grid &nbsp;·&nbsp; Hand Motions</div>
+        <div class="small f-vibes">In Gamma, the hands form a right angle.</div>
+      </div>
+
+      <div class="card">
+        <div class="meta">
+          <span class="name">Allura</span>
+          <span class="tag elegant">delicate</span>
+        </div>
+        <p class="note">Soft, modern flow. Lighter weight; elegant but thinner presence.</p>
+        <div class="big f-allura">Hand Positions</div>
+        <div class="row f-allura">The Grid &nbsp;·&nbsp; Hand Motions</div>
+        <div class="small f-allura">In Gamma, the hands form a right angle.</div>
+      </div>
+
+      <!-- REJECTED — for contrast. -->
+      <div class="card">
+        <div class="meta">
+          <span class="name">Alex Brush</span>
+          <span class="tag reject">current — too hard to read</span>
+        </div>
+        <p class="note">What's on the page now. Connected brush script — pretty, but the legibility you flagged.</p>
+        <div class="big f-alex">Hand Positions</div>
+        <div class="row f-alex">The Grid &nbsp;·&nbsp; Hand Motions</div>
+        <div class="small f-alex">In Gamma, the hands form a right angle.</div>
+      </div>
+
+      <!-- SERIF baseline. -->
+      <div class="card">
+        <div class="meta">
+          <span class="name">Cormorant Garamond italic</span>
+          <span class="tag serif">serif baseline</span>
+        </div>
+        <p class="note">The body serif, italic — not a script, shown so you can judge whether you even want a script.</p>
+        <div class="big f-cormorant">Hand Positions</div>
+        <div class="row f-cormorant">The Grid &nbsp;·&nbsp; Hand Motions</div>
+        <div class="small f-cormorant">In Gamma, the hands form a right angle.</div>
+      </div>
+    </div>
+  </body>
+</html>

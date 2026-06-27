@@ -1,9 +1,21 @@
-/* Cormorant Garamond — the guide's display serif (title / Greek subheads /
-   italic captions). Free, OFL-licensed (web + PDF-embed clean), unlike the
-   proof's Monotype Corsiva. Loaded HERE because the print/compare routes use
+/* Guide typefaces — both free + OFL (web + PDF-embed clean), unlike the proof's
+   Monotype Corsiva. Alex Brush = the calligraphic script for HEADERS (titles +
+   section names), the closest free Corsiva-class script and the cited pairing
+   for Cormorant. Cormorant Garamond = the display serif for everything else
+   (captions, legends). Loaded HERE because the print/compare routes use
    @(public) and bypass the guide +layout — every guide surface imports this
-   file, so this is the one place that reaches all of them. */
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&display=swap");
+   file, so this is the one place that reaches all of them. Swap a header font
+   by changing --guide-script in one spot below. */
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&family=Tangerine:wght@400;700&display=swap");
+
+:root {
+  /* Tangerine = chancery (Corsiva's lineage), tall x-height → legible. Interim
+     pick pending Austen's choice from /sketches/2026-06-26-guide-title-fonts.html;
+     swap this one line to change every guide title. */
+  --guide-script: "Tangerine", "Segoe Script", cursive; /* calligraphic page titles */
+  --guide-script-weight: 700; /* Tangerine has a true bold; set per chosen font */
+  --guide-display: "Cormorant Garamond", Georgia, serif; /* serif body/captions */
+}
 
 /* ══════════════════════════════════════════
    Level 1 Guide — Bleeding Edge Design

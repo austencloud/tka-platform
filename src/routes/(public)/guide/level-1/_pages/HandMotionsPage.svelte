@@ -266,11 +266,11 @@
   .run.i {
     font-style: italic;
   }
-  /* Page title — the book's display serif (matches The Grid / Hand Positions). */
+  /* Page title — calligraphic script (font + weight from guide.css vars). */
   .run.t {
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-style: italic;
-    font-weight: 600;
+    font-family: var(--guide-script);
+    font-style: normal;
+    font-weight: var(--guide-script-weight, 400);
     color: #14142b;
   }
 
