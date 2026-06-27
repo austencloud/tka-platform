@@ -29,6 +29,7 @@
   let increment = $derived(config.increment ?? 5);
   let smoothStep = $derived(config.smoothStep ?? 1);
   let roundsPerLevel = $derived(config.roundsPerLevel ?? 5);
+  let targetBpm = $derived(config.targetBpm ?? 60);
   // Migrate the legacy "auto" value to the new "smooth" default for display.
   let progressionMode: ProgressionMode = $derived(
     ((config.progressionMode as string) === "auto" ? "smooth" : config.progressionMode) ?? "smooth"
@@ -50,17 +51,22 @@
   function setRounds(next: number) {
     onUpdate({ roundsPerLevel: clamp(next, 1, 10) });
   }
+  function setTargetBpm(next: number) {
+    onUpdate({ targetBpm: clamp(next, startBpm + 5, config.maxBpm ?? 300) });
+  }
 
   const MODE_OPTIONS: { value: ProgressionMode; label: string }[] = [
     { value: "smooth", label: "Smooth" },
     { value: "stepped", label: "Stepped" },
     { value: "manual", label: "Manual" },
+    { value: "target", label: "Target" },
   ];
 
   const HINTS: Record<ProgressionMode, string> = {
     smooth: "Tempo rises a little after every loop — barely noticeable, but it adds up.",
     stepped: "Holds each tempo for a set of loops, then speeds up by the speed step.",
     manual: "Holds the tempo. You tap Faster on the bar to speed up when you're ready.",
+    target: "Climbs gently to your goal tempo, then stops and celebrates.",
   };
 </script>
 
@@ -110,6 +116,9 @@
               {:else if progressionMode === "stepped"}
                 {@render stepper("Loops per speed-up", roundsPerLevel, "", () => setRounds(roundsPerLevel - 1), () => setRounds(roundsPerLevel + 1))}
                 {@render stepper("Speed step", increment, "BPM", () => setIncrement(increment - 1), () => setIncrement(increment + 1))}
+              {:else if progressionMode === "target"}
+                {@render stepper("Goal tempo", targetBpm, "BPM", () => setTargetBpm(targetBpm - 5), () => setTargetBpm(targetBpm + 5))}
+                {@render stepper("BPM per loop", smoothStep, "", () => setSmoothStep(smoothStep - 1), () => setSmoothStep(smoothStep + 1))}
               {:else}
                 {@render stepper("Speed step", increment, "BPM", () => setIncrement(increment - 1), () => setIncrement(increment + 1))}
               {/if}

@@ -165,4 +165,51 @@ describe("TempoPracticeOrchestrator", () => {
     expect(o.advanceLevel()).toBeNull();
     expect(o.decreaseLevel()).toBeNull();
   });
+
+  it("target mode creeps up by smoothStep toward the goal", () => {
+    const o = new TempoPracticeOrchestrator();
+    const start = o.start({ startBpm: 20, smoothStep: 1, targetBpm: 23, progressionMode: "target" });
+    expect(start).toBe(20);
+    expect(o.onLoopComplete()).toBe(21);
+    expect(o.onLoopComplete()).toBe(22);
+    expect(o.getProgress().currentLevel).toBe(0); // creeps like smooth, no levels
+    expect(o.getProgress().reachedTarget).toBe(false);
+  });
+
+  it("target mode stops at the goal and flags reachedTarget", () => {
+    const o = new TempoPracticeOrchestrator();
+    o.start({ startBpm: 20, smoothStep: 1, targetBpm: 22, progressionMode: "target" });
+    expect(o.onLoopComplete()).toBe(21);
+    expect(o.onLoopComplete()).toBe(22); // lands on the goal
+    const p = o.getProgress();
+    expect(p.currentBpm).toBe(22);
+    expect(p.reachedTarget).toBe(true);
+    expect(o.isActive()).toBe(false); // reaching the goal ends the session
+  });
+
+  it("target mode caps the goal at maxBpm", () => {
+    const o = new TempoPracticeOrchestrator();
+    o.start({ startBpm: 20, smoothStep: 5, targetBpm: 500, maxBpm: 30, progressionMode: "target" });
+    expect(o.getProgress().targetBpm).toBe(30); // clamped to maxBpm
+    expect(o.onLoopComplete()).toBe(25);
+    expect(o.onLoopComplete()).toBe(30); // stops at the cap-as-goal
+    expect(o.getProgress().reachedTarget).toBe(true);
+  });
+
+  it("progress.targetBpm reflects the cap outside target mode", () => {
+    const o = new TempoPracticeOrchestrator();
+    o.start({ startBpm: 20, maxBpm: 200, progressionMode: "smooth" });
+    expect(o.getProgress().targetBpm).toBe(200);
+    expect(o.getProgress().reachedTarget).toBe(false);
+  });
+
+  it("setProgressionMode switches the ramp live without restarting", () => {
+    const o = new TempoPracticeOrchestrator();
+    o.start({ startBpm: 20, smoothStep: 1, increment: 5, roundsPerLevel: 3, progressionMode: "smooth" });
+    expect(o.onLoopComplete()).toBe(21); // smooth creep
+    o.setProgressionMode("stepped");
+    expect(o.getProgress().progressionMode).toBe("stepped");
+    expect(o.getProgress().currentBpm).toBe(21); // preserved
+    expect(o.onLoopComplete()).toBeNull(); // stepped now: holds for the round set
+  });
 });

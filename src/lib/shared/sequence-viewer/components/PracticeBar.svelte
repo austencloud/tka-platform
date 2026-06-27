@@ -41,8 +41,10 @@
   });
 
   // Floor/ceiling shared by both the level buttons and the fine spinner.
+  // Ceiling = the goal in target mode, else the maxBpm cap (progress.targetBpm
+  // carries whichever applies).
   let atFloor = $derived(bpm <= progress.startBpm);
-  let atCeiling = $derived(bpm >= progress.maxBpm);
+  let atCeiling = $derived(bpm >= progress.targetBpm);
 
   function fine(dir: 1 | -1) {
     const next = Math.max(progress.startBpm, Math.min(progress.maxBpm, bpm + dir));
@@ -65,11 +67,20 @@
 
   let isSmooth = $derived(progress.progressionMode === "smooth");
   let isManual = $derived(progress.progressionMode === "manual");
+  let isTarget = $derived(progress.progressionMode === "target");
 
-  // Fill toward the next speed-up (smooth has no boundary → a faded full bar).
-  let fillPct = $derived(
-    isSmooth ? 100 : (progress.roundsPerLevel > 0 ? (progress.loopsCompleted / progress.roundsPerLevel) * 100 : 0)
-  );
+  // Fill semantics by mode: target → real start→goal progress; smooth → a faded
+  // full (breathing) bar; stepped/manual → progress toward the next speed-up.
+  let fillPct = $derived.by(() => {
+    if (isTarget) {
+      const span = progress.targetBpm - progress.startBpm;
+      return span > 0 ? Math.max(0, Math.min(100, ((bpm - progress.startBpm) / span) * 100)) : 0;
+    }
+    if (isSmooth) return 100;
+    return progress.roundsPerLevel > 0
+      ? (progress.loopsCompleted / progress.roundsPerLevel) * 100
+      : 0;
+  });
 
   // Pulse the BPM number whenever the tempo bumps up, so you feel it tighten.
   let prevBpm = bpm;
@@ -95,20 +106,24 @@
     return () => mq.removeEventListener("change", sync);
   });
 
-  // Celebrate crossing a level boundary — a real speed-up, not every smooth
-  // loop (currentLevel stays 0 in smooth mode, so this only fires in
-  // stepped/manual when the tempo actually steps up).
+  // Celebrate a real milestone: crossing a level boundary (stepped/manual —
+  // currentLevel stays 0 in smooth/target so it won't fire every loop) OR
+  // reaching the goal in target mode.
   let prevLevel = progress.currentLevel;
+  let prevReached = progress.reachedTarget;
   let celebrate = $state(false);
   let celebrateTimer: ReturnType<typeof setTimeout> | null = null;
+  function fireCelebrate() {
+    celebrate = true;
+    if (celebrateTimer) clearTimeout(celebrateTimer);
+    celebrateTimer = setTimeout(() => (celebrate = false), 620);
+  }
   $effect(() => {
     const lvl = progress.currentLevel;
-    if (lvl > prevLevel) {
-      celebrate = true;
-      if (celebrateTimer) clearTimeout(celebrateTimer);
-      celebrateTimer = setTimeout(() => (celebrate = false), 620);
-    }
+    const reached = progress.reachedTarget;
+    if (lvl > prevLevel || (reached && !prevReached)) fireCelebrate();
     prevLevel = lvl;
+    prevReached = reached;
   });
 
   // The + glows when Manual has parked at a completed level awaiting a tap.
@@ -116,6 +131,11 @@
 
   let caption = $derived.by(() => {
     if (progress.held) return `Holding at ${bpm} BPM`;
+    if (isTarget) {
+      return progress.reachedTarget
+        ? `Reached ${bpm} BPM`
+        : `Climbing to ${progress.targetBpm} BPM`;
+    }
     if (isSmooth) return `Climbing +${progress.smoothStep} BPM each loop`;
     const n = progress.loopsRemaining;
     const loops = `${n} ${n === 1 ? "loop" : "loops"}`;
@@ -222,7 +242,7 @@
         {#key caption}
           <span
             class="pb-caption"
-            class:ready={progress.readyToAdvance}
+            class:ready={progress.readyToAdvance || progress.reachedTarget}
             in:fade|local={{ duration: reduceMotion ? 0 : 150 }}
             out:fade|local={{ duration: reduceMotion ? 0 : 150 }}
           >{caption}</span>
@@ -232,7 +252,7 @@
         <div
           class="pb-fill"
           class:smooth={isSmooth}
-          class:ready={progress.readyToAdvance}
+          class:ready={progress.readyToAdvance || progress.reachedTarget}
           style="width:{fillPct}%"
         ></div>
       </div>

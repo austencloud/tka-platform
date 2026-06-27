@@ -18,9 +18,13 @@
  * - "manual":  onLoopComplete() never changes BPM. It counts loops and, once
  *              roundsPerLevel is reached, raises `readyToAdvance`. The consumer
  *              calls advanceLevel() when the user taps "Level Up". Self-paced.
+ * - "target":  creeps up by `smoothStep` every loop (like smooth) but toward a
+ *              user-set `targetBpm` instead of the hard cap. On reaching the goal
+ *              the session ends at that tempo and `reachedTarget` is raised — a
+ *              finish line, so the fill bar reads as real start→goal progress.
  */
 
-export type ProgressionMode = "smooth" | "stepped" | "manual";
+export type ProgressionMode = "smooth" | "stepped" | "manual" | "target";
 
 export interface TempoPracticeConfig {
   /** Starting BPM (default: 15) */
@@ -33,6 +37,8 @@ export interface TempoPracticeConfig {
   roundsPerLevel: number;
   /** Optional maximum BPM cap (default: 300) */
   maxBpm: number;
+  /** Target mode: climb to this BPM, then stop + celebrate (default: 60) */
+  targetBpm: number;
   /** How the ramp progresses (default: "smooth") */
   progressionMode: ProgressionMode;
 }
@@ -66,6 +72,11 @@ export interface TempoPracticeProgress {
   maxBpm: number;
   /** Smooth mode per-loop BPM gain — surfaced for the bar's caption */
   smoothStep: number;
+  /** Effective ceiling: the goal BPM in target mode, else the maxBpm cap.
+   *  Drives the bar's at-ceiling disable and the target-mode fill. */
+  targetBpm: number;
+  /** Target mode only: the goal BPM has been reached (session complete). */
+  reachedTarget: boolean;
 }
 
 const DEFAULT_CONFIG: TempoPracticeConfig = {
@@ -74,6 +85,7 @@ const DEFAULT_CONFIG: TempoPracticeConfig = {
   smoothStep: 1,
   roundsPerLevel: 5,
   maxBpm: 300,
+  targetBpm: 60,
   progressionMode: "smooth",
 };
 
@@ -110,6 +122,25 @@ export class TempoPracticeOrchestrator {
     this.held = held;
   }
 
+  /** Switch the ramp mode live without restarting (preserves currentBpm). */
+  setProgressionMode(mode: ProgressionMode): void {
+    this.config.progressionMode = mode;
+    this.currentRound = 0;
+    this.readyToAdvance = false;
+  }
+
+  /** Set the target-mode goal BPM live (clamped above the start tempo). */
+  setTargetBpm(bpm: number): void {
+    this.config.targetBpm = Math.max(this.config.startBpm + 1, Math.min(bpm, this.config.maxBpm));
+  }
+
+  /** The ceiling the climb stops at: the goal in target mode, else the cap. */
+  private effectiveCeiling(): number {
+    return this.config.progressionMode === "target"
+      ? Math.min(this.config.targetBpm, this.config.maxBpm)
+      : this.config.maxBpm;
+  }
+
   stop(): number {
     const finalBpm = this.currentBpm;
     this.active = false;
@@ -136,8 +167,9 @@ export class TempoPracticeOrchestrator {
 
     this.totalRoundsCompleted++;
 
-    // Smooth: creep up every loop. No level boundary to wait for.
-    if (this.config.progressionMode === "smooth") {
+    // Smooth + target both creep up by smoothStep every loop. Target stops once
+    // it reaches the goal (enforced by the effective ceiling in stepBpm).
+    if (this.config.progressionMode === "smooth" || this.config.progressionMode === "target") {
       return this.stepBpm(this.config.smoothStep);
     }
 
@@ -187,7 +219,7 @@ export class TempoPracticeOrchestrator {
     const target = this.currentBpm + delta;
     const clamped = Math.max(
       this.config.startBpm,
-      Math.min(target, this.config.maxBpm)
+      Math.min(target, this.effectiveCeiling())
     );
 
     if (clamped === this.currentBpm) {
@@ -196,6 +228,14 @@ export class TempoPracticeOrchestrator {
     }
 
     this.currentBpm = clamped;
+    // Target mode: landing on the goal ends the session at that tempo.
+    if (
+      delta > 0 &&
+      this.config.progressionMode === "target" &&
+      this.currentBpm >= this.effectiveCeiling()
+    ) {
+      this.active = false;
+    }
     return this.currentBpm;
   }
 
@@ -221,7 +261,7 @@ export class TempoPracticeOrchestrator {
       roundsPerLevel: this.config.roundsPerLevel,
       // Derived from BPM — never an independent counter that can desync.
       currentLevel:
-        mode === "smooth"
+        mode === "smooth" || mode === "target"
           ? 0
           : Math.max(
               0,
@@ -236,6 +276,9 @@ export class TempoPracticeOrchestrator {
       startBpm: this.config.startBpm,
       maxBpm: this.config.maxBpm,
       smoothStep: this.config.smoothStep,
+      targetBpm: this.effectiveCeiling(),
+      reachedTarget:
+        mode === "target" && this.currentBpm >= this.effectiveCeiling(),
     };
   }
 }

@@ -51,6 +51,8 @@ export function createTempoPracticeState() {
     startBpm: 15,
     maxBpm: 300,
     smoothStep: 1,
+    targetBpm: 60,
+    reachedTarget: false,
   });
 
   // Completion message state
