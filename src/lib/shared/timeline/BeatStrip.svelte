@@ -42,7 +42,7 @@
   const BUFFER = 3;
   const HERO_SCALE = 1.32;
   const STRIDE = $derived(cellSize + GAP);
-  const FRAME = $derived(cellSize + 26); // gold frame hugs the enlarged hero
+  const FRAME = $derived(Math.round(cellSize * HERO_SCALE) + 3); // gold frame hugs the scaled hero (cellSize 72 → 98)
   const viewportHeight = $derived(FRAME + 26); // headroom above/below the hero
 
   let currentStepNumber = $derived(Math.floor(currentStep ?? 0));
@@ -121,7 +121,7 @@
             class="beat-cell"
             class:start-cell={cell.isStart}
             class:is-focus={dist === 0}
-            class:clickable={onCellClick !== null}
+            class:clickable={!!onCellClick}
             style="opacity: {cellOpacity(dist)}"
             role={onCellClick ? "button" : undefined}
             tabindex={onCellClick ? 0 : undefined}
