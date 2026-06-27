@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
+	import { renderMandalaSVG, renderMandalaToCanvas } from "$lib/shared/mandala/services/mandala-renderer";
 	import { onMount } from "svelte";
 	import { cubicInOut } from "svelte/easing";
 	import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
@@ -11,9 +11,12 @@
 		MandalaPathShape,
 		UndulationEasing,
 	} from "../domain/mandala-types";
+	import { DEFAULT_OVERLAP_CONFIG } from "../domain/mandala-types";
 	import {
 		MANDALA_DEFAULT_SIZE,
 		MANDALA_STANDARD_TIP_DX,
+		MANDALA_GRID_RADIUS,
+		ENGINE_GRID_RADIUS,
 		DARK_MOTION_BLUE_STROKE,
 		DARK_MOTION_RED_STROKE,
 		DARK_MOTION_BLUE_FILL,
@@ -158,6 +161,20 @@
 	let animatedDx: number = $state(MANDALA_STANDARD_TIP_DX);
 	let rotationDeg: number = $state(0);
 	let rafId: number = 0;
+
+	// Live render target. While animating (undulation or shape-morph) the mandala
+	// is painted to a persistent <canvas> via renderMandalaToCanvas — the same
+	// Path2D + single-shadow-blur renderer the MP4 export uses — instead of
+	// re-serializing the full SVG string and re-parsing it through {@html} every
+	// frame. {@html} tore down and rebuilt the entire filtered SVG subtree (three
+	// feGaussianBlur filters + mask + bloom) 60×/sec, which is what made the
+	// animation stutter. Static consumers (gallery, card back, guide) never set
+	// `animate`, so they keep the unchanged SVG-string path.
+	const GLOW_STDDEV = 3;
+	let canvasEl: HTMLCanvasElement | undefined = $state();
+	// Reused offscreen scratch for the glow + purple-overlap mask passes, sized to
+	// the device-pixel backing store, so the hot loop allocates nothing per frame.
+	let scratch: { a: OffscreenCanvas; b: OffscreenCanvas } | null = null;
 
 	// Fixed reference period (seconds) for rotation. animateRotation is "degrees
 	// per this many seconds" — independent of the undulation period. Matches the
@@ -307,13 +324,83 @@
 		};
 	});
 
+	// Canvas while motion is live (undulation or shape-morph), SVG when fully
+	// static. `svgString` is lazy — it isn't read in the canvas branch, so the
+	// expensive SVG-string build is skipped entirely during animation.
+	const useCanvas = $derived(animate || activeMorph !== null);
+
 	const svgString = $derived.by((): string => {
-		if (!paths) return "";
+		if (useCanvas || !paths) return "";
 		return renderMandalaSVG(paths, renderOptions);
+	});
+
+	// Paint the canvas whenever any visual input changes. During animation
+	// `paths` (driven by animatedDx) and `palette`/`gradient` (driven by the
+	// controller's color loop) produce fresh values each frame, so this effect
+	// re-runs ~once per frame and redraws. Rotation is intentionally NOT read
+	// here — it stays a CSS transform on the wrapper (compositor-cheap, never
+	// forces a canvas repaint).
+	$effect(() => {
+		if (!useCanvas) return;
+		const canvas = canvasEl;
+		const p = paths;
+		if (!canvas || !p) return;
+		const opts = renderOptions;
+
+		const ratio =
+			typeof window !== "undefined"
+				? Math.min(3, Math.max(1, window.devicePixelRatio || 1))
+				: 1;
+		const device = Math.max(1, Math.round(size * ratio));
+		if (canvas.width !== device || canvas.height !== device) {
+			canvas.width = device;
+			canvas.height = device;
+		}
+
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+
+		// Persistent device-sized scratch for the glow/mask passes (allocate only
+		// on first paint or size change).
+		if (typeof OffscreenCanvas !== "undefined") {
+			if (!scratch || scratch.a.width !== device || scratch.a.height !== device) {
+				scratch = { a: new OffscreenCanvas(device, device), b: new OffscreenCanvas(device, device) };
+			}
+		}
+
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+		ctx.clearRect(0, 0, device, device);
+		ctx.scale(ratio, ratio);
+
+		// Device-space glow blur that matches the SVG `#glow` feGaussianBlur, whose
+		// stdDeviation lives inside the scaled <g> (so its device size is
+		// stdDeviation × renderScale × dpr). Mirrors mandala-frame-renderer.
+		const effTip = Math.max(opts.tipDx ?? MANDALA_STANDARD_TIP_DX, MANDALA_STANDARD_TIP_DX);
+		const tipReach = (effTip * MANDALA_GRID_RADIUS) / ENGINE_GRID_RADIUS;
+		const renderScale = size / 2 / ((MANDALA_GRID_RADIUS + tipReach) * 1.05);
+
+		renderMandalaToCanvas(ctx, p, {
+			...opts,
+			size,
+			glow: {
+				blur: GLOW_STDDEV * renderScale * ratio,
+				bloomBlur: DEFAULT_OVERLAP_CONFIG.bloomBlur * renderScale * ratio,
+			},
+			offsetX: 0,
+			offsetY: 0,
+			maskScratch: scratch ?? undefined,
+		});
 	});
 </script>
 
-{#if svgString}
+{#if useCanvas}
+	<div
+		class="mandala-container"
+		style="width: {size}px; height: {size}px; transform: rotate({rotationDeg}deg);"
+	>
+		<canvas bind:this={canvasEl} class="mandala-canvas"></canvas>
+	</div>
+{:else if svgString}
 	<div
 		class="mandala-container"
 		style="width: {size}px; height: {size}px; transform: rotate({rotationDeg}deg);"
@@ -333,5 +420,11 @@
 	.mandala-container :global(svg) {
 		width: 100%;
 		height: 100%;
+	}
+
+	.mandala-canvas {
+		width: 100%;
+		height: 100%;
+		display: block;
 	}
 </style>
