@@ -452,7 +452,11 @@
     align-items: center;
     justify-content: center;
     gap: 0;
+    /* dvh tracks the *real* visible viewport as the browser's tab strip + URL bar
+       (and a foldable unfold) show/hide — 100vh would size to the chrome-retracted
+       height, pushing the "Open the app" link below the fold. vh is the fallback. */
     min-height: 100vh;
+    min-height: 100dvh;
     box-sizing: border-box;
     /* Top padding clears the fixed SiteHeader (64px) so the tagline isn't hidden. */
     padding: clamp(84px, 11vh, 108px) 24px 40px;
@@ -526,7 +530,9 @@
     /* Explicit width (not 100%) so the shrink-wrapped column can't collapse it.
        Height term tuned so the whole hero (title→links) fits a laptop fold. */
     width: min(34vw, 36vh / 0.8);
+    width: min(34vw, 36dvh / 0.8);
     max-height: calc(100vh - 200px);
+    max-height: calc(100dvh - 200px);
     aspect-ratio: 4 / 5;
     border-radius: 16px;
     overflow: hidden;
@@ -874,6 +880,7 @@
       border-radius: 12px;
       width: 100%;
       max-width: min(92vw, 58vh / 0.8);
+      max-width: min(92vw, 58dvh / 0.8);
       max-height: calc(100dvh - 260px);
       margin: 0 auto;
     }

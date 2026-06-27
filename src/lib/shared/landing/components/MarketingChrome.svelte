@@ -41,11 +41,7 @@
 
     <div class="mkt-stage">
       {#key path}
-        <div
-          class="mkt-content"
-          in:fade|global={{ duration: 240, delay: 120 }}
-          out:fade|global={{ duration: 120 }}
-        >
+        <div class="mkt-content" in:fade|global={{ duration: 200 }}>
           {@render children()}
         </div>
       {/key}

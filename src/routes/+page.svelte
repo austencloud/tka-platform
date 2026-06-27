@@ -317,13 +317,6 @@
     overflow-x: hidden;
   }
 
-
-  .background-layer {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-  }
-
   .content-layer {
     position: relative;
     z-index: 1;

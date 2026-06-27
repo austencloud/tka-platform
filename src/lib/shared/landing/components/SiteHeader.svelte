@@ -11,6 +11,7 @@
    * cross from the chrome-less public pages into the app shell.
    */
   import { page } from "$app/state";
+  import { afterNavigate, preloadData } from "$app/navigation";
   import { onMount, type Component } from "svelte";
   import RobustAvatar from "../../components/avatar/RobustAvatar.svelte";
   import type { authState as AuthStateModule } from "../../auth/state/auth-state.svelte";
@@ -144,6 +145,26 @@
     mobileOpen = false;
   }
 
+  // Close the mobile menu only AFTER navigation lands — not on tap. Closing on
+  // tap snapped the overlay shut to reveal the OLD page, then the keyed
+  // content crossfade (MarketingChrome) played old→new behind it, so you saw
+  // the page you left flash back before the transition. Holding the overlay up
+  // through navigation lets it stay covering the old page and fade away onto
+  // the NEW one — straight from the menu into the destination.
+  afterNavigate(() => {
+    mobileOpen = false;
+    accountOpen = false;
+  });
+
+  // The moment the menu opens, warm every destination (code + data) so the tap
+  // navigates instantly — the page is already in memory, no load wait before
+  // the curtain reveals it. preloadData is idempotent/cached, so re-opening is
+  // free. Lightweight marketing routes, so eagerly warming all of them is cheap.
+  $effect(() => {
+    if (!mobileOpen) return;
+    for (const link of NAV) void preloadData(link.href).catch(() => {});
+  });
+
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
       if (accountOpen) accountOpen = false;
@@ -246,7 +267,7 @@
     <ul class="m-list">
       {#each NAV as link, i}
         <li style="--i:{i}">
-          <a href={link.href} class:active={isActive(link.href)} onclick={close}>
+          <a href={link.href} class:active={isActive(link.href)}>
             <i class="fas {link.icon} m-icon" aria-hidden="true"></i>
             <span class="m-label">{link.label}</span>
             <i class="fas fa-chevron-right m-chev" aria-hidden="true"></i>

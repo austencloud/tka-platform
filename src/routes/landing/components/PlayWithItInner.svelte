@@ -34,6 +34,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import SequenceProgressBar from "$lib/shared/animation-engine/components/layers/SequenceProgressBar.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // ── Factory state ──────────────────────────────────────────────────────────
@@ -359,7 +360,22 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
                 previewDarkMode={true}
                 visibilityManagerOverride={visibilityManager}
                 effectsConfigState={effectsConfigState}
+                onPlaybackToggle={togglePlayPause}
+                tapToToggle={true}
+                hideProgressBar={true}
               />
+              {#if playback?.animationState?.sequenceData?.steps?.length}
+                <!-- Minimal export-style progress line: the same thin colored bar
+                     baked into downloaded videos (no scrubber knob, no play button,
+                     no per-beat notches). Play/pause is the canvas tap above. -->
+                <div class="mini-progress">
+                  <SequenceProgressBar
+                    currentStep={playback?.animationState?.currentStep ?? 0}
+                    totalSteps={playback.animationState.sequenceData.steps.length}
+                    darkMode={true}
+                  />
+                </div>
+              {/if}
             </div>
           {:else if animationError}
             <div class="canvas-placeholder">
@@ -493,9 +509,27 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   }
 
   .canvas-wrapper {
+    position: relative;
     width: 100%;
     height: 100%;
     overflow: hidden;
+  }
+
+  /* Export-style progress line pinned to the very bottom of the canvas frame —
+     the same thin colored bar baked into downloaded videos. Display-only
+     (pointer-events off so the canvas tap-to-play still fires through it). */
+  .mini-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .mini-progress :global(.progress-bar-container) {
+    background: transparent;
+    padding: 0 10px 6px;
   }
 
   .canvas-placeholder {

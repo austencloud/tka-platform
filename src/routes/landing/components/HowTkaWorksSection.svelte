@@ -457,47 +457,30 @@
     text-align: center;
   }
 
-  /* Narrow: keep the row, let it scroll horizontally with snap points */
+  /* Tablet: 3 across, 2 rows. The progression wraps onto a second row instead
+     of scrolling sideways — every step stays on screen. */
   @media (max-width: 1100px) {
     .cards-row {
-      display: flex;
-      overflow-x: auto;
-      scroll-snap-type: x proximity;
-      -webkit-overflow-scrolling: touch;
+      grid-template-columns: repeat(3, 1fr);
       gap: 14px;
-      padding: 14px 4px 18px;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
-    }
-
-    .cards-row::-webkit-scrollbar {
-      height: 4px;
-    }
-    .cards-row::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    .cards-row::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.12);
-      border-radius: 2px;
-    }
-
-    .step-card {
-      flex: 0 0 220px;
-      scroll-snap-align: center;
     }
   }
 
-  @media (max-width: 680px) {
+  /* Phone: 2 across, 3 rows. All six steps fit the viewport — no left/right
+     scroll. Reads top-to-bottom: grid → hands → props → motion → sequence →
+     animation. */
+  @media (max-width: 640px) {
     .how-tka-works {
       padding: 48px 16px;
     }
 
-    .step-card {
-      flex: 0 0 200px;
+    .cards-row {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
     }
 
-    .pictograph-frame {
-      max-width: 180px;
+    .step-card {
+      padding: 20px 12px 16px;
     }
   }
 
