@@ -19,6 +19,7 @@ import type {
   GalleryCacheEntry,
   GalleryCacheMeta,
 } from "$lib/shared/offline/domain/offline-cache-types";
+import type { GeneratedMandalaEntry } from "$lib/shared/mandala/domain/mandala-pool-types";
 import {
   DATABASE_NAME,
   DATABASE_VERSION,
@@ -56,6 +57,9 @@ export class TKADatabase extends Dexie {
   // Offline cache tables (v6)
   galleryCache!: EntityTable<GalleryCacheEntry, "id">;
   galleryCacheMeta!: EntityTable<GalleryCacheMeta, "id">;
+
+  // Mandala loader pool (v8)
+  generatedMandalaPool!: EntityTable<GeneratedMandalaEntry, "id">;
 
   constructor() {
     super(DATABASE_NAME);
@@ -116,6 +120,7 @@ export async function clearAllData(): Promise<void> {
       db.compositions,
       db.galleryCache,
       db.galleryCacheMeta,
+      db.generatedMandalaPool,
     ],
     async () => {
       await db.sequences.clear();
@@ -128,6 +133,7 @@ export async function clearAllData(): Promise<void> {
       await db.compositions.clear();
       await db.galleryCache.clear();
       await db.galleryCacheMeta.clear();
+      await db.generatedMandalaPool.clear();
     }
   );
 }
@@ -146,6 +152,7 @@ export async function getDatabaseInfo(): Promise<{
   compositions: number;
   galleryCache: number;
   galleryCacheMeta: number;
+  generatedMandalaPool: number;
 }> {
   const info = {
     sequences: await db.sequences.count(),
@@ -161,6 +168,8 @@ export async function getDatabaseInfo(): Promise<{
     // Offline cache stats (v6)
     galleryCache: await db.galleryCache.count(),
     galleryCacheMeta: await db.galleryCacheMeta.count(),
+    // Mandala loader pool (v8)
+    generatedMandalaPool: await db.generatedMandalaPool.count(),
   };
   return info;
 }

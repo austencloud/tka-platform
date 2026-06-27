@@ -23,8 +23,10 @@ export const DATABASE_NAME = "TKADatabase";
  * Version 6: Added galleryCache and galleryCacheMeta tables for offline browse gallery
  * Version 7: Removed the gamification tables (XP/achievement/challenge/streak system
  *            torn out). Dexie drops the object stores omitted from this schema.
+ * Version 8: Added generatedMandalaPool — bounded pool of locally-generated
+ *            sequences for the in-app MandalaLoader (drop-oldest at cap).
  */
-export const DATABASE_VERSION = 7;
+export const DATABASE_VERSION = 8;
 
 // ============================================================================
 // TABLE NAMES
@@ -44,6 +46,8 @@ export const TABLE_NAMES = {
   // Offline cache tables (v6)
   GALLERY_CACHE: "galleryCache",
   GALLERY_CACHE_META: "galleryCacheMeta",
+  // Mandala loader pool (v8)
+  GENERATED_MANDALA_POOL: "generatedMandalaPool",
 } as const;
 
 // ============================================================================
@@ -73,6 +77,8 @@ export const TABLE_INDEXES = {
   // Offline cache tables (v6)
   [TABLE_NAMES.GALLERY_CACHE]: "id, data.word, data.ownerId, cachedAt",
   [TABLE_NAMES.GALLERY_CACHE_META]: "id",
+  // Mandala loader pool (v8) — id is a supplied uuid, not auto-increment
+  [TABLE_NAMES.GENERATED_MANDALA_POOL]: "id, generatedAt",
 } as const;
 
 // ============================================================================
