@@ -112,11 +112,13 @@
     {#if Built}<Built />{:else}<PagePlaceholder />{/if}
   {/snippet}
   <!-- A rebuilt body page paints its OWN layout edge-to-edge (faithful to the
-       proof PDF, title included), so it gets fullBleed + no GuidePage header.
-       Unbuilt pages keep the standard header + placeholder. -->
+       proof PDF), so it gets fullBleed. The title ALWAYS comes from the manifest
+       (entry.title) and is rendered by GuidePage — so a page's heading and its
+       TOC row are the exact same string and can never drift. Unbuilt pages keep
+       the standard header + placeholder. -->
   {@render page({
     kind: "body",
-    title: isBuilt ? undefined : entry.title,
+    title: entry.title,
     fullBleed: isBuilt,
     pageNumber: i + 1,
     label: `body p${i + 1}: ${entry.title}`,

@@ -41,7 +41,8 @@
 <section class="guide-page" class:full-bleed={fullBleed}>
   {#if label && !fullBleed}<span class="page-tag" aria-hidden="true">{label}</span>{/if}
   <div class="page-body">
-    {#if title}
+    {#if title && !fullBleed}
+      <!-- Front matter (TOC, Read Me…): title in the serif header band + flourish. -->
       <header class="page-header">
         <h1 class="page-header-title">{title}</h1>
         <span class="page-header-flourish" aria-hidden="true"></span>
@@ -51,6 +52,12 @@
       {@render children()}
     </div>
   </div>
+  {#if title && fullBleed}
+    <!-- Body page: the manifest title in the shared calligraphic .guide-title,
+         positioned high on the sheet. Rendered HERE (from the manifest) instead
+         of hand-written per page, so the heading and the TOC row can't drift. -->
+    <div class="guide-title">{title}</div>
+  {/if}
   {#if showNumber}
     <span class="page-number" class:recto class:verso={!recto}>{pageNumber}</span>
   {/if}

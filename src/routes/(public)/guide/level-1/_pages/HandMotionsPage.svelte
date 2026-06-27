@@ -231,8 +231,6 @@
     </span>
   {/each}
 
-  <div class="guide-title">Hand Motions</div>
-
   {#each RUNS as r}
     <span
       class="run"

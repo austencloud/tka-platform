@@ -162,8 +162,6 @@
     </div>
   {/each}
 
-  <div class="guide-title">The Grid</div>
-
   {#each RUNS as r}
     <span
       class="run"

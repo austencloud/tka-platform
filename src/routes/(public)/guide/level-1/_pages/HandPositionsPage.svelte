@@ -177,8 +177,6 @@
     <div class="rule" style="left:{64.4 * S}px; top:{dy * S}px; width:{491.6 * S}px"></div>
   {/each}
 
-  <div class="guide-title">Hand Positions</div>
-
   {#each RUNS as r}
     <span
       class="run"
