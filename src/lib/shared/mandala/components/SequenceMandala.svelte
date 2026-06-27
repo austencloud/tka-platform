@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { renderMandalaSVG, renderMandalaToCanvas } from "$lib/shared/mandala/services/mandala-renderer";
-	import { onMount } from "svelte";
+	import { onMount, untrack } from "svelte";
 	import { cubicInOut } from "svelte/easing";
 	import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 	import type {
@@ -171,6 +171,14 @@
 	// animation stutter. Static consumers (gallery, card back, guide) never set
 	// `animate`, so they keep the unchanged SVG-string path.
 	const GLOW_STDDEV = 3;
+	// Backing-store scale over the canvas's true displayed CSS size. 1.0 = native
+	// device pixels (sharp as the display allows). The prior bug rendered from the
+	// `size` prop, which is smaller than the stretched canvas in fill/framed
+	// layouts, so the backing fell BELOW native and was upscaled → "low res".
+	// Driving it from clientWidth fixes that. Raise SUPERSAMPLE >1 for extra
+	// edge AA at quadratic cost; MAX_BACKING caps pixel count on huge panes.
+	const SUPERSAMPLE = 1;
+	const MAX_BACKING = 2160;
 	let canvasEl: HTMLCanvasElement | undefined = $state();
 	// Reused offscreen scratch for the glow + purple-overlap mask passes, sized to
 	// the device-pixel backing store, so the hot loop allocates nothing per frame.
@@ -220,6 +228,9 @@
 			if (start === null) start = ts;
 			const lin = Math.min(1, (ts - start) / MORPH_MS);
 			activeMorph = { from, t: EASING_FNS.bloom(lin) };
+			// When animating, the undulation rAF already draws every frame; only
+			// paint from here for a morph that runs while otherwise static.
+			if (!animate) draw();
 			if (lin < 1) {
 				morphRafId = requestAnimationFrame(stepMorph);
 			} else {
@@ -267,6 +278,10 @@
 				// never changes how fast the mandala spins.
 				rotationDeg += (dtSec / ROTATION_REF_PERIOD) * animateRotation;
 			}
+
+			// Single per-frame canvas paint (also covers an in-flight shape morph,
+			// which the morph rAF therefore skips while we're animating).
+			draw();
 
 			rafId = requestAnimationFrame(tick);
 		}
@@ -334,24 +349,39 @@
 		return renderMandalaSVG(paths, renderOptions);
 	});
 
-	// Paint the canvas whenever any visual input changes. During animation
-	// `paths` (driven by animatedDx) and `palette`/`gradient` (driven by the
-	// controller's color loop) produce fresh values each frame, so this effect
-	// re-runs ~once per frame and redraws. Rotation is intentionally NOT read
-	// here — it stays a CSS transform on the wrapper (compositor-cheap, never
-	// forces a canvas repaint).
-	$effect(() => {
-		if (!useCanvas) return;
+	// Paint the canvas ONCE for the current state. Called exactly once per frame
+	// from the single animation rAF (and once from the morph rAF when not
+	// otherwise animating), so the canvas redraws at the display refresh rate,
+	// vsync-aligned — never from a reactive effect, which fired separately for the
+	// undulation loop AND the controller's color loop and double-drew the canvas
+	// off-vsync (the residual judder). Rotation is intentionally NOT painted here;
+	// it stays a CSS transform on the wrapper (compositor-cheap, no repaint).
+	function draw(): void {
 		const canvas = canvasEl;
+		if (!canvas) return;
 		const p = paths;
-		if (!canvas || !p) return;
+		if (!p) return;
 		const opts = renderOptions;
 
-		const ratio =
+		// Resolution: derive the backing store from the canvas's ACTUAL displayed
+		// box (clientWidth), not the `size` prop. In layouts that CSS-stretch the
+		// canvas past `size` (device frames, flex fills), `size * dpr` under-resolves
+		// — backing fell below native and the raster was upscaled, which read as
+		// "low res". `logicalSize` is the true on-screen size; SUPERSAMPLE renders
+		// above native so raster edges approach the old SVG's vector crispness.
+		// MAX_BACKING caps the pixel count so the per-frame raster (glow is the
+		// expensive part) stays within the 60fps budget on the largest panes.
+		const dpr =
 			typeof window !== "undefined"
 				? Math.min(3, Math.max(1, window.devicePixelRatio || 1))
 				: 1;
-		const device = Math.max(1, Math.round(size * ratio));
+		// True rendered size in CSS px — getBoundingClientRect reflects any CSS
+		// transform/zoom on an ancestor (e.g. a scaled device frame), so the backing
+		// matches what's actually on screen even there. Falls back to the prop.
+		const logicalSize = Math.max(1, Math.round(canvas.getBoundingClientRect().width) || size);
+		const device = Math.min(MAX_BACKING, Math.max(1, Math.round(logicalSize * dpr * SUPERSAMPLE)));
+		// Logical→device scale (folds in dpr + supersample + any CSS stretch).
+		const ratio = device / logicalSize;
 		if (canvas.width !== device || canvas.height !== device) {
 			canvas.width = device;
 			canvas.height = device;
@@ -374,14 +404,14 @@
 
 		// Device-space glow blur that matches the SVG `#glow` feGaussianBlur, whose
 		// stdDeviation lives inside the scaled <g> (so its device size is
-		// stdDeviation × renderScale × dpr). Mirrors mandala-frame-renderer.
+		// stdDeviation × renderScale × ratio). Mirrors mandala-frame-renderer.
 		const effTip = Math.max(opts.tipDx ?? MANDALA_STANDARD_TIP_DX, MANDALA_STANDARD_TIP_DX);
 		const tipReach = (effTip * MANDALA_GRID_RADIUS) / ENGINE_GRID_RADIUS;
-		const renderScale = size / 2 / ((MANDALA_GRID_RADIUS + tipReach) * 1.05);
+		const renderScale = logicalSize / 2 / ((MANDALA_GRID_RADIUS + tipReach) * 1.05);
 
 		renderMandalaToCanvas(ctx, p, {
 			...opts,
-			size,
+			size: logicalSize,
 			glow: {
 				blur: GLOW_STDDEV * renderScale * ratio,
 				bloomBlur: DEFAULT_OVERLAP_CONFIG.bloomBlur * renderScale * ratio,
@@ -390,6 +420,16 @@
 			offsetY: 0,
 			maskScratch: scratch ?? undefined,
 		});
+	}
+
+	// First paint + resize for the canvas. Tracks ONLY useCanvas/canvasEl/size;
+	// the actual draw() reads (paths/palette/…) are untracked so this never
+	// re-fires per frame — the rAF loops own per-frame redraws.
+	$effect(() => {
+		if (!useCanvas) return;
+		void canvasEl;
+		void size;
+		untrack(() => draw());
 	});
 </script>
 
