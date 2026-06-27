@@ -1,0 +1,32 @@
+{
+  "rules": [
+    {
+      "id": "app-and-local-dev-uploads",
+      "allowed": {
+        "origins": [
+          "https://tkaflowarts.com",
+          "https://www.tkaflowarts.com",
+          "https://localhost:5173",
+          "https://localhost:5174",
+          "http://localhost:5173",
+          "http://localhost:5174",
+          "capacitor://localhost",
+          "https://localhost"
+        ],
+        "methods": ["PUT", "GET", "HEAD"],
+        "headers": ["Content-Type", "Content-Length"]
+      },
+      "exposeHeaders": ["ETag"],
+      "maxAgeSeconds": 3600
+    },
+    {
+      "id": "public-read-any-origin",
+      "allowed": {
+        "origins": ["*"],
+        "methods": ["GET", "HEAD"],
+        "headers": ["Content-Type", "Content-Length"]
+      },
+      "maxAgeSeconds": 3600
+    }
+  ]
+}
