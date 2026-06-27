@@ -146,6 +146,9 @@ export class Zap2DRenderer {
     const regenEvery = Math.max(1, Math.round(60 / Math.max(0.1, params.frequency)));
     const inStrike = this.frameCount % regenEvery < Math.max(1, regenEvery * 0.4);
     const strike = inStrike ? 1 : 0.35;
+    // Path-roughness factor: jitter 0.5 ≈ the original look, 0 = nearly straight,
+    // 1 = wild forks.
+    const jf = 0.35 + params.jitter * 1.3;
 
     for (const bolt of bolts) {
       const { A, B, energy } = bolt;
@@ -156,7 +159,7 @@ export class Zap2DRenderer {
       for (let s = 0; s < strikes; s++) {
         const alpha = clamp01(params.intensity * strike * rnd(0.7, 1));
         const pts: Pt[] = [{ x: A.x, y: A.y }];
-        this.jag(A, B, Math.min(dist * 0.28, 70), pts);
+        this.jag(A, B, Math.min(dist * 0.28, 70) * jf, pts);
         this.strokeBolt(ctx, pts, params.lineWidth, params.glowBlur, params.leftColor, grad, alpha, scale);
 
         // Forks: count from the branching param plus motion energy.
@@ -168,7 +171,7 @@ export class Zap2DRenderer {
           const len = dist * rnd(0.12, 0.32);
           const end = { x: o.x + Math.cos(ang) * len, y: o.y + Math.sin(ang) * len };
           const bp: Pt[] = [{ x: o.x, y: o.y }];
-          this.jag(o, end, Math.min(len * 0.3, 28), bp);
+          this.jag(o, end, Math.min(len * 0.3, 28) * jf, bp);
           this.strokeBolt(ctx, bp, params.lineWidth * 0.6, params.glowBlur * 0.7, params.leftColor, grad, alpha * 0.6, scale);
         }
       }
@@ -186,14 +189,32 @@ export class Zap2DRenderer {
     bolts: ZapBolt[],
     scale: number,
   ): void {
-    for (const bolt of bolts) {
-      const { A, B, energy } = bolt;
+    // Smooth temporal phase (frame-driven). wobbleRate maps 0..1 → calm..lively;
+    // even at 1 it's a controlled undulation, never the old per-frame strobe.
+    const tBase = this.frameCount * (0.02 + params.wobbleRate * 0.22);
+
+    for (let bi = 0; bi < bolts.length; bi++) {
+      const { A, B, energy } = bolts[bi]!;
+      const dx = B.x - A.x;
+      const dy = B.y - A.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const perpX = -dy / len; // unit vector perpendicular to the bolt axis
+      const perpY = dx / len;
+      const midX = (A.x + B.x) / 2;
+      const midY = (A.y + B.y) / 2;
+      const amp = params.wobbleAmount * (10 + energy * 26) * scale;
 
       // 3 overlapping wobbling conduits: bright white core + colored sheaths.
       for (let layer = 0; layer < 3; layer++) {
-        const wob = (18 + energy * 30) * scale;
-        const mx = (A.x + B.x) / 2 + rnd(-wob, wob);
-        const my = (A.y + B.y) / 2 + rnd(-wob, wob);
+        // Per-bolt + per-layer phase offsets so bolts decorrelate and the three
+        // conduits braid rather than overlap. Bow is a smooth two-octave sine
+        // displaced perpendicular to the axis; jitter feeds the crackle octave.
+        const phase = tBase + bi * 1.7 + layer * 2.3;
+        const bow =
+          Math.sin(phase) * amp +
+          Math.sin(phase * 1.9 + 0.6) * amp * 0.35 * (0.5 + params.jitter);
+        const mx = midX + perpX * bow;
+        const my = midY + perpY * bow;
         ctx.save();
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = (params.glowBlur * 2 - layer * 8) * scale;
@@ -266,6 +287,7 @@ export class Zap2DRenderer {
     const maxSpeed = nodes.reduce((m, n) => Math.max(m, n.speed), 0);
     const energy = clamp01(maxSpeed / REF_SPEED);
     this.webPulse = (this.webPulse + 0.012 + energy * 0.03) % 1;
+    const jf = 0.35 + params.jitter * 1.3; // edge-roughness, jitter 0.5 ≈ original
 
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
@@ -277,7 +299,7 @@ export class Zap2DRenderer {
         const col = sameProp ? (nodes[i]!.isBlue ? params.leftColor : params.rightColor) : "#9d7bff";
 
         const pts: Pt[] = [{ x: A.x, y: A.y }];
-        this.jag(A, B, Math.min(dist * 0.18, 34), pts);
+        this.jag(A, B, Math.min(dist * 0.18, 34) * jf, pts);
         const width = sameProp ? params.lineWidth * 0.8 : params.lineWidth * 0.55;
         const alpha = clamp01(params.intensity * (sameProp ? 0.8 : 0.5));
         this.strokeBolt(ctx, pts, width, params.glowBlur * 0.7, col, null, alpha, scale);

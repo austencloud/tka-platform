@@ -18,19 +18,31 @@ import type {
 import { SMOKE_PALETTES } from "../domain/smoke-palettes";
 
 describe("resolveZap2D - per-hand color", () => {
+  const baseIntent = (): ZapIntent => ({
+    intensity: 0.7,
+    leftColor: "#ff0000",
+    rightColor: "#0000ff",
+    frequency: 12,
+    mode: "arc",
+    branching: 0.3,
+    style: "branching",
+    wobbleRate: 0.18,
+    wobbleAmount: 0.5,
+    glow: 0.5,
+    jitter: 0.5,
+  });
+
   it("preserves leftColor and rightColor in the output params", () => {
-    const intent: ZapIntent = {
-      intensity: 0.7,
-      leftColor: "#ff0000",
-      rightColor: "#0000ff",
-      frequency: 12,
-      mode: "arc",
-      branching: 0.3,
-      style: "branching",
-    };
-    const out = resolveZap2D(intent);
+    const out = resolveZap2D(baseIntent());
     expect(out.leftColor).toBe("#ff0000");
     expect(out.rightColor).toBe("#0000ff");
+  });
+
+  it("derives glowBlur from the glow knob, not intensity", () => {
+    const dim = resolveZap2D({ ...baseIntent(), glow: 0, intensity: 1 });
+    const bright = resolveZap2D({ ...baseIntent(), glow: 1, intensity: 0 });
+    expect(bright.glowBlur).toBeGreaterThan(dim.glowBlur); // tracks glow…
+    expect(dim.glowBlur).toBe(6); // …and is independent of intensity (6 + glow*22)
   });
 });
 

@@ -17,6 +17,7 @@ export const ZAP_PRESETS: EffectPreset<"zap">[] = [
     patch: {
       intensity: 1.0, leftColor: "#c084fc", rightColor: "#7c3aed",
       frequency: 18, branching: 0.4, style: "plasma", mode: "arc",
+      wobbleRate: 0.16, wobbleAmount: 0.55, glow: 0.6, jitter: 0.35,
     },
   },
   {

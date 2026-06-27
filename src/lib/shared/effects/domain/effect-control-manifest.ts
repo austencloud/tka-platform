@@ -125,7 +125,11 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
       { value: "branching", label: "Storm" }, { value: "plasma", label: "Plasma" }, { value: "web", label: "Web" },
     ] },
     slider("zap", "frequency", "Frequency", { min: 1, max: 30, step: 1, pct: false, tier: "primary" }),
-    slider("zap", "branching", "Branching", { tier: "advanced" }),
+    slider("zap", "branching", "Branching", { tier: "advanced", showWhen: (i) => i.style === "branching" }),
+    slider("zap", "wobbleRate", "Wobble Rate", { tier: "advanced", showWhen: (i) => i.style === "plasma" }),
+    slider("zap", "wobbleAmount", "Wobble Amount", { tier: "advanced", showWhen: (i) => i.style === "plasma" }),
+    slider("zap", "glow", "Glow", { tier: "advanced" }),
+    slider("zap", "jitter", "Jitter", { tier: "advanced" }),
   ],
   sparkles: [
     { id: "sparkles-colormode", label: "Color", type: "segmented", field: "colorMode", tier: "primary", options: [

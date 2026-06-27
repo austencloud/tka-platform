@@ -228,6 +228,12 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // (form "ribbon", creature "snake", bodyLength 0.5, slither 0.5) via the merge
   // below, so every persisted silk config keeps its velocity ribbon.
 
+  // v23 → v24: zap gains tunable plasma wobble + glow/jitter —
+  // wobbleRate/wobbleAmount/glow/jitter. Net-new fields; absent values resolve
+  // to DEFAULT_EFFECTS_CONFIG.zap (wobbleRate 0.18, wobbleAmount 0.5, glow 0.5,
+  // jitter 0.5) via the merge below. The old plasma wobble was a hardcoded
+  // per-frame random; these make it a smooth controllable undulation.
+
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,

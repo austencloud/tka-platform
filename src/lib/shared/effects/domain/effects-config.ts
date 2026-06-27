@@ -14,7 +14,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 23;
+export const EFFECTS_CONFIG_VERSION = 24;
 
 export type EffectType =
   | "none"
@@ -122,6 +122,17 @@ export interface ZapIntent {
    * "web" = live mesh across every tip with charge pulses on the edges.
    */
   style: "branching" | "plasma" | "web";
+  /** 0-1 - plasma conduit undulation SPEED. Low = slow calm bow, high = lively
+   *  (never the per-frame strobe the old hardcoded random gave). */
+  wobbleRate: number;
+  /** 0-1 - plasma conduit bow AMPLITUDE (how far it bends off the axis). */
+  wobbleAmount: number;
+  /** 0-1 - glow halo size (drives shadowBlur). Decoupled from intensity so the
+   *  arc can be tightened or bloomed independently. */
+  glow: number;
+  /** 0-1 - bolt-path roughness. Scales the jagged midpoint displacement
+   *  (storm/web) and the plasma crackle octave. */
+  jitter: number;
 }
 
 export interface SparklesIntent {

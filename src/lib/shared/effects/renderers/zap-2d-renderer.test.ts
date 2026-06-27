@@ -7,6 +7,7 @@ function makeCtx() {
   const calls = { stroke: 0, fill: 0, quad: 0, arc: 0, fillRect: 0, linearGrad: 0, radialGrad: 0 };
   const strokeStyles: unknown[] = [];
   const lineWidths: number[] = [];
+  const quadPoints: { x: number; y: number }[] = [];
   let _stroke: unknown = "";
   let _lineWidth = 1;
 
@@ -24,7 +25,7 @@ function makeCtx() {
     beginPath: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
-    quadraticCurveTo: vi.fn(() => { calls.quad++; }),
+    quadraticCurveTo: vi.fn((cx: number, cy: number) => { calls.quad++; quadPoints.push({ x: cx, y: cy }); }),
     arc: vi.fn(() => { calls.arc++; }),
     fill: vi.fn(() => { calls.fill++; }),
     fillRect: vi.fn(() => { calls.fillRect++; }),
@@ -44,7 +45,7 @@ function makeCtx() {
       configurable: true, enumerable: true,
     },
   });
-  return { ctx: ctx as CanvasRenderingContext2D, calls, strokeStyles, lineWidths };
+  return { ctx: ctx as CanvasRenderingContext2D, calls, strokeStyles, lineWidths, quadPoints };
 }
 
 function makeParams(overrides: Partial<Zap2DParams> = {}): Zap2DParams {
@@ -56,6 +57,10 @@ function makeParams(overrides: Partial<Zap2DParams> = {}): Zap2DParams {
     mode: "arc",
     branching: 0,
     style: "branching",
+    wobbleRate: 0.18,
+    wobbleAmount: 0.5,
+    glow: 0.5,
+    jitter: 0.5,
     segments: 8,
     jitterAmount: 10,
     glowBlur: 12,
@@ -137,6 +142,32 @@ describe("Zap2DRenderer", () => {
       r.render(ctx, makeParams({ style: "plasma" }), pair());
       expect(calls.quad).toBeGreaterThan(0); // wobbling conduits
       expect(calls.fill).toBeGreaterThan(0); // sputter sparks
+    });
+
+    it("wobble is temporally coherent: rate controls travel, no per-frame strobe", () => {
+      // Total path the layer-0 conduit control point travels over N frames of a
+      // STATIC pair (energy 0 → fixed amplitude; only the sine phase advances).
+      // The old hardcoded per-frame random had NO rate control and teleported
+      // the point every frame; a smooth oscillation must travel farther at high
+      // rate than low, and stay calm at low rate.
+      const travel = (wobbleRate: number) => {
+        const r = new Zap2DRenderer();
+        const params = makeParams({ style: "plasma", wobbleAmount: 1, jitter: 0, wobbleRate });
+        const pts: { x: number; y: number }[] = [];
+        for (let f = 0; f < 20; f++) {
+          const { ctx, quadPoints } = makeCtx();
+          r.render(ctx, params, pair()); // same positions each frame → energy 0
+          pts.push(quadPoints[0]!); // first quad = layer-0 conduit control point
+        }
+        let total = 0;
+        for (let i = 1; i < pts.length; i++) {
+          total += Math.hypot(pts[i]!.x - pts[i - 1]!.x, pts[i]!.y - pts[i - 1]!.y);
+        }
+        return total;
+      };
+      const slow = travel(0.05);
+      const fast = travel(1.0);
+      expect(fast).toBeGreaterThan(slow * 2); // rate genuinely controls speed
     });
   });
 

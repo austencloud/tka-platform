@@ -104,6 +104,66 @@
         </div>
       {/if}
 
+      <!-- Wobble (Plasma style only) -->
+      {#if state.zap.style === "plasma"}
+        <div class="slider-row">
+          <label for="zap-wobble-rate">Wobble Rate</label>
+          <input
+            id="zap-wobble-rate"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.zap.wobbleRate}
+            oninput={(e) => state.updateEffect("zap", { wobbleRate: +(e.currentTarget as HTMLInputElement).value })}
+          />
+          <span class="slider-value">{Math.round(state.zap.wobbleRate * 100)}%</span>
+        </div>
+        <div class="slider-row">
+          <label for="zap-wobble-amount">Wobble Amount</label>
+          <input
+            id="zap-wobble-amount"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.zap.wobbleAmount}
+            oninput={(e) => state.updateEffect("zap", { wobbleAmount: +(e.currentTarget as HTMLInputElement).value })}
+          />
+          <span class="slider-value">{Math.round(state.zap.wobbleAmount * 100)}%</span>
+        </div>
+      {/if}
+
+      <!-- Glow -->
+      <div class="slider-row">
+        <label for="zap-glow">Glow</label>
+        <input
+          id="zap-glow"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={state.zap.glow}
+          oninput={(e) => state.updateEffect("zap", { glow: +(e.currentTarget as HTMLInputElement).value })}
+        />
+        <span class="slider-value">{Math.round(state.zap.glow * 100)}%</span>
+      </div>
+
+      <!-- Jitter -->
+      <div class="slider-row">
+        <label for="zap-jitter">Jitter</label>
+        <input
+          id="zap-jitter"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={state.zap.jitter}
+          oninput={(e) => state.updateEffect("zap", { jitter: +(e.currentTarget as HTMLInputElement).value })}
+        />
+        <span class="slider-value">{Math.round(state.zap.jitter * 100)}%</span>
+      </div>
+
       <!-- Per-hand color pickers -->
       <div class="color-row">
         <span class="color-label">Colors</span>

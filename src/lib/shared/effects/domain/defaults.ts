@@ -49,6 +49,10 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     mode: "arc",
     branching: 0.35,
     style: "plasma",
+    wobbleRate: 0.18,
+    wobbleAmount: 0.5,
+    glow: 0.5,
+    jitter: 0.5,
   },
 
   sparkles: {
