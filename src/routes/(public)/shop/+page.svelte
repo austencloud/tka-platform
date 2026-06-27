@@ -1,3 +1,11 @@
+<script module lang="ts">
+  // Cache the admin claim for the session. Without this, navigating back to /shop
+  // re-runs the async auth check with ready=false, flashing ComingSoon before the
+  // grid — and that flash destroys the reverse view-transition (the cover has no
+  // grid card to land on). Resolved once, then every remount is synchronous.
+  let cachedIsAdmin: boolean | null = null;
+</script>
+
 <script lang="ts">
   // /shop — admin sees the live shop (incl. drafts); everyone else (signed out OR
   // signed-in non-admin) sees Coming Soon. Same URL. Launch later = drop the gate.
@@ -6,8 +14,9 @@
   import StorePage from "$lib/features/store/StorePage.svelte";
   import ShopComingSoon from "$lib/features/store/components/ShopComingSoon.svelte";
 
-  let ready = $state(false);
-  let isAdmin = $state(false);
+  // Seed from the session cache so a return visit renders correctly on frame one.
+  let ready = $state(cachedIsAdmin !== null);
+  let isAdmin = $state(cachedIsAdmin ?? false);
 
   onMount(async () => {
     try {
@@ -25,11 +34,13 @@
             try {
               const token = await user.getIdTokenResult();
               isAdmin = token.claims.admin === true;
+              cachedIsAdmin = isAdmin;
             } catch (e) {
               console.error("[shop] token claim read failed:", e);
             }
           } else {
             isAdmin = false;
+            cachedIsAdmin = false;
           }
           unsub();
           resolve();

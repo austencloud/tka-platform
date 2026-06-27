@@ -3,7 +3,6 @@
 
 import { getMerchCheckoutCreator } from "$lib/features/store/get-merch-checkout-creator";
 import { getProductLoader } from "$lib/features/store/get-product-loader";
-  import { onMount } from "svelte";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
   import ProductCard from "./components/ProductCard.svelte";
@@ -19,9 +18,10 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
 
   setStoreContext({ state });
 
-  onMount(() => {
-    state.loadProducts(showDrafts);
-  });
+  // Prime synchronously (cache-first) so a back-navigation paints the grid on the
+  // first frame — the view-transition reverse morph needs the target cards present
+  // at the moment SvelteKit snapshots the new page. The first visit still fetches.
+  state.loadProducts(showDrafts);
 </script>
 
 <div class="store-page">
