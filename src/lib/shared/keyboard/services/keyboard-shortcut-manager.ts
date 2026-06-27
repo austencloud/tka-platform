@@ -26,6 +26,7 @@ export class KeyboardShortcutManager {
   private currentContext: ShortcutContext = "global";
   private isInitialized = false;
   private keydownHandler: ((event: KeyboardEvent) => void) | null = null;
+  private inputSuppressors = new Set<(event: KeyboardEvent) => boolean>();
 
   constructor(private registry: ShortcutRegistry) {}
 
@@ -114,6 +115,23 @@ export class KeyboardShortcutManager {
     this.registry.remove(id);
   }
 
+  /**
+   * Register a predicate that makes the manager ignore matching keydown events
+   * for as long as it stays registered. Used when a feature temporarily owns
+   * raw key input — e.g. the Assemble numpad builder claims all Numpad* codes —
+   * so the global single-key shortcuts never double-fire for keys another
+   * surface is already consuming. The manager listens in the capture phase and
+   * matches by normalized `event.key`, so a feature cannot reliably out-order it
+   * or distinguish (NumLock-off) Numpad from Arrow/Delete on its own; suppressing
+   * by `event.code` here is the robust seam. Returns an unregister function.
+   */
+  addInputSuppressor(predicate: (event: KeyboardEvent) => boolean): () => void {
+    this.inputSuppressors.add(predicate);
+    return () => {
+      this.inputSuppressors.delete(predicate);
+    };
+  }
+
   enable(id: string): void {
     const shortcut = this.registry.get(id);
     if (shortcut) {
@@ -190,6 +208,13 @@ export class KeyboardShortcutManager {
    * Handle keydown events
    */
   private handleKeydown(event: KeyboardEvent): void {
+    // A feature may temporarily own raw key input (e.g. the Assemble numpad
+    // builder claims all Numpad* codes). Honour suppressors first so global
+    // shortcuts never double-fire for keys another surface already consumes.
+    for (const suppress of this.inputSuppressors) {
+      if (suppress(event)) return;
+    }
+
     // Skip WASD shortcuts when an arrow is selected for adjustment
     // The ArrowAdjustmentControls component handles WASD in this case
     const key = event.key.toLowerCase();

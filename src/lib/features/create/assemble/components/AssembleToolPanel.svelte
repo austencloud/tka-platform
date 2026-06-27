@@ -12,6 +12,8 @@
   import InteractiveGrid from "$lib/features/assemble-lab/components/InteractiveGrid.svelte";
   import BuilderTurnBar from "$lib/features/assemble-lab/components/BuilderTurnBar.svelte";
   import AssembleIdlePanel from "$lib/features/assemble-lab/components/AssembleIdlePanel.svelte";
+  import KeyboardHintStrip from "$lib/features/assemble-lab/components/KeyboardHintStrip.svelte";
+  import { attachAssembleKeyboard } from "$lib/features/assemble-lab/services/assemble-keyboard-dispatcher";
   import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
@@ -60,6 +62,19 @@
     }
     return false;
   }
+
+  // Numpad building: while keyboard mode is on, route numpad input through the
+  // shared dispatcher. Mounting is scoped to the active Assemble tab (the
+  // {#key activeToolPanel} in CreationToolPanelSlot unmounts this on tab switch),
+  // so the window listener never leaks into other Create tabs. Position adds go
+  // through checkBeatCap so the numpad respects the tier cap like mouse clicks.
+  $effect(() => {
+    if (!builderState.keyboardMode) return;
+    return attachAssembleKeyboard(builderState, {
+      onStepCapExceeded: checkBeatCap,
+      isModalOpen: () => showBeatCapNudge && beatCapNudgeAllowed,
+    });
+  });
 
   let isIdle = $state(true);
   let prevPhaseIdle = true;
@@ -125,6 +140,9 @@
   </div>
 
   <div class="turn-bar-section" class:hidden={isIdle}>
+    {#if builderState.keyboardMode}
+      <KeyboardHintStrip {builderState} />
+    {/if}
     <BuilderTurnBar {builderState} />
   </div>
 
