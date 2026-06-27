@@ -14,7 +14,9 @@
   import GuideCover from "./GuideCover.svelte";
   import GuideTOC from "./GuideTOC.svelte";
   import PagePlaceholder from "./PagePlaceholder.svelte";
+  import ProofTextPage from "../_pages/ProofTextPage.svelte";
   import { GUIDE_BODY_PAGES, type GuidePageMeta } from "../_data/guide-manifest";
+  import { PROOF_TEXT } from "../_data/proof-text";
 
   let {
     page,
@@ -107,19 +109,22 @@
 {@render page({ kind: "toc", title: "Table of Contents", label: "p5: Table of Contents", content: tocContent })}
 {#each GUIDE_BODY_PAGES as entry, i}
   {@const isBuilt = !!built[entry.id]}
+  {@const hasProof = !isBuilt && !!PROOF_TEXT[entry.id]}
   {#snippet bodyContent()}
     {@const Built = built[entry.id]}
-    {#if Built}<Built />{:else}<PagePlaceholder />{/if}
+    {#if Built}<Built />
+    {:else if PROOF_TEXT[entry.id]}<ProofTextPage id={entry.id} />
+    {:else}<PagePlaceholder />{/if}
   {/snippet}
-  <!-- A rebuilt body page paints its OWN layout edge-to-edge (faithful to the
-       proof PDF), so it gets fullBleed. The title ALWAYS comes from the manifest
-       (entry.title) and is rendered by GuidePage — so a page's heading and its
-       TOC row are the exact same string and can never drift. Unbuilt pages keep
-       the standard header + placeholder. -->
+  <!-- A built page paints its own bespoke layout edge-to-edge; a proof-text page
+       paints the original proof's text edge-to-edge. Both are fullBleed. The
+       title ALWAYS comes from the manifest (entry.title) and is rendered by
+       GuidePage, so a page's heading and its TOC row can never drift. Pages with
+       neither keep the standard placeholder. -->
   {@render page({
     kind: "body",
     title: entry.title,
-    fullBleed: isBuilt,
+    fullBleed: isBuilt || hasProof,
     pageNumber: i + 1,
     label: `body p${i + 1}: ${entry.title}`,
     content: bodyContent,
