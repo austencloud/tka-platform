@@ -161,7 +161,38 @@
     return (activeStepNumber! - 1) % parsedLetters.length;
   });
 
+  // Bumped when on-demand glyph loads resolve, so getGlyphUrl re-reads the
+  // (non-reactive) GlyphCache and the rendered <img> swaps in once the SVG lands.
+  let glyphLoadVersion = $state(0);
+
+  // The letters this label needs glyphs for, from whichever source is active.
+  const neededTokens = $derived.by<string[]>(() => {
+    if (isContextualMessage) return [];
+    if (hasLetterSources) return letterSources!.map((s: LetterSource) => s.letter);
+    return parsedLetters;
+  });
+
+  // The global startup warm (+layout) is deferred to idle, so the cache is
+  // usually cold when this label first paints — without this it falls back to
+  // plain text and never recovers (the cache read isn't reactive). Load just
+  // the letters this word needs on demand, then trigger a re-read.
+  $effect(() => {
+    const c = cache;
+    if (!c) return;
+    const tokens = neededTokens;
+    if (tokens.length === 0) return;
+    const bases = [
+      ...new Set(tokens.map((t) => (isDashLetter(t) ? getBaseLetter(t) : t))),
+    ];
+    const missing = bases.filter((b) => b && !c.getGlyphDataUrl(b));
+    if (missing.length === 0) return;
+    c.loadGlyphsByLetter(missing).then(() => {
+      glyphLoadVersion++;
+    });
+  });
+
   function getGlyphUrl(letter: string): string | null {
+    void glyphLoadVersion; // re-read cache after on-demand loads resolve
     if (!cache) return null;
     const base = isDashLetter(letter) ? getBaseLetter(letter) : letter;
     return cache.getGlyphDataUrl(base);
@@ -220,10 +251,10 @@
       class:is-scaled={scaleFactor < 1}
       style:--scale-factor={scaleFactor}
       onclick={copyToClipboard}
-      title={isContextualMessage ? word : "Click to copy '{word}' to clipboard"}
+      title={isContextualMessage ? word : `Click to copy '${copyableWord}' to clipboard`}
       aria-label={isContextualMessage
         ? word
-        : "Current word: {word}. Click to copy."}
+        : `Current word: ${copyableWord}. Click to copy.`}
     >
       {#if hasLetterSources && !isContextualMessage}
         {#each letterSources as source, index (index)}
