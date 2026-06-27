@@ -41,6 +41,13 @@
   color: var(--guide-title-color);
   white-space: nowrap;
 }
+/* Front matter (cover excepted) renders the SAME title in normal flow, so its
+   page content (TOC columns, the Read Me letter, the support QR) centres below
+   it. Same font/size as the body-page titles — one consistent header. */
+.guide-title.flow {
+  position: static;
+  margin: -0.3in 0 0.4in; /* ride up to the body-page title height, then a gap */
+}
 
 /* ══════════════════════════════════════════
    Level 1 Guide — Bleeding Edge Design

@@ -46,11 +46,9 @@
   {#if label && !fullBleed}<span class="page-tag" aria-hidden="true">{label}</span>{/if}
   <div class="page-body">
     {#if title && !isBody}
-      <!-- Front matter (TOC, Read Me…): title in the serif header band + flourish. -->
-      <header class="page-header">
-        <h1 class="page-header-title">{title}</h1>
-        <span class="page-header-flourish" aria-hidden="true"></span>
-      </header>
+      <!-- Front matter (TOC, Read Me…): the SAME calligraphic title as body pages,
+           rendered in flow so the page content sits below it. -->
+      <h1 class="guide-title flow">{title}</h1>
     {/if}
     <div class="page-content">
       {@render children()}
@@ -95,48 +93,8 @@
     padding: 0;
   }
 
-  /* Dedicated header BAND pinned to the top of every page — large centred
-     script title + gold flourish, consistent across the book (matches the
-     original, where the page title sits high near the top edge). The band hugs
-     the top of the page body (0.6in page margin), it does not float mid-page. */
-  .page-header {
-    flex: 0 0 auto;
-    text-align: center;
-    /* Negative top margin rides the title up near the sheet's top edge (above
-       the 0.6in body padding) without shrinking the printed side/bottom margin. */
-    margin: -0.18in 0 0.4in;
-  }
-  .page-header-title {
-    /* --guide-header-font lets the whole book's page-header typeface be swapped
-       in one place. Default = Cormorant Garamond italic (chosen for readability
-       over a fancy script; the original's Monotype Corsiva isn't web-licensable
-       and its closest free clone, TeX Gyre Chorus, read too ornate here). */
-    font-family: var(--guide-header-font, "Cormorant Garamond", Georgia, serif);
-    font-style: italic;
-    font-weight: 600;
-    font-size: 3.2rem;
-    line-height: 1.0;
-    color: #14142b;
-    margin: 0;
-  }
-  .page-header-flourish {
-    display: block;
-    width: 2.1in;
-    height: 9px;
-    margin: 0.18in auto 0;
-    background: linear-gradient(#c9a227, #c9a227) center / 100% 1px no-repeat;
-    position: relative;
-  }
-  .page-header-flourish::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 7px;
-    height: 7px;
-    transform: translate(-50%, -50%) rotate(45deg);
-    background: #14142b;
-  }
+  /* Page titles (body + front matter) are the shared .guide-title (guide.css);
+     no per-page header band here anymore. */
   /* Content fills the page below the header. */
   .page-content {
     flex: 1 1 auto;
