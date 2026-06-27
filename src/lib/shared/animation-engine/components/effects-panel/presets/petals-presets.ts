@@ -97,13 +97,6 @@ export const PETALS_PRESETS: EffectPreset<"petals">[] = [
       trackingMode: "both_ends",
     },
   },
-  {
-    // "Custom" just opens Customize - empty patch, marks the chip active.
-    id: "petals-custom",
-    name: "Custom",
-    previewColor: "custom",
-    patch: {},
-  },
 ];
 
 export const PETALS_PRESET_GROUP: EffectPresetGroup = {

@@ -116,13 +116,6 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
       trackingMode: "right_end",
     },
   },
-  {
-    // "Custom" just opens Customize - empty patch, marks the chip active.
-    id: "silk-custom",
-    name: "Custom",
-    previewColor: "custom",
-    patch: {},
-  },
 ];
 
 export const SILK_PRESET_GROUP: EffectPresetGroup = {

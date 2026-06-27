@@ -85,13 +85,6 @@ export const INK_PRESETS: EffectPreset<"ink">[] = [
       trackingMode: "both_ends",
     },
   },
-  {
-    // "Custom" just opens Customize - empty patch, marks the chip active.
-    id: "ink-custom",
-    name: "Custom",
-    previewColor: "custom",
-    patch: {},
-  },
 ];
 
 export const INK_PRESET_GROUP: EffectPresetGroup = {

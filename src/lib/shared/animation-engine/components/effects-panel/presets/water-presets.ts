@@ -99,13 +99,6 @@ export const WATER_PRESETS: EffectPreset<"water">[] = [
       trackingMode: "both_ends",
     },
   },
-  {
-    // "Custom" just opens the Customize panel - empty patch, marks the chip active.
-    id: "water-custom",
-    name: "Custom",
-    previewColor: "custom",
-    patch: {},
-  },
 ];
 
 export const WATER_PRESET_GROUP: EffectPresetGroup = {

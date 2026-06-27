@@ -41,13 +41,6 @@ export const ECHO_PRESETS: EffectPreset<"echo">[] = [
       glow: 0.9, depth: 0.3, flash: 0.9,
     },
   },
-  {
-    // "Custom" just opens the Customize panel - empty patch, marks the chip active.
-    id: "echo-custom",
-    name: "Custom",
-    previewColor: "custom",
-    patch: {},
-  },
 ];
 
 export const ECHO_PRESET_GROUP: EffectPresetGroup = {

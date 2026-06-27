@@ -63,11 +63,4 @@ describe("matchPresetId", () => {
     } as Record<string, unknown>;
     expect(matchPresetId(BLOOM_PRESET_GROUP, cfg)).toBeNull();
   });
-
-  it("never auto-matches the empty-patch Custom chip", () => {
-    // bloom-custom has patch: {} — it must never be returned by the matcher,
-    // even for the base default. (Its highlight comes from the explicit signal.)
-    const anyConfig = { intensity: 0.123 } as Record<string, unknown>;
-    expect(matchPresetId(BLOOM_PRESET_GROUP, anyConfig)).not.toBe("bloom-custom");
-  });
 });

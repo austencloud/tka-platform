@@ -85,13 +85,6 @@ export const FROST_PRESETS: EffectPreset<"frost">[] = [
       trackingMode: "both_ends",
     },
   },
-  {
-    // "Custom" just opens Customize - empty patch, marks the chip active.
-    id: "frost-custom",
-    name: "Custom",
-    previewColor: "custom",
-    patch: {},
-  },
 ];
 
 export const FROST_PRESET_GROUP: EffectPresetGroup = {

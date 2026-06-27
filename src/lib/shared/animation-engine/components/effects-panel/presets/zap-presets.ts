@@ -30,13 +30,6 @@ export const ZAP_PRESETS: EffectPreset<"zap">[] = [
       frequency: 12, branching: 0.2, style: "web", mode: "arc",
     },
   },
-  {
-    // "Custom" just opens the Customize panel - empty patch, marks the chip active.
-    id: "zap-custom",
-    name: "Custom",
-    previewColor: "custom",
-    patch: {},
-  },
 ];
 
 export const ZAP_PRESET_GROUP: EffectPresetGroup = {

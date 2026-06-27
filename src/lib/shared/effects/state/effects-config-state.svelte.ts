@@ -54,6 +54,8 @@ import { charcoalParamsToSemantic } from "$lib/shared/animation-engine/domain/ty
 
 const STORAGE_KEY = "tka_effects_config";
 const BASELINE_KEY = "tka_effects_baseline";
+/** Per-effect personal-default snapshots (the Default chip's target). */
+const CUSTOM_KEY = "tka_effects_custom";
 const VM_STORAGE_KEY = "animation-visibility-settings";
 
 const EFFECT_IDS = [
@@ -191,6 +193,22 @@ function loadStoredConfig(): EffectsConfig | null {
   }
 }
 
+/**
+ * Per-effect personal-default snapshots persisted under CUSTOM_KEY. A plain
+ * `Record<effectId, intent>`; absent or malformed → null (seed from config).
+ */
+function loadStoredPersonalDefaults(): Record<string, unknown> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(CUSTOM_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export function createEffectsConfigState(
   initial: EffectsConfig = DEFAULT_EFFECTS_CONFIG,
   options: { persist?: boolean } = {},
@@ -203,6 +221,7 @@ export function createEffectsConfigState(
   let config = $state<EffectsConfig>(stored ?? migrateFromVmStorageOnce(structuredClone(initial)));
   let version = $state(0);
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  let defaultsTimer: ReturnType<typeof setTimeout> | null = null;
   const sceneUndo = getSceneUndoManager();
 
   sceneUndo.registerDomain("effects", {
@@ -230,20 +249,35 @@ export function createEffectsConfigState(
     }, 300);
   }
 
+  /** Debounced persist of the personal-default map (separate from the live config). */
+  function persistPersonalDefaults() {
+    if (!persist) return; // ephemeral instance: in-memory only
+    if (typeof window === "undefined") return;
+    if (defaultsTimer) clearTimeout(defaultsTimer);
+    defaultsTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(CUSTOM_KEY, JSON.stringify(personalDefaults));
+      } catch { /* quota exceeded or private browsing */ }
+    }, 300);
+  }
+
   const cloneOne = <T>(v: T): T => {
     try { return structuredClone(v); }
     catch { return JSON.parse(JSON.stringify(v)); }
   };
 
-  // Per-effect "your last hand-tuned look" snapshots. Seeded from the loaded
-  // config and updated on every manual updateEffect (NOT on applyPreset /
-  // restoreCustom / resetToShipped). Backs the Custom restore chip: clicking a
-  // preset is a safe excursion because the pre-preset tuning waits here.
-  // In-memory only — re-seeded from the persisted config on reload. Spec:
-  // docs/superpowers/specs/2026-06-27-core-preset-and-custom-restore-design.md
-  const customSnapshots = $state<Record<string, unknown>>({});
+  // Per-effect personal default — "your look". Auto-tracks every manual
+  // updateEffect (NOT applyPreset / restorePersonalDefault / resetToFactory) and
+  // is the target of the Default chip. Persisted under CUSTOM_KEY so "return to
+  // my look" survives a reload while parked on a named preset. Seeded from the
+  // persisted map, falling back to the loaded config for first-run / new effects.
+  // Spec: docs/superpowers/specs/2026-06-27-personal-default-collapse-design.md
+  const storedDefaults = persist ? loadStoredPersonalDefaults() : null;
+  const personalDefaults = $state<Record<string, unknown>>({});
   for (const id of EFFECT_IDS) {
-    customSnapshots[id] = cloneOne((config as unknown as Record<string, unknown>)[id]);
+    personalDefaults[id] = cloneOne(
+      storedDefaults?.[id] ?? (config as unknown as Record<string, unknown>)[id],
+    );
   }
 
   /** Structural deep-equality for effect intents (scalars, string arrays, shallow objects). */
@@ -274,45 +308,66 @@ export function createEffectsConfigState(
       ...patch,
     };
     config.activePresets[effectId as keyof typeof config.activePresets] = null;
-    // A manual edit IS the user's custom look — capture it for the Custom chip.
-    customSnapshots[effectId] = cloneOne((config as unknown as Record<string, unknown>)[effectId]);
+    // A manual edit IS the user's personal default — capture and persist it.
+    personalDefaults[effectId] = cloneOne((config as unknown as Record<string, unknown>)[effectId]);
     scheduleSave();
+    persistPersonalDefaults();
     sceneUndo.commitStateCoalescing(`effects-${effectId}`);
   }
 
-  /** The captured custom snapshot for an effect, or null if none. */
-  function customSnapshot<K extends keyof EffectConfigMap>(id: K): EffectConfigMap[K] | null {
-    return (customSnapshots[id] as EffectConfigMap[K] | undefined) ?? null;
+  /** The effect's personal default ("your look"), or null if none seeded. */
+  function personalDefault<K extends keyof EffectConfigMap>(id: K): EffectConfigMap[K] | null {
+    return (personalDefaults[id] as EffectConfigMap[K] | undefined) ?? null;
   }
 
-  /** True once the user has tuned this effect away from the shipped default. */
+  /** True once this effect's personal default differs from the factory original. */
   function hasCustom(id: keyof EffectConfigMap): boolean {
-    const snap = customSnapshots[id];
+    const snap = personalDefaults[id];
     if (snap == null) return false;
     return !deepEqual(snap, (DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>)[id]);
   }
 
-  /** Restore the captured custom snapshot (the Custom chip). No-op without one. */
-  function restoreCustom<K extends keyof EffectConfigMap>(id: K) {
+  /** Restore this effect's personal default (the Default chip). No-op without one. */
+  function restorePersonalDefault<K extends keyof EffectConfigMap>(id: K) {
     if (!isEffectId(id)) return;
-    const snap = customSnapshots[id];
+    const snap = personalDefaults[id];
     if (snap == null) return;
-    sceneUndo.captureState("restore-custom-effect", `Restore ${id} custom`);
+    sceneUndo.captureState("restore-custom-effect", `Restore ${id}`);
     (config as unknown as Record<string, unknown>)[id] = cloneOne(snap);
     config.activePresets[id as keyof typeof config.activePresets] = null;
     scheduleSave();
     sceneUndo.commitState();
   }
 
-  /** Reset an effect to the shipped factory default (the Default chip). */
-  function resetToShipped<K extends keyof EffectConfigMap>(id: K) {
+  const factoryOf = (id: string) =>
+    cloneOne((DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>)[id]);
+
+  /**
+   * Reset one effect to the factory original (the buried escape hatch). Also
+   * wipes its personal default back to factory, so a later Default click can't
+   * resurrect the discarded tuning.
+   */
+  function resetToFactory<K extends keyof EffectConfigMap>(id: K) {
     if (!isEffectId(id)) return;
-    sceneUndo.captureState("reset-effect-default", `Reset ${id} to default`);
-    (config as unknown as Record<string, unknown>)[id] = cloneOne(
-      (DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>)[id],
-    );
+    sceneUndo.captureState("reset-effect-default", `Reset ${id} to factory`);
+    (config as unknown as Record<string, unknown>)[id] = factoryOf(id);
+    personalDefaults[id] = factoryOf(id);
     config.activePresets[id as keyof typeof config.activePresets] = null;
     scheduleSave();
+    persistPersonalDefaults();
+    sceneUndo.commitState();
+  }
+
+  /** Reset every effect to the factory original (the global nuke). One undo entry. */
+  function resetAllToFactory() {
+    sceneUndo.captureState("reset-all-effects", "Reset all effects to factory");
+    for (const id of EFFECT_IDS) {
+      (config as unknown as Record<string, unknown>)[id] = factoryOf(id);
+      personalDefaults[id] = factoryOf(id);
+      config.activePresets[id as keyof typeof config.activePresets] = null;
+    }
+    scheduleSave();
+    persistPersonalDefaults();
     sceneUndo.commitState();
   }
 
@@ -454,10 +509,11 @@ export function createEffectsConfigState(
     replace,
     saveAsBaseline,
     resetToBaseline,
-    customSnapshot,
+    personalDefault,
     hasCustom,
-    restoreCustom,
-    resetToShipped,
+    restorePersonalDefault,
+    resetToFactory,
+    resetAllToFactory,
   };
 }
 

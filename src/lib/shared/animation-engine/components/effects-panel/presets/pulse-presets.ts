@@ -86,13 +86,6 @@ export const PULSE_PRESETS: EffectPreset<"pulse">[] = [
       harmonics: 0.9,
     },
   },
-  {
-    // "Custom" just opens Customize - empty patch, marks the chip active.
-    id: "pulse-custom",
-    name: "Custom",
-    previewColor: "custom",
-    patch: {},
-  },
 ];
 
 export const PULSE_PRESET_GROUP: EffectPresetGroup = {

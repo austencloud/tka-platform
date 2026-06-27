@@ -32,13 +32,6 @@ export const SPARKLES_PRESETS: EffectPreset<"sparkles">[] = [
       spread: 12, gravity: 0.8, mode: "stream",
     },
   },
-  {
-    // "Custom" just opens the Customize panel - empty patch, marks the chip active.
-    id: "sparkles-custom",
-    name: "Custom",
-    previewColor: "custom",
-    patch: {},
-  },
 ];
 
 export const SPARKLES_PRESET_GROUP: EffectPresetGroup = {

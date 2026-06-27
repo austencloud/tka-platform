@@ -18,6 +18,19 @@ vi.mock("$lib/shared/3d/undo/get-scene-undo-manager", () => ({
 
 const { createEffectsConfigState } = await import("../effects-config-state.svelte");
 
+// This suite runs in the node env (no window/localStorage). Persistence in the
+// factory is gated on `typeof window !== "undefined"`, so exercising the persist
+// path needs both faked. A tiny in-memory localStorage + a window stub do it.
+function makeLocalStorageStub() {
+  const store = new Map<string, string>();
+  return {
+    getItem: (k: string) => (store.has(k) ? (store.get(k) as string) : null),
+    setItem: (k: string, v: string) => void store.set(k, v),
+    removeItem: (k: string) => void store.delete(k),
+    clear: () => store.clear(),
+  };
+}
+
 describe("EffectsConfigState", () => {
   describe("updateEffect", () => {
     it("updates a specific effect by id", () => {
@@ -45,45 +58,87 @@ describe("EffectsConfigState", () => {
     });
   });
 
-  describe("custom snapshots + core preset (Default / Custom chips)", () => {
+  describe("personal default (Default chip) + factory reset", () => {
     it("hasCustom is false at the shipped default", () => {
       const state = createEffectsConfigState(undefined, { persist: false });
       expect(state.hasCustom("bloom")).toBe(false);
     });
 
-    it("updateEffect captures the live config as the custom snapshot", () => {
+    it("updateEffect captures the live config as the personal default", () => {
       const state = createEffectsConfigState(undefined, { persist: false });
       state.updateEffect("bloom", { intensity: 0.123 });
       expect(state.hasCustom("bloom")).toBe(true);
-      expect(state.customSnapshot("bloom")?.intensity).toBe(0.123);
+      expect(state.personalDefault("bloom")?.intensity).toBe(0.123);
     });
 
-    it("applyPreset does NOT overwrite the custom snapshot", () => {
+    it("applyPreset does NOT overwrite the personal default", () => {
       const state = createEffectsConfigState(undefined, { persist: false });
       state.updateEffect("bloom", { intensity: 0.123 });
       state.applyPreset("bloom", "bloom-supernova", { intensity: 1, radius: 50 });
       expect(state.bloom.intensity).toBe(1); // preset applied to live config
-      expect(state.customSnapshot("bloom")?.intensity).toBe(0.123); // snapshot preserved
+      expect(state.personalDefault("bloom")?.intensity).toBe(0.123); // your look preserved
     });
 
-    it("restoreCustom returns the pre-preset tuning", () => {
+    it("restorePersonalDefault returns the pre-preset tuning", () => {
       const state = createEffectsConfigState(undefined, { persist: false });
       state.updateEffect("bloom", { intensity: 0.123, radius: 41 });
       state.applyPreset("bloom", "bloom-supernova", { intensity: 1, radius: 50 });
-      state.restoreCustom("bloom");
+      state.restorePersonalDefault("bloom");
       expect(state.bloom.intensity).toBe(0.123);
       expect(state.bloom.radius).toBe(41);
       expect(state.activePresets.bloom).toBeNull();
     });
 
-    it("resetToShipped returns factory default and leaves the snapshot intact", () => {
+    it("resetToFactory returns factory default AND wipes the personal default", () => {
       const state = createEffectsConfigState(undefined, { persist: false });
       state.updateEffect("bloom", { intensity: 0.123 });
-      state.resetToShipped("bloom");
+      expect(state.hasCustom("bloom")).toBe(true);
+      state.resetToFactory("bloom");
       expect(state.bloom.intensity).toBe(DEFAULT_EFFECTS_CONFIG.bloom.intensity);
       expect(state.activePresets.bloom).toBeNull();
-      expect(state.hasCustom("bloom")).toBe(true); // your look is still recoverable
-      expect(state.customSnapshot("bloom")?.intensity).toBe(0.123);
+      // Personal default is wiped to factory, so a later Default click can't
+      // resurrect the discarded tuning.
+      expect(state.hasCustom("bloom")).toBe(false);
+      expect(state.personalDefault("bloom")?.intensity).toBe(DEFAULT_EFFECTS_CONFIG.bloom.intensity);
+    });
+
+    it("resetAllToFactory returns every effect to factory and wipes personal defaults", () => {
+      const state = createEffectsConfigState(undefined, { persist: false });
+      state.updateEffect("bloom", { intensity: 0.123 });
+      state.updateEffect("fire", { intensity: 0.2 });
+      state.resetAllToFactory();
+      expect(state.bloom.intensity).toBe(DEFAULT_EFFECTS_CONFIG.bloom.intensity);
+      expect(state.fire.intensity).toBe(DEFAULT_EFFECTS_CONFIG.fire.intensity);
+      expect(state.hasCustom("bloom")).toBe(false);
+      expect(state.hasCustom("fire")).toBe(false);
+    });
+
+    it("seeds the personal default from the persisted CUSTOM_KEY", () => {
+      const ls = makeLocalStorageStub();
+      vi.stubGlobal("window", {});
+      vi.stubGlobal("localStorage", ls);
+      ls.setItem(
+        "tka_effects_custom",
+        JSON.stringify({ bloom: { ...DEFAULT_EFFECTS_CONFIG.bloom, intensity: 0.77 } }),
+      );
+      const state = createEffectsConfigState(undefined, { persist: true });
+      expect(state.personalDefault("bloom")?.intensity).toBe(0.77);
+      expect(state.hasCustom("bloom")).toBe(true);
+      vi.unstubAllGlobals();
+    });
+
+    it("persists the personal default to CUSTOM_KEY on manual edit (round-trip)", () => {
+      vi.useFakeTimers();
+      const ls = makeLocalStorageStub();
+      vi.stubGlobal("window", {});
+      vi.stubGlobal("localStorage", ls);
+      const state = createEffectsConfigState(undefined, { persist: true });
+      state.updateEffect("bloom", { intensity: 0.31 });
+      vi.advanceTimersByTime(350); // flush the 300ms debounce
+      const raw = JSON.parse(ls.getItem("tka_effects_custom")!);
+      expect(raw.bloom.intensity).toBe(0.31);
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
     });
   });
 

@@ -85,13 +85,6 @@ export const BUBBLES_PRESETS: EffectPreset<"bubbles">[] = [
       trackingMode: "both_ends",
     },
   },
-  {
-    // "Custom" just opens Customize - empty patch, marks the chip active.
-    id: "bubbles-custom",
-    name: "Custom",
-    previewColor: "custom",
-    patch: {},
-  },
 ];
 
 export const BUBBLES_PRESET_GROUP: EffectPresetGroup = {

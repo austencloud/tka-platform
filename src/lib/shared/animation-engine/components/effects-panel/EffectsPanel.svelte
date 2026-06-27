@@ -7,9 +7,9 @@
   import { EFFECT_COLORS, EFFECT_LABELS, EFFECTS, getRegistration } from "./effect-registry";
   import type { EffectRegistration } from "./effect-registry";
   import { matchPresetId, valuesEqual } from "./presets/match-preset";
-  import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+  import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 
-  /** Synthetic chip id for the shipped factory default (not a named preset). */
+  /** Synthetic chip id for the user's personal default (not a named preset). */
   const DEFAULT_CHIP_ID = "__default__";
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
@@ -50,52 +50,31 @@
     activeEffect !== "none" ? getRegistration(activeEffect) : undefined
   );
 
-  // Honest highlight: the chip is active only when the LIVE config actually
-  // equals a preset. We patch-match the live config against each preset, and a
-  // chip lights up iff every field it patches matches. Base default (matching no
-  // preset) → null → no phantom highlight.
-  //
-  // The explicit `activePresets[effect]` signal (set by applyPreset, cleared to
-  // null by any manual edit) is consulted ONLY to disambiguate the two presets
-  // that have no static patch to match — the empty-patch "Custom" chips and the
-  // resolvePatch trail/fire customs — so an explicitly-chosen Custom still
-  // highlights. A stale activePresets id whose patch no longer matches the live
-  // config is NOT trusted.
-  //
-  // The old `?? loadPresetMap()` fallback resurrected a stale preset id from a
-  // separate localStorage key (tka_active_effect_presets) that was never cleared
-  // on select — that was the source of the phantom "Supernova" highlight.
+  // Honest highlight. The Default chip represents the user's PERSONAL default
+  // ("your look"), which auto-tracks every manual tweak. Priority:
+  //   1. live config == personal default          → Default chip
+  //   2. live config matches a named preset's patch → that preset
+  //   3. explicit trail/fire resolvePatch custom    → that custom
+  // A named-preset excursion lights its own chip; clicking Default returns here.
+  // A stale activePresets id whose patch no longer matches the live config is
+  // NOT trusted (only the patch-less resolvePatch customs lean on the signal).
   const activePresetId = $derived.by(() => {
     if (activeEffect === "none" || !registration) return null;
     const fx = activeEffect as EffectId;
     const effectConfig = effectsConfigState.effect(fx) as unknown as Record<string, unknown>;
-    // 1. Shipped factory default → the synthetic Default chip.
-    const shipped = (DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>)[fx];
-    if (valuesEqual(effectConfig, shipped)) return DEFAULT_CHIP_ID;
+    // 1. Your personal default → the synthetic Default chip.
+    const personal = effectsConfigState.personalDefault(fx) as unknown as Record<string, unknown> | null;
+    if (personal && valuesEqual(effectConfig, personal)) return DEFAULT_CHIP_ID;
     // 2. A named preset whose static patch the live config matches.
     const matched = matchPresetId(registration.presetGroup, effectConfig);
     if (matched) return matched;
-    // 3. The snapshot-backed Custom chip (the empty-patch customs, NOT trail/fire
-    //    resolvePatch ones): light it when the live config equals your snapshot.
-    const customPreset = registration.presetGroup.presets.find(
-      (p) => p.previewColor === "custom" && !p.resolvePatch,
-    );
-    if (
-      customPreset &&
-      effectsConfigState.hasCustom(fx) &&
-      valuesEqual(effectConfig, effectsConfigState.customSnapshot(fx) as unknown as Record<string, unknown>)
-    ) {
-      return customPreset.id;
-    }
-    // 4. An explicitly-chosen patch-less / resolvePatch preset (trail/fire custom
-    //    colours) — those carry meaning only through the activePresets signal.
+    // 3. An explicitly-chosen resolvePatch custom (trail/fire colours) — those
+    //    have no static patch to match, so they lean on the activePresets signal.
     const ap = effectsConfigState.activePresets as Record<string, string | null>;
     const explicit = ap[activeEffect];
     if (!explicit) return null;
     const preset = registration.presetGroup.presets.find((p) => p.id === explicit);
-    const patchless =
-      preset && (!preset.patch || Object.keys(preset.patch).length === 0 || !!preset.resolvePatch);
-    return patchless ? explicit : null;
+    return preset?.resolvePatch ? explicit : null;
   });
 
   const currentSummary = $derived.by(() => {
@@ -121,33 +100,33 @@
 
   function handlePresetSelect(presetId: string): void {
     if (!registration) return;
+    // The Default chip returns to your personal default ("your look").
     if (presetId === DEFAULT_CHIP_ID) {
-      if (isEffectId(activeEffect)) effectsConfigState.resetToShipped(activeEffect);
+      if (isEffectId(activeEffect)) effectsConfigState.restorePersonalDefault(activeEffect);
       return;
     }
     const group = registration.presetGroup;
     const preset = group.presets.find(p => p.id === presetId);
     if (!preset) return;
-    // The snapshot-backed Custom chip (empty-patch, not trail/fire) restores your
-    // last hand-tuned look instead of applying a static patch.
-    if (preset.previewColor === "custom" && !preset.resolvePatch) {
-      if (isEffectId(activeEffect)) effectsConfigState.restoreCustom(activeEffect);
-      return;
-    }
     const patch = preset.resolvePatch ? preset.resolvePatch() : (preset.patch ?? {});
     effectsConfigState.applyPreset(group.effectType, preset.id, patch);
   }
 
-  // Whether the active effect's Custom chip is a snapshot-restore that has nothing
-  // saved yet (→ render it disabled). trail/fire resolvePatch customs are never disabled.
-  const customDisabled = $derived.by(() => {
-    if (activeEffect === "none" || !registration) return false;
-    const customPreset = registration.presetGroup.presets.find(
-      (p) => p.previewColor === "custom" && !p.resolvePatch,
-    );
-    if (!customPreset) return false;
-    return !effectsConfigState.hasCustom(activeEffect as EffectId);
-  });
+  // ── Factory reset (the buried escape hatch) ──────────────────────────────
+  let confirmResetAllOpen = $state(false);
+
+  /** Per-effect "Reset to original" — only meaningful once tuned away from factory. */
+  const resetEffectDisabled = $derived(
+    activeEffect === "none" || !isEffectId(activeEffect) || !effectsConfigState.hasCustom(activeEffect as EffectId),
+  );
+
+  function handleResetEffect(): void {
+    if (isEffectId(activeEffect)) effectsConfigState.resetToFactory(activeEffect);
+  }
+
+  function handleResetAll(): void {
+    effectsConfigState.resetAllToFactory();
+  }
 
   async function handleCustomizeOpen(): Promise<void> {
     if (!registration) return;
@@ -167,6 +146,18 @@
     primarySpec.set(effectsConfigState, v);
   }
 </script>
+
+{#snippet resetToOriginalBtn()}
+  <button
+    type="button"
+    class="reset-original-btn"
+    disabled={resetEffectDisabled}
+    onclick={handleResetEffect}
+  >
+    <i class="fas fa-rotate-left" aria-hidden="true"></i>
+    <span>Reset {EFFECT_LABELS[activeEffect] ?? ""} to original</span>
+  </button>
+{/snippet}
 
 {#if layout === "sidebar"}
   <div class="effects-panel">
@@ -197,7 +188,6 @@
           presetGroup={registration.presetGroup}
           {activePresetId}
           defaultChipId={DEFAULT_CHIP_ID}
-          {customDisabled}
           onSelectPreset={handlePresetSelect}
           onCustomize={handleCustomizeOpen}
           effectLabel={EFFECT_LABELS[activeEffect] ?? ""}
@@ -210,10 +200,19 @@
     {#if customizeOpen && CustomizeComponent}
       <div class="sb-section">
         <CustomizeComponent onBack={handleCustomizeClose} />
+        <div class="reset-row">
+          {@render resetToOriginalBtn()}
+        </div>
       </div>
     {/if}
 
     {#if children}{@render children()}{/if}
+
+    <div class="sb-section sb-footer">
+      <button type="button" class="reset-all-btn" onclick={() => (confirmResetAllOpen = true)}>
+        Reset all effects to original
+      </button>
+    </div>
   </div>
 {:else if layout === "strip" || layout === "grid"}
   <!-- Mobile / popover layout -->
@@ -227,6 +226,9 @@
         </span>
       </button>
       <CustomizeComponent onBack={handleCustomizeClose} />
+      <div class="reset-row">
+        {@render resetToOriginalBtn()}
+      </div>
     {:else}
       <div class="fx-strip" class:grid={layout === "grid"} role="radiogroup" aria-label="Select effect">
         {#each EFFECTS as e (e.id)}
@@ -277,6 +279,17 @@
   </div>
 {/if}
 
+<ConfirmDialog
+  bind:isOpen={confirmResetAllOpen}
+  title="Reset all effects?"
+  message="Every effect returns to its factory original. Your personal defaults and tuning are discarded. This can be undone."
+  confirmText="Reset all"
+  cancelText="Keep mine"
+  variant="danger"
+  onConfirm={handleResetAll}
+  onCancel={() => {}}
+/>
+
 <style>
   /* Module accent: the animation-panel blue family (matches rail-tile.css).
      No global token covers this hue, so it's scoped here. */
@@ -305,6 +318,59 @@
     letter-spacing: 0.5px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
     margin-bottom: 8px;
+  }
+
+  /* ── Factory reset (buried escape hatch) ── */
+  .reset-row {
+    margin-top: 12px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .reset-original-btn,
+  .reset-all-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 150ms ease;
+  }
+
+  .reset-original-btn:hover:not(:disabled),
+  .reset-all-btn:hover {
+    color: var(--semantic-warning, #f59e0b);
+    border-color: color-mix(in srgb, var(--semantic-warning, #f59e0b) 45%, transparent);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 8%, transparent);
+  }
+
+  .reset-original-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .reset-original-btn:focus-visible,
+  .reset-all-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .sb-footer {
+    display: flex;
+    justify-content: center;
+  }
+
+  .reset-all-btn {
+    width: 100%;
   }
 
   /* ── Strip / Grid layout (mobile + popover) ─────────────────────────────── */
@@ -579,7 +645,9 @@
     .fx-tile,
     .preset-chip,
     .more-btn,
-    .back-row {
+    .back-row,
+    .reset-original-btn,
+    .reset-all-btn {
       transition: none;
     }
   }

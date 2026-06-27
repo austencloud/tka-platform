@@ -85,13 +85,6 @@ export const SMOKE_PRESETS: EffectPreset<"smoke">[] = [
       trackingMode: "both_ends",
     },
   },
-  {
-    // "Custom" just opens Customize - empty patch, marks the chip active.
-    id: "smoke-custom",
-    name: "Custom",
-    previewColor: "custom",
-    patch: {},
-  },
 ];
 
 export const SMOKE_PRESET_GROUP: EffectPresetGroup = {

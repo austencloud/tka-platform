@@ -79,13 +79,6 @@ export const BLOOM_PRESETS: EffectPreset<"bloom">[] = [
       afterglow: 0.6,
     },
   },
-  {
-    // "Custom" just opens the Customize panel - empty patch, marks the chip active.
-    id: "bloom-custom",
-    name: "Custom",
-    previewColor: "custom",
-    patch: {},
-  },
 ];
 
 export const BLOOM_PRESET_GROUP: EffectPresetGroup = {
