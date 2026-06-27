@@ -52,8 +52,7 @@ export async function getFollowingFeed(
       const relevantEvents = events.filter((event) => {
         const isRelevantType =
           event.eventType === "sequence_create" ||
-          event.eventType === "sequence_favorite" ||
-          event.eventType === "achievement_unlock";
+          event.eventType === "sequence_favorite";
 
         if (!isRelevantType) return false;
 
@@ -136,13 +135,6 @@ function activityEventToFeedItem(
     if (event.metadata?.sequenceId) {
       base.sequenceId = event.metadata.sequenceId;
       base.sequenceWord = event.metadata.sequenceWord as string | undefined;
-    }
-  } else if (event.eventType === "achievement_unlock") {
-    if (event.metadata?.achievementId) {
-      base.achievementId = event.metadata.achievementId;
-      base.achievementName = event.metadata.achievementName as
-        | string
-        | undefined;
     }
   }
 

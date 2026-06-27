@@ -25,11 +25,6 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { firestoreGet, firestoreList } from "$lib/shared/firestore";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import { getUserAchievementsPath } from "$lib/shared/gamification/data/firestore-collections";
-import { ALL_ACHIEVEMENTS } from "$lib/shared/gamification/domain/constants/achievement-definitions";
-import type {
-  Achievement,
-} from "$lib/shared/gamification/domain/models/achievement-models";
 import type { PaginatedUsersResult, PaginatedQueryOptions } from "./types";
 import type {
   EnhancedUserProfile,
@@ -42,7 +37,6 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-typ
 import type { PresenceLocation } from "$lib/shared/presence/domain/models/presence-models";
 import {
   UserFirestoreDataSchema,
-  UserAchievementFirestoreSchema,
   FollowDocSchema,
 } from "../domain/models/user-firestore-schemas";
 import type { UserFirestoreDataParsed } from "../domain/models/user-firestore-schemas";
@@ -63,11 +57,6 @@ interface FirestoreUserData extends DocumentData {
   followerCount?: number;
   followingCount?: number;
   createdAt?: Timestamp;
-  totalXP?: number;
-  currentLevel?: number;
-  achievementCount?: number;
-  currentStreak?: number;
-  longestStreak?: number;
   isFeatured?: boolean;
   bio?: string;
   instagramUsername?: string;
@@ -136,41 +125,6 @@ async function getFollowingIds(userId: string): Promise<Set<string>> {
   }
 }
 
-async function fetchUserTopAchievements(userId: string): Promise<Achievement[]> {
-  try {
-    const achievementsPath = getUserAchievementsPath(userId);
-
-    const userAchievements = await firestoreList(
-      achievementsPath,
-      UserAchievementFirestoreSchema,
-      {
-        where: [{ field: "isCompleted", op: "==", value: true }],
-        orderBy: [{ field: "unlockedAt", direction: "desc" }],
-        limit: 5,
-      },
-    );
-
-    const achievements: Achievement[] = [];
-
-    for (const userAch of userAchievements) {
-      const fullAchievement = ALL_ACHIEVEMENTS.find(
-        (ach) => ach.id === userAch.achievementId
-      );
-      if (fullAchievement) {
-        achievements.push(fullAchievement);
-      }
-    }
-
-    return achievements;
-  } catch (error) {
-    console.error(
-      `[UserRepository] Error fetching achievements for user ${userId}:`,
-      error
-    );
-    return [];
-  }
-}
-
 async function mapFirestoreToEnhancedProfile(
   userId: string,
   data: FirestoreUserData | UserFirestoreDataParsed,
@@ -203,11 +157,6 @@ async function mapFirestoreToEnhancedProfile(
           ? (rawLastActivity as Timestamp).toDate()
           : joinedDate;
 
-    const totalXP = data.totalXP ?? 0;
-    const currentLevel = data.currentLevel ?? 1;
-    const achievementCount = data.achievementCount ?? 0;
-    const currentStreak = data.currentStreak ?? 0;
-    const longestStreak = data.longestStreak ?? 0;
     const isFeatured = data.isFeatured ?? false;
     const bio = data.bio ?? undefined;
     const instagramUsername = data.instagramUsername ?? undefined;
@@ -224,10 +173,6 @@ async function mapFirestoreToEnhancedProfile(
     const adminLabel = data.adminLabel ?? undefined;
     const adminNotes = data.adminNotes ?? undefined;
     const location = (data.lastLocation as PresenceLocation | undefined) ?? null;
-
-    const topAchievements = skipAchievements
-      ? []
-      : await fetchUserTopAchievements(userId);
 
     return {
       id: userId,
@@ -248,12 +193,6 @@ async function mapFirestoreToEnhancedProfile(
       propsISpinWith,
       favoriteProp,
       activeProp,
-      totalXP,
-      currentLevel,
-      achievementCount,
-      currentStreak,
-      longestStreak,
-      topAchievements,
       isFeatured,
       bio,
       role,
@@ -311,8 +250,6 @@ function applyFilters(
       return users.filter((u) => u.isFeatured);
     case "most-sequences":
       return users.filter((u) => u.sequenceCount > 0);
-    case "highest-level":
-      return users.filter((u) => u.currentLevel > 1);
     case "most-followers":
       return users.filter((u) => u.followerCount > 0);
     case "newest":

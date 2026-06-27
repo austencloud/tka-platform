@@ -15,7 +15,6 @@ export type ActivityCategory =
   | "share" // Share actions
   | "social" // Follow, like, comment
   | "learn" // Quiz, lessons, tutorials
-  | "achievement" // Achievements, challenges, XP
   | "settings"; // Settings changes
 
 /**
@@ -54,12 +53,6 @@ export type ActivityEventType =
   | "quiz_start"
   | "quiz_complete"
   | "quiz_answer"
-  // Achievement events
-  | "achievement_unlock"
-  | "challenge_start"
-  | "challenge_complete"
-  | "xp_earn"
-  | "level_up"
   // Settings events
   | "setting_change"
   | "prop_type_change"
@@ -89,12 +82,6 @@ export interface ActivityMetadata {
   quizId?: string;
   score?: number;
   correct?: boolean;
-
-  // Achievement context
-  achievementId?: string;
-  challengeId?: string;
-  xpAmount?: number;
-  newLevel?: number;
 
   // Settings context
   settingKey?: string;

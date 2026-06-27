@@ -162,10 +162,6 @@
                   name={userProfile.displayName}
                   size={120}
                 />
-                <div class="level-badge">
-                  <i class="fas fa-star" aria-hidden="true"></i>
-                  <span>{userProfile.currentLevel}</span>
-                </div>
               </div>
               <div class="user-info">
                 <h3 class="display-name">{userProfile.displayName}</h3>
@@ -193,20 +189,12 @@
             <!-- Stats Row -->
             <div class="stats-row">
               <div class="stat">
-                <span class="stat-value">{userProfile.totalXP?.toLocaleString() || 0}</span>
-                <span class="stat-label">XP</span>
-              </div>
-              <div class="stat">
                 <span class="stat-value">{userProfile.sequenceCount || 0}</span>
                 <span class="stat-label">Sequences</span>
               </div>
               <div class="stat">
                 <span class="stat-value">{userProfile.followerCount || 0}</span>
                 <span class="stat-label">Followers</span>
-              </div>
-              <div class="stat">
-                <span class="stat-value">{userProfile.currentStreak || 0}</span>
-                <span class="stat-label">Streak</span>
               </div>
             </div>
           </section>
@@ -242,10 +230,6 @@
                   name={userProfile.displayName}
                   size={64}
                 />
-                <div class="level-badge small">
-                  <i class="fas fa-star" aria-hidden="true"></i>
-                  <span>{userProfile.currentLevel}</span>
-                </div>
               </div>
               <div class="user-info">
                 <h3 class="display-name">{userProfile.displayName}</h3>
@@ -265,20 +249,12 @@
             </div>
             <div class="stats-row compact">
               <div class="stat">
-                <span class="stat-value">{userProfile.totalXP?.toLocaleString() || 0}</span>
-                <span class="stat-label">XP</span>
-              </div>
-              <div class="stat">
                 <span class="stat-value">{userProfile.sequenceCount || 0}</span>
                 <span class="stat-label">Sequences</span>
               </div>
               <div class="stat">
                 <span class="stat-value">{userProfile.followerCount || 0}</span>
                 <span class="stat-label">Followers</span>
-              </div>
-              <div class="stat">
-                <span class="stat-value">{userProfile.currentStreak || 0}</span>
-                <span class="stat-label">Streak</span>
               </div>
             </div>
           </div>
@@ -351,10 +327,6 @@
                     name={userProfile.displayName}
                     size={72}
                   />
-                  <div class="level-badge small">
-                    <i class="fas fa-star" aria-hidden="true"></i>
-                    <span>{userProfile.currentLevel}</span>
-                  </div>
                 </div>
                 <div class="user-info">
                   <h3 class="display-name">{userProfile.displayName}</h3>
@@ -382,20 +354,12 @@
 
               <div class="stats-row">
                 <div class="stat">
-                  <span class="stat-value">{userProfile.totalXP?.toLocaleString() || 0}</span>
-                  <span class="stat-label">XP</span>
-                </div>
-                <div class="stat">
                   <span class="stat-value">{userProfile.sequenceCount || 0}</span>
                   <span class="stat-label">Sequences</span>
                 </div>
                 <div class="stat">
                   <span class="stat-value">{userProfile.followerCount || 0}</span>
                   <span class="stat-label">Followers</span>
-                </div>
-                <div class="stat">
-                  <span class="stat-value">{userProfile.currentStreak || 0}</span>
-                  <span class="stat-label">Streak</span>
                 </div>
               </div>
 

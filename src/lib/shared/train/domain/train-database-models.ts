@@ -29,7 +29,6 @@ export interface StoredPerformance {
     goodHits: number;
     misses: number;
     maxCombo: number;
-    xpEarned: number;
   };
 
   // Optional metadata

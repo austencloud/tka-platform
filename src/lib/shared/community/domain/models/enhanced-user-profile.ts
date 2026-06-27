@@ -3,7 +3,6 @@
  * Extends base UserProfile with gamification and social data
  */
 
-import type { Achievement } from "$lib/shared/gamification/domain/models/achievement-models";
 import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { PresenceLocation } from "$lib/shared/presence/domain/models/presence-models";
@@ -75,33 +74,16 @@ export interface EnhancedUserProfile extends UserProfile {
   // Base UserProfile fields:
   // id, username, displayName, avatar, email, sequenceCount, collectionCount, followerCount, joinedDate, isFollowing
 
-  // Gamification additions
-  totalXP: number;
-  currentLevel: number;
-  achievementCount: number;
-  currentStreak: number;
-  longestStreak: number;
-  topAchievements: Achievement[]; // Top 3-5 most impressive achievements
-
   // Social additions
   isFeatured: boolean;
   bio?: string;
   followingCount: number;
-
-  // Rankings (optional - for display on profile cards)
-  rank?: {
-    xp: number;
-    level: number;
-    sequences: number;
-    achievements: number;
-  };
 }
 
 export type CreatorFilterType =
   | "all"
   | "featured"
   | "most-sequences"
-  | "highest-level"
   | "most-followers"
   | "newest";
 

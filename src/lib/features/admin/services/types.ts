@@ -10,9 +10,6 @@ export type AuditActionType =
   | "account_enabled"
   | "user_data_reset"
   | "user_deleted"
-  | "challenge_created"
-  | "challenge_updated"
-  | "challenge_deleted"
   | "announcement_created"
   | "announcement_updated"
   | "announcement_deleted"
@@ -39,10 +36,6 @@ export interface CachedUserMetadata {
   publicSequenceCount: number;
   totalViews: number;
   shareCount: number;
-  challengesCompleted: number;
-  achievementCount: number;
-  currentStreak: number;
-  totalXP: number;
   lastActivityDate: Date | null;
   createdAt: Date | null;
   disabled: boolean;
@@ -53,17 +46,6 @@ export interface CachedUserMetadata {
   attribution: Record<string, unknown> | null;
   /** Persistent last-known IP location (admin view). */
   lastLocation?: import("$lib/shared/presence/domain/models/presence-models").PresenceLocation | null;
-}
-export interface CachedChallenge {
-  id: string;
-  name: string;
-  description: string | null;
-  difficulty: string;
-  xpReward: number;
-  sequenceId: string | null;
-  scheduledDate: Date | null;
-  createdAt: Date | null;
-  type: "daily" | "train";
 }
 export interface CachedAnnouncement {
   id: string;
@@ -79,7 +61,6 @@ export interface CachedAnnouncement {
 }
 export interface SystemState {
   users: CachedUserMetadata[];
-  challenges: CachedChallenge[];
   announcements: CachedAnnouncement[];
   loadedAt: number;
   expiresAt: number;
@@ -91,11 +72,9 @@ export interface SummaryMetrics {
   totalUsers: number;
   activeToday: number;
   sequencesCreated: number;
-  challengesCompleted: number;
   previousTotalUsers: number;
   previousActiveToday: number;
   previousSequencesCreated: number;
-  previousChallengesCompleted: number;
 }
 export interface UserActivityPoint {
   date: string;
@@ -113,14 +92,6 @@ export interface TopSequenceData {
   word: string;
   views: number;
   creator: string;
-}
-export interface EngagementMetrics {
-  challengeParticipants: number;
-  achievementsUnlocked: number;
-  activeStreaks: number;
-  totalXPEarned: number;
-  totalUsers: number;
-  totalAchievementsPossible: number;
 }
 export interface AnalyticsTimeRange {
   days: number;

@@ -20,10 +20,6 @@
   import { getSessionCompletionProcessor } from "$lib/features/train/get-session-completion-processor";
   import { getPositionDetector } from "$lib/features/train/get-position-detector";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type {
-    XPBreakdown,
-    ChallengeProgressResult,
-  } from "../services/session-completion-processor";
   import { getTrainPracticeState } from "../state/train-practice-state.svelte";
   import ModeSettingsSheet from "./practice/ModeSettingsSheet.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
@@ -36,7 +32,6 @@
     sequence?: SequenceData | null;
     practiceMode?: PracticeMode;
     modeConfig?: AdaptiveConfig | StepConfig | TimedConfig;
-    challengeId?: string;
     onSequenceSelect?: (sequence: SequenceData) => void;
     onSequenceClear?: () => void;
     onSessionComplete?: () => void;
@@ -46,7 +41,6 @@
     sequence = null,
     practiceMode = PracticeMode.TIMED,
     modeConfig,
-    challengeId,
     onSequenceSelect,
     onSequenceClear,
     onSessionComplete,
@@ -73,32 +67,6 @@
   // Session tracking
   let sessionStartTime = 0;
   let hasProcessedSession = false;
-
-  // Results data for display
-  let sessionXPBreakdown = $state<XPBreakdown | undefined>(undefined);
-  let sessionChallengeProgressRaw = $state<ChallengeProgressResult | undefined>(
-    undefined
-  );
-
-  // Convert ChallengeProgressResult to ChallengeProgress for ResultsScreen
-  const sessionChallengeProgress = $derived(
-    sessionChallengeProgressRaw ? {
-      challenge: {
-        ...sessionChallengeProgressRaw.challenge,
-        description: '',
-        difficulty: 'medium' as const,
-        isActive: true,
-        createdAt: new Date(),
-        order: 0,
-        requirement: {
-          ...sessionChallengeProgressRaw.challenge.requirement,
-          type: 'complete_sequence' as const,
-        },
-      },
-      currentProgress: sessionChallengeProgressRaw.currentProgress,
-      isComplete: sessionChallengeProgressRaw.isComplete,
-    } : undefined
-  );
 
   // Timing system (using requestAnimationFrame for better performance)
   let stepAnimationFrameId: number | null = null;
@@ -261,7 +229,7 @@
   async function processSessionCompletion() {
     const duration = Date.now() - sessionStartTime;
 
-    const result = await sessionCompletionProcessor.processCompletion({
+    await sessionCompletionProcessor.processCompletion({
       totalSteps: trainState.totalSteps,
       totalHits: trainState.totalHits,
       totalMisses: trainState.totalMisses,
@@ -273,10 +241,6 @@
       sequenceName: sequence?.word ?? sequence?.name,
       sessionDuration: duration,
     });
-
-    // Store results for ResultsScreen display
-    sessionXPBreakdown = result.xpBreakdown;
-    sessionChallengeProgressRaw = result.challengeProgress;
   }
 
   function startStepTimer() {
@@ -436,8 +400,6 @@
         maxCombo={trainState.maxCombo}
         finalScore={trainState.currentScore}
         sequenceName={trainState.sequence?.name || trainState.sequence?.word}
-        xpBreakdown={sessionXPBreakdown}
-        challengeProgress={sessionChallengeProgress}
         onPlayAgain={handleBackToSetup}
         onExit={() => {
           handleBackToSetup();

@@ -21,8 +21,10 @@ export const DATABASE_NAME = "TKADatabase";
  * Version 4: Added train module tables (performances, calibration profiles)
  * Version 5: Added compositions table for Compose module
  * Version 6: Added galleryCache and galleryCacheMeta tables for offline browse gallery
+ * Version 7: Removed the gamification tables (XP/achievement/challenge/streak system
+ *            torn out). Dexie drops the object stores omitted from this schema.
  */
-export const DATABASE_VERSION = 6;
+export const DATABASE_VERSION = 7;
 
 // ============================================================================
 // TABLE NAMES
@@ -34,19 +36,6 @@ export const TABLE_NAMES = {
   USER_WORK: "userWork",
   USER_PROJECTS: "userProjects",
   SETTINGS: "settings",
-  // Gamification tables (v2)
-  USER_ACHIEVEMENTS: "userAchievements",
-  USER_XP: "userXP",
-  XP_EVENTS: "xpEvents",
-  DAILY_CHALLENGES: "dailyChallenges",
-  USER_CHALLENGE_PROGRESS: "userChallengeProgress",
-  USER_STREAKS: "userStreaks",
-  ACHIEVEMENT_NOTIFICATIONS: "achievementNotifications",
-  // Challenge extension tables (v3)
-  WEEKLY_CHALLENGES: "weeklyChallenges",
-  USER_WEEKLY_PROGRESS: "userWeeklyProgress",
-  SKILL_PROGRESSIONS: "skillProgressions",
-  USER_SKILL_PROGRESS: "userSkillProgress",
   // Train module tables (v4)
   TRAIN_PERFORMANCES: "trainPerformances",
   TRAIN_CALIBRATION_PROFILES: "trainCalibrationProfiles",
@@ -74,25 +63,6 @@ export const TABLE_INDEXES = {
   [TABLE_NAMES.USER_PROJECTS]:
     "++id, name, userId, createdAt, lastModified, isPublic, *tags",
   [TABLE_NAMES.SETTINGS]: "++id, userId",
-  // Gamification tables (v2)
-  [TABLE_NAMES.USER_ACHIEVEMENTS]:
-    "++id, achievementId, userId, isCompleted, unlockedAt",
-  [TABLE_NAMES.USER_XP]: "++id, userId, totalXP, currentLevel, lastUpdated",
-  [TABLE_NAMES.XP_EVENTS]: "++id, action, timestamp, userId",
-  [TABLE_NAMES.DAILY_CHALLENGES]: "++id, date, difficulty, expiresAt",
-  [TABLE_NAMES.USER_CHALLENGE_PROGRESS]:
-    "++id, challengeId, userId, isCompleted, completedAt",
-  [TABLE_NAMES.USER_STREAKS]: "++id, userId, currentStreak, longestStreak",
-  [TABLE_NAMES.ACHIEVEMENT_NOTIFICATIONS]: "++id, type, timestamp, isRead",
-  // Challenge extension tables (v3)
-  [TABLE_NAMES.WEEKLY_CHALLENGES]:
-    "++id, weekNumber, year, [year+weekNumber], isActive, startDate, endDate",
-  [TABLE_NAMES.USER_WEEKLY_PROGRESS]:
-    "++id, challengeId, userId, [year+weekNumber], isCompleted, completedAt",
-  [TABLE_NAMES.SKILL_PROGRESSIONS]:
-    "++id, skillId, skillCategory, isActive, order",
-  [TABLE_NAMES.USER_SKILL_PROGRESS]:
-    "++id, skillId, userId, currentLevel, isCompleted, lastProgressAt",
   // Train module tables (v4)
   [TABLE_NAMES.TRAIN_PERFORMANCES]:
     "++id, sequenceId, performedAt, grade, [sequenceId+performedAt], score.percentage",

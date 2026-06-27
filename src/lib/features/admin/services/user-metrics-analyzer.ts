@@ -1,10 +1,10 @@
-import type { SummaryMetrics, ContentStatistics, EngagementMetrics, AnalyticsTimeRange } from "./types";
+import type { SummaryMetrics, ContentStatistics, AnalyticsTimeRange } from "./types";
 import type { SystemStateManager } from "./system-state-manager";
 /**
  * User Metrics Analyzer
  *
  * Analyzes user-based metrics from the SystemStateManager cache.
- * Handles summary metrics, content statistics, and engagement metrics.
+ * Handles summary metrics and content statistics.
  */
 
 
@@ -15,11 +15,9 @@ const EMPTY_SUMMARY_METRICS: SummaryMetrics = {
   totalUsers: 0,
   activeToday: 0,
   sequencesCreated: 0,
-  challengesCompleted: 0,
   previousTotalUsers: 0,
   previousActiveToday: 0,
   previousSequencesCreated: 0,
-  previousChallengesCompleted: 0,
 };
 
 const EMPTY_CONTENT_STATS: ContentStatistics = {
@@ -27,15 +25,6 @@ const EMPTY_CONTENT_STATS: ContentStatistics = {
   publicSequences: 0,
   totalViews: 0,
   totalShares: 0,
-};
-
-const EMPTY_ENGAGEMENT_METRICS: EngagementMetrics = {
-  challengeParticipants: 0,
-  achievementsUnlocked: 0,
-  activeStreaks: 0,
-  totalXPEarned: 0,
-  totalUsers: 0,
-  totalAchievementsPossible: 0,
 };
 
 export class UserMetricsAnalyzer {
@@ -64,7 +53,6 @@ export class UserMetricsAnalyzer {
       let activeToday = 0;
       let previousActiveToday = 0;
       let totalSequences = 0;
-      let totalChallenges = 0;
 
       for (const user of users) {
         // Count active users
@@ -77,19 +65,16 @@ export class UserMetricsAnalyzer {
         }
         // Sum totals
         totalSequences += user.sequenceCount;
-        totalChallenges += user.challengesCompleted;
       }
 
       return {
         totalUsers,
         activeToday,
         sequencesCreated: totalSequences,
-        challengesCompleted: totalChallenges,
         // No historical comparison available for these metrics
         previousTotalUsers: totalUsers,
         previousActiveToday,
         previousSequencesCreated: totalSequences,
-        previousChallengesCompleted: totalChallenges,
       };
     } catch (error) {
       console.error("[UserMetricsAnalyzer] Failed to get summary metrics:", error);
@@ -126,52 +111,6 @@ export class UserMetricsAnalyzer {
     } catch (error) {
       console.error("[UserMetricsAnalyzer] Failed to get content statistics:", error);
       return EMPTY_CONTENT_STATS;
-    }
-  }
-
-  /**
-   * Get engagement metrics from user data
-   */
-  async getEngagementMetrics(): Promise<EngagementMetrics> {
-    try {
-      const systemState = await this.systemStateManager.getSystemState();
-      const users = systemState.users;
-      const totalUsers = users.length;
-
-      let challengeParticipants = 0;
-      let achievementsUnlocked = 0;
-      let activeStreaks = 0;
-      let totalXPEarned = 0;
-
-      for (const user of users) {
-        // Count users who have completed at least one challenge
-        if (user.challengesCompleted > 0) {
-          challengeParticipants++;
-        }
-        // Sum up achievements
-        achievementsUnlocked += user.achievementCount;
-        // Count users with active streaks
-        if (user.currentStreak > 0) {
-          activeStreaks++;
-        }
-        // Sum up XP
-        totalXPEarned += user.totalXP;
-      }
-
-      // Calculate total possible achievements (10 achievements per user as baseline)
-      const totalAchievementsPossible = totalUsers * 10;
-
-      return {
-        challengeParticipants,
-        achievementsUnlocked,
-        activeStreaks,
-        totalXPEarned,
-        totalUsers,
-        totalAchievementsPossible,
-      };
-    } catch (error) {
-      console.error("[UserMetricsAnalyzer] Failed to get engagement metrics:", error);
-      return EMPTY_ENGAGEMENT_METRICS;
     }
   }
 }

@@ -5,7 +5,7 @@
  * This is the main entry point for analytics data in the admin module.
  *
  * Architecture:
- * - UserMetricsAnalyzer: Summary, content, and engagement metrics from SystemStateManager
+ * - UserMetricsAnalyzer: Summary and content metrics from SystemStateManager
  * - EventActivityAnalyzer: Activity logs, event breakdowns, module usage
  * - ContentQueryAnalyzer: Top sequences and content queries
  */
@@ -14,7 +14,7 @@ import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import type { UserMetricsAnalyzer } from "./user-metrics-analyzer";
 import type { EventActivityAnalyzer } from "./event-activity-analyzer";
 import { getTopSequences } from "$lib/features/admin/services/content-query-analyzer";
-import type { SummaryMetrics, UserActivityPoint, ContentStatistics, TopSequenceData, EngagementMetrics, AnalyticsTimeRange, EventTypeBreakdown, ModuleUsageData, RecentActivityEvent } from "./types";
+import type { SummaryMetrics, UserActivityPoint, ContentStatistics, TopSequenceData, AnalyticsTimeRange, EventTypeBreakdown, ModuleUsageData, RecentActivityEvent } from "./types";
 
 /**
  * Empty metrics for when Firebase is unavailable
@@ -23,11 +23,9 @@ const EMPTY_SUMMARY_METRICS: SummaryMetrics = {
   totalUsers: 0,
   activeToday: 0,
   sequencesCreated: 0,
-  challengesCompleted: 0,
   previousTotalUsers: 0,
   previousActiveToday: 0,
   previousSequencesCreated: 0,
-  previousChallengesCompleted: 0,
 };
 
 export class AnalyticsDataProvider {
@@ -70,20 +68,6 @@ export class AnalyticsDataProvider {
       return { totalSequences: 0, publicSequences: 0, totalViews: 0, totalShares: 0 };
     }
     return this.userMetricsAnalyzer.getContentStatistics();
-  }
-
-  async getEngagementMetrics(): Promise<EngagementMetrics> {
-    if (!(await this.isFirestoreAvailable())) {
-      return {
-        challengeParticipants: 0,
-        achievementsUnlocked: 0,
-        activeStreaks: 0,
-        totalXPEarned: 0,
-        totalUsers: 0,
-        totalAchievementsPossible: 0,
-      };
-    }
-    return this.userMetricsAnalyzer.getEngagementMetrics();
   }
 
   // ============================================================================

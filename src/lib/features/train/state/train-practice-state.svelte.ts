@@ -55,7 +55,6 @@ interface PracticeState {
   adaptiveConfig: AdaptiveConfig;
   stepConfig: StepConfig;
   timedConfig: TimedConfig;
-  currentChallengeId?: string;
   // Sequence persistence
   lastSequenceId: string | null;
   lastSequenceData: SequenceData | null;
@@ -142,14 +141,6 @@ export function createTrainPracticeState() {
       case PracticeMode.TIMED:
         return state.timedConfig;
     }
-  }
-
-  function loadChallenge(challengeId: string) {
-    state.currentChallengeId = challengeId;
-  }
-
-  function clearChallenge() {
-    state.currentChallengeId = undefined;
   }
 
   /**
@@ -271,9 +262,6 @@ export function createTrainPracticeState() {
     get timedConfig() {
       return state.timedConfig;
     },
-    get currentChallengeId() {
-      return state.currentChallengeId;
-    },
     get lastSequenceId() {
       return state.lastSequenceId;
     },
@@ -302,8 +290,6 @@ export function createTrainPracticeState() {
     updateStepConfig,
     updateTimedConfig,
     getCurrentModeConfig,
-    loadChallenge,
-    clearChallenge,
     setLastSequence,
     clearLastSequence,
     addToRecentSequences,

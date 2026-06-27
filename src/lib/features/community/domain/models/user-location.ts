@@ -29,8 +29,6 @@ export interface UserLocationWithProfile extends UserLocation {
   username: string;
   displayName: string;
   avatar?: string;
-  totalXP: number;
-  currentLevel: number;
   sequenceCount: number;
 }
 

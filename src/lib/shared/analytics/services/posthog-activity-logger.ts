@@ -40,10 +40,6 @@ export async function logActivity(
     if (metadata.quizId !== undefined) properties.quiz_id = metadata.quizId;
     if (metadata.score !== undefined) properties.score = metadata.score;
     if (metadata.correct !== undefined) properties.correct = metadata.correct;
-    if (metadata.achievementId !== undefined) properties.achievement_id = metadata.achievementId;
-    if (metadata.challengeId !== undefined) properties.challenge_id = metadata.challengeId;
-    if (metadata.xpAmount !== undefined) properties.xp_amount = metadata.xpAmount;
-    if (metadata.newLevel !== undefined) properties.new_level = metadata.newLevel;
     if (metadata.settingKey !== undefined) properties.setting_key = metadata.settingKey;
     if (metadata.oldValue !== undefined) properties.old_value = metadata.oldValue;
     if (metadata.newValue !== undefined) properties.new_value = metadata.newValue;
@@ -55,7 +51,7 @@ export async function logActivity(
     const mappedKeys = [
       "module", "panel", "previousModule", "sequenceId", "sequenceWord", "sequenceLength",
       "isPublic", "generationType", "loopType", "lessonId", "quizId", "score", "correct",
-      "achievementId", "challengeId", "xpAmount", "newLevel", "settingKey", "oldValue",
+      "settingKey", "oldValue",
       "newValue", "shareMethod", "exportFormat", "targetUserId", "duration",
     ];
 
@@ -95,14 +91,6 @@ export async function logShareAction(
   metadata?: Partial<ActivityMetadata>,
 ): Promise<void> {
   await logActivity(action, "share", metadata);
-}
-
-/** Log an achievement/XP event */
-export async function logAchievementAction(
-  action: "achievement_unlock" | "challenge_start" | "challenge_complete" | "xp_earn" | "level_up",
-  metadata?: Partial<ActivityMetadata>,
-): Promise<void> {
-  await logActivity(action, "achievement", metadata);
 }
 
 /** Log a settings change */

@@ -2,7 +2,7 @@
  * System State Service Implementation
  *
  * Unified data hub that loads and caches core admin collections.
- * Fetches users, challenges, and announcements once and derives all views from this snapshot.
+ * Fetches users and announcements once and derives all views from this snapshot.
  */
 
 import {
@@ -11,7 +11,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
-import type { SystemState, CachedUserMetadata, CachedChallenge, CachedAnnouncement } from "./types";
+import type { SystemState, CachedUserMetadata, CachedAnnouncement } from "./types";
 
 // Cache TTL: 2-3 minutes for ops work (stale data is acceptable)
 const SYSTEM_STATE_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
@@ -68,15 +68,13 @@ export class SystemStateManager {
       const expiresAt = now + SYSTEM_STATE_CACHE_TTL_MS;
 
       // Load all collections in parallel
-      const [users, challenges, announcements] = await Promise.all([
+      const [users, announcements] = await Promise.all([
         this.loadUsers(),
-        this.loadChallenges(),
         this.loadAnnouncements(),
       ]);
 
       const systemState: SystemState = {
         users,
-        challenges,
         announcements,
         loadedAt: now,
         expiresAt,
@@ -155,10 +153,6 @@ export class SystemStateManager {
       publicSequenceCount: (data["publicSequenceCount"] as number) ?? 0,
       totalViews: (data["totalViews"] as number) ?? 0,
       shareCount: (data["shareCount"] as number) ?? 0,
-      challengesCompleted: (data["challengesCompleted"] as number) ?? 0,
-      achievementCount: (data["achievementCount"] as number) ?? 0,
-      currentStreak: (data["currentStreak"] as number) ?? 0,
-      totalXP: (data["totalXP"] as number) ?? 0,
       lastActivityDate,
       createdAt: createdAtDate,
       disabled: (data["disabled"] as boolean) ?? false,
@@ -169,130 +163,6 @@ export class SystemStateManager {
         | import("$lib/shared/presence/domain/models/presence-models").PresenceLocation
         | undefined) ?? null,
     };
-  }
-
-  /**
-   * Load all challenges (daily and train)
-   */
-  private async loadChallenges(): Promise<CachedChallenge[]> {
-    try {
-      const [dailyChallenges, trainChallenges] = await Promise.all([
-        this.loadDailyChallenges(),
-        this.loadTrainChallenges(),
-      ]);
-
-      return [...dailyChallenges, ...trainChallenges];
-    } catch (error) {
-      console.error("Failed to load challenges:", error);
-      return [];
-    }
-  }
-
-  /**
-   * Load daily challenges
-   */
-  private async loadDailyChallenges(): Promise<CachedChallenge[]> {
-    try {
-      const firestore = await getFirestoreInstance();
-      const challengesRef = collection(firestore, "dailyChallenges");
-      const snapshot = await withTimeout(
-        getDocs(challengesRef),
-        QUERY_TIMEOUT_MS,
-        null
-      );
-
-      if (!snapshot) {
-        return [];
-      }
-
-      const challenges: CachedChallenge[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const scheduledDate = data["scheduledDate"];
-        let scheduledDateObj: Date | null = null;
-        if (scheduledDate) {
-          scheduledDateObj =
-            scheduledDate instanceof Timestamp
-              ? scheduledDate.toDate()
-              : new Date(scheduledDate as string);
-        }
-
-        const createdAt = data["createdAt"];
-        let createdAtDate: Date | null = null;
-        if (createdAt) {
-          createdAtDate =
-            createdAt instanceof Timestamp
-              ? createdAt.toDate()
-              : new Date(createdAt as string);
-        }
-
-        challenges.push({
-          id: doc.id,
-          name: (data["name"] as string) ?? "Untitled",
-          description: (data["description"] as string) ?? null,
-          difficulty: (data["difficulty"] as string) ?? "intermediate",
-          xpReward: (data["xpReward"] as number) ?? 0,
-          sequenceId: (data["sequenceId"] as string) ?? null,
-          scheduledDate: scheduledDateObj,
-          createdAt: createdAtDate,
-          type: "daily",
-        });
-      });
-
-      return challenges;
-    } catch (error) {
-      console.error("Failed to load daily challenges:", error);
-      return [];
-    }
-  }
-
-  /**
-   * Load train challenges
-   */
-  private async loadTrainChallenges(): Promise<CachedChallenge[]> {
-    try {
-      const firestore = await getFirestoreInstance();
-      const challengesRef = collection(firestore, "trainChallenges");
-      const snapshot = await withTimeout(
-        getDocs(challengesRef),
-        QUERY_TIMEOUT_MS,
-        null
-      );
-
-      if (!snapshot) {
-        return [];
-      }
-
-      const challenges: CachedChallenge[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const createdAt = data["createdAt"];
-        let createdAtDate: Date | null = null;
-        if (createdAt) {
-          createdAtDate =
-            createdAt instanceof Timestamp
-              ? createdAt.toDate()
-              : new Date(createdAt as string);
-        }
-
-        challenges.push({
-          id: doc.id,
-          name: (data["name"] as string) ?? "Untitled",
-          description: (data["description"] as string) ?? null,
-          difficulty: (data["difficulty"] as string) ?? "intermediate",
-          xpReward: (data["xpReward"] as number) ?? 0,
-          sequenceId: null, // Train challenges don't have sequences
-          scheduledDate: null,
-          createdAt: createdAtDate,
-          type: "train",
-        });
-      });
-
-      return challenges;
-    } catch (error) {
-      console.error("Failed to load train challenges:", error);
-      return [];
-    }
   }
 
   /**
@@ -389,7 +259,6 @@ export class SystemStateManager {
   private getEmptySystemState(): SystemState {
     return {
       users: [],
-      challenges: [],
       announcements: [],
       loadedAt: Date.now(),
       expiresAt: Date.now(),

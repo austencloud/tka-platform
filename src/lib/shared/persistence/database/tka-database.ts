@@ -11,21 +11,6 @@ import type { PictographData } from "../../pictograph/shared/domain/models/picto
 import type { SequenceData } from "../../foundation/domain/models/sequence-data";
 import Dexie, { type EntityTable } from "dexie";
 import type {
-  AchievementNotification,
-  DailyChallenge,
-  UserAchievement,
-  UserChallengeProgress,
-  UserStreak,
-  UserXP,
-  XPGainEvent,
-} from "../../gamification/domain/models/achievement-models";
-import type {
-  WeeklyChallenge,
-  UserWeeklyChallengeProgress,
-  SkillProgression,
-  UserSkillProgress,
-} from "../../gamification/domain/models/challenge-models";
-import type {
   StoredPerformance,
   StoredCalibrationProfile,
 } from "$lib/shared/train/domain/train-database-models";
@@ -60,21 +45,6 @@ export class TKADatabase extends Dexie {
   userWork!: EntityTable<UserWorkData, "id">;
   userProjects!: EntityTable<UserProject, "id">;
   settings!: EntityTable<AppSettings & { id: string }, "id">;
-
-  // Gamification tables (v2)
-  userAchievements!: EntityTable<UserAchievement, "id">;
-  userXP!: EntityTable<UserXP, "id">;
-  xpEvents!: EntityTable<XPGainEvent, "id">;
-  dailyChallenges!: EntityTable<DailyChallenge, "id">;
-  userChallengeProgress!: EntityTable<UserChallengeProgress, "id">;
-  userStreaks!: EntityTable<UserStreak, "id">;
-  achievementNotifications!: EntityTable<AchievementNotification, "id">;
-
-  // Challenge extension tables (v3)
-  weeklyChallenges!: EntityTable<WeeklyChallenge, "id">;
-  userWeeklyProgress!: EntityTable<UserWeeklyChallengeProgress, "id">;
-  skillProgressions!: EntityTable<SkillProgression, "id">;
-  userSkillProgress!: EntityTable<UserSkillProgress, "id">;
 
   // Train module tables (v4)
   trainPerformances!: EntityTable<StoredPerformance, "id">;
@@ -141,17 +111,6 @@ export async function clearAllData(): Promise<void> {
       db.userWork,
       db.userProjects,
       db.settings,
-      db.userAchievements,
-      db.userXP,
-      db.xpEvents,
-      db.dailyChallenges,
-      db.userChallengeProgress,
-      db.userStreaks,
-      db.achievementNotifications,
-      db.weeklyChallenges,
-      db.userWeeklyProgress,
-      db.skillProgressions,
-      db.userSkillProgress,
       db.trainPerformances,
       db.trainCalibrationProfiles,
       db.compositions,
@@ -164,17 +123,6 @@ export async function clearAllData(): Promise<void> {
       await db.userWork.clear();
       await db.userProjects.clear();
       await db.settings.clear();
-      await db.userAchievements.clear();
-      await db.userXP.clear();
-      await db.xpEvents.clear();
-      await db.dailyChallenges.clear();
-      await db.userChallengeProgress.clear();
-      await db.userStreaks.clear();
-      await db.achievementNotifications.clear();
-      await db.weeklyChallenges.clear();
-      await db.userWeeklyProgress.clear();
-      await db.skillProgressions.clear();
-      await db.userSkillProgress.clear();
       await db.trainPerformances.clear();
       await db.trainCalibrationProfiles.clear();
       await db.compositions.clear();
@@ -193,17 +141,6 @@ export async function getDatabaseInfo(): Promise<{
   userWork: number;
   userProjects: number;
   settings: number;
-  userAchievements: number;
-  userXP: number;
-  xpEvents: number;
-  dailyChallenges: number;
-  userChallengeProgress: number;
-  userStreaks: number;
-  achievementNotifications: number;
-  weeklyChallenges: number;
-  userWeeklyProgress: number;
-  skillProgressions: number;
-  userSkillProgress: number;
   trainPerformances: number;
   trainCalibrationProfiles: number;
   compositions: number;
@@ -216,19 +153,6 @@ export async function getDatabaseInfo(): Promise<{
     userWork: await db.userWork.count(),
     userProjects: await db.userProjects.count(),
     settings: await db.settings.count(),
-    // Gamification stats (v2)
-    userAchievements: await db.userAchievements.count(),
-    userXP: await db.userXP.count(),
-    xpEvents: await db.xpEvents.count(),
-    dailyChallenges: await db.dailyChallenges.count(),
-    userChallengeProgress: await db.userChallengeProgress.count(),
-    userStreaks: await db.userStreaks.count(),
-    achievementNotifications: await db.achievementNotifications.count(),
-    // Challenge extension stats (v3)
-    weeklyChallenges: await db.weeklyChallenges.count(),
-    userWeeklyProgress: await db.userWeeklyProgress.count(),
-    skillProgressions: await db.skillProgressions.count(),
-    userSkillProgress: await db.userSkillProgress.count(),
     // Train module stats (v4)
     trainPerformances: await db.trainPerformances.count(),
     trainCalibrationProfiles: await db.trainCalibrationProfiles.count(),

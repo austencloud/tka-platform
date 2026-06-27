@@ -29,8 +29,6 @@ const UserProfileJoinSchema = z
     username: z.string().nullish(),
     displayName: z.string().nullish(),
     avatar: z.string().nullish(),
-    totalXP: z.number().nullish(),
-    currentLevel: z.number().nullish(),
     sequenceCount: z.number().nullish(),
   })
   .passthrough();
@@ -104,8 +102,6 @@ export async function getPublicLocations(
           username: profile.username ?? "Unknown",
           displayName: profile.displayName ?? "Anonymous",
           avatar: profile.avatar ?? undefined,
-          totalXP: profile.totalXP ?? 0,
-          currentLevel: profile.currentLevel ?? 1,
           sequenceCount: profile.sequenceCount ?? 0,
         };
         return result;

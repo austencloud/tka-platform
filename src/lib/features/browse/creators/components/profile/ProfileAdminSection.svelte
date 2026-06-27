@@ -183,51 +183,6 @@
     }
   }
 
-  async function resetUserData() {
-    if (isActionPending) return;
-
-    isActionPending = true;
-    actionError = null;
-
-    try {
-      const firestore = await getFirestoreInstance();
-      const batch = writeBatch(firestore);
-
-      // Reset user stats
-      const userRef = doc(firestore, "users", userProfile.id);
-      batch.update(userRef, {
-        totalXP: 0,
-        currentLevel: 1,
-        achievementCount: 0,
-        currentStreak: 0,
-        longestStreak: 0,
-      });
-
-      // Delete XP document
-      const xpRef = doc(firestore, `users/${userProfile.id}/xp/current`);
-      batch.delete(xpRef);
-
-      // Delete streak document
-      const streakRef = doc(
-        firestore,
-        `users/${userProfile.id}/streak/current`
-      );
-      batch.delete(streakRef);
-
-      await batch.commit();
-
-      onUserUpdated?.({
-        totalXP: 0,
-        currentLevel: 1,
-      });
-    } catch (err) {
-      console.error("[ProfileAdminSection] Failed to reset data:", err);
-      actionError = "Failed to reset user data";
-    } finally {
-      isActionPending = false;
-      confirmAction = null;
-    }
-  }
 
   /**
    * Delete user completely from Firestore.
@@ -325,9 +280,6 @@
     switch (confirmAction.type) {
       case "disable":
         toggleDisabled();
-        break;
-      case "reset":
-        resetUserData();
         break;
       case "delete":
         deleteUser();
@@ -568,21 +520,6 @@
           aria-hidden="true"
         ></i>
         {userProfile.isDisabled ? "Enable Account" : "Disable Account"}
-      </button>
-
-      <button
-        class="action-btn danger"
-        disabled={isActionPending}
-        aria-label="Reset user progress"
-        onclick={() => {
-          confirmAction = {
-            type: "reset",
-            message: `Reset all progress for ${userProfile.displayName}? This will clear XP, level, achievements, and streaks.`,
-          };
-        }}
-      >
-        <i class="fas fa-rotate-left" aria-hidden="true"></i>
-        Reset Progress
       </button>
 
       <button

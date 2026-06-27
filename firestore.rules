@@ -134,91 +134,10 @@ service cloud.firestore {
       allow update, delete: if false; // Immutable audit trail
     }
 
-    // ============================================================================
-    // GAMIFICATION COLLECTIONS (Root Level)
-    // ============================================================================
-
-    // User Achievements - users can read/write their own achievements
-    // SECURITY: userId field is required - no fallback for missing field
-    match /userAchievements/{achievementId} {
-      allow read: if isOwner(resource.data.userId);
-      allow create: if hasValidUserId();
-      allow update: if isOwner(resource.data.userId);
-      allow delete: if isOwner(resource.data.userId);
-    }
-
-    // User XP - users can read/write their own XP data
-    // SECURITY: userId field is required - no fallback for missing field
-    match /userXP/{xpId} {
-      allow read: if isOwner(resource.data.userId);
-      allow create: if hasValidUserId();
-      allow update: if isOwner(resource.data.userId);
-      allow delete: if isOwner(resource.data.userId);
-    }
-
-    // XP Events - append-only log, users can only create events for themselves
-    // SECURITY: userId field is required on create
-    match /xpEvents/{eventId} {
-      allow read: if isOwner(resource.data.userId);
-      allow create: if hasValidUserId();
-      allow update, delete: if false; // Events are immutable
-    }
-
-    // Daily Challenges - global data, read-only for users (admin can write)
-    match /dailyChallenges/{challengeId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin(); // Only admin can create/update/delete challenges
-    }
-
-    // Weekly Challenges - global data, read-only for users (admin can write)
-    match /weeklyChallenges/{challengeId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Skill Progressions - global skill definitions (admin can write)
-    match /skillProgressions/{skillId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Train Challenges - global training challenges (admin can write)
-    match /trainChallenges/{challengeId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
     // Announcements - read by authenticated users, write by admins
     match /announcements/{announcementId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
-    }
-
-    // User Challenge Progress - users can read/write their own progress
-    // SECURITY: userId field is required - no fallback for missing field
-    match /userChallengeProgress/{progressId} {
-      allow read: if isOwner(resource.data.userId);
-      allow create: if hasValidUserId();
-      allow update: if isOwner(resource.data.userId);
-      allow delete: if isOwner(resource.data.userId);
-    }
-
-    // User Streaks - users can read/write their own streak data
-    // SECURITY: userId field is required - no fallback for missing field
-    match /userStreaks/{streakId} {
-      allow read: if isOwner(resource.data.userId);
-      allow create: if hasValidUserId();
-      allow update: if isOwner(resource.data.userId);
-      allow delete: if isOwner(resource.data.userId);
-    }
-
-    // Achievement Notifications - users can only read/write their own notifications
-    // SECURITY: userId field is required - no fallback for missing field
-    match /achievementNotifications/{notificationId} {
-      allow read: if isOwner(resource.data.userId);
-      allow create: if hasValidUserId();
-      allow update: if isOwner(resource.data.userId);
-      allow delete: if isOwner(resource.data.userId);
     }
 
     // ============================================================================
@@ -335,43 +254,9 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
-      // USER GAMIFICATION SUBCOLLECTIONS (Private - admin can read for preview)
+      // PROP COLLECTION + NOTIFICATIONS (the XP/achievement/challenge/streak
+      // gamification subcollections were removed 2026-06-26)
       // -------------------------------------------------------------------------
-
-      // User achievements - PUBLIC read for creator profiles in Browse
-      match /achievements/{achievementId} {
-        // Anyone can read achievements (for viewing creator profiles)
-        // Only owner can write, admins can delete
-        allow read: if true;
-        allow create, update: if isOwner(userId);
-        allow delete: if isOwner(userId) || isAdmin();
-      }
-
-      // User XP (single document or subcollection)
-      match /xp/{xpId} {
-        allow read, create, update: if isOwner(userId);
-        allow delete: if isOwner(userId) || isAdmin();
-      }
-
-      // XP events log (append-only for users, admins can delete for cleanup)
-      match /xpEvents/{eventId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if false; // Events are immutable
-        allow delete: if isAdmin(); // Admins can clean up
-      }
-
-      // Challenge progress
-      match /challengeProgress/{progressId} {
-        allow read, create, update: if isOwner(userId);
-        allow delete: if isOwner(userId) || isAdmin();
-      }
-
-      // User streak (single document or subcollection)
-      match /streak/{streakId} {
-        allow read, create, update: if isOwner(userId);
-        allow delete: if isOwner(userId) || isAdmin();
-      }
 
       // Prop unlock collection (single propCollection doc under gamification)
       match /gamification/{docId} {
@@ -491,24 +376,6 @@ service cloud.firestore {
         allow read: if isOwner(userId) || isAdmin();
         allow create: if isOwner(userId);
         allow update: if isOwner(userId) || isAdmin();
-        allow delete: if isOwner(userId) || isAdmin();
-      }
-
-      // Weekly challenge progress
-      match /weeklyProgress/{progressId} {
-        allow read, create, update: if isOwner(userId);
-        allow delete: if isOwner(userId) || isAdmin();
-      }
-
-      // Skill progression tracking
-      match /skillProgress/{progressId} {
-        allow read, create, update: if isOwner(userId);
-        allow delete: if isOwner(userId) || isAdmin();
-      }
-
-      // Train challenge progress
-      match /trainProgress/{progressId} {
-        allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 

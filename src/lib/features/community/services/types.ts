@@ -36,7 +36,7 @@ export interface FollowingFeedItem {
   userAvatarUrl?: string;
 
   /** Type of activity */
-  eventType: "sequence_create" | "sequence_favorite" | "achievement_unlock";
+  eventType: "sequence_create" | "sequence_favorite";
 
   /** When the event occurred */
   timestamp: Date;
@@ -45,11 +45,6 @@ export interface FollowingFeedItem {
   sequenceId?: string;
   sequenceWord?: string;
   sequenceThumbnailUrl?: string;
-
-  /** Achievement context (for achievement events) */
-  achievementId?: string;
-  achievementName?: string;
-  achievementIcon?: string;
 }
 
 /**

@@ -22,8 +22,6 @@ Provides quiz functionality for learning TKA notation:
   import QuizResultsView from "./QuizResultsView.svelte";
   import QuizSelectorView from "./QuizSelectorView.svelte";
   import QuizWorkspaceView from "./QuizWorkspaceView.svelte";
-  import StreakDisplay from "./StreakDisplay.svelte";
-  import { getDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getCodex } from "$lib/features/learn/codex/get-codex";
   import { getQuizRepoManager } from "$lib/features/learn/quiz/get-quiz-repo-manager";
@@ -44,10 +42,6 @@ Provides quiz functionality for learning TKA notation:
   const hapticService = getHapticFeedback();
   const quizHistoryRecorder = quizHistoryRecorderModule;
   const letterToConceptMapper = letterToConceptMapperModule;
-  const delightOrchestrator = getDelightOrchestrator();
-
-  // Component refs
-  let streakDisplayRef = $state<StreakDisplay | null>(null);
 
   // ============================================================================
   // COMPONENT STATE
@@ -184,9 +178,6 @@ Provides quiz functionality for learning TKA notation:
 
       currentView = "results";
 
-      // Record daily activity for streak tracking
-      await streakDisplayRef?.recordActivity();
-
       // Persist quiz attempt to Firestore (fire-and-forget)
       persistQuizAttempt();
     } catch (err) {
@@ -227,13 +218,6 @@ Provides quiz functionality for learning TKA notation:
       .catch((err) => {
         console.warn("[QuizTab] Failed to persist quiz attempt:", err);
       });
-  }
-
-  function handleStreakMilestone(streak: number) {
-    // Trigger major celebration for streak milestones
-    delightOrchestrator?.celebrate('streak-milestone', {
-      toastMessage: `${streak} day streak! 🔥`
-    });
   }
 
   function handleReturnToSelector() {
@@ -313,7 +297,7 @@ Provides quiz functionality for learning TKA notation:
 <!-- ============================================================================ -->
 
 <div class="learn-tab" data-testid="learn-tab">
-  <!-- Unified header with back button + streak -->
+  <!-- Unified header with back button -->
   <div class="quiz-header">
     {#if currentView === "workspace"}
       <button
@@ -337,10 +321,6 @@ Provides quiz functionality for learning TKA notation:
     {:else}
       <div class="header-spacer"></div>
     {/if}
-    <StreakDisplay
-      bind:this={streakDisplayRef}
-      onStreakMilestone={handleStreakMilestone}
-    />
   </div>
 
   <!-- Error display -->

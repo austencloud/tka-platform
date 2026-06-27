@@ -2,11 +2,10 @@
   FloatingHeader
 
   Floating header that auto-hides on scroll down and shows on scroll up.
-  Contains StreakBadge, welcome message, InboxIcon, and AlertsIcon.
+  Contains welcome message, InboxIcon, and AlertsIcon.
   Uses gradient background to blend with content.
 -->
 <script lang="ts">
-  import StreakBadge from "./StreakBadge.svelte";
   import InboxIcon from "./InboxIcon.svelte";
   import AlertsIcon from "./AlertsIcon.svelte";
 
@@ -27,9 +26,7 @@
 
 <header class="floating-header" class:hidden={!isVisible}>
   <div class="header-content">
-    <div class="header-left">
-      <StreakBadge />
-    </div>
+    <div class="header-left"></div>
     <h1 class="welcome-message">{welcomeMessage}</h1>
     <div class="header-right">
       <InboxIcon onClick={onInboxClick} />

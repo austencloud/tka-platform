@@ -1,8 +1,8 @@
 // src/lib/shared/gamification/state/prop-collection-state.svelte.ts
 /**
  * Reactive mirror of the user's prop collection. The PropUnlockManager is the
- * writer; UI reads these values. Follows the gamification module's "export
- * $state + action functions" pattern (see notification-state.svelte.ts).
+ * writer; UI reads these values. Follows the "export $state + action
+ * functions" rune-state pattern.
  */
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {

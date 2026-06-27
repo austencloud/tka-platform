@@ -5,8 +5,6 @@
    * Main admin interface for managing TKA system
    */
 
-  import DailyChallengeScheduler from "./DailyChallengeScheduler.svelte";
-  import TrainChallengeManager from "./TrainChallengeManager.svelte";
   import UsersDashboard from "./UsersDashboard.svelte";
   import FeatureFlagManagement from "./FeatureFlagManagement.svelte";
   import AnnouncementManagement from "./AnnouncementManagement.svelte";
@@ -80,22 +78,6 @@
           aria-labelledby="users-tab"
         >
           <UsersDashboard />
-        </div>
-      {:else if activeSection === "challenges"}
-        <div
-          id="challenges-panel"
-          role="tabpanel"
-          aria-labelledby="challenges-tab"
-        >
-          <DailyChallengeScheduler />
-        </div>
-      {:else if activeSection === "train-challenges"}
-        <div
-          id="train-challenges-panel"
-          role="tabpanel"
-          aria-labelledby="train-challenges-tab"
-        >
-          <TrainChallengeManager />
         </div>
       {:else if activeSection === "flags"}
         <div id="flags-panel" role="tabpanel" aria-labelledby="flags-tab">

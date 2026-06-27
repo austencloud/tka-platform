@@ -19,7 +19,6 @@ export interface PerformanceScore {
   goodHits: number;
   misses: number;
   maxCombo: number;
-  xpEarned: number;
 }
 
 export type PerformanceGrade = "S" | "A" | "B" | "C" | "D" | "F";

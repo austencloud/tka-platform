@@ -46,16 +46,6 @@
 
   <div class="stats-grid">
     <div class="stat">
-      <i class="fas fa-star" aria-hidden="true"></i>
-      <span class="stat-label">{t('community_stat_level')}</span>
-      <span class="stat-value">{user.currentLevel}</span>
-    </div>
-    <div class="stat">
-      <i class="fas fa-bolt" aria-hidden="true"></i>
-      <span class="stat-label">{t('community_stat_xp')}</span>
-      <span class="stat-value">{user.totalXP.toLocaleString()}</span>
-    </div>
-    <div class="stat">
       <i class="fas fa-layer-group" aria-hidden="true"></i>
       <span class="stat-label">{t('community_stat_sequences')}</span>
       <span class="stat-value">{user.sequenceCount}</span>
