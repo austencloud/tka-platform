@@ -19,6 +19,7 @@
     releaseBackground,
   } from "$lib/shared/background/shared/state/background-suppression.svelte";
   import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
+  import ShopMorphLayer from "$lib/features/store/transitions/ShopMorphLayer.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
   import SiteHeader from "./SiteHeader.svelte";
@@ -71,6 +72,9 @@
          cosmos with a living, zero-jank "future-tech" wash that costs nothing to
          snapshot during the morph. -->
     <div class="shop-ambient" aria-hidden="true"></div>
+    <!-- Shared-element morph overlay (Motion spring-FLIP). Persists across the
+         grid<->detail route swap so the ghost can bridge it. -->
+    <ShopMorphLayer />
   {/if}
 
   <div class="mkt-layer">

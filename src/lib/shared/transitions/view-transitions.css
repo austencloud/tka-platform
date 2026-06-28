@@ -29,32 +29,12 @@
 }
 
 /* ============================================================================
-   SHOP PRODUCT COVER MORPH
-   The card cover carries view-transition-name=product-{id} and
-   view-transition-class=product-cover in both the grid and the detail view, so
-   it morphs between them. A gentle slow-in easing keeps the burst feeling smooth
-   even when the first frame is heavy (the full-viewport cosmic background is
-   costly to snapshot, ~99ms on the opening frame).
+   SHOP PRODUCT COVER MORPH — retired.
+   The shop card->detail cover morph moved OFF the View Transitions API to a
+   Motion spring-FLIP (src/lib/features/store/transitions/ShopMorphLayer.svelte):
+   interruptible, velocity-aware, and works on Safari/Firefox where VT does not.
+   The old ::view-transition-group(.product-cover) rules were removed.
    ============================================================================ */
-::view-transition-group(.product-cover) {
-  animation-duration: 500ms;
-  /* Even ease (the standard curve), NOT a front-loaded decelerate. The old curve
-     (0.16,1,0.3,1) covered ~60% of the distance in the first ~80ms — exactly when
-     the destination page is mounting and the main thread is busiest — so a single
-     dropped frame there ate a huge chunk of motion and read as a skip. An even
-     curve spreads the motion across the whole 500ms, so any early hitch is nearly
-     invisible and the morph reads as butter. (The cosmos is now suppressed on
-     /shop, so the heavy WebGL snapshot is already gone.) */
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Settle the geometry over the full 500ms, but resolve the old->new cross-fade
-   sooner so the cover's content is crisp through the final settle (reads sharp
-   the moment real cover art lands on both sides). */
-::view-transition-old(.product-cover),
-::view-transition-new(.product-cover) {
-  animation-duration: 320ms;
-}
 
 /* ============================================================================
    COMMUNITY PANEL TRANSITIONS
@@ -257,13 +237,6 @@
   ::view-transition-new(root) {
     animation: none !important;
     transition: none !important;
-  }
-
-  /* Shop product cover: snap instead of morph under reduced motion. */
-  ::view-transition-group(.product-cover),
-  ::view-transition-old(.product-cover),
-  ::view-transition-new(.product-cover) {
-    animation-duration: 1ms !important;
   }
 
   /* Instant transitions */

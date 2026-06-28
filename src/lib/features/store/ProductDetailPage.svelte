@@ -9,6 +9,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   import CardMockupPreview from "./components/CardMockupPreview.svelte";
   import SampleCardCarousel from "./components/SampleCardCarousel.svelte";
   import BuyButton from "./components/BuyButton.svelte";
+  import { captureMorphSource } from "./transitions/shop-morph";
   import type { Product } from "./domain/models/product";
 
   interface Props {
@@ -48,7 +49,11 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
       <div class="error">{state.error}</div>
     {:else if state.selectedProduct}
       {@const product = state.selectedProduct}
-      <a href="/shop" class="back-button">
+      <a
+        href="/shop"
+        class="back-button"
+        onclick={() => captureMorphSource(product.id)}
+      >
         <i class="fas fa-arrow-left" aria-hidden="true"></i> All Products
       </a>
 
@@ -57,7 +62,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
           <CardMockupPreview
             coverImageUrl={product.coverImageUrl}
             productName={product.name}
-            viewTransitionName={`product-${product.id}`}
+            morphId={product.id}
           />
         </div>
 

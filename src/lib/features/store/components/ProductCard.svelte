@@ -2,6 +2,7 @@
 <script lang="ts">
   import type { Product } from "../domain/models/product";
   import CardMockupPreview from "./CardMockupPreview.svelte";
+  import { captureMorphSource } from "../transitions/shop-morph";
 
   interface Props {
     product: Product;
@@ -20,11 +21,12 @@
   href="/shop/{product.id}"
   class="product-card"
   style:--enter-delay="{index * 40}ms"
+  onclick={() => captureMorphSource(product.id)}
 >
   <CardMockupPreview
     coverImageUrl={product.coverImageUrl}
     productName={product.name}
-    viewTransitionName={`product-${product.id}`}
+    morphId={product.id}
   />
   <div class="card-info">
     <h3 class="card-name">{product.name}</h3>

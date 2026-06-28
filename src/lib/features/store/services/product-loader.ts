@@ -9,7 +9,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { Product } from "../domain/models/product";
-import { DEMO_PRODUCTS } from "./demo-products"; // TEMP DEMO FIXTURE — remove before launch
+import { DEMO_PRODUCTS, withPlaceholderCover } from "./demo-products"; // TEMP DEMO FIXTURE — remove before launch
 
 export async function loadActiveProducts(): Promise<Product[]> {
   const firestore = await getFirestoreInstance();
@@ -34,7 +34,11 @@ export async function loadAllProducts(): Promise<Product[]> {
   const productsRef = collection(firestore, "products");
   const q = query(productsRef, orderBy("sortOrder", "asc"));
   const snapshot = await getDocs(q);
-  const real = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Product);
+  // TEMP DEV FALLBACK — fill empty real covers with a gradient placeholder so the
+  // grid isn't half-glyph during layout/transition work. Remove before launch.
+  const real = snapshot.docs
+    .map((d) => ({ id: d.id, ...d.data() }) as Product)
+    .map(withPlaceholderCover);
   // TEMP DEMO FIXTURE — admin view only; interleave by sortOrder. Remove before launch.
   return [...real, ...DEMO_PRODUCTS].sort((a, b) => a.sortOrder - b.sortOrder);
 }
@@ -50,5 +54,7 @@ export async function loadProduct(productId: string): Promise<Product | null> {
   const docRef = doc(firestore, "products", productId);
   const snapshot = await getDoc(docRef);
   if (!snapshot.exists()) return null;
-  return { id: snapshot.id, ...snapshot.data() } as Product;
+  // TEMP DEV FALLBACK — same placeholder fill as the grid so the detail page and
+  // its morph show an image instead of the glyph. Remove before launch.
+  return withPlaceholderCover({ id: snapshot.id, ...snapshot.data() } as Product);
 }

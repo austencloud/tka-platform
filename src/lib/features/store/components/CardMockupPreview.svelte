@@ -1,16 +1,36 @@
 <!-- src/lib/features/store/components/CardMockupPreview.svelte -->
 <script lang="ts">
+  import { onMount } from "svelte";
+  import {
+    registerCover,
+    unregisterCover,
+    startMorphInto,
+  } from "../transitions/shop-morph";
+
   interface Props {
     coverImageUrl?: string;
     productName: string;
-    /** When set, names this element for a cross-route view-transition morph. */
-    viewTransitionName?: string;
+    /** Product id. When set, this cover joins the shared-element morph (grid card
+        <-> detail hero). Omitted for the morph ghost's own copy. */
+    morphId?: string;
   }
 
-  let { coverImageUrl, productName, viewTransitionName }: Props = $props();
+  let { coverImageUrl, productName, morphId }: Props = $props();
+
+  let containerEl: HTMLDivElement | undefined = $state();
+
+  onMount(() => {
+    if (!morphId || !containerEl) return;
+    const el = containerEl;
+    const id = morphId;
+    registerCover(id, el, { coverImageUrl, productName });
+    // If we navigated INTO this cover, run the incoming ghost morph.
+    startMorphInto(id, el);
+    return () => unregisterCover(id, el);
+  });
 </script>
 
-<div class="mockup-container" style:view-transition-name={viewTransitionName}>
+<div class="mockup-container" bind:this={containerEl}>
   {#if coverImageUrl}
     <img
       src={coverImageUrl}
@@ -34,13 +54,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* This is the view-transition-named element. Keep CSS containment OFF it —
-       container-type/contain on a morphing (named) element is a known-fragile
-       combination (the Chrome 129 containing-block change). The cqw query
-       container lives on the child .placeholder instead. */
-    /* Shared morph styling for the grid<->detail view transition (only takes
-       effect on instances that also carry a view-transition-name). */
-    view-transition-class: product-cover;
   }
 
   .cover-image {

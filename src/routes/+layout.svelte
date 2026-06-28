@@ -32,9 +32,10 @@
     if (!from || !to) return false;
     const a = from.pathname;
     const b = to.pathname;
-    // Shop grid <-> product detail: the product cover morphs (product-{id}).
-    if (a.startsWith("/shop") && b.startsWith("/shop")) return true;
-    // Browse gallery <-> sequence viewer: the thumbnail morphs (sequence-{id}).
+    // Shop uses a Motion spring-FLIP morph (ShopMorphLayer), NOT the View
+    // Transitions API — interruptible, velocity-aware, and works on Safari/Firefox
+    // where VT does not. So shop navigations are deliberately excluded here.
+    // Browse gallery <-> sequence viewer still uses the VT thumbnail morph.
     const seqPair = (x: string, y: string) =>
       x.startsWith("/browse") && y.startsWith("/sequence");
     if (seqPair(a, b) || seqPair(b, a)) return true;
