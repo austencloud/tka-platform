@@ -154,6 +154,31 @@
   }
 </script>
 
+{#snippet customizeAnchors()}
+  <!-- Quick anchors while tuning: snap to factory (Default) or your saved look
+       (Custom) without leaving the Customize panel. -->
+  <div class="anchor-row">
+    <button
+      type="button"
+      class="anchor-btn"
+      class:active={activePresetId === DEFAULT_CHIP_ID}
+      onclick={() => handlePresetSelect(DEFAULT_CHIP_ID)}
+    >
+      Default
+    </button>
+    <button
+      type="button"
+      class="anchor-btn"
+      class:active={activePresetId === CUSTOM_CHIP_ID}
+      class:disabled={customDisabled}
+      disabled={customDisabled}
+      onclick={() => handlePresetSelect(CUSTOM_CHIP_ID)}
+    >
+      Custom
+    </button>
+  </div>
+{/snippet}
+
 {#if layout === "sidebar"}
   <div class="effects-panel">
     {#if showPlayback}
@@ -197,6 +222,7 @@
 
     {#if customizeOpen && CustomizeComponent}
       <div class="sb-section">
+        {@render customizeAnchors()}
         <CustomizeComponent onBack={handleCustomizeClose} />
       </div>
     {/if}
@@ -220,6 +246,7 @@
           <span class="back-row-sub">More tuning</span>
         </span>
       </button>
+      {@render customizeAnchors()}
       <CustomizeComponent onBack={handleCustomizeClose} />
     {:else}
       <div class="fx-strip" class:grid={layout === "grid"} role="radiogroup" aria-label="Select effect">
@@ -345,6 +372,49 @@
 
   .reset-all-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  /* ── Customize anchors (Default | Custom snap-row) ── */
+  .anchor-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .anchor-btn {
+    flex: 1;
+    min-height: var(--min-touch-target, 44px);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 150ms ease;
+  }
+
+  .anchor-btn:hover:not(:disabled) {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, white);
+  }
+
+  .anchor-btn.active {
+    border-color: color-mix(in srgb, var(--fx-accent) 55%, transparent);
+    background: color-mix(in srgb, var(--fx-accent) 15%, transparent);
+    color: var(--fx-accent-text);
+  }
+
+  .anchor-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .anchor-btn:focus-visible {
+    outline: 2px solid var(--fx-accent);
     outline-offset: 2px;
   }
 
@@ -621,7 +691,8 @@
     .preset-chip,
     .more-btn,
     .back-row,
-    .reset-all-btn {
+    .reset-all-btn,
+    .anchor-btn {
       transition: none;
     }
   }
