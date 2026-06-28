@@ -549,12 +549,10 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
           isOwned={ctx.isOwned}
           isLoggedIn={ctx.isLoggedIn}
           practiceActive={ctx.practiceActive}
-          practiceConfig={ctx.practiceState.userConfig}
           onFavorite={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
           onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
           onEdit={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
-          onPracticeToggle={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
-          onPracticeConfigUpdate={ctx.practiceState.updateConfig}
+          onPracticeToggle={() => ctx.practiceActive ? ctx.exitPracticeMode() : ctx.enterPracticeMode()}
           onStepBack={() => ctx.handlePracticeStep(-1)}
           onStepForward={() => ctx.handlePracticeStep(1)}
           onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
@@ -662,8 +660,12 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
                 onCanvasReady={ctx.handleCanvasReady}
                 onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
                 practiceActive={ctx.practiceActive}
+                practiceRunning={ctx.practiceRunning}
                 practiceCellSize={ctx.practiceViewPrefs.cellSize}
-                practiceCanvasFraction={ctx.practiceViewPrefs.canvasFraction}
+                practiceCanvasFraction={ctx.practiceRunning ? ctx.practiceViewPrefs.canvasFraction : 0.5}
+                practiceConfig={ctx.practiceState.userConfig}
+                onPracticeSetConfig={ctx.handlePracticeSetConfig}
+                onPracticeStart={ctx.handlePracticeStart}
               />
               <ChoreoCardContextMenuHost
                 bind:this={choreoCardMenuHost}
@@ -724,7 +726,7 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
           <!-- Stays mounted; a flow child that pushes the content up (one instant
                reflow at the slide's near edge) while the bar slides up via
                composited transform → 60fps. Parked (height 0) + inert when off. -->
-          <div class="practice-bar-rise" class:up={ctx.practiceActive} inert={!ctx.practiceActive}>
+          <div class="practice-bar-rise" class:up={ctx.practiceRunning} inert={!ctx.practiceRunning}>
             <PracticeBar
               progress={ctx.practiceState.progress}
               bpm={ctx.bpmLocal}
@@ -733,7 +735,7 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
               onPlayPause={ctx.handlePlaybackToggle}
               onStepLevel={ctx.handlePracticeStepLevel}
               onToggleHold={ctx.handlePracticeToggleHold}
-              onSetConfig={ctx.handlePracticeSetConfig}
+              onStop={ctx.handlePracticeStop}
             />
           </div>
         {/if}

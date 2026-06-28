@@ -58,6 +58,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     singlePlayDuration: number;
 
     practiceActive: boolean;
+    practiceRunning: boolean;
     practiceState: ReturnType<typeof import("$lib/shared/sequence-viewer/state/tempo-practice-state.svelte").createTempoPracticeState>;
     practiceViewPrefs: import("$lib/shared/sequence-viewer/state/practice-view-prefs.svelte").PracticeViewPrefs;
 
@@ -124,6 +125,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     invokeGatedAction: (type: PendingActionType, realHandler: (() => void) | (() => Promise<void>) | undefined) => void;
     handleUnifiedDarkModeToggle: () => void;
     handlePracticeStart: () => void;
+    enterPracticeMode: () => void;
+    exitPracticeMode: () => void;
     handlePracticeStepLevel: (dir: 1 | -1) => void;
     handlePracticeStep: (dir: 1 | -1) => void;
     handlePracticeToggleHold: () => void;
@@ -997,6 +1000,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     singlePlayDuration,
 
     practiceActive: playback.practiceActive,
+    practiceRunning: playback.practiceRunning,
     practiceState: playback.practiceState,
     practiceViewPrefs,
 
@@ -1088,6 +1092,16 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       }
       playback.handlePracticeStart();
     },
+    enterPracticeMode: () => {
+      // Setup screen lives in the split companion pane — force split view first.
+      if (viewerState.viewerMode !== 'split') {
+        viewerState.exitExport();
+        viewerState.setSplitConfig({ leftPane: 'animation', rightPane: 'card' });
+        viewerState.setViewerMode('split');
+      }
+      playback.enterPracticeMode();
+    },
+    exitPracticeMode: () => playback.exitPracticeMode(),
     handlePracticeStepLevel: (dir: 1 | -1) => playback.handlePracticeStepLevel(dir),
     handlePracticeStep: (dir: 1 | -1) => playback.handlePracticeStep(dir),
     handlePracticeToggleHold: () => playback.handlePracticeToggleHold(),

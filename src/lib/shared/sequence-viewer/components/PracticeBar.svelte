@@ -1,21 +1,26 @@
 <!--
   PracticeBar.svelte
 
-  Docked cockpit bar for focused practice mode. Centered, prominent controls in
-  one full-width strip at the bottom of the viewer:
+  Docked cockpit bar for focused practice mode. One full-width strip at the
+  bottom of the viewer, with only the LIVE controls:
 
-    play/pause | [Slower]  [− BPM +]  [Faster] | ❄ Hold | config + caption + fill
+    play/pause | [−Y Slower]  [ BPM ▾ ]  [+Y Faster] | ❄ Hold
+                         caption + fill below
 
-  One model, no modes: you set X (loops between speed-ups) and Y (BPM per
-  speed-up), with an optional goal. X=1 is the gentle per-loop creep; X=5,Y=5 is
-  a hold-then-jump staircase. The big Slower/Faster step by Y; the BPM pill has
-  small ±1 fine steppers flanking it. The number pulses on each bump and a slim
-  fill bar grows toward the next speed-up (or the goal). Exit lives in the header.
+  The Slower/Faster buttons step by Y (the schedule increment) and show that Y
+  on their face, so the step is coupled to the action instead of stranded in a
+  separate row. The BPM readout opens a popover (presets + exact entry +
+  tap-tempo) for jumping straight to any tempo. The auto-climb schedule
+  (Every X loops, +Y BPM, Goal) lives in the ⚙ gear in the viewer header — it is
+  not duplicated here. The number pulses on each bump; a slim fill bar grows
+  toward the next speed-up (or the goal). Exit lives in the header.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
-  import type { TempoPracticeConfig, TempoPracticeProgress } from "../services/tempo-practice-orchestrator";
+  import { Popover } from "bits-ui";
+  import BpmQuickPopover from "$lib/shared/animation-engine/components/controls/BpmQuickPopover.svelte";
+  import type { TempoPracticeProgress } from "../services/tempo-practice-orchestrator";
 
   interface Props {
     progress: TempoPracticeProgress;
@@ -27,13 +32,11 @@
     onStepLevel: (dir: 1 | -1) => void;
     /** Freeze/resume the auto-climb at the current speed. */
     onToggleHold: () => void;
-    /** Apply a live config change (loops X, step Y, goal, target on/off). Omit to
-     *  hide the inline config controls. */
-    onSetConfig?: (patch: Partial<TempoPracticeConfig>) => void;
+    /** Stop the ramp and return to the setup screen. */
+    onStop: () => void;
   }
 
-  let { progress, bpm, isPlaying, onBpmChange, onStepLevel, onToggleHold, onPlayPause, onSetConfig }: Props =
-    $props();
+  let { progress, bpm, isPlaying, onBpmChange, onStepLevel, onToggleHold, onPlayPause, onStop }: Props = $props();
 
   let bpmColor = $derived.by(() => {
     if (bpm <= 30) return "var(--semantic-success, #22c55e)";
@@ -42,58 +45,21 @@
     return "var(--semantic-error, #ef4444)";
   });
 
-  // Floor/ceiling shared by the level buttons and the fine spinner. Ceiling =
-  // the goal when a target is set, else the maxBpm cap (progress.targetBpm
-  // carries whichever applies).
+  // Floor/ceiling shared by the level buttons. Ceiling = the goal when a target
+  // is set, else the maxBpm cap (progress.targetBpm carries whichever applies).
   let atFloor = $derived(bpm <= progress.startBpm);
   let atCeiling = $derived(bpm >= progress.targetBpm);
 
-  function fine(dir: 1 | -1) {
-    const next = Math.max(progress.startBpm, Math.min(progress.maxBpm, bpm + dir));
-    if (next !== bpm) onBpmChange(next);
-  }
+  // Y — the per-step increment, shown on the Slower/Faster buttons so the step
+  // amount is visible where the action lives.
+  let increment = $derived(progress.increment);
 
-  // Fine ± with press-and-hold to repeat (accelerates after a short delay).
-  let holdTimer: ReturnType<typeof setTimeout> | null = null;
-  let holdInterval: ReturnType<typeof setInterval> | null = null;
-  function startFineHold(dir: 1 | -1) {
-    fine(dir);
-    holdTimer = setTimeout(() => {
-      holdInterval = setInterval(() => fine(dir), 90);
-    }, 450);
-  }
-  function stopFineHold() {
-    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
-    if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
-  }
+  // BPM popover open state (bits-ui owns dismissal: Esc + outside click).
+  let bpmOpen = $state(false);
 
   // Two knobs + an optional goal. X=1 reads as a continuous creep (no levels).
   let hasTarget = $derived(progress.targetEnabled);
   let isCreep = $derived(progress.roundsPerLevel <= 1);
-
-  // Inline config steppers (loops X, step Y, goal). Bounds mirror the gear popover.
-  const LOOPS_MIN = 1, LOOPS_MAX = 20, STEP_MIN = 1, STEP_MAX = 30, GOAL_STEP = 5;
-  function cfgLoops(dir: 1 | -1) {
-    const v = Math.max(LOOPS_MIN, Math.min(LOOPS_MAX, progress.roundsPerLevel + dir));
-    if (v !== progress.roundsPerLevel) onSetConfig?.({ roundsPerLevel: v });
-  }
-  function cfgStep(dir: 1 | -1) {
-    const v = Math.max(STEP_MIN, Math.min(STEP_MAX, progress.increment + dir));
-    if (v !== progress.increment) onSetConfig?.({ increment: v });
-  }
-  function cfgGoal(dir: 1 | -1) {
-    const v = Math.max(progress.startBpm + GOAL_STEP, Math.min(progress.maxBpm, progress.goalBpm + dir * GOAL_STEP));
-    if (v !== progress.goalBpm) onSetConfig?.({ targetBpm: v });
-  }
-  function toggleTarget() {
-    onSetConfig?.({ targetEnabled: !progress.targetEnabled });
-  }
-  let loopsAtMin = $derived(progress.roundsPerLevel <= LOOPS_MIN);
-  let loopsAtMax = $derived(progress.roundsPerLevel >= LOOPS_MAX);
-  let stepAtMin = $derived(progress.increment <= STEP_MIN);
-  let stepAtMax = $derived(progress.increment >= STEP_MAX);
-  let goalAtMin = $derived(progress.goalBpm <= progress.startBpm + GOAL_STEP);
-  let goalAtMax = $derived(progress.goalBpm >= progress.maxBpm);
 
   // Fill semantics: goal set → real start→goal progress; creep (X=1) → a faded
   // full (breathing) bar; staircase (X>1) → progress toward the next speed-up.
@@ -164,19 +130,6 @@
   });
 </script>
 
-{#snippet cfgStepper(label: string, value: number, unit: string, dec: () => void, inc: () => void, atMin: boolean, atMax: boolean)}
-  <div class="pb-cfg" role="group" aria-label={label}>
-    <span class="pb-cfg-label">{label}</span>
-    <button class="pb-fine-btn" type="button" onclick={dec} disabled={atMin} aria-label="Decrease {label}">
-      <i class="fas fa-minus" aria-hidden="true"></i>
-    </button>
-    <span class="pb-cfg-value">{value}{#if unit}<span class="pb-cfg-unit">{unit}</span>{/if}</span>
-    <button class="pb-fine-btn" type="button" onclick={inc} disabled={atMax} aria-label="Increase {label}">
-      <i class="fas fa-plus" aria-hidden="true"></i>
-    </button>
-  </div>
-{/snippet}
-
 <div class="practice-bar" role="region" aria-label="Practice controls">
   <div class="pb-group">
     <button
@@ -203,42 +156,39 @@
         type="button"
         onclick={() => onStepLevel(-1)}
         disabled={atFloor}
-        aria-label="Slower"
+        aria-label={`Slower by ${increment} BPM`}
       >
-        <i class="fas fa-minus" aria-hidden="true"></i>
+        <span class="pb-step-num">&minus;{increment}</span>
         <span class="pb-level-label">Slower</span>
       </button>
 
-      <div class="pb-readout" class:bumped role="group" aria-label="Fine tune tempo by 1 BPM">
-        <button
-          class="pb-fine-btn"
-          type="button"
-          onpointerdown={() => startFineHold(-1)}
-          onpointerup={stopFineHold}
-          onpointerleave={stopFineHold}
-          onpointercancel={stopFineHold}
-          disabled={atFloor}
-          aria-label="Slower by 1 BPM"
-        >
-          <i class="fas fa-minus" aria-hidden="true"></i>
-        </button>
-        <span class="pb-bpm" aria-live="polite">
-          <span class="pb-bpm-value">{bpm}</span>
-          <span class="pb-bpm-unit">BPM</span>
-        </span>
-        <button
-          class="pb-fine-btn"
-          type="button"
-          onpointerdown={() => startFineHold(1)}
-          onpointerup={stopFineHold}
-          onpointerleave={stopFineHold}
-          onpointercancel={stopFineHold}
-          disabled={atCeiling}
-          aria-label="Faster by 1 BPM"
-        >
-          <i class="fas fa-plus" aria-hidden="true"></i>
-        </button>
-      </div>
+      <Popover.Root bind:open={bpmOpen}>
+        <Popover.Trigger>
+          {#snippet child({ props })}
+            <button
+              {...props}
+              class="pb-readout-btn"
+              class:bumped
+              type="button"
+              aria-label={`Set tempo, currently ${bpm} BPM`}
+            >
+              <span class="pb-bpm-value">{bpm}</span>
+              <span class="pb-bpm-unit">BPM <i class="fas fa-caret-up" aria-hidden="true"></i></span>
+            </button>
+          {/snippet}
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Content side="top" align="center" sideOffset={12} collisionPadding={12} class="pb-bpm-pop">
+            <BpmQuickPopover
+              {bpm}
+              min={progress.startBpm}
+              max={progress.maxBpm}
+              {onBpmChange}
+              onClose={() => (bpmOpen = false)}
+            />
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
 
       <button
         class="pb-btn pb-level up"
@@ -246,9 +196,9 @@
         type="button"
         onclick={() => onStepLevel(1)}
         disabled={atCeiling}
-        aria-label="Faster"
+        aria-label={`Faster by ${increment} BPM`}
       >
-        <i class="fas fa-plus" aria-hidden="true"></i>
+        <span class="pb-step-num">+{increment}</span>
         <span class="pb-level-label">Faster</span>
       </button>
     </div>
@@ -265,31 +215,20 @@
       <span>{progress.held ? "Held" : "Hold"}</span>
     </button>
 
-    {#if onSetConfig}
-      <span class="pb-divider" aria-hidden="true"></span>
-      <div class="pb-config" role="group" aria-label="Speed-up schedule">
-        {@render cfgStepper("Every", progress.roundsPerLevel, "loops", () => cfgLoops(-1), () => cfgLoops(1), loopsAtMin, loopsAtMax)}
-        {@render cfgStepper("+", progress.increment, "BPM", () => cfgStep(-1), () => cfgStep(1), stepAtMin, stepAtMax)}
-        <button
-          class="pb-target-toggle"
-          class:on={hasTarget}
-          type="button"
-          onclick={toggleTarget}
-          aria-pressed={hasTarget}
-        >
-          <i class="fas {hasTarget ? 'fa-flag-checkered' : 'fa-flag'}" aria-hidden="true"></i>
-          <span>Goal</span>
-        </button>
-        <div class="pb-goal-slot" class:hidden={!hasTarget} aria-hidden={!hasTarget} inert={!hasTarget}>
-          {@render cfgStepper("Goal", progress.goalBpm, "BPM", () => cfgGoal(-1), () => cfgGoal(1), goalAtMin, goalAtMax)}
-        </div>
-      </div>
-    {/if}
+    <span class="pb-divider" aria-hidden="true"></span>
+
+    <button
+      class="pb-btn pb-stop"
+      type="button"
+      onclick={onStop}
+      aria-label="Stop — back to setup"
+    >
+      <i class="fas fa-stop" aria-hidden="true"></i>
+      <span>Stop</span>
+    </button>
   </div>
 
-  <!-- Status line: caption above a slim fill bar, full-width below the controls.
-       Kept out of the control row so the schedule steppers no longer stack into
-       a tall side column that pushed the whole bar's height up asymmetrically. -->
+  <!-- Status line: caption above a slim fill bar, full-width below the controls. -->
   <div class="pb-status">
     <span class="pb-caption-wrap">
       {#key caption}
@@ -340,13 +279,6 @@
     justify-content: center;
   }
 
-  .pb-divider {
-    width: 1px;
-    height: var(--ctrl-h);
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    flex-shrink: 0;
-  }
-
   /* Every interactive control in the strip shares one height. */
   .pb-btn {
     display: flex;
@@ -363,8 +295,15 @@
   }
   .pb-btn:active:not(:disabled) { transform: scale(0.95); }
   .pb-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-  .pb-btn:focus-visible,
-  .pb-fine-btn:focus-visible { outline: 3px solid var(--theme-accent, #6366f1); outline-offset: 2px; }
+  .pb-btn:focus-visible { outline: 3px solid var(--theme-accent, #6366f1); outline-offset: 2px; }
+
+  /* Thin separator between the live controls and the settings gear. */
+  .pb-divider {
+    width: 1px;
+    height: var(--ctrl-h);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    flex-shrink: 0;
+  }
 
   /* Hold — toggle that freezes the climb; lights up when active */
   .pb-hold {
@@ -388,6 +327,23 @@
     color: color-mix(in srgb, var(--theme-accent, #7dd3fc) 75%, white);
   }
 
+  /* Stop — ends the ramp and returns to the setup screen. */
+  .pb-stop {
+    flex-direction: column;
+    gap: 1px;
+    width: 62px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 38%, var(--theme-stroke, rgba(255, 255, 255, 0.14)));
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 78%, white);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .pb-stop i { font-size: 16px; }
+  @media (hover: hover) and (pointer: fine) {
+    .pb-stop:hover { background: color-mix(in srgb, var(--semantic-error, #ef4444) 18%, transparent); color: #fff; }
+  }
+
   /* Play/pause — neutral square */
   .pb-play {
     width: var(--ctrl-h);
@@ -397,10 +353,14 @@
   }
   .pb-play i { font-size: 18px; }
   @media (hover: hover) and (pointer: fine) {
-    .pb-play:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1)); }
+    .pb-play:hover {
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+      border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
+      box-shadow: 0 0 14px color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
+    }
   }
 
-  /* Tempo cluster: [− level]  readout  [+ level] — all share --ctrl-h */
+  /* Tempo cluster: [−Y Slower]  readout  [+Y Faster] — all share --ctrl-h */
   .pb-tempo {
     display: flex;
     align-items: center;
@@ -408,13 +368,18 @@
     flex-shrink: 0;
   }
 
-  /* Big level buttons — the primary tempo control */
+  /* Big level buttons — the primary tempo control; the step (Y) sits on the face */
   .pb-level {
     flex-direction: column;
     gap: 1px;
-    width: 62px;
+    width: 68px;
   }
-  .pb-level i { font-size: 18px; }
+  .pb-step-num {
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
   .pb-level-label {
     font-size: 10px;
     font-weight: 700;
@@ -440,40 +405,57 @@
     }
   }
 
-  /* BPM readout pill — same height; small ±1 fine steppers flank the number */
-  .pb-readout {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: var(--ctrl-h);
-    padding: 0 8px;
-    border-radius: 14px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
-    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-  }
-  .pb-bpm {
+  /* BPM readout — a button that opens the tempo popover; same height as the
+     level buttons. A caret hints it's openable. */
+  .pb-readout-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    line-height: 1;
-    min-width: 50px;
+    justify-content: center;
+    height: var(--ctrl-h);
+    min-width: 84px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
   }
+  @media (hover: hover) and (pointer: fine) {
+    .pb-readout-btn:hover {
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+      border-color: color-mix(in srgb, var(--bpm-color) 40%, var(--theme-stroke, rgba(255, 255, 255, 0.12)));
+    }
+  }
+  .pb-readout-btn:active { transform: scale(0.97); }
+  .pb-readout-btn:focus-visible { outline: 3px solid var(--theme-accent, #6366f1); outline-offset: 2px; }
+  .pb-readout-btn[aria-expanded="true"] {
+    border-color: color-mix(in srgb, var(--bpm-color) 55%, transparent);
+    background: color-mix(in srgb, var(--bpm-color) 12%, transparent);
+  }
+
   .pb-bpm-value {
     font-size: 1.7rem;
     font-weight: 800;
+    line-height: 1;
     color: var(--bpm-color);
     font-variant-numeric: tabular-nums;
     display: inline-block;
   }
   /* Bump pulse — the number pops when the tempo climbs. Transform only, so it
      never nudges layout. */
-  .pb-readout.bumped .pb-bpm-value { animation: pb-bump 360ms ease-out; }
+  .pb-readout-btn.bumped .pb-bpm-value { animation: pb-bump 360ms ease-out; }
   @keyframes pb-bump {
     0% { transform: scale(1); }
     35% { transform: scale(1.22); }
     100% { transform: scale(1); }
   }
   .pb-bpm-unit {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
@@ -481,41 +463,23 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     margin-top: 3px;
   }
+  .pb-bpm-unit i { font-size: 9px; opacity: 0.8; }
 
-  .pb-fine-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    flex-shrink: 0;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    border-radius: 9px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
-    font-size: 0.7rem;
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: none;
+  /* Popover panel wrapper — BpmQuickPopover supplies its own surface; this just
+     lifts the portalled content above app chrome. :global because bits-ui
+     portals the content out of this component's scope. */
+  :global(.pb-bpm-pop) { z-index: var(--z-dropdown, 1000); transform-origin: bottom center; }
+  /* Entrance animation via bits-ui data-state — the popover rises + fades in
+     from the readout instead of snapping open. */
+  :global(.pb-bpm-pop[data-state="open"]) {
+    animation: pb-bpm-pop-in 170ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
   }
-  @media (hover: hover) and (pointer: fine) {
-    .pb-fine-btn:hover:not(:disabled) {
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
-      color: var(--theme-text, white);
-    }
+  @keyframes pb-bpm-pop-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
-  .pb-fine-btn:active:not(:disabled) { transform: scale(0.9); }
-  .pb-fine-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-  /* Schedule config — one inline row alongside the tempo controls: Every X
-     loops · +Y BPM · Goal [stepper]. No longer a tall stacked side column. */
-  .pb-config {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    flex-wrap: wrap;
+  @media (prefers-reduced-motion: reduce) {
+    :global(.pb-bpm-pop[data-state="open"]) { animation: none; }
   }
 
   /* Status line below the controls: caption + slim fill, full-width but capped
@@ -528,68 +492,6 @@
     width: 100%;
     max-width: 30rem;
   }
-  .pb-cfg {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .pb-cfg-label {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-  }
-  .pb-cfg-value {
-    min-width: 2.75rem;
-    text-align: center;
-    font-size: 0.95rem;
-    font-weight: 800;
-    color: var(--theme-text, #fff);
-    font-variant-numeric: tabular-nums;
-  }
-  .pb-cfg-unit {
-    font-size: 9px;
-    font-weight: 700;
-    opacity: 0.5;
-    margin-left: 2px;
-  }
-
-  /* Goal toggle — button + indicator (no checkbox); fills when active. */
-  .pb-target-toggle {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    height: 34px;
-    padding: 0 14px;
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
-    -webkit-tap-highlight-color: transparent;
-    flex-shrink: 0;
-  }
-  .pb-target-toggle:focus-visible { outline: 3px solid var(--theme-accent, #6366f1); outline-offset: 2px; }
-  .pb-target-toggle:active { transform: scale(0.96); }
-  @media (hover: hover) and (pointer: fine) {
-    .pb-target-toggle:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12)); color: var(--theme-text, #fff); }
-  }
-  .pb-target-toggle.on {
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 26%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 55%, transparent);
-    color: color-mix(in srgb, var(--theme-accent, #c4b5fd) 80%, white);
-  }
-
-  /* Goal stepper keeps its slot reserved so toggling the goal never shifts the
-     row width/height (visibility, not display). */
-  .pb-goal-slot { display: flex; transition: opacity var(--duration-fast, 150ms) ease; }
-  .pb-goal-slot.hidden { visibility: hidden; opacity: 0; pointer-events: none; }
 
   .pb-fill-track {
     width: 100%;
@@ -662,18 +564,17 @@
     100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--semantic-success, #22c55e) 0%, transparent); }
   }
 
-  /* Narrow: tighten gaps, drop the divider; the config wraps within the control
-     row and the status line is already full-width below. */
+  /* Narrow: tighten gaps, drop the divider. */
   @container practice-bar (max-width: 600px) {
     .pb-group { gap: 12px; }
     .pb-divider { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pb-btn, .pb-fine-btn, .pb-fill, .pb-target-toggle, .pb-goal-slot { transition: none; }
+    .pb-btn, .pb-fill, .pb-readout-btn { transition: none; }
     .pb-level.up.celebrate,
     .pb-fill.creep { animation: none; }
-    .pb-readout.bumped .pb-bpm-value { animation: none; }
-    .pb-btn:active, .pb-fine-btn:active, .pb-target-toggle:active { transform: none; }
+    .pb-readout-btn.bumped .pb-bpm-value { animation: none; }
+    .pb-btn:active, .pb-readout-btn:active { transform: none; }
   }
 </style>

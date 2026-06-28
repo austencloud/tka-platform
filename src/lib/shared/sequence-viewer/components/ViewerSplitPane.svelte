@@ -22,11 +22,13 @@
   import VideoGallery from './VideoGallery.svelte';
   import ArtPane from './ArtPane.svelte';
   import PracticeLanePane from "./PracticeLanePane.svelte";
+  import PracticeSetupPane from "./PracticeSetupPane.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
   import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
   import { setEffectsConfigContext, getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext, getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
@@ -37,15 +39,23 @@
   // Also enforces unilateral prop constraint: props with one meaningful endpoint
   // (fan, club, minihoop, etc.) always use RIGHT_END regardless of stored preference.
   const trailSettings = $derived.by(() => {
+    // Visual dials (thickness/brightness/colors) live on effectsConfig.trails;
+    // rendering params (mode/fade/tracking/tailLength) stay on animationSettings.
+    // The 2D overlay reads only TrailSettings, so fold both stores here — else the
+    // trail thickness/brightness/colour dials mutate a store the renderer never reads.
     const t = animationSettings.trail;
     void t.mode;
     void t.fadeDurationMs;
-    void t.lineWidth;
-    void t.maxOpacity;
     void t.trackingMode;
     void t.effect;
+    void t.tailLength;
+    const intent = effectsConfigState.trails;
+    void intent.thickness;
+    void intent.brightness;
+    void intent.blueColor;
+    void intent.redColor;
 
-    const settings = { ...t };
+    const settings = foldTrailIntentIntoSettings(t, intent);
 
     // Enforce unilateral constraint: only bilateral props can track both ends
     if (settings.trackingMode === TrackingMode.BOTH_ENDS) {
@@ -138,6 +148,14 @@
     practiceCellSize?: number;
     /** Fraction of total width given to the animation canvas column in practice mode. */
     practiceCanvasFraction?: number;
+    /** True while the ramp is actually running (vs. the setup screen). */
+    practiceRunning?: boolean;
+    /** Ramp config shown on the setup screen. */
+    practiceConfig?: Partial<import("../services/tempo-practice-orchestrator").TempoPracticeConfig>;
+    /** Live ramp-config change from the setup screen. */
+    onPracticeSetConfig?: (patch: Partial<import("../services/tempo-practice-orchestrator").TempoPracticeConfig>) => void;
+    /** Start the ramp (setup screen Start button). */
+    onPracticeStart?: () => void;
   }
 
   let {
@@ -170,6 +188,10 @@
     practiceActive = false,
     practiceCellSize = 72,
     practiceCanvasFraction = 0.38,
+    practiceRunning = false,
+    practiceConfig = {},
+    onPracticeSetConfig = () => {},
+    onPracticeStart = () => {},
   }: Props = $props();
 
   // Three.js / Threlte is multi-MB. The 3D canvas + performer hub are only
@@ -627,15 +649,23 @@
 
     <div class="preview-column-inner" class:focused={layout.focusedPane === "image"}>
       {#if practiceActive}
-        <PracticeLanePane
-          sequence={playback.animationState.sequenceData}
-          currentStep={playback.currentStep}
-          {bpm}
-          cellSize={practiceCellSize}
-          bluePropType={propRendering.bluePropType}
-          redPropType={propRendering.redPropType}
-          onSeek={onProgressBarSeek ?? null}
-        />
+        {#if practiceRunning}
+          <PracticeLanePane
+            sequence={playback.animationState.sequenceData}
+            currentStep={playback.currentStep}
+            {bpm}
+            cellSize={practiceCellSize}
+            bluePropType={propRendering.bluePropType}
+            redPropType={propRendering.redPropType}
+            onSeek={onProgressBarSeek ?? null}
+          />
+        {:else}
+          <PracticeSetupPane
+            config={practiceConfig}
+            onSetConfig={onPracticeSetConfig}
+            onStart={onPracticeStart}
+          />
+        {/if}
       {:else}
       {#if _2dRightMounted}
         <div
@@ -1228,9 +1258,22 @@
      sets the split. Wins over the generic desktop 50/50 rule on specificity
      (.split-view.practice = two classes) + later source order.
      ======================================== */
+  /* Registered so it's animatable — a plain custom property can't transition,
+     which is why the canvas snapped on Start. */
+  @property --canvas-frac {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 0.5;
+  }
+
   .split-view.practice {
     grid-template-columns: 1fr;
     grid-template-rows: minmax(0, 1fr) auto;
+    /* Slide the canvas/companion split on Start/Stop instead of snapping. Timed
+       to the cockpit bar's rise (--ws-dur 300ms / --ws-ease) so the canvas glide
+       and the bar slide read as one choreographed motion. Reduced-motion kills
+       it via the !important rule below. */
+    transition: --canvas-frac 300ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   @media (min-width: 768px) {

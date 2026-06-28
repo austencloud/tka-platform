@@ -339,7 +339,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
             onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
             onRemix={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
             practiceActive={ctx.practiceActive}
-            onPracticeToggle={isMobileWidth ? () => (ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()) : undefined}
+            onPracticeToggle={isMobileWidth ? () => (ctx.practiceActive ? ctx.exitPracticeMode() : ctx.enterPracticeMode()) : undefined}
             onCopyData={authState.isAdmin ? handleCopyForClaude : undefined}
             copyDataFeedback={copyClaudeFeedback}
             onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
@@ -367,7 +367,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                     <button
                       type="button"
                       class="header-action-btn practice-exit"
-                      onclick={ctx.handlePracticeStop}
+                      onclick={ctx.exitPracticeMode}
                       aria-label="Exit practice mode"
                     >
                       <i class="fas fa-arrow-left" aria-hidden="true"></i>
@@ -433,7 +433,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                         type="button"
                         class="header-action-btn practice"
                         class:practice-active={ctx.practiceActive}
-                        onclick={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
+                        onclick={() => ctx.practiceActive ? ctx.exitPracticeMode() : ctx.enterPracticeMode()}
                         aria-label={ctx.practiceActive ? "Stop practice" : "Practice"}
                         aria-pressed={ctx.practiceActive}
                       >
@@ -441,7 +441,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       </button>
                       <PracticeConfigPopover
                         config={ctx.practiceState.userConfig}
-                        onUpdate={ctx.practiceState.updateConfig}
+                        onUpdate={ctx.handlePracticeSetConfig}
                       />
 
                       <span class="header-action-divider"></span>
@@ -592,8 +592,12 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
                       onArtExport={ctx.handleArtExport}
                       practiceActive={ctx.practiceActive}
+                      practiceRunning={ctx.practiceRunning}
                       practiceCellSize={ctx.practiceViewPrefs.cellSize}
-                      practiceCanvasFraction={ctx.practiceViewPrefs.canvasFraction}
+                      practiceCanvasFraction={ctx.practiceRunning ? ctx.practiceViewPrefs.canvasFraction : 0.5}
+                      practiceConfig={ctx.practiceState.userConfig}
+                      onPracticeSetConfig={ctx.handlePracticeSetConfig}
+                      onPracticeStart={ctx.handlePracticeStart}
                     />
                   {/if}
                   {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
@@ -728,8 +732,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                  Parked (height 0) + inert when not practicing. -->
             <div
               class="practice-bar-rise"
-              class:up={ctx.practiceActive}
-              inert={!ctx.practiceActive}
+              class:up={ctx.practiceRunning}
+              inert={!ctx.practiceRunning}
             >
               <PracticeBar
                 progress={ctx.practiceState.progress}
@@ -739,7 +743,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                 onPlayPause={ctx.handlePlaybackToggle}
                 onStepLevel={ctx.handlePracticeStepLevel}
                 onToggleHold={ctx.handlePracticeToggleHold}
-                onSetConfig={ctx.handlePracticeSetConfig}
+                onStop={ctx.handlePracticeStop}
               />
             </div>
           {/if}

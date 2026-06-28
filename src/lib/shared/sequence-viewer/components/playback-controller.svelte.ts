@@ -34,6 +34,10 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
   let bpmLocal = $state(deps.initialBpm);
   let arrivedViaStepping = $state(false);
 
+  // Practice phase: off (normal viewer) → setup (config screen) → running (ramp).
+  // `practiceActive` = in-mode (setup|running); `practiceRunning` = ramp active.
+  let practicePhase = $state<"off" | "setup" | "running">("off");
+
   // External dependencies (set by orchestrator after service load)
   let _playbackController: AnimationPlaybackController | null = null;
   let _hapticService: HapticFeedback | null = null;
@@ -220,6 +224,22 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     if (!isPlayingLocal) {
       _playbackController.togglePlayback();
     }
+
+    practicePhase = "running";
+  }
+
+  /** Enter practice mode → setup screen. Does NOT start the ramp. */
+  function enterPracticeMode() {
+    practiceState.clearCompletion();
+    practicePhase = "setup";
+    _hapticService?.trigger("selection");
+  }
+
+  /** Leave practice mode entirely; stop the ramp if it's running. */
+  function exitPracticeMode() {
+    if (practicePhase === "running") stopPracticeIfActive();
+    practicePhase = "off";
+    _hapticService?.trigger("selection");
   }
 
   /**
@@ -273,6 +293,10 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     // No "personal best" — we don't track props, so a best BPM would just be
     // "the highest the slider was dragged to". Honest completion only.
     showToast(`Practice complete: reached ${finalBpm} BPM`, "success");
+
+    // Stop returns to the setup screen (not out of practice mode); exiting the
+    // mode entirely is exitPracticeMode().
+    practicePhase = "setup";
   }
 
   /**
@@ -329,7 +353,8 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     set bpmLocal(v: number) { bpmLocal = v; },
     get arrivedViaStepping() { return arrivedViaStepping; },
     set arrivedViaStepping(v: boolean) { arrivedViaStepping = v; },
-    get practiceActive() { return practiceState.progress.active; },
+    get practiceActive() { return practicePhase !== "off"; },
+    get practiceRunning() { return practicePhase === "running"; },
     practiceState,
 
     // Dependency injection (set after service load)
@@ -348,6 +373,8 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     handlePlaybackModeChange,
     handleStepClick,
     handlePracticeStart,
+    enterPracticeMode,
+    exitPracticeMode,
     handlePracticeStepLevel,
     handlePracticeStep,
     handlePracticeToggleHold,

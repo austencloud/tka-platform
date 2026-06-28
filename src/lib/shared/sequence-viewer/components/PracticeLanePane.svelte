@@ -32,19 +32,40 @@
     onSeek?: ((stepNumber: number) => void) | null;
   } = $props();
 
-  const cells = $derived(buildNotationCells(sequence));
+  // Practice loops continuously, so drop the start-position cell: its pose equals
+  // the sequence's end, and the lane shouldn't travel back through it each loop.
+  // Beats only, cycled. currentStep is shifted −1 so beat k focuses its own cell
+  // now that the start segment [0,1) no longer has a cell of its own.
+  const cells = $derived(buildNotationCells(sequence).filter((c) => !c.isStart));
+  const shiftedStep = $derived((currentStep ?? 0) - 1);
+
+  // Wide aspect → side-by-side tall column → fill its height with a big focus
+  // pictograph (a fixed px reads tiny on a large monitor). Portrait foot keeps
+  // the fixed cellSize. Matches the ViewerSplitPane side-by-side breakpoint.
+  let wide = $state(false);
+  $effect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(min-width: 768px), (orientation: landscape)");
+    wide = mq.matches;
+    const on = () => (wide = mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  });
 </script>
 
 <div class="practice-lane">
   <BeatStrip
     {cells}
-    {currentStep}
+    currentStep={shiftedStep}
     {bpm}
     {cellSize}
     {bluePropType}
     {redPropType}
     beatPulse={true}
     onCellClick={onSeek}
+    anchor="start"
+    fillHeight={wide}
+    loop={true}
   />
 </div>
 

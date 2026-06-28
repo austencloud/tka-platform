@@ -1,15 +1,13 @@
 <!--
-  PracticeConfigPopover.svelte
+  RampConfigForm.svelte
 
-  A small settings popover for tuning the practice tempo ramp. Owns its own
-  gear trigger so it can sit next to the Practice button in any viewer header.
-
-  One model, no modes: every X loops, raise BPM by Y, optionally up to a goal.
-  Writes through onUpdate (which persists to userConfig). Tweaking mid-session is
-  fine — the bar's inline controls apply live; this sets the next run's defaults.
+  The practice tempo-ramp config rows (Start tempo / Loops per speed-up X /
+  BPM per speed-up Y / Goal toggle + Goal tempo) plus a plain-language hint.
+  Extracted from the old PracticeConfigPopover so it can render inline in the
+  practice setup screen (and anywhere else a ramp form is needed) instead of
+  being trapped inside a popover. Writes through onUpdate.
 -->
 <script lang="ts">
-  import { Popover } from "bits-ui";
   import type { TempoPracticeConfig } from "../services/tempo-practice-orchestrator";
 
   interface Props {
@@ -18,8 +16,6 @@
   }
 
   let { config, onUpdate }: Props = $props();
-
-  let open = $state(false);
 
   // Display values fall back to the orchestrator defaults.
   let startBpm = $derived(config.startBpm ?? 15);
@@ -58,54 +54,31 @@
   );
 </script>
 
-<Popover.Root bind:open>
-  <Popover.Trigger>
-    {#snippet child({ props })}
-      <button
-        {...props}
-        type="button"
-        class="practice-config-trigger"
-        class:open
-        aria-label="Practice settings"
-        title="Practice settings"
-      >
-        <i class="fas fa-sliders" aria-hidden="true"></i>
-      </button>
-    {/snippet}
-  </Popover.Trigger>
+<div class="config-body">
+  {@render stepper("Start tempo", startBpm, "BPM", () => setStartBpm(startBpm - 5), () => setStartBpm(startBpm + 5))}
+  {@render stepper("Loops per speed-up", roundsPerLevel, "", () => setRounds(roundsPerLevel - 1), () => setRounds(roundsPerLevel + 1))}
+  {@render stepper("BPM per speed-up", increment, "", () => setIncrement(increment - 1), () => setIncrement(increment + 1))}
 
-  <Popover.Portal>
-    <Popover.Content side="bottom" align="end" sideOffset={8} collisionPadding={12} class="practice-config-panel">
-      <header class="config-header">Practice ramp</header>
+  <div class="config-row">
+    <span class="config-label">Stop at a goal</span>
+    <button
+      type="button"
+      class="goal-toggle"
+      class:on={targetEnabled}
+      onclick={toggleTarget}
+      aria-pressed={targetEnabled}
+      aria-label={targetEnabled ? "Goal on" : "Goal off"}
+    >
+      <span class="goal-knob"></span>
+    </button>
+  </div>
 
-      <div class="config-body">
-        {@render stepper("Start tempo", startBpm, "BPM", () => setStartBpm(startBpm - 5), () => setStartBpm(startBpm + 5))}
-        {@render stepper("Loops per speed-up", roundsPerLevel, "", () => setRounds(roundsPerLevel - 1), () => setRounds(roundsPerLevel + 1))}
-        {@render stepper("BPM per speed-up", increment, "", () => setIncrement(increment - 1), () => setIncrement(increment + 1))}
+  {#if targetEnabled}
+    {@render stepper("Goal tempo", clamp(targetBpm, startBpm + 5, maxBpm), "BPM", () => setTargetBpm(targetBpm - 5), () => setTargetBpm(targetBpm + 5))}
+  {/if}
 
-        <div class="config-row">
-          <span class="config-label">Stop at a goal</span>
-          <button
-            type="button"
-            class="goal-toggle"
-            class:on={targetEnabled}
-            onclick={toggleTarget}
-            aria-pressed={targetEnabled}
-            aria-label={targetEnabled ? "Goal on" : "Goal off"}
-          >
-            <span class="goal-knob"></span>
-          </button>
-        </div>
-
-        {#if targetEnabled}
-          {@render stepper("Goal tempo", clamp(targetBpm, startBpm + 5, maxBpm), "BPM", () => setTargetBpm(targetBpm - 5), () => setTargetBpm(targetBpm + 5))}
-        {/if}
-
-        <p class="config-hint">{hint}</p>
-      </div>
-    </Popover.Content>
-  </Popover.Portal>
-</Popover.Root>
+  <p class="config-hint">{hint}</p>
+</div>
 
 {#snippet stepper(label: string, value: number, unit: string, onMinus: () => void, onPlus: () => void)}
   <div class="config-row">
@@ -123,82 +96,11 @@
 {/snippet}
 
 <style>
-  .practice-config-trigger {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: var(--min-touch-target);
-    min-height: var(--min-touch-target);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .practice-config-trigger i {
-    font-size: 15px;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .practice-config-trigger:hover {
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-      color: var(--theme-text, white);
-    }
-  }
-
-  .practice-config-trigger.open {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 16%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
-    color: var(--theme-accent, #a78bfa);
-  }
-
-  .practice-config-trigger:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
-  /* :global because bits-ui portals the Content node out of this component's
-     scope (the class is passed as a string prop, so it carries no scope hash).
-     The inner rows below stay scoped — they're authored in-template. */
-  :global(.practice-config-panel) {
-    width: 280px;
-    background: var(--theme-panel-bg, #0c0e16);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 16px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
-    overflow: hidden;
-    z-index: var(--z-dropdown, 1000);
-    /* Entrance: scale + fade from the trigger corner (side=bottom align=end). */
-    transform-origin: top right;
-    animation: -global-practice-config-in var(--duration-fast, 150ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
-  }
-  @keyframes -global-practice-config-in {
-    from { opacity: 0; transform: scale(0.94) translateY(-6px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    :global(.practice-config-panel) { animation: none; }
-  }
-
-  .config-header {
-    padding: 12px 16px 10px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-  }
-
   .config-body {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding: 14px 16px 16px;
+    width: 100%;
   }
 
   .config-row {
