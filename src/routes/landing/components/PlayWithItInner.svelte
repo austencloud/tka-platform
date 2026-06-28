@@ -33,6 +33,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   import { buildNotationCells, type NotationCell } from "$lib/shared/timeline/notation-cell";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
 
   // ── Factory state ──────────────────────────────────────────────────────────
   let playback = $state<EndlessPlaybackState | null>(null);
@@ -65,6 +66,16 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
 
   // ── Derived values ─────────────────────────────────────────────────────────
   let isPlaying = $derived(playback?.animationState?.isPlaying ?? false);
+
+  // Trail VISUALS (thickness, brightness, colors) live on the effects config
+  // (scope.effects.trails); rendering params (mode, fade, length, tracking) stay
+  // on scope.settings.trail. The 2D trail overlay reads only TrailSettings, so
+  // fold the effects-config visuals in here — without this, a trail preset patches
+  // scope.effects.trails but the renderer keeps reading the untouched settings
+  // store. Same fold the Tunnel art view does.
+  let trailSettings = $derived(
+    foldTrailIntentIntoSettings(scope.settings.trail, effectsConfigState.trails)
+  );
 
   // ── Responsive layout: sidebar panel beside the canvas on wide screens,
   //    ControlDock bottom bar inside the showcase on narrow ones. ─────────────
@@ -204,7 +215,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
                 sequenceData={playback?.animationState?.sequenceData}
                 currentStep={playback?.animationState?.currentStep ?? 0}
                 isPlaying={isPlaying}
-                trailSettings={scope.settings.trail}
+                trailSettings={trailSettings}
                 bluePropType={currentPropType}
                 redPropType={currentPropType}
                 word={playback?.animationState?.sequenceData?.intendedWord ?? playback?.animationState?.sequenceData?.word ?? null}

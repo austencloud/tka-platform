@@ -42,6 +42,33 @@ import { resolveInkPalette } from "$lib/shared/3d/effects/ink/ink-palettes";
 import { resolveFrostPalette } from "../domain/frost-palettes";
 import { resolveSilkPalette } from "../domain/silk-palettes";
 import { resolvePulsePalette } from "../domain/pulse-palettes";
+import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
+
+/**
+ * Fold the effects-config trail VISUALS into a legacy TrailSettings base.
+ *
+ * The 2D trail overlay reads only TrailSettings, but the visual dials
+ * (thickness, brightness, colors) now live on the unified effects config
+ * (TrailsIntent); rendering params (mode, fade, tailLength, trackingMode) stay
+ * on TrailSettings. Any 2D surface driven from BOTH stores must fold here -
+ * otherwise a preset/dial change mutates a store the renderer never reads.
+ * Mirrors resolveTrails2D's intent->param mapping. Returns `base` unchanged
+ * when no intent is supplied.
+ */
+export function foldTrailIntentIntoSettings(
+  base: TrailSettings,
+  intent: TrailsIntent | null | undefined,
+): TrailSettings {
+  if (!intent) return base;
+  return {
+    ...base,
+    lineWidth: intent.thickness,
+    maxOpacity: intent.brightness,
+    minOpacity: intent.brightness * 0.3,
+    blueColor: intent.blueColor,
+    redColor: intent.redColor,
+  };
+}
 
 export function resolveTrails2D(
   intent: TrailsIntent,

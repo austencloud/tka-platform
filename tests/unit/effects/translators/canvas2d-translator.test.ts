@@ -4,8 +4,10 @@ import {
   resolveFire2D,
   resolveLed2D,
   resolveCharcoal2D,
+  foldTrailIntentIntoSettings,
 } from "$lib/shared/effects/translators/canvas2d-translator";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+import { DEFAULT_TRAIL_SETTINGS } from "$lib/shared/animation-engine/domain/types/trail-types";
 
 describe("resolveTrails2D", () => {
   const intent = DEFAULT_EFFECTS_CONFIG.trails;
@@ -35,6 +37,47 @@ describe("resolveTrails2D", () => {
     const out = resolveTrails2D({ ...intent, blueColor: "#abc123", redColor: "#def456" });
     expect(out.blueColor).toBe("#abc123");
     expect(out.redColor).toBe("#def456");
+  });
+});
+
+describe("foldTrailIntentIntoSettings", () => {
+  const base = DEFAULT_TRAIL_SETTINGS;
+  const intent = DEFAULT_EFFECTS_CONFIG.trails;
+
+  it("returns base unchanged when no intent is supplied", () => {
+    expect(foldTrailIntentIntoSettings(base, undefined)).toBe(base);
+    expect(foldTrailIntentIntoSettings(base, null)).toBe(base);
+  });
+
+  it("folds the effects-config visuals over the legacy base", () => {
+    const out = foldTrailIntentIntoSettings(base, {
+      ...intent,
+      thickness: 8,
+      brightness: 0.9,
+      blueColor: "#abc123",
+      redColor: "#def456",
+    });
+    expect(out.lineWidth).toBe(8);
+    expect(out.maxOpacity).toBe(0.9);
+    expect(out.minOpacity).toBeCloseTo(0.27, 5);
+    expect(out.blueColor).toBe("#abc123");
+    expect(out.redColor).toBe("#def456");
+  });
+
+  it("preserves rendering params (mode, fade, tailLength, trackingMode) from base", () => {
+    const out = foldTrailIntentIntoSettings(base, { ...intent, thickness: 8 });
+    expect(out.mode).toBe(base.mode);
+    expect(out.fadeDurationMs).toBe(base.fadeDurationMs);
+    expect(out.tailLength).toBe(base.tailLength);
+    expect(out.trackingMode).toBe(base.trackingMode);
+  });
+
+  it("matches resolveTrails2D's intent→visual mapping", () => {
+    const folded = foldTrailIntentIntoSettings(base, intent);
+    const resolved = resolveTrails2D(intent);
+    expect(folded.lineWidth).toBe(resolved.lineWidth);
+    expect(folded.maxOpacity).toBe(resolved.maxOpacity);
+    expect(folded.minOpacity).toBe(resolved.minOpacity);
   });
 });
 

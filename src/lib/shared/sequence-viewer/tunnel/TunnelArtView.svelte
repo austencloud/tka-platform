@@ -7,6 +7,7 @@
   import type { TunnelViewController } from "./tunnel-view-controller.svelte";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
 
   const {
     sequence,
@@ -73,21 +74,11 @@
   // mode / fade live on the legacy animationSettings.trail, while the visual
   // dials (thickness, brightness, colors) write to the unified effects config.
   // The 2D trail overlay only reads the legacy TrailSettings, so fold the
-  // effects-config visuals back in here — otherwise dragging a dial mutates a
-  // store the renderer never reads. Mirrors resolveTrails2D's intent mapping.
-  const trailSettings = $derived.by(() => {
-    const base = animationSettings.trail;
-    const tr = effectsConfig?.trails;
-    if (!tr) return base;
-    return {
-      ...base,
-      lineWidth: tr.thickness,
-      maxOpacity: tr.brightness,
-      minOpacity: tr.brightness * 0.3,
-      blueColor: tr.blueColor,
-      redColor: tr.redColor,
-    };
-  });
+  // effects-config visuals back in — otherwise dragging a dial mutates a store
+  // the renderer never reads. Shared with the landing showcase via the helper.
+  const trailSettings = $derived(
+    foldTrailIntentIntoSettings(animationSettings.trail, effectsConfig?.trails)
+  );
 </script>
 
 <div class="tunnel-art">
