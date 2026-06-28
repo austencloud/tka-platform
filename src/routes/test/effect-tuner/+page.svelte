@@ -45,6 +45,7 @@
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
+  import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import { getRegistration } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
@@ -93,8 +94,11 @@
   // AnimatorCanvas only respects them when we pass an explicit trailSettings.
   // Replicates AnimationPlayer: BOTH_ENDS collapses to one end on unilateral props.
   const trailSettings = $derived.by(() => {
-    const t = animationSettings.trail;
-    const settings = { ...t };
+    // Fold the effects-config trail visuals (thickness/brightness/colors — the
+    // store the Choose-a-Look presets + sliders write) onto the rendering params
+    // (trackingMode/tailLength) that live on animationSettings. Without this the
+    // canvas reads only animationSettings.trail and trail presets never take.
+    const settings = foldTrailIntentIntoSettings(animationSettings.trail, effectsConfig.trails);
     if (settings.trackingMode === TrackingMode.BOTH_ENDS) {
       const blue = settingsService.settings.bluePropType;
       const red = settingsService.settings.redPropType;
