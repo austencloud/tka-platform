@@ -54,10 +54,9 @@
   // ("your look"), which auto-tracks every manual tweak. Priority:
   //   1. live config == personal default          → Default chip
   //   2. live config matches a named preset's patch → that preset
-  //   3. explicit trail/fire resolvePatch custom    → that custom
   // A named-preset excursion lights its own chip; clicking Default returns here.
-  // A stale activePresets id whose patch no longer matches the live config is
-  // NOT trusted (only the patch-less resolvePatch customs lean on the signal).
+  // Every preset now carries a static patch (the trail/fire resolvePatch colour
+  // customs were retired), so matchPresetId fully covers the named presets.
   const activePresetId = $derived.by(() => {
     if (activeEffect === "none" || !registration) return null;
     const fx = activeEffect as EffectId;
@@ -66,15 +65,7 @@
     const personal = effectsConfigState.personalDefault(fx) as unknown as Record<string, unknown> | null;
     if (personal && valuesEqual(effectConfig, personal)) return DEFAULT_CHIP_ID;
     // 2. A named preset whose static patch the live config matches.
-    const matched = matchPresetId(registration.presetGroup, effectConfig);
-    if (matched) return matched;
-    // 3. An explicitly-chosen resolvePatch custom (trail/fire colours) — those
-    //    have no static patch to match, so they lean on the activePresets signal.
-    const ap = effectsConfigState.activePresets as Record<string, string | null>;
-    const explicit = ap[activeEffect];
-    if (!explicit) return null;
-    const preset = registration.presetGroup.presets.find((p) => p.id === explicit);
-    return preset?.resolvePatch ? explicit : null;
+    return matchPresetId(registration.presetGroup, effectConfig);
   });
 
   const currentSummary = $derived.by(() => {

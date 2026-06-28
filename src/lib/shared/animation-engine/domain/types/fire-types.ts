@@ -237,6 +237,15 @@ export function hexToFlameColor(hex: string): PropFlameColor {
   return { r, g, b };
 }
 
+/** Inverse of {@link hexToFlameColor}: normalized [0,1] RGB → CSS hex (#rrggbb). */
+export function flameColorToHex(c: PropFlameColor): string {
+  const channel = (v: number) =>
+    Math.max(0, Math.min(255, Math.round(v * 255)))
+      .toString(16)
+      .padStart(2, "0");
+  return `#${channel(c.r)}${channel(c.g)}${channel(c.b)}`;
+}
+
 /** Default prop flame colors (blue/red) */
 export const DEFAULT_PROP_FLAME_COLORS: [PropFlameColor, PropFlameColor] = [
   hexToFlameColor("#3b82f6"), // blue (left prop)

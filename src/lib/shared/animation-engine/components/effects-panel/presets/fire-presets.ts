@@ -7,14 +7,12 @@
  *
  * Presets are COLOR ONLY - they don't touch intensity, turbulence, or blend.
  * Those settings are controlled by the sliders and apply uniformly to all presets.
- * The 4th preset ("Custom") reads a user-picked fire color from localStorage at
- * apply time via `resolvePatch`.
+ * Custom prop colours are edited in the Fire Customize panel (which sets
+ * `propColors` + `colorBlend`), not via a preset chip.
  */
 
 import type { EffectPreset, EffectPresetGroup } from "./types";
-import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import type { FireColorCurve } from "../../../domain/types/fire-types";
-import { hexToFlameColor } from "../../../domain/types/fire-types";
 
 // RGB values are normalized [0-1] for shader consumption
 const CLASSIC_CURVE: FireColorCurve = {
@@ -38,43 +36,6 @@ const SPIRIT_CURVE: FireColorCurve = {
   coreColor: [1.0, 0.7, 1.0],
 };
 
-// ── Custom fire color persistence ──────────────────────────────────────
-const CUSTOM_FIRE_COLORS_KEY = "tka_custom_fire_colors";
-
-export interface CustomFireColors {
-  left: string;
-  right: string;
-}
-
-const DEFAULT_CUSTOM_FIRE_COLORS: CustomFireColors = {
-  left: "#34d399",
-  right: "#f97316",
-};
-
-export function loadCustomFireColors(): CustomFireColors {
-  try {
-    const raw = localStorage.getItem(CUSTOM_FIRE_COLORS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.left && parsed.right) return parsed;
-    }
-  } catch { /* ignore */ }
-  return { ...DEFAULT_CUSTOM_FIRE_COLORS };
-}
-
-export function saveCustomFireColors(colors: CustomFireColors): void {
-  try {
-    localStorage.setItem(CUSTOM_FIRE_COLORS_KEY, JSON.stringify(colors));
-  } catch { /* ignore */ }
-}
-
-export function applyCustomFireColors(state: EffectsConfigState, colors: CustomFireColors): void {
-  state.updateEffect("fire", {
-    colorBlend: 1.0,
-    propColors: [hexToFlameColor(colors.left), hexToFlameColor(colors.right)],
-  });
-}
-
 // ── Presets (color only - no intensity/turbulence changes) ─────────────
 
 export const FIRE_PRESETS: EffectPreset<"fire">[] = [
@@ -95,18 +56,6 @@ export const FIRE_PRESETS: EffectPreset<"fire">[] = [
     name: "Spirit",
     previewColor: "#a855f7",
     patch: { colorCurve: SPIRIT_CURVE, propColors: null },
-  },
-  {
-    id: "fire-custom",
-    name: "Custom",
-    previewColor: "custom",
-    resolvePatch: () => {
-      const colors = loadCustomFireColors();
-      return {
-        colorBlend: 1.0,
-        propColors: [hexToFlameColor(colors.left), hexToFlameColor(colors.right)],
-      };
-    },
   },
 ];
 

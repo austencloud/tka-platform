@@ -1,17 +1,5 @@
 <script lang="ts">
 	import type { EffectPresetGroup } from "./presets/types";
-	import {
-		loadCustomTrailColors,
-		saveCustomTrailColors,
-		applyCustomTrailColors,
-		type CustomTrailColors,
-	} from "./presets/trail-presets";
-	import {
-		loadCustomFireColors,
-		saveCustomFireColors,
-		applyCustomFireColors,
-		type CustomFireColors,
-	} from "./presets/fire-presets";
 	import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
 
 	interface Props {
@@ -30,27 +18,14 @@
 
 	const effectsConfigState = getEffectsConfigContext();
 
-	// ── Trail custom colors ────────────────────────────────────────────
-	let customTrailColors = $state<CustomTrailColors>(loadCustomTrailColors());
-
-	function handleTrailColorChange(which: "blue" | "red", value: string) {
-		customTrailColors = { ...customTrailColors, [which]: value };
-		saveCustomTrailColors(customTrailColors);
-		if (activePresetId === "trail-custom" && effectsConfigState) {
-			applyCustomTrailColors(effectsConfigState, customTrailColors);
-		}
-	}
-
-	// ── Fire custom colors ─────────────────────────────────────────────
-	let customFireColors = $state<CustomFireColors>(loadCustomFireColors());
-
-	function handleFireColorChange(which: "left" | "right", value: string) {
-		customFireColors = { ...customFireColors, [which]: value };
-		saveCustomFireColors(customFireColors);
-		if (activePresetId === "fire-custom" && effectsConfigState) {
-			applyCustomFireColors(effectsConfigState, customFireColors);
-		}
-	}
+	// Trail's default IS the colour-matched blue/red pair, so its Default chip shows
+	// the live blue/red dots instead of the generic accent dot. (Colours are edited
+	// in the Trails Customize panel.) Other effects use the accent dot.
+	const trailDefaultColors = $derived(
+		presetGroup.effectType === "trails" && effectsConfigState
+			? { blue: effectsConfigState.trails.blueColor, red: effectsConfigState.trails.redColor }
+			: null,
+	);
 </script>
 
 <div class="presets-section">
@@ -73,14 +48,20 @@
 				onclick={() => onSelectPreset(defaultChipId)}
 			>
 				<div class="preview-area">
-					<div class="dot" style:background={accentColor} style:box-shadow="0 0 14px 5px {accentColor}80"></div>
+					{#if trailDefaultColors}
+						<div class="dual-dots">
+							<div class="dot" style:background={trailDefaultColors.blue} style:box-shadow="0 0 14px 5px {trailDefaultColors.blue}80"></div>
+							<div class="dot" style:background={trailDefaultColors.red} style:box-shadow="0 0 14px 5px {trailDefaultColors.red}80"></div>
+						</div>
+					{:else}
+						<div class="dot" style:background={accentColor} style:box-shadow="0 0 14px 5px {accentColor}80"></div>
+					{/if}
 				</div>
 				<span class="preset-name" class:active-name={isDefaultActive}>Default</span>
 			</button>
 		{/if}
 		{#each presetGroup.presets as preset (preset.id)}
 			{@const isActive = preset.id === activePresetId}
-			{@const isCustom = preset.previewColor === "custom"}
 			<button
 				class="preset-card"
 				class:active={isActive}
@@ -91,99 +72,21 @@
 				onclick={() => onSelectPreset(preset.id)}
 			>
 				<div class="preview-area">
-					{#if isCustom && preset.id === "trail-custom"}
-						<div class="dual-dots">
-							<div
-								class="dot"
-								style:background={customTrailColors.blue}
-								style:box-shadow="0 0 14px 5px {customTrailColors.blue}80"
-							></div>
-							<div
-								class="dot"
-								style:background={customTrailColors.red}
-								style:box-shadow="0 0 14px 5px {customTrailColors.red}80"
-							></div>
-						</div>
-					{:else if isCustom && preset.id === "fire-custom"}
-						<div class="dual-dots">
-							<div
-								class="dot"
-								style:background={customFireColors.left}
-								style:box-shadow="0 0 14px 5px {customFireColors.left}80"
-							></div>
-							<div
-								class="dot"
-								style:background={customFireColors.right}
-								style:box-shadow="0 0 14px 5px {customFireColors.right}80"
-							></div>
-						</div>
-					{:else if preset.previewColor === "rainbow"}
+					{#if preset.previewColor === "rainbow"}
 						<div class="rainbow-dot"></div>
 					{:else if preset.previewColor2}
 						<div class="dual-dots">
-							<div
-								class="dot"
-								style:background={preset.previewColor}
-								style:box-shadow="0 0 14px 5px {preset.previewColor}80"
-							></div>
-							<div
-								class="dot"
-								style:background={preset.previewColor2}
-								style:box-shadow="0 0 14px 5px {preset.previewColor2}80"
-							></div>
+							<div class="dot" style:background={preset.previewColor} style:box-shadow="0 0 14px 5px {preset.previewColor}80"></div>
+							<div class="dot" style:background={preset.previewColor2} style:box-shadow="0 0 14px 5px {preset.previewColor2}80"></div>
 						</div>
 					{:else}
-						<div
-							class="dot"
-							style:background={preset.previewColor}
-							style:box-shadow="0 0 14px 5px {preset.previewColor}80"
-						></div>
+						<div class="dot" style:background={preset.previewColor} style:box-shadow="0 0 14px 5px {preset.previewColor}80"></div>
 					{/if}
 				</div>
 				<span class="preset-name" class:active-name={isActive}>{preset.name}</span>
 			</button>
 		{/each}
 	</div>
-
-	{#if activePresetId === "trail-custom"}
-		<div class="custom-color-row">
-			<label class="color-pick">
-				<input
-					type="color"
-					value={customTrailColors.blue}
-					oninput={(e) => handleTrailColorChange("blue", e.currentTarget.value)}
-				/>
-				<span class="color-label">Left</span>
-			</label>
-			<label class="color-pick">
-				<input
-					type="color"
-					value={customTrailColors.red}
-					oninput={(e) => handleTrailColorChange("red", e.currentTarget.value)}
-				/>
-				<span class="color-label">Right</span>
-			</label>
-		</div>
-	{:else if activePresetId === "fire-custom"}
-		<div class="custom-color-row">
-			<label class="color-pick">
-				<input
-					type="color"
-					value={customFireColors.left}
-					oninput={(e) => handleFireColorChange("left", e.currentTarget.value)}
-				/>
-				<span class="color-label">Left</span>
-			</label>
-			<label class="color-pick">
-				<input
-					type="color"
-					value={customFireColors.right}
-					oninput={(e) => handleFireColorChange("right", e.currentTarget.value)}
-				/>
-				<span class="color-label">Right</span>
-			</label>
-		</div>
-	{/if}
 
 	<div class="summary-row">
 		<div class="summary-dot" style:background={accentColor} style:box-shadow="0 0 6px 2px {accentColor}60"></div>
@@ -349,54 +252,6 @@
 	.customize-btn:focus-visible {
 		outline: 2px solid var(--btn-accent);
 		outline-offset: 2px;
-	}
-
-	/* ── Custom color pickers ── */
-	.custom-color-row {
-		display: flex;
-		justify-content: center;
-		gap: 24px;
-		padding: 10px 0 4px;
-	}
-
-	.color-pick {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 6px;
-		cursor: pointer;
-	}
-
-	.color-pick input[type="color"] {
-		-webkit-appearance: none;
-		appearance: none;
-		width: 40px;
-		height: 40px;
-		border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-		border-radius: 50%;
-		background: none;
-		cursor: pointer;
-		padding: 0;
-		overflow: hidden;
-	}
-
-	.color-pick input[type="color"]::-webkit-color-swatch-wrapper {
-		padding: 0;
-	}
-
-	.color-pick input[type="color"]::-webkit-color-swatch {
-		border: none;
-		border-radius: 50%;
-	}
-
-	.color-pick input[type="color"]::-moz-color-swatch {
-		border: none;
-		border-radius: 50%;
-	}
-
-	.color-label {
-		font-size: var(--font-size-compact, 12px);
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
 	}
 
 	/* ── Reduced motion ── */

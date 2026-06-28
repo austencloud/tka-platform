@@ -87,25 +87,13 @@ describe("effect preset data", () => {
     }
   });
 
-  it("every resolvePatch returns a plain object without throwing", () => {
-    // The two "Custom" dynamic presets (trail-custom, fire-custom) read colors
-    // from localStorage, which is absent in the node test env — their helpers
-    // swallow that and fall back to defaults. This asserts that path is safe.
-    for (const g of GROUPS) {
-      for (const p of g.presets) {
-        if (!p.resolvePatch) continue;
-        const out = p.resolvePatch();
-        expect(out, `${p.id}: resolvePatch returned non-object`).toBeTypeOf("object");
-        expect(out).not.toBeNull();
-        expect(Object.keys(out).length, `${p.id}: resolvePatch returned empty patch`).toBeGreaterThan(0);
-      }
-    }
-  });
-
-  it("only trails and fire use dynamic resolvePatch", () => {
+  it("every preset uses a static patch (no dynamic resolvePatch remains)", () => {
+    // The trail/fire colour-picker "Custom" presets were retired — custom colours
+    // now live in the Customize panels, and trail's default IS the colour-matched
+    // pair on the synthetic Default chip. So every preset is a static patch.
     const dynamic = GROUPS.flatMap((g) =>
       g.presets.filter((p) => p.resolvePatch).map((p) => p.id),
     );
-    expect(dynamic.sort()).toEqual(["fire-custom", "trail-custom"]);
+    expect(dynamic).toEqual([]);
   });
 });

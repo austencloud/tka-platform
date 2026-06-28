@@ -1,8 +1,36 @@
 <script lang="ts">
 	import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
 	import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+	import {
+		hexToFlameColor,
+		flameColorToHex,
+		DEFAULT_PROP_FLAME_COLORS,
+	} from "$lib/shared/animation-engine/domain/types/fire-types";
 
 	const effectsConfig = getEffectsConfigContext();
+
+	// Prop colours (the "custom fire colour" controls — replaces the old fire
+	// Custom preset chip). Picking a colour sets propColors and forces full
+	// colour blend so the flames actually take the chosen hue.
+	const leftFireColor = $derived(
+		effectsConfig?.fire.propColors?.[0]
+			? flameColorToHex(effectsConfig.fire.propColors[0])
+			: flameColorToHex(DEFAULT_PROP_FLAME_COLORS[0]),
+	);
+	const rightFireColor = $derived(
+		effectsConfig?.fire.propColors?.[1]
+			? flameColorToHex(effectsConfig.fire.propColors[1])
+			: flameColorToHex(DEFAULT_PROP_FLAME_COLORS[1]),
+	);
+
+	function setFireColor(which: "left" | "right", hex: string): void {
+		const left = which === "left" ? hex : leftFireColor;
+		const right = which === "right" ? hex : rightFireColor;
+		effectsConfig?.updateEffect("fire", {
+			colorBlend: 1.0,
+			propColors: [hexToFlameColor(left), hexToFlameColor(right)],
+		});
+	}
 
 	function formatIntensity(v: number): string {
 		const pct = Math.round(((v - 0.45) / (1 - 0.45)) * 100);
@@ -76,6 +104,28 @@
 		<span class="slider-value">{formatTurbulence(effectsConfig?.fire.turbulence ?? DEFAULT_EFFECTS_CONFIG.fire.turbulence)}</span>
 	</div>
 
+	<div class="color-row">
+		<span class="color-label">Colors</span>
+		<div class="color-pickers">
+			<label class="color-picker">
+				<input
+					type="color"
+					value={leftFireColor}
+					oninput={(e) => setFireColor("left", (e.target as HTMLInputElement).value)}
+				/>
+				<span class="color-hand">Left</span>
+			</label>
+			<label class="color-picker">
+				<input
+					type="color"
+					value={rightFireColor}
+					oninput={(e) => setFireColor("right", (e.target as HTMLInputElement).value)}
+				/>
+				<span class="color-hand">Right</span>
+			</label>
+		</div>
+	</div>
+
 	<button
 		class="reset-btn"
 		type="button"
@@ -117,6 +167,63 @@
 		font-family: var(--font-mono, monospace);
 		font-size: var(--font-size-compact, 12px);
 		color: var(--theme-text, white);
+	}
+
+	.color-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-height: var(--min-touch-target, 44px);
+	}
+
+	.color-label {
+		min-width: 70px;
+		font-size: var(--font-size-compact, 12px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+	}
+
+	.color-pickers {
+		display: flex;
+		gap: 12px;
+		flex: 1;
+	}
+
+	.color-picker {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		cursor: pointer;
+	}
+
+	.color-picker input[type="color"] {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 32px;
+		height: 32px;
+		border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+		border-radius: 50%;
+		background: none;
+		cursor: pointer;
+		padding: 0;
+	}
+
+	.color-picker input[type="color"]::-webkit-color-swatch-wrapper {
+		padding: 2px;
+	}
+
+	.color-picker input[type="color"]::-webkit-color-swatch {
+		border: none;
+		border-radius: 50%;
+	}
+
+	.color-picker input[type="color"]::-moz-color-swatch {
+		border: none;
+		border-radius: 50%;
+	}
+
+	.color-hand {
+		font-size: var(--font-size-compact, 12px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
 	}
 
 	.reset-btn {
