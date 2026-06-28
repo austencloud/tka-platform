@@ -175,6 +175,22 @@
         />
         <span class="slider-value">{Math.round(state.echo.flash * 100)}%</span>
       </div>
+
+      <!-- Streak (connective thread linking consecutive clones) -->
+      <div class="slider-row">
+        <label for="echo-streak">Streak</label>
+        <input
+          id="echo-streak"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={state.echo.streak}
+          oninput={(e) =>
+            state.updateEffect("echo", { streak: +(e.currentTarget as HTMLInputElement).value })}
+        />
+        <span class="slider-value">{Math.round(state.echo.streak * 100)}%</span>
+      </div>
     </div>
   {:else}
     <p class="empty">Effect state unavailable.</p>

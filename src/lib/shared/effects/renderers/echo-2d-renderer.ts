@@ -4,72 +4,67 @@ import { emitterId } from "./emitter-tip";
 
 /**
  * Input for the echo overlay. Each prop contributes a tip pair (A + B ends of
- * the staff) - a phantom captures the whole pair at once so the rendered line
+ * the staff) - a clone captures the whole pair at once so the rendered staff
  * correctly connects the two ends the user sees in the live staff. The flat
  * emitter list carries every prop including tunnel kaleidoscope layers
  * (propIndex >= 2); pairs are reconstructed by grouping on propIndex, so the
- * stroboscope lattice covers the whole stack.
+ * strobe lattice covers the whole stack.
  *
- * `currentStep` drives beat-onset detection and phantom aging. It is the
- * authoritative step index from the animation engine (fractional, advances
- * during playback) - using it instead of wall-clock dt makes the
- * stroboscope land exactly on the beat grid regardless of frame jitter.
+ * `currentStep` drives beat-onset detection. It is the authoritative step index
+ * from the animation engine (fractional, advances during playback) - using it
+ * instead of wall-clock dt makes the strobe land exactly on the beat grid
+ * regardless of frame jitter.
  *
  * Each emitter's `color` is consumed when `params.colorMode === "prop-matched"`
  * (spectrum-gated per prop by the builder).
  */
 export interface EchoTipInput {
   emitters: EmitterTip[];
-  /** Current animation step index (fractional). Used for beat-onset detection + aging. */
+  /** Current animation step index (fractional). Used for beat-onset detection. */
   currentStep: number;
 }
 
 type Vec2 = { x: number; y: number };
 
-interface Phantom {
+/** The previous clone's frozen tip pair for one prop, used to draw the streak. */
+interface ClonePos {
   posA: Vec2;
   posB: Vec2;
-  /** `currentStep` at the moment of capture. Age = (currentStep - capturedStep) / interval. */
-  capturedStep: number;
-  /** Per-end velocity (px/frame) frozen at capture, for the directional smear. */
-  velA: Vec2;
-  velB: Vec2;
-  /** Prop color frozen at capture, used when colorMode === "prop-matched". */
-  color: string;
 }
 
 /**
- * Luminous beat-onset stroboscope for the Canvas2D backend.
+ * Long-exposure strobe stamp for the Canvas2D backend.
  *
- * On each beat boundary (`floor(currentStep / interval)` advances) it captures
- * a phantom of each active prop's tip pair. Phantoms age by the same step index
- * and are culled once their age (in intervals) reaches `decay`. The result is a
- * lattice of fading ghosts - a visual metronome.
+ * On each beat boundary (`floor(currentStep / interval)` advances) it STAMPS a
+ * crisp light-painted clone of each active prop's tip pair into the target
+ * canvas. It does NOT manage persistence or fade - that is the
+ * EchoOverlayRenderer's accumulation buffer. The renderer only draws on the
+ * beat; non-beat frames are a no-op. The accumulator keeps every stamp and
+ * fades it over the exposure window, so the screen shows a march of clones
+ * marching through space - the literal strobe-flash long exposure.
  *
- * Each phantom is rendered as light, not a flat stroke:
- *   - a glowing staff (shadowBlur halo + a white-hot core for fresh captures),
+ * Each clone is rendered as light:
+ *   - a glowing staff (shadowBlur halo + a white-hot core),
  *   - tips as radiant orbs (radial gradient),
- *   - temporal depth: older phantoms recede - they shrink and blur more, so the
- *     newest snapshot reads crisp and the oldest dissolves into the background,
- *   - a capture flash on the beat (a bright additive pop at the moment of
- *     capture) so each beat snaps,
- *   - a subtle motion smear frozen into each phantom from the prop's velocity at
- *     capture - a fast swing leaves a directional blur, a slow drift stays crisp.
+ *   - a faint velocity-aware streak from the previous clone to this one
+ *     (`params.streak`), so the exposure reads as one continuous strobe rather
+ *     than isolated stamps,
+ *   - a bright additive flash pop at the staff midpoint (`params.flash`).
  *
- * Additive blend means overlapping ghosts brighten where the prop returned to a
- * position. Capture/cull/loop logic is unchanged from the original stroboscope.
+ * Additive blend means overlapping clones brighten where the prop returned to a
+ * position.
  */
 export class Echo2DRenderer {
-  private phantoms: Phantom[] = [];
   private lastStepIndex: number = -1;
   private previousStep: number = -1;
   /** Last frame's tip positions (keyed by emitter id), for per-end velocity. */
   private prevTips = new Map<string, Vec2>();
+  /** Previous stamped clone per propIndex, for the connective streak. */
+  private lastClonePos = new Map<number, ClonePos>();
 
-  private static readonly MAX_PHANTOMS = 200;
   private static readonly LOOP_DETECTION_THRESHOLD = 0.5;
-  /** Phantom age (in intervals) within which the capture flash is visible. */
-  private static readonly FLASH_INTERVALS = 0.45;
+  /** Base alpha of the connective streak at `streak` = 1. */
+  private static readonly STREAK_BASE = 0.5;
 
   render(
     ctx: CanvasRenderingContext2D,
@@ -78,21 +73,22 @@ export class Echo2DRenderer {
     scale: number = 1,
   ): void {
     const { emitters, currentStep } = input;
-    // Detect animation loop (currentStep jumps backward). Without this,
-    // phantoms from the previous iteration get negative age and are never
-    // culled — unbounded growth that eventually crashes the tab.
+
+    // Detect animation loop (currentStep jumps backward). Reset onset tracking
+    // and the streak's previous-position memory so the next iteration starts a
+    // fresh exposure. (The overlay clears the accumulator on the same signal.)
     if (
       this.previousStep >= 0 &&
       this.previousStep - currentStep > Echo2DRenderer.LOOP_DETECTION_THRESHOLD
     ) {
-      this.phantoms.length = 0;
       this.lastStepIndex = -1;
+      this.lastClonePos.clear();
     }
     this.previousStep = currentStep;
 
-    // Group emitters into per-prop (A,B) pairs keyed by propIndex. A phantom
+    // Group emitters into per-prop (A,B) pairs keyed by propIndex. A clone
     // captures a whole prop's tip pair; layers (propIndex >= 2) become their
-    // own phantoms with their own spectrum-gated color.
+    // own clones with their own spectrum-gated color.
     const pairs = new Map<number, { a?: EmitterTip; b?: EmitterTip }>();
     for (const e of emitters) {
       let slot = pairs.get(e.propIndex);
@@ -101,88 +97,62 @@ export class Echo2DRenderer {
       else slot.b = e;
     }
 
-    // 1. Beat-onset detection. floor() places every sub-step within one
-    //    beat cell; the transition from one cell to the next is the onset.
+    // Beat-onset detection. floor() places every sub-step within one beat
+    // cell; the transition from one cell to the next is the onset. Only stamp
+    // on the onset - the accumulator holds the rest.
     const stepNumber = Math.floor(currentStep / params.interval);
-    if (stepNumber > this.lastStepIndex) {
-      for (const { a, b } of pairs.values()) {
-        if (!a || !b) continue;
-        this.phantoms.push({
-          posA: { x: a.x, y: a.y },
-          posB: { x: b.x, y: b.y },
-          capturedStep: currentStep,
-          velA: this.velocityAt(emitterId(a.propIndex, a.tipIndex), a),
-          velB: this.velocityAt(emitterId(b.propIndex, b.tipIndex), b),
-          color: a.color,
-        });
-      }
-      this.lastStepIndex = stepNumber;
+    const onset = stepNumber > this.lastStepIndex;
 
-      // Hard cap: drop oldest phantoms if the array grows past safety limit.
-      const cap = Echo2DRenderer.MAX_PHANTOMS;
-      if (this.phantoms.length > cap) {
-        this.phantoms.splice(0, this.phantoms.length - cap);
-      }
-    }
+    if (onset) {
+      const prevComposite = ctx.globalCompositeOperation;
+      const prevAlpha = ctx.globalAlpha;
+      const prevLineCap = ctx.lineCap;
+      const prevLineWidth = ctx.lineWidth;
+      const prevStroke = ctx.strokeStyle;
+      const prevFill = ctx.fillStyle;
+      const prevBlur = ctx.shadowBlur;
+      const prevShadow = ctx.shadowColor;
 
-    // Remember positions for next frame's velocity (after capture so the
-    // captured velocity reflects the step into this frame).
-    this.rememberTips(emitters);
+      try {
+        ctx.globalCompositeOperation = params.blendMode ?? "lighter";
+        ctx.lineCap = "round";
 
-    // 2. Cull aged-out phantoms (in-place compaction - zero allocation).
-    const cullAge = params.decay;
-    const ageInIntervals = (p: Phantom) =>
-      (currentStep - p.capturedStep) / params.interval;
-    let w = 0;
-    for (let i = 0; i < this.phantoms.length; i++) {
-      if (ageInIntervals(this.phantoms[i]!) < cullAge) {
-        if (i !== w) this.phantoms[w] = this.phantoms[i]!;
-        w++;
-      }
-    }
-    this.phantoms.length = w;
+        for (const [propIndex, { a, b }] of pairs) {
+          if (!a || !b) continue;
+          const posA: Vec2 = { x: a.x, y: a.y };
+          const posB: Vec2 = { x: b.x, y: b.y };
+          const velA = this.velocityAt(emitterId(a.propIndex, a.tipIndex), a);
+          const velB = this.velocityAt(emitterId(b.propIndex, b.tipIndex), b);
+          const color = this.pickColor(params, stepNumber, a.color);
 
-    if (!this.phantoms.length) return;
+          const prior = this.lastClonePos.get(propIndex);
+          if (prior && params.streak > 0) {
+            this.drawStreak(ctx, prior, posA, posB, velA, velB, params, color, scale);
+          }
+          this.drawClone(ctx, posA, posB, params, color, scale);
+          if (params.flash > 0) {
+            this.drawFlash(ctx, posA, posB, params, color, scale);
+          }
 
-    // 3. Draw each phantom. Additive blend means overlapping ghosts brighten.
-    const prevComposite = ctx.globalCompositeOperation;
-    const prevAlpha = ctx.globalAlpha;
-    const prevLineCap = ctx.lineCap;
-    const prevLineWidth = ctx.lineWidth;
-    const prevStroke = ctx.strokeStyle;
-    const prevFill = ctx.fillStyle;
-    const prevBlur = ctx.shadowBlur;
-    const prevShadow = ctx.shadowColor;
-
-    try {
-      ctx.globalCompositeOperation = params.blendMode ?? "lighter";
-      ctx.lineCap = "round";
-
-      for (const phantom of this.phantoms) {
-        const age = ageInIntervals(phantom);
-        const ageT = Math.min(1, Math.max(0, age / cullAge));
-        const alpha = params.intensity * Math.max(0, 1 - age / cullAge);
-        const color = this.pickColor(
-          params,
-          Math.floor(phantom.capturedStep / params.interval),
-          age,
-          phantom.color,
-        );
-        this.drawPhantom(ctx, phantom, params, alpha, color, scale, ageT);
-        if (age < Echo2DRenderer.FLASH_INTERVALS) {
-          this.drawFlash(ctx, phantom, params, color, scale, age);
+          this.lastClonePos.set(propIndex, { posA, posB });
         }
+      } finally {
+        ctx.globalCompositeOperation = prevComposite;
+        ctx.globalAlpha = prevAlpha;
+        ctx.lineCap = prevLineCap;
+        ctx.lineWidth = prevLineWidth;
+        ctx.strokeStyle = prevStroke;
+        ctx.fillStyle = prevFill;
+        ctx.shadowBlur = prevBlur;
+        ctx.shadowColor = prevShadow;
       }
-    } finally {
-      ctx.globalCompositeOperation = prevComposite;
-      ctx.globalAlpha = prevAlpha;
-      ctx.lineCap = prevLineCap;
-      ctx.lineWidth = prevLineWidth;
-      ctx.strokeStyle = prevStroke;
-      ctx.fillStyle = prevFill;
-      ctx.shadowBlur = prevBlur;
-      ctx.shadowColor = prevShadow;
+
+      this.lastStepIndex = stepNumber;
     }
+
+    // Remember positions for next frame's velocity (every frame, so a clone
+    // stamped on the next beat carries an up-to-date swing direction).
+    this.rememberTips(emitters);
   }
 
   private velocityAt(id: string, cur: Vec2): Vec2 {
@@ -203,16 +173,19 @@ export class Echo2DRenderer {
   private pickColor(
     params: Echo2DParams,
     beatIdx: number,
-    age: number,
     propColor: string,
   ): string {
     switch (params.colorMode) {
       case "rainbow":
         // 47° per beat - coprime with 360 so the cycle doesn't repeat for 360 beats.
         return `hsl(${(beatIdx * 47) % 360}, 80%, 60%)`;
-      case "gradient":
-        // Fade from red (hue 0) → violet (hue 240) across decay.
-        return `hsl(${Math.min(240, (age / params.decay) * 240)}, 80%, 60%)`;
+      case "gradient": {
+        // Red → violet sweep across the exposure window, keyed to capture-beat
+        // (color bakes at stamp time, so it can't fade by age post-capture).
+        const span = Math.max(1, params.decay);
+        const hue = ((((beatIdx % span) + span) % span) / span) * 280;
+        return `hsl(${hue}, 80%, 60%)`;
+      }
       case "prop-matched":
         return propColor;
       case "solid":
@@ -221,72 +194,98 @@ export class Echo2DRenderer {
     }
   }
 
-  private drawPhantom(
+  /** A crisp light-painted clone of the staff's tip pair, stamped once. */
+  private drawClone(
     ctx: CanvasRenderingContext2D,
-    phantom: Phantom,
+    posA: Vec2,
+    posB: Vec2,
     params: Echo2DParams,
-    alpha: number,
     color: string,
     scale: number,
-    ageT: number,
   ): void {
-    if (alpha <= 0) return;
     const glow = params.glow ?? 0;
-    const depth = params.depth ?? 0;
     const thick = params.thickness * scale;
-    // Temporal depth: older phantoms recede (shrink) and blur more.
-    const recede = 1 - depth * 0.45 * ageT;
-    const blur = glow * thick * (1.2 + depth * ageT * 3);
+    const blur = glow * thick * 1.2;
 
     const drawStaff = params.shape === "staff" || params.shape === "both";
     const drawTips = params.shape === "tips" || params.shape === "both";
 
     if (drawStaff) {
-      // Frozen motion smear: faded offset copies along -velocity at capture.
-      const smear = Math.hypot(phantom.velA.x, phantom.velA.y) + Math.hypot(phantom.velB.x, phantom.velB.y);
-      if (smear > 1.5) {
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = color;
-        ctx.lineWidth = Math.max(1, thick * recede * 0.7);
-        for (let s = 1; s <= 2; s++) {
-          const k = (s / 3) * 0.6;
-          ctx.globalAlpha = alpha * 0.22 * (1 - s / 3);
-          ctx.beginPath();
-          ctx.moveTo(phantom.posA.x - phantom.velA.x * k, phantom.posA.y - phantom.velA.y * k);
-          ctx.lineTo(phantom.posB.x - phantom.velB.x * k, phantom.posB.y - phantom.velB.y * k);
-          ctx.stroke();
-        }
-      }
-
-      // Glowing staff.
+      // Glowing colored body.
       ctx.shadowBlur = blur;
       ctx.shadowColor = color;
       ctx.strokeStyle = color;
-      ctx.globalAlpha = alpha;
-      ctx.lineWidth = thick * recede;
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = thick;
       ctx.beginPath();
-      ctx.moveTo(phantom.posA.x, phantom.posA.y);
-      ctx.lineTo(phantom.posB.x, phantom.posB.y);
+      ctx.moveTo(posA.x, posA.y);
+      ctx.lineTo(posB.x, posB.y);
       ctx.stroke();
 
-      // White-hot core - strongest on the freshest phantom, fades with age.
+      // White-hot core down the middle.
       ctx.shadowBlur = blur * 0.4;
       ctx.strokeStyle = "#ffffff";
-      ctx.globalAlpha = alpha * (1 - ageT) * 0.8;
-      ctx.lineWidth = Math.max(1, thick * recede * 0.4);
+      ctx.globalAlpha = 0.8;
+      ctx.lineWidth = Math.max(1, thick * 0.4);
       ctx.beginPath();
-      ctx.moveTo(phantom.posA.x, phantom.posA.y);
-      ctx.lineTo(phantom.posB.x, phantom.posB.y);
+      ctx.moveTo(posA.x, posA.y);
+      ctx.lineTo(posB.x, posB.y);
       ctx.stroke();
     }
 
     if (drawTips) {
-      const r = Math.max(1, thick * recede * 1.3);
-      this.orb(ctx, phantom.posA.x, phantom.posA.y, r, color, alpha, blur);
-      this.orb(ctx, phantom.posB.x, phantom.posB.y, r, color, alpha, blur);
+      const r = Math.max(1, thick * 1.3);
+      this.orb(ctx, posA.x, posA.y, r, color, blur);
+      this.orb(ctx, posB.x, posB.y, r, color, blur);
     }
 
     ctx.shadowBlur = 0;
+  }
+
+  /**
+   * Faint velocity-aware thread from the previous clone's ends to this one's.
+   * Body-to-body, dim, additive, beat-gated - the dim LED smear between strobe
+   * flashes. Kept deliberately distinct from Trails (a bright tapered tip ribbon).
+   */
+  private drawStreak(
+    ctx: CanvasRenderingContext2D,
+    prior: ClonePos,
+    posA: Vec2,
+    posB: Vec2,
+    velA: Vec2,
+    velB: Vec2,
+    params: Echo2DParams,
+    color: string,
+    scale: number,
+  ): void {
+    const alpha = params.streak * Echo2DRenderer.STREAK_BASE;
+    if (alpha <= 0) return;
+    const thick = params.thickness * scale;
+    ctx.shadowBlur = (params.glow ?? 0) * thick * 0.8;
+    ctx.shadowColor = color;
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = Math.max(1, thick * 0.5);
+
+    // Each end's thread bows the way the prop swung (control point offset by the
+    // frozen velocity at capture).
+    this.streakEnd(ctx, prior.posA, posA, velA);
+    this.streakEnd(ctx, prior.posB, posB, velB);
+    ctx.shadowBlur = 0;
+  }
+
+  private streakEnd(
+    ctx: CanvasRenderingContext2D,
+    from: Vec2,
+    to: Vec2,
+    vel: Vec2,
+  ): void {
+    const cx = (from.x + to.x) / 2 - vel.x * 0.5;
+    const cy = (from.y + to.y) / 2 - vel.y * 0.5;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.quadraticCurveTo(cx, cy, to.x, to.y);
+    ctx.stroke();
   }
 
   /** A radiant tip orb: white-hot center → color → transparent. */
@@ -296,12 +295,11 @@ export class Echo2DRenderer {
     y: number,
     r: number,
     color: string,
-    alpha: number,
     blur: number,
   ): void {
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, withAlpha("#ffffff", alpha));
-    g.addColorStop(0.4, withAlpha(color, alpha));
+    g.addColorStop(0, withAlpha("#ffffff", 1));
+    g.addColorStop(0.4, withAlpha(color, 1));
     g.addColorStop(1, withAlpha(color, 0));
     ctx.globalAlpha = 1;
     ctx.shadowBlur = blur * 0.5;
@@ -312,27 +310,23 @@ export class Echo2DRenderer {
     ctx.fill();
   }
 
-  /** Bright additive pop at the staff midpoint on the beat of capture. */
+  /** Bright additive pop at the staff midpoint - the strobe flash, baked in. */
   private drawFlash(
     ctx: CanvasRenderingContext2D,
-    phantom: Phantom,
+    posA: Vec2,
+    posB: Vec2,
     params: Echo2DParams,
     color: string,
     scale: number,
-    age: number,
   ): void {
     const flash = params.flash ?? 0;
     if (flash <= 0) return;
-    const t = age / Echo2DRenderer.FLASH_INTERVALS; // 0 at capture → 1 at window end
-    const a = flash * params.intensity * (1 - t);
-    if (a <= 0) return;
-    const mx = (phantom.posA.x + phantom.posB.x) / 2;
-    const my = (phantom.posA.y + phantom.posB.y) / 2;
-    // Flash expands as it fades.
-    const r = params.thickness * scale * (3 + t * 6);
+    const mx = (posA.x + posB.x) / 2;
+    const my = (posA.y + posB.y) / 2;
+    const r = params.thickness * scale * 4;
     const g = ctx.createRadialGradient(mx, my, 0, mx, my, r);
-    g.addColorStop(0, withAlpha("#ffffff", a));
-    g.addColorStop(0.5, withAlpha(color, a * 0.5));
+    g.addColorStop(0, withAlpha("#ffffff", flash));
+    g.addColorStop(0.5, withAlpha(color, flash * 0.5));
     g.addColorStop(1, withAlpha(color, 0));
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
@@ -340,11 +334,16 @@ export class Echo2DRenderer {
     ctx.fillRect(mx - r, my - r, r * 2, r * 2);
   }
 
-  dispose(): void {
-    this.phantoms = [];
+  /** Reset cross-frame state. Called on loop and dispose. */
+  reset(): void {
     this.lastStepIndex = -1;
     this.previousStep = -1;
     this.prevTips.clear();
+    this.lastClonePos.clear();
+  }
+
+  dispose(): void {
+    this.reset();
   }
 }
 

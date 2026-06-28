@@ -14,7 +14,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 24;
+export const EFFECTS_CONFIG_VERSION = 25;
 
 export type EffectType =
   | "none"
@@ -157,26 +157,36 @@ export interface SparklesIntent {
 }
 
 export interface EchoIntent {
-  /** 0-1 - phantom peak alpha. */
+  /** 0-1 - exposure composite alpha (peak brightness of the baked exposure). */
   intensity: number;
-  /** 1-8 - how many beats a phantom persists before fully fading. */
+  /** 1-8 - exposure length in beats: how many beats a stamped clone takes to
+   *  fade to ~0 in the accumulation buffer. Short = rolling few-beat exposure;
+   *  long = the whole loop's clone-march baked at once. */
   decay: number;
   /** Capture interval in beats. 1 = every beat, 0.5 = every half-beat, 2 = every other beat. */
   interval: number;
   /** "staff" = line connecting blue/red tip pair; "tips" = dots at each tip; "both" = line + dots. */
   shape: "staff" | "tips" | "both";
-  /** "solid" = use color, "rainbow" = hue shifts per-beat, "prop-matched" = blue tips blue / red tips red, "gradient" = hue shifts per-phantom-age. */
+  /** "solid" = use color, "rainbow" = hue shifts per-beat, "prop-matched" = blue
+   *  tips blue / red tips red, "gradient" = hue keyed to capture-beat (color
+   *  bakes into the exposure at stamp time, so it can't shift after capture). */
   colorMode: "solid" | "rainbow" | "prop-matched" | "gradient";
   /** Hex - when colorMode === "solid". */
   color: string;
   /** 1-8 - stroke width / tip dot size in 2D. */
   thickness: number;
-  /** 0-1 - luminous bloom (shadowBlur halo) on phantoms + tip orbs. */
+  /** 0-1 - luminous bloom (shadowBlur halo) on clones + tip orbs. */
   glow: number;
-  /** 0-1 - temporal depth: how much older phantoms recede (shrink + blur). */
+  /** 0-1 - exposure falloff steepness: higher makes older stamps recede (dim)
+   *  faster down the exposure tail. Expresses "recede" temporally - baked pixels
+   *  can't shrink. */
   depth: number;
   /** 0-1 - capture-flash brightness: a bright pop on each beat of capture. */
   flash: number;
+  /** 0-1 - connective body-to-body thread linking consecutive clones, so the
+   *  exposure reads as one continuous strobe rather than isolated stamps.
+   *  0 = pure stamps. Faint + beat-gated to stay distinct from Trails. */
+  streak: number;
 }
 
 export interface BloomIntent {

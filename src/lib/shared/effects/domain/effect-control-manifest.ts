@@ -161,6 +161,7 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     slider("echo", "glow", "Glow", { tier: "advanced" }),
     slider("echo", "depth", "Depth", { tier: "advanced" }),
     slider("echo", "flash", "Flash", { tier: "advanced" }),
+    slider("echo", "streak", "Streak", { tier: "advanced" }),
   ],
   bloom: [
     { id: "bloom-colormode", label: "Color", type: "segmented", field: "colorMode", tier: "primary", options: [

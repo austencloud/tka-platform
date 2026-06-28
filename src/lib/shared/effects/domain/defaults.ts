@@ -80,6 +80,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     glow: 0.6,
     depth: 0.5,
     flash: 0.5,
+    streak: 0.35,
   },
 
   bloom: {

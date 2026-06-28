@@ -88,6 +88,8 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
         glow: 0.6,
         depth: 0.5,
         flash: 0.5,
+        // v25 long-exposure-strobe field (same rationale).
+        streak: 0.35,
       };
       delete input.motion;
     }
@@ -233,6 +235,14 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // to DEFAULT_EFFECTS_CONFIG.zap (wobbleRate 0.18, wobbleAmount 0.5, glow 0.5,
   // jitter 0.5) via the merge below. The old plasma wobble was a hardcoded
   // per-frame random; these make it a smooth controllable undulation.
+
+  // v24 → v25: echo becomes a long-exposure strobe — clones are stamped into a
+  // persistent accumulation buffer instead of cleared/redrawn every frame, and
+  // it gains `streak` (the connective body-to-body thread between clones).
+  // Net-new field; absent values resolve to DEFAULT_EFFECTS_CONFIG.echo.streak
+  // (0.35) via the merge below. `decay`/`depth` keep their stored numbers — only
+  // the renderer's interpretation changes (exposure length / falloff steepness),
+  // so no field mutation is needed.
 
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,

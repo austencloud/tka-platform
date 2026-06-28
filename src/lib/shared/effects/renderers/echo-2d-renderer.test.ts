@@ -20,6 +20,7 @@ function makeCtx() {
     stroke: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
+    quadraticCurveTo: vi.fn(),
     closePath: vi.fn(),
     save: vi.fn(),
     restore: vi.fn(),
@@ -42,6 +43,7 @@ function makeParams(overrides: Partial<Echo2DParams> = {}): Echo2DParams {
     glow: 0.6,
     depth: 0.5,
     flash: 0.5,
+    streak: 0,
     blendMode: "lighter",
     ...overrides,
   };
@@ -71,114 +73,53 @@ function makeTips(opts: TipOpts = {}): EchoTipInput {
   return { emitters, currentStep: opts.currentStep ?? 0 };
 }
 
-const phantoms = (r: Echo2DRenderer) => (r as unknown as { phantoms: { posA: Pt; posB: Pt; capturedStep: number; color: string }[] }).phantoms;
+const clones = (r: Echo2DRenderer) =>
+  (r as unknown as { lastClonePos: Map<number, unknown> }).lastClonePos;
+const stepIndex = (r: Echo2DRenderer) =>
+  (r as unknown as { lastStepIndex: number }).lastStepIndex;
+const strokes = (ctx: CanvasRenderingContext2D) =>
+  (ctx.stroke as unknown as { mock: { calls: unknown[] } }).mock.calls.length;
 
-describe("Echo2DRenderer", () => {
-  it("captures a phantom when crossing a beat boundary", () => {
+describe("Echo2DRenderer — long-exposure stamp", () => {
+  it("stamps a clone on a beat-onset (staff strokes, clone position recorded)", () => {
     const r = new Echo2DRenderer();
     const ctx = makeCtx();
-    const params = makeParams({ interval: 1 });
+    const params = makeParams({ interval: 1, shape: "staff" });
 
-    // Step 0 crosses from -1 → 0; should capture.
-    r.render(
-      ctx,
-      params,
-      makeTips({ bluePosA: { x: 10, y: 20 }, bluePosB: { x: 30, y: 40 }, currentStep: 0 }),
-    );
+    // Step 0 crosses from beat -1 → 0; should stamp.
+    r.render(ctx, params, makeTips({ bluePosA: { x: 10, y: 20 }, bluePosB: { x: 30, y: 40 }, currentStep: 0 }));
 
-    expect(phantoms(r).length).toBe(1);
-    expect(phantoms(r)[0]!.posA).toEqual({ x: 10, y: 20 });
-    expect(phantoms(r)[0]!.posB).toEqual({ x: 30, y: 40 });
-    expect(phantoms(r)[0]!.capturedStep).toBe(0);
+    expect(strokes(ctx)).toBeGreaterThan(0);
+    expect(stepIndex(r)).toBe(0);
+    expect(clones(r).get(0)).toEqual({ posA: { x: 10, y: 20 }, posB: { x: 30, y: 40 } });
   });
 
-  it("does not capture when currentStep increments within the same beat", () => {
+  it("does not stamp within the same beat cell", () => {
     const r = new Echo2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ interval: 1 });
 
     r.render(ctx, params, makeTips({ bluePosA: { x: 10, y: 20 }, bluePosB: { x: 30, y: 40 }, currentStep: 0 }));
-    expect(phantoms(r).length).toBe(1);
+    (ctx.stroke as ReturnType<typeof vi.fn>).mockClear();
 
-    // Same beat (floor(0.5 / 1) = 0, unchanged).
+    // floor(0.5 / 1) === 0, still beat 0 → no new stamp.
     r.render(ctx, params, makeTips({ bluePosA: { x: 50, y: 60 }, bluePosB: { x: 70, y: 80 }, currentStep: 0.5 }));
-    expect(phantoms(r).length).toBe(1);
+    expect(strokes(ctx)).toBe(0);
+    expect(stepIndex(r)).toBe(0);
   });
 
-  it("captures a new phantom at the next beat boundary", () => {
+  it("stamps again at the next beat boundary", () => {
     const r = new Echo2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ interval: 1 });
 
     r.render(ctx, params, makeTips({ bluePosA: { x: 0, y: 0 }, bluePosB: { x: 1, y: 1 }, currentStep: 0 }));
-    r.render(ctx, params, makeTips({ bluePosA: { x: 0, y: 0 }, bluePosB: { x: 1, y: 1 }, currentStep: 1 }));
-    expect(phantoms(r).length).toBe(2);
+    r.render(ctx, params, makeTips({ bluePosA: { x: 5, y: 5 }, bluePosB: { x: 6, y: 6 }, currentStep: 1 }));
+    expect(stepIndex(r)).toBe(1);
+    expect(clones(r).get(0)).toEqual({ posA: { x: 5, y: 5 }, posB: { x: 6, y: 6 } });
   });
 
-  it("captures phantoms from tunnel layer props (propIndex >= 2)", () => {
-    const r = new Echo2DRenderer();
-    const ctx = makeCtx();
-    const params = makeParams({ interval: 1 });
-
-    // Base blue pair + one layer pair at the same beat → two phantoms.
-    r.render(
-      ctx,
-      params,
-      makeTips({
-        bluePosA: { x: 0, y: 0 },
-        bluePosB: { x: 1, y: 1 },
-        layerPosA: { x: 200, y: 200 },
-        layerPosB: { x: 201, y: 201 },
-        currentStep: 0,
-      }),
-    );
-    expect(phantoms(r).length).toBe(2);
-    // The layer phantom carries the layer's spectrum color, not the base blue.
-    expect(phantoms(r).some((p) => p.color === "#22cc88")).toBe(true);
-  });
-
-  it("culls phantoms whose age (in intervals) reaches decay", () => {
-    const r = new Echo2DRenderer();
-    const ctx = makeCtx();
-    const params = makeParams({ interval: 1, decay: 2 });
-
-    r.render(ctx, params, makeTips({ bluePosA: { x: 0, y: 0 }, bluePosB: { x: 1, y: 1 }, currentStep: 0 }));
-    expect(phantoms(r).length).toBe(1);
-
-    r.render(ctx, params, makeTips({ bluePosA: { x: 0, y: 0 }, bluePosB: { x: 1, y: 1 }, currentStep: 1 }));
-    expect(phantoms(r).length).toBe(2);
-
-    // Step 2: capture another; age of first = 2 (>= decay), culled.
-    r.render(ctx, params, makeTips({ bluePosA: { x: 0, y: 0 }, bluePosB: { x: 1, y: 1 }, currentStep: 2 }));
-    expect(phantoms(r).length).toBe(2);
-  });
-
-  it("renders staff lines (moveTo/lineTo/stroke) when shape='staff'", () => {
-    const r = new Echo2DRenderer();
-    const ctx = makeCtx();
-    const params = makeParams({ shape: "staff" });
-
-    r.render(ctx, params, makeTips({ bluePosA: { x: 10, y: 20 }, bluePosB: { x: 30, y: 40 }, currentStep: 0 }));
-
-    expect((ctx.moveTo as any).mock.calls.length).toBeGreaterThan(0);
-    expect((ctx.lineTo as any).mock.calls.length).toBeGreaterThan(0);
-    expect((ctx.stroke as any).mock.calls.length).toBeGreaterThan(0);
-    expect((ctx.arc as any).mock.calls.length).toBe(0);
-  });
-
-  it("renders tip dots (arc/fill) when shape='tips' and does not stroke lines", () => {
-    const r = new Echo2DRenderer();
-    const ctx = makeCtx();
-    const params = makeParams({ shape: "tips" });
-
-    r.render(ctx, params, makeTips({ bluePosA: { x: 10, y: 20 }, bluePosB: { x: 30, y: 40 }, currentStep: 0 }));
-
-    expect((ctx.arc as any).mock.calls.length).toBeGreaterThan(0);
-    expect((ctx.fill as any).mock.calls.length).toBeGreaterThan(0);
-    expect((ctx.stroke as any).mock.calls.length).toBe(0);
-  });
-
-  it("captures both blue and red phantoms at the same beat", () => {
+  it("stamps both blue and red clones at the same beat", () => {
     const r = new Echo2DRenderer();
     const ctx = makeCtx();
 
@@ -186,18 +127,17 @@ describe("Echo2DRenderer", () => {
       ctx,
       makeParams(),
       makeTips({
-        bluePosA: { x: 0, y: 0 },
-        bluePosB: { x: 1, y: 1 },
-        redPosA: { x: 100, y: 100 },
-        redPosB: { x: 101, y: 101 },
+        bluePosA: { x: 0, y: 0 }, bluePosB: { x: 1, y: 1 },
+        redPosA: { x: 100, y: 100 }, redPosB: { x: 101, y: 101 },
         currentStep: 0,
       }),
     );
-
-    expect(phantoms(r).length).toBe(2);
+    expect(clones(r).size).toBe(2);
+    expect(clones(r).has(0)).toBe(true);
+    expect(clones(r).has(1)).toBe(true);
   });
 
-  it("dispose() empties the phantom array and resets lastStepIndex", () => {
+  it("stamps tunnel-layer clones (propIndex >= 2)", () => {
     const r = new Echo2DRenderer();
     const ctx = makeCtx();
 
@@ -205,51 +145,80 @@ describe("Echo2DRenderer", () => {
       ctx,
       makeParams(),
       makeTips({
-        bluePosA: { x: 0, y: 0 },
-        bluePosB: { x: 1, y: 1 },
-        redPosA: { x: 2, y: 2 },
-        redPosB: { x: 3, y: 3 },
+        bluePosA: { x: 0, y: 0 }, bluePosB: { x: 1, y: 1 },
+        layerPosA: { x: 200, y: 200 }, layerPosB: { x: 201, y: 201 },
         currentStep: 0,
       }),
     );
-    expect(phantoms(r).length).toBe(2);
-
-    r.dispose();
-    expect(phantoms(r).length).toBe(0);
-    expect((r as any).lastStepIndex).toBe(-1);
+    expect(clones(r).size).toBe(2);
+    expect(clones(r).has(2)).toBe(true);
   });
 
-  it("clears phantoms and resets lastStepIndex when animation loops (currentStep jumps backward)", () => {
+  it("shape='tips' with streak=0 draws orbs (arc/fill) and no strokes", () => {
     const r = new Echo2DRenderer();
     const ctx = makeCtx();
-    const params = makeParams({ interval: 1, decay: 10 });
+    const params = makeParams({ shape: "tips", streak: 0 });
+
+    r.render(ctx, params, makeTips({ bluePosA: { x: 10, y: 20 }, bluePosB: { x: 30, y: 40 }, currentStep: 0 }));
+
+    expect((ctx.arc as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+    expect((ctx.fill as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+    expect(strokes(ctx)).toBe(0);
+  });
+
+  it("streak>0 draws a connective thread once a prior clone exists", () => {
+    const r = new Echo2DRenderer();
+    const ctx = makeCtx();
+    // tips shape so the only possible stroke is the streak thread itself.
+    const params = makeParams({ shape: "tips", streak: 0.5, interval: 1 });
+
+    // Beat 0: no prior clone → no streak → no stroke.
+    r.render(ctx, params, makeTips({ bluePosA: { x: 0, y: 0 }, bluePosB: { x: 1, y: 1 }, currentStep: 0 }));
+    expect(strokes(ctx)).toBe(0);
+
+    // Beat 1: prior clone exists → streak thread strokes (quadratic curves).
+    r.render(ctx, params, makeTips({ bluePosA: { x: 10, y: 0 }, bluePosB: { x: 11, y: 1 }, currentStep: 1 }));
+    expect(strokes(ctx)).toBeGreaterThan(0);
+    expect((ctx.quadraticCurveTo as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+  });
+
+  it("resets onset + streak memory when the animation loops (currentStep jumps back)", () => {
+    const r = new Echo2DRenderer();
+    const ctx = makeCtx();
+    const params = makeParams({ interval: 1, streak: 0.5 });
 
     for (let step = 0; step < 5; step++) {
       r.render(ctx, params, makeTips({ bluePosA: { x: step, y: 0 }, bluePosB: { x: step + 1, y: 0 }, currentStep: step }));
     }
-    expect(phantoms(r).length).toBe(5);
-    expect((r as any).lastStepIndex).toBe(4);
+    expect(stepIndex(r)).toBe(4);
 
-    // Simulate animation loop: currentStep jumps back to 0
+    // Loop: currentStep jumps back to 0. Onset memory + prior clone reset, so the
+    // first beat of the new exposure stamps without a streak from the old tail.
+    (ctx.quadraticCurveTo as ReturnType<typeof vi.fn>).mockClear();
     r.render(ctx, params, makeTips({ bluePosA: { x: 0, y: 0 }, bluePosB: { x: 1, y: 0 }, currentStep: 0 }));
-
-    expect(phantoms(r).length).toBe(1);
-    expect(phantoms(r)[0]!.capturedStep).toBe(0);
-    expect((r as any).lastStepIndex).toBe(0);
+    expect(stepIndex(r)).toBe(0);
+    expect(clones(r).size).toBe(1);
+    expect((ctx.quadraticCurveTo as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
   });
 
-  it("does not leak phantoms across multiple animation loops", () => {
+  it("reset() clears onset index and clone memory", () => {
     const r = new Echo2DRenderer();
     const ctx = makeCtx();
-    const params = makeParams({ interval: 1, decay: 10 });
+    r.render(ctx, makeParams(), makeTips({ bluePosA: { x: 0, y: 0 }, bluePosB: { x: 1, y: 1 }, currentStep: 0 }));
+    expect(clones(r).size).toBe(1);
 
-    for (let loop = 0; loop < 5; loop++) {
-      for (let step = 0; step < 4; step++) {
-        r.render(ctx, params, makeTips({ bluePosA: { x: step, y: 0 }, bluePosB: { x: step + 1, y: 0 }, currentStep: step }));
-      }
-    }
-    // Should only have phantoms from the last loop (4), not 20
-    expect(phantoms(r).length).toBeLessThanOrEqual(4);
+    r.reset();
+    expect(stepIndex(r)).toBe(-1);
+    expect(clones(r).size).toBe(0);
+  });
+
+  it("dispose() clears state", () => {
+    const r = new Echo2DRenderer();
+    const ctx = makeCtx();
+    r.render(ctx, makeParams(), makeTips({ bluePosA: { x: 0, y: 0 }, bluePosB: { x: 1, y: 1 }, currentStep: 0 }));
+    r.dispose();
+    expect(stepIndex(r)).toBe(-1);
+    expect(clones(r).size).toBe(0);
   });
 });
 
@@ -263,7 +232,7 @@ describe("Echo2DRenderer scale", () => {
     ).not.toThrow();
   });
 
-  it("at scale=0.5, ctx.lineWidth is set to thickness*0.5 during render", () => {
+  it("at scale=0.5, ctx.lineWidth is set to thickness*0.5 during a staff stamp", () => {
     const r = new Echo2DRenderer();
     const assignedLineWidths: number[] = [];
     let _lineWidth = 1;
@@ -273,12 +242,9 @@ describe("Echo2DRenderer scale", () => {
       set lineWidth(v: number) { assignedLineWidths.push(v); _lineWidth = v; },
     } as unknown as CanvasRenderingContext2D;
 
-    const params = makeParams({ intensity: 1, thickness: 8, glow: 0, depth: 0, flash: 0 });
-    // Step 1: capture at beat 0.
+    const params = makeParams({ intensity: 1, thickness: 8, glow: 0, depth: 0, flash: 0, streak: 0, shape: "staff" });
+    // Stamps at beat 0; body stroke sets lineWidth = thickness * scale = 8 * 0.5 = 4.
     r.render(ctx, params, makeTips({ bluePosA: { x: 0, y: 0 }, bluePosB: { x: 10, y: 0 }, currentStep: 0 }), 0.5);
-    // Step 2: advance past beat 1 so the captured phantom is drawn.
-    r.render(ctx, params, makeTips({ bluePosA: { x: 0, y: 0 }, bluePosB: { x: 10, y: 0 }, currentStep: 1.5 }), 0.5);
-    // The renderer sets lineWidth = thickness * scale = 8 * 0.5 = 4.
     expect(assignedLineWidths).toContain(4);
   });
 });
