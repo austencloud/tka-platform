@@ -133,7 +133,18 @@ const DEFAULT_PROP_STATE: PropState = {
   // x and y are optional - only set for dash motions
 };
 
-export function createAnimationPanelState(): AnimationPanelState {
+/**
+ * @param options.ephemeral When true, the instance ignores the shared
+ *   localStorage prefs (speed/loop/playbackMode/step/exportLoopCount): it starts
+ *   from defaults and never auto-saves. Use for scoped surfaces (e.g. the landing
+ *   "Watch it move" card) that must run at a fixed 60 BPM without inheriting — or
+ *   clobbering — the user's global playback settings.
+ */
+export function createAnimationPanelState(
+  options?: { ephemeral?: boolean }
+): AnimationPanelState {
+  const ephemeral = options?.ephemeral ?? false;
+
   // Observer set for notifying subscribers
   const observers = new Set<AnimationStateObserver>();
 
@@ -141,53 +152,63 @@ export function createAnimationPanelState(): AnimationPanelState {
     observers.forEach((observer) => observer(key, value));
   }
 
-  // Playback state
+  // Playback state. Ephemeral instances start from the same defaults the
+  // persistence helpers above declare, but never read or write localStorage.
   let currentStep = $state(0);
   let isPlaying = $state(false);
-  let speed = $state(speedPersistence.load());
-  let shouldLoop = $state(loopPersistence.load());
-  let playbackMode = $state<PlaybackMode>(playbackModePersistence.load());
-  let stepPlaybackPauseMs = $state(stepPlaybackPauseMsPersistence.load());
+  let speed = $state(ephemeral ? 1.0 : speedPersistence.load());
+  let shouldLoop = $state(ephemeral ? false : loopPersistence.load());
+  let playbackMode = $state<PlaybackMode>(
+    ephemeral ? "continuous" : playbackModePersistence.load()
+  );
+  let stepPlaybackPauseMs = $state(
+    ephemeral ? 300 : stepPlaybackPauseMsPersistence.load()
+  );
   let stepPlaybackStepSize = $state<StepPlaybackStepSize>(
-    stepPlaybackStepSizePersistence.load()
+    ephemeral ? 1 : stepPlaybackStepSizePersistence.load()
   );
 
   // Export settings
-  let exportLoopCount = $state(exportLoopCountPersistence.load());
+  let exportLoopCount = $state(
+    ephemeral ? 1 : exportLoopCountPersistence.load()
+  );
 
-  // Auto-save speed, loop state, and export loop count
-  // Capture cleanup function to prevent memory leaks
-  const cleanupEffects = $effect.root(() => {
-    $effect(() => {
-      void speed;
-      speedPersistence.setupAutoSave(speed);
-    });
+  // Auto-save speed, loop state, and export loop count.
+  // Skipped entirely for ephemeral instances so a scoped surface can't write
+  // its fixed values back over the user's global prefs.
+  const cleanupEffects = ephemeral
+    ? () => {}
+    : $effect.root(() => {
+        $effect(() => {
+          void speed;
+          speedPersistence.setupAutoSave(speed);
+        });
 
-    $effect(() => {
-      void shouldLoop;
-      loopPersistence.setupAutoSave(shouldLoop);
-    });
+        $effect(() => {
+          void shouldLoop;
+          loopPersistence.setupAutoSave(shouldLoop);
+        });
 
-    $effect(() => {
-      void playbackMode;
-      playbackModePersistence.setupAutoSave(playbackMode);
-    });
+        $effect(() => {
+          void playbackMode;
+          playbackModePersistence.setupAutoSave(playbackMode);
+        });
 
-    $effect(() => {
-      void stepPlaybackPauseMs;
-      stepPlaybackPauseMsPersistence.setupAutoSave(stepPlaybackPauseMs);
-    });
+        $effect(() => {
+          void stepPlaybackPauseMs;
+          stepPlaybackPauseMsPersistence.setupAutoSave(stepPlaybackPauseMs);
+        });
 
-    $effect(() => {
-      void stepPlaybackStepSize;
-      stepPlaybackStepSizePersistence.setupAutoSave(stepPlaybackStepSize);
-    });
+        $effect(() => {
+          void stepPlaybackStepSize;
+          stepPlaybackStepSizePersistence.setupAutoSave(stepPlaybackStepSize);
+        });
 
-    $effect(() => {
-      void exportLoopCount;
-      exportLoopCountPersistence.setupAutoSave(exportLoopCount);
-    });
-  });
+        $effect(() => {
+          void exportLoopCount;
+          exportLoopCountPersistence.setupAutoSave(exportLoopCount);
+        });
+      });
 
   // Sequence metadata
   let totalSteps = $state(0);

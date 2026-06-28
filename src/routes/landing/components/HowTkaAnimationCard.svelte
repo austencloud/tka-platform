@@ -35,8 +35,9 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
   let containerRef: HTMLElement | null = null;
   let hasStartedLoading = $state(false);
 
-  // Animation engine state
-  const animationState = createAnimationPanelState();
+  // Animation engine state. Ephemeral so this teaching card runs at a fixed
+  // 60 BPM and never inherits — or overwrites — the user's saved playback prefs.
+  const animationState = createAnimationPanelState({ ephemeral: true });
   let playbackController: AnimationPlaybackController | null = null;
   let startPositionDeriver: StartPositionDeriver | null = null;
   let animationReady = $state(false);
@@ -129,13 +130,21 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
       animationSettings.setTrackingMode(TrackingMode.BOTH_ENDS);
       visibilityManager.setDarkMode(true);
       visibilityManager.setActiveEffect("none");
+      // Hard-code ARC paths for this teaching card. Without this it inherits the
+      // user's saved global pathShape (linear/concave/hybrid).
+      visibilityManager.setPathShape("arc");
+      visibilityManager.setMotionAwarePaths(false);
 
-      playbackController = createAnimationPlaybackController();
+      // Pass the ephemeral manager so prop interpolation reads ARC from THIS
+      // scope, not the global singleton (matches PlayWithItInner's wiring).
+      playbackController = createAnimationPlaybackController(visibilityManager);
       startPositionDeriver = startPositionDeriverInstance;
 
       const prepared = applyPropType(sequence);
 
       animationState.setShouldLoop(true);
+      // Hard-code 60 BPM (speed 1.0). Ephemeral state means this won't persist.
+      animationState.setSpeed(1.0);
       const success = playbackController.initialize(prepared, animationState);
       if (!success) throw new Error("Playback init failed");
 
