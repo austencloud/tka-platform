@@ -31,8 +31,6 @@
     onClose: () => void;
   } = $props();
 
-  const word = $derived(variations[0]?.word ?? "");
-
   const propSettings = $derived({
     bluePropType: settingsService.settings.bluePropType,
     redPropType: settingsService.settings.redPropType,
@@ -64,14 +62,17 @@
 >
   {#snippet header()}
     <ModalHeader
-      title={t('browse_variations_title', { count: String(variations.length), word })}
+      title={t('browse_variations_title')}
+      subtitle={t('browse_choose_variation')}
       onClose={onClose}
     />
   {/snippet}
 
   <div class="picker-grid">
-    {#each variations as variation (variation.id)}
-      <div class="picker-item">
+    {#each variations as variation, i (variation.id)}
+      <!-- data-animate reuses BaseModal's staggered entrance (modal-tokens.css);
+           capped at the defined 1..6 range, reduced-motion-safe automatically. -->
+      <div class="picker-item" data-animate={Math.min(i + 1, 6)}>
         <ChoreoCardThumbnail
           sequence={variation}
           onPrimaryAction={() => handleSelect(variation)}
@@ -81,7 +82,6 @@
           {lightMode}
           eager
         />
-        <span class="picker-author">{variation.author ?? "Unknown"}</span>
       </div>
     {/each}
   </div>
@@ -98,21 +98,6 @@
     justify-content: center;
     gap: clamp(16px, 2vw, 24px);
     padding: clamp(16px, 3vw, 32px);
-  }
-
-  .picker-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .picker-author {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   /* Cap the dialog width at ~1100px (the `lg` default of 640px is too narrow for

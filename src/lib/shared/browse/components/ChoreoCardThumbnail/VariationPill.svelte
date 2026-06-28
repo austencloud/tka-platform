@@ -76,7 +76,10 @@ Touch target: var(--min-touch-target) minimum for WCAG AA accessibility.
 
     /* Interaction */
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition:
+      transform var(--duration-fast) ease,
+      background-color var(--duration-fast) ease,
+      border-color var(--duration-fast) ease;
 
     /* Ensure clickable on top of thumbnail */
     z-index: 10;
