@@ -47,8 +47,12 @@
   <div class="page-body">
     {#if title && !isBody}
       <!-- Front matter (TOC, Read Me…): the SAME calligraphic title as body pages,
-           rendered in flow so the page content sits below it. -->
-      <h1 class="guide-title flow">{title}</h1>
+           rendered in flow so the page content sits below it. A <div> (not <h1>)
+           on purpose — /print wraps the doc in .guide-content, whose `.guide-content
+           h1` rule (Inter 750, for the scroll layout) would otherwise outweigh
+           .guide-title and force the title to bold sans-serif. Body titles are
+           already divs and render Tangerine correctly inside that same wrapper. -->
+      <div class="guide-title flow">{title}</div>
     {/if}
     <div class="page-content">
       {@render children()}
