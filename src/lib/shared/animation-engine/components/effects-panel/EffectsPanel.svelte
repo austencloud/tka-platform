@@ -114,17 +114,10 @@
     effectsConfigState.applyPreset(group.effectType, preset.id, patch);
   }
 
-  // ── Factory reset (the buried escape hatch) ──────────────────────────────
+  // ── Global factory reset (escape hatch in the panel footer) ──────────────
+  // Per-effect reset lives on the Default chip itself (clicking Default resets
+  // that effect to factory), so there is no separate per-effect reset button.
   let confirmResetAllOpen = $state(false);
-
-  /** Per-effect "Reset to original" — only meaningful once tuned away from factory. */
-  const resetEffectDisabled = $derived(
-    activeEffect === "none" || !isEffectId(activeEffect) || !effectsConfigState.hasCustom(activeEffect as EffectId),
-  );
-
-  function handleResetEffect(): void {
-    if (isEffectId(activeEffect)) effectsConfigState.resetToFactory(activeEffect);
-  }
 
   function handleResetAll(): void {
     effectsConfigState.resetAllToFactory();
@@ -160,18 +153,6 @@
     primarySpec.set(effectsConfigState, v);
   }
 </script>
-
-{#snippet resetToOriginalBtn()}
-  <button
-    type="button"
-    class="reset-original-btn"
-    disabled={resetEffectDisabled}
-    onclick={handleResetEffect}
-  >
-    <i class="fas fa-rotate-left" aria-hidden="true"></i>
-    <span>Reset {EFFECT_LABELS[activeEffect] ?? ""} to original</span>
-  </button>
-{/snippet}
 
 {#if layout === "sidebar"}
   <div class="effects-panel">
@@ -217,9 +198,6 @@
     {#if customizeOpen && CustomizeComponent}
       <div class="sb-section">
         <CustomizeComponent onBack={handleCustomizeClose} />
-        <div class="reset-row">
-          {@render resetToOriginalBtn()}
-        </div>
       </div>
     {/if}
 
@@ -243,9 +221,6 @@
         </span>
       </button>
       <CustomizeComponent onBack={handleCustomizeClose} />
-      <div class="reset-row">
-        {@render resetToOriginalBtn()}
-      </div>
     {:else}
       <div class="fx-strip" class:grid={layout === "grid"} role="radiogroup" aria-label="Select effect">
         {#each EFFECTS as e (e.id)}
@@ -337,15 +312,14 @@
     margin-bottom: 8px;
   }
 
-  /* ── Factory reset (buried escape hatch) ── */
-  .reset-row {
-    margin-top: 12px;
+  /* ── Global factory reset (panel footer) ── */
+  .sb-footer {
     display: flex;
     justify-content: center;
   }
 
-  .reset-original-btn,
   .reset-all-btn {
+    width: 100%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -363,31 +337,15 @@
     transition: all 150ms ease;
   }
 
-  .reset-original-btn:hover:not(:disabled),
   .reset-all-btn:hover {
     color: var(--semantic-warning, #f59e0b);
     border-color: color-mix(in srgb, var(--semantic-warning, #f59e0b) 45%, transparent);
     background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 8%, transparent);
   }
 
-  .reset-original-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .reset-original-btn:focus-visible,
   .reset-all-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #8b5cf6);
     outline-offset: 2px;
-  }
-
-  .sb-footer {
-    display: flex;
-    justify-content: center;
-  }
-
-  .reset-all-btn {
-    width: 100%;
   }
 
   /* ── Strip / Grid layout (mobile + popover) ─────────────────────────────── */
@@ -663,7 +621,6 @@
     .preset-chip,
     .more-btn,
     .back-row,
-    .reset-original-btn,
     .reset-all-btn {
       transition: none;
     }
