@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { EffectPresetGroup } from "./presets/types";
-	import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+	import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 
 	interface Props {
 		presetGroup: EffectPresetGroup;
 		activePresetId: string | null;
-		/** Sentinel id for the synthetic Default chip (the user's personal default). */
+		/** Sentinel id for the synthetic Default chip (the factory default look). */
 		defaultChipId?: string;
 		onSelectPreset: (presetId: string) => void;
 		onCustomize: () => void;
@@ -16,14 +16,12 @@
 
 	const { presetGroup, activePresetId, defaultChipId, onSelectPreset, onCustomize, effectLabel, accentColor, summary }: Props = $props();
 
-	const effectsConfigState = getEffectsConfigContext();
-
-	// Trail's default IS the colour-matched blue/red pair, so its Default chip shows
-	// the live blue/red dots instead of the generic accent dot. (Colours are edited
-	// in the Trails Customize panel.) Other effects use the accent dot.
+	// Trail's Default IS the colour-matched factory blue/red, so its Default chip
+	// shows those dots instead of the generic accent dot. Static (the factory look),
+	// not the live config — Default always reads as the matched red/blue.
 	const trailDefaultColors = $derived(
-		presetGroup.effectType === "trails" && effectsConfigState
-			? { blue: effectsConfigState.trails.blueColor, red: effectsConfigState.trails.redColor }
+		presetGroup.effectType === "trails"
+			? { blue: DEFAULT_EFFECTS_CONFIG.trails.blueColor, red: DEFAULT_EFFECTS_CONFIG.trails.redColor }
 			: null,
 	);
 </script>

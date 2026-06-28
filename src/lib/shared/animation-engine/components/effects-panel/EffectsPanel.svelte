@@ -7,9 +7,10 @@
   import { EFFECT_COLORS, EFFECT_LABELS, EFFECTS, getRegistration } from "./effect-registry";
   import type { EffectRegistration } from "./effect-registry";
   import { matchPresetId, valuesEqual } from "./presets/match-preset";
+  import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 
-  /** Synthetic chip id for the user's personal default (not a named preset). */
+  /** Synthetic chip id for the factory default look (not a named preset). */
   const DEFAULT_CHIP_ID = "__default__";
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
@@ -50,20 +51,19 @@
     activeEffect !== "none" ? getRegistration(activeEffect) : undefined
   );
 
-  // Honest highlight. The Default chip represents the user's PERSONAL default
-  // ("your look"), which auto-tracks every manual tweak. Priority:
-  //   1. live config == personal default          → Default chip
+  // Honest highlight. The Default chip is the FACTORY default look (for trail,
+  // the colour-matched red/blue) — the canonical anchor you reset to, not a
+  // tracker of your edits. Priority:
+  //   1. live config == factory default            → Default chip
   //   2. live config matches a named preset's patch → that preset
-  // A named-preset excursion lights its own chip; clicking Default returns here.
-  // Every preset now carries a static patch (the trail/fire resolvePatch colour
-  // customs were retired), so matchPresetId fully covers the named presets.
+  // Tuning away from both lights nothing; clicking Default resets to factory.
   const activePresetId = $derived.by(() => {
     if (activeEffect === "none" || !registration) return null;
     const fx = activeEffect as EffectId;
     const effectConfig = effectsConfigState.effect(fx) as unknown as Record<string, unknown>;
-    // 1. Your personal default → the synthetic Default chip.
-    const personal = effectsConfigState.personalDefault(fx) as unknown as Record<string, unknown> | null;
-    if (personal && valuesEqual(effectConfig, personal)) return DEFAULT_CHIP_ID;
+    // 1. The factory default look → the synthetic Default chip.
+    const factory = (DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>)[fx];
+    if (valuesEqual(effectConfig, factory)) return DEFAULT_CHIP_ID;
     // 2. A named preset whose static patch the live config matches.
     return matchPresetId(registration.presetGroup, effectConfig);
   });
@@ -91,9 +91,9 @@
 
   function handlePresetSelect(presetId: string): void {
     if (!registration) return;
-    // The Default chip returns to your personal default ("your look").
+    // The Default chip resets to the factory default look.
     if (presetId === DEFAULT_CHIP_ID) {
-      if (isEffectId(activeEffect)) effectsConfigState.restorePersonalDefault(activeEffect);
+      if (isEffectId(activeEffect)) effectsConfigState.resetToFactory(activeEffect);
       return;
     }
     const group = registration.presetGroup;
