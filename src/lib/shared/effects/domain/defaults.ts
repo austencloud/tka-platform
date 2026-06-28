@@ -11,8 +11,10 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     trackingMode: "both_ends",
     thickness: 5,
     brightness: 1.0,
-    blueColor: "#3D44B8",
-    redColor: "#DC2626",
+    // The colour-matched prop blue/red (bright "dark mode" prop colours). This is
+    // the trail Default look — matches the blue/red props on the dark canvas.
+    blueColor: "#3575E2",
+    redColor: "#ED1C24",
     rainbow: false,
   },
 

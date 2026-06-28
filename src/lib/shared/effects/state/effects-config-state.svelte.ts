@@ -280,6 +280,24 @@ export function createEffectsConfigState(
     );
   }
 
+  // Heal stale trail colours. The retired trail "Custom" preset seeded magenta/
+  // violet defaults (#8b5cf6 / #ec4899) that leaked into some persisted configs,
+  // so the trail Default chip showed magenta+blue instead of the matched red/blue.
+  // Reset that exact leaked pair (live config + personal default) to the factory
+  // colours. Idempotent; only the leaked pair is touched, never a real colour pick.
+  function healStaleTrailColors(t: { blueColor?: string; redColor?: string } | undefined | null): boolean {
+    if (t && t.blueColor === "#8b5cf6" && t.redColor === "#ec4899") {
+      t.blueColor = DEFAULT_EFFECTS_CONFIG.trails.blueColor;
+      t.redColor = DEFAULT_EFFECTS_CONFIG.trails.redColor;
+      return true;
+    }
+    return false;
+  }
+  const healedConfig = healStaleTrailColors(config.trails as { blueColor?: string; redColor?: string });
+  const healedDefault = healStaleTrailColors(personalDefaults.trails as { blueColor?: string; redColor?: string });
+  if (persist && healedConfig) scheduleSave();
+  if (persist && healedDefault) persistPersonalDefaults();
+
   /** Structural deep-equality for effect intents (scalars, string arrays, shallow objects). */
   function deepEqual(a: unknown, b: unknown): boolean {
     if (a === b) return true;
