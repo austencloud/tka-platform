@@ -7,6 +7,12 @@
 		activePresetId: string | null;
 		/** Sentinel id for the synthetic Default chip (the factory default look). */
 		defaultChipId?: string;
+		/** Sentinel id for the synthetic Custom chip (your auto-captured look). */
+		customChipId?: string;
+		/** Render the Custom chip disabled (no custom captured yet). */
+		customDisabled?: boolean;
+		/** Trail's captured custom blue/red for the Custom chip preview (else null). */
+		customColors?: { blue: string; red: string } | null;
 		onSelectPreset: (presetId: string) => void;
 		onCustomize: () => void;
 		effectLabel: string;
@@ -14,7 +20,7 @@
 		summary: string;
 	}
 
-	const { presetGroup, activePresetId, defaultChipId, onSelectPreset, onCustomize, effectLabel, accentColor, summary }: Props = $props();
+	const { presetGroup, activePresetId, defaultChipId, customChipId, customDisabled = false, customColors = null, onSelectPreset, onCustomize, effectLabel, accentColor, summary }: Props = $props();
 
 	// Trail's Default IS the colour-matched factory blue/red, so its Default chip
 	// shows those dots instead of the generic accent dot. Static (the factory look),
@@ -84,6 +90,32 @@
 				<span class="preset-name" class:active-name={isActive}>{preset.name}</span>
 			</button>
 		{/each}
+		{#if customChipId}
+			{@const isCustomActive = activePresetId === customChipId}
+			<button
+				class="preset-card"
+				class:active={isCustomActive}
+				class:disabled={customDisabled}
+				type="button"
+				role="radio"
+				aria-checked={isCustomActive}
+				disabled={customDisabled}
+				style:--card-accent={accentColor}
+				onclick={() => onSelectPreset(customChipId)}
+			>
+				<div class="preview-area">
+					{#if customColors}
+						<div class="dual-dots">
+							<div class="dot" style:background={customColors.blue} style:box-shadow={customDisabled ? "none" : `0 0 14px 5px ${customColors.blue}80`}></div>
+							<div class="dot" style:background={customColors.red} style:box-shadow={customDisabled ? "none" : `0 0 14px 5px ${customColors.red}80`}></div>
+						</div>
+					{:else}
+						<div class="dot" style:background={accentColor} style:box-shadow={customDisabled ? "none" : `0 0 14px 5px ${accentColor}80`}></div>
+					{/if}
+				</div>
+				<span class="preset-name" class:active-name={isCustomActive}>Custom</span>
+			</button>
+		{/if}
 	</div>
 
 	<div class="summary-row">
@@ -149,6 +181,15 @@
 	.preset-card.active {
 		border-color: var(--card-accent);
 		background: color-mix(in srgb, var(--card-accent) 8%, transparent);
+	}
+
+	.preset-card.disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.preset-card.disabled:hover {
+		border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
 	}
 
 	.preset-card:focus-visible {

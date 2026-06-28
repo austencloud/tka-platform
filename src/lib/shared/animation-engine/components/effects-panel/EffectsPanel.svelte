@@ -12,6 +12,8 @@
 
   /** Synthetic chip id for the factory default look (not a named preset). */
   const DEFAULT_CHIP_ID = "__default__";
+  /** Synthetic chip id for the user's auto-captured custom look. */
+  const CUSTOM_CHIP_ID = "__custom__";
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import type { PrimaryParamSpec } from "./effect-primary-param";
@@ -51,12 +53,11 @@
     activeEffect !== "none" ? getRegistration(activeEffect) : undefined
   );
 
-  // Honest highlight. The Default chip is the FACTORY default look (for trail,
-  // the colour-matched red/blue) — the canonical anchor you reset to, not a
-  // tracker of your edits. Priority:
-  //   1. live config == factory default            → Default chip
+  // Honest highlight. Priority:
+  //   1. live config == factory default            → Default chip (canonical anchor)
   //   2. live config matches a named preset's patch → that preset
-  // Tuning away from both lights nothing; clicking Default resets to factory.
+  //   3. live config == your captured custom look   → Custom chip
+  // Tuning away from all three lights nothing.
   const activePresetId = $derived.by(() => {
     if (activeEffect === "none" || !registration) return null;
     const fx = activeEffect as EffectId;
@@ -65,7 +66,12 @@
     const factory = (DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>)[fx];
     if (valuesEqual(effectConfig, factory)) return DEFAULT_CHIP_ID;
     // 2. A named preset whose static patch the live config matches.
-    return matchPresetId(registration.presetGroup, effectConfig);
+    const matched = matchPresetId(registration.presetGroup, effectConfig);
+    if (matched) return matched;
+    // 3. Your captured custom look → the synthetic Custom chip.
+    const custom = effectsConfigState.personalDefault(fx) as unknown as Record<string, unknown> | null;
+    if (custom && effectsConfigState.hasCustom(fx) && valuesEqual(effectConfig, custom)) return CUSTOM_CHIP_ID;
+    return null;
   });
 
   const currentSummary = $derived.by(() => {
@@ -96,6 +102,11 @@
       if (isEffectId(activeEffect)) effectsConfigState.resetToFactory(activeEffect);
       return;
     }
+    // The Custom chip restores your auto-captured custom look.
+    if (presetId === CUSTOM_CHIP_ID) {
+      if (isEffectId(activeEffect)) effectsConfigState.restorePersonalDefault(activeEffect);
+      return;
+    }
     const group = registration.presetGroup;
     const preset = group.presets.find(p => p.id === presetId);
     if (!preset) return;
@@ -118,6 +129,18 @@
   function handleResetAll(): void {
     effectsConfigState.resetAllToFactory();
   }
+
+  // ── Custom chip (your auto-captured look) ────────────────────────────────
+  /** Disabled until the user has captured a custom look (first manual edit). */
+  const customDisabled = $derived(
+    activeEffect === "none" || !isEffectId(activeEffect) || !effectsConfigState.hasCustom(activeEffect as EffectId),
+  );
+  /** Trail's Custom chip shows the captured custom blue/red dots; other effects use accent. */
+  const customColors = $derived.by(() => {
+    if (activeEffect !== "trails") return null;
+    const c = effectsConfigState.personalDefault("trails");
+    return c ? { blue: c.blueColor, red: c.redColor } : null;
+  });
 
   async function handleCustomizeOpen(): Promise<void> {
     if (!registration) return;
@@ -179,6 +202,9 @@
           presetGroup={registration.presetGroup}
           {activePresetId}
           defaultChipId={DEFAULT_CHIP_ID}
+          customChipId={CUSTOM_CHIP_ID}
+          {customDisabled}
+          {customColors}
           onSelectPreset={handlePresetSelect}
           onCustomize={handleCustomizeOpen}
           effectLabel={EFFECT_LABELS[activeEffect] ?? ""}

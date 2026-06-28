@@ -64,6 +64,12 @@ describe("EffectsConfigState", () => {
       expect(state.hasCustom("bloom")).toBe(false);
     });
 
+    it("the Custom slot starts empty (null) until the first edit", () => {
+      const state = createEffectsConfigState(undefined, { persist: false });
+      expect(state.personalDefault("trails")).toBeNull();
+      expect(state.hasCustom("trails")).toBe(false);
+    });
+
     it("updateEffect captures the live config as the personal default", () => {
       const state = createEffectsConfigState(undefined, { persist: false });
       state.updateEffect("bloom", { intensity: 0.123 });
@@ -121,6 +127,8 @@ describe("EffectsConfigState", () => {
         "tka_effects_custom",
         JSON.stringify({ bloom: { ...DEFAULT_EFFECTS_CONFIG.bloom, intensity: 0.77 } }),
       );
+      // Mark the one-time clean as already done so it doesn't wipe the seed.
+      ls.setItem("tka_effects_custom_clean", "1");
       const state = createEffectsConfigState(undefined, { persist: true });
       expect(state.personalDefault("bloom")?.intensity).toBe(0.77);
       expect(state.hasCustom("bloom")).toBe(true);

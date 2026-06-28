@@ -54,8 +54,10 @@ import { charcoalParamsToSemantic } from "$lib/shared/animation-engine/domain/ty
 
 const STORAGE_KEY = "tka_effects_config";
 const BASELINE_KEY = "tka_effects_baseline";
-/** Per-effect personal-default snapshots (the Default chip's target). */
+/** Per-effect custom-look snapshots (the Custom chip's target). */
 const CUSTOM_KEY = "tka_effects_custom";
+/** Flag marking the one-time clear of the polluted v1 custom data. */
+const CUSTOM_CLEAN_FLAG = "tka_effects_custom_clean";
 const VM_STORAGE_KEY = "animation-visibility-settings";
 
 const EFFECT_IDS = [
@@ -209,6 +211,20 @@ function loadStoredPersonalDefaults(): Record<string, unknown> | null {
   }
 }
 
+/**
+ * One-time clear of the v1 `tka_effects_custom` data. The first cut auto-seeded
+ * the Custom slot from the live config, so a *selected* preset (e.g. Neon) leaked
+ * in as "your custom". Discard it once so the Custom chip starts genuinely empty.
+ */
+function cleanPollutedCustomDataOnce(): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (localStorage.getItem(CUSTOM_CLEAN_FLAG)) return;
+    localStorage.removeItem(CUSTOM_KEY);
+    localStorage.setItem(CUSTOM_CLEAN_FLAG, "1");
+  } catch { /* quota exceeded or private browsing */ }
+}
+
 export function createEffectsConfigState(
   initial: EffectsConfig = DEFAULT_EFFECTS_CONFIG,
   options: { persist?: boolean } = {},
@@ -266,18 +282,19 @@ export function createEffectsConfigState(
     catch { return JSON.parse(JSON.stringify(v)); }
   };
 
-  // Per-effect personal default — "your look". Auto-tracks every manual
-  // updateEffect (NOT applyPreset / restorePersonalDefault / resetToFactory) and
-  // is the target of the Default chip. Persisted under CUSTOM_KEY so "return to
-  // my look" survives a reload while parked on a named preset. Seeded from the
-  // persisted map, falling back to the loaded config for first-run / new effects.
-  // Spec: docs/superpowers/specs/2026-06-27-personal-default-collapse-design.md
+  // Per-effect Custom slot — "your last-modified look". Auto-captured on every
+  // manual updateEffect (NOT applyPreset / restorePersonalDefault / resetToFactory)
+  // and is the target of the Custom chip. Persisted under CUSTOM_KEY so it survives
+  // reload. Starts EMPTY (null) — seeded ONLY from the persisted store, never from
+  // the live config, so a *selected* preset never leaks in as "your custom". The
+  // chip stays disabled until the first real edit populates a slot.
+  // Spec: docs/superpowers/specs/2026-06-27-custom-chip-design.md
+  if (persist) cleanPollutedCustomDataOnce();
   const storedDefaults = persist ? loadStoredPersonalDefaults() : null;
   const personalDefaults = $state<Record<string, unknown>>({});
   for (const id of EFFECT_IDS) {
-    personalDefaults[id] = cloneOne(
-      storedDefaults?.[id] ?? (config as unknown as Record<string, unknown>)[id],
-    );
+    const stored = storedDefaults?.[id];
+    personalDefaults[id] = stored != null ? cloneOne(stored) : null;
   }
 
   // Heal stale trail colours. The retired trail "Custom" preset seeded magenta/
