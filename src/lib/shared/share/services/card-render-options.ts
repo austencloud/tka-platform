@@ -55,6 +55,10 @@ export function buildCardRenderOptions(
   const vm = getVisibilityStateManager();
   const stepCount = sequence.steps?.length ?? 0;
   const isHandPath = input.isHandPath ?? false;
+  // One-count cards (single beat + start) have no spare cell for a QR — it would
+  // land on the start position. One-count cards never carry a QR (matches the
+  // canvas backstop in findEmptyCellForQR and the gallery thumbnail gate).
+  const oneCount = stepCount <= 1;
 
   // The panel's column chip stores STEP columns; the assembler wants the total
   // including the start-position column, so add +1 when start is shown.
@@ -83,7 +87,7 @@ export function buildCardRenderOptions(
     addReversalSymbols: !isHandPath,
     visibilityOverrides: {
       darkMode: input.darkMode,
-      showQRCode: ic.showQRCode,
+      showQRCode: oneCount ? false : ic.showQRCode,
       showGrid: vm.getGridVisibility(),
       showMandala: ic.showMandala,
       handPathMode: isHandPath,

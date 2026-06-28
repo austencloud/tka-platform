@@ -118,6 +118,12 @@ export function findEmptyCellForQR(
   sequence: SequenceData,
   options: Partial<SequenceExportOptions>
 ): { col: number; row: number } | null {
+  // One-count cards (a single beat + the start position) have no spare cell.
+  // In row mode the heuristic below would pick { col: columns - 1, row: 0 },
+  // which for columns === 1 IS the start-position cell — the QR would paint
+  // over the start. One-count cards never carry a QR, in any layout mode.
+  if ((sequence.steps?.length ?? 0) <= 1) return null;
+
   const layoutMode = options.startPositionLayout ?? "row";
   const useColumnMode = layoutMode === "column" && !!options.includeStartPosition;
 

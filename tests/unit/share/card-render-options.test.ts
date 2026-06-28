@@ -70,6 +70,17 @@ describe("buildCardRenderOptions", () => {
     ).toBeUndefined();
   });
 
+  it("forces QR off for a one-count card even when the global QR toggle is on", () => {
+    // showQRCode is on globally, but a single beat + start has no spare cell —
+    // a QR would land on the start position. One-count cards never carry a QR.
+    const oneStep = { steps: [{ letter: "A" }] } as any;
+    expect(ic.showQRCode).toBe(true);
+    const o = buildCardRenderOptions(oneStep, { darkMode: false, userName: "" });
+    expect(o.visibilityOverrides?.showQRCode).toBe(false);
+    // Multi-count cards are unaffected.
+    expect(buildCardRenderOptions(seq, { darkMode: false, userName: "" }).visibilityOverrides?.showQRCode).toBe(true);
+  });
+
   it("suppresses difficulty, LOOP glyph, reversals and TKA in hand-path mode", () => {
     const o = buildCardRenderOptions(seq, { darkMode: false, userName: "", isHandPath: true });
     expect(o.addDifficultyLevel).toBe(false);

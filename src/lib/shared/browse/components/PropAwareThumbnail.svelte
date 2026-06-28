@@ -113,8 +113,23 @@
 
   // Resolve effective settings: explicit props > user preference from composition manager
   const compositionManager = getImageCompositionManager();
+
+  // Derived: beat count. Declared before the layout/visibility deriveds below
+  // because both read it (one-count gating + per-length start layout).
+  // Priority: steps array length (if not empty) > sequenceLength field > fallback to 4
+  // NOTE: Use || not ?? because steps is often [] (empty array) for Community sequences,
+  // and [].length is 0 which ?? treats as valid (only null/undefined fall through)
+  const stepCount = $derived(
+    sequence.steps?.length || sequence.sequenceLength || 4
+  );
+
+  // Resolve the per-step-count start-position layout (honors the user's
+  // "Top Row" / "Left Column" choice for THIS length), matching the viewer
+  // preview and the export path. Reading the global startPositionLayout here
+  // ignored per-length overrides, so a one-count set to "Left Column" still
+  // rendered row-mode in the gallery.
   const effectiveStartPositionLayout = $derived(
-    startPositionLayout ?? compositionManager.startPositionLayout
+    startPositionLayout ?? compositionManager.getStartPositionLayoutForStepCount(stepCount)
   );
 
   // Merge composition manager's QR/mandala settings into visibility when no explicit visibility passed
@@ -126,7 +141,10 @@
     // (Firebase short-code) QR. Because showQRCode is part of the cache key, a
     // guest's no-QR card keys separately (showQRCode:false) and can never
     // overwrite the signed-in short-code card in the shared cloud cache.
-    const qrAllowed = authState.isAuthenticated;
+    // One-count cards (single beat + start) never carry a QR — there is no spare
+    // cell, so it would land on the start position. Gating it here also re-keys
+    // any one-count thumbnail that was previously cached with a QR baked in.
+    const qrAllowed = authState.isAuthenticated && stepCount > 1;
     if (visibility) {
       const qrGated = qrAllowed ? visibility : { ...visibility, showQRCode: false };
       return (handPathMode || needsMotionFilter || !qrAllowed)
@@ -151,14 +169,6 @@
   // collapsing that to a nonsense "SPM"/"SAM". deriveWord reads the real letters,
   // matching what the section bucket and the rendered thumbnail show.
   const displayName = $derived(simplifyRepeatedWord(deriveWord(sequence)));
-
-  // Derived: beat count for aspect ratio calculation
-  // Priority: steps array length (if not empty) > sequenceLength field > fallback to 4
-  // NOTE: Use || not ?? because steps is often [] (empty array) for Community sequences,
-  // and [].length is 0 which ?? treats as valid (only null/undefined fall through)
-  const stepCount = $derived(
-    sequence.steps?.length || sequence.sequenceLength || 4
-  );
 
   // Derived: aspect ratio based on beat count, variant, and start position layout
   // Gallery variant has header + footer, wordcard uses natural aspect ratio
