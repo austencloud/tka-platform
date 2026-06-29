@@ -8,7 +8,7 @@ Combines video feed with playback controls for practicing sequences.
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { onDestroy, onMount } from "svelte";
-  import { Metronome } from "../services/metronome";
+  import { Metronome } from "$lib/shared/audio/metronome";
   import { createRecordTabState } from "../state/record-tab-state.svelte";
   import RecordControls from "./RecordControls.svelte";
   import VideoFeedPanel from "./VideoFeedPanel.svelte";
