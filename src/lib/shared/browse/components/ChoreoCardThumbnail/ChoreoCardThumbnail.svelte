@@ -32,6 +32,11 @@ Variation support:
   import { untrack } from "svelte";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+  import { adminDeleteSequence } from "$lib/shared/library/services/admin-sequence-actions";
+  import { notifyLibraryMutated } from "$lib/shared/library/library-events";
+  import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 
   let thumbnailRef = $state<ReturnType<typeof PropAwareThumbnail> | null>(null);
 
@@ -140,6 +145,33 @@ Variation support:
   // ── Context menu (admin-only) ──────────────────────────────────────
   let contextMenuState: ContextMenuState = $state({ open: false });
 
+  let removeConfirmOpen = $state(false);
+  let removeTarget = $state<SequenceData | null>(null);
+
+  async function performRemove() {
+    const seq = removeTarget;
+    if (!seq) return;
+    const myUid = authState.user?.uid;
+    const isOwner = !!myUid && seq.ownerId === myUid;
+    try {
+      if (isOwner) {
+        await getLibraryRepository().deleteSequence(seq.id);
+      } else {
+        await adminDeleteSequence(seq.ownerId ?? "", seq.id);
+      }
+      // Drives the browse engine's onLibraryMutated listener: removes the card
+      // from the reactive grid state and the loader cache immediately.
+      notifyLibraryMutated(seq.id);
+      toast.success("Removed from library");
+    } catch (err) {
+      console.error("Remove from library failed:", err);
+      toast.error("Failed to remove sequence");
+    } finally {
+      removeConfirmOpen = false;
+      removeTarget = null;
+    }
+  }
+
   function handleSendTo() {
     const seq = displayedSequence;
     closeContextMenu();
@@ -231,6 +263,25 @@ Variation support:
         },
       );
     }
+
+    const myUid = authState.user?.uid;
+    const isOwner = !!myUid && seq.ownerId === myUid;
+    if (isOwner || featureFlagService.isAdmin) {
+      items.push(
+        { type: "separator" } as ContextMenuEntry,
+        {
+          id: "remove-from-library",
+          label: "Remove from library",
+          icon: "fa-trash",
+          danger: true,
+          action() {
+            closeContextMenu();
+            removeTarget = seq;
+            removeConfirmOpen = true;
+          },
+        },
+      );
+    }
     return items;
   });
 
@@ -284,6 +335,17 @@ Variation support:
 </button>
 
 <ContextMenu menuState={contextMenuState} items={contextMenuItems} onClose={closeContextMenu} />
+
+<ConfirmDialog
+  bind:isOpen={removeConfirmOpen}
+  title="Remove from library?"
+  message="This permanently removes this sequence. It can't be undone."
+  confirmText="Remove"
+  cancelText="Keep"
+  variant="danger"
+  onConfirm={performRemove}
+  onCancel={() => { removeConfirmOpen = false; removeTarget = null; }}
+/>
 
 <style>
   .choreo-card {
