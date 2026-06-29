@@ -52,10 +52,12 @@ export {
 
 export { cleanupStaleAnonymousAccounts } from "./cleanupStaleAnonymousAccounts";
 export { cleanupStagedUploads } from "./cleanupStagedUploads";
+export { promoteFeedbackImages } from "./promoteFeedbackImages";
 export { backupHealthCheck } from "./backupHealthCheck";
 export { createMerchCheckout } from "./merch/createMerchCheckout";
 export { handleMerchWebhook } from "./merch/handleMerchWebhook";
 export { createDonationCheckout } from "./donation/createDonationCheckout";
+export { purgeOneCountSequences, adminDeleteSequence } from "./adminPurgeOneCount";
 
 const db = admin.firestore();
 
