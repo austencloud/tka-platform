@@ -95,6 +95,51 @@ function backfillPrefloatFromLegacySteps(
 }
 
 /**
+ * Reconstruct the start-position pictograph from a sequence's first step: both
+ * props placed STATIC at their start locations/orientations. Shared by hydrate()
+ * (runtime) and ensureComposition() (persist time) so a sequence always carries a
+ * renderable start cell even though the compositional save path doesn't emit one.
+ * Returns undefined when the first step has no motions to derive from.
+ */
+function deriveStartPositionFromSteps(
+	steps: readonly StepData[],
+	id: string
+): SequenceData["startPosition"] | undefined {
+	const first = steps[0];
+	const blueMotion = first?.motions?.blue;
+	const redMotion = first?.motions?.red;
+	if (!first || (!blueMotion && !redMotion)) return undefined;
+	return {
+		isStartPosition: true as const,
+		id: `start-${id}`,
+		letter: first.letter ?? null,
+		endPosition: first.startPosition ?? first.endPosition ?? null,
+		motions: {
+			...(blueMotion && {
+				[MotionColor.BLUE]: {
+					...blueMotion,
+					endLocation: blueMotion.startLocation,
+					endOrientation: blueMotion.startOrientation,
+					motionType: MotionType.STATIC,
+					rotationDirection: RotationDirection.NO_ROTATION,
+					turns: 0,
+				},
+			}),
+			...(redMotion && {
+				[MotionColor.RED]: {
+					...redMotion,
+					endLocation: redMotion.startLocation,
+					endOrientation: redMotion.startOrientation,
+					motionType: MotionType.STATIC,
+					rotationDirection: RotationDirection.NO_ROTATION,
+					turns: 0,
+				},
+			}),
+		},
+	} as SequenceData["startPosition"];
+}
+
+/**
  * Re-derives StepData from compositional fields (SoloPropData + StepPairingData).
  * Ensures derived fields are up-to-date with current domain logic.
  */
@@ -136,42 +181,8 @@ export function hydrate(sequence: SequenceData): SequenceData {
 
 			const steps = backfillPrefloatFromLegacySteps(derived, sequence.steps);
 
-			let startPosition = sequence.startPosition;
-			if (!startPosition && steps.length > 0) {
-				const first = steps[0];
-				const blueMotion = first?.motions?.blue;
-				const redMotion = first?.motions?.red;
-				if (blueMotion || redMotion) {
-					startPosition = {
-						isStartPosition: true as const,
-						id: `start-${sequence.id}`,
-						letter: first.letter ?? null,
-						endPosition: first.startPosition ?? first.endPosition ?? null,
-						motions: {
-							...(blueMotion && {
-								[MotionColor.BLUE]: {
-									...blueMotion,
-									endLocation: blueMotion.startLocation,
-									endOrientation: blueMotion.startOrientation,
-									motionType: MotionType.STATIC,
-									rotationDirection: RotationDirection.NO_ROTATION,
-									turns: 0,
-								},
-							}),
-							...(redMotion && {
-								[MotionColor.RED]: {
-									...redMotion,
-									endLocation: redMotion.startLocation,
-									endOrientation: redMotion.startOrientation,
-									motionType: MotionType.STATIC,
-									rotationDirection: RotationDirection.NO_ROTATION,
-									turns: 0,
-								},
-							}),
-						},
-					};
-				}
-			}
+			const startPosition =
+				sequence.startPosition ?? deriveStartPositionFromSteps(steps, sequence.id);
 
 			const hydrated = { ...sequence, steps, ...(startPosition && { startPosition }) };
 			return hydrated.steps.length > 0
@@ -202,6 +213,14 @@ export function ensureComposition(sequence: SequenceData): SequenceData {
 	const redSoloProp = extractRedSoloProp(sequence);
 	const stepPairings = extractStepPairings(sequence);
 
+	// Persist a start position alongside the compositional fields. It is NOT
+	// derivable from blue/redSoloProp + stepPairings alone, so without this the
+	// saved doc (and its public mirror) renders an empty start cell — exactly the
+	// bug the 2026-06 backfill repaired. Deriving here keeps every save/publish
+	// self-sufficient instead of relying on read-time hydrate().
+	const startPosition =
+		sequence.startPosition ?? deriveStartPositionFromSteps(sequence.steps, sequence.id);
+
 	return {
 		...sequence,
 		blueSoloProp,
@@ -211,5 +230,6 @@ export function ensureComposition(sequence: SequenceData): SequenceData {
 		redPathHash: redSoloProp.handPath.contentHash,
 		blueSoloHash: blueSoloProp.contentHash,
 		redSoloHash: redSoloProp.contentHash,
+		...(startPosition && { startPosition }),
 	};
 }

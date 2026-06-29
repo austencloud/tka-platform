@@ -179,8 +179,15 @@ export class LibraryRepository {
 
     // Derive word from steps (single source of truth)
     // Some older documents only have stepPairings (no steps array), so check both.
-    // Fall back to stored word/name only if neither is available.
-    const steps = (data["steps"] || seqData["steps"]) as Array<{ letter?: string }> | undefined;
+    // Pre-compositional legacy docs (2025-era) store their motion steps under
+    // `sequenceData.beats` — neither flat nor nested `steps` exist — so include
+    // that slot too, mirroring the `steps ?? beats` fallback already used in
+    // public-sequences-loader.ts. Without it these docs hydrate to an empty
+    // steps array and read as "0 steps" everywhere in the gallery.
+    // Fall back to stored word/name only if none is available.
+    const steps = (data["steps"] || seqData["steps"] || data["beats"] || seqData["beats"]) as
+      | Array<{ letter?: string }>
+      | undefined;
     const stepPairings = (data["stepPairings"] || seqData["stepPairings"]) as Array<{ letter?: string }> | undefined;
     let word: string | null = null;
 
@@ -215,6 +222,14 @@ export class LibraryRepository {
       ...data,
       id,
       word, // Ensure word is always present
+      // Funnel whichever slot held the motion array (flat steps, nested
+      // sequenceData.steps, or legacy *.beats) into `steps`. For legacy
+      // beats docs the spread above leaves `steps` absent, so set it here.
+      // hydrate() overrides this with freshly derived steps when the doc
+      // carries compositional fields.
+      ...(steps && steps.length > 0 && {
+        steps: steps as unknown as LibrarySequence["steps"],
+      }),
       sequenceTags,
       // Birthday field - original creation date (never changes after being set)
       birthday: this.toDateOrUndefined(data["birthday"]),
@@ -687,19 +702,26 @@ export class LibraryRepository {
     // Await the local write so callers can safely reload data immediately after.
     // trackWrite queues to Firestore's local cache first (offline-persistence), so
     // this resolves quickly - it does NOT block on server acknowledgment.
-    await trackWrite(
-      () => deleteDoc(doc(firestore, getUserSequencePath(userId, sequenceId))),
-      "library"
-    ).catch((error) => {
+    try {
+      await trackWrite(
+        () => deleteDoc(doc(firestore, getUserSequencePath(userId, sequenceId))),
+        "library"
+      );
+    } catch (error) {
+      // Surface the failure instead of swallowing it. Callers optimistically
+      // remove the card and show a success toast; if the delete never landed,
+      // that fakes success and the doc reappears on the next reload. Rethrow so
+      // the caller can show an error and keep the card.
       this.reportError(
         "Failed to delete sequence. It may reappear on refresh.",
         error,
         "delete-sequence",
         { sequenceId }
       );
-    });
+      throw error;
+    }
 
-    // Notify listeners so caches can remove the entry immediately
+    // Notify listeners so caches can remove the entry immediately (success only)
     notifyLibraryMutated(sequenceId);
 
     // Decrement user's sequenceCount (async, non-blocking, clamped to 0)

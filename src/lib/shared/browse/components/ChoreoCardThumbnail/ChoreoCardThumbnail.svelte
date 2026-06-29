@@ -157,7 +157,10 @@ Variation support:
       if (isOwner) {
         await getLibraryRepository().deleteSequence(seq.id);
       } else {
-        await adminDeleteSequence(seq.ownerId ?? "", seq.id);
+        const res = await adminDeleteSequence(seq.ownerId ?? "", seq.id);
+        // The callable resolves even when it deleted nothing; treat that as a
+        // failure so we don't show success + drop the card for a no-op delete.
+        if (!res.deleted) throw new Error("Admin delete reported no deletion");
       }
       // Drives the browse engine's onLibraryMutated listener: removes the card
       // from the reactive grid state and the loader cache immediately.
