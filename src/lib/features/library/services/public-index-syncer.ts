@@ -86,7 +86,7 @@ export class PublicIndexSyncer {
     }
 
     if (isOneCountSequence(sequence)) {
-      throw new Error("Too short to publish — a sequence needs at least 2 steps.");
+      throw new Error("Too short to publish. A sequence needs at least 2 steps.");
     }
 
     const firestore = await getFirestoreInstance();

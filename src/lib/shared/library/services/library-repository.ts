@@ -247,7 +247,7 @@ export class LibraryRepository {
 
     if (isOneCountSequence(sequence)) {
       throw new LibraryError(
-        "Too short to save — a sequence needs at least 2 steps.",
+        "Too short to save. A sequence needs at least 2 steps.",
         "INVALID_DATA",
         sequence.id
       );
