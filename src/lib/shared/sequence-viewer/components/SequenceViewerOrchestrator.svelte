@@ -61,6 +61,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     practiceRunning: boolean;
     practiceState: ReturnType<typeof import("$lib/shared/sequence-viewer/state/tempo-practice-state.svelte").createTempoPracticeState>;
     practiceViewPrefs: import("$lib/shared/sequence-viewer/state/practice-view-prefs.svelte").PracticeViewPrefs;
+    metronomeEnabled: boolean;
+    handleToggleMetronome: () => void;
 
     bluePropType: PropType | undefined;
     redPropType: PropType | undefined;
@@ -128,7 +130,6 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     enterPracticeMode: () => void;
     exitPracticeMode: () => void;
     handlePracticeStepLevel: (dir: 1 | -1) => void;
-    handlePracticeStep: (dir: 1 | -1) => void;
     handlePracticeToggleHold: () => void;
     handlePracticeSetConfig: (patch: Partial<TempoPracticeConfig>) => void;
     handlePracticeStop: () => void;
@@ -299,6 +300,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
   const viewerState = createViewerState();
   const practiceViewPrefs = createPracticeViewPrefs();
+  playback.setPracticeViewPrefs(practiceViewPrefs);
 
   if (viewer3DState.renderMode === '3d' && !viewerState.wants3D) {
     viewerState.setSplitPaneContent('left', 'animation-3d');
@@ -1003,6 +1005,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     practiceRunning: playback.practiceRunning,
     practiceState: playback.practiceState,
     practiceViewPrefs,
+    metronomeEnabled: playback.metronomeEnabled,
+    handleToggleMetronome: playback.handleToggleMetronome,
 
     bluePropType: activeBlueProp,
     redPropType: activeRedProp,
@@ -1103,7 +1107,6 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     },
     exitPracticeMode: () => playback.exitPracticeMode(),
     handlePracticeStepLevel: (dir: 1 | -1) => playback.handlePracticeStepLevel(dir),
-    handlePracticeStep: (dir: 1 | -1) => playback.handlePracticeStep(dir),
     handlePracticeToggleHold: () => playback.handlePracticeToggleHold(),
     handlePracticeSetConfig: (patch: Partial<TempoPracticeConfig>) => playback.handlePracticeSetConfig(patch),
     handlePracticeStop: () => playback.handlePracticeStop(),
