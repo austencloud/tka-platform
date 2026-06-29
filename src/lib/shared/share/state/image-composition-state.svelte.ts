@@ -9,6 +9,7 @@ import { browser } from "$app/environment";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import { getAuthSync } from "$lib/shared/auth/firebase";
+import type { InfoCellChoice } from "$lib/shared/sequence-viewer/services/info-cell-display";
 
 const STORAGE_KEY = "tka-image-composition-settings";
 
@@ -48,6 +49,11 @@ export interface ImageCompositionSettings {
   // Controls how many beat columns ChoreoCards use for that sequence length.
   columnCountOverrides: Record<string, number>;
 
+  // Per-step-count info-cell choice (QR vs Mandala vs None) for cards with a
+  // single empty info cell. Keys are step counts as strings. When absent the
+  // choice derives from showQRCode / showMandala (QR-preferential).
+  infoCellChoiceOverrides: Record<string, InfoCellChoice>;
+
   // Backwards compatibility - computed from granular controls (always defined in getSettings())
   addUserInfo: boolean; // True if any footer element is shown
 }
@@ -82,6 +88,9 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
 
   // No per-step-count column count overrides by default (auto layout)
   columnCountOverrides: {},
+
+  // No per-step-count info-cell choice overrides by default (derive from globals)
+  infoCellChoiceOverrides: {},
 
   // Computed: true when any footer element is shown
   addUserInfo: true,
@@ -157,6 +166,9 @@ class ImageCompositionStateManager {
     }
     if (!this.settings.columnCountOverrides) {
       this.settings.columnCountOverrides = {};
+    }
+    if (!this.settings.infoCellChoiceOverrides) {
+      this.settings.infoCellChoiceOverrides = {};
     }
     // Clean up any stale overrides for sequences too short to have column options
     let cleaned = false;
@@ -399,6 +411,43 @@ class ImageCompositionStateManager {
    */
   clearStartPositionLayoutOverride(stepCount: number): void {
     delete this.settings.startPositionLayoutOverrides[String(stepCount)];
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
+   * Resolve the info-cell choice for a step count. Returns the per-length
+   * override if set, else the derived default from the global toggles
+   * (QR-preferential): both on -> "qr"; QR off -> "mandala"; both off -> "none".
+   */
+  getInfoCellChoiceForStepCount(stepCount: number): InfoCellChoice {
+    const override = this.settings.infoCellChoiceOverrides[String(stepCount)];
+    if (override) return override;
+    return this.settings.showQRCode ? "qr" : this.settings.showMandala ? "mandala" : "none";
+  }
+
+  /**
+   * Set the info-cell choice for a step count. If the value matches the derived
+   * default, removes the override to keep storage clean (mirrors start-layout).
+   */
+  setInfoCellChoiceForStepCount(stepCount: number, value: InfoCellChoice): void {
+    const derivedDefault: InfoCellChoice =
+      this.settings.showQRCode ? "qr" : this.settings.showMandala ? "mandala" : "none";
+    if (value === derivedDefault) {
+      delete this.settings.infoCellChoiceOverrides[String(stepCount)];
+    } else {
+      this.settings.infoCellChoiceOverrides[String(stepCount)] = value;
+    }
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  hasInfoCellChoiceOverride(stepCount: number): boolean {
+    return String(stepCount) in this.settings.infoCellChoiceOverrides;
+  }
+
+  clearInfoCellChoiceOverride(stepCount: number): void {
+    delete this.settings.infoCellChoiceOverrides[String(stepCount)];
     this.saveToStorage();
     this.notifyObservers();
   }
