@@ -33,6 +33,9 @@ export default defineConfig({
       // vitest.rules.config.ts) run via `npm run test:e2e` / `test:rules` with
       // Firebase emulators. They cannot pass in the default emulator-less run.
       "tests/integration/**/*",
+      // Component tests run in the browser project (vitest.components.config.ts),
+      // never under jsdom.
+      "**/*.svelte.{test,spec}.{js,ts}",
     ],
 
     alias: {
