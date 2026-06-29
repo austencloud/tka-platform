@@ -327,6 +327,21 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     practicePhase = "setup";
   }
 
+  /**
+   * Practice step nav (header ‹ ›). Pauses first so the seek is actually
+   * visible — during the looping ramp a bare seek is instantly overwritten by
+   * playback, which made the buttons feel dead. Tap to park on a pictograph,
+   * tap again to step, hit play to resume the ramp.
+   */
+  function handlePracticeStep(dir: 1 | -1) {
+    if (!_playbackController) return;
+    if (isPlayingLocal) _playbackController.togglePlayback();
+    arrivedViaStepping = true;
+    if (dir > 0) _playbackController.stepFullBeatForward();
+    else _playbackController.stepFullBeatBackward();
+    _hapticService?.trigger("selection");
+  }
+
   // ── Stepping ──
   function stepHalfBeatBackward() { arrivedViaStepping = true; _playbackController?.stepHalfBeatBackward(); }
   function stepHalfBeatForward() { arrivedViaStepping = true; _playbackController?.stepHalfBeatForward(); }
@@ -393,6 +408,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     enterPracticeMode,
     exitPracticeMode,
     handlePracticeStepLevel,
+    handlePracticeStep,
     handlePracticeToggleHold,
     handleToggleMetronome,
     handlePracticeSetConfig,
