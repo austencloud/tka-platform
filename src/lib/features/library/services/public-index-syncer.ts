@@ -261,7 +261,18 @@ export class PublicIndexSyncer {
     const firestore = await getFirestoreInstance();
 
     try {
-      await deleteDoc(doc(firestore, getPublicSequencePath(sequenceId)));
+      const ref = doc(firestore, getPublicSequencePath(sequenceId));
+      // If the public mirror is already gone (out-of-sync visibility, or a
+      // prior removal), there's nothing to delete. Deleting a non-existent doc
+      // trips the ownerId-based delete rule — `resource` is null, so the rule
+      // evaluates to false and Firestore reports "Missing or insufficient
+      // permissions". Treat an absent mirror as success.
+      const existing = await getDoc(ref);
+      if (!existing.exists()) {
+        this.browseLoader?.removeFromCache(sequenceId);
+        return;
+      }
+      await deleteDoc(ref);
 
       // Remove from cache immediately so the gallery reflects the change.
       this.browseLoader?.removeFromCache(sequenceId);
