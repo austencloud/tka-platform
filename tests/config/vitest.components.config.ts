@@ -12,6 +12,10 @@ const projectRoot = path.resolve(
 export default defineConfig({
   plugins: [svelte()],
 
+  // axe-core is CJS; pre-bundle it so Vite doesn't re-optimize mid-run.
+  // A cold-start re-optimization reload can flake the first a11y test (esp. in CI).
+  optimizeDeps: { include: ["axe-core"] },
+
   resolve: {
     conditions: ["browser"],
     alias: {
