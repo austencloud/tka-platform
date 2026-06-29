@@ -34,9 +34,13 @@
     onToggleHold: () => void;
     /** Stop the ramp and return to the setup screen. */
     onStop: () => void;
+    /** Whether the metronome click is currently on. */
+    metronomeOn: boolean;
+    /** Toggle the metronome click on/off. */
+    onToggleMetronome: () => void;
   }
 
-  let { progress, bpm, isPlaying, onBpmChange, onStepLevel, onToggleHold, onPlayPause, onStop }: Props = $props();
+  let { progress, bpm, isPlaying, onBpmChange, onStepLevel, onToggleHold, onPlayPause, onStop, metronomeOn, onToggleMetronome }: Props = $props();
 
   let bpmColor = $derived.by(() => {
     if (bpm <= 30) return "var(--semantic-success, #22c55e)";
@@ -215,6 +219,18 @@
       <span>{progress.held ? "Held" : "Hold"}</span>
     </button>
 
+    <button
+      class="pb-btn pb-sound"
+      class:on={metronomeOn}
+      type="button"
+      onclick={onToggleMetronome}
+      aria-label={metronomeOn ? "Mute metronome" : "Play metronome"}
+      aria-pressed={metronomeOn}
+    >
+      <i class="fas {metronomeOn ? 'fa-volume-high' : 'fa-volume-xmark'}" aria-hidden="true"></i>
+      <span>{metronomeOn ? "Sound" : "Muted"}</span>
+    </button>
+
     <span class="pb-divider" aria-hidden="true"></span>
 
     <button
@@ -322,6 +338,28 @@
     .pb-hold:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12)); color: var(--theme-text, #fff); }
   }
   .pb-hold.held {
+    background: color-mix(in srgb, var(--theme-accent, #38bdf8) 26%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #38bdf8) 55%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #7dd3fc) 75%, white);
+  }
+
+  /* Sound — toggle that plays a beat click; lights up when active, mirrors Hold */
+  .pb-sound {
+    flex-direction: column;
+    gap: 1px;
+    width: 62px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .pb-sound i { font-size: 16px; }
+  @media (hover: hover) and (pointer: fine) {
+    .pb-sound:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12)); color: var(--theme-text, #fff); }
+  }
+  .pb-sound.on {
     background: color-mix(in srgb, var(--theme-accent, #38bdf8) 26%, transparent);
     border-color: color-mix(in srgb, var(--theme-accent, #38bdf8) 55%, transparent);
     color: color-mix(in srgb, var(--theme-accent, #7dd3fc) 75%, white);

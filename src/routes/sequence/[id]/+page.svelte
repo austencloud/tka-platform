@@ -35,6 +35,7 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
   import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
   import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
   import PracticeBar from "$lib/shared/sequence-viewer/components/PracticeBar.svelte";
+  import PracticeSetupBar from "$lib/shared/sequence-viewer/components/PracticeSetupBar.svelte";
   import RouteViewerHeader from "$lib/shared/sequence-viewer/components/RouteViewerHeader.svelte";
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
 
@@ -553,8 +554,6 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
           onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
           onEdit={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
           onPracticeToggle={() => ctx.practiceActive ? ctx.exitPracticeMode() : ctx.enterPracticeMode()}
-          onStepBack={() => ctx.handlePracticeStep(-1)}
-          onStepForward={() => ctx.handlePracticeStep(1)}
           onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
           onPublish={() => ctx.invokeGatedAction("publish", ctx.handlePublishAction)}
           onUnpublish={ctx.handleUnpublishAction}
@@ -662,10 +661,7 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
                 practiceActive={ctx.practiceActive}
                 practiceRunning={ctx.practiceRunning}
                 practiceCellSize={ctx.practiceViewPrefs.cellSize}
-                practiceCanvasFraction={ctx.practiceRunning ? ctx.practiceViewPrefs.canvasFraction : 0.5}
-                practiceConfig={ctx.practiceState.userConfig}
-                onPracticeSetConfig={ctx.handlePracticeSetConfig}
-                onPracticeStart={ctx.handlePracticeStart}
+                practiceCanvasFraction={0.5}
               />
               <ChoreoCardContextMenuHost
                 bind:this={choreoCardMenuHost}
@@ -723,20 +719,34 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
         </div>
 
         {#if ctx.hasSequence}
-          <!-- Stays mounted; a flow child that pushes the content up (one instant
-               reflow at the slide's near edge) while the bar slides up via
-               composited transform → 60fps. Parked (height 0) + inert when off. -->
-          <div class="practice-bar-rise" class:up={ctx.practiceRunning} inert={!ctx.practiceRunning}>
-            <PracticeBar
-              progress={ctx.practiceState.progress}
-              bpm={ctx.bpmLocal}
-              isPlaying={ctx.isPlayingLocal}
-              onBpmChange={ctx.handleBpmChange}
-              onPlayPause={ctx.handlePlaybackToggle}
-              onStepLevel={ctx.handlePracticeStepLevel}
-              onToggleHold={ctx.handlePracticeToggleHold}
-              onStop={ctx.handlePracticeStop}
-            />
+          <!-- Stays mounted. Entering practice reserves its row (one canvas resize on
+               enter); Start then slides the cockpit in from the right via composited
+               transform with no layout change → 60fps. Parked + inert when off. -->
+          <div class="practice-bar-rise" class:reserved={ctx.practiceActive} class:up={ctx.practiceActive} inert={!ctx.practiceActive}>
+            <!-- Conveyor: setup config (setup) ↔ running cockpit (running). Config
+                 slides out left as the cockpit slides in. Cockpit is the flow child
+                 (defines bar height); config overlays it. -->
+            <div class="bar-pane config" class:active={!ctx.practiceRunning} inert={ctx.practiceRunning}>
+              <PracticeSetupBar
+                config={ctx.practiceState.userConfig}
+                onSetConfig={ctx.handlePracticeSetConfig}
+                onStart={ctx.handlePracticeStart}
+              />
+            </div>
+            <div class="bar-pane cockpit" class:active={ctx.practiceRunning} inert={!ctx.practiceRunning}>
+              <PracticeBar
+                progress={ctx.practiceState.progress}
+                bpm={ctx.bpmLocal}
+                isPlaying={ctx.isPlayingLocal}
+                onBpmChange={ctx.handleBpmChange}
+                onPlayPause={ctx.handlePlaybackToggle}
+                onStepLevel={ctx.handlePracticeStepLevel}
+                onToggleHold={ctx.handlePracticeToggleHold}
+                onStop={ctx.handlePracticeStop}
+                metronomeOn={ctx.metronomeEnabled}
+                onToggleMetronome={ctx.handleToggleMetronome}
+              />
+            </div>
           </div>
         {/if}
       </div>
@@ -774,32 +784,62 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
     overflow: hidden;
   }
 
-  /* Practice bar pushes content up: flow child, height toggles in one instant
-     reflow at the slide's near edge, visible motion is composited transform. */
+  /* Cockpit bar: a flow child that reserves its row when practice is ACTIVE. The
+     row's height animates 0↔auto on the --ws-dur clock so the canvas glides into
+     its practice height instead of snapping; height settles on enter, so Start/
+     Stop never relayout (visible Start motion is a composited slide-in). */
   .practice-bar-rise {
+    position: relative; /* anchors the absolute config bar-pane */
     flex-shrink: 0;
     overflow: hidden;
     height: 0;
-    transform: translateY(100%);
+    transform: translateX(110%);
     opacity: 0;
-    will-change: transform, opacity;
+    will-change: transform, opacity, height;
+    /* Scoped to this element only — interpolate-size is inherited, so on an
+       ancestor it leaks the height:auto animation into the viewer subtree. */
+    interpolate-size: allow-keywords;
     transition:
       transform var(--ws-dur) var(--ws-ease),
       opacity var(--ws-dur) var(--ws-ease),
-      height 0ms var(--ws-dur);
+      height var(--ws-dur) var(--ws-ease);
   }
-  .practice-bar-rise.up {
+  /* Entering practice (setup OR running) reserves the row, growing it from 0. */
+  .practice-bar-rise.reserved {
     height: auto;
-    transform: translateY(0);
+  }
+  /* Practice active: bar slides in from the right + fades in (carrying the setup
+     config). Start swaps config→cockpit via the inner conveyor; bar stays put. */
+  .practice-bar-rise.reserved.up {
+    transform: translateX(0);
     opacity: 1;
-    transition:
-      transform var(--ws-dur) var(--ws-ease),
-      opacity var(--ws-dur) var(--ws-ease),
-      height 0ms 0ms;
+  }
+
+  /* Inner conveyor: config (setup) ↔ cockpit (running). Cockpit is the flow child
+     (defines bar height); config is an absolute overlay. */
+  .bar-pane {
+    transition: transform var(--ws-dur) var(--ws-ease);
+    will-change: transform;
+  }
+  .bar-pane.config {
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+  }
+  .bar-pane.config.active {
+    transform: translateX(0);
+  }
+  .bar-pane.cockpit {
+    position: relative;
+    transform: translateX(100%);
+  }
+  .bar-pane.cockpit.active {
+    transform: translateX(0);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .practice-bar-rise { transition: none; }
+    .practice-bar-rise,
+    .bar-pane { transition: none; }
   }
 
   .route-body-content {

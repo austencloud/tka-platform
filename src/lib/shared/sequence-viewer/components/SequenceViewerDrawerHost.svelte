@@ -22,6 +22,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import ExportImagePanel from "./ExportImagePanel.svelte";
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
   import PracticeBar from "./PracticeBar.svelte";
+  import PracticeSetupBar from "./PracticeSetupBar.svelte";
   import Recording3DOverlay from "./Recording3DOverlay.svelte";
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
@@ -373,26 +374,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       <i class="fas fa-arrow-left" aria-hidden="true"></i>
                       <span>Exit Practice</span>
                     </button>
-                    <div class="practice-step-nav" role="group" aria-label="Step through the sequence">
-                      <button
-                        type="button"
-                        class="header-action-btn"
-                        onclick={() => ctx.handlePracticeStep(-1)}
-                        aria-label="Previous step"
-                        title="Previous step"
-                      >
-                        <i class="fas fa-chevron-left" aria-hidden="true"></i>
-                      </button>
-                      <button
-                        type="button"
-                        class="header-action-btn"
-                        onclick={() => ctx.handlePracticeStep(1)}
-                        aria-label="Next step"
-                        title="Next step"
-                      >
-                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                      </button>
-                    </div>
                   </div>
 
                   <div class="left-actions-layer normal" class:active={!ctx.practiceActive} inert={ctx.practiceActive}>
@@ -594,10 +575,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       practiceActive={ctx.practiceActive}
                       practiceRunning={ctx.practiceRunning}
                       practiceCellSize={ctx.practiceViewPrefs.cellSize}
-                      practiceCanvasFraction={ctx.practiceRunning ? ctx.practiceViewPrefs.canvasFraction : 0.5}
-                      practiceConfig={ctx.practiceState.userConfig}
-                      onPracticeSetConfig={ctx.handlePracticeSetConfig}
-                      onPracticeStart={ctx.handlePracticeStart}
+                      practiceCanvasFraction={0.5}
                     />
                   {/if}
                   {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
@@ -732,19 +710,35 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                  Parked (height 0) + inert when not practicing. -->
             <div
               class="practice-bar-rise"
-              class:up={ctx.practiceRunning}
-              inert={!ctx.practiceRunning}
+              class:reserved={ctx.practiceActive}
+              class:up={ctx.practiceActive}
+              inert={!ctx.practiceActive}
             >
-              <PracticeBar
-                progress={ctx.practiceState.progress}
-                bpm={ctx.bpmLocal}
-                isPlaying={ctx.isPlayingLocal}
-                onBpmChange={ctx.handleBpmChange}
-                onPlayPause={ctx.handlePlaybackToggle}
-                onStepLevel={ctx.handlePracticeStepLevel}
-                onToggleHold={ctx.handlePracticeToggleHold}
-                onStop={ctx.handlePracticeStop}
-              />
+              <!-- Bottom-bar conveyor: setup config (setup phase) ↔ running cockpit
+                   (running phase). Config slides out left as the cockpit slides in
+                   from the right on Start. Cockpit is the flow child so it defines
+                   the bar's height; config overlays it. -->
+              <div class="bar-pane config" class:active={!ctx.practiceRunning} inert={ctx.practiceRunning}>
+                <PracticeSetupBar
+                  config={ctx.practiceState.userConfig}
+                  onSetConfig={ctx.handlePracticeSetConfig}
+                  onStart={ctx.handlePracticeStart}
+                />
+              </div>
+              <div class="bar-pane cockpit" class:active={ctx.practiceRunning} inert={!ctx.practiceRunning}>
+                <PracticeBar
+                  progress={ctx.practiceState.progress}
+                  bpm={ctx.bpmLocal}
+                  isPlaying={ctx.isPlayingLocal}
+                  onBpmChange={ctx.handleBpmChange}
+                  onPlayPause={ctx.handlePlaybackToggle}
+                  onStepLevel={ctx.handlePracticeStepLevel}
+                  onToggleHold={ctx.handlePracticeToggleHold}
+                  onStop={ctx.handlePracticeStop}
+                  metronomeOn={ctx.metronomeEnabled}
+                  onToggleMetronome={ctx.handleToggleMetronome}
+                />
+              </div>
             </div>
           {/if}
 
@@ -900,11 +894,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
   }
 
-  .practice-step-nav {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
 
   .header-action-btn.practice-exit {
     gap: 8px;
@@ -969,55 +958,93 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     min-height: 32px;
   }
 
-  /* Rail stays mounted; on practice enter it fades + nudges out (composited)
-     and its grid column collapses in a SINGLE reflow after the fade (masked),
-     instead of resizing the heavy content area every frame. */
+  /* Rail stays mounted; on practice enter it fades + nudges out (composited) AND
+     its width animates 320→0 over --ws-dur on the same shared clock. The width is
+     what reclaims layout space, so animating it (not snapping it) lets the split-
+     view — and the canvas column inside it — GLIDE into the freed space as one
+     continuous motion. Snapping max-width to 0 instantly is what jolted the canvas
+     ("sidebar vanishes → canvas jumps"); animating it removes the snap at the
+     source, so no JS FLIP is needed on the canvas side. */
   .viewer-rail-wrap {
     display: flex;
     min-height: 0;
     overflow: hidden;
     max-width: 320px;
-    will-change: opacity, transform;
-    transition: opacity var(--ws-dur) var(--ws-ease), transform var(--ws-dur) var(--ws-ease);
+    will-change: opacity, transform, max-width;
+    transition:
+      opacity var(--ws-dur) var(--ws-ease),
+      transform var(--ws-dur) var(--ws-ease),
+      max-width var(--ws-dur) var(--ws-ease);
   }
   .viewer-rail-wrap.collapsed {
     opacity: 0;
     transform: translateX(-12px);
     max-width: 0;
     pointer-events: none;
-    transition:
-      opacity var(--ws-dur) var(--ws-ease),
-      transform var(--ws-dur) var(--ws-ease),
-      max-width 0ms var(--ws-dur);
   }
 
   /* Bottom workstation: a flow child so it PUSHES the content up (bottom rows
-     stay visible — not an overlay). The size change is a single instant reflow
-     at the slide's near edge (height 0↔auto, never animated); everything the eye
-     follows is composited transform/opacity, so it holds 60fps under the 2D
-     animator. On enter the gap opens first (height 0ms 0ms) then the bar slides
-     up into it; on exit it slides down first and the gap closes after (height
-     0ms var(--ws-dur)) — mirrors the rail's collapse-after-fade. */
+     stay visible — not an overlay). The row's height animates 0↔auto on the same
+     --ws-dur clock as the rail collapse (interpolate-size enables the auto
+     keyword), so the canvas glides into its practice height in step with the
+     horizontal rail glide — one diagonal motion, no vertical snap. The cockpit
+     itself rides in on a composited transform/opacity for 60fps. Height settles
+     at practice ENTER (setup), so Start/Stop never re-run this — they only slide
+     the cockpit via transform. */
   .practice-bar-rise {
+    position: relative; /* anchors the absolute config bar-pane */
     flex-shrink: 0;
     overflow: hidden;
     height: 0;
-    transform: translateY(100%);
+    transform: translateX(110%);
     opacity: 0;
-    will-change: transform, opacity;
+    will-change: transform, opacity, height;
+    /* Scoped to this element ONLY (it's an inherited property — set on a shared
+       ancestor it leaks the height:auto animation into the whole viewer subtree
+       and collapsed the right preview card). Enables the row's 0↔auto glide. */
+    interpolate-size: allow-keywords;
     transition:
       transform var(--ws-dur) var(--ws-ease),
       opacity var(--ws-dur) var(--ws-ease),
-      height 0ms var(--ws-dur);
+      height var(--ws-dur) var(--ws-ease);
   }
-  .practice-bar-rise.up {
+  /* Entering practice (setup OR running) reserves the bar's row, growing it from
+     0 over --ws-dur so the canvas resize is a glide, not a step. */
+  .practice-bar-rise.reserved {
     height: auto;
-    transform: translateY(0);
+  }
+  /* Practice active: the bar slides in from the right + fades in, carrying the
+     setup config. Composited transform/opacity → 60fps. (Start swaps config→
+     cockpit via the inner conveyor; the bar itself stays put.) */
+  .practice-bar-rise.reserved.up {
+    transform: translateX(0);
     opacity: 1;
-    transition:
-      transform var(--ws-dur) var(--ws-ease),
-      opacity var(--ws-dur) var(--ws-ease),
-      height 0ms 0ms;
+  }
+
+  /* Inner conveyor: config (setup) ↔ cockpit (running). Cockpit is the flow child
+     so it defines the bar's auto height; config is an absolute overlay. Both slide
+     on the shared clock — config exits left, cockpit enters right on Start. */
+  .bar-pane {
+    transition: transform var(--ws-dur) var(--ws-ease);
+    will-change: transform;
+  }
+  .bar-pane.config {
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+  }
+  .bar-pane.config.active {
+    transform: translateX(0);
+  }
+  .bar-pane.cockpit {
+    position: relative;
+    transform: translateX(100%);
+  }
+  .bar-pane.cockpit.active {
+    transform: translateX(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bar-pane { transition: none; }
   }
 
   /* Header action layers crossfade on practice toggle — both stay mounted so
