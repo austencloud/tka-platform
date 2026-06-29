@@ -43,7 +43,7 @@ Last audit: 2025-12-27
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import type { FireOverlayConfig } from "../domain/types/fire-types";
   import type { LedOverlayConfig } from "../domain/types/led-types";
-  import type { TipEffectMap, TipEffortMap } from "../domain/types/tip-effect-types";
+  import type { TipEffectMap, TipEffortMap, EffectType } from "../domain/types/tip-effect-types";
   import CanvasContextMenuHost from "./canvas-context-menu/CanvasContextMenuHost.svelte";
   import SplitCanvasView from "./SplitCanvasView.svelte";
   import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
@@ -86,6 +86,7 @@ Last audit: 2025-12-27
     tipEffortMap: cellTipEffortMap = undefined,
     disableContextMenu = false,
     fillContainer = false,
+    prewarmEffects = undefined,
     showNonRadialPoints = true,
     resizePaused = false,
     onInitialized: onInitializedCallback = undefined,
@@ -142,6 +143,9 @@ Last audit: 2025-12-27
     tipEffortMap?: TipEffortMap;
     disableContextMenu?: boolean;
     fillContainer?: boolean;
+    /** WebGL overlay effects (today: "fire") to warm at engine startup so the
+     *  first switch never freezes. Forwarded to CanvasSurface → AnimationEngine. */
+    prewarmEffects?: EffectType[];
     showNonRadialPoints?: boolean;
     /** When true, the engine's ResizeObserver is paused to prevent canvas buffer clears during CSS transitions */
     resizePaused?: boolean;
@@ -480,6 +484,7 @@ Last audit: 2025-12-27
       {resizePaused}
       visibilityManagerOverride={visibilityManagerOverride}
       {effectsConfigState}
+      {prewarmEffects}
       contextId={resolvedContextId}
       {onCanvasReady}
       onInitialized={onInitializedCallback}

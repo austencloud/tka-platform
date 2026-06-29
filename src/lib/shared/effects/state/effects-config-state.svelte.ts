@@ -18,7 +18,7 @@ import type {
   SparklesIntent,
   EchoIntent,
   BloomIntent,
-  WaterIntent,
+  GooIntent,
   BubblesIntent,
   PetalsIntent,
   SmokeIntent,
@@ -37,7 +37,7 @@ export interface EffectConfigMap {
   sparkles: SparklesIntent;
   echo: EchoIntent;
   bloom: BloomIntent;
-  water: WaterIntent;
+  goo: GooIntent;
   bubbles: BubblesIntent;
   petals: PetalsIntent;
   smoke: SmokeIntent;
@@ -62,7 +62,7 @@ const VM_STORAGE_KEY = "animation-visibility-settings";
 
 const EFFECT_IDS = [
   "trails", "fire", "led", "charcoal", "zap", "sparkles", "echo", "bloom",
-  "water", "bubbles", "petals", "smoke", "ink", "frost", "silk", "pulse",
+  "goo", "bubbles", "petals", "smoke", "ink", "frost", "silk", "pulse",
 ] as const;
 
 /** One of the 16 concrete effect ids — `EffectType` minus "none". */
@@ -236,6 +236,11 @@ export function createEffectsConfigState(
   const stored = persist ? loadStoredConfig() : null;
   let config = $state<EffectsConfig>(stored ?? migrateFromVmStorageOnce(structuredClone(initial)));
   let version = $state(0);
+  // Transient, never-persisted hover-intent signal: "the user is about to make
+  // this effect active — warm its renderer now." Sibling to activeEffect; read
+  // by the canvas layer to call engine.prewarmEffect(). Not part of the config
+  // schema, so serialize/replace ignore it.
+  let prewarmHint = $state<EffectType | null>(null);
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   let defaultsTimer: ReturnType<typeof setTimeout> | null = null;
   const sceneUndo = getSceneUndoManager();
@@ -419,6 +424,13 @@ export function createEffectsConfigState(
     sceneUndo.commitState();
   }
 
+  /** Hover-intent: ask the canvas layer to warm this effect's renderer ahead of
+   *  a click. Setting a new value retriggers the canvas $effect; re-warming an
+   *  already-warm renderer is a no-op downstream, so spamming this is cheap. */
+  function requestPrewarm(effect: EffectType) {
+    prewarmHint = effect;
+  }
+
   function getEffectLayer(effectId: string): "behind" | "front" {
     return config.effectLayerOverrides[effectId] ?? "behind";
   }
@@ -518,7 +530,7 @@ export function createEffectsConfigState(
     get sparkles() { return config.sparkles; },
     get echo() { return config.echo; },
     get bloom() { return config.bloom; },
-    get water() { return config.water; },
+    get goo() { return config.goo; },
     get bubbles() { return config.bubbles; },
     get petals() { return config.petals; },
     get smoke() { return config.smoke; },
@@ -530,6 +542,7 @@ export function createEffectsConfigState(
     get activeEffect() { return config.activeEffect; },
     get effectLayerOverrides() { return config.effectLayerOverrides; },
     get version() { return version; },
+    get prewarmHint() { return prewarmHint; },
 
     effect<K extends keyof EffectConfigMap>(id: K): EffectConfigMap[K] {
       return (config as unknown as Record<string, unknown>)[id] as EffectConfigMap[K];
@@ -537,6 +550,7 @@ export function createEffectsConfigState(
 
     updateEffect,
     setActiveEffect,
+    requestPrewarm,
     getEffectLayer,
     setEffectLayer,
     setTipEffectMap,

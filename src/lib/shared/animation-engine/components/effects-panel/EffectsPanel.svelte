@@ -95,6 +95,12 @@
     if (isEffectId(effectId)) effectsConfigState.setActiveEffect(effectId);
   }
 
+  // Hover/press intent: warm the effect's webgl renderer before the click so the
+  // switch never freezes. No-op downstream for non-webgl effects.
+  function handleEffectPrewarm(effectId: string): void {
+    if (isEffectId(effectId)) effectsConfigState.requestPrewarm(effectId);
+  }
+
   function handlePresetSelect(presetId: string): void {
     if (!registration) return;
     // The Default chip resets to the factory default look.
@@ -199,7 +205,7 @@
 
     <div class="sb-section">
       <span class="sb-label">EFFECTS</span>
-      <EffectSelector {activeEffect} onSelect={handleEffectSelect} />
+      <EffectSelector {activeEffect} onSelect={handleEffectSelect} onPrewarm={handleEffectPrewarm} />
     </div>
 
     {#if activeEffect !== "none" && !customizeOpen && registration}

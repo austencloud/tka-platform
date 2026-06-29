@@ -107,6 +107,15 @@ export interface AnimationEngineCallbacks {
   onTrailSettingsChange?: (settings: TrailSettings) => void;
   /** Called when an effect (fire/charcoal/LED) fails repeatedly and is auto-disabled */
   onEffectError?: (effectName: string, error: Error) => void;
+  /**
+   * Webgl overlay effects to warm during startup (currently only "fire" is an
+   * actionable webgl overlay). Their GL context + FBOs are created at the end of
+   * initialize() — while nothing is animating yet — and parked warm, so the first
+   * switch to that effect is instant instead of freezing the props. Surfaces that
+   * want to stay memory-light (production viewer) omit this and rely on
+   * hover-intent prewarm instead. Non-webgl ids are harmless no-ops.
+   */
+  prewarmEffects?: EffectType[];
 }
 
 
@@ -350,6 +359,24 @@ export class AnimationEngine {
 
     // Create overlays that weren't created yet.
     this.effectSystem.rendererManager.ensureEnabledOverlays();
+
+    // Startup warm: create + park the requested webgl renderers now, before the
+    // render loop free-runs, so their getContext + FBO cost lands during load
+    // (nothing animating yet) and the first switch to them never freezes.
+    const prewarm = callbacks.prewarmEffects;
+    if (prewarm) {
+      for (const id of prewarm) this.effectSystem.rendererManager.prewarmRenderer(id);
+    }
+  }
+
+  /**
+   * Eagerly warm a webgl overlay renderer (currently fire) ahead of the user
+   * enabling it — driven by hover intent. Delegates to the renderer manager,
+   * which parks the warmed renderer until it's enabled. No-op before init or for
+   * non-webgl effects.
+   */
+  prewarmEffect(id: EffectType): void {
+    this.effectSystem.rendererManager.prewarmRenderer(id);
   }
 
   /**

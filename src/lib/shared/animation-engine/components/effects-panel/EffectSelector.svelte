@@ -4,9 +4,12 @@
   interface Props {
     activeEffect: string;
     onSelect: (effect: string) => void;
+    /** Hover/press intent — fires before the click commits so the canvas can warm
+     *  the effect's webgl renderer ahead of activation (kills the switch freeze). */
+    onPrewarm?: (effect: string) => void;
   }
 
-  const { activeEffect, onSelect }: Props = $props();
+  const { activeEffect, onSelect, onPrewarm }: Props = $props();
 
   function getButtonStyle(effect: EffectMeta): string {
     const isActive = activeEffect === effect.id;
@@ -36,6 +39,8 @@
       title={isActive ? `Click to disable ${effect.label}` : effect.label}
       style={getButtonStyle(effect)}
       onclick={() => onSelect(effect.id)}
+      onpointerenter={() => onPrewarm?.(effect.id)}
+      onpointerdown={() => onPrewarm?.(effect.id)}
     >
       <i class="fas {effect.icon}" aria-hidden="true" style:color={effect.color}></i>
       <span class="effect-label">{effect.label}</span>

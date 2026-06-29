@@ -50,7 +50,7 @@ captureEffectDiagnostics to the context menu.
   import { isSeamlesslyLoopable as sequenceLoopabilityCheck } from "$lib/shared/foundation/services/sequence-loopability-checker";
   import type { FireOverlayConfig } from "../domain/types/fire-types";
   import type { LedOverlayConfig } from "../domain/types/led-types";
-  import type { TipEffectMap, TipEffortMap } from "../domain/types/tip-effect-types";
+  import type { TipEffectMap, TipEffortMap, EffectType } from "../domain/types/tip-effect-types";
   import { untrack } from "svelte";
   import { fireCacheInvalidation } from "../state/fire-invalidation-signal.svelte";
   import { effectErrorSignal } from "../state/effect-error-signal.svelte";
@@ -98,6 +98,7 @@ captureEffectDiagnostics to the context menu.
     resizePaused = false,
     visibilityManagerOverride = undefined,
     effectsConfigState = undefined,
+    prewarmEffects = undefined,
     contextId = undefined,
     // Callbacks
     onCanvasReady = () => {},
@@ -140,6 +141,9 @@ captureEffectDiagnostics to the context menu.
     resizePaused?: boolean;
     visibilityManagerOverride?: AnimationVisibilityStateManager;
     effectsConfigState?: EffectsConfigState;
+    /** WebGL overlay effects (today: "fire") to warm at engine startup so the
+     *  first switch to them never freezes. Omit on memory-sensitive surfaces. */
+    prewarmEffects?: EffectType[];
     contextId?: string;
     onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
     onInitialized?: () => void;
@@ -191,6 +195,17 @@ captureEffectDiagnostics to the context menu.
     if (!ecs) return;
     void ecs.version;
     untrack(() => getAnimationVisibilityManager().notifyObservers());
+  });
+
+  // Hover-intent prewarm: when the user points at an effect in the picker,
+  // EffectsPanel sets ecs.prewarmHint. Warm that effect's webgl renderer (today:
+  // fire) ahead of the click so the switch never freezes. Best-effort — a no-op
+  // before init or for non-webgl effects.
+  $effect(() => {
+    const ecs = effectsConfigState ?? inheritedEffectsConfig ?? null;
+    const hint = ecs?.prewarmHint;
+    if (!hint) return;
+    untrack(() => engineInstance.prewarmEffect(hint));
   });
 
   // Push viewer-scoped motion visibility into the engine whenever the toggle
@@ -281,6 +296,7 @@ captureEffectDiagnostics to the context menu.
             externalTrailSettings = settings;
           },
           onEffectError,
+          prewarmEffects,
         })
         .then(() => {
           if (disposed) return;

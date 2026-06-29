@@ -31,7 +31,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+  import type { TipEffectMap, EffectType } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 
   // Isolated effects config — drives the real EffectsPanel via context.
   import {
@@ -53,6 +53,11 @@
   import type { EffectPreset } from "$lib/shared/animation-engine/components/effects-panel/presets/types";
 
   const DEFAULT_PROP_STATE: PropState = { centerPathAngle: 0, staffRotationAngle: 0 };
+
+  // Warm fire's GL context/FBOs at engine startup (before the loop free-runs) so
+  // switching to fire never freezes the props. Desktop tuner → holding the extra
+  // context is free. Only fire is an actionable webgl overlay today.
+  const PREWARM_EFFECTS: EffectType[] = ["fire"];
 
   type Fold = 2 | 4 | 8;
   type Scene = "clean" | "tunnel";
@@ -625,6 +630,7 @@
               hideStepNumbers={true}
               fillContainer={true}
               fireConfig={{ disableFrameCache: true }}
+              prewarmEffects={PREWARM_EFFECTS}
             />
           {:else}
             <div class="placeholder">{status}</div>

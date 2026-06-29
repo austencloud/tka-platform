@@ -77,6 +77,19 @@ export class EffectRendererManager {
    */
   private pendingWebglInit = new Set<OverlayEffectId>();
 
+  /**
+   * WebGL overlay ids that are CREATED + initialized but parked warm: their
+   * canvas is hidden and they are deregistered from the render loop, yet their
+   * GL context / FBOs / shader programs are kept alive so a later enable is
+   * instant (no getContext/FBO realloc — the freeze). Two sources park into
+   * here: keep-warm (an enabled→disabled transition parks instead of disposing)
+   * and prewarmRenderer (eager startup/hover warm). Membership also guards the
+   * disable transition so the per-frame setFireConfig→syncEffectOverlay can't
+   * re-run onDisable every frame (which would reset the shared fireTipTracker
+   * and starve every per-tip effect).
+   */
+  private warmHidden = new Set<OverlayEffectId>();
+
   // ── Per-cell maps ───────────────────────────────────────────────────
   cellTipEffectMap: TipEffectMap | undefined = undefined;
   cellTipEffortMap: TipEffortMap | undefined = undefined;
@@ -193,7 +206,18 @@ export class EffectRendererManager {
 
     if (enabled) {
       const current = this.renderers.get(id);
-      if (!current?.isInitialized()) {
+      if (current?.isInitialized()) {
+        // Already created. If it was parked warm (keep-warm or a prewarm), un-park:
+        // re-show its canvas and re-register it with the render loop. No
+        // getContext/FBO realloc — reactivation is free, so the switch never freezes.
+        if (this.warmHidden.has(id)) {
+          this.warmHidden.delete(id);
+          this.setRendererCanvasVisible(id, true);
+          this.renderLoopService?.updateConfig({
+            renderers: { [id]: current },
+          } as Partial<RenderLoopConfig>);
+        }
+      } else {
         if (!this.containerElement) return;
         if (plugin.kind === "webgl") {
           // Heavy WebGL init (shader compile + float-FBO alloc) is deferred off
@@ -206,21 +230,30 @@ export class EffectRendererManager {
       }
     } else {
       const current = this.renderers.get(id);
-      // Tear down only on the enabled→disabled TRANSITION (renderer still
-      // live). Once torn down, repeated disabled syncs must be no-ops.
-      // plugin.onDisable for fire/charcoal resets the SHARED fireTipTracker,
-      // and CanvasSurface calls setFireConfig every frame, so an unguarded
-      // onDisable here re-armed the tracker's 3-frame warmup every frame —
-      // starving every per-tip effect (bloom, water, sparkles, …) that reads
-      // the tracker (it returned zero tips, so bloom fell back to prop
-      // centers / the hand path). Root-caused 2026-06-23.
+      // Already parked warm → no-op. Critical guard: CanvasSurface calls
+      // setFireConfig every frame → syncEffectOverlay, so without this the
+      // disable transition would re-run every frame, re-firing plugin.onDisable
+      // (which resets the SHARED fireTipTracker) and starving every per-tip
+      // effect (bloom, water, sparkles, …). Mirrors the pre-keep-warm
+      // delete+return guard. Root-caused 2026-06-23.
+      if (this.warmHidden.has(id)) return;
       if (current?.isInitialized()) {
-        current.dispose();
-        this.renderers.delete(id);
-        this.renderLoopService?.updateConfig({
-          renderers: { [id]: null },
-        } as Partial<RenderLoopConfig>);
-        plugin.onDisable?.(this);
+        if (plugin.kind === "webgl") {
+          // Keep-warm: park the webgl renderer instead of disposing. Hide its
+          // canvas (preserveDrawingBuffer would otherwise leave a stale frame)
+          // and deregister it from the render loop so the loop can idle-stop —
+          // but KEEP the GL context / FBOs / programs so re-enable is instant.
+          this.parkWarm(id);
+          plugin.onDisable?.(this);
+        } else {
+          // canvas2d: cheap to recreate — dispose on the enabled→disabled transition.
+          current.dispose();
+          this.renderers.delete(id);
+          this.renderLoopService?.updateConfig({
+            renderers: { [id]: null },
+          } as Partial<RenderLoopConfig>);
+          plugin.onDisable?.(this);
+        }
       } else {
         return; // already disabled — nothing to tear down, no re-render
       }
@@ -286,6 +319,71 @@ export class EffectRendererManager {
         this.triggerRender();
       }
     });
+  }
+
+  /**
+   * Eagerly create a webgl overlay renderer ahead of the user enabling it, then
+   * park it warm. Moves the heavy getContext + float-FBO allocation off the
+   * enable click (the freeze) to whenever this is called — engine startup (where
+   * nothing is animating yet) or a hover-intent signal that precedes the click.
+   * Safe because the render loop gates each effect on its config + assigned tips:
+   * a created-but-unassigned renderer never simulates.
+   *
+   * No-op for non-webgl effects (canvas2d init is already a cheap inline
+   * getContext), for renderers already created, or with a deferred init already
+   * in flight. The init runs in a rAF so the call site itself never blocks.
+   */
+  prewarmRenderer(id: EffectType): void {
+    const plugin = EFFECT_PLUGIN_BY_ID[id] as typeof OVERLAY_PLUGINS[number] | undefined;
+    // Only webgl-kind OVERLAY plugins benefit. Today that is fire alone — led
+    // (kind:"led") and trails (kind:"trails") have their own lifecycles; canvas2d
+    // init is already a cheap inline getContext. Any other id is a harmless no-op,
+    // so hover-intent can forward whatever effect the pointer is over.
+    if (!plugin || plugin.kind !== "webgl") return;
+    const oid = id as OverlayEffectId; // narrowed: webgl overlay ⊂ OverlayEffectId
+    if (!this.containerElement) return;
+    if (this.renderers.get(oid)?.isInitialized()) return;
+    if (this.pendingWebglInit.has(oid)) return;
+    this.pendingWebglInit.add(oid);
+    requestAnimationFrame(() => {
+      if (!this.pendingWebglInit.has(oid)) return; // cancelled by dispose()
+      this.pendingWebglInit.delete(oid);
+      if (!this.containerElement) return;
+      if (this.renderers.get(oid)?.isInitialized()) return;
+      try {
+        this.initOverlayRenderer(plugin);
+      } catch (err) {
+        console.error(`[AnimationEngine] ${oid} prewarm error:`, err);
+        this.renderers.delete(oid);
+        return;
+      }
+      if (this.prevEffectEnabled.get(oid) ?? false) {
+        // Enabled while the prewarm was in flight — leave it live and render now.
+        this.triggerRender();
+      } else {
+        this.parkWarm(oid); // hide + deregister from the loop, keep the GL objects
+      }
+    });
+  }
+
+  /** Park a created webgl renderer warm: hide its canvas + deregister it from the
+   *  render loop, keeping its GL context/FBOs/programs. The manager retains the
+   *  instance in `renderers`; only the loop forgets it (so the loop can idle-stop). */
+  private parkWarm(id: OverlayEffectId): void {
+    this.setRendererCanvasVisible(id, false);
+    this.warmHidden.add(id);
+    this.renderLoopService?.updateConfig({
+      renderers: { [id]: null },
+    } as Partial<RenderLoopConfig>);
+  }
+
+  /** Toggle a renderer canvas's display. Both webgl renderers expose getCanvas(). */
+  private setRendererCanvasVisible(id: OverlayEffectId, visible: boolean): void {
+    const renderer = this.renderers.get(id) as
+      | (EffectRendererLike & { getCanvas?: () => HTMLCanvasElement | null })
+      | undefined;
+    const canvas = renderer?.getCanvas?.();
+    if (canvas) canvas.style.display = visible ? "" : "none";
   }
 
   /**
@@ -588,6 +686,7 @@ export class EffectRendererManager {
     // Cancel any in-flight deferred webgl init; the rAF callback bails when its
     // id is no longer present, so clearing the set acts as the cancel signal.
     this.pendingWebglInit.clear();
+    this.warmHidden.clear();
 
     // Dispose all registry-driven renderers (canvas2d + webgl overlays)
     for (const plugin of OVERLAY_PLUGINS) {
