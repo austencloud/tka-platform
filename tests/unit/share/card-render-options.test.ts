@@ -14,8 +14,10 @@ const ic = {
   showMandala: true,
   _cols: 4 as number | null,
   _layout: "row" as "row" | "column",
+  _choice: "qr" as "qr" | "mandala" | "none",
   getColumnCountForStepCount: () => ic._cols,
   getStartPositionLayoutForStepCount: () => ic._layout,
+  getInfoCellChoiceForStepCount: () => ic._choice,
 };
 const vm = { getGridVisibility: () => true };
 
@@ -25,6 +27,10 @@ vi.mock("$lib/shared/share/state/image-composition-state.svelte", () => ({
 vi.mock("$lib/shared/pictograph/shared/state/visibility-state.svelte", () => ({
   getVisibilityStateManager: () => vm,
 }));
+// The resolver reads auth to gate the guest QR degrade; stub a signed-in user.
+vi.mock("$lib/shared/auth/firebase", () => ({
+  getAuthSync: () => ({ currentUser: { uid: "u" } }),
+}));
 
 import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
 
@@ -33,6 +39,9 @@ const seq = { steps: [{ letter: "A" }, { letter: "B" }, { letter: "C" }] } as an
 describe("buildCardRenderOptions", () => {
   beforeEach(() => {
     ic._cols = 4;
+    ic._choice = "qr";
+    ic.showQRCode = true;
+    ic.showMandala = true;
     ic.includeStartPosition = true;
     ic.addDifficultyLevel = true;
     ic.showLoopGlyph = true;
@@ -79,6 +88,27 @@ describe("buildCardRenderOptions", () => {
     expect(o.visibilityOverrides?.showQRCode).toBe(false);
     // Multi-count cards are unaffected.
     expect(buildCardRenderOptions(seq, { darkMode: false, userName: "" }).visibilityOverrides?.showQRCode).toBe(true);
+  });
+
+  it("one-spot 4-count + both on + choice 'mandala' resolves to mandala only", () => {
+    // 4 steps, auto layout (row) -> exactly one info cell -> contention.
+    const fourStep = { steps: [{ letter: "A" }, { letter: "B" }, { letter: "C" }, { letter: "D" }] } as any;
+    ic._cols = null; // auto layout table, not a 4-column override
+    ic._layout = "row";
+    ic._choice = "mandala";
+    const o = buildCardRenderOptions(fourStep, { darkMode: false, userName: "" });
+    expect(o.visibilityOverrides?.showQRCode).toBe(false);
+    expect(o.visibilityOverrides?.showMandala).toBe(true);
+  });
+
+  it("one-spot 4-count + both on + choice 'qr' keeps QR only", () => {
+    const fourStep = { steps: [{ letter: "A" }, { letter: "B" }, { letter: "C" }, { letter: "D" }] } as any;
+    ic._cols = null;
+    ic._layout = "row";
+    ic._choice = "qr";
+    const o = buildCardRenderOptions(fourStep, { darkMode: false, userName: "" });
+    expect(o.visibilityOverrides?.showQRCode).toBe(true);
+    expect(o.visibilityOverrides?.showMandala).toBe(false);
   });
 
   it("suppresses difficulty, LOOP glyph, reversals and TKA in hand-path mode", () => {

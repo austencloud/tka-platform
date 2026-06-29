@@ -17,6 +17,8 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
+import { resolveInfoCellDisplay } from "$lib/shared/sequence-viewer/services/info-cell-display";
+import { getAuthSync } from "$lib/shared/auth/firebase";
 
 export interface CardRenderOptionsInput {
   /**
@@ -71,6 +73,20 @@ export function buildCardRenderOptions(
       ? stepColumns + (ic.includeStartPosition ? 1 : 0)
       : undefined;
 
+  // One-spot info-cell resolution: a card with a single empty info cell + both QR
+  // and mandala on routes through the user's per-length choice. No-op otherwise,
+  // so multi-cell cards keep both. oneCount already forces QR off (no spare cell).
+  const effectiveInfoCell = resolveInfoCellDisplay({
+    stepCount,
+    includeStartPosition: ic.includeStartPosition,
+    startPositionLayout: ic.getStartPositionLayoutForStepCount(stepCount),
+    columnCount: ic.getColumnCountForStepCount(stepCount), // STEP columns
+    showQRCode: oneCount ? false : ic.showQRCode,
+    showMandala: ic.showMandala,
+    infoCellChoice: ic.getInfoCellChoiceForStepCount(stepCount),
+    isAuthenticated: !!getAuthSync().currentUser,
+  });
+
   return {
     includeStartPosition: ic.includeStartPosition,
     startPositionLayout: ic.getStartPositionLayoutForStepCount(stepCount),
@@ -87,9 +103,9 @@ export function buildCardRenderOptions(
     addReversalSymbols: !isHandPath,
     visibilityOverrides: {
       darkMode: input.darkMode,
-      showQRCode: oneCount ? false : ic.showQRCode,
+      showQRCode: effectiveInfoCell.showQRCode,
       showGrid: vm.getGridVisibility(),
-      showMandala: ic.showMandala,
+      showMandala: effectiveInfoCell.showMandala,
       handPathMode: isHandPath,
       // Match the preview's hand-path overlay suppression. Left undefined for
       // normal cards so the composer inherits TKA/reversal visibility from the
