@@ -60,7 +60,7 @@
         {#if dryRun.candidates > 0}
           <ul>
             {#each dryRun.sample as s (s.id)}
-              <li>{s.word || "(untitled)"} — owner {s.ownerId}</li>
+              <li>{s.word || "(untitled)"} · owner {s.ownerId}</li>
             {/each}
           </ul>
           <button class="action danger" onclick={() => (confirmOpen = true)} disabled={busy}>
