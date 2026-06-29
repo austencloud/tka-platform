@@ -76,15 +76,17 @@
 
   // Guests cannot render a scannable QR — drop the QR segment for them so the
   // lone cell can never resolve to a blank QR.
-  const infoCellOptions = $derived<{ value: InfoCellChoice; label: string; icon?: string }[]>(
+  // Text labels (not icons): they read at the same size as the sibling chips in
+  // this panel (Word / Level / Grid …) and a tiny QR/asterisk glyph is cryptic.
+  const infoCellOptions = $derived<{ value: InfoCellChoice; label: string }[]>(
     authState.isAuthenticated
       ? [
-          { value: "qr", label: "QR", icon: "fas fa-qrcode" },
-          { value: "mandala", label: "Mandala", icon: "fas fa-asterisk" },
+          { value: "qr", label: "QR" },
+          { value: "mandala", label: "Mandala" },
           { value: "none", label: "None" },
         ]
       : [
-          { value: "mandala", label: "Mandala", icon: "fas fa-asterisk" },
+          { value: "mandala", label: "Mandala" },
           { value: "none", label: "None" },
         ]
   );
