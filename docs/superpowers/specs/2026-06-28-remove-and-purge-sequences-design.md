@@ -91,18 +91,32 @@ On select → open a `ConfirmDialog` (`variant="danger"`). On confirm:
   then call `browseLoader.removeFromCache(sequence.id)` so the card disappears
   immediately (the server cannot touch the client cache).
 
-### Confirm host
+### Confirm host (card-local — revised from the grid-lift idea)
 
-Mount **one** `ConfirmDialog` at the grid level (`BrowseGrid.svelte`) rather than
-one per card. The card exposes an `onRequestDelete(sequence)` prop callback; the
-grid owns the dialog state (`pendingDelete`, `dialogOpen`) and the delete
-dispatch. If an imperative confirm service already exists, reuse it instead
-(check in planning).
+Cards render through **two** independent paths — `BrowseGrid.svelte` (flat /
+sections) and `VirtualizedSequenceGrid.svelte` (50+ items). Lifting the dialog to
+a grid would mean wiring it twice or prop-drilling from `BrowseModule`. Instead,
+keep the whole remove flow **inside `ChoreoCardThumbnail.svelte`**: all
+dependencies are singleton getters the card can import directly
+(`getLibraryRepository`, `getBrowseLoader`, `authState`, the callable wrappers),
+exactly as the card already imports `toast` / `sharer` / `getClaudeCodeCopier`.
+No imperative confirm service exists, so the card hosts a `ConfirmDialog`
+instance bound to local `removeConfirmOpen` state. bits-ui `Dialog` renders
+nothing while closed, so one-per-card is inert — and the card already mounts a
+per-card `ContextMenu`, so this matches the existing structure. Neither grid
+needs a new prop.
 
 ### Current-user uid source
 
-Resolve `myUid` from the existing auth service used elsewhere in browse (confirm
-exact accessor during planning; `featureFlagService` / auth store).
+`authState.user?.uid` (`auth/state/auth-state.svelte`). `isOwner = sequence.ownerId === authState.user?.uid`.
+
+### Cache removal
+
+`getBrowseLoader()` (`browse/get-browse-loader.ts`) returns the singleton
+`PublicSequencesLoader`; `removeFromCache(id)` is synchronous. After any
+successful delete, call `getBrowseLoader().removeFromCache(sequence.id)` so the
+card vanishes immediately (the owner client-delete path may invalidate a
+different injected loader instance, so call it explicitly here regardless).
 
 ### Files
 
