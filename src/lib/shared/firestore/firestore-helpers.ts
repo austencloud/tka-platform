@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  FieldValue,
   type CollectionReference,
   type DocumentReference,
   type Firestore,
@@ -18,6 +19,15 @@ export function stripUndefined<T extends Record<string, unknown>>(
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (value === undefined) continue;
+    // FieldValue sentinels (serverTimestamp/increment/arrayUnion/deleteField)
+    // are opaque objects that MUST reach setDoc/updateDoc intact. Recursing into
+    // one deep-copies it into a plain object — e.g. serverTimestamp() becomes a
+    // literal { _methodName: "serverTimestamp" } stored as data, corrupting the
+    // field. Pass sentinels through untouched.
+    if (value instanceof FieldValue) {
+      result[key] = value;
+      continue;
+    }
     if (
       value !== null &&
       typeof value === "object" &&
