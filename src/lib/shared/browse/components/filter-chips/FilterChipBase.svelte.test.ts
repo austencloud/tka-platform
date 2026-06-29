@@ -1,5 +1,5 @@
 import { render } from "vitest-browser-svelte";
-import { page } from "@vitest/browser/context";
+import { page } from "vitest/browser";
 import { describe, it, expect, vi } from "vitest";
 import FilterChipBase from "./FilterChipBase.svelte";
 
