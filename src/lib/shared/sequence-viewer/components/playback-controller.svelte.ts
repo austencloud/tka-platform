@@ -18,6 +18,8 @@ import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { TempoPracticeOrchestrator, type TempoPracticeConfig } from "$lib/shared/sequence-viewer/services/tempo-practice-orchestrator";
 import { createTempoPracticeState } from "$lib/shared/sequence-viewer/state/tempo-practice-state.svelte";
+import { Metronome } from "$lib/shared/audio/metronome";
+import type { PracticeViewPrefs } from "$lib/shared/sequence-viewer/state/practice-view-prefs.svelte";
 
 export interface PlaybackControllerDeps {
   modalAnimationState: AnimationPanelState;
@@ -43,6 +45,8 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
   let _hapticService: HapticFeedback | null = null;
   let _onUrlParamChange: ((key: string, value: string) => void) | undefined;
   let _isAnimationVisible: (() => boolean) | null = null;
+  let _practiceViewPrefs: PracticeViewPrefs | null = null;
+  let _metronome: Metronome | null = null;
 
   // ── Animation state subscription ──
   let lastStepNumber = 0;
@@ -59,6 +63,12 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
           const newBeat = Math.floor(rawStep);
           if (isPlayingLocal && newBeat !== lastStepNumber && newBeat >= 1 && (_isAnimationVisible?.() !== false)) {
             _hapticService?.trigger("selection");
+            // Ramp-only audible beat. Accent the loop downbeat (beat 1 of each
+            // loop) so the restart is audible. Driven by the visual beat event,
+            // so it stays locked to playback through every ramp speed-up.
+            if (practicePhase === "running" && _practiceViewPrefs?.metronomeEnabled) {
+              _metronome?.tick(newBeat === 1);
+            }
           }
           lastStepNumber = newBeat;
           currentStepLocal = rawStep;
@@ -197,6 +207,8 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     }
 
     _hapticService?.trigger("selection");
+    // Start is a user gesture; unlock audio now so the first beat clicks.
+    if (_practiceViewPrefs?.metronomeEnabled) ensureMetronome();
     practiceState.clearCompletion();
 
     const startBpm = practiceOrchestrator.start(practiceState.userConfig);
@@ -270,6 +282,22 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     _hapticService?.trigger("selection");
   }
 
+  /** Lazily build + unlock the metronome. Must be called from a user gesture
+   *  (Start, or the toggle) — browsers only unlock audio inside one. */
+  function ensureMetronome() {
+    if (!_metronome) _metronome = new Metronome();
+    _metronome.resume();
+  }
+
+  /** Cockpit toggle: flip the persisted on/off pref. Turning on unlocks audio
+   *  on this gesture. */
+  function handleToggleMetronome() {
+    const next = !(_practiceViewPrefs?.metronomeEnabled ?? false);
+    _practiceViewPrefs?.setMetronomeEnabled(next);
+    if (next) ensureMetronome();
+    _hapticService?.trigger("selection");
+  }
+
   /** Apply a live config change from the bar's inline controls (loops X, step Y,
    *  goal, target on/off). Persists for the next session too. */
   function handlePracticeSetConfig(patch: Partial<TempoPracticeConfig>) {
@@ -299,21 +327,6 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     practicePhase = "setup";
   }
 
-  /**
-   * Practice step nav (header ‹ ›). Pauses first so the seek is actually
-   * visible — during the looping ramp a bare seek is instantly overwritten by
-   * playback, which made the buttons feel dead. Tap to park on a pictograph,
-   * tap again to step, hit play to resume the ramp.
-   */
-  function handlePracticeStep(dir: 1 | -1) {
-    if (!_playbackController) return;
-    if (isPlayingLocal) _playbackController.togglePlayback();
-    arrivedViaStepping = true;
-    if (dir > 0) _playbackController.stepFullBeatForward();
-    else _playbackController.stepFullBeatBackward();
-    _hapticService?.trigger("selection");
-  }
-
   // ── Stepping ──
   function stepHalfBeatBackward() { arrivedViaStepping = true; _playbackController?.stepHalfBeatBackward(); }
   function stepHalfBeatForward() { arrivedViaStepping = true; _playbackController?.stepHalfBeatForward(); }
@@ -336,6 +349,8 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
       startHoldTimer = null;
     }
     stopPracticeIfActive();
+    _metronome?.dispose();
+    _metronome = null;
     cleanupSubscription?.();
     unregisterVisibilityObserver();
     if (_playbackController) {
@@ -355,6 +370,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     set arrivedViaStepping(v: boolean) { arrivedViaStepping = v; },
     get practiceActive() { return practicePhase !== "off"; },
     get practiceRunning() { return practicePhase === "running"; },
+    get metronomeEnabled() { return _practiceViewPrefs?.metronomeEnabled ?? false; },
     practiceState,
 
     // Dependency injection (set after service load)
@@ -363,6 +379,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     setHapticService(hs: HapticFeedback) { _hapticService = hs; },
     setAnimationVisible(fn: () => boolean) { _isAnimationVisible = fn; },
     setOnUrlParamChange(cb: ((key: string, value: string) => void) | undefined) { _onUrlParamChange = cb; },
+    setPracticeViewPrefs(p: PracticeViewPrefs) { _practiceViewPrefs = p; },
 
     // Handlers
     handlePlaybackToggle,
@@ -376,8 +393,8 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     enterPracticeMode,
     exitPracticeMode,
     handlePracticeStepLevel,
-    handlePracticeStep,
     handlePracticeToggleHold,
+    handleToggleMetronome,
     handlePracticeSetConfig,
     handlePracticeStop,
     stepHalfBeatBackward,
