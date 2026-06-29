@@ -119,8 +119,10 @@
 </script>
 
 <div class="tutorial-step">
-  <h1 class="title">Your workspace</h1>
-  <p class="subtitle">Here's where everything lives.</p>
+  <div class="step-header">
+    <h1 class="title">Your workspace</h1>
+    <p class="subtitle">Here's where everything lives.</p>
+  </div>
 
   <!-- Desktop: side-by-side mockup + legend -->
   <div class="workspace-mockup desktop-only">
@@ -227,7 +229,34 @@
         aria-expanded={expandedIndex === i}
       >
         <div class="accordion-header">
-          <span class="legend-badge {btn.colorClass}">{i + 1}</span>
+          <span class="legend-badge {btn.colorClass}">
+            {#if btn.iconType === "svg"}
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M9 14L4 9L9 4"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M4 9H15A6 6 0 0 1 15 21H13"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            {:else}
+              <i class="fa-solid {btn.icon}" aria-hidden="true"></i>
+            {/if}
+          </span>
           <span class="accordion-label">{btn.label}</span>
           <i
             class="fas fa-chevron-down accordion-chevron"
@@ -580,6 +609,11 @@
     align-items: center;
     gap: 10px;
     padding: 12px 14px;
+  }
+
+  .accordion-header .legend-badge i {
+    font-size: 12px;
+    line-height: 1;
   }
 
   .accordion-label {

@@ -38,14 +38,16 @@
 </script>
 
 <div class="tutorial-step">
-  <h1 class="title">Add beat {stepCount + 1} of {REQUIRED_BEATS}</h1>
-  <p class="subtitle">
-    {#if beatsRemaining > 1}
-      Pick a move. {beatsRemaining} beats left.
-    {:else}
-      Last one. Pick your final beat.
-    {/if}
-  </p>
+  <div class="step-header">
+    <h1 class="title">Add beat {stepCount + 1} of {REQUIRED_BEATS}</h1>
+    <p class="subtitle">
+      {#if beatsRemaining > 1}
+        Pick a move. {beatsRemaining} beats left.
+      {:else}
+        Last one. Pick your final beat.
+      {/if}
+    </p>
+  </div>
 
   <div class="picker-container">
     {#if currentSequence.length > 0}

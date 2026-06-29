@@ -41,8 +41,10 @@
 </script>
 
 <div class="tutorial-step">
-  <h1 class="title">Pick a starting position</h1>
-  <p class="subtitle">Every sequence begins with a position. Tap one.</p>
+  <div class="step-header">
+    <h1 class="title">Pick a starting position</h1>
+    <p class="subtitle">Every sequence begins with a position. Tap one.</p>
+  </div>
 
   <div class="picker-container">
     {#await import("$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte") then mod}

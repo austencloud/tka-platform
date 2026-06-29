@@ -256,6 +256,15 @@
     padding: 0 16px 90px;
   }
 
+  /* Header wrapper — column on desktop, one compact line on mobile (see media query) */
+  .create-tutorial-wizard :global(.step-header) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+  }
+
   /* Entrance animation for step content */
   .create-tutorial-wizard :global(.tutorial-step) {
     opacity: 0;
@@ -363,6 +372,63 @@
     .back-button,
     button.dot.completed {
       transition: none;
+    }
+  }
+
+  /* ── Mobile / small-tablet: fullscreen edge-to-edge ── */
+  @media (max-width: 900px) {
+    /* Stop vertical centering so the card fills the viewport */
+    .create-tutorial-wizard {
+      align-items: stretch;
+    }
+
+    .step-container {
+      padding: 0;
+      max-width: none;
+      align-items: stretch;
+    }
+
+    /* Strip card chrome for every step (0,2,0) > each step's own rule (0,1,0) */
+    .create-tutorial-wizard :global(.tutorial-step) {
+      max-width: none;
+      width: 100%;
+      border: none;
+      border-radius: 0;
+      min-height: 100dvh;
+      box-sizing: border-box;
+      padding-top: 56px; /* clear fixed Back/Skip buttons */
+      padding-bottom: 88px; /* clear fixed step-dots */
+      padding-left: max(8px, env(safe-area-inset-left));
+      padding-right: max(8px, env(safe-area-inset-right));
+    }
+
+    /* Free the second axis so the device-aware fitter grows tiles both ways.
+       (Ready's accordion is intentionally NOT filled — it stays content-sized.) */
+    .create-tutorial-wizard :global(.picker-container),
+    .create-tutorial-wizard :global(.viewer-container) {
+      height: auto;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* One compact line: title · subtitle */
+    .create-tutorial-wizard :global(.step-header) {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px 8px;
+    }
+    .create-tutorial-wizard :global(.step-header .title) {
+      font-size: 1.05rem;
+    }
+    .create-tutorial-wizard :global(.step-header .subtitle) {
+      font-size: 0.8rem;
+    }
+    .create-tutorial-wizard :global(.step-header .subtitle::before) {
+      content: "·";
+      margin-right: 6px;
+      color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     }
   }
 </style>

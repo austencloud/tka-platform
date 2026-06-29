@@ -152,14 +152,16 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
 </script>
 
 <div class="tutorial-step">
-  <h1 class="title">Your sequence</h1>
-  <p class="subtitle">
-    {#if showAnimation}
-      Watch your sequence come to life.
-    {:else}
-      Here's what you built. Hit play to see it animated.
-    {/if}
-  </p>
+  <div class="step-header">
+    <h1 class="title">Your sequence</h1>
+    <p class="subtitle">
+      {#if showAnimation}
+        Watch your sequence come to life.
+      {:else}
+        Here's what you built. Hit play to see it animated.
+      {/if}
+    </p>
+  </div>
 
   <div class="viewer-container">
     {#if showAnimation && tutorialSequence}
