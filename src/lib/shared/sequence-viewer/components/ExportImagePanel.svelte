@@ -15,6 +15,9 @@
   import "$lib/shared/animation-panel/bento/rail-tile.css";
   import { columnOptionsFor } from "./bento/columns-stepper";
   import ControlDock, { type ControlDockTab } from "./ControlDock.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import { getInfoCellCount, type InfoCellChoice } from "../services/info-cell-display";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -56,6 +59,41 @@
   const startPosLayout = $derived.by(() => {
     void compositionVersion;
     return imageComposition.getStartPositionLayoutForStepCount(stepCount);
+  });
+
+  // One-spot cards (a single empty info cell) route QR vs Mandala through one
+  // explicit chooser; multi-cell cards keep the two independent chips.
+  const infoCellCount = $derived.by(() => {
+    void compositionVersion;
+    return getInfoCellCount({
+      stepCount,
+      includeStartPosition: imageComposition.includeStartPosition,
+      startPositionLayout: startPosLayout,
+      columnCount: imageComposition.getColumnCountForStepCount(stepCount),
+    });
+  });
+  const isOneSpot = $derived(infoCellCount === 1);
+
+  // Guests cannot render a scannable QR — drop the QR segment for them so the
+  // lone cell can never resolve to a blank QR.
+  const infoCellOptions = $derived<{ value: InfoCellChoice; label: string; icon?: string }[]>(
+    authState.isAuthenticated
+      ? [
+          { value: "qr", label: "QR", icon: "fas fa-qrcode" },
+          { value: "mandala", label: "Mandala", icon: "fas fa-asterisk" },
+          { value: "none", label: "None" },
+        ]
+      : [
+          { value: "mandala", label: "Mandala", icon: "fas fa-asterisk" },
+          { value: "none", label: "None" },
+        ]
+  );
+
+  const infoCellChoice = $derived.by<InfoCellChoice>(() => {
+    void compositionVersion;
+    const raw = imageComposition.getInfoCellChoiceForStepCount(stepCount);
+    // A guest whose derived default is "qr" has no QR segment; show "mandala".
+    return raw === "qr" && !authState.isAuthenticated ? "mandala" : raw;
   });
 
   // Pictograph visibility - sourced from VisibilityManager so this panel
@@ -216,8 +254,20 @@
           <div class="field">
             <span class="field-label">Info</span>
             <div class="rt-chip-row">
-              <button type="button" class="rt-chip" aria-pressed={showQRCode} onclick={() => imageComposition.setShowQRCode(!showQRCode)}><i class="fas fa-qrcode" aria-hidden="true"></i> QR</button>
-              <button type="button" class="rt-chip" aria-pressed={showMandala} onclick={() => imageComposition.setShowMandala(!showMandala)}><i class="fas fa-asterisk" aria-hidden="true"></i> Mandala</button>
+              {#if isOneSpot}
+                <div class="seg-fill">
+                  <SegmentedControl
+                    options={infoCellOptions}
+                    value={infoCellChoice}
+                    onchange={(v) => imageComposition.setInfoCellChoiceForStepCount(stepCount, v)}
+                    color="accent"
+                    size="sm"
+                  />
+                </div>
+              {:else}
+                <button type="button" class="rt-chip" aria-pressed={showQRCode} onclick={() => imageComposition.setShowQRCode(!showQRCode)}><i class="fas fa-qrcode" aria-hidden="true"></i> QR</button>
+                <button type="button" class="rt-chip" aria-pressed={showMandala} onclick={() => imageComposition.setShowMandala(!showMandala)}><i class="fas fa-asterisk" aria-hidden="true"></i> Mandala</button>
+              {/if}
               <button type="button" class="rt-chip" aria-pressed={showStartPos} onclick={() => imageComposition.setIncludeStartPosition(!showStartPos)}>Start</button>
               {#if showStartPos}
                 <button type="button" class="rt-chip" aria-pressed={startPosLayout === "row"} onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "row")}>Top Row</button>
@@ -340,27 +390,43 @@
         </div>
       </div>
 
-      <!-- QR code (standalone - it's a grid cell, not a banner) -->
-      <div class="setting-row">
-        <span class="setting-label">QR</span>
-        <div class="chip-group">
-          <button type="button" class="chip" class:active={showQRCode}
-            onclick={() => imageComposition.setShowQRCode(!showQRCode)}
-            aria-pressed={showQRCode}
-          >QR Code</button>
+      {#if isOneSpot}
+        <!-- One info cell: QR and Mandala compete for it -> single chooser. -->
+        <div class="setting-row">
+          <span class="setting-label">Info Cell</span>
+          <div class="chip-group seg-fill">
+            <SegmentedControl
+              options={infoCellOptions}
+              value={infoCellChoice}
+              onchange={(v) => imageComposition.setInfoCellChoiceForStepCount(stepCount, v)}
+              color="accent"
+              size="sm"
+            />
+          </div>
         </div>
-      </div>
+      {:else}
+        <!-- QR code (standalone - it's a grid cell, not a banner) -->
+        <div class="setting-row">
+          <span class="setting-label">QR</span>
+          <div class="chip-group">
+            <button type="button" class="chip" class:active={showQRCode}
+              onclick={() => imageComposition.setShowQRCode(!showQRCode)}
+              aria-pressed={showQRCode}
+            >QR Code</button>
+          </div>
+        </div>
 
-      <!-- Mandala fill (blue/red path visualization in empty col-0 cells) -->
-      <div class="setting-row">
-        <span class="setting-label">Mandala</span>
-        <div class="chip-group">
-          <button type="button" class="chip" class:active={showMandala}
-            onclick={() => imageComposition.setShowMandala(!showMandala)}
-            aria-pressed={showMandala}
-          >Mandala</button>
+        <!-- Mandala fill (blue/red path visualization in empty col-0 cells) -->
+        <div class="setting-row">
+          <span class="setting-label">Mandala</span>
+          <div class="chip-group">
+            <button type="button" class="chip" class:active={showMandala}
+              onclick={() => imageComposition.setShowMandala(!showMandala)}
+              aria-pressed={showMandala}
+            >Mandala</button>
+          </div>
         </div>
-      </div>
+      {/if}
 
       <div class="setting-row">
         <span class="setting-label">Start</span>
@@ -598,6 +664,15 @@
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+  }
+
+  /* SegmentedControl is width:100%; give it room to fill next to the label. */
+  .seg-fill {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .dock-dense .seg-fill {
+    flex: 1 1 160px;
   }
 
   .chip {
