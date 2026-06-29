@@ -51,6 +51,8 @@
     "lint:fix": "prettier --write . && eslint . --fix",
     "format": "prettier --write .",
     "test:ci": "vitest run --config tests/config/vitest.config.ts",
+    "test:components": "vitest --config tests/config/vitest.components.config.ts",
+    "test:components:ci": "vitest run --config tests/config/vitest.components.config.ts",
     "test:rules": "firebase emulators:exec --only firestore --project the-kinetic-alphabet \"vitest run --config tests/config/vitest.rules.config.ts\"",
     "test:e2e": "firebase emulators:exec --only auth --project the-kinetic-alphabet \"vitest run --config tests/config/vitest.e2e.config.ts\"",
     "validate": "npm run lint && npm run check && npm run test:ci",
