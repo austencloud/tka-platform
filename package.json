@@ -141,6 +141,8 @@
     "@types/three": "^0.182.0",
     "@types/web-bluetooth": "^0.0.21",
     "@vitest/browser": "^4.0.16",
+    "@vitest/browser-playwright": "^4.0.18",
+    "axe-core": "^4.12.1",
     "canvas": "^3.2.0",
     "cross-env": "^10.1.0",
     "eslint": "^9.39.2",
@@ -153,6 +155,7 @@
     "lightningcss": "^1.30.2",
     "pdfjs-dist": "^6.0.227",
     "pixelmatch": "^6.0.0",
+    "playwright": "^1.61.1",
     "pngjs": "^7.0.0",
     "postcss-html": "^1.8.1",
     "prettier": "^3.6.2",
@@ -175,6 +178,7 @@
     "vite": "^7.3.0",
     "vite-plugin-static-copy": "^3.1.4",
     "vitest": "^4.0.16",
+    "vitest-browser-svelte": "^2.1.1",
     "web-vitals": "^5.1.0"
   },
   "engines": {
