@@ -211,7 +211,8 @@ export async function importDrafts(drafts: LibrarySequence[]): Promise<number> {
       imported += 1;
     } catch (error) {
       const code = (error as { code?: string })?.code;
-      if (code !== "ALREADY_EXISTS") throw error;
+      // Skip duplicates and one-count junk during migration; rethrow anything else.
+      if (code !== "ALREADY_EXISTS" && code !== "INVALID_DATA") throw error;
     }
   }
   return imported;

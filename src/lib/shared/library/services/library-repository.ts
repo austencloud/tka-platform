@@ -64,6 +64,7 @@ import {
 import { LibraryRecycleBin } from "$lib/shared/library/services/library-recycle-bin";
 import { LibraryBatchOperations } from "$lib/shared/library/services/library-batch-operations";
 import { LibraryError } from "$lib/shared/library/domain/library-error";
+import { isOneCountSequence } from "$lib/shared/library/domain/sequence-min-length";
 
 export class LibraryRepository {
   /**
@@ -243,6 +244,15 @@ export class LibraryRepository {
   ): Promise<LibrarySequence> {
     const firestore = await getFirestoreInstance();
     const userId = this.getUserId();
+
+    if (isOneCountSequence(sequence)) {
+      throw new LibraryError(
+        "Too short to save — a sequence needs at least 2 steps.",
+        "INVALID_DATA",
+        sequence.id
+      );
+    }
+
     let actualSequenceId = sequence.id || crypto.randomUUID();
 
     let sequenceDocRef = doc(

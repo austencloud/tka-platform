@@ -127,7 +127,8 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
       showToast("Saved to library", "success");
     } catch (error) {
       console.error("Failed to save sequence:", error);
-      showToast("Failed to save sequence", "error");
+      const msg = error instanceof Error ? error.message : "Failed to save sequence";
+      showToast(msg, "error");
     }
   }
 

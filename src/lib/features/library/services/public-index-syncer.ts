@@ -45,6 +45,7 @@ import { loopDetector } from "$lib/features/create/generate/circular/services/lo
 import { periodToNumber } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
+import { isOneCountSequence } from "$lib/shared/library/domain/sequence-min-length";
 
 
 export class PublicIndexSyncer {
@@ -82,6 +83,10 @@ export class PublicIndexSyncer {
           );
         }
       }
+    }
+
+    if (isOneCountSequence(sequence)) {
+      throw new Error("Too short to publish — a sequence needs at least 2 steps.");
     }
 
     const firestore = await getFirestoreInstance();

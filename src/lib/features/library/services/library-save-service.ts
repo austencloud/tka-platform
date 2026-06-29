@@ -25,6 +25,7 @@ import type {
   SaveToLibraryOptions, SaveProgress, SaveResult } from "./types";
 import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 import { LibraryError } from "$lib/shared/library/domain/library-error";
+import { isOneCountSequence } from "$lib/shared/library/domain/sequence-min-length";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte.ts";
 import { db } from "$lib/shared/persistence/database/tka-database";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -75,6 +76,14 @@ export class LibrarySaveService {
     // (anon provider disabled, offline), and the Dexie write below keeps the
     // save working even when no identity could be provisioned.
     await ensureGuestIdentity();
+
+    if (isOneCountSequence(sequence)) {
+      throw new LibraryError(
+        "Too short to save — a sequence needs at least 2 steps.",
+        "INVALID_DATA",
+        sequence.id
+      );
+    }
 
     const { name, displayName, visibility, tags, notes } = options;
 
