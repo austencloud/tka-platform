@@ -79,10 +79,14 @@ export const purgeOneCountSequences = functions
     }> = [];
 
     for (const doc of snap.docs) {
+      // Only operate on real user libraries: users/{uid}/sequences/{id}.
+      // collectionGroup matches every "sequences" subcollection (e.g. deck
+      // catalogs), so guard on the grandparent collection being "users".
+      const userDoc = doc.ref.parent.parent;
+      if (!userDoc || userDoc.parent.id !== "users") continue;
       const d = doc.data();
       if (stepCount(d) <= ONE_COUNT_MAX) {
-        // path is users/{ownerId}/sequences/{id}
-        const ownerId = doc.ref.parent.parent?.id ?? "";
+        const ownerId = userDoc.id;
         const word = (d.word as string) || (d.name as string) || "";
         candidates.push({ ref: doc.ref, id: doc.id, ownerId, word });
       }
@@ -155,8 +159,8 @@ export const adminDeleteSequence = functions.https.onCall(
       );
     }
 
-    await db.doc(`users/${ownerId}/sequences/${sequenceId}`).delete();
-
+    // Remove the public mirror first so a failure can't leave it orphaned in
+    // the community gallery (the user doc is the fallback source of truth).
     let publicRemoved = false;
     const publicRef = db.doc(`publicSequences/${sequenceId}`);
     const publicSnap = await publicRef.get();
@@ -165,7 +169,14 @@ export const adminDeleteSequence = functions.https.onCall(
       publicRemoved = true;
     }
 
-    await decrementSequenceCount(ownerId, 1);
-    return { deleted: true, publicRemoved };
+    const userSeqRef = db.doc(`users/${ownerId}/sequences/${sequenceId}`);
+    const userSnap = await userSeqRef.get();
+    const deleted = userSnap.exists;
+    if (deleted) {
+      await userSeqRef.delete();
+      await decrementSequenceCount(ownerId, 1);
+    }
+
+    return { deleted, publicRemoved };
   }
 );
