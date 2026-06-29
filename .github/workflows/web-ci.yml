@@ -49,3 +49,36 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+  component-tests:
+    name: Component Tests (browser)
+    runs-on: ubuntu-latest
+    continue-on-error: true # non-blocking until P3 (see plan)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create .env from .env.example
+        run: cp .env.example .env
+
+      - name: Build workspace packages
+        run: pnpm run build:packages
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Component tests (Vitest browser mode)
+        run: pnpm run test:components:ci
