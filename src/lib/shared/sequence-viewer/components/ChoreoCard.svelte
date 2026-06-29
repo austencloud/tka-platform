@@ -28,6 +28,7 @@
   import type { ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
   import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
+  import { resolveInfoCellDisplay } from "../services/info-cell-display";
   import { encodeViewMode } from "$lib/shared/browse/domain/browse-view-mode";
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
   import { renderCell, deleteCellCache } from "../services/preview-cell-renderer";
@@ -254,6 +255,29 @@
     compositionManager.unregisterObserver(onCompositionChanged);
   });
 
+  // One-spot info-cell resolution: when a card has a single empty info cell and
+  // both QR + mandala are on, the user's per-length choice decides the cell.
+  // resolveInfoCellDisplay is a no-op in every other case, so multi-cell cards
+  // and marketing cards (mandala-only) are unaffected. The layout is computed
+  // here independently (not via layoutState) to avoid a reactive dependency cycle.
+  const effectiveInfoCell = $derived.by(() => {
+    void compositionVersion;
+    const sc = sequence?.steps?.length ?? 0;
+    const spl = startPositionLayoutOverride ?? compositionManager.getStartPositionLayoutForStepCount(sc);
+    return resolveInfoCellDisplay({
+      stepCount: sc,
+      includeStartPosition,
+      startPositionLayout: spl,
+      columnCount, // STEP columns (null = auto), same convention as renderAllCells
+      showQRCode,
+      showMandala,
+      infoCellChoice: compositionManager.getInfoCellChoiceForStepCount(sc),
+      isAuthenticated: authState.isAuthenticated,
+    });
+  });
+  const effShowQRCode = $derived(effectiveInfoCell.showQRCode);
+  const effShowMandala = $derived(effectiveInfoCell.showMandala);
+
   // Motion visibility: viewer-scoped. When rendered outside a viewer
   // (browse previews, export pipeline), fall back to always-visible.
   const viewerVisibility = tryGetViewerVisibilityContext();
@@ -287,7 +311,7 @@
   const encodedViewMode = $derived(browseViewMode ? encodeViewMode(browseViewMode) : undefined);
 
   const qrCacheKey = $derived.by(() => {
-    if (!showQRCode || !sequence) return "";
+    if (!effShowQRCode || !sequence) return "";
     const seqId = sequence.id ?? sequence.word ?? "unknown";
     // Auth state is part of the key: guests get inline (offline) QR codes,
     // signed-in users get Firestore short codes. A guest who signs in
@@ -450,8 +474,8 @@
     columnCount,
     showHeader,
     showFooter,
-    showQRCode,
-    showMandala,
+    showQRCode: effShowQRCode,
+    showMandala: effShowMandala,
     forceContain,
     showBlueMotion,
     showRedMotion,
@@ -1544,10 +1568,10 @@
         {needsScroll}
         {showHighlight}
         {highlightedStepIndex}
-        {showQRCode}
+        showQRCode={effShowQRCode}
         {qrDataUrl}
         {qrGridPosition}
-        showMandala={showMandala}
+        showMandala={effShowMandala}
         {mandalaPlacements}
         {flipDuration}
         {cellWidth}
