@@ -33,10 +33,11 @@ const STORAGE_KEY = "tka-practice-view";
 interface PersistedPrefs {
   splitPreset: SplitPreset;
   readAheadDepth: number;
+  metronomeEnabled: boolean;
 }
 
 function load(): PersistedPrefs {
-  const fallback: PersistedPrefs = { splitPreset: "lane-heavy", readAheadDepth: 2 };
+  const fallback: PersistedPrefs = { splitPreset: "lane-heavy", readAheadDepth: 2, metronomeEnabled: false };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return fallback;
@@ -45,6 +46,7 @@ function load(): PersistedPrefs {
     return {
       splitPreset: parsed.splitPreset ?? fallback.splitPreset,
       readAheadDepth: depth === 1 || depth === 2 || depth === 3 ? depth : fallback.readAheadDepth,
+      metronomeEnabled: parsed.metronomeEnabled ?? fallback.metronomeEnabled,
     };
   } catch {
     return fallback;
@@ -56,10 +58,11 @@ export function createPracticeViewPrefs() {
   const initial = load();
   let splitPreset = $state<SplitPreset>(initial.splitPreset);
   let readAheadDepth = $state<number>(initial.readAheadDepth);
+  let metronomeEnabled = $state<boolean>(initial.metronomeEnabled);
 
   function persist() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ splitPreset, readAheadDepth }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ splitPreset, readAheadDepth, metronomeEnabled }));
     } catch {
       // ignore storage errors
     }
@@ -70,8 +73,10 @@ export function createPracticeViewPrefs() {
     get readAheadDepth() { return readAheadDepth; },
     get canvasFraction() { return canvasFractionFor(splitPreset); },
     get cellSize() { return cellSizeForReadAhead(readAheadDepth); },
+    get metronomeEnabled() { return metronomeEnabled; },
     setSplitPreset(p: SplitPreset) { splitPreset = p; persist(); },
     setReadAheadDepth(d: number) { readAheadDepth = Math.min(3, Math.max(1, Math.round(d))); persist(); },
+    setMetronomeEnabled(v: boolean) { metronomeEnabled = v; persist(); },
   };
 }
 
