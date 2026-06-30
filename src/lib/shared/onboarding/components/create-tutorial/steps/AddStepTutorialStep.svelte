@@ -106,6 +106,17 @@
     height: clamp(300px, 55vh, 600px);
   }
 
+  /* The option grid caps its tile size, so in a tall picker (fullscreen mobile)
+     it can't fill the height. Center it vertically instead of letting it hug the
+     top. The fallback single-section path drops the grid into .swipe-container,
+     which is a flex *item* (flex:1) but not a flex *container* — so its child
+     top-aligns. Make it center its child. Scoped to the tutorial picker. */
+  .picker-container :global(.swipe-container) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
   .loading {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 0.9rem;
