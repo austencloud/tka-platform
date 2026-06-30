@@ -21,7 +21,8 @@
  * Running this before step 1 mismatches a V1 app against V2 hashes → mass-fork.
  * See the rollout spec for the full ordering + the lazy-rehash backstop.
  *
- *   npx tsx scripts/migrations/rehash-content-v2.ts             # dry-run
+ *   npx tsx scripts/migrations/rehash-content-v2.ts                 # dry-run (all)
+ *   npx tsx scripts/migrations/rehash-content-v2.ts --skip-catalogs # dry-run, skip the big deck corpus
  *   npx tsx scripts/migrations/rehash-content-v2.ts --apply
  *   npx tsx scripts/migrations/rehash-content-v2.ts --user <uid> --apply
  */
@@ -43,6 +44,9 @@ type AnyRec = Record<string, unknown>;
 const DEFAULT_USER = "PBp3GSBO6igCKPwJyLZNmVEmamI3";
 const argv = process.argv.slice(2);
 const APPLY = argv.includes("--apply");
+// Skip systemCatalogs (the deck corpus — tens of thousands of docs) for a fast,
+// cheap dry-run over just the user library + public mirror.
+const SKIP_CATALOGS = argv.includes("--skip-catalogs");
 const userId = (() => {
   const i = argv.indexOf("--user");
   return i >= 0 && argv[i + 1] ? argv[i + 1]! : DEFAULT_USER;
@@ -121,7 +125,9 @@ async function main(): Promise<void> {
   add(await processCollection(db, "public mirror", "publicSequences"));
   // System catalogs (deck variants) live under systemCatalogs/{id}/sequences;
   // enumerate the catalogs, then rehash each catalog's sequences.
-  try {
+  if (SKIP_CATALOGS) {
+    console.log(`\n(systemCatalogs skipped via --skip-catalogs)`);
+  } else try {
     const catSnap = await (db.collection as (p: string) => AnyRec)("systemCatalogs")["get"]();
     for (const c of catSnap.docs as Array<{ id: string }>) {
       add(await processCollection(db, `catalog ${c.id}`, `systemCatalogs/${c.id}/sequences`));
