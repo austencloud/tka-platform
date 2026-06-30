@@ -512,6 +512,15 @@ Expected: FAIL — `Cannot find module './pictograph-cloud-cache'`.
 
 - [ ] **Step 3: Write minimal implementation**
 
+> **SUPERSEDED by direct-probe (code-review correction).** The manifest/`knows()`-gated
+> version below was found to break cross-device benefit: nothing maintains
+> `pictograph-cells/manifest.json`, so a second device's `knows()` is always false and it
+> never downloads. The shipped implementation is **direct-probe** — `download(hash)` fetches
+> the deterministic URL and negative-caches misses; `upload(hash, blob)` swallows + dedups;
+> no manifest, no localStorage, no `knows()`. Exports: `cellPublicUrl`, `download`, `upload`,
+> `_resetForTest`. See the committed file and the matching Task 1.4 cloud-tier code. The block
+> below is retained only as the original-intent record.
+
 ```ts
 // src/lib/shared/render/services/pictograph-cloud-cache.ts
 /**
@@ -712,13 +721,12 @@ vi.mock("$lib/shared/render/services/worker-render-pool", () => ({
   getWorkerRenderPool: () => ({ render: (...a: unknown[]) => poolRender(...a) }),
 }));
 
-const cloudKnows = vi.fn();
 const cloudDownload = vi.fn();
 const cloudUpload = vi.fn().mockResolvedValue("https://x/y.webp");
 vi.mock("$lib/shared/render/services/pictograph-cloud-cache", () => ({
-  knows: (...a: unknown[]) => cloudKnows(...a),
   download: (...a: unknown[]) => cloudDownload(...a),
   upload: (...a: unknown[]) => cloudUpload(...a),
+  cellPublicUrl: (h: string) => `https://x/${h}.webp`,
 }));
 
 vi.mock("$lib/shared/render/services/cloud-cell-key", () => ({
@@ -749,7 +757,6 @@ describe("renderCell cloud tier", () => {
   });
 
   it("cloud HIT: downloads, never calls the worker", async () => {
-    cloudKnows.mockReturnValue(true);
     cloudDownload.mockResolvedValue(new Blob(["img"], { type: "image/webp" }));
 
     await renderCell(data, undefined, true, opts);
@@ -759,7 +766,7 @@ describe("renderCell cloud tier", () => {
   });
 
   it("cloud MISS: renders via worker AND uploads the result", async () => {
-    cloudKnows.mockReturnValue(false);
+    cloudDownload.mockResolvedValue(null); // direct-probe miss
     poolRender.mockResolvedValue(new Blob(["png"], { type: "image/png" }));
 
     await renderCell(data, undefined, true, opts);
@@ -794,20 +801,20 @@ Then, immediately AFTER the IndexedDB lookup `try/catch` block (which currently 
   // Cloud tier: a globally-shared, pre-rendered image for this exact pictograph.
   // A cold scanner (empty IndexedDB) downloads it instead of rasterizing on
   // device. Keyed by a canonical, size-independent hash so every device agrees.
+  // Direct-probe: download() attempts the deterministic URL and returns null on
+  // a miss (negative-cached for the session) — no manifest/knows() gate.
   let cloudHash: string | null = null;
   try {
     cloudHash = await deriveCloudCellHash(pictographData, isDark, baseOptions);
-    if (pictographCloudCache.knows(cloudHash)) {
-      const cloudBlob = await pictographCloudCache.download(cloudHash);
-      if (cloudBlob) {
-        // Seed IndexedDB under the display key so a re-render is a local hit.
-        pictographBlobCache.set(cacheKey, cloudBlob).catch(() => {});
-        return wantNumber
-          ? URL.createObjectURL(
-              await compositeStepNumberOnBlob(cloudBlob, stepNumber!, options.size, isDark, options.widthMultiplier ?? 1),
-            )
-          : URL.createObjectURL(cloudBlob);
-      }
+    const cloudBlob = await pictographCloudCache.download(cloudHash);
+    if (cloudBlob) {
+      // Seed IndexedDB under the display key so a re-render is a local hit.
+      pictographBlobCache.set(cacheKey, cloudBlob).catch(() => {});
+      return wantNumber
+        ? URL.createObjectURL(
+            await compositeStepNumberOnBlob(cloudBlob, stepNumber!, options.size, isDark, options.widthMultiplier ?? 1),
+          )
+        : URL.createObjectURL(cloudBlob);
     }
   } catch {
     // Cloud unavailable or hash failure — fall through to local render.
@@ -817,10 +824,11 @@ Then, immediately AFTER the IndexedDB lookup `try/catch` block (which currently 
 Then, immediately AFTER the existing IndexedDB write `pictographBlobCache.set(cacheKey, blob).catch(() => {});` (line 198), insert the crowd-source upload:
 
 ```ts
-  // Crowd-source: this device just rendered a pictograph nobody had cached.
-  // Upload it (as WebP) so the next scanner downloads instead of rendering.
-  // Fire-and-forget — never blocks the returned URL.
-  if (cloudHash && !pictographCloudCache.knows(cloudHash)) {
+  // Crowd-source: this device just rendered a pictograph the cloud didn't have
+  // (download() above returned null, i.e. confirmed miss). Upload it (as WebP)
+  // so the next scanner downloads instead of rendering. upload() dedups + never
+  // throws. Fire-and-forget — never blocks the returned URL.
+  if (cloudHash) {
     const hashForUpload = cloudHash;
     void pngBlobToWebp(blob)
       .then((webp) => pictographCloudCache.upload(hashForUpload, webp))
@@ -849,41 +857,15 @@ git commit -m "feat(render): cloud image tier in renderCell (download not raster
 
 ---
 
-### Task 1.5: Load the cell manifest early on the scan page
+### Task 1.5: DROPPED (no manifest in the direct-probe design)
 
-**Files:**
-- Modify: `src/routes/q/[code]/+page.svelte:422-441`
+The cloud cache read path is now **direct-probe** (a code-review correction — see the
+note under Task 1.3): `download()` attempts the deterministic URL and negative-caches
+misses per session, so there is no manifest to pre-load and no `knows()` gate. The
+scan page therefore needs no manifest-warm step. This task is intentionally removed.
 
-- [ ] **Step 1: Add the import**
-
-In `src/routes/q/[code]/+page.svelte` `<script>` imports:
-
-```ts
-import * as pictographCloudCache from "$lib/shared/render/services/pictograph-cloud-cache";
-```
-
-- [ ] **Step 2: Kick off the manifest load before the heavy resolve**
-
-Inside onMount, right after `setProgress(8); trickleTo(30);` (line 423-424), add:
-
-```ts
-      // Warm the cloud-cell knownExists set from the manifest in parallel with
-      // resolve, so by the time ChoreoCard renders cells we already know which
-      // pictographs can be downloaded (no per-cell 404 probing).
-      void pictographCloudCache.loadManifest();
-```
-
-- [ ] **Step 3: Verify**
-
-Run: `npm run check:fast`
-Expected: no new errors.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add src/routes/q/[code]/+page.svelte
-git commit -m "feat(scan): warm pictograph cloud-cell manifest on scan boot" -- src/routes/q/[code]/+page.svelte
-```
+(If a manifest-based probe-avoidance optimization is ever wanted at gallery scale, it
+would be a separate, additive task — it is NOT required for scan-card correctness.)
 
 ---
 
