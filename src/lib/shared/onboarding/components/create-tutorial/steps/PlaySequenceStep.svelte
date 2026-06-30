@@ -1,8 +1,8 @@
 <!--
   PlaySequenceStep - Step 3 of the create tutorial
 
-  Shows the real ChoreoCard built from the user's chosen start position + beats.
-  A big green play button triggers playback via AnimatorCanvas.
+  Shows the user's sequence in AnimatorCanvas, initialized paused. Tapping the
+  canvas toggles play/pause (minimal chrome: thin progress line, no transport).
   Tapping "Continue" advances to the final step.
 -->
 <script lang="ts">
@@ -10,7 +10,6 @@
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount, onDestroy } from "svelte";
-  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { createTutorialState } from "../../../state/create-tutorial-state.svelte";
   import {
@@ -19,7 +18,6 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   } from "$lib/shared/foundation/domain/models/sequence-data";
   import { pictographDataToStepData } from "$lib/shared/pictograph/shared/domain/utils/step-pictograph-conversion";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
-  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import {
     createAnimationPanelState,
@@ -33,8 +31,6 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
 
   const { onAdvance }: Props = $props();
 
-  const isDarkMode = $derived(getSettings().darkMode ?? false);
-
   // Haptic
   let hapticService: HapticFeedback | null = null;
   try {
@@ -44,7 +40,6 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   }
 
   // Playback state
-  let showAnimation = $state(false);
   let isPlaying = $state(false);
   let hasPlayed = $state(false);
   let currentStep = $state(0);
@@ -97,32 +92,12 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
 
   const currentLetter = $derived(currentStepData?.letter || null);
 
-  function handlePlay() {
+  // Tap the canvas to toggle play/pause (minimal chrome — no buttons, no scrubber).
+  function handleToggle() {
     hapticService?.trigger("selection");
-    if (!tutorialSequence || !playbackController) return;
-    showAnimation = true;
-    hasPlayed = true;
-
-    // Initialize and start playback
-    animationState.setShouldLoop(true);
-    const success = playbackController.initialize(
-      tutorialSequence,
-      animationState,
-    );
-    if (success) {
-      animationState.setSequenceData(tutorialSequence);
-      playbackController.togglePlayback();
-    }
-  }
-
-  function handleStop() {
-    hapticService?.trigger("selection");
-    if (playbackController && isPlaying) {
-      playbackController.stop();
-    }
-    showAnimation = false;
-    isPlaying = false;
-    currentStep = 0;
+    if (!playbackController) return;
+    playbackController.togglePlayback();
+    hasPlayed = true; // first tap unlocks Continue
   }
 
   onMount(() => {
@@ -142,6 +117,13 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
         }
       },
     );
+
+    // Load the sequence paused so the first canvas tap plays it.
+    if (playbackController && tutorialSequence) {
+      animationState.setShouldLoop(true);
+      playbackController.initialize(tutorialSequence, animationState);
+      animationState.setSequenceData(tutorialSequence);
+    }
   });
 
   onDestroy(() => {
@@ -155,21 +137,21 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   <div class="step-header">
     <h1 class="title">Your sequence</h1>
     <p class="subtitle">
-      {#if showAnimation}
-        Watch your sequence come to life.
+      {#if isPlaying}
+        Tap to pause.
       {:else}
-        Here's what you built. Hit play to see it animated.
+        Tap to play your sequence.
       {/if}
     </p>
   </div>
 
   <div class="viewer-container">
-    {#if showAnimation && tutorialSequence}
+    {#if tutorialSequence}
       <div class="animation-pane">
         <AnimatorCanvas
           sequenceData={animationState.sequenceData}
           currentStep={currentStep}
-          isPlaying={true}
+          isPlaying={isPlaying}
           blueProp={animationState.bluePropState}
           redProp={animationState.redPropState}
           gridMode={tutorialSequence.gridMode}
@@ -177,13 +159,9 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
           stepData={currentStepData}
           word={tutorialSequence.word}
           focused={true}
-        />
-      </div>
-    {:else if tutorialSequence}
-      <div class="card-pane">
-        <ChoreoCard
-          sequence={tutorialSequence}
-          darkMode={isDarkMode}
+          tapToToggle={true}
+          progressLine={true}
+          onPlaybackToggle={handleToggle}
         />
       </div>
     {:else}
@@ -192,16 +170,6 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   </div>
 
   <div class="button-row">
-    {#if showAnimation}
-      <button class="stop-button" onclick={handleStop}>
-        <i class="fas fa-stop" aria-hidden="true"></i> Back to card
-      </button>
-    {:else}
-      <button class="play-button" onclick={handlePlay} aria-label="Play sequence">
-        <i class="fas fa-play" aria-hidden="true"></i>
-      </button>
-    {/if}
-
     {#if hasPlayed}
       <button class="continue-button" onclick={onAdvance}>
         Continue <i class="fas fa-arrow-right" aria-hidden="true"></i>
@@ -248,7 +216,6 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
     position: relative;
   }
 
-  .card-pane,
   .animation-pane {
     width: 100%;
     height: 100%;
@@ -271,62 +238,6 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
     justify-content: center;
     gap: 16px;
     margin-top: 4px;
-  }
-
-  /* Big green play button */
-  .play-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 64px;
-    height: 64px;
-    background: linear-gradient(
-      135deg,
-      var(--semantic-success, #22c55e),
-      color-mix(in srgb, var(--semantic-success, #22c55e) 85%, #000)
-    );
-    border: none;
-    border-radius: 50%;
-    color: var(--theme-text, #fff);
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) var(--ease-out);
-    box-shadow: 0 4px 16px color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
-  }
-
-  .play-button:hover {
-    transform: scale(1.08);
-    box-shadow: 0 6px 24px color-mix(in srgb, var(--semantic-success, #22c55e) 50%, transparent);
-  }
-
-  .play-button:active {
-    transform: scale(0.95);
-  }
-
-  .play-button i {
-    /* Optical center - play icon needs slight right offset */
-    margin-left: 3px;
-  }
-
-  .stop-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 24px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    color: var(--theme-text, #fff);
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) var(--ease-out);
-  }
-
-  .stop-button:hover {
-    background: var(--theme-hover, rgba(255, 255, 255, 0.1));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
   .continue-button {
@@ -364,9 +275,7 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
     transform: scale(0.97);
   }
 
-  .continue-button:focus-visible,
-  .play-button:focus-visible,
-  .stop-button:focus-visible {
+  .continue-button:focus-visible {
     outline: 2px solid var(--theme-accent-strong, #8b5cf6);
     outline-offset: 2px;
   }
@@ -379,11 +288,6 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
     .title {
       font-size: 1.25rem;
     }
-    .play-button {
-      width: 56px;
-      height: 56px;
-      font-size: 1.3rem;
-    }
     .continue-button {
       padding: 12px 24px;
     }
@@ -391,13 +295,9 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
 
   @media (prefers-reduced-motion: reduce) {
     .tutorial-step,
-    .play-button,
-    .stop-button,
     .continue-button {
       transition: none;
     }
-    .play-button:hover,
-    .play-button:active,
     .continue-button:active {
       transform: none;
     }
