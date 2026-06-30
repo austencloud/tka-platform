@@ -36,6 +36,7 @@
   import { deriveCacheKey } from "../services/cell-cache-key-deriver";
   import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
   import { markScan, reportScanToStable } from "$lib/shared/analytics/scan-perf";
+  import { buildChoreoCardRenderKeys } from "$lib/shared/choreo-card/services/choreo-card-render-keys";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
@@ -687,9 +688,9 @@
 
       if (resolvedColumnCount !== null && resolvedColumnCount > 0) {
         // Manual or composition column override.
-        // resolvedColumnCount is the number of *beat* columns.
+        // resolvedColumnCount is the number of *step* columns.
         // Row layout: start sits in the top row, no extra column added.
-        // Column layout: start occupies its own column, so cols = beats + 1.
+        // Column layout: start occupies its own column, so cols = steps + 1.
         cols = includeStartPosition && spl === "column" ? resolvedColumnCount + 1 : resolvedColumnCount;
         if (includeStartPosition && spl === "row") {
           rws = 1 + Math.ceil(stepCount / cols);
@@ -722,9 +723,9 @@
       let computedDurationRows: TimelineRow[] = [];
       if (mixed) {
         // cols already accounts for start-column in column mode (subtract 1
-        // to get beat columns); in row mode start doesn't consume a column.
-        const beatsPerRow = includeStartPosition && spl === "column" ? cols - 1 : cols;
-        computedDurationRows = calculateTimelineRowsByBeatCount(sequence.steps, beatsPerRow);
+        // to get step columns); in row mode start doesn't consume a column.
+        const stepsPerRow = includeStartPosition && spl === "column" ? cols - 1 : cols;
+        computedDurationRows = calculateTimelineRowsByBeatCount(sequence.steps, stepsPerRow);
         // Row mode adds a top row for the start position.
         rws = computedDurationRows.length + (includeStartPosition && spl === "row" ? 1 : 0);
         durationRows = computedDurationRows;
@@ -1262,7 +1263,6 @@
   //   3. Everything else → full re-render
   $effect(() => {
     // Track all props that affect rendering by reading them (creates Svelte dependency)
-    const stepLetters = sequence?.steps?.map(s => s.letter ?? "?").join("") ?? "";
     const stepCount = sequence?.steps?.length ?? 0;
     const bpt = bluePropType;
     const rpt = redPropType;
@@ -1287,16 +1287,30 @@
 
     const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
 
-    // Image key: props that affect the actual pictograph images (NOT grid positions).
-    // Cell images are rendered at a fixed CELL_SIZE (240px) regardless of column
-    // count, so column changes only need relayoutCells() (instant grid repositioning).
-    const gv = `${stnd ? "1" : "0"}${selm ? "1" : "0"}${spos ? "1" : "0"}${sgrid ? "1" : "0"}`;
-    const imageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${snr}-${hpv}-${stka}-${sr}-${durationKey}-mv:${sbm ? "1" : "0"}${srm ? "1" : "0"}-gv:${gv}`;
-    // Layout key: props that only affect grid positions (column count, start position toggle).
-    const layoutKey = `${isp}-cols:${effCols}`;
-    // Full content key combines both
-    const contentKey = `${imageKey}-${layoutKey}`;
-    const renderKey = `${contentKey}-${dm}`;
+    // Build the render-trigger keys via the shared builder so this effect and
+    // onMount can never drift — that drift (showGrid missing from one copy's gv)
+    // fired a spurious post-mount "grid-stable-image" crossfade, the "blip out
+    // and in as a group" bug. gridStableKey is still derived just below.
+    const { imageKey, contentKey, renderKey } = buildChoreoCardRenderKeys({
+      sequence,
+      bluePropType: bpt,
+      redPropType: rpt,
+      catDogModeEnabled: cdm,
+      showStepNumbers: ssn,
+      showNonRadial: snr,
+      handPointVis: hpv,
+      showTKA: stka,
+      showReversals: sr,
+      showTnD: stnd,
+      showElemental: selm,
+      showPositions: spos,
+      showGrid: sgrid,
+      showBlueMotion: sbm,
+      showRedMotion: srm,
+      includeStartPosition: isp,
+      effectiveColumns: effCols,
+      darkMode: dm,
+    });
 
     if (!hasMounted) return;
     if (renderKey === lastEffectRenderKey) return;
@@ -1439,15 +1453,32 @@
   });
 
   onMount(() => {
-    // Initialize keys so the $effect can detect dark-mode-only and layout-only changes
-    const stepLetters = sequence?.steps?.map(s => s.letter ?? "?").join("") ?? "";
-    const stepCount = sequence?.steps?.length ?? 0;
-    const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
-    const initImageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}-mv:${showBlueMotion ? "1" : "0"}${showRedMotion ? "1" : "0"}-gv:${showTnD ? "1" : "0"}${showElemental ? "1" : "0"}${showPositions ? "1" : "0"}`;
-    const initContentKey = `${initImageKey}-${includeStartPosition}-cols:${effectiveColumns}`;
-    const initGridStableKey = `${stepCount}-${durationKey}-cols:${effectiveColumns}-isp:${includeStartPosition}`;
-    crossfader.updateKeys({ contentKey: initContentKey, imageKey: initImageKey, gridStableKey: initGridStableKey });
-    lastEffectRenderKey = `${initContentKey}-${darkMode}`;
+    // Initialize change-detection keys via the SAME builder the render $effect
+    // uses, so onMount and the effect agree on the very first comparison. (A
+    // mismatch here — onMount's gv omitted showGrid — fired a spurious
+    // "grid-stable-image" crossfade right after the first paint.)
+    const initKeys = buildChoreoCardRenderKeys({
+      sequence,
+      bluePropType,
+      redPropType,
+      catDogModeEnabled,
+      showStepNumbers,
+      showNonRadial,
+      handPointVis,
+      showTKA,
+      showReversals,
+      showTnD,
+      showElemental,
+      showPositions,
+      showGrid,
+      showBlueMotion,
+      showRedMotion,
+      includeStartPosition,
+      effectiveColumns,
+      darkMode,
+    });
+    crossfader.updateKeys({ contentKey: initKeys.contentKey, imageKey: initKeys.imageKey, gridStableKey: initKeys.gridStableKey });
+    lastEffectRenderKey = initKeys.renderKey;
 
     // Synchronous cache probe: if the global cache already has this exact render,
     // populate cells immediately so the first paint shows content instead of a
