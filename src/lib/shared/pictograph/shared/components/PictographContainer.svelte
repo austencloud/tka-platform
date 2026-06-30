@@ -99,6 +99,9 @@ with pre-prepared data for better performance.
     // instead of polling — PictographRenderer does all arrow/prop work synchronously
     // from prepared data, so once preparedData is committed the SVG content is present.
     onReady = undefined,
+    // Per-instance step-number override. undefined = follow the global toggle;
+    // true/false force it (the choreo sheet drives this from its own setting).
+    stepNumberOverride = undefined,
   } = $props<{
     pictographData?: (StepData | PictographData) | null;
     disableTransitions?: boolean;
@@ -142,6 +145,8 @@ with pre-prepared data for better performance.
     musicalPosition?: string;
     /** Fires once after the first prepared render commits to the DOM (deterministic export readiness signal). */
     onReady?: () => void;
+    /** Force step-number visibility on/off, overriding the global toggle. undefined = follow global. */
+    stepNumberOverride?: boolean;
   }>();
 
   // Extract beat context from StepData if available.
@@ -180,7 +185,7 @@ with pre-prepared data for better performance.
   // Step numbers honor the global visibility toggle (right-click → Step Numbers).
   // Start positions never show a number; 0/null already excluded downstream.
   const showStepNumber = $derived(
-    stepNumber !== null && !isStartPosition && syncedVisibility.stepNumbers
+    stepNumber !== null && !isStartPosition && (stepNumberOverride ?? syncedVisibility.stepNumbers)
   );
 
   function handleVisibilityChange() {

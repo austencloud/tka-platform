@@ -8,6 +8,8 @@
   import ActSheet from "./ActSheet.svelte";
   import MusicPlayer from "./MusicPlayer.svelte";
   import WriteToolbar from "./WriteToolbar.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import ChoreoSheetView from "./sheet/ChoreoSheetView.svelte";
 
   import {
     createDefaultMusicPlayerState,
@@ -26,6 +28,21 @@
   let musicPlayerState = $state<MusicPlayerState>(
     createDefaultMusicPlayerState()
   );
+
+  // Act (performance playlist) vs Sheet (printable choreo roster) mode.
+  let writeMode = $state<"act" | "sheet">("act");
+  let sheetSeed = $state<ActData | null>(null);
+  const modeOptions: { value: "act" | "sheet"; label: string }[] = [
+    { value: "act", label: "Act" },
+    { value: "sheet", label: "Sheet" },
+  ];
+
+  // Hand the current Act's roster to the sheet builder, then switch to Sheet mode.
+  function handleSendToSheet() {
+    if (!currentAct) return;
+    sheetSeed = currentAct;
+    writeMode = "sheet";
+  }
 
   // Services
   let hapticService: HapticFeedback;
@@ -207,15 +224,36 @@
 <div class="write-tab">
   <!-- Toolbar -->
   <div class="toolbar-section">
-    <WriteToolbar
-      {hasUnsavedChanges}
-      disabled={isLoading}
-      onNewActRequested={handleNewActRequested}
-      onSaveRequested={handleSaveRequested}
-      onSaveAsRequested={handleSaveAsRequested}
-    />
+    <div class="mode-switch">
+      <SegmentedControl
+        options={modeOptions}
+        value={writeMode}
+        onchange={(v) => (writeMode = v)}
+        color="accent"
+        size="sm"
+      />
+    </div>
+    {#if writeMode === "act"}
+      <WriteToolbar
+        {hasUnsavedChanges}
+        disabled={isLoading}
+        onNewActRequested={handleNewActRequested}
+        onSaveRequested={handleSaveRequested}
+        onSaveAsRequested={handleSaveAsRequested}
+      />
+      <button
+        type="button"
+        class="send-to-sheet"
+        onclick={handleSendToSheet}
+        disabled={!currentAct || currentAct.sequences.length === 0}
+      >
+        <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
+        Send to Sheet
+      </button>
+    {/if}
   </div>
 
+  {#if writeMode === "act"}
   <!-- Main content area with horizontal layout -->
   <div class="main-content">
     <!-- Act Browser -->
@@ -272,6 +310,11 @@
       </div>
     </div>
   </div>
+  {:else}
+    <div class="sheet-mode-content">
+      <ChoreoSheetView seedAct={sheetSeed ?? undefined} />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -287,6 +330,42 @@
   .toolbar-section {
     flex-shrink: 0;
     padding: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+  }
+
+  .mode-switch {
+    width: 180px;
+    flex-shrink: 0;
+  }
+
+  .send-to-sheet {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 var(--spacing-md);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 8px;
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .send-to-sheet:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .sheet-mode-content {
+    flex: 1;
+    min-height: 0;
+    padding: 0 var(--spacing-sm) var(--spacing-sm);
+    overflow: hidden;
   }
 
   .main-content {
