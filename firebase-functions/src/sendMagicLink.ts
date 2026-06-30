@@ -2,7 +2,7 @@
  * Send Magic Link Cloud Function
  *
  * Generates a Firebase Auth magic link via Admin SDK,
- * then sends a branded email via Resend using your custom domain.
+ * then sends a branded email via Brevo using your custom domain.
  */
 
 import * as functions from "firebase-functions";
@@ -10,8 +10,8 @@ import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
 
-// Resend API endpoint
-const RESEND_API_URL = "https://api.resend.com/emails";
+// Brevo transactional email API endpoint
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
 // Load HTML template at cold start (efficient)
 const templatePath = path.join(__dirname, "templates", "magic-link.html");
@@ -69,10 +69,10 @@ export const sendMagicLink = functions.https.onCall(
       );
     }
 
-    // Get Resend API key from environment variables
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (!resendApiKey) {
-      console.error("Resend API key not configured");
+    // Get Brevo API key from environment variables
+    const brevoApiKey = process.env.BREVO_API_KEY;
+    if (!brevoApiKey) {
+      console.error("Brevo API key not configured");
       throw new functions.https.HttpsError(
         "failed-precondition",
         "Email service not configured"
@@ -80,8 +80,8 @@ export const sendMagicLink = functions.https.onCall(
     }
 
     // Get sender email from environment (with fallback)
-    const senderEmail = process.env.RESEND_SENDER_EMAIL || "noreply@tkaflowarts.com";
-    const senderName = process.env.RESEND_SENDER_NAME || "TKA Composer";
+    const senderEmail = process.env.BREVO_SENDER_EMAIL || "noreply@tkaflowarts.com";
+    const senderName = process.env.BREVO_SENDER_NAME || "TKA Composer";
 
     try {
       // Generate the magic link using Firebase Admin SDK
@@ -108,25 +108,26 @@ Didn't request this? Just ignore it.
 - TKA Composer
 https://tkaflowarts.com`;
 
-      // Send via Resend API
-      const response = await fetch(RESEND_API_URL, {
+      // Send via Brevo transactional email API
+      const response = await fetch(BREVO_API_URL, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${resendApiKey}`,
+          "api-key": brevoApiKey,
           "Content-Type": "application/json",
+          accept: "application/json",
         },
         body: JSON.stringify({
-          from: `${senderName} <${senderEmail}>`,
-          to: [email],
+          sender: { name: senderName, email: senderEmail },
+          to: [{ email }],
           subject: "Sign in to TKA Composer",
-          html: htmlContent,
-          text: textContent,
+          htmlContent,
+          textContent,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Resend API error:", errorData);
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Brevo API error:", errorData);
         throw new functions.https.HttpsError(
           "internal",
           "Failed to send email"
@@ -134,7 +135,7 @@ https://tkaflowarts.com`;
       }
 
       const result = await response.json();
-      console.log(`Magic link email sent to ${email}, Resend ID: ${result.id}`);
+      console.log(`Magic link email sent to ${email}, Brevo messageId: ${result.messageId}`);
 
       return {
         success: true,

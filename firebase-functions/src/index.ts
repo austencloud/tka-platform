@@ -2,7 +2,7 @@
  * Firebase Cloud Functions for TKA Composer
  *
  * Handles subscription-related background tasks like role sync,
- * custom email delivery via Resend, and feedback claim management.
+ * custom email delivery via Brevo, and feedback claim management.
  */
 
 import * as functions from "firebase-functions";

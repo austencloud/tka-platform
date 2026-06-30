@@ -294,6 +294,31 @@ export async function initializeAuthListener(): Promise<void> {
 
   await authReady;
 
+  // Complete a pending magic-link sign-in BEFORE wiring the main listener, so
+  // its first fire reflects the signed-in (or anon→linked) user. The magic
+  // link lands deep in the app (e.g. /create), where the EmailLinkAuth form
+  // isn't mounted — this is the global completion that runs on every route.
+  try {
+    const { completeEmailLinkSignIn } = await import(
+      "../services/email-link-completion"
+    );
+    const result = await completeEmailLinkSignIn();
+    if (result.completed) {
+      void import("$lib/shared/toast/state/toast-state.svelte").then(
+        ({ toast }) => toast.success("Signed in! Welcome.")
+      );
+    } else if (result.errorCode && result.errorCode !== "auth/missing-email") {
+      void import("$lib/shared/toast/state/toast-state.svelte").then(
+        ({ toast }) =>
+          toast.error(
+            "That sign-in link is invalid or expired. Request a new one."
+          )
+      );
+    }
+  } catch (error) {
+    console.warn("⚠️ [authState] Magic-link completion failed:", error);
+  }
+
   const { isDesktop } = await import("$lib/shared/desktop/is-desktop");
   const isDesktopEnv = isDesktop();
 

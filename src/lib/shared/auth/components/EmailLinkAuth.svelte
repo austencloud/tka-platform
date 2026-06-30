@@ -2,19 +2,16 @@
   /**
    * Passwordless Email Link Authentication
    *
-   * Sends a branded magic link via Cloud Function + Resend,
-   * then completes sign-in using Firebase Auth.
+   * Sends a branded magic link via Cloud Function + Brevo, then completes
+   * sign-in using Firebase Auth. Completion is delegated to the shared
+   * email-link-completion service (the app bootstrap calls the same service so
+   * a link landing on any route completes); this onMount is the fallback for
+   * when the form itself is shown with a magic link in the URL.
    */
 
-  import {
-    isSignInWithEmailLink,
-    signInWithEmailLink,
-    browserLocalPersistence,
-    indexedDBLocalPersistence,
-    setPersistence,
-  } from "firebase/auth";
   import { httpsCallable } from "firebase/functions";
-  import { auth, getFunctionsInstance } from "../firebase";
+  import { getFunctionsInstance } from "../firebase";
+  import { completeEmailLinkSignIn } from "../services/email-link-completion";
   import { onMount } from "svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
@@ -25,11 +22,27 @@
   let error = $state<string | null>(null);
   let success = $state<string | null>(null);
 
-  // Check if we're completing a sign-in from an email link
+  // Fallback completion path: if the form is mounted with a magic link in the
+  // URL (the app bootstrap normally completes it first on any route), finish
+  // sign-in via the shared service and surface any error in this form.
   onMount(async () => {
     try {
-      if (isSignInWithEmailLink(auth, window.location.href)) {
-        await completeSignIn();
+      const result = await completeEmailLinkSignIn();
+      if (!result.completed && result.errorCode) {
+        if (
+          result.errorCode === "auth/invalid-action-code" ||
+          result.errorCode === "auth/expired-action-code"
+        ) {
+          error =
+            "This link is invalid or has expired. Please request a new one.";
+          toast.error("This link is invalid or expired. Request a new one.");
+        } else if (result.errorCode === "auth/invalid-email") {
+          error = "Invalid email address.";
+          toast.error("Invalid email address.");
+        } else if (result.errorCode !== "auth/missing-email") {
+          error = result.errorMessage || "Failed to sign in. Please try again.";
+          toast.error("Sign-in failed. Please try again.");
+        }
       }
     } catch (err) {
       console.error(
@@ -87,108 +100,6 @@
       }
     } finally {
       loading = false;
-    }
-  }
-
-  async function completeSignIn() {
-    try {
-      // Set persistence before sign-in
-      try {
-        await setPersistence(auth, indexedDBLocalPersistence);
-      } catch (indexedDBErr) {
-        await setPersistence(auth, browserLocalPersistence);
-      }
-
-      // Get the email from localStorage
-      let savedEmail = window.localStorage.getItem("emailForSignIn");
-
-      if (!savedEmail) {
-        // User opened the link on a different device
-        // Ask for email to prevent session fixation attacks
-        savedEmail = window.prompt(
-          "Please enter your email address to confirm:"
-        );
-      }
-
-      if (!savedEmail) {
-        error = "Email address is required to complete sign-in.";
-        return;
-      }
-
-      // Sign in with the email link. If an anonymous session survived the
-      // round-trip, LINK the email credential onto the anon user in place
-      // (preserving its uid + data) instead of minting a fresh account.
-      const link = window.location.href;
-      if (auth.currentUser?.isAnonymous) {
-        const { EmailAuthProvider, linkWithCredential } = await import(
-          "firebase/auth"
-        );
-        const anonUid = auth.currentUser.uid;
-        const credential = EmailAuthProvider.credentialWithLink(
-          savedEmail,
-          link
-        );
-        try {
-          await linkWithCredential(auth.currentUser, credential);
-          // Guest just upgraded to a full account — fire the admin signup
-          // notification (createOrUpdateUserDocument skips it for anon users,
-          // and the linked uid's doc already exists so it won't re-fire there).
-          const { notifyUpgradeSignup } = await import(
-            "$lib/shared/auth/services/anonymous-upgrade"
-          );
-          void notifyUpgradeSignup();
-        } catch (linkErr) {
-          const code = (linkErr as { code?: string })?.code;
-          if (
-            code === "auth/credential-already-in-use" ||
-            code === "auth/email-already-in-use"
-          ) {
-            // Email already belongs to a permanent account: sign into it and
-            // offer to import the anon's drafts.
-            const { upgradeMagicLinkCollision } = await import(
-              "$lib/shared/auth/services/anonymous-upgrade"
-            );
-            const { promptAnonymousImport } = await import(
-              "$lib/shared/auth/state/anonymous-import-prompt.svelte"
-            );
-            const drafts = await upgradeMagicLinkCollision(
-              anonUid,
-              savedEmail,
-              link
-            );
-            promptAnonymousImport(drafts);
-          } else {
-            throw linkErr;
-          }
-        }
-      } else {
-        await signInWithEmailLink(auth, savedEmail, link);
-      }
-
-      // Clear the email from storage
-      window.localStorage.removeItem("emailForSignIn");
-
-      // The magic link's continueUrl already landed the user inside the app
-      // (e.g. /create). No extra navigation needed - sending them to "/" would
-      // bounce them back to the marketing landing page.
-    } catch (err: any) {
-      console.error(`❌ [email-link] Sign-in error:`, err);
-      console.error(`❌ [email-link] Error code:`, err.code);
-
-      if (err.code === "auth/invalid-email") {
-        error = "Invalid email address.";
-        toast.error("Invalid email address.");
-      } else if (err.code === "auth/invalid-action-code") {
-        error =
-          "This link is invalid or has expired. Please request a new one.";
-        toast.error("This link is invalid or expired. Request a new one.");
-      } else if (err.code === "auth/expired-action-code") {
-        error = "This link has expired. Please request a new one.";
-        toast.error("This link has expired. Please request a new one.");
-      } else {
-        error = err.message || "Failed to sign in. Please try again.";
-        toast.error("Sign-in failed. Please try again.");
-      }
     }
   }
 
