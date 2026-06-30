@@ -104,6 +104,7 @@ Last audit: 2025-12-27
     tapToToggle = false,
     progressLine = false,
     hoverHint = "none",
+    cornerToggle = false,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -195,6 +196,11 @@ Last audit: 2025-12-27
      *  - "scrim": faint hover vignette, no icon.
      *  - "none":  no hint (default). */
     hoverHint?: "none" | "badge" | "pill" | "scrim";
+    /** Persistent play/pause button pinned to the canvas's upper-right corner.
+     *  A real <button> (works on mouse AND touch), anchored inside the square
+     *  canvas via CanvasSurface's cornerControl slot. Pairs with onPlaybackToggle.
+     *  Off by default. */
+    cornerToggle?: boolean;
   } = $props();
 
   const resolvedContextId = contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
@@ -323,6 +329,13 @@ Last audit: 2025-12-27
     }
   }
 
+  // Corner button: a real <button>, so the body pointer handler skips it
+  // (target.closest('button') early-returns) — no double toggle, no flash.
+  function handleCornerToggle() {
+    getHapticFeedback().impact("light");
+    onPlaybackToggle();
+  }
+
   function showTapFeedback(willPlay: boolean) {
     getHapticFeedback().impact("light");
     tapFeedback = { icon: willPlay ? "play" : "pause", key: ++tapFeedbackSeq };
@@ -443,6 +456,21 @@ Last audit: 2025-12-27
   }
 </script>
 
+{#snippet cornerToggleControl()}
+  <button
+    type="button"
+    class="corner-toggle"
+    aria-label={isPlaying ? "Pause" : "Play"}
+    onclick={handleCornerToggle}
+  >
+    <span class="corner-disc">
+      <Crossfade key={isPlaying} duration={DURATION.fast}>
+        <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+      </Crossfade>
+    </span>
+  </button>
+{/snippet}
+
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="animation-container"
@@ -451,6 +479,7 @@ Last audit: 2025-12-27
   data-no-progress={hideProgressBar || undefined}
   data-hide-header={hideHeader || undefined}
   data-hover-hint={hoverHint !== "none" ? hoverHint : undefined}
+  data-tap-toggle={tapToToggle || undefined}
   data-view={viewState}
   oncontextmenu={handleContextMenu}
   onpointerdown={handlePointerDown}
@@ -514,6 +543,7 @@ Last audit: 2025-12-27
       {onCanvasReady}
       onInitialized={onInitializedCallback}
       {onEffectError}
+      cornerControl={cornerToggle ? cornerToggleControl : undefined}
     />
 
     <!-- Split canvases: blue-only and red-only, expand below hero during disassemble.
@@ -669,13 +699,28 @@ Last audit: 2025-12-27
   /* ── Hover affordance (mouse only) ──────────────────────────────────
      Teaches "click the canvas to play/pause" for pointer devices. Hidden
      entirely on touch (no hover) where the tap-flash already covers
-     discovery. pointer-events:none so it never blocks the toggle tap. */
+     discovery. pointer-events:none so it never blocks the toggle tap.
+
+     CRITICAL: the markup is always in the DOM (gated only by the hoverHint
+     prop), so ALL of its layout/visuals must default to display:none here.
+     Without this, any non-hover context — touch devices AND Chrome's
+     responsive/device-emulation mode — drops the styled overlay and the raw
+     icon/word leak into normal flow beside the canvas. Only the hover-capable
+     media query below turns it back on. */
+  .hover-hint {
+    display: none;
+  }
+
   @media (hover: hover) and (pointer: fine) {
-    .animation-container[data-hover-hint] {
+    /* Tap-to-toggle (with or without a hover hint) reads as clickable on a
+       mouse, so show the pointer cursor over the canvas. */
+    .animation-container[data-hover-hint],
+    .animation-container[data-tap-toggle] {
       cursor: pointer;
     }
 
     .hover-hint {
+      display: block;
       position: absolute;
       inset: 0;
       pointer-events: none;
@@ -780,6 +825,83 @@ Last audit: 2025-12-27
     .hover-hint,
     .hint-stack,
     .hint-pill {
+      transition: none;
+    }
+  }
+
+  /* ── Corner play/pause toggle ──────────────────────────────────────
+     A real <button> pinned to the canvas square's top-right (rendered inside
+     CanvasSurface's position:relative .canvas-wrapper via the cornerControl
+     slot). Visible on every device — mouse AND touch — unlike the hover hint;
+     the body tap-to-toggle still works as a bonus. cqmin sizes it to the
+     canvas. The header's loop badge lives in a separate strip above, so this
+     corner is free. */
+  .corner-toggle {
+    position: absolute;
+    top: clamp(4px, 2cqmin, 10px);
+    right: clamp(4px, 2cqmin, 10px);
+    z-index: 7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px; /* touch-target floor (design system) */
+    min-height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .corner-disc {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(30px, 8.5cqmin, 46px);
+    height: clamp(30px, 8.5cqmin, 46px);
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    color: rgba(255, 255, 255, 0.96);
+    font-size: clamp(13px, 3.6cqmin, 20px);
+    opacity: 0.9;
+    transition:
+      opacity 140ms ease,
+      transform 140ms ease,
+      box-shadow 140ms ease;
+  }
+
+  .corner-toggle:hover .corner-disc,
+  .corner-toggle:focus-visible .corner-disc {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+
+  .corner-toggle:active .corner-disc {
+    transform: scale(0.94);
+  }
+
+  .corner-toggle:focus-visible {
+    outline: none;
+  }
+
+  .corner-toggle:focus-visible .corner-disc {
+    box-shadow:
+      0 0 0 2px var(--theme-accent, #6366f1),
+      0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Optical centering: the play triangle reads right-heavy in a circle. */
+  .corner-disc i.fa-play {
+    transform: translateX(1px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .corner-disc {
       transition: none;
     }
   }
