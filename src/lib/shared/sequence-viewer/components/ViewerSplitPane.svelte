@@ -22,7 +22,7 @@
   import VideoGallery from './VideoGallery.svelte';
   import ArtPane from './ArtPane.svelte';
   import PracticeLanePane from "./PracticeLanePane.svelte";
-  import PracticeSetupPane from "./PracticeSetupPane.svelte";
+  import PracticeCountInOverlay from "./PracticeCountInOverlay.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
@@ -150,12 +150,8 @@
     practiceCanvasFraction?: number;
     /** True while the ramp is actually running (vs. the setup screen). */
     practiceRunning?: boolean;
-    /** Ramp config shown on the setup screen. */
-    practiceConfig?: Partial<import("../services/tempo-practice-orchestrator").TempoPracticeConfig>;
-    /** Live ramp-config change from the setup screen. */
-    onPracticeSetConfig?: (patch: Partial<import("../services/tempo-practice-orchestrator").TempoPracticeConfig>) => void;
-    /** Start the ramp (setup screen Start button). */
-    onPracticeStart?: () => void;
+    /** Count-in value over the canvas: 3/2/1 while counting in, 0 = hidden. */
+    practiceCountdown?: number;
   }
 
   let {
@@ -189,10 +185,40 @@
     practiceCellSize = 72,
     practiceCanvasFraction = 0.38,
     practiceRunning = false,
-    practiceConfig = {},
-    onPracticeSetConfig = () => {},
-    onPracticeStart = () => {},
+    practiceCountdown = 0,
   }: Props = $props();
+
+
+  // The canvas glide on practice enter/exit is owned by CSS, not JS: the drawer
+  // host animates the content rail's `max-width` collapse over --ws-dur, so the
+  // split-view (and the canvas column inside it) grows smoothly into the freed
+  // space. A composited layout transition reads as one continuous motion — no
+  // FLIP needed. (A JS re-measuring FLIP lived here; it fought the layout instead
+  // of removing the snap and is gone.)
+  //
+  // The glide resizes the canvas continuously for --ws-dur. Left live, the 2D
+  // engine's ResizeObserver would re-rasterize the canvas every frame (clearing +
+  // redrawing the buffer) — the same cost the disassemble transition avoids. So
+  // pause the engine's resize for the duration of the toggle: the canvas
+  // CSS-scales its existing buffer on the compositor (60fps), then re-rasterizes
+  // ONCE at the settled size when we resume. Mirrors AnimatorCanvas's own
+  // pauseResize/resumeResize around the disassemble width transition.
+  let _practiceResizePaused = $state(false);
+  let _prevPracticeActive = practiceActive;
+  let _resizeResumeTimer: ReturnType<typeof setTimeout> | undefined;
+  $effect(() => {
+    const active = practiceActive;
+    if (active === _prevPracticeActive) return; // skip initial mount; only react to toggles
+    _prevPracticeActive = active;
+    const reduce =
+      typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return; // reduced motion snaps instantly → single resize, nothing to pause
+    _practiceResizePaused = true;
+    clearTimeout(_resizeResumeTimer);
+    // --ws-dur (300ms) + a frame of slack so resume lands after the layout settles.
+    _resizeResumeTimer = setTimeout(() => (_practiceResizePaused = false), 340);
+  });
+  $effect(() => () => clearTimeout(_resizeResumeTimer));
 
   // Three.js / Threlte is multi-MB. The 3D canvas + performer hub are only
   // imported once a 3D pane is actually activated, so any chunk that touches
@@ -544,6 +570,7 @@
               hideProgressBar={showMobileTransport}
               hideHeader={showMobileTransport}
               tapToToggle={showMobileTransport}
+              resizePaused={_practiceResizePaused}
             />
           </div>
         {/if}
@@ -638,6 +665,8 @@
         />
       </div>
     {/if}
+
+    <PracticeCountInOverlay count={practiceCountdown} />
   </div>
 
   <!-- Image/Preview pane -->
@@ -648,25 +677,6 @@
   >
 
     <div class="preview-column-inner" class:focused={layout.focusedPane === "image"}>
-      {#if practiceActive}
-        {#if practiceRunning}
-          <PracticeLanePane
-            sequence={playback.animationState.sequenceData}
-            currentStep={playback.currentStep}
-            {bpm}
-            cellSize={practiceCellSize}
-            bluePropType={propRendering.bluePropType}
-            redPropType={propRendering.redPropType}
-            onSeek={onProgressBarSeek ?? null}
-          />
-        {:else}
-          <PracticeSetupPane
-            config={practiceConfig}
-            onSetConfig={onPracticeSetConfig}
-            onStart={onPracticeStart}
-          />
-        {/if}
-      {:else}
       {#if _2dRightMounted}
         <div
           class="media-pane animation-pane persistent-2d"
@@ -695,6 +705,7 @@
               focused={false}
               suppress2DOverlays={false}
               hideProgressBar={true}
+              resizePaused={_practiceResizePaused}
             />
           </div>
         </div>
@@ -813,6 +824,31 @@
           />
         </div>
       {/if}
+
+      <!-- Practice deck OVERLAYS the persistent companion panes (card / 2D /
+           mandala / etc.) instead of replacing them. Entering practice used to
+           sit inside `{:else}` of these panes, which UNMOUNTED the ChoreoCard —
+           exiting then rebuilt it from scratch, flashing every pictograph back
+           to a loading spinner. As an opaque overlay it keeps them mounted: the
+           card stays rendered behind it and is revealed intact as the deck
+           slides out on exit (no re-render). -->
+      {#if practiceActive}
+        <!-- Read-ahead lane: parked off-screen right during SETUP so the
+             side-by-side choreo card shows through (you preview the sequence while
+             configuring). It slides in to cover the card only once the ramp starts.
+             Stays mounted across setup↔running so the strip never re-renders or
+             flickers on Start. -->
+        <div class="practice-deck lane" class:lane-in={practiceRunning}>
+          <PracticeLanePane
+            sequence={playback.animationState.sequenceData}
+            currentStep={playback.currentStep}
+            {bpm}
+            cellSize={practiceCellSize}
+            bluePropType={propRendering.bluePropType}
+            redPropType={propRendering.redPropType}
+            onSeek={onProgressBarSeek ?? null}
+          />
+        </div>
       {/if}
     </div>
   </div>
@@ -981,8 +1017,41 @@
     width: 100%;
     height: 100%;
     min-height: 0;
+    /* Positioning context for the practice deck (absolute, slides over the
+       normal companion content during enter/exit). */
+    position: relative;
   }
 
+  /* Practice deck — the read-ahead lane, mounted on practice enter and parked
+     off-screen right (translateX 100%). Slides in on Start (.lane-in) and back
+     out on exit, while the still-mounted card / 2D / art sit hidden behind it.
+     overflow:hidden clips the lane's own content. */
+  .practice-deck {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    /* Above the persistent companion panes (content-overlay is z-index 3) so the
+       still-mounted card/2D/art sit hidden behind it during practice and are
+       revealed intact as the deck slides out on exit. FULLY opaque: the theme
+       panel bg is ~75% alpha, so layer it over a solid base or the card ghosts
+       through. */
+    z-index: 4;
+    background-color: var(--theme-bg-deep, #0a0a14);
+    background-image: linear-gradient(
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98)),
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98))
+    );
+    /* Parked off-screen right during setup (card shows through); slides in on Start. */
+    transform: translateX(100%);
+    transition: transform var(--ws-dur, 300ms) var(--ws-ease, cubic-bezier(0.2, 0, 0, 1));
+    will-change: transform;
+  }
+  .practice-deck.lane-in {
+    transform: translateX(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .practice-deck { transition: none; }
+  }
   .media-pane {
     flex: 1;
     min-height: 0;
@@ -1258,22 +1327,15 @@
      sets the split. Wins over the generic desktop 50/50 rule on specificity
      (.split-view.practice = two classes) + later source order.
      ======================================== */
-  /* Registered so it's animatable — a plain custom property can't transition,
-     which is why the canvas snapped on Start. */
-  @property --canvas-frac {
-    syntax: "<number>";
-    inherits: false;
-    initial-value: 0.5;
-  }
-
   .split-view.practice {
     grid-template-columns: 1fr;
     grid-template-rows: minmax(0, 1fr) auto;
-    /* Slide the canvas/companion split on Start/Stop instead of snapping. Timed
-       to the cockpit bar's rise (--ws-dur 300ms / --ws-ease) so the canvas glide
-       and the bar slide read as one choreographed motion. Reduced-motion kills
-       it via the !important rule below. */
-    transition: --canvas-frac 300ms cubic-bezier(0.2, 0, 0, 1);
+    /* No --canvas-frac transition. Animating the grid column re-lays-out + re-renders
+       the live animator canvas every frame (the ResizeObserver cascade documented on
+       .split-view above — measured at ~11fps). The fraction is constant across setup
+       and running, so the canvas resizes exactly ONCE on enter/exit; Start/Stop never
+       touch it. The visible Start/Stop motion is the companion deck + cockpit bar,
+       both composited transforms. */
   }
 
   @media (min-width: 768px) {

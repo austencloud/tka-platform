@@ -38,7 +38,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import VideoPanel from "./video-panel/VideoPanel.svelte";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
-  import PracticeConfigPopover from "./PracticeConfigPopover.svelte";
   import {
     openSendSequenceSheet,
     buildSequenceSharePayload,
@@ -339,8 +338,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
             isSaved={ctx.isSaved}
             onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
             onRemix={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
-            practiceActive={ctx.practiceActive}
-            onPracticeToggle={isMobileWidth ? () => (ctx.practiceActive ? ctx.exitPracticeMode() : ctx.enterPracticeMode()) : undefined}
             onCopyData={authState.isAdmin ? handleCopyForClaude : undefined}
             copyDataFeedback={copyClaudeFeedback}
             onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
@@ -378,6 +375,15 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 
                   <div class="left-actions-layer normal" class:active={!ctx.practiceActive} inert={ctx.practiceActive}>
                     {#if isMobileWidth}
+                      <button
+                        type="button"
+                        class="header-action-btn practice"
+                        onclick={() => ctx.enterPracticeMode()}
+                        aria-label="Practice"
+                      >
+                        <i class="fas fa-signal" aria-hidden="true"></i>
+                        <span>Practice</span>
+                      </button>
                       {@render overflowMenu(true)}
                     {:else}
                       <button
@@ -413,17 +419,12 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       <button
                         type="button"
                         class="header-action-btn practice"
-                        class:practice-active={ctx.practiceActive}
-                        onclick={() => ctx.practiceActive ? ctx.exitPracticeMode() : ctx.enterPracticeMode()}
-                        aria-label={ctx.practiceActive ? "Stop practice" : "Practice"}
-                        aria-pressed={ctx.practiceActive}
+                        onclick={() => ctx.enterPracticeMode()}
+                        aria-label="Practice"
                       >
-                        <i class="fas {ctx.practiceActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
+                        <i class="fas fa-signal" aria-hidden="true"></i>
+                        <span>Practice</span>
                       </button>
-                      <PracticeConfigPopover
-                        config={ctx.practiceState.userConfig}
-                        onUpdate={ctx.handlePracticeSetConfig}
-                      />
 
                       <span class="header-action-divider"></span>
 
@@ -574,6 +575,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       onArtExport={ctx.handleArtExport}
                       practiceActive={ctx.practiceActive}
                       practiceRunning={ctx.practiceRunning}
+                      practiceCountdown={ctx.practiceCountdown}
                       practiceCellSize={ctx.practiceViewPrefs.cellSize}
                       practiceCanvasFraction={0.5}
                     />
@@ -888,12 +890,20 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     color: var(--semantic-warning, #f59e0b);
   }
 
-  .header-action-btn.practice-active {
-    color: var(--semantic-error, #f87171);
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+  /* Practice entry — labeled accent CTA. Tinted accent fill (no border, like
+     .practice-exit) so it stands out from the utility icon buttons. */
+  .header-action-btn.practice {
+    gap: 8px;
+    padding: 0 16px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: var(--theme-accent, #a78bfa);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 18%, transparent);
   }
-
+  .header-action-btn.practice:hover {
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
+    color: #fff;
+  }
 
   .header-action-btn.practice-exit {
     gap: 8px;

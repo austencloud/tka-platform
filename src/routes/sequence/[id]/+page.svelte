@@ -660,6 +660,7 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
                 onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
                 practiceActive={ctx.practiceActive}
                 practiceRunning={ctx.practiceRunning}
+                practiceCountdown={ctx.practiceCountdown}
                 practiceCellSize={ctx.practiceViewPrefs.cellSize}
                 practiceCanvasFraction={0.5}
               />

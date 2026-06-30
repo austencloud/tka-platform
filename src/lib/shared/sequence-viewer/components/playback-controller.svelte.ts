@@ -40,6 +40,14 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
   // `practiceActive` = in-mode (setup|running); `practiceRunning` = ramp active.
   let practicePhase = $state<"off" | "setup" | "running">("off");
 
+  // 3·2·1 count-in before a practice ramp starts. practiceCountdown drives the
+  // overlay (3/2/1 while counting, 0 = idle/hidden); _countInActive guards
+  // re-entry + marks the pre-roll window; _countInTimer is the fixed ticker.
+  let practiceCountdown = $state(0);
+  let _countInActive = false;
+  let _countInTimer: ReturnType<typeof setTimeout> | null = null;
+  const COUNT_IN_MS = 700;
+
   // External dependencies (set by orchestrator after service load)
   let _playbackController: AnimationPlaybackController | null = null;
   let _hapticService: HapticFeedback | null = null;
@@ -206,38 +214,56 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
       return;
     }
 
+    // Re-entrancy guard (synchronous): a double-tap (common on mobile) would
+    // otherwise spawn two count-ins whose GO toggles cancel out, leaving
+    // practicePhase "running" but playback paused. Everything below is async.
+    if (_countInActive || practicePhase === "running") return;
+    _countInActive = true;
+
     _hapticService?.trigger("selection");
-    // Start is a user gesture; unlock audio now so the first beat clicks.
+    // Start is a user gesture; unlock audio now so the count-in ticks — which
+    // fire on later, non-gesture timer turns — can play.
     if (_practiceViewPrefs?.metronomeEnabled) ensureMetronome();
     practiceState.clearCompletion();
 
     const startBpm = practiceOrchestrator.start(practiceState.userConfig);
     practiceState.updateProgress(practiceOrchestrator.getProgress());
+    handleBpmChange(startBpm); // ramp speed for AFTER the count-in (not playing yet)
 
-    handleBpmChange(startBpm);
+    // Park at the start pose, paused, for the count-in. jumpToStep(0) stops the
+    // loop, pauses (isPlayingLocal → false), and lands at exactly 0 — a bare
+    // seekToStep would preserve a prior scrub's fraction and start mid-beat.
+    _playbackController.jumpToStep(0);
 
-    _playbackController.onLoopComplete(() => {
-      // Returns a new BPM on a speed-up loop (every X loops), else null while the
-      // step is still accumulating its reps.
-      const newBpm = practiceOrchestrator.onLoopComplete();
-      practiceState.updateProgress(practiceOrchestrator.getProgress());
+    // Show the cockpit now (also reinforces the re-entrancy guard). isPlayingLocal
+    // stays false through the count-in, so the beat-boundary metronome stays silent.
+    practicePhase = "running";
 
-      if (newBpm !== null) {
-        handleBpmChange(newBpm);
-        _hapticService?.trigger("selection");
-      }
+    // Fixed-tempo 3·2·1 count-in, then GO arms looping and starts the ramp.
+    runCountIn(() => {
+      if (!_playbackController) return;
+      // Arm looping BEFORE play so the very first loop wraps (and is counted).
+      _playbackController.onLoopComplete(() => {
+        // Returns a new BPM on a speed-up loop (every X loops), else null while the
+        // step is still accumulating its reps.
+        const newBpm = practiceOrchestrator.onLoopComplete();
+        practiceState.updateProgress(practiceOrchestrator.getProgress());
 
-      if (!practiceOrchestrator.isActive()) {
-        handlePracticeStop();
+        if (newBpm !== null) {
+          handleBpmChange(newBpm);
+          _hapticService?.trigger("selection");
+        }
+
+        if (!practiceOrchestrator.isActive()) {
+          handlePracticeStop();
+        }
+      });
+
+      modalAnimationState.setShouldLoop(true);
+      if (!isPlayingLocal) {
+        _playbackController.togglePlayback();
       }
     });
-
-    modalAnimationState.setShouldLoop(true);
-    if (!isPlayingLocal) {
-      _playbackController.togglePlayback();
-    }
-
-    practicePhase = "running";
   }
 
   /** Enter practice mode → setup screen. Does NOT start the ramp. */
@@ -289,6 +315,37 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     _metronome.resume();
   }
 
+  /** Cancel an in-progress count-in (Stop / exit / dispose). Idempotent. */
+  function cancelCountIn() {
+    if (_countInTimer !== null) {
+      clearTimeout(_countInTimer);
+      _countInTimer = null;
+    }
+    practiceCountdown = 0;
+    _countInActive = false;
+  }
+
+  /** Fixed ~700ms 3·2·1 count-in, independent of the ramp BPM (which can be
+   *  15 = 4s/beat). Plain tick on 3/2/1, accented tick on GO, then onGo() starts
+   *  the ramp. The visual count still runs when the metronome is off (tick no-ops). */
+  function runCountIn(onGo: () => void) {
+    practiceCountdown = 3;
+    _metronome?.tick(false);
+    const step = () => {
+      practiceCountdown -= 1;
+      if (practiceCountdown > 0) {
+        _metronome?.tick(false);
+        _countInTimer = setTimeout(step, COUNT_IN_MS);
+      } else {
+        _metronome?.tick(true); // accented GO
+        _countInTimer = null;
+        _countInActive = false;
+        onGo();
+      }
+    };
+    _countInTimer = setTimeout(step, COUNT_IN_MS);
+  }
+
   /** Cockpit toggle: flip the persisted on/off pref. Turning on unlocks audio
    *  on this gesture. */
   function handleToggleMetronome() {
@@ -310,6 +367,17 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
   function handlePracticeStop() {
     if (!_playbackController) return;
 
+    // Cancelled during the count-in — the ramp never ran, so skip the completion
+    // celebration; unwind quietly back to the setup screen.
+    if (_countInActive) {
+      cancelCountIn();
+      practiceOrchestrator.stop();
+      _playbackController.offLoopComplete();
+      practiceState.updateProgress(practiceOrchestrator.getProgress());
+      practicePhase = "setup";
+      return;
+    }
+
     const finalBpm = practiceOrchestrator.stop();
     practiceState.updateProgress(practiceOrchestrator.getProgress());
 
@@ -327,21 +395,6 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     practicePhase = "setup";
   }
 
-  /**
-   * Practice step nav (header ‹ ›). Pauses first so the seek is actually
-   * visible — during the looping ramp a bare seek is instantly overwritten by
-   * playback, which made the buttons feel dead. Tap to park on a pictograph,
-   * tap again to step, hit play to resume the ramp.
-   */
-  function handlePracticeStep(dir: 1 | -1) {
-    if (!_playbackController) return;
-    if (isPlayingLocal) _playbackController.togglePlayback();
-    arrivedViaStepping = true;
-    if (dir > 0) _playbackController.stepFullBeatForward();
-    else _playbackController.stepFullBeatBackward();
-    _hapticService?.trigger("selection");
-  }
-
   // ── Stepping ──
   function stepHalfBeatBackward() { arrivedViaStepping = true; _playbackController?.stepHalfBeatBackward(); }
   function stepHalfBeatForward() { arrivedViaStepping = true; _playbackController?.stepHalfBeatForward(); }
@@ -351,6 +404,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
 
   // ── Practice cleanup ──
   function stopPracticeIfActive() {
+    cancelCountIn();
     if (practiceOrchestrator.isActive()) {
       practiceOrchestrator.stop();
       _playbackController?.offLoopComplete();
@@ -385,6 +439,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     set arrivedViaStepping(v: boolean) { arrivedViaStepping = v; },
     get practiceActive() { return practicePhase !== "off"; },
     get practiceRunning() { return practicePhase === "running"; },
+    get practiceCountdown() { return practiceCountdown; },
     get metronomeEnabled() { return _practiceViewPrefs?.metronomeEnabled ?? false; },
     practiceState,
 
@@ -408,7 +463,6 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     enterPracticeMode,
     exitPracticeMode,
     handlePracticeStepLevel,
-    handlePracticeStep,
     handlePracticeToggleHold,
     handleToggleMetronome,
     handlePracticeSetConfig,

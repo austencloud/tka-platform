@@ -59,6 +59,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
     practiceActive: boolean;
     practiceRunning: boolean;
+    practiceCountdown: number;
     practiceState: ReturnType<typeof import("$lib/shared/sequence-viewer/state/tempo-practice-state.svelte").createTempoPracticeState>;
     practiceViewPrefs: import("$lib/shared/sequence-viewer/state/practice-view-prefs.svelte").PracticeViewPrefs;
     metronomeEnabled: boolean;
@@ -1003,6 +1004,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
     practiceActive: playback.practiceActive,
     practiceRunning: playback.practiceRunning,
+    practiceCountdown: playback.practiceCountdown,
     practiceState: playback.practiceState,
     practiceViewPrefs,
     metronomeEnabled: playback.metronomeEnabled,
