@@ -127,9 +127,27 @@
     createTutorialState.reset();
     onSkip();
   }
+
+  // Dismiss like a modal: clicking the backdrop (dark area around the card) or
+  // pressing Escape closes the tutorial — same outcome as Skip.
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      handleSkip();
+    }
+  }
 </script>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <div class="create-tutorial-wizard" class:animate-in={animateIn}>
+  <!-- Click-out backdrop: a click on the dark area around the card dismisses the
+       tutorial (same as Skip). It sits behind the content; the card and the
+       fixed controls are layered above it so their own clicks aren't swallowed.
+       Matches the Drawer primitive's backdrop pattern (aria-hidden + window
+       keydown handles keyboard dismissal). -->
+  <div class="tutorial-backdrop" onclick={handleSkip} aria-hidden="true"></div>
+
   <!-- Progress bar -->
   <div class="progress-bar">
     <div
@@ -194,6 +212,16 @@
     background: rgba(0, 0, 0, 0.4);
     z-index: var(--z-priority);
     overflow-y: auto;
+  }
+
+  /* Transparent click-catcher for the dark area around the card. The visible
+     tint comes from the wizard's own background above; this layer just turns a
+     click anywhere outside the card into a dismiss. Sits behind everything
+     (z-index 0); the card + controls are raised above it. */
+  .tutorial-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
   }
 
   /* Progress bar */
@@ -265,6 +293,11 @@
     width: 100%;
     max-width: 1100px;
     padding: 0 16px 90px;
+    /* Raise the card above the click-out backdrop so clicks on it aren't
+       swallowed (a positioned z-index is required — a static element paints
+       below the absolutely-positioned backdrop). */
+    position: relative;
+    z-index: 1;
   }
 
   /* Header wrapper — column on desktop, one compact line on mobile (see media query) */
