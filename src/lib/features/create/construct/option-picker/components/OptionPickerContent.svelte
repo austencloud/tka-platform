@@ -30,6 +30,8 @@ Uses organizer and sizer services for section grouping and sizing.
     isContinuousOnly?: boolean;
     onToggleContinuous?: (value: boolean) => void;
     isSideBySideLayout?: () => boolean;
+    /** Hide the All/Continuous filter UI (simplified tutorial grid) */
+    hideFilters?: boolean;
     // Sequence context for reversal detection
     currentSequence?: PictographData[];
     // Continuation reordering
@@ -55,6 +57,7 @@ Uses organizer and sizer services for section grouping and sizing.
     isContinuousOnly = false,
     onToggleContinuous,
     isSideBySideLayout = () => false,
+    hideFilters = false,
     currentSequence = [],
     onSlotClicked,
     lastClickedSlot = null,
@@ -354,7 +357,7 @@ Uses organizer and sizer services for section grouping and sizing.
       {#if useUnifiedHeader}
         <div class="picker-header-slot">
           <OptionPickerHeader
-            showFilter={shouldShowFilterToggle()}
+            showFilter={shouldShowFilterToggle() && !hideFilters}
             {isContinuousOnly}
             {onToggleContinuous}
             {blueTurns}
@@ -371,7 +374,7 @@ Uses organizer and sizer services for section grouping and sizing.
       {/if}
 
       <!-- Standalone filter pill: mobile/compact layouts only. -->
-      {#if shouldShowFilterToggle() && !useUnifiedHeader}
+      {#if shouldShowFilterToggle() && !hideFilters && !useUnifiedHeader}
         <div class="filter-header" class:mobile={shouldUseSwipeLayout()}>
           <button
             class="filter-toggle"

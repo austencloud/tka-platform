@@ -45,6 +45,8 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
     isUndoingOption?: boolean;
     /** Optional predicate to further filter options (e.g., loop-only for tutorials) */
     filterPredicate?: (option: PictographData) => boolean;
+    /** Hide the All/Continuous filter UI (e.g. simplified tutorial grid) */
+    hideFilters?: boolean;
   }
 
   const {
@@ -56,6 +58,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
     isSideBySideLayout = () => false,
     isUndoingOption = false,
     filterPredicate,
+    hideFilters = false,
   }: Props = $props();
 
   // State
@@ -390,6 +393,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
     isContinuousOnly={internalContinuousOnly}
     onToggleContinuous={handleToggleContinuous}
     {isSideBySideLayout}
+    {hideFilters}
     {currentSequence}
     onSlotClicked={handleSlotClicked}
     lastClickedSlot={pickerState?.lastClickedSlot ?? null}
