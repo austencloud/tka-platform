@@ -63,7 +63,6 @@ Popover uses fixed positioning to escape overflow:hidden containers.
   class:size-sm={size === "sm"}
   style="--chip-color: {chipColor};"
   type="button"
-  role={mode === "toggle" ? "switch" : "button"}
   aria-pressed={mode === "toggle" ? active : undefined}
   aria-haspopup={mode === "dropdown" ? "listbox" : undefined}
   aria-expanded={mode === "dropdown" ? expanded : undefined}
