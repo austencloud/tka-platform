@@ -519,8 +519,19 @@ class ImageCompositionStateManager {
   }
 }
 
-// Singleton instance
-let instance: ImageCompositionStateManager | null = null;
+// Singleton instance — preserved across HMR so its loaded settings (showQRCode,
+// showMandala, start-position layout) stay stable. Those feed the thumbnail cache
+// key; if the manager reconstructed on each dev save it would briefly serve
+// DEFAULT settings, churning the hash and forcing every gallery thumbnail to
+// re-render. Mirrors auth-state's import.meta.hot.data pattern.
+let instance: ImageCompositionStateManager | null =
+  (import.meta.hot?.data?.instance as ImageCompositionStateManager | undefined) ?? null;
+
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    data.instance = instance;
+  });
+}
 
 export function getImageCompositionManager(): ImageCompositionStateManager {
   if (!instance) {
