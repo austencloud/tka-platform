@@ -25,10 +25,12 @@
       <div class="countin-number">{count}</div>
     {/key}
   </div>
-  <!-- Decoupled assertive live region: announces "3" "2" "1" without reading the
-       raw glyph or double-announcing. -->
-  <div class="sr-only" role="timer" aria-live="assertive" aria-atomic="true">{count}</div>
 {/if}
+<!-- Decoupled assertive live region, ALWAYS mounted (empty when idle): a region
+     inserted already-populated is commonly skipped by screen readers, so keeping
+     it in the a11y tree lets the 0→3 transition announce the first "3". Announces
+     "3" "2" "1" without reading the raw (aria-hidden) glyph or double-announcing. -->
+<div class="sr-only" role="timer" aria-live="assertive" aria-atomic="true">{count > 0 ? count : ""}</div>
 
 <style>
   .countin-overlay {

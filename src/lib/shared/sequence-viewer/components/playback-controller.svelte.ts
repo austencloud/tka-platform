@@ -132,6 +132,10 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
   // ── Handlers ──
 
   function handlePlaybackToggle() {
+    // Locked during the count-in pre-roll: a tap would start the ramp before GO
+    // arms looping, breaking the isPlayingLocal-false-until-GO invariant (and
+    // doubling ticks). The count-in's GO is the only thing that starts playback.
+    if (_countInActive) return;
     arrivedViaStepping = false;
     _playbackController?.togglePlayback();
   }
@@ -329,15 +333,21 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
    *  15 = 4s/beat). Plain tick on 3/2/1, accented tick on GO, then onGo() starts
    *  the ramp. The visual count still runs when the metronome is off (tick no-ops). */
   function runCountIn(onGo: () => void) {
+    // Gate each count tick on the pref (mirrors the beat-boundary gate). The
+    // instance lingers after a toggle-off — only dispose nulls it — so a bare
+    // _metronome?.tick() would click through a "Muted" count-in.
+    const tick = (accent: boolean) => {
+      if (_practiceViewPrefs?.metronomeEnabled) _metronome?.tick(accent);
+    };
     practiceCountdown = 3;
-    _metronome?.tick(false);
+    tick(false);
     const step = () => {
       practiceCountdown -= 1;
       if (practiceCountdown > 0) {
-        _metronome?.tick(false);
+        tick(false);
         _countInTimer = setTimeout(step, COUNT_IN_MS);
       } else {
-        _metronome?.tick(true); // accented GO
+        tick(true); // accented GO
         _countInTimer = null;
         _countInActive = false;
         onGo();
