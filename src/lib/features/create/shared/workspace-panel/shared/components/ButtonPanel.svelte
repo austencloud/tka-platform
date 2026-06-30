@@ -25,9 +25,16 @@
   import SequenceActionsButton from "./buttons/SequenceActionsButton.svelte";
   import ViewSequenceButton from "./buttons/ViewSequenceButton.svelte";
   import SaveToLibraryButton from "./buttons/SaveToLibraryButton.svelte";
+  import { workspaceButtonsInZone } from "../workspace-button-layout";
 
   // Get context - ButtonPanel is ONLY used inside CreateModule, so context is always available
   const { CreateModuleState, panelState } = getCreateModuleContext();
+
+  // Zone membership + order come from the shared workspace button layout, so the
+  // create tutorial's diagram of this panel can never drift from it.
+  const leftButtons = workspaceButtonsInZone("left");
+  const centerButtons = workspaceButtonsInZone("center");
+  const rightButtons = workspaceButtonsInZone("right");
 
   // Props interface - only event handler callbacks
   const {
@@ -95,16 +102,19 @@
 
 {#if visible}
   <div class="button-panel" transition:fade={{ duration: 200 }}>
-    <!-- LEFT ZONE: Undo + Clear (corrective actions) -->
+    <!-- LEFT ZONE: order/membership from the shared layout -->
     <div class="left-zone">
-      <div transition:presenceTransition>
-        <UndoButton {CreateModuleState} />
-      </div>
-      {#if canClearSequence && onClearSequence}
-        <div transition:presenceTransition>
-          <ClearSequencePanelButton onclick={onClearSequence} />
-        </div>
-      {/if}
+      {#each leftButtons as btn (btn.id)}
+        {#if btn.id === "undo"}
+          <div transition:presenceTransition>
+            <UndoButton {CreateModuleState} />
+          </div>
+        {:else if btn.id === "clear" && canClearSequence && onClearSequence}
+          <div transition:presenceTransition>
+            <ClearSequencePanelButton onclick={onClearSequence} />
+          </div>
+        {/if}
+      {/each}
     </div>
 
     <!-- CENTER ZONE: Main action button (Export Panel) -->
@@ -115,30 +125,33 @@
           out:fade={{ duration: 150 }}
           in:fade={{ duration: 150, delay: 150 }}
         >
-          {#if showViewSequenceButton && onViewSequence}
-            <div>
-              <ViewSequenceButton onclick={onViewSequence} isActive={isExportPanelOpen} />
-            </div>
-          {/if}
+          {#each centerButtons as btn (btn.id)}
+            {#if btn.id === "view" && showViewSequenceButton && onViewSequence}
+              <div>
+                <ViewSequenceButton onclick={onViewSequence} isActive={isExportPanelOpen} />
+              </div>
+            {/if}
+          {/each}
         </div>
       {/key}
     </div>
 
-    <!-- RIGHT ZONE: Tools + Save (constructive actions) -->
+    <!-- RIGHT ZONE: order/membership from the shared layout -->
     <div class="right-zone">
-      {#if showSequenceActions && onSequenceActionsClick}
-        <div transition:presenceTransition>
-          <SequenceActionsButton onclick={onSequenceActionsClick} />
-        </div>
-      {/if}
-      {#if canSaveToLibrary && onSaveToLibrary}
-        <div transition:presenceTransition>
-          <SaveToLibraryButton
-            sequence={currentSequence}
-            onclick={onSaveToLibrary}
-          />
-        </div>
-      {/if}
+      {#each rightButtons as btn (btn.id)}
+        {#if btn.id === "sequence-actions" && showSequenceActions && onSequenceActionsClick}
+          <div transition:presenceTransition>
+            <SequenceActionsButton onclick={onSequenceActionsClick} />
+          </div>
+        {:else if btn.id === "save" && canSaveToLibrary && onSaveToLibrary}
+          <div transition:presenceTransition>
+            <SaveToLibraryButton
+              sequence={currentSequence}
+              onclick={onSaveToLibrary}
+            />
+          </div>
+        {/if}
+      {/each}
     </div>
   </div>
 {/if}

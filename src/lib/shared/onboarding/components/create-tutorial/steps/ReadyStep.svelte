@@ -11,6 +11,13 @@
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import {
+    WORKSPACE_BUTTON_LAYOUT,
+    WORKSPACE_BUTTON_TUTORIAL,
+    workspaceButtonsInZone,
+    type WorkspaceButtonLayoutEntry,
+    type WorkspaceButtonTutorialMeta,
+  } from "$lib/features/create/shared/workspace-panel/shared/workspace-button-layout";
 
   interface Props {
     onAdvance: () => void;
@@ -64,62 +71,47 @@
     createTutorialState.steps.map((b) => b.letter ?? "").join(""),
   );
 
-  interface ButtonInfo {
-    label: string;
-    icon: string;
-    iconType: "fa" | "svg";
-    colorClass: string;
-    description: string;
-  }
-
-  // Order + positions mirror the real workspace ButtonPanel: left group
-  // [Undo, Clear], centered [View/Play], right group [Sequence Actions, Save],
-  // plus the tap-a-step affordance (Step Editor). Keep in sync with ButtonPanel.
-  const BUTTONS: ButtonInfo[] = [
-    {
-      label: "Undo",
-      icon: "undo-svg",
-      iconType: "svg",
-      colorClass: "accent",
-      description: "Removes the last step you added.",
-    },
-    {
-      label: "Clear",
-      icon: "fa-broom",
-      iconType: "fa",
-      colorClass: "error",
-      description: "Wipes the sequence so you can start fresh.",
-    },
-    {
-      label: "View and Share",
-      icon: "fa-play",
-      iconType: "fa",
-      colorClass: "success",
-      description: "Watch your sequence animated with props, or share it.",
-    },
-    {
-      label: "Sequence Actions",
-      icon: "fa-tools",
-      iconType: "fa",
-      colorClass: "success",
-      description: "Mirror, flip, rotate, and transform your sequence.",
-    },
-    {
-      label: "Save to Library",
-      icon: "fa-bookmark",
-      iconType: "fa",
-      colorClass: "accent",
-      description: "Stores your sequence so you can find it later.",
-    },
-    {
-      label: "Step Editor",
-      icon: "fa-hand-pointer",
-      iconType: "fa",
-      colorClass: "info",
-      description: "Tap any step to adjust turns, rotation, and duration.",
-    },
-  ];
+  // The diagram below is built entirely from the shared workspace button layout
+  // (the same source ButtonPanel renders from), so it can never drift.
+  const LAYOUT = [...WORKSPACE_BUTTON_LAYOUT].sort((a, b) => a.order - b.order);
+  const leftButtons = workspaceButtonsInZone("left");
+  const centerButtons = workspaceButtonsInZone("center");
+  const rightButtons = workspaceButtonsInZone("right");
+  const gridButton = workspaceButtonsInZone("grid")[0];
+  const meta = WORKSPACE_BUTTON_TUTORIAL;
 </script>
+
+{#snippet glyph(m: WorkspaceButtonTutorialMeta, size: number)}
+  {#if m.iconType === "svg"}
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M9 14L4 9L9 4"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M4 9H15A6 6 0 0 1 15 21H13"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  {:else}
+    <i class="fa-solid {m.icon}" aria-hidden="true"></i>
+  {/if}
+{/snippet}
+
+{#snippet mockSpot(entry: WorkspaceButtonLayoutEntry, extraClass: string)}
+  <div class="button-spot {extraClass}">
+    <span class="badge">{entry.order}</span>
+    <div class="mock-button {meta[entry.id].colorClass} glow">
+      {@render glyph(meta[entry.id], 18)}
+    </div>
+  </div>
+{/snippet}
 
 <div class="tutorial-step">
   <div class="step-header">
@@ -145,7 +137,7 @@
         {/if}
 
         <div class="tap-hint">
-          <span class="badge grid-badge">6</span>
+          <span class="badge grid-badge">{gridButton?.order}</span>
           <i class="fas fa-hand-pointer" aria-hidden="true"></i>
           <span>Tap any step to edit it</span>
         </div>
@@ -155,74 +147,30 @@
            absolutely centered (can't drift), [Sequence Actions, Save] right. -->
       <div class="button-bar">
         <div class="btn-group">
-          <div class="button-spot">
-            <span class="badge">1</span>
-            <div class="mock-button accent glow">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M9 14L4 9L9 4"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M4 9H15A6 6 0 0 1 15 21H13"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </div>
-          </div>
-
-          <div class="button-spot">
-            <span class="badge">2</span>
-            <div class="mock-button error glow">
-              <i class="fa-solid fa-broom" aria-hidden="true"></i>
-            </div>
-          </div>
+          {#each leftButtons as entry (entry.id)}
+            {@render mockSpot(entry, "")}
+          {/each}
         </div>
 
-        <div class="button-spot center-spot">
-          <span class="badge">3</span>
-          <div class="mock-button success glow">
-            <i class="fas fa-play" aria-hidden="true"></i>
-          </div>
-        </div>
+        {#each centerButtons as entry (entry.id)}
+          {@render mockSpot(entry, "center-spot")}
+        {/each}
 
         <div class="btn-group">
-          <div class="button-spot">
-            <span class="badge">4</span>
-            <div class="mock-button success glow">
-              <i class="fas fa-tools" aria-hidden="true"></i>
-            </div>
-          </div>
-
-          <div class="button-spot">
-            <span class="badge">5</span>
-            <div class="mock-button accent glow">
-              <i class="fa-solid fa-bookmark" aria-hidden="true"></i>
-            </div>
-          </div>
+          {#each rightButtons as entry (entry.id)}
+            {@render mockSpot(entry, "")}
+          {/each}
         </div>
       </div>
     </div>
 
     <div class="legend-panel">
-      {#each BUTTONS as btn, i}
+      {#each LAYOUT as entry (entry.id)}
         <div class="legend-item">
-          <span class="legend-badge {btn.colorClass}">{i + 1}</span>
+          <span class="legend-badge {meta[entry.id].colorClass}">{entry.order}</span>
           <div class="legend-text">
-            <strong>{btn.label}</strong>
-            <span class="legend-desc">{btn.description}</span>
+            <strong>{meta[entry.id].label}</strong>
+            <span class="legend-desc">{meta[entry.id].description}</span>
           </div>
         </div>
       {/each}
@@ -231,7 +179,7 @@
 
   <!-- Mobile: accordion list, no mockup -->
   <div class="accordion-list mobile-only">
-    {#each BUTTONS as btn, i}
+    {#each LAYOUT as entry, i (entry.id)}
       <button
         class="accordion-item"
         class:expanded={expandedIndex === i}
@@ -239,42 +187,17 @@
         aria-expanded={expandedIndex === i}
       >
         <div class="accordion-header">
-          <span class="legend-badge {btn.colorClass}">
-            {#if btn.iconType === "svg"}
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M9 14L4 9L9 4"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M4 9H15A6 6 0 0 1 15 21H13"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            {:else}
-              <i class="fa-solid {btn.icon}" aria-hidden="true"></i>
-            {/if}
+          <span class="legend-badge {meta[entry.id].colorClass}">
+            {@render glyph(meta[entry.id], 15)}
           </span>
-          <span class="accordion-label">{btn.label}</span>
+          <span class="accordion-label">{meta[entry.id].label}</span>
           <i
             class="fas fa-chevron-down accordion-chevron"
             aria-hidden="true"
           ></i>
         </div>
         {#if expandedIndex === i}
-          <p class="accordion-body">{btn.description}</p>
+          <p class="accordion-body">{meta[entry.id].description}</p>
         {/if}
       </button>
     {/each}
