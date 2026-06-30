@@ -283,6 +283,8 @@
   .step-dots {
     position: fixed;
     bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     gap: 12px;
   }
@@ -377,11 +379,6 @@
 
   /* ── Mobile / small-tablet: fullscreen edge-to-edge ── */
   @media (max-width: 900px) {
-    /* Stop vertical centering so the card fills the viewport */
-    .create-tutorial-wizard {
-      align-items: stretch;
-    }
-
     .step-container {
       padding: 0;
       max-width: none;
@@ -424,11 +421,6 @@
     }
     .create-tutorial-wizard :global(.step-header .subtitle) {
       font-size: 0.8rem;
-    }
-    .create-tutorial-wizard :global(.step-header .subtitle::before) {
-      content: "·";
-      margin-right: 6px;
-      color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     }
   }
 </style>
