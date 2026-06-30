@@ -5,7 +5,7 @@ import FilterChipBase from "./FilterChipBase.svelte";
 import { expectNoA11yViolations } from "$test-helpers/component-a11y";
 
 describe("FilterChipBase (toggle mode)", () => {
-  it("exposes a switch role with aria-pressed reflecting `active`", async () => {
+  it("exposes aria-pressed reflecting `active` on the toggle button", async () => {
     render(FilterChipBase, { label: "Loops", mode: "toggle", active: false });
     const chip = page.getByRole("button", { name: "Loops" });
     await expect.element(chip).toBeVisible();
