@@ -515,53 +515,43 @@ import type { SheetType } from "../../navigation/services/types";
          the app with "Loading preferences..." - that looks like a full page
          reload right after sign-in. Only block the UI for genuine first-run
          users whose local state isn't set up yet. -->
-    {#if isFullAccount && !firstRunState.isDone() && (firstRunState.syncInProgress || !firstRunState.cloudSynced)}
+    {#if isFullAccount && (!firstRunState.isDone() || firstRunState.shouldShow || passwordOnboardingState.required) && (firstRunState.syncInProgress || !firstRunState.cloudSynced || passwordOnboardingState.syncInProgress || !passwordOnboardingState.cloudSynced)}
+      <!-- Hold for cloud sync so we never flash a setup card for an account that
+           already finished onboarding / set a password on another device. -->
       <div class="fullscreen-overlay">
         <div class="auth-loading">
           <div class="auth-loading-spinner"></div>
           <p>Loading preferences...</p>
         </div>
       </div>
-    {:else if isFullAccount && (!firstRunState.isDone() || firstRunState.shouldShow)}
+    {:else if isFullAccount && (!firstRunState.isDone() || firstRunState.shouldShow || passwordOnboardingState.required)}
+      <!-- Unified post-signup setup: name and/or required password on ONE card.
+           AccountSetupStep shows only what's needed and auto-completes if neither
+           applies (e.g. a Google signup that already has a name + a login). -->
       <div class="fullscreen-overlay">
-        {#await import("../../onboarding/components/first-run/FirstRunWizard.svelte") then mod}
-          {#if appEntryState.phase === "wizard-exiting"}
+        {#await import("../../onboarding/components/first-run/AccountSetupWizard.svelte") then mod}
+          {#if (!firstRunState.isDone() || firstRunState.shouldShow) && appEntryState.phase === "wizard-exiting"}
             <div class="wizard-exit-wrapper">
               <mod.default
+                needsPassword={passwordOnboardingState.required}
                 forcePreview={firstRunState.previewMode}
                 onComplete={() => firstRunState.markCompleted()}
               />
             </div>
           {:else}
             <mod.default
+              needsPassword={passwordOnboardingState.required}
               forcePreview={firstRunState.previewMode}
               onComplete={() => {
-                firstRunState.markCompleted();
-                appEntryState.startEntrySequence(true);
+                const wasFirstRun =
+                  !firstRunState.isDone() || firstRunState.shouldShow;
+                if (wasFirstRun) {
+                  firstRunState.markCompleted();
+                  appEntryState.startEntrySequence(true);
+                }
               }}
             />
           {/if}
-        {/await}
-      </div>
-    {:else if isFullAccount && passwordOnboardingState.required && (passwordOnboardingState.syncInProgress || !passwordOnboardingState.cloudSynced)}
-      <!-- Hold for cloud sync before showing the password gate, so an account
-           that already set a password elsewhere (reached via the collision path)
-           never flashes the wizard. -->
-      <div class="fullscreen-overlay">
-        <div class="auth-loading">
-          <div class="auth-loading-spinner"></div>
-          <p>Loading preferences...</p>
-        </div>
-      </div>
-    {:else if isFullAccount && passwordOnboardingState.required}
-      <!-- Required set-password gate for passwordless (magic-link) accounts.
-           Independent of first-run so it also catches accounts that finished
-           the name card on a prior session. -->
-      <div class="fullscreen-overlay">
-        {#await import("../../onboarding/components/first-run/SetPasswordWizard.svelte") then mod}
-          <mod.default
-            onComplete={() => passwordOnboardingState.markHasPassword()}
-          />
         {/await}
       </div>
     {:else if appEntryState.isCreateTutorial()}

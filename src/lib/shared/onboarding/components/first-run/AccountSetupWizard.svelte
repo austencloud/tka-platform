@@ -1,19 +1,19 @@
 <!--
-  SetPasswordWizard - Required set-password overlay for passwordless accounts.
-
-  Independent of FirstRunWizard (the name card): the password gate must fire even
-  for accounts that already finished first-run on a prior session. Mounted by
-  MainApplication when passwordOnboardingState.required is true.
+  AccountSetupWizard - Post-signup overlay that hosts the unified setup card
+  (name and/or password on one modal). Replaces the separate FirstRunWizard +
+  SetPasswordWizard so a new magic-link account isn't walked through two stops.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import SetPasswordStep from "./steps/SetPasswordStep.svelte";
+  import AccountSetupStep from "./AccountSetupStep.svelte";
 
   interface Props {
+    needsPassword: boolean;
+    forcePreview?: boolean;
     onComplete: () => void;
   }
 
-  const { onComplete }: Props = $props();
+  const { needsPassword, forcePreview = false, onComplete }: Props = $props();
 
   let animateIn = $state(false);
 
@@ -24,14 +24,14 @@
   });
 </script>
 
-<div class="set-password-wizard" class:animate-in={animateIn}>
+<div class="account-setup-wizard" class:animate-in={animateIn}>
   <div class="step-container">
-    <SetPasswordStep {onComplete} />
+    <AccountSetupStep {needsPassword} {forcePreview} {onComplete} />
   </div>
 </div>
 
 <style>
-  .set-password-wizard {
+  .account-setup-wizard {
     position: fixed;
     inset: 0;
     display: flex;
@@ -52,7 +52,7 @@
     padding: 0 16px;
   }
 
-  .set-password-wizard :global(.set-password-step) {
+  .account-setup-wizard :global(.account-setup-step) {
     opacity: 0;
     transform: translateY(20px);
     transition:
@@ -60,13 +60,13 @@
       transform 0.4s ease;
   }
 
-  .set-password-wizard.animate-in :global(.set-password-step) {
+  .account-setup-wizard.animate-in :global(.account-setup-step) {
     opacity: 1;
     transform: translateY(0);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .set-password-wizard :global(.set-password-step) {
+    .account-setup-wizard :global(.account-setup-step) {
       transition: none;
       opacity: 1;
       transform: none;
