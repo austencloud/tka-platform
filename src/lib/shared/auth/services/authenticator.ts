@@ -15,6 +15,7 @@ import {
   indexedDBLocalPersistence,
   linkWithCredential,
   linkWithPopup,
+  reauthenticateWithPopup,
   sendEmailVerification,
   setPersistence,
   signInWithCredential,
@@ -171,6 +172,39 @@ export async function linkFacebookAccount(): Promise<void> {
   provider.addScope("public_profile");
   notePopupCoop();
   await linkWithPopup(currentUser, provider);
+}
+
+/**
+ * Reauthenticate the current user via a Google popup. Used to satisfy
+ * Firebase's recent-login requirement for sensitive operations (account
+ * deletion) on accounts that have no password. Mirrors signInWithGoogle.
+ */
+export async function reauthenticateWithGoogle(): Promise<void> {
+  const authInstance = await getAuthInstance();
+  const currentUser = authInstance.currentUser;
+  if (!currentUser) throw new Error("No user is currently signed in");
+
+  const provider = new GoogleAuthProvider();
+  provider.addScope("email");
+  provider.addScope("profile");
+  notePopupCoop();
+  await reauthenticateWithPopup(currentUser, provider);
+}
+
+/**
+ * Reauthenticate the current user via a Facebook popup. See
+ * reauthenticateWithGoogle.
+ */
+export async function reauthenticateWithFacebook(): Promise<void> {
+  const authInstance = await getAuthInstance();
+  const currentUser = authInstance.currentUser;
+  if (!currentUser) throw new Error("No user is currently signed in");
+
+  const provider = new FacebookAuthProvider();
+  provider.addScope("email");
+  provider.addScope("public_profile");
+  notePopupCoop();
+  await reauthenticateWithPopup(currentUser, provider);
 }
 
 export function getLinkedProviders(): string[] {

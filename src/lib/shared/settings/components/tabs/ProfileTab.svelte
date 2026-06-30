@@ -11,7 +11,7 @@
     loadPreviewSection,
     isSectionLoaded,
   } from "../../../debug/state/user-preview-state.svelte";
-  import type { AccountManager } from '$lib/shared/auth/services/account-manager'
+  import type { AccountManager, DeleteReauth } from '$lib/shared/auth/services/account-manager'
   import { onMount } from "svelte";
   import {
     createProfileSettingsState,
@@ -199,10 +199,10 @@
     }
   }
 
-  async function handleDeleteAccount(password: string) {
+  async function handleDeleteAccount(reauth: DeleteReauth) {
     if (!accountManager) return;
 
-    await accountManager.deleteAccount(password);
+    await accountManager.deleteAccount(reauth);
   }
 
   // Opens the themed confirmation; the destructive clear runs on confirm.
@@ -493,6 +493,9 @@
             userIdentifier={authState.user?.displayName ||
               authState.user?.email ||
               ""}
+            providerIds={authState.user?.providerData.map(
+              (p) => p.providerId
+            ) ?? []}
           />
         {/snippet}
       </GlassCard>

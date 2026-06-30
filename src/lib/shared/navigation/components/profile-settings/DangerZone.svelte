@@ -7,14 +7,16 @@
 -->
 <script lang="ts">
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
+  import type { DeleteReauth } from "$lib/shared/auth/services/account-manager";
   import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
 
   const ctx = getProfileSettingsContext();
 
-  let { onDeleteAccount, hapticService, userIdentifier } = $props<{
-    onDeleteAccount: (password: string) => Promise<void>;
+  let { onDeleteAccount, hapticService, userIdentifier, providerIds } = $props<{
+    onDeleteAccount: (reauth: DeleteReauth) => Promise<void>;
     hapticService: HapticFeedback | null;
     userIdentifier: string;
+    providerIds: string[];
   }>();
 
   let isExpanded = $state(false);
@@ -23,12 +25,37 @@
   let deleteError = $state("");
   let isDeleting = $state(false);
 
-  // Require exact match of their username/email (case-insensitive) AND a password
-  let isConfirmationValid = $derived(
+  // Which reauth methods this account actually has. OAuth accounts (Google /
+  // Facebook / magic-link upgrades) have no password, so they reauthenticate
+  // via a popup instead of a password field.
+  let hasGoogle = $derived(providerIds.includes("google.com"));
+  let hasFacebook = $derived(providerIds.includes("facebook.com"));
+  let hasOAuth = $derived(hasGoogle || hasFacebook);
+
+  // The GitHub-style barrier: type your username/email. OAuth reauth needs only
+  // this match (the popup proves identity); password reauth also needs a password.
+  let usernameMatches = $derived(
     confirmationText.toLowerCase().trim() ===
-      userIdentifier.toLowerCase().trim() &&
-    deletePassword.length > 0
+      userIdentifier.toLowerCase().trim()
   );
+  let isConfirmationValid = $derived(
+    usernameMatches && (hasOAuth || deletePassword.length > 0)
+  );
+
+  async function runDelete(reauth: DeleteReauth) {
+    if (!usernameMatches || isDeleting) return;
+    hapticService?.trigger("warning");
+    isDeleting = true;
+    deleteError = "";
+    try {
+      await onDeleteAccount(reauth);
+    } catch (e: unknown) {
+      deleteError = e instanceof Error ? e.message : "Failed to delete account";
+      hapticService?.trigger("error");
+    } finally {
+      isDeleting = false;
+    }
+  }
 
   function toggleExpanded() {
     hapticService?.trigger("selection");
@@ -54,20 +81,6 @@
     deleteError = "";
   }
 
-  async function handleConfirmDelete() {
-    if (!isConfirmationValid || isDeleting) return;
-    hapticService?.trigger("warning");
-    isDeleting = true;
-    deleteError = "";
-    try {
-      await onDeleteAccount(deletePassword);
-    } catch (e: unknown) {
-      deleteError = e instanceof Error ? e.message : "Failed to delete account";
-      hapticService?.trigger("error");
-    } finally {
-      isDeleting = false;
-    }
-  }
 </script>
 
 <div class="danger-section">
@@ -122,21 +135,27 @@
             />
           </div>
 
-          <div class="confirmation-input-section">
-            <label for="delete-password" class="confirmation-label">
-              Enter your <strong>password</strong> to confirm:
-            </label>
-            <input
-              id="delete-password"
-              type="password"
-              class="confirmation-input"
-              class:valid={deletePassword.length > 0}
-              placeholder="Your current password"
-              bind:value={deletePassword}
-              autocomplete="current-password"
-              disabled={isDeleting}
-            />
-          </div>
+          {#if hasOAuth}
+            <p class="confirmation-label reauth-hint">
+              Confirm with your linked account to permanently delete.
+            </p>
+          {:else}
+            <div class="confirmation-input-section">
+              <label for="delete-password" class="confirmation-label">
+                Enter your <strong>password</strong> to confirm:
+              </label>
+              <input
+                id="delete-password"
+                type="password"
+                class="confirmation-input"
+                class:valid={deletePassword.length > 0}
+                placeholder="Your current password"
+                bind:value={deletePassword}
+                autocomplete="current-password"
+                disabled={isDeleting}
+              />
+            </div>
+          {/if}
 
           {#if deleteError}
             <p class="error-message" role="alert">
@@ -149,14 +168,38 @@
             <button class="button button--secondary" onclick={handleCancel}>
               Cancel
             </button>
-            <button
-              class="button button--danger-confirm"
-              onclick={handleConfirmDelete}
-              disabled={!isConfirmationValid || isDeleting}
-            >
-              <i class="fas fa-trash-alt" aria-hidden="true"></i>
-              {isDeleting ? "Deleting..." : "Yes, Delete Forever"}
-            </button>
+            {#if hasOAuth}
+              {#if hasGoogle}
+                <button
+                  class="button button--danger-confirm"
+                  onclick={() => runDelete({ method: "google" })}
+                  disabled={!usernameMatches || isDeleting}
+                >
+                  <i class="fab fa-google" aria-hidden="true"></i>
+                  {isDeleting ? "Deleting..." : "Confirm with Google"}
+                </button>
+              {/if}
+              {#if hasFacebook}
+                <button
+                  class="button button--danger-confirm"
+                  onclick={() => runDelete({ method: "facebook" })}
+                  disabled={!usernameMatches || isDeleting}
+                >
+                  <i class="fab fa-facebook-f" aria-hidden="true"></i>
+                  {isDeleting ? "Deleting..." : "Confirm with Facebook"}
+                </button>
+              {/if}
+            {:else}
+              <button
+                class="button button--danger-confirm"
+                onclick={() =>
+                  runDelete({ method: "password", password: deletePassword })}
+                disabled={!isConfirmationValid || isDeleting}
+              >
+                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                {isDeleting ? "Deleting..." : "Yes, Delete Forever"}
+              </button>
+            {/if}
           </div>
         </div>
       {/if}
@@ -266,6 +309,10 @@
     font-size: var(--font-size-compact);
     color: var(--theme-text-dim, var(--theme-text-dim));
     line-height: 1.5;
+  }
+
+  .reauth-hint {
+    margin: 0 0 16px 0;
   }
 
   .confirmation-label strong {
