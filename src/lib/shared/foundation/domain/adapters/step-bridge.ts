@@ -7,12 +7,24 @@
  * a module converted to `Step` can still bridge to neighbors that still speak
  * `StepData`. Deleted once `StepData` is gone.
  *
- * Conversion is lossy by design: `Motion` is the lean structural type, so the
- * render data embedded on `MotionData` (arrowPlacementData, propPlacementData,
- * propType, isVisible, arrowLocation, gridMode, skewSteps, pathShape) is
- * dropped — it is recomputed downstream by the render pipeline, never authored
- * on the step. Stored reversal flags and `isSelected` are likewise dropped:
- * reversals derive via `deriveReversals(steps)`, selection lives in
+ * Conversion is lossy: `Motion` is lean structural-only, so the render data
+ * embedded on `MotionData` is dropped on the forward pass and rebuilt as
+ * `createMotionData` defaults on the reverse pass.
+ *
+ * ⚠ CRITICAL: that render data is NOT all "recomputed downstream." Some of it is
+ * USER-AUTHORED and PERSISTED: `pathShape`, `skewSteps`/`skewDir`,
+ * `arrowPlacementData.manualAdjustmentX/Y` (manual arrow nudges), `isVisible`
+ * (hidden-prop toggles), and effective `propType`. A `Step → StepData`
+ * round-trip via `stepToStepData` SILENTLY DISCARDS those authored choices.
+ * Therefore `stepToStepData` must NEVER run on a path that renders, persists,
+ * or re-authors a step (the render pipeline, serialization/identity hashing,
+ * the step-operation arrow/prop/path-shape/beta handlers) until the
+ * authored-vs-derived split is formalized — that is migration B.
+ *
+ * Stored reversal flags are also dropped and left `false`; the existing reversal
+ * pipeline (`reversalDetector.processReversals`) refills them. Do NOT substitute
+ * the engine `deriveReversals` for display flags — `processReversals` has
+ * loop-wrap semantics the engine version lacks. `isSelected` moves to
  * `selection-store.svelte.ts`.
  */
 import { createMotion, createStep, type Motion, type Step } from "@tka/tka-types";
@@ -77,11 +89,12 @@ export function stepDataToStep(sd: StepData): Step {
 }
 
 /**
- * Rebuild an app `MotionData` from a lean `Motion`. The render fields a
- * `Motion` doesn't carry (arrowPlacementData, propPlacementData, propType,
- * isVisible, arrowLocation, gridMode) are filled with `createMotionData`
- * defaults and recomputed downstream by the render pipeline — they are derived,
- * never authored on the step.
+ * Rebuild an app `MotionData` from a lean `Motion`. The render fields a `Motion`
+ * doesn't carry are filled with `createMotionData` defaults. Some of those
+ * fields are derived (recomputed by the render pipeline) but others are
+ * USER-AUTHORED and PERSISTED (pathShape, skew, manual arrow nudges, isVisible,
+ * effective propType) — those authored values are LOST here. See the file
+ * header: never round-trip a step through this on a render/persist/author path.
  */
 export function motionToMotionData(m: Motion, color: MotionColor): MotionData {
   return createMotionData({
@@ -116,6 +129,10 @@ export function motionToMotionData(m: Motion, color: MotionColor): MotionData {
  * this adapter introduces no reversal-logic change (the loop-wrap behavior the
  * app's detector has but the engine's `deriveReversals` lacks is preserved).
  * Selection is not restored here; it lives in the selection store.
+ *
+ * ⚠ LOSSY for authored choreographic data (see file header) — do NOT use on a
+ * render, persistence/hashing, or step-authoring path. Migration-A callers use
+ * the FORWARD direction (stepDataToStep) on structural reads only.
  */
 export function stepToStepData(step: Step): StepData {
   return createStepData({
