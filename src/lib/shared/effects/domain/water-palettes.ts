@@ -1,15 +1,16 @@
 /**
- * Water palette registry.
+ * Liquid palette registry (kept named "Water palette" — these are the liquid
+ * color sets, reused by the Goo effect after the 2026-06-28 water→goo rename).
  *
- * Backend-agnostic - both 2D (Water2DRenderer) and 3D (WaterRenderer3D)
- * resolve a WaterIntent's palette field through `resolveWaterPalette()`
- * and then sample core/edge/highlight/splashTint/puddleTint as needed.
+ * Backend-agnostic - both 2D (Goo2DRenderer) and the 3D path resolve a
+ * GooIntent's palette field through `resolveWaterPalette()` and then sample
+ * core/edge/highlight/splashTint/puddleTint as needed.
  */
 
-import type { WaterIntent } from "./effects-config";
+import type { GooIntent } from "./effects-config";
 
 export interface WaterPalette {
-  readonly id: WaterIntent["palette"];
+  readonly id: GooIntent["palette"];
   /** Hex - dense droplet core. */
   readonly core: string;
   /** Hex - droplet rim. */
@@ -82,7 +83,7 @@ export const WATER_PALETTES = {
  * Resolve the active palette for an intent. For `palette === "custom"`,
  * derive the five slots from `customColor` via HSL shift.
  */
-export function resolveWaterPalette(intent: WaterIntent): WaterPalette {
+export function resolveWaterPalette(intent: GooIntent): WaterPalette {
   if (intent.palette !== "custom") {
     return WATER_PALETTES[intent.palette];
   }

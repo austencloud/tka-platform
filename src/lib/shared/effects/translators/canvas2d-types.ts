@@ -13,9 +13,9 @@ import type {
   CharcoalIntent,
   ZapIntent,
   SparklesIntent,
-  EchoIntent,
+  GhostIntent,
   BloomIntent,
-  WaterIntent,
+  GooIntent,
   BubblesIntent,
   PetalsIntent,
   SmokeIntent,
@@ -87,7 +87,7 @@ export interface Sparkles2DParams extends SparklesIntent {
   blendMode?: GlobalCompositeOperation;
 }
 
-export interface Echo2DParams extends EchoIntent {
+export interface Ghost2DParams extends GhostIntent {
   /** Canvas composite op. Default 'lighter' so overlapping phantoms brighten. */
   blendMode?: GlobalCompositeOperation;
 }
@@ -97,7 +97,7 @@ export interface Bloom2DParams extends BloomIntent {
   blendMode?: GlobalCompositeOperation;
 }
 
-export interface Water2DParams extends WaterIntent {
+export interface GooParams extends GooIntent {
   /** Resolved palette swatches (intent's palette enum → concrete hex stops). */
   resolvedPalette: WaterPalette;
   /** Max droplets alive at once. Tier-dependent: 512 / 1024 / 2048. */

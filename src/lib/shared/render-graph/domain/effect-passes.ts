@@ -5,9 +5,9 @@
  * enough to need its own file, extract it then.
  */
 
-// ── Echo (phantom trail) ────────────────────────────────────────────
+// ── Ghost (phantom trail) ────────────────────────────────────────────
 
-export interface EchoPhantom {
+export interface GhostPhantom {
   /** Positions of staff endpoints at capture time, in NDC. */
   bluePos: [number, number];
   redPos: [number, number];
@@ -15,8 +15,8 @@ export interface EchoPhantom {
   age: number;
 }
 
-export interface EchoPassPayload {
-  phantoms: EchoPhantom[];
+export interface GhostPassPayload {
+  phantoms: GhostPhantom[];
   /** "staff" = line between tips, "tips" = dots, "both" = line + dots. */
   shape: "staff" | "tips" | "both";
   /** RGBA color 0..1. */

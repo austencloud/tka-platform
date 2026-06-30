@@ -1,8 +1,8 @@
 import type { EffectPreset, EffectPresetGroup } from "./types";
 
-export const WATER_PRESETS: EffectPreset<"water">[] = [
+export const GOO_PRESETS: EffectPreset<"goo">[] = [
   {
-    id: "water-classic",
+    id: "goo-classic",
     name: "Classic",
     previewColor: "#3a7fd9",
     patch: {
@@ -16,7 +16,7 @@ export const WATER_PRESETS: EffectPreset<"water">[] = [
     },
   },
   {
-    id: "water-fountain",
+    id: "goo-fountain",
     name: "Fountain",
     previewColor: "#6fb3ff",
     patch: {
@@ -30,7 +30,7 @@ export const WATER_PRESETS: EffectPreset<"water">[] = [
     },
   },
   {
-    id: "water-whip",
+    id: "goo-whip",
     name: "Whip",
     previewColor: "#e8f4ff",
     patch: {
@@ -44,7 +44,7 @@ export const WATER_PRESETS: EffectPreset<"water">[] = [
     },
   },
   {
-    id: "water-mercury",
+    id: "goo-mercury",
     name: "Mercury",
     previewColor: "#9a9fa8",
     patch: {
@@ -58,7 +58,7 @@ export const WATER_PRESETS: EffectPreset<"water">[] = [
     },
   },
   {
-    id: "water-acid",
+    id: "goo-acid",
     name: "Acid",
     previewColor: "#7fd94a",
     patch: {
@@ -72,7 +72,7 @@ export const WATER_PRESETS: EffectPreset<"water">[] = [
     },
   },
   {
-    id: "water-blood",
+    id: "goo-blood",
     name: "Ritual",
     previewColor: "#8a1818",
     patch: {
@@ -86,7 +86,7 @@ export const WATER_PRESETS: EffectPreset<"water">[] = [
     },
   },
   {
-    id: "water-spirit",
+    id: "goo-spirit",
     name: "Spirit",
     previewColor: "#80ffe8",
     patch: {
@@ -101,11 +101,11 @@ export const WATER_PRESETS: EffectPreset<"water">[] = [
   },
 ];
 
-export const WATER_PRESET_GROUP: EffectPresetGroup = {
-  effectType: "water",
-  presets: WATER_PRESETS,
+export const GOO_PRESET_GROUP: EffectPresetGroup = {
+  effectType: "goo",
+  presets: GOO_PRESETS,
   getSummary: (state) => {
-    const w = state.water;
-    return `${w.palette} · amb ${Math.round(w.ambientEmission * 100)}% · mot ${Math.round(w.motionEmission * 100)}%`;
+    const g = state.goo;
+    return `${g.palette} · amb ${Math.round(g.ambientEmission * 100)}% · mot ${Math.round(g.motionEmission * 100)}%`;
   },
 };

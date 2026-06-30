@@ -80,14 +80,14 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     get: (s) => s.sparkles.rate,
     set: (s, v) => s.updateEffect("sparkles", { rate: v }),
   },
-  echo: {
+  ghost: {
     label: "Intensity",
     min: 0,
     max: 1,
     step: 0.01,
     format: fmt2,
-    get: (s) => s.echo.intensity,
-    set: (s, v) => s.updateEffect("echo", { intensity: v }),
+    get: (s) => s.ghost.intensity,
+    set: (s, v) => s.updateEffect("ghost", { intensity: v }),
   },
   bloom: {
     label: "Intensity",
@@ -98,14 +98,14 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     get: (s) => s.bloom.intensity,
     set: (s, v) => s.updateEffect("bloom", { intensity: v }),
   },
-  water: {
+  goo: {
     label: "Intensity",
     min: 0,
     max: 1,
     step: 0.01,
     format: fmt2,
-    get: (s) => s.water.intensity,
-    set: (s, v) => s.updateEffect("water", { intensity: v }),
+    get: (s) => s.goo.intensity,
+    set: (s, v) => s.updateEffect("goo", { intensity: v }),
   },
   bubbles: {
     label: "Intensity",

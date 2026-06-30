@@ -10,7 +10,7 @@
  */
 
 import type {
-  EchoPassPayload,
+  GhostPassPayload,
   BloomPassPayload,
   ZapPassPayload,
   PulsePassPayload,
@@ -406,10 +406,10 @@ export class WebGPUOverlayEffectsExecutor {
     this.drawFullscreen(this.ringPipeline, bg, presentView, "load");
   }
 
-  // ── Echo (phantom trail lines) ──────────────────────────────────
+  // ── Ghost (phantom trail lines) ──────────────────────────────────
 
-  executeEcho(
-    payload: EchoPassPayload,
+  executeGhost(
+    payload: GhostPassPayload,
     presentView: GPUTextureView,
   ): void {
     if (payload.phantoms.length === 0) return;

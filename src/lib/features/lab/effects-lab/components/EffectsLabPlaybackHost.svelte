@@ -107,7 +107,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   // The EffectsPanel writes to the VM; we read from it to know which mode
   // is active for the canvas conditional props and accent color theming.
   let vmActiveMode = $state<
-    "fire" | "charcoal" | "led" | "trails" | "zap" | "sparkles" | "echo" | "bloom" | "water" | "bubbles" | "petals" | "smoke" | "ink" | "frost" | "silk" | "pulse" | "none"
+    "fire" | "charcoal" | "led" | "trails" | "zap" | "sparkles" | "ghost" | "bloom" | "goo" | "bubbles" | "petals" | "smoke" | "ink" | "frost" | "silk" | "pulse" | "none"
   >("none");
 
   function syncActiveMode() {

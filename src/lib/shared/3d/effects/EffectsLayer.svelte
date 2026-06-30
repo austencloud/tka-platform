@@ -15,7 +15,7 @@
   import { getEffectState } from "./state/effect-state.svelte";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
   import { getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
-  import { resolveEcho3D, resolveSparkles3D, resolveZap3D, resolveWater3D, resolveBubbles3D, resolvePetals3D, resolveSmoke3D, resolveFire3D } from "$lib/shared/effects/translators/webgl3d-translator";
+  import { resolveGhost3D, resolveSparkles3D, resolveZap3D, resolveGoo3D, resolveBubbles3D, resolvePetals3D, resolveSmoke3D, resolveFire3D } from "$lib/shared/effects/translators/webgl3d-translator";
   import { AUSTEN_STAFF } from "@austencloud/scene-3d";
 
   // Effect components
@@ -27,7 +27,7 @@
   import ElectricityArc from "./energy/ElectricityArc.svelte";
   // PropMotionEffects is the LEGACY per-prop motion blur/speed-line mount
   // driven by configState.motion (the `effects-config-state` next to this
-  // file, not the unified one). Phase 3 retires it. Echo is the unified
+  // file, not the unified one). Phase 3 retires it. Ghost is the unified
   // intent-layer replacement, mounted via GhostStaff3D below.
   import PropMotionEffects from "./motion/PropMotionEffects.svelte";
   import GhostStaff3D from "./motion/GhostStaff3D.svelte";
@@ -47,9 +47,9 @@
     isPlaying: boolean;
     /** Staff length for end position calculations */
     staffLength?: number;
-    /** Current animation step index (fractional). Used by Echo (GhostStaff3D)
+    /** Current animation step index (fractional). Used by Ghost (GhostStaff3D)
      *  to detect beat onsets and age phantoms. Default 0 when a parent
-     *  hasn't plumbed it yet - Echo stays silent rather than capturing a
+     *  hasn't plumbed it yet - Ghost stays silent rather than capturing a
      *  lone phantom at beat 0 every frame. */
     currentStep?: number;
   }
@@ -74,9 +74,9 @@
   const sparklesEnabled = $derived(
     unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "sparkles" : false,
   );
-  const echo3D = $derived(unifiedState ? resolveEcho3D(unifiedState.echo) : null);
-  const echoEnabled = $derived(
-    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "echo" : false,
+  const ghost3D = $derived(unifiedState ? resolveGhost3D(unifiedState.ghost) : null);
+  const ghostEnabled = $derived(
+    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "ghost" : false,
   );
   const bloomIntent = $derived(unifiedState?.bloom ?? null);
   const bloomEnabled = $derived(
@@ -84,15 +84,16 @@
   );
   const bloomBlueColor = $derived(unifiedState?.trails.blueColor ?? "#3b82f6");
   const bloomRedColor = $derived(unifiedState?.trails.redColor ?? "#ef4444");
-  const water3D = $derived(unifiedState ? resolveWater3D(unifiedState.water) : null);
-  const waterEnabled = $derived(
-    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "water" : false,
+  // 3D goo currently renders via the legacy WaterEmitter3D particle system; a dedicated 3D goo renderer is a follow-up.
+  const goo3D = $derived(unifiedState ? resolveGoo3D(unifiedState.goo) : null);
+  const gooEnabled = $derived(
+    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "goo" : false,
   );
-  const waterShowLeftEnd = $derived(
-    water3D?.trackingMode === "left_end" || water3D?.trackingMode === "both_ends",
+  const gooShowLeftEnd = $derived(
+    goo3D?.trackingMode === "left_end" || goo3D?.trackingMode === "both_ends",
   );
-  const waterShowRightEnd = $derived(
-    water3D?.trackingMode === "right_end" || water3D?.trackingMode === "both_ends",
+  const gooShowRightEnd = $derived(
+    goo3D?.trackingMode === "right_end" || goo3D?.trackingMode === "both_ends",
   );
   const bubbles3D = $derived(unifiedState ? resolveBubbles3D(unifiedState.bubbles) : null);
   const bubblesEnabled = $derived(
@@ -130,30 +131,14 @@
   );
 
   /**
-   * Pick the phantom color for the Echo effect. `whichProp` is "blue" or "red".
-   * - solid: params.color
-   * - rainbow: rotates hue by beat index (currentStep / interval)
-   * - gradient: not implemented in 3D (deferred - per-phantom age is known
-   *   inside GhostStaff3D but the current mount passes a single color down).
-   *   Falls back to solid color.
-   * - prop-matched: uses the unified trail color of the matching prop.
+   * Pick the phantom color for the Ghost effect. Ghost is prop-matched: each
+   * prop's ghosts wear that prop's unified trail color.
    */
-  function pickEchoColor(whichProp: "blue" | "red"): string {
-    if (!echo3D) return "#ffffff";
-    if (echo3D.colorMode === "prop-matched") {
-      const trails = unifiedState?.trails;
-      return whichProp === "blue"
-        ? trails?.blueColor ?? "#3b82f6"
-        : trails?.redColor ?? "#ef4444";
-    }
-    if (echo3D.colorMode === "rainbow") {
-      const beatIdx = Math.floor(currentStep / echo3D.interval);
-      const offset = whichProp === "blue" ? 0 : 180;
-      const hue = ((beatIdx * 47) + offset) % 360;
-      return `hsl(${hue}, 80%, 60%)`;
-    }
-    // solid and gradient (deferred) both read params.color.
-    return echo3D.color;
+  function pickGhostColor(whichProp: "blue" | "red"): string {
+    const trails = unifiedState?.trails;
+    return whichProp === "blue"
+      ? trails?.blueColor ?? "#3b82f6"
+      : trails?.redColor ?? "#ef4444";
   }
 
   function pickSparkleColor(i: number): string {
@@ -404,33 +389,33 @@
 {/if}
 
 <!-- =============================================================================
-     Unified Echo intent (Phase 1d revised) - beat-onset phantoms of each
-     prop, sourced from the unified intent layer via resolveEcho3D.
+     Unified Ghost intent (Phase 1d revised) - beat-onset phantoms of each
+     prop, sourced from the unified intent layer via resolveGhost3D.
      Lives alongside the legacy PropMotionEffects mount above; Phase 3
      retires the legacy path.
      ============================================================================= -->
-{#if echoEnabled && echo3D && isPlaying}
+{#if ghostEnabled && ghost3D && isPlaying}
   <GhostStaff3D
     propState={bluePropState}
-    enabled={echoEnabled}
-    intensity={echo3D.intensity}
-    decay={echo3D.decay}
-    interval={echo3D.interval}
-    color={pickEchoColor("blue")}
+    enabled={ghostEnabled}
+    intensity={ghost3D.intensity}
+    decay={ghost3D.decay}
+    interval={ghost3D.interval}
+    color={pickGhostColor("blue")}
     staffLength={staffLength}
     currentStep={currentStep}
-    shape={echo3D.shape}
+    shape="staff"
   />
   <GhostStaff3D
     propState={redPropState}
-    enabled={echoEnabled}
-    intensity={echo3D.intensity}
-    decay={echo3D.decay}
-    interval={echo3D.interval}
-    color={pickEchoColor("red")}
+    enabled={ghostEnabled}
+    intensity={ghost3D.intensity}
+    decay={ghost3D.decay}
+    interval={ghost3D.interval}
+    color={pickGhostColor("red")}
     staffLength={staffLength}
     currentStep={currentStep}
-    shape={echo3D.shape}
+    shape="staff"
   />
 {/if}
 
@@ -483,36 +468,36 @@
      reactive emission. Later sub-phases add stream ribbon / metaballs /
      puddles / refraction.
      ============================================================================= -->
-{#if waterEnabled && water3D && isPlaying}
-  {#if blueEnds && waterShowRightEnd}
+{#if gooEnabled && goo3D && isPlaying}
+  {#if blueEnds && gooShowRightEnd}
     <WaterEmitter3D
       position={blueEnds.positive}
       propVelocity={blueVelocityVec}
-      params={water3D}
+      params={goo3D}
       enabled={true}
     />
   {/if}
-  {#if blueEnds && waterShowLeftEnd}
+  {#if blueEnds && gooShowLeftEnd}
     <WaterEmitter3D
       position={blueEnds.negative}
       propVelocity={blueVelocityVec}
-      params={water3D}
+      params={goo3D}
       enabled={true}
     />
   {/if}
-  {#if redEnds && waterShowRightEnd}
+  {#if redEnds && gooShowRightEnd}
     <WaterEmitter3D
       position={redEnds.positive}
       propVelocity={redVelocityVec}
-      params={water3D}
+      params={goo3D}
       enabled={true}
     />
   {/if}
-  {#if redEnds && waterShowLeftEnd}
+  {#if redEnds && gooShowLeftEnd}
     <WaterEmitter3D
       position={redEnds.negative}
       propVelocity={redVelocityVec}
-      params={water3D}
+      params={goo3D}
       enabled={true}
     />
   {/if}

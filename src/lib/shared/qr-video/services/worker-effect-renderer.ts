@@ -6,9 +6,9 @@ import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 import {
   resolveZap2D,
   resolveSparkles2D,
-  resolveEcho2D,
+  resolveGhost2D,
   resolveBloom2D,
-  resolveWater2D,
+  resolveGoo2D,
   resolveBubbles2D,
   resolvePetals2D,
   resolveSmoke2D,
@@ -20,7 +20,7 @@ import {
 
 import { Bloom2DRenderer, type BloomTipInput } from "$lib/shared/effects/renderers/bloom-2d-renderer";
 import { Bubbles2DRenderer } from "$lib/shared/effects/renderers/bubbles-2d-renderer";
-import { Echo2DRenderer, type EchoTipInput } from "$lib/shared/effects/renderers/echo-2d-renderer";
+import { Ghost2DRenderer, type GhostInput } from "$lib/shared/effects/renderers/ghost-2d-renderer";
 import { Frost2DRenderer } from "$lib/shared/effects/renderers/frost-2d-renderer";
 import { Ink2DRenderer } from "$lib/shared/effects/renderers/ink-2d-renderer";
 import { Petals2DRenderer } from "$lib/shared/effects/renderers/petals-2d-renderer";
@@ -28,7 +28,7 @@ import { Pulse2DRenderer, type PulseTipInput } from "$lib/shared/effects/rendere
 import { Silk2DRenderer } from "$lib/shared/effects/renderers/silk-2d-renderer";
 import { Smoke2DRenderer } from "$lib/shared/effects/renderers/smoke-2d-renderer";
 import { Sparkles2DRenderer } from "$lib/shared/effects/renderers/sparkles-2d-renderer";
-import { Water2DRenderer } from "$lib/shared/effects/renderers/water-2d-renderer";
+import { Goo2DRenderer } from "$lib/shared/effects/renderers/goo-2d-renderer";
 import { Zap2DRenderer } from "$lib/shared/effects/renderers/zap-2d-renderer";
 import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 
@@ -197,7 +197,7 @@ function createTrailsRenderer(): WorkerEffectRenderer {
 // ── Canvas2D "quad-tip" effects (smoke, water, bubbles, etc.) ──
 
 function createQuadTipEffect(
-  effectType: Exclude<EffectType, "none" | "trails" | "fire" | "led" | "charcoal" | "bloom" | "echo" | "pulse">,
+  effectType: Exclude<EffectType, "none" | "trails" | "fire" | "led" | "charcoal" | "bloom" | "ghost" | "pulse">,
   canvasSize: number,
 ): WorkerEffectRenderer {
   const scale = computeEffectScale(canvasSize, canvasSize);
@@ -205,7 +205,7 @@ function createQuadTipEffect(
 
   const renderers = {
     smoke: () => ({ r: new Smoke2DRenderer(), p: resolveSmoke2D(config.smoke) }),
-    water: () => ({ r: new Water2DRenderer(), p: resolveWater2D(config.water) }),
+    goo: () => ({ r: new Goo2DRenderer(), p: resolveGoo2D(config.goo) }),
     bubbles: () => ({ r: new Bubbles2DRenderer(), p: resolveBubbles2D(config.bubbles) }),
     petals: () => ({ r: new Petals2DRenderer(), p: resolvePetals2D(config.petals) }),
     frost: () => ({ r: new Frost2DRenderer(), p: resolveFrost2D(config.frost) }),
@@ -225,8 +225,8 @@ function createQuadTipEffect(
         case "smoke":
           (r as Smoke2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
           break;
-        case "water":
-          (r as Water2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
+        case "goo":
+          (r as Goo2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
           break;
         case "bubbles":
           (r as Bubbles2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
@@ -287,22 +287,41 @@ function createBloomRenderer(canvasSize: number): WorkerEffectRenderer {
   };
 }
 
-// ── Echo (quad-tip + currentStep) ──────────────────────────────
+// ── Ghost (quad-tip + currentStep) ──────────────────────────────
 
-function createEchoRenderer(canvasSize: number): WorkerEffectRenderer {
-  const renderer = new Echo2DRenderer();
-  const params = resolveEcho2D(DEFAULT_EFFECTS_CONFIG.echo);
+function createGhostRenderer(canvasSize: number): WorkerEffectRenderer {
+  const renderer = new Ghost2DRenderer();
+  const params = resolveGhost2D(DEFAULT_EFFECTS_CONFIG.ghost);
   const scale = computeEffectScale(canvasSize, canvasSize);
+  // Ghost full-redraws its stroboscopic figure into a buffer each frame (the inner
+  // renderer self-clears), then we composite that buffer at the master intensity.
+  const accum = new OffscreenCanvas(canvasSize, canvasSize);
+  const accumCtx = accum.getContext("2d");
 
   return {
     renderFrame(ctx, cs, blue, red, blueVB, redVB, frameIndex, dt, stepIndex, isStartPosition) {
-      const fourTips = computeFourTips(cs, blue, red, blueVB, redVB);
+      if (!accumCtx) return;
       const currentStep = isStartPosition ? 0 : stepIndex + (frameIndex * dt) % 1;
-      const tips: EchoTipInput = {
-        emitters: fourTipsToEmitters(fourTips),
+      // Ghost now onion-skins the REAL prop sprite, which the export worker does
+      // not load (it only computes analytic tips). Real export ghosting is wired
+      // in productionization; until then the export echo layer is empty.
+      const input: GhostInput = {
+        props: [],
         currentStep,
+        // One export = one exposure; the figure persists across all frames.
+        epoch: "export",
       };
-      renderer.render(ctx as unknown as CanvasRenderingContext2D, params, tips, scale);
+      renderer.render(
+        accumCtx as unknown as CanvasRenderingContext2D,
+        params,
+        input,
+        dt,
+        scale,
+      );
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, Math.min(1, params.intensity));
+      ctx.drawImage(accum, 0, 0);
+      ctx.restore();
     },
     dispose() {
       renderer.dispose();
@@ -549,8 +568,8 @@ export function createWorkerEffectRenderer(
       return createTrailsRenderer();
     case "bloom":
       return createBloomRenderer(canvasSize);
-    case "echo":
-      return createEchoRenderer(canvasSize);
+    case "ghost":
+      return createGhostRenderer(canvasSize);
     case "pulse":
       return createPulseRenderer(canvasSize);
     case "fire":
@@ -560,7 +579,7 @@ export function createWorkerEffectRenderer(
     case "charcoal":
       return createCharcoalRenderer(canvasSize);
     case "smoke":
-    case "water":
+    case "goo":
     case "bubbles":
     case "petals":
     case "frost":

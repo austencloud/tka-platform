@@ -146,22 +146,10 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     slider("sparkles", "spread", "Spread", { min: 0, max: 30, step: 1, pct: false, tier: "advanced" }),
     slider("sparkles", "gravity", "Gravity", { tier: "advanced" }),
   ],
-  echo: [
-    { id: "echo-colormode", label: "Color", type: "segmented", field: "colorMode", tier: "primary", options: [
-      { value: "solid", label: "Solid" }, { value: "rainbow", label: "Rainbow" }, { value: "prop-matched", label: "Prop" }, { value: "gradient", label: "Gradient" },
-    ] },
-    slider("echo", "intensity", "Intensity", { tier: "primary" }),
-    { id: "echo-shape", label: "Shape", type: "segmented", field: "shape", tier: "primary", options: [
-      { value: "staff", label: "Staff" }, { value: "tips", label: "Tips" }, { value: "both", label: "Both" },
-    ] },
-    slider("echo", "decay", "Decay", { min: 1, max: 8, step: 1, pct: false, tier: "primary" }),
-    { id: "echo-tint", label: "Tint", type: "color", field: "color", tier: "advanced", showWhen: (i) => i.colorMode === "solid" },
-    slider("echo", "interval", "Interval", { min: 0.25, max: 2, step: 0.25, pct: false, tier: "advanced" }),
-    slider("echo", "thickness", "Thickness", { min: 1, max: 8, step: 1, pct: false, tier: "advanced" }),
-    slider("echo", "glow", "Glow", { tier: "advanced" }),
-    slider("echo", "depth", "Depth", { tier: "advanced" }),
-    slider("echo", "flash", "Flash", { tier: "advanced" }),
-    slider("echo", "streak", "Streak", { tier: "advanced" }),
+  ghost: [
+    slider("ghost", "intensity", "Intensity", { tier: "primary" }),
+    slider("ghost", "decay", "Persistence", { min: 1, max: 10, step: 0.5, pct: false, tier: "primary" }),
+    slider("ghost", "interval", "Density", { tier: "primary" }),
   ],
   bloom: [
     { id: "bloom-colormode", label: "Color", type: "segmented", field: "colorMode", tier: "primary", options: [
@@ -180,20 +168,20 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     slider("bloom", "chromatic", "Dispersion", { tier: "advanced" }),
     slider("bloom", "afterglow", "Afterglow", { tier: "advanced" }),
   ],
-  water: [
-    ...paletteColor("water", [
+  goo: [
+    ...paletteColor("goo", [
       { value: "classic", label: "Classic" }, { value: "mercury", label: "Mercury" }, { value: "acid", label: "Acid" },
       { value: "blood", label: "Blood" }, { value: "spirit", label: "Spirit" }, { value: "custom", label: "Custom" },
     ]),
-    slider("water", "intensity", "Intensity", { tier: "primary" }),
-    slider("water", "ambientEmission", "Ambient", { tier: "primary" }),
-    slider("water", "motionEmission", "Motion", { tier: "primary" }),
-    { id: "water-track", label: "Track", type: "segmented", field: "trackingMode", options: TRACK_OPTS, tier: "tracking" },
-    { id: "water-style", label: "Style", type: "segmented", field: "spewStyle", tier: "advanced", options: [
+    slider("goo", "intensity", "Intensity", { tier: "primary" }),
+    slider("goo", "ambientEmission", "Ambient", { tier: "primary" }),
+    slider("goo", "motionEmission", "Motion", { tier: "primary" }),
+    { id: "goo-track", label: "Track", type: "segmented", field: "trackingMode", options: TRACK_OPTS, tier: "tracking" },
+    { id: "goo-style", label: "Style", type: "segmented", field: "spewStyle", tier: "advanced", options: [
       { value: "splash", label: "Splash" }, { value: "flow", label: "Flow" }, { value: "mist", label: "Mist" },
     ] },
-    slider("water", "clarity", "Clarity", { tier: "advanced" }),
-    slider("water", "surfaceTension", "Tension", { tier: "advanced" }),
+    slider("goo", "clarity", "Clarity", { tier: "advanced" }),
+    slider("goo", "surfaceTension", "Tension", { tier: "advanced" }),
   ],
   bubbles: [
     ...paletteColor("bubbles", [

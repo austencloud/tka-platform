@@ -13,7 +13,7 @@
  */
 
 import type {
-  EchoPassPayload,
+  GhostPassPayload,
   BloomPassPayload,
   ZapPassPayload,
   PulsePassPayload,
@@ -148,9 +148,9 @@ export class OverlayEffectsExecutor {
     gl.disable(gl.BLEND);
   }
 
-  // ── Echo (phantom trail lines) ───────────────────────────────────────
+  // ── Ghost (phantom trail lines) ───────────────────────────────────────
 
-  executeEcho(payload: EchoPassPayload): void {
+  executeGhost(payload: GhostPassPayload): void {
     if (payload.phantoms.length === 0) return;
     this.ensureMesh();
     const gl = this.gl;

@@ -69,18 +69,13 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     mode: "stream",
   },
 
-  echo: {
-    intensity: 0.7,
-    decay: 4,
-    interval: 1,
-    shape: "staff",
-    colorMode: "solid",
-    color: "#ffffff",
-    thickness: 3,
-    glow: 0.6,
-    depth: 0.5,
-    flash: 0.5,
-    streak: 0.35,
+  // Ghost = prop onion-skin (decaying ghost trail). intensity=opacity,
+  // decay=Persistence (trail length), interval=Density (higher=denser).
+  // See ghost-2d-renderer.ts.
+  ghost: {
+    intensity: 0.85,
+    decay: 8,
+    interval: 0.5,
   },
 
   bloom: {
@@ -98,7 +93,11 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     afterglow: 0.5,
   },
 
-  water: {
+  // Goo (renamed from water 2026-06-28). clarity/surfaceTension/spewStyle are
+  // inert legacy droplet knobs kept for shape stability; goo uses emission,
+  // intensity, palette, trackingMode. Higher motionEmission so blobs are dense
+  // enough to bridge into connected goo rather than lonely globs.
+  goo: {
     ambientEmission: 0.4,
     motionEmission: 0.6,
     intensity: 0.6,
@@ -222,9 +221,9 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     charcoal: null,
     zap: null,
     sparkles: null,
-    echo: null,
+    ghost: null,
     bloom: null,
-    water: null,
+    goo: null,
     bubbles: null,
     petals: null,
     smoke: null,

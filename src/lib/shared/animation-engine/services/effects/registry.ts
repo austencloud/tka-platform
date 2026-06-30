@@ -16,9 +16,9 @@ import { ledEffectPlugin } from "../led/web-gl-led-renderer";
 import { trailsEffectPlugin } from "../trail-overlay-web-gl2";
 import { zapEffectPlugin } from "../zap-overlay-renderer";
 import { sparklesEffectPlugin } from "../sparkles-overlay-renderer";
-import { echoEffectPlugin } from "../echo-overlay-renderer";
+import { ghostEffectPlugin } from "../ghost-overlay-renderer";
 import { bloomEffectPlugin } from "../bloom-overlay-renderer";
-import { waterEffectPlugin } from "../water-overlay-renderer";
+import { gooEffectPlugin } from "../goo-overlay-renderer";
 import { bubblesEffectPlugin } from "../bubbles-overlay-renderer";
 import { petalsEffectPlugin } from "../petals-overlay-renderer";
 import { smokeEffectPlugin } from "../smoke-overlay-renderer";
@@ -35,9 +35,9 @@ export const EFFECT_PLUGINS: readonly EffectPlugin[] = [
   trailsEffectPlugin,
   zapEffectPlugin,
   sparklesEffectPlugin,
-  echoEffectPlugin,
+  ghostEffectPlugin,
   bloomEffectPlugin,
-  waterEffectPlugin,
+  gooEffectPlugin,
   bubblesEffectPlugin,
   petalsEffectPlugin,
   smokeEffectPlugin,

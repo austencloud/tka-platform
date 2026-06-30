@@ -511,6 +511,14 @@ export class Canvas2DAnimationRenderer {
     return { blue: this.lastBlueTransform, red: this.lastRedTransform };
   }
 
+  /** Current prop sprite images — the echo overlay ghosts these at past poses. */
+  getPropImages(): { blue: HTMLImageElement | null; red: HTMLImageElement | null } {
+    return {
+      blue: this.imageLoader.getBluePropImage(),
+      red: this.imageLoader.getRedPropImage(),
+    };
+  }
+
   /**
    * Render a prop at its calculated position with rotation
    * @param flipped - Whether to mirror the prop horizontally (for asymmetric props like Buugeng)

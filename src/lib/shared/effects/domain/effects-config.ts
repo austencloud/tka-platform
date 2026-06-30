@@ -14,7 +14,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 25;
+export const EFFECTS_CONFIG_VERSION = 28;
 
 export type EffectType =
   | "none"
@@ -24,9 +24,9 @@ export type EffectType =
   | "charcoal"
   | "zap"
   | "sparkles"
-  | "echo"
+  | "ghost"
   | "bloom"
-  | "water"
+  | "goo"
   | "bubbles"
   | "petals"
   | "smoke"
@@ -156,37 +156,19 @@ export interface SparklesIntent {
   mode: "burst" | "stream" | "trail";
 }
 
-export interface EchoIntent {
-  /** 0-1 - exposure composite alpha (peak brightness of the baked exposure). */
+/**
+ * Ghost = prop onion-skin (decaying ghost trail). The real prop sprite is ghosted
+ * at recent past poses, fading to nothing over a short window, so the prop trails
+ * out behind himself with no persistent after-image — not a tip trail, not a
+ * stick line, the actual prop graphic. See ghost-2d-renderer.ts.
+ */
+export interface GhostIntent {
+  /** 0-1 — overall trail opacity (master brightness). */
   intensity: number;
-  /** 1-8 - exposure length in beats: how many beats a stamped clone takes to
-   *  fade to ~0 in the accumulation buffer. Short = rolling few-beat exposure;
-   *  long = the whole loop's clone-march baked at once. */
+  /** 1-10 — Persistence: how long each ghost lingers before fading to nothing. */
   decay: number;
-  /** Capture interval in beats. 1 = every beat, 0.5 = every half-beat, 2 = every other beat. */
+  /** 0-1 — Density: higher packs more ghosts into the trail (finer pose sampling). */
   interval: number;
-  /** "staff" = line connecting blue/red tip pair; "tips" = dots at each tip; "both" = line + dots. */
-  shape: "staff" | "tips" | "both";
-  /** "solid" = use color, "rainbow" = hue shifts per-beat, "prop-matched" = blue
-   *  tips blue / red tips red, "gradient" = hue keyed to capture-beat (color
-   *  bakes into the exposure at stamp time, so it can't shift after capture). */
-  colorMode: "solid" | "rainbow" | "prop-matched" | "gradient";
-  /** Hex - when colorMode === "solid". */
-  color: string;
-  /** 1-8 - stroke width / tip dot size in 2D. */
-  thickness: number;
-  /** 0-1 - luminous bloom (shadowBlur halo) on clones + tip orbs. */
-  glow: number;
-  /** 0-1 - exposure falloff steepness: higher makes older stamps recede (dim)
-   *  faster down the exposure tail. Expresses "recede" temporally - baked pixels
-   *  can't shrink. */
-  depth: number;
-  /** 0-1 - capture-flash brightness: a bright pop on each beat of capture. */
-  flash: number;
-  /** 0-1 - connective body-to-body thread linking consecutive clones, so the
-   *  exposure reads as one continuous strobe rather than isolated stamps.
-   *  0 = pure stamps. Faint + beat-gated to stay distinct from Trails. */
-  streak: number;
 }
 
 export interface BloomIntent {
@@ -224,7 +206,15 @@ export interface BloomIntent {
   afterglow: number;
 }
 
-export interface WaterIntent {
+/**
+ * Goo — viscous luminous liquid flung off the prop, blobs merged via the
+ * metaball blur+contrast threshold (see Goo2DRenderer). Renamed from the
+ * earlier realistic-water effect (2026-06-28). Goo reads ambientEmission,
+ * motionEmission, intensity, palette and trackingMode; the droplet-era fields
+ * `clarity`, `surfaceTension` and `spewStyle` are inert for the goo renderer
+ * and kept only for config-shape stability — a controls trim is a follow-up.
+ */
+export interface GooIntent {
   /** 0-1. Continuous drip rate when props are at rest. */
   ambientEmission: number;
   /** 0-1. Velocity-reactive emission multiplier. */
@@ -452,9 +442,9 @@ export interface EffectsConfig {
   charcoal: CharcoalIntent;
   zap: ZapIntent;
   sparkles: SparklesIntent;
-  echo: EchoIntent;
+  ghost: GhostIntent;
   bloom: BloomIntent;
-  water: WaterIntent;
+  goo: GooIntent;
   bubbles: BubblesIntent;
   petals: PetalsIntent;
   smoke: SmokeIntent;
@@ -469,9 +459,9 @@ export interface EffectsConfig {
     charcoal: string | null;
     zap: string | null;
     sparkles: string | null;
-    echo: string | null;
+    ghost: string | null;
     bloom: string | null;
-    water: string | null;
+    goo: string | null;
     bubbles: string | null;
     petals: string | null;
     smoke: string | null;

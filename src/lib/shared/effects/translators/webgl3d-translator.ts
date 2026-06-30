@@ -5,9 +5,9 @@ import type {
   CharcoalIntent,
   ZapIntent,
   SparklesIntent,
-  EchoIntent,
+  GhostIntent,
   BloomIntent,
-  WaterIntent,
+  GooIntent,
   BubblesIntent,
   PetalsIntent,
   SmokeIntent,
@@ -21,9 +21,9 @@ import type {
   Charcoal3DParams,
   Zap3DParams,
   Sparkles3DParams,
-  Echo3DParams,
+  Ghost3DParams,
   Bloom3DParams,
-  Water3DParams,
+  Goo3DParams,
   Bubbles3DParams,
   Petals3DParams,
   Smoke3DParams,
@@ -122,11 +122,11 @@ export function resolveSparkles3D(
   return { ...intent, ...defaults, ...override };
 }
 
-export function resolveEcho3D(
-  intent: EchoIntent,
-  override: Partial<Echo3DParams> = {},
-): Echo3DParams {
-  const defaults: Omit<Echo3DParams, keyof EchoIntent> = {
+export function resolveGhost3D(
+  intent: GhostIntent,
+  override: Partial<Ghost3DParams> = {},
+): Ghost3DParams {
+  const defaults: Omit<Ghost3DParams, keyof GhostIntent> = {
     poolSize: Math.max(2, Math.ceil(intent.decay / intent.interval) + 2),
   };
   return { ...intent, ...defaults, ...override };
@@ -144,11 +144,11 @@ export function resolveBloom3D(
   return { ...intent, ...defaults, ...override };
 }
 
-export function resolveWater3D(
-  intent: WaterIntent,
-  override: Partial<Water3DParams> = {},
-): Water3DParams {
-  const defaults: Omit<Water3DParams, keyof WaterIntent> = {
+export function resolveGoo3D(
+  intent: GooIntent,
+  override: Partial<Goo3DParams> = {},
+): Goo3DParams {
+  const defaults: Omit<Goo3DParams, keyof GooIntent> = {
     resolvedPalette: resolveWaterPalette(intent),
     poolSize: 1024,
     baseRadius: 0.04,

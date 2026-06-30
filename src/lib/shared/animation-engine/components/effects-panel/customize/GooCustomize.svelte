@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import type { WaterIntent } from "$lib/shared/effects/domain/effects-config";
+  import type { GooIntent } from "$lib/shared/effects/domain/effects-config";
   import OptionChipRow from "../OptionChipRow.svelte";
 
   interface Props {
@@ -10,7 +10,7 @@
   const { onBack }: Props = $props();
   const state = getEffectsConfigContext();
 
-  const PALETTES: { value: WaterIntent["palette"]; label: string; swatch: string }[] = [
+  const PALETTES: { value: GooIntent["palette"]; label: string; swatch: string }[] = [
     { value: "classic", label: "Classic", swatch: "#3a7fd9" },
     { value: "mercury", label: "Mercury", swatch: "#9a9fa8" },
     { value: "acid", label: "Acid", swatch: "#7fd94a" },
@@ -19,17 +19,15 @@
     { value: "custom", label: "Custom", swatch: "#ffffff" },
   ];
 
-  const TRACKING: { value: WaterIntent["trackingMode"]; label: string }[] = [
+  const TRACKING: { value: GooIntent["trackingMode"]; label: string }[] = [
     { value: "left_end", label: "Left" },
     { value: "right_end", label: "Right" },
     { value: "both_ends", label: "Both" },
   ];
 
-  const STYLES: { value: WaterIntent["spewStyle"]; label: string; icon: string }[] = [
-    { value: "splash", label: "Splash", icon: "fa-droplet" },
-    { value: "flow", label: "Flow", icon: "fa-wave-square" },
-    { value: "mist", label: "Mist", icon: "fa-cloud" },
-  ];
+  // Goo reads emission/intensity/palette/tracking. The droplet-era spewStyle,
+  // clarity and surfaceTension knobs are inert for the goo renderer, so they
+  // are not exposed here (the fields remain on GooIntent for shape stability).
 </script>
 
 <div class="customize-view">
@@ -39,19 +37,19 @@
   </button>
 
   {#if state}
-    <div class="water-controls">
-      <OptionChipRow label="Palette" ariaLabel="Water palette" value={state.water.palette} options={PALETTES} onChange={(v) => state.updateEffect("water", { palette: v })} />
+    <div class="goo-controls">
+      <OptionChipRow label="Palette" ariaLabel="Goo palette" value={state.goo.palette} options={PALETTES} onChange={(v) => state.updateEffect("goo", { palette: v })} />
 
-      {#if state.water.palette === "custom"}
+      {#if state.goo.palette === "custom"}
         <div class="color-row">
           <span class="color-label">Tint</span>
           <div class="color-pickers">
             <label class="color-picker">
               <input
                 type="color"
-                value={state.water.customColor}
+                value={state.goo.customColor}
                 oninput={(e) =>
-                  state.updateEffect("water", {
+                  state.updateEffect("goo", {
                     customColor: (e.currentTarget as HTMLInputElement).value,
                   })}
               />
@@ -60,98 +58,60 @@
         </div>
       {/if}
 
-      <OptionChipRow label="Style" ariaLabel="Water spew style" value={state.water.spewStyle} options={STYLES} onChange={(v) => state.updateEffect("water", { spewStyle: v })} />
-
-      <OptionChipRow label="Tracking" ariaLabel="Water tracking mode" value={state.water.trackingMode} options={TRACKING} onChange={(v) => state.updateEffect("water", { trackingMode: v })} />
+      <OptionChipRow label="Tracking" ariaLabel="Goo tracking mode" value={state.goo.trackingMode} options={TRACKING} onChange={(v) => state.updateEffect("goo", { trackingMode: v })} />
 
       <!-- Ambient emission -->
       <div class="slider-row">
-        <label for="water-ambient">Drip</label>
+        <label for="goo-ambient">Drip</label>
         <input
-          id="water-ambient"
+          id="goo-ambient"
           type="range"
           min="0"
           max="1"
           step="0.05"
-          value={state.water.ambientEmission}
+          value={state.goo.ambientEmission}
           oninput={(e) =>
-            state.updateEffect("water", {
+            state.updateEffect("goo", {
               ambientEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
-        <span class="slider-value">{Math.round(state.water.ambientEmission * 100)}%</span>
+        <span class="slider-value">{Math.round(state.goo.ambientEmission * 100)}%</span>
       </div>
 
       <!-- Motion emission -->
       <div class="slider-row">
-        <label for="water-motion">Motion</label>
+        <label for="goo-motion">Motion</label>
         <input
-          id="water-motion"
+          id="goo-motion"
           type="range"
           min="0"
           max="1"
           step="0.05"
-          value={state.water.motionEmission}
+          value={state.goo.motionEmission}
           oninput={(e) =>
-            state.updateEffect("water", {
+            state.updateEffect("goo", {
               motionEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
-        <span class="slider-value">{Math.round(state.water.motionEmission * 100)}%</span>
+        <span class="slider-value">{Math.round(state.goo.motionEmission * 100)}%</span>
       </div>
 
       <!-- Intensity -->
       <div class="slider-row">
-        <label for="water-intensity">Intensity</label>
+        <label for="goo-intensity">Intensity</label>
         <input
-          id="water-intensity"
+          id="goo-intensity"
           type="range"
           min="0"
           max="1"
           step="0.05"
-          value={state.water.intensity}
+          value={state.goo.intensity}
           oninput={(e) =>
-            state.updateEffect("water", {
+            state.updateEffect("goo", {
               intensity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
-        <span class="slider-value">{Math.round(state.water.intensity * 100)}%</span>
-      </div>
-
-      <!-- Clarity -->
-      <div class="slider-row">
-        <label for="water-clarity">Clarity</label>
-        <input
-          id="water-clarity"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.water.clarity}
-          oninput={(e) =>
-            state.updateEffect("water", {
-              clarity: +(e.currentTarget as HTMLInputElement).value,
-            })}
-        />
-        <span class="slider-value">{Math.round(state.water.clarity * 100)}%</span>
-      </div>
-
-      <!-- Surface tension (inactive until 1f.iii metaballs ship) -->
-      <div class="slider-row">
-        <label for="water-tension">Tension</label>
-        <input
-          id="water-tension"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.water.surfaceTension}
-          oninput={(e) =>
-            state.updateEffect("water", {
-              surfaceTension: +(e.currentTarget as HTMLInputElement).value,
-            })}
-        />
-        <span class="slider-value">{Math.round(state.water.surfaceTension * 100)}%</span>
+        <span class="slider-value">{Math.round(state.goo.intensity * 100)}%</span>
       </div>
     </div>
   {:else}
@@ -203,7 +163,7 @@
     }
   }
 
-  .water-controls {
+  .goo-controls {
     display: flex;
     flex-direction: column;
     gap: 8px;

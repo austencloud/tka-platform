@@ -18,7 +18,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     afterglow: 0.5,
   },
 
-  water: {
+  goo: {
     intensity: 0.6,
     palette: "classic",
   },
@@ -71,8 +71,8 @@ describe("patchDefaultsBlock", () => {
   it("swaps a field in the target block, leaves other blocks alone", () => {
     const { src } = patchDefaultsBlock(SAMPLE_DEFAULTS, "bloom", { intensity: 0.5 });
     expect(src).toContain("  bloom: {\n    intensity: 0.5,");
-    // water.intensity must stay 0.6 — same field name, different block
-    expect(src).toContain("  water: {\n    intensity: 0.6,");
+    // goo.intensity must stay 0.6 — same field name, different block
+    expect(src).toContain("  goo: {\n    intensity: 0.6,");
   });
 
   it("swaps the LAST field without duplicating it (the end-of-slice anchor)", () => {

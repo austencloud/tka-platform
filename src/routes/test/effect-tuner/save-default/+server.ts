@@ -32,8 +32,8 @@ const PRESETS_DIR = resolve(
 );
 
 const EFFECT_IDS = new Set([
-  "trails", "fire", "led", "charcoal", "zap", "sparkles", "echo", "bloom",
-  "water", "bubbles", "petals", "smoke", "ink", "frost", "silk", "pulse",
+  "trails", "fire", "led", "charcoal", "zap", "sparkles", "ghost", "bloom",
+  "goo", "bubbles", "petals", "smoke", "ink", "frost", "silk", "pulse",
 ]);
 
 /** Preset source file for an effect. Only `trails` breaks the `<effect>-presets` rule. */

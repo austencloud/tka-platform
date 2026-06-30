@@ -16,9 +16,9 @@ import { LED_PRESET_GROUP } from "./presets/led-presets";
 import { CHARCOAL_PRESET_GROUP } from "./presets/charcoal-presets";
 import { ZAP_PRESET_GROUP } from "./presets/zap-presets";
 import { SPARKLES_PRESET_GROUP } from "./presets/sparkles-presets";
-import { ECHO_PRESET_GROUP } from "./presets/echo-presets";
+import { GHOST_PRESET_GROUP } from "./presets/ghost-presets";
 import { BLOOM_PRESET_GROUP } from "./presets/bloom-presets";
-import { WATER_PRESET_GROUP } from "./presets/water-presets";
+import { GOO_PRESET_GROUP } from "./presets/goo-presets";
 import { BUBBLES_PRESET_GROUP } from "./presets/bubbles-presets";
 import { PETALS_PRESET_GROUP } from "./presets/petals-presets";
 import { SMOKE_PRESET_GROUP } from "./presets/smoke-presets";
@@ -58,9 +58,9 @@ export const EFFECTS: readonly EffectMeta[] = [
   { id: "charcoal", label: "Coal", icon: "fa-diamond", color: "#a855f7" },
   { id: "zap", label: "Zap", icon: "fa-bolt", color: "#38bdf8" },
   { id: "sparkles", label: "Sparkle", icon: "fa-star", color: "#fbbf24" },
-  { id: "echo", label: "Echo", icon: "fa-clone", color: "#22d3ee" },
+  { id: "ghost", label: "Ghost", icon: "fa-ghost", color: "#22d3ee" },
   { id: "bloom", label: "Bloom", icon: "fa-sun", color: "#f472b6" },
-  { id: "water", label: "Water", icon: "fa-droplet", color: "#3a7fd9" },
+  { id: "goo", label: "Goo", icon: "fa-droplet", color: "#3a7fd9" },
   { id: "bubbles", label: "Bubbles", icon: "fa-circle-notch", color: "#c8e0ff" },
   { id: "petals", label: "Petals", icon: "fa-leaf", color: "#ffc0d8" },
   { id: "smoke", label: "Smoke", icon: "fa-smog", color: "#c0c0c8" },
@@ -108,9 +108,9 @@ const presetGroups: Record<string, EffectPresetGroup> = {
   charcoal: CHARCOAL_PRESET_GROUP,
   zap: ZAP_PRESET_GROUP,
   sparkles: SPARKLES_PRESET_GROUP,
-  echo: ECHO_PRESET_GROUP,
+  ghost: GHOST_PRESET_GROUP,
   bloom: BLOOM_PRESET_GROUP,
-  water: WATER_PRESET_GROUP,
+  goo: GOO_PRESET_GROUP,
   bubbles: BUBBLES_PRESET_GROUP,
   petals: PETALS_PRESET_GROUP,
   smoke: SMOKE_PRESET_GROUP,
@@ -128,9 +128,9 @@ const customizeLoaders: Record<string, () => Promise<{ default: Component<any> }
   charcoal: resilientLazyImport(() => import("./customize/CharcoalCustomize.svelte")),
   zap: resilientLazyImport(() => import("./customize/ZapCustomize.svelte")),
   sparkles: resilientLazyImport(() => import("./customize/SparklesCustomize.svelte")),
-  echo: resilientLazyImport(() => import("./customize/EchoCustomize.svelte")),
+  ghost: resilientLazyImport(() => import("./customize/GhostCustomize.svelte")),
   bloom: resilientLazyImport(() => import("./customize/BloomCustomize.svelte")),
-  water: resilientLazyImport(() => import("./customize/WaterCustomize.svelte")),
+  goo: resilientLazyImport(() => import("./customize/GooCustomize.svelte")),
   bubbles: resilientLazyImport(() => import("./customize/BubblesCustomize.svelte")),
   petals: resilientLazyImport(() => import("./customize/PetalsCustomize.svelte")),
   smoke: resilientLazyImport(() => import("./customize/SmokeCustomize.svelte")),

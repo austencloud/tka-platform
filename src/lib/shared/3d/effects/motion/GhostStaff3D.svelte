@@ -2,7 +2,7 @@
   /**
    * GhostStaff3D - beat-onset phantoms of a staff in 3D.
    *
-   * Mirrors the 2D Echo2DRenderer behaviour: on each beat boundary
+   * Mirrors the 2D Ghost2DRenderer behaviour: on each beat boundary
    * (`floor(currentStep / interval) > lastStepIndex`), captures the current
    * prop's worldPosition + worldRotation into a ring buffer. Each phantom
    * is rendered as a translucent staff-shaped mesh (cylinder) with alpha

@@ -16,7 +16,7 @@ import type {
   CharcoalIntent,
   ZapIntent,
   SparklesIntent,
-  EchoIntent,
+  GhostIntent,
   BloomIntent,
   GooIntent,
   BubblesIntent,
@@ -35,7 +35,7 @@ export interface EffectConfigMap {
   charcoal: CharcoalIntent;
   zap: ZapIntent;
   sparkles: SparklesIntent;
-  echo: EchoIntent;
+  ghost: GhostIntent;
   bloom: BloomIntent;
   goo: GooIntent;
   bubbles: BubblesIntent;
@@ -61,7 +61,7 @@ const CUSTOM_CLEAN_FLAG = "tka_effects_custom_clean";
 const VM_STORAGE_KEY = "animation-visibility-settings";
 
 const EFFECT_IDS = [
-  "trails", "fire", "led", "charcoal", "zap", "sparkles", "echo", "bloom",
+  "trails", "fire", "led", "charcoal", "zap", "sparkles", "ghost", "bloom",
   "goo", "bubbles", "petals", "smoke", "ink", "frost", "silk", "pulse",
 ] as const;
 
@@ -528,7 +528,7 @@ export function createEffectsConfigState(
     get charcoal() { return config.charcoal; },
     get zap() { return config.zap; },
     get sparkles() { return config.sparkles; },
-    get echo() { return config.echo; },
+    get ghost() { return config.ghost; },
     get bloom() { return config.bloom; },
     get goo() { return config.goo; },
     get bubbles() { return config.bubbles; },

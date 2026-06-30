@@ -25,9 +25,9 @@ import { LED_PRESET_GROUP } from "./led-presets";
 import { CHARCOAL_PRESET_GROUP } from "./charcoal-presets";
 import { ZAP_PRESET_GROUP } from "./zap-presets";
 import { SPARKLES_PRESET_GROUP } from "./sparkles-presets";
-import { ECHO_PRESET_GROUP } from "./echo-presets";
+import { GHOST_PRESET_GROUP } from "./ghost-presets";
 import { BLOOM_PRESET_GROUP } from "./bloom-presets";
-import { WATER_PRESET_GROUP } from "./water-presets";
+import { GOO_PRESET_GROUP } from "./goo-presets";
 import { BUBBLES_PRESET_GROUP } from "./bubbles-presets";
 import { PETALS_PRESET_GROUP } from "./petals-presets";
 import { SMOKE_PRESET_GROUP } from "./smoke-presets";
@@ -43,9 +43,9 @@ const GROUPS: EffectPresetGroup[] = [
   CHARCOAL_PRESET_GROUP,
   ZAP_PRESET_GROUP,
   SPARKLES_PRESET_GROUP,
-  ECHO_PRESET_GROUP,
+  GHOST_PRESET_GROUP,
   BLOOM_PRESET_GROUP,
-  WATER_PRESET_GROUP,
+  GOO_PRESET_GROUP,
   BUBBLES_PRESET_GROUP,
   PETALS_PRESET_GROUP,
   SMOKE_PRESET_GROUP,

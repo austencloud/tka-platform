@@ -46,9 +46,9 @@
   import TrailsPanel from "$lib/shared/animation-engine/components/settings-panels/TrailsPanel.svelte";
   import ZapCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/ZapCustomize.svelte";
   import SparklesCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/SparklesCustomize.svelte";
-  import EchoCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/EchoCustomize.svelte";
+  import GhostCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/GhostCustomize.svelte";
   import BloomCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/BloomCustomize.svelte";
-  import WaterCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/WaterCustomize.svelte";
+  import GooCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/GooCustomize.svelte";
   import BubblesCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/BubblesCustomize.svelte";
   import PetalsCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/PetalsCustomize.svelte";
   import SmokeCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/SmokeCustomize.svelte";
@@ -93,8 +93,8 @@
   const folds: Fold[] = [2, 4, 8];
 
   const effectChoices: EffectType[] = [
-    "none", "fire", "charcoal", "led", "trails", "zap", "sparkles", "echo",
-    "bloom", "water", "bubbles", "petals", "smoke", "ink", "frost", "silk", "pulse",
+    "none", "fire", "charcoal", "led", "trails", "zap", "sparkles", "ghost",
+    "bloom", "goo", "bubbles", "petals", "smoke", "ink", "frost", "silk", "pulse",
   ];
 
   const tipEffectMap = $derived<TipEffectMap | undefined>(
@@ -111,9 +111,9 @@
     trails: { comp: TrailsPanel, needsBack: false },
     zap: { comp: ZapCustomize, needsBack: true },
     sparkles: { comp: SparklesCustomize, needsBack: true },
-    echo: { comp: EchoCustomize, needsBack: true },
+    ghost: { comp: GhostCustomize, needsBack: true },
     bloom: { comp: BloomCustomize, needsBack: true },
-    water: { comp: WaterCustomize, needsBack: true },
+    goo: { comp: GooCustomize, needsBack: true },
     bubbles: { comp: BubblesCustomize, needsBack: true },
     petals: { comp: PetalsCustomize, needsBack: true },
     smoke: { comp: SmokeCustomize, needsBack: true },

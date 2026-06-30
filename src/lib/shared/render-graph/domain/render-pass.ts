@@ -16,9 +16,9 @@ export type RenderPassKind =
   | "charcoal"
   | "zap"
   | "sparkles"
-  | "echo"
+  | "ghost"
   | "bloom"
-  | "water"
+  | "goo"
   | "bubbles"
   | "petals"
   | "smoke"
@@ -35,7 +35,7 @@ export type RenderPassKind =
  * Ordering rationale:
  *   Background plane: grid → glyphs → frost (surface) → trail → ink/silk (ribbons)
  *   Mid-plane: charcoal → props → led → echo (phantoms)
- *   Foreground: fire → water → smoke → bubbles → petals → zap → sparkles
+ *   Foreground: fire → goo → smoke → bubbles → petals → zap → sparkles
  *   Post-process: bloom → pulse (radial overlay) → composite
  */
 export const Z_ORDER = {
@@ -48,9 +48,9 @@ export const Z_ORDER = {
   CHARCOAL: 45,
   PROPS: 50,
   LED: 55,
-  ECHO: 57,
+  GHOST: 57,
   FIRE: 60,
-  WATER: 62,
+  GOO: 62,
   SMOKE: 64,
   BUBBLES: 66,
   PETALS: 68,

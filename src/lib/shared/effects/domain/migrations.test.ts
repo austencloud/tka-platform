@@ -93,9 +93,9 @@ describe("migrateEffectsConfig", () => {
     const out = migrateEffectsConfig(v4);
     expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
     expect((out as any).motion).toBeUndefined();
-    expect(out.echo.intensity).toBe(0.7);
-    expect(out.echo.decay).toBe(4);
-    expect(out.echo.shape).toBe("staff");
+    expect(out.ghost.intensity).toBe(0.7);
+    expect(out.ghost.decay).toBe(4);
+    expect(out.ghost.interval).toBe(0.5);
   });
 
   it("migrates v5 motion block to v6 echo with fresh defaults", () => {
@@ -110,16 +110,14 @@ describe("migrateEffectsConfig", () => {
     const out = migrateEffectsConfig(v5);
     expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
     expect((out as any).motion).toBeUndefined();
-    expect(out.echo.intensity).toBe(0.7);
-    expect(out.echo.decay).toBe(4);
-    expect(out.echo.interval).toBe(1);
-    expect(out.echo.shape).toBe("staff");
-    expect(out.echo.colorMode).toBe("solid");
-    expect(out.echo.color).toBe("#ffffff");
-    expect(out.echo.thickness).toBe(3);
+    expect(out.ghost.intensity).toBe(0.7);
+    expect(out.ghost.decay).toBe(4);
+    // v28 strips echo to its three live fields; the formerly-unused interval is
+    // reseeded to the Density default.
+    expect(out.ghost.interval).toBe(0.5);
   });
 
-  it("migrates v5 tipEffectMap motion entries to echo", () => {
+  it("migrates v5 tipEffectMap motion entries to ghost (via echo)", () => {
     const v5 = {
       version: 5,
       tipEffectMap: {
@@ -129,19 +127,20 @@ describe("migrateEffectsConfig", () => {
       },
     };
     const out = migrateEffectsConfig(v5);
-    expect(out.tipEffectMap["*"]?.effect).toBe("echo");
-    expect(out.tipEffectMap["0"]?.effect).toBe("echo");
+    expect(out.tipEffectMap["*"]?.effect).toBe("ghost");
+    expect(out.tipEffectMap["0"]?.effect).toBe("ghost");
     expect(out.tipEffectMap["1-0"]?.effect).toBe("sparkles");
   });
 
-  it("migrates v5 activePresets.motion → v6 activePresets.echo", () => {
+  it("migrates v5 activePresets.motion → ghost (via echo)", () => {
     const v5 = {
       version: 5,
       activePresets: { motion: "motion-anime", sparkles: "sparkles-fairy-dust" },
     };
     const out = migrateEffectsConfig(v5);
     expect((out.activePresets as any).motion).toBeUndefined();
-    expect(out.activePresets.echo).toBe("motion-anime");
+    expect((out.activePresets as any).echo).toBeUndefined();
+    expect(out.activePresets.ghost).toBe("motion-anime");
     expect(out.activePresets.sparkles).toBe("sparkles-fairy-dust");
   });
 
@@ -218,20 +217,15 @@ describe("migrateEffectsConfig", () => {
     expect(out.bloom.palette).toEqual(["#aaa", "#bbb", "#ccc"]);
   });
 
-  it("leaves a current-version v6 echo untouched", () => {
-    const v6 = {
+  it("leaves a current-version ghost untouched", () => {
+    const current = {
       version: EFFECTS_CONFIG_VERSION,
-      echo: {
-        intensity: 0.9, decay: 6, interval: 0.5,
-        shape: "tips" as const,
-        colorMode: "rainbow" as const,
-        color: "#22d3ee", thickness: 5,
-      },
+      ghost: { intensity: 0.9, decay: 6, interval: 0.5 },
     };
-    const out = migrateEffectsConfig(v6);
-    expect(out.echo.intensity).toBe(0.9);
-    expect(out.echo.shape).toBe("tips");
-    expect(out.echo.colorMode).toBe("rainbow");
+    const out = migrateEffectsConfig(current);
+    expect(out.ghost.intensity).toBe(0.9);
+    expect(out.ghost.decay).toBe(6);
+    expect(out.ghost.interval).toBe(0.5);
   });
 
   it("migrates v8 → v9 by seeding default bubbles intent", () => {

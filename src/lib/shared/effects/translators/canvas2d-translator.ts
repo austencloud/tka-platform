@@ -5,9 +5,9 @@ import type {
   CharcoalIntent,
   ZapIntent,
   SparklesIntent,
-  EchoIntent,
+  GhostIntent,
   BloomIntent,
-  WaterIntent,
+  GooIntent,
   BubblesIntent,
   PetalsIntent,
   SmokeIntent,
@@ -23,9 +23,9 @@ import type {
   Charcoal2DParams,
   Zap2DParams,
   Sparkles2DParams,
-  Echo2DParams,
+  Ghost2DParams,
   Bloom2DParams,
-  Water2DParams,
+  GooParams,
   Bubbles2DParams,
   Petals2DParams,
   Smoke2DParams,
@@ -137,11 +137,11 @@ export function resolveSparkles2D(
   return { ...intent, ...defaults, ...override };
 }
 
-export function resolveEcho2D(
-  intent: EchoIntent,
-  override: Partial<Echo2DParams> = {},
-): Echo2DParams {
-  const defaults: Omit<Echo2DParams, keyof EchoIntent> = {
+export function resolveGhost2D(
+  intent: GhostIntent,
+  override: Partial<Ghost2DParams> = {},
+): Ghost2DParams {
+  const defaults: Omit<Ghost2DParams, keyof GhostIntent> = {
     blendMode: "lighter",
   };
   return { ...intent, ...defaults, ...override };
@@ -157,11 +157,11 @@ export function resolveBloom2D(
   return { ...intent, ...defaults, ...override };
 }
 
-export function resolveWater2D(
-  intent: WaterIntent,
-  override: Partial<Water2DParams> = {},
-): Water2DParams {
-  const defaults: Omit<Water2DParams, keyof WaterIntent> = {
+export function resolveGoo2D(
+  intent: GooIntent,
+  override: Partial<GooParams> = {},
+): GooParams {
+  const defaults: Omit<GooParams, keyof GooIntent> = {
     resolvedPalette: resolveWaterPalette(intent),
     poolSize: 1024,
     baseRadius: 4,

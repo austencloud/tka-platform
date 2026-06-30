@@ -25,7 +25,7 @@ import type { EffectsConfigState } from "$lib/shared/effects/state/effects-confi
 import type {
   Bloom2DParams,
   Bubbles2DParams,
-  Echo2DParams,
+  Ghost2DParams,
   Frost2DParams,
   Ink2DParams,
   Petals2DParams,
@@ -33,13 +33,13 @@ import type {
   Pulse2DParams,
   Smoke2DParams,
   Sparkles2DParams,
-  Water2DParams,
+  GooParams,
   Zap2DParams,
 } from "$lib/shared/effects/translators/canvas2d-types";
 import {
   resolveBloom2D,
   resolveBubbles2D,
-  resolveEcho2D,
+  resolveGhost2D,
   resolveFrost2D,
   resolveInk2D,
   resolvePetals2D,
@@ -47,13 +47,13 @@ import {
   resolvePulse2D,
   resolveSmoke2D,
   resolveSparkles2D,
-  resolveWater2D,
+  resolveGoo2D,
   resolveZap2D,
 } from "$lib/shared/effects/translators/canvas2d-translator";
 import type {
   BloomIntent,
   BubblesIntent,
-  EchoIntent,
+  GhostIntent,
   FrostIntent,
   InkIntent,
   PetalsIntent,
@@ -61,7 +61,7 @@ import type {
   PulseIntent,
   SmokeIntent,
   SparklesIntent,
-  WaterIntent,
+  GooIntent,
 } from "$lib/shared/effects/domain/effects-config";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
@@ -76,12 +76,12 @@ export class FrameParameterBuilder {
   private zapConfig: Zap2DParams = resolveZap2D(DEFAULT_EFFECTS_CONFIG.zap);
   private sparklesConfig: Sparkles2DParams = resolveSparkles2D(DEFAULT_EFFECTS_CONFIG.sparkles);
   private prevSparklesIntentRef: SparklesIntent | null = null;
-  private echoConfig: Echo2DParams = resolveEcho2D(DEFAULT_EFFECTS_CONFIG.echo);
-  private prevEchoIntentRef: EchoIntent | null = null;
+  private ghostConfig: Ghost2DParams = resolveGhost2D(DEFAULT_EFFECTS_CONFIG.ghost);
+  private prevGhostIntentRef: GhostIntent | null = null;
   private bloomConfig: Bloom2DParams = resolveBloom2D(DEFAULT_EFFECTS_CONFIG.bloom);
   private prevBloomIntentRef: BloomIntent | null = null;
-  private waterConfig: Water2DParams = resolveWater2D(DEFAULT_EFFECTS_CONFIG.water);
-  private prevWaterIntentRef: WaterIntent | null = null;
+  private gooConfig: GooParams = resolveGoo2D(DEFAULT_EFFECTS_CONFIG.goo);
+  private prevGooIntentRef: GooIntent | null = null;
   private bubblesConfig: Bubbles2DParams = resolveBubbles2D(DEFAULT_EFFECTS_CONFIG.bubbles);
   private prevBubblesIntentRef: BubblesIntent | null = null;
   private petalsConfig: Petals2DParams = resolvePetals2D(DEFAULT_EFFECTS_CONFIG.petals);
@@ -153,9 +153,9 @@ export class FrameParameterBuilder {
     ledConfig: null,
     zapConfig: null,
     sparklesConfig: null,
-    echoConfig: null,
+    ghostConfig: null,
     bloomConfig: null,
-    waterConfig: null,
+    gooConfig: null,
     bubblesConfig: null,
     petalsConfig: null,
     smokeConfig: null,
@@ -307,17 +307,17 @@ export class FrameParameterBuilder {
     }
     fp.sparklesConfig = erm.wasEnabled("sparkles") ? this.sparklesConfig : null;
 
-    // Echo overlay config - re-resolve when EchoIntent changes via
+    // Ghost overlay config - re-resolve when GhostIntent changes via
     // reference identity (mirrors sparkles; cheap and EffectsConfigState
-    // assigns a fresh object on every updateEcho).
+    // assigns a fresh object on every updateGhost).
     if (effectsConfigState) {
-      const intent = effectsConfigState.echo;
-      if (intent !== this.prevEchoIntentRef) {
-        this.prevEchoIntentRef = intent;
-        this.echoConfig = resolveEcho2D(intent);
+      const intent = effectsConfigState.ghost;
+      if (intent !== this.prevGhostIntentRef) {
+        this.prevGhostIntentRef = intent;
+        this.ghostConfig = resolveGhost2D(intent);
       }
     }
-    fp.echoConfig = erm.wasEnabled("echo") ? this.echoConfig : null;
+    fp.ghostConfig = erm.wasEnabled("ghost") ? this.ghostConfig : null;
 
     // Bloom overlay config - re-resolve when BloomIntent changes via
     // reference identity (mirrors echo/sparkles; EffectsConfigState
@@ -331,16 +331,16 @@ export class FrameParameterBuilder {
     }
     fp.bloomConfig = erm.wasEnabled("bloom") ? this.bloomConfig : null;
 
-    // Water overlay config - re-resolve when WaterIntent changes via
+    // Goo overlay config - re-resolve when GooIntent changes via
     // reference identity (same pattern as bloom/echo/sparkles).
     if (effectsConfigState) {
-      const intent = effectsConfigState.water;
-      if (intent !== this.prevWaterIntentRef) {
-        this.prevWaterIntentRef = intent;
-        this.waterConfig = resolveWater2D(intent);
+      const intent = effectsConfigState.goo;
+      if (intent !== this.prevGooIntentRef) {
+        this.prevGooIntentRef = intent;
+        this.gooConfig = resolveGoo2D(intent);
       }
     }
-    fp.waterConfig = erm.wasEnabled("water") ? this.waterConfig : null;
+    fp.gooConfig = erm.wasEnabled("goo") ? this.gooConfig : null;
 
     // Bubbles overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {

@@ -1,5 +1,5 @@
 import type {
-  WaterIntent,
+  GooIntent,
   BubblesIntent,
   PetalsIntent,
   SmokeIntent,
@@ -83,8 +83,8 @@ function buildTipState(p: TipParams): ParticleTipState {
   };
 }
 
-export function toWaterPayload(
-  intent: WaterIntent,
+export function toGooPayload(
+  intent: GooIntent,
   ctx: ParticleTranslationContext,
 ): ParticlePassPayload {
   const color = paletteToRgb(intent.palette, intent.customColor);

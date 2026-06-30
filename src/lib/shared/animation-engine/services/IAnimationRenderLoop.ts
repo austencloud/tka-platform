@@ -15,7 +15,7 @@ import type { FireTipTracker } from "./fire-tip-tracker";
 import type { FireOverlayConfig, PropFlameColor } from "../domain/types/fire-types";
 import type { LedTipTracker } from "./led-tip-tracker";
 import type { LedOverlayConfig } from "../domain/types/led-types";
-import type { Bloom2DParams, Bubbles2DParams, Echo2DParams, Frost2DParams, Ink2DParams, Petals2DParams, Pulse2DParams, Silk2DParams, Smoke2DParams, Sparkles2DParams, Water2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
+import type { Bloom2DParams, Bubbles2DParams, Ghost2DParams, Frost2DParams, Ink2DParams, Petals2DParams, Pulse2DParams, Silk2DParams, Smoke2DParams, Sparkles2DParams, GooParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -115,12 +115,12 @@ export interface RenderFrameParams {
   zapConfig?: Zap2DParams | null;
   /** Sparkles overlay parameters (null or undefined = disabled) */
   sparklesConfig?: Sparkles2DParams | null;
-  /** Echo overlay parameters (null or undefined = disabled) */
-  echoConfig?: Echo2DParams | null;
+  /** Ghost overlay parameters (null or undefined = disabled) */
+  ghostConfig?: Ghost2DParams | null;
   /** Bloom overlay parameters (null or undefined = disabled) */
   bloomConfig?: Bloom2DParams | null;
-  /** Water overlay parameters (null or undefined = disabled) */
-  waterConfig?: Water2DParams | null;
+  /** Goo overlay parameters (null or undefined = disabled) */
+  gooConfig?: GooParams | null;
   /** Bubbles overlay parameters (null or undefined = disabled) */
   bubblesConfig?: Bubbles2DParams | null;
   /** Petals overlay parameters (null or undefined = disabled) */

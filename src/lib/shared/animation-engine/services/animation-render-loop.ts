@@ -98,6 +98,8 @@ interface EffectDispatchContext {
   params: RenderFrameParams;
   currentTime: number;
   renderedTransforms: { blue: RenderedPropTransform | null; red: RenderedPropTransform | null } | undefined;
+  /** Live prop sprite images — echo ghosts these at past poses. */
+  propImages: { blue: HTMLImageElement | null; red: HTMLImageElement | null } | undefined;
   loopDetectedThisFrame: boolean;
   isSeamlesslyLoopable: boolean;
 }
@@ -528,18 +530,58 @@ export class AnimationRenderLoop {
       buildInput: (ctx) => AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "sparkles", ctx.params),
       render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
     },
-    // --- Echo: 4-pos + currentStep + colors, no dt ---
+    // --- Ghost: stroboscopic prop mandala — emitters + playback phase + seq epoch ---
     {
-      effect: "echo",
-      configKey: "echoConfig",
-      getRenderer: (l) => (l.renderers.get("echo") ?? null) as EffectRenderer | null,
-      needsDt: false,
+      effect: "ghost",
+      configKey: "ghostConfig",
+      getRenderer: (l) => (l.renderers.get("ghost") ?? null) as EffectRenderer | null,
+      needsDt: true,
       resetTimeOnInactive: false,
-      buildInput: (ctx) => ({
-        emitters: AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "echo", ctx.params),
-        currentStep: ctx.params.currentStep,
-      }),
-      render: (r, cfg, inp) => r.renderFrame(cfg, inp),
+      buildInput: (ctx) => {
+        // Ghost ghosts the REAL prop sprite at past poses (onion-skin). Assemble
+        // each live prop's blit transform from the already-computed prop
+        // transforms (center/angle/scale) + dimensions + the sprite image.
+        const rt = ctx.renderedTransforms;
+        const imgs = ctx.propImages;
+        const p = ctx.params;
+        const props: Array<{
+          id: number;
+          image: CanvasImageSource;
+          centerX: number;
+          centerY: number;
+          angle: number;
+          width: number;
+          height: number;
+          flipped: boolean;
+        }> = [];
+        if (rt?.blue && imgs?.blue && p.props.blueProp) {
+          props.push({
+            id: 0,
+            image: imgs.blue,
+            centerX: rt.blue.centerX,
+            centerY: rt.blue.centerY,
+            angle: rt.blue.angle,
+            width: p.props.bluePropDimensions.width * rt.blue.scaleFactor,
+            height: p.props.bluePropDimensions.height * rt.blue.scaleFactor,
+            flipped: p.bluePropFlipped ?? false,
+          });
+        }
+        if (rt?.red && imgs?.red && p.props.redProp) {
+          props.push({
+            id: 1,
+            image: imgs.red,
+            centerX: rt.red.centerX,
+            centerY: rt.red.centerY,
+            angle: rt.red.angle,
+            width: p.props.redPropDimensions.width * rt.red.scaleFactor,
+            height: p.props.redPropDimensions.height * rt.red.scaleFactor,
+            flipped: p.redPropFlipped ?? false,
+          });
+        }
+        // Wipe the exposure when the sequence changes; hold it across loop wraps.
+        return { props, currentStep: p.currentStep, epoch: p.sequenceContentHash ?? "" };
+      },
+      render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
     },
     // --- Bloom: array-of-tips, no dt ---
     {
@@ -551,14 +593,14 @@ export class AnimationRenderLoop {
       buildInput: (ctx) => AnimationRenderLoop.buildArrayTips(ctx.sharedTips, ctx.tipMap, "bloom", ctx.params, ctx.renderedTransforms),
       render: (r, cfg, inp) => r.renderFrame(cfg, inp),
     },
-    // --- Water: 4-pos, dt, resetTimeOnInactive ---
+    // --- Goo: 4-pos, dt, resetTimeOnInactive ---
     {
-      effect: "water",
-      configKey: "waterConfig",
-      getRenderer: (l) => (l.renderers.get("water") ?? null) as EffectRenderer | null,
+      effect: "goo",
+      configKey: "gooConfig",
+      getRenderer: (l) => (l.renderers.get("goo") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
-      buildInput: (ctx) => AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "water", ctx.params),
+      buildInput: (ctx) => AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "goo", ctx.params),
       render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
     },
     // --- Bubbles: 4-pos, dt, resetTimeOnInactive ---
@@ -1186,6 +1228,7 @@ export class AnimationRenderLoop {
         params,
         currentTime,
         renderedTransforms,
+        propImages: this.renderer?.getPropImages?.(),
         loopDetectedThisFrame: this.loopDetectedThisFrame,
         isSeamlesslyLoopable: params.isSeamlesslyLoopable ?? false,
       };

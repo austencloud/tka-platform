@@ -1,5 +1,5 @@
 import type {
-  EchoIntent,
+  GhostIntent,
   BloomIntent,
   ZapIntent,
   PulseIntent,
@@ -8,8 +8,8 @@ import type {
   SilkIntent,
 } from "$lib/shared/effects/domain/effects-config";
 import type {
-  EchoPassPayload,
-  EchoPhantom,
+  GhostPassPayload,
+  GhostPhantom,
   BloomPassPayload,
   BloomSource,
   ZapPassPayload,
@@ -57,25 +57,26 @@ function paletteToRgb(palette: string, customColor: string): [number, number, nu
   return PALETTE_COLORS[palette] ?? [1, 1, 1];
 }
 
-export interface EchoTranslationContext {
+export interface GhostTranslationContext {
   phantoms: Array<{ bluePos: [number, number]; redPos: [number, number]; age: number }>;
 }
 
-export function toEchoPayload(
-  intent: EchoIntent,
-  ctx: EchoTranslationContext,
-): EchoPassPayload {
-  const [r, g, b] = hexToRgb(intent.color);
-  const phantoms: EchoPhantom[] = ctx.phantoms.map((p) => ({
+export function toGhostPayload(
+  intent: GhostIntent,
+  ctx: GhostTranslationContext,
+): GhostPassPayload {
+  const phantoms: GhostPhantom[] = ctx.phantoms.map((p) => ({
     bluePos: p.bluePos,
     redPos: p.redPos,
     age: p.age,
   }));
+  // Ghost is now a prop-matched whole-staff onion-skin; per-prop color is applied
+  // upstream, so the pass carries a neutral staff at the master intensity.
   return {
     phantoms,
-    shape: intent.shape,
-    color: [r, g, b, intent.intensity],
-    thickness: intent.thickness * 0.003,
+    shape: "staff",
+    color: [1, 1, 1, intent.intensity],
+    thickness: 0.012,
     maxAge: intent.decay,
   };
 }

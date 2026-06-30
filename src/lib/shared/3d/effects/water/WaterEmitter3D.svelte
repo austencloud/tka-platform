@@ -14,7 +14,7 @@
 
   import { T, useTask } from "@threlte/core";
   import { Vector3, Quaternion } from "three";
-  import type { Water3DParams } from "$lib/shared/effects/translators/webgl3d-types";
+  import type { Goo3DParams } from "$lib/shared/effects/translators/webgl3d-types";
 
   interface Props {
     /** World-space position of this tip. null = hidden. */
@@ -22,7 +22,7 @@
     /** Per-frame prop displacement. Converted to m/s inside. */
     propVelocity: Vector3;
     /** Resolved water params (palette + rates + gravity). */
-    params: Water3DParams;
+    params: Goo3DParams;
     /** Gates mounting. */
     enabled: boolean;
   }

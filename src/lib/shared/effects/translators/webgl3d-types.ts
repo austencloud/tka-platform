@@ -14,9 +14,9 @@ import type {
   CharcoalIntent,
   ZapIntent,
   SparklesIntent,
-  EchoIntent,
+  GhostIntent,
   BloomIntent,
-  WaterIntent,
+  GooIntent,
   BubblesIntent,
   PetalsIntent,
   SmokeIntent,
@@ -104,7 +104,7 @@ export interface Sparkles3DParams extends SparklesIntent {
   worldGravity: number;
 }
 
-export interface Echo3DParams extends EchoIntent {
+export interface Ghost3DParams extends GhostIntent {
   /** Max phantom mesh count per prop (ring buffer). Derived from decay / interval. */
   poolSize: number;
 }
@@ -116,7 +116,7 @@ export interface Bloom3DParams extends BloomIntent {
   textureSize: number;
 }
 
-export interface Water3DParams extends WaterIntent {
+export interface Goo3DParams extends GooIntent {
   /** Resolved palette swatches. */
   resolvedPalette: WaterPalette;
   /** Max instanced droplets. Tier-dependent: 512 / 1024 / 2048. */

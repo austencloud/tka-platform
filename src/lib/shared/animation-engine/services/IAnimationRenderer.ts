@@ -49,6 +49,13 @@ export interface IAnimationRenderer {
   getLastPropTransforms(): { blue: RenderedPropTransform | null; red: RenderedPropTransform | null };
 
   /**
+   * Get the current prop sprite images, so the echo overlay can onion-skin
+   * (ghost) the real prop graphic at past poses instead of drawing a stick line.
+   * Optional — only the Canvas2D renderer provides it.
+   */
+  getPropImages?(): { blue: HTMLImageElement | null; red: HTMLImageElement | null };
+
+  /**
    * Load prop images for a specific prop type
    * @param propType - Type of prop (e.g., "staff", "club", "fan")
    */

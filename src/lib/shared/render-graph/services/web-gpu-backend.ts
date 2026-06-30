@@ -9,7 +9,7 @@ import type { FirePassPayload } from "../domain/fire-pass";
 import type { LedPassPayload } from "../domain/led-pass";
 import type { ParticlePassPayload } from "../domain/particle-pass";
 import type {
-  EchoPassPayload,
+  GhostPassPayload,
   BloomPassPayload,
   ZapPassPayload,
   PulsePassPayload,
@@ -244,7 +244,7 @@ export class WebGPUBackend implements RenderBackend {
       case "led":
         this.executeLedPass(pass.payload as LedPassPayload, dt);
         return;
-      case "water":
+      case "goo":
       case "bubbles":
       case "petals":
       case "smoke":
@@ -256,8 +256,8 @@ export class WebGPUBackend implements RenderBackend {
           dt,
         );
         return;
-      case "echo":
-        this.executeEchoPass(pass.payload as EchoPassPayload, dt);
+      case "ghost":
+        this.executeGhostPass(pass.payload as GhostPassPayload, dt);
         return;
       case "bloom":
         this.executeBloomPass(pass.payload as BloomPassPayload, dt);
@@ -325,9 +325,9 @@ export class WebGPUBackend implements RenderBackend {
     return this.overlayExecutor;
   }
 
-  private executeEchoPass(payload: EchoPassPayload, _dt: number): void {
+  private executeGhostPass(payload: GhostPassPayload, _dt: number): void {
     const presentView = this.context!.getCurrentTexture().createView();
-    this.getOverlay().executeEcho(payload, presentView);
+    this.getOverlay().executeGhost(payload, presentView);
   }
 
   private executeBloomPass(payload: BloomPassPayload, _dt: number): void {

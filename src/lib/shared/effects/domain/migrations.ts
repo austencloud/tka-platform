@@ -21,7 +21,6 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     motion?: LegacyRecord;
     echo?: LegacyRecord;
     bloom?: LegacyRecord;
-    water?: LegacyRecord;
     bubbles?: LegacyRecord;
     petals?: LegacyRecord;
     smoke?: LegacyRecord;
@@ -244,6 +243,93 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // the renderer's interpretation changes (exposure length / falloff steepness),
   // so no field mutation is needed.
 
+  // v25 → v26: echo pivots to the swept-prop mandala — it stamps the whole staff
+  // body across the loop, accumulating the prop's swept figure, which locks +
+  // blooms on loop close. `colorMode` default flips "solid" → "prop-matched"
+  // (blue/red per hand). A persisted "solid" is the old default echoing back
+  // (same logic as the v17 bloom / v20 pulse remaps), so remap it; a deliberate
+  // solid set after this ships is left alone. decay → persistence, depth → core,
+  // flash → lock-bloom (reinterpreted, no field mutation); interval/shape/streak
+  // go unused but stay for config stability.
+  if (version < 26 && input.echo && input.echo.colorMode === "solid") {
+    input.echo.colorMode = "prop-matched";
+  }
+
+  // v26 → v27: the realistic "water" droplet effect is renamed to "goo" (a
+  // viscous luminous metaball liquid). Mirror the v6 motion→echo rename — move
+  // the config block, rewrite tipEffectMap + activePresets keys, and remap
+  // activeEffect — so persisted configs and saved sequences keep firing the
+  // effect under its new id instead of silently dropping it.
+  if (version < 27) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy water key not in current shape
+    const anyInput = input as any;
+    if (anyInput.water && !anyInput.goo) anyInput.goo = anyInput.water;
+    delete anyInput.water;
+    if (input.tipEffectMap) {
+      for (const key of Object.keys(input.tipEffectMap)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const entry = (input.tipEffectMap as any)[key] as Record<string, any> | undefined;
+        if (entry?.effect === "water") entry.effect = "goo";
+      }
+    }
+    if (anyInput.activePresets && "water" in anyInput.activePresets) {
+      const presets = anyInput.activePresets as Record<string, unknown>;
+      if (presets.goo == null) presets.goo = presets.water;
+      delete presets.water;
+      // Preset ids were "water-*"; rename the persisted active id to "goo-*"
+      // so the chosen look stays highlighted after the rename.
+      if (typeof presets.goo === "string" && presets.goo.startsWith("water-")) {
+        presets.goo = "goo-" + presets.goo.slice("water-".length);
+      }
+    }
+    if (anyInput.activeEffect === "water") anyInput.activeEffect = "goo";
+  }
+
+  // v27 → v28: echo is rebuilt as a decaying prop onion-skin (it ghosts the real
+  // prop sprite at past poses, fading out — no persistent figure). The old
+  // swept-prop fields (shape/colorMode/color/thickness/glow/depth/flash/streak)
+  // have no meaning in the new model, so strip echo down to the three fields that
+  // do: intensity, decay (Persistence), interval (now Density). The user's real
+  // intensity/decay carry over; `interval` was UNUSED in every prior echo, so its
+  // stored value is never a user choice — reseed it to the Density default.
+  if (version < 28 && input.echo) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy echo fields not in current shape
+    const e = input.echo as Record<string, any>;
+    input.echo = {
+      intensity: typeof e.intensity === "number" ? e.intensity : DEFAULT_EFFECTS_CONFIG.ghost.intensity,
+      decay: typeof e.decay === "number" ? e.decay : DEFAULT_EFFECTS_CONFIG.ghost.decay,
+      interval: DEFAULT_EFFECTS_CONFIG.ghost.interval,
+    };
+  }
+
+  // v28 → v29: echo is renamed to "ghost" (it ghosts the real prop sprite as a
+  // decaying onion-skin). Mirror the v6 motion→echo / v27 water→goo renames —
+  // move the config block, rewrite tipEffectMap + activePresets keys (and any
+  // echo-* preset id → ghost-*), and remap activeEffect — so persisted configs
+  // and saved sequences keep firing the effect under its new id.
+  if (version < 29) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy echo key not in current shape
+    const anyInput = input as any;
+    if (anyInput.echo && !anyInput.ghost) anyInput.ghost = anyInput.echo;
+    delete anyInput.echo;
+    if (input.tipEffectMap) {
+      for (const key of Object.keys(input.tipEffectMap)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const entry = (input.tipEffectMap as any)[key] as Record<string, any> | undefined;
+        if (entry?.effect === "echo") entry.effect = "ghost";
+      }
+    }
+    if (anyInput.activePresets && "echo" in anyInput.activePresets) {
+      const presets = anyInput.activePresets as Record<string, unknown>;
+      if (presets.ghost == null) presets.ghost = presets.echo;
+      delete presets.echo;
+      if (typeof presets.ghost === "string" && presets.ghost.startsWith("echo-")) {
+        presets.ghost = "ghost-" + presets.ghost.slice("echo-".length);
+      }
+    }
+    if (anyInput.activeEffect === "echo") anyInput.activeEffect = "ghost";
+  }
+
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,
@@ -253,9 +339,9 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     charcoal: { ...DEFAULT_EFFECTS_CONFIG.charcoal, ...(input.charcoal ?? {}) },
     zap: { ...DEFAULT_EFFECTS_CONFIG.zap, ...(input.zap ?? {}) },
     sparkles: { ...DEFAULT_EFFECTS_CONFIG.sparkles, ...(input.sparkles ?? {}) },
-    echo: { ...DEFAULT_EFFECTS_CONFIG.echo, ...(input.echo ?? {}) },
+    ghost: { ...DEFAULT_EFFECTS_CONFIG.ghost, ...(input.ghost ?? {}) },
     bloom: { ...DEFAULT_EFFECTS_CONFIG.bloom, ...(input.bloom ?? {}) },
-    water: { ...DEFAULT_EFFECTS_CONFIG.water, ...(input.water ?? {}) },
+    goo: { ...DEFAULT_EFFECTS_CONFIG.goo, ...(input.goo ?? {}) },
     bubbles: { ...DEFAULT_EFFECTS_CONFIG.bubbles, ...(input.bubbles ?? {}) },
     petals: { ...DEFAULT_EFFECTS_CONFIG.petals, ...(input.petals ?? {}) },
     smoke: { ...DEFAULT_EFFECTS_CONFIG.smoke, ...(input.smoke ?? {}) },
