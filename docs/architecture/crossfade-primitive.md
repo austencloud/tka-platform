@@ -1,0 +1,98 @@
+# ADR: Crossfade Primitive and the Crossfade Boundary
+
+**Date:** 2026-06-30
+**Status:** Accepted
+**Context loaded:** on demand (not every session)
+
+## Decision
+
+There is exactly one sanctioned way to crossfade content:
+`src/lib/shared/components/Crossfade.svelte`. Every *true crossfade* of cheap
+content uses it. Heavy/stateful content uses the dual-source no-remount path.
+Single enter/exit fades stay plain `transition:fade`. The boundary between these
+three is recorded here so future work doesn't re-litigate it.
+
+Enforced routing summary lives in `.claude/rules/crossfade-primitive.md`; this
+doc is the rationale.
+
+## Why
+
+Crossfades were repeatedly hand-rolled as two in-flow siblings each with
+`transition:fade`. Both stay in normal flow during the transition, so they stack,
+take each other's space, and shove neighbors — layout shift across the whole
+transition. The grid-stack fix (both layers pinned to one cell) was known and
+copied around in feature code, but with no primitive to reach for, each new
+crossfade re-derived it and often got it wrong. Austen (2026-06-30): *"this has
+already been solved time and time again in our code base."*
+
+## The boundary (the load-bearing decision)
+
+Two independent axes decide where a fading thing belongs. Conflating them is the
+mistake that produced both the bug and the over-correction.
+
+### Axis 1 — Is it even a crossfade?
+
+A **true crossfade** has two mutually-exclusive states that swap in the same box
+(`{#if a}…{:else}…{/if}` or `{#key}`-driven). A **single enter/exit** fade has no
+second state — a modal appears, a toast dismisses, a panel mounts. Single fades
+are NOT crossfades. Wrapping one in `<Crossfade>` means inventing a meaningless
+`key` and makes the code lie about its intent. They stay plain `transition:fade`.
+
+### Axis 2 — Remount cost (only for true crossfades)
+
+`<Crossfade>` is `{#key}`-based, so it REMOUNTS children on every change.
+
+- **Cheap content** (labels, icons, status words, light panels): remount is free.
+  → `<Crossfade>`.
+- **Heavy/stateful content** (canvas, large pictograph render, a panel holding
+  scroll position / focus / in-progress export): remount drops that state and
+  costs a paint. → dual-source path (`CellRenderer` + `crossfader-state`), which
+  keeps both sources mounted and animates opacity. Never `{#key}`.
+
+### Sizing is a primitive option, not a boundary
+
+Content-sized (default grid mode) vs parent-filled (`fill` → `absolute; inset:0`)
+is just a prop. It does NOT decide the boundary — remount cost does. A parent-
+filled crossfade of cheap content is fine on the primitive (`fill`); a parent-
+filled crossfade of heavy content is not (regardless of `fill`).
+
+## What is on the primitive (migrated 2026-06-30)
+
+| File | Mode | Note |
+|---|---|---|
+| `landing/SpinnerStatsBar` | grid, crossfade | flex stat sets, real shift bug fixed |
+| `tool-panel/ToolPanel` sub-tab | `fill`, crossfade | heavy but already keyed; gained reduced-motion |
+| `mandala/MandalaLoader` | `fill` | parent-filled stage, already cycles |
+| `generate/GenerateEmptyState` | grid, `delay=120` | tuned stagger preserved via `delay` |
+
+Consolidation tax accepted: bespoke asymmetric in/out durations (e.g. in 260 /
+out 180) collapse to one `DURATION.*` token. Differences are imperceptible;
+removing micro-timings is the point. The one perceptible tuning (the 120ms
+delayed-in stagger) is preserved via the `delay` prop.
+
+## Deliberate carve-outs (NOT migrated)
+
+- `CellRenderer` + `crossfader-state` — the heavy-content dual-source path.
+- `FuseTab`, `CreationWorkspaceArea` — heavy non-keyed view/workspace swaps;
+  `{#key}` remount too costly.
+- `ButtonPanel` center-zone — absolutely centered against the whole panel (a
+  third sizing the primitive does not model) with load-bearing container-query
+  CSS on the faded element; migrating shifts the button's center.
+- ~30 single enter/exit fades — not crossfades.
+
+## Enforcement
+
+Rule + memory, deliberately NOT an automated lint/grep. A regex cannot reliably
+distinguish a true two-sibling crossfade from a single enter/exit fade without
+heavy false positives, and a noisy gate is worse than none (cross-ref
+`component-test-discipline.md`). The signal is carried by:
+`.claude/rules/crossfade-primitive.md`, the `Crossfade.svelte` header doc, and
+memory `feedback_crossfade_no_layout_shift`.
+
+## Consequences
+
+- One place to evolve crossfade behavior; new crossfades have an obvious home.
+- A future agent reading any `transition:fade` has a rule that tells it whether a
+  crossfade is owed.
+- The carve-outs are explicit, so "why isn't X on the primitive" is answered here
+  rather than re-discovered.

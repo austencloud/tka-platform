@@ -6,7 +6,8 @@
   - Infinite mode: total generated globally, this session
 -->
 <script lang="ts">
-  import { fade } from "svelte/transition";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { SpinnerMode, SpinnerMetrics } from "../domain/models/spinner-models";
   import type { SpinnerStats } from "$lib/shared/landing/domain/types";
@@ -32,8 +33,8 @@
 </script>
 
 <div class="stats-bar">
-  {#key mode}
-    <div class="stats-content" in:fade={{ duration: 150 }} out:fade={{ duration: 100 }}>
+  <Crossfade key={mode} duration={DURATION.fast}>
+    <div class="stats-content">
       {#if mode === "library"}
         <!-- Library mode stats -->
         <div class="stat">
@@ -60,7 +61,7 @@
         </div>
       {/if}
     </div>
-  {/key}
+  </Crossfade>
 </div>
 
 <style>

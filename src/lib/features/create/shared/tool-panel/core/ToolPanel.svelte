@@ -22,7 +22,8 @@
   import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
-  import { fade } from "svelte/transition";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import GeneratePanel from "../../../generate/components/GeneratePanel.svelte";
   import ConstructTabContent from "../../components/ConstructTabContent.svelte";
   import type {
@@ -231,17 +232,6 @@
     hapticService?.trigger("selection");
   }
 
-  // ============================================================================
-  // TRANSITION CONFIGURATION
-  // ============================================================================
-  // Simple, clean fade transitions between tabs
-
-  const OUT_DURATION = 200;
-  const IN_DURATION = 200;
-  const IN_DELAY = 0;
-
-  const fadeOutParams = { duration: OUT_DURATION };
-  const fadeInParams = { duration: IN_DURATION, delay: IN_DELAY };
 </script>
 
 <!-- ============================================================================ -->
@@ -272,12 +262,12 @@
   {:else if activeToolPanel}
     <!-- Tab Content with Sequential Fade Transitions -->
     <div class="tool-panel-content">
-      {#key `${activeToolPanel}-${createModuleState.sequenceState.currentSequence?.id ?? "empty"}`}
-        <div
-          class="sub-tab-content"
-          in:fade={fadeInParams}
-          out:fade={fadeOutParams}
-        >
+      <Crossfade
+        key={`${activeToolPanel}-${createModuleState.sequenceState.currentSequence?.id ?? "empty"}`}
+        fill
+        duration={DURATION.normal}
+      >
+        <div class="sub-tab-content">
           {#if activeToolPanel === "construct"}
             {#if isPickerStateLoading}
               <!-- Loading state while determining which picker to show -->
@@ -308,7 +298,7 @@
             <GeneratePanel sequenceState={createModuleState.sequenceState} />
           {/if}
         </div>
-      {/key}
+      </Crossfade>
     </div>
   {:else}
     <!-- Fallback case: persistence is loaded but no active tab -->

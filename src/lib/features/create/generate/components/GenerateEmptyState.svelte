@@ -16,7 +16,8 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { fade } from "svelte/transition";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { generateTourState } from "$lib/shared/onboarding/state/generate-tour-state.svelte";
 
@@ -27,14 +28,6 @@
   let showOffer = $state(false);
   let hapticService = $state<ReturnType<typeof getHapticFeedback> | null>(null);
 
-  // Honor prefers-reduced-motion — gates the JS-driven crossfade durations below
-  // (a CSS @media block alone can't stop Svelte's transition timings).
-  let reduceMotion = $state(
-    typeof window !== "undefined" &&
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-  );
-
   onMount(() => {
     try {
       hapticService = getHapticFeedback();
@@ -42,21 +35,11 @@
       /* optional */
     }
 
-    let stopMotionWatch: (() => void) | undefined;
-    if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
-      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-      const onChange = (e: MediaQueryListEvent) => (reduceMotion = e.matches);
-      mq.addEventListener("change", onChange);
-      stopMotionWatch = () => mq.removeEventListener("change", onChange);
-    }
-
     if (typeof localStorage !== "undefined") {
       const alreadyOffered = localStorage.getItem(OFFERED_KEY) === "true";
       // Don't offer if they've already seen the tour by any path, or already declined.
       showOffer = !alreadyOffered && !generateTourState.hasCompleted;
     }
-
-    return () => stopMotionWatch?.();
   });
 
   function markOffered() {
@@ -79,57 +62,43 @@
 </script>
 
 <!--
-  Single grid cell holding both states stacked (grid-area: 1 / 1), so the
-  offer→hint swap is a true in-place crossfade with zero layout shift. A bare
-  {#if}/{:else} with one transition lets the incoming block pop in beside the
-  outgoing one for a frame — Svelte transitions don't coordinate two siblings
-  on their own. Stacking + paired in/out fade is the codebase's working idiom
-  (see FuseTab.svelte) and honors no-layout-shift.md (grid-stack technique).
+  The offer↔hint swap is a true in-place crossfade with zero layout shift, via
+  the shared Crossfade primitive (grid-stack + {#key}). The 120ms in-delay is a
+  deliberate gentle stagger; reduced-motion is handled inside the primitive.
 -->
 <div class="empty-state">
-  {#if showOffer}
-    <div
-      class="tour-offer"
-      in:fade={{ duration: reduceMotion ? 0 : 260, delay: reduceMotion ? 0 : 120 }}
-      out:fade={{ duration: reduceMotion ? 0 : 180 }}
-    >
-      <p class="offer-title">First time generating?</p>
-      <p class="offer-sub">A quick tour shows what each option does.</p>
-      <div class="offer-actions">
-        <button type="button" class="offer-btn primary" onclick={acceptTour}>
-          Show me
-        </button>
-        <button type="button" class="offer-btn secondary" onclick={declineTour}>
-          I'll explore
-        </button>
+  <Crossfade key={showOffer} duration={DURATION.emphasis} delay={120}>
+    {#if showOffer}
+      <div class="tour-offer">
+        <p class="offer-title">First time generating?</p>
+        <p class="offer-sub">A quick tour shows what each option does.</p>
+        <div class="offer-actions">
+          <button type="button" class="offer-btn primary" onclick={acceptTour}>
+            Show me
+          </button>
+          <button type="button" class="offer-btn secondary" onclick={declineTour}>
+            I'll explore
+          </button>
+        </div>
       </div>
-    </div>
-  {:else}
-    <p
-      class="workspace-hint"
-      in:fade={{ duration: reduceMotion ? 0 : 260, delay: reduceMotion ? 0 : 120 }}
-      out:fade={{ duration: reduceMotion ? 0 : 180 }}
-    >
-      Tap Generate to create your sequence
-    </p>
-  {/if}
+    {:else}
+      <p class="workspace-hint">
+        Tap Generate to create your sequence
+      </p>
+    {/if}
+  </Crossfade>
 </div>
 
 <style>
-  /* Grid stack: both states share one cell (children at grid-area: 1 / 1) so
-     the offer↔hint swap crossfades in place. The cell anchors both at the same
-     top edge, so the text dissolves without sliding; the upper-region spacing
-     lives here once, not on each child. */
+  /* Centers the Crossfade (which owns the offer↔hint stack internally) and
+     holds the upper-region spacing once. The in-place crossfade itself lives in
+     the shared primitive now, not here. */
   .empty-state {
     flex-shrink: 0;
     display: grid;
     justify-items: center;
     margin-top: clamp(2.5rem, 11vmin, 6.5rem);
     padding: 0 1rem;
-  }
-
-  .empty-state > * {
-    grid-area: 1 / 1;
   }
 
   /* Hint — preserved verbatim from StandardWorkspaceLayout so the non-first-run

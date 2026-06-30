@@ -6,7 +6,7 @@
 	 * prefers-reduced-motion (static single mandala, no crossfade).
 	 */
 	import { onMount } from "svelte";
-	import { fade } from "svelte/transition";
+	import Crossfade from "$lib/shared/components/Crossfade.svelte";
 	import SequenceMandala from "./SequenceMandala.svelte";
 	import IndeterminateBar from "$lib/shared/components/loading/IndeterminateBar.svelte";
 	import { mandalaPool } from "../services/mandala-pool.svelte";
@@ -94,13 +94,8 @@
 <div class="mandala-loader" role="status" aria-label={message || "Loading"} aria-busy="true">
 	{#if current}
 		<div class="stage" style:width="{size}px" style:height="{size}px">
-			{#key currentKey}
-				<div
-					class="layer"
-					in:fade={{ duration: reducedMotion ? 0 : MANDALA_CROSSFADE_MS }}
-					out:fade={{ duration: reducedMotion ? 0 : MANDALA_CROSSFADE_MS }}
-				>
-					<SequenceMandala
+			<Crossfade key={currentKey} fill duration={MANDALA_CROSSFADE_MS}>
+				<SequenceMandala
 						sequence={current}
 						{size}
 						show="both"
@@ -115,8 +110,7 @@
 						{palette}
 						{gradient}
 					/>
-				</div>
-			{/key}
+			</Crossfade>
 		</div>
 	{:else}
 		<!-- Pool still warming (first-ever run): calm bar, no jank. -->
@@ -140,10 +134,6 @@
 	}
 	.stage {
 		position: relative;
-	}
-	.layer {
-		position: absolute;
-		inset: 0;
 	}
 	.message {
 		font-size: var(--font-size-sm, 14px);
