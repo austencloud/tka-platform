@@ -68,9 +68,12 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
   // LOOP glyph - shown by default when sequence has LOOP constraints
   showLoopGlyph: true,
 
-  // Footer defaults - all shown by default when user info is enabled
+  // Footer defaults. Creator name + birthday show by default; the center notes
+  // lane is OFF by default — the "Created using TKA Composer" branding watermark
+  // doesn't earn its slot on every card. Notes are opt-in; customNotesText is the
+  // text used once a user turns the lane on.
   showCreatorName: true,
-  showNotes: true,
+  showNotes: false,
   showBirthday: true,
   customNotesText: "Created using TKA Composer",
 
@@ -179,6 +182,29 @@ class ImageCompositionStateManager {
       }
     }
     if (cleaned) this.saveToStorage();
+
+    // One-time: retire the "Created using TKA Composer" branding note as a
+    // default. Flips ONLY users who never customized the note (text is still the
+    // branding default) and have the lane on — a real typed note is never
+    // touched. Guarded by a localStorage marker so it runs once and won't fight
+    // a user who later re-enables notes with the default text.
+    if (browser) {
+      const NOTES_MIGRATION_KEY = `${STORAGE_KEY}:notesDefaultMigrated`;
+      if (!localStorage.getItem(NOTES_MIGRATION_KEY)) {
+        if (
+          this.settings.showNotes &&
+          this.settings.customNotesText === "Created using TKA Composer"
+        ) {
+          this.settings.showNotes = false;
+          this.saveToStorage();
+        }
+        try {
+          localStorage.setItem(NOTES_MIGRATION_KEY, "1");
+        } catch {
+          // localStorage unavailable — migration retries next load, harmless.
+        }
+      }
+    }
     // Note: darkMode is synced from AnimationVisibilityManager in syncWithAnimationVisibility()
   }
 
