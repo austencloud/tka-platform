@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { computeHash } from "../../../src/lib/features/library/services/sequence-content-hasher";
+import { computeHash } from "../../../src/lib/shared/library/services/sequence-content-hasher";
 import { MotionColor } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 // Minimal motion data that satisfies the hasher's extraction

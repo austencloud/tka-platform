@@ -29,6 +29,7 @@ import {
   CONTENT_HASH_VERSION,
 } from "../../src/lib/shared/library/services/sequence-content-hasher";
 import { deriveSteps } from "../../src/lib/shared/foundation/services/step-deriver";
+import { hydrate } from "../../src/lib/shared/foundation/services/sequence-hydrator";
 import type { SequenceData } from "../../src/lib/shared/foundation/domain/models/sequence-data";
 
 const projectRoot = path.resolve(
@@ -270,5 +271,27 @@ describe("content-hash V2 — collision-safe over the published corpus", () => {
     // The crux safety property: V2 never merges two PHYSICALLY DISTINCT sequences.
     // (Merging stale duplicates of the same physical sequence is correct dedup.)
     expect(falseMerges.length).toBe(0);
+  });
+});
+
+describe("content-hash V2 — recompute determinism (the lazy-rehash relies on this)", () => {
+  it("hydrate → V2 hash is stable across loads of the same stored doc", async () => {
+    // The cross-version fork guard recomputes a stored doc's hash at V2 to
+    // decide fork-vs-rehash. If hydrate→hash weren't deterministic, an UNCHANGED
+    // doc could recompute to a different hash and spuriously fork. Step `id`
+    // uses crypto.randomUUID (varies per hydrate) but is NOT hashed — confirm
+    // the hashed fields are stable.
+    const corpus = loadCorpus().slice(0, 40);
+    expect(corpus.length).toBeGreaterThan(0);
+    for (const doc of corpus) {
+      let a: string, b: string;
+      try {
+        a = await computeHash(hydrate({ ...(doc as object) } as SequenceData), HASH_VERSION_V2);
+        b = await computeHash(hydrate({ ...(doc as object) } as SequenceData), HASH_VERSION_V2);
+      } catch {
+        continue;
+      }
+      expect(a).toBe(b);
+    }
   });
 });

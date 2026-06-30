@@ -10,7 +10,10 @@
  */
 import { initFirestore } from "../lib/firestore-provider.js";
 import { hydrate } from "../../src/lib/shared/foundation/services/sequence-hydrator";
-import { computeHash } from "../../src/lib/shared/library/services/sequence-content-hasher";
+import {
+  computeHash,
+  CONTENT_HASH_VERSION,
+} from "../../src/lib/shared/library/services/sequence-content-hasher";
 import type { SequenceData } from "../../src/lib/shared/foundation/domain/models/sequence-data";
 
 // computeHash uses crypto.subtle — guard for older Node runtimes.
@@ -62,7 +65,10 @@ async function processCollection(db: AnyRec, label: string, path: string): Promi
 
     const updates: AnyRec = {};
     if (needHash) {
-      try { updates["contentHash"] = await computeHash(hydrated); } catch { /* */ }
+      try {
+        updates["contentHash"] = await computeHash(hydrated);
+        updates["contentHashVersion"] = CONTENT_HASH_VERSION;
+      } catch { /* */ }
     }
     if (needGrid) {
       const gm = inferGridMode(hydrated);

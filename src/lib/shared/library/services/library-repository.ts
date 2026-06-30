@@ -315,11 +315,15 @@ export class LibraryRepository {
         activeVersion: CONTENT_HASH_VERSION,
         recomputeExistingAtActiveVersion: async () => {
           try {
-            const rehydratedExisting = hydrate({
-              ...(existingData as object),
-              id: actualSequenceId,
-            } as SequenceData);
-            return await computeHash(rehydratedExisting);
+            // Match the normal read path (mapDocToLibrarySequence → hydrate)
+            // exactly, so an UNCHANGED doc recomputes to the same hash
+            // incomingHash was built from — a map-only transform must never read
+            // as a content edit at V2.
+            const mapped = this.mapDocToLibrarySequence(
+              existingData as DocumentData,
+              actualSequenceId
+            );
+            return await computeHash(hydrate(mapped));
           } catch {
             return undefined;
           }
@@ -464,8 +468,10 @@ export class LibraryRepository {
       startingPositionGroup: undefined,
       contentHash: incomingHash,
       // Tag the basis incomingHash was computed under so cross-version saves
-      // lazy-rehash instead of spuriously forking. Inert while active == V1.
-      contentHashVersion: CONTENT_HASH_VERSION,
+      // lazy-rehash instead of spuriously forking. Only alongside a real hash
+      // (if computeHash failed, contentHash is stripped — don't orphan the
+      // version). Inert while active == V1.
+      ...(incomingHash ? { contentHashVersion: CONTENT_HASH_VERSION } : {}),
       birthday: isNewSequence
         ? libSeq.birthday || serverTimestamp()
         : libSeq.birthday,

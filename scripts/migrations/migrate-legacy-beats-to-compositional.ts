@@ -24,7 +24,10 @@
 
 import { initFirestore } from "../lib/firestore-provider.js";
 import { ensureComposition } from "../../src/lib/shared/foundation/services/sequence-hydrator";
-import { computeHash } from "../../src/lib/shared/library/services/sequence-content-hasher";
+import {
+  computeHash,
+  CONTENT_HASH_VERSION,
+} from "../../src/lib/shared/library/services/sequence-content-hasher";
 import { deriveWord } from "../../src/lib/shared/foundation/services/word-deriver";
 import type { SequenceData } from "../../src/lib/shared/foundation/domain/models/sequence-data";
 
@@ -205,6 +208,7 @@ async function main(): Promise<void> {
         redSoloHash: composed.redSoloHash,
         sequenceLength: beatsCount,
         contentHash,
+        contentHashVersion: CONTENT_HASH_VERSION,
       });
       const update: AnyRec = {
         ...cleanData,

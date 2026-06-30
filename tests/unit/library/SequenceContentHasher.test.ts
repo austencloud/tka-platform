@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeHash } from "$lib/features/library/services/sequence-content-hasher";
+import { computeHash } from "$lib/shared/library/services/sequence-content-hasher";
 import {
   createSequenceData,
 } from "$lib/shared/foundation/domain/models/sequence-data";

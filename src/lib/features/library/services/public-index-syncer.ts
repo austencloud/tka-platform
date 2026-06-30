@@ -169,6 +169,12 @@ export class PublicIndexSyncer {
         updatedAt: serverTimestamp(),
         // Full motion content hash for deduplication
         contentHash: sequence.contentHash,
+        // Carry the hash basis so the public doc's (hash, version) pair never
+        // diverges from the library doc — keeps future public-tier version-aware
+        // logic correct. Only when present (a contentHash exists).
+        ...((sequence as { contentHashVersion?: number }).contentHashVersion != null
+          ? { contentHashVersion: (sequence as { contentHashVersion?: number }).contentHashVersion }
+          : {}),
         encoderHash,
         // Compositional fields - everything needed to render without sourceRef
         blueSoloProp: sequence.blueSoloProp,
