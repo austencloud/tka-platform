@@ -204,6 +204,16 @@ export async function initFirestore() {
 }
 
 async function _initFirestoreImpl() {
+  // Opt-in override: force the Admin SDK (bypasses security rules) for repairs
+  // that the contributor/client SDK can't perform — e.g. fixing other users'
+  // publicSequences docs. Requires the service account key. Set TKA_ADMIN=1.
+  if (process.env.TKA_ADMIN === "1") {
+    if (!existsSync(SERVICE_ACCOUNT_PATH)) {
+      throw new Error("TKA_ADMIN=1 set but serviceAccountKey.json not found in repo root.");
+    }
+    return await initAdminSdk();
+  }
+
   // Priority 1: Client SDK via saved OAuth credentials
   const credentials = loadCredentials();
   if (credentials?.googleRefreshToken) {
