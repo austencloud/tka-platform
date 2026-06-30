@@ -12,7 +12,6 @@
   import { onMount, onDestroy } from "svelte";
   import type { BrowseEngine } from "../engine/types";
   import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
-  import ViewModeToggle from "$lib/features/browse/shared/components/ViewModeToggle.svelte";
   import ExpandableSearchBar from "$lib/shared/browse/components/ExpandableSearchBar.svelte";
   import LevelFilterChip from "$lib/shared/browse/components/filter-chips/LevelFilterChip.svelte";
   import FavoritesFilterChip from "$lib/shared/browse/components/filter-chips/FavoritesFilterChip.svelte";
@@ -257,12 +256,6 @@
       </button>
     </div>
   {/if}
-
-  <!-- 2. View mode toggle (compositional browsing) -->
-  <ViewModeToggle
-    viewMode={engine.viewMode}
-    onViewModeChange={(mode) => engine.setViewMode(mode)}
-  />
 
   <!-- 3. Sort dropdown -->
   <div class="sort-dropdown-wrapper">
