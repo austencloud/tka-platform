@@ -13,7 +13,7 @@ export const SPLIT_PRESETS: { value: SplitPreset; label: string; canvasFraction:
   { value: "canvas-heavy", label: "Canvas", canvasFraction: 0.72 },
 ];
 
-/** Read-ahead depth (moves visible ahead) → BeatStrip cell size (px). Sized up
+/** Read-ahead depth (moves visible ahead) → StepStrip cell size (px). Sized up
  *  from the landing's 72px so the practice strip reads from across a room — a
  *  wide side-by-side column has room for big cells, and even depth 3 stays
  *  legible. Smaller depth = bigger cells = fewer moves ahead. */

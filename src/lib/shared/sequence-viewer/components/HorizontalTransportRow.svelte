@@ -2,7 +2,7 @@
   HorizontalTransportRow.svelte
 
   Transport controls row for horizontal layout mode.
-  Contains step buttons (half/full beat) and central play/pause button.
+  Contains step buttons (half/full step) and central play/pause button.
 -->
 <script lang="ts">
 	import { onMount } from "svelte";
@@ -21,7 +21,7 @@
 		onPlaybackToggle: () => void;
 		onStepHalfBack: () => void;
 		onStepHalfFwd: () => void;
-		/** Step backward by one full beat (compose context) */
+		/** Step backward by one full step (compose context) */
 		onStepFullBack?: () => void;
 		/** Restart from the beginning (viewer context) - replaces step-back button when provided */
 		onRestartToStart?: () => void;
@@ -43,7 +43,7 @@
 	<button
 		class="step-btn step-secondary"
 		onclick={onStepHalfBack}
-		aria-label="Previous half beat"
+		aria-label="Previous half step"
 	>
 		<i class="fas fa-chevron-left" aria-hidden="true"></i>
 	</button>
@@ -59,7 +59,7 @@
 		<button
 			class="step-btn step-primary"
 			onclick={onStepFullBack}
-			aria-label="Previous beat"
+			aria-label="Previous step"
 		>
 			<i class="fas fa-angles-left" aria-hidden="true"></i>
 		</button>
@@ -91,14 +91,14 @@
 	<button
 		class="step-btn step-primary"
 		onclick={onStepFullFwd}
-		aria-label="Next beat"
+		aria-label="Next step"
 	>
 		<i class="fas fa-angles-right" aria-hidden="true"></i>
 	</button>
 	<button
 		class="step-btn step-secondary"
 		onclick={onStepHalfFwd}
-		aria-label="Next half beat"
+		aria-label="Next half step"
 	>
 		<i class="fas fa-chevron-right" aria-hidden="true"></i>
 	</button>

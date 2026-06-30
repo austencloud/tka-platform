@@ -46,18 +46,18 @@ export function motionDataToConfig3D(
 }
 
 /** Extract motion configs from a StepData or StartPositionData object */
-export function beatDataToConfigs(
-  beat: StepData | StartPositionData,
+export function stepDataToConfigs(
+  step: StepData | StartPositionData,
   plane: Plane = Plane.WALL,
   modeConfig?: PlaneModeConfig,
 ): StepMotionConfigs {
-  const blueMotion = beat.motions?.[MotionColor.BLUE];
-  const redMotion = beat.motions?.[MotionColor.RED];
+  const blueMotion = step.motions?.[MotionColor.BLUE];
+  const redMotion = step.motions?.[MotionColor.RED];
 
   const stepNumber =
-    "isStartPosition" in beat && beat.isStartPosition
+    "isStartPosition" in step && step.isStartPosition
       ? 0
-      : (beat as StepData).stepNumber ?? 0;
+      : (step as StepData).stepNumber ?? 0;
 
   const bluePlane = modeConfig?.bluePlane ?? plane;
   const redPlane = modeConfig?.redPlane ?? plane;
@@ -126,8 +126,8 @@ function deriveStartConfigFromStep(
 }
 
 /**
- * Convert an entire sequence to an array of beat motion configs.
- * Filters out beat 0 (start position).
+ * Convert an entire sequence to an array of step motion configs.
+ * Filters out step 0 (start position).
  */
 export function sequenceToMotionConfigs(
   sequence: SequenceData,
@@ -140,7 +140,7 @@ export function sequenceToMotionConfigs(
 
   return sequence.steps
     .filter((step) => step.stepNumber !== 0)
-    .map((step) => beatDataToConfigs(step, plane, modeConfig))
+    .map((step) => stepDataToConfigs(step, plane, modeConfig))
     .sort((a, b) => a.stepNumber - b.stepNumber);
 }
 
@@ -151,16 +151,16 @@ export function getStartPositionConfigs(
   modeConfig?: PlaneModeConfig,
 ): StepMotionConfigs | null {
   if (sequence.startPosition) {
-    return beatDataToConfigs(sequence.startPosition, plane, modeConfig);
+    return stepDataToConfigs(sequence.startPosition, plane, modeConfig);
   }
 
   const step0 = sequence.steps?.find((step) => step.stepNumber === 0);
   if (step0) {
-    return beatDataToConfigs(step0, plane, modeConfig);
+    return stepDataToConfigs(step0, plane, modeConfig);
   }
 
   if (sequence.startingPosition) {
-    return beatDataToConfigs(sequence.startingPosition, plane, modeConfig);
+    return stepDataToConfigs(sequence.startingPosition, plane, modeConfig);
   }
 
   const firstStep = sequence.steps?.find((step) => step.stepNumber !== 0);

@@ -61,7 +61,7 @@
   <!-- Sequence Info -->
   {#if hasSequence}
     <div class="sequence-header">
-      <span class="mode-label">Beat {currentStepIndex + 1} of {totalSteps}</span
+      <span class="mode-label">Step {currentStepIndex + 1} of {totalSteps}</span
       >
     </div>
   {:else}

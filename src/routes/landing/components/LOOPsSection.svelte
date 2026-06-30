@@ -14,7 +14,7 @@
       <div class="loop-flow">
         <div class="flow-step">
           <div class="step-num">1</div>
-          <div class="step-text">Start with one beat</div>
+          <div class="step-text">Start with one step</div>
         </div>
         <div class="flow-arrow">→</div>
         <div class="flow-step">

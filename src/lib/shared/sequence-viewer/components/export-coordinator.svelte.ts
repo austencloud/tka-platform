@@ -87,7 +87,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
 
   // The tunnel (Art mode) export drives the shared offscreen engine with a
   // square sourceSizeOverride (the live 2D animator canvas is unmounted in Art
-  // mode) + the kaleidoscope's per-beat layers, all chrome suppressed. A bare
+  // mode) + the kaleidoscope's per-step layers, all chrome suppressed. A bare
   // square placeholder satisfies the dependency signature without touching the
   // live DOM.
   function createArtExportPlaceholderCanvas(size: number): HTMLCanvasElement {
@@ -99,7 +99,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
 
   /**
    * Tunnel (Art-mode) video export — preview-first. Renders the kaleidoscope via
-   * the shared offscreen engine (square sourceSizeOverride + per-beat layers +
+   * the shared offscreen engine (square sourceSizeOverride + per-step layers +
    * chrome suppressed), then leaves the result on
    * sequenceModalExporter.previewBlobUrl for ArtPane to surface inline
    * (VideoPreviewPanel: play / save / share). NOTHING auto-downloads — the user
@@ -374,7 +374,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       return;
     } else if (exportType === "image" && effectiveSequence) {
       if (!effectiveSequence.steps || effectiveSequence.steps.length === 0) {
-        showToast("Sequence has no beats to export.", "error");
+        showToast("Sequence has no steps to export.", "error");
         return;
       }
       // All card toggles (word/difficulty/LOOP/mandala/QR/grid/footer/columns/

@@ -1,7 +1,7 @@
 /**
  * Column-count options for the card export Columns control.
  *
- * The value null represents "Auto". Numeric values are beat-column counts.
+ * The value null represents "Auto". Numeric values are step-column counts.
  * `columnOptionsFor` is the single source of truth shared by the desktop chip
  * group and the mobile inline stepper, so both offer the same set.
  */
@@ -10,7 +10,7 @@ const MIN_COLUMNS = 2;
 const MAX_COLUMNS = 8;
 
 /**
- * Valid numeric column counts for a sequence of `stepCount` beats.
+ * Valid numeric column counts for a sequence of `stepCount` steps.
  *
  * Only exact divisors of the step count are offered, so every layout fills a
  * complete rectangle with no ragged orphan row. A 16-step sequence yields

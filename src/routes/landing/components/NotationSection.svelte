@@ -6,7 +6,7 @@
   <div class="container">
     <h2>Flow Arts Notation</h2>
     <p class="section-intro">
-      A grid-based notation system. Every beat of movement becomes a
+      A grid-based notation system. Every step of movement becomes a
       <strong>pictograph</strong> showing where your hands are and how they move.
     </p>
 
@@ -47,7 +47,7 @@
         <h3>The Letter System</h3>
         <p>
           Each motion combination has a letter. Combine letters into words,
-          which are multi-beat patterns that form a shared choreographic vocabulary.
+          which are multi-step patterns that form a shared choreographic vocabulary.
         </p>
       </div>
     </div>

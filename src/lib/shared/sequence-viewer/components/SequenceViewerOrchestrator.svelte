@@ -150,7 +150,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     playbackController: AnimationPlaybackController | null;
 
     /** Art-mode export entry threaded into ViewerSplitPane -> ArtPane. Tunnel
-     *  routes through the shared video orchestrator with per-beat kaleidoscope
+     *  routes through the shared video orchestrator with per-step kaleidoscope
      *  layers + chrome suppressed; mandala drives its OWN export worker. */
     handleArtExport: (args: {
       artType: "mandala" | "tunnel";
@@ -708,7 +708,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   }
 
   // Art-mode export. Mandala drives its OWN worker (separate pipeline); tunnel
-  // runs the shared video orchestrator with the kaleidoscope's per-beat overlaid
+  // runs the shared video orchestrator with the kaleidoscope's per-step overlaid
   // prop layers and ALL chrome suppressed (the tunnel is pure visual).
   function handleArtExport(args: {
     artType: "mandala" | "tunnel";
@@ -724,7 +724,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
     // Tunnel: route through the export coordinator's tunnel pipeline. It drives
     // the shared offscreen engine (the live 2D AnimatorCanvas is unmounted in
-    // Art mode) with the kaleidoscope's per-beat layers + all chrome suppressed,
+    // Art mode) with the kaleidoscope's per-step layers + all chrome suppressed,
     // AND — unlike the old inline call here — surfaces progress + an inline
     // preview (save/share) via the ArtPane overlay and a visible error toast.
     const ctrl = args.controller;

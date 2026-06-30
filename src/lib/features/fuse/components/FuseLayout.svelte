@@ -2,7 +2,7 @@
 	/**
 	 * Fuse Layout
 	 *
-	 * Shuffle-to-discover: pick a beat length, shuffle cards on each side,
+	 * Shuffle-to-discover: pick a step length, shuffle cards on each side,
 	 * hit Fuse when you like what's showing. No pick step.
 	 */
 
@@ -285,14 +285,14 @@
 				<button
 					class="length-trigger"
 					onclick={() => showLengthPicker = !showLengthPicker}
-					aria-label="Change beat length (currently {fuseLength})"
+					aria-label="Change step length (currently {fuseLength})"
 				>
 					<span class="length-value">{fuseLength}</span>
-					<span class="length-unit">beats</span>
+					<span class="length-unit">steps</span>
 				</button>
 				{#if showLengthPicker}
 					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<div class="length-popover" role="radiogroup" aria-label="Beat length">
+					<div class="length-popover" role="radiogroup" aria-label="Step length">
 						{#each LENGTHS as len}
 							<button
 								class="length-option"

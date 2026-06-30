@@ -113,7 +113,7 @@
       <div class="demo-content">
         <div class="sequence-info">
           <span>A (1s), B (2s), C (0.5s), D (1.5s)</span>
-          <span class="step-indicator">Beat {Math.floor(demo1CurrentStep) + 1}</span>
+          <span class="step-indicator">Step {Math.floor(demo1CurrentStep) + 1}</span>
         </div>
         <div class="progress-wrapper">
           <SegmentedSequenceProgressBar
@@ -136,8 +136,8 @@
       </div>
       <div class="demo-content">
         <div class="sequence-info">
-          <span>6 beats, equal duration</span>
-          <span class="step-indicator">Beat {Math.floor(demo2CurrentStep) + 1}</span>
+          <span>6 steps, equal duration</span>
+          <span class="step-indicator">Step {Math.floor(demo2CurrentStep) + 1}</span>
         </div>
         <div class="progress-wrapper">
           <SegmentedSequenceProgressBar
@@ -161,7 +161,7 @@
       <div class="demo-content">
         <div class="sequence-info">
           <span>Fast-slow-fast pattern</span>
-          <span class="step-indicator">Beat {Math.floor(demo3CurrentStep) + 1}</span>
+          <span class="step-indicator">Step {Math.floor(demo3CurrentStep) + 1}</span>
         </div>
         <div class="progress-wrapper">
           <SegmentedSequenceProgressBar
@@ -185,7 +185,7 @@
       <div class="demo-content">
         <div class="sequence-info">
           <span>A (1s), B (2s), C (0.5s), D (1.5s)</span>
-          <span class="step-indicator">Beat {Math.floor(demo4CurrentStep) + 1}</span>
+          <span class="step-indicator">Step {Math.floor(demo4CurrentStep) + 1}</span>
         </div>
         <div class="progress-wrapper">
           <SegmentedSequenceProgressBar
@@ -208,8 +208,8 @@
       </div>
       <div class="demo-content">
         <div class="sequence-info">
-          <span>6 beats, equal duration</span>
-          <span class="step-indicator">Beat {Math.floor(demo5CurrentStep) + 1}</span>
+          <span>6 steps, equal duration</span>
+          <span class="step-indicator">Step {Math.floor(demo5CurrentStep) + 1}</span>
         </div>
         <div class="progress-wrapper">
           <SegmentedSequenceProgressBar
@@ -228,12 +228,12 @@
     <div class="demo-card">
       <div class="demo-header">
         <h2>Labeled</h2>
-        <p>Shows beat letters with clear dividers</p>
+        <p>Shows step letters with clear dividers</p>
       </div>
       <div class="demo-content">
         <div class="sequence-info">
           <span>Fast-slow-fast pattern</span>
-          <span class="step-indicator">Beat {Math.floor(demo6CurrentStep) + 1}</span>
+          <span class="step-indicator">Step {Math.floor(demo6CurrentStep) + 1}</span>
         </div>
         <div class="progress-wrapper">
           <SegmentedSequenceProgressBar
@@ -256,8 +256,8 @@
       </div>
       <div class="demo-content">
         <div class="sequence-info">
-          <span>6 beats, equal duration</span>
-          <span class="step-indicator">Beat {Math.floor(demo7CurrentStep) + 1}</span>
+          <span>6 steps, equal duration</span>
+          <span class="step-indicator">Step {Math.floor(demo7CurrentStep) + 1}</span>
         </div>
         <div class="progress-wrapper">
           <SegmentedSequenceProgressBar
@@ -285,7 +285,7 @@
       <div class="feature">
         <div class="icon">🎯</div>
         <h3>Interactive Scrubbing</h3>
-        <p>Click or drag to navigate - instantly jump to any beat</p>
+        <p>Click or drag to navigate - instantly jump to any step</p>
       </div>
 
       <div class="feature">
@@ -317,7 +317,7 @@
   <div class="instructions">
     <h2>Try It Out</h2>
     <ul>
-      <li><strong>Click</strong> any segment to jump to that beat</li>
+      <li><strong>Click</strong> any segment to jump to that step</li>
       <li><strong>Drag</strong> across the progress bar to scrub through</li>
       <li><strong>Keyboard:</strong> Arrow keys to step, Home/End to jump</li>
       <li><strong>Notice:</strong> Segment widths match beat durations</li>

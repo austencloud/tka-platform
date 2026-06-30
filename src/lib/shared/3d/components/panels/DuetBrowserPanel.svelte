@@ -104,7 +104,7 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
   function formatOffset(offset: number): string {
     if (offset === 0) return "Synced";
     const sign = offset > 0 ? "+" : "";
-    return `${sign}${offset} beat${Math.abs(offset) !== 1 ? "s" : ""}`;
+    return `${sign}${offset} step${Math.abs(offset) !== 1 ? "s" : ""}`;
   }
 
   function formatDate(date: Date): string {

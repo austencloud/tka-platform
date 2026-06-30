@@ -83,20 +83,20 @@ export function transformSequence(
   const clone = JSON.parse(JSON.stringify(seq)) as SequenceData;
   const steps = (clone.steps ?? []) as readonly StepData[];
 
-  // Reversal is CUMULATIVE (matching reversal-detector.ts: a beat reverses when
-  // its spin differs from the previous beat). The pattern symbol TOGGLES a running
-  // per-hand parity; a beat's motion is flipped from base whenever parity is true.
-  // The stored reversal flag marks the toggle beat (the spin-change), which is what
-  // the detector re-derives. Absolute per-beat flipping made PPPP uniform-anti,
+  // Reversal is CUMULATIVE (matching reversal-detector.ts: a step reverses when
+  // its spin differs from the previous step). The pattern symbol TOGGLES a running
+  // per-hand parity; a step's motion is flipped from base whenever parity is true.
+  // The stored reversal flag marks the toggle step (the spin-change), which is what
+  // the detector re-derives. Absolute per-step flipping made PPPP uniform-anti,
   // which the detector reads back as "continuous" — the bug this replaces.
   const parities = cumulativeParities(pattern.sequence, steps.length);
-  const transformedSteps = steps.map((step, beatIndex) => {
+  const transformedSteps = steps.map((step, stepIndex) => {
     const { blueReversal: blueToggle, redReversal: redToggle } = getReversalFlagsForBeat(
       pattern.sequence,
-      beatIndex,
+      stepIndex,
     );
-    const blueParity = parities.blue[beatIndex] ?? false;
-    const redParity = parities.red[beatIndex] ?? false;
+    const blueParity = parities.blue[stepIndex] ?? false;
+    const redParity = parities.red[stepIndex] ?? false;
 
     const mutable = step as unknown as {
       motions?: { blue?: MutableMotion; red?: MutableMotion };
@@ -172,19 +172,19 @@ function spinOf(motion: MutableMotion | undefined): Spin | null {
 }
 
 /**
- * Solve which beats of one hand must flip so that the *detected* reversals of
+ * Solve which steps of one hand must flip so that the *detected* reversals of
  * the result land exactly on the caller's `desired` cells.
  *
- * A reversal is "this beat's spin differs from the previous spinning beat"
- * (matching `reversal-detector.ts`). So we walk the hand's spinning beats in
- * order, anchor the first to its current spin, and set every later beat's target
- * spin to flip-from-previous iff its cell is on. A beat flips only when its
+ * A reversal is "this step's spin differs from the previous spinning step"
+ * (matching `reversal-detector.ts`). So we walk the hand's spinning steps in
+ * order, anchor the first to its current spin, and set every later step's target
+ * spin to flip-from-previous iff its cell is on. A step flips only when its
  * current spin already disagrees with that target — which makes a second apply
  * of the same matrix a no-op (idempotent) and the rendered dots match the matrix
  * 1:1 (WYSIWYG).
  *
- * Non-spinning beats (static / dash) can't carry a reversal, so their cells are
- * inert. The first spinning beat's cell is honoured on a loop via the wrap (when
+ * Non-spinning steps (static / dash) can't carry a reversal, so their cells are
+ * inert. The first spinning step's cell is honoured on a loop via the wrap (when
  * the hand reverses an even number of times the loop closes and the wrap
  * reversal falls out automatically); on a non-loop it has no predecessor and is
  * inert, exactly as the detector reports.
@@ -205,11 +205,11 @@ export function solveHandFlips(
   }
   if (firstSpin < 0) return flips; // hand never spins → nothing to reverse
 
-  // Anchor the first spinning beat to its current spin (flips[firstSpin] = false).
+  // Anchor the first spinning step to its current spin (flips[firstSpin] = false).
   let target: Spin = spinOf(motions[firstSpin])!;
   for (let i = firstSpin + 1; i < len; i++) {
     const base = spinOf(motions[i]);
-    if (!base) continue; // non-spinning beat: inert cell
+    if (!base) continue; // non-spinning step: inert cell
     if (desired[i]) target = target === "cw" ? "ccw" : "cw";
     flips[i] = base !== target;
   }
@@ -219,7 +219,7 @@ export function solveHandFlips(
 /**
  * Apply a reversal matrix to a live sequence, idempotently.
  *
- * `blueReversals` / `redReversals` are per-beat "reverse here" flags (already
+ * `blueReversals` / `redReversals` are per-step "reverse here" flags (already
  * tiled to the sequence length). Unlike {@link transformSequence} (which toggles
  * relative to the current motions and is therefore designed to run once on a
  * clean catalog base), this solves for an absolute target spin and flips only
@@ -247,7 +247,7 @@ export function applyReversalMatrix(
   const blueFlips = solveHandFlips(blueMotions, blueReversals);
   const redFlips = solveHandFlips(redMotions, redReversals);
 
-  const transformedSteps = steps.map((step, beatIndex) => {
+  const transformedSteps = steps.map((step, stepIndex) => {
     const mutable = step as unknown as {
       motions?: { blue?: MutableMotion; red?: MutableMotion };
       startPosition?: string | null;
@@ -260,10 +260,10 @@ export function applyReversalMatrix(
     const blue = mutable.motions?.blue;
     const red = mutable.motions?.red;
 
-    flipMotion(blue, blueFlips[beatIndex] ?? false);
-    flipMotion(red, redFlips[beatIndex] ?? false);
-    mutable.blueReversal = blueReversals[beatIndex] ?? false;
-    mutable.redReversal = redReversals[beatIndex] ?? false;
+    flipMotion(blue, blueFlips[stepIndex] ?? false);
+    flipMotion(red, redFlips[stepIndex] ?? false);
+    mutable.blueReversal = blueReversals[stepIndex] ?? false;
+    mutable.redReversal = redReversals[stepIndex] ?? false;
 
     if (blue && red) {
       const letter = lookupLetter(edges, {

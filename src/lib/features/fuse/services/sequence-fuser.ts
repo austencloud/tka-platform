@@ -11,7 +11,7 @@ import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { FuseOptions } from "./types";
 
-const DEFAULT_MAX_BEATS = 64;
+const DEFAULT_MAX_STEPS = 64;
 
 function gcd(a: number, b: number): number {
 	return b === 0 ? a : gcd(b, a % b);
@@ -116,13 +116,13 @@ export function fuseSequences(
 	red: HandPathData | SoloPropData,
 	options?: FuseOptions
 ): SequenceData {
-	const maxSteps = options?.maxSteps ?? DEFAULT_MAX_BEATS;
+	const maxSteps = options?.maxSteps ?? DEFAULT_MAX_STEPS;
 	const alignmentOffset = options?.alignmentOffset ?? 0;
 
 	const blueHandPath = extractHandPath(blue);
 	const redHandPath = extractHandPath(red);
 
-	// Derive beat count from locations (N+1 locations = N beats), not from
+	// Derive step count from locations (N+1 locations = N steps), not from
 	// the `length` property which may be stale or incorrect in existing data.
 	const blueLength = blueHandPath.locations.length - 1;
 	const redLength = redHandPath.locations.length - 1;
@@ -154,7 +154,7 @@ export function fuseSequences(
 		? tile(redSoloSteps, targetLength)
 		: buildMinimalSteps(redLocations, targetLength);
 
-	// Build per-beat step pairings. Without full motion analysis we mark
+	// Build per-step step pairings. Without full motion analysis we mark
 	// letter and positions as null/false - downstream hydration fills them.
 	const stepPairings: StepPairingData[] = [];
 	for (let i = 0; i < targetLength; i++) {

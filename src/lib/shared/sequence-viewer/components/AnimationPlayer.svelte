@@ -198,7 +198,7 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 		if (useContext || !controller) return;
 
 		// Create content hash to detect edits (same ID, different content)
-		// Include steps data to detect any beat modifications
+		// Include steps data to detect any step modifications
 		const stepsHash = sequence?.steps?.map(s =>
 			`${s.letter}:${s.duration}:${s.startPosition ? 'start' : ''}`
 		).join('|') ?? '';

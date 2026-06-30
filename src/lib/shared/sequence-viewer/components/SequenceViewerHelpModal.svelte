@@ -51,7 +51,7 @@
       <HelpSection icon="fa-image" title="Image Mode" {accentColor}>
         <p>View your sequence as a static image showing all steps at once.</p>
         <ul>
-          <li><strong>Toggle options</strong> - Show/hide beat numbers, word, grid</li>
+          <li><strong>Toggle options</strong> - Show/hide step numbers, word, grid</li>
           <li><strong>Dark/light</strong> - Switch background for export</li>
         </ul>
       </HelpSection>
@@ -77,7 +77,7 @@
       <HelpSection icon="fa-lightbulb" title="Tip" variant="tip">
         <p>
           Use the toggle chips below the preview to customize what elements appear
-          in your export (beat numbers, grid, word label).
+          in your export (step numbers, grid, word label).
         </p>
       </HelpSection>
     </div>

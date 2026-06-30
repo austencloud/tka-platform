@@ -13,7 +13,7 @@ export interface CardBackDomRenderOptions {
 }
 
 /**
- * Per-hand skew data for a single beat.
+ * Per-hand skew data for a single step.
  *
  * Skews modify how far a shift travels along the ring:
  *   shift+  = 1 step further (skewSteps: 1, skewDir: PLUS)
@@ -27,14 +27,14 @@ export interface HandSkew {
 
 /**
  * A hand path trace is the raw spatial data: where each hand is at each point
- * in time. From 9 locations per hand we derive 8 beats (transitions).
+ * in time. From 9 locations per hand we derive 8 steps (transitions).
  *
- * Skew data is optional per-beat, per-hand. Only shifts can be skewed.
+ * Skew data is optional per-step, per-hand. Only shifts can be skewed.
  */
 export interface HandPathTrace {
   blue: GridLocation[];
   red: GridLocation[];
-  /** Per-beat skew overrides. Index aligns with beat index (0 = first transition). */
+  /** Per-step skew overrides. Index aligns with step index (0 = first transition). */
   skews?: { blue?: HandSkew; red?: HandSkew }[];
 }
 
@@ -58,7 +58,7 @@ export interface InfoCardCanvasOptions {
 export interface SeedInfo {
   /** Display name for this seed (e.g. "AA", "KE") */
   name: string;
-  /** Which beat indices (1-based) belong to each occurrence of this seed */
+  /** Which step indices (1-based) belong to each occurrence of this seed */
   beatRanges: [number, number][];
 }
 

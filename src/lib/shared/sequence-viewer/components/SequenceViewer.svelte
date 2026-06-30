@@ -396,7 +396,7 @@
 							onclick={toggleStepNumbers}
 							aria-pressed={addStepNumbers}
 						>
-							Beat #s
+							Step #s
 						</button>
 						<button
 							type="button"

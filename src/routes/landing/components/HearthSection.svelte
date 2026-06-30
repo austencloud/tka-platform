@@ -104,7 +104,7 @@
       {/if}
     </div>
     <span class="pictograph-caption">
-      The letter A. One beat of movement, written down.
+      The letter A. One step of movement, written down.
     </span>
     <button class="change-prop-btn" onclick={cycleProp}>
       <i class="fas fa-sync-alt" aria-hidden="true"></i>

@@ -69,8 +69,8 @@
     <button
       class="action-btn"
       onclick={handleAddKeyframe}
-      aria-label="Add keyframe at current beat"
-      title="Add keyframe at current beat"
+      aria-label="Add keyframe at current step"
+      title="Add keyframe at current step"
       disabled={!currentCameraPosition}
     >
       <i class="fas fa-plus" aria-hidden="true"></i>

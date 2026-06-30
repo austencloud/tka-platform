@@ -1,13 +1,13 @@
 <!--
   PatternStripEditor.svelte
-  Length × Rhythm × Amount over a PatternBeatStrip. Strip is the source of truth;
+  Length × Rhythm × Amount over a PatternStepStrip. Strip is the source of truth;
   chips stamp + auto-highlight by derivation.
 -->
 <script lang="ts">
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import RhythmGlyph from "./RhythmGlyph.svelte";
-  import PatternBeatStrip from "./PatternBeatStrip.svelte";
+  import PatternStepStrip from "./PatternStepStrip.svelte";
   import type { StripBinding, StripValue } from "./pattern-strip-types";
   import {
     divisorsUpTo, uniformActive, perHandRhythmMatches, singleLaneRhythmMatches,
@@ -33,7 +33,7 @@
   function setPeriod(p: number) {
     onChange(value.map((lane) => resizePeriod(lane, p, binding.base)));
   }
-  /** Value stamped on active beats: a binary binding's fixed activeValue, else
+  /** Value stamped on active steps: a binary binding's fixed activeValue, else
    *  the lane's current uniform amount (falling back to the first amount). */
   function stampValue(li: number): StripValue {
     if (binding.activeValue !== undefined) return binding.activeValue;
@@ -149,7 +149,7 @@
 
   <div class="axis result">
     <div class="axis-lbl">Result</div>
-    <PatternBeatStrip
+    <PatternStepStrip
       lanes={stripLanes}
       cellKind={binding.cellKind ?? "number"}
       valueList={binding.valueList}

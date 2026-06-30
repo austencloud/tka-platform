@@ -61,7 +61,7 @@ export function createViewer3DShortcuts(
     {
       id: "3d-viewer.reset",
       label: "Reset",
-      description: "Reset to beginning of current beat",
+      description: "Reset to beginning of current step",
       key: "r",
       scope: "playback",
       context: "realm",
@@ -98,8 +98,8 @@ export function createViewer3DShortcuts(
     // === STEP NAVIGATION ===
     {
       id: "3d-viewer.prev-beat",
-      label: "Previous Beat",
-      description: "Go to previous beat in sequence",
+      label: "Previous Step",
+      description: "Go to previous step in sequence",
       key: "ArrowLeft",
       scope: "navigation",
       context: "realm",
@@ -107,8 +107,8 @@ export function createViewer3DShortcuts(
     },
     {
       id: "3d-viewer.next-beat",
-      label: "Next Beat",
-      description: "Go to next beat in sequence",
+      label: "Next Step",
+      description: "Go to next step in sequence",
       key: "ArrowRight",
       scope: "navigation",
       context: "realm",
@@ -116,8 +116,8 @@ export function createViewer3DShortcuts(
     },
     {
       id: "3d-viewer.first-beat",
-      label: "First Beat",
-      description: "Jump to first beat",
+      label: "First Step",
+      description: "Jump to first step",
       key: "Home",
       scope: "navigation",
       context: "realm",
@@ -125,8 +125,8 @@ export function createViewer3DShortcuts(
     },
     {
       id: "3d-viewer.last-beat",
-      label: "Last Beat",
-      description: "Jump to last beat",
+      label: "Last Step",
+      description: "Jump to last step",
       key: "End",
       scope: "navigation",
       context: "realm",

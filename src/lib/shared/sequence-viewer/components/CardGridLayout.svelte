@@ -630,7 +630,7 @@
 {/if}
 
 <style>
-  /* Scroll container for long sequences (>16 beats) */
+  /* Scroll container for long sequences (>16 steps) */
   .grid-scroll-container {
     flex: 0 1 auto;
     min-height: 0;

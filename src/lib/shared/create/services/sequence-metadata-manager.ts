@@ -18,7 +18,7 @@ export function generateSequenceName(options: GenerationOptions): string {
 
   const difficulty =
     options.difficulty.charAt(0).toUpperCase() + options.difficulty.slice(1);
-  return `${difficulty} ${options.length}-Beat (${timestamp})`;
+  return `${difficulty} ${options.length}-Step (${timestamp})`;
 }
 
 export function calculateWordFromBeats(steps: StepData[]): string {

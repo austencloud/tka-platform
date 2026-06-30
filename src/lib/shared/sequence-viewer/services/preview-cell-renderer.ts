@@ -121,7 +121,7 @@ export async function renderCell(
   options: PreviewCellRenderOptions
 ): Promise<string> {
   // The base pictograph is cached NUMBER-FREE (step number forced off) so blobs
-  // are shared across beats and the persistent cache never bloats per-number.
+  // are shared across steps and the persistent cache never bloats per-number.
   // The step number is composited on top afterwards (see compositeStepNumberOnBlob)
   // so it lands in the displayed image — dissolving in lockstep with the cell
   // during crossfades — without ever entering the base cache key.

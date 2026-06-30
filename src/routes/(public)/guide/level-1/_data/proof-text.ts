@@ -735,7 +735,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 355.3,
       "fs": 15,
       "s": "regular",
-      "t": "And with gamma→gamma, it creates a 4-beat sequence:"
+      "t": "And with gamma→gamma, it creates a 4-step sequence:"
     },
     {
       "x": 80,
@@ -761,7 +761,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 571.8,
       "fs": 15,
       "s": "regular",
-      "t": "The performer can use it to keep track of rotations and check their position on every beat."
+      "t": "The performer can use it to keep track of rotations and check their position on every step."
     },
     {
       "x": 77.8,
@@ -1261,7 +1261,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 430.1,
       "fs": 14,
       "s": "regular",
-      "t": "To execute this in wall plane, you must do one of the following on beat 2:"
+      "t": "To execute this in wall plane, you must do one of the following on step 2:"
     },
     {
       "x": 11.7,
@@ -1269,7 +1269,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 508.2,
       "fs": 14,
       "s": "regular",
-      "t": "• Pass the thumb end through the negative space above your right shoulder on beat 2."
+      "t": "• Pass the thumb end through the negative space above your right shoulder on step 2."
     },
     {
       "x": 11.7,
@@ -1277,7 +1277,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 581.8,
       "fs": 14,
       "s": "regular",
-      "t": "• Turn your torso to the left on beat 2 and pass the thumb end in front, then pass the pinky end on"
+      "t": "• Turn your torso to the left on step 2 and pass the thumb end in front, then pass the pinky end on"
     },
     {
       "x": 11.7,
@@ -1285,7 +1285,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 298,
       "fs": 14,
       "s": "regular",
-      "t": "the inside of your right arm as you move to beat 3."
+      "t": "the inside of your right arm as you move to step 3."
     },
     {
       "x": 107.1,
@@ -1325,7 +1325,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 522.3,
       "fs": 14,
       "s": "regular",
-      "t": "To execute this without finger-spinning, turn your torso to the left on beat 3. During this"
+      "t": "To execute this without finger-spinning, turn your torso to the left on step 3. During this"
     },
     {
       "x": 12.9,
@@ -1333,7 +1333,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 572.4,
       "fs": 14,
       "s": "regular",
-      "t": "beat, the staff moves briefly in wheel-plane relative to your left-facing view. On beat 4, turn your"
+      "t": "step, the staff moves briefly in wheel-plane relative to your left-facing view. On step 4, turn your"
     },
     {
       "x": 12.9,
@@ -2659,7 +2659,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 267,
       "fs": 15,
       "s": "regular",
-      "t": "motion, both hands remain still for a beat."
+      "t": "motion, both hands remain still for a step."
     },
     {
       "x": 141.4,
@@ -2877,7 +2877,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 540.4,
       "fs": 15,
       "s": "regular",
-      "t": "the ability to check your thumb orientation on each beat to see if you’re still on track."
+      "t": "the ability to check your thumb orientation on each step to see if you’re still on track."
     },
     {
       "x": 22.8,
@@ -3899,7 +3899,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 112.7,
       "fs": 15,
       "s": "regular",
-      "t": "them after beat 1."
+      "t": "them after step 1."
     },
     {
       "x": 45.7,
@@ -3915,7 +3915,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 220.6,
       "fs": 15,
       "s": "regular",
-      "t": "top after beat 4, so we’ll repeat the"
+      "t": "top after step 4, so we’ll repeat the"
     },
     {
       "x": 9.7,
@@ -3931,7 +3931,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 236.7,
       "fs": 15,
       "s": "regular",
-      "t": "reversal after beat 5) to return to our"
+      "t": "reversal after step 5) to return to our"
     },
     {
       "x": 9.7,
@@ -3995,7 +3995,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 187.4,
       "fs": 15,
       "s": "regular",
-      "t": "beats 2 and 4, notated by an “"
+      "t": "steps 2 and 4, notated by an “"
     },
     {
       "x": 561.6,
@@ -4043,7 +4043,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 498,
       "fs": 15,
       "s": "regular",
-      "t": "Now let’s look at another variation of AABB*2 with reversals after beats 3 & 7:"
+      "t": "Now let’s look at another variation of AABB*2 with reversals after steps 3 & 7:"
     }
   ],
   "misc-permutations": [
@@ -4053,7 +4053,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 514.5,
       "fs": 15,
       "s": "regular",
-      "t": "In this example of DJII, the graphs in the second repetition (beats 5-8) mirror the"
+      "t": "In this example of DJII, the graphs in the second repetition (steps 5-8) mirror the"
     },
     {
       "x": 72.2,
@@ -4061,7 +4061,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 372,
       "fs": 15,
       "s": "regular",
-      "t": "graphs in the first repetition (beats 1-4), classifiying it as a"
+      "t": "graphs in the first repetition (steps 1-4), classifiying it as a"
     },
     {
       "x": 447.5,

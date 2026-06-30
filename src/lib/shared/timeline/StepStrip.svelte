@@ -1,5 +1,5 @@
 <!--
-  BeatStrip.svelte
+  StepStrip.svelte
 
   Focus-locked read-ahead carousel: the active pictograph is pinned center under a
   gold focus frame; the whole track slides one cell-stride left per step. Neighbors
@@ -24,7 +24,7 @@
     loop = false,
     bluePropType = null,
     redPropType = null,
-    beatPulse = false,
+    stepPulse = false,
     onCellClick = null,
   }: {
     cells: NotationCell[];
@@ -45,7 +45,7 @@
     bluePropType?: PropType | null;
     redPropType?: PropType | null;
     /** Flash the focus frame each time the active step advances. */
-    beatPulse?: boolean;
+    stepPulse?: boolean;
     /** Seek callback when a cell is tapped (receives the cell's stepNumber). */
     onCellClick?: ((stepNumber: number) => void) | null;
   } = $props();
@@ -59,9 +59,9 @@
     Math.min(Math.max(currentStepNumber, 0), Math.max(0, cells.length - 1))
   );
 
-  // Smooth progress within the current beat (0→1) from the float step — drives
-  // the calm per-beat countdown cue under the focus frame.
-  let beatPhase = $derived(Math.min(1, Math.max(0, (currentStep ?? 0) - currentStepNumber)));
+  // Smooth progress within the current step (0→1) from the float step — drives
+  // the calm per-step countdown cue under the focus frame.
+  let stepPhase = $derived(Math.min(1, Math.max(0, (currentStep ?? 0) - currentStepNumber)));
 
   // Monotonic virtual index for seamless looping: the raw step wraps (…N→0…), so
   // on each wrap we add cells.length — the track keeps sliding forward into a
@@ -83,7 +83,7 @@
   });
   let virtualActive = $derived(loop ? activeIndex + loopOffset : activeIndex);
 
-  let beatStripEl = $state<HTMLDivElement | null>(null);
+  let stepStripEl = $state<HTMLDivElement | null>(null);
   let stripContainerWidth = $state(375);
   let stripContainerHeight = $state(160);
 
@@ -160,7 +160,7 @@
     trackX = left - idx * STRIDE;
   });
 
-  // Slide duration tracks the beat interval (half a beat, clamped) — fast tempos
+  // Slide duration tracks the step interval (half a step, clamped) — fast tempos
   // get a shorter, less-visible travel.
   let slideDurMs = $derived(
     Math.round(Math.min(0.42, Math.max(0.12, (60 / Math.max(1, bpm)) * 0.5)) * 1000)
@@ -176,7 +176,7 @@
   }
 
   $effect(() => {
-    const el = beatStripEl;
+    const el = stepStripEl;
     if (!el) return;
     stripContainerWidth = el.clientWidth;
     stripContainerHeight = el.clientHeight;
@@ -194,22 +194,22 @@
 
 {#if cells.length > 0}
   <div
-    class="beat-viewport"
+    class="step-viewport"
     class:anchor-start={anchor === "start"}
     class:fill-height={fillHeight}
-    bind:this={beatStripEl}
+    bind:this={stepStripEl}
     style="--slide-dur: {slideDurMs}ms; --cell: {effCell}px; --frame: {FRAME}px; {fillHeight ? 'height: 100%' : `height: ${viewportHeight}px`}"
   >
-    <div class="beat-focus" style="left: {frameLeft}px">
-      {#if beatPulse}
-        <div class="beat-progress" style="transform: scaleX({beatPhase})"></div>
+    <div class="step-focus" style="left: {frameLeft}px">
+      {#if stepPulse}
+        <div class="step-progress" style="transform: scaleX({stepPhase})"></div>
       {/if}
     </div>
-    <div class="beat-track" class:no-anim={!animateTrack} style="transform: translateX({trackX}px)">
+    <div class="step-track" class:no-anim={!animateTrack} style="transform: translateX({trackX}px)">
       {#each renderCells as item (item.vi)}
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <div
-          class="beat-cell"
+          class="step-cell"
           class:start-cell={item.cell.isStart}
           class:is-focus={item.dist === 0}
           class:clickable={!!onCellClick}
@@ -221,7 +221,7 @@
             ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCellClick?.(item.cell.stepNumber); } }
             : undefined}
         >
-          <div class="beat-pictograph" style="transform: scale({cellScale(item.dist)})">
+          <div class="step-pictograph" style="transform: scale({cellScale(item.dist)})">
             <PictographContainer
               pictographData={item.cell.data}
               darkMode={true}
@@ -238,7 +238,7 @@
 {/if}
 
 <style>
-  .beat-viewport {
+  .step-viewport {
     position: relative;
     width: 100%;
     overflow: hidden;
@@ -247,17 +247,17 @@
     -webkit-mask-image: linear-gradient(to right, transparent 0, black 10%, black 90%, transparent 100%);
     mask-image: linear-gradient(to right, transparent 0, black 10%, black 90%, transparent 100%);
   }
-  .beat-viewport.fill-height { height: 100%; }
+  .step-viewport.fill-height { height: 100%; }
   /* Start-anchored: focus sits left, so fade only the upcoming (right) edge —
      the left stays solid so the big focus pictograph is never dimmed. */
-  .beat-viewport.anchor-start {
+  .step-viewport.anchor-start {
     -webkit-mask-image: linear-gradient(to right, black 0, black 86%, transparent 100%);
     mask-image: linear-gradient(to right, black 0, black 86%, transparent 100%);
   }
   /* Cells are absolutely placed at vi * STRIDE inside the track; the track
      translateX slides the whole window. (Absolute, not flex, so the virtual
      window can run past the ends for seamless looping.) */
-  .beat-track {
+  .step-track {
     position: absolute;
     top: 0;
     bottom: 0;
@@ -265,8 +265,8 @@
     will-change: transform;
     transition: transform var(--slide-dur, 420ms) cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .beat-track.no-anim { transition: none; }
-  .beat-focus {
+  .step-track.no-anim { transition: none; }
+  .step-focus {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
@@ -280,10 +280,10 @@
     overflow: hidden; /* clip the countdown line to the rounded frame */
     transition: left 0.2s ease;
   }
-  /* Calm per-beat countdown: a thin amber line fills left→right across the beat,
+  /* Calm per-step countdown: a thin amber line fills left→right across the step,
      reaching full as the next move takes focus. Replaces the distracting border
      expand/contract — anticipatory and steady instead of flashy. */
-  .beat-progress {
+  .step-progress {
     position: absolute;
     left: 0;
     right: 0;
@@ -293,7 +293,7 @@
     transform-origin: left center;
     will-change: transform;
   }
-  .beat-cell {
+  .step-cell {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
@@ -304,10 +304,10 @@
     overflow: hidden;
     transition: opacity var(--slide-dur, 420ms) ease;
   }
-  .beat-cell.clickable { cursor: pointer; }
-  .beat-cell.start-cell { border-color: rgba(255, 255, 255, 0.15); }
-  .beat-cell.is-focus { overflow: visible; border-color: transparent; z-index: 3; }
-  .beat-pictograph {
+  .step-cell.clickable { cursor: pointer; }
+  .step-cell.start-cell { border-color: rgba(255, 255, 255, 0.15); }
+  .step-cell.is-focus { overflow: visible; border-color: transparent; z-index: 3; }
+  .step-pictograph {
     width: 100%;
     height: 100%;
     transform-origin: center;
@@ -315,8 +315,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .beat-track,
-    .beat-cell,
-    .beat-pictograph { transition: none; }
+    .step-track,
+    .step-cell,
+    .step-pictograph { transition: none; }
   }
 </style>

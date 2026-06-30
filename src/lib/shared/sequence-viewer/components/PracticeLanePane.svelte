@@ -3,11 +3,11 @@
 
   The read-ahead lane shown in place of the side-by-side preview during focused
   practice. Pure wrapper: derives cells from the sequence and renders the shared
-  BeatStrip with prefs-driven zoom + beat-pulse + tap-to-seek. No playback ownership
+  StepStrip with prefs-driven zoom + step-pulse + tap-to-seek. No playback ownership
   (the viewer orchestrator owns currentStep/bpm and the seek).
 -->
 <script lang="ts">
-  import BeatStrip from "$lib/shared/timeline/BeatStrip.svelte";
+  import StepStrip from "$lib/shared/timeline/StepStrip.svelte";
   import { buildNotationCells } from "$lib/shared/timeline/notation-cell";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -29,7 +29,7 @@
     cellSize: number;
     bluePropType?: PropType | null;
     redPropType?: PropType | null;
-    /** Jump playback to a step (0 = start position, 1..N = beats). */
+    /** Jump playback to a step (0 = start position, 1..N = steps). */
     onSeek?: ((stepNumber: number) => void) | null;
     /** Pre-roll count-in: include + focus the start-position tile so the lane
      *  matches the start pose parked on the canvas. Off during the running loop. */
@@ -38,12 +38,12 @@
 
   // Practice loops continuously, so during the running loop we drop the
   // start-position cell: its pose equals the sequence's end, and the lane
-  // shouldn't travel back through it each loop. Beats only, cycled; currentStep
-  // is shifted −1 so beat k focuses its own cell.
+  // shouldn't travel back through it each loop. Steps only, cycled; currentStep
+  // is shifted −1 so step k focuses its own cell.
   //
   // Exception — the pre-roll count-in (showStartCell): the canvas is parked at
-  // the start pose, so the lane shows the start tile focused to match. Beat 1
-  // would show its props at the END of the beat, a different place. No −1 shift
+  // the start pose, so the lane shows the start tile focused to match. Step 1
+  // would show its props at the END of the step, a different place. No −1 shift
   // then, so step 0 focuses the start cell at index 0.
   const cells = $derived(
     showStartCell
@@ -79,14 +79,14 @@
 
 <div class="practice-lane">
   {#if laneReady}
-    <BeatStrip
+    <StepStrip
       {cells}
       currentStep={shiftedStep}
       {bpm}
       {cellSize}
       {bluePropType}
       {redPropType}
-      beatPulse={true}
+      stepPulse={true}
       onCellClick={onSeek}
       anchor="start"
       fillHeight={wide}

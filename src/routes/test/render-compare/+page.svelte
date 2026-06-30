@@ -717,7 +717,7 @@
     <div class="controls">
       <button onclick={renderSequences} disabled={isLoading}>
         {isLoading
-          ? `Rendering seq ${sequenceProgress.current}/${sequenceProgress.total} (beat ${sequenceProgress.currentStep}/${sequenceProgress.totalSteps})...`
+          ? `Rendering seq ${sequenceProgress.current}/${sequenceProgress.total} (step ${sequenceProgress.currentStep}/${sequenceProgress.totalSteps})...`
           : `Render ${SEQUENCE_COUNT} Real Sequences`}
       </button>
 
@@ -775,7 +775,7 @@
             {#each result.steps as beat, stepIdx}
               <div class="beat-item">
                 <div class="beat-header">
-                  <span class="beat-number">Beat {beat.stepIndex + 1}</span>
+                  <span class="beat-number">Step {beat.stepIndex + 1}</span>
                   <span class="beat-letter">{beat.letter}</span>
                   <span class="beat-speedup">{beat.speedup.toFixed(1)}x</span>
                 </div>
@@ -799,7 +799,7 @@
     {#if sequenceResults.length === 0 && !isLoading}
       <div class="empty-state">
         <p>Click "Render {SEQUENCE_COUNT} Real Sequences" to load and render actual sequences from Firebase.</p>
-        <p class="info-text">This will load public sequences from the database, extract each beat, and render them using both SVG and Canvas 2D methods for comparison.</p>
+        <p class="info-text">This will load public sequences from the database, extract each step, and render them using both SVG and Canvas 2D methods for comparison.</p>
       </div>
     {/if}
   {/if}

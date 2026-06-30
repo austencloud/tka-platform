@@ -182,7 +182,7 @@
   }
 
   /* Step number overlay - rendered as HTML instead of baked into blobs
-     so identical pictographs at different beats share one cached image */
+     so identical pictographs at different steps share one cached image */
   .step-number-overlay {
     position: absolute;
     top: 5.3%;

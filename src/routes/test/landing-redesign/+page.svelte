@@ -309,7 +309,7 @@
       <span class="annot annot-blue">blue hand<i></i></span>
       <span class="annot annot-red">red hand<i></i></span>
       <span class="annot annot-letter">the letter<i></i></span>
-      <figcaption>fig. 1 — one beat of movement, written down</figcaption>
+      <figcaption>fig. 1 — one step of movement, written down</figcaption>
     </figure>
   </section>
 

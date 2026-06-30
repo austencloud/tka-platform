@@ -560,7 +560,7 @@ export function createAvatarInstanceState(
 
     applyBeatPlaneOverrides();
     const afterSnapshot = capturePerformerSnapshot();
-    sceneUndo.pushSelfRestoringEntry("set-beat-plane-override", `Beat ${stepNumber} ${hand}: ${plane}`, {
+    sceneUndo.pushSelfRestoringEntry("set-beat-plane-override", `Step ${stepNumber} ${hand}: ${plane}`, {
       undo: () => restorePerformerSnapshot(beforeSnapshot),
       redo: () => restorePerformerSnapshot(afterSnapshot),
     });

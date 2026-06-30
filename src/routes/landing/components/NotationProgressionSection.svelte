@@ -25,7 +25,7 @@
         <span class="label">String them together</span>
         <p class="caption-above">
           Four letters make the word <strong>{sequence.word}</strong>.
-          Each cell is one beat. Read left to right.
+          Each cell is one step. Read left to right.
         </p>
       </div>
 

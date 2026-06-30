@@ -8,7 +8,7 @@
     Let's create more complex words using pictographs! In order to perform the words in this section
     correctly without finger-spinning, you must be familiar with negative space and body turns. If
     you finger-spin instead of using negative space, you'll lose precision and the ability to check
-    your thumb orientation on each beat to see if you're still on track. We'll use the word AABB as
+    your thumb orientation on each step to see if you're still on track. We'll use the word AABB as
     an example. Here are three variations on AABB, starting from different thumb orientations. Use
     staves or red/blue pens to follow along.
   </p>

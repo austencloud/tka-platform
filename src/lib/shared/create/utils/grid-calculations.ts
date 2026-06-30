@@ -106,7 +106,7 @@ export function calculateGridLayout(
   let columns: number;
 
   if (sizing.manualColumnCount !== null && sizing.manualColumnCount > 0) {
-    // Manual override: manualColumnCount is the number of *beat* columns,
+    // Manual override: manualColumnCount is the number of *step* columns,
     // not including the start position column (added separately as totalColumns).
     // Cap to the mobile column limit (4) on narrow screens so LOOP-aligned
     // column counts don't spill off the edge of small devices.
@@ -122,8 +122,8 @@ export function calculateGridLayout(
       containerWidth
     );
 
-    // Calculate actual columns based on beat count and max columns
-    // For small beat counts, use the optimal count; for larger counts, respect max columns
+    // Calculate actual columns based on step count and max columns
+    // For small step counts, use the optimal count; for larger counts, respect max columns
     columns = Math.min(stepCount, maxColumns);
   }
 
@@ -160,7 +160,7 @@ export function calculateGridLayout(
     // For larger grids, prioritize width since scrolling is inevitable
     if (isMobileFewSteps) {
       // Mobile with few steps: size by width only, ignore height constraint.
-      // This makes 1-2 beat cells much larger than the height would allow.
+      // This makes 1-2 step cells much larger than the height would allow.
       cellSize = Math.max(
         sizing.minCellSize,
         Math.min(sizing.maxCellSize, Math.floor(maxCellWidth))
@@ -194,7 +194,7 @@ export function calculateGridLayout(
 }
 
 /**
- * Calculate grid position (row, column) for beat index
+ * Calculate grid position (row, column) for step index
  */
 export function calculateStepPosition(
   stepIndex: number,
@@ -279,9 +279,9 @@ export function calculateTimelineRows(
 }
 
 /**
- * Calculate timeline row assignments based on a fixed beat count per row.
+ * Calculate timeline row assignments based on a fixed step count per row.
  * Unlike calculateTimelineRows (which packs by duration capacity), this
- * always places exactly `beatsPerRow` steps in each row. The last row
+ * always places exactly `stepsPerRow` steps in each row. The last row
  * may have fewer if steps don't divide evenly.
  *
  * Use this when the layout table prescribes a column count and the
@@ -289,21 +289,21 @@ export function calculateTimelineRows(
  * proportional sizing within each row.
  *
  * @param steps - Array of step data with optional duration
- * @param beatsPerRow - Exact number of beats to place in each row
+ * @param stepsPerRow - Exact number of steps to place in each row
  * @returns Array of row assignments with actual duration totals
  */
 export function calculateTimelineRowsByBeatCount(
   steps: readonly { duration?: number }[],
-  beatsPerRow: number
+  stepsPerRow: number
 ): TimelineRow[] {
-  if (beatsPerRow <= 0) beatsPerRow = 1;
+  if (stepsPerRow <= 0) stepsPerRow = 1;
   const rows: TimelineRow[] = [];
 
-  for (let i = 0; i < steps.length; i += beatsPerRow) {
+  for (let i = 0; i < steps.length; i += stepsPerRow) {
     const rowSteps: Array<{ stepIndex: number; duration: number }> = [];
     let totalDuration = 0;
 
-    for (let j = i; j < Math.min(i + beatsPerRow, steps.length); j++) {
+    for (let j = i; j < Math.min(i + stepsPerRow, steps.length); j++) {
       const duration = steps[j]?.duration ?? 1;
       rowSteps.push({ stepIndex: j, duration });
       totalDuration += duration;

@@ -64,7 +64,7 @@
 
   <h3 class="type-static">Type 6: Static</h3>
   <p>
-    In a Static motion, both hands remain still for a beat. These become more
+    In a Static motion, both hands remain still for a step. These become more
     interesting when adding turns.
   </p>
 

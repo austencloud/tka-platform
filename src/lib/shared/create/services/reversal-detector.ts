@@ -27,45 +27,45 @@ export interface PictographWithReversals extends PictographData {
 /**
  * Process reversals for an entire sequence.
  *
- * For loop sequences (rotated, mirrored, etc.) the last beats wrap into the
- * first beats, so beat 1's "previous" context includes the tail of the
+ * For loop sequences (rotated, mirrored, etc.) the last steps wrap into the
+ * first steps, so step 1's "previous" context includes the tail of the
  * sequence. We build a virtual prefix from the end of the sequence so that
- * early beats can detect reversals across the loop boundary.
+ * early steps can detect reversals across the loop boundary.
  */
 export function processReversals(sequence: SequenceData): SequenceData {
   const isLoop = !!sequence.loopType;
   const steps = sequence.steps;
-  const processedBeats: StepData[] = [];
+  const processedSteps: StepData[] = [];
 
   for (let i = 0; i < steps.length; i++) {
     const currentStep = steps[i]!;
 
-    // For loop sequences, early beats that have no prior context (or only
+    // For loop sequences, early steps that have no prior context (or only
     // noRotation predecessors) can look back through the tail of the sequence.
     // We concatenate the full sequence before the current slice so that
     // _getLastValidPropRotDir can walk backwards across the loop boundary.
     let previousSteps: StepData[];
     if (isLoop && i < steps.length) {
-      // Wrap: [...allBeats, ...beatsBeforeCurrent]
+      // Wrap: [...allSteps, ...stepsBeforeCurrent]
       previousSteps = [...steps, ...steps.slice(0, i)];
     } else {
       previousSteps = steps.slice(0, i);
     }
 
     const reversalInfo = detectReversal(previousSteps, currentStep);
-    const processedBeat = applyReversalSymbols(currentStep, reversalInfo);
+    const processedStep = applyReversalSymbols(currentStep, reversalInfo);
 
-    processedBeats.push(processedBeat);
+    processedSteps.push(processedStep);
   }
 
   return {
     ...sequence,
-    steps: processedBeats,
+    steps: processedSteps,
   };
 }
 
 /**
- * Detect reversal for a single beat based on previous steps
+ * Detect reversal for a single step based on previous steps
  */
 export function detectReversal(
   previousSteps: StepData[],
@@ -100,7 +100,7 @@ export function detectReversal(
 }
 
 /**
- * Apply reversal symbols to a beat
+ * Apply reversal symbols to a step
  */
 export function applyReversalSymbols(
   stepData: StepData,
@@ -234,8 +234,8 @@ function getLastValidPropRotDir(
   color: "blue" | "red"
 ): string | null {
   for (let i = steps.length - 1; i >= 0; i--) {
-    const beat = steps[i]!;
-    const propRotDir = getPropRotDir(beat, color);
+    const step = steps[i]!;
+    const propRotDir = getPropRotDir(step, color);
 
     if (propRotDir && propRotDir !== "noRotation") {
       return propRotDir;
@@ -244,14 +244,14 @@ function getLastValidPropRotDir(
   return null;
 }
 
-function getPropRotDir(beat: StepData, color: "blue" | "red"): string | null {
-  if (!beat || beat.isBlank) {
+function getPropRotDir(step: StepData, color: "blue" | "red"): string | null {
+  if (!step || step.isBlank) {
     return null;
   }
 
   // Use current data structure: motions[MotionColor]
   const motionColor = color === "blue" ? MotionColor.BLUE : MotionColor.RED;
-  const motionData = beat.motions[motionColor];
+  const motionData = step.motions[motionColor];
 
   if (!motionData) {
     return null;
@@ -273,7 +273,7 @@ function getPropRotDir(beat: StepData, color: "blue" | "red"): string | null {
   // really is missing here it's bad data - warn and fall through to cw so
   // downstream reversal detection doesn't crash.
   console.warn(
-    `Missing rotationDirection for ${color} at step ${beat.stepNumber}. ` +
+    `Missing rotationDirection for ${color} at step ${step.stepNumber}. ` +
       `Motion type: ${motionData.motionType}. Defaulting to 'cw'.`
   );
 
@@ -303,9 +303,9 @@ function getLastValidPropRotDirFromSequence(
   color: "blue" | "red"
 ): string | null {
   for (let i = steps.length - 1; i >= 0; i--) {
-    const beat = steps[i];
-    if (beat && !beat.isBlank) {
-      const propRotDir = getPropRotDir(beat, color);
+    const step = steps[i];
+    if (step && !step.isBlank) {
+      const propRotDir = getPropRotDir(step, color);
       if (propRotDir && propRotDir !== "noRotation") {
         return propRotDir;
       }

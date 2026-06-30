@@ -11,31 +11,31 @@
   </p>
 
   <p>
-    Here's an AABB in which both staves execute prop-reversals after beats 2 and 4, notated by an
+    Here's an AABB in which both staves execute prop-reversals after steps 2 and 4, notated by an
     "R/R" in between the pictographs. This requires negative space or a body turn to execute.
   </p>
   <GuideDiagram
     src="/guide/level-1/images/abc-examples/AABB_prop_revs.png"
-    alt="AABB with prop-reversals after beats 2 and 4"
-    caption="AABB with prop-reversals after beats 2 and 4"
+    alt="AABB with prop-reversals after steps 2 and 4"
+    caption="AABB with prop-reversals after steps 2 and 4"
   />
 
   <p>
-    Let's place the reversals in a different place. This time we'll put them after beat 1. This will
-    put our left hand on top after beat 4, so we'll repeat the sequence again mirrored (with a
-    reversal after beat 5) to return to our original home position. This is a Mirrored LOOP.
+    Let's place the reversals in a different place. This time we'll put them after step 1. This will
+    put our left hand on top after step 4, so we'll repeat the sequence again mirrored (with a
+    reversal after step 5) to return to our original home position. This is a Mirrored LOOP.
   </p>
   <GuideDiagram
     src="/guide/level-1/images/abc-examples/AABB_mir_perm.png"
-    alt="AABB Mirrored LOOP with reversals after beat 1"
+    alt="AABB Mirrored LOOP with reversals after step 1"
     caption="AABB Mirrored LOOP"
   />
 
-  <p>Now let's look at another variation of AABB×2 with reversals after beats 3 & 7.</p>
+  <p>Now let's look at another variation of AABB×2 with reversals after steps 3 & 7.</p>
   <GuideDiagram
     src="/guide/level-1/images/abc-examples/AABB_mir_perm_2.png"
-    alt="AABB×2 with reversals after beats 3 and 7"
-    caption="AABB×2 with reversals after beats 3 & 7"
+    alt="AABB×2 with reversals after steps 3 and 7"
+    caption="AABB×2 with reversals after steps 3 & 7"
   />
 
   <p>

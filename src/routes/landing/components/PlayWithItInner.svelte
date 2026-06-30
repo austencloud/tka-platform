@@ -29,7 +29,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { SequenceViewerVisibilityState } from "$lib/shared/sequence-viewer/state/viewer-visibility-state.svelte";
   import { setViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
-  import BeatStrip from "$lib/shared/timeline/BeatStrip.svelte";
+  import StepStrip from "$lib/shared/timeline/StepStrip.svelte";
   import { buildNotationCells, type NotationCell } from "$lib/shared/timeline/notation-cell";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -184,9 +184,9 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
 <!-- Beat strip: one definition shared by both layouts. Lives inside the stage
      column on mobile (under the canvas, above the dock) and full-width below
      the stage row on desktop so the whole sequence is visible without scroll. -->
-{#snippet beatStripBlock()}
+{#snippet stepStripBlock()}
   {#if playback?.animationState?.sequenceData && notationCells.length > 0}
-    <BeatStrip
+    <StepStrip
       cells={notationCells}
       currentStep={playback?.animationState?.currentStep ?? 0}
       {bpm}
@@ -242,7 +242,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
 
         <!-- Mobile: strip under the canvas, then the ControlDock bottom bar -->
         {#if !isDesktopLayout}
-          {@render beatStripBlock()}
+          {@render stepStripBlock()}
           <AnimationPanel
             isExporting={false}
             canvasReady={animationReady}
@@ -280,7 +280,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
 
     <!-- Desktop: full-width strip spanning canvas + panel below the stage row -->
     {#if isDesktopLayout}
-      {@render beatStripBlock()}
+      {@render stepStripBlock()}
     {/if}
   </div>
 </div>

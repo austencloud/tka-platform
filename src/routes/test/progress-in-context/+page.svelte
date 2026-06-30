@@ -166,11 +166,11 @@
             <span class="value">{sequenceData.word || sequenceData.name || "Untitled"}</span>
           </div>
           <div class="info-item">
-            <span class="label">Beats:</span>
+            <span class="label">Steps:</span>
             <span class="value">{sequenceData.steps.length}</span>
           </div>
           <div class="info-item">
-            <span class="label">Current Beat:</span>
+            <span class="label">Current Step:</span>
             <span class="value">{Math.floor(currentStep) + 1}</span>
           </div>
         </div>

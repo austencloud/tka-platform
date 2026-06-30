@@ -197,7 +197,7 @@ export class GenerationOrchestrator {
     // Motion type filter (motionTypeFilter axis)
     // no-dash = hard exclude; prefer-dash = soft maximize (weighted to
     // dominate other soft constraints, but closure/hard filters can still
-    // force non-dash picks on specific beats).
+    // force non-dash picks on specific steps).
     if (options.motionTypeFilter === "no-dash") {
       result.motionFamily = { exclude: ["dash"] };
     } else if (options.motionTypeFilter === "prefer-dash") {

@@ -16,7 +16,7 @@
 
   const TOGGLES: { key: VisibilityKey; label: string }[] = [
     { key: "props", label: "Props" },
-    { key: "stepNumbers", label: "Beat #s" },
+    { key: "stepNumbers", label: "Step #s" },
     { key: "tkaGlyph", label: "TKA Glyph" },
     { key: "wordHeader", label: "Word Header" },
     { key: "progressBar", label: "Progress Bar" },

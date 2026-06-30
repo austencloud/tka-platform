@@ -5,8 +5,8 @@
 
 <GuideSection id="type-1-loops" title="Type 1 LOOPs">
   <p>
-    In this example of DJII, the graphs in the second repetition (beats 5-8) mirror the graphs in
-    the first repetition (beats 1-4), classifying it as a Mirrored LOOP.
+    In this example of DJII, the graphs in the second repetition (steps 5-8) mirror the graphs in
+    the first repetition (steps 1-4), classifying it as a Mirrored LOOP.
   </p>
   <GuideDiagram
     src="/guide/level-1/images/type-1-caps/DJII.png"

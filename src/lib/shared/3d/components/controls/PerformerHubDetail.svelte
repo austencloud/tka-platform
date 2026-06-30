@@ -58,7 +58,7 @@
 
   const sequence = $derived(performer?.loadedSequence ?? null);
   const sequenceWord = $derived(sequence?.word ?? sequence?.name ?? null);
-  const sequenceBeats = $derived(sequence?.steps?.length ?? null);
+  const sequenceSteps = $derived(sequence?.steps?.length ?? null);
 
   function pickAvatar(id: AvatarId) {
     performer?.setAvatarModel(id);
@@ -244,8 +244,8 @@
                 <span class="seq-chip">{sequenceWord}</span>
                 <span class="seq-dot" aria-hidden="true">·</span>
               {/if}
-              {#if sequenceBeats !== null}
-                <span class="seq-beats">{sequenceBeats} beats</span>
+              {#if sequenceSteps !== null}
+                <span class="seq-beats">{sequenceSteps} steps</span>
               {:else}
                 <span class="seq-beats muted">No sequence</span>
               {/if}
@@ -310,8 +310,8 @@
             {#if sequence}
               <div class="seq-display">
                 <div class="seq-word-large">{sequenceWord ?? "Untitled sequence"}</div>
-                {#if sequenceBeats !== null}
-                  <div class="seq-beat-count">{sequenceBeats} beats</div>
+                {#if sequenceSteps !== null}
+                  <div class="seq-beat-count">{sequenceSteps} steps</div>
                 {/if}
               </div>
               <button

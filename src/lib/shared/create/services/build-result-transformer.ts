@@ -57,7 +57,7 @@ export class BuildResultTransformer {
   ): Promise<SequenceData> {
     const isCircular = !!result.loop;
 
-    // The engine's sequence[0] is the start position, sequence[1..n] are beats
+    // The engine's sequence[0] is the start position, sequence[1..n] are steps
     const startPositionStep = result.sequence[0];
     if (!startPositionStep) {
       throw new Error("BuildResult has empty sequence - no start position");
@@ -134,7 +134,7 @@ export class BuildResultTransformer {
   }
 
   /**
-   * Map engine SequenceSteps (beats only, not start position) to app StepData[].
+   * Map engine SequenceSteps (steps only, not start position) to app StepData[].
    */
   private mapSteps(
     engineSteps: SequenceStep[],

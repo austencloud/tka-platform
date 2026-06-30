@@ -41,13 +41,13 @@
 <!-- Playback row (toggleable) -->
 {#if playbackVisible}
   <div class="playback-row">
-    <button class="ctl" onclick={onStepBackward} aria-label="Previous beat">
+    <button class="ctl" onclick={onStepBackward} aria-label="Previous step">
       <i class="fas fa-backward-step"></i>
     </button>
     <button class="ctl play" onclick={onPlaybackToggle} aria-label={isPlaying ? "Pause" : "Play"}>
       <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}"></i>
     </button>
-    <button class="ctl" onclick={onStepForward} aria-label="Next beat">
+    <button class="ctl" onclick={onStepForward} aria-label="Next step">
       <i class="fas fa-forward-step"></i>
     </button>
   </div>

@@ -19,6 +19,7 @@
   import { authState } from "../../auth/state/auth-state.svelte";
   import { inboxState } from "../../inbox/state/inbox-state.svelte";
   import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
+  import { supportModalState } from "../../support/state/support-modal-state.svelte";
 
   let {
     // Current state
@@ -226,17 +227,16 @@
           <i class="fas fa-cog" aria-hidden="true"></i>
           <span>Settings</span>
         </button>
-        <a
+        <button
           class="drawer-action support"
-          href="/support"
-          target="_blank"
-          rel="noopener noreferrer"
-          data-sveltekit-reload
-          onclick={closeDrawer}
+          onclick={() => {
+            closeDrawer();
+            supportModalState.show();
+          }}
         >
           <i class="fas fa-heart" aria-hidden="true"></i>
           <span>Support</span>
-        </a>
+        </button>
         {#if isFullAccount}
           <button class="drawer-action sign-out" onclick={handleSignOut}>
             <i class="fas fa-sign-out-alt" aria-hidden="true"></i>

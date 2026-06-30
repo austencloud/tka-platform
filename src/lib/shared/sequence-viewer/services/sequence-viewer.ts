@@ -64,10 +64,10 @@ export class SequenceViewer {
       return sequence;
     }
 
-    const beat = sequence.steps[arrayIndex];
-    if (!beat) return sequence;
+    const step = sequence.steps[arrayIndex];
+    if (!step) return sequence;
 
-    const updatedStep = this.updateMotionOrientation(beat, color, orientation);
+    const updatedStep = this.updateMotionOrientation(step, color, orientation);
     const newSteps = [...sequence.steps];
     newSteps[arrayIndex] = updatedStep;
 
@@ -100,10 +100,10 @@ export class SequenceViewer {
       return sequence;
     }
 
-    const beat = sequence.steps[arrayIndex];
-    if (!beat) return sequence;
+    const step = sequence.steps[arrayIndex];
+    if (!step) return sequence;
 
-    const updatedStep = this.updateMotionTurns(beat, color, turnAmount);
+    const updatedStep = this.updateMotionTurns(step, color, turnAmount);
     const newSteps = [...sequence.steps];
     newSteps[arrayIndex] = updatedStep;
 

@@ -191,10 +191,10 @@ export function createAvatarSyncState(
     if (stepOffset === 0) {
       return `${followerName} is in sync`;
     } else if (stepOffset > 0) {
-      return `${followerName} is ${stepOffset} beat${stepOffset !== 1 ? "s" : ""} ahead`;
+      return `${followerName} is ${stepOffset} step${stepOffset !== 1 ? "s" : ""} ahead`;
     } else {
       const absOffset = Math.abs(stepOffset);
-      return `${followerName} is ${absOffset} beat${absOffset !== 1 ? "s" : ""} behind`;
+      return `${followerName} is ${absOffset} step${absOffset !== 1 ? "s" : ""} behind`;
     }
   }
 

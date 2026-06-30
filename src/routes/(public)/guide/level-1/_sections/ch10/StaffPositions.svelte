@@ -6,7 +6,7 @@
 <GuideSection id="staff-positions" title="Staff Positions">
   <p>
     When writing sequences with staves, it helps to mark the thumb end with a line.
-    The performer can use it to keep track of rotations and check their position on every beat.
+    The performer can use it to keep track of rotations and check their position on every step.
     It also encourages negative space/body turns instead of finger spinning.
   </p>
   <p>

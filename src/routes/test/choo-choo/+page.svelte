@@ -231,7 +231,7 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
           </button>
 
           <span class="beat-indicator">
-            Beat: {Math.floor(animationState.currentStep)}
+            Step: {Math.floor(animationState.currentStep)}
           </span>
         </div>
 

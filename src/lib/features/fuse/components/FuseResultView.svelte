@@ -192,13 +192,13 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 	tabindex="0"
 	onkeydown={handleKeydown}
 >
-	<!-- Header: word + beats -->
+	<!-- Header: word + steps -->
 	{#if displayWord}
 		<div class="result-header">
 			<h2 class="result-title">{displayWord}</h2>
 			{#if sequence}
 				<span class="result-meta">
-					{sequence.sequenceLength ?? sequence.steps?.length ?? 0} beats
+					{sequence.sequenceLength ?? sequence.steps?.length ?? 0} steps
 				</span>
 			{/if}
 		</div>

@@ -39,6 +39,7 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
   import { bootProfiler } from "$lib/shared/analytics/boot-profiler";
   import MainInterface from "../../MainInterface.svelte";
   import AuthSheet from "../../navigation/components/AuthSheet.svelte";
+  import SupportModal from "../../support/components/SupportModal.svelte";
   import LegalSheet from "../../legal/components/LegalSheet.svelte";
   import {
     getCurrentSheet,
@@ -578,6 +579,9 @@ import type { SheetType } from "../../navigation/services/types";
       isOpen={showAuthSheet}
       onClose={() => closeSheet()}
     />
+
+    <!-- Support modal — in-app "buy me a coffee" (self-driven via supportModalState) -->
+    <SupportModal />
 
     <!-- Legal sheets (terms/privacy - route-based) -->
     <LegalSheet

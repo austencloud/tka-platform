@@ -23,6 +23,6 @@ export interface StripBinding {
   laneLabels: string[];
   /** Cell interaction: numeric cycle (default) or boolean toggle. */
   cellKind?: "number" | "toggle";
-  /** Fixed value stamped on active beats when there is no amount (reversals → true). */
+  /** Fixed value stamped on active steps when there is no amount (reversals → true). */
   activeValue?: StripValue;
 }

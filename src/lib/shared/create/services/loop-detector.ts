@@ -212,7 +212,7 @@ export class LOOPDetector implements ILOOPDetector {
   /**
    * Determine slice size based on sequence length and position patterns
    *
-   * Key insight: For quartered rotation, compare START positions of first beat
+   * Key insight: For quartered rotation, compare START positions of first step
    * of each quarter. If q1->q2->q3->q4 follows 90 degree rotation, it's quartered.
    */
   private determinePeriod(steps: readonly StepData[]): Period {
@@ -238,7 +238,7 @@ export class LOOPDetector implements ILOOPDetector {
 
     const quarterLength = length / 4;
 
-    // Derive start positions of first beat of each quarter from motion locations
+    // Derive start positions of first step of each quarter from motion locations
     const step1 = steps[0];
     const step2 = steps[quarterLength];
     const step3 = steps[quarterLength * 2];
@@ -269,7 +269,7 @@ export class LOOPDetector implements ILOOPDetector {
   /**
    * Detect if sequence follows rotation transformation
    *
-   * For halved: Compare START position of first beat vs START position of half beat
+   * For halved: Compare START position of first step vs START position of half step
    * For quartered: Already detected in determinePeriod via detectsQuarteredRotation
    */
   private detectsRotation(
@@ -283,7 +283,7 @@ export class LOOPDetector implements ILOOPDetector {
       return this.detectsQuarteredRotation(steps);
     }
 
-    // Halved rotation: compare START positions of first beat of each half
+    // Halved rotation: compare START positions of first step of each half
     if (period === Period.HALVED && length >= 2 && length % 2 === 0) {
       const halfLength = length / 2;
       // Derive positions from motion locations
@@ -549,7 +549,7 @@ export class LOOPDetector implements ILOOPDetector {
     let swapCount = 0;
     let checkCount = 0;
 
-    // Check first few beat pairs at this interval
+    // Check first few step pairs at this interval
     const pairsToCheck = Math.min(4, length - interval);
 
     for (let i = 0; i < pairsToCheck; i++) {
@@ -642,8 +642,8 @@ export class LOOPDetector implements ILOOPDetector {
 
   /**
    * Detect inner halved rotation: the first half of the sequence is itself a ROTATED loop.
-   * Checks if beat[0].startPosition -> beat[N/4].startPosition follows HALF_POSITION_MAP.
-   * Example: 16-beat sequence where beats 1-8 form a 2-period rotated loop.
+   * Checks if step[0].startPosition -> step[N/4].startPosition follows HALF_POSITION_MAP.
+   * Example: 16-step sequence where steps 1-8 form a 2-period rotated loop.
    */
   private detectsInnerHalvedRotation(steps: readonly StepData[]): boolean {
     const length = steps.length;

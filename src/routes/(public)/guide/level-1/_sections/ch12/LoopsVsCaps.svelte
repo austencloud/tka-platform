@@ -17,15 +17,15 @@
     kidney-bean shape created by alternating extensions and antispin petals.
   </p>
   <p>
-    <strong>LOOPs</strong> compose per-beat snapshots. Each letter captures both hands simultaneously
-    for one beat. A LOOP is a word that, when repeated with one or more transformations, returns to
+    <strong>LOOPs</strong> compose per-step snapshots. Each letter captures both hands simultaneously
+    for one step. A LOOP is a word that, when repeated with one or more transformations, returns to
     its starting position.
   </p>
 
   <h3>Neither is a subset of the other</h3>
   <p>
     Some patterns can be described as both a CAP and a LOOP. Others exist in one framework but not the
-    other. CAPs describe trajectory shapes; LOOPs describe beat-by-beat letter sequences with
+    other. CAPs describe trajectory shapes; LOOPs describe step-by-step letter sequences with
     transformation rules. Different lenses on the same physical motion.
   </p>
 </GuideSection>

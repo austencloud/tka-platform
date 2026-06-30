@@ -6,7 +6,7 @@
 <GuideSection id="acac-bcbc" title="ACAC / BCBC">
   <p>
     When combining a hybrid like C with a non-hybrid like A or B, a prop-reversal is necessary.
-    Let's look at the word ACAC. In this variation, the left hand does a reversal on every beat.
+    Let's look at the word ACAC. In this variation, the left hand does a reversal on every step.
     Give it a try.
   </p>
   <GuideDiagram
@@ -30,7 +30,7 @@
 
   <p>
     Prop-reversals are also required with BCBC, as shown in this example. Here, the right hand is
-    prop-reversing after every beat. Eventually, it returns to home.
+    prop-reversing after every step. Eventually, it returns to home.
   </p>
   <GuideDiagram
     src="/guide/level-1/images/abc-examples/BC.png"

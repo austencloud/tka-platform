@@ -1,10 +1,10 @@
 /**
  * Step Number Compositor
  *
- * Composites a beat/step number ON TOP of an already-rendered, number-free
+ * Composites a step number ON TOP of an already-rendered, number-free
  * pictograph cell blob, producing a new blob whose number is baked into the
  * pixels. This keeps the expensive persistent pictograph cache (pictographBlobCache)
- * number-free and shared across beats, while still making the number part of the
+ * shared across steps, while still making the number part of the
  * cell IMAGE — so it dissolves in perfect sync during the viewer's crossfade
  * instead of floating above it as a separate DOM layer (which read as a flash on
  * thin text).

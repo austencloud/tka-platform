@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { motionDataToConfig3D, beatDataToConfigs } from "$lib/shared/3d/services/sequence-converter";
+import { motionDataToConfig3D, stepDataToConfigs } from "$lib/shared/3d/services/sequence-converter";
 import { Plane } from "@austencloud/scene-3d";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -42,7 +42,7 @@ describe("SequenceConverter plane passthrough", () => {
       id: "test",
     } as unknown as StepData;
 
-    const result = beatDataToConfigs(beat, Plane.WALL, modeConfig);
+    const result = stepDataToConfigs(beat, Plane.WALL, modeConfig);
     expect(result.blue?.plane).toBe(Plane.WHEEL);
   });
 
@@ -63,7 +63,7 @@ describe("SequenceConverter plane passthrough", () => {
       id: "test",
     } as unknown as StepData;
 
-    const result = beatDataToConfigs(beat);
+    const result = stepDataToConfigs(beat);
     expect(result.blue?.plane).toBe(Plane.FLOOR);
     expect(result.red?.plane).toBe(Plane.WHEEL);
   });

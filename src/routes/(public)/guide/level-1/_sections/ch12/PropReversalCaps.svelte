@@ -21,8 +21,8 @@
   />
 
   <p>
-    In this example of B&#x394;MX, the right hand stops on beats 2 and 4 before resuming its motion
-    around the center point. Even when there is a beat with no motion in between, we can still mark
+    In this example of B&#x394;MX, the right hand stops on steps 2 and 4 before resuming its motion
+    around the center point. Even when there is a step with no motion in between, we can still mark
     the reversal with an "R" to indicate the prop reversal.
   </p>
   <GuideDiagram

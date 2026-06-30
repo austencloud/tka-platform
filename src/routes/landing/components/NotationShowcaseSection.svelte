@@ -26,7 +26,7 @@
 
     <p class="demo-caption">
       The pictographs on the right are the score. The figure on the left is the
-      performance. Every beat, every position, every transition, written and
+      performance. Every step, every position, every transition, written and
       readable.
     </p>
   </div>

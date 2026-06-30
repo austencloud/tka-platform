@@ -65,7 +65,7 @@ export interface LetterSource {
   letter: Letter;
   /** True if user typed this letter, false if it was interpolated as a bridge */
   isOriginal: boolean;
-  /** The beat index in the final sequence (1-indexed, after start position) */
+  /** The step index in the final sequence (1-indexed, after start position) */
   stepIndex: number;
 }
 
@@ -95,7 +95,7 @@ export interface SpellPreferences {
  * Statistics calculated from a generated sequence
  */
 export interface SequenceStats {
-  /** Total number of steps (beats) */
+  /** Total number of steps */
   totalSteps: number;
   /** Number of prop reversals (blue + red combined) */
   propReversals: number;

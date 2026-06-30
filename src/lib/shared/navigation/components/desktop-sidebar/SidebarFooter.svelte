@@ -11,6 +11,7 @@
   import AccountRow from "../account/AccountRow.svelte";
   import { inboxState } from "../../../inbox/state/inbox-state.svelte";
   import { authState } from "../../../auth/state/auth-state.svelte";
+  import { supportModalState } from "../../../support/state/support-modal-state.svelte";
 
   // Inbox is a member-only surface (unfinished, and not relevant to guests).
   // Anonymous guests are authenticated but not full accounts — gate on this.
@@ -120,15 +121,13 @@
       {/if}
     </button>
 
-    <!-- Support Button (opens the donation page in a new tab) -->
-    <a
+    <!-- Support button (opens the in-app support modal — no longer a new tab) -->
+    <button
+      type="button"
       class="footer-button support-button"
       class:collapsed={isCollapsed}
-      href="/support"
-      target="_blank"
-      rel="noopener noreferrer"
-      data-sveltekit-reload
-      aria-label="Support The Kinetic Alphabet (opens in a new tab)"
+      onclick={() => supportModalState.show()}
+      aria-label="Support The Kinetic Alphabet"
     >
       <div class="button-icon">
         <i class="fas fa-heart" aria-hidden="true"></i>
@@ -136,7 +135,7 @@
       {#if !isCollapsed}
         <span class="button-label">Support</span>
       {/if}
-    </a>
+    </button>
 
     <!-- Inbox Button (members only) -->
     {#if isFullAccount}

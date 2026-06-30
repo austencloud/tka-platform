@@ -1,6 +1,6 @@
 <!--
-  PatternBeatStrip.svelte
-  The editable per-beat strip. One or two lanes. Number cells cycle a value list
+  PatternStepStrip.svelte
+  The editable per-step strip. One or two lanes. Number cells cycle a value list
   (left −, right +, center = popover); toggle cells flip on/off. Source of truth
   is owned by the parent; this emits edits.
 -->
@@ -9,7 +9,7 @@
     label: string;
     color: "blue" | "red" | "hold";
     values: T[];
-    /** Per-cell "this cell can't take effect" mask (reversals: beat isn't
+    /** Per-cell "this cell can't take effect" mask (reversals: step isn't
      *  spinning). Aligned to `values`. Renders the cell dimmed + dashed. */
     inert?: boolean[];
   }
@@ -21,11 +21,11 @@
     /** Base/default value rendered "muted". */
     base: T;
     format: (v: T) => string;
-    onEdit: (laneIndex: number, beatIndex: number, value: T) => void;
+    onEdit: (laneIndex: number, stepIndex: number, value: T) => void;
   }
   let { lanes, cellKind, valueList = [], base, format, onEdit }: Props = $props();
 
-  let popover = $state<{ lane: number; beat: number; x: number; y: number } | null>(null);
+  let popover = $state<{ lane: number; step: number; x: number; y: number } | null>(null);
 
   function zone(e: MouseEvent, el: HTMLElement): -1 | 0 | 1 {
     const r = el.getBoundingClientRect();
@@ -39,7 +39,7 @@
   }
   function openPopover(li: number, bi: number, el: HTMLElement) {
     const r = el.getBoundingClientRect();
-    popover = { lane: li, beat: bi, x: r.left, y: r.bottom + 8 };
+    popover = { lane: li, step: bi, x: r.left, y: r.bottom + 8 };
   }
   function onNumberClick(e: MouseEvent, li: number, bi: number, v: T, el: HTMLElement) {
     // Keyboard activation (Enter/Space) fires a click with detail === 0 and
@@ -59,7 +59,7 @@
     }
   }
   function pick(v: T) {
-    if (popover) onEdit(popover.lane, popover.beat, v);
+    if (popover) onEdit(popover.lane, popover.step, v);
     popover = null;
   }
 </script>
@@ -70,7 +70,7 @@
   {#each lanes as lane, li}
     <div class="pbs-lane">
       <span class="pbs-label {lane.color}">{lane.label}</span>
-      <div class="pbs-beats">
+      <div class="pbs-steps">
         {#each lane.values as v, bi}
           {#if cellKind === "number"}
             <button
@@ -89,9 +89,9 @@
               class:inert={lane.inert?.[bi]}
               role="switch"
               aria-checked={v !== base}
-              aria-label="{lane.label} beat {bi + 1}{lane.inert?.[bi] ? ' (no spin, reversal has no effect)' : ''}"
+              aria-label="{lane.label} step {bi + 1}{lane.inert?.[bi] ? ' (no spin, reversal has no effect)' : ''}"
               title={lane.inert?.[bi]
-                ? "This beat isn't spinning, so a reversal here has no effect"
+                ? "This step isn't spinning, so a reversal here has no effect"
                 : undefined}
               onclick={() => onEdit(li, bi, (v === base ? (valueList.find((x) => x !== base) ?? base) : base) as T)}
             >
@@ -108,7 +108,7 @@
   {@const lane = lanes[popover.lane]!}
   <div class="pbs-pop" style="left:{popover.x}px; top:{popover.y}px">
     {#each valueList as v}
-      <button class:sel={String(v) === String(lane.values[popover.beat])} onclick={() => pick(v)}>{format(v)}</button>
+      <button class:sel={String(v) === String(lane.values[popover.step])} onclick={() => pick(v)}>{format(v)}</button>
     {/each}
   </div>
 {/if}
@@ -120,7 +120,7 @@
   .pbs-label.blue { color: var(--theme-blue, #6f9bff); }
   .pbs-label.red { color: var(--theme-red, #ff7a8a); }
   .pbs-label.hold { color: var(--theme-accent, #2dd4bf); }
-  .pbs-beats { display: flex; gap: 10px; flex: 1; min-width: 0; }
+  .pbs-steps { display: flex; gap: 10px; flex: 1; min-width: 0; }
   .pbs-cell {
     position: relative; flex: 1; min-width: 0; height: 56px; border-radius: 12px;
     border: 1px solid var(--theme-stroke); background: var(--theme-card-bg);
@@ -144,7 +144,7 @@
   .pbs-cell.toggle.on.red { background: color-mix(in srgb, var(--theme-red, #ff7a8a) 30%, var(--theme-card-bg)); }
   .pbs-cell.toggle:not(.on) i { opacity: .32; }
 
-  /* Inert: this beat doesn't spin, so a reversal here can't act. Dashed + dim,
+  /* Inert: this step doesn't spin, so a reversal here can't act. Dashed + dim,
      and an "on" toggle here drops its bright fill to read as having no effect. */
   .pbs-cell.inert { border-style: dashed; opacity: .55; }
   .pbs-cell.toggle.on.inert { background: var(--theme-card-bg); color: var(--theme-text-dim); }

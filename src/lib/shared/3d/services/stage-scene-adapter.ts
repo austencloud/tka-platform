@@ -125,7 +125,7 @@ export function createStageSceneAdapter(
 
   /**
    * Get the active clip at current playhead for a specific performer.
-   * Returns clip info with progress and beat calculations.
+   * Returns clip info with progress and step calculations.
    */
   function getActivePerformerClip(
     performerIndex: number
@@ -150,7 +150,7 @@ export function createStageSceneAdapter(
     const clipProgress =
       (position - activeClip.startTime) / activeClip.duration;
 
-    // Calculate beat info from the sequence
+    // Calculate step info from the sequence
     const stepCount = activeClip.sequence.steps.length;
     if (stepCount === 0) {
       return {
@@ -166,9 +166,9 @@ export function createStageSceneAdapter(
     const effectiveProgress =
       activeClip.inPoint +
       clipProgress * (activeClip.outPoint - activeClip.inPoint);
-    const exactBeat = effectiveProgress * stepCount;
-    const stepIndex = Math.floor(exactBeat) % stepCount;
-    const stepProgress = exactBeat - Math.floor(exactBeat);
+    const exactStep = effectiveProgress * stepCount;
+    const stepIndex = Math.floor(exactStep) % stepCount;
+    const stepProgress = exactStep - Math.floor(exactStep);
 
     return {
       clipId: activeClip.id,
