@@ -19,6 +19,24 @@ function makeFakeRenderer() {
   };
 }
 
+// LED has its own kind:"led" lifecycle: the manager constructs WebGLLedRenderer
+// directly (not via plugin.createRenderer), so its fake adds clearSimulation
+// (the keep-warm clear) and is injected through the mocked led module ctor.
+function makeFakeLed() {
+  const canvas = { style: { display: "" } } as unknown as HTMLCanvasElement;
+  let inited = false;
+  return {
+    canvas,
+    initialize: vi.fn(() => { inited = true; return true; }),
+    isInitialized: () => inited,
+    dispose: vi.fn(() => { inited = false; }),
+    getCanvas: () => canvas,
+    clearSimulation: vi.fn(),
+    resize: vi.fn(),
+    setCanvasZIndex: vi.fn(),
+  };
+}
+
 // vi.mock is hoisted above top-level code, so the fake plugin + spies it
 // references must be created inside vi.hoisted (also hoisted) — not as plain
 // top-level consts (which would be in the temporal dead zone at mock time).
@@ -33,15 +51,38 @@ const h = vi.hoisted(() => {
     defaultConfig: {},
     onDisable,
   };
-  return { createRenderer, onDisable, firePlugin };
+  // LED plugin descriptor (kind:"led"). Excluded from OVERLAY_PLUGINS by the
+  // manager's canvas2d|webgl filter, but present in EFFECT_PLUGIN_BY_ID so
+  // prewarmRenderer can route "led" to its dedicated warm path.
+  const ledPlugin = {
+    id: "led",
+    kind: "led",
+    createRenderer: vi.fn(),
+    configKey: "ledRenderer",
+    defaultConfig: {},
+  };
+  // Holder-backed ctor: `new WebGLLedRenderer()` runs this impl, which returns
+  // the holder's current fake (a constructor returning an object yields that
+  // object). beforeEach swaps in a fresh fake. mockReturnValue is unreliable
+  // under `new`, so use an explicit returning implementation.
+  const ledHolder: { current: unknown } = { current: null };
+  const LedCtor = vi.fn(function () { return ledHolder.current; });
+  return { createRenderer, onDisable, firePlugin, ledPlugin, LedCtor, ledHolder };
 });
-const { createRenderer, onDisable } = h;
+const { createRenderer, onDisable, LedCtor, ledHolder } = h;
 
 let fakeRenderer: ReturnType<typeof makeFakeRenderer>;
+let fakeLed: ReturnType<typeof makeFakeLed>;
 
 vi.mock("../effects/registry", () => ({
-  EFFECT_PLUGINS: [h.firePlugin],
-  EFFECT_PLUGIN_BY_ID: { fire: h.firePlugin },
+  EFFECT_PLUGINS: [h.firePlugin, h.ledPlugin],
+  EFFECT_PLUGIN_BY_ID: { fire: h.firePlugin, led: h.ledPlugin },
+}));
+
+// new WebGLLedRenderer() returns the injected fake (a constructor returning an
+// object yields that object), so the led lifecycle runs against the stub.
+vi.mock("../led/web-gl-led-renderer", () => ({
+  WebGLLedRenderer: h.LedCtor,
 }));
 
 import { EffectRendererManager } from "../effect-renderer-manager";
@@ -138,5 +179,80 @@ describe("EffectRendererManager — prewarm + keep-warm", () => {
 
     expect(fakeRenderer.dispose).toHaveBeenCalled();
     expect(manager.getRenderer("fire")).toBeNull();
+  });
+});
+
+describe("EffectRendererManager — LED prewarm + keep-warm", () => {
+  beforeEach(() => {
+    fakeLed = makeFakeLed();
+    ledHolder.current = fakeLed;
+    LedCtor.mockClear(); // clears call records, KEEPS the returning impl
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => { cb(0); return 1; });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("prewarmRenderer('led') creates the led renderer, parks it hidden + cleared, leaves it disabled", () => {
+    const { manager } = wiredManager();
+    manager.prewarmRenderer("led");
+
+    expect(LedCtor).toHaveBeenCalledTimes(1);
+    expect(manager.getRenderer("led")).toBe(fakeLed);
+    expect(fakeLed.isInitialized()).toBe(true);
+    expect(manager.getLedConfig().enabled).toBe(false);
+    // Parked: hidden + cleared so a preserveDrawingBuffer frame can't leak through.
+    expect(fakeLed.canvas.style.display).toBe("none");
+    expect(fakeLed.clearSimulation).toHaveBeenCalled();
+  });
+
+  it("enabling a prewarmed led un-parks it (no second construct) and shows it", () => {
+    const { manager } = wiredManager();
+    manager.prewarmRenderer("led");
+    LedCtor.mockClear();
+
+    manager.setLedConfig({ enabled: true });
+
+    expect(LedCtor).not.toHaveBeenCalled(); // un-parked, not rebuilt
+    expect(manager.getRenderer("led")).toBe(fakeLed);
+    expect(fakeLed.canvas.style.display).toBe(""); // shown
+  });
+
+  it("disabling led parks it warm (clears + hides) instead of disposing", () => {
+    const { manager } = wiredManager();
+    // Cold enable (no prewarm): deferred init runs via the stubbed rAF.
+    manager.setLedConfig({ enabled: true });
+    expect(fakeLed.isInitialized()).toBe(true);
+    fakeLed.clearSimulation.mockClear();
+
+    manager.setLedConfig({ enabled: false });
+
+    expect(fakeLed.dispose).not.toHaveBeenCalled(); // kept warm
+    expect(manager.getRenderer("led")).toBe(fakeLed); // still held
+    expect(fakeLed.canvas.style.display).toBe("none"); // parked hidden
+    expect(fakeLed.clearSimulation).toHaveBeenCalled(); // flash-safe clear
+  });
+
+  it("repeated disabled led syncs are a no-op (the ledWarmHidden guard)", () => {
+    const { manager } = wiredManager();
+    manager.setLedConfig({ enabled: true });
+    manager.setLedConfig({ enabled: false }); // park
+    fakeLed.clearSimulation.mockClear();
+
+    // Mimics CanvasSurface calling setLedConfig / syncLedOverlay every frame while off.
+    manager.syncLedOverlay();
+    manager.syncLedOverlay();
+
+    expect(fakeLed.clearSimulation).not.toHaveBeenCalled();
+    expect(fakeLed.dispose).not.toHaveBeenCalled();
+  });
+
+  it("full dispose() tears down the parked led", () => {
+    const { manager } = wiredManager();
+    manager.prewarmRenderer("led");
+    expect(fakeLed.isInitialized()).toBe(true);
+
+    manager.dispose();
+
+    expect(fakeLed.dispose).toHaveBeenCalled();
+    expect(manager.getRenderer("led")).toBeNull();
   });
 });

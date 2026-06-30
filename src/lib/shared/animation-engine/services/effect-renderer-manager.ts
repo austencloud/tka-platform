@@ -64,6 +64,17 @@ export class EffectRendererManager {
   fireConfig: FireOverlayConfig = { ...DEFAULT_FIRE_CONFIG };
   ledConfig: LedOverlayConfig = { ...DEFAULT_LED_CONFIG };
   private ledInitPending = false;
+  /**
+   * LED is CREATED + initialized but parked warm: canvas hidden, deregistered
+   * from the render loop, GL context/FBOs/programs kept alive so re-enable is
+   * instant. LED's own kind:"led" lifecycle (it compiles 5 shader programs +
+   * allocates 8 float FBOs synchronously — the freeze) gets the same keep-warm
+   * treatment the generic webgl overlays get via warmHidden. Parked from two
+   * sources: keep-warm (enabled→disabled parks instead of disposing) and
+   * prewarmLed (startup/hover warm). Also guards the per-frame setLedConfig
+   * disable path so it can't re-park (and reset the tip tracker) every frame.
+   */
+  private ledWarmHidden = false;
 
   /**
    * WebGL overlay ids with a deferred init scheduled (at most one rAF in
@@ -334,11 +345,18 @@ export class EffectRendererManager {
    * in flight. The init runs in a rAF so the call site itself never blocks.
    */
   prewarmRenderer(id: EffectType): void {
+    // LED has its own deferred kind:"led" lifecycle (separate from the generic
+    // webgl overlays) but is just as heavy to init — route it to its dedicated
+    // warm path so startup/hover prewarm covers it too.
+    if (EFFECT_PLUGIN_BY_ID[id]?.kind === "led") {
+      this.prewarmLed();
+      return;
+    }
     const plugin = EFFECT_PLUGIN_BY_ID[id] as typeof OVERLAY_PLUGINS[number] | undefined;
-    // Only webgl-kind OVERLAY plugins benefit. Today that is fire alone — led
-    // (kind:"led") and trails (kind:"trails") have their own lifecycles; canvas2d
-    // init is already a cheap inline getContext. Any other id is a harmless no-op,
-    // so hover-intent can forward whatever effect the pointer is over.
+    // webgl-kind OVERLAY plugins (fire, charcoal) benefit. trails (kind:"trails")
+    // inits once at engine startup and is never parked; canvas2d init is already a
+    // cheap inline getContext. Any other id is a harmless no-op, so hover-intent
+    // can forward whatever effect the pointer is over.
     if (!plugin || plugin.kind !== "webgl") return;
     const oid = id as OverlayEffectId; // narrowed: webgl overlay ⊂ OverlayEffectId
     if (!this.containerElement) return;
@@ -372,10 +390,12 @@ export class EffectRendererManager {
   private parkWarm(id: OverlayEffectId): void {
     this.setRendererCanvasVisible(id, false);
     // Reset internal + visible state so a stale last frame can't flash when the
-    // renderer is un-parked and re-shown. Fire re-renders its visible buffer from
-    // the sim FBOs every frame, so hiding the canvas isn't enough — the sim must
-    // be cleared (clearSimulation also clears the visible default framebuffer).
-    // Without this, switching back to a kept-warm effect flashed its last frame.
+    // renderer is un-parked and re-shown. preserveDrawingBuffer:true keeps the
+    // last frame in the drawing buffer, so hiding the canvas isn't enough — the
+    // sim must be cleared. Contract: every keep-warm webgl renderer's
+    // clearSimulation() also blanks the visible default framebuffer (fire
+    // web-gl-fire-renderer.ts, charcoal charcoal-spark-renderer.ts). Without
+    // this, switching back to a kept-warm effect flashed its last frame.
     const r = this.renderers.get(id) as
       | (EffectRendererLike & { clearSimulation?: () => void })
       | undefined;
@@ -386,8 +406,8 @@ export class EffectRendererManager {
     } as Partial<RenderLoopConfig>);
   }
 
-  /** Toggle a renderer canvas's display. Both webgl renderers expose getCanvas(). */
-  private setRendererCanvasVisible(id: OverlayEffectId, visible: boolean): void {
+  /** Toggle a renderer canvas's display. fire/charcoal/led all expose getCanvas(). */
+  private setRendererCanvasVisible(id: EffectType, visible: boolean): void {
     const renderer = this.renderers.get(id) as
       | (EffectRendererLike & { getCanvas?: () => HTMLCanvasElement | null })
       | undefined;
@@ -428,10 +448,23 @@ export class EffectRendererManager {
    */
   syncLedOverlay(): void {
     const currentLed = this.renderers.get("led");
-    if (this.ledConfig.enabled && !currentLed?.isInitialized()) {
+    if (this.ledConfig.enabled) {
+      if (currentLed?.isInitialized()) {
+        // Already created. If parked warm (keep-warm or a prewarm), un-park:
+        // re-show its canvas + re-register with the loop. No re-init — the
+        // switch is instant, no shader recompile / FBO realloc (the freeze).
+        if (this.ledWarmHidden) {
+          this.ledWarmHidden = false;
+          this.setRendererCanvasVisible("led", true);
+          this.renderLoopService?.updateConfig({ renderers: { led: currentLed } });
+          this.triggerRender();
+        }
+        return;
+      }
       if (!this.containerElement || this.ledInitPending) return;
       // Defer WebGL initialization to avoid blocking the reactive effect chain.
-      // Without this, shader compilation on Windows/ANGLE can freeze the entire page.
+      // Without this, shader compilation on Windows/ANGLE can freeze the entire
+      // page. Prewarm (startup/hover) avoids even this deferred frame.
       this.ledInitPending = true;
       requestAnimationFrame(() => {
         this.ledInitPending = false;
@@ -461,13 +494,79 @@ export class EffectRendererManager {
           this.renderers.delete("led");
         }
       });
-    } else if (!this.ledConfig.enabled && this.renderers.has("led")) {
-      const led = this.renderers.get("led");
-      led?.dispose();
-      this.renderers.delete("led");
-      this.renderLoopService?.updateConfig({ renderers: { led: null } });
-      this.ledTipTracker?.reset();
+    } else {
+      // Disabled. Keep-warm: park (hide + clear + deregister, keep the GL
+      // context) instead of disposing so a re-enable is instant. Guard: this
+      // runs on the per-frame setLedConfig path, so without the ledWarmHidden
+      // short-circuit it would re-park (and reset the tip tracker) every frame.
+      // Mirrors the warmHidden guard for the generic webgl overlays.
+      if (this.ledWarmHidden) return;
+      if (currentLed?.isInitialized()) {
+        this.parkLedWarm();
+      }
     }
+  }
+
+  /**
+   * Park the LED renderer warm: hide its canvas, clear its buffers (so a stale
+   * frame / trail energy can't flash on re-show — preserveDrawingBuffer:true),
+   * and deregister it from the render loop, keeping its GL context/FBOs/programs
+   * alive so a later enable is instant. Mirrors parkWarm for the generic webgl
+   * overlays; LED has a dedicated path because of its kind:"led" lifecycle.
+   */
+  private parkLedWarm(): void {
+    this.setRendererCanvasVisible("led", false);
+    const led = this.renderers.get("led") as
+      | (EffectRendererLike & { clearSimulation?: () => void })
+      | undefined;
+    led?.clearSimulation?.();
+    this.ledWarmHidden = true;
+    this.renderLoopService?.updateConfig({ renderers: { led: null } });
+    this.ledTipTracker?.reset();
+  }
+
+  /**
+   * Eagerly create + park the LED renderer ahead of the user enabling it,
+   * moving its heavy synchronous init (5 shader programs + 8 float FBOs) off the
+   * switch frame to startup/hover. LED-specific sibling of prewarmRenderer's
+   * generic webgl path. The init runs in a rAF so the call site never blocks.
+   */
+  private prewarmLed(): void {
+    if (!this.containerElement) return;
+    if (this.renderers.get("led")?.isInitialized()) return;
+    if (this.ledInitPending) return;
+    this.ledInitPending = true;
+    requestAnimationFrame(() => {
+      this.ledInitPending = false;
+      if (!this.containerElement) return;
+      if (this.renderers.get("led")?.isInitialized()) return;
+      try {
+        const ledRenderer = new WebGLLedRenderer();
+        const success = ledRenderer.initialize(
+          this.containerElement,
+          this.canvasSize,
+          this.canvasSize
+        );
+        if (!success) {
+          this.renderers.delete("led");
+          return;
+        }
+        this.renderers.set("led", ledRenderer);
+        if (this.ledConfig.enabled) {
+          // Enabled while the prewarm was in flight — go live now.
+          this.renderLoopService?.updateConfig({ renderers: { led: ledRenderer } });
+          this.triggerRender();
+        } else {
+          // Park warm: hide + clear, leave it out of the loop.
+          this.setRendererCanvasVisible("led", false);
+          ledRenderer.clearSimulation();
+          this.ledWarmHidden = true;
+        }
+      } catch (err) {
+        console.error("[AnimationEngine] LED prewarm error:", err);
+        this.renderers.delete("led");
+      }
+    });
   }
 
   // ── Config setters / getters ────────────────────────────────────────
@@ -707,6 +806,8 @@ export class EffectRendererManager {
 
     // Dispose LED overlay (also prevent any pending deferred init from running)
     this.ledConfig.enabled = false;
+    this.ledInitPending = false;
+    this.ledWarmHidden = false;
     const led = this.renderers.get("led");
     led?.dispose();
     this.renderers.delete("led");

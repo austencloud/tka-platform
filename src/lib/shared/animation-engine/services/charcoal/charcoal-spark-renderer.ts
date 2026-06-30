@@ -326,6 +326,18 @@ export class CharcoalSparkRenderer {
 			p.active = false;
 		}
 		this.ambientAccumulators.clear();
+		// Blank the visible default framebuffer too. preserveDrawingBuffer:true
+		// retains the last spark frame in the drawing buffer; when this renderer is
+		// parked warm (canvas hidden via keep-warm) then re-shown, the browser
+		// composites that stale frame for one frame before draw()'s gl.clear runs.
+		// Clearing here mirrors fire's clearSimulation and removes the flash.
+		// (0,0,0,0) is correct under premultipliedAlpha:true.
+		const gl = this.gl;
+		if (gl && this.initialized) {
+			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+			gl.clearColor(0, 0, 0, 0);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+		}
 	}
 
 	dispose(): void {

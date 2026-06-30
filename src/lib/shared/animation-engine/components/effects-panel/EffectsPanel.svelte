@@ -258,7 +258,7 @@
       <div class="fx-strip" class:grid={layout === "grid"} role="radiogroup" aria-label="Select effect">
         {#each EFFECTS as e (e.id)}
           {@const isActive = activeEffect === e.id}
-          <button type="button" class="fx-tile" class:active={isActive} role="radio" aria-checked={isActive} aria-label={e.label} style:--fx={e.color} onclick={() => handleEffectSelect(e.id)}>
+          <button type="button" class="fx-tile" class:active={isActive} role="radio" aria-checked={isActive} aria-label={e.label} style:--fx={e.color} onpointerenter={() => handleEffectPrewarm(e.id)} onpointerdown={() => handleEffectPrewarm(e.id)} onclick={() => handleEffectSelect(e.id)}>
             <i class="fas {e.icon}" aria-hidden="true"></i>
             <span>{e.label}</span>
             {#if isActive}<span class="dot" aria-hidden="true"></span>{/if}

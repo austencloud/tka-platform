@@ -54,10 +54,12 @@
 
   const DEFAULT_PROP_STATE: PropState = { centerPathAngle: 0, staffRotationAngle: 0 };
 
-  // Warm fire's GL context/FBOs at engine startup (before the loop free-runs) so
-  // switching to fire never freezes the props. Desktop tuner → holding the extra
-  // context is free. Only fire is an actionable webgl overlay today.
-  const PREWARM_EFFECTS: EffectType[] = ["fire"];
+  // Warm every heavy webgl effect's GL context/FBOs/programs at engine startup
+  // (before the loop free-runs) so switching to any of them never freezes the
+  // props. fire + charcoal park warm via the generic webgl path; led via its
+  // dedicated keep-warm path (kind:"led"). Desktop tuner → holding the extra
+  // contexts is free, and this is the surface the no-freeze goal is tuned on.
+  const PREWARM_EFFECTS: EffectType[] = ["fire", "charcoal", "led"];
 
   type Fold = 2 | 4 | 8;
   type Scene = "clean" | "tunnel";

@@ -665,6 +665,18 @@ export class WebGLLedRenderer {
 		this._diagFrameCount = 0;
 	}
 
+	/**
+	 * Keep-warm clear. Blanks all FBOs + the visible default framebuffer and
+	 * resets per-tip state so a parked LED can't flash its last frame or stale
+	 * trail energy on re-show. preserveDrawingBuffer:true + persistent ping-pong
+	 * trail FBOs would otherwise retain both across a display:none/'' toggle.
+	 * Aliases resetExportState (which already does exactly this); the manager's
+	 * parkLedWarm calls clearSimulation() generically across webgl renderers.
+	 */
+	clearSimulation(): void {
+		this.resetExportState();
+	}
+
 	private swapFBO(fbo: DoubleFBO): void {
 		const tmp = fbo.read;
 		fbo.read = fbo.write;
