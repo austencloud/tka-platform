@@ -34,6 +34,8 @@ Last audit: 2025-12-27
   import WordHeader from "./layers/WordHeader.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
   import SequenceProgressBar from "$lib/shared/animation-engine/components/layers/SequenceProgressBar.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { AnimationEngine } from "../services/animation-engine.svelte";
@@ -305,8 +307,20 @@ Last audit: 2025-12-27
       )
     )
       return;
+    // Capture state BEFORE the toggle: onPlaybackToggle() updates the isPlaying
+    // prop synchronously (the controller notifies subscribers synchronously and
+    // Svelte 5 props read live), so reading isPlaying afterwards yields the
+    // already-toggled value and flashes the wrong icon. The flash should show
+    // the state we're entering = the opposite of what we were.
+    const wasPlaying = isPlaying;
     onPlaybackToggle();
-    showTapFeedback(!isPlaying);
+    // On a mouse/pen the hover hint already shows the play/pause state, so the
+    // centered flash would collide with it (two icons mid-transition). Skip the
+    // flash there and let the hint be the feedback; keep it for touch (no hover).
+    const pointerHasHover = e.pointerType === "mouse" || e.pointerType === "pen";
+    if (!(pointerHasHover && hoverHint !== "none")) {
+      showTapFeedback(!wasPlaying);
+    }
   }
 
   function showTapFeedback(willPlay: boolean) {
@@ -554,9 +568,15 @@ Last audit: 2025-12-27
       {#if hoverHint === "badge"}
         <span class="hint-stack">
           <span class="hint-disc">
-            <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+            <Crossfade key={isPlaying} duration={DURATION.fast}>
+              <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+            </Crossfade>
           </span>
-          <span class="hint-word">{isPlaying ? "Pause" : "Play"}</span>
+          <span class="hint-word">
+            <Crossfade key={isPlaying} duration={DURATION.fast}>
+              {isPlaying ? "Pause" : "Play"}
+            </Crossfade>
+          </span>
         </span>
       {:else if hoverHint === "pill"}
         <span class="hint-pill">
@@ -675,11 +695,14 @@ Last audit: 2025-12-27
       justify-content: center;
     }
 
+    /* Badge scales with the canvas: cqmin = the smaller side of the square
+       canvas (the .animation-container is container-type:size). Clamps keep it
+       sane on a tiny mobile pane and a huge desktop/export pane alike. */
     .hint-stack {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: clamp(5px, 2cqmin, 12px);
       transform: scale(0.92);
       transition: transform 150ms cubic-bezier(0.2, 0, 0, 1);
     }
@@ -692,8 +715,8 @@ Last audit: 2025-12-27
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 72px;
-      height: 72px;
+      width: clamp(44px, 15cqmin, 96px);
+      height: clamp(44px, 15cqmin, 96px);
       border-radius: 50%;
       background: rgba(0, 0, 0, 0.42);
       backdrop-filter: blur(6px);
@@ -701,7 +724,8 @@ Last audit: 2025-12-27
       border: 1px solid rgba(255, 255, 255, 0.18);
       box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
       color: rgba(255, 255, 255, 0.96);
-      font-size: 28px;
+      /* icon size = ~38% of the disc */
+      font-size: clamp(17px, 5.7cqmin, 36px);
     }
 
     /* Optical centering: the play triangle reads right-heavy in a circle. */
@@ -710,7 +734,7 @@ Last audit: 2025-12-27
     }
 
     .hint-word {
-      font-size: 13px;
+      font-size: clamp(10px, 3cqmin, 15px);
       font-weight: 600;
       letter-spacing: 0.04em;
       color: rgba(255, 255, 255, 0.92);
