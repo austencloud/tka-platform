@@ -55,13 +55,13 @@
   });
 
   const beatSteps = $derived<StepData[]>(
-    createTutorialState.beats.map((step, i) =>
+    createTutorialState.steps.map((step, i) =>
       pictographDataToStepData(step, step.id ?? `tutorial-beat-${i}`),
     ),
   );
 
   const displayWord = $derived(
-    createTutorialState.beats.map((b) => b.letter ?? "").join(""),
+    createTutorialState.steps.map((b) => b.letter ?? "").join(""),
   );
 
   interface ButtonInfo {

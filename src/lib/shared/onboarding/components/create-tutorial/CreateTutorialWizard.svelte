@@ -31,14 +31,14 @@
 
   const STEP_ICONS: Record<CreateTutorialStep, string> = {
     "pick-start": "fa-crosshairs",
-    "add-beat": "fa-plus",
+    "add-step": "fa-plus",
     "play-sequence": "fa-play",
     ready: "fa-rocket",
   };
 
   const STEPS: CreateTutorialStep[] = [
     "pick-start",
-    "add-beat",
+    "add-step",
     "play-sequence",
     "ready",
   ];
@@ -78,13 +78,13 @@
     if (createTutorialState.currentStepIndex === 0) return;
     hapticService?.trigger("selection");
 
-    // On the add-beat step with beats already picked, undo the last beat
+    // On the add-step step with steps already picked, undo the last step
     // instead of leaving the step entirely
     if (
-      createTutorialState.currentStep === "add-beat" &&
-      createTutorialState.beats.length > 0
+      createTutorialState.currentStep === "add-step" &&
+      createTutorialState.steps.length > 0
     ) {
-      createTutorialState.removeLastBeat();
+      createTutorialState.removeLastStep();
       return;
     }
 
@@ -139,7 +139,7 @@
   <div class="step-container">
     {#if createTutorialState.currentStep === "pick-start"}
       <PickStartPositionStep onAdvance={handleAdvance} />
-    {:else if createTutorialState.currentStep === "add-beat"}
+    {:else if createTutorialState.currentStep === "add-step"}
       <AddStepTutorialStep onAdvance={handleAdvance} />
     {:else if createTutorialState.currentStep === "play-sequence"}
       <PlaySequenceStep onAdvance={handleAdvance} />

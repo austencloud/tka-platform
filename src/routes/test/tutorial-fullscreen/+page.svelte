@@ -1,7 +1,7 @@
 <!--
   Test harness for the Create tutorial fullscreen-on-mobile change.
   Renders the REAL CreateTutorialWizard. Resize the viewport to <=900px
-  (375 / 414) to see the edge-to-edge treatment. Walk pick-start -> add-beat
+  (375 / 414) to see the edge-to-edge treatment. Walk pick-start -> add-step
   to verify pictograph tiles grow.
 -->
 <script lang="ts">

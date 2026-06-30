@@ -54,7 +54,7 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   // Build a real SequenceData from the tutorial selections
   function buildTutorialSequence(): SequenceData | null {
     const startPicto = createTutorialState.startPosition;
-    const steps = createTutorialState.beats;
+    const steps = createTutorialState.steps;
     if (!startPicto || steps.length === 0) return null;
 
     const startPosition: StartPositionData = {

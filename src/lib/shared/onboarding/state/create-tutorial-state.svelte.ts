@@ -2,23 +2,23 @@
  * Create Tutorial State
  *
  * Manages the 4-step create tutorial wizard.
- * The "add-beat" step repeats until the user has picked REQUIRED_BEATS beats.
+ * The "add-step" step repeats until the user has picked REQUIRED_STEPS steps.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-export const REQUIRED_BEATS = 4;
+export const REQUIRED_STEPS = 4;
 
 export type CreateTutorialStep =
   | "pick-start"
-  | "add-beat"
+  | "add-step"
   | "play-sequence"
   | "ready";
 
 const STEPS: CreateTutorialStep[] = [
   "pick-start",
-  "add-beat",
+  "add-step",
   "play-sequence",
   "ready",
 ];
@@ -27,7 +27,7 @@ interface CreateTutorialData {
   currentStepIndex: number;
   startPosition: PictographData | null;
   gridMode: GridMode;
-  beats: PictographData[];
+  steps: PictographData[];
 }
 
 function createCreateTutorialState() {
@@ -35,7 +35,7 @@ function createCreateTutorialState() {
     currentStepIndex: 0,
     startPosition: null,
     gridMode: GridMode.DIAMOND,
-    beats: [],
+    steps: [],
   });
 
   return {
@@ -57,36 +57,36 @@ function createCreateTutorialState() {
     get gridMode() {
       return data.gridMode;
     },
-    get beats(): PictographData[] {
-      return data.beats;
+    get steps(): PictographData[] {
+      return data.steps;
     },
-    /** Full sequence: start position + all beats */
+    /** Full sequence: start position + all steps */
     get sequence(): PictographData[] {
       const seq: PictographData[] = [];
       if (data.startPosition) seq.push(data.startPosition);
-      seq.push(...data.beats);
+      seq.push(...data.steps);
       return seq;
     },
-    get beatsRemaining() {
-      return REQUIRED_BEATS - data.beats.length;
+    get stepsRemaining() {
+      return REQUIRED_STEPS - data.steps.length;
     },
 
     setStartPosition(pos: PictographData, gridMode?: GridMode) {
       data.startPosition = pos;
-      // Clear beats - they were computed from the old start position
-      data.beats = [];
+      // Clear steps - they were computed from the old start position
+      data.steps = [];
       if (gridMode) {
         data.gridMode = gridMode;
       }
     },
 
-    addStep(beat: PictographData) {
-      data.beats.push(beat);
+    addStep(step: PictographData) {
+      data.steps.push(step);
     },
 
-    /** Remove the last beat (for undo/back within the add-beat step) */
-    removeLastBeat() {
-      data.beats.pop();
+    /** Remove the last step (for undo/back within the add-step step) */
+    removeLastStep() {
+      data.steps.pop();
     },
 
     advance() {
@@ -111,7 +111,7 @@ function createCreateTutorialState() {
       data.currentStepIndex = 0;
       data.startPosition = null;
       data.gridMode = GridMode.DIAMOND;
-      data.beats = [];
+      data.steps = [];
     },
   };
 }

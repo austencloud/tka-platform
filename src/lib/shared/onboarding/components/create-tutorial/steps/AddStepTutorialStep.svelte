@@ -1,14 +1,14 @@
 <!--
   AddStepTutorialStep - Step 2 of the create tutorial
 
-  Shows available next beats via the OptionPicker after the user picked a start position.
-  The user picks 4 beats total. Each pick updates the sequence and refreshes options.
-  Auto-advances to the next wizard step after the 4th beat.
+  Shows available next steps via the OptionPicker after the user picked a start position.
+  The user picks 4 steps total. Each pick updates the sequence and refreshes options.
+  Auto-advances to the next wizard step after the 4th step.
 -->
 <script lang="ts">
   import {
     createTutorialState,
-    REQUIRED_BEATS,
+    REQUIRED_STEPS,
   } from "../../../state/create-tutorial-state.svelte";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import {
@@ -23,19 +23,19 @@
 
   const { onAdvance }: Props = $props();
 
-  // The full sequence so far: start position + all beats picked
+  // The full sequence so far: start position + all steps picked
   const currentSequence = $derived<PictographData[]>(
     createTutorialState.sequence
   );
 
-  const stepCount = $derived(createTutorialState.beats.length);
+  const stepCount = $derived(createTutorialState.steps.length);
 
   // Use the grid mode stored when the start position was picked
   const currentGridMode = $derived(createTutorialState.gridMode);
 
   function handleOptionSelected(option: PictographData) {
     createTutorialState.addStep(option);
-    if (createTutorialState.beatsRemaining <= 0) {
+    if (createTutorialState.stepsRemaining <= 0) {
       onAdvance();
     }
   }
@@ -51,7 +51,7 @@
 
 <div class="tutorial-step">
   <div class="step-header">
-    <h1 class="title">Add step {stepCount + 1} of {REQUIRED_BEATS}</h1>
+    <h1 class="title">Add step {stepCount + 1} of {REQUIRED_STEPS}</h1>
     <p class="subtitle">Tap a step to add it.</p>
   </div>
 
