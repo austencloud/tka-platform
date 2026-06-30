@@ -1128,12 +1128,17 @@ service cloud.firestore {
     // writable by admins only. Distinct from released printable Decks, which
     // live in deckReleases/ below. Migrated from the legacy decks/ collection.
     match /catalogs/{catalogId} {
-      allow read: if isAuthenticated();
+      // TnD catalogs are public teaching material (guest-readable, surfaced by
+      // the "Start here" onboarding). The full enumerated LOOP catalogs stay
+      // auth-gated. Discriminator: the catalog doc's `collection` field.
+      allow read: if isAuthenticated() || resource.data.collection == "TnD";
       allow write: if isAdmin();
 
-      // Sequences within a catalog
+      // Sequences within a catalog. Guests may read a TnD catalog's sequences;
+      // the parent's `collection` field gates this (get() reads the parent doc).
       match /sequences/{sequenceId} {
-        allow read: if isAuthenticated();
+        allow read: if isAuthenticated()
+          || get(/databases/$(database)/documents/catalogs/$(catalogId)).data.collection == "TnD";
         allow write: if isAdmin();
       }
     }
