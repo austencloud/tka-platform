@@ -104,6 +104,37 @@ race entirely and is the standard content-addressable migration pattern.
   separate correctness track, Option C in the findings) and Option B (stop
   overriding stored flags on read). This rollout fixes identity/fork only.
 
+## Adversarial verification (2026-06-30) — all claims confirmed
+
+4-lens workflow (`fork-detection-verify`) confirmed: inert at V1 (git-diff proves
+`decideFork` collapses to the exact replaced inline expression), correct
+mechanism at V2 (mismatch → recompute on active basis → unchanged=no-fork,
+edit=fork, throw=safe-no-fork; lazy rehash persists the new version), and no
+unhandled cross-path hazard (dedup / public mirror degrade to temporary
+missed-dup — SHA-256 can't false-merge — never corruption).
+
+Follow-ups it surfaced, now FIXED (commit `81f72d2457`):
+- Deleted the stale V1-only duplicate hasher and repointed its 3 tests at the
+  versioned shared one — they now canary the V2 flip instead of passing on dead
+  logic.
+- Cross-version recompute mirrors the read path (`mapDocToLibrarySequence →
+  hydrate`) so a map-only transform can't read as an edit at V2.
+- `public-index-syncer` + both backfill scripts now persist
+  `contentHashVersion` alongside `contentHash`.
+- Determinism test added (`hydrate → V2 hash` stable across loads).
+
+### Pre-flip checklist (before step 3)
+
+1. Run the migration (step 2) to convert the corpus.
+2. Update the now-canary tests
+   (`SequenceContentHasher`/`content-hash-duplicate`/`fork-detection`): the
+   reversal-flag and gridMode "different hash" cases assert V1 semantics and
+   will (correctly) fail once V2 is active — re-point them to V1 explicitly or
+   update expectations.
+3. Smoke a real load → save-unchanged at V2 against a prod-shaped doc → assert
+   no fork (the determinism test covers the hash side; this covers the full
+   saveSequence path).
+
 ## Risk + rollback
 
 - The live change is confined to identity/fork comparison + an added persisted
