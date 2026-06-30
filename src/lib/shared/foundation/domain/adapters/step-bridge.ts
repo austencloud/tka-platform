@@ -16,9 +16,17 @@
  * `selection-store.svelte.ts`.
  */
 import { createMotion, createStep, type Motion, type Step } from "@tka/tka-types";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  createMotionData,
+  type MotionData,
+} from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
+import {
+  MotionColor,
+  type MotionType as AppMotionType,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { Letter as AppLetter } from "$lib/shared/foundation/domain/models/letter";
 
 /** Project an app `MotionData` onto the lean structural `Motion`. */
 export function motionDataToMotion(md: MotionData): Motion {
@@ -65,5 +73,65 @@ export function stepDataToStep(sd: StepData): Step {
     stepNumber: sd.stepNumber,
     duration: sd.duration,
     ...(sd.isBlank !== undefined && { isBlank: sd.isBlank }),
+  });
+}
+
+/**
+ * Rebuild an app `MotionData` from a lean `Motion`. The render fields a
+ * `Motion` doesn't carry (arrowPlacementData, propPlacementData, propType,
+ * isVisible, arrowLocation, gridMode) are filled with `createMotionData`
+ * defaults and recomputed downstream by the render pipeline — they are derived,
+ * never authored on the step.
+ */
+export function motionToMotionData(m: Motion, color: MotionColor): MotionData {
+  return createMotionData({
+    // tka-types Motion.motionType is broader (it also includes "shift", which the
+    // app models separately as HandMotionType). A real app step motion is never
+    // "shift", so narrowing is safe here; the engine/app shift conflation is a
+    // deferred reconciliation for migration B.
+    motionType: m.motionType as AppMotionType,
+    startLocation: m.startLocation,
+    endLocation: m.endLocation,
+    rotationDirection: m.rotationDirection,
+    startOrientation: m.startOrientation,
+    endOrientation: m.endOrientation,
+    turns: m.turns,
+    color,
+    ...(m.plane !== undefined && { plane: m.plane }),
+    ...(m.prefloatMotionType !== undefined && {
+      prefloatMotionType: m.prefloatMotionType as AppMotionType,
+    }),
+    ...(m.prefloatRotationDirection !== undefined && {
+      prefloatRotationDirection: m.prefloatRotationDirection,
+    }),
+  });
+}
+
+/**
+ * Rebuild an app `StepData` from a canonical `Step`, so a `Step`-speaking
+ * module can hand a value back to a neighbor that still speaks `StepData`.
+ *
+ * Reversal flags default to `false` — they are filled later by the existing
+ * reversal pipeline (`reversalDetector.processReversals`), exactly as today, so
+ * this adapter introduces no reversal-logic change (the loop-wrap behavior the
+ * app's detector has but the engine's `deriveReversals` lacks is preserved).
+ * Selection is not restored here; it lives in the selection store.
+ */
+export function stepToStepData(step: Step): StepData {
+  return createStepData({
+    id: step.id,
+    // App `Letter` is a nominal string enum; tka-types `Letter` is an identical
+    // `as const` string union (same 47 members). Pure nominal divergence — cast.
+    letter: step.letter as AppLetter | null,
+    startPosition: step.startPosition,
+    endPosition: step.endPosition,
+    motions: {
+      [MotionColor.BLUE]: motionToMotionData(step.motions.blue, MotionColor.BLUE),
+      [MotionColor.RED]: motionToMotionData(step.motions.red, MotionColor.RED),
+    },
+    ...(step.gridMode !== undefined && { gridMode: step.gridMode }),
+    stepNumber: step.stepNumber,
+    duration: step.duration,
+    isBlank: step.isBlank ?? false,
   });
 }

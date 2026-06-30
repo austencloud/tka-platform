@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { stepDataToStep, motionDataToMotion } from "../step-bridge";
+import {
+  stepDataToStep,
+  motionDataToMotion,
+  stepToStepData,
+} from "../step-bridge";
 import { createStepData } from "../../factories/create-step-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -49,5 +53,40 @@ describe("stepDataToStep", () => {
       motions: { [MotionColor.BLUE]: createMotionData({ color: MotionColor.BLUE }) },
     });
     expect(() => stepDataToStep(sd)).toThrow(/missing its red motion/);
+  });
+});
+
+describe("stepToStepData (reverse) + round-trip", () => {
+  it("rebuilds a StepData from a Step, render fields defaulted, reversal false", () => {
+    const original = createStepData({
+      stepNumber: 2,
+      duration: 1,
+      motions: {
+        [MotionColor.BLUE]: createMotionData({ color: MotionColor.BLUE, turns: 1 }),
+        [MotionColor.RED]: createMotionData({ color: MotionColor.RED }),
+      },
+    });
+    const step = stepDataToStep(original);
+    const back = stepToStepData(step);
+
+    // structural fields survive the round trip
+    expect(back.stepNumber).toBe(2);
+    expect(back.duration).toBe(1);
+    expect(back.motions[MotionColor.BLUE]!.motionType).toBe(
+      original.motions.blue!.motionType
+    );
+    expect(back.motions[MotionColor.BLUE]!.turns).toBe(1);
+    expect(back.motions[MotionColor.RED]!.startLocation).toBe(
+      original.motions.red!.startLocation
+    );
+
+    // render cache rebuilt with defaults (recomputed downstream), present + valid
+    expect(back.motions[MotionColor.BLUE]!.arrowPlacementData).toBeDefined();
+    expect(back.motions[MotionColor.BLUE]!.propPlacementData).toBeDefined();
+
+    // reversal flags default false (filled by the reversal pipeline), discriminator kept
+    expect(back.blueReversal).toBe(false);
+    expect(back.redReversal).toBe(false);
+    expect(back.isStep).toBe(true);
   });
 });
