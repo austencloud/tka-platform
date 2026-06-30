@@ -371,6 +371,15 @@ export class EffectRendererManager {
    *  instance in `renderers`; only the loop forgets it (so the loop can idle-stop). */
   private parkWarm(id: OverlayEffectId): void {
     this.setRendererCanvasVisible(id, false);
+    // Reset internal + visible state so a stale last frame can't flash when the
+    // renderer is un-parked and re-shown. Fire re-renders its visible buffer from
+    // the sim FBOs every frame, so hiding the canvas isn't enough — the sim must
+    // be cleared (clearSimulation also clears the visible default framebuffer).
+    // Without this, switching back to a kept-warm effect flashed its last frame.
+    const r = this.renderers.get(id) as
+      | (EffectRendererLike & { clearSimulation?: () => void })
+      | undefined;
+    r?.clearSimulation?.();
     this.warmHidden.add(id);
     this.renderLoopService?.updateConfig({
       renderers: { [id]: null },
