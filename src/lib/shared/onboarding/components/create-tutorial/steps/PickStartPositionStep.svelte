@@ -43,7 +43,6 @@
 <div class="tutorial-step">
   <div class="step-header">
     <h1 class="title">Pick a starting position</h1>
-    <p class="subtitle">Every sequence begins with a position. Tap one.</p>
   </div>
 
   <div class="picker-container">
@@ -76,15 +75,68 @@
     margin: 0;
   }
 
-  .subtitle {
-    font-size: 0.95rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    margin: 0;
-  }
-
   .picker-container {
     width: 100%;
     height: clamp(280px, 50vh, 500px);
+  }
+
+  /* Make the 3 start positions clearly tappable in the tutorial: a resting
+     colored frame + soft glow + gentle invite-pulse, then a punchy hover.
+     Scoped to this step's picker so the real Create start-picker is untouched. */
+  .picker-container :global(.pictograph-wrapper) {
+    border-color: color-mix(
+      in srgb,
+      var(--letter-border-color, var(--theme-accent, #8b5cf6)) 55%,
+      transparent
+    );
+    box-shadow:
+      0 0 0 1px
+        color-mix(
+          in srgb,
+          var(--letter-border-color, var(--theme-accent, #8b5cf6)) 30%,
+          transparent
+        ),
+      0 10px 28px rgba(0, 0, 0, 0.4);
+    animation: tutorial-start-invite 2.6s ease-in-out infinite;
+  }
+
+  .picker-container :global(.pictograph-container:hover .pictograph-wrapper) {
+    transform: scale(1.1);
+    border-color: var(--letter-border-color, var(--theme-accent, #8b5cf6));
+    box-shadow:
+      0 0 28px
+        color-mix(
+          in srgb,
+          var(--letter-border-color, var(--theme-accent, #8b5cf6)) 55%,
+          transparent
+        ),
+      0 12px 32px rgba(0, 0, 0, 0.45);
+    filter: brightness(1.08);
+    animation: none;
+  }
+
+  @keyframes tutorial-start-invite {
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 1px
+          color-mix(
+            in srgb,
+            var(--letter-border-color, var(--theme-accent, #8b5cf6)) 30%,
+            transparent
+          ),
+        0 10px 28px rgba(0, 0, 0, 0.4);
+    }
+    50% {
+      box-shadow:
+        0 0 22px
+          color-mix(
+            in srgb,
+            var(--letter-border-color, var(--theme-accent, #8b5cf6)) 45%,
+            transparent
+          ),
+        0 10px 28px rgba(0, 0, 0, 0.4);
+    }
   }
 
   @media (max-width: 640px) {
@@ -109,6 +161,9 @@
   @media (prefers-reduced-motion: reduce) {
     .tutorial-step {
       transition: none;
+    }
+    .picker-container :global(.pictograph-wrapper) {
+      animation: none;
     }
   }
 </style>

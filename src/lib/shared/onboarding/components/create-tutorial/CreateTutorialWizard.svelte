@@ -408,19 +408,5 @@
       min-height: 0;
     }
 
-    /* One compact line: title · subtitle */
-    .create-tutorial-wizard :global(.step-header) {
-      flex-direction: row;
-      flex-wrap: wrap;
-      align-items: baseline;
-      justify-content: center;
-      gap: 4px 8px;
-    }
-    .create-tutorial-wizard :global(.step-header .title) {
-      font-size: 1.05rem;
-    }
-    .create-tutorial-wizard :global(.step-header .subtitle) {
-      font-size: 0.8rem;
-    }
   }
 </style>
