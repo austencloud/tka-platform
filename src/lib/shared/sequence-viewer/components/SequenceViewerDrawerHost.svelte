@@ -92,6 +92,31 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 
   let isMobileWidth = $state(true);
 
+  // Available width of the viewer body. Measured (bind:clientWidth) so this works
+  // when the viewer is embedded in a constrained container, not just full-window.
+  // Seeded from the window so the first paint doesn't flash the wrong layout.
+  let bodyWidth = $state(typeof window !== "undefined" ? window.innerWidth : 0);
+
+  // Every desktop export (card AND the 2D/3D animation download) puts its settings in
+  // a fixed-width sidebar column beside the content rail and the preview. The preview
+  // is the hero, so it must NEVER be narrower than the settings sidebar — otherwise
+  // the controls dominate a sliver of a preview. Below the width where rail + a hero
+  // at least sidebar-wide + the sidebar all fit, the export falls back to the compact
+  // bottom dock with the preview as the hero (same layout phones get).
+  const EXPORT_SIDEBAR_WIDTH = 560; // keep in sync with --export-sidebar-width in CSS
+  const HERO_MIN_WIDTH = 600;       // sidebar 560 + 40px so the preview is clearly larger
+
+  // Rail width is user-persisted (ViewerContentRail's RAIL_WIDTH_KEY), so a dragged-
+  // wider rail raises the bar correctly instead of silently re-crushing the preview.
+  function exportSidebarMinWidth(): number {
+    let rail = 180; // ViewerContentRail DEFAULT_WIDTH
+    try {
+      const raw = localStorage.getItem("tka-viewer-rail-width");
+      if (raw) { const n = parseInt(raw, 10); if (n >= 72 && n <= 300) rail = n; }
+    } catch { /* ignore */ }
+    return rail + EXPORT_SIDEBAR_WIDTH + HERO_MIN_WIDTH;
+  }
+
   $effect(() => {
     if (typeof window !== "undefined") {
       const check = () => { isMobileWidth = window.innerWidth < 768; };
@@ -327,7 +352,16 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
         {@const isAnyExportActive = ctx.editingPane !== null}
         {@const isRecordSceneActive = isVideoExportActive && ctx.renderMode === '3d' && !ctx.previewBlobUrl}
         {@const isSidebarExportActive = isAnyExportActive && !isRecordSceneActive}
-        {@const showRail = !isMobileWidth}
+        <!-- Every sidebar export (card + the 2D/3D animation download) needs enough
+             width for the 560px settings sidebar to sit beside a usable preview + rail.
+             When the viewer is narrower than that (embedded, split, small window), drive
+             the whole export view into the mobile layout: preview hero on top, settings
+             in the bottom dock, modes in the bottom bar. RecordSceneChrome (3D record)
+             is its own full-bleed UI and is excluded via isRecordSceneActive. -->
+        {@const cardExportNarrow = isImageExportActive && !isMobileWidth && bodyWidth < exportSidebarMinWidth()}
+        {@const videoExportNarrow = isVideoExportActive && !isRecordSceneActive && !isMobileWidth && bodyWidth < exportSidebarMinWidth()}
+        {@const effectiveMobile = isMobileWidth || cardExportNarrow || videoExportNarrow}
+        {@const showRail = !effectiveMobile}
         {#snippet overflowMenu(includeMotion: boolean)}
           <ViewerOverflowMenu
             variant="header"
@@ -468,7 +502,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                   <!-- Card export settings can't be collapsed on desktop — they're
                        required to configure the download. Only Download Animation
                        keeps the hide/show toggle. -->
-                  {#if isAnyExportActive && !isMobileWidth && !isRecordSceneActive && !isImageExportActive}
+                  {#if isAnyExportActive && !effectiveMobile && !isRecordSceneActive && !isImageExportActive}
                     <button
                       type="button"
                       class="header-action-btn"
@@ -497,13 +531,13 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
             </header>
 
           <div class="drawer-main">
-            <div class="drawer-body-content">
+            <div class="drawer-body-content" bind:clientWidth={bodyWidth}>
               {#if ctx.hasSequence && ctx.effectiveSequence}
                 <div
                   class="viewer-and-export"
                   class:export-active={isSidebarExportActive}
                   class:record-scene-active={isRecordSceneActive}
-                  class:desktop={!isMobileWidth}
+                  class:desktop={!effectiveMobile}
                   class:sidebar-collapsed={exportSidebarCollapsed && !isImageExportActive}
                   class:has-rail={showRail}
                 >
@@ -544,7 +578,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       layout={{
                         isFullscreen: ctx.isFullscreen,
                         fullscreenStackVertical: ctx.fullscreenStackVertical,
-                        isMobile: isMobileWidth,
+                        isMobile: effectiveMobile,
                         isLandscapeMobile: isLandscape,
                         focusedPane: ctx.viewerState.viewerMode !== 'split' ? (ctx.viewerState.viewerMode === 'card' ? 'image' : 'animation') : ctx.editingPane,
                         suppressCloseButton: ctx.viewerState.viewerMode !== 'split',
@@ -609,7 +643,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                     />
                   {/if}
                   {#if isSidebarExportActive}
-                    <div class="export-panel-container" class:sidebar={!isMobileWidth && (isVideoExportActive || isVideoUploadActive)}>
+                    <div class="export-panel-container" class:sidebar={!effectiveMobile && (isVideoExportActive || isVideoUploadActive)}>
                       {#if isVideoExportActive}
                         {#if ctx.previewBlobUrl}
                           <VideoPreviewPanel
@@ -639,7 +673,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                             isExporting={ctx.isExporting}
                             exportProgress={ctx.exportProgress}
                             canvasReady={ctx.canvasReady}
-                            layout={isMobileWidth ? "bottom" : "sidebar"}
+                            layout={effectiveMobile ? "bottom" : "sidebar"}
                             singlePlayDuration={ctx.singlePlayDuration}
                             isPlaying={ctx.isPlayingLocal}
                             bpm={ctx.bpmLocal}
@@ -654,7 +688,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                             onCancel={ctx.handleCancelExport}
                           />
                         {/if}
-                      {:else if isImageExportActive && !isMobileWidth}
+                      {:else if isImageExportActive && !effectiveMobile}
                         <!-- No onClose on desktop: the card export settings are
                              required to configure the download and must stay put.
                              Leave the Download Card mode via the content rail. -->
@@ -677,7 +711,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                     </div>
                   {/if}
                 </div>
-                {#if isMobileWidth && isImageExportActive && ctx.effectiveSequence}
+                {#if effectiveMobile && isImageExportActive && ctx.effectiveSequence}
                   <!-- Entrance/exit fly now lives on ControlDock's root
                        (shared by every dock); this wrapper only positions. -->
                   <div class="export-footer-overlay">
@@ -693,7 +727,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                 {/if}
               {/if}
             </div>
-            {#if isMobileWidth && ctx.hasSequence && ctx.effectiveSequence && !ctx.practiceActive}
+            {#if effectiveMobile && ctx.hasSequence && ctx.effectiveSequence && !ctx.practiceActive}
               <div transition:fade={{ duration: prefersReducedMotion ? 0 : 180 }}>
                 <ViewerModeBottomBar
                   activeMode={ctx.viewerState.viewerMode}
@@ -1143,27 +1177,25 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     min-width: 0;
   }
 
-  @media (max-width: 767px) {
-    .viewer-and-export.export-active {
-      display: flex;
-      flex-direction: column;
-    }
+  /* Stacked export layout — phones AND desktop widths too narrow for the 560px
+     sidebar. The settings dock sits UNDER a full-width hero preview instead of
+     beside it. Keyed off :not(.desktop) (toggled by effectiveMobile) rather than a
+     viewport media query, so the same correct stacking applies at, say, 1200px when
+     the rail + sidebar + preview wouldn't fit. */
+  .viewer-and-export:not(.desktop) .export-panel-container {
+    width: 100%;
+    flex-shrink: 0;
+    overflow: visible;
+    border-left: none;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
 
-    .export-panel-container {
-      width: 100%;
-      flex-shrink: 0;
-      overflow: visible;
-      border-left: none;
-      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    }
-
-    .viewer-and-export.export-active :global(.view-container) {
-      position: relative;
-      inset: auto;
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
+  .viewer-and-export:not(.desktop).export-active :global(.view-container) {
+    position: relative;
+    inset: auto;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .export-footer-overlay {
