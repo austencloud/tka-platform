@@ -528,7 +528,6 @@ import type { SheetType } from "../../navigation/services/types";
               <mod.default
                 forcePreview={firstRunState.previewMode}
                 onComplete={() => firstRunState.markCompleted()}
-                onSkip={() => firstRunState.markSkipped()}
               />
             </div>
           {:else}
@@ -536,10 +535,6 @@ import type { SheetType } from "../../navigation/services/types";
               forcePreview={firstRunState.previewMode}
               onComplete={() => {
                 firstRunState.markCompleted();
-                appEntryState.startEntrySequence(true);
-              }}
-              onSkip={() => {
-                firstRunState.markSkipped();
                 appEntryState.startEntrySequence(true);
               }}
             />

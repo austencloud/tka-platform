@@ -20,16 +20,15 @@
 
   interface Props {
     onComplete: () => void;
-    onSkip: () => void;
     /** Admin "Preview First Run" — render the card even when the account
      *  already has a provider display name (which normally auto-completes). */
     forcePreview?: boolean;
   }
 
-  const { onComplete, onSkip, forcePreview = false }: Props = $props();
-  // onSkip is part of the wizard contract (MainApplication wires it to
-  // markSkipped) but this flow always completes via onComplete.
-  void onSkip;
+  // The name card always finishes through onComplete — "Skip for now" just
+  // completes without a custom name. There is no skip-distinct-from-complete
+  // outcome, so the wizard exposes no onSkip.
+  const { onComplete, forcePreview = false }: Props = $props();
 
   let hapticService: HapticFeedback | null = null;
   let animateIn = $state(false);
