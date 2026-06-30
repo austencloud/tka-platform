@@ -624,6 +624,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     if (!this.backend) return;
     this.blueTipEpoch++;
     this.redTipEpoch++;
+    // Blank the visible canvas too. The epoch bump gives fresh accumulator FBOs,
+    // but the default framebuffer still holds the last composited trail; with the
+    // canvas hidden then re-shown (effect toggled off→on) that stale frame flashes
+    // for one frame before the new trail draws. The old rebuildBackend() blanked
+    // it for free by destroying the context; clear it explicitly instead.
+    this.backend.clearScreen();
   }
 
   /** Returns which rings received a new point this frame. Captures the base

@@ -31,6 +31,11 @@ export interface RenderBackend {
   /** Resize all managed FBOs + the display target. */
   resize(width: number, height: number): void;
 
+  /** Clear the display target (default framebuffer / canvas) to transparent.
+   *  Used when an effect is turned off to blank the visible canvas so a stale
+   *  last-frame composite can't flash when the canvas is hidden then re-shown. */
+  clearScreen(): void;
+
   /** Release all GPU resources. */
   dispose(): void;
 

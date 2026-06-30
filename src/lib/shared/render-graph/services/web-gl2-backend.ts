@@ -227,6 +227,14 @@ export class WebGL2Backend implements RenderBackend {
     this.fbos.resize(width, height);
   }
 
+  clearScreen(): void {
+    const gl = this.gl;
+    if (!gl) return;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+  }
+
   dispose(): void {
     if (!this.gl) return;
     const gl = this.gl;

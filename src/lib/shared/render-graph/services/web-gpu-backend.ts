@@ -165,6 +165,23 @@ export class WebGPUBackend implements RenderBackend {
     this.allocateScratchTextures(w, h);
   }
 
+  clearScreen(): void {
+    if (!this.device || !this.context) return;
+    const encoder = this.device.createCommandEncoder();
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: this.context.getCurrentTexture().createView(),
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
+      ],
+    });
+    pass.end();
+    this.device.queue.submit([encoder.finish()]);
+  }
+
   dispose(): void {
     if (!this.device) return;
     this.textures.forEach((t) => t.texture.destroy());
