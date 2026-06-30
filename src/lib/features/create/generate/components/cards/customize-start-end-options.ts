@@ -1,0 +1,47 @@
+import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
+import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+
+/** The start/end fields the customize overlay edits, held as live local state. */
+export interface CustomizeStartEndLocalState {
+  blockedStartPositions: GridPosition[];
+  endPosition: PictographData | null;
+  blueStartOrientation: Orientation;
+  redStartOrientation: Orientation;
+}
+
+/**
+ * Build a complete, internally-consistent StartEndOptions from the overlay's
+ * live local state.
+ *
+ * Why this exists: the overlay edits start positions, end position, and both
+ * start orientations independently, but the engine's setOptions() does a full
+ * REPLACE (not a merge). The overlay used to spread its frozen open-time
+ * snapshot per handler (`{ ...startEndOptions, blueStartOrientation }`), so
+ * each single-field change reset every field the user wasn't currently
+ * touching back to its open-time value — change red and blue silently reverted,
+ * change a position and the orientations reverted, etc. The overlay's own
+ * display read separate local mirrors that did NOT revert, so the overlay
+ * showed the picked value while the card summary and the generated sequence
+ * used the stale one ("wrong orientation in the panel" / "didn't take").
+ *
+ * Emitting the FULL local state on every edit keeps the engine state in lockstep
+ * with what the overlay shows. `base` supplies only the fields the overlay does
+ * not manage (mustContain/mustNotContain letters); those never change while the
+ * overlay is open. startPosition is legacy/deprecated — the blocked-position
+ * list supersedes it — so it is always cleared.
+ */
+export function buildStartEndOptions(
+  base: StartEndOptions,
+  local: CustomizeStartEndLocalState
+): StartEndOptions {
+  return {
+    ...base,
+    blockedStartPositions: local.blockedStartPositions,
+    startPosition: null,
+    endPosition: local.endPosition,
+    blueStartOrientation: local.blueStartOrientation,
+    redStartOrientation: local.redStartOrientation,
+  };
+}

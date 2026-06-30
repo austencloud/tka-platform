@@ -59,6 +59,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   import PositionSection from "$lib/shared/components/position-picker/PositionSection.svelte";
   import PropOrientationControl from "../../../shared/components/sequence-actions/PropOrientationControl.svelte";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { buildStartEndOptions } from "./customize-start-end-options";
 
   type AccordionSection = "style" | "startEnd";
 
@@ -180,15 +181,28 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     onClose();
   }
 
+  // Emit a COMPLETE, internally-consistent options object built from the
+  // overlay's live local state. The engine's setOptions() does a full replace,
+  // so emitting anything less (e.g. the frozen open-time snapshot + one field)
+  // reverts every field the user isn't currently touching. See
+  // buildStartEndOptions for the full rationale.
+  function emitStartEndChange() {
+    if (!startEndOptions || !onStartEndChange) return;
+    onStartEndChange(
+      buildStartEndOptions(startEndOptions, {
+        blockedStartPositions: localBlockedPositions,
+        endPosition: localEndPosition,
+        blueStartOrientation: localBlueOri,
+        redStartOrientation: localRedOri,
+      })
+    );
+  }
+
   // ─── Start Position handlers ───
   function applyBlockedPositions(blocked: GridPosition[]) {
     if (!startEndOptions || !onStartEndChange) return;
     localBlockedPositions = blocked;
-    onStartEndChange({
-      ...startEndOptions,
-      blockedStartPositions: blocked,
-      startPosition: null,
-    });
+    emitStartEndChange();
   }
 
   // Preset segment: All clears the blocklist, Classic 3 blocks all but the
@@ -216,7 +230,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     if (!startEndOptions || !onStartEndChange) return;
     hapticService?.trigger("selection");
     localEndPosition = position;
-    onStartEndChange({ ...startEndOptions, endPosition: position });
+    emitStartEndChange();
   }
 
   // Start orientation per prop. Feeds the engine's blue/redStartOrientation
@@ -225,14 +239,14 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     if (!startEndOptions || !onStartEndChange) return;
     hapticService?.trigger("selection");
     localBlueOri = ori as Orientation;
-    onStartEndChange({ ...startEndOptions, blueStartOrientation: ori as Orientation });
+    emitStartEndChange();
   }
 
   function handleRedOriChange(ori: string) {
     if (!startEndOptions || !onStartEndChange) return;
     hapticService?.trigger("selection");
     localRedOri = ori as Orientation;
-    onStartEndChange({ ...startEndOptions, redStartOrientation: ori as Orientation });
+    emitStartEndChange();
   }
 </script>
 
