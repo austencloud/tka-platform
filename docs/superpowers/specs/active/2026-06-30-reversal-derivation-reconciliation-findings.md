@@ -194,16 +194,32 @@ without immediately changing the hash basis. **C** is a separate correctness
 improvement. Do **not** ship any of these blind — A's hash-basis change and B's
 visible-dot change are both Austen's calls.
 
+## Decision (2026-06-30): Option A chosen, mechanism built
+
+Austen chose **A**. Built + proven this session (default still V1 — zero runtime
+change until the gated rollout):
+- V2 identity hasher behind a version constant — `sequence-content-hasher.ts`.
+- Fork-proof + collision-safe proof — `tests/unit/content-hash-v2-fork-proof.test.ts`
+  (7 tests green; V2 invariant under re-derivation; 0 false merges over the
+  corpus; V1 golden-locked).
+- Migration — `scripts/migrations/rehash-content-v2.ts` (dry-run default).
+- Rollout spec (version-aware fork detection + lazy rehash + ordering):
+  `docs/superpowers/specs/active/2026-06-30-content-hash-v2-rollout.md`.
+
+Gated on Austen: the version-aware fork-detection wiring (corruption core) + the
+prod migration + flipping the active version. See the rollout spec.
+
 ## What was delivered this session (safe, committed)
 
 - `tests/unit/reversal-derivation-parity.test.ts` — read-only diagnostic over
-  the real corpus using the real `deriveSteps` + `processReversals`. Prints the
-  categorized report; asserts only that the corpus loaded (not a CI gate while
-  the divergence is an open decision).
+  the real corpus using the real `deriveSteps` + `processReversals`.
+- `sequence-content-hasher.ts` V2 hasher (default V1, inert) +
+  `tests/unit/content-hash-v2-fork-proof.test.ts` + `rehash-content-v2.ts`
+  migration + the rollout spec.
 - This findings doc.
 
-No live code path, no `deriveReversals` semantics, and no persisted data were
-touched.
+No live code path changed behavior (active hash version stays V1), no
+`deriveReversals` semantics, and no persisted data were touched.
 
 ## Adversarial verification summary
 
