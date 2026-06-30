@@ -29,7 +29,9 @@
 
   const MIN = 8;
   const tooShort = $derived(password.length > 0 && password.length < MIN);
+  const longEnough = $derived(password.length >= MIN);
   const mismatch = $derived(confirm.length > 0 && password !== confirm);
+  const matched = $derived(longEnough && confirm.length > 0 && password === confirm);
   const isValid = $derived(password.length >= MIN && password === confirm);
 
   async function handleSubmit(e: Event) {
@@ -83,45 +85,58 @@
   </p>
 
   <form class="password-form" onsubmit={handleSubmit}>
-    <div class="field">
-      <div class="input-wrap">
-        <input
-          type={show ? "text" : "password"}
-          class="password-input"
-          class:invalid={tooShort}
-          placeholder="New password"
-          bind:value={password}
-          autocomplete="new-password"
-          disabled={submitting}
-        />
-        <button
-          type="button"
-          class="reveal-button"
-          onclick={() => (show = !show)}
-          aria-label={show ? "Hide password" : "Show password"}
-        >
-          <i class="fas {show ? 'fa-eye-slash' : 'fa-eye'}" aria-hidden="true"></i>
-        </button>
-      </div>
-      {#if tooShort}
-        <p class="field-error">At least {MIN} characters.</p>
-      {/if}
-    </div>
-
-    <div class="field">
+    <div class="input-wrap">
       <input
         type={show ? "text" : "password"}
         class="password-input"
-        class:invalid={mismatch}
-        placeholder="Confirm password"
-        bind:value={confirm}
+        class:invalid={tooShort}
+        class:valid={longEnough && !tooShort}
+        placeholder="New password"
+        bind:value={password}
         autocomplete="new-password"
         disabled={submitting}
       />
-      {#if mismatch}
-        <p class="field-error">Passwords don't match.</p>
-      {/if}
+      <button
+        type="button"
+        class="reveal-button"
+        onclick={() => (show = !show)}
+        aria-label={show ? "Hide password" : "Show password"}
+      >
+        <i class="fas {show ? 'fa-eye-slash' : 'fa-eye'}" aria-hidden="true"></i>
+      </button>
     </div>
+
+    <input
+      type={show ? "text" : "password"}
+      class="password-input"
+      class:invalid={mismatch}
+      class:valid={matched}
+      placeholder="Confirm password"
+      bind:value={confirm}
+      autocomplete="new-password"
+      disabled={submitting}
+    />
+
+    <!-- One reserved status row for the whole form: shows the current blocker
+         (too short / mismatch) or the match confirmation. Fixed height so the
+         button never shifts (no-layout-shift). -->
+    <p
+      class="status-line"
+      class:error={tooShort || mismatch}
+      class:ok={matched}
+      aria-live="polite"
+    >
+      {#if tooShort}
+        <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+        At least {MIN} characters.
+      {:else if mismatch}
+        <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+        Passwords don't match.
+      {:else if matched}
+        <i class="fas fa-circle-check" aria-hidden="true"></i>
+        Passwords match
+      {/if}
+    </p>
 
     {#if error}
       <p class="form-error" role="alert">
@@ -196,15 +211,9 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 14px;
+    gap: 12px;
     width: 100%;
     margin-top: 8px;
-  }
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
   }
 
   .input-wrap {
@@ -215,14 +224,16 @@
 
   .password-input {
     width: 100%;
-    padding: 16px 20px;
+    /* Right gutter leaves comfortable room for the reveal button + the browser/
+       password-manager icon (Dashlane etc.) so neither hugs the text or edge. */
+    padding: 15px 46px 15px 18px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 14px;
     color: white;
     font-size: 1.1rem;
     font-weight: 500;
-    text-align: center;
+    text-align: left;
     transition: all var(--duration-normal) ease;
   }
 
@@ -238,6 +249,10 @@
 
   .password-input.invalid {
     border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 55%, transparent);
+  }
+
+  .password-input.valid {
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 55%, transparent);
   }
 
   .reveal-button {
@@ -260,12 +275,27 @@
     color: var(--theme-text, white);
   }
 
-  .field-error {
+  /* Reserved status row: always occupies the same height so toggling between
+     the mismatch error and the "Passwords match" confirmation never shifts the
+     button below it (no-layout-shift). */
+  .status-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 1.05rem;
     margin: 0;
     font-size: 0.8rem;
-    color: var(--semantic-error, #f87171);
     text-align: left;
     padding-left: 4px;
+    color: transparent;
+  }
+
+  .status-line.error {
+    color: var(--semantic-error, #f87171);
+  }
+
+  .status-line.ok {
+    color: var(--semantic-success, #22c55e);
   }
 
   .form-error {
@@ -342,7 +372,7 @@
       font-size: 1.3rem;
     }
     .password-input {
-      padding: 14px 16px;
+      padding: 13px 44px 13px 16px;
       font-size: 1rem;
     }
   }
