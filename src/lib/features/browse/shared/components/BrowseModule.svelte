@@ -26,6 +26,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   import { creatorsViewState } from "../../creators/state/creators-view-state.svelte";
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import GalleryTab from "./GalleryTab.svelte";
+  import StartHere from "$lib/features/browse/start-here/components/StartHere.svelte";
   import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
   import {
     browseNavigationState,
@@ -82,6 +83,9 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   let _selectedSequence = $state<SequenceData | null>(null);
   let error = $state<string | null>(null);
   let activeTab = $state<BrowseModuleType>("gallery");
+  // Gallery opens on the taxonomy-first "Start here" surface; "Browse all"
+  // reveals the full GalleryTab. Stays on the chosen view while mounted.
+  let galleryView = $state<"start-here" | "browse-all">("start-here");
   let showAnimator = $state<boolean>(false);
   let sequenceToAnimate = $state<SequenceData | null>(null);
   let isAnimationModalOpen = $state(false);
@@ -501,16 +505,34 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
         }}
       >
         {#if activeTab === "gallery"}
-          <GalleryTab
-            {isMobile}
-            {drawerWidth}
-            {engine}
-            {error}
-            onSequenceAction={(action, sequence, variations) => {
-              return eventHandlerService?.handleSequenceAction(action, sequence, variations) ??
-                Promise.resolve();
-            }}
-          />
+          {#if galleryView === "start-here"}
+            <StartHere
+              onBrowseAll={() => (galleryView = "browse-all")}
+              pool={engine.sequences}
+            />
+          {:else}
+            <div class="browse-all-wrap">
+              <button
+                type="button"
+                class="back-to-start"
+                onclick={() => (galleryView = "start-here")}
+              >
+                ← Start here
+              </button>
+              <div class="gallery-host">
+                <GalleryTab
+                  {isMobile}
+                  {drawerWidth}
+                  {engine}
+                  {error}
+                  onSequenceAction={(action, sequence, variations) => {
+                    return eventHandlerService?.handleSequenceAction(action, sequence, variations) ??
+                      Promise.resolve();
+                  }}
+                />
+              </div>
+            </div>
+          {/if}
         {:else if activeTab === "collections"}
           <CollectionsBrowsePanel />
         {:else if activeTab === "creators"}
@@ -548,5 +570,36 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     display: flex;
     flex-direction: column;
     overflow: hidden;
+  }
+
+  .browse-all-wrap {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .gallery-host {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .back-to-start {
+    align-self: flex-start;
+    margin: 0.5rem 0.75rem;
+    background: transparent;
+    border: 1px solid var(--theme-stroke);
+    color: var(--theme-text);
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    flex: 0 0 auto;
+  }
+
+  .back-to-start:hover {
+    border-color: var(--theme-accent);
   }
 </style>
