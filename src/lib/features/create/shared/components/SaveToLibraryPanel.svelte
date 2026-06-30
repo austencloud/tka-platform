@@ -235,7 +235,7 @@
 
       <!-- Community visibility section -->
       {#if !s.isFlagged}
-        <div class="community-section">
+        <div class="community-section" class:disabled={!s.canPublishToCommunity}>
           <label class="toggle-row">
             <div class="toggle-label">
               <i class="fas fa-globe" aria-hidden="true"></i>
@@ -249,17 +249,25 @@
               class="toggle-button"
               class:toggle-on={s.publishToCommunity}
               onclick={() => (s.publishToCommunity = !s.publishToCommunity)}
-              disabled={s.isSaving}
+              disabled={s.isSaving || !s.canPublishToCommunity}
               aria-pressed={s.publishToCommunity}
-              aria-label={s.publishToCommunity
-                ? "Will publish to community on save"
-                : "Will save to personal library only"}
+              aria-label={!s.canPublishToCommunity
+                ? `Needs at least ${s.communityMinSteps} steps to make public`
+                : s.publishToCommunity
+                  ? "Will publish to community on save"
+                  : "Will save to personal library only"}
             >
               <span class="toggle-track">
                 <span class="toggle-thumb"></span>
               </span>
             </button>
           </label>
+          {#if !s.canPublishToCommunity}
+            <p class="community-note">
+              <i class="fas fa-circle-info" aria-hidden="true"></i>
+              Needs at least {s.communityMinSteps} steps to post to the community. Saves to your library.
+            </p>
+          {/if}
         </div>
       {/if}
 
@@ -716,6 +724,25 @@
     background: var(--theme-card-bg);
     border: 1.5px solid var(--theme-stroke);
     border-radius: 12px;
+  }
+
+  /* Under the community minimum: dim the label (the toggle dims via :disabled). */
+  .community-section.disabled .toggle-label {
+    opacity: 0.5;
+  }
+
+  .community-note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim);
+  }
+
+  .community-note i {
+    color: var(--theme-accent);
+    flex-shrink: 0;
   }
 
   .toggle-row {

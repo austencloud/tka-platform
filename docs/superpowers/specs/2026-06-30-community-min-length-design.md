@@ -63,8 +63,12 @@ the new API.
    degrading.
 
 4. **Save panel:** `isTooShort` → `isEmptySequence` (Save is enabled for
-   1-count). The `publishToCommunity` toggle stays clickable; the under-4 block
-   surfaces as the degrade toast on save (no disabled control).
+   1-count). The **Make Public toggle is disabled** when the sequence is under
+   `MIN_COMMUNITY_STEPS`, with an inline note ("Needs at least 4 steps to post to
+   the community. Saves to your library."). The toggle is also force-cleared if
+   the sequence drops under the minimum while the panel is open. The
+   degrade+toast in `LibrarySaveService` remains as a backstop for non-panel
+   publish paths (forks default to public, programmatic saves).
 
 ## Toast copy
 

@@ -2,7 +2,7 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { libraryState } from "$lib/features/library/state/library-state.svelte";
 import { computeHash as computeSequenceHash } from "$lib/shared/library/services/sequence-content-hasher";
-import { isEmptySequence } from "$lib/shared/library/domain/sequence-min-length";
+import { isEmptySequence, meetsCommunityMinimum, MIN_COMMUNITY_STEPS } from "$lib/shared/library/domain/sequence-min-length";
 import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
 import type { ShameCategory } from "$lib/features/hall-of-shame/domain/models/hall-of-shame-models";
 import type { HallOfShameSubmitter } from "$lib/features/hall-of-shame/services/hall-of-shame-submitter";
@@ -147,9 +147,13 @@ export function createSavePanelState(deps: SavePanelDeps) {
   const isAlreadyPublished = $derived(savedSequence?.visibility === "public");
 
   // Only a truly empty (0-step) sequence is too short to save. A 1-count is a
-  // valid personal-library entry; the 4-step community minimum is enforced at
-  // save time (degrade + toast), not by disabling Save here.
+  // valid personal-library entry.
   const isTooShort = $derived(!!sequence && isEmptySequence(sequence));
+
+  // The community gallery requires MIN_COMMUNITY_STEPS. Under that, the Make
+  // Public toggle is disabled with a note — the sequence still saves to the
+  // personal library. (Repository + syncer enforce the same floor as a backstop.)
+  const canPublishToCommunity = $derived(!!sequence && meetsCommunityMinimum(sequence));
 
   const canSave = $derived(
     !!tkaName && !isSaving && !isFlagged && !isExactDuplicate && !isTooShort,
@@ -167,7 +171,15 @@ export function createSavePanelState(deps: SavePanelDeps) {
   // Default the community toggle to match the current published state when panel opens
   $effect(() => {
     if (_propsGetter().show) {
-      publishToCommunity = isAlreadyPublished;
+      publishToCommunity = isAlreadyPublished && canPublishToCommunity;
+    }
+  });
+
+  // Clamp: never leave the toggle on for a sequence that can't be published
+  // (e.g. the user removed steps after toggling it on).
+  $effect(() => {
+    if (!canPublishToCommunity && publishToCommunity) {
+      publishToCommunity = false;
     }
   });
 
@@ -408,6 +420,8 @@ export function createSavePanelState(deps: SavePanelDeps) {
     get hasDuplicate() { return hasDuplicate; },
     get duplicateCount() { return duplicateCount; },
     get isAlreadyPublished() { return isAlreadyPublished; },
+    get canPublishToCommunity() { return canPublishToCommunity; },
+    get communityMinSteps() { return MIN_COMMUNITY_STEPS; },
     get canSave() { return canSave; },
     get tkaName() { return tkaName; },
 
