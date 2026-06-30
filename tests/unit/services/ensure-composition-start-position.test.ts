@@ -116,6 +116,10 @@ describe("ensureComposition — start position persistence", () => {
     expect(motions?.blue?.endLocation).toBe(GridLocation.NORTH);
     expect(motions?.red?.startLocation).toBe(GridLocation.SOUTH);
     expect(motions?.red?.endLocation).toBe(GridLocation.SOUTH);
+    // The glyph must be the start POSITION (blue@north + red@south = alpha),
+    // NOT the first step's letter. Only alpha/beta/gamma are valid here.
+    expect(["α", "β", "γ"]).toContain(composed.startPosition?.letter);
+    expect(composed.startPosition?.letter).toBe("α");
   });
 
   it("preserves an existing startPosition instead of overwriting it", () => {

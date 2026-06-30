@@ -7,9 +7,10 @@ import {
 import type { SequenceData } from "../domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { MotionColor, MotionType, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { MotionType, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { calculateHandpathDirection } from "$lib/shared/pictograph/arrow/positioning/calculation/services/handpath-direction-calculator";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
+import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 
 // Legacy sequences saved before SoloPropStepData carried prefloatMotionType
 // will arrive here with derived float motions whose prefloat fields are
@@ -95,48 +96,25 @@ function backfillPrefloatFromLegacySteps(
 }
 
 /**
- * Reconstruct the start-position pictograph from a sequence's first step: both
- * props placed STATIC at their start locations/orientations. Shared by hydrate()
- * (runtime) and ensureComposition() (persist time) so a sequence always carries a
- * renderable start cell even though the compositional save path doesn't emit one.
- * Returns undefined when the first step has no motions to derive from.
+ * Reconstruct the start-position pictograph from a sequence's first step.
+ * Delegates to the canonical StartPositionDeriver, which computes the actual
+ * start POSITION (alpha/beta/gamma) from the first step's blue+red start
+ * locations and places both props STATIC there. Shared by hydrate() (runtime)
+ * and ensureComposition() (persist time) so a sequence always carries a
+ * renderable start cell — labelled with the position glyph, NOT the first
+ * step's letter (the bug that showed U/B/V… in the start cell). Returns
+ * undefined when the first step lacks the blue/red motions to derive from.
  */
 function deriveStartPositionFromSteps(
-	steps: readonly StepData[],
-	id: string
+	steps: readonly StepData[]
 ): SequenceData["startPosition"] | undefined {
 	const first = steps[0];
-	const blueMotion = first?.motions?.blue;
-	const redMotion = first?.motions?.red;
-	if (!first || (!blueMotion && !redMotion)) return undefined;
-	return {
-		isStartPosition: true as const,
-		id: `start-${id}`,
-		letter: first.letter ?? null,
-		endPosition: first.startPosition ?? first.endPosition ?? null,
-		motions: {
-			...(blueMotion && {
-				[MotionColor.BLUE]: {
-					...blueMotion,
-					endLocation: blueMotion.startLocation,
-					endOrientation: blueMotion.startOrientation,
-					motionType: MotionType.STATIC,
-					rotationDirection: RotationDirection.NO_ROTATION,
-					turns: 0,
-				},
-			}),
-			...(redMotion && {
-				[MotionColor.RED]: {
-					...redMotion,
-					endLocation: redMotion.startLocation,
-					endOrientation: redMotion.startOrientation,
-					motionType: MotionType.STATIC,
-					rotationDirection: RotationDirection.NO_ROTATION,
-					turns: 0,
-				},
-			}),
-		},
-	} as SequenceData["startPosition"];
+	if (!first?.motions?.blue || !first?.motions?.red) return undefined;
+	try {
+		return startPositionDeriver.deriveFromFirstBeat(first) as SequenceData["startPosition"];
+	} catch {
+		return undefined;
+	}
 }
 
 /**
@@ -182,7 +160,7 @@ export function hydrate(sequence: SequenceData): SequenceData {
 			const steps = backfillPrefloatFromLegacySteps(derived, sequence.steps);
 
 			const startPosition =
-				sequence.startPosition ?? deriveStartPositionFromSteps(steps, sequence.id);
+				sequence.startPosition ?? deriveStartPositionFromSteps(steps);
 
 			const hydrated = { ...sequence, steps, ...(startPosition && { startPosition }) };
 			return hydrated.steps.length > 0
@@ -219,7 +197,7 @@ export function ensureComposition(sequence: SequenceData): SequenceData {
 	// bug the 2026-06 backfill repaired. Deriving here keeps every save/publish
 	// self-sufficient instead of relying on read-time hydrate().
 	const startPosition =
-		sequence.startPosition ?? deriveStartPositionFromSteps(sequence.steps, sequence.id);
+		sequence.startPosition ?? deriveStartPositionFromSteps(sequence.steps);
 
 	return {
 		...sequence,
