@@ -39,7 +39,6 @@ import { renderCell } from "./preview-cell-renderer";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 const data = { letter: "A", motions: {} } as unknown as PictographData;
-const opts = { size: 300, probeCloud: true };
 
 describe("renderCell cloud tier", () => {
   beforeEach(() => {
@@ -47,22 +46,32 @@ describe("renderCell cloud tier", () => {
     blobGet.mockResolvedValue(null); // IndexedDB miss (cold)
   });
 
-  it("cloud HIT (probeCloud on): downloads, never calls the worker", async () => {
+  it("probeCloud HIT: downloads, never calls the worker", async () => {
     cloudDownload.mockResolvedValue(new Blob(["img"], { type: "image/webp" }));
-    await renderCell(data, undefined, true, opts);
+    await renderCell(data, undefined, true, { size: 300, probeCloud: true });
     expect(cloudDownload).toHaveBeenCalledWith("HASH");
     expect(poolRender).not.toHaveBeenCalled();
   });
 
-  it("cloud MISS (probeCloud on): renders via worker AND uploads", async () => {
+  it("probeCloud MISS without uploadCanonical: renders locally, does NOT upload", async () => {
     cloudDownload.mockResolvedValue(null);
     poolRender.mockResolvedValue(new Blob(["png"], { type: "image/png" }));
-    await renderCell(data, undefined, true, opts);
+    await renderCell(data, undefined, true, { size: 300, probeCloud: true });
+    expect(poolRender).toHaveBeenCalledTimes(1);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(cloudUpload).not.toHaveBeenCalled();
+  });
+
+  it("uploadCanonical: renders + uploads (render-at-publish path)", async () => {
+    cloudDownload.mockResolvedValue(null);
+    poolRender.mockResolvedValue(new Blob(["png"], { type: "image/png" }));
+    await renderCell(data, undefined, true, { size: 300, probeCloud: true, uploadCanonical: true });
     expect(poolRender).toHaveBeenCalledTimes(1);
     await vi.waitFor(() => expect(cloudUpload).toHaveBeenCalledWith("HASH", expect.any(Blob)));
   });
 
-  it("probeCloud off (default): skips the cloud entirely, renders locally", async () => {
+  it("no flags: skips cloud entirely, renders locally", async () => {
     poolRender.mockResolvedValue(new Blob(["png"], { type: "image/png" }));
     await renderCell(data, undefined, true, { size: 300 });
     expect(cloudDownload).not.toHaveBeenCalled();

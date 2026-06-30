@@ -34,4 +34,10 @@ describe("canonicalCellKeyString", () => {
       canonicalCellKeyString(data, false, base),
     );
   });
+
+  it("normalizes per-device visibility: same hash regardless of showTKA/showTnD/showGrid", () => {
+    const a = canonicalCellKeyString(data, true, { ...base, showTKA: true, showTnD: true, showGrid: true });
+    const b = canonicalCellKeyString(data, true, { ...base, showTKA: false, showTnD: false, showGrid: false });
+    expect(a).toBe(b);
+  });
 });

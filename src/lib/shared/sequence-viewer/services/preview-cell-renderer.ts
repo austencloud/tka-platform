@@ -80,6 +80,12 @@ export interface PreviewCellRenderOptions {
    *  the scan-card path sets this; gallery/compose/crossfade leave it false so
    *  they go straight to local render with no added network latency. */
   probeCloud?: boolean;
+
+  /** When true, after a local render upload the WebP to the shared cloud store
+   *  under the canonical hash. ONLY render-at-publish sets this (it renders with
+   *  the canonical visibility set). The scan card sets probeCloud but NOT this,
+   *  so it never uploads a personal-preference render. */
+  uploadCanonical?: boolean;
 }
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
@@ -153,14 +159,19 @@ export async function renderCell(
     // Cache miss or error, proceed to render
   }
 
-  // Cloud tier (scan-card only): a globally-shared, pre-rendered image for this
-  // exact pictograph. A cold scanner downloads it instead of rasterizing on
-  // device. Gated by probeCloud so the gallery/crossfade never pay the probe
-  // latency. Direct-probe: download() returns null on a miss (negative-cached).
+  // Cloud tier (scan-card / publish only). Derive the canonical, device-
+  // independent hash when either flag is active. probeCloud => try to download a
+  // pre-rendered image (cold scanner downloads instead of rasterizing).
   let cloudHash: string | null = null;
-  if (options.probeCloud) {
+  if (options.probeCloud || options.uploadCanonical) {
     try {
       cloudHash = await deriveCloudCellHash(pictographData, isDark, baseOptions);
+    } catch {
+      cloudHash = null;
+    }
+  }
+  if (options.probeCloud && cloudHash) {
+    try {
       const cloudBlob = await pictographCloudCache.download(cloudHash);
       if (cloudBlob) {
         // Seed IndexedDB under the display key so a re-render is a local hit.
@@ -168,7 +179,7 @@ export async function renderCell(
         return toDisplayUrl(cloudBlob);
       }
     } catch {
-      // Cloud unavailable or hash failure — fall through to local render.
+      // Cloud unavailable — fall through to local render.
     }
   }
 
@@ -230,11 +241,9 @@ export async function renderCell(
 
   pictographBlobCache.set(cacheKey, blob).catch(() => {});
 
-  // Crowd-source: this device just rendered a pictograph the cloud didn't have
-  // (download() above returned null, i.e. confirmed miss). Upload it (as WebP)
-  // so the next scanner downloads instead of rendering. upload() dedups + never
-  // throws. Fire-and-forget — never blocks the returned URL.
-  if (cloudHash) {
+  // Crowd-source upload — ONLY when uploadCanonical (render-at-publish), so a
+  // scan card's personal-preference render never pollutes the canonical store.
+  if (options.uploadCanonical && cloudHash) {
     const hashForUpload = cloudHash;
     void pngBlobToWebp(blob)
       .then((webp) => pictographCloudCache.upload(hashForUpload, webp))

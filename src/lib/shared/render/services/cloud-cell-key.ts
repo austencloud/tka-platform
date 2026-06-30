@@ -16,7 +16,29 @@ import { deriveCacheKey } from "$lib/shared/sequence-viewer/services/cell-cache-
 /** Canonical render size for cloud-stored cells. High enough for any card cell. */
 export const CANONICAL_CELL_SIZE = 480;
 
-/** The size-normalized, number-free cell key string (deterministic, long). */
+/**
+ * Fixed visibility config that defines the canonical scan-card look. Both the
+ * cloud hash (here) and render-at-publish use it, so every device computes the
+ * SAME hash for a given card regardless of the viewer's personal visibility
+ * prefs. Prop types + catDogMode are intentionally NOT here — they come from the
+ * sequence's intendedProp (already canonical across scanners).
+ */
+export const CANONICAL_CARD_VISIBILITY = {
+  showTKA: true,
+  showGrid: true,
+  showNonRadialPoints: true,
+  handPointVisibility: "all" as const,
+  showReversals: true,
+  showTnD: false,
+  showElemental: false,
+  showPositions: false,
+  showBlueMotion: true,
+  showRedMotion: true,
+  handPathMode: false,
+  browseViewMode: undefined,
+} satisfies Partial<PreviewCellRenderOptions>;
+
+/** The size-normalized, visibility-canonicalized, number-free cell key string. */
 export function canonicalCellKeyString(
   pictographData: PictographData,
   isDark: boolean,
@@ -24,6 +46,7 @@ export function canonicalCellKeyString(
 ): string {
   return deriveCacheKey(pictographData, undefined, isDark, {
     ...options,
+    ...CANONICAL_CARD_VISIBILITY,
     size: CANONICAL_CELL_SIZE,
     showStepNumbers: false,
   });
