@@ -55,23 +55,48 @@
     });
   });
 
-  function handleAdvance() {
-    hapticService?.trigger("selection");
+  // Step exit duration — the outgoing card lifts + fades before we swap.
+  // Kept in sync with the .tutorial-step transition below.
+  const STEP_EXIT_MS = 230;
+
+  function prefersReducedMotion(): boolean {
+    return (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
+    );
+  }
+
+  // Play the outgoing card's exit, run `swap`, then spring the new card in.
+  function transitionStep(swap: () => void) {
+    if (prefersReducedMotion()) {
+      swap();
+      animateIn = true;
+      return;
+    }
     animateIn = false;
-
-    requestAnimationFrame(() => {
-      if (createTutorialState.currentStep === "ready") {
-        // Last step - complete the tutorial
-        onComplete();
-        return;
-      }
-
-      createTutorialState.advance();
-
+    setTimeout(() => {
+      swap();
       requestAnimationFrame(() => {
         animateIn = true;
       });
-    });
+    }, STEP_EXIT_MS);
+  }
+
+  function handleAdvance() {
+    hapticService?.trigger("selection");
+
+    if (createTutorialState.currentStep === "ready") {
+      // Last step - exit the card, then complete the tutorial.
+      if (prefersReducedMotion()) {
+        onComplete();
+        return;
+      }
+      animateIn = false;
+      setTimeout(onComplete, STEP_EXIT_MS);
+      return;
+    }
+
+    transitionStep(() => createTutorialState.advance());
   }
 
   function handleBack() {
@@ -88,27 +113,13 @@
       return;
     }
 
-    animateIn = false;
-
-    requestAnimationFrame(() => {
-      createTutorialState.goBack();
-      requestAnimationFrame(() => {
-        animateIn = true;
-      });
-    });
+    transitionStep(() => createTutorialState.goBack());
   }
 
   function handleDotClick(index: number) {
     if (index >= createTutorialState.currentStepIndex) return;
     hapticService?.trigger("selection");
-    animateIn = false;
-
-    requestAnimationFrame(() => {
-      createTutorialState.goToStep(index);
-      requestAnimationFrame(() => {
-        animateIn = true;
-      });
-    });
+    transitionStep(() => createTutorialState.goToStep(index));
   }
 
   function handleSkip() {
@@ -265,18 +276,18 @@
     width: 100%;
   }
 
-  /* Entrance animation for step content */
+  /* Step transition: outgoing card lifts + fades, incoming springs up into place. */
   .create-tutorial-wizard :global(.tutorial-step) {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(26px) scale(0.965);
     transition:
-      opacity var(--duration-dramatic, 350ms) var(--ease-out),
-      transform var(--duration-dramatic, 350ms) var(--ease-out);
+      opacity 240ms ease,
+      transform 440ms cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .create-tutorial-wizard.animate-in :global(.tutorial-step) {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 
   /* Step dots */
