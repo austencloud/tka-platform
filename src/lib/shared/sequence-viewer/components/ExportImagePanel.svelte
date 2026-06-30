@@ -17,7 +17,6 @@
   import ControlDock, { type ControlDockTab } from "./ControlDock.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { getInfoCellCount, type InfoCellChoice } from "../services/info-cell-display";
-  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -78,24 +77,18 @@
   // lone cell can never resolve to a blank QR.
   // Text labels (not icons): they read at the same size as the sibling chips in
   // this panel (Word / Level / Grid …) and a tiny QR/asterisk glyph is cryptic.
-  const infoCellOptions = $derived<{ value: InfoCellChoice; label: string }[]>(
-    authState.isAuthenticated
-      ? [
-          { value: "qr", label: "QR" },
-          { value: "mandala", label: "Mandala" },
-          { value: "none", label: "None" },
-        ]
-      : [
-          { value: "mandala", label: "Mandala" },
-          { value: "none", label: "None" },
-        ]
-  );
+  // QR is always offered (matches the original always-visible QR toggle); a guest
+  // who picks it gets the mandala at render time via resolveInfoCellDisplay's
+  // guest degrade, so the cell never blanks.
+  const infoCellOptions: { value: InfoCellChoice; label: string }[] = [
+    { value: "qr", label: "QR" },
+    { value: "mandala", label: "Mandala" },
+    { value: "none", label: "None" },
+  ];
 
   const infoCellChoice = $derived.by<InfoCellChoice>(() => {
     void compositionVersion;
-    const raw = imageComposition.getInfoCellChoiceForStepCount(stepCount);
-    // A guest whose derived default is "qr" has no QR segment; show "mandala".
-    return raw === "qr" && !authState.isAuthenticated ? "mandala" : raw;
+    return imageComposition.getInfoCellChoiceForStepCount(stepCount);
   });
 
   // Pictograph visibility - sourced from VisibilityManager so this panel
