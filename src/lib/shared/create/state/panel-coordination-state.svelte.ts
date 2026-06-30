@@ -13,6 +13,8 @@
  * - Sequence Actions Panel: open/closed state and mode (turns/transforms)
  * - Video Record Panel: open/closed state
  * - Export Panel Panel: open/closed state
+ * - Step Editor Panel: open/closed state
+ * - Save to Library Panel: open/closed state
  * Other panels reset on page refresh for predictable UX.
  *
  * Domain: Create module - Panel State Management for Sequence Construction
@@ -74,6 +76,11 @@ const exportPanelPersistence = createPersistenceHelper({
 
 const stepEditorPanelPersistence = createPersistenceHelper({
   key: "tka_step_editor_panel_open",
+  defaultValue: false,
+});
+
+const saveToLibraryPanelPersistence = createPersistenceHelper({
+  key: "tka_save_to_library_panel_open",
   defaultValue: false,
 });
 
@@ -318,8 +325,9 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   // Guard flag to prevent effects from seeing transient close during openExportPanel()
   let isExportPanelReopening = $state(false);
 
-  // Save to Library panel state
-  let isSaveToLibraryPanelOpen = $state(false);
+  // Save to Library panel state (persisted — survives dev HMR / refresh so the
+  // panel isn't closed out from under the user mid-edit, matching export/editor)
+  let isSaveToLibraryPanelOpen = $state(saveToLibraryPanelPersistence.load());
 
   // Video record panel state (persisted)
   let isVideoRecordPanelOpen = $state(videoRecordPanelPersistence.load());
@@ -360,6 +368,11 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     $effect(() => {
       void isStepEditorPanelOpen;
       stepEditorPanelPersistence.setupAutoSave(isStepEditorPanelOpen);
+    });
+
+    $effect(() => {
+      void isSaveToLibraryPanelOpen;
+      saveToLibraryPanelPersistence.setupAutoSave(isSaveToLibraryPanelOpen);
     });
   });
 
