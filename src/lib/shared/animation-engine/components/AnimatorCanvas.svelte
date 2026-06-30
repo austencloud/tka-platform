@@ -101,6 +101,7 @@ Last audit: 2025-12-27
     contextId = undefined,
     tapToToggle = false,
     progressLine = false,
+    hoverHint = "none",
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -183,6 +184,15 @@ Last audit: 2025-12-27
      *  instead of the full UnifiedTimeline transport. For embedded/showcase
      *  players that pair it with tapToToggle. Off by default. */
     progressLine?: boolean;
+    /** Mouse-only hover affordance teaching "click the canvas to play/pause".
+     *  Only renders on fine-pointer/hover devices (touch keeps the tap-flash).
+     *  Pairs with tapToToggle. Off by default so existing consumers are
+     *  unaffected.
+     *  - "badge": centered glass circle + word (Pause/Play) fades in on hover.
+     *  - "pill":  small corner caption pill on hover.
+     *  - "scrim": faint hover vignette, no icon.
+     *  - "none":  no hint (default). */
+    hoverHint?: "none" | "badge" | "pill" | "scrim";
   } = $props();
 
   const resolvedContextId = contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
@@ -426,6 +436,7 @@ Last audit: 2025-12-27
   data-fill={fillContainer || undefined}
   data-no-progress={hideProgressBar || undefined}
   data-hide-header={hideHeader || undefined}
+  data-hover-hint={hoverHint !== "none" ? hoverHint : undefined}
   data-view={viewState}
   oncontextmenu={handleContextMenu}
   onpointerdown={handlePointerDown}
@@ -522,6 +533,9 @@ Last audit: 2025-12-27
           totalSteps={sequenceData?.steps?.length ?? 0}
           visible={progressBarVisible && !hideProgressBar}
           darkMode={darkModeEnabled}
+          onSeek={onProgressBarSeek ? (ratio) => playbackAdapter.seek(ratio) : null}
+          onScrubStart={onProgressBarScrubStart}
+          onScrubEnd={onProgressBarScrubEnd}
         />
       {:else}
         <UnifiedTimeline
@@ -531,6 +545,27 @@ Last audit: 2025-12-27
       {/if}
     </div>
   </div>
+
+  {#if hoverHint !== "none"}
+    <!-- Mouse-only hover affordance (CSS :hover, gated to fine pointers). The
+         icon/word reflect the action a click will take. pointer-events:none so
+         it never eats the tap that toggles playback. -->
+    <div class="hover-hint hover-hint--{hoverHint}" aria-hidden="true">
+      {#if hoverHint === "badge"}
+        <span class="hint-stack">
+          <span class="hint-disc">
+            <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+          </span>
+          <span class="hint-word">{isPlaying ? "Pause" : "Play"}</span>
+        </span>
+      {:else if hoverHint === "pill"}
+        <span class="hint-pill">
+          <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+          <span>{isPlaying ? "Pause" : "Play"}</span>
+        </span>
+      {/if}
+    </div>
+  {/if}
 
   {#if tapFeedback}
     {#key tapFeedback.key}
@@ -608,6 +643,120 @@ Last audit: 2025-12-27
   @media (prefers-reduced-motion: reduce) {
     .tap-feedback i {
       animation-duration: 250ms;
+    }
+  }
+
+  /* ── Hover affordance (mouse only) ──────────────────────────────────
+     Teaches "click the canvas to play/pause" for pointer devices. Hidden
+     entirely on touch (no hover) where the tap-flash already covers
+     discovery. pointer-events:none so it never blocks the toggle tap. */
+  @media (hover: hover) and (pointer: fine) {
+    .animation-container[data-hover-hint] {
+      cursor: pointer;
+    }
+
+    .hover-hint {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 150ms ease-out;
+    }
+
+    .animation-container[data-hover-hint]:hover .hover-hint {
+      opacity: 1;
+    }
+
+    /* badge: centered glass disc + word */
+    .hover-hint--badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hint-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      transform: scale(0.92);
+      transition: transform 150ms cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    .animation-container[data-hover-hint="badge"]:hover .hint-stack {
+      transform: scale(1);
+    }
+
+    .hint-disc {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.42);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+      color: rgba(255, 255, 255, 0.96);
+      font-size: 28px;
+    }
+
+    /* Optical centering: the play triangle reads right-heavy in a circle. */
+    .hint-disc i.fa-play {
+      transform: translateX(2px);
+    }
+
+    .hint-word {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: rgba(255, 255, 255, 0.92);
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+    }
+
+    /* pill: corner caption */
+    .hint-pill {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 13px;
+      font-weight: 600;
+      transform: translateY(-4px);
+      transition: transform 150ms cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    .animation-container[data-hover-hint="pill"]:hover .hint-pill {
+      transform: translateY(0);
+    }
+
+    /* scrim: faint vignette, no icon */
+    .hover-hint--scrim {
+      background: radial-gradient(
+        ellipse at center,
+        rgba(0, 0, 0, 0) 45%,
+        rgba(0, 0, 0, 0.22) 100%
+      );
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hover-hint,
+    .hint-stack,
+    .hint-pill {
+      transition: none;
     }
   }
 

@@ -4,6 +4,14 @@ SequenceProgressBar.svelte
 Linear progress indicator for animation sequences.
 Shows current position within the sequence and resets on loop.
 
+Two modes (chosen by whether `onSeek` is provided):
+- Display-only (default): a thin progress LINE. role="progressbar".
+- Seekable: pass `onSeek` and it becomes a thin scrubber — click/drag to seek,
+  keyboard arrows, a knob on hover/scrub. role="slider". The visible track stays
+  3px; the hit area grows so it's easy to grab. Pointer behaviour mirrors
+  UnifiedTimeline (pause on grab via onScrubStart, resume on release via
+  onScrubEnd). onSeek reports a 0..1 ratio across the full sequence.
+
 Design:
 - Thin horizontal bar (3px height)
 - Smooth CSS transitions for fluid updates
@@ -17,6 +25,9 @@ Design:
     totalSteps = 0,
     visible = true,
     darkMode = false,
+    onSeek = null,
+    onScrubStart = null,
+    onScrubEnd = null,
   }: {
     /** Current beat/step number (can exceed totalSteps for looping sequences) */
     currentStep?: number;
@@ -26,7 +37,16 @@ Design:
     visible?: boolean;
     /** Dark mode override (matches WordHeader pattern) */
     darkMode?: boolean;
+    /** When provided, the bar becomes a seekable scrubber. Reports a 0..1 ratio
+     *  across the full sequence. Absent → display-only progress line. */
+    onSeek?: ((ratio: number) => void) | null;
+    /** Called when a scrub gesture begins (consumer pauses playback). */
+    onScrubStart?: (() => void) | null;
+    /** Called when a scrub gesture ends (consumer resumes if it was playing). */
+    onScrubEnd?: (() => void) | null;
   } = $props();
+
+  const interactive = $derived(!!onSeek);
 
   /**
    * Progress within current loop (0-1)
@@ -48,10 +68,16 @@ Design:
     return Math.max(0, Math.min(1, normalizedStep / totalSteps));
   });
 
+  // While scrubbing, show the dragged ratio immediately so the fill/knob track
+  // the pointer without waiting for the seek round-trip to update currentStep.
+  let scrubbing = $state(false);
+  let scrubRatio = $state(0);
+  const displayProgress = $derived(scrubbing ? scrubRatio : progress);
+
   /**
    * Percentage string for CSS (0% to 100%)
    */
-  const progressPercent = $derived(`${(progress * 100).toFixed(2)}%`);
+  const progressPercent = $derived(`${(displayProgress * 100).toFixed(2)}%`);
 
   /**
    * Format for screen readers
@@ -64,22 +90,113 @@ Design:
     const step = Math.floor(zeroBasedStep % totalSteps) + 1;
     return `Sequence progress: step ${step} of ${totalSteps}`;
   });
+
+  // ── Seek gesture (only wired when interactive) ──
+  let trackEl: HTMLDivElement | undefined = $state();
+  let containerEl: HTMLDivElement | undefined = $state();
+
+  function ratioFromEvent(e: PointerEvent): number {
+    if (!trackEl) return 0;
+    const rect = trackEl.getBoundingClientRect();
+    if (rect.width <= 0) return 0;
+    return Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  }
+
+  function onPointerDown(e: PointerEvent) {
+    if (!interactive || e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    scrubbing = true;
+    scrubRatio = ratioFromEvent(e);
+    onScrubStart?.();
+    try { containerEl?.setPointerCapture(e.pointerId); } catch { /* synthetic/uncapturable pointer */ }
+    onSeek?.(scrubRatio);
+  }
+
+  function onPointerMove(e: PointerEvent) {
+    if (!scrubbing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    scrubRatio = ratioFromEvent(e);
+    onSeek?.(scrubRatio);
+  }
+
+  function onPointerUp(e: PointerEvent) {
+    if (!scrubbing) return;
+    e.stopPropagation();
+    scrubbing = false;
+    try { containerEl?.releasePointerCapture(e.pointerId); } catch { /* not captured */ }
+    onScrubEnd?.();
+  }
+
+  function seekTo(ratio: number) {
+    const clamped = Math.max(0, Math.min(1, ratio));
+    // Discrete (keyboard) seek: brief pause/resume bracket keeps parity with drag.
+    onScrubStart?.();
+    onSeek?.(clamped);
+    onScrubEnd?.();
+  }
+
+  function onKeydown(e: KeyboardEvent) {
+    if (!interactive || totalSteps <= 0) return;
+    const stepRatio = 1 / totalSteps;
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      seekTo(progress + stepRatio);
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      seekTo(progress - stepRatio);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      seekTo(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      seekTo(1);
+    }
+  }
 </script>
 
 {#if visible && totalSteps > 0}
-  <div
-    class="progress-bar-container"
-    class:dark-mode={darkMode}
-    role="progressbar"
-    aria-label={ariaLabel}
-    aria-valuenow={Math.floor(progress * 100)}
-    aria-valuemin={0}
-    aria-valuemax={100}
-  >
-    <div class="progress-track">
-      <div class="progress-fill" style="--progress: {progressPercent}"></div>
+  {#if interactive}
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <div
+      bind:this={containerEl}
+      class="progress-bar-container interactive"
+      class:dark-mode={darkMode}
+      class:scrubbing
+      role="slider"
+      tabindex="0"
+      aria-label="Seek position"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(displayProgress * 100)}
+      aria-valuetext={ariaLabel}
+      onpointerdown={onPointerDown}
+      onpointermove={onPointerMove}
+      onpointerup={onPointerUp}
+      onpointercancel={onPointerUp}
+      onkeydown={onKeydown}
+    >
+      <div class="progress-track" bind:this={trackEl}>
+        <div class="progress-fill" style="--progress: {progressPercent}"></div>
+        <div class="progress-knob" style="left: {progressPercent}"></div>
+      </div>
     </div>
-  </div>
+  {:else}
+    <div
+      class="progress-bar-container"
+      class:dark-mode={darkMode}
+      role="progressbar"
+      aria-label={ariaLabel}
+      aria-valuenow={Math.floor(progress * 100)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
+      <div class="progress-track">
+        <div class="progress-fill" style="--progress: {progressPercent}"></div>
+      </div>
+    </div>
+  {/if}
 {/if}
 
 <style>
@@ -93,6 +210,22 @@ Design:
     /* Match WordHeader background for seamless integration */
     background: var(--theme-panel-bg, rgba(240, 240, 240, 0.98));
     transition: background 150ms ease-out;
+  }
+
+  /* Seekable: bigger, comfortable hit area (≥~24px) while the line stays 3px,
+     plus pointer affordances. */
+  .progress-bar-container.interactive {
+    padding-top: 10px;
+    padding-bottom: 12px;
+    cursor: pointer;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .progress-bar-container.interactive:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+    border-radius: 6px;
   }
 
   /* Dark mode background */
@@ -111,9 +244,13 @@ Design:
     height: 3px;
     background: var(--theme-stroke, rgba(0, 0, 0, 0.08));
     border-radius: 999px; /* Pill shape */
-    overflow: hidden; /* Clip fill to rounded corners */
     position: relative;
     transition: background 150ms ease-out;
+  }
+
+  /* Display-only track clips its fill; the seekable track lets the knob overflow. */
+  .progress-bar-container:not(.interactive) .progress-track {
+    overflow: hidden;
   }
 
   .dark-mode .progress-track {
@@ -158,13 +295,35 @@ Design:
     box-shadow: 0 0 12px color-mix(in srgb, var(--theme-accent) 50%, transparent);
   }
 
+  /* Knob: hidden until hover/scrub so the resting state stays a clean line. */
+  .progress-knob {
+    position: absolute;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 120ms ease-out;
+  }
+
+  .progress-bar-container.interactive:hover .progress-knob,
+  .progress-bar-container.interactive:focus-visible .progress-knob,
+  .progress-bar-container.scrubbing .progress-knob {
+    opacity: 1;
+  }
+
   /* Accessibility: respect reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
     .progress-fill {
       transition: none;
     }
     .progress-track,
-    .progress-bar-container {
+    .progress-bar-container,
+    .progress-knob {
       transition: none;
     }
   }

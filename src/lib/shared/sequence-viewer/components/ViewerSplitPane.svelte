@@ -15,8 +15,6 @@
   } from "../domain/viewer-prop-groups";
   import type { SplitConfig } from '../services/viewer-state-persistence';
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
-  import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import RightRail from "./RightRail.svelte";
   import VideoGallery from './VideoGallery.svelte';
@@ -144,7 +142,7 @@
     suppressProgress?: boolean;
     /** When true, renders PracticeLanePane in the right pane instead of the normal preview. */
     practiceActive?: boolean;
-    /** Cell size (px) forwarded to PracticeLanePane / BeatStrip. */
+    /** Cell size (px) forwarded to PracticeLanePane / StepStrip. */
     practiceCellSize?: number;
     /** Fraction of total width given to the animation canvas column in practice mode. */
     practiceCanvasFraction?: number;
@@ -220,6 +218,23 @@
   });
   $effect(() => () => clearTimeout(_resizeResumeTimer));
 
+  // Pre-roll latch for the read-ahead lane's start tile. `showStartCell` must stay
+  // true while the canvas is parked on the start pose and flip only once the canvas
+  // actually LEAVES it (first reaches beat 1). A bare `practiceCountdown > 0` flips
+  // at the GO tick while currentStep is still 0 — at a 15-BPM start tempo the canvas
+  // then holds the start pose for ~4s while the lane has already popped to beat 1.
+  // One-way: never flips back on a loop wrap (start ≡ end, dropped each loop).
+  let _laneAtStart = $state(true);
+  $effect(() => {
+    if (practiceCountdown > 0) {
+      _laneAtStart = true; // count-in: canvas parked at start → lane focuses the start tile
+    } else if (practiceRunning && playback.currentStep >= 1) {
+      _laneAtStart = false; // canvas reached beat 1 → lane switches to beats, in sync
+    } else if (!practiceActive) {
+      _laneAtStart = true; // reset out of practice so the next Start begins parked
+    }
+  });
+
   // Three.js / Threlte is multi-MB. The 3D canvas + performer hub are only
   // imported once a 3D pane is actually activated, so any chunk that touches
   // ViewerSplitPane (e.g. the lightweight QR landing page, which never sets a
@@ -270,23 +285,15 @@
     if (_2dLeftActive) _2dLeftMounted = true;
   });
 
-  // Portrait-mobile relocates the 2D canvas transport to a full-width bar above
-  // the bottom nav, freeing the canvas to fill its row. Applies to split AND to
-  // the single-animation (focused 2D) view — the canvas-attached scrubber is
-  // suppressed in both via hideProgressBar={showMobileTransport}.
+  // Portrait-mobile still hides the 2D canvas word-header to reclaim vertical
+  // space (the transport itself is now the in-canvas tap-to-play + thin seekable
+  // line on every size — no relocated transport bar).
   const showMobileTransport = $derived(
     layout.isMobile &&
       !layout.isLandscapeMobile &&
       _2dLeftActive &&
       (!layout.focusedPane || layout.focusedPane === "animation")
   );
-  const mobileTransportAdapter = createAnimatorPlaybackAdapter({
-    getCurrentStep: () => playback.currentStep,
-    getSteps: () => playback.animationState.sequenceData?.steps ?? [],
-    getIsPlaying: () => playback.isPlaying,
-    onSeek: (target) => onProgressBarSeek?.(target),
-    onTogglePlay: () => onPlaybackToggle?.(),
-  });
 
   let _2dRightMounted = $state(false);
   const _2dRightActive = $derived(splitConfig.rightPane === 'animation');
@@ -457,7 +464,6 @@
   data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "vertical" : "horizontal") : undefined}
   data-landscape={layout.isLandscapeMobile || undefined}
   data-focused={layout.focusedPane}
-  data-mobile-transport={(showMobileTransport && !suppressProgress) || undefined}
 >
   <!-- Animation pane -->
   <div
@@ -567,9 +573,10 @@
               onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
               focused={layout.focusedPane === "animation"}
               suppress2DOverlays={false}
-              hideProgressBar={showMobileTransport}
+              hideProgressBar={suppressProgress}
               hideHeader={showMobileTransport}
-              tapToToggle={showMobileTransport}
+              tapToToggle={true}
+              progressLine={true}
               resizePaused={_practiceResizePaused}
             />
           </div>
@@ -847,18 +854,13 @@
             bluePropType={propRendering.bluePropType}
             redPropType={propRendering.redPropType}
             onSeek={onProgressBarSeek ?? null}
-            showStartCell={practiceCountdown > 0}
+            showStartCell={_laneAtStart}
           />
         </div>
       {/if}
     </div>
   </div>
 
-  {#if showMobileTransport && !suppressProgress}
-    <div class="mobile-transport-bar" data-swipe-block>
-      <UnifiedTimeline playback={mobileTransportAdapter} hidePlay />
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -889,34 +891,6 @@
        ResizeObserver to fire on every frame, producing a tiny→expand resize cascade. */
   }
 
-  /* Portrait-mobile split: canvas + card share the flexible space, transport
-     pins to a full-width auto row below the card. */
-  .split-view[data-mobile-transport] {
-    grid-template-rows: 1fr 1fr auto;
-  }
-  /* Single-animation (focused 2D) portrait: collapse the image row so the
-     canvas fills, and give the relocated transport bar its own auto row. */
-  .split-view[data-focused="animation"][data-mobile-transport] {
-    grid-template-rows: 1fr 0% auto;
-  }
-
-  .mobile-transport-bar {
-    grid-column: 1 / -1;
-    width: 100%;
-    min-width: 0;
-    z-index: 10;
-  }
-
-  /* Match the viewer's solid dark panel surface (preview-column uses the same
-     token) instead of the floating-overlay glass the pill wears inside a canvas,
-     and shave vertical padding so the bar stays compact on short phones. */
-  .mobile-transport-bar :global(.transport-pill) {
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    backdrop-filter: none;
-    border-top-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    padding-top: 4px;
-    padding-bottom: 4px;
-  }
 
   .media-pane.persistent-3d,
   .media-pane.persistent-2d {
@@ -1318,7 +1292,7 @@
 
      Portrait / narrow (default): canvas fills the top, the read-ahead strip is
      a full-width "foot" pinned to the bottom (the landing Infinite Spinner
-     model). The strip row is `auto` so it sizes to BeatStrip's intrinsic
+     model). The strip row is `auto` so it sizes to StepStrip's intrinsic
      height; the canvas takes everything above.
 
      Wide (desktop ≥768) + landscape mobile: side-by-side — canvas | strip

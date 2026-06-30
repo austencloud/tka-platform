@@ -10,8 +10,6 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
   import ViewerOverflowMenu from "./ViewerOverflowMenu.svelte";
-  import PracticeConfigPopover from "./PracticeConfigPopover.svelte";
-  import type { TempoPracticeConfig } from "../services/tempo-practice-orchestrator";
 
   interface Props {
     editingPane: 'animation' | 'image' | 'video-upload' | null;
@@ -33,15 +31,10 @@
     isOwned?: boolean;
     isLoggedIn?: boolean;
     practiceActive?: boolean;
-    practiceConfig?: Partial<TempoPracticeConfig>;
     onFavorite?: () => void;
     onSave?: () => void;
     onEdit?: () => void;
     onPracticeToggle?: () => void;
-    onPracticeConfigUpdate?: (patch: Partial<TempoPracticeConfig>) => void;
-    /** Practice mode: step to the previous/next pictograph. */
-    onStepBack?: () => void;
-    onStepForward?: () => void;
     onVideoUpload?: () => void;
     onPublish?: () => void;
     onUnpublish?: () => void;
@@ -63,14 +56,10 @@
     isOwned = false,
     isLoggedIn = false,
     practiceActive = false,
-    practiceConfig,
     onFavorite,
     onSave,
     onEdit,
     onPracticeToggle,
-    onPracticeConfigUpdate,
-    onStepBack,
-    onStepForward,
     onVideoUpload,
     onPublish,
     onUnpublish,
@@ -140,26 +129,6 @@
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
         <span>Exit Practice</span>
       </button>
-      <div class="practice-step-nav" role="group" aria-label="Step through the sequence">
-        <button
-          type="button"
-          class="header-action-btn"
-          onclick={onStepBack}
-          aria-label="Previous step"
-          title="Previous step"
-        >
-          <i class="fas fa-chevron-left" aria-hidden="true"></i>
-        </button>
-        <button
-          type="button"
-          class="header-action-btn"
-          onclick={onStepForward}
-          aria-label="Next step"
-          title="Next step"
-        >
-          <i class="fas fa-chevron-right" aria-hidden="true"></i>
-        </button>
-      </div>
     {/if}
   </div>
 
@@ -186,7 +155,7 @@
 
   <div class="header-right">
     {#if !practiceActive}
-    {#if onFavorite}
+    {#if !isMobile && onFavorite}
       <button
         type="button"
         class="header-action-btn"
@@ -198,7 +167,7 @@
       </button>
     {/if}
 
-    {#if !isSaved && onSave}
+    {#if !isMobile && !isSaved && onSave}
       <button
         type="button"
         class="header-action-btn save"
@@ -209,7 +178,7 @@
       </button>
     {/if}
 
-    {#if onEdit}
+    {#if !isMobile && onEdit}
       <button
         type="button"
         class="header-action-btn remix"
@@ -220,20 +189,16 @@
       </button>
     {/if}
 
-    {#if !isMobile && onPracticeToggle}
+    {#if onPracticeToggle}
       <button
         type="button"
         class="header-action-btn practice"
-        class:practice-active={practiceActive}
         onclick={onPracticeToggle}
-        aria-label={practiceActive ? "Stop practice" : "Practice"}
-        aria-pressed={practiceActive}
+        aria-label="Practice"
       >
-        <i class="fas {practiceActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
+        <i class="fas fa-signal" aria-hidden="true"></i>
+        <span>Practice</span>
       </button>
-      {#if onPracticeConfigUpdate}
-        <PracticeConfigPopover config={practiceConfig ?? {}} onUpdate={onPracticeConfigUpdate} />
-      {/if}
     {/if}
 
     <span class="header-action-divider"></span>
@@ -255,8 +220,11 @@
     <ViewerOverflowMenu
       variant="header"
       sequenceId={sequence?.id}
-      practiceActive={practiceActive}
-      onPracticeToggle={isMobile ? onPracticeToggle : undefined}
+      isFavorite={isFavorite}
+      onFavoriteToggle={isMobile ? onFavorite : undefined}
+      isSaved={isSaved}
+      onSave={isMobile ? onSave : undefined}
+      onRemix={isMobile ? onEdit : undefined}
       onVideoUpload={isLoggedIn ? onVideoUpload : undefined}
       {isPublished}
       onPublish={isOwned && isSaved ? onPublish : undefined}
@@ -394,16 +362,19 @@
     color: var(--semantic-warning, #f59e0b);
   }
 
-  .header-action-btn.practice-active {
-    color: var(--semantic-error, #f87171);
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+  /* Practice entry — labeled accent CTA. Tinted accent fill (no border, like
+     .practice-exit) so it stands out from the utility icon buttons. */
+  .header-action-btn.practice {
+    gap: 8px;
+    padding: 0 16px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: var(--theme-accent, #a78bfa);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 18%, transparent);
   }
-
-  .practice-step-nav {
-    display: flex;
-    align-items: center;
-    gap: 4px;
+  .header-action-btn.practice:hover {
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
+    color: #fff;
   }
 
   .header-action-btn.practice-exit {
