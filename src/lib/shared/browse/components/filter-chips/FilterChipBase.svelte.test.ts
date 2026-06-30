@@ -2,6 +2,7 @@ import { render } from "vitest-browser-svelte";
 import { page } from "vitest/browser";
 import { describe, it, expect, vi } from "vitest";
 import FilterChipBase from "./FilterChipBase.svelte";
+import { expectNoA11yViolations } from "$test-helpers/component-a11y";
 
 describe("FilterChipBase (toggle mode)", () => {
   it("exposes a switch role with aria-pressed reflecting `active`", async () => {
@@ -28,5 +29,28 @@ describe("FilterChipBase (toggle mode)", () => {
     await expect
       .element(page.getByRole("switch", { name: "Loops" }))
       .toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("FilterChipBase (dropdown mode)", () => {
+  it("exposes listbox popup semantics with aria-expanded", async () => {
+    const screen = render(FilterChipBase, {
+      label: "Sort",
+      mode: "dropdown",
+      expanded: false,
+    });
+    const chip = page.getByRole("button", { name: "Sort" });
+    await expect.element(chip).toHaveAttribute("aria-haspopup", "listbox");
+    await expect.element(chip).toHaveAttribute("aria-expanded", "false");
+
+    await screen.rerender({ label: "Sort", mode: "dropdown", expanded: true });
+    await expect
+      .element(page.getByRole("button", { name: "Sort" }))
+      .toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("has no AAA a11y violations in toggle mode", async () => {
+    render(FilterChipBase, { label: "Loops", mode: "toggle", active: true });
+    await expectNoA11yViolations(document.body, { soft: true });
   });
 });
