@@ -70,4 +70,22 @@ describe("resolveInfoCellDisplay", () => {
     expect(resolveInfoCellDisplay({ ...base, isAuthenticated: false, showQRCode: true, showMandala: true, infoCellChoice: "qr" }))
       .toEqual({ showQRCode: false, showMandala: true });
   });
+
+  it("guest multi-cell forces QR off so the mandala fill claims its slot", () => {
+    // 6-count row layout = two info cells. A guest can't mint a QR, so QR must
+    // resolve off even though the raw toggle is on — otherwise the reserved QR
+    // cell renders blank instead of becoming a third/second mandala.
+    expect(resolveInfoCellDisplay({ ...base, stepCount: 6, isAuthenticated: false, showQRCode: true, showMandala: true, infoCellChoice: "mandala" }))
+      .toEqual({ showQRCode: false, showMandala: true });
+  });
+
+  it("guest with only QR on resolves QR off (no scannable code to mint)", () => {
+    expect(resolveInfoCellDisplay({ ...base, isAuthenticated: false, showQRCode: true, showMandala: false, infoCellChoice: "qr" }))
+      .toEqual({ showQRCode: false, showMandala: false });
+  });
+
+  it("signed-in multi-cell keeps QR reserved (unchanged)", () => {
+    expect(resolveInfoCellDisplay({ ...base, stepCount: 6, isAuthenticated: true, showQRCode: true, showMandala: true, infoCellChoice: "mandala" }))
+      .toEqual({ showQRCode: true, showMandala: true });
+  });
 });

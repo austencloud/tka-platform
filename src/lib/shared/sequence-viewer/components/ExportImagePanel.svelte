@@ -17,6 +17,7 @@
   import ControlDock, { type ControlDockTab } from "./ControlDock.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { getInfoCellCount, type InfoCellChoice } from "../services/info-cell-display";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -76,23 +77,40 @@
   // nowhere to render — hide the controls entirely rather than offer dead toggles.
   const hasInfoCell = $derived(infoCellCount >= 1);
 
-  // Guests cannot render a scannable QR — drop the QR segment for them so the
-  // lone cell can never resolve to a blank QR.
+  // Guests can't mint a scannable QR (it needs an account-owned short code), so
+  // QR is hidden from this panel entirely for them rather than shown-then-blocked.
+  // Same auth gate the card renderer uses (ChoreoCard / card-render-options), so
+  // the panel and the output agree; with QR gone the freed info cell flows into
+  // the mandala fill (resolveInfoCellDisplay forces guest QR off downstream).
+  const canQRCode = $derived(authState.isAuthenticated);
+
   // Text labels (not icons): they read at the same size as the sibling chips in
   // this panel (Word / Level / Grid …) and a tiny QR/asterisk glyph is cryptic.
-  // QR is always offered (matches the original always-visible QR toggle); a guest
-  // who picks it gets the mandala at render time via resolveInfoCellDisplay's
-  // guest degrade, so the cell never blanks.
-  const infoCellOptions: { value: InfoCellChoice; label: string }[] = [
-    { value: "qr", label: "QR" },
-    { value: "mandala", label: "Mandala" },
-    { value: "none", label: "None" },
-  ];
+  // The QR option drops out of the one-spot chooser for guests.
+  const infoCellOptions = $derived<{ value: InfoCellChoice; label: string }[]>(
+    canQRCode
+      ? [
+          { value: "qr", label: "QR" },
+          { value: "mandala", label: "Mandala" },
+          { value: "none", label: "None" },
+        ]
+      : [
+          { value: "mandala", label: "Mandala" },
+          { value: "none", label: "None" },
+        ]
+  );
 
   const infoCellChoice = $derived.by<InfoCellChoice>(() => {
     void compositionVersion;
     return imageComposition.getInfoCellChoiceForStepCount(stepCount);
   });
+
+  // What the segmented indicator shows: a guest's leftover "qr" choice (QR isn't
+  // in their option list) displays as mandala — its render-time degrade — so the
+  // indicator lands on a real option instead of nowhere.
+  const infoCellDisplayChoice = $derived<InfoCellChoice>(
+    infoCellChoice === "qr" && !canQRCode ? "mandala" : infoCellChoice
+  );
 
   // Pictograph visibility - sourced from VisibilityManager so this panel
   // stays in sync with the Visibility tab, context menus, and voice control.
@@ -149,7 +167,7 @@
   }
 
   // Columns options share one source with the mobile stepper (columnOptionsFor):
-  // numeric counts capped at the beat count, with awkward layouts hidden.
+  // numeric counts capped at the step count, with awkward layouts hidden.
   const columnOptions = $derived<{ label: string; value: number | null }[]>([
     { label: "Auto", value: null },
     ...columnOptionsFor(stepCount).map((v) => ({ label: String(v), value: v })),
@@ -172,7 +190,7 @@
     exportOptions.setImageColumnCount(value);
   }
 
-  // If the current selection exceeds the beat count (e.g. user switched
+  // If the current selection exceeds the step count (e.g. user switched
   // to a shorter sequence), reset to Auto.
   $effect(() => {
     if (currentColumnCount !== null && currentColumnCount > stepCount) {
@@ -257,14 +275,16 @@
                   <div class="seg-fill">
                     <SegmentedControl
                       options={infoCellOptions}
-                      value={infoCellChoice}
+                      value={infoCellDisplayChoice}
                       onchange={(v) => imageComposition.setInfoCellChoiceForStepCount(stepCount, v)}
                       color="accent"
                       size="sm"
                     />
                   </div>
                 {:else}
-                  <button type="button" class="rt-chip" aria-pressed={showQRCode} onclick={() => imageComposition.setShowQRCode(!showQRCode)}><i class="fas fa-qrcode" aria-hidden="true"></i> QR</button>
+                  {#if canQRCode}
+                    <button type="button" class="rt-chip" aria-pressed={showQRCode} onclick={() => imageComposition.setShowQRCode(!showQRCode)}><i class="fas fa-qrcode" aria-hidden="true"></i> QR</button>
+                  {/if}
                   <button type="button" class="rt-chip" aria-pressed={showMandala} onclick={() => imageComposition.setShowMandala(!showMandala)}><i class="fas fa-asterisk" aria-hidden="true"></i> Mandala</button>
                 {/if}
               {/if}
@@ -398,7 +418,7 @@
           <div class="chip-group seg-fill">
             <SegmentedControl
               options={infoCellOptions}
-              value={infoCellChoice}
+              value={infoCellDisplayChoice}
               onchange={(v) => imageComposition.setInfoCellChoiceForStepCount(stepCount, v)}
               color="accent"
               size="sm"
@@ -406,7 +426,9 @@
           </div>
         </div>
       {:else}
-        <!-- QR code (standalone - it's a grid cell, not a banner) -->
+        <!-- QR code (standalone - it's a grid cell, not a banner). Signed-in
+             only: guests can't mint a scannable QR, so the row is hidden. -->
+        {#if canQRCode}
         <div class="setting-row">
           <span class="setting-label">QR</span>
           <div class="chip-group">
@@ -416,6 +438,7 @@
             >QR Code</button>
           </div>
         </div>
+        {/if}
 
         <!-- Mandala fill (blue/red path visualization in empty col-0 cells) -->
         <div class="setting-row">

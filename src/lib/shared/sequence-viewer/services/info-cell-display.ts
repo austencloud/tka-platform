@@ -67,6 +67,14 @@ export interface ResolveInfoCellArgs extends InfoCellGeometryArgs {
  * (genuine contention) routes through the per-card choice; every other case
  * returns the globals untouched, so non-contention paths (a card with only mandala
  * on, multi-cell cards, hidden start position) are unaffected.
+ *
+ * Guest QR suppression applies in EVERY regime, not just one-spot contention: a
+ * guest can't mint a scannable QR (it needs an account-owned short code), so QR
+ * is forced off. That matters for the mandala fill — with QR off, the slot it
+ * would have reserved flows into getMandalaPlacements, which then fills all
+ * available info cells instead of leaving the QR cell blank. This is the single
+ * funnel both the preview (ChoreoCard) and the export (card-render-options) pass
+ * through, so they stay in lockstep.
  */
 export function resolveInfoCellDisplay(
   args: ResolveInfoCellArgs
@@ -74,10 +82,10 @@ export function resolveInfoCellDisplay(
   const { showQRCode, showMandala, infoCellChoice, isAuthenticated } = args;
 
   if (!showQRCode || !showMandala) {
-    return { showQRCode, showMandala };
+    return { showQRCode: showQRCode && isAuthenticated, showMandala };
   }
   if (getInfoCellCount(args) !== 1) {
-    return { showQRCode, showMandala };
+    return { showQRCode: showQRCode && isAuthenticated, showMandala };
   }
 
   const choice: InfoCellChoice =
