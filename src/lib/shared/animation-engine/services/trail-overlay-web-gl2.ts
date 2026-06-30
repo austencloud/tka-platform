@@ -556,14 +556,14 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.redEnvelopeWasZero = false;
     this.warmupFramesRemaining = TrailOverlayWebGL2.WARMUP_FRAMES;
     this.prevTipTrailMask = 0xF;
-    this.rebuildBackend();
+    this.freshAccumulators();
   }
 
   clearBuffers(): void {
     this.hasPrevCenter = false;
     this.resetRingsAndTails();
     this.warmupFramesRemaining = TrailOverlayWebGL2.WARMUP_FRAMES;
-    this.rebuildBackend();
+    this.freshAccumulators();
   }
 
   private resetRingsAndTails(): void {
@@ -609,21 +609,21 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   // Internal
   // -------------------------------------------------------------------
 
-  /** Rebuild the backend against the current canvas so per-tip FBOs
-   *  are dropped. Called on sequence transitions to guarantee a blank
-   *  accumulator state. */
-  private rebuildBackend(): void {
-    const canvas = this.canvas;
-    if (!canvas) return;
-    this.backend?.dispose();
-    this.backend = null;
-    void createBackend(canvas, { preferred: "webgl2" }).then((backend) => {
-      if (this.canvas === canvas) {
-        this.backend = backend;
-      } else {
-        backend.dispose();
-      }
-    });
+  /** Drop the per-tip accumulator FBOs for a blank-slate trail without touching
+   *  the backend. Bumping the tip epochs re-keys every tipId, so the next render
+   *  allocates fresh blank accumulators and the backend's idle-tip sweep
+   *  (MAX_UNUSED_FRAMES_BEFORE_GC) frees the orphaned ones.
+   *
+   *  Replaces the old rebuildBackend(), which disposed + recreated the whole
+   *  WebGL2Backend — synchronously recompiling all 27 shader programs on every
+   *  trails-off transition (~240ms ANGLE LINK_STATUS stall on Windows). That was
+   *  the freeze when switching away from trails. Keeping the backend warm also
+   *  makes re-entering trails instant. Same mechanism the fade-out / tip-mask
+   *  paths already use (blueTipEpoch++ / redTipEpoch++). */
+  private freshAccumulators(): void {
+    if (!this.backend) return;
+    this.blueTipEpoch++;
+    this.redTipEpoch++;
   }
 
   /** Returns which rings received a new point this frame. Captures the base
