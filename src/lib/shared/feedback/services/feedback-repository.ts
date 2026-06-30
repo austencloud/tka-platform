@@ -61,7 +61,7 @@ export class FeedbackRepository {
     capturedTab: string,
     images?: File[],
     onProgress?: FeedbackProgressCallback,
-    preUploadedImageUrls?: string[]
+    stagedImagePaths?: string[]
   ): Promise<string> {
     return feedbackSubmissionModule.submitFeedback(
       formData,
@@ -69,7 +69,7 @@ export class FeedbackRepository {
       capturedTab,
       images,
       onProgress,
-      preUploadedImageUrls
+      stagedImagePaths
     );
   }
 

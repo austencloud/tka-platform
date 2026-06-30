@@ -196,18 +196,35 @@ export function createFeedbackSubmitState() {
       const capturedModule = getCapturedModule();
       const capturedTab = getCapturedTab();
 
-      // Always upload to permanent storage path at submit time.
-      // Staging URLs (feedback-staging/) expire when the cleanup function
-      // deletes them after 30 minutes — never save those as final URLs.
+      // Collect staging paths in image order. When every attached image finished
+      // staging, hand the paths to the doc — the promoteFeedbackImages onCreate
+      // trigger copies them from feedback-staging/ to the permanent feedback/
+      // path and writes imageUrls, so submit is just the doc write (instant) and
+      // the images survive the 30-minute staging cleanup.
+      const collectedPaths = images
+        .map((f) => stagedImages.get(f)?.storagePath)
+        .filter((p): p is string => p != null);
+      const allStaged =
+        images.length > 0 && collectedPaths.length === images.length;
+
       await feedbackService.submitFeedback(
         formData,
         capturedModule,
         capturedTab,
-        images.length > 0 ? images : undefined,
+        // Only pass raw files for the upload-on-submit fallback used when staging
+        // didn't fully complete; otherwise the trigger handles the staged paths.
+        allStaged ? undefined : images.length > 0 ? images : undefined,
         (progress) => {
           uploadProgress = progress;
         },
+        allStaged ? collectedPaths : undefined,
       );
+
+      // The promote trigger (or the fallback upload) now owns these files. Drop
+      // our handles/state so reset() doesn't race the trigger and delete a
+      // staged file before it's copied to the permanent path.
+      uploadHandles.clear();
+      stagedImages = new Map();
 
       uploadProgress = null;
       submitStatus = "success";

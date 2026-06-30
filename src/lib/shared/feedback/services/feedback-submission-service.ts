@@ -69,7 +69,7 @@ export async function submitFeedback(
   capturedTab: string,
   images?: File[],
   onProgress?: FeedbackProgressCallback,
-  preUploadedImageUrls?: string[]
+  stagedImagePaths?: string[]
 ): Promise<string> {
   const firestore = await getFirestoreInstance();
   const user = authState.user;
@@ -87,6 +87,12 @@ export async function submitFeedback(
 
   // Capture device context
   const deviceContext = captureDeviceContext(capturedModule, capturedTab);
+
+  // Images are pre-uploaded to feedback-staging/ on attach. When all of them
+  // finished staging, we hand the staging paths to the doc and the
+  // promoteFeedbackImages trigger copies them into the permanent path + writes
+  // imageUrls — so submit is just this one doc write (instant).
+  const hasStagedImages = !!stagedImagePaths && stagedImagePaths.length > 0;
 
   const feedbackData = {
     userId: effectiveUser.uid,
@@ -107,6 +113,8 @@ export async function submitFeedback(
     status: "new" as FeedbackStatus,
     createdAt: serverTimestamp(),
     updatedAt: null,
+    // Consumed + cleared by the promoteFeedbackImages onCreate trigger.
+    ...(hasStagedImages ? { stagedImagePaths } : {}),
   };
 
   // Report saving phase
@@ -125,16 +133,11 @@ export async function submitFeedback(
     throw error;
   }
 
-  // Attach images - use pre-uploaded URLs if available (instant), otherwise upload now
-  if (preUploadedImageUrls && preUploadedImageUrls.length > 0) {
-    try {
-      await updateDoc(docRef, { imageUrls: preUploadedImageUrls });
-    } catch (error) {
-      console.error("[FeedbackSubmitter] Failed to attach pre-uploaded image URLs:", error);
-      toast.warning("Feedback submitted but images may not be attached.");
-    }
-  } else if (images && images.length > 0) {
-    // Fallback: upload during submit (used when pre-upload didn't complete)
+  // When images were staged, the promoteFeedbackImages trigger handles them from
+  // the doc's stagedImagePaths — nothing more to do here (submit stays instant).
+  // Fallback path: staging didn't complete (e.g. unavailable), so upload the raw
+  // files now and write imageUrls directly.
+  if (!hasStagedImages && images && images.length > 0) {
     onProgress?.({ phase: "uploading", fraction: 0 });
 
     try {

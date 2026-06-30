@@ -159,6 +159,9 @@ export interface FeedbackItem {
   description: string;
   priority?: FeedbackPriority;
   imageUrls?: string[]; // Screenshots attached to feedback
+  // Staging paths set by the client on submit; consumed + deleted by the
+  // promoteFeedbackImages onCreate trigger, which then populates imageUrls.
+  stagedImagePaths?: string[];
 
   // Original content (write-once, never overwritten)
   // Preserved for long-term analysis of user language patterns and mental models

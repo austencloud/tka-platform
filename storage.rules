@@ -23,12 +23,19 @@ service firebase.storage {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Feedback staging - temporary uploads before feedback submission
-    // Cleaned up by scheduled Cloud Function after 30 minutes
+    // Feedback staging - temporary uploads before feedback submission.
+    // A feedback-doc onCreate trigger (promoteFeedbackImages) copies these to the
+    // permanent feedback/ path; a scheduled Cloud Function cleans up orphans after
+    // 30 minutes.
     match /feedback-staging/{userId}/{allPaths=**} {
       // Owner can read/write, admins can read (for feedback review)
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // Owner can upload — images only, capped at 10MB (abuse guard; the client
+      // also caps attachments at 5 per feedback).
+      allow write: if request.auth != null && request.auth.uid == userId
+        && (request.resource == null
+          || (request.resource.contentType.matches('image/.*')
+            && request.resource.size < 10 * 1024 * 1024));
     }
 
     // Feedback images - users can only access their own, admins can access all
