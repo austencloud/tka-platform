@@ -86,6 +86,16 @@ export class AccountManager {
       throw new Error("No authenticated user found");
     }
 
+    // Admin accounts cannot be self-deleted. Deleting an admin removes both the
+    // Auth custom claim and the Firestore role doc — if they're the last admin
+    // that leaves zero admins with no in-app recovery. Read the authoritative
+    // token claim (same source the admin routes trust) and refuse before any
+    // reauth or deletion. This is the real lock; the UI also hides the path.
+    const tokenResult = await user.getIdTokenResult();
+    if (tokenResult.claims.admin === true) {
+      throw new Error("Admin accounts can't be deleted from the app.");
+    }
+
     // Re-authenticate to satisfy Firebase's recent-login requirement, using the
     // method the user actually has. OAuth accounts (Google/Facebook, magic-link
     // upgrades) have no password — a popup reauth is the only path for them.

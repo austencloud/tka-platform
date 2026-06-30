@@ -12,11 +12,12 @@
 
   const ctx = getProfileSettingsContext();
 
-  let { onDeleteAccount, hapticService, userIdentifier, providerIds } = $props<{
+  let { onDeleteAccount, hapticService, userIdentifier, providerIds, isAdmin } = $props<{
     onDeleteAccount: (reauth: DeleteReauth) => Promise<void>;
     hapticService: HapticFeedback | null;
     userIdentifier: string;
     providerIds: string[];
+    isAdmin: boolean;
   }>();
 
   let isExpanded = $state(false);
@@ -101,6 +102,13 @@
 
   {#if isExpanded}
     <div id="danger-zone-content" class="danger-content">
+      {#if isAdmin}
+        <p class="warning-text">
+          <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+          Admin accounts can't be deleted in-app. Manage account removal through
+          the Firebase console.
+        </p>
+      {:else}
       <p class="warning-text">
         <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         Deleting your account is permanent and cannot be undone. All your progress
@@ -202,6 +210,7 @@
             {/if}
           </div>
         </div>
+      {/if}
       {/if}
     </div>
   {/if}

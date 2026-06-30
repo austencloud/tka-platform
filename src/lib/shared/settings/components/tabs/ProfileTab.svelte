@@ -490,6 +490,7 @@
           <DangerZone
             onDeleteAccount={handleDeleteAccount}
             {hapticService}
+            isAdmin={authState.isAdmin}
             userIdentifier={authState.user?.displayName ||
               authState.user?.email ||
               ""}
