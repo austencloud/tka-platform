@@ -26,7 +26,7 @@ import type {
   SaveToLibraryOptions, SaveProgress, SaveResult } from "./types";
 import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 import { LibraryError } from "$lib/shared/library/domain/library-error";
-import { isOneCountSequence } from "$lib/shared/library/domain/sequence-min-length";
+import { isEmptySequence, meetsCommunityMinimum, MIN_COMMUNITY_STEPS } from "$lib/shared/library/domain/sequence-min-length";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte.ts";
 import { db } from "$lib/shared/persistence/database/tka-database";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -78,15 +78,26 @@ export class LibrarySaveService {
     // save working even when no identity could be provisioned.
     await ensureGuestIdentity();
 
-    if (isOneCountSequence(sequence)) {
+    if (isEmptySequence(sequence)) {
       throw new LibraryError(
-        "Too short to save. A sequence needs at least 2 steps.",
+        "Nothing to save — this sequence has no steps.",
         "INVALID_DATA",
         sequence.id
       );
     }
 
-    const { name, displayName, visibility, tags, notes } = options;
+    const { name, displayName, tags, notes } = options;
+    // Community gate: under the minimum, a sequence can still be saved to the
+    // user's own library — just not posted to the community gallery. Degrade the
+    // requested visibility and tell them, rather than failing the save. The
+    // repository + syncer enforce the same invariant as a backstop.
+    let visibility = options.visibility;
+    if (visibility === "public" && !meetsCommunityMinimum(sequence)) {
+      visibility = "private";
+      toast.info(
+        `Needs at least ${MIN_COMMUNITY_STEPS} steps to post to the community gallery. Saved to your library.`
+      );
+    }
 
     const emitProgress = (
       step: number,

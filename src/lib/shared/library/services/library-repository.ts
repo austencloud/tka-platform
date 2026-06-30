@@ -64,7 +64,7 @@ import {
 import { LibraryRecycleBin } from "$lib/shared/library/services/library-recycle-bin";
 import { LibraryBatchOperations } from "$lib/shared/library/services/library-batch-operations";
 import { LibraryError } from "$lib/shared/library/domain/library-error";
-import { isOneCountSequence } from "$lib/shared/library/domain/sequence-min-length";
+import { isEmptySequence, meetsCommunityMinimum, MIN_COMMUNITY_STEPS } from "$lib/shared/library/domain/sequence-min-length";
 
 export class LibraryRepository {
   /**
@@ -260,9 +260,9 @@ export class LibraryRepository {
     const firestore = await getFirestoreInstance();
     const userId = this.getUserId();
 
-    if (isOneCountSequence(sequence)) {
+    if (isEmptySequence(sequence)) {
       throw new LibraryError(
-        "Too short to save. A sequence needs at least 2 steps.",
+        "Nothing to save — this sequence has no steps.",
         "INVALID_DATA",
         sequence.id
       );
@@ -406,6 +406,15 @@ export class LibraryRepository {
     } catch {
       // Composition services not available (e.g. during SSR or early boot).
       // Save without compositional fields - the migration script can backfill.
+    }
+
+    // Community gate: a sub-minimum sequence can live in the user's library but
+    // must never enter the community gallery. Degrade its visibility BEFORE the
+    // write so the stored doc and the public mirror stay consistent (no
+    // visibility:"public" doc that's missing from the mirror). The syncer below
+    // is the authoritative backstop; this keeps the persisted state honest.
+    if (libSeq.visibility === "public" && !meetsCommunityMinimum(libSeq)) {
+      libSeq = { ...libSeq, visibility: "private" };
     }
 
     // Write sequence document using setDoc - works offline, queues in Firestore cache
@@ -605,6 +614,22 @@ export class LibraryRepository {
     const existing = await this.getSequence(sequenceId);
     if (!existing) {
       throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
+    }
+
+    // Explicit make-public (setVisibility / publishSequence funnel here): block
+    // under-minimum sequences with a clear error rather than degrading silently —
+    // the user is deliberately publishing an already-saved sequence. Checked
+    // before the optimistic write below so nothing is persisted on rejection.
+    if (
+      updates.visibility === "public" &&
+      existing.visibility !== "public" &&
+      !meetsCommunityMinimum({ ...existing, ...updates })
+    ) {
+      throw new LibraryError(
+        `Needs at least ${MIN_COMMUNITY_STEPS} steps to post to the community gallery.`,
+        "INVALID_DATA",
+        sequenceId
+      );
     }
 
     // Apply updates locally for immediate return

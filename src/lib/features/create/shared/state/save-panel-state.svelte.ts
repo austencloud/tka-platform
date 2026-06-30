@@ -2,7 +2,7 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { libraryState } from "$lib/features/library/state/library-state.svelte";
 import { computeHash as computeSequenceHash } from "$lib/shared/library/services/sequence-content-hasher";
-import { isOneCountSequence } from "$lib/shared/library/domain/sequence-min-length";
+import { isEmptySequence } from "$lib/shared/library/domain/sequence-min-length";
 import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
 import type { ShameCategory } from "$lib/features/hall-of-shame/domain/models/hall-of-shame-models";
 import type { HallOfShameSubmitter } from "$lib/features/hall-of-shame/services/hall-of-shame-submitter";
@@ -146,7 +146,10 @@ export function createSavePanelState(deps: SavePanelDeps) {
 
   const isAlreadyPublished = $derived(savedSequence?.visibility === "public");
 
-  const isTooShort = $derived(!!sequence && isOneCountSequence(sequence));
+  // Only a truly empty (0-step) sequence is too short to save. A 1-count is a
+  // valid personal-library entry; the 4-step community minimum is enforced at
+  // save time (degrade + toast), not by disabling Save here.
+  const isTooShort = $derived(!!sequence && isEmptySequence(sequence));
 
   const canSave = $derived(
     !!tkaName && !isSaving && !isFlagged && !isExactDuplicate && !isTooShort,

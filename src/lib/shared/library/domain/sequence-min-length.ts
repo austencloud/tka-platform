@@ -1,7 +1,10 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
-/** Minimum number of motion steps a sequence must have to be saved or published. */
-export const MIN_SEQUENCE_STEPS = 2;
+/** Absolute floor: a sequence needs at least this many motion steps to be saved at all. */
+export const MIN_SAVE_STEPS = 1;
+
+/** Minimum motion steps required to post a sequence to the community gallery. */
+export const MIN_COMMUNITY_STEPS = 4;
 
 /**
  * Number of motion steps from the persisted source of truth.
@@ -24,7 +27,17 @@ export function getPersistedStepCount(sequence: SequenceData): number {
   return sequence.sequenceLength ?? 0;
 }
 
-/** True when a sequence has too few steps to keep — one motion step or fewer. */
-export function isOneCountSequence(sequence: SequenceData): boolean {
-  return getPersistedStepCount(sequence) < MIN_SEQUENCE_STEPS;
+/** True when a sequence has no motion steps — there is nothing to save. */
+export function isEmptySequence(sequence: SequenceData): boolean {
+  return getPersistedStepCount(sequence) < MIN_SAVE_STEPS;
+}
+
+/**
+ * True when a sequence has enough steps to post to the community gallery.
+ *
+ * Personal libraries have no upper or lower length policy beyond not being empty
+ * (see {@link isEmptySequence}); the community gallery requires {@link MIN_COMMUNITY_STEPS}.
+ */
+export function meetsCommunityMinimum(sequence: SequenceData): boolean {
+  return getPersistedStepCount(sequence) >= MIN_COMMUNITY_STEPS;
 }

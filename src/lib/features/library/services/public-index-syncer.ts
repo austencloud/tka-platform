@@ -45,7 +45,7 @@ import { loopDetector } from "$lib/features/create/generate/circular/services/lo
 import { periodToNumber } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
-import { isOneCountSequence } from "$lib/shared/library/domain/sequence-min-length";
+import { meetsCommunityMinimum, MIN_COMMUNITY_STEPS } from "$lib/shared/library/domain/sequence-min-length";
 
 
 export class PublicIndexSyncer {
@@ -85,8 +85,14 @@ export class PublicIndexSyncer {
       }
     }
 
-    if (isOneCountSequence(sequence)) {
-      throw new Error("Too short to publish. A sequence needs at least 2 steps.");
+    // Authoritative community gate: nothing under the minimum ever enters the
+    // public mirror, regardless of which path called us (save with public
+    // visibility, fork-default-public, explicit publish). Upstream save paths
+    // degrade gracefully before reaching here; this is the invariant backstop.
+    if (!meetsCommunityMinimum(sequence)) {
+      throw new Error(
+        `Needs at least ${MIN_COMMUNITY_STEPS} steps to post to the community gallery.`
+      );
     }
 
     const firestore = await getFirestoreInstance();
