@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import { WORKSPACE_BUTTON_ICON } from "../../workspace-button-layout";
 
   // Props
   const {
@@ -30,7 +31,7 @@
   aria-label="Clear sequence"
   title="Clear sequence"
 >
-  <i class="fa-solid fa-eraser" aria-hidden="true"></i>
+  <i class="fa-solid {WORKSPACE_BUTTON_ICON.clear.icon}" aria-hidden="true"></i>
 </button>
 
 <style>

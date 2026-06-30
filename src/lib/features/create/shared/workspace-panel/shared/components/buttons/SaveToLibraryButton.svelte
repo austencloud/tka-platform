@@ -8,6 +8,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { WORKSPACE_BUTTON_ICON } from "../../workspace-button-layout";
 
   // Props
   let {
@@ -54,7 +55,7 @@
   title={tooltip}
   aria-label="Save to Library"
 >
-  <i class="fa-solid fa-bookmark" aria-hidden="true"></i>
+  <i class="fa-solid {WORKSPACE_BUTTON_ICON.save.icon}" aria-hidden="true"></i>
 </button>
 
 <style>

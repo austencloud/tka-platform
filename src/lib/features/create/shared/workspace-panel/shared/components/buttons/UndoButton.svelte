@@ -3,6 +3,7 @@
   import { UndoOperationType } from "../../../../services/undo-manager";
   import type { createCreateModuleState } from "$lib/features/create/shared/state/create-module-state.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import UndoGlyph from "./UndoGlyph.svelte";
 
   type CreateModuleState = ReturnType<typeof createCreateModuleState>;
 
@@ -105,30 +106,7 @@
   title={undoTooltip()}
   aria-label={undoButtonText()}
 >
-  <svg
-    class="undo-icon"
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <path
-      d="M9 14L4 9L9 4"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
-    <path
-      d="M4 9H15A6 6 0 0 1 15 21H13"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
-  </svg>
+  <UndoGlyph size={20} />
 </button>
 
 <style>
@@ -198,10 +176,5 @@
     opacity: 0.4;
     cursor: not-allowed;
     pointer-events: none;
-  }
-
-  /* Undo icon positioning */
-  .undo-icon {
-    flex-shrink: 0;
   }
 </style>

@@ -14,10 +14,12 @@
   import {
     WORKSPACE_BUTTON_LAYOUT,
     WORKSPACE_BUTTON_TUTORIAL,
+    WORKSPACE_BUTTON_ICON,
     workspaceButtonsInZone,
     type WorkspaceButtonLayoutEntry,
-    type WorkspaceButtonTutorialMeta,
+    type WorkspaceButtonId,
   } from "$lib/features/create/shared/workspace-panel/shared/workspace-button-layout";
+  import UndoGlyph from "$lib/features/create/shared/workspace-panel/shared/components/buttons/UndoGlyph.svelte";
 
   interface Props {
     onAdvance: () => void;
@@ -81,26 +83,11 @@
   const meta = WORKSPACE_BUTTON_TUTORIAL;
 </script>
 
-{#snippet glyph(m: WorkspaceButtonTutorialMeta, size: number)}
-  {#if m.iconType === "svg"}
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M9 14L4 9L9 4"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-      <path
-        d="M4 9H15A6 6 0 0 1 15 21H13"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    </svg>
+{#snippet glyph(id: WorkspaceButtonId, size: number)}
+  {#if WORKSPACE_BUTTON_ICON[id].iconType === "svg"}
+    <UndoGlyph {size} />
   {:else}
-    <i class="fa-solid {m.icon}" aria-hidden="true"></i>
+    <i class="fa-solid {WORKSPACE_BUTTON_ICON[id].icon}" aria-hidden="true"></i>
   {/if}
 {/snippet}
 
@@ -108,7 +95,7 @@
   <div class="button-spot {extraClass}">
     <span class="badge">{entry.order}</span>
     <div class="mock-button {meta[entry.id].colorClass} glow">
-      {@render glyph(meta[entry.id], 18)}
+      {@render glyph(entry.id, 18)}
     </div>
   </div>
 {/snippet}
@@ -188,7 +175,7 @@
       >
         <div class="accordion-header">
           <span class="legend-badge {meta[entry.id].colorClass}">
-            {@render glyph(meta[entry.id], 15)}
+            {@render glyph(entry.id, 15)}
           </span>
           <span class="accordion-label">{meta[entry.id].label}</span>
           <i
