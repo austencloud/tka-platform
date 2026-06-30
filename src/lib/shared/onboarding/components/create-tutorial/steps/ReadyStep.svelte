@@ -72,34 +72,16 @@
     description: string;
   }
 
+  // Order + positions mirror the real workspace ButtonPanel: left group
+  // [Undo, Clear], centered [View/Play], right group [Sequence Actions, Save],
+  // plus the tap-a-step affordance (Step Editor). Keep in sync with ButtonPanel.
   const BUTTONS: ButtonInfo[] = [
     {
       label: "Undo",
       icon: "undo-svg",
       iconType: "svg",
       colorClass: "accent",
-      description: "Removes the last beat you added.",
-    },
-    {
-      label: "Save to Library",
-      icon: "fa-bookmark",
-      iconType: "fa",
-      colorClass: "accent",
-      description: "Stores your sequence so you can find it later.",
-    },
-    {
-      label: "Sequence Actions",
-      icon: "fa-tools",
-      iconType: "fa",
-      colorClass: "success",
-      description: "Mirror, flip, rotate, and transform your sequence.",
-    },
-    {
-      label: "View and Share",
-      icon: "fa-play",
-      iconType: "fa",
-      colorClass: "success",
-      description: "Watch your sequence animated with props, or share it.",
+      description: "Removes the last step you added.",
     },
     {
       label: "Clear",
@@ -109,11 +91,32 @@
       description: "Wipes the sequence so you can start fresh.",
     },
     {
+      label: "View and Share",
+      icon: "fa-play",
+      iconType: "fa",
+      colorClass: "success",
+      description: "Watch your sequence animated with props, or share it.",
+    },
+    {
+      label: "Sequence Actions",
+      icon: "fa-tools",
+      iconType: "fa",
+      colorClass: "success",
+      description: "Mirror, flip, rotate, and transform your sequence.",
+    },
+    {
+      label: "Save to Library",
+      icon: "fa-bookmark",
+      iconType: "fa",
+      colorClass: "accent",
+      description: "Stores your sequence so you can find it later.",
+    },
+    {
       label: "Step Editor",
       icon: "fa-hand-pointer",
       iconType: "fa",
       colorClass: "info",
-      description: "Tap any beat to adjust turns, rotation, and duration.",
+      description: "Tap any step to adjust turns, rotation, and duration.",
     },
   ];
 </script>
@@ -128,42 +131,7 @@
   <div class="workspace-mockup desktop-only">
     <div class="workspace-panel">
       <div class="top-bar">
-        <div class="button-spot">
-          <span class="badge">1</span>
-          <div class="mock-button accent glow">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M9 14L4 9L9 4"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M4 9H15A6 6 0 0 1 15 21H13"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </div>
-        </div>
-
         <span class="word-label">{displayWord}</span>
-
-        <div class="button-spot">
-          <span class="badge">2</span>
-          <div class="mock-button accent glow">
-            <i class="fa-solid fa-bookmark" aria-hidden="true"></i>
-          </div>
-        </div>
       </div>
 
       <div class="grid-area">
@@ -177,30 +145,72 @@
         {/if}
 
         <div class="tap-hint">
+          <span class="badge grid-badge">6</span>
           <i class="fas fa-hand-pointer" aria-hidden="true"></i>
-          <span>Tap any beat to edit it</span>
+          <span>Tap any step to edit it</span>
         </div>
       </div>
 
-      <div class="bottom-bar">
-        <div class="button-spot">
-          <span class="badge">3</span>
-          <div class="mock-button success glow">
-            <i class="fas fa-tools" aria-hidden="true"></i>
+      <!-- Mirrors the real ButtonPanel: [Undo, Clear] pinned left, Play
+           absolutely centered (can't drift), [Sequence Actions, Save] right. -->
+      <div class="button-bar">
+        <div class="btn-group">
+          <div class="button-spot">
+            <span class="badge">1</span>
+            <div class="mock-button accent glow">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M9 14L4 9L9 4"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M4 9H15A6 6 0 0 1 15 21H13"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <div class="button-spot">
+            <span class="badge">2</span>
+            <div class="mock-button error glow">
+              <i class="fa-solid fa-broom" aria-hidden="true"></i>
+            </div>
           </div>
         </div>
 
-        <div class="button-spot">
-          <span class="badge">4</span>
+        <div class="button-spot center-spot">
+          <span class="badge">3</span>
           <div class="mock-button success glow">
             <i class="fas fa-play" aria-hidden="true"></i>
           </div>
         </div>
 
-        <div class="button-spot">
-          <span class="badge">5</span>
-          <div class="mock-button error glow">
-            <i class="fa-solid fa-broom" aria-hidden="true"></i>
+        <div class="btn-group">
+          <div class="button-spot">
+            <span class="badge">4</span>
+            <div class="mock-button success glow">
+              <i class="fas fa-tools" aria-hidden="true"></i>
+            </div>
+          </div>
+
+          <div class="button-spot">
+            <span class="badge">5</span>
+            <div class="mock-button accent glow">
+              <i class="fa-solid fa-bookmark" aria-hidden="true"></i>
+            </div>
           </div>
         </div>
       </div>
@@ -336,7 +346,7 @@
   .top-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     padding: 10px 14px;
     flex-shrink: 0;
   }
@@ -385,12 +395,36 @@
     50% { opacity: 1; }
   }
 
-  .bottom-bar {
+  .button-bar {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 10px 20px;
     flex-shrink: 0;
+  }
+
+  .btn-group {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+
+  /* Play is anchored dead-center like the real ButtonPanel, so it can never
+     drift with the side groups' widths. */
+  .center-spot {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Inline number badge for the in-grid "tap a step" hint (badge 6). */
+  .tap-hint .grid-badge {
+    position: static;
+    width: 18px;
+    height: 18px;
   }
 
   .button-spot {
