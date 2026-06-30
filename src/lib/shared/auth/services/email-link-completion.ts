@@ -113,6 +113,22 @@ export async function completeEmailLinkSignIn(): Promise<EmailLinkCompletionResu
 
     window.localStorage.removeItem(EMAIL_FOR_SIGN_IN_KEY);
 
+    // Magic-link accounts have no password. If this account is email-only (no
+    // OAuth provider to fall back on), flag it to require setting one. The boot
+    // cloud-sync clears this if the account already has a password (e.g. an
+    // existing account reached via the collision path), so it never traps a
+    // password-haver. OAuth accounts are exempt.
+    const user = auth.currentUser;
+    const hasOAuth = !!user?.providerData.some(
+      (p) => p.providerId === "google.com" || p.providerId === "facebook.com"
+    );
+    if (user && !hasOAuth) {
+      const { passwordOnboardingState } = await import(
+        "$lib/shared/onboarding/state/password-onboarding-state.svelte"
+      );
+      passwordOnboardingState.markRequired();
+    }
+
     // Strip the consumed Firebase link params from the URL so a reload doesn't
     // replay an already-used link (which throws auth/invalid-action-code) and
     // the address bar reads clean. Stays on the same route.

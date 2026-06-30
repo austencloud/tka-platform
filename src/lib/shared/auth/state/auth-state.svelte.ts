@@ -583,6 +583,16 @@ export async function signOut(): Promise<void> {
       // First-run state may not be loaded - that's ok
     }
 
+    // Same for password-onboarding sync, so the next sign-in re-evaluates the
+    // required set-password gate against fresh cloud state.
+    try {
+      const { passwordOnboardingState } =
+        await import("../../onboarding/state/password-onboarding-state.svelte");
+      passwordOnboardingState.resetCloudSync();
+    } catch {
+      // Not loaded - that's ok
+    }
+
     // Mark user as offline in presence system before signing out
     try {
       const presenceService = getPresenceTracker();

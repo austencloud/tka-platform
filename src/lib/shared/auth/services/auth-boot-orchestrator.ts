@@ -99,6 +99,24 @@ export async function initializeChildServices(
       }
     });
 
+  // Sync password-onboarding status FROM cloud (drives the required set-password
+  // gate for email-only accounts; clears it if a password was set on another device)
+  import("$lib/shared/onboarding/state/password-onboarding-state.svelte")
+    .then(async ({ passwordOnboardingState }) => {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      await passwordOnboardingState.syncFromCloud();
+    })
+    .catch(async (error) => {
+      console.warn("⚠️ [authState] Password-onboarding sync failed:", error);
+      try {
+        const { passwordOnboardingState } = await import("$lib/shared/onboarding/state/password-onboarding-state.svelte");
+        passwordOnboardingState.markCloudSyncComplete();
+      } catch {
+        // Non-fatal; localStorage carries the flag
+      }
+    });
+
   // Initialize onboarding Firebase sync (non-blocking)
   import("$lib/shared/onboarding/config/storage-keys")
     .then(async (onboardingModule) => {

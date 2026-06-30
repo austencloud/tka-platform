@@ -30,6 +30,7 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
   import InboxSubscriptionProvider from "../../inbox/components/InboxSubscriptionProvider.svelte";
   import { myFeedbackDetailState } from "$lib/shared/feedback/state/my-feedback-detail-state.svelte";
   import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
+  import { passwordOnboardingState } from "../../onboarding/state/password-onboarding-state.svelte.ts";
   import { appEntryState } from "../../onboarding/state/app-entry-state.svelte.ts";
   import SendSequenceSheetHost from "../../inbox/components/SendSequenceSheetHost.svelte";
   import { propDrawerState } from "../../settings/state/prop-drawer-state.svelte";
@@ -540,6 +541,27 @@ import type { SheetType } from "../../navigation/services/types";
               }}
             />
           {/if}
+        {/await}
+      </div>
+    {:else if isFullAccount && passwordOnboardingState.required && (passwordOnboardingState.syncInProgress || !passwordOnboardingState.cloudSynced)}
+      <!-- Hold for cloud sync before showing the password gate, so an account
+           that already set a password elsewhere (reached via the collision path)
+           never flashes the wizard. -->
+      <div class="fullscreen-overlay">
+        <div class="auth-loading">
+          <div class="auth-loading-spinner"></div>
+          <p>Loading preferences...</p>
+        </div>
+      </div>
+    {:else if isFullAccount && passwordOnboardingState.required}
+      <!-- Required set-password gate for passwordless (magic-link) accounts.
+           Independent of first-run so it also catches accounts that finished
+           the name card on a prior session. -->
+      <div class="fullscreen-overlay">
+        {#await import("../../onboarding/components/first-run/SetPasswordWizard.svelte") then mod}
+          <mod.default
+            onComplete={() => passwordOnboardingState.markHasPassword()}
+          />
         {/await}
       </div>
     {:else if appEntryState.isCreateTutorial()}

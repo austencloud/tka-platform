@@ -133,6 +133,13 @@ export async function signUpWithEmail(
     await updateProfile(userCredential.user, { displayName: name.trim() });
   }
 
+  // This account was created WITH a password, so it must never see the
+  // required set-password gate (which targets passwordless magic-link accounts).
+  const { passwordOnboardingState } = await import(
+    "$lib/shared/onboarding/state/password-onboarding-state.svelte"
+  );
+  passwordOnboardingState.markHasPassword();
+
   await sendEmailVerification(userCredential.user);
 }
 
