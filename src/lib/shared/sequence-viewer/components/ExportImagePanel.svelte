@@ -72,6 +72,9 @@
     });
   });
   const isOneSpot = $derived(infoCellCount === 1);
+  // Zero info cells (start position hidden, or a 1-count) means a QR/mandala has
+  // nowhere to render — hide the controls entirely rather than offer dead toggles.
+  const hasInfoCell = $derived(infoCellCount >= 1);
 
   // Guests cannot render a scannable QR — drop the QR segment for them so the
   // lone cell can never resolve to a blank QR.
@@ -249,19 +252,21 @@
           <div class="field">
             <span class="field-label">Info</span>
             <div class="rt-chip-row">
-              {#if isOneSpot}
-                <div class="seg-fill">
-                  <SegmentedControl
-                    options={infoCellOptions}
-                    value={infoCellChoice}
-                    onchange={(v) => imageComposition.setInfoCellChoiceForStepCount(stepCount, v)}
-                    color="accent"
-                    size="sm"
-                  />
-                </div>
-              {:else}
-                <button type="button" class="rt-chip" aria-pressed={showQRCode} onclick={() => imageComposition.setShowQRCode(!showQRCode)}><i class="fas fa-qrcode" aria-hidden="true"></i> QR</button>
-                <button type="button" class="rt-chip" aria-pressed={showMandala} onclick={() => imageComposition.setShowMandala(!showMandala)}><i class="fas fa-asterisk" aria-hidden="true"></i> Mandala</button>
+              {#if hasInfoCell}
+                {#if isOneSpot}
+                  <div class="seg-fill">
+                    <SegmentedControl
+                      options={infoCellOptions}
+                      value={infoCellChoice}
+                      onchange={(v) => imageComposition.setInfoCellChoiceForStepCount(stepCount, v)}
+                      color="accent"
+                      size="sm"
+                    />
+                  </div>
+                {:else}
+                  <button type="button" class="rt-chip" aria-pressed={showQRCode} onclick={() => imageComposition.setShowQRCode(!showQRCode)}><i class="fas fa-qrcode" aria-hidden="true"></i> QR</button>
+                  <button type="button" class="rt-chip" aria-pressed={showMandala} onclick={() => imageComposition.setShowMandala(!showMandala)}><i class="fas fa-asterisk" aria-hidden="true"></i> Mandala</button>
+                {/if}
               {/if}
               <button type="button" class="rt-chip" aria-pressed={showStartPos} onclick={() => imageComposition.setIncludeStartPosition(!showStartPos)}>Start</button>
               {#if showStartPos}
@@ -385,6 +390,7 @@
         </div>
       </div>
 
+      {#if hasInfoCell}
       {#if isOneSpot}
         <!-- One info cell: QR and Mandala compete for it -> single chooser. -->
         <div class="setting-row">
@@ -421,6 +427,7 @@
             >Mandala</button>
           </div>
         </div>
+      {/if}
       {/if}
 
       <div class="setting-row">
