@@ -10,10 +10,9 @@
   interface Props {
     onNext: (displayName: string) => void;
     onBack?: () => void;
-    onSkip: () => void;
   }
 
-  const { onNext, onBack, onSkip }: Props = $props();
+  const { onNext, onBack }: Props = $props();
 
   // Get existing display name from auth (Google/email signup already collected this)
   const authDisplayName = $derived(authState.user?.displayName || "");
@@ -133,10 +132,6 @@
       </button>
     </div>
   </form>
-
-  <button type="button" class="skip-link" onclick={onSkip}>
-    Skip for now
-  </button>
 </div>
 
 <style>
@@ -360,21 +355,6 @@
     transform: scale(0.98);
   }
 
-  .skip-link {
-    padding: 10px 16px;
-    background: transparent;
-    border: none;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: color var(--duration-normal) ease;
-    margin-top: 4px;
-  }
-
-  .skip-link:hover {
-    color: var(--theme-text, rgba(255, 255, 255, 0.8));
-  }
-
   /* Mobile */
   @media (max-width: 480px) {
     .display-name-step {
@@ -407,7 +387,6 @@
     .name-input,
     .back-button,
     .next-button,
-    .skip-link,
     .edit-button,
     .cancel-edit {
       transition: none;

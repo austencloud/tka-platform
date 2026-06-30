@@ -25,9 +25,9 @@
     forcePreview?: boolean;
   }
 
-  // The name card always finishes through onComplete — "Skip for now" just
-  // completes without a custom name. There is no skip-distinct-from-complete
-  // outcome, so the wizard exposes no onSkip.
+  // The name card finishes through onComplete once a name is entered. Naming is
+  // mandatory for the accounts that see this card (the nameless sign-up paths),
+  // so there is no skip and no skip-distinct-from-complete outcome.
   const { onComplete, forcePreview = false }: Props = $props();
 
   let hapticService: HapticFeedback | null = null;
@@ -75,16 +75,12 @@
     void completeWith(name);
   }
 
-  function handleSkip() {
-    hapticService?.trigger("selection");
-    onComplete();
-  }
 </script>
 
 {#if showCard}
   <div class="first-run-wizard" class:animate-in={animateIn}>
     <div class="step-container">
-      <DisplayNameStep onNext={handleNameComplete} onSkip={handleSkip} />
+      <DisplayNameStep onNext={handleNameComplete} />
     </div>
   </div>
 {/if}
