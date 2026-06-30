@@ -11,8 +11,9 @@ const AAA_TAGS = [
 
 /**
  * Assert the rendered subtree has no axe accessibility violations (WCAG AAA).
- * `color-contrast` is disabled because isolated component tests lack the app's
- * theme variables; contrast is validated in-app / by the accessibility-auditor.
+ * `color-contrast` and `region` are disabled because isolated component tests
+ * lack the app's theme variables and page landmarks; both are validated in-app
+ * / by the accessibility-auditor, not at the component-isolation level.
  * Pass `{ soft: true }` to log violations without failing (only while
  * remediating a known-dirty primitive).
  */
@@ -22,7 +23,11 @@ export async function expectNoA11yViolations(
 ): Promise<void> {
   const results = await axe.run(container, {
     runOnly: { type: "tag", values: AAA_TAGS },
-    rules: { "color-contrast": { enabled: false } },
+    rules: {
+      "color-contrast": { enabled: false },
+      // `region` needs page landmarks; isolated component tests have none.
+      region: { enabled: false },
+    },
   });
   if (results.violations.length === 0) return;
 
