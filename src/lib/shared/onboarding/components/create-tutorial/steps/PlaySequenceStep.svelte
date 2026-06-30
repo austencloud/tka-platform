@@ -175,7 +175,13 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
       <p class="loading">Building sequence...</p>
     {:else if showCard}
       <div class="card-pane">
-        <ChoreoCard sequence={tutorialSequence} darkMode={isDarkMode} />
+        <!-- Force the start position into its own left column (not the top row),
+             independent of the user's saved layout preference. -->
+        <ChoreoCard
+          sequence={tutorialSequence}
+          darkMode={isDarkMode}
+          startPositionLayoutOverride="column"
+        />
       </div>
     {:else}
       <div class="animation-pane">
