@@ -3,6 +3,7 @@ import type { SequenceData } from "../../foundation/domain/models/sequence-data"
 import type { ShareOptions } from "../domain/models/share-options";
 import { PreviewCache } from "./preview-cache";
 import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
+import { buildCardRenderOptions } from "./card-render-options";
 
 export class Sharer {
   private previewCache = new PreviewCache();
@@ -59,6 +60,38 @@ export class Sharer {
     onProgress?: ImageGenerationProgressCallback
   ): Promise<Blob> {
     const renderOptions = this.convertToRenderOptions(options, sequence.dateAdded);
+
+    return await this.renderService.renderSequenceToBlob(
+      sequence,
+      renderOptions,
+      onProgress
+    );
+  }
+
+  /**
+   * Render the user's CARD (front) as a blob, funnelled through
+   * buildCardRenderOptions — the single source of truth shared with the viewer
+   * export, the QR scan page, copy/download/share, and the save-panel preview.
+   * Unlike getImageBlob (the legacy ShareOptions path) this honors every card
+   * toggle: prop type, QR, mandala, LOOP glyph, grid, columns, start-layout and
+   * footer. Used by the library save thumbnail so the saved PNG matches what the
+   * preview shows.
+   */
+  async getCardImageBlob(
+    sequence: SequenceData,
+    opts: { darkMode: boolean; userName: string },
+    onProgress?: ImageGenerationProgressCallback
+  ): Promise<Blob> {
+    const renderOptions = {
+      stepSize: 240,
+      format: "PNG" as const,
+      quality: 1.0,
+      ...buildCardRenderOptions(sequence, {
+        darkMode: opts.darkMode,
+        userName: opts.userName,
+        isHandPath: !!sequence.metadata?.isHandPathVisualization,
+      }),
+    };
 
     return await this.renderService.renderSequenceToBlob(
       sequence,

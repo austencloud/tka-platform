@@ -71,12 +71,18 @@
 {/if}
 
 <style>
-  /* Footer section */
+  /* Footer section — three fixed lanes (name | notes | date). Explicit grid
+     columns keep each element in its own lane regardless of which siblings
+     render, so the centered branding can never overlap the name/date and the
+     box never resizes when the text changes (a flex + absolute-centered note
+     used to collide on narrow cards). min-width:0 lets each lane truncate with
+     an ellipsis instead of overflowing into its neighbor. */
   .footer-section {
     position: relative;
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
     align-items: center;
-    justify-content: space-between;
+    column-gap: 10px;
     background: rgba(245, 245, 245, 0.98);
     border-top: 1px solid rgba(0, 0, 0, 0.1);
     font-family: Georgia, serif;
@@ -94,20 +100,40 @@
   }
 
   .footer-name {
+    grid-column: 1;
+    justify-self: start;
     font-weight: bold;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .footer-notes {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    grid-column: 2;
+    justify-self: center;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .footer-birthday {
-    margin-left: auto;
+    grid-column: 3;
+    justify-self: end;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .footer-path-shape {
+    grid-column: 2;
+    justify-self: center;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: inherit;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-style: italic;

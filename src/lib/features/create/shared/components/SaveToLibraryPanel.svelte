@@ -26,12 +26,15 @@
   import { getHallOfShameSubmitter } from "$lib/features/hall-of-shame/get-hall-of-shame-submitter";
   import { createSavePanelState } from "../state/save-panel-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
-  // The preview must mirror the artifact the save will actually generate. The
-  // saved thumbnail reads includeStartPosition from these composition settings
-  // (see LibrarySaveService.generateAndUploadThumbnail); without this the
-  // preview hardcoded the start position on while the saved image left it off.
+  // The preview must mirror the artifact the save will actually generate. Both
+  // the saved thumbnail (LibrarySaveService.generateAndUploadThumbnail) and this
+  // preview now read every card toggle from the same composition settings +
+  // app-settings prop type, so prop / QR / mandala / footer all agree with the
+  // saved PNG instead of drifting (they used to share only includeStartPosition).
   const compositionManager = getImageCompositionManager();
+  const appSettings = getSettings();
 
   interface Props {
     show: boolean;
@@ -141,30 +144,35 @@
     </div>
 
     <div class="panel-body">
-      <!-- Sequence Preview -->
+      <!-- Sequence Preview — WYSIWYG: the same card the save will produce.
+           Every toggle comes from the composition manager / app settings (the
+           same sources buildCardRenderOptions reads for the saved PNG), so the
+           prop, QR, mandala, LOOP glyph and footer match the saved file on every
+           screen size (desktop included). -->
       {#if s.sequence}
-        {#if s.isMobileLayout}
-          <div class="choreo-group">
-            <div class="choreo-preview">
-              <ChoreoCard
-                sequence={{ ...s.sequence, word: s.tkaName }}
-                darkMode={s.darkMode}
-                userName={s.creatorName}
-                includeStartPosition={compositionManager.includeStartPosition}
-                showCreatorName={true}
-                showBirthday={true}
-                showNotes={true}
-                showDifficultyLevel={true}
-                showLoopGlyph={true}
-              />
-            </div>
+        <div class="choreo-group">
+          <div class="choreo-preview">
+            <ChoreoCard
+              sequence={{ ...s.sequence, word: s.tkaName }}
+              darkMode={s.darkMode}
+              userName={s.creatorName}
+              forceContain={true}
+              bluePropType={appSettings.bluePropType}
+              redPropType={appSettings.redPropType}
+              showWord={compositionManager.addWord}
+              showStepNumbers={compositionManager.addStepNumbers}
+              showDifficultyLevel={compositionManager.addDifficultyLevel}
+              includeStartPosition={compositionManager.includeStartPosition}
+              showCreatorName={compositionManager.showCreatorName}
+              showNotes={compositionManager.showNotes}
+              showBirthday={compositionManager.showBirthday}
+              showLoopGlyph={compositionManager.showLoopGlyph}
+              showQRCode={compositionManager.showQRCode}
+              showMandala={compositionManager.showMandala}
+              columnCount={compositionManager.getColumnCountForStepCount(s.sequence.steps?.length ?? 0)}
+            />
           </div>
-        {:else}
-          <!-- Desktop: compact word display (workspace visible behind panel) -->
-          <div class="word-display">
-            <span class="word-text">{s.tkaName}</span>
-          </div>
-        {/if}
+        </div>
 
         <!-- Compact info row: variation / saved status (fixed-height slot) -->
         <div class="info-row">
@@ -839,19 +847,4 @@
       transition: none;
     }
   }
-
-  /* Desktop: compact word display */
-  .word-display {
-    text-align: center;
-    padding: 16px;
-  }
-
-  .word-text {
-    font-family: Georgia, serif;
-    font-size: var(--font-size-2xl, 1.5rem);
-    font-weight: 600;
-    color: var(--theme-text);
-    letter-spacing: 0.05em;
-  }
-
 </style>

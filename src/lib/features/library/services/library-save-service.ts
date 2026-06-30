@@ -20,7 +20,6 @@ import type { SequenceVisibility } from "$lib/shared/library/domain/models/libra
 import { findTagByName, createUserTag } from "./tag-manager";
 import type { ArtifactExtractor } from "./artifact-extractor";
 import { TAG_COLORS } from "../domain/models/tag";
-import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/share-options";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte.ts";
 import type {
   SaveToLibraryOptions, SaveProgress, SaveResult } from "./types";
@@ -279,39 +278,25 @@ export class LibrarySaveService {
     }
 
     try {
-      // Get image composition settings from visibility settings
+      // Build the saved thumbnail through the one canonical card-render builder
+      // (buildCardRenderOptions, via Sharer.getCardImageBlob) so the saved PNG
+      // matches the viewer card AND the save-panel preview — prop type, QR,
+      // mandala, LOOP glyph, columns, start-layout and footer all come from the
+      // user's composition settings. The old path hand-built a ShareOptions
+      // subset that dropped QR + mandala and never read the selected prop.
       const imageCompositionManager = getImageCompositionManager();
-      const compositionSettings = imageCompositionManager.getSettings();
+      const userName = authState.user?.displayName || "";
 
-      const thumbnailOptions = {
-        ...DEFAULT_SHARE_OPTIONS,
-        addWord: compositionSettings.addWord,
-        addStepNumbers: compositionSettings.addStepNumbers,
-        addDifficultyLevel: compositionSettings.addDifficultyLevel,
-        addUserInfo: compositionSettings.addUserInfo,
-        includeStartPosition: compositionSettings.includeStartPosition,
-        format: "PNG" as const,
-      };
-
-      // Try to reuse cached preview if available
-      let imageBlob = await this.shareService.getCachedBlobIfAvailable(
+      const imageBlob = await this.shareService.getCardImageBlob(
         sequence,
-        thumbnailOptions
+        { darkMode: imageCompositionManager.darkMode, userName },
+        (progress: { current: number; total: number; stage: string }) => {
+          emitProgress(1, {
+            current: progress.current,
+            total: progress.total,
+          });
+        }
       );
-
-      if (!imageBlob) {
-        // Cache miss - generate thumbnail with progress tracking
-        imageBlob = await this.shareService.getImageBlob(
-          sequence,
-          thumbnailOptions,
-          (progress: { current: number; total: number; stage: string }) => {
-            emitProgress(1, {
-              current: progress.current,
-              total: progress.total,
-            });
-          }
-        );
-      }
 
       // Step 2: Upload thumbnail
       emitProgress(2);
