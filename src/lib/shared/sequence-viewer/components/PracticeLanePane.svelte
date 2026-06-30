@@ -20,6 +20,7 @@
     bluePropType = null,
     redPropType = null,
     onSeek = null,
+    showStartCell = false,
   }: {
     sequence: SequenceData | null | undefined;
     /** Float step from playback (integer step + fractional progress). */
@@ -30,14 +31,26 @@
     redPropType?: PropType | null;
     /** Jump playback to a step (0 = start position, 1..N = beats). */
     onSeek?: ((stepNumber: number) => void) | null;
+    /** Pre-roll count-in: include + focus the start-position tile so the lane
+     *  matches the start pose parked on the canvas. Off during the running loop. */
+    showStartCell?: boolean;
   } = $props();
 
-  // Practice loops continuously, so drop the start-position cell: its pose equals
-  // the sequence's end, and the lane shouldn't travel back through it each loop.
-  // Beats only, cycled. currentStep is shifted −1 so beat k focuses its own cell
-  // now that the start segment [0,1) no longer has a cell of its own.
-  const cells = $derived(buildNotationCells(sequence).filter((c) => !c.isStart));
-  const shiftedStep = $derived((currentStep ?? 0) - 1);
+  // Practice loops continuously, so during the running loop we drop the
+  // start-position cell: its pose equals the sequence's end, and the lane
+  // shouldn't travel back through it each loop. Beats only, cycled; currentStep
+  // is shifted −1 so beat k focuses its own cell.
+  //
+  // Exception — the pre-roll count-in (showStartCell): the canvas is parked at
+  // the start pose, so the lane shows the start tile focused to match. Beat 1
+  // would show its props at the END of the beat, a different place. No −1 shift
+  // then, so step 0 focuses the start cell at index 0.
+  const cells = $derived(
+    showStartCell
+      ? buildNotationCells(sequence)
+      : buildNotationCells(sequence).filter((c) => !c.isStart)
+  );
+  const shiftedStep = $derived(showStartCell ? (currentStep ?? 0) : (currentStep ?? 0) - 1);
 
   // Wide aspect → side-by-side tall column → fill its height with a big focus
   // pictograph (a fixed px reads tiny on a large monitor). Portrait foot keeps
@@ -51,22 +64,35 @@
     mq.addEventListener("change", on);
     return () => mq.removeEventListener("change", on);
   });
+
+  // Defer the read-ahead strip's pictograph render until after the enter slide
+  // settles. The lane is parked off-screen during setup, so rendering all its
+  // cells up front only blocks the enter transition (measured ~116ms). 360ms is
+  // past the 300ms deck slide and well before a user finishes the setup screen,
+  // so the strip is populated by the time they hit Start.
+  let laneReady = $state(false);
+  $effect(() => {
+    const id = setTimeout(() => (laneReady = true), 360);
+    return () => clearTimeout(id);
+  });
 </script>
 
 <div class="practice-lane">
-  <BeatStrip
-    {cells}
-    currentStep={shiftedStep}
-    {bpm}
-    {cellSize}
-    {bluePropType}
-    {redPropType}
-    beatPulse={true}
-    onCellClick={onSeek}
-    anchor="start"
-    fillHeight={wide}
-    loop={true}
-  />
+  {#if laneReady}
+    <BeatStrip
+      {cells}
+      currentStep={shiftedStep}
+      {bpm}
+      {cellSize}
+      {bluePropType}
+      {redPropType}
+      beatPulse={true}
+      onCellClick={onSeek}
+      anchor="start"
+      fillHeight={wide}
+      loop={true}
+    />
+  {/if}
 </div>
 
 <style>

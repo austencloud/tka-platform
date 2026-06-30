@@ -847,6 +847,7 @@
             bluePropType={propRendering.bluePropType}
             redPropType={propRendering.redPropType}
             onSeek={onProgressBarSeek ?? null}
+            showStartCell={practiceCountdown > 0}
           />
         </div>
       {/if}
