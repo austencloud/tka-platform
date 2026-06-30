@@ -35,6 +35,7 @@
   import { compositeStepNumberOnBlob } from "../services/step-number-compositor";
   import { deriveCacheKey } from "../services/cell-cache-key-deriver";
   import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
+  import { markScan, reportScanToStable } from "$lib/shared/analytics/scan-perf";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
@@ -939,6 +940,12 @@
       for (const url of oldBlobUrls) {
         URL.revokeObjectURL(url);
       }
+
+      // Instrumentation: the static grid is now stable. No-ops off the scan
+      // route (scan:start is only marked by /q/[code]). markScan is idempotent
+      // and reportScanToStable is one-shot, so this is safe to reach repeatedly.
+      markScan("all-cells-stable");
+      reportScanToStable();
     } catch (error) {
       console.error("Failed to render cells:", error);
     } finally {

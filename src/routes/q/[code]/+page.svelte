@@ -33,6 +33,7 @@
   import { registerLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
+  import { markScan } from "$lib/shared/analytics/scan-perf";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
   import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -377,6 +378,7 @@
   }
 
   onMount(async () => {
+    markScan("start");
     if (browser) {
       const checkViewport = () => {
         viewportWidth = window.innerWidth;
@@ -454,6 +456,7 @@
       ]);
 
       let seq = seq_;
+      markScan("shortcode-resolved");
       if (!seq) {
         stopTrickle();
         pageState = { kind: "error", message: "Sequence not found" };
@@ -468,6 +471,7 @@
       });
 
       resolvedSeq = seq;
+      markScan("hydrated");
       const word = seq.word || seq.name || "Sequence";
       seqWord = word;
 
@@ -538,6 +542,7 @@
       stopTrickle();
       setProgress(100);
       pageState = { kind: "playing", word };
+      markScan("card-mount");
 
       // Clean load → re-arm the module-chunk self-heal so a later mid-write edit
       // can trigger one fresh recovery reload again (the guard is one-shot).
