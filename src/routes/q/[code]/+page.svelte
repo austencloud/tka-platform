@@ -454,12 +454,16 @@
       const genuine = !isInlineEncoded(shortCode) && isGenuineScan(shortCode);
       const scanPrintId = page.url.searchParams.get("pid") || null;
 
+      // Run the orchestrator/split-pane chunk loads CONCURRENTLY with the full
+      // glyph-cache init instead of chaining the orchestrator behind it. Glyph
+      // init stays awaited — a cold-scan local cell render (cloud miss) needs
+      // the cache populated before the card paints — but it no longer serializes
+      // in front of the chunk import, trimming the critical path by the import time.
       const [seq_, OrchestratorModule, SplitPaneModule] = await Promise.all([
         shortCodeManager.resolveShortCode(shortCode),
-        getGlyphCache().initialize().then(() =>
-          import("$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte")
-        ),
+        import("$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte"),
         import("$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte"),
+        getGlyphCache().initialize(),
       ]);
 
       let seq = seq_;
