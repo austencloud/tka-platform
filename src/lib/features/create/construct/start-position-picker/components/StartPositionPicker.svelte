@@ -271,7 +271,8 @@ Controls moved below the grid for better UX
     {/key}
   </div>
 
-  <!-- Controls Footer - below grid -->
+  <!-- Controls Footer - below grid (hidden when embedded, e.g. the create tutorial) -->
+  {#if !embedded}
   <div class="controls-footer">
     <div class="orientation-controls">
       <OrientationCycler
@@ -345,6 +346,7 @@ Controls moved below the grid for better UX
       </button>
     </div>
   </div>
+  {/if}
 </div>
 
 <style>
