@@ -48,6 +48,7 @@
   import type { SplitConfig } from "$lib/shared/sequence-viewer/services/viewer-state-persistence";
   import type { ContentType, ViewerMode } from "$lib/shared/sequence-viewer/state/viewer-state.svelte";
   import type { OrchestratorContext } from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
+  import { setScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
   import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
   import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/sequence-modal-exporter.svelte";
@@ -59,6 +60,12 @@
   import ToastContainer from "$lib/shared/toast/components/ToastContainer.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
   import type { ExportPhase } from "$lib/shared/video-export/components/ExportTakeover.svelte";
+
+  // Scan cards download pre-rendered pictographs from the shared cloud store
+  // instead of rasterizing on the scanner's device. Enables probeCloud on every
+  // descendant ChoreoCard cell render. Must be set during component init (not in
+  // onMount) so the Svelte context resolves for the descendant viewer tree.
+  setScanCardCloudProbe(true);
 
   const BASE_BPM = 60;
 
@@ -489,7 +496,11 @@
         (seq.intendedProp?.bluePropType as PropType | undefined) ??
         null;
       if (seedProp) {
-        updateSettings({ bluePropType: seedProp, redPropType: seedProp });
+        updateSettings({
+          bluePropType: seedProp,
+          redPropType: seedProp,
+          catDogMode: seq.intendedProp?.catDogMode ?? false,
+        });
       }
 
       OrchestratorComponent = OrchestratorModule.default;

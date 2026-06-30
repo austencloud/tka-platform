@@ -40,6 +40,7 @@
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
+  import { getScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
   import { calculateTimelineRowsByBeatCount } from "$lib/shared/create/utils/grid-calculations";
   import type { TimelineRow } from "$lib/shared/create/utils/grid-calculations";
 
@@ -278,6 +279,9 @@
   });
   const effShowQRCode = $derived(effectiveInfoCell.showQRCode);
   const effShowMandala = $derived(effectiveInfoCell.showMandala);
+
+  // True only under the /q scan route — makes cells download from the cloud.
+  const cloudProbeEnabled = getScanCardCloudProbe();
 
   // Motion visibility: viewer-scoped. When rendered outside a viewer
   // (browse previews, export pipeline), fall back to always-visible.
@@ -571,6 +575,10 @@
       // Drives renderCell to composite the step number onto the (number-free)
       // base cell so it bakes into the image and crossfades in lockstep.
       showStepNumbers,
+      // Cloud tier: only the /q scan route sets this (via scan-card-cloud
+      // context), so a cold scanner downloads pre-rendered cells instead of
+      // rasterizing. Unset everywhere else => local render path, no extra latency.
+      probeCloud: cloudProbeEnabled,
     };
   }
 
