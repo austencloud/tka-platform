@@ -29,7 +29,6 @@
   );
 
   const stepCount = $derived(createTutorialState.beats.length);
-  const beatsRemaining = $derived(createTutorialState.beatsRemaining);
 
   // Use the grid mode stored when the start position was picked
   const currentGridMode = $derived(createTutorialState.gridMode);
@@ -52,14 +51,8 @@
 
 <div class="tutorial-step">
   <div class="step-header">
-    <h1 class="title">Add beat {stepCount + 1} of {REQUIRED_BEATS}</h1>
-    <p class="subtitle">
-      {#if beatsRemaining > 1}
-        Pick a move. {beatsRemaining} beats left.
-      {:else}
-        Last one. Pick your final beat.
-      {/if}
-    </p>
+    <h1 class="title">Add step {stepCount + 1} of {REQUIRED_BEATS}</h1>
+    <p class="subtitle">Tap a step to add it.</p>
   </div>
 
   <div class="picker-container">
