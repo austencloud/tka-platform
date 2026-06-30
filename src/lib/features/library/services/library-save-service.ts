@@ -14,6 +14,7 @@
  */
 
 import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+import { warmSequenceCells } from "./warm-sequence-cells";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceVisibility } from "$lib/shared/library/domain/models/library-sequence";
 import { findTagByName, createUserTag } from "./tag-manager";
@@ -136,6 +137,20 @@ export class LibrarySaveService {
     emitProgress(4);
     this.syncToFirestore(sequence, { name, displayName, visibility, tags, notes: notes ?? "", thumbnailUrl })
       .catch(err => console.warn("[LibrarySaveService] Firestore sync pending:", err));
+
+    // Fire-and-forget: pre-render this sequence's pictograph cells to the cloud
+    // store (canonical visibility + intendedProp) so the first person to scan
+    // its QR downloads images instead of rendering them on their phone. Never
+    // blocks or fails the save.
+    if (typeof window !== "undefined") {
+      const ip = sequenceToSave.intendedProp;
+      void warmSequenceCells(sequenceToSave, {
+        isDark: true,
+        bluePropType: ip?.bluePropType,
+        redPropType: ip?.redPropType,
+        catDogMode: ip?.catDogMode ?? false,
+      }).catch(() => {});
+    }
 
     // Fire-and-forget: decompose the sequence into hand paths and solo props
     // so they're independently queryable in the user's artifact repositories.
