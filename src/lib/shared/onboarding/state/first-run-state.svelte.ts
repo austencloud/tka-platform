@@ -26,6 +26,9 @@ interface FirstRunState {
   completedAt: Date | null;
   /** Whether to show the first-run wizard */
   shouldShow: boolean;
+  /** Whether the wizard is being force-shown as an admin preview (bypasses the
+   *  provider-name short-circuit so the card renders even for named accounts) */
+  previewMode: boolean;
   /** Whether we've synced with cloud this session */
   cloudSynced: boolean;
   /** Whether we're currently syncing with cloud */
@@ -53,6 +56,7 @@ function createFirstRunState() {
     wasSkipped: skipped,
     completedAt,
     shouldShow: false, // Controlled by trigger function
+    previewMode: false,
     cloudSynced: false,
     syncInProgress: false,
   });
@@ -69,6 +73,9 @@ function createFirstRunState() {
     },
     get shouldShow() {
       return state.shouldShow;
+    },
+    get previewMode() {
+      return state.previewMode;
     },
     get syncInProgress() {
       return state.syncInProgress;
@@ -88,14 +95,18 @@ function createFirstRunState() {
       }
 
       state.shouldShow = true;
+      state.previewMode = false;
       return true;
     },
 
     /**
-     * Force show the first-run wizard (e.g., from settings "replay intro")
+     * Force show the first-run wizard (e.g., admin "Preview First Run").
+     * Sets previewMode so the wizard renders its card even for accounts that
+     * already have a provider display name (which normally auto-completes).
      */
     forceShow() {
       state.shouldShow = true;
+      state.previewMode = true;
     },
 
     /**
@@ -108,6 +119,7 @@ function createFirstRunState() {
       state.hasCompleted = true;
       state.completedAt = now;
       state.shouldShow = false;
+      state.previewMode = false;
 
       localStorage.setItem(FIRST_RUN_COMPLETED_KEY, "true");
       localStorage.setItem(FIRST_RUN_COMPLETED_AT_KEY, now.toISOString());
@@ -124,6 +136,7 @@ function createFirstRunState() {
 
       state.wasSkipped = true;
       state.shouldShow = false;
+      state.previewMode = false;
 
       localStorage.setItem(FIRST_RUN_SKIPPED_KEY, "true");
 
@@ -136,6 +149,7 @@ function createFirstRunState() {
      */
     hide() {
       state.shouldShow = false;
+      state.previewMode = false;
     },
 
     /**
@@ -148,6 +162,7 @@ function createFirstRunState() {
       state.wasSkipped = false;
       state.completedAt = null;
       state.shouldShow = false;
+      state.previewMode = false;
       state.cloudSynced = false;
 
       localStorage.removeItem(FIRST_RUN_COMPLETED_KEY);

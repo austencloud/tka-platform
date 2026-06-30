@@ -21,9 +21,12 @@
   interface Props {
     onComplete: () => void;
     onSkip: () => void;
+    /** Admin "Preview First Run" — render the card even when the account
+     *  already has a provider display name (which normally auto-completes). */
+    forcePreview?: boolean;
   }
 
-  const { onComplete, onSkip }: Props = $props();
+  const { onComplete, onSkip, forcePreview = false }: Props = $props();
   // onSkip is part of the wizard contract (MainApplication wires it to
   // markSkipped) but this flow always completes via onComplete.
   void onSkip;
@@ -32,8 +35,10 @@
   let animateIn = $state(false);
 
   // If the provider already supplied a name, there's nothing to ask — complete
-  // immediately and render nothing.
+  // immediately and render nothing. Skipped in forcePreview so admins can see
+  // the card their named accounts would otherwise auto-skip.
   const hasProviderName = $derived(!!authState.user?.displayName?.trim());
+  const showCard = $derived(forcePreview || !hasProviderName);
 
   onMount(() => {
     try {
@@ -42,7 +47,7 @@
       // Haptics optional
     }
 
-    if (hasProviderName) {
+    if (!showCard) {
       onComplete();
       return;
     }
@@ -77,7 +82,7 @@
   }
 </script>
 
-{#if !hasProviderName}
+{#if showCard}
   <div class="first-run-wizard" class:animate-in={animateIn}>
     <div class="step-container">
       <DisplayNameStep onNext={handleNameComplete} onSkip={handleSkip} />

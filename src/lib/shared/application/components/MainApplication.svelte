@@ -526,12 +526,14 @@ import type { SheetType } from "../../navigation/services/types";
           {#if appEntryState.phase === "wizard-exiting"}
             <div class="wizard-exit-wrapper">
               <mod.default
+                forcePreview={firstRunState.previewMode}
                 onComplete={() => firstRunState.markCompleted()}
                 onSkip={() => firstRunState.markSkipped()}
               />
             </div>
           {:else}
             <mod.default
+              forcePreview={firstRunState.previewMode}
               onComplete={() => {
                 firstRunState.markCompleted();
                 appEntryState.startEntrySequence(true);
