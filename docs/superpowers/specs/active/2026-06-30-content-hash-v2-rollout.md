@@ -34,31 +34,33 @@ load → "Save to library" can mint a different hash than the stored one and
   recomputes `contentHash` under V2 + sets `contentHashVersion: 2` across user
   library, public mirror, and system catalogs).
 
-## What remains (GATED — needs Austen review; touches the corruption core)
+## Step 1 — version-aware fork detection + lazy rehash — BUILT (default-inert at V1)
 
-### 1. Version-aware fork detection + dedup (the live-core change)
+Done this pass (commit alongside this spec update). Inert while
+`CONTENT_HASH_VERSION === V1`; activates when flipped to V2.
 
-`contentHash` alone is no longer a stable key across versions, so identity
-comparisons must carry a version. Persist `contentHashVersion` next to
-`contentHash`, and:
+- **Pure decision** — `fork-decision.ts` `decideFork()`. On a version mismatch
+  it recomputes the stored content's hash at the active version (via an injected
+  closure) so a basis change never looks like a content change; a real edit
+  still forks. Unit-tested: `tests/unit/library/fork-decision.test.ts` (7 green,
+  incl. the cross-version "bump ≠ fork" and "edit still forks" cases).
+- **Fork detection** (`library-repository.ts` saveSequence) now calls
+  `decideFork`; at V1 with no stored version it is byte-identical to the prior
+  behavior (no recompute path taken).
+- **Lazy rehash backstop**: the update branch's write path already persists
+  `contentHash: incomingHash` (active basis) + the new
+  `contentHashVersion: CONTENT_HASH_VERSION`, so a cross-version doc self-heals
+  to the active version on its next save — no fork.
+- **Persisted field**: `contentHashVersion` added to the write, the
+  `LibrarySequenceDocSchema` (passthrough; now first-class optional), and the
+  `LibrarySequence` model.
+- **Not changed**: `hasMatchingContent` / dedup query still matches on
+  `contentHash` alone — correct once the migration normalizes everything to V2;
+  the only pre-migration gap is a temporary missed-dup (a duplicate, never
+  corruption). `updateSequence` does not touch `contentHash`, so it needs no
+  change.
 
-- **Fork detection** (`library-repository.ts:~295`): only compare
-  `incomingHash !== existingHash` when `incomingVersion === existingVersion`. On
-  a **version mismatch**, do NOT fork — the stored doc just predates the current
-  hash basis; recompute its hash under the current version and treat equal
-  content as the same identity (lazy rehash, below).
-- **Dedup** (`hasMatchingContent`, `library-repository.ts:~590`): match within
-  the active version; a cross-version lookup must rehash the candidate (or rely
-  on the migration having normalized everything to V2).
-- **Lazy rehash backstop**: on any load → save, if a doc's
-  `contentHashVersion` is below the active version, rewrite its `contentHash` +
-  `contentHashVersion` to current in place (a normal field update, NOT a fork).
-  This self-heals stragglers the batch migration missed and makes ordering
-  forgiving.
-- **Write path** (`library-repository.ts:~431`): always persist
-  `contentHashVersion: CONTENT_HASH_VERSION` alongside `contentHash`.
-- **Public-mirror sync** (`updateSequence`, `library-repository.ts:~670`): mirror
-  carries the same version so library + mirror stay comparable.
+## What remains (GATED — needs Austen creds / deploy)
 
 ### 2. Run the migration
 

@@ -124,6 +124,14 @@ export interface LibrarySequence extends SequenceData {
    */
   readonly contentHash?: string;
 
+  /**
+   * Identity-hash basis `contentHash` was computed under (see HASH_VERSION_V1 /
+   * HASH_VERSION_V2 in sequence-content-hasher). Absent === V1. Lets fork
+   * detection compare hashes on a common basis and lazy-rehash across a version
+   * bump instead of spuriously forking.
+   */
+  readonly contentHashVersion?: number;
+
   // ============================================================
   // SOFT DELETE (RECYCLE BIN)
   // ============================================================

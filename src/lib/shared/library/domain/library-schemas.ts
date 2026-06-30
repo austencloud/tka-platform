@@ -72,6 +72,8 @@ export const LibrarySequenceDocSchema = z
     // Sync
     _version: z.number().optional(),
     contentHash: z.string().optional(),
+    // Identity-hash basis the contentHash was computed under (absent === V1).
+    contentHashVersion: z.number().optional(),
 
     // Soft delete
     isDeleted: z.boolean().optional(),

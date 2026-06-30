@@ -42,7 +42,12 @@ import type { ErrorHandler } from '$lib/shared/application/services/error-handle
 import { detectOrientationCycle } from "$lib/shared/create/services/orientation-cycle-detector";
 import type { IPublicIndexSyncer as PublicIndexSyncer } from "$lib/shared/library/services/IPublicIndexSyncer";
 import type { ConflictResolver } from "$lib/shared/offline/services/conflict-resolver";
-import { computeHash } from "$lib/shared/library/services/sequence-content-hasher";
+import {
+  computeHash,
+  CONTENT_HASH_VERSION,
+  HASH_VERSION_V1,
+} from "$lib/shared/library/services/sequence-content-hasher";
+import { decideFork } from "$lib/shared/library/services/fork-decision";
 import { getTagMigrator } from "$lib/shared/library/get-tag-migrator";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type {
@@ -291,8 +296,37 @@ export class LibraryRepository {
       // Create a new document - the original stays untouched in the user's library.
       const existingData = existingDoc.data();
       const existingHash = existingData?.contentHash as string | undefined;
+      const existingVersion =
+        (existingData?.contentHashVersion as number | undefined) ??
+        HASH_VERSION_V1;
 
-      if (incomingHash && existingHash && existingHash !== incomingHash) {
+      // Version-aware fork decision. `incomingHash` is computed at the active
+      // hash version; a stored doc on an older basis must not look like a content
+      // change (that would spuriously FORK every unmigrated doc on its next
+      // save). decideFork recomputes the stored content at the active version on
+      // a version mismatch so only a REAL edit forks; a mere version bump takes
+      // the update branch, which lazy-rehashes the doc. Inert at V1 (no
+      // mismatch). See fork-decision.ts +
+      // docs/superpowers/specs/active/2026-06-30-content-hash-v2-rollout.md.
+      const { fork } = await decideFork({
+        incomingHash,
+        existingHash,
+        existingVersion,
+        activeVersion: CONTENT_HASH_VERSION,
+        recomputeExistingAtActiveVersion: async () => {
+          try {
+            const rehydratedExisting = hydrate({
+              ...(existingData as object),
+              id: actualSequenceId,
+            } as SequenceData);
+            return await computeHash(rehydratedExisting);
+          } catch {
+            return undefined;
+          }
+        },
+      });
+
+      if (fork) {
         // Content changed - fork into a new variation
         const parentId = actualSequenceId;
         actualSequenceId = crypto.randomUUID();
@@ -429,6 +463,9 @@ export class LibraryRepository {
       startingPosition: undefined,
       startingPositionGroup: undefined,
       contentHash: incomingHash,
+      // Tag the basis incomingHash was computed under so cross-version saves
+      // lazy-rehash instead of spuriously forking. Inert while active == V1.
+      contentHashVersion: CONTENT_HASH_VERSION,
       birthday: isNewSequence
         ? libSeq.birthday || serverTimestamp()
         : libSeq.birthday,
