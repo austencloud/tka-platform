@@ -80,6 +80,9 @@ import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob
 import { getWorkerRenderPool } from "$lib/shared/render/services/worker-render-pool";
 import { deriveCacheKey } from "./cell-cache-key-deriver";
 import { compositeStepNumberOnBlob } from "./step-number-compositor";
+import * as pictographCloudCache from "$lib/shared/render/services/pictograph-cloud-cache";
+import { deriveCloudCellHash } from "$lib/shared/render/services/cloud-cell-key";
+import { pngBlobToWebp } from "$lib/shared/render/services/png-blob-to-webp";
 
 function filterSoloMotions(
   data: PictographData,
@@ -139,6 +142,28 @@ export async function renderCell(
     // Cache miss or error, proceed to render
   }
 
+  // Cloud tier: a globally-shared, pre-rendered image for this exact pictograph.
+  // A cold scanner (empty IndexedDB) downloads it instead of rasterizing on
+  // device. Keyed by a canonical, size-independent hash so every device agrees.
+  // Direct-probe: download() attempts the deterministic URL and returns null on
+  // a miss (negative-cached for the session) — no manifest/knows() gate.
+  let cloudHash: string | null = null;
+  try {
+    cloudHash = await deriveCloudCellHash(pictographData, isDark, baseOptions);
+    const cloudBlob = await pictographCloudCache.download(cloudHash);
+    if (cloudBlob) {
+      // Seed IndexedDB under the display key so a re-render is a local hit.
+      pictographBlobCache.set(cacheKey, cloudBlob).catch(() => {});
+      return wantNumber
+        ? URL.createObjectURL(
+            await compositeStepNumberOnBlob(cloudBlob, stepNumber!, options.size, isDark, options.widthMultiplier ?? 1),
+          )
+        : URL.createObjectURL(cloudBlob);
+    }
+  } catch {
+    // Cloud unavailable or hash failure — fall through to local render.
+  }
+
   const viewMode = options.browseViewMode;
   const isHandsView = viewMode?.subject === "hands";
   const isSoloView = viewMode?.granularity === "solo";
@@ -196,6 +221,17 @@ export async function renderCell(
   const blob = await pool.render(prepared, renderOptions, visibility, undefined);
 
   pictographBlobCache.set(cacheKey, blob).catch(() => {});
+
+  // Crowd-source: this device just rendered a pictograph the cloud didn't have
+  // (download() above returned null, i.e. confirmed miss). Upload it (as WebP)
+  // so the next scanner downloads instead of rendering. upload() dedups + never
+  // throws. Fire-and-forget — never blocks the returned URL.
+  if (cloudHash) {
+    const hashForUpload = cloudHash;
+    void pngBlobToWebp(blob)
+      .then((webp) => pictographCloudCache.upload(hashForUpload, webp))
+      .catch(() => {});
+  }
 
   return wantNumber
     ? URL.createObjectURL(
