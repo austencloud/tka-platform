@@ -27,6 +27,14 @@
   let showOffer = $state(false);
   let hapticService = $state<ReturnType<typeof getHapticFeedback> | null>(null);
 
+  // Honor prefers-reduced-motion — gates the JS-driven crossfade durations below
+  // (a CSS @media block alone can't stop Svelte's transition timings).
+  let reduceMotion = $state(
+    typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+
   onMount(() => {
     try {
       hapticService = getHapticFeedback();
@@ -34,10 +42,21 @@
       /* optional */
     }
 
-    if (typeof localStorage === "undefined") return;
-    const alreadyOffered = localStorage.getItem(OFFERED_KEY) === "true";
-    // Don't offer if they've already seen the tour by any path, or already declined.
-    showOffer = !alreadyOffered && !generateTourState.hasCompleted;
+    let stopMotionWatch: (() => void) | undefined;
+    if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const onChange = (e: MediaQueryListEvent) => (reduceMotion = e.matches);
+      mq.addEventListener("change", onChange);
+      stopMotionWatch = () => mq.removeEventListener("change", onChange);
+    }
+
+    if (typeof localStorage !== "undefined") {
+      const alreadyOffered = localStorage.getItem(OFFERED_KEY) === "true";
+      // Don't offer if they've already seen the tour by any path, or already declined.
+      showOffer = !alreadyOffered && !generateTourState.hasCompleted;
+    }
+
+    return () => stopMotionWatch?.();
   });
 
   function markOffered() {
@@ -59,33 +78,67 @@
   }
 </script>
 
-{#if showOffer}
-  <div class="tour-offer" transition:fade={{ duration: 220 }}>
-    <p class="offer-title">First time generating?</p>
-    <p class="offer-sub">A quick tour shows what each option does.</p>
-    <div class="offer-actions">
-      <button type="button" class="offer-btn primary" onclick={acceptTour}>
-        Show me
-      </button>
-      <button type="button" class="offer-btn secondary" onclick={declineTour}>
-        I'll explore
-      </button>
+<!--
+  Single grid cell holding both states stacked (grid-area: 1 / 1), so the
+  offer→hint swap is a true in-place crossfade with zero layout shift. A bare
+  {#if}/{:else} with one transition lets the incoming block pop in beside the
+  outgoing one for a frame — Svelte transitions don't coordinate two siblings
+  on their own. Stacking + paired in/out fade is the codebase's working idiom
+  (see FuseTab.svelte) and honors no-layout-shift.md (grid-stack technique).
+-->
+<div class="empty-state">
+  {#if showOffer}
+    <div
+      class="tour-offer"
+      in:fade={{ duration: reduceMotion ? 0 : 260, delay: reduceMotion ? 0 : 120 }}
+      out:fade={{ duration: reduceMotion ? 0 : 180 }}
+    >
+      <p class="offer-title">First time generating?</p>
+      <p class="offer-sub">A quick tour shows what each option does.</p>
+      <div class="offer-actions">
+        <button type="button" class="offer-btn primary" onclick={acceptTour}>
+          Show me
+        </button>
+        <button type="button" class="offer-btn secondary" onclick={declineTour}>
+          I'll explore
+        </button>
+      </div>
     </div>
-  </div>
-{:else}
-  <p class="workspace-hint">Tap Generate to create your sequence</p>
-{/if}
+  {:else}
+    <p
+      class="workspace-hint"
+      in:fade={{ duration: reduceMotion ? 0 : 260, delay: reduceMotion ? 0 : 120 }}
+      out:fade={{ duration: reduceMotion ? 0 : 180 }}
+    >
+      Tap Generate to create your sequence
+    </p>
+  {/if}
+</div>
 
 <style>
+  /* Grid stack: both states share one cell (children at grid-area: 1 / 1) so
+     the offer↔hint swap crossfades in place. The cell anchors both at the same
+     top edge, so the text dissolves without sliding; the upper-region spacing
+     lives here once, not on each child. */
+  .empty-state {
+    flex-shrink: 0;
+    display: grid;
+    justify-items: center;
+    margin-top: clamp(2.5rem, 11vmin, 6.5rem);
+    padding: 0 1rem;
+  }
+
+  .empty-state > * {
+    grid-area: 1 / 1;
+  }
+
   /* Hint — preserved verbatim from StandardWorkspaceLayout so the non-first-run
      empty state is visually unchanged. cqi tracks the .tool-panel-container
      (container-type: size), this component's parent, so it still scales to one
      line at any width. */
   .workspace-hint {
-    flex-shrink: 0;
+    margin: 0;
     text-align: center;
-    margin: clamp(2.5rem, 11vmin, 6.5rem) 0 0;
-    padding: 0 1rem;
     font-family: "Playfair Display", Georgia, serif;
     font-size: clamp(1rem, 4.6cqi, 2rem);
     font-weight: 500;
@@ -98,13 +151,10 @@
   /* Offer — occupies the same upper region as the hint so swapping between
      them moves nothing below (the cards keep their position). */
   .tour-offer {
-    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    margin: clamp(2rem, 9vmin, 5.5rem) auto 0;
-    padding: 0 1rem;
     max-width: 30rem;
     text-align: center;
   }

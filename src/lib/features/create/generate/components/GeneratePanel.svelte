@@ -8,7 +8,7 @@ Card-based architecture with integrated Generate button:
 - Generation actions: generateActionsState.svelte.ts
 - Device state: generateDeviceState.svelte.ts
 - Responsive padding: State-driven for sync with workspace animation
-- Tour: Guided tour triggered from help button or ButtonPanel
+- Tour: Guided tour offered first-run via GenerateEmptyState; also via voice
 -->
 <script lang="ts">
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
@@ -141,13 +141,6 @@ Card-based architecture with integrated Generate button:
 
   let hapticService = $state<HapticFeedback | null>(null);
 
-  // Tour trigger (desktop help button; first-run offer in the empty workspace)
-  function handleHelpClick(event?: MouseEvent) {
-    event?.stopPropagation();
-    hapticService?.trigger("selection");
-    generateTourState.start();
-  }
-
   // ===== Device Service Integration =====
   onMount(() => {
     try {
@@ -204,18 +197,6 @@ Card-based architecture with integrated Generate button:
   role="region"
   aria-label="Generator settings panel"
 >
-  <!-- Desktop-only help button in top-right corner -->
-  {#if isDesktop}
-    <button
-      class="desktop-help-button"
-      onclick={handleHelpClick}
-      aria-label="Help with generator settings"
-      title="Help with generator settings"
-    >
-      <i class="fas fa-circle-question" aria-hidden="true"></i>
-    </button>
-  {/if}
-
   <div class="generate-panel-inner">
     <CardBasedSettingsContainer
       config={configState.config}
@@ -333,45 +314,5 @@ Card-based architecture with integrated Generate button:
   /* Ensure no scrolling is forced when not appropriate */
   .generate-panel[data-allow-scroll="false"] {
     overflow: hidden;
-  }
-
-  /* Desktop help button - positioned in top-right corner of generator panel */
-  .desktop-help-button {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
-    font-size: 1.25rem;
-    color: var(--theme-text);
-
-    /* Blue info styling */
-    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 70%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-info, #3b82f6) 40%, transparent);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--semantic-info, #3b82f6) 30%, transparent);
-  }
-
-  .desktop-help-button:hover {
-    transform: scale(1.05);
-    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 85%, transparent);
-    box-shadow: 0 6px 16px color-mix(in srgb, var(--semantic-info, #3b82f6) 50%, transparent);
-  }
-
-  .desktop-help-button:active {
-    transform: scale(0.95);
-    transition: all var(--duration-instant) ease;
-  }
-
-  .desktop-help-button:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
   }
 </style>
