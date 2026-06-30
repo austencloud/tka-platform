@@ -10,6 +10,8 @@ Use a component test when the risk is in the **wiring**: reactivity, ARIA/roles,
 
 Component tests are colocated next to the component and named `Foo.svelte.test.ts`. The `.svelte.` segment compiles runes in the test file and routes it to the browser project (the jsdom project explicitly excludes `**/*.svelte.test.ts`).
 
+> **Naming footgun:** the `.svelte.test.ts` suffix routes a file to the browser project unconditionally. This repo's state convention is `xxx.svelte.ts` (rune modules), so a *logic* test for one of those must **not** be named `xxx.svelte.test.ts` — it would be force-run in headless Chromium (slow, no DOM). Put rune-module logic tests in `__tests__/xxx.test.ts` (no `.svelte.` suffix); reserve `*.svelte.test.ts` for component renders.
+
 ```bash
 # watch a single component while iterating
 pnpm run test:components -- --run FilterChipBase

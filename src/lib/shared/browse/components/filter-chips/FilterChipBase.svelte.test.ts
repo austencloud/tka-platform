@@ -30,6 +30,11 @@ describe("FilterChipBase (toggle mode)", () => {
       .element(page.getByRole("button", { name: "Loops" }))
       .toHaveAttribute("aria-pressed", "true");
   });
+
+  it("has no AAA a11y violations", async () => {
+    render(FilterChipBase, { label: "Loops", mode: "toggle", active: true });
+    await expectNoA11yViolations();
+  });
 });
 
 describe("FilterChipBase (dropdown mode)", () => {
@@ -47,10 +52,5 @@ describe("FilterChipBase (dropdown mode)", () => {
     await expect
       .element(page.getByRole("button", { name: "Sort" }))
       .toHaveAttribute("aria-expanded", "true");
-  });
-
-  it("has no AAA a11y violations in toggle mode", async () => {
-    render(FilterChipBase, { label: "Loops", mode: "toggle", active: true });
-    await expectNoA11yViolations();
   });
 });

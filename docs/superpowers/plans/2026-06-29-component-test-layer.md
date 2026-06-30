@@ -193,9 +193,9 @@ import { describe, it, expect, vi } from "vitest";
 import FilterChipBase from "./FilterChipBase.svelte";
 
 describe("FilterChipBase (toggle mode)", () => {
-  it("exposes a switch role with aria-pressed reflecting `active`", async () => {
+  it("exposes aria-pressed reflecting `active` on the toggle button", async () => {
     render(FilterChipBase, { label: "Loops", mode: "toggle", active: false });
-    const chip = page.getByRole("switch", { name: "Loops" });
+    const chip = page.getByRole("button", { name: "Loops" });
     await expect.element(chip).toBeVisible();
     await expect.element(chip).toHaveAttribute("aria-pressed", "false");
   });
@@ -209,13 +209,13 @@ describe("FilterChipBase (toggle mode)", () => {
       onclick,
     });
 
-    await page.getByRole("switch", { name: "Loops" }).click();
+    await page.getByRole("button", { name: "Loops" }).click();
     expect(onclick).toHaveBeenCalledOnce();
 
     // Controlled component: parent flips `active` → ARIA must follow.
     await screen.rerender({ label: "Loops", mode: "toggle", active: true, onclick });
     await expect
-      .element(page.getByRole("switch", { name: "Loops" }))
+      .element(page.getByRole("button", { name: "Loops" }))
       .toHaveAttribute("aria-pressed", "true");
   });
 });

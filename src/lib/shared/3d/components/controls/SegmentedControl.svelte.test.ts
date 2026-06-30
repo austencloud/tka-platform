@@ -21,7 +21,7 @@ describe("SegmentedControl", () => {
       .toHaveAttribute("aria-pressed", "false");
   });
 
-  it("calls onchange with the clicked value and moves the indicator on rerender", async () => {
+  it("calls onchange with the clicked value and reflects the new selection (aria-pressed) on rerender", async () => {
     const onchange = vi.fn();
     const screen = render(SegmentedControl, {
       options: OPTIONS,
