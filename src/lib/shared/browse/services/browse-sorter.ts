@@ -17,6 +17,16 @@ function resolveLevel(sequence: SequenceData): number {
   return 1;
 }
 
+/**
+ * Step count for a sequence. The optional stored `sequenceLength` is absent on
+ * legacy/imported docs, so fall back to the always-hydrated `steps` array.
+ * Never use word length — the dash convention (Δ-, Z-) inflates it past the
+ * real step count.
+ */
+function stepCountOf(sequence: SequenceData): number {
+  return sequence.sequenceLength ?? sequence.steps?.length ?? 0;
+}
+
 export function sortSequences(
   sequences: SequenceData[],
   sortMethod: BrowseSortMethod
@@ -82,9 +92,7 @@ function sortByDifficulty(sequences: SequenceData[]): SequenceData[] {
 }
 
 function sortByLength(sequences: SequenceData[]): SequenceData[] {
-  return sequences.sort(
-    (a, b) => (a.sequenceLength ?? 0) - (b.sequenceLength ?? 0)
-  );
+  return sequences.sort((a, b) => stepCountOf(a) - stepCountOf(b));
 }
 
 function sortByAuthor(sequences: SequenceData[]): SequenceData[] {
@@ -149,7 +157,7 @@ function getAlphabeticalSection(sequence: SequenceData): string {
 }
 
 function getLengthSection(sequence: SequenceData): string {
-  const length = sequence.sequenceLength ?? 0;
+  const length = stepCountOf(sequence);
 
   if (length <= 4) return "3-4 steps";
   if (length <= 6) return "5-6 steps";

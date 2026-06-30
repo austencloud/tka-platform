@@ -153,11 +153,13 @@ function getGroupKey(
       // Pipe separator avoids conflict with dash in letter names ("W-").
       return `${deriveLetter(sequence)}|${stepCountOf(sequence)}`;
 
-    case "length": {
-      const word = deriveWord(sequence);
-      const length = sequence.sequenceLength ?? word.length;
-      return `${length} steps`;
-    }
+    case "length":
+      // Bucket by step count, never word character count. The Type-3/4/5 dash
+      // convention (Δ-, Z-) adds a "-" per letter, so word.length overcounts a
+      // sequence's steps (e.g. the 3-step "Δ-QZ-" has a 5-char word). stepCountOf
+      // falls back to steps.length — always hydrated — when the optional stored
+      // sequenceLength is absent on legacy docs.
+      return `${stepCountOf(sequence)} steps`;
 
     case "difficulty":
       // Two-axis: level → letter → beat count, so the grid/sidebar can render a
@@ -267,9 +269,8 @@ function sortSequencesInSection(
 ): SequenceData[] {
   const sorted = [...sequences];
 
-  // Helper to get sequence length (beat count)
-  const getLength = (s: SequenceData) =>
-    s.sequenceLength ?? s.word?.length ?? 0;
+  // Step count (never word character count — see getGroupKey "length" case).
+  const getLength = stepCountOf;
 
   switch (sortMethod) {
     case "alphabetical": {
