@@ -11,6 +11,11 @@
     REQUIRED_BEATS,
   } from "../../../state/create-tutorial-state.svelte";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import {
+    getLetterType,
+    type Letter,
+  } from "$lib/shared/foundation/domain/models/letter";
+  import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
 
   interface Props {
     onAdvance: () => void;
@@ -35,6 +40,14 @@
       onAdvance();
     }
   }
+
+  // Tutorial shows only Type 1 (dual-shift) options, presented as the whole set.
+  function isType1(option: PictographData): boolean {
+    return (
+      !!option.letter &&
+      getLetterType(option.letter as Letter) === LetterType.TYPE1
+    );
+  }
 </script>
 
 <div class="tutorial-step">
@@ -56,6 +69,8 @@
           {currentSequence}
           {currentGridMode}
           onOptionSelected={handleOptionSelected}
+          filterPredicate={isType1}
+          hideFilters
         />
       {/await}
     {:else}
