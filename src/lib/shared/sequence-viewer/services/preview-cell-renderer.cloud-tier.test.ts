@@ -39,32 +39,35 @@ import { renderCell } from "./preview-cell-renderer";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 const data = { letter: "A", motions: {} } as unknown as PictographData;
-const opts = { size: 300 };
+const opts = { size: 300, probeCloud: true };
 
 describe("renderCell cloud tier", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    blobGet.mockResolvedValue(null); // IndexedDB miss (cold scanner)
+    blobGet.mockResolvedValue(null); // IndexedDB miss (cold)
   });
 
-  it("cloud HIT: downloads, never calls the worker", async () => {
+  it("cloud HIT (probeCloud on): downloads, never calls the worker", async () => {
     cloudDownload.mockResolvedValue(new Blob(["img"], { type: "image/webp" }));
-
     await renderCell(data, undefined, true, opts);
-
     expect(cloudDownload).toHaveBeenCalledWith("HASH");
     expect(poolRender).not.toHaveBeenCalled();
   });
 
-  it("cloud MISS: renders via worker AND uploads the result", async () => {
-    cloudDownload.mockResolvedValue(null); // direct-probe miss
+  it("cloud MISS (probeCloud on): renders via worker AND uploads", async () => {
+    cloudDownload.mockResolvedValue(null);
     poolRender.mockResolvedValue(new Blob(["png"], { type: "image/png" }));
-
     await renderCell(data, undefined, true, opts);
+    expect(poolRender).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(cloudUpload).toHaveBeenCalledWith("HASH", expect.any(Blob)));
+  });
 
+  it("probeCloud off (default): skips the cloud entirely, renders locally", async () => {
+    poolRender.mockResolvedValue(new Blob(["png"], { type: "image/png" }));
+    await renderCell(data, undefined, true, { size: 300 });
+    expect(cloudDownload).not.toHaveBeenCalled();
     expect(poolRender).toHaveBeenCalledTimes(1);
     await Promise.resolve();
-    await Promise.resolve();
-    expect(cloudUpload).toHaveBeenCalledWith("HASH", expect.any(Blob));
+    expect(cloudUpload).not.toHaveBeenCalled();
   });
 });

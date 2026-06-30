@@ -74,6 +74,12 @@ export interface PreviewCellRenderOptions {
 
   /** Show red motion (prop + arrow). When false, renderer skips red entirely. Default: true. */
   showRedMotion?: boolean;
+
+  /** When true, consult the shared cross-device cloud image store before/after
+   *  local render (download-instead-of-rasterize + crowd-source upload). Only
+   *  the scan-card path sets this; gallery/compose/crossfade leave it false so
+   *  they go straight to local render with no added network latency. */
+  probeCloud?: boolean;
 }
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
@@ -129,39 +135,41 @@ export async function renderCell(
     options.browseViewMode?.granularity !== "solo" &&
     !isMotionSoloCell;
 
+  // Single source of truth for turning a base (number-free) blob into the
+  // displayed object URL — composites the step number iff this cell wants one.
+  const toDisplayUrl = async (b: Blob): Promise<string> =>
+    wantNumber
+      ? URL.createObjectURL(
+          await compositeStepNumberOnBlob(b, stepNumber!, options.size, isDark, options.widthMultiplier ?? 1),
+        )
+      : URL.createObjectURL(b);
+
   try {
     const cachedBlob = await pictographBlobCache.get(cacheKey);
     if (cachedBlob) {
-      return wantNumber
-        ? URL.createObjectURL(
-            await compositeStepNumberOnBlob(cachedBlob, stepNumber!, options.size, isDark, options.widthMultiplier ?? 1),
-          )
-        : URL.createObjectURL(cachedBlob);
+      return toDisplayUrl(cachedBlob);
     }
   } catch {
     // Cache miss or error, proceed to render
   }
 
-  // Cloud tier: a globally-shared, pre-rendered image for this exact pictograph.
-  // A cold scanner (empty IndexedDB) downloads it instead of rasterizing on
-  // device. Keyed by a canonical, size-independent hash so every device agrees.
-  // Direct-probe: download() attempts the deterministic URL and returns null on
-  // a miss (negative-cached for the session) — no manifest/knows() gate.
+  // Cloud tier (scan-card only): a globally-shared, pre-rendered image for this
+  // exact pictograph. A cold scanner downloads it instead of rasterizing on
+  // device. Gated by probeCloud so the gallery/crossfade never pay the probe
+  // latency. Direct-probe: download() returns null on a miss (negative-cached).
   let cloudHash: string | null = null;
-  try {
-    cloudHash = await deriveCloudCellHash(pictographData, isDark, baseOptions);
-    const cloudBlob = await pictographCloudCache.download(cloudHash);
-    if (cloudBlob) {
-      // Seed IndexedDB under the display key so a re-render is a local hit.
-      pictographBlobCache.set(cacheKey, cloudBlob).catch(() => {});
-      return wantNumber
-        ? URL.createObjectURL(
-            await compositeStepNumberOnBlob(cloudBlob, stepNumber!, options.size, isDark, options.widthMultiplier ?? 1),
-          )
-        : URL.createObjectURL(cloudBlob);
+  if (options.probeCloud) {
+    try {
+      cloudHash = await deriveCloudCellHash(pictographData, isDark, baseOptions);
+      const cloudBlob = await pictographCloudCache.download(cloudHash);
+      if (cloudBlob) {
+        // Seed IndexedDB under the display key so a re-render is a local hit.
+        pictographBlobCache.set(cacheKey, cloudBlob).catch(() => {});
+        return toDisplayUrl(cloudBlob);
+      }
+    } catch {
+      // Cloud unavailable or hash failure — fall through to local render.
     }
-  } catch {
-    // Cloud unavailable or hash failure — fall through to local render.
   }
 
   const viewMode = options.browseViewMode;
@@ -233,11 +241,7 @@ export async function renderCell(
       .catch(() => {});
   }
 
-  return wantNumber
-    ? URL.createObjectURL(
-        await compositeStepNumberOnBlob(blob, stepNumber!, options.size, isDark, options.widthMultiplier ?? 1),
-      )
-    : URL.createObjectURL(blob);
+  return toDisplayUrl(blob);
 }
 
 /**
