@@ -42,8 +42,10 @@ From investigation + four product answers (2026-06-30):
 - **Row width 8, wrap to rows of 8.** Sequences longer than 8 steps wrap: a
   16-count = 2 rows of 8, kept together as **one sequence block** (no split across
   a page break). Short sequences pad the row with blank cells (`isBlank`).
-- **Output:** on-screen landscape preview **+** print-ready PDF. Preview and PDF
-  share the same planner, geometry, and raster cell pipeline → pixel-parity.
+- **Output:** on-screen landscape preview **+** print-ready PDF. Preview (live
+  virtualized pictograph cells) and PDF (raster at print DPI) share the same
+  `planSheet()` output, page geometry, and locked visibility → layout + visual
+  parity.
 - **Geometry confirmed:** US-Letter landscape = 792×612pt. Margin 18pt, gutter
   3pt → 8 cols of ~92pt (~1.28") square cells; 6 rows × 92pt = 552pt ≤ 564pt
   usable height. 48 pictographs/page. Austen's "8 comfortably, 6 rows" holds.
@@ -57,11 +59,13 @@ From investigation + four product answers (2026-06-30):
   toggleable (`showStepNumbers`).
 - **Paper:** US Letter landscape for v1. A4 is a later toggle (geometry is
   parameterized so adding it is a constant + an enum value).
-- **Preview rendering = raster, not live SVG.** `PrintPreviewPages` already shows
-  one rendered `<img>` per cell; mounting ~48 live `PictographRenderer` SVGs per
-  page per sheet is slow (flagged by recon). Preview reuses the raster worker
-  pipeline at a screen-appropriate cell size; PDF reuses it at print DPI. Same
-  pipeline = parity.
+- **Preview = live virtualized pictograph cells; PDF = raster.** Live
+  `StepCell`/`PictographContainer` (what WorkspaceGrid / the viewer already use)
+  give instant, crisp rendering with no 15s worker cold-start, so the builder
+  feels snappy on reorder. The preview **virtualizes to the visible page(s)** to
+  cap live-component count. PDF export rasterizes via the existing card render
+  stack at print DPI. Parity is guaranteed not by sharing the renderer but by both
+  consuming the same `planSheet()` + geometry + locked visibility (`§3`).
 
 ## Existing primitives (reuse, do not rebuild)
 
@@ -160,21 +164,21 @@ export interface SheetPage { rows: SheetRow[]; }
 export function planSheet(seqs: readonly SequenceData[], layout: ChoreoSheetLayout): SheetPage[]
 ```
 
-### 3. Shared raster cell renderer — `services/sheet-cell-renderer.ts`
+### 3. Shared cell render config — `services/sheet-cell-config.ts`
 
-Thin wrapper over the existing render stack so preview and PDF render cells
-identically:
+A tiny module that both the live preview cells and the PDF rasterizer consume, so
+a step looks the same in each: the locked visibility set
+(`buildCanonicalCardVisibility()`), light/`printMode` background, `stepNumber`
+overlay gating (`showStepNumbers`), and `gridMode` resolution for a `StepData`.
+No rendering here — just the shared config object + a `cellRenderInput(step,
+layout)` helper. Blank cells render as an empty white tile in both paths.
 
-- For a `StepData`: `PictographPreparer.prepareSingle()` →
-  `Canvas2DDirectRenderer.renderPictograph()` at a target cell px, with
-  `buildCanonicalCardVisibility()` + light/`printMode` background +
-  `stepNumber` (if `showStepNumbers`). Blank cells → empty (white) tile.
-- Batched via `CompositionDispatcher` worker pool when available; main-thread
-  fallback. `LayerCompositor` LRU cache means identical pictographs across
-  sequences render once.
-- `targetCellPx` differs by caller: preview uses a screen size (e.g. ~140px),
-  PDF uses print DPI (cellPt/72 × 300). Layout/parity comes from the shared
-  planner + geometry, not the pixel size.
+The two renderers that consume it:
+- **Preview** (§7): live `StepCell`/`PictographContainer` Svelte components.
+- **PDF** (§8): the existing card raster stack — `PictographPreparer.prepareSingle()`
+  → `Canvas2DDirectRenderer` (worker pool via `CompositionDispatcher` when warm,
+  main-thread fallback; `LayerCompositor` LRU cache renders identical pictographs
+  once) at print DPI (`cellPt/72 × 300`).
 
 ### 4. ChoreoSheet state + persistence — `state/` + `services/`
 
@@ -216,16 +220,21 @@ Wired into `WriteTab.svelte` as a second mode/tab next to the Act editor
 Clone the `PrintPreviewPages` page-frame structure (`.page`, crop marks, page
 guides, multi-page stacking) but **landscape** (`aspect-ratio: 11/8.5`) and
 grid-spec driven (`grid-template-columns: repeat(columns, cellPct)`). Renders
-each `SheetPage` → rows → cells as raster `<img>` from section 3 (screen px).
-Draws the group separator between blocks. Honors reduced-motion / tokens.
+each `SheetPage` → rows → cells as **live** `StepCell`/`PictographContainer`
+components using the §3 shared config; **virtualizes** so only the visible page(s)
+mount their cells (cap live-component count). Draws the group separator between
+blocks. Honors reduced-motion / tokens.
 
 ### 8. Landscape 8×6 PDF — `services/sheet-pdf-exporter.ts`
 
-Model on `print-pdf-exporter.ts` / `codex-sheet-pdf.ts`: a pdf-lib document,
-landscape pages (792×612), cells embedded as PNG from section 3 (print DPI),
-positioned by the shared geometry + planner, optional crop marks, group
-separators drawn as thin lines, paginated. Download via the existing
-`print-blob` path. `exportChoreoSheetPDF(sheet, hydratedSeqs, onProgress)`.
+Model on `codex-sheet-pdf.ts` (verified template: `PDFDocument.create` →
+`embedPng` → `addPage([W,H])` → `drawImage` → blob → download): a pdf-lib
+document, landscape pages (792×612), each cell rasterized via the existing card
+render stack (`PictographPreparer` → `Canvas2DDirectRenderer`, §3 config) at
+print DPI and embedded as PNG, positioned by the shared geometry + `planSheet()`,
+optional crop marks, group separators drawn as thin lines, paginated. Download via
+a `downloadChoreoSheetPDF` helper mirroring `downloadCodexSheetPDF`.
+`buildChoreoSheetPDF(sheet, hydratedSeqs, onProgress): Promise<Blob>`.
 
 ### 9. Module wiring
 
