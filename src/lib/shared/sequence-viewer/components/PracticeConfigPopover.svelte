@@ -15,11 +15,15 @@
   interface Props {
     config: Partial<TempoPracticeConfig>;
     onUpdate: (patch: Partial<TempoPracticeConfig>) => void;
+    /** Bindable: lets a parent (e.g. the setup bar's Custom chip) open it. */
+    open?: boolean;
+    /** When set, positions the panel over this element instead of the gear
+     *  trigger — so opening via the Custom preset appears at the preset rather
+     *  than over on the far-right gear. */
+    customAnchor?: HTMLElement | null;
   }
 
-  let { config, onUpdate }: Props = $props();
-
-  let open = $state(false);
+  let { config, onUpdate, open = $bindable(false), customAnchor = null }: Props = $props();
 
   // Display values fall back to the orchestrator defaults.
   let startBpm = $derived(config.startBpm ?? 15);
@@ -75,7 +79,14 @@
   </Popover.Trigger>
 
   <Popover.Portal>
-    <Popover.Content side="bottom" align="end" sideOffset={8} collisionPadding={12} class="practice-config-panel">
+    <Popover.Content
+      side="bottom"
+      align={customAnchor ? "center" : "end"}
+      sideOffset={8}
+      collisionPadding={12}
+      customAnchor={customAnchor ?? undefined}
+      class="practice-config-panel"
+    >
       <header class="config-header">Practice ramp</header>
 
       <div class="config-body">
