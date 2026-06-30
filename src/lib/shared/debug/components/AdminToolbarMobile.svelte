@@ -19,7 +19,6 @@
     isSearchOpen: boolean;
     isLoading: boolean;
     introResetMessage: string | null;
-    canResetIntro: boolean;
     isCurrentUserInQuickAccess: boolean;
     onSelectUser: (user: {
       uid: string;
@@ -31,18 +30,14 @@
     onAddToQuickAccess: () => void;
     onClearPreview: () => void;
     onToggleSearch: () => void;
-    onResetTabIntro: () => void;
     onPreviewFirstRun: () => void;
     onPreviewCreateTutorial: () => void;
-    onResetHelpDiscovery: () => void;
     onClearCloudThumbnails: () => void;
     isClearingThumbnails: boolean;
     onClearLocalCache: () => void;
     isClearingLocalCache: boolean;
     onClearTikaCache: () => void;
     isClearingTikaCache: boolean;
-    onClearThumbnailCache: () => void;
-    isClearingThumbnailCache: boolean;
     onShowPwaBanner: () => void;
     onClose: () => void;
   }
@@ -54,25 +49,20 @@
     isSearchOpen,
     isLoading,
     introResetMessage,
-    canResetIntro,
     isCurrentUserInQuickAccess,
     onSelectUser,
     onRemoveFromQuickAccess,
     onAddToQuickAccess,
     onClearPreview,
     onToggleSearch,
-    onResetTabIntro,
     onPreviewFirstRun,
     onPreviewCreateTutorial,
-    onResetHelpDiscovery,
     onClearCloudThumbnails,
     isClearingThumbnails,
     onClearLocalCache,
     isClearingLocalCache,
     onClearTikaCache,
     isClearingTikaCache,
-    onClearThumbnailCache,
-    isClearingThumbnailCache,
     onShowPwaBanner,
     onClose,
   }: Props = $props();
@@ -197,21 +187,6 @@
         <span>Create Tutorial</span>
       </button>
 
-      <button
-        type="button"
-        class="action-card"
-        onclick={onResetTabIntro}
-        disabled={!canResetIntro}
-      >
-        <i class="fas fa-door-open" aria-hidden="true"></i>
-        <span>Reset Tab Intro</span>
-      </button>
-
-      <button type="button" class="action-card" onclick={onResetHelpDiscovery}>
-        <i class="fas fa-circle-question" aria-hidden="true"></i>
-        <span>Reset Help Discovery</span>
-      </button>
-
       <button type="button" class="action-card" onclick={onShowPwaBanner}>
         <i class="fas fa-mobile-screen" aria-hidden="true"></i>
         <span>Show PWA Banner</span>
@@ -259,21 +234,6 @@
         {:else}
           <i class="fas fa-robot" aria-hidden="true"></i>
           <span>Clear TIKA Cache</span>
-        {/if}
-      </button>
-
-      <button
-        type="button"
-        class="action-card danger"
-        onclick={onClearThumbnailCache}
-        disabled={isClearingThumbnailCache}
-      >
-        {#if isClearingThumbnailCache}
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          <span>Clearing...</span>
-        {:else}
-          <i class="fas fa-images" aria-hidden="true"></i>
-          <span>Clear Thumbnail Cache</span>
         {/if}
       </button>
 

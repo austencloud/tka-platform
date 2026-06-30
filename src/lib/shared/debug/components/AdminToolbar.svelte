@@ -20,8 +20,6 @@
     initUserPreview,
   } from "$lib/shared/debug/state/user-preview-state.svelte";
   import { adminToolbarState } from "$lib/shared/debug/state/admin-toolbar-state.svelte";
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { getTabIntroContent } from "$lib/shared/onboarding/config/tab-intro-content";
   import { firstRunState } from "$lib/shared/onboarding/state/first-run-state.svelte.ts";
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte.ts";
   import { createTutorialState } from "$lib/shared/onboarding/state/create-tutorial-state.svelte";
@@ -100,22 +98,6 @@ import type { QuickAccessUser } from "../services/types";
   // Mobile: bottom sheet only (FAB and preview banner removed - impersonation uses border + bottom bar)
   const showMobileSheet = $derived(isAdmin && isMobile && isOpen);
 
-  // Tab Intro
-  const currentModule = $derived(navigationState.currentModule);
-  const currentTab = $derived(navigationState.activeTab);
-  const currentIntro = $derived(
-    currentModule && currentTab
-      ? getTabIntroContent(currentModule, currentTab)
-      : null
-  );
-
-  const canResetIntro = $derived(() => {
-    if (!currentModule || !currentTab || !currentIntro) return false;
-    if (typeof localStorage === "undefined") return false;
-    const key = `tabIntroSeen:${currentModule}:${currentTab}`;
-    return localStorage.getItem(key) === "true";
-  });
-
   // Check if current preview user is in quick access
   // Uses the reactive quickAccessUsers array so it updates when users are added/removed
   const isCurrentUserInQuickAccess = $derived.by(() => {
@@ -171,16 +153,6 @@ import type { QuickAccessUser } from "../services/types";
     featureFlagService.clearDebugRoleOverride();
   }
 
-  function resetTabIntro() {
-    if (!currentModule || !currentTab || !currentIntro) return;
-    const key = `tabIntroSeen:${currentModule}:${currentTab}`;
-    localStorage.removeItem(key);
-    introResetMessage = `Reset "${currentIntro.title}"`;
-    setTimeout(() => {
-      introResetMessage = null;
-    }, 2000);
-  }
-
   function previewFirstRunWizard() {
     firstRunState.forceShow();
     introResetMessage = "First-run wizard opened";
@@ -193,17 +165,6 @@ import type { QuickAccessUser } from "../services/types";
     createTutorialState.reset();
     appEntryState.replay();
     introResetMessage = "Create tutorial opened";
-    setTimeout(() => {
-      introResetMessage = null;
-    }, 2000);
-  }
-
-  function resetHelpButtonDiscovery() {
-    const key = "helpButtonDiscoverySeen:generate";
-    localStorage.removeItem(key);
-    // Dispatch custom event so HelpButtonDiscovery can react (same-tab)
-    window.dispatchEvent(new CustomEvent("helpDiscoveryReset"));
-    introResetMessage = "Help button discovery reset";
     setTimeout(() => {
       introResetMessage = null;
     }, 2000);
@@ -338,45 +299,6 @@ import type { QuickAccessUser } from "../services/types";
     }
   }
 
-  let isClearingThumbnailCache = $state(false);
-
-  async function clearThumbnailLocalCache() {
-    if (isClearingThumbnailCache) return;
-
-    console.log("🗑️ Starting thumbnail local cache clear...");
-    isClearingThumbnailCache = true;
-    introResetMessage = "Clearing thumbnail cache...";
-
-    try {
-      const thumbnailCache = getThumbnailLocalCache();
-
-      // Get stats before clearing
-      const statsBefore = await thumbnailCache.getStats();
-
-      // Clear the cache
-      await thumbnailCache.clear();
-
-      const sizeMB = (statsBefore.sizeBytes / 1024 / 1024).toFixed(1);
-      introResetMessage = `Cleared ${statsBefore.count} thumbnails (${sizeMB}MB)`;
-
-      console.log(`✅ Cleared thumbnail local cache:
-      - Entries: ${statsBefore.count}
-      - Size: ${sizeMB}MB`);
-
-      setTimeout(() => {
-        introResetMessage = null;
-      }, 5000);
-    } catch (error) {
-      console.error("❌ Failed to clear thumbnail cache:", error);
-      introResetMessage = `Error: ${error instanceof Error ? error.message : "Unknown"}`;
-      setTimeout(() => {
-        introResetMessage = null;
-      }, 5000);
-    } finally {
-      isClearingThumbnailCache = false;
-    }
-  }
-
   function showPwaMigrationBanner() {
     window.dispatchEvent(new CustomEvent("pwaMigrationBannerShow"));
     introResetMessage = "PWA migration banner shown";
@@ -424,26 +346,20 @@ import type { QuickAccessUser } from "../services/types";
     {isSearchOpen}
     isLoading={userPreviewState.isLoading}
     {introResetMessage}
-    canResetIntro={canResetIntro()}
-    currentIntroTitle={currentIntro?.title || null}
     {isCurrentUserInQuickAccess}
     onSelectUser={selectUser}
     onRemoveFromQuickAccess={removeFromQuickAccess}
     onAddToQuickAccess={addToQuickAccess}
     onClearPreview={handleClearPreview}
     onToggleSearch={handleToggleSearch}
-    onResetTabIntro={resetTabIntro}
     onPreviewFirstRun={previewFirstRunWizard}
     onPreviewCreateTutorial={previewCreateTutorial}
-    onResetHelpDiscovery={resetHelpButtonDiscovery}
     onClearCloudThumbnails={clearCloudThumbnails}
     {isClearingThumbnails}
     onClearLocalCache={clearLocalPictographCache}
     {isClearingLocalCache}
     onClearTikaCache={clearTikaPictographCache}
     {isClearingTikaCache}
-    onClearThumbnailCache={clearThumbnailLocalCache}
-    {isClearingThumbnailCache}
     onShowPwaBanner={showPwaMigrationBanner}
     onClose={handleClose}
     {currentRole}
@@ -461,25 +377,20 @@ import type { QuickAccessUser } from "../services/types";
     {isSearchOpen}
     isLoading={userPreviewState.isLoading}
     {introResetMessage}
-    canResetIntro={canResetIntro()}
     {isCurrentUserInQuickAccess}
     onSelectUser={selectUser}
     onRemoveFromQuickAccess={removeFromQuickAccess}
     onAddToQuickAccess={addToQuickAccess}
     onClearPreview={handleClearPreview}
     onToggleSearch={handleToggleSearch}
-    onResetTabIntro={resetTabIntro}
     onPreviewFirstRun={previewFirstRunWizard}
     onPreviewCreateTutorial={previewCreateTutorial}
-    onResetHelpDiscovery={resetHelpButtonDiscovery}
     onClearCloudThumbnails={clearCloudThumbnails}
     {isClearingThumbnails}
     onClearLocalCache={clearLocalPictographCache}
     {isClearingLocalCache}
     onClearTikaCache={clearTikaPictographCache}
     {isClearingTikaCache}
-    onClearThumbnailCache={clearThumbnailLocalCache}
-    {isClearingThumbnailCache}
     onShowPwaBanner={showPwaMigrationBanner}
     onClose={handleClose}
   />

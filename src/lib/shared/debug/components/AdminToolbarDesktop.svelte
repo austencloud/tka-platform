@@ -31,8 +31,6 @@
     isSearchOpen: boolean;
     isLoading: boolean;
     introResetMessage: string | null;
-    canResetIntro: boolean;
-    currentIntroTitle: string | null;
     isCurrentUserInQuickAccess: boolean;
     onSelectUser: (user: {
       uid: string;
@@ -44,18 +42,14 @@
     onAddToQuickAccess: () => void;
     onClearPreview: () => void;
     onToggleSearch: () => void;
-    onResetTabIntro: () => void;
     onPreviewFirstRun: () => void;
     onPreviewCreateTutorial: () => void;
-    onResetHelpDiscovery: () => void;
     onClearCloudThumbnails: () => void;
     isClearingThumbnails: boolean;
     onClearLocalCache: () => void;
     isClearingLocalCache: boolean;
     onClearTikaCache: () => void;
     isClearingTikaCache: boolean;
-    onClearThumbnailCache: () => void;
-    isClearingThumbnailCache: boolean;
     onShowPwaBanner: () => void;
     onClose: () => void;
     currentRole: UserRole;
@@ -70,26 +64,20 @@
     isSearchOpen,
     isLoading,
     introResetMessage,
-    canResetIntro,
-    currentIntroTitle,
     isCurrentUserInQuickAccess,
     onSelectUser,
     onRemoveFromQuickAccess,
     onAddToQuickAccess,
     onClearPreview,
     onToggleSearch,
-    onResetTabIntro,
     onPreviewFirstRun,
     onPreviewCreateTutorial,
-    onResetHelpDiscovery,
     onClearCloudThumbnails,
     isClearingThumbnails,
     onClearLocalCache,
     isClearingLocalCache,
     onClearTikaCache,
     isClearingTikaCache,
-    onClearThumbnailCache,
-    isClearingThumbnailCache,
     onShowPwaBanner,
     onClose,
     currentRole,
@@ -97,75 +85,11 @@
     onSwitchRole,
   }: Props = $props();
 
-  // Responsive: show inline action buttons when they fit, dropdown when they don't.
-  // A hidden measuring strip always renders the action buttons offscreen.
-  // We compare its width against the available space (toolbar minus fixed items).
-  let measureEl: HTMLElement | null = $state(null);
-  let toolbarEl: HTMLElement | null = $state(null);
-  let useInline = $state(true);
-
-  $effect(() => {
-    if (!measureEl || !toolbarEl) return;
-
-    function checkFit() {
-      if (!measureEl || !toolbarEl) return;
-      // The measure strip has the same action buttons. We need to check if
-      // adding them to the toolbar would fit. The toolbar already has:
-      // branding + roles + divider + users + search + spacer + right section
-      // So: available = toolbar width - (everything except action buttons)
-      // Simplification: the right section (dropdown + close) is ~100px.
-      // The left items (branding + roles + users + search) we can measure from
-      // the toolbar's existing children before the spacer.
-      const spacer = toolbarEl.querySelector(".toolbar-spacer") as HTMLElement;
-      if (!spacer) return;
-      // Everything before the spacer is fixed content
-      let fixedWidth = 0;
-      for (const child of toolbarEl.children) {
-        if (child === spacer) break;
-        fixedWidth += (child as HTMLElement).offsetWidth + 6; // 6 = gap
-      }
-      // Right section (close button, potential dropdown)
-      const rightSection = toolbarEl.querySelector(".toolbar-right") as HTMLElement;
-      const rightWidth = rightSection ? 50 : 0; // just the close button when inline
-      const available = toolbarEl.clientWidth - fixedWidth - rightWidth - 12;
-      useInline = measureEl.scrollWidth <= available;
-    }
-
-    checkFit();
-    window.addEventListener("resize", checkFit);
-    return () => window.removeEventListener("resize", checkFit);
-  });
-
-  // Debug actions dropdown state
+  // Caches dropdown state
   let isActionsOpen = $state(false);
 
   function toggleActions() {
     isActionsOpen = !isActionsOpen;
-  }
-
-  function handleFirstRun() {
-    onPreviewFirstRun();
-    isActionsOpen = false;
-  }
-
-  function handleCreateTutorial() {
-    onPreviewCreateTutorial();
-    isActionsOpen = false;
-  }
-
-  function handleResetIntro() {
-    onResetTabIntro();
-    isActionsOpen = false;
-  }
-
-  function handleResetHelpDiscovery() {
-    onResetHelpDiscovery();
-    isActionsOpen = false;
-  }
-
-  function handleShowPwaBanner() {
-    onShowPwaBanner();
-    isActionsOpen = false;
   }
 
   function handleClearCloudThumbnails() {
@@ -183,11 +107,6 @@
     isActionsOpen = false;
   }
 
-  function handleClearThumbnailCache() {
-    onClearThumbnailCache();
-    isActionsOpen = false;
-  }
-
   function handlePointerDownOutside(event: PointerEvent) {
     const target = event.target as HTMLElement;
     if (!target.closest(".actions-menu")) {
@@ -199,23 +118,7 @@
 <svelte:window onpointerdown={handlePointerDownOutside} />
 
 <div class="admin-toolbar" transition:slide={{ duration: 150 }}>
-  <!-- Hidden measuring element - always rendered offscreen to get natural button width -->
-  {#if !isUserPreview}
-    <div class="measure-strip" bind:this={measureEl} aria-hidden="true">
-      <span class="action-chip"><i class="fas fa-wand-magic-sparkles"></i><span>Preview First Run</span></span>
-      <span class="action-chip"><i class="fas fa-graduation-cap"></i><span>Preview Tutorial</span></span>
-      <span class="action-chip"><i class="fas fa-door-open"></i><span>Reset Intro</span></span>
-      <span class="action-chip"><i class="fas fa-circle-question"></i><span>Reset Help Discovery</span></span>
-      <span class="action-chip"><i class="fas fa-mobile-screen"></i><span>PWA Banner</span></span>
-      <span class="toolbar-divider"></span>
-      <span class="action-chip"><i class="fas fa-cloud-arrow-down"></i><span>Clear Cloud Thumbnails</span></span>
-      <span class="action-chip"><i class="fas fa-database"></i><span>Clear Pictograph Cache</span></span>
-      <span class="action-chip"><i class="fas fa-robot"></i><span>Clear TIKA Cache</span></span>
-      <span class="action-chip"><i class="fas fa-images"></i><span>Clear Thumbnail Cache</span></span>
-    </div>
-  {/if}
-
-  <div class="toolbar-row" bind:this={toolbarEl}>
+  <div class="toolbar-row">
     {#if isUserPreview && previewProfile}
       <!-- PREVIEW MODE: three-column layout -->
       <div class="toolbar-left">
@@ -316,60 +219,33 @@
       <!-- Spacer pushes actions to the right -->
       <div class="toolbar-spacer"></div>
 
-      <!-- Inline action buttons (when they fit) -->
-      {#if useInline}
-        <button type="button" class="action-chip" onclick={handleFirstRun} title="Preview First Run Wizard">
-          <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-          <span>Preview First Run</span>
-        </button>
-        <button type="button" class="action-chip" onclick={handleCreateTutorial} title="Preview Create Tutorial">
-          <i class="fas fa-graduation-cap" aria-hidden="true"></i>
-          <span>Preview Tutorial</span>
-        </button>
-        <button type="button" class="action-chip" onclick={handleResetIntro} disabled={!canResetIntro} title="Reset Tab Intro{currentIntroTitle ? ` (${currentIntroTitle})` : ''}">
-          <i class="fas fa-door-open" aria-hidden="true"></i>
-          <span>Reset Intro</span>
-        </button>
-        <button type="button" class="action-chip" onclick={handleResetHelpDiscovery} title="Reset Help Button Discovery">
-          <i class="fas fa-circle-question" aria-hidden="true"></i>
-          <span>Reset Help Discovery</span>
-        </button>
-        <button type="button" class="action-chip" onclick={handleShowPwaBanner} title="Show PWA Migration Banner">
-          <i class="fas fa-mobile-screen" aria-hidden="true"></i>
-          <span>PWA Banner</span>
-        </button>
-        <div class="toolbar-divider"></div>
-        <button type="button" class="action-chip danger" onclick={handleClearCloudThumbnails} disabled={isClearingThumbnails} title="Clear Cloud Thumbnails">
-          {#if isClearingThumbnails}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>{:else}<i class="fas fa-cloud-arrow-down" aria-hidden="true"></i>{/if}
-          <span>Clear Cloud Thumbnails</span>
-        </button>
-        <button type="button" class="action-chip danger" onclick={handleClearLocalCache} disabled={isClearingLocalCache} title="Clear Pictograph Cache">
-          {#if isClearingLocalCache}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>{:else}<i class="fas fa-database" aria-hidden="true"></i>{/if}
-          <span>Clear Pictograph Cache</span>
-        </button>
-        <button type="button" class="action-chip danger" onclick={handleClearTikaCache} disabled={isClearingTikaCache} title="Clear TIKA Cache">
-          {#if isClearingTikaCache}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>{:else}<i class="fas fa-robot" aria-hidden="true"></i>{/if}
-          <span>Clear TIKA Cache</span>
-        </button>
-        <button type="button" class="action-chip danger" onclick={handleClearThumbnailCache} disabled={isClearingThumbnailCache} title="Clear Thumbnail Cache">
-          {#if isClearingThumbnailCache}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>{:else}<i class="fas fa-images" aria-hidden="true"></i>{/if}
-          <span>Clear Thumbnail Cache</span>
-        </button>
-      {/if}
+      <!-- Inline onboarding preview actions -->
+      <button type="button" class="action-chip" onclick={onPreviewFirstRun} title="Preview First Run Wizard">
+        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+        <span>Preview First Run</span>
+      </button>
+      <button type="button" class="action-chip" onclick={onPreviewCreateTutorial} title="Preview Create Tutorial">
+        <i class="fas fa-graduation-cap" aria-hidden="true"></i>
+        <span>Preview Tutorial</span>
+      </button>
+      <button type="button" class="action-chip" onclick={onShowPwaBanner} title="Show PWA Migration Banner">
+        <i class="fas fa-mobile-screen" aria-hidden="true"></i>
+        <span>PWA Banner</span>
+      </button>
     {/if}
 
-    <!-- RIGHT: dropdown (fallback when inline doesn't fit) + close -->
+    <!-- RIGHT: caches dropdown + close -->
     <div class="toolbar-right">
-      <div class="actions-menu" class:hidden={useInline && !isUserPreview}>
+      <div class="actions-menu">
         <button
           type="button"
           class="actions-trigger"
           class:active={isActionsOpen}
           onclick={toggleActions}
-          title="Debug actions"
+          title="Clear caches"
         >
-          <i class="fas fa-wrench" aria-hidden="true"></i>
-          <span class="trigger-label">Debug</span>
+          <i class="fas fa-database" aria-hidden="true"></i>
+          <span class="trigger-label">Caches</span>
           <i
             class="fas fa-chevron-down chevron"
             class:open={isActionsOpen}
@@ -382,59 +258,6 @@
             class="actions-dropdown"
             transition:fly={{ y: -8, duration: 150 }}
           >
-            <button
-              type="button"
-              class="dropdown-item"
-              onclick={handleFirstRun}
-            >
-              <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-              <span>Preview First Run Wizard</span>
-            </button>
-
-            <button
-              type="button"
-              class="dropdown-item"
-              onclick={handleCreateTutorial}
-            >
-              <i class="fas fa-graduation-cap" aria-hidden="true"></i>
-              <span>Preview Create Tutorial</span>
-            </button>
-
-            <button
-              type="button"
-              class="dropdown-item"
-              onclick={handleResetIntro}
-              disabled={!canResetIntro}
-            >
-              <i class="fas fa-door-open" aria-hidden="true"></i>
-              <span>
-                Reset Tab Intro
-                {#if currentIntroTitle}
-                  <span class="intro-hint">({currentIntroTitle})</span>
-                {/if}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              class="dropdown-item"
-              onclick={handleResetHelpDiscovery}
-            >
-              <i class="fas fa-circle-question" aria-hidden="true"></i>
-              <span>Reset Help Button Discovery</span>
-            </button>
-
-            <button
-              type="button"
-              class="dropdown-item"
-              onclick={handleShowPwaBanner}
-            >
-              <i class="fas fa-mobile-screen" aria-hidden="true"></i>
-              <span>Show PWA Migration Banner</span>
-            </button>
-
-            <div class="dropdown-divider"></div>
-
             <button
               type="button"
               class="dropdown-item danger"
@@ -477,21 +300,6 @@
               {:else}
                 <i class="fas fa-robot" aria-hidden="true"></i>
                 <span>Clear TIKA Pictograph Cache</span>
-              {/if}
-            </button>
-
-            <button
-              type="button"
-              class="dropdown-item danger"
-              onclick={handleClearThumbnailCache}
-              disabled={isClearingThumbnailCache}
-            >
-              {#if isClearingThumbnailCache}
-                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-                <span>Clearing...</span>
-              {:else}
-                <i class="fas fa-images" aria-hidden="true"></i>
-                <span>Clear Thumbnail Cache</span>
               {/if}
             </button>
           </div>
@@ -856,12 +664,6 @@
     color: var(--theme-accent);
   }
 
-  .dropdown-item .intro-hint {
-    font-size: var(--font-size-xs);
-    color: var(--theme-text-dim);
-    margin-left: 4px;
-  }
-
   .dropdown-item.danger {
     color: #fca5a5;
   }
@@ -872,12 +674,6 @@
 
   .dropdown-item.danger:hover:not(:disabled) {
     background: rgba(239, 68, 68, 0.15);
-  }
-
-  .dropdown-divider {
-    height: 1px;
-    margin: 4px 8px;
-    background: rgba(255, 255, 255, 0.1);
   }
 
   .toast {
@@ -979,23 +775,6 @@
   }
 
 
-  /* Hidden measuring strip - renders buttons offscreen to get natural width */
-  .measure-strip {
-    position: absolute;
-    top: -9999px;
-    left: 0;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-    pointer-events: none;
-    visibility: hidden;
-  }
-
-  .actions-menu.hidden {
-    display: none;
-  }
-
   /* Progressive collapse: 900-1200px */
   @media (max-width: 1200px) {
     .trigger-label {
@@ -1019,6 +798,11 @@
     }
 
     .chip-name {
+      display: none;
+    }
+
+    /* Onboarding preview actions go icon-only to avoid overflow */
+    .action-chip span {
       display: none;
     }
   }
