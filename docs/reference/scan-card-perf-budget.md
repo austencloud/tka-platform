@@ -83,6 +83,20 @@ sequence guaranteed unwarmed) and paste cold + warm `scan-to-stable` here.
 Paste cold + warm `scan-to-stable` after the feature is warmed. The warm number
 is the headline win (download vs rasterize).
 
+## Known v1 limitations (documented, acceptable)
+
+- **Warming is dark-mode only.** The cloud hash includes `isDark`, and
+  `warmSequenceCells` warms `isDark: true`. A scanner whose device is in **light**
+  mode computes a different hash, misses, and cold-renders locally (the old
+  behavior). The scan page is dark-themed, so the majority render dark and hit.
+  To cover light too, warm both modes at publish (2× uploads) or force the scan
+  card dark.
+- **Cat/dog (different prop per hand) sequences.** The scan page seeds both hands
+  to one prop (`?bp` / `intendedProp.bluePropType`), while render-at-publish uses
+  `intendedProp.redPropType` for the red hand. So cat/dog cards can mismatch on
+  the prop and cold-render. Rare; seed `redPropType` from `intendedProp` on the
+  scan page to close it.
+
 ## Known follow-ups (measured, not guessed)
 
 - **Aggressive glyph-init defer.** The full glyph cache init is currently awaited
