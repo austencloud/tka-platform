@@ -45,7 +45,8 @@ export class PropPlacer {
   async calculatePlacement(
     pictographData: PictographData,
     motionData: MotionData,
-    visibility?: PropPlacementVisibility
+    visibility?: PropPlacementVisibility,
+    propSettings?: PropPlacerSettings
   ): Promise<PropPlacementData> {
     // DEBUG: Log motion data
 
@@ -64,7 +65,8 @@ export class PropPlacer {
       pictographData,
       motionData,
       gridMode,
-      visibility
+      visibility,
+      propSettings
     );
 
     // IMPORTANT: Hands should never rotate - always use default orientation (0 degrees)
@@ -84,11 +86,12 @@ export class PropPlacer {
     pictographData: PictographData,
     motionData: MotionData,
     gridMode: GridMode,
-    visibility?: PropPlacementVisibility
+    visibility?: PropPlacementVisibility,
+    propSettings?: PropPlacerSettings
   ): Promise<{ x: number; y: number }> {
     // Determine if strict handpoints are needed (large props like bighoop)
     // Legacy: pictograph_checker.has_strict_placed_props() - true when BOTH props are strict types
-    const resolvedSettings = this.settings ?? {
+    const resolvedSettings = propSettings ?? this.settings ?? {
       bluePropType: pictographData.motions.blue?.propType ?? "staff",
       redPropType: pictographData.motions.red?.propType ?? "staff",
     };
@@ -117,7 +120,8 @@ export class PropPlacer {
       pictographData,
       motionData,
       gridMode,
-      visibility
+      visibility,
+      propSettings
     );
 
     return {
@@ -130,7 +134,8 @@ export class PropPlacer {
     pictographData: PictographData,
     motionData: MotionData,
     gridMode: GridMode,
-    visibility?: PropPlacementVisibility
+    visibility?: PropPlacementVisibility,
+    propSettings?: PropPlacerSettings
   ): Promise<{ x: number; y: number }> {
     // If this prop's partner is hidden, there is no collision - skip offset.
     // Beta offset exists purely to separate two overlapping props; with one
@@ -158,8 +163,11 @@ export class PropPlacer {
     }
 
     // App-specific: resolve actual prop types from user settings
-    // (user may have "staff" stored in data but render as "buugeng" via settings)
-    const settings = this.settings ?? {
+    // (user may have "staff" stored in data but render as "club"/"buugeng" via settings).
+    // Per-call propSettings wins because the in-app singleton carries no settings —
+    // without this the beta calc falls back to the stored "staff" type and the
+    // unilateral-skip in render-core never fires for club/fan/etc.
+    const settings = propSettings ?? this.settings ?? {
       bluePropType: blueMotion.propType ?? "staff",
       redPropType: redMotion.propType ?? "staff",
     };

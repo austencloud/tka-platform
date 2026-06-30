@@ -228,7 +228,12 @@ export class PictographPreparer {
               options?.useGridVersion ?? false,
               options?.themeMode ? { themeMode: options.themeMode } : undefined
             ),
-            this.propPlacer.calculatePlacement(pictograph, motion, visibility),
+            this.propPlacer.calculatePlacement(
+              pictograph,
+              motion,
+              visibility,
+              settings
+            ),
           ]);
 
           if (!renderData.svgData) return;

@@ -11,7 +11,10 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import { propPlacer } from "$lib/shared/pictograph/prop/services/prop-placer";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
+import {
+  isBuugengFamilyProp,
+  isUnilateralProp,
+} from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
 
 /** "dash" -> "Dash", "static" -> "Static". For the dense motion-line display. */
 export function formatMotionTypeLabel(motionType: string | undefined): string {
@@ -68,7 +71,14 @@ export async function formatMotionText(
         : motion;
       const placement = await propPlacer.calculatePlacement(
         pictographData,
-        motionWithOverride
+        motionWithOverride,
+        undefined,
+        {
+          bluePropType: settings.bluePropType,
+          redPropType: settings.redPropType,
+          blueBuugengFlipped: settings.blueBuugengFlipped,
+          redBuugengFlipped: settings.redBuugengFlipped,
+        }
       );
       calculatedPlacement = placement;
     } catch (e) {
@@ -284,26 +294,46 @@ function formatBetaAnalysis(
   lines.push(`  Hybrid (one radial, one not): ${hybridOrientation}`);
   lines.push(`  Same Type But Different Orientation: ${sameTypeButDifferent}`);
 
-  // Decision summary
-  // NOTE: Orientation (IN/OUT/CLOCK/COUNTER) is SEPARATE from Chirality (shape form)
-  // Buugeng nesting only requires: both Buugeng + opposite chirality
-  lines.push(``, `  BUUGENG NESTING CONDITIONS:`);
-  lines.push(`    1. Both Buugeng Family: ${bothBuugeng ? "✓" : "✗"}`);
-  lines.push(`    2. Opposite Chirality: ${oppositeChirality ? "✓" : "✗"}`);
-  lines.push(`    (Orientation is irrelevant for nesting decision)`);
+  // Decision summary — mirror EVERY skip gate in render-core calculateBetaOffset()
+  // so this readout matches what actually renders. Previously this only checked
+  // the buugeng-nesting gate, so it printed "NO" even when the real function
+  // skipped (e.g. two clubs ending radial-but-different — the unilateral gate).
+  const blueUnilateral = isUnilateralProp(actualBlueProp);
+  const redUnilateral = isUnilateralProp(actualRedProp);
 
-  const shouldSkipBetaOffset = bothBuugeng && oppositeChirality;
+  // Gate 3: one prop radial, the other non-radial.
+  const hybridSkip = hybridOrientation;
+  // Gate 4: both buugeng family + opposite chirality (nest together).
+  const buugengNestSkip = bothBuugeng && oppositeChirality;
+  // Gate 5: target prop is unilateral (one-ended) + same-type/different-orientation.
+  // The render decides per-target; for the same-prop case both sides agree.
+  const unilateralSkip =
+    sameTypeButDifferent && (blueUnilateral || redUnilateral);
+  // Gate 6: trigeng + same-type/different-orientation.
+  const trigengSkip =
+    sameTypeButDifferent &&
+    (actualBlueProp?.toLowerCase() === "trigeng" ||
+      actualRedProp?.toLowerCase() === "trigeng");
+
+  lines.push(``, `  SKIP CONDITIONS (any one skips the offset):`);
+  lines.push(
+    `    Hybrid orientation (one radial, one not): ${hybridSkip ? "✓" : "✗"}`
+  );
+  lines.push(
+    `    Buugeng nesting (both buugeng + opposite chirality): ${buugengNestSkip ? "✓" : "✗"}`
+  );
+  lines.push(
+    `    Unilateral one-ended + same-type/different-orientation: ${unilateralSkip ? "✓" : "✗"} (blue=${blueUnilateral}, red=${redUnilateral})`
+  );
+  lines.push(
+    `    Trigeng + same-type/different-orientation: ${trigengSkip ? "✓" : "✗"}`
+  );
+
+  const shouldSkipBetaOffset =
+    hybridSkip || buugengNestSkip || unilateralSkip || trigengSkip;
   lines.push(
     `  → Should Skip Beta Offset: ${shouldSkipBetaOffset ? "YES" : "NO"}`
   );
-
-  if (!shouldSkipBetaOffset && bothBuugeng) {
-    if (!oppositeChirality) {
-      lines.push(
-        `  → Reason: Same chirality (both ${blueChirality ? "B" : "A"})`
-      );
-    }
-  }
 
   // Orientation analysis (for reference, not part of nesting decision)
   lines.push(``, `  ORIENTATION ANALYSIS (for reference):`);
