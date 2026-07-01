@@ -313,6 +313,11 @@ Last audit: 2025-12-27
       )
     )
       return;
+    // Tap-to-toggle fires ONLY on the canvas square, not the surrounding chrome
+    // (word header, progress slot, empty pane margin). The square is
+    // CanvasSurface's .canvas-wrapper; pointer-events:none overlays (tap-flash,
+    // hover hint) let taps fall through to it so closest() still resolves.
+    if (!target?.closest(".canvas-wrapper")) return;
     // Capture state BEFORE the toggle: onPlaybackToggle() updates the isPlaying
     // prop synchronously (the controller notifies subscribers synchronously and
     // Svelte 5 props read live), so reading isPlaying afterwards yields the
@@ -480,6 +485,7 @@ Last audit: 2025-12-27
   data-hide-header={hideHeader || undefined}
   data-hover-hint={hoverHint !== "none" ? hoverHint : undefined}
   data-tap-toggle={tapToToggle || undefined}
+  data-corner-toggle={cornerToggle || undefined}
   data-view={viewState}
   oncontextmenu={handleContextMenu}
   onpointerdown={handlePointerDown}
@@ -832,14 +838,15 @@ Last audit: 2025-12-27
   /* ── Corner play/pause toggle ──────────────────────────────────────
      A real <button> pinned to the canvas square's top-right (rendered inside
      CanvasSurface's position:relative .canvas-wrapper via the cornerControl
-     slot). Visible on every device — mouse AND touch — unlike the hover hint;
-     the body tap-to-toggle still works as a bonus. cqmin sizes it to the
-     canvas. The header's loop badge lives in a separate strip above, so this
-     corner is free. */
+     slot). HIDDEN at rest; revealed on mouse hover of the canvas (and on
+     keyboard focus) — the YouTube/Vimeo idiom. Touch has no hover, so it stays
+     hidden there and the body tap-to-toggle covers play/pause. cqmin sizes it
+     to the canvas. The header's loop badge lives in a separate strip above, so
+     this corner is free. */
   .corner-toggle {
     position: absolute;
-    top: clamp(4px, 2cqmin, 10px);
-    right: clamp(4px, 2cqmin, 10px);
+    top: clamp(8px, 2.5cqmin, 20px);
+    right: clamp(8px, 2.5cqmin, 20px);
     z-index: 7;
     display: flex;
     align-items: center;
@@ -851,15 +858,33 @@ Last audit: 2025-12-27
     border: 0;
     background: none;
     cursor: pointer;
+    /* Hidden at rest, tucked toward its corner so the reveal pops outward. */
+    opacity: 0;
+    transform: scale(0.55) translateY(-12px);
+    transform-origin: top right;
+    pointer-events: none; /* non-interactive until revealed */
+    transition:
+      opacity 140ms ease,
+      transform 150ms ease; /* exit: quick, no overshoot */
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Keyboard focus reveals + arms on any device (not gated to hover). */
+  .corner-toggle:focus-visible {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+    transition:
+      opacity 200ms ease,
+      transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1); /* enter: bouncy pop */
   }
 
   .corner-disc {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: clamp(30px, 8.5cqmin, 46px);
-    height: clamp(30px, 8.5cqmin, 46px);
+    width: clamp(44px, 11cqmin, 84px);
+    height: clamp(44px, 11cqmin, 84px);
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.42);
     backdrop-filter: blur(6px);
@@ -867,7 +892,7 @@ Last audit: 2025-12-27
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     color: rgba(255, 255, 255, 0.96);
-    font-size: clamp(13px, 3.6cqmin, 20px);
+    font-size: clamp(18px, 4.6cqmin, 38px);
     opacity: 0.9;
     transition:
       opacity 140ms ease,
@@ -900,9 +925,41 @@ Last audit: 2025-12-27
     transform: translateX(1px);
   }
 
+  /* Reveal is scoped to the CANVAS SQUARE only — hovering the square (not the
+     header, progress slot, or empty pane margin) shows the button + a pointer
+     cursor. The button lives inside CanvasSurface's .canvas-wrapper, reached
+     with :global; the rest stays scoped. Gated to fine-pointer/hover so touch
+     never sticky-shows it. */
+  @media (hover: hover) and (pointer: fine) {
+    /* Pointer cursor on the canvas square whenever it's clickable — the
+       tap-to-toggle canvas (every viewer/landing/tutorial player) and the
+       corner-button variant. The honest "this is clickable" signal; discovery
+       then happens via the tap + flash. */
+    .animation-container[data-tap-toggle] :global(.canvas-wrapper),
+    .animation-container[data-corner-toggle] :global(.canvas-wrapper) {
+      cursor: pointer;
+    }
+
+    .animation-container[data-corner-toggle] :global(.canvas-wrapper:hover .corner-toggle) {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: auto;
+      transition:
+        opacity 200ms ease,
+        transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1); /* enter: bouncy pop */
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .corner-disc {
       transition: none;
+    }
+    /* No pop under reduced motion — reveal is a plain fade, no scale/translate. */
+    .corner-toggle,
+    .corner-toggle:focus-visible,
+    .animation-container[data-corner-toggle] :global(.canvas-wrapper:hover .corner-toggle) {
+      transform: none;
+      transition: opacity 140ms ease;
     }
   }
 

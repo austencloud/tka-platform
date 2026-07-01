@@ -51,7 +51,7 @@ captureEffectDiagnostics to the context menu.
   import type { FireOverlayConfig } from "../domain/types/fire-types";
   import type { LedOverlayConfig } from "../domain/types/led-types";
   import type { TipEffectMap, TipEffortMap, EffectType } from "../domain/types/tip-effect-types";
-  import { untrack } from "svelte";
+  import { untrack, type Snippet } from "svelte";
   import { fireCacheInvalidation } from "../state/fire-invalidation-signal.svelte";
   import { effectErrorSignal } from "../state/effect-error-signal.svelte";
   import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
@@ -106,6 +106,10 @@ captureEffectDiagnostics to the context menu.
     onEffectError = undefined,
     // Bound back to the parent so it can drive resize + diagnostics
     engine = $bindable(),
+    // Optional overlay pinned inside the square .canvas-wrapper (position:relative),
+    // e.g. a corner play/pause toggle. Anchors to the actual canvas, not the
+    // header/progress stack. Undefined → nothing rendered.
+    cornerControl = undefined,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -150,6 +154,8 @@ captureEffectDiagnostics to the context menu.
     onEffectError?: (effectName: string, error: Error) => void;
     /** The engine instance, bound back to the parent for resize + diagnostics control. */
     engine?: AnimationEngine;
+    /** Optional overlay pinned inside the square canvas (e.g. a corner toggle). */
+    cornerControl?: Snippet;
   } = $props();
 
   const resolvedContextId = contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
@@ -457,6 +463,8 @@ captureEffectDiagnostics to the context menu.
       {preRenderedFramesReady}
     />
   {/if}
+
+  {@render cornerControl?.()}
 </div>
 
 <style>
