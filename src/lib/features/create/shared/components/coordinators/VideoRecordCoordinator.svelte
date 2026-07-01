@@ -113,6 +113,22 @@ import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
 
       logger.success("Sequence saved to library with ID:", sequenceId);
 
+      // File the freshly-saved sequence into any collections chosen in the
+      // save dialog. The sequence id only exists now, so this can't happen at
+      // dialog time — the picker collected the ids and we apply them here.
+      if (metadata.collectionIds?.length) {
+        try {
+          const { addSequenceToCollection } = await import(
+            "$lib/shared/library/services/collection-manager"
+          );
+          for (const collectionId of metadata.collectionIds) {
+            await addSequenceToCollection(collectionId, sequenceId);
+          }
+        } catch (err) {
+          logger.warn("Could not add sequence to selected collections:", err);
+        }
+      }
+
       // Mark session as saved
       await ctx.sessionManager.markAsSaved(sequenceId);
       logger.info("Session marked as saved");

@@ -20,6 +20,8 @@ Allows user to set name, visibility, tags, collections, and notes.
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import CollectionPickerContent from "$lib/features/library/components/collection-picker/CollectionPickerContent.svelte";
+  import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
 
   let {
     isOpen = false,
@@ -38,6 +40,9 @@ Allows user to set name, visibility, tags, collections, and notes.
   let tagInput = $state("");
   let tags = $state<string[]>([]);
   let notes = $state("");
+  // Select mode: the sequence isn't saved yet, so we collect chosen collection
+  // ids here and apply them after the save (see VideoRecordCoordinator).
+  let selectedCollectionIds = $state<string[]>([]);
 
   // Always public - no private sequences for sharing
   const visibility: SequenceVisibility = "public";
@@ -55,6 +60,8 @@ Allows user to set name, visibility, tags, collections, and notes.
       tags = [];
       tagInput = "";
       notes = "";
+      selectedCollectionIds = [];
+      collectionsState.ensureStarted();
     }
   });
 
@@ -87,7 +94,7 @@ Allows user to set name, visibility, tags, collections, and notes.
       name: name.trim(),
       visibility: "public", // Always public
       tags,
-      collectionIds: [], // Not used for now
+      collectionIds: selectedCollectionIds,
       notes: notes.trim(),
     };
 
@@ -208,13 +215,10 @@ Allows user to set name, visibility, tags, collections, and notes.
         {/if}
       </div>
 
-      <!-- Collections (Placeholder for future implementation) -->
+      <!-- Collections -->
       <div class="form-group">
         <span class="form-label">Collections</span>
-        <p class="placeholder-text">
-          <i class="fas fa-folder" aria-hidden="true"></i>
-          Collection management coming soon
-        </p>
+        <CollectionPickerContent mode="select" bind:selectedIds={selectedCollectionIds} />
       </div>
 
       <!-- Notes -->
@@ -504,33 +508,6 @@ Allows user to set name, visibility, tags, collections, and notes.
 
   .tag-remove:hover {
     opacity: 1;
-  }
-
-  /* Placeholder Text */
-  .placeholder-text {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    background: color-mix(
-      in srgb,
-      var(--theme-card-bg, var(--theme-card-bg)) 45%,
-      transparent
-    );
-    border: 1px dashed
-      color-mix(
-        in srgb,
-        var(--theme-stroke, var(--theme-stroke)) 70%,
-        transparent
-      );
-    border-radius: 8px;
-    color: color-mix(
-      in srgb,
-      var(--theme-text-dim, var(--theme-text-dim)) 70%,
-      transparent
-    );
-    font-size: var(--font-size-compact);
-    margin: 0;
   }
 
   /* Footer */

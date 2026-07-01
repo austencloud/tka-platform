@@ -37,6 +37,8 @@ Variation support:
   import { adminDeleteSequence } from "$lib/shared/library/services/admin-sequence-actions";
   import { notifyLibraryMutated } from "$lib/shared/library/library-events";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
+  import CollectionPickerSheet from "$lib/features/library/components/collection-picker/CollectionPickerSheet.svelte";
+  import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
 
   let thumbnailRef = $state<ReturnType<typeof PropAwareThumbnail> | null>(null);
 
@@ -147,6 +149,11 @@ Variation support:
 
   let removeConfirmOpen = $state(false);
   let removeTarget = $state<SequenceData | null>(null);
+
+  // Add-to-collection picker. Target id is captured on open so cycling a
+  // variation while the sheet is open doesn't re-point it at a different card.
+  let collectionSheetOpen = $state(false);
+  let collectionTarget = $state<SequenceData | null>(null);
 
   async function performRemove() {
     const seq = removeTarget;
@@ -269,6 +276,25 @@ Variation support:
 
     const myUid = authState.user?.uid;
     const isOwner = !!myUid && seq.ownerId === myUid;
+    // Owner-only: filing into a collection is filing YOUR sequence into YOUR
+    // collection. Admins viewing someone else's card don't get this (that would
+    // reference a foreign sequence id — out of scope until save-to-library-first).
+    if (isOwner) {
+      items.push(
+        { type: "separator" } as ContextMenuEntry,
+        {
+          id: "add-to-collection",
+          label: "Add to collection…",
+          icon: "fa-folder-plus",
+          action() {
+            closeContextMenu();
+            collectionTarget = seq;
+            collectionsState.ensureStarted();
+            collectionSheetOpen = true;
+          },
+        },
+      );
+    }
     if (isOwner || featureFlagService.isAdmin) {
       items.push(
         { type: "separator" } as ContextMenuEntry,
@@ -349,6 +375,14 @@ Variation support:
   onConfirm={performRemove}
   onCancel={() => { removeConfirmOpen = false; removeTarget = null; }}
 />
+
+{#if collectionTarget}
+  <CollectionPickerSheet
+    bind:isOpen={collectionSheetOpen}
+    sequenceId={collectionTarget.id}
+    sequenceLabel={collectionTarget.name}
+  />
+{/if}
 
 <style>
   .choreo-card {
