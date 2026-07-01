@@ -134,6 +134,7 @@
                       showTnD={SHEET_CELL_VISIBILITY.showTnD}
                       showElemental={SHEET_CELL_VISIBILITY.showElemental}
                       showPositions={SHEET_CELL_VISIBILITY.showPositions}
+                      stepNumberOverride={layout.showStepNumbers}
                       {showHandPoints}
                     />
                   {/if}
