@@ -112,6 +112,10 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // on freshly-added rows instead of leaving them mysteriously blank.
   let isHydrating = $state(false);
 
+  // Which sequence block (by id) is selected in the preview / rail — powers
+  // select-then-remove (click the whole sequence, see it highlighted, remove it).
+  let selectedSequenceId = $state<string | null>(null);
+
   // The on-sheet sequences, in sheet order, with any not-yet-hydrated ones
   // skipped (their rows simply haven't drawn yet — they fill in as hydration
   // resolves). This is what the planner and preview consume.
@@ -226,9 +230,28 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // it's keyed by id and re-adding the sequence should not refetch.
   function removeAt(index: number): void {
     if (index < 0 || index >= sheet.sequenceIds.length) return;
+    const removedId = sheet.sequenceIds[index];
     const next = sheet.sequenceIds.slice();
     next.splice(index, 1);
     sheet = { ...sheet, sequenceIds: next, updatedAt: new Date() };
+    if (removedId === selectedSequenceId) selectedSequenceId = null;
+  }
+
+  // Remove a whole sequence block by id (the preview selects by id, not index).
+  function removeById(id: string): void {
+    const index = sheet.sequenceIds.indexOf(id);
+    if (index >= 0) removeAt(index);
+  }
+
+  // Selection: which sequence block is highlighted for select-then-remove.
+  function selectSequence(id: string | null): void {
+    selectedSequenceId = id;
+  }
+  function toggleSequenceSelection(id: string): void {
+    selectedSequenceId = selectedSequenceId === id ? null : id;
+  }
+  function clearSelection(): void {
+    selectedSequenceId = null;
   }
 
   // Reorder: pull the row out of `from` and drop it back in at `to`.
@@ -335,10 +358,17 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     get isHydrating() {
       return isHydrating;
     },
+    get selectedSequenceId() {
+      return selectedSequenceId;
+    },
 
     addSequences,
     addHydratedSequences,
     removeAt,
+    removeById,
+    selectSequence,
+    toggleSequenceSelection,
+    clearSelection,
     move,
     setName,
     setLayout,
