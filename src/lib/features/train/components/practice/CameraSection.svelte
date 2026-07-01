@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import CameraPreview from "../CameraPreview.svelte";
+  import CameraPreview from "$lib/shared/train/components/CameraPreview.svelte";
   import GridOverlay from "../GridOverlay.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { TrainMode } from "../../domain/enums/train-enums";
