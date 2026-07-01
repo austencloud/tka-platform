@@ -34,10 +34,13 @@
     pages,
     geo,
     layout,
+    breakSequenceIds = new Set<string>(),
   }: {
     pages: SheetPage[];
     geo: SheetPageGeometry;
     layout: ChoreoSheetLayout;
+    /** Sequence ids whose block does NOT connect to the sequence above it. */
+    breakSequenceIds?: Set<string>;
   } = $props();
 
   // PictographContainer takes a boolean showHandPoints; the locked config carries
@@ -101,6 +104,14 @@
   function hasSeparator(page: SheetPage, rowIndex: number): boolean {
     return layout.groupSeparator === "rule" && rowIndex > 0 && page.rows[rowIndex]!.isBlockStart;
   }
+
+  // A break sits at the start of a block whose sequence doesn't connect to the
+  // one above it. Independent of the group-separator style — it's a warning, not
+  // a decoration — so it draws even when the separator is "gap" or "none".
+  function isBreak(page: SheetPage, rowIndex: number): boolean {
+    const row = page.rows[rowIndex]!;
+    return row.isBlockStart && !!row.sequenceId && breakSequenceIds.has(row.sequenceId);
+  }
 </script>
 
 {#if pages.length === 0}
@@ -117,8 +128,14 @@
             <div
               class="sheet-row"
               class:separator={hasSeparator(page, ri)}
+              class:break={isBreak(page, ri)}
               style="grid-template-columns: repeat({geo.columns}, 1fr); column-gap: {colGapPct}%;"
             >
+              {#if isBreak(page, ri)}
+                <span class="row-break-label">
+                  <i class="fa-solid fa-link-slash" aria-hidden="true"></i> break
+                </span>
+              {/if}
               {#each row.cells as cell, ci (ci)}
                 <div class="cell" class:blank={cell.isBlank}>
                   {#if cell.step && visiblePages.has(pi)}
@@ -201,10 +218,48 @@
   .cell {
     aspect-ratio: 1;
     overflow: hidden;
+    border: 1px solid var(--sheet-cell-stroke, rgba(0, 0, 0, 0.18));
+    border-radius: 3px;
+    box-sizing: border-box;
   }
 
   .cell.blank {
     background: transparent;
+    border-color: rgba(0, 0, 0, 0.06);
+  }
+
+  /* Break: a red dashed rule above the block + a small corner flag. Absolute, so
+     it never shifts the grid (no-layout-shift). */
+  .sheet-row.break::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -3px;
+    height: 2px;
+    background: repeating-linear-gradient(
+      to right,
+      var(--theme-danger, #ef4444) 0 6px,
+      transparent 6px 10px
+    );
+    pointer-events: none;
+  }
+
+  .row-break-label {
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0 4px;
+    font-size: 9px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--theme-danger, #ef4444);
+    border-radius: 3px;
+    pointer-events: none;
   }
 
   .empty {
