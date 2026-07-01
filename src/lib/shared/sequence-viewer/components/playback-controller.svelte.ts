@@ -365,9 +365,12 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     _hapticService?.trigger("selection");
   }
 
+  /** Cockpit toggle: flip the persisted AR-mirror pref. The camera itself is
+   *  owned by the mirror layer's mount/unmount — no side effect here. */
   function handleToggleMirror() {
     const next = !(_practiceViewPrefs?.mirrorEnabled ?? false);
     _practiceViewPrefs?.setMirrorEnabled(next);
+    _hapticService?.trigger("selection");
   }
 
   /** Apply a live config change from the bar's inline controls (loops X, step Y,
