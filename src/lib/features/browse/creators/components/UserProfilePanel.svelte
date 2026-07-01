@@ -352,6 +352,10 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
   .profile-main {
     grid-area: main;
     min-width: 0;
+    /* Sit above the sticky rail so the gallery's sort popover can overlap the
+       rail region instead of being covered by it (both are backdrop-filter
+       panels = separate stacking contexts). */
+    z-index: 2;
   }
 
   .profile-aside {
@@ -361,6 +365,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     align-self: start;
     display: flex;
     flex-direction: column;
+    z-index: 1;
   }
 
   /* Three frosted glass panels (banner / main / rail) so all content reads

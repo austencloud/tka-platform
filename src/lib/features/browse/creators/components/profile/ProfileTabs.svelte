@@ -133,6 +133,11 @@
     gap: 12px;
     margin-bottom: 16px;
     flex-wrap: wrap;
+    /* Lift the sort popover above the gallery grid below it. The grid's
+       container-type establishes a stacking context, so without this the
+       cards paint over the open popover. */
+    position: relative;
+    z-index: 30;
   }
 
   .gallery-count {
