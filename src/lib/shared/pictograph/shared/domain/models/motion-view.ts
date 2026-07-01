@@ -57,6 +57,14 @@ export interface MotionView {
 
   /** Skew direction sign. Only meaningful when `skewSteps > 0`. */
   readonly skewDir?: SkewDirection | null;
+
+  /**
+   * Per-step path-shape override for animation interpolation (arc/linear/concave).
+   * Absent = use the global pathShape setting. Lives here, not on core `Motion`:
+   * it is a render/animation concern, not engine structure. Drives
+   * PropInterpolator / HandPathAnimator (single-frame renders never read it).
+   */
+  readonly pathShape?: "arc" | "linear" | "concave";
 }
 
 /**
