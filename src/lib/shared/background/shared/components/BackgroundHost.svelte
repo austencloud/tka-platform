@@ -69,6 +69,57 @@
 		canvasB: HTMLCanvasElement | null;
 		container: HTMLElement | null;
 		updateCanvasDimensions: () => void;
+		// The active/incoming background systems. Read-only here to hover-test the
+		// ocean jellyfish swarm for a desktop pointer cursor (see pointerOverJelly).
+		systemA: unknown;
+		systemB: unknown;
+	}
+
+	// Read-only shape of the ocean system's jelly swarm, mirrored just enough to
+	// hit-test. The real state lives on the (TS-private) OceanBackgroundOrchestrator
+	// and is only reached to give a hover affordance; everything is optional-chained
+	// so a non-ocean background — or a future package that renames the field — is a
+	// silent no-op, exactly like the setPointer/pokeAt guards above.
+	interface OceanSystemLike {
+		state?: { jellyfish?: { x: number; y: number; size: number }[] };
+	}
+
+	function jellyHit(system: unknown, x: number, y: number): boolean {
+		const jellies = (system as OceanSystemLike | null)?.state?.jellyfish;
+		if (!Array.isArray(jellies)) return false;
+		for (const j of jellies) {
+			// Match pokeAt's generous hit radius (size * 0.6) so the cursor flips
+			// exactly where a poke would land.
+			const r = j.size * 0.6;
+			const dx = j.x - x;
+			const dy = j.y - y;
+			if (dx * dx + dy * dy <= r * r) return true;
+		}
+		return false;
+	}
+
+	// True when (x, y) — container CSS px — is over a pokeable jelly on either the
+	// active or incoming (mid-crossfade) system, mirroring pokeAt's systemA ?? systemB.
+	function pointerOverJelly(ctrl: NonNullable<typeof controller>, x: number, y: number): boolean {
+		const c = ctrl as unknown as BackgroundControllerPrivate;
+		return jellyHit(c.systemA, x, y) || jellyHit(c.systemB, x, y);
+	}
+
+	// The 2D background sits behind the whole app (pointer-events:none, z-index:-1),
+	// so the window-level pointerdown fires even when the click really landed on a
+	// control sitting on top of a jelly. Clicking that button must not also ring the
+	// jelly hiding behind it. A pointerdown/hover whose target resolves to an
+	// interactive element is "consumed by the UI" — skip the poke and the hover
+	// cursor there. Covers native controls plus the ARIA/tabbable widgets this app
+	// uses (role="button"/"switch" divs, per the no-checkboxes toggle pattern).
+	const INTERACTIVE_SELECTOR =
+		'a[href], button, input, select, textarea, label, summary, ' +
+		'[role="button"], [role="link"], [role="tab"], [role="menuitem"], ' +
+		'[role="switch"], [role="checkbox"], [role="radio"], [role="option"], ' +
+		'[contenteditable=""], [contenteditable="true"], [tabindex]:not([tabindex="-1"])';
+
+	function isInteractiveTarget(target: EventTarget | null): boolean {
+		return target instanceof Element && target.closest(INTERACTIVE_SELECTOR) !== null;
 	}
 
 	// On a genuinely low-capability device (explicit data-saver, or a slow 3g-or-worse
@@ -119,6 +170,13 @@
 		mounted = true;
 		onReady?.();
 
+		// Dev-only escape hatch so automated verification (DevTools MCP) can query
+		// the live background state — jelly positions, hoverGlow, active system —
+		// without guessing canvas pixels. Stripped from prod builds by the DEV gate.
+		if (import.meta.env.DEV) {
+			(window as unknown as Record<string, unknown>).__tkaBackgroundController = controller;
+		}
+
 		// App-wide cursor flee: the container is pointer-events:none, so listen on
 		// window and map client coords to container-relative px. The canvas is sized
 		// to the container (patchCanvasResolution), so container CSS px == canvas
@@ -126,6 +184,23 @@
 		// non-ocean backgrounds (their systems lack setPointer) AND for a stale
 		// HMR-persisted controller singleton from a pre-0.6.2 build that predates
 		// the setPointer API. Safe app-wide; a hard reload picks up the new method.
+		// Desktop-only: show a pointer cursor while hovering a pokeable 2D jelly, so a
+		// mouse user can tell the swarm is interactive (the pointerdown poke already
+		// works window-wide). Touch has no hover state, so gate to a fine pointer with
+		// hover. The container is pointer-events:none behind the app, so the cursor is
+		// set on <body> — an inherited property, so descendants that don't set their
+		// own cursor pick it up, while buttons/inputs keep theirs. On desktop the canvas
+		// is sized 1:1 to the container (the constrained-res cap only trips on
+		// phones/data-saver), so container CSS px == the canvas-logical px the jelly
+		// positions live in — the same space pokeAt() hit-tests.
+		const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+		let cursorOverJelly = false;
+		const setJellyCursor = (over: boolean) => {
+			if (over === cursorOverJelly) return;
+			cursorOverJelly = over;
+			document.body.style.cursor = over ? 'pointer' : '';
+		};
+
 		const onPointerMove = (e: PointerEvent) => {
 			if (!controller || !containerRef) return;
 			const rect = containerRef.getBoundingClientRect();
@@ -133,8 +208,16 @@
 			const y = e.clientY - rect.top;
 			const inside = x >= 0 && y >= 0 && x <= rect.width && y <= rect.height;
 			controller.setPointer?.(x, y, inside);
+			if (finePointer.matches) {
+				// Only claim the pointer cursor where a poke would actually fire — not
+				// over a control sitting on top of the jelly (it owns its own cursor).
+				setJellyCursor(inside && !isInteractiveTarget(e.target) && pointerOverJelly(controller, x, y));
+			}
 		};
-		const onPointerLeaveWin = () => controller?.setPointer?.(0, 0, false);
+		const onPointerLeaveWin = () => {
+			controller?.setPointer?.(0, 0, false);
+			setJellyCursor(false);
+		};
 		window.addEventListener('pointermove', onPointerMove, { passive: true });
 		window.addEventListener('pointerleave', onPointerLeaveWin);
 
@@ -149,6 +232,9 @@
 		const notes = buildPentatonicNotes(16);
 		const onPointerDown = (e: PointerEvent) => {
 			if (!controller || !containerRef) return;
+			// A click that landed on real UI on top of the background must not also
+			// poke a jelly hiding behind it.
+			if (isInteractiveTarget(e.target)) return;
 			const rect = containerRef.getBoundingClientRect();
 			const x = e.clientX - rect.left;
 			const y = e.clientY - rect.top;
@@ -173,6 +259,7 @@
 			window.removeEventListener('pointerleave', onPointerLeaveWin);
 			window.removeEventListener('pointerdown', onPointerDown);
 			document.removeEventListener('visibilitychange', onVisibilityChange);
+			setJellyCursor(false); // never leave a stray pointer cursor on <body>
 			chime.dispose();
 		};
 	});
