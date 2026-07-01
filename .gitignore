@@ -384,3 +384,6 @@ scripts/i18n-drafts/
 # Local dev TLS certs (mkcert) — HTTP/2 dev server
 .cert/
 static/models/autumn/*_raw.glb
+
+# SW precache manifest (generated at build by scripts/generate-svg-precache-manifest.cjs)
+static/svg-precache-manifest.json

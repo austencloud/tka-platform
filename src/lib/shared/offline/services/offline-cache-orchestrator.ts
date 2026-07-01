@@ -1,9 +1,44 @@
 
+import { dev } from "$app/environment";
 import type { NetworkStatusMonitor } from "$lib/shared/sync/services/network-status-monitor";
 import type { GalleryOfflineCache } from "./gallery-offline-cache";
-import type { OfflineCacheStats } from "../domain/offline-cache-types";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type {
+  DownloadForOfflineResult,
+  OfflineCacheStats,
+} from "../domain/offline-cache-types";
 import type { ThumbnailLocalCache } from "$lib/shared/browse/services/thumbnail-local-cache";
+import {
+  deriveKey,
+  type ThumbnailRenderInput,
+} from "$lib/shared/browse/services/thumbnail-key-deriver";
+import { getUrl } from "$lib/shared/browse/services/cloud-thumbnail-cache";
+import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/get-thumbnail-render-orchestrator";
+import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+
+// A precached grid SVG that every diamond pictograph needs. Its presence in the
+// SW Cache Storage is a reliable proxy for "pictographs can render offline".
+const OFFLINE_RENDER_PROBE = "/images/grid/diamond_grid.svg";
+
+/**
+ * Is there a service-worker cache to warm into HERE? Offline caching is a
+ * production/PWA capability: the SW registers prod-only (hooks.client.ts) and
+ * bypasses localhost/127.0.0.1 (sw.js), while dev actively unregisters SWs and
+ * wipes Cache Storage each load to protect HMR. Warming does nothing durable
+ * without it, so the button must say so instead of silently no-opping.
+ */
+function offlineCachingSupported(): boolean {
+  if (dev) return false;
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return false;
+  if (typeof caches === "undefined") return false;
+  const host = typeof location !== "undefined" ? location.hostname : "";
+  if (host === "localhost" || host === "127.0.0.1") return false;
+  return true;
+}
+
+/** Cumulative-progress callback: (sequences processed, total). */
+type WarmProgress = (done: number, total: number) => void;
 
 export class OfflineCacheOrchestrator {
   private cancelled = false;
@@ -21,17 +56,45 @@ export class OfflineCacheOrchestrator {
   async startBackgroundCache(): Promise<void> {
     this.cancelled = false;
 
+    // Silent background warm only where a SW cache exists to warm into.
+    if (!offlineCachingSupported()) return;
+
     const stats = await this.galleryCache.getStats();
     if (stats.count === 0) {
       return;
     }
 
-    await this.prefetchThumbnails(false);
+    // The gallery converter is wired when the browse loader is first
+    // constructed. Ensure it exists so a session that never opened Browse
+    // still reads its cached sequences.
+    getBrowseLoader();
+    await this.warmCloudThumbnails(false);
   }
 
-  async downloadForOffline(): Promise<void> {
+  /** True when this environment can actually cache for offline (prod PWA). */
+  isOfflineCachingSupported(): boolean {
+    return offlineCachingSupported();
+  }
+
+  async downloadForOffline(onProgress?: WarmProgress): Promise<DownloadForOfflineResult> {
     this.cancelled = false;
-    await this.prefetchThumbnails(true);
+
+    if (!offlineCachingSupported()) {
+      return { supported: false, reason: "unsupported-env", warmed: 0, total: 0 };
+    }
+
+    // Guarantee the gallery converter is set before reading cached sequences —
+    // without this, going straight to Settings (never opening Browse) reads an
+    // empty list from an otherwise-populated cache and warms nothing.
+    getBrowseLoader();
+
+    const { warmed, total } = await this.warmCloudThumbnails(true, onProgress);
+    return {
+      supported: true,
+      reason: total === 0 ? "empty-gallery" : undefined,
+      warmed,
+      total,
+    };
   }
 
   cancel(): void {
@@ -39,17 +102,22 @@ export class OfflineCacheOrchestrator {
   }
 
   async getCacheStats(): Promise<OfflineCacheStats> {
-    const [galleryStats, thumbnailStats] = await Promise.all([
+    const [galleryStats, thumbnailStats, propSvgsCached] = await Promise.all([
       this.galleryCache.getStats(),
       this.thumbnailCache.getStats(),
+      this.checkPropSvgsCached(),
     ]);
     return {
       gallerySequenceCount: galleryStats.count,
       galleryLastSyncedAt: galleryStats.lastSyncedAt,
       thumbnailsCached: thumbnailStats.count,
       thumbnailsSizeBytes: thumbnailStats.sizeBytes,
-      propSvgsCached: true, 
-      isOfflineReady: galleryStats.count > 0,
+      propSvgsCached,
+      // Honest readiness: pictographs only draw offline when their SVGs are in
+      // the SW cache AND there's a cached gallery to show. The old check
+      // (galleryCount > 0 alone) flipped "Offline ready" on metadata sync, with
+      // blank art and zero downloaded assets.
+      isOfflineReady: galleryStats.count > 0 && propSvgsCached,
     };
   }
 
@@ -61,25 +129,62 @@ export class OfflineCacheOrchestrator {
     ]);
   }
 
-  private async prefetchThumbnails(fullSpeed: boolean): Promise<void> {
-    if (this.prefetching) return;
+  /**
+   * Real check (replaces a hardcoded `true`): is the precached pictograph SVG
+   * set actually present in the SW Cache Storage?
+   */
+  private async checkPropSvgsCached(): Promise<boolean> {
+    if (typeof caches === "undefined") return false;
+    try {
+      return !!(await caches.match(OFFLINE_RENDER_PROBE));
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Warm the service-worker cache for gallery thumbnails the cloud is known to
+   * hold, so the browse gallery's cloud tier serves them offline.
+   *
+   * We resolve each sequence's cloud URL via the SAME canonical key the gallery
+   * renderer uses (`deriveKey` -> `buildCloudKey` -> `getUrl`) and `fetch()` it,
+   * which lands the response in the SW's stale-while-revalidate cache for
+   * firebasestorage. Nothing is written to the Dexie thumbnail store — the old
+   * code wrote blobs keyed by raw URL that the hash-keyed renderer never read
+   * (and which evicted the real cache). The cloud storage path depends only on
+   * prop + light/dark + variant + name, NOT on composition/QR, so this warm
+   * stays correct across composition toggles. Sequences with no cloud thumbnail
+   * fall to the offline local-render path (which now works because the SVGs are
+   * cached).
+   */
+  private async warmCloudThumbnails(
+    fullSpeed: boolean,
+    onProgress?: WarmProgress
+  ): Promise<{ warmed: number; total: number }> {
+    if (this.prefetching) return { warmed: 0, total: 0 };
     this.prefetching = true;
+
+    let warmed = 0;
+    let processed = 0;
+    let total = 0;
 
     try {
       const { sequences } = await this.galleryCache.loadCached();
+      total = sequences.length;
+      onProgress?.(0, total);
+      if (total === 0) return { warmed, total };
 
-      // Only process sequences that have at least one thumbnail URL.
-      const withThumbnails = sequences.filter(
-        (s): s is SequenceData & { thumbnails: readonly [string, ...string[]] } =>
-          s.thumbnails.length > 0
-      );
-
-      if (withThumbnails.length === 0) return;
+      // Render settings the gallery uses, read once. Matching these makes the
+      // warmed cloud URL the one the gallery will later fetch.
+      const renderOrchestrator = getThumbnailRenderOrchestrator();
+      const lightMode = !getAnimationVisibilityManager().isDarkMode();
+      const bluePropType = settingsService.settings.bluePropType;
+      const redPropType = settingsService.settings.redPropType;
+      const catDogModeEnabled = settingsService.settings.catDogMode ?? false;
 
       const concurrency = fullSpeed ? 10 : this.getConcurrency();
 
-      // Process in batches of `concurrency`.
-      for (let i = 0; i < withThumbnails.length; i += concurrency) {
+      for (let i = 0; i < sequences.length; i += concurrency) {
         if (this.cancelled) break;
 
         // Pause while the tab is hidden - save battery on mobile.
@@ -96,23 +201,40 @@ export class OfflineCacheOrchestrator {
 
         if (this.cancelled) break;
 
-        const batch = withThumbnails.slice(i, i + concurrency);
+        const batch = sequences.slice(i, i + concurrency);
 
         await Promise.allSettled(
           batch.map(async (sequence) => {
-            const url = sequence.thumbnails[0];
-
-            // Skip already-cached entries - avoids redundant fetches.
-            if (await this.thumbnailCache.has(url)) return;
+            if (this.cancelled) return;
 
             try {
-              const response = await fetch(url);
-              if (!response.ok) return;
+              const input: ThumbnailRenderInput = {
+                sequenceName: sequence.word || sequence.name || "",
+                sequenceId: sequence.id,
+                bluePropType,
+                redPropType,
+                catDogModeEnabled,
+                lightMode,
+                variant: "gallery",
+                loopType: sequence.loopType ?? null,
+              };
 
-              const blob = await response.blob();
-              await this.thumbnailCache.set(url, blob);
+              const cloudKey = renderOrchestrator.buildCloudKey(deriveKey(input));
+
+              // getUrl only returns a URL for thumbnails known to exist in the
+              // cloud (gated by the knownExists manifest), so this never
+              // 404-spams firebasestorage.
+              const url = await getUrl(cloudKey);
+              if (!url) return;
+
+              // Warm the SW Cache Storage; no local IndexedDB write.
+              const res = await fetch(url);
+              if (res.ok) warmed++;
             } catch {
-              // Network failure for one thumbnail shouldn't abort the batch.
+              // Network failure for one sequence shouldn't abort the batch.
+            } finally {
+              processed++;
+              onProgress?.(processed, total);
             }
           })
         );
@@ -120,6 +242,8 @@ export class OfflineCacheOrchestrator {
     } finally {
       this.prefetching = false;
     }
+
+    return { warmed, total };
   }
 
   /**

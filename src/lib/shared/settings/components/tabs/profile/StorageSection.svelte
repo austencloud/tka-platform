@@ -5,7 +5,10 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   import { onMount } from "svelte";
   import GlassCard from "./GlassCard.svelte";
 
-  import type { OfflineCacheStats } from "$lib/shared/offline/domain/offline-cache-types";
+  import type {
+    DownloadForOfflineResult,
+    OfflineCacheStats,
+  } from "$lib/shared/offline/domain/offline-cache-types";
 
   interface Props {
     /** Request a cache clear. Parent shows a confirmation, then runs the nuclear
@@ -19,10 +22,16 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   let offlineStats = $state<OfflineCacheStats | null>(null);
   let isDownloading = $state(false);
   let downloadError = $state<string | null>(null);
+  let progress = $state<{ done: number; total: number } | null>(null);
+  let lastResult = $state<DownloadForOfflineResult | null>(null);
+  // Whether this environment has a service worker to cache into (prod PWA).
+  // Dev/localhost/preview do not — the button reports that instead of no-opping.
+  let cachingSupported = $state(true);
 
   const orchestrator = getOfflineCacheOrchestrator();
 
   onMount(() => {
+    cachingSupported = orchestrator.isOfflineCachingSupported();
     loadOfflineStats();
   });
 
@@ -37,15 +46,41 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   async function handleDownloadForOffline() {
     isDownloading = true;
     downloadError = null;
+    lastResult = null;
+    progress = null;
     try {
-      await orchestrator.downloadForOffline();
+      lastResult = await orchestrator.downloadForOffline((done, total) => {
+        progress = { done, total };
+      });
       offlineStats = await orchestrator.getCacheStats();
     } catch (err) {
       downloadError = err instanceof Error ? err.message : "Download failed";
     } finally {
       isDownloading = false;
+      progress = null;
     }
   }
+
+  // Honest, environment-aware summary of the last download attempt.
+  const resultMessage = $derived.by(() => {
+    const r = lastResult;
+    if (!r) return null;
+    if (!r.supported)
+      return "Offline caching runs on the installed app — not localhost. Deploy or install the PWA to cache for offline.";
+    if (r.reason === "empty-gallery")
+      return "Nothing to cache yet. Open Browse online first, then download.";
+    if (r.warmed === 0)
+      return "Pictograph art cached. No cloud thumbnails needed warming.";
+    return `Warmed ${r.warmed.toLocaleString()} of ${r.total.toLocaleString()} thumbnails. Pictograph art cached.`;
+  });
+
+  const downloadLabel = $derived(
+    isDownloading
+      ? progress
+        ? `Downloading… ${progress.done}/${progress.total}`
+        : "Downloading…"
+      : "Download for offline"
+  );
 
   // Request the clear. Parent confirms, then the nuclear clear wipes everything
   // (including the offline IndexedDB cache) and reloads — no separate offline
@@ -108,27 +143,28 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       <button
         class="action-btn download-btn"
         onclick={handleDownloadForOffline}
-        disabled={isDownloading || offlineStats?.isOfflineReady === true}
+        disabled={isDownloading}
       >
         <i class="fas {isDownloading ? 'fa-spinner fa-spin' : 'fa-download'}" aria-hidden="true"></i>
-        <span>
-          {#if isDownloading}
-            Downloading...
-          {:else if offlineStats?.isOfflineReady}
-            Already downloaded
-          {:else}
-            Download for offline
-          {/if}
-        </span>
+        <span class="download-label">{downloadLabel}</span>
       </button>
 
       {#if downloadError}
         <p class="error-text">{downloadError}</p>
+      {:else if resultMessage}
+        <p class="result-text" class:info={lastResult && !lastResult.supported}>{resultMessage}</p>
       {/if}
 
-      <p class="hint-text">
-        Downloads all gallery sequences and thumbnails so the browse gallery works without internet.
-      </p>
+      {#if !cachingSupported && !lastResult}
+        <p class="hint-text info-note">
+          <i class="fas fa-circle-info" aria-hidden="true"></i>
+          Offline caching runs on the installed app or tkaflowarts.com — not localhost. The service worker that stores assets is disabled in dev.
+        </p>
+      {:else}
+        <p class="hint-text">
+          Caches pictograph art so the gallery and sequences render offline, and warms gallery thumbnails for instant loading.
+        </p>
+      {/if}
 
       <!-- Clear Cache button -->
       <button class="action-btn" onclick={handleClearCache} disabled={isClearing}>
@@ -292,6 +328,34 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     color: var(--semantic-error);
     margin: 0;
     line-height: 1.5;
+  }
+
+  /* Stable digit width so the live "142/380" counter never jitters the button. */
+  .download-label {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .result-text {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--semantic-success, #4caf50);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* Neutral tone for "can't run here" / "nothing to do" outcomes. */
+  .result-text.info {
+    color: var(--theme-text-dim);
+  }
+
+  .info-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .info-note i {
+    margin-top: 2px;
+    flex-shrink: 0;
   }
 
   /* ========================================

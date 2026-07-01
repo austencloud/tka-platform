@@ -39,3 +39,22 @@ export interface OfflineCacheStats {
   propSvgsCached: boolean;
   isOfflineReady: boolean;
 }
+
+/** Why a download attempt produced no durable caching. */
+export type DownloadForOfflineReason =
+  /** No service worker here (dev / localhost / preview) — nothing to cache into. */
+  | "unsupported-env"
+  /** Environment is fine but the gallery cache is empty (visit Browse online first). */
+  | "empty-gallery";
+
+/** Outcome of a "Download for offline" run, so the UI can report honestly. */
+export interface DownloadForOfflineResult {
+  /** True when this environment has an active SW cache to warm into. */
+  supported: boolean;
+  /** Set when nothing meaningful happened; drives the user-facing notice. */
+  reason?: DownloadForOfflineReason;
+  /** Cloud thumbnails successfully warmed into the SW cache. */
+  warmed: number;
+  /** Gallery sequences considered. */
+  total: number;
+}

@@ -3,16 +3,42 @@
  * No Workbox. No precache manifest. Hashed immutable assets are cached on first visit.
  */
 
-const CACHE_NAME = "tka-v2";
+const CACHE_NAME = "tka-v3";
 const ASSETS_3D_CACHE = "tka-3d-assets-v1";
 const APP_SHELL_URLS = ["/app"];
+// Build-generated list of pictograph SVGs (props/grid/arrows/letters/numbers/
+// glyphs) so pictographs render cold-offline. See scripts/generate-svg-precache-manifest.cjs.
+const SVG_PRECACHE_MANIFEST = "/svg-precache-manifest.json";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL_URLS))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await cache.addAll(APP_SHELL_URLS);
+      await precacheSvgAssets(cache);
+    })
   );
   self.skipWaiting();
 });
+
+// Precache the finite essential pictograph SVG set. Resilient: a missing
+// manifest (older deploy) or a stray 404 must NEVER fail install — the runtime
+// /images cache-first rule below still covers everything on first online view.
+async function precacheSvgAssets(cache) {
+  try {
+    const res = await fetch(SVG_PRECACHE_MANIFEST, { cache: "no-cache" });
+    if (!res.ok) return;
+    const data = await res.json();
+    const assets = Array.isArray(data.assets) ? data.assets : [];
+    await Promise.allSettled(
+      assets.map(async (url) => {
+        const r = await fetch(url);
+        if (r.ok) await cache.put(url, r.clone());
+      })
+    );
+  } catch {
+    // No manifest / network hiccup — non-fatal.
+  }
+}
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -74,6 +100,20 @@ self.addEventListener("fetch", (event) => {
   // This is the critical fix for offline: without this, the app can't load when
   // the browser HTTP cache is evicted.
   if (url.pathname.startsWith("/_app/immutable/")) {
+    event.respondWith(cacheFirst(event.request));
+    return;
+  }
+
+  // Pictograph render assets + bundled thumbnails: cache-first (durable offline).
+  // /images/* = prop/grid/arrow/letter/number/glyph SVGs the live pictograph
+  // renderer fetches on demand; /thumbnails/*.webp = static bundled thumbnails.
+  // Without this they fell through to "network only" and pictographs rendered
+  // blank offline (audit 2026-06-30 fix #1). The essential SVG subset is also
+  // precached on install; this rule durably caches everything else on first view.
+  if (
+    url.pathname.startsWith("/images/") ||
+    (url.pathname.startsWith("/thumbnails/") && url.pathname.endsWith(".webp"))
+  ) {
     event.respondWith(cacheFirst(event.request));
     return;
   }
