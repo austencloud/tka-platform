@@ -80,16 +80,16 @@ function sortAlphabetically(sequences: SequenceData[]): SequenceData[] {
 }
 
 /**
- * Timestamp used for date sorting. Library sequences carry `createdAt`
- * (added-to-library) and `birthday`; community docs carry the legacy
- * `dateAdded`. Prefer createdAt, then dateAdded, then birthday so both the
- * profile library gallery and the community gallery sort by a real date.
- * Community docs have no createdAt, so their existing dateAdded order is
- * unchanged.
+ * Timestamp used for date sorting. Community docs get `dateAdded` from
+ * birthday ?? publishedAt, but their `createdAt` is mapped from Firestore
+ * `updatedAt` (public-sequences-loader), so createdAt must be the LAST
+ * resort — preferring it would sort community galleries by last-edit time.
+ * Library sequences lack dateAdded but carry birthday (real creation) and
+ * createdAt (added-to-library), so they still resolve to a real date.
  */
 function dateValueOf(sequence: SequenceData): number {
   const withCreated = sequence as SequenceData & { createdAt?: Date };
-  const d = withCreated.createdAt ?? sequence.dateAdded ?? sequence.birthday;
+  const d = sequence.dateAdded ?? sequence.birthday ?? withCreated.createdAt;
   return d ? new Date(d).getTime() : 0;
 }
 

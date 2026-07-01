@@ -1095,6 +1095,8 @@
   "profile_pronouns_placeholder": "e.g., they/them",
   "profile_pronouns_update_failed": "Failed to update pronouns",
   "profile_pronouns_updated": "Pronouns updated",
+  "profile_sequence_count_one": "1 sequence",
+  "profile_sequence_count_other": "{count} sequences",
   "pronoun_preset_he_him": "he/him",
   "pronoun_preset_she_her": "she/her",
   "pronoun_preset_they_them": "they/them",

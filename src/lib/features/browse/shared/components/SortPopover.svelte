@@ -19,9 +19,13 @@
   interface Props {
     currentMethod: BrowseSortMethod;
     onSortChange: (method: BrowseSortMethod) => void;
+    /** Which trigger edge the popover hangs from. Use "end" when the trigger
+     *  sits at the right edge of a clipped container (overflow hidden), so the
+     *  panel opens leftward over the content instead of off the edge. */
+    align?: "start" | "end";
   }
 
-  let { currentMethod, onSortChange }: Props = $props();
+  let { currentMethod, onSortChange, align = "start" }: Props = $props();
 
   const sortOptions: SortOption[] = [
     { id: BrowseSortMethod.ALPHABETICAL, label: t('browse_sort_alphabetical'), icon: "fa-font" },
@@ -202,6 +206,7 @@
     <div
       class="sort-popover"
       class:visible={isVisible}
+      class:align-end={align === "end"}
       bind:this={popoverEl}
       role="listbox"
       aria-label={t('browse_sort_options')}
@@ -322,6 +327,12 @@
     transition:
       opacity var(--duration-normal, 200ms) ease,
       transform var(--duration-emphasis, 280ms) cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .sort-popover.align-end {
+    left: auto;
+    right: 0;
+    transform-origin: top right;
   }
 
   .sort-popover.visible {

@@ -17,9 +17,12 @@
   interface Props {
     targetUserId: string;
     targetUserName: string;
+    /** Hero follow-button state. Changes re-fetch connection info so the
+     *  mutual-status copy can't contradict the button beside it. */
+    isFollowing?: boolean;
   }
 
-  let { targetUserId, targetUserName }: Props = $props();
+  let { targetUserId, targetUserName, isFollowing }: Props = $props();
 
   // State
   let connectionInfo = $state<ConnectionInfo | null>(null);
@@ -41,12 +44,17 @@
     checkMobile();
     window.addEventListener("resize", checkMobile);
 
-    // Load connection info
-    loadConnectionInfo();
-
     return () => {
       window.removeEventListener("resize", checkMobile);
     };
+  });
+
+  // Initial load + silent re-fetch whenever the hero Follow button toggles
+  // (isLoading stays false after the first load, so the refresh doesn't flash
+  // a spinner or shift layout).
+  $effect(() => {
+    void isFollowing;
+    void loadConnectionInfo();
   });
 
   async function loadConnectionInfo() {
@@ -177,7 +185,7 @@
         <div class="content-grid empty-grid">
           <p class="empty-line">
             <i class="fas fa-link-slash" aria-hidden="true"></i>
-            No connection yet — you don't follow each other and share no sequences.
+            No connection yet. You don't follow each other and share no sequences.
           </p>
           <div class="content-block notes-block">
             <ConnectionNotes

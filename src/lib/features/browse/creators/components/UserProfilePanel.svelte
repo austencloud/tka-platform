@@ -56,10 +56,12 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
   const isOwnProfile = $derived(currentUserId === userId);
   const isAdmin = $derived(authState.isAdmin);
 
-  // Right rail appears when viewing someone else while logged in (connection),
-  // which also covers the admin case. Own profile / logged-out → gallery goes
-  // full width, no rail.
-  const showAside = $derived(!!currentUserId && !isOwnProfile);
+  // Right rail appears when viewing someone else while logged in (connection)
+  // or as an admin. The desktop build grants isAdmin with user: null
+  // (auth-state desktop fallback), so isAdmin must be its own gate — it is NOT
+  // implied by currentUserId. Own profile / logged-out non-admin → gallery
+  // goes full width, no rail.
+  const showAside = $derived((!!currentUserId || isAdmin) && !isOwnProfile);
 
   const modalUsers = $derived(followersModalType === "followers" ? followerUsers : followingUsers);
   const modalLoading = $derived(followersModalType === "followers" ? followersLoading : followingLoading);
@@ -262,6 +264,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
               <ProfileConnectionSection
                 targetUserId={userId}
                 targetUserName={userProfile.displayName}
+                isFollowing={userProfile.isFollowing}
               />
             {/if}
 

@@ -51,6 +51,13 @@
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
 
+  $effect(() => {
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handler = (e: MediaQueryListEvent) => { reducedMotion = e.matches; };
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  });
+
   // Modal focus management - shared FocusTrap (same helper Drawer.svelte uses)
   // moves focus in on open, traps Tab, and restores focus on close.
   let confirmModalEl = $state<HTMLDivElement | null>(null);

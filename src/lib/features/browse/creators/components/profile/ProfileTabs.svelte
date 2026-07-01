@@ -11,6 +11,7 @@
   import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let {
     userSequences = [],
@@ -94,10 +95,13 @@
 {:else}
   <div class="gallery-toolbar">
     <span class="gallery-count">
-      {userSequences.length}
-      {userSequences.length === 1 ? "sequence" : "sequences"}
+      {userSequences.length === 1
+        ? t("profile_sequence_count_one")
+        : t("profile_sequence_count_other", { count: String(userSequences.length) })}
     </span>
-    <SortPopover currentMethod={sortMethod} onSortChange={(m) => (sortMethod = m)} />
+    <!-- align="end": the trigger sits at the toolbar's right edge and the
+         profile scroller clips overflow-x, so the panel must open leftward. -->
+    <SortPopover currentMethod={sortMethod} onSortChange={(m) => (sortMethod = m)} align="end" />
   </div>
 
   <div class="gallery-content">
