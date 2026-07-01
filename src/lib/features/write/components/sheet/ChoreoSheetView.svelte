@@ -27,7 +27,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import SheetPreviewPages from "./SheetPreviewPages.svelte";
-  import SequencePickerSheet from "../picker/SequencePickerSheet.svelte";
+  import MediaBrowserPanel from "$lib/features/compose/timeline/components/media-browser/MediaBrowserPanel.svelte";
 
   let { seedAct = undefined }: { seedAct?: ActData } = $props();
 
@@ -72,7 +72,7 @@
     { value: "none", label: "None" },
   ];
 
-  let pickerOpen = $state(false);
+  let browseOpen = $state(false);
 
   let exporting = $state(false);
   let exportPct = $state(0);
@@ -123,7 +123,7 @@
       placeholder="Untitled Sheet"
     />
     <div class="toolbar-actions">
-      <button type="button" class="btn" onclick={() => (pickerOpen = true)}>
+      <button type="button" class="btn" class:active={browseOpen} onclick={() => (browseOpen = !browseOpen)}>
         <i class="fa-solid fa-plus" aria-hidden="true"></i>
         Add sequences
       </button>
@@ -235,15 +235,32 @@
   </div>
 </div>
 
-<SequencePickerSheet
-  open={pickerOpen}
-  onConfirm={(ids) => {
-    pickerOpen = false;
-    void builder.addSequences(ids);
-  }}
-  onCancel={() => (pickerOpen = false)}
-  title="Add sequences to the sheet"
-/>
+{#if browseOpen}
+  <!-- The shared media browser (same one the compose timeline uses): real
+       Browse search/sort/filter. Click a sequence → it appends as a row. -->
+  <button
+    type="button"
+    class="browse-scrim"
+    aria-label="Close sequence browser"
+    onclick={() => (browseOpen = false)}
+  ></button>
+  <aside class="browse-drawer" aria-label="Add sequences">
+    <div class="browse-drawer-head">
+      <span class="browse-drawer-title">Add sequences — tap to add a row</span>
+      <button
+        type="button"
+        class="browse-close"
+        aria-label="Close browser"
+        onclick={() => (browseOpen = false)}
+      >
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="browse-drawer-body">
+      <MediaBrowserPanel onLoadToSource={(seq) => builder.addHydratedSequences([seq])} />
+    </div>
+  </aside>
+{/if}
 
 <style>
   .choreo-sheet-view {
@@ -315,6 +332,77 @@
   .btn:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+  }
+
+  .btn.active {
+    background: var(--theme-accent, #6366f1);
+    border-color: transparent;
+    color: var(--theme-text-on-accent, #fff);
+  }
+
+  /* Right-docked drawer holding the shared MediaBrowserPanel. */
+  .browse-scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    z-index: 40;
+  }
+
+  .browse-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(420px, 92vw);
+    display: flex;
+    flex-direction: column;
+    background: var(--theme-panel-bg, #14141c);
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+    z-index: 41;
+  }
+
+  .browse-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    flex-shrink: 0;
+  }
+
+  .browse-drawer-title {
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 600;
+    color: var(--theme-text, #fff);
+  }
+
+  .browse-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    background: none;
+    border: none;
+    border-radius: 6px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    cursor: pointer;
+  }
+
+  .browse-close:hover {
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, #fff);
+  }
+
+  .browse-drawer-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .save-message {

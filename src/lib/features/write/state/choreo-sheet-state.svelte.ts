@@ -108,6 +108,28 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     await ensureHydrated(additions.length > 0 ? additions : ids);
   }
 
+  // Append sequences we ALREADY hold fully hydrated (e.g. clicked in the shared
+  // media browser, which loads from the public/gallery loader — not the user's
+  // library). Seed the cache directly with the given data so we neither refetch
+  // nor depend on the id existing in the library `loadSequence` path.
+  function addHydratedSequences(seqs: readonly SequenceData[]): void {
+    const additions: string[] = [];
+    for (const seq of seqs) {
+      if (!seq?.id) continue;
+      cache.set(seq.id, seq);
+      if (!sheet.sequenceIds.includes(seq.id) && !additions.includes(seq.id)) {
+        additions.push(seq.id);
+      }
+    }
+    if (additions.length > 0) {
+      sheet = {
+        ...sheet,
+        sequenceIds: [...sheet.sequenceIds, ...additions],
+        updatedAt: new Date(),
+      };
+    }
+  }
+
   // Drop the row at `index`. The cached SequenceData is intentionally retained —
   // it's keyed by id and re-adding the sequence should not refetch.
   function removeAt(index: number): void {
@@ -189,6 +211,7 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     },
 
     addSequences,
+    addHydratedSequences,
     removeAt,
     move,
     setLayout,
