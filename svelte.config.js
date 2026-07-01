@@ -56,6 +56,12 @@ const config = {
       // imported across the src/lib <-> src/routes boundary.
       "$guide-level-1": "./src/routes/(public)/guide/level-1",
       "$guide-level-1/*": "./src/routes/(public)/guide/level-1/*",
+      // Component-test helpers (mirrors tests/config/vitest.components.config.ts).
+      // Needed so svelte-check resolves the `$test-helpers/*` imports in the
+      // *.svelte.test.ts files; without it `npm run check` reports 6 phantom
+      // "Cannot find module" errors.
+      "$test-helpers": "./tests/helpers",
+      "$test-helpers/*": "./tests/helpers/*",
     },
 
     // ============================================================================
