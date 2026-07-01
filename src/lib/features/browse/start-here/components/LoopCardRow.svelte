@@ -1,10 +1,10 @@
 <!--
   LoopCardRow — filter the loaded community pool by loopType and render the real
-  cards. The community `loopType` lens works on real data today (Phase 1).
+  cards in a wrapping grid. The community `loopType` lens works today (Phase 1).
 -->
 <script lang="ts">
-  import HorizontalSwipeContainer from "$lib/shared/foundation/ui/HorizontalSwipeContainer.svelte";
   import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   interface Props {
@@ -17,8 +17,12 @@
   const cards = $derived(
     pool
       .filter((s) => (s.loopType ?? "").toLowerCase() === loopType.toLowerCase())
-      .slice(0, 24)
+      .slice(0, 60)
   );
+
+  function open(seq: SequenceData) {
+    openSequenceViewer(seq, { returnPath: "/browse/gallery", returnLabel: "Browse" });
+  }
 </script>
 
 <section class="loop">
@@ -26,25 +30,43 @@
   {#if cards.length === 0}
     <div class="state">No {loopType} examples loaded.</div>
   {:else}
-    <HorizontalSwipeContainer height="320px" showArrows showIndicators={false}>
+    <div class="grid">
       {#each cards as card (card.id)}
-        <div class="embla__slide slide">
-          <ChoreoCardThumbnail sequence={card} eager addWord />
-        </div>
+        <ChoreoCardThumbnail sequence={card} addWord onPrimaryAction={open} />
       {/each}
-    </HorizontalSwipeContainer>
+    </div>
   {/if}
 </section>
 
 <style>
   .loop {
+    height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
     padding: 1rem 1.25rem;
   }
-  .head { text-align: center; }
-  .head h2 { margin: 0; font-size: 1.5rem; font-weight: 800; text-transform: capitalize; }
-  .state { padding: 2.5rem; text-align: center; color: var(--theme-text-muted, #9aa6b8); }
-  .slide { flex: 0 0 240px; padding: 0 0.5rem; }
+  .head { flex: 0 0 auto; }
+  .head h2 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 800;
+    text-transform: capitalize;
+  }
+  .state {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    color: var(--theme-text-muted, #9aa6b8);
+  }
+  .grid {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 1rem;
+    align-content: start;
+    padding-bottom: 1rem;
+  }
 </style>

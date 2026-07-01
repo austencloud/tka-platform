@@ -41,11 +41,14 @@
 
 <style>
   .picker {
+    height: 100%;
+    overflow-y: auto;
     max-width: 920px;
     margin: 0 auto;
     padding: 1.5rem 1.25rem;
     display: flex;
     flex-direction: column;
+    justify-content: safe center;
     gap: 1.5rem;
   }
   .intro { text-align: center; }

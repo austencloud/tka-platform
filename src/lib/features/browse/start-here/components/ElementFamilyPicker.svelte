@@ -31,11 +31,14 @@
 
 <style>
   .picker {
+    height: 100%;
+    overflow-y: auto;
     max-width: 860px;
     margin: 0 auto;
     padding: 1.5rem 1.25rem;
     display: flex;
     flex-direction: column;
+    justify-content: safe center;
     gap: 1.5rem;
   }
   .intro { text-align: center; }
@@ -62,6 +65,11 @@
   }
   .tile:hover { border-color: var(--accent); transform: translateY(-2px); }
   .tile:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .tile img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+  }
   .name { font-weight: 700; }
   .element {
     font-size: 0.8rem;

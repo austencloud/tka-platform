@@ -1,7 +1,8 @@
 <!--
   StartHere — taxonomy-first onboarding shell. Reads the step machine and renders
-  the current step inside the shared Crossfade primitive. Owns the back
-  affordance and the "Browse all →" CTA (the second front door).
+  the current step inside the shared Crossfade primitive. The top bar (Back +
+  "Browse all") shows on every step except the first decision, which carries its
+  own "skip to the full gallery" button. Body content is vertically centered.
 -->
 <script lang="ts">
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
@@ -23,19 +24,25 @@
 </script>
 
 <div class="start-here">
+  <!-- Bar is always present (constant height) so stepping between the decide
+       screen and the pickers never shifts the centered body up or down. -->
   <div class="bar">
     {#if s.step !== "decide"}
       <button class="back" type="button" onclick={() => s.back()}>← Back</button>
+      <button class="browse-all" type="button" onclick={() => onBrowseAll?.()}>
+        Browse all →
+      </button>
     {/if}
-    <button class="browse-all" type="button" onclick={() => onBrowseAll?.()}>
-      Browse all →
-    </button>
   </div>
 
   <div class="body">
     <Crossfade key={s.step}>
       {#if s.step === "decide"}
-        <DecideStep onBase={() => s.chooseBase()} onLoop={() => s.chooseLoop()} />
+        <DecideStep
+          onBase={() => s.chooseBase()}
+          onLoop={() => s.chooseLoop()}
+          onBrowseAll={() => onBrowseAll?.()}
+        />
       {:else if s.step === "base-families"}
         <ElementFamilyPicker onSelect={(id) => s.selectFamily(id)} />
       {:else if s.step === "base-cards" && s.familyId}
@@ -80,6 +87,14 @@
   .body {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* The Crossfade layer fills the body; each step owns its own scroll/centering
+     (pickers center, card grids fill top-down). */
+  .body > :global(*) {
+    flex: 1;
+    min-height: 0;
   }
 </style>
