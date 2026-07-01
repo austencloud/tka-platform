@@ -27,7 +27,8 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import SheetPreviewPages from "./SheetPreviewPages.svelte";
-  import MediaBrowserPanel from "$lib/features/compose/timeline/components/media-browser/MediaBrowserPanel.svelte";
+  import BrowseGrid from "$lib/features/browse/sequences/display/components/BrowseGrid.svelte";
+  import { getBrowseThumbnailProvider } from "$lib/shared/browse/get-browse-thumbnail-provider";
 
   let { seedAct = undefined }: { seedAct?: ActData } = $props();
 
@@ -72,7 +73,46 @@
     { value: "none", label: "None" },
   ];
 
+  // ── Add-sequences browse drawer ────────────────────────────────────────────
+  // Renders the user's library through the canonical Browse grid/card
+  // (ChoreoCardThumbnail → PropAwareThumbnail), so each option is a real
+  // rendered pictograph model — not a stored strip thumbnail. Click a card and
+  // it appends as a row (the sequence is already hydrated, so seed it directly).
   let browseOpen = $state(false);
+  const thumbnailProvider = getBrowseThumbnailProvider();
+  let libSequences = $state<SequenceData[]>([]);
+  let browseLoading = $state(false);
+  let browseError = $state<string | null>(null);
+  let browseLoaded = false;
+  let browseSearch = $state("");
+
+  async function ensureLibraryLoaded(): Promise<void> {
+    if (browseLoaded) return;
+    browseLoaded = true;
+    browseLoading = true;
+    browseError = null;
+    try {
+      libSequences = (await getLibraryRepository().getSequences()) as SequenceData[];
+    } catch (error) {
+      browseLoaded = false; // let a re-open retry
+      browseError = error instanceof Error ? error.message : "Failed to load sequences";
+    } finally {
+      browseLoading = false;
+    }
+  }
+
+  function toggleBrowse(): void {
+    browseOpen = !browseOpen;
+    if (browseOpen) void ensureLibraryLoaded();
+  }
+
+  const filteredLibSequences = $derived.by(() => {
+    const q = browseSearch.trim().toLowerCase();
+    if (!q) return libSequences;
+    return libSequences.filter((s) =>
+      `${s.word ?? ""} ${s.name ?? ""} ${s.displayName ?? ""}`.toLowerCase().includes(q),
+    );
+  });
 
   let exporting = $state(false);
   let exportPct = $state(0);
@@ -123,7 +163,7 @@
       placeholder="Untitled Sheet"
     />
     <div class="toolbar-actions">
-      <button type="button" class="btn" class:active={browseOpen} onclick={() => (browseOpen = !browseOpen)}>
+      <button type="button" class="btn" class:active={browseOpen} onclick={toggleBrowse}>
         <i class="fa-solid fa-plus" aria-hidden="true"></i>
         Add sequences
       </button>
@@ -236,8 +276,8 @@
 </div>
 
 {#if browseOpen}
-  <!-- The shared media browser (same one the compose timeline uses): real
-       Browse search/sort/filter. Click a sequence → it appends as a row. -->
+  <!-- Canonical Browse grid (ChoreoCardThumbnail → PropAwareThumbnail): each
+       option is a real rendered pictograph model. Click a card → adds a row. -->
   <button
     type="button"
     class="browse-scrim"
@@ -256,8 +296,33 @@
         <i class="fa-solid fa-xmark" aria-hidden="true"></i>
       </button>
     </div>
-    <div class="browse-drawer-body">
-      <MediaBrowserPanel onLoadToSource={(seq) => builder.addHydratedSequences([seq])} />
+    <div class="browse-search">
+      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+      <input
+        type="text"
+        bind:value={browseSearch}
+        placeholder="Search your sequences"
+        aria-label="Search your sequences"
+      />
+    </div>
+    <div class="browse-grid-scroll">
+      {#if browseLoading}
+        <p class="browse-status">Loading your sequences…</p>
+      {:else if browseError}
+        <p class="browse-status">{browseError}</p>
+      {:else if filteredLibSequences.length === 0}
+        <p class="browse-status">
+          {libSequences.length === 0 ? "No sequences in your library yet." : "No matches."}
+        </p>
+      {:else}
+        <BrowseGrid
+          sequences={filteredLibSequences}
+          thumbnailService={thumbnailProvider}
+          eager
+          disableVirtualization
+          onAction={(_action, seq) => builder.addHydratedSequences([seq])}
+        />
+      {/if}
     </div>
   </aside>
 {/if}
@@ -340,7 +405,7 @@
     color: var(--theme-text-on-accent, #fff);
   }
 
-  /* Right-docked drawer holding the shared MediaBrowserPanel. */
+  /* Right-docked drawer: search + canonical Browse grid of pictograph cards. */
   .browse-scrim {
     position: fixed;
     inset: 0;
@@ -399,10 +464,45 @@
     color: var(--theme-text, #fff);
   }
 
-  .browse-drawer-body {
+  .browse-search {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin: var(--spacing-sm) var(--spacing-md) 0;
+    padding: 0 var(--spacing-sm);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 8px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    flex-shrink: 0;
+  }
+
+  .browse-search input {
+    flex: 1;
+    min-width: 0;
+    min-height: var(--min-touch-target, 44px);
+    background: none;
+    border: none;
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .browse-search input:focus {
+    outline: none;
+  }
+
+  .browse-grid-scroll {
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow-y: auto;
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+  }
+
+  .browse-status {
+    text-align: center;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-sm, 0.875rem);
+    margin: var(--spacing-md) 0;
   }
 
   .save-message {
