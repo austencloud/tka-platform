@@ -88,6 +88,17 @@
 
     return parts.join(" • ") || "No connection yet";
   });
+
+  // Whether the connection has any status worth showing as full blocks.
+  // When false, the mutual-status + shared-sequences blocks collapse to a
+  // single compact line (notes are always shown).
+  const hasSignal = $derived(
+    !!connectionInfo &&
+      (connectionInfo.mutualFollow.isMutual ||
+        connectionInfo.mutualFollow.iFollowThem ||
+        connectionInfo.mutualFollow.theyFollowMe ||
+        connectionInfo.sharedSequenceCount > 0)
+  );
 </script>
 
 <section class="connection-section" class:expanded={isExpanded}>
@@ -136,31 +147,46 @@
         <span>{error}</span>
       </div>
     {:else if connectionInfo}
-      <div class="content-grid">
-        <!-- Mutual Status -->
-        <div class="content-block">
-          <ConnectionMutualStatus
-            mutualFollow={connectionInfo.mutualFollow}
-            theirName={targetUserName}
-          />
-        </div>
+      {#if hasSignal}
+        <div class="content-grid">
+          <!-- Mutual Status -->
+          <div class="content-block">
+            <ConnectionMutualStatus
+              mutualFollow={connectionInfo.mutualFollow}
+              theirName={targetUserName}
+            />
+          </div>
 
-        <!-- Shared Sequences -->
-        <div class="content-block">
-          <ConnectionSharedSequences
-            sharedSequences={connectionInfo.sharedSequences}
-            theirName={targetUserName}
-          />
-        </div>
+          <!-- Shared Sequences -->
+          <div class="content-block">
+            <ConnectionSharedSequences
+              sharedSequences={connectionInfo.sharedSequences}
+              theirName={targetUserName}
+            />
+          </div>
 
-        <!-- Notes -->
-        <div class="content-block notes-block">
-          <ConnectionNotes
-            {targetUserId}
-            initialNotes={connectionInfo.notes}
-          />
+          <!-- Notes -->
+          <div class="content-block notes-block">
+            <ConnectionNotes
+              {targetUserId}
+              initialNotes={connectionInfo.notes}
+            />
+          </div>
         </div>
-      </div>
+      {:else}
+        <div class="content-grid empty-grid">
+          <p class="empty-line">
+            <i class="fas fa-link-slash" aria-hidden="true"></i>
+            No connection yet — you don't follow each other and share no sequences.
+          </p>
+          <div class="content-block notes-block">
+            <ConnectionNotes
+              {targetUserId}
+              initialNotes={connectionInfo.notes}
+            />
+          </div>
+        </div>
+      {/if}
     {/if}
   </div>
 </section>
@@ -171,10 +197,29 @@
     container-name: connection;
 
     margin-top: 24px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
+    padding-top: 8px;
+    background: transparent;
+    border: none;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 0;
     overflow: hidden;
+  }
+
+  .empty-grid {
+    gap: 12px;
+  }
+
+  .empty-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm);
+  }
+
+  .empty-line i {
+    opacity: 0.7;
   }
 
   .section-header {

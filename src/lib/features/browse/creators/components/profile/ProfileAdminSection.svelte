@@ -26,6 +26,7 @@
   import { getContributorLoader } from "$lib/shared/feedback/get-contributor-loader";
   import { FocusTrap } from "$lib/shared/foundation/ui/drawer/focus-trap";
   import { onDestroy } from "svelte";
+  import { fade } from "svelte/transition";
 
   interface Props {
     userProfile: EnhancedUserProfile;
@@ -41,6 +42,14 @@
   let confirmAction = $state<{ type: string; message: string } | null>(null);
   let editNameModal = $state<{ open: boolean; value: string }>({ open: false, value: "" });
   let deleteConfirmText = $state("");
+
+  // Admin controls are collapsed by default so Delete User etc. don't appear
+  // on every profile an admin visits. Expand on demand.
+  let isExpanded = $state(false);
+  let reducedMotion = $state(
+    typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 
   // Modal focus management - shared FocusTrap (same helper Drawer.svelte uses)
   // moves focus in on open, traps Tab, and restores focus on close.
@@ -380,11 +389,29 @@
   }
 </script>
 
-<section class="admin-section">
-  <h3 class="section-title">
-    <i class="fas fa-shield-halved" aria-hidden="true"></i>
-    Admin Controls
-  </h3>
+<section class="admin-section" class:expanded={isExpanded}>
+  <button
+    class="section-header"
+    onclick={() => (isExpanded = !isExpanded)}
+    aria-expanded={isExpanded}
+    aria-controls="admin-body"
+  >
+    <span class="section-title">
+      <i class="fas fa-shield-halved" aria-hidden="true"></i>
+      Admin Controls
+    </span>
+    <i
+      class="fas fa-chevron-down expand-icon"
+      class:rotated={isExpanded}
+      aria-hidden="true"
+    ></i>
+  </button>
+
+  {#if isExpanded}
+    <div
+      id="admin-body"
+      transition:fade={{ duration: reducedMotion ? 0 : 150 }}
+    >
 
   <!-- Admin Label (prominent quick identifier) -->
   <div class="admin-label-row">
@@ -537,8 +564,10 @@
         <i class="fas fa-trash-alt" aria-hidden="true"></i>
         Delete User
       </button>
+      </div>
     </div>
-  </div>
+    </div>
+  {/if}
 </section>
 
 <!-- Confirmation Modal -->
@@ -662,20 +691,59 @@
 <style>
   .admin-section {
     margin-top: 24px;
-    padding: 20px;
-    background: color-mix(in srgb, var(--semantic-error) 5%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-error) 20%, transparent);
-    border-radius: 12px;
+    padding-top: 8px;
+    background: transparent;
+    border: none;
+    border-top: 1px solid var(--theme-stroke);
+    border-radius: 0;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    padding: 8px 4px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .section-header:hover .section-title,
+  .section-header:hover .expand-icon {
+    color: var(--semantic-error);
   }
 
   .section-title {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 0 0 16px 0;
+    margin: 0;
     font-size: var(--font-size-base);
     font-weight: 600;
     color: var(--semantic-error);
+  }
+
+  .expand-icon {
+    font-size: 12px;
+    color: var(--theme-text-dim);
+    transition: transform var(--duration-normal, 200ms) ease;
+  }
+
+  .expand-icon.rotated {
+    transform: rotate(180deg);
+  }
+
+  #admin-body {
+    padding-top: 16px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .expand-icon {
+      transition: none;
+    }
   }
 
   .admin-label-row {

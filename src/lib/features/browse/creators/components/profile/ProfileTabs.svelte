@@ -109,8 +109,9 @@
     <PanelState
       type="empty"
       icon="fa-list"
-      title="No Sequences"
+      title="No sequences yet"
       message="This creator hasn't published any sequences yet."
+      compact
     />
   {:else}
     <div class="gallery-grid">
@@ -149,7 +150,6 @@
   .gallery-content {
     container-type: inline-size;
     container-name: gallery;
-    min-height: 300px;
     width: 100%;
   }
 

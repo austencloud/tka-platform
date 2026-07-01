@@ -226,40 +226,42 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     <ProfileHeaderBar onBack={handleBack} />
 
     <div class="profile-content">
-      <ProfileHeroSection
-        {userProfile}
-        {currentUserId}
-        {isOwnProfile}
-        {followInProgress}
-        onFollowToggle={handleFollowToggle}
-        onFollowersClick={() => openFollowersModal("followers")}
-        onFollowingClick={() => openFollowersModal("following")}
-      />
-
-      <ProfileShowcase
-        pinnedItems={userProfile.pinnedItems ?? []}
-        {isOwnProfile}
-      />
-
-      <ProfileTabs
-        {userSequences}
-        onSequenceClick={handleSequenceClick}
-      />
-
-      {#if currentUserId && !isOwnProfile}
-        <ProfileConnectionSection
-          targetUserId={userId}
-          targetUserName={userProfile.displayName}
-        />
-      {/if}
-
-      {#if isAdmin && !isOwnProfile}
-        <ProfileAdminSection
+      <div class="profile-sheet">
+        <ProfileHeroSection
           {userProfile}
-          onUserUpdated={handleAdminUpdate}
-          {onUserDeleted}
+          {currentUserId}
+          {isOwnProfile}
+          {followInProgress}
+          onFollowToggle={handleFollowToggle}
+          onFollowersClick={() => openFollowersModal("followers")}
+          onFollowingClick={() => openFollowersModal("following")}
         />
-      {/if}
+
+        <ProfileShowcase
+          pinnedItems={userProfile.pinnedItems ?? []}
+          {isOwnProfile}
+        />
+
+        <ProfileTabs
+          {userSequences}
+          onSequenceClick={handleSequenceClick}
+        />
+
+        {#if currentUserId && !isOwnProfile}
+          <ProfileConnectionSection
+            targetUserId={userId}
+            targetUserName={userProfile.displayName}
+          />
+        {/if}
+
+        {#if isAdmin && !isOwnProfile}
+          <ProfileAdminSection
+            {userProfile}
+            onUserUpdated={handleAdminUpdate}
+            {onUserDeleted}
+          />
+        {/if}
+      </div>
     </div>
 
     <FollowersModal
@@ -307,7 +309,23 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     padding: clamp(16px, 4cqi, 32px);
   }
 
-  .profile-content > :global(*) {
+  /* Single frosted surface: all sections read against one calm panel instead
+     of floating as transparent cards over the animated ocean background.
+     Reuses the app's modal-surface token (--theme-panel-bg). */
+  .profile-sheet {
+    width: 100%;
+    max-width: 920px;
+    margin-inline: auto;
+    padding: clamp(16px, 4cqi, 32px);
+    background: color-mix(in srgb, var(--theme-panel-bg, rgba(18, 20, 30, 0.98)) 92%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--theme-stroke);
+    border-radius: clamp(16px, 3cqi, 24px);
+    box-shadow: var(--theme-shadow, 0 8px 32px rgba(0, 0, 0, 0.3));
+  }
+
+  .profile-sheet > :global(*) {
     width: 100%;
     flex-shrink: 0;
   }

@@ -20,9 +20,11 @@
     icon?: string;
     /** Optional retry callback for error state */
     onretry?: () => void;
+    /** Dense variant: smaller padding/icon/title for inline empty states */
+    compact?: boolean;
   }
 
-  let { type, title, message, icon, onretry }: Props = $props();
+  let { type, title, message, icon, onretry, compact = false }: Props = $props();
 
   const defaultIcons: Record<StateType, string> = {
     loading: "",
@@ -45,6 +47,7 @@
 <div
   class="panel-state"
   class:panel-state--error={type === "error"}
+  class:panel-state--compact={compact}
   role={type === "error" ? "alert" : undefined}
 >
   {#if type === "loading"}
@@ -75,6 +78,23 @@
     gap: 12px;
     padding: 60px 20px;
     text-align: center;
+  }
+
+  .panel-state--compact {
+    padding: 20px 16px;
+    gap: 8px;
+  }
+
+  .panel-state--compact .panel-state__icon {
+    font-size: var(--font-size-xl);
+  }
+
+  .panel-state--compact .panel-state__title {
+    font-size: var(--font-size-base);
+  }
+
+  .panel-state--compact .panel-state__message {
+    font-size: var(--font-size-compact);
   }
 
   .panel-state__icon {
