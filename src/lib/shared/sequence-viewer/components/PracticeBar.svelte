@@ -38,9 +38,13 @@
     metronomeOn: boolean;
     /** Toggle the metronome click on/off. */
     onToggleMetronome: () => void;
+    /** Whether the AR mirror (webcam behind canvas) is on. */
+    mirrorOn: boolean;
+    /** Toggle the AR mirror on/off. */
+    onToggleMirror: () => void;
   }
 
-  let { progress, bpm, isPlaying, onBpmChange, onStepLevel, onToggleHold, onPlayPause, onStop, metronomeOn, onToggleMetronome }: Props = $props();
+  let { progress, bpm, isPlaying, onBpmChange, onStepLevel, onToggleHold, onPlayPause, onStop, metronomeOn, onToggleMetronome, mirrorOn, onToggleMirror }: Props = $props();
 
   let bpmColor = $derived.by(() => {
     if (bpm <= 30) return "var(--semantic-success, #22c55e)";
@@ -207,41 +211,57 @@
       </button>
     </div>
 
-    <button
-      class="pb-btn pb-hold"
-      class:held={progress.held}
-      type="button"
-      onclick={onToggleHold}
-      aria-label={progress.held ? "Resume speeding up" : "Hold this speed"}
-      aria-pressed={progress.held}
-    >
-      <i class="fas fa-snowflake" aria-hidden="true"></i>
-      <span>{progress.held ? "Held" : "Hold"}</span>
-    </button>
+    <!-- Auxiliary controls grouped so mobile can drop them to their own row
+         instead of letting the whole strip flex-wrap arbitrarily. -->
+    <div class="pb-aux">
+      <button
+        class="pb-btn pb-hold"
+        class:held={progress.held}
+        type="button"
+        onclick={onToggleHold}
+        aria-label={progress.held ? "Resume speeding up" : "Hold this speed"}
+        aria-pressed={progress.held}
+      >
+        <i class="fas fa-snowflake" aria-hidden="true"></i>
+        <span>{progress.held ? "Held" : "Hold"}</span>
+      </button>
 
-    <button
-      class="pb-btn pb-sound"
-      class:on={metronomeOn}
-      type="button"
-      onclick={onToggleMetronome}
-      aria-label={metronomeOn ? "Mute metronome" : "Play metronome"}
-      aria-pressed={metronomeOn}
-    >
-      <i class="fas {metronomeOn ? 'fa-volume-high' : 'fa-volume-xmark'}" aria-hidden="true"></i>
-      <span>{metronomeOn ? "Sound" : "Muted"}</span>
-    </button>
+      <button
+        class="pb-btn pb-sound"
+        class:on={metronomeOn}
+        type="button"
+        onclick={onToggleMetronome}
+        aria-label={metronomeOn ? "Mute metronome" : "Play metronome"}
+        aria-pressed={metronomeOn}
+      >
+        <i class="fas {metronomeOn ? 'fa-volume-high' : 'fa-volume-xmark'}" aria-hidden="true"></i>
+        <span>{metronomeOn ? "Sound" : "Muted"}</span>
+      </button>
 
-    <span class="pb-divider" aria-hidden="true"></span>
+      <button
+        class="pb-btn pb-mirror"
+        class:on={mirrorOn}
+        type="button"
+        onclick={onToggleMirror}
+        aria-label={mirrorOn ? "Hide camera mirror" : "Show camera mirror"}
+        aria-pressed={mirrorOn}
+      >
+        <i class="fas {mirrorOn ? 'fa-video' : 'fa-video-slash'}" aria-hidden="true"></i>
+        <span>Mirror</span>
+      </button>
 
-    <button
-      class="pb-btn pb-stop"
-      type="button"
-      onclick={onStop}
-      aria-label="Stop — back to setup"
-    >
-      <i class="fas fa-stop" aria-hidden="true"></i>
-      <span>Stop</span>
-    </button>
+      <span class="pb-divider" aria-hidden="true"></span>
+
+      <button
+        class="pb-btn pb-stop"
+        type="button"
+        onclick={onStop}
+        aria-label="Stop and return to setup"
+      >
+        <i class="fas fa-stop" aria-hidden="true"></i>
+        <span>Stop</span>
+      </button>
+    </div>
   </div>
 
   <!-- Status line: caption above a slim fill bar, full-width below the controls. -->
@@ -293,6 +313,14 @@
     gap: 16px;
     flex-wrap: wrap;
     justify-content: center;
+  }
+
+  /* Hold · Sound · Stop grouped so they wrap/drop together, not one at a time.
+     On desktop they sit inline with the same 16px rhythm as the rest of the row. */
+  .pb-aux {
+    display: flex;
+    align-items: center;
+    gap: 16px;
   }
 
   /* Every interactive control in the strip shares one height. */
@@ -360,6 +388,28 @@
     .pb-sound:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12)); color: var(--theme-text, #fff); }
   }
   .pb-sound.on {
+    background: color-mix(in srgb, var(--theme-accent, #38bdf8) 26%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #38bdf8) 55%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #7dd3fc) 75%, white);
+  }
+
+  /* Mirror — toggle that shows the webcam behind the canvas; mirrors Hold/Sound. */
+  .pb-mirror {
+    flex-direction: column;
+    gap: 1px;
+    width: 62px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .pb-mirror i { font-size: 16px; }
+  @media (hover: hover) and (pointer: fine) {
+    .pb-mirror:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12)); color: var(--theme-text, #fff); }
+  }
+  .pb-mirror.on {
     background: color-mix(in srgb, var(--theme-accent, #38bdf8) 26%, transparent);
     border-color: color-mix(in srgb, var(--theme-accent, #38bdf8) 55%, transparent);
     color: color-mix(in srgb, var(--theme-accent, #7dd3fc) 75%, white);
@@ -602,9 +652,22 @@
     100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--semantic-success, #22c55e) 0%, transparent); }
   }
 
-  /* Narrow: tighten gaps, drop the divider. */
+  /* Narrow: two tidy rows instead of an arbitrary flex-wrap. Row 1 = play +
+     tempo cluster; row 2 = Hold · Sound · Stop, centered and spanning. Drop the
+     divider (the row break already separates the live controls from the aux). */
   @container practice-bar (max-width: 600px) {
-    .pb-group { gap: 12px; }
+    .pb-group {
+      display: grid;
+      grid-template-columns: auto auto;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+    .pb-aux {
+      grid-column: 1 / -1;
+      justify-content: center;
+      gap: 12px;
+    }
     .pb-divider { display: none; }
   }
 

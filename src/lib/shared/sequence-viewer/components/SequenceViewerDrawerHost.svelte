@@ -169,7 +169,14 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     // one (e.g. 2D + 3D) was persisted before the bar went away.
     ctx.viewerState.setSplitConfig({ leftPane: 'animation', rightPane: 'card' });
     ctx.viewerState.setViewerMode('split');
-    setTimeout(() => rerenderTrigger++, 280);
+    // NOTE: do NOT force a rerenderTrigger++ here. The ChoreoCard's render
+    // $effect already reacts to the pane's prop changes (darkMode / columnCount
+    // / forceContain) via the cache-aware renderAllCells (in-place swap on a
+    // cache hit). rerenderTrigger++ routes to forceRerenderAllCells, which
+    // DELETES the in-memory + IndexedDB caches and blanks every cell to a
+    // spinner before re-rendering — that was the whole-grid "flash" seen when
+    // switching Card ↔ Side-by-side. The forced cache-clear is only for the
+    // admin context-menu "force rerender", not for a view switch.
   }
 
   function selectViewerMode(ctx: OrchestratorContext, mode: ContentType) {
@@ -389,7 +396,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
               : undefined}
           />
         {/snippet}
-        <div class="drawer-viewer-container" class:landscape={isLandscape}>
+        <div class="drawer-viewer-container" class:landscape={isLandscape} class:practice-mobile={isMobileWidth && ctx.practiceActive}>
           <header class="drawer-header">
                 <div class="drawer-header-left-actions">
                   <!-- Both action sets stay mounted and crossfade so entering
@@ -612,6 +619,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       practiceCountdown={ctx.practiceCountdown}
                       practiceCellSize={ctx.practiceViewPrefs.cellSize}
                       practiceCanvasFraction={0.5}
+                      practiceMirrorEnabled={ctx.mirrorEnabled}
                     />
                   {/if}
                   {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
@@ -773,6 +781,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                   onStop={ctx.handlePracticeStop}
                   metronomeOn={ctx.metronomeEnabled}
                   onToggleMetronome={ctx.handleToggleMetronome}
+                  mirrorOn={ctx.mirrorEnabled}
+                  onToggleMirror={ctx.handleToggleMirror}
                 />
               </div>
             </div>
@@ -993,6 +1003,13 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   }
 
   .landscape .drawer-header-title-group {
+    display: none;
+  }
+
+  /* Mobile-portrait practice: the red "Exit Practice" pill already communicates
+     the mode, and a wide labeled pill collides with the absolutely-centered
+     title. Drop the redundant centered title (landscape already does this). */
+  .practice-mobile .drawer-header-title-group {
     display: none;
   }
 

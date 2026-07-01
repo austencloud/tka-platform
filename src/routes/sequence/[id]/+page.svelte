@@ -663,6 +663,7 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
                 practiceCountdown={ctx.practiceCountdown}
                 practiceCellSize={ctx.practiceViewPrefs.cellSize}
                 practiceCanvasFraction={0.5}
+                practiceMirrorEnabled={ctx.mirrorEnabled}
               />
               <ChoreoCardContextMenuHost
                 bind:this={choreoCardMenuHost}
@@ -746,6 +747,8 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
                 onStop={ctx.handlePracticeStop}
                 metronomeOn={ctx.metronomeEnabled}
                 onToggleMetronome={ctx.handleToggleMetronome}
+                mirrorOn={ctx.mirrorEnabled}
+                onToggleMirror={ctx.handleToggleMirror}
               />
             </div>
           </div>
