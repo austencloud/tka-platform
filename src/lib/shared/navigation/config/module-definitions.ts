@@ -233,7 +233,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     id: "write",
     labelKey: "module_write",
     descKey: "module_desc_write",
-    label: "Choreo Sheet",
+    label: "Choreo",
     icon: '<i class="fas fa-pen-nib" style="color: #f43f5e;" aria-hidden="true"></i>',
     color: "#f43f5e", // Rose - creative writing/composition
     description: "Build a printable choreography sheet",
