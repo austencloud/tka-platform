@@ -134,6 +134,20 @@ class CollectionsState {
 	}
 
 	/**
+	 * Publish or unpublish a collection. Public collections appear in
+	 * Browse > Collections > Community for everyone; private ones are yours
+	 * alone. Returns false when the write fails (manager toasts).
+	 */
+	async setPublic(collectionId: string, isPublic: boolean): Promise<boolean> {
+		try {
+			await updateCollection(collectionId, { isPublic });
+			return true;
+		} catch {
+			return false; // manager already toasted
+		}
+	}
+
+	/**
 	 * Delete a collection. The manager cascades membership cleanup and refuses
 	 * system collections (Favorites is permanent), toasting its own error.
 	 * The sequences themselves are untouched — only the folder goes away.

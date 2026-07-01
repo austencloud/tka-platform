@@ -16,14 +16,29 @@ instead of showing an empty shell.
 <script lang="ts">
 	import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
+	import {
+		communityCollectionsState,
+		type CommunityCollection,
+	} from "../state/community-collections-state.svelte";
 	import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
+	import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
 	import CollectionCard from "./CollectionCard.svelte";
 	import CollectionDetailView from "./CollectionDetailView.svelte";
 
 	const signedIn = $derived(!!authState.user);
 
+	// Mine | Community. Local state survives the detail round-trip because the
+	// panel stays mounted while detail replaces the list.
+	let subView = $state<"mine" | "community">("mine");
+
 	$effect(() => {
 		if (signedIn) collectionsState.ensureStarted();
+	});
+
+	$effect(() => {
+		if (subView === "community") {
+			void communityCollectionsState.ensureLoaded(authState.user?.uid ?? null);
+		}
 	});
 
 	// Favorites stays pinned (sortOrder -1000); after that, most recently
@@ -41,18 +56,49 @@ instead of showing an empty shell.
 	const loading = $derived(collectionsState.loading);
 
 	// The nav state is the single source of truth for which view is showing.
-	const detailCollectionId = $derived.by(() => {
+	// Foreign (community) collections encode their owner in the contextId as
+	// "ownerId:collectionId" — own collection ids never contain a colon
+	// (Firestore auto-ids + "system_favorites").
+	const detail = $derived.by(() => {
 		const loc = browseNavigationState.currentLocation;
-		return loc?.tab === "collections" && loc.view === "detail" && loc.contextId
-			? loc.contextId
-			: null;
+		if (loc?.tab !== "collections" || loc.view !== "detail" || !loc.contextId) {
+			return null;
+		}
+		const sep = loc.contextId.indexOf(":");
+		if (sep > 0) {
+			return {
+				id: loc.contextId.slice(sep + 1),
+				ownerId: loc.contextId.slice(0, sep),
+				ownerName: loc.filter?.displayName,
+			};
+		}
+		// Your own collection needs you signed in; a stale restore while signed
+		// out falls through to the list (which shows the sign-in prompt).
+		if (!signedIn) return null;
+		return { id: loc.contextId, ownerId: null, ownerName: undefined };
 	});
 
 	function openCollection(id: string, name: string) {
 		browseNavigationState.viewCollectionDetail(id, name);
 	}
 
+	function openCommunityCollection(item: CommunityCollection) {
+		browseNavigationState.navigateTo({
+			tab: "collections",
+			view: "detail",
+			contextId: `${item.ownerId}:${item.collection.id}`,
+			filter: {
+				type: "collectionName",
+				value: item.collection.name,
+				displayName: item.ownerName,
+			},
+		});
+	}
+
 	function backToList() {
+		// Leaving a community collection should land back on the Community view,
+		// not flip the user over to Mine.
+		if (detail?.ownerId) subView = "community";
 		browseNavigationState.viewCollections();
 	}
 
@@ -86,71 +132,124 @@ instead of showing an empty shell.
 	}
 </script>
 
-{#if !signedIn}
-	<div class="signed-out">
-		<span class="signed-out-icon">
-			<i class="fas fa-folder-open" aria-hidden="true"></i>
-		</span>
-		<p class="signed-out-title">Collections live in your account</p>
-		<p class="signed-out-hint">
-			Sign in to group sequences into collections and keep your favorites in one
-			place.
-		</p>
-	</div>
-{:else if detailCollectionId}
-	<CollectionDetailView collectionId={detailCollectionId} onBack={backToList} />
+{#if detail}
+	<CollectionDetailView
+		collectionId={detail.id}
+		foreignOwnerId={detail.ownerId}
+		ownerName={detail.ownerName}
+		onBack={backToList}
+	/>
 {:else}
 	<div class="collections-list">
 		<header class="list-header">
 			<h2 class="list-title">Collections</h2>
+			<SegmentedControl
+				options={[
+					{ value: "mine", label: "Mine" },
+					{ value: "community", label: "Community" },
+				]}
+				value={subView}
+				onchange={(v) => (subView = v)}
+				color="accent"
+				size="sm"
+			/>
 		</header>
 
-		{#if loading && collections.length === 0}
+		{#if subView === "mine"}
+			{#if !signedIn}
+				<div class="signed-out">
+					<span class="signed-out-icon">
+						<i class="fas fa-folder-open" aria-hidden="true"></i>
+					</span>
+					<p class="signed-out-title">Collections live in your account</p>
+					<p class="signed-out-hint">
+						Sign in to group sequences into collections and keep your favorites
+						in one place. Community collections are open right now — take a
+						look.
+					</p>
+				</div>
+			{:else if loading && collections.length === 0}
+				<div class="card-grid" aria-hidden="true">
+					{#each Array(4) as _}
+						<span class="tile-skeleton"></span>
+					{/each}
+				</div>
+			{:else}
+				<div class="card-grid">
+					{#each collections as c (c.id)}
+						<CollectionCard
+							collection={c}
+							onOpen={() => openCollection(c.id, c.name)}
+						/>
+					{/each}
+
+					{#if showInput}
+						<div class="new-tile-input">
+							<!-- svelte-ignore a11y_autofocus -->
+							<input
+								type="text"
+								class="name-field"
+								placeholder="Collection name"
+								aria-label="New collection name"
+								bind:value={newName}
+								onkeydown={handleInputKeydown}
+								maxlength="60"
+								autofocus
+							/>
+							<button
+								type="button"
+								class="confirm-create"
+								onclick={handleCreate}
+								disabled={!newName.trim() || creating}
+								aria-label="Create collection"
+							>
+								<i class="fas fa-check" aria-hidden="true"></i>
+							</button>
+						</div>
+					{:else}
+						<button type="button" class="add-tile" onclick={() => (showInput = true)}>
+							<span class="add-icon">
+								<i class="fas fa-plus" aria-hidden="true"></i>
+							</span>
+							<span class="add-label">New collection</span>
+						</button>
+					{/if}
+				</div>
+			{/if}
+		{:else if communityCollectionsState.loading}
 			<div class="card-grid" aria-hidden="true">
-				{#each Array(4) as _}
+				{#each Array(6) as _}
 					<span class="tile-skeleton"></span>
 				{/each}
 			</div>
+		{:else if communityCollectionsState.error}
+			<div class="signed-out">
+				<span class="signed-out-icon">
+					<i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+				</span>
+				<p class="signed-out-title">{communityCollectionsState.error}</p>
+			</div>
+		{:else if communityCollectionsState.items.length === 0}
+			<div class="signed-out">
+				<span class="signed-out-icon">
+					<i class="fas fa-globe" aria-hidden="true"></i>
+				</span>
+				<p class="signed-out-title">No public collections yet</p>
+				<p class="signed-out-hint">
+					Make one of yours public from its card menu and it shows up here for
+					everyone.
+				</p>
+			</div>
 		{:else}
 			<div class="card-grid">
-				{#each collections as c (c.id)}
+				{#each communityCollectionsState.items as item (item.ownerId + item.collection.id)}
 					<CollectionCard
-						collection={c}
-						onOpen={() => openCollection(c.id, c.name)}
+						collection={item.collection}
+						ownerName={item.ownerName}
+						readonly
+						onOpen={() => openCommunityCollection(item)}
 					/>
 				{/each}
-
-				{#if showInput}
-					<div class="new-tile-input">
-						<!-- svelte-ignore a11y_autofocus -->
-						<input
-							type="text"
-							class="name-field"
-							placeholder="Collection name"
-							aria-label="New collection name"
-							bind:value={newName}
-							onkeydown={handleInputKeydown}
-							maxlength="60"
-							autofocus
-						/>
-						<button
-							type="button"
-							class="confirm-create"
-							onclick={handleCreate}
-							disabled={!newName.trim() || creating}
-							aria-label="Create collection"
-						>
-							<i class="fas fa-check" aria-hidden="true"></i>
-						</button>
-					</div>
-				{:else}
-					<button type="button" class="add-tile" onclick={() => (showInput = true)}>
-						<span class="add-icon">
-							<i class="fas fa-plus" aria-hidden="true"></i>
-						</span>
-						<span class="add-label">New collection</span>
-					</button>
-				{/if}
 			</div>
 		{/if}
 	</div>
@@ -176,6 +275,9 @@ instead of showing an empty shell.
 	.list-header {
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
 	}
 
 	.list-title {

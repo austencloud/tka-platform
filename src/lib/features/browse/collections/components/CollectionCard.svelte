@@ -25,9 +25,15 @@ first and only removes the folder — the sequences inside stay in the library.
 	let {
 		collection,
 		onOpen,
+		ownerName,
+		readonly: isReadonly = false,
 	}: {
 		collection: LibraryCollection;
 		onOpen: () => void;
+		/** Community cards credit their creator under the name. */
+		ownerName?: string;
+		/** Someone else's collection: no kebab, no rename/delete/publish. */
+		readonly?: boolean;
 	} = $props();
 
 	const isSystem = $derived(isSystemCollection(collection));
@@ -50,6 +56,15 @@ first and only removes the folder — the sequences inside stay in the library.
 				renaming = true;
 			},
 		},
+		{
+			id: "visibility",
+			label: collection.isPublic ? "Make private" : "Make public",
+			icon: collection.isPublic ? "fa-lock" : "fa-globe",
+			action() {
+				menuState = { open: false };
+				void collectionsState.setPublic(collection.id, !collection.isPublic);
+			},
+		},
 		{ type: "separator" } as ContextMenuEntry,
 		{
 			id: "delete",
@@ -64,7 +79,7 @@ first and only removes the folder — the sequences inside stay in the library.
 	]);
 
 	function openMenuAt(x: number, y: number) {
-		if (isSystem) return;
+		if (isSystem || isReadonly) return;
 		menuState = { open: true, x, y };
 	}
 
@@ -150,11 +165,17 @@ first and only removes the folder — the sequences inside stay in the library.
 			</span>
 			<span class="tile-text">
 				<span class="tile-name">{collection.name}</span>
-				<span class="tile-count">{countLabel(collection.sequenceCount)}</span>
+				<span class="tile-count">
+					{countLabel(collection.sequenceCount)}{#if !isReadonly && collection.isPublic}
+						· <i class="fas fa-globe public-globe" aria-hidden="true"></i> Public{/if}
+				</span>
+				{#if ownerName}
+					<span class="tile-owner">by {ownerName}</span>
+				{/if}
 			</span>
 		</button>
 
-		{#if !isSystem}
+		{#if !isSystem && !isReadonly}
 			<button
 				type="button"
 				class="kebab"
@@ -257,6 +278,19 @@ first and only removes the folder — the sequences inside stay in the library.
 		font-size: var(--font-size-compact, 12px);
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
 		font-variant-numeric: tabular-nums;
+	}
+
+	.public-globe {
+		font-size: 10px;
+		color: color-mix(in srgb, var(--tile-color) 80%, white);
+	}
+
+	.tile-owner {
+		font-size: var(--font-size-compact, 12px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.kebab {

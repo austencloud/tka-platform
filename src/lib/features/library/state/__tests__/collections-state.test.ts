@@ -124,6 +124,18 @@ describe("collectionsState", () => {
 		expect(ok).toBe(false);
 	});
 
+	it("setPublic delegates the visibility flip to the manager", async () => {
+		const ok = await collectionsState.setPublic("c1", true);
+		expect(ok).toBe(true);
+		expect(mocks.updateCollection).toHaveBeenCalledWith("c1", { isPublic: true });
+	});
+
+	it("setPublic returns false when the manager rejects", async () => {
+		mocks.updateCollection.mockRejectedValue(new Error("network"));
+		const ok = await collectionsState.setPublic("c1", true);
+		expect(ok).toBe(false);
+	});
+
 	it("remove delegates to the manager and reports success", async () => {
 		const ok = await collectionsState.remove("c1");
 		expect(ok).toBe(true);

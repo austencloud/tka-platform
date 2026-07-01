@@ -20,6 +20,10 @@ instead of showing a ghost.
 		subscribeToCollection,
 		getCollectionSequences,
 	} from "$lib/shared/library/services/collection-manager";
+	import {
+		getUserPublicCollections,
+		getUserCollectionSequences,
+	} from "$lib/features/library/services/public-collection-loader";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
 	import BrowseGrid from "$lib/features/browse/sequences/display/components/BrowseGrid.svelte";
@@ -33,9 +37,19 @@ instead of showing a ghost.
 	let {
 		collectionId,
 		onBack,
+		foreignOwnerId = null,
+		ownerName,
 	}: {
 		collectionId: string;
 		onBack: () => void;
+		/**
+		 * Set when viewing someone ELSE's public collection (Community view).
+		 * Read-only: no rename/delete/remove, one-shot fetch instead of a live
+		 * subscription (you can't edit it, so there's nothing to stay live for).
+		 */
+		foreignOwnerId?: string | null;
+		/** Creator credit shown under the name for foreign collections. */
+		ownerName?: string;
 	} = $props();
 
 	let collection = $state<LibraryCollection | null>(null);
@@ -50,10 +64,17 @@ instead of showing a ghost.
 
 	$effect(() => {
 		const id = collectionId;
+		const owner = foreignOwnerId;
 		firstSnapshotSeen = false;
 		collection = null;
 		members = [];
 		loadingMembers = true;
+
+		// Someone else's public collection: one-shot read, nothing to keep live.
+		if (owner) {
+			void loadForeign(owner, id);
+			return;
+		}
 
 		const unsubscribe = subscribeToCollection(id, (col) => {
 			const wasFirst = !firstSnapshotSeen;
@@ -90,6 +111,29 @@ instead of showing a ghost.
 
 		return unsubscribe;
 	});
+
+	async function loadForeign(owner: string, id: string) {
+		try {
+			// The loader only serves public collections, so a private/deleted one
+			// comes back missing — bail to the list rather than render a ghost.
+			const publicCollections = await getUserPublicCollections(owner);
+			if (id !== collectionId) return;
+			const col = publicCollections.find((c) => c.id === id) ?? null;
+			if (!col) {
+				onBack();
+				return;
+			}
+			collection = col;
+
+			const fetched = await getUserCollectionSequences(owner, id);
+			if (id !== collectionId) return;
+			members = sortByCollectionOrder(fetched, col.sequenceIds);
+		} catch (err) {
+			console.error("[CollectionDetail] Failed to load public collection:", err);
+		} finally {
+			if (id === collectionId) loadingMembers = false;
+		}
+	}
 
 	async function loadMembers(id: string, col: LibraryCollection) {
 		loadingMembers = true;
@@ -220,12 +264,14 @@ instead of showing a ghost.
 			<div class="header-text">
 				<h2 class="header-name">{collection?.name ?? ""}</h2>
 				<span class="header-count">
-					{collection ? countLabel(collection.sequenceIds.length) : ""}
+					{#if ownerName}by {ownerName} · {/if}{collection
+						? countLabel(collection.sequenceIds.length)
+						: ""}
 				</span>
 			</div>
 		{/if}
 
-		{#if collection && !isSystem && !renaming}
+		{#if collection && !isSystem && !renaming && !foreignOwnerId}
 			<button
 				type="button"
 				class="options-btn"
@@ -251,8 +297,12 @@ instead of showing a ghost.
 				</span>
 				<p class="empty-title">Nothing here yet</p>
 				<p class="empty-hint">
-					Add sequences from the gallery — right-click (or long-press) a card and
-					choose "Add to collection…", or file one while saving.
+					{#if foreignOwnerId}
+						This collection doesn't have any public sequences right now.
+					{:else}
+						Add sequences from the gallery — right-click (or long-press) a card
+						and choose "Add to collection…", or file one while saving.
+					{/if}
 				</p>
 			</div>
 		{:else}
@@ -260,11 +310,13 @@ instead of showing a ghost.
 				sequences={members}
 				thumbnailService={null}
 				onAction={handleSequenceAction}
-				collectionContext={{
-					id: collectionId,
-					name: collection?.name ?? "this collection",
-					onRemove: handleRemoveFromCollection,
-				}}
+				collectionContext={foreignOwnerId
+					? undefined
+					: {
+							id: collectionId,
+							name: collection?.name ?? "this collection",
+							onRemove: handleRemoveFromCollection,
+						}}
 			/>
 		{/if}
 	</div>

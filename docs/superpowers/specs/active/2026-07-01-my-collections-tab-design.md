@@ -63,12 +63,39 @@ handled in the new components.
 - Unwired (not deleted): `CollectionsBrowsePanel`, `CreatorLibraryCard`,
   `collections-browse-state` — the creator-browser.
 
+## Addendum (same day): Mine | Community split
+
+Austen picked "Mine | Community" (AskUserQuestion, 2026-07-01). The tab
+gains a SegmentedControl: **Mine** (default, everything above) and
+**Community** — everyone's public collections as one flat grid, newest
+activity first, browsable signed-out.
+
+- Feed: `community-collections-state` aggregates per-creator
+  (`getUsers()` → `getUserPublicCollections(uid)`), the same reads the
+  old creator-browser used — rules already allow them
+  (`firestore.rules:471`, `allow read: if true`). Own collections and
+  empty collections are filtered out. Session-cached. A cross-user
+  collectionGroup index is the scale-up path later.
+- Publishing: "Make public / Make private" in the own-card menu
+  (`collections-state.setPublic` → `updateCollection`), globe badge in
+  the card's count line.
+- Read-only foreign detail: contextId encodes `ownerId:collectionId`
+  (own ids never contain a colon); `CollectionDetailView` gets
+  `foreignOwnerId` — one-shot fetch via `public-collection-loader`
+  (which enforces isPublic), no options menu, no remove entries, owner
+  credit in the header. Back returns to the Community sub-view.
+- List polish: centered 880px column; Mine sorts Favorites-first then
+  most-recently-touched (all user collections share sortOrder 0, so the
+  tie-break was arbitrary before). Picker keeps stable order — toggling
+  bumps updatedAt and tiles would jump under your finger.
+
 ## Deferred
 
-- Saving/favoriting OTHER people's public collections (needs a
-  saved-reference model — a foreign collection isn't in your
-  `users/{uid}/collections` subtree).
+- Saving/favoriting OTHER people's public collections into your own
+  account (needs a saved-reference model — a foreign collection isn't in
+  your `users/{uid}/collections` subtree).
 - Shared multi-editor collections (Google-Photos style).
-- A "Discover collections" browse surface.
+- Cross-user collectionGroup query + index (replaces per-creator
+  aggregation once creator count makes N+1 reads hurt).
 - Member reordering UI (`reorderSequences` exists in the manager).
 - Collection cover thumbnails (see amendment 5).
