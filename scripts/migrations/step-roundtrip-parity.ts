@@ -28,6 +28,7 @@ import {
   stepWithViewToStepData,
 } from "../../src/lib/shared/foundation/domain/adapters/step-view-bridge";
 import type { SequenceData } from "../../src/lib/shared/foundation/domain/models/sequence-data";
+import { viewFieldsDigest, riskFieldCoverage, formatCoverage } from "./lib/view-fields-digest.js";
 
 if (!(globalThis as { crypto?: { subtle?: unknown } }).crypto?.subtle) {
   const { webcrypto } = await import("node:crypto");
@@ -50,6 +51,7 @@ async function fingerprintHydrated(seq: SequenceData): Promise<Record<string, st
     blueSoloHash: String(composed["blueSoloHash"] ?? ""),
     redSoloHash: String(composed["redSoloHash"] ?? ""),
     stepSignatures: JSON.stringify(stepSig.generateSignatures(seq.steps ?? [])),
+    viewFieldsDigest: viewFieldsDigest(seq.steps ?? []),
   };
 }
 
@@ -66,7 +68,7 @@ async function main(): Promise<void> {
   const { records } = JSON.parse(readFileSync(SNAPSHOT, "utf8")) as {
     records: Array<{ raw: SequenceData }>;
   };
-  const FIELDS = ["identityHash", "bluePathHash", "redPathHash", "blueSoloHash", "redSoloHash", "stepSignatures"];
+  const FIELDS = ["identityHash", "bluePathHash", "redPathHash", "blueSoloHash", "redSoloHash", "stepSignatures", "viewFieldsDigest"];
   const drift: Array<{ word: string; field: string; before: string; after: string }> = [];
   let seqs = 0;
   let steps = 0;
@@ -101,6 +103,16 @@ async function main(): Promise<void> {
 
   const byField = new Map<string, number>();
   for (const d of drift) byField.set(d.field, (byField.get(d.field) ?? 0) + 1);
+  // Non-vacuousness proof: show the corpus actually CARRIES the risk fields.
+  // 0 in any column means "lossless" was never tested on that field.
+  const allSteps = records.flatMap(({ raw }) => {
+    try {
+      return (hydrate(raw) as SequenceData).steps ?? [];
+    } catch {
+      return [];
+    }
+  });
+  console.log(`risk-field coverage: ${formatCoverage(riskFieldCoverage(allSteps))}`);
   console.log(`\n─── round-trip parity: ${seqs} sequences, ${steps} steps, ${FIELDS.length} fingerprints each ───`);
   if (drift.length === 0) {
     console.log(`✅ LOSSLESS — 0 fingerprints drifted. Step + MotionView round-trips byte-identical on every non-render sink.`);

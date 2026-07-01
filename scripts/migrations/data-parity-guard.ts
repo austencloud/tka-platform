@@ -41,6 +41,8 @@ import { encodeSequence, decodeSequence } from "../../src/lib/shared/navigation/
 
 const stepSig = new StepSignatureGenerator(new MotionSignatureGenerator());
 import type { SequenceData } from "../../src/lib/shared/foundation/domain/models/sequence-data";
+import { viewFieldsDigest, riskFieldCoverage, formatCoverage } from "./lib/view-fields-digest.js";
+import { buildRiskFixtureRecords } from "./lib/risk-fixtures.js";
 
 if (!(globalThis as { crypto?: { subtle?: unknown } }).crypto?.subtle) {
   const { webcrypto } = await import("node:crypto");
@@ -69,6 +71,7 @@ interface Fingerprint {
   redSoloHash: string;
   stepSignatures: string; // JSON of generateSignatures(steps)
   encoderRoundTripHash: string; // computeHash(hydrate(decode(encode(seq))))
+  viewFieldsDigest: string; // direct digest of handPath/skew/pathShape/prefloat/turns/plane
 }
 
 async function fingerprint(seq: SequenceData): Promise<Fingerprint> {
@@ -94,6 +97,7 @@ async function fingerprint(seq: SequenceData): Promise<Fingerprint> {
     encoderRoundTripHash: await safe(async () =>
       computeHash(hydrate(decodeSequence(encodeSequence(hydrated))) as SequenceData)
     ),
+    viewFieldsDigest: await safe(() => viewFieldsDigest(hydrated.steps ?? [])),
   };
 }
 
@@ -105,6 +109,7 @@ const FIELDS: (keyof Fingerprint)[] = [
   "redSoloHash",
   "stepSignatures",
   "encoderRoundTripHash",
+  "viewFieldsDigest",
 ];
 
 // ─── capture ────────────────────────────────────────────────────────────────
@@ -122,6 +127,14 @@ async function capture(): Promise<void> {
     if (!hydrated.steps || hydrated.steps.length === 0) continue;
     records.push({ raw, fp: await fingerprint(raw) });
   }
+  // Synthetic risk fixtures — the corpus carries zero handPath/skew/pathShape
+  // (2026-07-01 audit), so without these every check is vacuous on the exact
+  // fields the migration endangers. Snapshot-local; never written to Firestore.
+  for (const raw of buildRiskFixtureRecords(records.map((r) => r.raw))) {
+    records.push({ raw, fp: await fingerprint(raw) });
+  }
+  const allSteps = records.flatMap((r) => (hydrate(r.raw) as SequenceData).steps ?? []);
+  console.log(`risk-field coverage: ${formatCoverage(riskFieldCoverage(allSteps))}`);
   if (!existsSync(dirname(SNAPSHOT))) mkdirSync(dirname(SNAPSHOT), { recursive: true });
   writeFileSync(SNAPSHOT, JSON.stringify({ capturedAt: new Date().toISOString(), records }, null, 2));
   console.log(`Froze ${records.length} sequences + fingerprints -> ${SNAPSHOT}`);
