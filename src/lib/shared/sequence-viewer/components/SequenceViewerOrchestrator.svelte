@@ -64,6 +64,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     practiceViewPrefs: import("$lib/shared/sequence-viewer/state/practice-view-prefs.svelte").PracticeViewPrefs;
     metronomeEnabled: boolean;
     handleToggleMetronome: () => void;
+    mirrorEnabled: boolean;
+    handleToggleMirror: () => void;
 
     bluePropType: PropType | undefined;
     redPropType: PropType | undefined;
@@ -1009,6 +1011,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     practiceViewPrefs,
     metronomeEnabled: playback.metronomeEnabled,
     handleToggleMetronome: playback.handleToggleMetronome,
+    mirrorEnabled: playback.mirrorEnabled,
+    handleToggleMirror: playback.handleToggleMirror,
 
     bluePropType: activeBlueProp,
     redPropType: activeRedProp,
