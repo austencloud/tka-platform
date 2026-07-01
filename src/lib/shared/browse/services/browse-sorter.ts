@@ -79,12 +79,22 @@ function sortAlphabetically(sequences: SequenceData[]): SequenceData[] {
   return sortSequencesByKineticAlphabet(sequences);
 }
 
+/**
+ * Timestamp used for date sorting. Library sequences carry `createdAt`
+ * (added-to-library) and `birthday`; community docs carry the legacy
+ * `dateAdded`. Prefer createdAt, then dateAdded, then birthday so both the
+ * profile library gallery and the community gallery sort by a real date.
+ * Community docs have no createdAt, so their existing dateAdded order is
+ * unchanged.
+ */
+function dateValueOf(sequence: SequenceData): number {
+  const withCreated = sequence as SequenceData & { createdAt?: Date };
+  const d = withCreated.createdAt ?? sequence.dateAdded ?? sequence.birthday;
+  return d ? new Date(d).getTime() : 0;
+}
+
 function sortByDateAdded(sequences: SequenceData[]): SequenceData[] {
-  return sequences.sort((a, b) => {
-    const dateA = a.dateAdded ? new Date(a.dateAdded) : new Date(0);
-    const dateB = b.dateAdded ? new Date(b.dateAdded) : new Date(0);
-    return dateB.getTime() - dateA.getTime(); // Newest first
-  });
+  return sequences.sort((a, b) => dateValueOf(b) - dateValueOf(a)); // Newest first
 }
 
 function sortByDifficulty(sequences: SequenceData[]): SequenceData[] {

@@ -1,10 +1,13 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
-  import { fade, fly } from "svelte/transition";
+  import { fade } from "svelte/transition";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import PanelTabs from "$lib/shared/components/panel/PanelTabs.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
+  import SortPopover from "$lib/features/browse/shared/components/SortPopover.svelte";
+  import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
+  import { sortSequences } from "$lib/shared/browse/services/browse-sorter";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -46,30 +49,14 @@
     return () => visibilityManager.unregisterObserver(handleVisibilityChange);
   });
 
-  let activeTab = $state("all");
+  // Reuses the browse gallery's sort machinery: SortPopover UI + the shared
+  // sortSequences() service. Default to newest-first — most useful for a large
+  // personal library.
+  let sortMethod = $state<BrowseSortMethod>(BrowseSortMethod.DATE_ADDED);
 
-  const tabs = $derived(() => {
-    const result: { value: string; label: string; icon: string }[] = [
-      { value: "all", label: `All (${userSequences.length})`, icon: "fa-th" },
-    ];
-
-    if (userSequences.length > 0) {
-      result.push({
-        value: "sequences",
-        label: `Sequences (${userSequences.length})`,
-        icon: "fa-list",
-      });
-    }
-
-    return result;
-  });
-
-  const filteredSequences = $derived(() => {
-    if (activeTab === "all" || activeTab === "sequences") {
-      return userSequences;
-    }
-    return [];
-  });
+  const sortedSequences = $derived(
+    sortSequences([...userSequences] as SequenceData[], sortMethod) as LibrarySequence[]
+  );
 
   function getDisplayName(sequence: LibrarySequence): string {
     if (sequence.word) return sequence.word;
@@ -94,18 +81,8 @@
   }
 </script>
 
-<div class="tabs-wrapper" transition:fly={{ y: reducedMotion ? 0 : 20, duration: reducedMotion ? 0 : 300, delay: reducedMotion ? 0 : 200 }}>
-  {#if tabs().length > 1}
-    <PanelTabs
-      tabs={tabs()}
-      {activeTab}
-      onchange={(tab: string) => (activeTab = tab)}
-    />
-  {/if}
-</div>
-
-<div class="gallery-content">
-  {#if filteredSequences().length === 0}
+{#if userSequences.length === 0}
+  <div class="gallery-content">
     <PanelState
       type="empty"
       icon="fa-list"
@@ -113,9 +90,19 @@
       message="This creator hasn't published any sequences yet."
       compact
     />
-  {:else}
+  </div>
+{:else}
+  <div class="gallery-toolbar">
+    <span class="gallery-count">
+      {userSequences.length}
+      {userSequences.length === 1 ? "sequence" : "sequences"}
+    </span>
+    <SortPopover currentMethod={sortMethod} onSortChange={(m) => (sortMethod = m)} />
+  </div>
+
+  <div class="gallery-content">
     <div class="gallery-grid">
-      {#each filteredSequences() as sequence (sequence.id)}
+      {#each sortedSequences as sequence (sequence.id)}
         <button
           class="gallery-card"
           onclick={() => handleSequenceClick(sequence)}
@@ -135,16 +122,23 @@
         </button>
       {/each}
     </div>
-  {/if}
-</div>
+  </div>
+{/if}
 
 <style>
-  .tabs-wrapper {
-    container-type: inline-size;
-    container-name: tabs-wrapper;
+  .gallery-toolbar {
     display: flex;
-    justify-content: center;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .gallery-count {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--theme-text-dim);
   }
 
   .gallery-content {
@@ -155,8 +149,7 @@
 
   .gallery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 350px));
-    justify-content: center;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 12px;
   }
 
@@ -222,7 +215,7 @@
 
   @container gallery (max-width: 640px) {
     .gallery-grid {
-      grid-template-columns: repeat(auto-fit, minmax(150px, 250px));
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
       gap: 8px;
     }
 
@@ -234,7 +227,7 @@
 
   @container gallery (min-width: 2000px) {
     .gallery-grid {
-      grid-template-columns: repeat(auto-fit, minmax(300px, 400px));
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     }
   }
 

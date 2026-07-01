@@ -56,6 +56,11 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
   const isOwnProfile = $derived(currentUserId === userId);
   const isAdmin = $derived(authState.isAdmin);
 
+  // Right rail appears when viewing someone else while logged in (connection),
+  // which also covers the admin case. Own profile / logged-out → gallery goes
+  // full width, no rail.
+  const showAside = $derived(!!currentUserId && !isOwnProfile);
+
   const modalUsers = $derived(followersModalType === "followers" ? followerUsers : followingUsers);
   const modalLoading = $derived(followersModalType === "followers" ? followersLoading : followingLoading);
 
@@ -226,40 +231,48 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     <ProfileHeaderBar onBack={handleBack} />
 
     <div class="profile-content">
-      <div class="profile-sheet">
-        <ProfileHeroSection
-          {userProfile}
-          {currentUserId}
-          {isOwnProfile}
-          {followInProgress}
-          onFollowToggle={handleFollowToggle}
-          onFollowersClick={() => openFollowersModal("followers")}
-          onFollowingClick={() => openFollowersModal("following")}
-        />
-
-        <ProfileShowcase
-          pinnedItems={userProfile.pinnedItems ?? []}
-          {isOwnProfile}
-        />
-
-        <ProfileTabs
-          {userSequences}
-          onSequenceClick={handleSequenceClick}
-        />
-
-        {#if currentUserId && !isOwnProfile}
-          <ProfileConnectionSection
-            targetUserId={userId}
-            targetUserName={userProfile.displayName}
-          />
-        {/if}
-
-        {#if isAdmin && !isOwnProfile}
-          <ProfileAdminSection
+      <div class="profile-layout" class:has-aside={showAside}>
+        <div class="hero-area">
+          <ProfileHeroSection
             {userProfile}
-            onUserUpdated={handleAdminUpdate}
-            {onUserDeleted}
+            {currentUserId}
+            {isOwnProfile}
+            {followInProgress}
+            onFollowToggle={handleFollowToggle}
+            onFollowersClick={() => openFollowersModal("followers")}
+            onFollowingClick={() => openFollowersModal("following")}
           />
+        </div>
+
+        <div class="profile-main">
+          <ProfileShowcase
+            pinnedItems={userProfile.pinnedItems ?? []}
+            {isOwnProfile}
+          />
+
+          <ProfileTabs
+            {userSequences}
+            onSequenceClick={handleSequenceClick}
+          />
+        </div>
+
+        {#if showAside}
+          <aside class="profile-aside">
+            {#if currentUserId && !isOwnProfile}
+              <ProfileConnectionSection
+                targetUserId={userId}
+                targetUserName={userProfile.displayName}
+              />
+            {/if}
+
+            {#if isAdmin && !isOwnProfile}
+              <ProfileAdminSection
+                {userProfile}
+                onUserUpdated={handleAdminUpdate}
+                {onUserDeleted}
+              />
+            {/if}
+          </aside>
         {/if}
       </div>
     </div>
@@ -309,25 +322,88 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     padding: clamp(16px, 4cqi, 32px);
   }
 
-  /* Single frosted surface: all sections read against one calm panel instead
-     of floating as transparent cards over the animated ocean background.
-     Reuses the app's modal-surface token (--theme-panel-bg). */
-  .profile-sheet {
+  /* 4K-first layout: full-width hero banner, gallery main that fills the
+     width, and a sticky right rail for viewer-only sections. Collapses to a
+     single stacked column on narrow panels. */
+  .profile-layout {
     width: 100%;
-    max-width: 920px;
+    max-width: 1920px;
     margin-inline: auto;
-    padding: clamp(16px, 4cqi, 32px);
-    background: color-mix(in srgb, var(--theme-panel-bg, rgba(18, 20, 30, 0.98)) 92%, transparent);
+    display: grid;
+    gap: 24px;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "hero"
+      "main";
+    align-items: start;
+  }
+
+  .profile-layout.has-aside {
+    grid-template-columns: minmax(0, 1fr) clamp(320px, 22cqi, 400px);
+    grid-template-areas:
+      "hero hero"
+      "main aside";
+  }
+
+  .hero-area {
+    grid-area: hero;
+  }
+
+  .profile-main {
+    grid-area: main;
+    min-width: 0;
+  }
+
+  .profile-aside {
+    grid-area: aside;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Three frosted glass panels (banner / main / rail) so all content reads
+     against calm surfaces; the ocean breathes in the grid gaps + page
+     margins. Reuses the app modal-surface token (--theme-panel-bg). */
+  .hero-area,
+  .profile-main,
+  .profile-aside {
+    background: color-mix(in srgb, var(--theme-panel-bg, rgba(18, 20, 30, 0.98)) 90%, transparent);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--theme-stroke);
-    border-radius: clamp(16px, 3cqi, 24px);
+    border-radius: clamp(16px, 2cqi, 24px);
+    padding: clamp(16px, 2cqi, 28px);
     box-shadow: var(--theme-shadow, 0 8px 32px rgba(0, 0, 0, 0.3));
   }
 
-  .profile-sheet > :global(*) {
-    width: 100%;
-    flex-shrink: 0;
+  /* Hero fills its banner panel edge-to-edge (drop its own max-width/margins). */
+  .hero-area :global(.hero-section) {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .profile-aside > :global(:first-child) {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  @container profile-panel (max-width: 1100px) {
+    .profile-layout.has-aside {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "hero"
+        "main"
+        "aside";
+    }
+
+    .profile-aside {
+      position: static;
+    }
   }
 
   @container profile-panel (max-width: 768px) {
