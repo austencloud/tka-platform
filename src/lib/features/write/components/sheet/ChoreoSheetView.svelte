@@ -15,6 +15,7 @@
 -->
 <script lang="ts">
   import { flip } from "svelte/animate";
+  import { onMount } from "svelte";
   import {
     createChoreoSheetState,
     setChoreoSheetContext,
@@ -27,8 +28,9 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import SheetPreviewPages from "./SheetPreviewPages.svelte";
-  import BrowseGrid from "$lib/features/browse/sequences/display/components/BrowseGrid.svelte";
-  import { getBrowseThumbnailProvider } from "$lib/shared/browse/get-browse-thumbnail-provider";
+  import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
+  import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
 
   let { seedAct = undefined }: { seedAct?: ActData } = $props();
 
@@ -74,45 +76,39 @@
   ];
 
   // ── Add-sequences browse drawer ────────────────────────────────────────────
-  // Renders the user's library through the canonical Browse grid/card
-  // (ChoreoCardThumbnail → PropAwareThumbnail), so each option is a real
-  // rendered pictograph model — not a stored strip thumbnail. Click a card and
-  // it appends as a row (the sequence is already hydrated, so seed it directly).
+  // Reuses the full Browse experience (BrowsePanel + a browse engine): real
+  // rendered pictograph cards, search/filter/sort, virtualization, source
+  // toggle. Same recipe as CovenSequencePicker. Defaults to the user's own
+  // library; the source toggle lets them pull from community too.
   let browseOpen = $state(false);
-  const thumbnailProvider = getBrowseThumbnailProvider();
-  let libSequences = $state<SequenceData[]>([]);
-  let browseLoading = $state(false);
-  let browseError = $state<string | null>(null);
-  let browseLoaded = false;
-  let browseSearch = $state("");
+  let browseInitialized = false;
+  const browseEngine = createBrowseEngine({
+    persistKey: null, // ephemeral: don't remember filter/source across visits
+    initialSource: "my-library",
+    minColumns: 2,
+  });
 
-  async function ensureLibraryLoaded(): Promise<void> {
-    if (browseLoaded) return;
-    browseLoaded = true;
-    browseLoading = true;
-    browseError = null;
-    try {
-      libSequences = (await getLibraryRepository().getSequences()) as SequenceData[];
-    } catch (error) {
-      browseLoaded = false; // let a re-open retry
-      browseError = error instanceof Error ? error.message : "Failed to load sequences";
-    } finally {
-      browseLoading = false;
-    }
-  }
+  onMount(() => () => browseEngine.destroy());
 
   function toggleBrowse(): void {
     browseOpen = !browseOpen;
-    if (browseOpen) void ensureLibraryLoaded();
+    if (browseOpen && !browseInitialized) {
+      browseInitialized = true;
+      browseEngine.initialize();
+    }
   }
 
-  const filteredLibSequences = $derived.by(() => {
-    const q = browseSearch.trim().toLowerCase();
-    if (!q) return libSequences;
-    return libSequences.filter((s) =>
-      `${s.word ?? ""} ${s.name ?? ""} ${s.displayName ?? ""}`.toLowerCase().includes(q),
-    );
-  });
+  // BrowsePanel emits a metadata-only SequenceData on select, so hydrate its
+  // steps (via the browse loader) before adding — otherwise the row draws blank.
+  async function handleBrowseSelect(seq: SequenceData): Promise<void> {
+    try {
+      const full = await getBrowseLoader().loadFullSequenceData(seq.id, seq.id);
+      builder.addHydratedSequences([full ?? seq]);
+    } catch (err) {
+      console.warn("[ChoreoSheetView] Failed to hydrate selected sequence:", err);
+      builder.addHydratedSequences([seq]);
+    }
+  }
 
   let exporting = $state(false);
   let exportPct = $state(0);
@@ -276,8 +272,8 @@
 </div>
 
 {#if browseOpen}
-  <!-- Canonical Browse grid (ChoreoCardThumbnail → PropAwareThumbnail): each
-       option is a real rendered pictograph model. Click a card → adds a row. -->
+  <!-- Full Browse experience (BrowsePanel + engine): real rendered pictograph
+       cards, search/filter/sort, virtualization. Tap a card → adds a row. -->
   <button
     type="button"
     class="browse-scrim"
@@ -286,7 +282,7 @@
   ></button>
   <aside class="browse-drawer" aria-label="Add sequences">
     <div class="browse-drawer-head">
-      <span class="browse-drawer-title">Add sequences — tap to add a row</span>
+      <span class="browse-drawer-title">Add sequences — tap a card to add a row</span>
       <button
         type="button"
         class="browse-close"
@@ -296,33 +292,13 @@
         <i class="fa-solid fa-xmark" aria-hidden="true"></i>
       </button>
     </div>
-    <div class="browse-search">
-      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-      <input
-        type="text"
-        bind:value={browseSearch}
-        placeholder="Search your sequences"
-        aria-label="Search your sequences"
+    <div class="browse-panel-host">
+      <BrowsePanel
+        engine={browseEngine}
+        layout="compact"
+        showSourceToggle
+        onSelect={(seq) => handleBrowseSelect(seq)}
       />
-    </div>
-    <div class="browse-grid-scroll">
-      {#if browseLoading}
-        <p class="browse-status">Loading your sequences…</p>
-      {:else if browseError}
-        <p class="browse-status">{browseError}</p>
-      {:else if filteredLibSequences.length === 0}
-        <p class="browse-status">
-          {libSequences.length === 0 ? "No sequences in your library yet." : "No matches."}
-        </p>
-      {:else}
-        <BrowseGrid
-          sequences={filteredLibSequences}
-          thumbnailService={thumbnailProvider}
-          eager
-          disableVirtualization
-          onAction={(_action, seq) => builder.addHydratedSequences([seq])}
-        />
-      {/if}
     </div>
   </aside>
 {/if}
@@ -421,7 +397,7 @@
     top: 0;
     right: 0;
     bottom: 0;
-    width: min(420px, 92vw);
+    width: min(560px, 96vw);
     display: flex;
     flex-direction: column;
     background: var(--theme-panel-bg, #14141c);
@@ -464,45 +440,11 @@
     color: var(--theme-text, #fff);
   }
 
-  .browse-search {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    margin: var(--spacing-sm) var(--spacing-md) 0;
-    padding: 0 var(--spacing-sm);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 8px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    flex-shrink: 0;
-  }
-
-  .browse-search input {
-    flex: 1;
-    min-width: 0;
-    min-height: var(--min-touch-target, 44px);
-    background: none;
-    border: none;
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-sm, 0.875rem);
-  }
-
-  .browse-search input:focus {
-    outline: none;
-  }
-
-  .browse-grid-scroll {
+  .browse-panel-host {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
-    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
-  }
-
-  .browse-status {
-    text-align: center;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-sm, 0.875rem);
-    margin: var(--spacing-md) 0;
+    display: flex;
+    flex-direction: column;
   }
 
   .save-message {
