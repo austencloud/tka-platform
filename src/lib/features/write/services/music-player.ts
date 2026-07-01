@@ -1,6 +1,12 @@
 /**
  * MusicPlayer - Implementation for music playback in Write tab
  */
+
+/** Safari's legacy prefixed AudioContext (no `unknown` double-cast needed). */
+interface WindowWithWebkitAudio extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
 export class MusicPlayer {
   private audioContext: AudioContext | null = null;
   private currentAudio: HTMLAudioElement | null = null;
@@ -52,9 +58,11 @@ export class MusicPlayer {
     try {
       // Initialize Web Audio API context
       const AudioContextClass =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext })
-          .webkitAudioContext;
+        window.AudioContext ??
+        (window as WindowWithWebkitAudio).webkitAudioContext;
+      if (!AudioContextClass) {
+        throw new Error("Web Audio API unavailable in this browser");
+      }
       this.audioContext = new AudioContextClass();
 
       // Resume audio context if suspended (required for user interaction)

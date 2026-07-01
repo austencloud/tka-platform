@@ -212,6 +212,10 @@
   }
 
   .page {
+    /* Component-scoped print-surface borders (the white sheet is print-fixed —
+       these never track the app theme, so no global token applies). */
+    --print-border-faint: rgba(0, 0, 0, 0.06);
+    --print-border-strong: rgba(0, 0, 0, 0.4);
     position: relative;
     background: var(--print-bg, #ffffff);
     border-radius: 4px;
@@ -250,13 +254,13 @@
 
   .cell.blank {
     background: transparent;
-    border-color: rgba(0, 0, 0, 0.06);
+    border-color: var(--print-border-faint, rgba(0, 0, 0, 0.06));
   }
 
   /* Separator: a vertical divider on the left edge of a sequence-start cell —
      in flow mode a boundary is between two cells, not two rows. */
   .cell.separator {
-    border-left: 2px solid rgba(0, 0, 0, 0.4);
+    border-left: 2px solid var(--print-border-strong, rgba(0, 0, 0, 0.4));
   }
 
   /* Whole-sequence selection: a transparent hit layer over each cell, an accent
@@ -295,13 +299,13 @@
     min-height: var(--min-touch-target, 44px);
     padding: 0 12px;
     background: var(--theme-danger, #ef4444);
-    color: #fff;
+    color: var(--theme-text-inverse, #fff);
     border: none;
     border-radius: 8px;
     font-size: var(--font-size-compact, 0.72rem);
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.3));
   }
 
   .block-remove:hover {
@@ -323,9 +327,9 @@
     align-items: center;
     gap: 3px;
     padding: 0 4px;
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
-    color: #fff;
+    color: var(--theme-text-inverse, #fff);
     background: var(--theme-danger, #ef4444);
     border-radius: 3px;
     pointer-events: none;

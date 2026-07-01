@@ -278,7 +278,7 @@
     width: 16px;
     height: 16px;
     background: var(--theme-accent, #f43f5e);
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     border-radius: 50%;
     cursor: pointer;
     transition: transform var(--duration-fast) ease;
@@ -292,7 +292,7 @@
     width: 14px;
     height: 14px;
     background: var(--theme-accent, #f43f5e);
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     border-radius: 50%;
     cursor: pointer;
   }
@@ -338,7 +338,7 @@
   }
 
   .transport-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-hover-bg, rgba(255, 255, 255, 0.1));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     transform: scale(1.05);
   }

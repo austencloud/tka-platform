@@ -17,7 +17,7 @@
  */
 
 import { getContext, setContext } from "svelte";
-import { SvelteMap } from "svelte/reactivity";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 import {
   createEmptyChoreoSheet,
   DEFAULT_SHEET_LAYOUT,
@@ -62,6 +62,16 @@ export interface ChoreoSheetStateDeps {
 // Lightweight: ids + layout + name + timestamps only. Mirrors the guarded
 // load/persist pattern used across the state modules (e.g. practice-view-prefs).
 
+// JSON round-trips Date fields as ISO strings, so a restored draft's timestamps
+// arrive as `unknown`-shaped values. Narrow at runtime instead of casting.
+function parseDraftDate(value: unknown, fallback: Date): Date {
+  if (typeof value === "string" || typeof value === "number") {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return fallback;
+}
+
 export function loadDraft(key: string): ChoreoSheet | null {
   try {
     const raw = localStorage.getItem(key);
@@ -77,8 +87,8 @@ export function loadDraft(key: string): ChoreoSheet | null {
         (x): x is string => typeof x === "string"
       ),
       layout: { ...DEFAULT_SHEET_LAYOUT, ...(p.layout ?? {}) },
-      createdAt: p.createdAt ? new Date(p.createdAt as unknown as string) : now,
-      updatedAt: p.updatedAt ? new Date(p.updatedAt as unknown as string) : now,
+      createdAt: parseDraftDate(p.createdAt, now),
+      updatedAt: parseDraftDate(p.updatedAt, now),
     };
   } catch {
     return null;
@@ -112,6 +122,11 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // True while a hydration round-trip is in flight, so the UI can show a spinner
   // on freshly-added rows instead of leaving them mysteriously blank.
   let isHydrating = $state(false);
+
+  // Ids whose hydration failed (fetch threw, or the loader returned null). A
+  // SvelteSet — the reactive sibling of the cache's SvelteMap — so the UI can
+  // put an error badge + retry on the affected rows instead of a silent blank.
+  const failedIds = new SvelteSet<string>();
 
   // Which sequence block (by id) is selected in the preview / rail — powers
   // select-then-remove (click the whole sequence, see it highlighted, remove it).
@@ -171,8 +186,8 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   const actSequence = $derived(buildActSequence(normalizedRows, sheet.name));
 
   // Hydrate only the ids we don't already have, in parallel. A failed fetch for
-  // one id never blocks the others or throws — that row just stays blank, which
-  // a later add/retry can fill.
+  // one id never blocks the others or throws — the id lands in `failedIds` so
+  // the row can show an error + retry instead of a mysterious blank.
   async function ensureHydrated(ids: readonly string[]): Promise<void> {
     const missing = ids.filter((id) => !cache.has(id));
     if (missing.length === 0) return;
@@ -181,17 +196,30 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     try {
       await Promise.all(
         missing.map(async (id) => {
+          failedIds.delete(id); // a retry attempt clears the stale error first
           try {
             const data = await deps.loadSequence(id);
-            if (data) cache.set(id, data);
+            if (data) {
+              cache.set(id, data);
+            } else {
+              failedIds.add(id); // loader resolved but found nothing
+            }
           } catch (error) {
             console.error(`[ChoreoSheetState] Failed to hydrate sequence ${id}:`, error);
+            failedIds.add(id);
           }
         })
       );
     } finally {
       isHydrating = false;
     }
+  }
+
+  // Re-attempt hydration for one failed id, or all failed ids when none given.
+  async function retryHydration(id?: string): Promise<void> {
+    const targets = id ? [id] : [...failedIds];
+    if (targets.length === 0) return;
+    await ensureHydrated(targets);
   }
 
   // Append sequences to the sheet (one block per sequence, so ids already on the
@@ -218,6 +246,7 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     for (const seq of seqs) {
       if (!seq?.id) continue;
       cache.set(seq.id, seq);
+      failedIds.delete(seq.id); // directly seeded — any earlier failure is moot
       if (!sheet.sequenceIds.includes(seq.id) && !additions.includes(seq.id)) {
         additions.push(seq.id);
       }
@@ -303,6 +332,7 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
       const data = placement.sequenceData;
       if (!data?.id) continue;
       cache.set(data.id, data);
+      failedIds.delete(data.id); // directly seeded — any earlier failure is moot
       if (!ids.includes(data.id)) ids.push(data.id);
     }
     sheet = {
@@ -366,11 +396,15 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     get isHydrating() {
       return isHydrating;
     },
+    get failedSequenceIds(): ReadonlySet<string> {
+      return failedIds;
+    },
     get selectedSequenceId() {
       return selectedSequenceId;
     },
 
     addSequences,
+    retryHydration,
     addHydratedSequences,
     removeAt,
     removeById,

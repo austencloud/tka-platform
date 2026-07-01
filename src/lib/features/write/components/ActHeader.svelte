@@ -192,7 +192,7 @@
   .field-input {
     width: 100%;
     padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--theme-input-bg, rgba(0, 0, 0, 0.2));
     border: 2px solid var(--theme-accent, #6366f1);
     border-radius: var(--border-radius-md, 8px);
     color: var(--theme-text, #ffffff);
@@ -232,7 +232,7 @@
   }
 
   .field-display:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-hover-bg, rgba(255, 255, 255, 0.04));
     border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
@@ -290,7 +290,7 @@
   }
 
   .music-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-hover-bg, rgba(255, 255, 255, 0.04));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 

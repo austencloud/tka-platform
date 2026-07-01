@@ -53,7 +53,8 @@
   );
   function rowLabel(id: string): string {
     const seq = byId.get(id);
-    return seq?.displayName ?? seq?.word ?? seq?.name ?? "Loading…";
+    if (seq) return seq.displayName ?? seq.word ?? seq.name ?? "Untitled";
+    return builder.failedSequenceIds.has(id) ? "Failed to load" : "Loading…";
   }
   function rowCount(id: string): number | null {
     return byId.get(id)?.steps.length ?? null;
@@ -130,6 +131,9 @@
   let collections = $state<LibraryCollection[]>([]);
   let libSequences = $state<SequenceData[]>([]);
   let collectionsLoaded = false;
+  // Mirrors the saveMessage pattern: a failed collections fetch surfaces here
+  // (rendered in the picker with a retry) instead of dying in the console.
+  let pickerError = $state<string | null>(null);
 
   function initEngineOnce(): void {
     if (browseInitialized) return;
@@ -190,6 +194,7 @@
   async function ensureCollectionsLoaded(): Promise<void> {
     if (collectionsLoaded) return;
     collectionsLoaded = true;
+    pickerError = null;
     try {
       const [cols, seqs] = await Promise.all([
         getCollections(),
@@ -200,6 +205,7 @@
     } catch (e) {
       console.error("[ChoreoSheetView] collections load failed", e);
       collectionsLoaded = false; // let a retry re-attempt
+      pickerError = "Couldn't load your collections.";
     }
   }
 
@@ -380,6 +386,17 @@
                   <span class="row-count">{rowCount(id)}</span>
                 {/if}
                 <div class="row-actions">
+                  {#if builder.failedSequenceIds.has(id)}
+                    <button
+                      type="button"
+                      class="icon-btn row-retry"
+                      aria-label="Sequence failed to load — retry"
+                      title="This sequence failed to load. Tap to retry."
+                      onclick={() => void builder.retryHydration(id)}
+                    >
+                      <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                    </button>
+                  {/if}
                   <button
                     type="button"
                     class="icon-btn"
@@ -500,7 +517,21 @@
             {/each}
           </div>
           <div class="browse-panel-host">
-            {#if !selectedCollectionId}
+            {#if pickerError}
+              <!-- Swaps into the same flexible host slot the empty states use, so
+                   showing it never shifts the dock's chrome. -->
+              <div class="picker-error" role="alert">
+                <p class="dock-empty">{pickerError}</p>
+                <button
+                  type="button"
+                  class="btn"
+                  onclick={() => void ensureCollectionsLoaded()}
+                >
+                  <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                  Retry
+                </button>
+              </div>
+            {:else if !selectedCollectionId}
               <p class="dock-empty">Pick a collection.</p>
             {:else if collectionSequences.length === 0}
               <p class="dock-empty">No sequences in this collection.</p>
@@ -651,6 +682,21 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-sm, 0.875rem);
     margin: var(--spacing-md) 0;
+  }
+
+  /* Collections fetch failure: message + retry in the same slot as the empty
+     states, so the dock chrome never moves. */
+  .picker-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-md);
+  }
+
+  .picker-error .dock-empty {
+    margin: 0;
+    color: var(--theme-danger, #ef4444);
   }
 
   .browse-drawer-head {
@@ -846,6 +892,15 @@
     color: var(--theme-danger, #ef4444);
   }
 
+  /* Failed-hydration retry on a row: danger-tinted so the row reads as broken. */
+  .row-retry {
+    color: var(--theme-danger, #ef4444);
+  }
+
+  .row-retry:hover:not(:disabled) {
+    color: var(--theme-danger, #ef4444);
+  }
+
   .setting-row {
     display: flex;
     align-items: center;
@@ -896,7 +951,7 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--theme-text, #fff);
     transition: transform var(--duration-fast, 0.12s) ease;
   }
 

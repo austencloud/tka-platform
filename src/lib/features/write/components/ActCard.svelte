@@ -108,7 +108,7 @@
   }
 
   .act-card:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-hover-bg, rgba(255, 255, 255, 0.04));
     border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
@@ -178,7 +178,8 @@
     );
     border-radius: 50%;
     color: var(--semantic-success, #22c55e);
-    font-size: 0.6rem;
+    /* 12px floor; the icon stays visually small via its fixed 20px badge box. */
+    font-size: var(--font-size-compact, 12px);
   }
 
   .card-description {
@@ -205,7 +206,7 @@
   }
 
   .meta-item i {
-    font-size: 0.65rem;
+    font-size: var(--font-size-compact, 12px);
     opacity: 0.7;
   }
 

@@ -192,7 +192,7 @@
   }
 
   .sequence-card:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-hover-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     transform: translateY(-2px);
   }
@@ -207,7 +207,7 @@
     width: 100%;
     height: 160px;
     overflow: hidden;
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--theme-bg-subtle, rgba(0, 0, 0, 0.3));
   }
 
   .sequence-thumbnail img {
@@ -225,7 +225,7 @@
     position: absolute;
     top: var(--spacing-xs);
     left: var(--spacing-xs);
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--color-scrim-strong, rgba(0, 0, 0, 0.7));
     color: white;
     padding: var(--spacing-xs) var(--spacing-sm);
     border-radius: var(--border-radius-sm, 6px);

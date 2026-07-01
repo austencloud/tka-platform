@@ -95,6 +95,8 @@
 
 <style>
   .sequence-thumbnail {
+    /* Component-scoped: fainter than any --theme-* fill token provides. */
+    --preview-surface-faint: rgba(255, 255, 255, 0.02);
     background: var(--surface-color);
     backdrop-filter: var(--glass-backdrop);
     border: var(--glass-border);
@@ -111,8 +113,8 @@
   }
 
   .sequence-thumbnail:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--theme-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     transform: translateY(-2px);
     box-shadow: var(--shadow-glass-hover);
   }
@@ -162,13 +164,15 @@
     justify-content: center;
     transition: all var(--transition-fast);
     line-height: 1;
-    box-shadow: 0 2px 8px rgba(236, 72, 153, 0.3);
+    box-shadow: 0 2px 8px
+      color-mix(in srgb, var(--secondary-color, #ec4899) 30%, transparent);
   }
 
   .remove-button:hover {
     background: var(--secondary-light);
     transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4);
+    box-shadow: 0 4px 12px
+      color-mix(in srgb, var(--secondary-color, #ec4899) 40%, transparent);
   }
 
   .remove-button:active {
@@ -181,7 +185,7 @@
     align-items: center;
     justify-content: center;
     padding: var(--spacing-xs);
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--preview-surface-faint, rgba(255, 255, 255, 0.02));
   }
 
   .sequence-preview img {

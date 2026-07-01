@@ -122,7 +122,7 @@
 
   .count {
     padding: 2px 8px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border-radius: 10px;
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
@@ -144,7 +144,7 @@
   }
 
   .icon-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-hover-bg, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, #ffffff);
   }
 
@@ -203,7 +203,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-radius: 50%;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
     font-size: 1.25rem;
