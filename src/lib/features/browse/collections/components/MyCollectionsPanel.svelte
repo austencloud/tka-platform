@@ -26,7 +26,18 @@ instead of showing an empty shell.
 		if (signedIn) collectionsState.ensureStarted();
 	});
 
-	const collections = $derived(collectionsState.collections);
+	// Favorites stays pinned (sortOrder -1000); after that, most recently
+	// touched first — adding or removing a sequence bumps updatedAt, so the
+	// collection you're actively building floats to the front. All user
+	// collections share sortOrder 0, so without this the tie-break is
+	// whatever order Firestore returns.
+	const collections = $derived(
+		[...collectionsState.collections].sort(
+			(a, b) =>
+				a.sortOrder - b.sortOrder ||
+				b.updatedAt.getTime() - a.updatedAt.getTime(),
+		),
+	);
 	const loading = $derived(collectionsState.loading);
 
 	// The nav state is the single source of truth for which view is showing.
@@ -153,7 +164,13 @@ instead of showing an empty shell.
 		height: 100%;
 		min-height: 0;
 		overflow-y: auto;
-		padding: 12px;
+		padding: clamp(12px, 3cqi, 28px);
+		/* A handful of collections on a wide desktop panel otherwise huddles in
+		   the top-left corner — cap the column and center it so the page reads
+		   composed at any count. */
+		width: 100%;
+		max-width: 880px;
+		margin-inline: auto;
 	}
 
 	.list-header {
