@@ -168,13 +168,18 @@ export function hydrate(sequence: SequenceData): SequenceData {
 				: hydrated;
 		}
 
-		// Compositional fields missing - steps won't be derived.
-		// This sequence either predates the migration or was saved by a code path
-		// that doesn't call ensureComposition(). See the hydrate() docstring above.
+		// Compositional fields missing - steps won't be derived here.
+		// The sequence predates ensureComposition() or was saved by a path that
+		// skips it. No action needed: ensureComposition() runs on every save
+		// (library-repository) and on publish (library-batch-operations), so the
+		// doc self-heals the next time it's touched. Read-time consumers that need
+		// the fields immediately derive them on the fly (see hand-path explorer).
+		// There is no bulk migration script - that path is archived in favour of
+		// lazy heal-on-save (content-hash V2).
 		if (sequence.steps.length > 0 && !sequence.blueSoloProp) {
-			console.warn(
-				`[SequenceHydrator] Sequence "${sequence.word || sequence.id}" has steps but no compositional fields. ` +
-				`Run \`node scripts/migrate-compositional.cjs\` to backfill, or check that ensureComposition() is called at save time.`
+			console.debug(
+				`[SequenceHydrator] Sequence "${sequence.word || sequence.id}" has steps but no ` +
+				`compositional fields; will heal on next save/publish. Derive read-time if needed.`
 			);
 		}
 

@@ -1,6 +1,7 @@
 import type { HandPathData } from "$lib/shared/foundation/domain/models/hand-path-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { handPathToName } from '$lib/shared/foundation/services/hand-path-namer';
+import { ensureComposition } from "$lib/shared/foundation/services/sequence-hydrator";
 import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
 
 export type HandSide = "blue" | "red";
@@ -47,7 +48,24 @@ export function createExplorerState(
       isLoading = true;
       loadError = null;
 
-      const sequences = await sequenceRepository.getAllSequences();
+      const rawSequences = await sequenceRepository.getAllSequences();
+
+      // Legacy sequences carry `steps` but no compositional fields
+      // (blueSoloProp/redSoloProp) — they predate the field or were saved by a
+      // path that skips ensureComposition(). handPath lives on those fields, so
+      // the Explorer is empty for the whole legacy corpus without this. Derive
+      // them read-time (no persistence — the same one-way decomposition
+      // ensureComposition() does at save time, run here at read time, mirroring
+      // how hydrate() derives the opposite direction). This keeps the read-only
+      // Explorer self-sufficient instead of depending on a data backfill.
+      const sequences = rawSequences.map((seq) => {
+        if (seq.blueSoloProp || seq.steps.length === 0) return seq;
+        try {
+          return ensureComposition(seq);
+        } catch {
+          return seq;
+        }
+      });
 
       // Build a map from contentHash → PathGroup.
       // A sequence contributes to a group when it has a SoloPropData on either side.
