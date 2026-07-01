@@ -60,16 +60,32 @@ Done this pass (commit alongside this spec update). Inert while
   corruption). `updateSequence` does not touch `contentHash`, so it needs no
   change.
 
-## What remains (GATED — needs Austen creds / deploy)
+## Rollout — COMPLETED 2026-06-30
 
-### 2. Run the migration
+### 1. Version-aware code deployed — DONE
 
-`npx tsx scripts/migrations/rehash-content-v2.ts --apply` (needs prod Firestore
-admin — Austen). Eagerly rewrites every doc to a V2 hash + version 2.
+Shipped in commit `d814ad76d3` and pushed to prod (CF Pages deploy `2d131e35`,
+commit `48099bc7b3`). Note: the push also surfaced + fixed a pre-existing 3-day
+prod build break — four modules (`SupportContent`, `SupportModal`,
+`support-modal-state`, `PlaygroundModule`) were imported by committed code but
+never tracked, so CF's SSR build failed `vite:load-fallback ENOENT`. Committed
+in `48099bc7b3`; that deploy went green and un-stuck production.
 
-### 3. Flip the active version
+### 2. Migration run — DONE
 
-Set `CONTENT_HASH_VERSION = HASH_VERSION_V2` and deploy.
+`TKA_ADMIN=1 npx tsx scripts/migrations/rehash-content-v2.ts --apply` — rewrote
+**933 docs** (user library 481 + public mirror 452) to V2 + `contentHashVersion: 2`,
+**0 failed**. `systemCatalogs` is empty (deck-enumerator corpus not persisted
+there yet). A read-only re-run confirmed persistence: `unchanged=933,
+would-rewrite=0`.
+
+### 3. Active version flipped to V2 — DONE
+
+`CONTENT_HASH_VERSION = HASH_VERSION_V2` in `sequence-content-hasher.ts`. The 3
+canary tests + the 2 flip-canaries in `content-hash-v2-fork-proof.test.ts`
+updated to dual-basis (explicit V1 `not.toBe` + V2 `toBe`); all 38 identity-hash
+tests pass. Golden V1 byte-stability lock untouched. Deploys with the same push
+as this doc.
 
 ## Rollout ordering (prevents mass-fork + client/migration race)
 

@@ -88,8 +88,8 @@ function makeFixture(overrides?: {
 }
 
 describe("content-hash V2 — fork-proof contract", () => {
-  it("keeps the active version at V1 (must not flip without the corpus migration)", () => {
-    expect(CONTENT_HASH_VERSION).toBe(HASH_VERSION_V1);
+  it("active version is V2 (corpus migrated + version-aware fork detection shipped 2026-06-30)", () => {
+    expect(CONTENT_HASH_VERSION).toBe(HASH_VERSION_V2);
   });
 
   it("V1 includes reversal flags; V2 ignores them (FORK-PROOF for reversals)", async () => {
@@ -131,9 +131,9 @@ describe("content-hash V2 — fork-proof contract", () => {
     );
   });
 
-  it("default computeHash() == explicit V1 (active basis unchanged)", async () => {
+  it("default computeHash() == explicit V2 (active basis is now V2)", async () => {
     const seq = makeFixture({ blueReversal: true });
-    expect(await computeHash(seq)).toBe(await computeHash(seq, HASH_VERSION_V1));
+    expect(await computeHash(seq)).toBe(await computeHash(seq, HASH_VERSION_V2));
   });
 
   it("V1 byte-stability lock (golden) — fork detection depends on this never drifting", async () => {

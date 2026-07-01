@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { computeHash } from "$lib/shared/library/services/sequence-content-hasher";
+import {
+  computeHash,
+  HASH_VERSION_V1,
+  HASH_VERSION_V2,
+} from "$lib/shared/library/services/sequence-content-hasher";
 import {
   createSequenceData,
 } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -173,7 +177,7 @@ describe("SequenceContentHasher", () => {
     expect(hashAB).not.toBe(hashBA);
   });
 
-  it("produces a different hash for DIAMOND vs BOX grid mode", async () => {
+  it("grid mode is V1 identity but excluded from V2 (re-derived on hydrate)", async () => {
     const diamondStep = makeStep({ gridMode: GridMode.DIAMOND });
     const boxStep = makeStep({
       gridMode: GridMode.BOX,
@@ -201,9 +205,14 @@ describe("SequenceContentHasher", () => {
       steps: [boxStep],
     });
 
-    const hashDiamond = await computeHash(seqDiamond);
-    const hashBox = await computeHash(seqBox);
-
-    expect(hashDiamond).not.toBe(hashBox);
+    // V1: grid mode contributes to identity at seq/step/motion levels.
+    expect(await computeHash(seqDiamond, HASH_VERSION_V1)).not.toBe(
+      await computeHash(seqBox, HASH_VERSION_V1)
+    );
+    // V2: gridMode is re-derived on hydrate at every level, so it is dropped;
+    // with identical locations these are the same physical identity.
+    expect(await computeHash(seqDiamond, HASH_VERSION_V2)).toBe(
+      await computeHash(seqBox, HASH_VERSION_V2)
+    );
   });
 });

@@ -23,10 +23,10 @@
  *   differs in flipped motion content (`reversal-seed-service.ts` flips pro↔anti
  *   + cw↔ccw), so dropping the redundant reversal flag merges nothing.
  *
- * `CONTENT_HASH_VERSION` is the ACTIVE version. It stays at V1 until the corpus
- * `contentHash` migration runs (`scripts/migrations/rehash-content-v2.ts`) and
- * fork detection is made version-aware — see the rollout spec. Flipping it
- * before the migration would mismatch every stored hash and mass-fork.
+ * `CONTENT_HASH_VERSION` is the ACTIVE version — **V2** since 2026-06-30, after
+ * the corpus `contentHash` migration (`scripts/migrations/rehash-content-v2.ts`)
+ * and version-aware fork detection shipped. The version-aware compare + lazy
+ * rehash keep mixed-version data consistent, so the flip was race-free.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -39,14 +39,16 @@ export const HASH_VERSION_V1 = 1;
 export const HASH_VERSION_V2 = 2;
 
 /**
- * ACTIVE identity-hash version. DO NOT flip to V2 until:
- *   1. `scripts/migrations/rehash-content-v2.ts --apply` has rewritten every
- *      stored `contentHash` (library + public mirror + system catalogs), and
- *   2. fork detection / dedup are version-aware (compare same-version hashes,
- *      lazy-rehash on mismatch) per the rollout spec.
- * Flipping early mass-forks the corpus.
+ * ACTIVE identity-hash version — V2 as of 2026-06-30. Rollout complete:
+ *   1. version-aware fork detection + lazy rehash deployed (compares
+ *      same-version hashes; recomputes on version mismatch instead of forking),
+ *   2. `scripts/migrations/rehash-content-v2.ts --apply` rewrote every stored
+ *      `contentHash` to V2 (user library + public mirror; systemCatalogs empty),
+ *   3. flipped to V2 here.
+ * Any straggler still on V1 self-heals via the version-aware lazy rehash on next
+ * access, so a rollback to V1 stays fork-safe too.
  */
-export const CONTENT_HASH_VERSION = HASH_VERSION_V1;
+export const CONTENT_HASH_VERSION = HASH_VERSION_V2;
 
 interface ExtractOptions {
   /** V2: drop round-trip-derived fields (reversal flags, gridMode) so the hash

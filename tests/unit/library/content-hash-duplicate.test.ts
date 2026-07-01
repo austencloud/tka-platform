@@ -10,7 +10,11 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { computeHash } from "../../../src/lib/shared/library/services/sequence-content-hasher";
+import {
+  computeHash,
+  HASH_VERSION_V1,
+  HASH_VERSION_V2,
+} from "../../../src/lib/shared/library/services/sequence-content-hasher";
 import { MotionColor } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 // Minimal motion data that satisfies the hasher's extraction
@@ -165,14 +169,19 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
     expect(hashA).not.toBe(hashB);
   });
 
-  it("different grid mode produces a different hash", async () => {
+  it("grid mode is V1 identity but excluded from V2 (re-derived on hydrate)", async () => {
     const a = makeSequence({ gridMode: "diamond" });
     const b = makeSequence({ gridMode: "box" });
 
-    const hashA = await computeHash(a);
-    const hashB = await computeHash(b);
-
-    expect(hashA).not.toBe(hashB);
+    // V1: gridMode contributes to identity.
+    expect(await computeHash(a, HASH_VERSION_V1)).not.toBe(
+      await computeHash(b, HASH_VERSION_V1)
+    );
+    // V2: gridMode is re-derived by deriveStepGridMode on every load, so it is
+    // dropped from identity — with identical locations these are the same.
+    expect(await computeHash(a, HASH_VERSION_V2)).toBe(
+      await computeHash(b, HASH_VERSION_V2)
+    );
   });
 
   it("hash is a 64-character hex string (SHA-256)", async () => {
@@ -181,16 +190,21 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
     expect(hash).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it("reversal flag difference produces a different hash", async () => {
+  it("reversal flag is V1 identity but excluded from V2 (re-derived on hydrate)", async () => {
     const a = makeSequence();
     const b = makeSequence({
       steps: [makeStep({ blueReversal: true })],
     });
 
-    const hashA = await computeHash(a);
-    const hashB = await computeHash(b);
-
-    expect(hashA).not.toBe(hashB);
+    // V1: reversal flags contribute to identity.
+    expect(await computeHash(a, HASH_VERSION_V1)).not.toBe(
+      await computeHash(b, HASH_VERSION_V1)
+    );
+    // V2: reversal flags are re-derived by processReversals on every load, so
+    // they are dropped from identity (this is the phantom-fork-on-resave fix).
+    expect(await computeHash(a, HASH_VERSION_V2)).toBe(
+      await computeHash(b, HASH_VERSION_V2)
+    );
   });
 
   it("undefined step gridMode inherits from sequence and matches explicit value", async () => {
