@@ -205,7 +205,6 @@ function _getPropName(propType: PropType): string {
       return "club";
     case PropType.BUUGENG:
     case PropType.BIGBUUGENG:
-    case PropType.FRACTALGENG:
       return "buugeng";
     case PropType.MINIHOOP:
     case PropType.BIGHOOP:

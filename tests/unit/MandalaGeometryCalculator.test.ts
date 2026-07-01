@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { calculate } from "$lib/shared/mandala/services/mandala-geometry-calculator";
 import type { StepLike } from "$lib/shared/mandala/services/types";
+import { pairTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 import {
   MANDALA_STANDARD_TIP_DX,
   ENGINE_GRID_RADIUS,
@@ -833,6 +834,60 @@ describe("MandalaGeometryCalculator", () => {
       const result = calc.calculate([{ motions: null }]);
       expect(result.blue).toHaveLength(0);
       expect(result.red).toHaveLength(0);
+    });
+  });
+
+  // ─── Prop-aware tip ends (single- vs dual-ended) ─────────────────────────
+  // A two-ended prop (staff) traces both tips; a single-ended prop (club/fan)
+  // traces ONLY the outer staff end — same staff geometry, inner (pinky) locus
+  // dropped — so a club sequence's mandala isn't the double-staff figure.
+
+  describe("prop-aware tip ends", () => {
+    it("default (no options) traces both tips → blue has 2 path-sets", () => {
+      const result = calc.calculate(SINGLE_PRO_STEP);
+      expect(result.blue).toHaveLength(2);
+    });
+
+    it("tipEnds:1 traces one tip → blue and red each have 1 path-set", () => {
+      const result = calc.calculate(SINGLE_PRO_STEP, undefined, undefined, {
+        tipEnds: 1,
+      });
+      expect(result.blue).toHaveLength(1);
+      expect(result.red).toHaveLength(1);
+    });
+
+    it("the single-ended path IS the outer (+dx) tip of the dual render", () => {
+      // Dual emits [innerTip(-dx), outerTip(+dx)]; single keeps exactly +dx.
+      // Identical `d` proves the geometry is unchanged — only the inner tip is
+      // dropped (staff geometry preserved, no per-prop reshaping).
+      const dual = calc.calculate(SINGLE_STATIC_STEP);
+      const single = calc.calculate(SINGLE_STATIC_STEP, undefined, undefined, {
+        tipEnds: 1,
+      });
+      expect(single.blue[0]!.d).toBe(dual.blue[1]!.d);
+    });
+
+    it("pairTipEnds maps single-ended props → 1, staff family → 2", () => {
+      expect(pairTipEnds("club", "club")).toBe(1);
+      expect(pairTipEnds("fan", "fan")).toBe(1);
+      expect(pairTipEnds("triad", "triad")).toBe(1);
+      expect(pairTipEnds("staff", "staff")).toBe(2);
+      expect(pairTipEnds("buugeng", "buugeng")).toBe(2);
+    });
+
+    it("big chicken is bilateral (2); regular chicken is single-ended (1)", () => {
+      expect(pairTipEnds("bigchicken", "bigchicken")).toBe(2);
+      expect(pairTipEnds("chicken", "chicken")).toBe(1);
+    });
+
+
+    it("a mixed pair keeps the staff hand's second tip (→ 2)", () => {
+      expect(pairTipEnds("club", "staff")).toBe(2);
+      expect(pairTipEnds("staff", "club")).toBe(2);
+    });
+
+    it("an unspecified prop defaults to the two-ended staff render", () => {
+      expect(pairTipEnds(undefined, undefined)).toBe(2);
     });
   });
 });

@@ -8,6 +8,7 @@
 
 import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
 import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
+import { pairTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 import type { MandalaRenderOptions } from "$lib/shared/mandala/domain/mandala-types";
 import type { StepLike } from "$lib/shared/mandala/services/types";
 
@@ -30,7 +31,13 @@ export async function exportMandalaPNG(
 	options: Partial<ExportOptions> = {},
 ): Promise<Blob> {
 	const opts = { ...DEFAULT_EXPORT_OPTIONS, ...options };
-	const paths = calculateMandalaGeometry(steps, bluePropType, redPropType);
+	const tipEnds = pairTipEnds(bluePropType, redPropType);
+	const paths = calculateMandalaGeometry(
+		steps,
+		bluePropType,
+		redPropType,
+		tipEnds === 1 ? { tipEnds: 1 } : undefined,
+	);
 
 	const renderOptions: MandalaRenderOptions = {
 		size: opts.size,

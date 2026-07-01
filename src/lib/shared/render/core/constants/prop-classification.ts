@@ -12,7 +12,7 @@ const SMALL_UNILATERAL_PROPS = [
 ] as const;
 
 const BUUGENG_FAMILY = [
-  "buugeng", "bigbuugeng", "fractalgeng", "trigeng",
+  "buugeng", "bigbuugeng", "trigeng",
 ] as const;
 
 const STRICT_PLACED = [

@@ -30,7 +30,7 @@
 		{ label: "Fan", types: ["fan", "bigfan"] },
 		{ label: "Triad", types: ["triad", "bigtriad"] },
 		{ label: "Hoop", types: ["minihoop", "bighoop"] },
-		{ label: "Buugeng", types: ["buugeng", "bigbuugeng", "fractalgeng", "trigeng"] },
+		{ label: "Buugeng", types: ["buugeng", "bigbuugeng", "trigeng"] },
 		{ label: "Triquetra", types: ["triquetra", "triquetra2"] },
 		{ label: "Sword", types: ["sword"] },
 		{ label: "Chicken", types: ["chicken", "bigchicken"] },

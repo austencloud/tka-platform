@@ -62,7 +62,6 @@ export const SMALL_BILATERAL_PROPS = [
   "trigeng",
   "doublestar",
   "quiad",
-  "fractalgeng",
   "eightrings",
   "doublecontactball",
 ] as const;
@@ -107,7 +106,6 @@ export function isBilateralProp(propType: string): boolean {
 export const BUUGENG_FAMILY_PROPS = [
   "buugeng",
   "bigbuugeng",
-  "fractalgeng",
   "trigeng",
 ] as const;
 

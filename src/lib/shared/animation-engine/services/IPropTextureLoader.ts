@@ -48,7 +48,6 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   // Buugeng family
   buugeng: { width: 300, height: 155.26 },
   bigbuugeng: { width: 600, height: 293.1 },
-  fractalgeng: { width: 300, height: 228.36 },
   trigeng: { width: 300, height: 284 }, // matches animated/trigeng.svg viewBox
 
   // Hand - matches animated/hand.svg viewBox (same as static version)

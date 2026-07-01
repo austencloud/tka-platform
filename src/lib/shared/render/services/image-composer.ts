@@ -35,6 +35,7 @@ import { composeCardImage as composeCardImageFn } from "./card-composer";
 import { ensureCardFonts } from "./gelasio-fonts";
 // mandala geometry calculate() loaded dynamically to keep its dependency graph out of the worker bundle until needed
 import { renderMandalaToCanvas } from "../../mandala/services/mandala-renderer";
+import { pairTipEnds } from "../../pictograph/prop/domain/prop-tip-ends";
 import { getMandalaPlacements } from "../../sequence-viewer/services/get-mandala-placements";
 import {
   LIGHT_MOTION_BLUE_STROKE,
@@ -778,10 +779,12 @@ export class ImageComposer {
       const { calculate: calculateMandalaGeometry } = await import(
         "../../mandala/services/mandala-geometry-calculator"
       );
+      const tipEnds = pairTipEnds(bluePropType, redPropType);
       const paths = calculateMandalaGeometry(
         sequence.steps ?? [],
         bluePropType,
         redPropType,
+        tipEnds === 1 ? { tipEnds: 1 } : undefined,
       );
       if (paths.blue.length === 0 && paths.red.length === 0) return;
 

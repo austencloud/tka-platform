@@ -31,7 +31,6 @@ even when Svelte recreates the component instance.
   const BUUGENG_FAMILY = new Set([
     PropType.BUUGENG,
     PropType.BIGBUUGENG,
-    PropType.FRACTALGENG,
     PropType.TRIGENG,
   ]);
 

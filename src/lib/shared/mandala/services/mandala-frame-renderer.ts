@@ -10,6 +10,7 @@
 import { calculate as calculateMandalaGeometry } from "./mandala-geometry-calculator";
 import { renderMandalaSVG, renderMandalaToCanvas } from "./mandala-renderer";
 import type { MandalaPathOptions } from "./types";
+import { pairTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 import { DEFAULT_OVERLAP_CONFIG } from "../domain/mandala-types";
 import type {
   MandalaPalette,
@@ -137,10 +138,15 @@ export interface MandalaFrameOutput {
   cacheKey: number | null;
 }
 
-function pathOptionsFor(shape: MandalaPathShape): MandalaPathOptions | undefined {
-  if (shape === "hybrid") return { motionAware: true };
-  if (shape !== "arc") return { pathShape: shape };
-  return undefined;
+function pathOptionsFor(
+  shape: MandalaPathShape,
+  tipEnds?: 1 | 2,
+): MandalaPathOptions | undefined {
+  const base: MandalaPathOptions = {};
+  if (shape === "hybrid") base.motionAware = true;
+  else if (shape !== "arc") base.pathShape = shape;
+  if (tipEnds === 1) base.tipEnds = 1;
+  return Object.keys(base).length > 0 ? base : undefined;
 }
 
 type FrameGradient = { blue: [string, string]; red: [string, string]; purple: [string, string] };
@@ -179,7 +185,7 @@ function computeFrameGeometry(
     spec.steps as any,
     spec.bluePropType,
     spec.redPropType,
-    pathOptionsFor(spec.pathShape),
+    pathOptionsFor(spec.pathShape, pairTipEnds(spec.bluePropType, spec.redPropType)),
     { dx: tipDx, dy: 0 },
   );
   return { paths, tipDx };

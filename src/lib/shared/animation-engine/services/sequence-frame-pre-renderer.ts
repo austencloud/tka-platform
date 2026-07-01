@@ -497,7 +497,7 @@ export class SequenceFramePreRenderer {
     try {
       const settingsState = settingsService;
       const settings = settingsState.currentSettings;
-      const buugengFamily = ["buugeng", "bigbuugeng", "fractalgeng"];
+      const buugengFamily = ["buugeng", "bigbuugeng"];
       bluePropType = (
         settings?.bluePropType ||
         settings?.propType ||

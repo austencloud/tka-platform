@@ -137,13 +137,6 @@ const BIGBUUGENG_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-const FRACTALGENG_TIP_POINTS: PropTipConfig = {
-  points: [
-    { dx: 120, dy: -80 },
-    { dx: -120, dy: 80 },
-  ],
-};
-
 const TRIGENG_TIP_POINTS: PropTipConfig = {
   points: [
     { dx: 130, dy: -60 },
@@ -170,7 +163,16 @@ const TRIQUETRA_TIP_POINTS: PropTipConfig = {
 
 // ─── Chicken Family ───────────────────────────────────────────────────────────
 
+// Regular (small) chicken is single-ended — one weighted tip at the outer
+// (+dx) end, matching the club/sword single-tip convention.
 const CHICKEN_TIP_POINTS: PropTipConfig = {
+  points: [{ dx: 150, dy: 0 }],
+};
+
+// Big chicken is bilateral — two mirror-symmetric ends. (See the
+// TWO_ENDED_PROPS set in prop-tip-ends.ts: bigchicken is two-ended, regular
+// chicken is not.)
+const BIGCHICKEN_TIP_POINTS: PropTipConfig = {
   points: [
     { dx: -150, dy: 0 },
     { dx: 150, dy: 0 },
@@ -303,7 +305,6 @@ export const PROP_TIP_POINTS: Record<string, PropTipConfig> = {
   // Buugeng family
   buugeng: BUUGENG_TIP_POINTS,
   bigbuugeng: BIGBUUGENG_TIP_POINTS,
-  fractalgeng: FRACTALGENG_TIP_POINTS,
   trigeng: TRIGENG_TIP_POINTS,
 
   // Hand
@@ -318,7 +319,7 @@ export const PROP_TIP_POINTS: Record<string, PropTipConfig> = {
 
   // Chicken family
   chicken: CHICKEN_TIP_POINTS,
-  bigchicken: CHICKEN_TIP_POINTS,
+  bigchicken: BIGCHICKEN_TIP_POINTS,
 
   // Guitar family
   guitar: GUITAR_TIP_POINTS,

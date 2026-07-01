@@ -3,7 +3,7 @@ const path = require('path');
 
 const dir = 'static/images/props/buttons';
 const ids = ['staff','bigstaff','club','bigclub','fan','bigfan','triad','bigtriad','minihoop','bighoop',
-  'buugeng','bigbuugeng','fractalgeng','trigeng','triquetra','triquetra2','chicken','bigchicken',
+  'buugeng','bigbuugeng','trigeng','triquetra','triquetra2','chicken','bigchicken',
   'doublestar','bigdoublestar','eightrings','bigeightrings','torch','bigtorch','doublecontactball',
   'hand','sword','quiad'];
 
@@ -92,7 +92,7 @@ const SECTIONS=[
 {label:'Curved',props:[
 {id:'triad',label:'Triad',bi:false,big:'bigtriad',bigLabel:'Big Triad'},
 {id:'minihoop',label:'Mini Hoop',bi:false,big:'bighoop',bigLabel:'Big Hoop'},
-{id:'buugeng',label:'Buugeng',bi:true,big:'bigbuugeng',bigLabel:'Big Buugeng',shapes:['buugeng','fractalgeng']},
+{id:'buugeng',label:'Buugeng',bi:true,big:'bigbuugeng',bigLabel:'Big Buugeng',shapes:['buugeng']},
 {id:'trigeng',label:'Trigeng',bi:true},
 {id:'triquetra',label:'Triquetra',bi:false,shapes:['triquetra','triquetra2']}
 ]},

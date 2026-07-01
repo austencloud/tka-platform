@@ -32,6 +32,7 @@
 	} from "../domain/mandala-constants";
 	import { calculate as calculateMandalaGeometry, calculateMorphed as calculateMandalaMorphed } from "../services/mandala-geometry-calculator";
 	import type { MandalaPathOptions } from "../services/types";
+	import { pairTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 
 	export type { MandalaPathShape, UndulationEasing } from "../domain/mandala-types";
 
@@ -111,7 +112,11 @@
 		strokeWidth?: number;
 		/** Per-path gradient colors for gradient color mode */
 		gradient?: { blue: [string, string]; red: [string, string]; purple: [string, string] };
-		/** Prop ends traced: 2 = staff (both tips), 1 = club (one tip). Default 2. */
+		/**
+		 * Prop ends traced: 2 = staff (both tips), 1 = club (one tip). Optional —
+		 * when omitted, derived from bluePropType/redPropType via pairTipEnds. Set
+		 * explicitly only to force a count regardless of prop (labs/explorers).
+		 */
 		tipEnds?: 1 | 2;
 	}
 
@@ -136,8 +141,15 @@
 		palette: paletteOverride,
 		strokeWidth,
 		gradient,
-		tipEnds = 2,
+		tipEnds,
 	}: Props = $props();
+
+	// Prop-aware tip count: an explicit `tipEnds` prop wins (labs / overrides);
+	// otherwise derive from the prop the mandala is rendered with — a single-ended
+	// prop (club/fan/triad) traces ONE staff end, a two-ended prop (staff/buugeng)
+	// traces both. This is what makes a club sequence's mandala drop the inner
+	// (pinky) locus instead of always drawing the double-staff figure.
+	const effectiveTipEnds = $derived(tipEnds ?? pairTipEnds(bluePropType, redPropType));
 
 	const DARK_MOTION_PALETTE: MandalaPalette = {
 		blueStroke: DARK_MOTION_BLUE_STROKE,
@@ -209,7 +221,7 @@
 		const base: MandalaPathOptions = {};
 		if (shape === "hybrid") base.motionAware = true;
 		else if (shape !== "arc") base.pathShape = shape;
-		if (tipEnds === 1) base.tipEnds = 1;
+		if (effectiveTipEnds === 1) base.tipEnds = 1;
 		return Object.keys(base).length > 0 ? base : undefined;
 	}
 

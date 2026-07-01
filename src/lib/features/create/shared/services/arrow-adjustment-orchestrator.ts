@@ -328,7 +328,7 @@ export class ArrowAdjustmentOrchestrator {
     // to match what PictographPreparer does during rendering. Without this, the
     // SpecialPlacer inside the calculator uses the raw sequence propType (e.g.,
     // "staff") for its cascading lookup, while the renderer uses the settings
-    // propType (e.g., "fractalgeng"). This mismatch causes the arrow to jump
+    // propType (e.g., "bigbuugeng"). This mismatch causes the arrow to jump
     // to a wrong position on the first WASD press after a reset.
     try {
       const motionWithPropOverride = {

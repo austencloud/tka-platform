@@ -87,7 +87,6 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   [PropType.BIGHOOP]: "H",
   [PropType.BUUGENG]: "B",
   [PropType.BIGBUUGENG]: "b",
-  [PropType.FRACTALGENG]: "R",
   [PropType.TRIGENG]: "J",
   [PropType.HAND]: "X",
   [PropType.TRIQUETRA]: "Q",
@@ -114,6 +113,11 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
 const PROP_TYPE_DECODE: Record<string, PropType> = Object.fromEntries(
   Object.entries(PROP_TYPE_ENCODE).map(([k, v]) => [v, k as PropType])
 ) as Record<string, PropType>;
+
+// Legacy alias: fractalgeng (removed from the codebase 2026-06-30) was encoded
+// "R". Decode old short codes / URLs to its base prop, buugeng, so existing
+// links still resolve instead of falling through to a missing prop.
+PROP_TYPE_DECODE["R"] = PropType.BUUGENG;
 
 const INLINE_PREFIX = "s~";
 

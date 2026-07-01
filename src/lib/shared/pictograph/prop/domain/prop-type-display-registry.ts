@@ -80,10 +80,6 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
       label: "Big Buugeng",
       image: "/images/props/buttons/bigbuugeng.svg",
     },
-    [PropType.FRACTALGENG]: {
-      label: "Fractalgeng",
-      image: "/images/props/buttons/fractalgeng.svg",
-    },
 
     // === TRIGENG FAMILY ===
     [PropType.TRIGENG]: {
@@ -193,9 +189,8 @@ export const DEACTIVATED_PROP_TYPES: ReadonlySet<PropType> = new Set([
   PropType.CONTACTBALL,
   PropType.BIGCONTACTBALL,
   PropType.BIGDOUBLECONTACTBALL,
-  // Retired 2026-06-18 (props-tab redesign): Fractalgeng dropped entirely; Poi is
-  // a club.svg placeholder pending its own icon + design.
-  PropType.FRACTALGENG,
+  // Poi is a club.svg placeholder pending its own icon + design.
+  // (Fractalgeng was removed from the codebase entirely 2026-06-30.)
   PropType.POI,
 ]);
 
@@ -251,7 +246,6 @@ export const VARIANT_PROP_TYPES: PropType[] = [
   PropType.BIGHOOP,
   // Buugeng family
   PropType.BIGBUUGENG,
-  PropType.FRACTALGENG,
   // Triquetra family
   PropType.TRIQUETRA2,
   // Chicken family
@@ -287,7 +281,6 @@ const VARIANT_TO_BASE: Partial<Record<PropType, PropType>> = {
   [PropType.BIGHOOP]: PropType.MINIHOOP,
   // Buugeng variations
   [PropType.BIGBUUGENG]: PropType.BUUGENG,
-  [PropType.FRACTALGENG]: PropType.BUUGENG,
   // Triquetra variations
   [PropType.TRIQUETRA2]: PropType.TRIQUETRA,
   // Chicken variations
@@ -316,7 +309,7 @@ const BASE_TO_VARIANTS: Partial<Record<PropType, PropType[]>> = {
   [PropType.FAN]: [PropType.BIGFAN],
   [PropType.TRIAD]: [PropType.BIGTRIAD],
   [PropType.MINIHOOP]: [PropType.BIGHOOP],
-  [PropType.BUUGENG]: [PropType.BIGBUUGENG, PropType.FRACTALGENG],
+  [PropType.BUUGENG]: [PropType.BIGBUUGENG],
   [PropType.TRIQUETRA]: [PropType.TRIQUETRA2],
   [PropType.CHICKEN]: [PropType.BIGCHICKEN],
   [PropType.GUITAR]: [PropType.UKULELE],
@@ -498,8 +491,8 @@ export function toggleBigVariant(propType: PropType): PropType {
  *
  * Curation: props NOT listed here are simply absent from the picker. Simple
  * Staff (backend thumb-orientation prop), Staff V2, and Hand (hand-path teaching
- * only) stay fully wired elsewhere but off the picker. Fractalgeng + Poi are
- * fully retired via DEACTIVATED_PROP_TYPES.
+ * only) stay fully wired elsewhere but off the picker. Poi is retired via
+ * DEACTIVATED_PROP_TYPES. (Fractalgeng was removed from the codebase entirely.)
  *
  * Rendering filters by isPropActive, so deactivating a listed prop hides it
  * without editing this list.

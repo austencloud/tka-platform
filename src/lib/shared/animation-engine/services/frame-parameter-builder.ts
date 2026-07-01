@@ -237,7 +237,7 @@ export class FrameParameterBuilder {
     // - Hand: red hand always flipped (left/right hands are anatomically mirrored)
     const settings = settingsService?.currentSettings;
     // Chirality-flippable props (buugeng family + trigeng) honor the user's flip.
-    const buugengFamily = ["buugeng", "bigbuugeng", "fractalgeng", "trigeng"];
+    const buugengFamily = ["buugeng", "bigbuugeng", "trigeng"];
     const bluePropType = state.currentBluePropType.toLowerCase();
     const redPropType = state.currentRedPropType.toLowerCase();
 

@@ -95,6 +95,18 @@
 
   const cellSize = $derived(isTimelineMode ? timelineUnitSize : gridLayout.cellSize);
 
+  // Effective prop for the step-grid mandalas: an explicit override wins, else
+  // the user's selected prop, else staff. The mandala derives its tip count
+  // (single- vs dual-ended) from this, so passing the raw (often undefined)
+  // override drew the dual-staff figure even for a club. Mirrors the
+  // collection-save resolution below.
+  const effectiveBluePropType = $derived(
+    bluePropTypeOverride ?? settingsService.settings.bluePropType ?? "staff",
+  );
+  const effectiveRedPropType = $derived(
+    redPropTypeOverride ?? settingsService.settings.redPropType ?? "staff",
+  );
+
   // --- Duration resize (timeline only) ---
   const SNAP_INCREMENT = DURATION_STEP_FINE;
   let resizingStepIndex = $state<number | null>(null);
@@ -223,14 +235,8 @@
           name,
           steps: [...steps],
           variant: mandalaMenuVariant,
-          bluePropType:
-            bluePropTypeOverride ??
-            settingsService.settings.bluePropType ??
-            "staff",
-          redPropType:
-            redPropTypeOverride ??
-            settingsService.settings.redPropType ??
-            "staff",
+          bluePropType: effectiveBluePropType,
+          redPropType: effectiveRedPropType,
         });
         toast.success(`Saved "${name}" to collection`);
       },
@@ -301,8 +307,8 @@
                 style="stroke"
                 show={cell.show}
                 size={mandalaSize}
-                bluePropType={bluePropTypeOverride}
-                redPropType={redPropTypeOverride}
+                bluePropType={effectiveBluePropType}
+                redPropType={effectiveRedPropType}
                 pathShape={mandalaPathShape}
               />
             </div>
@@ -444,8 +450,8 @@
             style="stroke"
             show={cell.show}
             size={mandalaSize}
-            bluePropType={bluePropTypeOverride}
-            redPropType={redPropTypeOverride}
+            bluePropType={effectiveBluePropType}
+            redPropType={effectiveRedPropType}
             pathShape={mandalaPathShape}
           />
         </div>

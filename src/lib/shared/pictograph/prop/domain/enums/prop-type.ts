@@ -36,7 +36,6 @@ export enum PropType {
   // === BUUGENG FAMILY ===
   BUUGENG = "buugeng",
   BIGBUUGENG = "bigbuugeng",
-  FRACTALGENG = "fractalgeng",
 
   // === TRIGENG FAMILY ===
   TRIGENG = "trigeng",
