@@ -855,6 +855,22 @@ export const HAND_PATH_TABS: Section[] = [
   },
 ];
 
+// Playground module tabs - user-facing experimental toys, added one at a time on
+// request (the user-facing counterpart to the admin-only Lab). First tab: Mandala.
+// Tab labels reuse the former module's i18n keys (no re-translation needed).
+export const PLAYGROUND_TABS: Section[] = [
+  {
+    id: "mandala",
+    labelKey: "module_mandala",
+    descKey: "module_desc_mandala",
+    label: "Mandala",
+    icon: '<i class="fas fa-dharmachakra" aria-hidden="true"></i>',
+    description: "Create, collect, and meditate with mandalas",
+    color: "#f472b6",
+    gradient: "linear-gradient(135deg, #f9a8d4 0%, #f472b6 100%)",
+  },
+];
+
 // Video module tabs (graduated from Lab Mar 2026)
 export const VIDEO_TABS: Section[] = [
   {

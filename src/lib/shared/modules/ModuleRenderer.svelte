@@ -207,6 +207,8 @@
     video: () => import("../../features/video/VideoModule.svelte"),
     // Lab module - ALL experiments consolidated here (Skew, Poi, Realm, Terrain, Mandala, Backgrounds, Landing)
     lab: () => import("../../features/lab/LabModule.svelte"),
+    // Playground module - user-facing experimental toys (counterpart to admin Lab)
+    playground: () => import("../../features/playground/PlaygroundModule.svelte"),
     // ========================================================================
     // BACKWARDS COMPAT: Old standalone experimental modules now redirect to Lab
     // ========================================================================

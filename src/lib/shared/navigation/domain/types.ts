@@ -78,7 +78,8 @@ export type ModuleId =
   | "social" // Social module: community map + nearby spinner sync (graduated from Lab Mar 2026)
   | "lab" // Experimental features lab (all experiments consolidated here)
   | "stage" // Stage choreography - multi-performer formation locomotion
-  | "mandala"; // Mandala creation, collection, meditation, and export
+  | "mandala" // Mandala creation, collection, meditation, and export
+  | "playground"; // User-facing experimental toys (counterpart to admin Lab); populated one tab at a time
 
 /**
  * Module Definition
