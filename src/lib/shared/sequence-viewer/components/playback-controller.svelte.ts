@@ -365,6 +365,11 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     _hapticService?.trigger("selection");
   }
 
+  function handleToggleMirror() {
+    const next = !(_practiceViewPrefs?.mirrorEnabled ?? false);
+    _practiceViewPrefs?.setMirrorEnabled(next);
+  }
+
   /** Apply a live config change from the bar's inline controls (loops X, step Y,
    *  goal, target on/off). Persists for the next session too. */
   function handlePracticeSetConfig(patch: Partial<TempoPracticeConfig>) {
@@ -451,6 +456,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     get practiceRunning() { return practicePhase === "running"; },
     get practiceCountdown() { return practiceCountdown; },
     get metronomeEnabled() { return _practiceViewPrefs?.metronomeEnabled ?? false; },
+    get mirrorEnabled() { return _practiceViewPrefs?.mirrorEnabled ?? false; },
     practiceState,
 
     // Dependency injection (set after service load)
@@ -475,6 +481,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     handlePracticeStepLevel,
     handlePracticeToggleHold,
     handleToggleMetronome,
+    handleToggleMirror,
     handlePracticeSetConfig,
     handlePracticeStop,
     stepHalfBeatBackward,
