@@ -74,7 +74,7 @@ export interface MotionView {
  * should annotate inputs as `MotionWithView` rather than the deprecated
  * `MotionData`.
  *
- * ## Migration blockers - resolved and outstanding
+ * ## Migration blockers - all resolved
  *
  * ### Resolved 2026-04-20
  *
@@ -82,38 +82,21 @@ export interface MotionView {
  * was loosened to match (commit a299c806). `createMotion` still defaults the
  * runtime value to `Plane.wall` when omitted.
  *
- * ### Outstanding - deeper enum incompatibilities
+ * ### Resolved by 2026-07-01 - enum nominality no longer blocks
  *
- * The bigger obstacle to swapping `MotionData` -> `Motion` in consumers:
+ * The 2026-04-20 blocker ("app enums are nominal TS enums, tka-types uses
+ * const-as-union") no longer holds: every enum the lean `Motion` touches
+ * (MotionType, GridLocation, GridMode, RotationDirection, Orientation,
+ * MotionColor, Plane) has since been converted to const-as-union on the app
+ * side, so the types are structurally identical across the package boundary.
+ * Verified empirically 2026-07-01: `const m: Motion = motionData` and
+ * `const mv: MotionWithView = motionData` both compile with zero errors
+ * (probe validated with a deliberate-error canary to prove the file was
+ * actually checked). `HandPath` and `SkewDirection` remain nominal TS enums
+ * but exist only on the app side (`MotionView`) - they never cross into
+ * `@tka/tka-types`, so their nominality is irrelevant to the migration.
  *
- *   1. **App enums are nominal TS `enum` types, tka-types uses `const`-as-union.**
- *      `enum MotionType { PRO = "pro" }` makes `MotionType.PRO` nominally
- *      distinct from `"pro"` at the type level. A caller holding
- *      `MotionData` (app enums) cannot directly satisfy a parameter typed
- *      as `Motion` (tka-types unions) without a cast, even though the
- *      runtime values match.
- *
- *   2. **`Plane` value set disagrees.** App `Plane` has 9 values (WALL,
- *      WHEEL, FLOOR, plus 6 fusion planes). tka-types `Plane` also has 9
- *      values now (wall, wheel, floor, plus 6 fusion planes), but
- *      `MotionData.plane: Plane` (app enum) is still nominally distinct
- *      from `Motion.plane: Plane` (tka-types const-as-union) due to
- *      issue #1 above.
- *
- *   3. **Interfaces still declare `MotionData`.** Swapping an implementation
- *      without also swapping the interface triggers TS2416 "not assignable
- *      to base type". Interface and impl must migrate together.
- *
- * A clean migration requires one of:
- *   - Unify `Plane` (merge fusion planes into tka-types, or extract a
- *     shared 3D enum package).
- *   - Convert app enums to `const`-as-union so values become structurally
- *     assignable.
- *   - Introduce `MotionData` as a structurally-compatible alias of
- *     `Motion & MotionView` (the Motion half using app enums re-exported
- *     from tka-types as type aliases).
- *
- * Until this prerequisite is addressed, Category A / B / C migration of
- * consumers from `MotionData` is blocked. See session log on 2026-04-20.
+ * The remaining adoption work is therefore mechanical retyping (interfaces
+ * and impls migrate together to avoid TS2416), not type-system surgery.
  */
 export type MotionWithView = Motion & MotionView;
