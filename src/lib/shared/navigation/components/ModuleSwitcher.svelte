@@ -229,10 +229,7 @@
         </button>
         <button
           class="drawer-action support"
-          onclick={() => {
-            closeDrawer();
-            supportModalState.show();
-          }}
+          onclick={() => supportModalState.show()}
         >
           <i class="fas fa-heart" aria-hidden="true"></i>
           <span>Support</span>
