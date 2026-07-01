@@ -20,6 +20,7 @@ import { getContext, setContext } from "svelte";
 import { SvelteMap } from "svelte/reactivity";
 import {
   createEmptyChoreoSheet,
+  DEFAULT_SHEET_LAYOUT,
   type ChoreoSheet,
   type ChoreoSheetLayout,
 } from "../domain/types/choreo-sheet";
@@ -38,12 +39,61 @@ export interface ChoreoSheetStateDeps {
   loadSequence: (id: string) => Promise<SequenceData | null>;
   /** Optional seed sheet (e.g. a saved sheet being reopened). Defaults to a fresh empty sheet. */
   initialSheet?: ChoreoSheet;
+  /**
+   * localStorage key for an auto-saved draft. When set, the builder restores
+   * from it on construction (unless `initialSheet` is passed) and re-saves on
+   * every change, so a reload / HMR lands on the exact state the user left. The
+   * heavy step data is NOT persisted — only ids + layout + name; steps rehydrate
+   * via `loadSequence` on restore (so it must resolve both library and community
+   * ids).
+   */
+  persistKey?: string;
+}
+
+// ── Draft persistence (localStorage) ─────────────────────────────────────────
+// Lightweight: ids + layout + name + timestamps only. Mirrors the guarded
+// load/persist pattern used across the state modules (e.g. practice-view-prefs).
+
+function loadDraft(key: string): ChoreoSheet | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as Partial<ChoreoSheet> & { sequenceIds?: unknown };
+    if (!Array.isArray(p.sequenceIds)) return null;
+    const now = new Date();
+    return {
+      id: typeof p.id === "string" && p.id ? p.id : crypto.randomUUID(),
+      name: typeof p.name === "string" ? p.name : "Untitled Sheet",
+      ownerId: typeof p.ownerId === "string" ? p.ownerId : "",
+      sequenceIds: (p.sequenceIds as unknown[]).filter(
+        (x): x is string => typeof x === "string"
+      ),
+      layout: { ...DEFAULT_SHEET_LAYOUT, ...(p.layout ?? {}) },
+      createdAt: p.createdAt ? new Date(p.createdAt as unknown as string) : now,
+      updatedAt: p.updatedAt ? new Date(p.updatedAt as unknown as string) : now,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistDraft(key: string, sheet: ChoreoSheet): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(sheet));
+  } catch {
+    // ignore storage errors (quota, private mode)
+  }
 }
 
 export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // The sheet itself (ids + layout + metadata). Mutated by reassignment so the
-  // `updatedAt` stamp and downstream `$derived`s refresh together.
-  let sheet = $state<ChoreoSheet>(deps.initialSheet ?? createEmptyChoreoSheet(""));
+  // `updatedAt` stamp and downstream `$derived`s refresh together. Restored from
+  // the persisted draft when a persistKey is given and no explicit seed passed.
+  let sheet = $state<ChoreoSheet>(
+    deps.initialSheet ??
+      (deps.persistKey ? loadDraft(deps.persistKey) : null) ??
+      createEmptyChoreoSheet("")
+  );
 
   // id -> hydrated SequenceData. A SvelteMap (not a plain Map) so `.set()`/`.get()`
   // are reactive — the moment a sequence finishes hydrating, the rows that need
@@ -157,6 +207,12 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     sheet = { ...sheet, sequenceIds: next, updatedAt: new Date() };
   }
 
+  // Rename the sheet. Kept in state (not a local in the view) so the name is
+  // part of the persisted draft and restores on reload.
+  function setName(name: string): void {
+    sheet = { ...sheet, name, updatedAt: new Date() };
+  }
+
   // Patch one or more layout fields (e.g. toggle step numbers, change the group
   // separator). Merges over the current layout so callers only pass what changed.
   function setLayout(patch: Partial<ChoreoSheetLayout>): void {
@@ -187,6 +243,22 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     };
   }
 
+  // Restore path: a draft loaded with ids needs its steps hydrated now (via the
+  // loader dep, which must resolve both community and library ids).
+  if (sheet.sequenceIds.length > 0) {
+    void ensureHydrated(sheet.sequenceIds);
+  }
+
+  // Auto-save the draft on every sheet change, so reload / HMR restores the
+  // exact state the user left. Cache/hydration mutations don't reassign `sheet`,
+  // so they don't trigger a redundant write.
+  if (deps.persistKey) {
+    const key = deps.persistKey;
+    $effect(() => {
+      persistDraft(key, sheet);
+    });
+  }
+
   return {
     get sheet() {
       return sheet;
@@ -214,6 +286,7 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     addHydratedSequences,
     removeAt,
     move,
+    setName,
     setLayout,
     seedFromAct,
   };

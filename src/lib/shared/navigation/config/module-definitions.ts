@@ -25,6 +25,7 @@ import {
   ARCHIVE_TABS,
   LEVELS_TABS,
   HAND_PATH_TABS,
+  PLAYGROUND_TABS,
   VIDEO_TABS,
   SOCIAL_TABS,
   STAGE_TABS,
@@ -52,8 +53,10 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   // of the walkable museum that the museum module superseded on a different engine.
   // Old /archive deep links redirect to museum (both are "The Kinetic Archive").
   archive: "museum",
-  "mandala-generator": "mandala",
-  "mandala-collection": "mandala",
+  // Mandala graduated into the Playground module (one-at-a-time, 2026-06-30)
+  "mandala-generator": "playground",
+  "mandala-collection": "playground",
+  mandala: "playground",
   "background-builder": "lab",
   "landing-preview": "lab",
   // ml-training removed (Mar 2026)
@@ -165,15 +168,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: COMPOSE_TABS, // TODO: Rename to COMPOSE_TABS
   },
   {
-    id: "mandala",
-    labelKey: "module_mandala",
-    descKey: "module_desc_mandala",
-    label: "Mandala",
-    icon: '<i class="fas fa-dharmachakra" style="color: #f472b6;" aria-hidden="true"></i>',
-    color: "#f472b6",
-    description: "Your mandala collection",
+    id: "playground",
+    labelKey: "module_playground",
+    descKey: "module_desc_playground",
+    label: "Playground",
+    icon: '<i class="fas fa-shapes" style="color: #d946ef;" aria-hidden="true"></i>',
+    color: "#d946ef",
+    description: "Experimental toys and projects you can play with",
     isMain: true,
-    sections: [],
+    sections: PLAYGROUND_TABS,
   },
   {
     id: "watch",
@@ -230,10 +233,10 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     id: "write",
     labelKey: "module_write",
     descKey: "module_desc_write",
-    label: "Write",
+    label: "Choreo Sheet",
     icon: '<i class="fas fa-pen-nib" style="color: #f43f5e;" aria-hidden="true"></i>',
     color: "#f43f5e", // Rose - creative writing/composition
-    description: "Create and edit choreography acts",
+    description: "Build a printable choreography sheet",
     isMain: true,
     sections: [], // Single-tab module
   },
@@ -408,6 +411,7 @@ const FEATURE_ENABLED: Record<string, boolean> = {
   video: typeof __FEATURE_VIDEO__ !== "undefined" ? __FEATURE_VIDEO__ : true,
   stage: typeof __FEATURE_STAGE__ !== "undefined" ? __FEATURE_STAGE__ : true,
   mandala: typeof __FEATURE_MANDALA__ !== "undefined" ? __FEATURE_MANDALA__ : true,
+  playground: true,
   lab: typeof __FEATURE_LAB__ !== "undefined" ? __FEATURE_LAB__ : true,
   settings: typeof __FEATURE_SETTINGS__ !== "undefined" ? __FEATURE_SETTINGS__ : true,
 };

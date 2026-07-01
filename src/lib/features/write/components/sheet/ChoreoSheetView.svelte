@@ -6,12 +6,12 @@
   live landscape preview → export a print-ready PDF (and save the sheet).
 
   Owns the builder state (createChoreoSheetState) and sets the context so any
-  descendant can read it. Sequences are added via the multi-select picker
-  (additive — removal/reorder happen here in the row list); the picker, preview,
-  and PDF all read the same planned pages, so what you see is what prints.
+  descendant can read it. Sequences are added via the Browse drawer (additive —
+  removal/reorder happen here in the row list); the picker, preview, and PDF all
+  read the same planned pages, so what you see is what prints.
 
-  `seedAct` lets the Act editor hand its roster over ("Send to Sheet") — the Act
-  already carries hydrated sequences, so seeding skips the library round-trip.
+  The builder auto-saves to localStorage and restores on reload/HMR, so the view
+  always comes back in the exact state it was left.
 -->
 <script lang="ts">
   import { flip } from "svelte/animate";
@@ -20,11 +20,9 @@
     createChoreoSheetState,
     setChoreoSheetContext,
   } from "../../state/choreo-sheet-state.svelte";
-  import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
   import { getChoreoSheetRepository } from "../../services/choreo-sheet-repository";
   import { downloadChoreoSheetPDF } from "../../services/sheet-pdf-exporter";
   import type { GroupSeparator } from "../../domain/types/choreo-sheet";
-  import type { ActData } from "../../domain/types/write";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import SheetPreviewPages from "./SheetPreviewPages.svelte";
@@ -32,29 +30,14 @@
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
 
-  let { seedAct = undefined }: { seedAct?: ActData } = $props();
-
-  // Builder-state object. loadSequence is the hydrating library read (NOT the
-  // gallery metadata loader, which returns empty steps).
+  // Builder-state object. The sheet auto-saves to localStorage (persistKey) and
+  // restores on reload/HMR. loadSequence resolves BOTH community and library ids
+  // (a restored draft — or a card picked from community — may be either).
   const builder = createChoreoSheetState({
-    loadSequence: (id) => getLibraryRepository().getSequence(id),
+    loadSequence: (id) => getBrowseLoader().loadFullSequenceData(id, id),
+    persistKey: "tka-choreo-sheet-draft",
   });
   setChoreoSheetContext({ state: builder });
-
-  // Editable sheet name (local; merged into the sheet on save). Not drawn on the
-  // sheet itself — sheets are label-free by design — only used to name the file
-  // and the saved record.
-  let sheetName = $state(builder.sheet.name || "Untitled Sheet");
-
-  // Seed from an Act once, when handed one.
-  let seededActId: string | null = null;
-  $effect(() => {
-    if (seedAct && seedAct.id !== seededActId) {
-      seededActId = seedAct.id;
-      builder.seedFromAct(seedAct);
-      sheetName = builder.sheet.name || sheetName;
-    }
-  });
 
   // id → hydrated sequence, for the row list labels/counts. Ids still hydrating
   // simply show "Loading…" until their data resolves.
@@ -117,9 +100,9 @@
     exporting = true;
     exportPct = 0;
     try {
-      const filename = `${(sheetName || "choreo-sheet").trim().replace(/\s+/g, "-").toLowerCase()}.pdf`;
+      const filename = `${(builder.sheet.name || "choreo-sheet").trim().replace(/\s+/g, "-").toLowerCase()}.pdf`;
       await downloadChoreoSheetPDF(
-        { ...builder.sheet, name: sheetName },
+        builder.sheet,
         builder.hydratedSequences,
         filename,
         (done, total) => {
@@ -138,7 +121,7 @@
     saving = true;
     saveMessage = null;
     try {
-      await getChoreoSheetRepository().saveSheet({ ...builder.sheet, name: sheetName });
+      await getChoreoSheetRepository().saveSheet(builder.sheet);
       saveMessage = "Saved";
     } catch (error) {
       saveMessage = error instanceof Error ? error.message : "Save failed";
@@ -154,7 +137,8 @@
     <input
       class="name-input"
       type="text"
-      bind:value={sheetName}
+      value={builder.sheet.name}
+      oninput={(e) => builder.setName(e.currentTarget.value)}
       aria-label="Sheet name"
       placeholder="Untitled Sheet"
     />
