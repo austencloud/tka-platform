@@ -182,9 +182,13 @@ export function createNavigationState() {
       const firstPart = pathParts[0];
       if (pathParts.length >= 1 && firstPart) {
         const rawUrlModule = firstPart.toLowerCase();
-        const urlTab = pathParts[1]?.toLowerCase() || searchParams.get("section")?.toLowerCase();
+        let urlTab = pathParts[1]?.toLowerCase() || searchParams.get("section")?.toLowerCase();
 
         const normalizedModule = normalizeModuleId(rawUrlModule);
+
+        // Moderation folded into Admin as a tab (2026-06-30): a bare /moderation
+        // deep link normalizes to the Admin module — open its Moderation tab.
+        if (rawUrlModule === "moderation" && !urlTab) urlTab = "moderation";
 
         const urlModuleDefinition = normalizedModule
           ? MODULE_DEFINITIONS.find((m) => m.id === normalizedModule)

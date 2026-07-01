@@ -59,6 +59,9 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   // ml-training removed (Mar 2026)
   community: "social",
   connect: "social",
+  // Moderation folded into Admin as a tab (2026-06-30) — lands on Admin;
+  // navigation-state deep-link handling routes the "moderation" section.
+  moderation: "admin",
 };
 
 /**
@@ -245,18 +248,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true, // Visibility controlled by getModuleDefinitions() based on tester status
     sections: FEEDBACK_TABS,
   },
-  {
-    id: "moderation",
-    labelKey: "module_moderation",
-    descKey: "module_desc_moderation",
-    label: "Moderation",
-    icon: '<i class="fas fa-shield-halved" style="color: #ef4444;" aria-hidden="true"></i>',
-    color: "#ef4444", // Red - moderation/safety
-    description: "Review and manage user reports",
-    isMain: true,
-    sections: [], // Single-tab module
-    adminOnly: true, // Admin-only
-  },
+  // Moderation folded into Admin as a tab (2026-06-30) — see ADMIN_TABS
+  // "moderation" section. Old deep links redirect via MODULE_ID_MIGRATIONS.
   // ml-training module consolidated into Lab (Feb 2026)
   {
     id: "admin",
@@ -405,7 +398,6 @@ const FEATURE_ENABLED: Record<string, boolean> = {
   train: typeof __FEATURE_TRAIN__ !== "undefined" ? __FEATURE_TRAIN__ : true,
   choreo_card: typeof __FEATURE_CHOREO_CARD__ !== "undefined" ? __FEATURE_CHOREO_CARD__ : true,
   write: typeof __FEATURE_WRITE__ !== "undefined" ? __FEATURE_WRITE__ : true,
-  moderation: typeof __FEATURE_MODERATION__ !== "undefined" ? __FEATURE_MODERATION__ : true,
   admin: typeof __FEATURE_ADMIN__ !== "undefined" ? __FEATURE_ADMIN__ : true,
   festivals: typeof __FEATURE_FESTIVALS__ !== "undefined" ? __FEATURE_FESTIVALS__ : true,
   museum: typeof __FEATURE_MUSEUM__ !== "undefined" ? __FEATURE_MUSEUM__ : true,

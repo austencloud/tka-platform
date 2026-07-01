@@ -393,6 +393,16 @@ export const ADMIN_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
   },
   {
+    id: "moderation",
+    labelKey: "tab_admin_moderation",
+    descKey: "tab_desc_admin_moderation",
+    label: "Moderation",
+    icon: '<i class="fas fa-shield-halved" aria-hidden="true"></i>',
+    description: "Review and manage user reports",
+    color: "#ef4444",
+    gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
+  },
+  {
     id: "loop-labeler",
     labelKey: "tab_admin_loop_labeler",
     descKey: "tab_desc_admin_loop_labeler",

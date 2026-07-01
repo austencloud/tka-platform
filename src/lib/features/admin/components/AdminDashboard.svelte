@@ -9,6 +9,7 @@
   import FeatureFlagManagement from "./FeatureFlagManagement.svelte";
   import AnnouncementManagement from "./AnnouncementManagement.svelte";
   import ShameQueuePanel from "./ShameQueuePanel.svelte";
+  import ModerationModule from "$lib/features/moderation/ModerationModule.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
   // Lazy load LOOP Labeler to avoid blocking admin dashboard if it fails
@@ -98,6 +99,14 @@
           aria-labelledby="hall-of-shame-tab"
         >
           <ShameQueuePanel />
+        </div>
+      {:else if activeSection === "moderation"}
+        <div
+          id="moderation-panel"
+          role="tabpanel"
+          aria-labelledby="moderation-tab"
+        >
+          <ModerationModule />
         </div>
       {:else if activeSection === "loop-labeler"}
         <div
@@ -246,6 +255,11 @@
   }
 
   #loop-labeler-panel {
+    height: 100%;
+  }
+
+  /* Moderation dashboard is a full-height master/detail layout */
+  #moderation-panel {
     height: 100%;
   }
 </style>

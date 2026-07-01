@@ -195,8 +195,8 @@
     settings: () => import("../../features/settings/SettingsModule.svelte"),
     // Tika module - AI tutor for TKA (standalone module)
     tika: () => import("../../features/tika/TikaModule.svelte"),
-    // Moderation module - user reports dashboard (admin-only)
-    moderation: () => import("../../features/moderation/ModerationModule.svelte"),
+    // Moderation is now an Admin tab (2026-06-30); "moderation" module id
+    // redirects to "admin" via MODULE_ID_MIGRATIONS, so no loader is needed.
     // festivals module - discover and apply to flow festivals
     festivals: () => import("../../features/festivals/FestivalModule.svelte"),
     // Levels module - L4-L7 position labs + Poi (graduated from Lab Mar 2026)
