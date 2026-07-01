@@ -118,52 +118,19 @@ export async function buildChoreoSheetPDF(
   // Embed-once cache: rendered-identity → PDFImage.
   const imageCache = new Map<string, PDFImage>();
 
-  const gridWidthPt = geo.columns * geo.cellSizePt + (geo.columns - 1) * geo.gutterPt;
-  const separatorColor = rgb(0.55, 0.55, 0.55);
+  const separatorColor = rgb(0.4, 0.4, 0.4);
   const cellStroke = rgb(0.8, 0.8, 0.8); // ≈ preview rgba(0,0,0,0.18) on white
   const blankStroke = rgb(0.92, 0.92, 0.92);
   const breakColor = rgb(0.9, 0.24, 0.24);
   const stride = geo.cellSizePt + geo.gutterPt;
 
+  let pageIndex = -1;
   for (const page of pages) {
+    pageIndex++;
     const pdfPage = pdf.addPage([geo.pageWidthPt, geo.pageHeightPt]);
 
     for (let ri = 0; ri < page.rows.length; ri++) {
       const row = page.rows[ri]!;
-
-      // Group separator: a thin rule sitting in the gutter above a block-start row
-      // that isn't the page's first row. "gap"/"none" draw nothing — fixed page
-      // geometry can't add vertical space without shifting rows, and the preview
-      // matches by also drawing nothing.
-      if (sheet.layout.groupSeparator === "rule" && ri > 0 && row.isBlockStart) {
-        const ruleY = geo.pageHeightPt - geo.marginYPt - ri * stride + geo.gutterPt / 2;
-        pdfPage.drawLine({
-          start: { x: geo.marginXPt, y: ruleY },
-          end: { x: geo.marginXPt + gridWidthPt, y: ruleY },
-          thickness: 0.75,
-          color: separatorColor,
-        });
-      }
-
-      // Break marker: a dashed red rule + label above a block that doesn't
-      // connect to the sequence above it. Independent of the separator style.
-      if (row.isBlockStart && row.sequenceId && breakSequenceIds.has(row.sequenceId)) {
-        const breakY = geo.pageHeightPt - geo.marginYPt - ri * stride + geo.gutterPt / 2;
-        pdfPage.drawLine({
-          start: { x: geo.marginXPt, y: breakY },
-          end: { x: geo.marginXPt + gridWidthPt, y: breakY },
-          thickness: 1.2,
-          color: breakColor,
-          dashArray: [4, 3],
-        });
-        pdfPage.drawText("break", {
-          x: geo.marginXPt,
-          y: breakY + 2,
-          size: 7,
-          font,
-          color: breakColor,
-        });
-      }
 
       for (let ci = 0; ci < row.cells.length; ci++) {
         const cell = row.cells[ci]!;
@@ -181,6 +148,36 @@ export async function buildChoreoSheetPDF(
           borderColor: cell.isBlank ? blankStroke : cellStroke,
           borderWidth: 0.75,
         });
+
+        // Sequences flow continuously, so a boundary is a VERTICAL edge on the
+        // sequence-start cell (it can land mid-row), matching the preview.
+        const isFirstCell = pageIndex === 0 && ri === 0 && ci === 0;
+        if (sheet.layout.groupSeparator === "rule" && cell.isSequenceStart && !isFirstCell) {
+          pdfPage.drawLine({
+            start: { x: cellX, y: cellBottomY },
+            end: { x: cellX, y: cellBottomY + geo.cellSizePt },
+            thickness: 1,
+            color: separatorColor,
+          });
+        }
+
+        // Break: thick red left edge + label on a sequence start that doesn't
+        // connect to the sequence before it. Independent of separator style.
+        if (cell.isSequenceStart && cell.sequenceId && breakSequenceIds.has(cell.sequenceId)) {
+          pdfPage.drawLine({
+            start: { x: cellX, y: cellBottomY },
+            end: { x: cellX, y: cellBottomY + geo.cellSizePt },
+            thickness: 2.5,
+            color: breakColor,
+          });
+          pdfPage.drawText("break", {
+            x: cellX + 2,
+            y: cellBottomY + 2,
+            size: 6,
+            font,
+            color: breakColor,
+          });
+        }
 
         if (cell.isBlank || !cell.step) continue;
         const step = cell.step;

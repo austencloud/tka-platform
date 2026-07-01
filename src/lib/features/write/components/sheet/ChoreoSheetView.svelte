@@ -64,27 +64,99 @@
     { value: "none", label: "None" },
   ];
 
-  // ── Add-sequences browse drawer ────────────────────────────────────────────
+  // ── Add-sequences picker (inline docked column) ─────────────────────────────
   // Reuses the full Browse experience (BrowsePanel + a browse engine): real
-  // rendered pictograph cards, search/filter/sort, virtualization, source
-  // toggle. Same recipe as CovenSequencePicker. Defaults to the user's own
-  // library; the source toggle lets them pull from community too.
-  let browseOpen = $state(false);
+  // rendered pictograph cards, search/filter/sort, virtualization. My Library /
+  // Community drive the engine; Collections is a client-side id filter over the
+  // library (collections aren't an engine source). Open state, source, selected
+  // collection and the engine's filters all persist across reload/HMR so the
+  // picker reopens exactly as it was left.
+  type PickerSource = "my-library" | "community" | "collections";
+
+  const PICKER_PREFS_KEY = "tka-choreo-sheet-picker-ui";
+  interface PickerPrefs {
+    open: boolean;
+    source: PickerSource;
+    collectionId: string | null;
+  }
+  function loadPickerPrefs(): PickerPrefs {
+    const fallback: PickerPrefs = { open: false, source: "my-library", collectionId: null };
+    if (typeof localStorage === "undefined") return fallback;
+    try {
+      const raw = localStorage.getItem(PICKER_PREFS_KEY);
+      if (!raw) return fallback;
+      const p = JSON.parse(raw) as Partial<PickerPrefs>;
+      const source: PickerSource =
+        p.source === "community" || p.source === "collections" ? p.source : "my-library";
+      return {
+        open: !!p.open,
+        source,
+        collectionId: typeof p.collectionId === "string" ? p.collectionId : null,
+      };
+    } catch {
+      return fallback;
+    }
+  }
+  const initialPrefs = loadPickerPrefs();
+
+  let browseOpen = $state(initialPrefs.open);
   let browseInitialized = false;
+  let pickerSource = $state<PickerSource>(initialPrefs.source);
+  let selectedCollectionId = $state<string | null>(initialPrefs.collectionId);
+
   const browseEngine = createBrowseEngine({
-    persistKey: null, // ephemeral: don't remember filter/source across visits
-    initialSource: "my-library",
+    // Persists source/sort/filters/columns across reload; BrowsePanel persists its
+    // own scroll via browseScrollState.
+    persistKey: "tka-choreo-sheet-picker",
+    initialSource: initialPrefs.source === "collections" ? "my-library" : initialPrefs.source,
     minColumns: 2,
   });
 
-  onMount(() => () => browseEngine.destroy());
+  const sourceOptions: { value: PickerSource; label: string }[] = [
+    { value: "my-library", label: "My Library" },
+    { value: "community", label: "Community" },
+    { value: "collections", label: "Collections" },
+  ];
+  const thumbnailProvider = getBrowseThumbnailProvider();
+  let collections = $state<LibraryCollection[]>([]);
+  let libSequences = $state<SequenceData[]>([]);
+  let collectionsLoaded = false;
+
+  function initEngineOnce(): void {
+    if (browseInitialized) return;
+    browseInitialized = true;
+    browseEngine.initialize();
+  }
+
+  onMount(() => {
+    // Restore: if the picker was left open, bring its data back up immediately.
+    if (browseOpen) {
+      if (pickerSource === "collections") void ensureCollectionsLoaded();
+      else initEngineOnce();
+    }
+    return () => browseEngine.destroy();
+  });
+
+  // Persist picker UI state (open / source / collection) on every change.
+  $effect(() => {
+    const prefs: PickerPrefs = {
+      open: browseOpen,
+      source: pickerSource,
+      collectionId: selectedCollectionId,
+    };
+    if (typeof localStorage === "undefined") return;
+    try {
+      localStorage.setItem(PICKER_PREFS_KEY, JSON.stringify(prefs));
+    } catch {
+      /* private-mode / quota — non-fatal */
+    }
+  });
 
   function toggleBrowse(): void {
     browseOpen = !browseOpen;
-    if (browseOpen && !browseInitialized) {
-      browseInitialized = true;
-      browseEngine.initialize();
-    }
+    if (!browseOpen) return;
+    if (pickerSource === "collections") void ensureCollectionsLoaded();
+    else initEngineOnce();
   }
 
   // BrowsePanel emits a metadata-only SequenceData on select, so hydrate its
@@ -98,21 +170,6 @@
       builder.addHydratedSequences([seq]);
     }
   }
-
-  // Picker source. My Library / Community drive the browse engine; Collections is
-  // a client-side id filter over the library (collections aren't an engine source).
-  type PickerSource = "my-library" | "community" | "collections";
-  let pickerSource = $state<PickerSource>("my-library");
-  const sourceOptions: { value: PickerSource; label: string }[] = [
-    { value: "my-library", label: "My Library" },
-    { value: "community", label: "Community" },
-    { value: "collections", label: "Collections" },
-  ];
-  const thumbnailProvider = getBrowseThumbnailProvider();
-  let collections = $state<LibraryCollection[]>([]);
-  let selectedCollectionId = $state<string | null>(null);
-  let libSequences = $state<SequenceData[]>([]);
-  let collectionsLoaded = false;
 
   async function ensureCollectionsLoaded(): Promise<void> {
     if (collectionsLoaded) return;
@@ -132,8 +189,38 @@
 
   function onSourceChange(v: PickerSource): void {
     pickerSource = v;
-    if (v === "collections") void ensureCollectionsLoaded();
-    else if (browseInitialized) void browseEngine.setSource(v);
+    if (v === "collections") {
+      void ensureCollectionsLoaded();
+    } else {
+      initEngineOnce();
+      void browseEngine.setSource(v);
+    }
+  }
+
+  // Persist/restore the collections grid scroll (BrowsePanel handles its own).
+  const SCROLL_KEY = "tka-choreo-sheet-picker-scroll";
+  function scrollMemory(el: HTMLElement) {
+    if (typeof localStorage !== "undefined") {
+      try {
+        const saved = Number(localStorage.getItem(SCROLL_KEY));
+        if (saved > 0) requestAnimationFrame(() => (el.scrollTop = saved));
+      } catch {
+        /* ignore */
+      }
+    }
+    const onScroll = () => {
+      try {
+        localStorage.setItem(SCROLL_KEY, String(el.scrollTop));
+      } catch {
+        /* ignore */
+      }
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return {
+      destroy() {
+        el.removeEventListener("scroll", onScroll);
+      },
+    };
   }
 
   const collectionSequences = $derived.by<SequenceData[]>(() => {
@@ -182,6 +269,12 @@
     }
   }
 </script>
+
+<svelte:window
+  onkeydown={(e) => {
+    if (e.key === "Escape" && builder.selectedSequenceId) builder.clearSelection();
+  }}
+/>
 
 <div class="choreo-sheet-view">
   <!-- Toolbar: name + primary actions -->
@@ -243,8 +336,20 @@
         {:else}
           <ul class="row-list">
             {#each builder.sequenceIds as id, i (id)}
-              <li class="row-item" animate:flip={{ duration: 200 }}>
-                <span class="row-label" title={rowLabel(id)}>{rowLabel(id)}</span>
+              <li
+                class="row-item"
+                class:selected={builder.selectedSequenceId === id}
+                animate:flip={{ duration: 200 }}
+              >
+                <button
+                  type="button"
+                  class="row-label"
+                  title={rowLabel(id)}
+                  aria-pressed={builder.selectedSequenceId === id}
+                  onclick={() => builder.toggleSequenceSelection(id)}
+                >
+                  {rowLabel(id)}
+                </button>
                 {#if rowCount(id) != null}
                   <span class="row-count">{rowCount(id)}</span>
                 {/if}
@@ -322,6 +427,9 @@
         geo={builder.geo}
         layout={builder.layout}
         breakSequenceIds={builder.breakSequenceIds}
+        selectedSequenceId={builder.selectedSequenceId}
+        onSelectSequence={(id) => builder.toggleSequenceSelection(id)}
+        onRemoveSequence={(id) => builder.removeById(id)}
       />
     </div>
 
@@ -371,7 +479,7 @@
             {:else if collectionSequences.length === 0}
               <p class="dock-empty">No sequences in this collection.</p>
             {:else}
-              <div class="dock-grid-scroll">
+              <div class="dock-grid-scroll" use:scrollMemory>
                 <BrowseGrid
                   sequences={collectionSequences}
                   thumbnailService={thumbnailProvider}
@@ -642,12 +750,26 @@
     border-radius: 8px;
   }
 
+  .row-item.selected {
+    border-color: var(--theme-accent, #6366f1);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 16%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.06))
+    );
+  }
+
   .row-label {
     flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
     font-size: var(--font-size-sm, 0.875rem);
     color: var(--theme-text, #fff);
   }

@@ -25,7 +25,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import type { SheetPage } from "../../services/sheet-row-planner";
+  import type { SheetPage, SheetCell } from "../../services/sheet-row-planner";
   import type { SheetPageGeometry } from "../../domain/sheet-page-layout";
   import type { ChoreoSheetLayout } from "../../domain/types/choreo-sheet";
   import { SHEET_CELL_VISIBILITY } from "../../services/sheet-cell-config";
@@ -35,12 +35,19 @@
     geo,
     layout,
     breakSequenceIds = new Set<string>(),
+    selectedSequenceId = null,
+    onSelectSequence,
+    onRemoveSequence,
   }: {
     pages: SheetPage[];
     geo: SheetPageGeometry;
     layout: ChoreoSheetLayout;
     /** Sequence ids whose block does NOT connect to the sequence above it. */
     breakSequenceIds?: Set<string>;
+    /** The currently-selected sequence block (whole-sequence select-then-remove). */
+    selectedSequenceId?: string | null;
+    onSelectSequence?: (sequenceId: string) => void;
+    onRemoveSequence?: (sequenceId: string) => void;
   } = $props();
 
   // PictographContainer takes a boolean showHandPoints; the locked config carries
@@ -99,18 +106,23 @@
 
   onDestroy(() => observer?.disconnect());
 
-  // A separator sits above a row that starts a new block and isn't the page's
-  // first row. Only the "rule" style draws a line (see component note).
-  function hasSeparator(page: SheetPage, rowIndex: number): boolean {
-    return layout.groupSeparator === "rule" && rowIndex > 0 && page.rows[rowIndex]!.isBlockStart;
+  // Sequences flow continuously, so a boundary falls on the sequence-start CELL
+  // (it can land mid-row), not on a whole row. All three marks are per-cell.
+
+  // A break: the sequence starting here doesn't connect to the one before it. A
+  // warning, so it draws regardless of the group-separator style.
+  function isCellBreak(cell: SheetCell): boolean {
+    return cell.isSequenceStart && !!cell.sequenceId && breakSequenceIds.has(cell.sequenceId);
   }
 
-  // A break sits at the start of a block whose sequence doesn't connect to the
-  // one above it. Independent of the group-separator style — it's a warning, not
-  // a decoration — so it draws even when the separator is "gap" or "none".
-  function isBreak(page: SheetPage, rowIndex: number): boolean {
-    const row = page.rows[rowIndex]!;
-    return row.isBlockStart && !!row.sequenceId && breakSequenceIds.has(row.sequenceId);
+  // A separator: a divider at each sequence start (except the sheet's very first
+  // cell). Only the "rule" style draws it.
+  function isCellSeparator(cell: SheetCell, isFirstCell: boolean): boolean {
+    return layout.groupSeparator === "rule" && cell.isSequenceStart && !isFirstCell;
+  }
+
+  function isSelected(sequenceId: string | null | undefined): boolean {
+    return !!sequenceId && sequenceId === selectedSequenceId;
   }
 </script>
 
@@ -127,17 +139,42 @@
           {#each page.rows as row, ri (ri)}
             <div
               class="sheet-row"
-              class:separator={hasSeparator(page, ri)}
-              class:break={isBreak(page, ri)}
               style="grid-template-columns: repeat({geo.columns}, 1fr); column-gap: {colGapPct}%;"
             >
-              {#if isBreak(page, ri)}
-                <span class="row-break-label">
-                  <i class="fa-solid fa-link-slash" aria-hidden="true"></i> break
-                </span>
-              {/if}
               {#each row.cells as cell, ci (ci)}
-                <div class="cell" class:blank={cell.isBlank}>
+                <div
+                  class="cell"
+                  class:blank={cell.isBlank}
+                  class:selected={isSelected(cell.sequenceId)}
+                  class:break={isCellBreak(cell)}
+                  class:separator={isCellSeparator(cell, pi === 0 && ri === 0 && ci === 0)}
+                >
+                  {#if !cell.isBlank && cell.sequenceId && onSelectSequence}
+                    <button
+                      type="button"
+                      class="cell-select"
+                      aria-label="Select this sequence"
+                      aria-pressed={isSelected(cell.sequenceId)}
+                      onclick={() => onSelectSequence?.(cell.sequenceId!)}
+                    ></button>
+                  {/if}
+                  {#if isCellBreak(cell)}
+                    <span class="cell-break-label">
+                      <i class="fa-solid fa-link-slash" aria-hidden="true"></i> break
+                    </span>
+                  {/if}
+                  {#if cell.isSequenceStart && isSelected(cell.sequenceId) && onRemoveSequence}
+                    <button
+                      type="button"
+                      class="block-remove"
+                      onclick={(e) => {
+                        e.stopPropagation();
+                        onRemoveSequence?.(cell.sequenceId!);
+                      }}
+                    >
+                      <i class="fa-solid fa-trash" aria-hidden="true"></i> Remove
+                    </button>
+                  {/if}
                   {#if cell.step && visiblePages.has(pi)}
                     <PictographContainer
                       pictographData={cell.step}
@@ -202,20 +239,8 @@
     width: 100%;
   }
 
-  /* Hairline group separator, drawn in the gutter above a block-start row without
-     consuming layout space (absolute), so it never shifts the grid. */
-  .sheet-row.separator::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: -3px;
-    height: 1px;
-    background: rgba(0, 0, 0, 0.28);
-    pointer-events: none;
-  }
-
   .cell {
+    position: relative;
     aspect-ratio: 1;
     overflow: hidden;
     border: 1px solid var(--sheet-cell-stroke, rgba(0, 0, 0, 0.18));
@@ -228,24 +253,68 @@
     border-color: rgba(0, 0, 0, 0.06);
   }
 
-  /* Break: a red dashed rule above the block + a small corner flag. Absolute, so
-     it never shifts the grid (no-layout-shift). */
-  .sheet-row.break::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: -3px;
-    height: 2px;
-    background: repeating-linear-gradient(
-      to right,
-      var(--theme-danger, #ef4444) 0 6px,
-      transparent 6px 10px
-    );
-    pointer-events: none;
+  /* Separator: a vertical divider on the left edge of a sequence-start cell —
+     in flow mode a boundary is between two cells, not two rows. */
+  .cell.separator {
+    border-left: 2px solid rgba(0, 0, 0, 0.4);
   }
 
-  .row-break-label {
+  /* Whole-sequence selection: a transparent hit layer over each cell, an accent
+     ring on every cell of the selected sequence, and a Remove button on its
+     first cell. */
+  .cell-select {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .cell.selected::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--theme-accent, #6366f1);
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 14%, transparent);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .block-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 12px;
+    background: var(--theme-danger, #ef4444);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: var(--font-size-compact, 0.72rem);
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .block-remove:hover {
+    filter: brightness(1.08);
+  }
+
+  /* Break: a thick red left edge on the start cell (the boundary is vertical in
+     flow) + a small corner flag. */
+  .cell.break {
+    border-left: 3px solid var(--theme-danger, #ef4444);
+  }
+
+  .cell-break-label {
     position: absolute;
     top: 1px;
     left: 1px;
