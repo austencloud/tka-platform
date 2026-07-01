@@ -28,6 +28,16 @@ const MIN_LIVE_PARTICLES = 40;
 const BURST_MOTION_THRESHOLD = 0.3;
 
 /**
+ * Always-on proportional size variety (±30%), applied per particle on top of
+ * the dial-derived `params.sizeScaleBase`. The old mapping folded variance INTO
+ * the dial (rand × size), so size=0 made every sparkle identical and high size
+ * made them wildly uneven. Splitting it out gives natural glint-to-glint variety
+ * at every size; the dial→scale curve + its ceiling now live in resolveSparkles2D.
+ */
+const SCALE_JITTER_MIN = 0.7;
+const SCALE_JITTER_SPAN = 0.6;
+
+/**
  * Particle-pool sparkle renderer for the Canvas2D backend.
  *
  * Holds particle state across frames. Caller passes tips per frame; renderer
@@ -215,6 +225,10 @@ export class Sparkles2DRenderer {
       // the whole batch dies together and the canvas pulses dark every lifetime.
       const lifeJitter = 0.6 + Math.random() * 0.8;
 
+      // sizeScaleBase (dial-derived, ceiling already applied in the translator)
+      // sets the band center; jitter spreads each particle ±30% around it.
+      const scaleJitter = SCALE_JITTER_MIN + Math.random() * SCALE_JITTER_SPAN;
+
       this.particles.push({
         x: originX,
         y: originY,
@@ -223,7 +237,7 @@ export class Sparkles2DRenderer {
         life: 0,
         maxLife: params.lifetime * lifeJitter,
         color: this.pickColor(params),
-        scale: 0.6 + Math.random() * 0.8 * params.size * 2,
+        scale: params.sizeScaleBase * scaleJitter,
         rotation: Math.random() * Math.PI * 2,
         spinSpeed: (Math.random() - 0.5) * 1.6,
         twinklePhase: Math.random() * Math.PI * 2,

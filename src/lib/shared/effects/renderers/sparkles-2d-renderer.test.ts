@@ -68,6 +68,7 @@ function makeParams(overrides: Partial<Sparkles2DParams> = {}): Sparkles2DParams
     mode: "stream",
     poolSize: 200,
     baseRadius: 3,
+    sizeScaleBase: 0.45,
     blendMode: "lighter",
     ...overrides,
   };
@@ -222,6 +223,7 @@ const baseParams: Sparkles2DParams = {
   mode: "stream",
   poolSize: 256,
   baseRadius: 4,
+  sizeScaleBase: 0.65,
   blendMode: "lighter",
 };
 

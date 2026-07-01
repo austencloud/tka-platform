@@ -129,9 +129,21 @@ export function resolveSparkles2D(
   intent: SparklesIntent,
   override: Partial<Sparkles2DParams> = {},
 ): Sparkles2DParams {
+  // Size dial → per-particle base scale, authored against the 500px reference
+  // canvas. Linear remap across the FULL slider into a capped range: size=0 →
+  // SIZE_SCALE_MIN (fine micro-dust), size=1 → MIN+SPAN (the largest glint we
+  // allow, ~8px stars at reference). The span tops out well before the cross
+  // stars read as overwhelming blobs, so no value is ever overwhelming and no
+  // slider travel is dead - every position maps to a distinct size. The renderer
+  // adds a random ±30% jitter on top for glint-to-glint variety.
+  const SIZE_SCALE_MIN = 0.25;
+  const SIZE_SCALE_SPAN = 0.4;
+  const sizeScaleBase = SIZE_SCALE_MIN + intent.size * SIZE_SCALE_SPAN;
+
   const defaults: Omit<Sparkles2DParams, keyof SparklesIntent> = {
     poolSize: 256,
     baseRadius: 3,
+    sizeScaleBase,
     blendMode: "lighter",
   };
   return { ...intent, ...defaults, ...override };

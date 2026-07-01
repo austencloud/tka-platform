@@ -83,6 +83,12 @@ export interface Sparkles2DParams extends SparklesIntent {
   poolSize: number;
   /** px - base particle radius before `size` multiplier. */
   baseRadius: number;
+  /**
+   * Per-particle base scale (the band center) derived from `size`. Carries the
+   * dial→scale remap and its size cap so the renderer stays policy-free; the
+   * renderer multiplies this by a random ±30% jitter for glint-to-glint variety.
+   */
+  sizeScaleBase: number;
   /** Canvas composite op. */
   blendMode?: GlobalCompositeOperation;
 }
