@@ -27,8 +27,14 @@
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import SheetPreviewPages from "./SheetPreviewPages.svelte";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
+  import BrowseGrid from "$lib/features/browse/sequences/display/components/BrowseGrid.svelte";
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+  import { getBrowseThumbnailProvider } from "$lib/shared/browse/get-browse-thumbnail-provider";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+  import { getCollections } from "$lib/shared/library/services/collection-manager";
+  import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 
   // Builder-state object. The sheet auto-saves to localStorage (persistKey) and
   // restores on reload/HMR. loadSequence resolves BOTH community and library ids
@@ -93,6 +99,51 @@
     }
   }
 
+  // Picker source. My Library / Community drive the browse engine; Collections is
+  // a client-side id filter over the library (collections aren't an engine source).
+  type PickerSource = "my-library" | "community" | "collections";
+  let pickerSource = $state<PickerSource>("my-library");
+  const sourceOptions: { value: PickerSource; label: string }[] = [
+    { value: "my-library", label: "My Library" },
+    { value: "community", label: "Community" },
+    { value: "collections", label: "Collections" },
+  ];
+  const thumbnailProvider = getBrowseThumbnailProvider();
+  let collections = $state<LibraryCollection[]>([]);
+  let selectedCollectionId = $state<string | null>(null);
+  let libSequences = $state<SequenceData[]>([]);
+  let collectionsLoaded = false;
+
+  async function ensureCollectionsLoaded(): Promise<void> {
+    if (collectionsLoaded) return;
+    collectionsLoaded = true;
+    try {
+      const [cols, seqs] = await Promise.all([
+        getCollections(),
+        getLibraryRepository().getSequences(),
+      ]);
+      collections = cols;
+      libSequences = seqs as SequenceData[];
+    } catch (e) {
+      console.error("[ChoreoSheetView] collections load failed", e);
+      collectionsLoaded = false; // let a retry re-attempt
+    }
+  }
+
+  function onSourceChange(v: PickerSource): void {
+    pickerSource = v;
+    if (v === "collections") void ensureCollectionsLoaded();
+    else if (browseInitialized) void browseEngine.setSource(v);
+  }
+
+  const collectionSequences = $derived.by<SequenceData[]>(() => {
+    if (!selectedCollectionId) return [];
+    const col = collections.find((c) => c.id === selectedCollectionId);
+    if (!col) return [];
+    const ids = new Set(col.sequenceIds);
+    return libSequences.filter((s) => ids.has(s.id));
+  });
+
   let exporting = $state(false);
   let exportPct = $state(0);
   async function exportPdf() {
@@ -103,11 +154,12 @@
       const filename = `${(builder.sheet.name || "choreo-sheet").trim().replace(/\s+/g, "-").toLowerCase()}.pdf`;
       await downloadChoreoSheetPDF(
         builder.sheet,
-        builder.hydratedSequences,
+        builder.normalizedRows,
         filename,
         (done, total) => {
           exportPct = total > 0 ? Math.round((done / total) * 100) : 0;
         },
+        builder.breakSequenceIds,
       );
     } finally {
       exporting = false;
@@ -161,6 +213,21 @@
         {exporting ? `Exporting ${exportPct}%` : "Export PDF"}
       </button>
     </div>
+    {#if builder.sequenceIds.length > 0}
+      <span
+        class="loop-badge"
+        class:loops={builder.loopStatus === "loops"}
+        class:open={builder.loopStatus === "open"}
+        title={builder.loopStatus === "loops"
+          ? "The sheet ends where it began — it loops."
+          : "The sheet ends at a different state than it began."}
+      >
+        <span class="loop-sizer" aria-hidden="true">Loops ✓</span>
+        <span class="loop-live">
+          {#if builder.loopStatus === "loops"}Loops ✓{:else}Open{/if}
+        </span>
+      </span>
+    {/if}
     {#if saveMessage}
       <span class="save-message">{saveMessage}</span>
     {/if}
@@ -250,42 +317,83 @@
       {#if builder.isHydrating && builder.hydratedSequences.length === 0}
         <p class="preview-status">Loading sequences…</p>
       {/if}
-      <SheetPreviewPages pages={builder.pages} geo={builder.geo} layout={builder.layout} />
-    </div>
-  </div>
-</div>
-
-{#if browseOpen}
-  <!-- Full Browse experience (BrowsePanel + engine): real rendered pictograph
-       cards, search/filter/sort, virtualization. Tap a card → adds a row. -->
-  <button
-    type="button"
-    class="browse-scrim"
-    aria-label="Close sequence browser"
-    onclick={() => (browseOpen = false)}
-  ></button>
-  <aside class="browse-drawer" aria-label="Add sequences">
-    <div class="browse-drawer-head">
-      <span class="browse-drawer-title">Add sequences — tap a card to add a row</span>
-      <button
-        type="button"
-        class="browse-close"
-        aria-label="Close browser"
-        onclick={() => (browseOpen = false)}
-      >
-        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-      </button>
-    </div>
-    <div class="browse-panel-host">
-      <BrowsePanel
-        engine={browseEngine}
-        layout="compact"
-        showSourceToggle
-        onSelect={(seq) => handleBrowseSelect(seq)}
+      <SheetPreviewPages
+        pages={builder.pages}
+        geo={builder.geo}
+        layout={builder.layout}
+        breakSequenceIds={builder.breakSequenceIds}
       />
     </div>
-  </aside>
-{/if}
+
+    {#if browseOpen}
+      <!-- Inline docked picker. The page stays fully visible (preview just
+           narrows) instead of being covered by an overlay. -->
+      <aside class="browse-dock" aria-label="Add sequences">
+        <div class="browse-drawer-head">
+          <span class="browse-drawer-title">Add sequences — tap a card to add a row</span>
+          <button
+            type="button"
+            class="browse-close"
+            aria-label="Close browser"
+            onclick={() => (browseOpen = false)}
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="dock-source">
+          <SegmentedControl
+            options={sourceOptions}
+            value={pickerSource}
+            onchange={onSourceChange}
+            color="accent"
+            size="sm"
+          />
+        </div>
+
+        {#if pickerSource === "collections"}
+          <div class="collection-chips">
+            {#each collections as col (col.id)}
+              <FilterChipBase
+                mode="toggle"
+                label={col.name}
+                count={col.sequenceCount}
+                active={selectedCollectionId === col.id}
+                onclick={() =>
+                  (selectedCollectionId = selectedCollectionId === col.id ? null : col.id)}
+                size="sm"
+              />
+            {/each}
+          </div>
+          <div class="browse-panel-host">
+            {#if !selectedCollectionId}
+              <p class="dock-empty">Pick a collection.</p>
+            {:else if collectionSequences.length === 0}
+              <p class="dock-empty">No sequences in this collection.</p>
+            {:else}
+              <div class="dock-grid-scroll">
+                <BrowseGrid
+                  sequences={collectionSequences}
+                  thumbnailService={thumbnailProvider}
+                  disableVirtualization
+                  onAction={(_a, seq) => builder.addHydratedSequences([seq])}
+                />
+              </div>
+            {/if}
+          </div>
+        {:else}
+          <div class="browse-panel-host">
+            <BrowsePanel
+              engine={browseEngine}
+              layout="compact"
+              onSelect={(seq) => handleBrowseSelect(seq)}
+            />
+          </div>
+        {/if}
+      </aside>
+    {/if}
+  </div>
+</div>
 
 <style>
   .choreo-sheet-view {
@@ -365,29 +473,46 @@
     color: var(--theme-text-on-accent, #fff);
   }
 
-  /* Right-docked drawer: search + canonical Browse grid of pictograph cards. */
-  .browse-scrim {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    z-index: 40;
-  }
-
-  .browse-drawer {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: min(560px, 96vw);
+  /* Inline docked picker column — sits beside the preview so the whole page
+     stays visible (the preview just narrows). Not an overlay. */
+  .browse-dock {
+    flex-shrink: 0;
+    width: min(460px, 42vw);
     display: flex;
     flex-direction: column;
+    min-height: 0;
     background: var(--theme-panel-bg, #14141c);
-    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
-    z-index: 41;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .dock-source {
+    padding: var(--spacing-sm) var(--spacing-md) 0;
+    flex-shrink: 0;
+  }
+
+  .collection-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    flex-shrink: 0;
+    overflow-y: auto;
+    max-height: 30%;
+  }
+
+  .dock-grid-scroll {
+    height: 100%;
+    overflow-y: auto;
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+  }
+
+  .dock-empty {
+    text-align: center;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-sm, 0.875rem);
+    margin: var(--spacing-md) 0;
   }
 
   .browse-drawer-head {
@@ -433,6 +558,35 @@
 
   .save-message {
     font-size: var(--font-size-sm, 0.875rem);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
+  /* Loop status. Ghost-sizer keeps the pill width fixed so the toolbar never
+     shifts as the word changes (no-layout-shift). */
+  .loop-badge {
+    display: inline-grid;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    font-size: var(--font-size-compact, 0.72rem);
+    font-weight: 700;
+  }
+
+  .loop-sizer,
+  .loop-live {
+    grid-area: 1 / 1;
+  }
+
+  .loop-sizer {
+    visibility: hidden;
+  }
+
+  .loop-badge.loops .loop-live {
+    color: var(--theme-success, #22c55e);
+  }
+
+  .loop-badge.open .loop-live {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
@@ -613,12 +767,16 @@
     font-size: var(--font-size-sm, 0.875rem);
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 900px) {
     .sheet-body {
       flex-direction: column;
     }
     .rail {
       width: 100%;
+    }
+    .browse-dock {
+      width: 100%;
+      max-height: 45vh;
     }
   }
 
