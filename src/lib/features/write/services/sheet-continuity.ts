@@ -8,11 +8,14 @@
  * `3d/state/avatar-instance-state.svelte.ts`.
  */
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { shiftStartPosition } from "$lib/shared/create/services/sequence-transformer";
 
 export interface EdgeState {
-  position: string | undefined;
+  // Opaque comparison keys — the exact domain types don't matter to this module,
+  // only that a row's end tuple equals the next row's start tuple.
+  position: StepData["startPosition"];
   blueOri: string | undefined;
   redOri: string | undefined;
 }

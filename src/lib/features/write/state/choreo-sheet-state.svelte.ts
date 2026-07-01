@@ -26,6 +26,13 @@ import {
 } from "../domain/types/choreo-sheet";
 import { getSheetPageLayout, type SheetPageGeometry } from "../domain/sheet-page-layout";
 import { planSheet, type SheetPage } from "../services/sheet-row-planner";
+import {
+  connects,
+  endStateOf,
+  loopStatus,
+  normalizeToStart,
+  type LoopStatus,
+} from "../services/sheet-continuity";
 import type { ActData } from "../domain/types/write";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
@@ -114,10 +121,45 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
       .filter((seq): seq is SequenceData => seq != null)
   );
 
+  // Each row (after the first) is normalized to start where the previous row's
+  // normalized form ends — so "fill from collections" auto-connects. The fold is
+  // order-dependent, so it lives here (not in the id-keyed cache).
+  const normalizedRows = $derived.by<SequenceData[]>(() => {
+    const out: SequenceData[] = [];
+    for (let i = 0; i < hydratedSequences.length; i++) {
+      const seq = hydratedSequences[i]!;
+      if (i === 0) {
+        out.push(seq);
+        continue;
+      }
+      const prevEnd = endStateOf(out[i - 1]!);
+      out.push(prevEnd ? normalizeToStart(seq, prevEnd) : seq);
+    }
+    return out;
+  });
+
+  // boundaries[i] = does row i connect to row i+1 (after normalization)?
+  const boundaries = $derived(
+    normalizedRows.slice(1).map((seq, i) => connects(normalizedRows[i]!, seq))
+  );
+
+  // Ids of rows that begin a break (don't connect to the row above). The preview
+  // and PDF mark a block start whose sequence id is in this set.
+  const breakSequenceIds = $derived(
+    new Set(
+      normalizedRows
+        .filter((seq, i) => i > 0 && !connects(normalizedRows[i - 1]!, seq))
+        .map((seq) => seq.id)
+    )
+  );
+
+  const sheetLoopStatus = $derived<LoopStatus>(loopStatus(normalizedRows));
+
   // Page geometry (cell size, margins, grid) and the paginated rows of cells.
-  // Both recompute from ids + layout + cache, so preview and PDF stay in lockstep.
+  // Both recompute from the normalized rows + layout, so preview and PDF stay in
+  // lockstep with what connects.
   const geo = $derived<SheetPageGeometry>(getSheetPageLayout(sheet.layout));
-  const pages = $derived<SheetPage[]>(planSheet(hydratedSequences, sheet.layout));
+  const pages = $derived<SheetPage[]>(planSheet(normalizedRows, sheet.layout));
 
   // Hydrate only the ids we don't already have, in parallel. A failed fetch for
   // one id never blocks the others or throws — that row just stays blank, which
@@ -277,6 +319,15 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     },
     get pages() {
       return pages;
+    },
+    get boundaries() {
+      return boundaries;
+    },
+    get breakSequenceIds() {
+      return breakSequenceIds;
+    },
+    get loopStatus() {
+      return sheetLoopStatus;
     },
     get isHydrating() {
       return isHydrating;
