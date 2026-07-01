@@ -193,17 +193,21 @@ if (browser && !dev) {
 }
 
 // Production: register the minimal hand-written service worker
+// (The old "tka-sync-queue" Background Sync registration was deleted — the SW
+// has no sync listener, so it was a no-op. Firestore's own persistence queue
+// handles offline writes while a tab is open.)
 if (browser && !dev && "serviceWorker" in navigator) {
   navigator.serviceWorker
     .register("/sw.js", { scope: "/" })
-    .then((registration) => {
-      if (registration.active && "sync" in registration) {
-        (registration as ServiceWorkerRegistration & { sync: { register(tag: string): Promise<void> } })
-          .sync.register("tka-sync-queue")
-          .catch(() => {});
-      }
-    })
     .catch((err) => {
       console.error("[SW] Registration failed:", err);
     });
+
+  // Ask the browser to exempt our storage (Cache Storage + IndexedDB — the
+  // whole offline kit) from best-effort eviction. Denials are fine: installed
+  // PWAs and engaged origins usually get it, and everything self-heals on the
+  // next online visit anyway.
+  if (navigator.storage?.persist) {
+    navigator.storage.persist().catch(() => {});
+  }
 }

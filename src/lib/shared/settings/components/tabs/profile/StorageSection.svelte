@@ -147,6 +147,17 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
               {/if}
             </span>
           </div>
+          {#if offlineStats.storageUsedBytes !== null && offlineStats.storageQuotaBytes !== null}
+            <div class="stat-row">
+              <span class="stat-label">Device storage</span>
+              <span class="stat-value">
+                {formatBytes(offlineStats.storageUsedBytes)} of {formatBytes(offlineStats.storageQuotaBytes)}
+                {#if offlineStats.storagePersisted}
+                  <span class="stat-size" title="The browser granted durable storage; cached data is exempt from automatic cleanup.">· protected</span>
+                {/if}
+              </span>
+            </div>
+          {/if}
         </div>
       {/if}
 

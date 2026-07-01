@@ -47,15 +47,18 @@ describe("svg precache manifest generator", () => {
     expect(assets).toContain("/images/same_opp_dot.svg");
   });
 
-  it("includes the six shipped elemental glyph PNGs", () => {
+  it("includes the six shipped elemental glyph WebPs, not the print PNGs", () => {
     // Mirrors ELEMENT_IMAGE_FILE in pictograph-enums.ts — these exact variants
-    // are what getElementImagePath() fetches at runtime.
-    expect(assets).toContain("/images/elements/water-v2.png");
-    expect(assets).toContain("/images/elements/fire-v2.png");
-    expect(assets).toContain("/images/elements/earth-v2.png");
-    expect(assets).toContain("/images/elements/air-v2.png");
-    expect(assets).toContain("/images/elements/sun-v4.png");
-    expect(assets).toContain("/images/elements/moon-v2.png");
+    // are what getElementImagePath() fetches at runtime. The lossless PNGs stay
+    // on disk for the print/card pipeline and must NOT be precached (4.4 MB).
+    expect(assets).toContain("/images/elements/water-v2.webp");
+    expect(assets).toContain("/images/elements/fire-v2.webp");
+    expect(assets).toContain("/images/elements/earth-v2.webp");
+    expect(assets).toContain("/images/elements/air-v2.webp");
+    expect(assets).toContain("/images/elements/sun-v4.webp");
+    expect(assets).toContain("/images/elements/moon-v2.webp");
+    expect(assets).not.toContain("/images/elements/water-v2.png");
+    expect(assets).not.toContain("/images/elements/sun-v4.png");
   });
 
   it("excludes the build-time arrow sprite files", () => {

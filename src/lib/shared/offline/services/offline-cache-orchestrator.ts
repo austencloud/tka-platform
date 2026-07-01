@@ -134,10 +134,11 @@ export class OfflineCacheOrchestrator {
   }
 
   async getCacheStats(): Promise<OfflineCacheStats> {
-    const [galleryStats, thumbnailStats, propSvgsCached] = await Promise.all([
+    const [galleryStats, thumbnailStats, propSvgsCached, storage] = await Promise.all([
       this.galleryCache.getStats(),
       this.thumbnailCache.getStats(),
       this.checkPropSvgsCached(),
+      this.checkStorage(),
     ]);
     return {
       gallerySequenceCount: galleryStats.count,
@@ -150,7 +151,38 @@ export class OfflineCacheOrchestrator {
       // (galleryCount > 0 alone) flipped "Offline ready" on metadata sync, with
       // blank art and zero downloaded assets.
       isOfflineReady: galleryStats.count > 0 && propSvgsCached,
+      ...storage,
     };
+  }
+
+  /**
+   * Device storage picture for the Storage panel: how much the origin uses,
+   * how much the browser will allow, and whether it granted durable storage
+   * (requested once at boot in hooks.client.ts). All best-effort — nulls where
+   * the API is unavailable.
+   */
+  private async checkStorage(): Promise<
+    Pick<OfflineCacheStats, "storageUsedBytes" | "storageQuotaBytes" | "storagePersisted">
+  > {
+    const fallback = {
+      storageUsedBytes: null,
+      storageQuotaBytes: null,
+      storagePersisted: false,
+    };
+    if (typeof navigator === "undefined" || !navigator.storage?.estimate) return fallback;
+    try {
+      const [estimate, persisted] = await Promise.all([
+        navigator.storage.estimate(),
+        navigator.storage.persisted?.() ?? Promise.resolve(false),
+      ]);
+      return {
+        storageUsedBytes: estimate.usage ?? null,
+        storageQuotaBytes: estimate.quota ?? null,
+        storagePersisted: persisted,
+      };
+    } catch {
+      return fallback;
+    }
   }
 
   async clearOfflineCache(): Promise<void> {

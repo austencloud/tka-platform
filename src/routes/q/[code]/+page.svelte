@@ -92,6 +92,18 @@
 
   let pageState = $state<PageState>({ kind: "loading" });
 
+  // Snapshot of connectivity at the moment resolution failed, so the error
+  // screen can say "you're offline" instead of blaming the code. A failed
+  // resolve while offline is a connectivity problem, not a broken code.
+  let failedWhileOffline = $state(false);
+
+  // Reconnecting while stuck on an offline error: retry automatically.
+  function handleBackOnline() {
+    if (pageState.kind === "error" && failedWhileOffline) {
+      location.reload();
+    }
+  }
+
   // ── Loading-state word glyphs ──
   // The scanned word arrives at SSR (data.meta.word) long before the heavy
   // sequence resolve finishes. We priority-load just this word's glyphs so it
@@ -470,6 +482,7 @@
       markScan("shortcode-resolved");
       if (!seq) {
         stopTrickle();
+        failedWhileOffline = !navigator.onLine;
         pageState = { kind: "error", message: "Sequence not found" };
         return;
       }
@@ -564,6 +577,7 @@
       clearModuleChunkRecoveryGuard();
     } catch (err: unknown) {
       stopTrickle();
+      failedWhileOffline = !navigator.onLine;
       pageState = {
         kind: "error",
         message: err instanceof Error ? err.message : "Failed to load sequence",
@@ -571,6 +585,8 @@
     }
   });
 </script>
+
+<svelte:window ononline={handleBackOnline} />
 
 <svelte:head>
   <title>{displayWord} · TKA</title>
@@ -622,18 +638,29 @@
         <line x1="12" y1="8" x2="12" y2="12"></line>
         <line x1="12" y1="16" x2="12.01" y2="16"></line>
       </svg>
-      <h1 class="error-heading">This sequence isn't available</h1>
-      <p class="status-text">The code may be broken, or the sequence was deleted by its owner.</p>
-      <div class="error-actions">
-        <a href="/browse/gallery" class="cta-button">
-          <i class="fas fa-compass" aria-hidden="true"></i>
-          Browse Sequences
-        </a>
-        <a href="/create" class="cta-button ghost">
-          <i class="fas fa-pen" aria-hidden="true"></i>
-          Create Your Own
-        </a>
-      </div>
+      {#if failedWhileOffline}
+        <h1 class="error-heading">You're offline</h1>
+        <p class="status-text">This code needs a connection to look up. It retries automatically when you're back online.</p>
+        <div class="error-actions">
+          <button type="button" class="cta-button" onclick={() => location.reload()}>
+            <i class="fas fa-rotate-right" aria-hidden="true"></i>
+            Try Again
+          </button>
+        </div>
+      {:else}
+        <h1 class="error-heading">This sequence isn't available</h1>
+        <p class="status-text">The code may be broken, or the sequence was deleted by its owner.</p>
+        <div class="error-actions">
+          <a href="/browse/gallery" class="cta-button">
+            <i class="fas fa-compass" aria-hidden="true"></i>
+            Browse Sequences
+          </a>
+          <a href="/create" class="cta-button ghost">
+            <i class="fas fa-pen" aria-hidden="true"></i>
+            Create Your Own
+          </a>
+        </div>
+      {/if}
     </div>
   {:else if pageState.kind === "playing" && OrchestratorComponent && resolvedSeq}
     <OrchestratorComponent

@@ -16,11 +16,48 @@ self.addEventListener("install", (event) => {
       // cache: "reload" bypasses the browser HTTP cache so a new SW never
       // precaches stale bytes it happens to have lying around.
       await cache.addAll(APP_SHELL_URLS.map((url) => new Request(url, { cache: "reload" })));
+      await precacheBootChunks(cache);
       await precacheSvgAssets(cache);
     })
   );
   self.skipWaiting();
 });
+
+// Precache the shell's boot-critical JS/CSS chunks by scraping them out of the
+// /app HTML cached just above. SvelteKit injects <script src>, modulepreload,
+// and stylesheet links for the exact boot graph into the shell, so the shell
+// and its chunk list always come from the same deploy snapshot — self-syncing,
+// zero build tooling. Without this, install → go offline → reload
+// white-screens: /app itself is cached but its entry chunks were only ever
+// runtime-cached. Failure-tolerant: a stray chunk 404 (e.g. mid-deploy race)
+// must NEVER fail install — the cache-first /_app/immutable/ runtime rule
+// below still picks up anything missed on the next online visit.
+async function precacheBootChunks(cache) {
+  try {
+    // Read the shell back OUT of the cache instead of re-fetching. cache.match
+    // returns a fresh Response copy each call, so consuming its body here does
+    // not touch the stored entry — no clone-before-put dance needed. If the
+    // shell isn't there (addAll failed upstream), skip silently.
+    const shell = await cache.match("/app");
+    if (!shell) return;
+    const html = await shell.text();
+    // Every boot asset SvelteKit injected into the shell lives under
+    // /_app/immutable/ (content-hashed). Dedupe — the same chunk appears as
+    // both a modulepreload link and inline import data.
+    const urls = [...new Set(html.match(/\/_app\/immutable\/[^"']+/g) || [])];
+    await Promise.allSettled(
+      urls.map(async (url) => {
+        // cache: "reload" — same install-time freshness as the shell above.
+        // Safe for these URLs: they're content-hashed, so bypassing the HTTP
+        // cache can never fetch different bytes, only guaranteed-real ones.
+        const r = await fetch(new Request(url, { cache: "reload" }));
+        if (r.ok) await cache.put(url, r.clone());
+      })
+    );
+  } catch {
+    // Parse/network hiccup — non-fatal; runtime chunk caching still applies.
+  }
+}
 
 // Precache the finite essential pictograph SVG set. Resilient: a missing
 // manifest (older deploy) or a stray 404 must NEVER fail install — the runtime
@@ -128,9 +165,19 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Viewed sequences and QR pages: network-first (offline festival use)
+  // Viewed sequences and QR pages: network-first (offline festival use).
+  // NAVIGATIONS additionally fall back to the cached /app shell: these routes
+  // have client-side local-decode paths (/sequence/[id] inline decode,
+  // /q/[code] resolution), so serving the shell lets the SvelteKit client
+  // router mount the page and handle offline itself — instead of the raw 503
+  // networkFirst returns on a cold-offline cache miss. Subresource
+  // (non-navigation) requests keep plain network-first.
   if (url.pathname.startsWith("/sequence/") || url.pathname.startsWith("/q/")) {
-    event.respondWith(networkFirst(event.request));
+    event.respondWith(
+      event.request.mode === "navigate"
+        ? networkFirstNavigation(event.request)
+        : networkFirst(event.request)
+    );
     return;
   }
 
@@ -181,13 +228,41 @@ async function cacheFirstDedicated(request, cacheName) {
 
 async function networkFirst(request) {
   try {
-    const response = await fetch(request);
+    // fetchWithTimeout (not bare fetch): on lie-fi — a connection that opens
+    // but never responds — a bare fetch can hang for minutes while a perfectly
+    // good cached copy sits in the catch below. ~10s matches the SPA
+    // navigation fallback. Real server responses (including 4xx/5xx) still
+    // pass through untouched; only fetch failure/abort reaches the catch.
+    const response = await fetchWithTimeout(request, 10000);
     if (response.ok) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, response.clone());
     }
     return response;
   } catch {
+    const cached = await caches.match(request);
+    return cached || new Response("Offline", { status: 503 });
+  }
+}
+
+// Network-first for /sequence/* and /q/* NAVIGATIONS with an /app shell
+// fallback. Only fetch failure/timeout falls back — a real server response
+// (even an error status) is returned as-is, so genuine server errors are never
+// masked by the shell. If the shell isn't cached either, degrade to the plain
+// networkFirst failure path: a previously cached copy of the page, then 503.
+async function networkFirstNavigation(request) {
+  try {
+    const response = await fetchWithTimeout(request, 10000);
+    // Cache successful page loads exactly like networkFirst, so a previously
+    // viewed page still has a per-URL cached copy as a last-resort fallback.
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const shell = await caches.match("/app");
+    if (shell) return shell;
     const cached = await caches.match(request);
     return cached || new Response("Offline", { status: 503 });
   }

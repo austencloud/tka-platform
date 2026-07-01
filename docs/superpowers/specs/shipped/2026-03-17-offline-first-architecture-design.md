@@ -14,6 +14,16 @@ last_triaged: 2026-05-04
 **Status:** Approved
 **Goal:** Make TKA Scribe fully functional offline after a single successful load, optimized for the festival QR code scenario.
 
+> **Status correction (2026-07-01):** The Workbox/VitePWA service worker approach
+> this spec describes was never implemented. Offline pictograph rendering shipped
+> 2026-06-30 to 2026-07-01 through a different mechanism: the hand-rolled service
+> worker at `static/sw.js` precaches a build-generated SVG manifest
+> (`scripts/generate-svg-precache-manifest.cjs` writes
+> `static/svg-precache-manifest.json`) and serves `/images/*` with
+> stale-while-revalidate. The body below is preserved as written for history.
+> Audited current state and remaining roadmap:
+> `docs/reference/offline-persistence-audit-2026-06-30.md`.
+
 ---
 
 ## Problem

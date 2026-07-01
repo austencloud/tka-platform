@@ -38,6 +38,12 @@ export interface OfflineCacheStats {
   thumbnailsSizeBytes: number;
   propSvgsCached: boolean;
   isOfflineReady: boolean;
+  /** navigator.storage.estimate() usage, or null where unsupported. */
+  storageUsedBytes: number | null;
+  /** navigator.storage.estimate() quota, or null where unsupported. */
+  storageQuotaBytes: number | null;
+  /** True when the browser granted durable (eviction-exempt) storage. */
+  storagePersisted: boolean;
 }
 
 /** Why a download attempt produced no durable caching. */

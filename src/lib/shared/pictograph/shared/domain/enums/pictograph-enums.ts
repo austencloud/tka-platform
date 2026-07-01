@@ -162,9 +162,14 @@ const ELEMENT_IMAGE_FILE: Record<ElementalType, string> = {
   [ElementalType.MOON]: "moon-v2",
 };
 
+// Live render path serves the WebP variants (~30-44 KB each vs 0.5-1.3 MB
+// PNGs) — they're SW-precached for offline, so weight matters. The print/card
+// pipeline (choreo-card/domain/tnd-element.ts) intentionally keeps the
+// lossless PNGs. Renaming a file here means updating ELEMENT_FILES in
+// scripts/generate-svg-precache-manifest.cjs too.
 export function getElementImagePath(element: ElementalType | string): string {
   const filename = ELEMENT_IMAGE_FILE[element as ElementalType] ?? element;
-  return `/images/elements/${filename}.png`;
+  return `/images/elements/${filename}.webp`;
 }
 
 export enum GlyphType {

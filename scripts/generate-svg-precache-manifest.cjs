@@ -45,17 +45,19 @@ const ESSENTIAL_ROOT_FILES = [
   "same_opp_dot.svg",
 ];
 
-// Elemental glyph PNGs fetched via getElementImagePath(). This list mirrors
+// Elemental glyph WebPs fetched via getElementImagePath(). This list mirrors
 // ELEMENT_IMAGE_FILE in src/lib/shared/pictograph/shared/domain/enums/
-// pictograph-enums.ts:156 — a rename there must update here too. Only these
-// six ship; the other variants/.ai/.svg files in elements/ are dead weight.
+// pictograph-enums.ts — a rename there must update here too. The live render
+// path uses these WebPs (~216 KB total); the sibling PNGs stay on disk for the
+// print/card pipeline (choreo-card/domain/tnd-element.ts) and are NOT
+// precached.
 const ELEMENT_FILES = [
-  "air-v2.png",
-  "earth-v2.png",
-  "fire-v2.png",
-  "moon-v2.png",
-  "sun-v4.png",
-  "water-v2.png",
+  "air-v2.webp",
+  "earth-v2.webp",
+  "fire-v2.webp",
+  "moon-v2.webp",
+  "sun-v4.webp",
+  "water-v2.webp",
 ];
 
 const ASSET_EXTENSIONS = new Set([".svg", ".json"]);
