@@ -34,10 +34,11 @@ interface PersistedPrefs {
   splitPreset: SplitPreset;
   readAheadDepth: number;
   metronomeEnabled: boolean;
+  mirrorEnabled: boolean;
 }
 
 function load(): PersistedPrefs {
-  const fallback: PersistedPrefs = { splitPreset: "lane-heavy", readAheadDepth: 2, metronomeEnabled: false };
+  const fallback: PersistedPrefs = { splitPreset: "lane-heavy", readAheadDepth: 2, metronomeEnabled: false, mirrorEnabled: false };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return fallback;
@@ -47,6 +48,7 @@ function load(): PersistedPrefs {
       splitPreset: parsed.splitPreset ?? fallback.splitPreset,
       readAheadDepth: depth === 1 || depth === 2 || depth === 3 ? depth : fallback.readAheadDepth,
       metronomeEnabled: parsed.metronomeEnabled ?? fallback.metronomeEnabled,
+      mirrorEnabled: parsed.mirrorEnabled ?? fallback.mirrorEnabled,
     };
   } catch {
     return fallback;
@@ -59,10 +61,11 @@ export function createPracticeViewPrefs() {
   let splitPreset = $state<SplitPreset>(initial.splitPreset);
   let readAheadDepth = $state<number>(initial.readAheadDepth);
   let metronomeEnabled = $state<boolean>(initial.metronomeEnabled);
+  let mirrorEnabled = $state<boolean>(initial.mirrorEnabled);
 
   function persist() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ splitPreset, readAheadDepth, metronomeEnabled }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ splitPreset, readAheadDepth, metronomeEnabled, mirrorEnabled }));
     } catch {
       // ignore storage errors
     }
@@ -74,9 +77,11 @@ export function createPracticeViewPrefs() {
     get canvasFraction() { return canvasFractionFor(splitPreset); },
     get cellSize() { return cellSizeForReadAhead(readAheadDepth); },
     get metronomeEnabled() { return metronomeEnabled; },
+    get mirrorEnabled() { return mirrorEnabled; },
     setSplitPreset(p: SplitPreset) { splitPreset = p; persist(); },
     setReadAheadDepth(d: number) { readAheadDepth = Math.min(3, Math.max(1, Math.round(d))); persist(); },
     setMetronomeEnabled(v: boolean) { metronomeEnabled = v; persist(); },
+    setMirrorEnabled(v: boolean) { mirrorEnabled = v; persist(); },
   };
 }
 
