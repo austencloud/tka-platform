@@ -57,6 +57,9 @@ export function createSavePanelState(deps: SavePanelDeps) {
   // Form state
   let notes = $state("");
   let showNotes = $state(false);
+  // Collections chosen in the picker. The sequence isn't saved yet, so we
+  // collect ids here and file them right after the save (see handleSave).
+  let selectedCollectionIds = $state<string[]>([]);
 
   // Responsive layout
   let panelWidth = $state(0);
@@ -197,6 +200,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
     if (sequence && _propsGetter().show) {
       notes = "";
       showNotes = false;
+      selectedCollectionIds = [];
     }
   });
 
@@ -266,6 +270,22 @@ export function createSavePanelState(deps: SavePanelDeps) {
       );
 
       logger.success("Sequence saved to library with ID:", result.sequenceId);
+
+      // File the freshly-saved sequence into any collections chosen in the
+      // picker. The sequence id only exists now, so this can't happen at pick
+      // time. Lazy import keeps the firestore-heavy manager off panel init.
+      if (selectedCollectionIds.length > 0) {
+        try {
+          const { addSequenceToCollection } = await import(
+            "$lib/shared/library/services/collection-manager"
+          );
+          for (const collectionId of selectedCollectionIds) {
+            await addSequenceToCollection(collectionId, result.sequenceId);
+          }
+        } catch (error) {
+          logger.warn("Could not add sequence to selected collections:", error);
+        }
+      }
 
       if (ctx.sessionManager) {
         await ctx.sessionManager.markAsSaved(result.sequenceId);
@@ -389,6 +409,9 @@ export function createSavePanelState(deps: SavePanelDeps) {
 
     get showNotes() { return showNotes; },
     set showNotes(v: boolean) { showNotes = v; },
+
+    get selectedCollectionIds() { return selectedCollectionIds; },
+    set selectedCollectionIds(v: string[]) { selectedCollectionIds = v; },
 
     get panelWidth() { return panelWidth; },
     set panelWidth(v: number) { panelWidth = v; },

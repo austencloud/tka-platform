@@ -17,6 +17,7 @@
   import CreatePanelDrawer from "./CreatePanelDrawer.svelte";
   import SaveProgressOverlay from "$lib/features/library/components/SaveProgressOverlay.svelte";
   import ExpandableField from "$lib/features/library/components/ExpandableField.svelte";
+  import CollectionPickerContent from "$lib/features/library/components/collection-picker/CollectionPickerContent.svelte";
   import ContentAppealModal from "$lib/features/moderation/components/ContentAppealModal.svelte";
   import HallOfShameGate from "$lib/features/hall-of-shame/components/HallOfShameGate.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
@@ -276,6 +277,24 @@
               Needs at least {s.communityMinSteps} steps to post to the community. Saves to your library.
             </p>
           {/if}
+        </div>
+      {/if}
+
+      <!-- Collections — file into your library's named collections -->
+      {#if !s.isFlagged && s.currentUser}
+        <div class="collections-section">
+          <div class="section-heading">
+            <i class="fas fa-folder-open" aria-hidden="true"></i>
+            <div class="section-heading-text">
+              <span class="section-heading-main">Add to a collection</span>
+              <span class="section-heading-sub">Keep it organized in your library</span>
+            </div>
+          </div>
+          <CollectionPickerContent
+            mode="select"
+            selectedIds={s.selectedCollectionIds}
+            onChange={(ids) => (s.selectedCollectionIds = ids)}
+          />
         </div>
       {/if}
 
@@ -721,6 +740,46 @@
       min-height: 52px;
       font-size: var(--font-size-base, 16px);
     }
+  }
+
+  /* Collections section — mirrors the community-section card language */
+  .collections-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+    background: var(--theme-card-bg);
+    border: 1.5px solid var(--theme-stroke);
+    border-radius: 12px;
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-heading > i {
+    color: var(--theme-accent);
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .section-heading-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .section-heading-main {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text);
+  }
+
+  .section-heading-sub {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim);
   }
 
   /* Community section */
