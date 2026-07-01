@@ -77,10 +77,20 @@ export class OfflineCacheOrchestrator {
   }
 
   async downloadForOffline(onProgress?: WarmProgress): Promise<DownloadForOfflineResult> {
-    this.cancelled = false;
-
     if (!offlineCachingSupported()) {
-      return { supported: false, reason: "unsupported-env", warmed: 0, total: 0 };
+      return { supported: false, reason: "unsupported-env", warmed: 0, total: 0, svgsCached: false };
+    }
+
+    // Warming fetches from the network; without one the batch loop would park
+    // in waitForOnline() forever with the button stuck on "Downloading…".
+    if (!this.networkMonitor.isOnline) {
+      return {
+        supported: true,
+        reason: "offline",
+        warmed: 0,
+        total: 0,
+        svgsCached: await this.checkPropSvgsCached(),
+      };
     }
 
     // Guarantee the gallery converter is set before reading cached sequences —
@@ -88,17 +98,39 @@ export class OfflineCacheOrchestrator {
     // empty list from an otherwise-populated cache and warms nothing.
     getBrowseLoader();
 
+    // An explicit click outranks the throttled background warm that Browse
+    // kicks off on mount. Cancel it and wait for it to release the guard —
+    // otherwise the re-entrancy check reports {0,0}, which the UI would
+    // misread as an empty gallery.
+    if (this.prefetching) {
+      this.cancelled = true;
+      await this.waitForWarmRelease();
+    }
+    this.cancelled = false;
+
     const { warmed, total } = await this.warmCloudThumbnails(true, onProgress);
     return {
       supported: true,
       reason: total === 0 ? "empty-gallery" : undefined,
       warmed,
       total,
+      svgsCached: await this.checkPropSvgsCached(),
     };
   }
 
   cancel(): void {
     this.cancelled = true;
+  }
+
+  /**
+   * Wait for a running warm pass to notice the cancel flag and release the
+   * re-entrancy guard. The batch loop checks between batches and the pause
+   * waits poll at 1s, so this resolves within about a second.
+   */
+  private async waitForWarmRelease(): Promise<void> {
+    while (this.prefetching) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
   }
 
   async getCacheStats(): Promise<OfflineCacheStats> {

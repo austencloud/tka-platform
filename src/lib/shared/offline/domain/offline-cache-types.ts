@@ -44,6 +44,8 @@ export interface OfflineCacheStats {
 export type DownloadForOfflineReason =
   /** No service worker here (dev / localhost / preview) — nothing to cache into. */
   | "unsupported-env"
+  /** Device has no network right now — warming would just hang. */
+  | "offline"
   /** Environment is fine but the gallery cache is empty (visit Browse online first). */
   | "empty-gallery";
 
@@ -57,4 +59,9 @@ export interface DownloadForOfflineResult {
   warmed: number;
   /** Gallery sequences considered. */
   total: number;
+  /**
+   * Whether the precached pictograph SVG set is actually present in the SW
+   * cache right now — the UI must not claim "art cached" on faith.
+   */
+  svgsCached: boolean;
 }

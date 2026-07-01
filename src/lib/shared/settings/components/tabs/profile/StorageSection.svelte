@@ -67,12 +67,23 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     if (!r) return null;
     if (!r.supported)
       return "Offline caching runs on the installed app — not localhost. Deploy or install the PWA to cache for offline.";
+    if (r.reason === "offline")
+      return "You're offline. Reconnect, then download.";
     if (r.reason === "empty-gallery")
       return "Nothing to cache yet. Open Browse online first, then download.";
-    if (r.warmed === 0)
-      return "Pictograph art cached. No cloud thumbnails needed warming.";
-    return `Warmed ${r.warmed.toLocaleString()} of ${r.total.toLocaleString()} thumbnails. Pictograph art cached.`;
+    // Only claim the art is cached when the SW cache probe says so — the
+    // install-time precache can still be in flight or have failed.
+    const artNote = r.svgsCached
+      ? "Pictograph art cached."
+      : "Pictograph art hasn't finished caching yet. Reload once online to finish.";
+    if (r.warmed === 0) return `No cloud thumbnails needed warming. ${artNote}`;
+    return `Warmed ${r.warmed.toLocaleString()} of ${r.total.toLocaleString()} thumbnails. ${artNote}`;
   });
+
+  // Neutral (non-success) tone for every "nothing durable happened" outcome.
+  const resultIsInfo = $derived(
+    lastResult != null && (!lastResult.supported || lastResult.reason !== undefined)
+  );
 
   const downloadLabel = $derived(
     isDownloading
@@ -149,11 +160,13 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
         <span class="download-label">{downloadLabel}</span>
       </button>
 
-      {#if downloadError}
-        <p class="error-text">{downloadError}</p>
-      {:else if resultMessage}
-        <p class="result-text" class:info={lastResult && !lastResult.supported}>{resultMessage}</p>
-      {/if}
+      <div role="status" aria-live="polite">
+        {#if downloadError}
+          <p class="error-text">{downloadError}</p>
+        {:else if resultMessage}
+          <p class="result-text" class:info={resultIsInfo}>{resultMessage}</p>
+        {/if}
+      </div>
 
       {#if !cachingSupported && !lastResult}
         <p class="hint-text info-note">

@@ -7,6 +7,7 @@
 
 import type { OfflineCacheOrchestrator } from "../services/offline-cache-orchestrator";
 import type {
+  DownloadForOfflineResult,
   OfflineCachePhase,
   OfflineCacheProgress,
   OfflineCacheStats,
@@ -16,8 +17,12 @@ export interface OfflineCacheState {
   readonly phase: OfflineCachePhase;
   readonly progress: OfflineCacheProgress;
   readonly isOfflineReady: boolean;
+  /** Outcome of the last explicit download run (null before the first). */
+  readonly lastDownloadResult: DownloadForOfflineResult | null;
+  /** Populated when phase is "error"; cleared on the next run. */
+  readonly errorMessage: string | null;
   startBackgroundCache(): Promise<void>;
-  downloadForOffline(): Promise<void>;
+  downloadForOffline(): Promise<DownloadForOfflineResult | null>;
   cancel(): void;
   getCacheStats(): Promise<OfflineCacheStats>;
   clearOfflineCache(): Promise<void>;
@@ -27,30 +32,40 @@ export function createOfflineCacheState(orchestrator: OfflineCacheOrchestrator):
   let phase = $state<OfflineCachePhase>("idle");
   let progress = $state<OfflineCacheProgress>({ cached: 0, total: 0, currentTask: "" });
   let isOfflineReady = $state(false);
+  let lastDownloadResult = $state<DownloadForOfflineResult | null>(null);
+  let errorMessage = $state<string | null>(null);
 
   async function startBackgroundCache() {
     phase = "caching";
+    errorMessage = null;
     progress = { cached: 0, total: 0, currentTask: "Gallery metadata" };
     try {
       await orchestrator.startBackgroundCache();
       const stats = await orchestrator.getCacheStats();
       isOfflineReady = stats.isOfflineReady;
       phase = "ready";
-    } catch {
+    } catch (error) {
+      errorMessage = error instanceof Error ? error.message : "Background caching failed";
       phase = "error";
     }
   }
 
-  async function downloadForOffline() {
+  async function downloadForOffline(): Promise<DownloadForOfflineResult | null> {
     phase = "caching";
+    errorMessage = null;
     progress = { cached: 0, total: 0, currentTask: "Downloading..." };
     try {
-      await orchestrator.downloadForOffline();
+      lastDownloadResult = await orchestrator.downloadForOffline((done, total) => {
+        progress = { cached: done, total, currentTask: "Downloading..." };
+      });
       const stats = await orchestrator.getCacheStats();
       isOfflineReady = stats.isOfflineReady;
       phase = "ready";
-    } catch {
+      return lastDownloadResult;
+    } catch (error) {
+      errorMessage = error instanceof Error ? error.message : "Download failed";
       phase = "error";
+      return null;
     }
   }
 
@@ -79,6 +94,8 @@ export function createOfflineCacheState(orchestrator: OfflineCacheOrchestrator):
     get phase() { return phase; },
     get progress() { return progress; },
     get isOfflineReady() { return isOfflineReady; },
+    get lastDownloadResult() { return lastDownloadResult; },
+    get errorMessage() { return errorMessage; },
     startBackgroundCache,
     downloadForOffline,
     cancel,

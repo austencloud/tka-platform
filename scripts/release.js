@@ -490,25 +490,9 @@ function updatePackageVersion(newVersion) {
   writeFileSync("./package.json", JSON.stringify(packageJson, null, 2) + "\n");
 }
 
-/**
- * Update service worker cache version
- * This ensures users get fresh assets after a release
- */
-function updateServiceWorkerVersion(newVersion) {
-  const swPath = "./static/sw.js";
-  if (!existsSync(swPath)) {
-    console.log("   ⚠️  No service worker found, skipping SW version update");
-    return;
-  }
-
-  let swContent = readFileSync(swPath, "utf8");
-  // Replace the CACHE_VERSION line
-  swContent = swContent.replace(
-    /const CACHE_VERSION = "[^"]+";/,
-    `const CACHE_VERSION = "v${newVersion}";`
-  );
-  writeFileSync(swPath, swContent);
-}
+// NOTE: releases do NOT bump the service worker cache version. sw.js's
+// CACHE_NAME is bumped manually, only on breaking cache-shape changes —
+// bumping it per release would wipe every user's offline cache on each deploy.
 
 /**
  * Prepare release in Firestore
@@ -745,11 +729,10 @@ function pushToRemote(branch) {
  * Create git commit and tag
  */
 function createGitRelease(version, changelog) {
-  // Stage package.json (and sw.js only if it exists)
+  // Stage package.json. sw.js is deliberately NOT staged — releases no longer
+  // touch it, and staging it here would sweep unrelated in-flight sw.js edits
+  // into the release commit.
   execSync("git add package.json", { stdio: "inherit" });
-  if (existsSync("./static/sw.js")) {
-    execSync("git add static/sw.js", { stdio: "inherit" });
-  }
 
   // Create commit message
   const changelogSummary = changelog
@@ -768,7 +751,6 @@ Co-Authored-By: Claude <noreply@anthropic.com>`;
   // Create commit — scope to the release files via explicit pathspec so a
   // shared index containing another agent's staged work is NOT swept in.
   const releasePaths = ["package.json"];
-  if (existsSync("./static/sw.js")) releasePaths.push("static/sw.js");
   if (existsSync("./static/thumbnails")) releasePaths.push("static/thumbnails");
   const pathspec = releasePaths.join(" ");
   execSync(`git commit -m "${commitMessage.replace(/"/g, '\\"')}" -- ${pathspec}`, {
@@ -1273,10 +1255,6 @@ async function main() {
   // Update package.json
   console.log("✓ Updating package.json...");
   updatePackageVersion(suggestedVersion);
-
-  // Update service worker cache version (forces cache bust for users)
-  console.log("✓ Updating service worker cache version...");
-  updateServiceWorkerVersion(suggestedVersion);
 
   // Prepare Firestore
   if (!useGitHistory && feedbackItems.length > 0) {

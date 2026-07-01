@@ -1008,6 +1008,15 @@ export class LibraryRepository {
                       this.conflictResolver!.resolveConflict(conflict, resolution);
                       if (resolution === "keep-local") {
                         this.resaveSequenceForConflict(localSeq);
+                      } else {
+                        // No prompt UI is registered yet, so server-wins is
+                        // silent by default. The user must at least be told
+                        // their pending edit was replaced.
+                        const name = serverSeq.word || conflict.sequenceId;
+                        toast.warning(
+                          `"${name}" was updated on another device. Kept the newer version; your offline edit was replaced.`,
+                          6000
+                        );
                       }
                     });
                   }

@@ -13,7 +13,9 @@ const SVG_PRECACHE_MANIFEST = "/svg-precache-manifest.json";
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      await cache.addAll(APP_SHELL_URLS);
+      // cache: "reload" bypasses the browser HTTP cache so a new SW never
+      // precaches stale bytes it happens to have lying around.
+      await cache.addAll(APP_SHELL_URLS.map((url) => new Request(url, { cache: "reload" })));
       await precacheSvgAssets(cache);
     })
   );
@@ -22,7 +24,8 @@ self.addEventListener("install", (event) => {
 
 // Precache the finite essential pictograph SVG set. Resilient: a missing
 // manifest (older deploy) or a stray 404 must NEVER fail install — the runtime
-// /images cache-first rule below still covers everything on first online view.
+// /images stale-while-revalidate rule below still covers everything on first
+// online view.
 async function precacheSvgAssets(cache) {
   try {
     const res = await fetch(SVG_PRECACHE_MANIFEST, { cache: "no-cache" });
@@ -31,7 +34,8 @@ async function precacheSvgAssets(cache) {
     const assets = Array.isArray(data.assets) ? data.assets : [];
     await Promise.allSettled(
       assets.map(async (url) => {
-        const r = await fetch(url);
+        // cache: "reload" — same install-time freshness as the shell above.
+        const r = await fetch(new Request(url, { cache: "reload" }));
         if (r.ok) await cache.put(url, r.clone());
       })
     );
@@ -104,17 +108,23 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Pictograph render assets + bundled thumbnails: cache-first (durable offline).
-  // /images/* = prop/grid/arrow/letter/number/glyph SVGs the live pictograph
-  // renderer fetches on demand; /thumbnails/*.webp = static bundled thumbnails.
-  // Without this they fell through to "network only" and pictographs rendered
-  // blank offline (audit 2026-06-30 fix #1). The essential SVG subset is also
-  // precached on install; this rule durably caches everything else on first view.
+  // Pictograph render assets: stale-while-revalidate (durable offline, fresh
+  // online). /images/* = prop/grid/arrow/letter/number/glyph SVGs the live
+  // pictograph renderer fetches on demand. These files are NOT content-hashed,
+  // so cache-first would serve them stale forever once cached; SWR serves the
+  // cache instantly (still offline-safe) and revalidates in the background.
+  // SVG loaders memoize in-memory per session, so revalidation traffic is small.
+  // Origin: audit 2026-06-30 fix #1 (was cache-first; pictographs rendered
+  // blank offline before the rule existed). Essential SVG subset is also
+  // precached on install.
+  // NOTE: the /thumbnails/*.webp branch is dead in production — the deploy
+  // trims static/thumbnails (scripts/trim-deploy-assets.js), so this rule only
+  // matters for /images. Kept so a future un-trim doesn't regress to network-only.
   if (
     url.pathname.startsWith("/images/") ||
     (url.pathname.startsWith("/thumbnails/") && url.pathname.endsWith(".webp"))
   ) {
-    event.respondWith(cacheFirst(event.request));
+    event.respondWith(staleWhileRevalidate(event.request));
     return;
   }
 
@@ -187,13 +197,21 @@ async function staleWhileRevalidate(request) {
   const cached = await caches.match(request);
   const fetchPromise = fetch(request)
     .then((response) => {
-      if ((response.ok || response.type === "opaque") && !response.bodyUsed) {
+      // Only cache real successes — never opaque or error responses.
+      if (response.ok && !response.bodyUsed) {
         const clone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
       }
       return response;
     })
-    .catch(() => cached);
+    .catch((err) => {
+      // Cached copy exists: it was already served below; returning it here
+      // just settles the background revalidation without an unhandled
+      // rejection. No cached copy: propagate the fetch error so respondWith
+      // rejects cleanly instead of resolving undefined.
+      if (cached) return cached;
+      throw err;
+    });
   return cached || fetchPromise;
 }
 
