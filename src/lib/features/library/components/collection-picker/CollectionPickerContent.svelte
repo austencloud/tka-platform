@@ -2,19 +2,19 @@
 CollectionPickerContent.svelte
 
 The add-to-collection picker body, with no sheet chrome so it can live inside
-the Drawer-based CollectionPickerSheet (browse card menu) OR inline inside the
-save dialog. Collections render as toggle chips (FilterChipBase, aria-pressed —
-no checkboxes); Favorites sorts first via its sortOrder. An inline "New
-collection" row creates and selects in one step.
+the Drawer-based CollectionPickerSheet (browse card menu) OR inline inside a
+save panel. Collections render as selectable tiles in a responsive grid that
+fills its container — a few tiles read as an intentional row on a wide desktop
+panel, and stack to a list on a narrow sheet. Tiles are aria-pressed buttons,
+never checkboxes. An "＋ New collection" tile creates and selects in one step.
 
 Two modes:
   - live   → operates on a real, saved sequenceId; toggles write to Firestore
              immediately through collections-state.
   - select → operates on a bindable selectedIds list (the sequence isn't saved
-             yet, e.g. the save dialog); the parent applies membership on save.
+             yet, e.g. the save panel); the parent applies membership on save.
 -->
 <script lang="ts">
-	import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
 	import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
 	import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
@@ -99,6 +99,10 @@ Two modes:
 			newName = "";
 		}
 	}
+
+	function countLabel(n: number): string {
+		return `${n} ${n === 1 ? "sequence" : "sequences"}`;
+	}
 </script>
 
 <div class="collection-picker">
@@ -107,35 +111,37 @@ Two modes:
 	{/if}
 
 	{#if loading && collections.length === 0}
-		<div class="chip-grid" aria-hidden="true">
+		<div class="tile-grid" aria-hidden="true">
 			{#each Array(4) as _}
-				<span class="chip-skeleton"></span>
+				<span class="tile-skeleton"></span>
 			{/each}
 		</div>
 	{:else}
-		{#if collections.length === 0}
-			<p class="picker-empty">No collections yet. Name your first one below.</p>
-		{:else}
-			<div class="chip-grid" role="group" aria-label="Collections">
-				{#each collections as c (c.id)}
-					<FilterChipBase
-						mode="toggle"
-						label={c.name}
-						icon={c.icon}
-						active={isMember(c)}
-						count={c.sequenceCount}
-						chipColor={c.color}
-						onclick={() => handleToggle(c)}
-					/>
-				{/each}
-			</div>
-		{/if}
+		<div class="tile-grid" role="group" aria-label="Collections">
+			{#each collections as c (c.id)}
+				<button
+					type="button"
+					class="collection-tile"
+					class:selected={isMember(c)}
+					style="--tile-color: {c.color ?? 'var(--theme-accent)'};"
+					aria-pressed={isMember(c)}
+					onclick={() => handleToggle(c)}
+				>
+					<span class="tile-icon">
+						<i class={c.icon ?? "fa-folder"} aria-hidden="true"></i>
+					</span>
+					<span class="tile-text">
+						<span class="tile-name">{c.name}</span>
+						<span class="tile-count">{countLabel(c.sequenceCount)}</span>
+					</span>
+					<span class="tile-check" aria-hidden="true">
+						<i class="fas fa-check"></i>
+					</span>
+				</button>
+			{/each}
 
-		<!-- Reserved-height slot: the action chip and the input occupy the same
-		     row so expanding to type never shifts the chips above it. -->
-		<div class="new-collection-slot">
 			{#if showInput}
-				<div class="new-collection-input">
+				<div class="new-tile-input">
 					<!-- svelte-ignore a11y_autofocus -->
 					<input
 						type="text"
@@ -158,12 +164,18 @@ Two modes:
 					</button>
 				</div>
 			{:else}
-				<FilterChipBase
-					mode="action"
-					label="New collection"
-					icon="fa-plus"
+				<button
+					type="button"
+					class="collection-tile add-tile"
 					onclick={() => (showInput = true)}
-				/>
+				>
+					<span class="tile-icon">
+						<i class="fas fa-plus" aria-hidden="true"></i>
+					</span>
+					<span class="tile-text">
+						<span class="tile-name">New collection</span>
+					</span>
+				</button>
 			{/if}
 		</div>
 	{/if}
@@ -174,7 +186,6 @@ Two modes:
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
-		padding: 4px;
 	}
 
 	.picker-subtitle {
@@ -188,22 +199,183 @@ Two modes:
 		font-weight: 600;
 	}
 
-	.picker-empty {
-		margin: 0;
+	/* Auto-fill grid: fills a wide panel (several across) and collapses to a
+	   single stacked column on a narrow sheet. */
+	.tile-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+		gap: 10px;
+	}
+
+	.collection-tile {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		min-height: 60px;
+		padding: 12px 14px;
+		text-align: left;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 14px;
+		color: var(--theme-text, white);
+		cursor: pointer;
+		transition:
+			background var(--duration-fast, 150ms) ease,
+			border-color var(--duration-fast, 150ms) ease,
+			transform var(--duration-fast, 150ms) ease;
+	}
+
+	.collection-tile:hover {
+		border-color: color-mix(in srgb, var(--tile-color) 45%, transparent);
+		background: color-mix(in srgb, var(--tile-color) 8%, var(--theme-card-bg));
+	}
+
+	.collection-tile:active {
+		transform: scale(0.98);
+	}
+
+	.collection-tile:focus-visible {
+		outline: 2px solid var(--tile-color);
+		outline-offset: 2px;
+	}
+
+	.collection-tile.selected {
+		border-color: color-mix(in srgb, var(--tile-color) 65%, transparent);
+		background: color-mix(in srgb, var(--tile-color) 16%, transparent);
+	}
+
+	.tile-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		flex-shrink: 0;
+		border-radius: 10px;
+		background: color-mix(in srgb, var(--tile-color) 20%, transparent);
+		color: var(--tile-color);
+		font-size: 15px;
+	}
+
+	.tile-text {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.tile-name {
 		font-size: var(--font-size-sm, 14px);
+		font-weight: 600;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.tile-count {
+		font-size: var(--font-size-compact, 12px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* Reserve the check slot so selecting doesn't shift the text width. */
+	.tile-check {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		flex-shrink: 0;
+		border-radius: 50%;
+		background: var(--tile-color);
+		color: #fff;
+		font-size: 11px;
+		opacity: 0;
+		transform: scale(0.6);
+		transition:
+			opacity var(--duration-fast, 150ms) ease,
+			transform var(--duration-fast, 150ms) ease;
+	}
+
+	.collection-tile.selected .tile-check {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	/* Add tile: dashed, quieter, same footprint as a collection tile. */
+	.add-tile {
+		border-style: dashed;
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
 	}
 
-	.chip-grid {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
+	.add-tile .tile-icon {
+		background: color-mix(in srgb, var(--theme-text-dim, #888) 14%, transparent);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.8));
 	}
 
-	.chip-skeleton {
-		width: 96px;
-		height: var(--min-touch-target, 44px);
-		border-radius: 100px;
+	.new-tile-input {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-height: 60px;
+	}
+
+	.name-field {
+		flex: 1;
+		min-width: 0;
+		height: 44px;
+		padding: 0 14px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 1.5px solid color-mix(in srgb, var(--theme-accent) 45%, transparent);
+		border-radius: 12px;
+		color: var(--theme-text, white);
+		font-size: var(--font-size-sm, 14px);
+		font-family: inherit;
+	}
+
+	.name-field:focus {
+		outline: none;
+		border-color: color-mix(in srgb, var(--theme-accent) 70%, transparent);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 14%, transparent);
+	}
+
+	.name-field::placeholder {
+		color: color-mix(in srgb, var(--theme-text-dim, #888) 70%, transparent);
+	}
+
+	.confirm-create {
+		flex-shrink: 0;
+		width: 44px;
+		height: 44px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid color-mix(in srgb, var(--theme-accent) 45%, transparent);
+		border-radius: 50%;
+		background: color-mix(in srgb, var(--theme-accent) 22%, transparent);
+		color: var(--theme-text, white);
+		cursor: pointer;
+		transition: background var(--duration-fast, 150ms) ease;
+	}
+
+	.confirm-create:hover:not(:disabled) {
+		background: color-mix(in srgb, var(--theme-accent) 34%, transparent);
+	}
+
+	.confirm-create:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.confirm-create:focus-visible {
+		outline: 2px solid var(--theme-accent);
+		outline-offset: 2px;
+	}
+
+	.tile-skeleton {
+		min-height: 60px;
+		border-radius: 14px;
 		background: color-mix(in srgb, var(--theme-text-dim, #888) 12%, transparent);
 		animation: skeleton-pulse 1.2s ease-in-out infinite;
 	}
@@ -218,79 +390,14 @@ Two modes:
 		}
 	}
 
-	/* Reserve the row height so switching between the action chip and the text
-	   input never reflows the chips above (no-layout-shift). */
-	.new-collection-slot {
-		min-height: var(--min-touch-target, 44px);
-		display: flex;
-		align-items: center;
-	}
-
-	.new-collection-input {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		width: 100%;
-	}
-
-	.name-field {
-		flex: 1;
-		min-width: 0;
-		height: var(--min-touch-target, 44px);
-		padding: 0 14px;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: 100px;
-		color: var(--theme-text, white);
-		font-size: var(--font-size-sm, 14px);
-		font-family: inherit;
-	}
-
-	.name-field:focus {
-		outline: none;
-		border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
-		box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 12%, transparent);
-	}
-
-	.name-field::placeholder {
-		color: color-mix(in srgb, var(--theme-text-dim, #888) 70%, transparent);
-	}
-
-	.confirm-create {
-		flex-shrink: 0;
-		width: var(--min-touch-target, 44px);
-		height: var(--min-touch-target, 44px);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border: 1px solid color-mix(in srgb, var(--theme-accent) 40%, transparent);
-		border-radius: 50%;
-		background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
-		color: var(--theme-text, white);
-		cursor: pointer;
-		transition: background var(--duration-fast, 150ms) ease;
-	}
-
-	.confirm-create:hover:not(:disabled) {
-		background: color-mix(in srgb, var(--theme-accent) 32%, transparent);
-	}
-
-	.confirm-create:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-
-	.confirm-create:focus-visible {
-		outline: 2px solid var(--theme-accent);
-		outline-offset: 2px;
-	}
-
 	@media (prefers-reduced-motion: reduce) {
-		.chip-skeleton {
-			animation: none;
-		}
+		.collection-tile,
+		.tile-check,
 		.confirm-create {
 			transition: none;
+		}
+		.tile-skeleton {
+			animation: none;
 		}
 	}
 </style>

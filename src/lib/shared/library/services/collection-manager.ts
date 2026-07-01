@@ -127,12 +127,19 @@ export async function createUserCollection(
   });
 
   const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
-  try {
-    await setDoc(docRef, {
+  // Firestore rejects undefined field values. createCollection leaves optional
+  // fields (description, color, coverImageUrl) undefined when not supplied, so
+  // strip them before the write — otherwise setDoc throws "Unsupported field
+  // value: undefined".
+  const docData = Object.fromEntries(
+    Object.entries({
       ...newCollection,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
+    }).filter(([, value]) => value !== undefined),
+  );
+  try {
+    await setDoc(docRef, docData);
 
     const userDocRef = doc(firestore, `users/${userId}`);
     await updateDoc(userDocRef, { lastActivityDate: serverTimestamp() });
