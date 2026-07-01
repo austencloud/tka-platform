@@ -6,8 +6,31 @@ export class MusicPlayer {
   private currentAudio: HTMLAudioElement | null = null;
   private initialized = false;
   private errorListener: ((message: string) => void) | null = null;
+  private timeListener: ((currentMs: number, durationMs: number) => void) | null = null;
+  private loadedListener: ((durationMs: number) => void) | null = null;
+  private endedListener: (() => void) | null = null;
+  private currentFilename: string | undefined;
 
   constructor() {}
+
+  /** Playback position/duration updates (ms). Pass null to clear. */
+  onTimeUpdate(listener: ((currentMs: number, durationMs: number) => void) | null): void {
+    this.timeListener = listener;
+  }
+
+  /** Fires once the track's duration (ms) is known. Pass null to clear. */
+  onLoadedMetadata(listener: ((durationMs: number) => void) | null): void {
+    this.loadedListener = listener;
+  }
+
+  /** Fires when the track finishes. Pass null to clear. */
+  onEnded(listener: (() => void) | null): void {
+    this.endedListener = listener;
+  }
+
+  get filename(): string | undefined {
+    return this.currentFilename;
+  }
 
   /**
    * Register a callback invoked whenever playback or loading fails, with a
@@ -113,6 +136,39 @@ export class MusicPlayer {
     this.currentAudio.currentTime = 0;
   }
 
+  /** Load a track WITHOUT auto-playing — wires listeners so the UI state stays
+   * live. Use `playLoaded()` to start. */
+  async load(url: string, filename: string): Promise<void> {
+    await this.ensureInitialized();
+
+    if (this.currentAudio) {
+      this.currentAudio.pause();
+      this.teardownAudioEventListeners();
+    }
+
+    this.currentAudio = new Audio(url);
+    this.currentFilename = filename;
+    this.setupAudioEventListeners();
+  }
+
+  /** Resume/play the currently-loaded track (from `load`). */
+  async playLoaded(): Promise<void> {
+    if (!this.currentAudio) return;
+    await this.ensureInitialized();
+    try {
+      await this.currentAudio.play();
+    } catch (error) {
+      console.error("❌ MusicPlayer: Failed to play loaded track:", error);
+      this.emitError("Failed to play the loaded track.");
+      throw error;
+    }
+  }
+
+  /** Seek the loaded track to `ms` milliseconds. */
+  seek(ms: number): void {
+    if (this.currentAudio) this.currentAudio.currentTime = ms / 1000;
+  }
+
   private async ensureInitialized(): Promise<void> {
     if (!this.initialized) {
       await this.initialize();
@@ -131,16 +187,30 @@ export class MusicPlayer {
     this.currentAudio.addEventListener("error", this.handleError);
   }
 
+  private teardownAudioEventListeners(): void {
+    if (!this.currentAudio) return;
+    this.currentAudio.removeEventListener("loadedmetadata", this.handleLoadedMetadata);
+    this.currentAudio.removeEventListener("timeupdate", this.handleTimeUpdate);
+    this.currentAudio.removeEventListener("ended", this.handleEnded);
+    this.currentAudio.removeEventListener("error", this.handleError);
+  }
+
+  private durationMs(): number {
+    const d = this.currentAudio?.duration ?? 0;
+    return Number.isFinite(d) ? d * 1000 : 0;
+  }
+
   private handleLoadedMetadata = (): void => {
-    // Metadata loaded - could emit events here for UI updates
+    this.loadedListener?.(this.durationMs());
   };
 
   private handleTimeUpdate = (): void => {
-    // Could emit events here for UI updates
+    if (!this.currentAudio) return;
+    this.timeListener?.(this.currentAudio.currentTime * 1000, this.durationMs());
   };
 
   private handleEnded = (): void => {
-    // Track ended - could emit events here for UI updates
+    this.endedListener?.();
   };
 
   private handleError = (event: Event): void => {

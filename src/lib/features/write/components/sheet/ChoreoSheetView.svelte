@@ -26,6 +26,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import SheetPreviewPages from "./SheetPreviewPages.svelte";
+  import ActPlayer from "./ActPlayer.svelte";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import BrowseGrid from "$lib/features/browse/sequences/display/components/BrowseGrid.svelte";
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
@@ -78,9 +79,15 @@
     open: boolean;
     source: PickerSource;
     collectionId: string | null;
+    playerOpen: boolean;
   }
   function loadPickerPrefs(): PickerPrefs {
-    const fallback: PickerPrefs = { open: false, source: "my-library", collectionId: null };
+    const fallback: PickerPrefs = {
+      open: false,
+      source: "my-library",
+      collectionId: null,
+      playerOpen: false,
+    };
     if (typeof localStorage === "undefined") return fallback;
     try {
       const raw = localStorage.getItem(PICKER_PREFS_KEY);
@@ -92,6 +99,7 @@
         open: !!p.open,
         source,
         collectionId: typeof p.collectionId === "string" ? p.collectionId : null,
+        playerOpen: !!p.playerOpen,
       };
     } catch {
       return fallback;
@@ -101,6 +109,7 @@
 
   let browseOpen = $state(initialPrefs.open);
   let browseInitialized = false;
+  let playerOpen = $state(initialPrefs.playerOpen);
   let pickerSource = $state<PickerSource>(initialPrefs.source);
   let selectedCollectionId = $state<string | null>(initialPrefs.collectionId);
 
@@ -143,6 +152,7 @@
       open: browseOpen,
       source: pickerSource,
       collectionId: selectedCollectionId,
+      playerOpen,
     };
     if (typeof localStorage === "undefined") return;
     try {
@@ -155,8 +165,14 @@
   function toggleBrowse(): void {
     browseOpen = !browseOpen;
     if (!browseOpen) return;
+    playerOpen = false; // docks are mutually exclusive — keep the page readable
     if (pickerSource === "collections") void ensureCollectionsLoaded();
     else initEngineOnce();
+  }
+
+  function togglePlayer(): void {
+    playerOpen = !playerOpen;
+    if (playerOpen) browseOpen = false;
   }
 
   // BrowsePanel emits a metadata-only SequenceData on select, so hydrate its
@@ -291,6 +307,16 @@
       <button type="button" class="btn" class:active={browseOpen} onclick={toggleBrowse}>
         <i class="fa-solid fa-plus" aria-hidden="true"></i>
         Add sequences
+      </button>
+      <button
+        type="button"
+        class="btn"
+        class:active={playerOpen}
+        onclick={togglePlayer}
+        disabled={builder.sequenceIds.length === 0}
+      >
+        <i class="fa-solid fa-play" aria-hidden="true"></i>
+        Play act
       </button>
       <button type="button" class="btn" onclick={save} disabled={saving || builder.sequenceIds.length === 0}>
         <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
@@ -499,6 +525,10 @@
           </div>
         {/if}
       </aside>
+    {/if}
+
+    {#if playerOpen}
+      <ActPlayer sequence={builder.actSequence} onClose={() => (playerOpen = false)} />
     {/if}
   </div>
 </div>

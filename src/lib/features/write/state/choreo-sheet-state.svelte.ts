@@ -26,6 +26,7 @@ import {
 } from "../domain/types/choreo-sheet";
 import { getSheetPageLayout, type SheetPageGeometry } from "../domain/sheet-page-layout";
 import { planSheet, type SheetPage } from "../services/sheet-row-planner";
+import { buildActSequence } from "../services/sheet-act-sequence";
 import {
   connects,
   endStateOf,
@@ -164,6 +165,10 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // lockstep with what connects.
   const geo = $derived<SheetPageGeometry>(getSheetPageLayout(sheet.layout));
   const pages = $derived<SheetPage[]>(planSheet(normalizedRows, sheet.layout));
+
+  // The whole sheet as ONE continuous sequence, for act playback. Recomputes only
+  // when the normalized rows or the name change.
+  const actSequence = $derived(buildActSequence(normalizedRows, sheet.name));
 
   // Hydrate only the ids we don't already have, in parallel. A failed fetch for
   // one id never blocks the others or throws — that row just stays blank, which
@@ -342,6 +347,9 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     },
     get pages() {
       return pages;
+    },
+    get actSequence() {
+      return actSequence;
     },
     get normalizedRows() {
       return normalizedRows;
