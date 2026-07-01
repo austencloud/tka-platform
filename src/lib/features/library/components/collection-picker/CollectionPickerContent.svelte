@@ -128,7 +128,9 @@ Two modes:
 					onclick={() => handleToggle(c)}
 				>
 					<span class="tile-icon">
-						<i class={c.icon ?? "fa-folder"} aria-hidden="true"></i>
+						<!-- Icons are stored bare ("fa-heart"); FontAwesome only paints them
+						     with a style class alongside, so prepend "fas". -->
+						<i class={`fas ${c.icon ?? "fa-folder"}`} aria-hidden="true"></i>
 					</span>
 					<span class="tile-text">
 						<span class="tile-name">{c.name}</span>

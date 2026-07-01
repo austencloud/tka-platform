@@ -37,6 +37,7 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
     disableVirtualization = false,
     eager = false,
     onGridReady,
+    collectionContext,
   } = $props<{
     sequences?: SequenceData[];
     sections?: SequenceData[];
@@ -54,6 +55,8 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
     eager?: boolean;
     /** Callback when the virtualized grid is ready (exposes scroll API for sidebar) */
     onGridReady?: (api: VirtualGridApi) => void;
+    /** When rendering a collection's members: adds "Remove from this collection" to each card's menu */
+    collectionContext?: { id: string; name: string; onRemove: (sequenceId: string) => void };
   }>();
 
   const useVirtualization = $derived(
@@ -201,7 +204,7 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
 <div bind:this={containerRef}>
 {#if useVirtualization}
   <!-- 🚀 VIRTUALIZED: Large flat list with 50+ items -->
-  <VirtualizedSequenceGrid {sequences} {thumbnailService} {onAction} {pinchColumnOverride} {onGridReady} />
+  <VirtualizedSequenceGrid {sequences} {thumbnailService} {onAction} {pinchColumnOverride} {onGridReady} {collectionContext} />
 {:else if showSections && sections.length > 0}
   <!-- Section-based organization (desktop app style) -->
   <div class="sections-container">
@@ -236,6 +239,7 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
                 catDogModeEnabled={isCatDog}
                 {lightMode}
                 {eager}
+                {collectionContext}
               />
             {/each}
           </div>
@@ -269,6 +273,7 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
         catDogModeEnabled={isCatDog}
         {lightMode}
         {eager}
+        {collectionContext}
       />
     {/each}
   </div>

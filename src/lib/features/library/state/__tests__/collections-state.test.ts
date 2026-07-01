@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
 	createUserCollection: vi.fn(),
 	ensureSystemCollections: vi.fn(),
 	subscribeToCollections: vi.fn(() => () => {}),
+	updateCollection: vi.fn(),
+	deleteCollection: vi.fn(),
 	toastError: vi.fn(),
 }));
 
@@ -16,6 +18,8 @@ vi.mock("$lib/shared/library/services/collection-manager", () => ({
 	createUserCollection: mocks.createUserCollection,
 	ensureSystemCollections: mocks.ensureSystemCollections,
 	subscribeToCollections: mocks.subscribeToCollections,
+	updateCollection: mocks.updateCollection,
+	deleteCollection: mocks.deleteCollection,
 }));
 vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
 	toast: { error: mocks.toastError, success: vi.fn() },
@@ -45,6 +49,8 @@ beforeEach(() => {
 	mocks.addSequenceToCollection.mockResolvedValue(undefined);
 	mocks.removeSequenceFromCollection.mockResolvedValue(undefined);
 	mocks.createUserCollection.mockImplementation(async (name: string) => col("new", name));
+	mocks.updateCollection.mockResolvedValue(undefined);
+	mocks.deleteCollection.mockResolvedValue(undefined);
 	collectionsState.collections = [];
 	collectionsState.loading = false;
 });
@@ -98,5 +104,35 @@ describe("collectionsState", () => {
 		const result = await collectionsState.create("   ");
 		expect(result).toBeNull();
 		expect(mocks.createUserCollection).not.toHaveBeenCalled();
+	});
+
+	it("rename trims the name and delegates to the manager", async () => {
+		const ok = await collectionsState.rename("c1", "  Fans  ");
+		expect(ok).toBe(true);
+		expect(mocks.updateCollection).toHaveBeenCalledWith("c1", { name: "Fans" });
+	});
+
+	it("rename ignores an empty name", async () => {
+		const ok = await collectionsState.rename("c1", "   ");
+		expect(ok).toBe(false);
+		expect(mocks.updateCollection).not.toHaveBeenCalled();
+	});
+
+	it("rename returns false when the manager rejects (e.g. system collection)", async () => {
+		mocks.updateCollection.mockRejectedValue(new Error("Cannot rename system collection"));
+		const ok = await collectionsState.rename("fav", "Nope");
+		expect(ok).toBe(false);
+	});
+
+	it("remove delegates to the manager and reports success", async () => {
+		const ok = await collectionsState.remove("c1");
+		expect(ok).toBe(true);
+		expect(mocks.deleteCollection).toHaveBeenCalledWith("c1");
+	});
+
+	it("remove returns false when the manager rejects", async () => {
+		mocks.deleteCollection.mockRejectedValue(new Error("Cannot delete system collection"));
+		const ok = await collectionsState.remove("fav");
+		expect(ok).toBe(false);
 	});
 });

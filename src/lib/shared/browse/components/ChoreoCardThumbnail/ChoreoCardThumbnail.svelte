@@ -59,6 +59,7 @@ Variation support:
     showRedMotion = true,
     addWord,
     addDifficultyLevel,
+    collectionContext,
   }: {
     sequence: SequenceData;
     variations?: SequenceData[];
@@ -79,6 +80,18 @@ Variation support:
     showRedMotion?: boolean;
     addWord?: boolean;
     addDifficultyLevel?: boolean;
+    /**
+     * Set when this card renders inside one of the viewer's own collections
+     * (Browse > Collections detail). Adds a "Remove from this collection"
+     * menu entry. Unlike "Add to collection…" this is NOT gated on owning the
+     * sequence — a collection can hold other people's public sequences, and
+     * taking one out of YOUR folder is always allowed.
+     */
+    collectionContext?: {
+      id: string;
+      name: string;
+      onRemove: (sequenceId: string) => void;
+    };
   } = $props();
 
   // Track which variation is currently displayed.
@@ -291,6 +304,21 @@ Variation support:
             collectionTarget = seq;
             collectionsState.ensureStarted();
             collectionSheetOpen = true;
+          },
+        },
+      );
+    }
+    if (collectionContext) {
+      const ctx = collectionContext;
+      items.push(
+        { type: "separator" } as ContextMenuEntry,
+        {
+          id: "remove-from-collection",
+          label: `Remove from "${ctx.name}"`,
+          icon: "fa-folder-minus",
+          action() {
+            closeContextMenu();
+            ctx.onRemove(seq.id);
           },
         },
       );

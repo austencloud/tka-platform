@@ -8,6 +8,8 @@ import {
 	removeSequenceFromCollection,
 	createUserCollection,
 	ensureSystemCollections,
+	updateCollection,
+	deleteCollection,
 } from "$lib/shared/library/services/collection-manager";
 
 /**
@@ -112,6 +114,36 @@ class CollectionsState {
 			return await createUserCollection(trimmed);
 		} catch {
 			return null;
+		}
+	}
+
+	/**
+	 * Rename a collection. Returns false when the name is empty or the write
+	 * fails — the manager blocks system collections (Favorites can't be
+	 * renamed) and toasts its own error, so callers only need the boolean.
+	 */
+	async rename(collectionId: string, name: string): Promise<boolean> {
+		const trimmed = name.trim();
+		if (!trimmed) return false;
+		try {
+			await updateCollection(collectionId, { name: trimmed });
+			return true;
+		} catch {
+			return false; // manager already toasted
+		}
+	}
+
+	/**
+	 * Delete a collection. The manager cascades membership cleanup and refuses
+	 * system collections (Favorites is permanent), toasting its own error.
+	 * The sequences themselves are untouched — only the folder goes away.
+	 */
+	async remove(collectionId: string): Promise<boolean> {
+		try {
+			await deleteCollection(collectionId);
+			return true;
+		} catch {
+			return false; // manager already toasted
 		}
 	}
 

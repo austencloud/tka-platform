@@ -45,6 +45,7 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
     showRedMotion = true,
     addWord,
     addDifficultyLevel,
+    collectionContext,
   } = $props<{
     sequences: SequenceData[];
     thumbnailService: BrowseThumbnailProvider | null;
@@ -58,6 +59,8 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
     showRedMotion?: boolean;
     addWord?: boolean;
     addDifficultyLevel?: boolean;
+    /** When rendering a collection's members: adds "Remove from this collection" to each card's menu */
+    collectionContext?: { id: string; name: string; onRemove: (sequenceId: string) => void };
   }>();
 
   const compositionManager = getImageCompositionManager();
@@ -377,6 +380,7 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
               {showRedMotion}
               {addWord}
               {addDifficultyLevel}
+              {collectionContext}
             />
           </div>
         {/each}
