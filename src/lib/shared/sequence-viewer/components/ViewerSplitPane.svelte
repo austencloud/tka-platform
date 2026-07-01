@@ -21,6 +21,7 @@
   import ArtPane from './ArtPane.svelte';
   import PracticeLanePane from "./PracticeLanePane.svelte";
   import PracticeCountInOverlay from "./PracticeCountInOverlay.svelte";
+  import CameraPreview from "$lib/shared/train/components/CameraPreview.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
@@ -150,6 +151,8 @@
     practiceRunning?: boolean;
     /** Count-in value over the canvas: 3/2/1 while counting in, 0 = hidden. */
     practiceCountdown?: number;
+    /** Passive AR mirror: webcam feed behind a transparent practice canvas. */
+    practiceMirrorEnabled?: boolean;
   }
 
   let {
@@ -184,6 +187,7 @@
     practiceCanvasFraction = 0.38,
     practiceRunning = false,
     practiceCountdown = 0,
+    practiceMirrorEnabled = false,
   }: Props = $props();
 
 
@@ -548,6 +552,11 @@
             <span>{playback.animationState.error}</span>
           </div>
         {:else}
+          {#if practiceActive && practiceMirrorEnabled}
+            <div class="practice-mirror-layer">
+              <CameraPreview mirrored={true} />
+            </div>
+          {/if}
           <div
             class="canvas-layer canvas-2d-layer"
             style="opacity:1;pointer-events:auto;"
@@ -565,6 +574,7 @@
               word={sequence?.word}
               bluePropType={propRendering.bluePropType}
               redPropType={propRendering.redPropType}
+              backgroundAlpha={practiceActive && practiceMirrorEnabled ? 0 : 1}
               {trailSettings}
               {onCanvasReady}
               {onPlaybackToggle}
@@ -651,6 +661,7 @@
           {playbackMode}
           {onPlaybackModeChange}
           onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+          layout={layout.isMobile ? "bottom" : "sidebar"}
           {onArtExport}
         />
       </div>
@@ -668,6 +679,7 @@
           {playbackMode}
           {onPlaybackModeChange}
           onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+          layout={layout.isMobile ? "bottom" : "sidebar"}
           {onArtExport}
         />
       </div>
@@ -810,6 +822,7 @@
             {playbackMode}
             {onPlaybackModeChange}
             onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+            layout={layout.isMobile ? "bottom" : "sidebar"}
             {onArtExport}
           />
         </div>
@@ -827,6 +840,7 @@
             {playbackMode}
             {onPlaybackModeChange}
             onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+            layout={layout.isMobile ? "bottom" : "sidebar"}
             {onArtExport}
           />
         </div>
@@ -1055,6 +1069,16 @@
     inset: 0;
     z-index: 1;
     transition: opacity 250ms ease;
+  }
+
+  /* Passive AR mirror — webcam behind the practice canvas. Fills the pane,
+     sits under the transparent canvas. z-index below .canvas-2d-layer. */
+  .practice-mirror-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: var(--border-radius-lg, 12px);
+    overflow: hidden;
   }
 
 
