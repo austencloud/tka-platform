@@ -54,7 +54,7 @@ export interface ChoreoSheetStateDeps {
 // Lightweight: ids + layout + name + timestamps only. Mirrors the guarded
 // load/persist pattern used across the state modules (e.g. practice-view-prefs).
 
-function loadDraft(key: string): ChoreoSheet | null {
+export function loadDraft(key: string): ChoreoSheet | null {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
@@ -77,7 +77,7 @@ function loadDraft(key: string): ChoreoSheet | null {
   }
 }
 
-function persistDraft(key: string, sheet: ChoreoSheet): void {
+export function persistDraft(key: string, sheet: ChoreoSheet): void {
   try {
     localStorage.setItem(key, JSON.stringify(sheet));
   } catch {
