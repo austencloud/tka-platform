@@ -34,6 +34,11 @@ Features frame processing loop for pose estimation and overlay support.
   let isInitializing = $state(true);
   let errorMessage = $state<string | null>(null);
   let isActive = $state(false);
+  // Guards the async init against unmount: if the component is destroyed while
+  // getUserMedia is still pending (permission prompt open, fast toggle-off),
+  // the resolved stream has no owner left — release it here or the camera
+  // light stays on until page reload.
+  let destroyed = false;
 
   async function initCamera() {
     isInitializing = true;
@@ -42,7 +47,15 @@ Features frame processing loop for pose estimation and overlay support.
     try {
       cameraService = new CameraManager();
       await cameraService.initialize({ facingMode: "user" });
+      if (destroyed) {
+        cameraService.stop();
+        return;
+      }
       await cameraService.start();
+      if (destroyed) {
+        cameraService.stop();
+        return;
+      }
 
       videoElement = cameraService.getVideoElement();
 
@@ -92,6 +105,7 @@ Features frame processing loop for pose estimation and overlay support.
   });
 
   onDestroy(() => {
+    destroyed = true;
     stopCamera();
   });
 </script>
