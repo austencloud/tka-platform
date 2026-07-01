@@ -90,8 +90,9 @@ function drawStepNumber(
 
 export async function buildChoreoSheetPDF(
   sheet: ChoreoSheet,
-  hydrated: readonly SequenceData[], // sheet.sequenceIds resolved to full SequenceData, in order
+  hydrated: readonly SequenceData[], // normalized rows, in order (see ChoreoSheetView)
   onProgress?: (done: number, total: number) => void,
+  breakSequenceIds: Set<string> = new Set(),
 ): Promise<Blob> {
   const geo = getSheetPageLayout(sheet.layout);
   const pages: SheetPage[] = planSheet(hydrated, sheet.layout);
@@ -119,6 +120,9 @@ export async function buildChoreoSheetPDF(
 
   const gridWidthPt = geo.columns * geo.cellSizePt + (geo.columns - 1) * geo.gutterPt;
   const separatorColor = rgb(0.55, 0.55, 0.55);
+  const cellStroke = rgb(0.8, 0.8, 0.8); // ≈ preview rgba(0,0,0,0.18) on white
+  const blankStroke = rgb(0.92, 0.92, 0.92);
+  const breakColor = rgb(0.9, 0.24, 0.24);
   const stride = geo.cellSizePt + geo.gutterPt;
 
   for (const page of pages) {
@@ -141,8 +145,43 @@ export async function buildChoreoSheetPDF(
         });
       }
 
+      // Break marker: a dashed red rule + label above a block that doesn't
+      // connect to the sequence above it. Independent of the separator style.
+      if (row.isBlockStart && row.sequenceId && breakSequenceIds.has(row.sequenceId)) {
+        const breakY = geo.pageHeightPt - geo.marginYPt - ri * stride + geo.gutterPt / 2;
+        pdfPage.drawLine({
+          start: { x: geo.marginXPt, y: breakY },
+          end: { x: geo.marginXPt + gridWidthPt, y: breakY },
+          thickness: 1.2,
+          color: breakColor,
+          dashArray: [4, 3],
+        });
+        pdfPage.drawText("break", {
+          x: geo.marginXPt,
+          y: breakY + 2,
+          size: 7,
+          font,
+          color: breakColor,
+        });
+      }
+
       for (let ci = 0; ci < row.cells.length; ci++) {
         const cell = row.cells[ci]!;
+
+        // pdf-lib draws from the bottom-left; the page origin is bottom-left too.
+        const cellX = geo.marginXPt + ci * stride;
+        const cellBottomY = geo.pageHeightPt - geo.marginYPt - ri * stride - geo.cellSizePt;
+
+        // Outline every cell (blanks fainter) so the grid reads as discrete boxes.
+        pdfPage.drawRectangle({
+          x: cellX,
+          y: cellBottomY,
+          width: geo.cellSizePt,
+          height: geo.cellSizePt,
+          borderColor: cell.isBlank ? blankStroke : cellStroke,
+          borderWidth: 0.75,
+        });
+
         if (cell.isBlank || !cell.step) continue;
         const step = cell.step;
 
@@ -163,9 +202,6 @@ export async function buildChoreoSheetPDF(
           imageCache.set(key, img);
         }
 
-        // pdf-lib draws from the bottom-left; the page origin is bottom-left too.
-        const cellX = geo.marginXPt + ci * stride;
-        const cellBottomY = geo.pageHeightPt - geo.marginYPt - ri * stride - geo.cellSizePt;
         pdfPage.drawImage(img, { x: cellX, y: cellBottomY, width: geo.cellSizePt, height: geo.cellSizePt });
 
         // Step numbers honor the sheet flag; start positions (stepNumber 0) never
@@ -191,8 +227,9 @@ export async function downloadChoreoSheetPDF(
   hydrated: readonly SequenceData[],
   filename = "choreo-sheet.pdf",
   onProgress?: (done: number, total: number) => void,
+  breakSequenceIds: Set<string> = new Set(),
 ): Promise<void> {
-  const blob = await buildChoreoSheetPDF(sheet, hydrated, onProgress);
+  const blob = await buildChoreoSheetPDF(sheet, hydrated, onProgress, breakSequenceIds);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

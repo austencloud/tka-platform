@@ -320,6 +320,9 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     get pages() {
       return pages;
     },
+    get normalizedRows() {
+      return normalizedRows;
+    },
     get boundaries() {
       return boundaries;
     },
