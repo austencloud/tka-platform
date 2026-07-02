@@ -11,8 +11,8 @@
   - CSS env() variables for positioning
 -->
 <script lang="ts">
-  import { onMount, onDestroy, type Snippet } from "svelte";
-  import { browser } from "$app/environment";
+  import { type Snippet } from "svelte";
+  import { createKeyboardInset } from "$lib/shared/mobile/utils/keyboard-inset.svelte";
 
   let {
     visible = false,
@@ -30,189 +30,39 @@
     leftContent?: Snippet;
   }>();
 
-  let keyboardHeight = $state(0);
-  let isKeyboardVisible = $state(false);
+  // Shared virtual-keyboard detection (VirtualKeyboard API / visualViewport).
+  // The toolbar is conditionally rendered, so detection can stay active for its
+  // whole lifetime.
+  const kb = createKeyboardInset();
 
-  // Track if VirtualKeyboard API is available (Chrome Android)
-  let hasVirtualKeyboardAPI = $state(false);
-
-  // Track if we're in a simulated mobile environment (Chrome DevTools)
-  // In this case, touch is detected but no actual keyboard exists
-  let isSimulatedMobile = $state(false);
-
-  // Debounce timer for keyboard height updates (prevents jank during keyboard animation)
-  let keyboardDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-  // Track last stable height to avoid micro-fluctuations
-  let lastStableHeight = 0;
-  // Pending height to apply after debounce
-  let pendingHeight = 0;
-
-  onMount(() => {
-    if (!browser) return;
-
-    // Detect Chrome DevTools mobile simulation:
-    // - Touch is indicated (maxTouchPoints > 0 or ontouchstart exists)
-    // - But no VirtualKeyboard API AND visualViewport matches window.innerHeight
-    //   (meaning no keyboard can push the viewport)
-    const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-    const hasVKApi = "virtualKeyboard" in navigator;
-    const viewportMatchesWindow =
-      window.visualViewport &&
-      Math.abs(window.visualViewport.height - window.innerHeight) < 10;
-
-    // If touch is detected but neither keyboard API is available/working,
-    // we're likely in Chrome DevTools simulation
-    if (hasTouch && !hasVKApi && viewportMatchesWindow) {
-      // Check if this is likely a desktop browser simulating mobile
-      // Real mobile devices would have VirtualKeyboard API (Chrome) or
-      // visualViewport that differs from innerHeight when keyboard is up
-      const userAgent = navigator.userAgent.toLowerCase();
-      const isLikelyDesktopBrowser =
-        !userAgent.includes("mobile") &&
-        !userAgent.includes("android") &&
-        !userAgent.includes("iphone") &&
-        !userAgent.includes("ipad");
-
-      if (isLikelyDesktopBrowser) {
-        isSimulatedMobile = true;
-        // In simulated mode, we won't show the toolbar since there's no keyboard
-        return;
-      }
-    }
-
-    // Try VirtualKeyboard API first (Chrome Android 94+)
-    if ("virtualKeyboard" in navigator) {
-      hasVirtualKeyboardAPI = true;
-      const vk = (navigator as any).virtualKeyboard;
-
-      // Opt-in to manual keyboard handling
-      vk.overlaysContent = true;
-
-      // Listen for geometry changes
-      vk.addEventListener("geometrychange", handleVirtualKeyboardChange);
-    } else if (window.visualViewport) {
-      // Fallback: visualViewport API (iOS Safari, older Chrome)
-      // Only use this if VirtualKeyboard API is NOT available
-      window.visualViewport.addEventListener("resize", handleVisualViewportResize);
-      window.visualViewport.addEventListener("scroll", handleVisualViewportResize);
-    }
-  });
-
-  onDestroy(() => {
-    if (!browser) return;
-
-    if (keyboardDebounceTimer) {
-      clearTimeout(keyboardDebounceTimer);
-    }
-
-    if (hasVirtualKeyboardAPI && "virtualKeyboard" in navigator) {
-      const vk = (navigator as any).virtualKeyboard;
-      vk.removeEventListener("geometrychange", handleVirtualKeyboardChange);
-    }
-
-    if (window.visualViewport) {
-      window.visualViewport.removeEventListener("resize", handleVisualViewportResize);
-      window.visualViewport.removeEventListener("scroll", handleVisualViewportResize);
-    }
-  });
-
-  function handleVirtualKeyboardChange(event: Event) {
-    const vk = event.target as any;
-    const rect = vk.boundingRect;
-    const newHeight = rect.height;
-    // Debounce to prevent jank during keyboard animation
-    if (keyboardDebounceTimer) {
-      clearTimeout(keyboardDebounceTimer);
-    }
-
-    pendingHeight = newHeight;
-
-    keyboardDebounceTimer = setTimeout(() => {
-      // Only update if height changed significantly (> 20px)
-      const heightDiff = Math.abs(pendingHeight - lastStableHeight);
-
-      if (pendingHeight > 100) {
-        // Keyboard is visible
-        if (heightDiff > 20 || !isKeyboardVisible) {
-          keyboardHeight = pendingHeight;
-          isKeyboardVisible = true;
-          lastStableHeight = pendingHeight;
-        }
-      } else {
-        // Keyboard is hidden
-        if (isKeyboardVisible) {
-          keyboardHeight = 0;
-          isKeyboardVisible = false;
-          lastStableHeight = 0;
-        }
-      }
-    }, 50); // 50ms debounce - matches visualViewport handler
-  }
-
-  function handleVisualViewportResize() {
-    if (!window.visualViewport) return;
-
-    // Calculate keyboard height from viewport difference
-    const viewportHeight = window.visualViewport.height;
-    const windowHeight = window.innerHeight;
-    const calculatedHeight = windowHeight - viewportHeight - window.visualViewport.offsetTop;
-
-    // Debounce rapid updates during keyboard animation
-    if (keyboardDebounceTimer) {
-      clearTimeout(keyboardDebounceTimer);
-    }
-
-    keyboardDebounceTimer = setTimeout(() => {
-      // Only update if height changed significantly (> 20px difference)
-      // This prevents micro-fluctuations during animation
-      const heightDiff = Math.abs(calculatedHeight - lastStableHeight);
-
-      if (calculatedHeight > 100) {
-        // Keyboard is visible
-        if (heightDiff > 20 || !isKeyboardVisible) {
-          keyboardHeight = calculatedHeight;
-          isKeyboardVisible = true;
-          lastStableHeight = calculatedHeight;
-        }
-      } else {
-        // Keyboard is hidden
-        if (isKeyboardVisible) {
-          keyboardHeight = 0;
-          isKeyboardVisible = false;
-          lastStableHeight = 0;
-        }
-      }
-    }, 50); // 50ms debounce
-  }
-
-  // Notify parent when keyboard height changes
+  // Notify parent when keyboard height changes. Add toolbar height (~60px) to
+  // the keyboard height for the total bottom inset consumers should reserve.
   $effect(() => {
-    // Add toolbar height (~60px) to keyboard height for total bottom inset
-    const totalHeight = keyboardHeight > 0 ? keyboardHeight + 60 : 0;
+    const totalHeight = kb.height > 0 ? kb.height + 60 : 0;
     onKeyboardHeightChange?.(totalHeight);
   });
 
-  // Compute bottom position using CSS env() with JS fallback
+  // Compute bottom position using CSS env() with JS fallback.
   const toolbarStyle = $derived.by(() => {
     // If VirtualKeyboard API is active, CSS env() will handle it
-    if (hasVirtualKeyboardAPI) {
+    if (kb.hasVirtualKeyboardAPI) {
       return "";
     }
     // For iOS Safari, use calculated keyboard height
-    if (keyboardHeight > 0) {
-      return `bottom: ${keyboardHeight}px`;
+    if (kb.height > 0) {
+      return `bottom: ${kb.height}px`;
     }
     return "";
   });
 
   // Don't show toolbar in simulated mobile mode (Chrome DevTools) - there's no keyboard
-  const shouldShow = $derived(visible && isKeyboardVisible && !isSimulatedMobile);
+  const shouldShow = $derived(visible && kb.isVisible && !kb.isSimulatedMobile);
 </script>
 
 {#if shouldShow}
   <div
     class="mobile-input-toolbar"
-    class:has-virtual-keyboard-api={hasVirtualKeyboardAPI}
+    class:has-virtual-keyboard-api={kb.hasVirtualKeyboardAPI}
     style={toolbarStyle}
     role="toolbar"
     aria-label="Input actions"
