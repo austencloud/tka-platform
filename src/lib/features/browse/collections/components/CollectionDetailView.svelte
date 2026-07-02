@@ -34,6 +34,7 @@ instead of showing a ghost.
 		ContextMenuState,
 	} from "$lib/shared/components/context-menu/context-menu-types";
 	import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
+	import AddSequencesSheet from "./AddSequencesSheet.svelte";
 
 	let {
 		collectionId,
@@ -176,6 +177,9 @@ instead of showing a ghost.
 		void collectionsState.toggle(sequenceId, collectionId);
 	}
 
+	// Build-from-inside: the add-sequences browser overlay.
+	let addSheetOpen = $state(false);
+
 	// ── Header options (rename / delete) ─────────────────────────────
 	let menuState: ContextMenuState = $state({ open: false });
 	let renaming = $state(false);
@@ -280,6 +284,17 @@ instead of showing a ghost.
 			</div>
 		{/if}
 
+		{#if collection && !renaming && !foreignOwnerId}
+			<button
+				type="button"
+				class="add-btn"
+				onclick={() => (addSheetOpen = true)}
+			>
+				<i class="fas fa-plus" aria-hidden="true"></i>
+				<span>Add</span>
+			</button>
+		{/if}
+
 		{#if collection && !isSystem && !renaming && !foreignOwnerId}
 			<button
 				type="button"
@@ -309,10 +324,20 @@ instead of showing a ghost.
 					{#if foreignOwnerId}
 						This collection doesn't have any public sequences right now.
 					{:else}
-						Add sequences from the gallery — right-click (or long-press) a card
-						and choose "Add to collection…", or file one while saving.
+						Hunt through your library or the community gallery and tap
+						sequences to add them.
 					{/if}
 				</p>
+				{#if !foreignOwnerId}
+					<button
+						type="button"
+						class="empty-cta"
+						onclick={() => (addSheetOpen = true)}
+					>
+						<i class="fas fa-plus" aria-hidden="true"></i>
+						<span>Add sequences</span>
+					</button>
+				{/if}
 			</div>
 		{:else}
 			<BrowseGrid
@@ -390,8 +415,33 @@ instead of showing a ghost.
 		outline-offset: 2px;
 	}
 
-	.options-btn {
+	/* The add button is the first right-aligned control; options follows it.
+	   (Options never renders without add, so the auto margin lives here.) */
+	.add-btn {
 		margin-left: auto;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		height: 44px;
+		padding: 0 16px;
+		flex-shrink: 0;
+		border: 1px solid color-mix(in srgb, var(--tile-color) 45%, transparent);
+		border-radius: 12px;
+		background: color-mix(in srgb, var(--tile-color) 18%, transparent);
+		color: var(--theme-text, white);
+		font-size: var(--font-size-sm, 14px);
+		font-weight: 600;
+		cursor: pointer;
+		transition: background var(--duration-fast, 150ms) ease;
+	}
+
+	.add-btn:hover {
+		background: color-mix(in srgb, var(--tile-color) 30%, transparent);
+	}
+
+	.add-btn:focus-visible {
+		outline: 2px solid var(--tile-color);
+		outline-offset: 2px;
 	}
 
 	.header-icon {
@@ -513,6 +563,32 @@ instead of showing a ghost.
 		font-size: var(--font-size-sm, 14px);
 		line-height: 1.5;
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+	}
+
+	.empty-cta {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		height: 44px;
+		padding: 0 20px;
+		margin-top: 6px;
+		border: 1px solid color-mix(in srgb, var(--tile-color) 45%, transparent);
+		border-radius: 12px;
+		background: color-mix(in srgb, var(--tile-color) 18%, transparent);
+		color: var(--theme-text, white);
+		font-size: var(--font-size-sm, 14px);
+		font-weight: 600;
+		cursor: pointer;
+		transition: background var(--duration-fast, 150ms) ease;
+	}
+
+	.empty-cta:hover {
+		background: color-mix(in srgb, var(--tile-color) 30%, transparent);
+	}
+
+	.empty-cta:focus-visible {
+		outline: 2px solid var(--tile-color);
+		outline-offset: 2px;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
