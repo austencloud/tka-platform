@@ -28,6 +28,7 @@
   import SheetPreviewPages from "./SheetPreviewPages.svelte";
   import ActPlayer from "./ActPlayer.svelte";
   import ActsDock from "./ActsDock.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import BrowseGrid from "$lib/features/browse/sequences/display/components/BrowseGrid.svelte";
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
@@ -295,6 +296,15 @@
 
   let saving = $state(false);
   let saveMessage = $state<string | null>(null);
+  // Success feedback happens ON the Save button itself: it briefly turns
+  // success-green with a check + "Saved", then settles back. saveMessage is
+  // reserved for errors.
+  let saveFlash = $state(false);
+  let saveFlashTimer: ReturnType<typeof setTimeout> | null = null;
+
+  $effect(() => () => {
+    if (saveFlashTimer) clearTimeout(saveFlashTimer);
+  });
 
   // ── Saved acts (dock) ────────────────────────────────────────────────────────
   // Dirty = the sheet has content the cloud hasn't seen: either it was never
@@ -315,9 +325,11 @@
     saveMessage = null;
     try {
       await getChoreoSheetRepository().saveSheet(builder.sheet);
-      saveMessage = "Saved";
       lastSyncedAt = Date.now();
       saveRefreshKey += 1;
+      saveFlash = true;
+      if (saveFlashTimer) clearTimeout(saveFlashTimer);
+      saveFlashTimer = setTimeout(() => (saveFlash = false), 1600);
       return true;
     } catch (error) {
       saveMessage = error instanceof Error ? error.message : "Save failed";
@@ -366,7 +378,12 @@
       placeholder="Untitled Sheet"
     />
     <div class="toolbar-actions">
-      <button type="button" class="btn" class:active={actsOpen} onclick={toggleActs}>
+      <button
+        type="button"
+        class="btn btn-acts"
+        class:active={actsOpen}
+        onclick={toggleActs}
+      >
         <i class="fa-solid fa-clapperboard" aria-hidden="true"></i>
         Acts
       </button>
@@ -387,14 +404,23 @@
       <button
         type="button"
         class="btn btn-save"
+        class:success={saveFlash}
         onclick={() => void save()}
         disabled={saving || builder.sequenceIds.length === 0}
         title={dirty ? "Unsaved changes" : undefined}
       >
-        <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+        <Crossfade key={saveFlash}>
+          {#if saveFlash}
+            <i class="fa-solid fa-check" aria-hidden="true"></i>
+          {:else}
+            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+          {/if}
+        </Crossfade>
         <span class="btn-label">
           <span class="btn-label-sizer" aria-hidden="true">Saving…</span>
-          <span class="btn-label-live">{saving ? "Saving…" : "Save"}</span>
+          <span class="btn-label-live">
+            {saving ? "Saving…" : saveFlash ? "Saved" : "Save"}
+          </span>
         </span>
         <span class="unsaved-dot" class:show={dirty} aria-hidden="true"></span>
       </button>
@@ -424,7 +450,7 @@
       </span>
     {/if}
     {#if saveMessage}
-      <span class="save-message">{saveMessage}</span>
+      <span class="save-message" role="alert">{saveMessage}</span>
     {/if}
   </header>
 
@@ -704,11 +730,24 @@
     font-size: var(--font-size-sm, 0.875rem);
     font-weight: 600;
     cursor: pointer;
-    transition: background-color var(--duration-fast, 0.12s) ease;
+    transition:
+      background-color var(--duration-fast, 0.12s) ease,
+      border-color var(--duration-fast, 0.12s) ease,
+      color var(--duration-fast, 0.12s) ease,
+      transform var(--duration-fast, 0.12s) ease;
   }
 
   .btn:hover:not(:disabled) {
     background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.12));
+  }
+
+  /* Press physics: every toolbar action gives a small tactile dip. */
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .btn i {
+    transition: transform var(--duration-normal, 0.2s) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .btn-primary {
@@ -728,10 +767,27 @@
     color: var(--theme-text-on-accent, #fff);
   }
 
+  /* The clapperboard tips open while the Acts dock is open. */
+  .btn-acts.active i {
+    transform: rotate(-12deg);
+  }
+
   /* Ghost-sizer keeps the Save button's width fixed while the label swaps
      between "Save" and "Saving…" (no-layout-shift). */
   .btn-save {
     position: relative;
+  }
+
+  /* Success morph: the button itself confirms the save — green tint, check
+     icon (crossfaded), "Saved" — then settles back after 1.6s. */
+  .btn-save.success {
+    border-color: color-mix(in srgb, var(--theme-success, #22c55e) 60%, transparent);
+    color: var(--theme-success, #22c55e);
+    background: color-mix(
+      in srgb,
+      var(--theme-success, #22c55e) 12%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.06))
+    );
   }
 
   .btn-label {
@@ -763,7 +819,7 @@
     transform: scale(0.4);
     transition:
       opacity var(--duration-fast, 0.12s) ease,
-      transform var(--duration-fast, 0.12s) ease;
+      transform var(--duration-normal, 0.2s) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .unsaved-dot.show {
@@ -880,9 +936,10 @@
     flex-direction: column;
   }
 
+  /* Errors only — success feedback lives on the Save button itself. */
   .save-message {
     font-size: var(--font-size-sm, 0.875rem);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: var(--theme-danger, #ef4444);
   }
 
   /* Loop status. Ghost-sizer keeps the pill width fixed so the toolbar never
@@ -1131,12 +1188,21 @@
     .toggle-track,
     .toggle-thumb,
     .btn,
+    .btn i,
     .unsaved-dot {
       transition: none;
     }
 
     .unsaved-dot.show {
       animation: none;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: none;
+    }
+
+    .btn-acts.active i {
+      transform: none;
     }
   }
 </style>

@@ -18,6 +18,7 @@
 -->
 <script lang="ts">
   import { flip } from "svelte/animate";
+  import { scale } from "svelte/transition";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { formatTimeAgo } from "$lib/shared/i18n/i18n-formatters";
   import { getChoreoSheetRepository } from "../../services/choreo-sheet-repository";
@@ -86,16 +87,32 @@
     }
   }
 
+  // "Your save landed HERE": after a save-triggered refetch, the saved act's
+  // card runs a one-shot success ring. The mount fetch doesn't flash — only
+  // refreshKey bumps (i.e. actual saves) do.
+  let flashId = $state<string | null>(null);
+  let flashTimer: ReturnType<typeof setTimeout> | null = null;
+  let seenFirstRefresh = false;
+
   // Fetch on mount and again whenever a save lands (refreshKey bumps), so a
   // just-saved act appears at the top without reopening the dock.
   $effect(() => {
     void refreshKey;
-    void refresh();
+    void (async () => {
+      await refresh();
+      if (seenFirstRefresh && !loadError) {
+        flashId = currentActId;
+        if (flashTimer) clearTimeout(flashTimer);
+        flashTimer = setTimeout(() => (flashId = null), 1400);
+      }
+      seenFirstRefresh = true;
+    })();
   });
 
   $effect(() => () => {
     if (disarmTimer) clearTimeout(disarmTimer);
     if (deleteErrorTimer) clearTimeout(deleteErrorTimer);
+    if (flashTimer) clearTimeout(flashTimer);
   });
 
   // One key drives the crossfaded body. Confirm wins so the guard always shows
@@ -298,11 +315,15 @@
       {:else}
         <div class="phase act-scroll">
           <ul class="act-list">
-            {#each acts as act (act.id)}
+            {#each acts as act, i (act.id)}
               <li
                 class="act-item"
                 class:current={act.id === currentActId}
+                class:armed={confirmDeleteId === act.id}
+                class:flash={flashId === act.id}
+                style="--enter-delay: {Math.min(i * 35, 280)}ms"
                 animate:flip={{ duration: 200 }}
+                out:scale={{ duration: 160, start: 0.92 }}
               >
                 <button
                   type="button"
@@ -440,9 +461,18 @@
       transform var(--duration-fast, 0.12s) ease;
   }
 
+  .new-act i {
+    transition: transform var(--duration-normal, 0.2s) cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
   .new-act:hover:not(:disabled) {
     background: var(--theme-hover-bg, rgba(255, 255, 255, 0.06));
     border-color: var(--theme-accent, #6366f1);
+  }
+
+  /* The plus twirls a quarter turn on hover — a small "I'm ready" cue. */
+  .new-act:hover:not(:disabled) i {
+    transform: rotate(90deg);
   }
 
   .new-act:active:not(:disabled) {
@@ -492,16 +522,29 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
+    /* Staggered entrance: each card rises in a beat after the one above it.
+       `backwards` holds the from-state through the per-card --enter-delay. */
+    animation: act-enter 0.28s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation-delay: var(--enter-delay, 0ms);
     transition:
       background-color var(--duration-fast, 0.12s) ease,
       border-color var(--duration-fast, 0.12s) ease,
-      transform var(--duration-fast, 0.12s) ease;
+      transform var(--duration-fast, 0.12s) ease,
+      box-shadow var(--duration-fast, 0.12s) ease;
+  }
+
+  @keyframes act-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.98);
+    }
   }
 
   .act-item:hover:not(.current) {
     background: var(--theme-hover-bg, rgba(255, 255, 255, 0.1));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--theme-shadow, rgba(0, 0, 0, 0.25));
   }
 
   .act-item.current {
@@ -511,6 +554,34 @@
       var(--theme-accent, #6366f1) 16%,
       var(--theme-card-bg, rgba(255, 255, 255, 0.06))
     );
+  }
+
+  /* Armed delete tints the WHOLE card danger, so it's unmistakable which act
+     the second tap will remove. */
+  .act-item.armed {
+    border-color: color-mix(in srgb, var(--theme-danger, #ef4444) 60%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-danger, #ef4444) 10%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.06))
+    );
+  }
+
+  /* One-shot success ring on the card a save just landed on. */
+  .act-item.flash {
+    animation: saved-ring 1.2s ease-out;
+    animation-delay: 0ms;
+  }
+
+  @keyframes saved-ring {
+    0% {
+      box-shadow: 0 0 0 0
+        color-mix(in srgb, var(--theme-success, #22c55e) 55%, transparent);
+      border-color: var(--theme-success, #22c55e);
+    }
+    100% {
+      box-shadow: 0 0 0 12px transparent;
+    }
   }
 
   .act-open {
@@ -569,6 +640,15 @@
     color: var(--theme-accent, #6366f1);
     border: 1px solid
       color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
+    /* Springy pop when the badge lands on a newly-opened act. */
+    animation: badge-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  }
+
+  @keyframes badge-pop {
+    from {
+      transform: scale(0.6);
+      opacity: 0;
+    }
   }
 
   .icon-btn {
@@ -603,10 +683,28 @@
     cursor: not-allowed;
   }
 
-  /* Armed delete: the same button turns danger and asks for the second tap. */
+  /* Armed delete: the same button turns danger and asks for the second tap.
+     The quick wiggle draws the eye without stealing focus. */
   .delete-btn.arming {
     background: var(--theme-danger, #ef4444);
     color: var(--theme-text-inverse, #fff);
+    animation: arm-wiggle 0.34s ease;
+  }
+
+  @keyframes arm-wiggle {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(-8deg);
+    }
+    55% {
+      transform: rotate(6deg);
+    }
+    80% {
+      transform: rotate(-3deg);
+    }
   }
 
   .delete-btn.arming:hover:not(:disabled) {
@@ -651,13 +749,22 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 8px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    animation: skeleton-pulse 1.4s ease-in-out infinite;
   }
 
+  /* Shimmer sweep instead of a flat opacity pulse — the card's inline
+     animation-delay staggers the sweep down the list via `inherit`. */
   .skeleton-line {
     height: 10px;
     border-radius: 5px;
-    background: var(--theme-hover-bg, rgba(255, 255, 255, 0.1));
+    background: linear-gradient(
+      100deg,
+      var(--theme-hover-bg, rgba(255, 255, 255, 0.08)) 40%,
+      color-mix(in srgb, var(--theme-text, #fff) 14%, transparent) 50%,
+      var(--theme-hover-bg, rgba(255, 255, 255, 0.08)) 60%
+    );
+    background-size: 220% 100%;
+    animation: shimmer 1.6s linear infinite;
+    animation-delay: inherit;
   }
 
   .skeleton-name {
@@ -668,13 +775,12 @@
     width: 40%;
   }
 
-  @keyframes skeleton-pulse {
-    0%,
-    100% {
-      opacity: 1;
+  @keyframes shimmer {
+    from {
+      background-position: 120% 0;
     }
-    50% {
-      opacity: 0.55;
+    to {
+      background-position: -100% 0;
     }
   }
 
@@ -699,6 +805,18 @@
     border-radius: 50%;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
     font-size: 1.25rem;
+    /* Gentle idle float keeps the empty state feeling alive, not abandoned. */
+    animation: gentle-float 3.4s ease-in-out infinite;
+  }
+
+  @keyframes gentle-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
   }
 
   .state-msg {
@@ -739,6 +857,15 @@
     background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
     color: var(--theme-accent, #6366f1);
     font-size: 1.15rem;
+    /* Pops in with a slight overshoot so the warning registers immediately. */
+    animation: confirm-pop 0.36s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  }
+
+  @keyframes confirm-pop {
+    from {
+      transform: scale(0.5);
+      opacity: 0;
+    }
   }
 
   .confirm-title {
@@ -841,16 +968,28 @@
   @media (prefers-reduced-motion: reduce) {
     .act-item,
     .new-act,
+    .new-act i,
     .icon-btn,
     .btn {
       transition: none;
     }
 
-    .skeleton-card {
+    .act-item,
+    .act-item.flash,
+    .skeleton-line,
+    .open-badge,
+    .confirm-icon,
+    .state-icon,
+    .delete-btn.arming {
       animation: none;
     }
 
     .act-item:hover:not(.current) {
+      transform: none;
+      box-shadow: none;
+    }
+
+    .new-act:hover:not(:disabled) i {
       transform: none;
     }
   }
