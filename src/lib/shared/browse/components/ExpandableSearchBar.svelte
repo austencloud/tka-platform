@@ -3,22 +3,21 @@
 
   - Shows as magnifying glass icon when collapsed
   - Expands to search input on click
-  - Automatically triggers TKA Virtual Keyboard on focus
-  - Suppresses system keyboard for focused notation entry
+  - Native keyboard on every device (the TKA virtual keyboard was retired
+    from browse search — the gallery drill's plain search input set the
+    standard, and the notation keyboard belongs to spelling flows, not
+    filtering)
   - Auto-collapses on blur when empty
 -->
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import VirtualKeyboard from "$lib/shared/components/touch/VirtualKeyboard.svelte";
 
   interface Props {
     onSearch: (query: string) => void;
     onClear?: () => void;
     placeholder?: string;
     value?: string;
-    /** Live count of matches to show in the virtual keyboard header */
-    resultCount?: number;
   }
 
   let {
@@ -26,7 +25,6 @@
     onClear,
     placeholder = "Search...",
     value = "",
-    resultCount = 0,
   }: Props = $props();
 
   // Local state - initialized empty; the $effect below syncs the prop value
@@ -36,10 +34,6 @@
   let inputValue = $state("");
   let inputRef: HTMLInputElement | null = $state(null);
   let containerRef: HTMLDivElement | null = $state(null);
-  let showVirtualKeyboard = $state(false);
-  const hasFinePointer =
-    typeof window !== "undefined" &&
-    window.matchMedia("(pointer: fine)").matches;
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
   let collapseTimer: ReturnType<typeof setTimeout> | null = null;
   let focusTimer: ReturnType<typeof setTimeout> | null = null;
@@ -65,19 +59,14 @@
   function handleExpand(event: MouseEvent) {
     event.stopPropagation();
     isExpanded = true;
-    if (!hasFinePointer) showVirtualKeyboard = true;
     if (focusTimer) clearTimeout(focusTimer);
     focusTimer = setTimeout(() => inputRef?.focus(), 0);
-  }
-
-  function handleFocus() {
-    if (!hasFinePointer) showVirtualKeyboard = true;
   }
 
   function handleCollapse() {
     if (collapseTimer) clearTimeout(collapseTimer);
     collapseTimer = setTimeout(() => {
-      if (!inputValue.trim() && !showVirtualKeyboard) {
+      if (!inputValue.trim()) {
         isExpanded = false;
       }
     }, COLLAPSE_DELAY_MS);
@@ -103,72 +92,15 @@
     lastSyncedValue = "";
     onSearch("");
     onClear?.();
-    showVirtualKeyboard = false;
     inputRef?.blur();
   }
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === "Escape") {
-      if (showVirtualKeyboard) {
-        showVirtualKeyboard = false;
-        inputRef?.blur();
-      } else {
-        handleClear();
-        isExpanded = false;
-      }
+      handleClear();
+      isExpanded = false;
     } else if (event.key === "Enter") {
-      showVirtualKeyboard = false;
       inputRef?.blur();
-    }
-  }
-
-  async function insertChar(char: string) {
-    if (!inputRef) return;
-    const start = inputRef.selectionStart ?? inputValue.length;
-    const end = inputRef.selectionEnd ?? inputValue.length;
-
-    // Update local state
-    const newValue = inputValue.slice(0, start) + char + inputValue.slice(end);
-    inputValue = newValue;
-
-    // CRITICAL: Update lastSyncedValue immediately to prevent the prop-sync effect
-    // from reverting this local change before the parent can process the search update.
-    lastSyncedValue = newValue;
-
-    triggerSearch();
-
-    // Wait for Svelte to update the DOM value
-    await tick();
-
-    // Restore selection/focus
-    if (inputRef) {
-      inputRef.focus();
-      const newPos = start + char.length;
-      inputRef.setSelectionRange(newPos, newPos);
-    }
-  }
-
-  async function handleBackspace() {
-    if (!inputRef) return;
-    const start = inputRef.selectionStart ?? 0;
-    const end = inputRef.selectionEnd ?? 0;
-
-    let newPos = start;
-    if (start === end) {
-      if (start === 0) return;
-      inputValue = inputValue.slice(0, start - 1) + inputValue.slice(start);
-      newPos = start - 1;
-    } else {
-      inputValue = inputValue.slice(0, start) + inputValue.slice(end);
-      newPos = start;
-    }
-
-    lastSyncedValue = inputValue;
-    triggerSearch();
-    await tick();
-    if (inputRef) {
-      inputRef.focus();
-      inputRef.setSelectionRange(newPos, newPos);
     }
   }
 
@@ -176,11 +108,9 @@
     if (
       containerRef &&
       !containerRef.contains(event.target as Node) &&
-      !inputValue.trim() &&
-      !showVirtualKeyboard
+      !inputValue.trim()
     ) {
       isExpanded = false;
-      showVirtualKeyboard = false;
     }
   }
 
@@ -198,7 +128,6 @@
 <div
   class="search-container"
   class:expanded={isExpanded}
-  class:kb-active={showVirtualKeyboard}
   bind:this={containerRef}
   role="search"
 >
@@ -213,10 +142,8 @@
         oninput={handleInput}
         onkeydown={handleKeydown}
         onblur={handleCollapse}
-        onfocus={handleFocus}
         {placeholder}
         aria-label={t('browse_search_sequences')}
-        inputmode={hasFinePointer ? undefined : "none"}
       />
       {#if inputValue}
         <button
@@ -229,21 +156,6 @@
         </button>
       {/if}
     </div>
-
-    {#if showVirtualKeyboard}
-      <VirtualKeyboard
-        bind:isOpen={showVirtualKeyboard}
-        value={inputValue}
-        {resultCount}
-        onKey={insertChar}
-        onBackspace={handleBackspace}
-        onClear={handleClear}
-        onClose={() => {
-          showVirtualKeyboard = false;
-          inputRef?.blur();
-        }}
-      />
-    {/if}
   {:else}
     <button
       class="search-button"
@@ -384,24 +296,6 @@
   @media (max-width: 640px) {
     .search-container.expanded {
       width: clamp(160px, 50vw, 300px);
-    }
-
-    /* On mobile, if keyboard is active, keep the top search bar as a compact icon
-       so it doesn't overlay the 'My Library' toggle. Input happens in the keyboard header. */
-    .search-container.expanded.kb-active {
-      width: var(--control-height);
-    }
-
-    .search-container.kb-active .search-input-wrapper {
-      padding: 0;
-      justify-content: center;
-      border-color: transparent;
-      background: transparent;
-    }
-
-    .search-container.kb-active .search-input,
-    .search-container.kb-active .clear-button {
-      display: none;
     }
 
     .search-input-wrapper {

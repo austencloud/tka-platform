@@ -23,6 +23,7 @@ compensation), so the detail view behind this sheet updates on its own.
 	import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
 	import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
 	import GalleryDrill from "$lib/features/browse/gallery-home/GalleryDrill.svelte";
+	import GalleryFilterSheet from "$lib/features/browse/gallery-home/GalleryFilterSheet.svelte";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
 	import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
 	import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
@@ -101,6 +102,10 @@ compensation), so the detail view behind this sheet updates on its own.
 	// Same two-stage flow as the gallery tab: drill first, grid after.
 	let view = $state<"drill" | "grid">("drill");
 
+	// Grid view carries the gallery's Filters pill → the shared drill filter
+	// sheet (stacked drawer; the Drawer stack handles z-order and Escape).
+	let filterSheetOpen = $state(false);
+
 	function backToDrill() {
 		// Fresh drill each time, mirroring BrowseModule's "← Start here".
 		engine.clearUserFilters();
@@ -171,9 +176,16 @@ compensation), so the detail view behind this sheet updates on its own.
 					onSelect={handleSelect}
 					onBack={backToDrill}
 					backLabel="Start here"
+					onOpenFilters={() => (filterSheetOpen = true)}
 				/>
 			{/if}
 		</div>
+
+		<GalleryFilterSheet
+			{engine}
+			bind:isOpen={filterSheetOpen}
+			isMobile={placement === "bottom"}
+		/>
 	</div>
 </Drawer>
 
