@@ -31,7 +31,6 @@
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-  import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
   import CheckerboardCircleIcon from "$lib/shared/icons/CheckerboardCircleIcon.svelte";
   import type { CardBackThemeVisuals } from "./card-back-theme-visuals";
   interface Props {
@@ -166,9 +165,7 @@
           {@const isQuarteredInv = comp === LOOPComponent.INVERTED && loopDisplay.inversionPeriod === Period.QUARTERED}
           <div class="loop-col">
             <span class="loop-icon-cell" style="overflow: hidden; width: 9cqi; height: 9cqi;">
-              {#if comp === LOOPComponent.SWAPPED}
-                <SwapIcon size="8cqi" />
-              {:else if isQuarteredInv}
+              {#if isQuarteredInv}
                 <CheckerboardCircleIcon size="8cqi" color={icon.color} />
               {:else}
                 <i

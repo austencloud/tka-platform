@@ -358,7 +358,7 @@ export async function buildBackJob(
   // CardBack.svelte node-selection exactly:
   //   ROTATED  → always quartered (fa-arrows-spin).
   //   INVERTED → quartered (checkerboard) only when inversionPeriod === QUARTERED.
-  //   SWAPPED  → SwapIcon.
+  //   SWAPPED  → fa-shuffle (kind "swap", rendered monochrome in its brand color).
   const loopCols: LoopRowCol[] = activeLoop.map((comp) => {
     const meta = LOOP_ICONS[comp];
     const color = meta?.color ?? "#ffffff";

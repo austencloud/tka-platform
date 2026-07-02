@@ -4,7 +4,7 @@
 
   PARITY: reproduces the EXACT node-selection logic and the .loop-icon-cell
   styling from CardBack.svelte:
-    - SWAPPED      -> <SwapIcon size="8cqi" />
+    - SWAPPED      -> <i class="fas fa-shuffle" ... />
     - quartered INVERTED -> <CheckerboardCircleIcon size="8cqi" color={color} />
     - quartered ROTATED  -> <i class="fas fa-arrows-spin" ... />
     - else         -> <i class={fa} ... />
@@ -13,7 +13,6 @@
   so the cqi-based icon size matches the live card.
 -->
 <script lang="ts">
-  import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
   import CheckerboardCircleIcon from "$lib/shared/icons/CheckerboardCircleIcon.svelte";
 
   interface Props {
@@ -29,7 +28,11 @@
 
 <span class="loop-icon-cell" style="overflow: hidden; width: 9cqi; height: 9cqi;">
   {#if kind === "swap"}
-    <SwapIcon size="8cqi" />
+    <i
+      class="fas fa-shuffle"
+      style="font-size: 8cqi; color: {color}; line-height: 1; display: block;"
+      aria-hidden="true"
+    ></i>
   {:else if kind === "checkerboard"}
     <CheckerboardCircleIcon size="8cqi" {color} />
   {:else}

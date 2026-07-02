@@ -11,7 +11,7 @@ Quadrant Layout (clockwise from top-right):
   │ I │ R │   I = INVERTED (orange #eb7d00)
   ├───┼───┤   R = ROTATED (blue #36c3ff)
   │ S │ M │   M = MIRRORED (purple #6F2DA8)
-  └───┴───┘   S = SWAPPED (green #26e600)
+  └───┴───┘   S = SWAPPED (emerald #2ecc71)
 
 Filled quadrant = LOOP component is active
 Empty quadrant = not present (freeform)
@@ -56,7 +56,7 @@ Empty quadrant = not present (freeform)
     },
     {
       component: LOOPComponent.SWAPPED,
-      color: "#26e600",
+      color: "#2ecc71",
       label: "Swapped",
       // Bottom-left quadrant: 180° to 270° (from 6 o'clock to 9 o'clock)
       startAngle: 90,

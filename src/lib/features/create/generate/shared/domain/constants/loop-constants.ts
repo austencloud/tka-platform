@@ -46,7 +46,7 @@ export const LOOP_COMPONENTS: readonly LOOPComponentInfo[] = [
     shortLabel: "Swapped",
     description: "Exchange which hand does what",
     icon: "shuffle",
-    color: "#26e600",
+    color: "#2ecc71",
   },
   {
     component: LOOPComponent.INVERTED,

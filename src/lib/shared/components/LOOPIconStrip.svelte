@@ -24,7 +24,6 @@ Used in:
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { LOOP_ICON_GAP_SCALE } from "@tka/render-composition";
-  import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
   import CheckerboardCircleIcon from "$lib/shared/icons/CheckerboardCircleIcon.svelte";
 
   interface Props {
@@ -82,7 +81,7 @@ Used in:
     },
     [LOOPComponent.SWAPPED]: {
       faClass: "fas fa-shuffle",
-      color: "#26e600",
+      color: "#2ecc71",
       label: "Swapped",
     },
     [LOOPComponent.INVERTED]: {
@@ -190,11 +189,7 @@ Used in:
       {@const icon = iconFor(component)}
       {#if icon}
         <span class="icon-cell" style="width: {size}px; height: {size}px;" title={icon.label}>
-          {#if component === LOOPComponent.SWAPPED}
-            <span class="custom-icon" style="filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));">
-              <SwapIcon size="{size}px" />
-            </span>
-          {:else if icon.customSvg === "checkerboard"}
+          {#if icon.customSvg === "checkerboard"}
             <span class="custom-icon" style="filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));">
               <CheckerboardCircleIcon size="{size}px" color={icon.color} />
             </span>

@@ -68,7 +68,7 @@ export const LOOP_ICONS: Record<string, { fa: string; color: string; label: stri
   [LOOPComponent.ROTATED]:  { fa: "fas fa-rotate",    color: "#36c3ff", label: "Rotated" },
   [LOOPComponent.MIRRORED]: { fa: "fas fa-left-right", color: "#6F2DA8", label: "Mirrored" },
   [LOOPComponent.FLIPPED]:  { fa: "fas fa-up-down",    color: "#e91e63", label: "Flipped" },
-  [LOOPComponent.SWAPPED]:  { fa: "fas fa-shuffle",    color: "#26e600", label: "Swapped" },
+  [LOOPComponent.SWAPPED]:  { fa: "fas fa-shuffle",    color: "#2ecc71", label: "Swapped" },
   [LOOPComponent.INVERTED]: { fa: "fas fa-adjust",     color: "#eb7d00", label: "Inverted" },
   [LOOPComponent.REWOUND]:  { fa: "fas fa-backward",   color: "#00bcd4", label: "Rewound" },
 };
@@ -197,7 +197,7 @@ export function rasterizeDifficultyBadge(
 /**
  * Rasterize a single LOOP component icon cell, matching CardBack.svelte's
  * node-selection logic exactly:
- *   - SWAPPED            -> SwapIcon
+ *   - SWAPPED            -> fa-shuffle (kind "swap", monochrome brand color)
  *   - quartered INVERTED -> CheckerboardCircleIcon (opts.quarteredInv)
  *   - quartered ROTATED  -> <i class="fas fa-arrows-spin"> (opts.quarteredRot)
  *   - else               -> <i class={LOOP_ICONS[component].fa}>

@@ -30,7 +30,7 @@ A **LOOP** is a sequence that:
 | Component | Icon | Color | Description |
 |-----------|------|-------|-------------|
 | **Rotated** | rotate | #36c3ff | Positions rotate 180° (halved) or 90° (quartered) |
-| **Swapped** | shuffle | #26e600 | Blue and red hands swap roles |
+| **Swapped** | shuffle | #2ecc71 | Blue and red hands swap roles |
 | **Mirrored** | left-right | #6F2DA8 | Positions mirror vertically (left ↔ right) |
 | **Flipped** | up-down | #14b8a6 | Positions mirror horizontally (top ↔ bottom) |
 | **Inverted** | yin-yang | #eb7d00 | Pro ↔ Anti motion types flip |

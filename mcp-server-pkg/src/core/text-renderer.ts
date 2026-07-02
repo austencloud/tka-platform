@@ -544,7 +544,7 @@ const LOOP_COMPONENT_COLORS: Record<LOOPComponent, string> = {
   [LOOPComponent.ROTATED]: "#36c3ff",   // Cyan
   [LOOPComponent.MIRRORED]: "#6F2DA8", // Purple
   [LOOPComponent.FLIPPED]: "#e91e63",  // Pink
-  [LOOPComponent.SWAPPED]: "#26e600",  // Green
+  [LOOPComponent.SWAPPED]: "#2ecc71",  // Emerald
   [LOOPComponent.INVERTED]: "#eb7d00", // Orange
   [LOOPComponent.REWOUND]: "#00bcd4",  // Teal
 };

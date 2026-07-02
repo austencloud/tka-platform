@@ -11,7 +11,6 @@
   cqi units match the live card; set --card-text-muted for the labels.
 -->
 <script lang="ts">
-  import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
   import CheckerboardCircleIcon from "$lib/shared/icons/CheckerboardCircleIcon.svelte";
 
   interface Col {
@@ -31,7 +30,11 @@
     <div class="loop-col">
       <span class="loop-icon-cell">
         {#if col.kind === "swap"}
-          <SwapIcon size="8cqi" />
+          <i
+            class="fas fa-shuffle"
+            style="font-size: 8cqi; color: {col.color}; line-height: 1; display: block;"
+            aria-hidden="true"
+          ></i>
         {:else if col.kind === "checkerboard"}
           <CheckerboardCircleIcon size="8cqi" color={col.color} />
         {:else}

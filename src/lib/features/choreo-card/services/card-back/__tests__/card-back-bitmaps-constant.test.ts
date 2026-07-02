@@ -127,7 +127,7 @@ describe("card-back-bitmaps-constant cache", () => {
     });
 
     it("different kind / fa / color are distinct cache entries", async () => {
-      await rasterizeLoopIconByKind("swap", "", "#26e600");
+      await rasterizeLoopIconByKind("swap", "", "#2ecc71");
       await rasterizeLoopIconByKind("checkerboard", "", "#eb7d00");
       await rasterizeLoopIconByKind("fa", "fas fa-rotate", "#36c3ff");
       await rasterizeLoopIconByKind("fa", "fas fa-rotate", "#ffffff");

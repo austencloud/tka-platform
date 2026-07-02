@@ -227,14 +227,14 @@ describe("card-back-bitmaps-percard rasterizers (canvas-native)", () => {
   describe("rasterizeLoopRow", () => {
     const cols: LoopRowCol[] = [
       { kind: "fa", fa: "fas fa-rotate", color: "#36c3ff", label: "Rotated" },
-      { kind: "swap", color: "#26e600", label: "Swapped" },
+      { kind: "swap", color: "#2ecc71", label: "Swapped" },
     ];
 
     it("resolves each icon via the CACHED rasterizeLoopIconByKind (no per-card mount)", async () => {
       await rasterizeLoopRow(cols, undefined, "ocean");
       expect(loopIconCalls).toHaveLength(2);
       expect(loopIconCalls[0]).toMatchObject({ kind: "fa", fa: "fas fa-rotate", color: "#36c3ff", theme: "ocean" });
-      expect(loopIconCalls[1]).toMatchObject({ kind: "swap", color: "#26e600", theme: "ocean" });
+      expect(loopIconCalls[1]).toMatchObject({ kind: "swap", color: "#2ecc71", theme: "ocean" });
     });
 
     it("draws an icon image + an uppercase label per column", async () => {

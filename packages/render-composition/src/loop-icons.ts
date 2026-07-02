@@ -27,7 +27,7 @@ const DISPLAY_ORDER: LOOPComponentId[] = [
 // FA7 solid icon SVG path data for each LOOP component, embedded to avoid
 // runtime file reads. Each path comes from the corresponding icon in
 // @fortawesome/fontawesome-free/svgs/solid/
-const LOOP_ICON_PATHS: Record<LOOPComponentId | "freeform" | "rotated-quartered" | "inverted-quartered", { d: string; viewBox: [number, number]; bicolor?: { blue: string; red: string } }> = {
+const LOOP_ICON_PATHS: Record<LOOPComponentId | "freeform" | "rotated-quartered" | "inverted-quartered", { d: string; viewBox: [number, number] }> = {
   // rotate.svg — viewBox 0 0 512 512 — used for halved (180°) rotations
   rotated: {
     d: "M480.1 192l7.9 0c13.3 0 24-10.7 24-24l0-144c0-9.7-5.8-18.5-14.8-22.2S477.9 .2 471 7L419.3 58.8C375 22.1 318 0 256 0 127 0 20.3 95.4 2.6 219.5 .1 237 12.2 253.2 29.7 255.7s33.7-9.7 36.2-27.1C79.2 135.5 159.3 64 256 64 300.4 64 341.2 79 373.7 104.3L327 151c-6.9 6.9-8.9 17.2-5.2 26.2S334.3 192 344 192l136.1 0zm29.4 100.5c2.5-17.5-9.7-33.7-27.1-36.2s-33.7 9.7-36.2 27.1c-13.3 93-93.4 164.5-190.1 164.5-44.4 0-85.2-15-117.7-40.3L185 361c6.9-6.9 8.9-17.2 5.2-26.2S177.7 320 168 320L24 320c-13.3 0-24 10.7-24 24L0 488c0 9.7 5.8 18.5 14.8 22.2S34.1 511.8 41 505l51.8-51.8C137 489.9 194 512 256 512 385 512 491.7 416.6 509.4 292.5z",
@@ -56,14 +56,10 @@ const LOOP_ICON_PATHS: Record<LOOPComponentId | "freeform" | "rotated-quartered"
     viewBox: [256, 512],
   },
 
-  // shuffle.svg — viewBox 0 0 512 512, split into two arrows for bicolor rendering
+  // shuffle.svg — viewBox 0 0 512 512
   swapped: {
     d: "M403.8 34.4c12-5 25.7-2.2 34.9 6.9l64 64c6 6 9.4 14.1 9.4 22.6s-3.4 16.6-9.4 22.6l-64 64c-9.2 9.2-22.9 11.9-34.9 6.9S384 204.9 384 192l0-32-32 0c-10.1 0-19.6 4.7-25.6 12.8l-32.4 43.2-40-53.3 21.2-28.3C293.3 110.2 321.8 96 352 96l32 0 0-32c0-12.9 7.8-24.6 19.8-29.6zM154 296l40 53.3-21.2 28.3C154.7 401.8 126.2 416 96 416l-64 0c-17.7 0-32-14.3-32-32s14.3-32 32-32l64 0c10.1 0 19.6-4.7 25.6-12.8L154 296zM438.6 470.6c-9.2 9.2-22.9 11.9-34.9 6.9S384 460.9 384 448l0-32-32 0c-30.2 0-58.7-14.2-76.8-38.4L121.6 172.8c-6-8.1-15.5-12.8-25.6-12.8l-64 0c-17.7 0-32-14.3-32-32S14.3 96 32 96l64 0c30.2 0 58.7 14.2 76.8 38.4L326.4 339.2c6 8.1 15.5 12.8 25.6 12.8l32 0 0-32c0-12.9 7.8-24.6 19.8-29.6s25.7-2.2 34.9 6.9l64 64c6 6 9.4 14.1 9.4 22.6s-3.4 16.6-9.4 22.6l-64 64z",
     viewBox: [512, 512],
-    bicolor: {
-      blue: "M403.8 34.4c12-5 25.7-2.2 34.9 6.9l64 64c6 6 9.4 14.1 9.4 22.6s-3.4 16.6-9.4 22.6l-64 64c-9.2 9.2-22.9 11.9-34.9 6.9S384 204.9 384 192l0-32-32 0c-10.1 0-19.6 4.7-25.6 12.8l-32.4 43.2-40-53.3 21.2-28.3C293.3 110.2 321.8 96 352 96l32 0 0-32c0-12.9 7.8-24.6 19.8-29.6zM154 296l40 53.3-21.2 28.3C154.7 401.8 126.2 416 96 416l-64 0c-17.7 0-32-14.3-32-32s14.3-32 32-32l64 0c10.1 0 19.6-4.7 25.6-12.8L154 296z",
-      red: "M438.6 470.6c-9.2 9.2-22.9 11.9-34.9 6.9S384 460.9 384 448l0-32-32 0c-30.2 0-58.7-14.2-76.8-38.4L121.6 172.8c-6-8.1-15.5-12.8-25.6-12.8l-64 0c-17.7 0-32-14.3-32-32S14.3 96 32 96l64 0c30.2 0 58.7 14.2 76.8 38.4L326.4 339.2c6 8.1 15.5 12.8 25.6 12.8l32 0 0-32c0-12.9 7.8-24.6 19.8-29.6s25.7-2.2 34.9 6.9l64 64c6 6 9.4 14.1 9.4 22.6s-3.4 16.6-9.4 22.6l-64 64z",
-    },
   },
 
   // circle-half-stroke.svg — viewBox 0 0 512 512 — used for halved (180°) inversions
@@ -98,7 +94,7 @@ export const LOOP_ICON_COLORS: Record<LOOPComponentId | "freeform", string> = {
   rotated: "#36c3ff",
   mirrored: "#6F2DA8",
   flipped: "#e91e63",
-  swapped: "#26e600",
+  swapped: "#2ecc71",
   inverted: "#eb7d00",
   rewound: "#00bcd4",
   freeform: "#9e9e9e",
@@ -153,54 +149,17 @@ export function renderLoopIconStrip(
   let currentX = centerX - totalWidth / 2 + iconSize / 2;
 
   for (const component of active) {
-    if (component === "swapped") {
-      drawBicolorSwapIcon(ctx, currentX, centerY, iconSize, darkMode);
-    } else {
-      const pathKey =
-        component === "rotated" && rotationPeriod === "quartered"
-          ? "rotated-quartered"
-          : component === "inverted" && inversionPeriod === "quartered"
-            ? "inverted-quartered"
-            : component;
-      drawLoopIcon(ctx, pathKey, currentX, centerY, iconSize, LOOP_ICON_COLORS[component], darkMode);
-    }
+    const pathKey =
+      component === "rotated" && rotationPeriod === "quartered"
+        ? "rotated-quartered"
+        : component === "inverted" && inversionPeriod === "quartered"
+          ? "inverted-quartered"
+          : component;
+    drawLoopIcon(ctx, pathKey, currentX, centerY, iconSize, LOOP_ICON_COLORS[component], darkMode);
     currentX += iconSize + gap;
   }
 
   return { totalWidth };
-}
-
-const SWAP_BLUE = "#3575E2";
-const SWAP_RED = "#ED1C24";
-
-function drawBicolorSwapIcon(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  size: number,
-  darkMode: boolean
-): void {
-  const iconData = LOOP_ICON_PATHS.swapped;
-  if (!iconData?.bicolor) return;
-
-  const target = { x: x - size / 2, y: y - size / 2, width: size, height: size };
-  const viewBox = { width: iconData.viewBox[0], height: iconData.viewBox[1] };
-
-  ctx.save();
-  ctx.shadowColor = darkMode ? "rgba(0, 0, 0, 0.5)" : "rgba(0, 0, 0, 0.3)";
-  ctx.shadowBlur = 2;
-  ctx.shadowOffsetY = 1;
-
-  ctx.fillStyle = SWAP_BLUE;
-  drawSvgPath(ctx, iconData.bicolor.blue, viewBox, target);
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.fillStyle = SWAP_RED;
-  drawSvgPath(ctx, iconData.bicolor.red, viewBox, target);
-  ctx.fill();
-
-  ctx.restore();
 }
 
 function drawLoopIcon(

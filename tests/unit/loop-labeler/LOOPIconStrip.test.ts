@@ -173,13 +173,12 @@ describe("renderLoopIconStrip period picker", () => {
 
     renderLoopIconStrip(ctx, components, 100, 50, 20, true, false, "quartered");
 
-    // rotated = 1 fill, swapped bicolor = 2 fills → 3 total.
-    expect(calls.length).toBe(3);
-    // Rotated's brand color + swapped's bicolor pair (blue + red).
+    // rotated = 1 fill, swapped = 1 fill → 2 total (both single-hue).
+    expect(calls.length).toBe(2);
+    // Rotated's brand color + swapped's emerald.
     const colors = calls.map((c) => c.fillStyle);
     expect(colors).toContain("#36c3ff");
-    expect(colors).toContain("#3575E2");
-    expect(colors).toContain("#ED1C24");
+    expect(colors).toContain("#2ecc71");
   });
 
   it("returns totalWidth accounting for all active icons and gaps", () => {

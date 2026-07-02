@@ -19,7 +19,7 @@ export const BASE_COMPONENTS = [
     label: "Swapped",
     description: "Blue/Red hands swap roles",
     icon: "shuffle",
-    color: "#26e600",
+    color: "#2ecc71",
   },
   {
     id: "mirrored",
