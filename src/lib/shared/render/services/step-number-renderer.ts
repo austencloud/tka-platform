@@ -21,7 +21,7 @@ const DARK_MODE_COLOR = "#ffffff";
 const LIGHT_MODE_COLOR = "#231f20";
 
 export function drawStepNumber(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   stepNumber: number,
   x: number,
   y: number,

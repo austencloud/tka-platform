@@ -8,10 +8,11 @@
  * `getSheetPageLayout()` + `planSheet()` the live preview uses, so the PDF lays
  * out identically. Identical pictographs embed once (keyed by rendered identity).
  *
- * Step numbers and block separators are drawn as vector text/lines by pdf-lib so
- * they stay crisp at any zoom.
+ * Step numbers are baked into the raster via the canonical drawStepNumber (the
+ * same overlay StepNumber.svelte / the card pipeline use), so print matches the
+ * live preview glyph-for-glyph. Block separators stay vector via pdf-lib.
  */
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFImage } from "pdf-lib";
 import { getSheetPageLayout, type SheetPageGeometry } from "../domain/sheet-page-layout";
 import { planSheet, type SheetPage } from "./sheet-row-planner";
 import { SHEET_CELL_VISIBILITY } from "./sheet-cell-config";
@@ -20,6 +21,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { RenderCanvas } from "$lib/shared/render/services/types";
 import { Canvas2DDirectRenderer } from "$lib/shared/render/services/canvas-2d-direct-renderer";
+import { drawStepNumber } from "$lib/shared/render/services/step-number-renderer";
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -34,8 +36,15 @@ function cellRasterSizePx(geo: SheetPageGeometry): number {
 
 // Identity key for raster de-dup: identical letter + blue/red motion + reversals
 // + prop types render to identical pixels, so they share one embedded PNG. This
-// mirrors what the preparer's own cache keys on.
-function cellRasterKey(step: StepData, blueProp: PropType, redProp: PropType): string {
+// mirrors what the preparer's own cache keys on. When step numbers are shown they
+// are baked into the pixels, so the number joins the identity (`bakedNumber` is
+// null when the sheet hides numbers, keeping full de-dup in that mode).
+function cellRasterKey(
+  step: StepData,
+  blueProp: PropType,
+  redProp: PropType,
+  bakedNumber: number | null,
+): string {
   const motions = step.motions ?? {};
   const fingerprint = (m: (typeof motions)["blue"]): string =>
     m
@@ -50,6 +59,7 @@ function cellRasterKey(step: StepData, blueProp: PropType, redProp: PropType): s
     step.redReversal ? "R" : "",
     blueProp,
     redProp,
+    bakedNumber ?? "",
   ].join("|");
 }
 
@@ -65,27 +75,6 @@ async function canvasToPngBytes(canvas: RenderCanvas): Promise<Uint8Array> {
     html.toBlob((b) => (b ? resolve(b) : reject(new Error("canvas.toBlob returned null"))), "image/png"),
   );
   return new Uint8Array(await blob.arrayBuffer());
-}
-
-// Draw the step number in the cell's top-left corner. pdf-lib's y is the text
-// baseline measured from the page bottom, so we sit it one font-height down from
-// the cell's top edge.
-function drawStepNumber(
-  page: import("pdf-lib").PDFPage,
-  font: PDFFont,
-  value: number,
-  cellX: number,
-  cellBottomY: number,
-  cellSizePt: number,
-): void {
-  const fontSize = Math.max(6, cellSizePt * 0.16);
-  page.drawText(String(value), {
-    x: cellX + cellSizePt * 0.06,
-    y: cellBottomY + cellSizePt - fontSize - cellSizePt * 0.04,
-    size: fontSize,
-    font,
-    color: rgb(0.1, 0.1, 0.1),
-  });
 }
 
 export async function buildChoreoSheetPDF(
@@ -182,7 +171,12 @@ export async function buildChoreoSheetPDF(
         if (cell.isBlank || !cell.step) continue;
         const step = cell.step;
 
-        const key = cellRasterKey(step, blueProp, redProp);
+        // Step numbers honor the sheet flag; start positions (stepNumber 0) never
+        // get one, though the planner only feeds actual steps (>= 1).
+        const bakedNumber =
+          sheet.layout.showStepNumbers && step.stepNumber && step.stepNumber > 0 ? step.stepNumber : null;
+
+        const key = cellRasterKey(step, blueProp, redProp, bakedNumber);
         let img = imageCache.get(key);
         if (!img) {
           const prepared = await pictographPreparer.prepareSingle(step, {
@@ -194,18 +188,21 @@ export async function buildChoreoSheetPDF(
             size: rasterPx,
             visibility: { ...SHEET_CELL_VISIBILITY, darkMode: false, bluePropType: blueProp, redPropType: redProp },
           });
+          if (bakedNumber !== null) {
+            // Canonical overlay — same drawStepNumber the preview's StepNumber.svelte
+            // mirrors and the card pipeline bakes, anchored 50/950 from the top-left.
+            const ctx = canvas.getContext("2d") as
+              | CanvasRenderingContext2D
+              | OffscreenCanvasRenderingContext2D
+              | null;
+            if (ctx) drawStepNumber(ctx, bakedNumber, 0, 0, rasterPx, false);
+          }
           const bytes = await canvasToPngBytes(canvas);
           img = await pdf.embedPng(bytes);
           imageCache.set(key, img);
         }
 
         pdfPage.drawImage(img, { x: cellX, y: cellBottomY, width: geo.cellSizePt, height: geo.cellSizePt });
-
-        // Step numbers honor the sheet flag; start positions (stepNumber 0) never
-        // get one, though the planner only feeds actual steps (>= 1).
-        if (sheet.layout.showStepNumbers && step.stepNumber && step.stepNumber > 0) {
-          drawStepNumber(pdfPage, font, step.stepNumber, cellX, cellBottomY, geo.cellSizePt);
-        }
 
         done++;
         onProgress?.(done, total);
