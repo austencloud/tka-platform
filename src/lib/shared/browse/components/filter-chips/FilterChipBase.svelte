@@ -202,7 +202,14 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     z-index: var(--z-dropdown);
     min-width: 160px;
     padding: 4px;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    /* --theme-panel-bg is a translucent wash (rgba(0,0,0,0.75) on dark
+       desktop) — floating menus need an opaque surface, so paint the wash
+       over a solid base. Same treatment as SortPopover. */
+    background-color: #12141c;
+    background-image: linear-gradient(
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98)),
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98))
+    );
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
     box-shadow:

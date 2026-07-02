@@ -312,7 +312,15 @@
     left: 0;
     min-width: 180px;
     padding: 4px;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    /* --theme-panel-bg is a translucent wash (rgba(0,0,0,0.75) on dark
+       desktop) — fine for big panels, see-through for a floating menu over
+       bright cards. Paint the wash over an opaque base so contents behind
+       the menu never bleed through. */
+    background-color: #12141c;
+    background-image: linear-gradient(
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98)),
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98))
+    );
     border: 1px solid var(--theme-stroke);
     border-radius: 14px;
     box-shadow:
