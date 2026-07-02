@@ -69,6 +69,17 @@
           <div class="toast-header">
             <i class="fas {config.icon} toast-icon" aria-hidden="true"></i>
             <span class="toast-message">{toast.message}</span>
+            {#if toast.action}
+              <button
+                class="toast-action accessible-touch-target"
+                onclick={() => {
+                  toast.action?.onClick();
+                  removeToast(toast.id);
+                }}
+              >
+                {toast.action.label}
+              </button>
+            {/if}
             <button
               class="toast-close accessible-touch-target"
               onclick={() => removeToast(toast.id)}
@@ -194,6 +205,24 @@
   .toast-close:hover {
     background: var(--theme-card-bg);
     color: color-mix(in srgb, var(--theme-text, white) 90%, transparent);
+  }
+
+  .toast-action {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1.5px solid var(--toast-color);
+    background: color-mix(in srgb, var(--toast-color) 22%, transparent);
+    color: var(--toast-text, var(--theme-text, white));
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--duration-fast);
+    white-space: nowrap;
+  }
+
+  .toast-action:hover {
+    background: color-mix(in srgb, var(--toast-color) 40%, transparent);
   }
 
   /* Mobile positioning */

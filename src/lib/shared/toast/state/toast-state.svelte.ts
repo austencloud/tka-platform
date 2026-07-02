@@ -6,6 +6,13 @@
 
 export type ToastType = "info" | "success" | "warning" | "error";
 
+export interface ToastAction {
+  /** Button label, e.g. "Reload". */
+  label: string;
+  /** Runs when the action button is clicked. The toast is dismissed after. */
+  onClick: () => void;
+}
+
 export interface Toast {
   id: string;
   message: string;
@@ -14,6 +21,8 @@ export interface Toast {
   timestamp: number;
   /** Optional image URL (data URL or http) for thumbnail preview */
   imageUrl?: string;
+  /** Optional action button (e.g. a Reload prompt). */
+  action?: ToastAction;
 }
 
 // Reactive toast queue
@@ -29,6 +38,7 @@ export interface ShowToastOptions {
   type?: ToastType;
   duration?: number;
   imageUrl?: string;
+  action?: ToastAction;
 }
 
 /**
@@ -54,6 +64,7 @@ export function showToast(
     duration: options.duration ?? 3000,
     timestamp: Date.now(),
     imageUrl: options.imageUrl,
+    action: options.action,
   };
 
   toastQueue.push(toast);
