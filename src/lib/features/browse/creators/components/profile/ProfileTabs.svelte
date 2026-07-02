@@ -10,6 +10,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
+  import SectionHeader from "$lib/shared/browse/components/SectionHeader.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
@@ -59,6 +60,21 @@
     sortSequences([...userSequences] as SequenceData[], sortMethod) as LibrarySequence[]
   );
 
+  // Group by exact step count so a row never mixes thumbnail heights (mixed
+  // rows make shorter sequences look shrunken). Map preserves insertion order,
+  // so groups follow the active sort: Length → ascending, Date → the group
+  // holding the newest sequence first, A-Z → group of the first word first.
+  const lengthGroups = $derived.by(() => {
+    const groups = new Map<number, LibrarySequence[]>();
+    for (const sequence of sortedSequences) {
+      const steps = sequence.sequenceLength ?? sequence.steps?.length ?? 0;
+      const bucket = groups.get(steps);
+      if (bucket) bucket.push(sequence);
+      else groups.set(steps, [sequence]);
+    }
+    return [...groups.entries()];
+  });
+
   function getDisplayName(sequence: LibrarySequence): string {
     if (sequence.word) return sequence.word;
 
@@ -105,27 +121,35 @@
   </div>
 
   <div class="gallery-content">
-    <div class="gallery-grid">
-      {#each sortedSequences as sequence (sequence.id)}
-        <button
-          class="gallery-card"
-          onclick={() => handleSequenceClick(sequence)}
-          transition:fade={{ duration: reducedMotion ? 0 : 200 }}
-          aria-label="View sequence {getDisplayName(sequence)}"
-        >
-          <div class="card-thumbnail">
-            <PropAwareThumbnail {sequence} {lightMode} />
-          </div>
-
-          {#if sequence.starCount > 0}
-            <div class="star-pill">
-              <span class="star-icon">&#9733;</span>
-              <span class="star-count">{sequence.starCount}</span>
+    {#each lengthGroups as [steps, group] (steps)}
+      <!-- Count travels inside the title as "(N sequences)" — the committed
+           SectionHeader parses it out; its explicit count prop is another
+           session's in-flight addition, not safe to depend on yet. -->
+      <SectionHeader
+        title={`${t("browse_n_steps", { count: String(steps) })} (${group.length} sequences)`}
+      />
+      <div class="gallery-grid">
+        {#each group as sequence (sequence.id)}
+          <button
+            class="gallery-card"
+            onclick={() => handleSequenceClick(sequence)}
+            transition:fade={{ duration: reducedMotion ? 0 : 200 }}
+            aria-label="View sequence {getDisplayName(sequence)}"
+          >
+            <div class="card-thumbnail">
+              <PropAwareThumbnail {sequence} {lightMode} />
             </div>
-          {/if}
-        </button>
-      {/each}
-    </div>
+
+            {#if sequence.starCount > 0}
+              <div class="star-pill">
+                <span class="star-icon">&#9733;</span>
+                <span class="star-count">{sequence.starCount}</span>
+              </div>
+            {/if}
+          </button>
+        {/each}
+      </div>
+    {/each}
   </div>
 {/if}
 
