@@ -253,6 +253,24 @@ Constraints of the hand-rolled SW:
    - Verify status indicator updates
    - Verify banner appears/dismisses
 
+### Automated coverage
+
+- **SW strategy logic (unit):** `tests/unit/sw-offline-behavior.test.ts` runs the
+  real `static/sw.js` source in a mocked SW scope (`tests/helpers/sw-harness.ts`)
+  — install precache, cache-first/SWR/network-first strategies, navigation
+  fallbacks, lie-fi timeout, and the update-wait/`SKIP_WAITING` message flow.
+- **SW runtime (real browser):** `node scripts/offline-sw-e2e.mjs` drives real
+  Chromium against a production `vite preview` build, registers the actual SW,
+  cuts the network (`context.setOffline`), and asserts the `/app` shell + a
+  render-critical pictograph SVG are served from cache. Serves over HTTPS on the
+  fake host `tka.test` (mapped to `127.0.0.1`) because `sw.js` bypasses
+  `localhost` by design and a SW needs a secure context on a non-localhost host.
+  Prereq: `npm run build:fast` first; needs the mkcert dev cert (`.cert/`) and
+  Playwright Chromium. **Local / non-blocking** — not a CI gate yet (cert absent
+  in CI); CI wiring is the known next step.
+- **Deploy artifact + live origin:** `npm run verify:offline` (build artifact)
+  and the daily `offline-kit-prod-check` workflow (live tkaflowarts.com).
+
 ---
 
 ## Confirmed Decisions
