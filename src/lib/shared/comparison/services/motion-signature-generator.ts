@@ -5,7 +5,7 @@
  * The signature captures the geometric essence independent of grid position.
  */
 
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { MotionWithView } from "$lib/shared/pictograph/shared/domain/models/motion-view";
 import type {
   MotionSignature,
   MotionComparisonResult,
@@ -44,7 +44,7 @@ const LOCATION_TO_ANGLE: Record<GridLocation, number> = {
 };
 
 export class MotionSignatureGenerator {
-  generateSignature(motion: MotionData): MotionSignature {
+  generateSignature(motion: MotionWithView): MotionSignature {
     return {
       motionType: motion.motionType,
       rotationDirection: motion.rotationDirection,
@@ -143,14 +143,14 @@ export class MotionSignatureGenerator {
   // PRIVATE HELPERS
   // ============================================================================
 
-  private extractOrientationTransition(motion: MotionData): OrientationTransition {
+  private extractOrientationTransition(motion: MotionWithView): OrientationTransition {
     return {
       from: motion.startOrientation,
       to: motion.endOrientation,
     };
   }
 
-  private extractLocationDelta(motion: MotionData): LocationDelta {
+  private extractLocationDelta(motion: MotionWithView): LocationDelta {
     const startLoc = motion.startLocation;
     const endLoc = motion.endLocation;
 

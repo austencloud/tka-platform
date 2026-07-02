@@ -5,7 +5,7 @@
  * Composes motion signatures with position group and hand angle information.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StepLike } from "$lib/shared/foundation/domain/models/step-like";
 import type { MotionSignatureGenerator } from "./motion-signature-generator";
 import type {
   StepSignature,
@@ -49,7 +49,7 @@ const LOCATION_TO_ANGLE: Record<GridLocation, number> = {
 export class StepSignatureGenerator {
   constructor(private readonly motionSignatureGenerator: MotionSignatureGenerator) {}
 
-  generateSignature(step: StepData): StepSignature {
+  generateSignature(step: StepLike): StepSignature {
     const blueMotion = step.motions[MotionColor.BLUE];
     const redMotion = step.motions[MotionColor.RED];
 
@@ -144,7 +144,7 @@ export class StepSignatureGenerator {
     };
   }
 
-  generateSignatures(steps: readonly StepData[]): readonly StepSignature[] {
+  generateSignatures(steps: readonly StepLike[]): readonly StepSignature[] {
     return steps.map((step) => this.generateSignature(step));
   }
 

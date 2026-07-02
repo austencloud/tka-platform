@@ -12,7 +12,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { StepLike } from "$lib/shared/foundation/domain/models/step-like";
 import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
@@ -39,6 +39,9 @@ import {
   MotionColor,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+// Canonical MotionType is a superset of the app enum (adds "shift"); StepLike
+// motions carry the canonical type, so type-level comparisons use it.
+import type { MotionType as CanonicalMotionType } from "@tka/tka-types";
 
 export class LOOPDetector implements ILOOPDetector {
 
@@ -48,7 +51,7 @@ export class LOOPDetector implements ILOOPDetector {
    * Derive start position from motion locations
    * Position is determined by blue and red hand start locations
    */
-  private deriveStartPosition(step: StepData): GridPosition | null {
+  private deriveStartPosition(step: StepLike): GridPosition | null {
     const blueMotion = step.motions?.[MotionColor.BLUE];
     const redMotion = step.motions?.[MotionColor.RED];
 
@@ -71,7 +74,7 @@ export class LOOPDetector implements ILOOPDetector {
    * Derive end position from motion locations
    * Position is determined by blue and red hand end locations
    */
-  private deriveEndPosition(step: StepData): GridPosition | null {
+  private deriveEndPosition(step: StepLike): GridPosition | null {
     const blueMotion = step.motions?.[MotionColor.BLUE];
     const redMotion = step.motions?.[MotionColor.RED];
 
@@ -215,7 +218,7 @@ export class LOOPDetector implements ILOOPDetector {
    * Key insight: For quartered rotation, compare START positions of first step
    * of each quarter. If q1->q2->q3->q4 follows 90 degree rotation, it's quartered.
    */
-  private determinePeriod(steps: readonly StepData[]): Period {
+  private determinePeriod(steps: readonly StepLike[]): Period {
     const length = steps.length;
 
     // Check quartered FIRST (more specific)
@@ -232,7 +235,7 @@ export class LOOPDetector implements ILOOPDetector {
   /**
    * Detect quartered (90 degree) rotation by comparing START positions of each quarter
    */
-  private detectsQuarteredRotation(steps: readonly StepData[]): boolean {
+  private detectsQuarteredRotation(steps: readonly StepLike[]): boolean {
     const length = steps.length;
     if (length < 4 || length % 4 !== 0) return false;
 
@@ -273,7 +276,7 @@ export class LOOPDetector implements ILOOPDetector {
    * For quartered: Already detected in determinePeriod via detectsQuarteredRotation
    */
   private detectsRotation(
-    steps: readonly StepData[],
+    steps: readonly StepLike[],
     period: Period
   ): boolean {
     const length = steps.length;
@@ -304,7 +307,7 @@ export class LOOPDetector implements ILOOPDetector {
   /**
    * Detect if sequence follows mirroring transformation
    */
-  private detectsMirroring(steps: readonly StepData[]): boolean {
+  private detectsMirroring(steps: readonly StepLike[]): boolean {
     const length = steps.length;
     if (length < 2 || length % 2 !== 0) return false;
 
@@ -346,7 +349,7 @@ export class LOOPDetector implements ILOOPDetector {
    * If both hands have the same motion type, swapping is meaningless
    * and would cause false positives.
    */
-  private detectsSwapping(steps: readonly StepData[]): boolean {
+  private detectsSwapping(steps: readonly StepLike[]): boolean {
     const length = steps.length;
     if (length < 2 || length % 2 !== 0) return false;
 
@@ -390,7 +393,7 @@ export class LOOPDetector implements ILOOPDetector {
   /**
    * Detect if sequence follows inversion transformation (inverted motion types)
    */
-  private detectsInversion(steps: readonly StepData[]): boolean {
+  private detectsInversion(steps: readonly StepLike[]): boolean {
     const length = steps.length;
     if (length < 2 || length % 2 !== 0) return false;
 
@@ -447,14 +450,14 @@ export class LOOPDetector implements ILOOPDetector {
   /**
    * Check if two motion types are inverted pairs
    */
-  private isMotionTypeInverted(type1: MotionType, type2: MotionType): boolean {
+  private isMotionTypeInverted(type1: CanonicalMotionType, type2: CanonicalMotionType): boolean {
     // PRO and ANTI are inverted pairs
     if (type1 === MotionType.PRO && type2 === MotionType.ANTI) return true;
     if (type1 === MotionType.ANTI && type2 === MotionType.PRO) return true;
 
     // STATIC, FLOAT, DASH are self-inverted
     if (type1 === type2) {
-      const selfInverted: MotionType[] = [
+      const selfInverted: CanonicalMotionType[] = [
         MotionType.STATIC,
         MotionType.FLOAT,
         MotionType.DASH,
@@ -470,7 +473,7 @@ export class LOOPDetector implements ILOOPDetector {
   /**
    * Detect transformations at quartered interval (90 degree rotation period)
    */
-  private detectAtQuartered(steps: readonly StepData[]): LOOPComponent[] {
+  private detectAtQuartered(steps: readonly StepLike[]): LOOPComponent[] {
     const components: LOOPComponent[] = [];
     const length = steps.length;
 
@@ -497,7 +500,7 @@ export class LOOPDetector implements ILOOPDetector {
   /**
    * Detect transformations at halved interval (180 degree rotation period)
    */
-  private detectAtHalved(steps: readonly StepData[]): LOOPComponent[] {
+  private detectAtHalved(steps: readonly StepLike[]): LOOPComponent[] {
     const components: LOOPComponent[] = [];
     const length = steps.length;
 
@@ -540,7 +543,7 @@ export class LOOPDetector implements ILOOPDetector {
    * @param interval The number of steps between comparisons
    */
   private detectsSwappingAtInterval(
-    steps: readonly StepData[],
+    steps: readonly StepLike[],
     interval: number
   ): boolean {
     const length = steps.length;
@@ -584,7 +587,7 @@ export class LOOPDetector implements ILOOPDetector {
    * Detect inversion at a specific interval
    */
   private detectsInversionAtInterval(
-    steps: readonly StepData[],
+    steps: readonly StepLike[],
     interval: number
   ): boolean {
     const length = steps.length;
@@ -645,7 +648,7 @@ export class LOOPDetector implements ILOOPDetector {
    * Checks if step[0].startPosition -> step[N/4].startPosition follows HALF_POSITION_MAP.
    * Example: 16-step sequence where steps 1-8 form a 2-period rotated loop.
    */
-  private detectsInnerHalvedRotation(steps: readonly StepData[]): boolean {
+  private detectsInnerHalvedRotation(steps: readonly StepLike[]): boolean {
     const length = steps.length;
     if (length < 8 || length % 4 !== 0) return false;
 
@@ -662,7 +665,7 @@ export class LOOPDetector implements ILOOPDetector {
    * e.g., 90 degree rotation (quartered) + swap (halved)
    */
   private detectCompoundPattern(
-    steps: readonly StepData[],
+    steps: readonly StepLike[],
     quarteredComponents: LOOPComponent[],
     halvedComponents: LOOPComponent[]
   ): CompoundPattern | null {
@@ -767,7 +770,7 @@ export class LOOPDetector implements ILOOPDetector {
    * Get the rotation direction for quartered rotation
    */
   private getQuarteredRotationDirection(
-    steps: readonly StepData[]
+    steps: readonly StepLike[]
   ): "cw" | "ccw" | null {
     const length = steps.length;
     if (length < 4 || length % 4 !== 0) return null;

@@ -5,7 +5,11 @@
  * They capture the geometric essence of movements without absolute grid positions.
  */
 
-import type { MotionType, RotationDirection, Orientation, HandPath, SkewDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+// MotionType comes from the canonical package: it is a superset of the app
+// enum (adds "shift"), and signatures are generated from canonical-compatible
+// MotionWithView inputs. The other enums are structurally identical app-side.
+import type { MotionType } from "@tka/tka-types";
+import type { RotationDirection, Orientation, HandPath, SkewDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 // ============================================================================
