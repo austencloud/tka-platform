@@ -1,6 +1,13 @@
 # StepData→Step Unification: Absence Encoding + Subtype Redefinition — Design
 
-**Date:** 2026-07-02 · **Status:** ACTIVE (governs the migration bulk)
+**Date:** 2026-07-02 · **Status:** SHIPPED 2026-07-02 (commits `a2c056f8ce` core
+flip + `d533fd5a9d` Letter union + `ca76df65ed` slice 1). Gates at ship: full
+svelte-check 0 errors; data-parity 202×8 = 0 drift; round-trip 202/2,758×7 = 0
+drift; mutation control NET HAS TEETH; guards+LOOP suites 86/86. Deviations
+from the plan below: `isStep`/`isSelected` KEPT as documented app extras (live
+type guards depend on them; deletion was cost without value), and the bridges
+were kept as script/test-only infrastructure (the lossy bridge is the negative
+control's tooth) instead of deleted.
 **Prereqs shipped:** data net armed (`826a1d5fb7`), presence register + tripwire guards (`b0176cae61`), Letter const-union (`d533fd5a9d`), adoption slice 1 (`ca76df65ed`)
 
 ## Problem

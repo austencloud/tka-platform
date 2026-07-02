@@ -1,31 +1,24 @@
 /**
- * Step Bridge — transitional adapters between the app's `StepData`/`MotionData`
- * and the canonical `@tka/tka-types` `Step`/`Motion`.
+ * Step Bridge — SCRIPT/TEST-ONLY adapters between the app's
+ * `StepData`/`MotionData` and lean `@tka/tka-types` `Step`/`Motion` values.
  *
- * Used during sub-migration A (sequence-engine unification Phase 2 — see
- * docs/superpowers/specs/active/2026-06-30-stepdata-step-migration-scope.md) so
- * a module converted to `Step` can still bridge to neighbors that still speak
- * `StepData`. Deleted once `StepData` is gone.
+ * Since 2026-07-02 the runtime app never needs these: `StepData` extends the
+ * canonical `Step` and `MotionData` extends `Motion` by declaration, so every
+ * app step/motion IS a canonical value with zero conversion. The remaining
+ * consumers are the migration parity scripts (`scripts/migrations/*`) and the
+ * adapter tests, where a LEAN value must be constructed deliberately:
  *
- * Conversion is lossy: `Motion` is lean structural-only, so the render data
- * embedded on `MotionData` is dropped on the forward pass and rebuilt as
- * `createMotionData` defaults on the reverse pass.
+ *   - `stepDataToStep` builds a lean Step (drops view fields) — used by
+ *     step-view-bridge and the constructability check.
+ *   - `stepToStepData` is DELIBERATELY LOSSY (view fields rebuilt as factory
+ *     defaults). That lossiness is the negative control's tooth:
+ *     step-lossy-mutation-test.ts proves the data-parity net flags exactly
+ *     this drop. Do not "fix" it, and do not call it from runtime code.
  *
- * ⚠ CRITICAL: that render data is NOT all "recomputed downstream." Some of it is
- * USER-AUTHORED and PERSISTED: `pathShape`, `skewSteps`/`skewDir`,
- * `arrowPlacementData.manualAdjustmentX/Y` (manual arrow nudges), `isVisible`
- * (hidden-prop toggles), and effective `propType`. A `Step → StepData`
- * round-trip via `stepToStepData` SILENTLY DISCARDS those authored choices.
- * Therefore `stepToStepData` must NEVER run on a path that renders, persists,
- * or re-authors a step (the render pipeline, serialization/identity hashing,
- * the step-operation arrow/prop/path-shape/beta handlers) until the
- * authored-vs-derived split is formalized — that is migration B.
- *
- * Stored reversal flags are also dropped and left `false`; the existing reversal
- * pipeline (`reversalDetector.processReversals`) refills them. Do NOT substitute
- * the engine `deriveReversals` for display flags — `processReversals` has
- * loop-wrap semantics the engine version lacks. `isSelected` moves to
- * `selection-store.svelte.ts`.
+ * Stored reversal flags are dropped and left `false`; the reversal pipeline
+ * (`reversalDetector.processReversals`) refills them. Do NOT substitute the
+ * engine `deriveReversals` for display flags — `processReversals` has
+ * loop-wrap semantics the engine version lacks.
  */
 import { createMotion, createStep, type Motion, type Step } from "@tka/tka-types";
 import {

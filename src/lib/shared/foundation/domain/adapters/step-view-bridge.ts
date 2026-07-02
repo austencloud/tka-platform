@@ -1,21 +1,14 @@
 /**
- * Lossless Step + MotionView bridge — the canonical-representation keystone for
- * the StepData->Step migration.
+ * Lossless Step + MotionView bridge — SCRIPT/TEST-ONLY since 2026-07-02.
  *
- * The generic `stepToStepData` / `motionToMotionData` (step-bridge.ts) are LOSSY:
- * canonical lean `Motion` has no slot for the authored view fields (handPath,
- * skew, pathShape, isVisible, propType, arrowLocation, gridMode, placements), so
- * a round-trip through them nulls those fields. That silently shifts the V2
- * identity contentHash (which reads handPath/skew — sequence-content-hasher.ts:
- * 172,175,176) and re-keys the soloprop/path dedup hashes — a phantom-fork the
- * pixel net cannot see.
- *
- * This bridge pairs a lean canonical `Step` with a per-hand `MotionView`
- * side-channel that carries EVERY view field, so `StepData -> StepWithView ->
- * StepData` is byte-identical on every fingerprint. Proven over the corpus by
- * scripts/migrations/step-roundtrip-parity.ts (0 drift). It is the minimal wedge
- * of "migration B" (MotionData -> Motion & MotionView) done losslessly for the
- * whole-step boundary, and the safe adapter the real hydrate-seam flip must use.
+ * The runtime app no longer needs any bridge: `StepData` extends canonical
+ * `Step` (and `MotionData` extends `Motion`) by declaration. This adapter
+ * remains for the migration parity scripts: it pairs a LEAN canonical `Step`
+ * with a per-hand `MotionView` side-channel carrying every view field, so
+ * `StepData -> StepWithView -> StepData` is byte-identical on every
+ * fingerprint (proven by scripts/migrations/step-roundtrip-parity.ts, 0
+ * drift over the corpus + risk fixtures). The lossy sibling (step-bridge.ts
+ * `stepToStepData`) is the negative control's deliberately-broken bridge.
  */
 import type { Motion, Step } from "@tka/tka-types";
 import { createMotionData, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";

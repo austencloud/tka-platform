@@ -47,11 +47,24 @@ describe("stepDataToStep", () => {
     expect("isSelected" in step).toBe(false);
   });
 
-  it("throws when a hand motion is missing", () => {
+  it("factory placeholder-fill means one-hand input still constructs (invisible red)", () => {
+    // Since 2026-07-02 the factory fills a missing hand with an invisible
+    // static placeholder (both-required canonical Step shape), so the bridge
+    // no longer sees absent motions from factory-built steps.
     const sd = createStepData({
       stepNumber: 1,
       motions: { [MotionColor.BLUE]: createMotionData({ color: MotionColor.BLUE }) },
     });
+    expect(sd.motions.red.isVisible).toBe(false);
+    const step = stepDataToStep(sd);
+    expect(step.motions.red.motionType).toBe("static");
+  });
+
+  it("still throws for a RAW step (never through the factory) missing a hand", () => {
+    const sd = {
+      ...createStepData({ stepNumber: 1 }),
+      motions: { [MotionColor.BLUE]: createMotionData({ color: MotionColor.BLUE }) },
+    } as unknown as Parameters<typeof stepDataToStep>[0];
     expect(() => stepDataToStep(sd)).toThrow(/missing its red motion/);
   });
 });

@@ -46,9 +46,10 @@ export interface StepData extends Step {
   readonly betaSwapped?: boolean;
   readonly category?: number | null;
 
-  // Type discriminator for TypeScript type guards (deleted in final slice)
+  // App-level runtime discriminator (pictograph-type-guards distinguishes
+  // StepData / StartPositionData / bare PictographData by it)
   readonly isStep?: true;
-  // Selection state (moving to the id-keyed selection store; deleted in final slice)
+  // Selection state (UI extra; the id-keyed selection store is the successor)
   readonly isSelected?: boolean;
 }
 
