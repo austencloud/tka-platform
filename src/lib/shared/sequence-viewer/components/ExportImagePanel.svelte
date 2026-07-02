@@ -201,11 +201,13 @@
   });
 
   // ── Mobile ControlDock state ─────────────────────────────────────────
+  // Columns + Theme are two buttons each — a whole tab apiece wasted the tray.
+  // Folded into one "Format" tab (two labeled rows), so every tab now holds a
+  // meaningful group instead of a lone pair.
   const DISPLAY_TABS: ControlDockTab[] = [
     { id: "labels", label: "Labels", icon: "fa-font" },
     { id: "pictograph", label: "Pictograph", icon: "fa-shapes" },
-    { id: "columns", label: "Columns", icon: "fa-table-columns" },
-    { id: "theme", label: "Theme", icon: "fa-circle-half-stroke" },
+    { id: "format", label: "Format", icon: "fa-sliders" },
   ];
   let activeTab = $state<string | null>(null);
 
@@ -311,16 +313,21 @@
               {/if}
             </div>
           </div>
-        {:else if activeTab === "columns"}
-          <div class="rt-chip-row">
-            {#each columnOptions as option}
-              <button type="button" class="rt-chip" aria-pressed={currentColumnCount === option.value} onclick={() => setColumns(option.value)}>{option.label}</button>
-            {/each}
+        {:else if activeTab === "format"}
+          <div class="field">
+            <span class="field-label">Columns</span>
+            <div class="rt-chip-row">
+              {#each columnOptions as option}
+                <button type="button" class="rt-chip" aria-pressed={currentColumnCount === option.value} onclick={() => setColumns(option.value)}>{option.label}</button>
+              {/each}
+            </div>
           </div>
-        {:else if activeTab === "theme"}
-          <div class="rt-chip-row">
-            <button type="button" class="rt-chip" aria-pressed={!exportOptions.imageDarkMode} onclick={() => exportOptions.setImageDarkMode(false)}><i class="fas fa-sun" aria-hidden="true"></i> Light</button>
-            <button type="button" class="rt-chip" aria-pressed={exportOptions.imageDarkMode} onclick={() => exportOptions.setImageDarkMode(true)}><i class="fas fa-moon" aria-hidden="true"></i> Dark</button>
+          <div class="field">
+            <span class="field-label">Theme</span>
+            <div class="rt-chip-row">
+              <button type="button" class="rt-chip" aria-pressed={!exportOptions.imageDarkMode} onclick={() => exportOptions.setImageDarkMode(false)}><i class="fas fa-sun" aria-hidden="true"></i> Light</button>
+              <button type="button" class="rt-chip" aria-pressed={exportOptions.imageDarkMode} onclick={() => exportOptions.setImageDarkMode(true)}><i class="fas fa-moon" aria-hidden="true"></i> Dark</button>
+            </div>
           </div>
         {/if}
       </div>
@@ -571,8 +578,35 @@
   /* Info segmented sits flush like a chip: drop the inset track frame so its
      height matches the 44px chips instead of towering ~7px over them (44px
      touch target + 3px track pad + 1px border was ~51px). */
-  .dock-dense :global(.segmented-control.sm) { padding: 0; }
-  .dock-dense :global(.segmented-control.sm .indicator) { top: 0; bottom: 0; border-radius: 9px; }
+  /* Info segmented matches the compact-pill chips: a 34px visible track +
+     indicator (drawn inset 5px, same frame as .rt-chip::before) over 44px-tap
+     segments, so it sits at the chips' visual height on the Pictograph tab
+     instead of towering over them. */
+  .dock-dense :global(.segmented-control.sm) {
+    padding: 0;
+    background: transparent;
+    border: none;
+    position: relative;
+  }
+  .dock-dense :global(.segmented-control.sm)::before {
+    content: "";
+    position: absolute;
+    inset: 5px 0;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 0;
+    pointer-events: none;
+  }
+  .dock-dense :global(.segmented-control.sm .indicator) {
+    top: 5px;
+    bottom: 5px;
+    border-radius: 9px;
+    z-index: 1;
+  }
+  .dock-dense :global(.segmented-control.sm .segment) {
+    z-index: 2;
+  }
   /* Inline label-left rows: each section is one row, not a label line + chips line. */
   .dock-dense .field {
     display: grid;
@@ -598,12 +632,59 @@
   /* Size chips to their label (override rail-tile's flex:1 + min-width:44 that
      squeezed long labels like "Non-radial" until they clipped) and let the row
      wrap. Each chip stays one unbroken line at >=44px tap height. */
+  /* Compact-pill: the <button> keeps a full 44px tap box (the mandatory touch
+     floor), but its visible pill is a ::before inset 5px top/bottom — 34px tall.
+     So the chips READ smaller without shrinking the tap target or the row
+     height. The base rt-chip's own bg/border is moved off the button onto the
+     pseudo pill; hover/active/focus are re-mapped to it. `flex: 0 0 auto` hugs
+     the label so short words aren't stretched into slabs. */
   .dock-dense :global(.rt-chip) {
-    flex: 0 1 auto;
+    position: relative;
+    flex: 0 0 auto;
     min-width: 0;
     min-height: 44px;
-    padding: 6px 12px;
+    padding: 0 12px;
+    background: transparent;
+    border-color: transparent;
     white-space: nowrap;
+    z-index: 0;
+  }
+  .dock-dense :global(.rt-chip:hover) {
+    background: transparent;
+    border-color: transparent;
+  }
+  .dock-dense :global(.rt-chip)::before {
+    content: "";
+    position: absolute;
+    inset: 5px 0;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: -1;
+    transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  }
+  .dock-dense :global(.rt-chip[aria-pressed="true"])::before {
+    background: color-mix(in srgb, var(--rail-accent, #4a9eff) 22%, rgba(20, 22, 32, 0.6));
+    border-color: color-mix(in srgb, var(--rail-accent, #4a9eff) 55%, transparent);
+  }
+  @media (hover: hover) {
+    .dock-dense :global(.rt-chip:hover:not([aria-pressed="true"]))::before {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+  }
+  /* Focus ring hugs the visible pill (via box-shadow on ::before), not the
+     invisible 44px button box. */
+  .dock-dense :global(.rt-chip:focus-visible) {
+    outline: none;
+  }
+  .dock-dense :global(.rt-chip:focus-visible)::before {
+    box-shadow: 0 0 0 2px var(--rail-accent, #4a9eff);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dock-dense :global(.rt-chip)::before {
+      transition: none;
+    }
   }
 
   /* ============================================================

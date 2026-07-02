@@ -132,9 +132,9 @@
     {/if}
   </div>
 
-  <div class="header-center">
+  {#snippet titleTrigger({ isOpen, hasMenu }: { isOpen: boolean; hasMenu: boolean })}
     {#if editingPane}
-      <h2 class="mode-title">
+      <span class="sequence-title">
         {#if editingPane === "animation"}
           Download Animation
         {:else if editingPane === "image"}
@@ -142,14 +142,45 @@
         {:else}
           Upload Video
         {/if}
-      </h2>
+      </span>
     {:else}
-      <div class="title-group">
-        <h2 class="sequence-title">{practiceActive ? "Practice Mode" : "Sequence Viewer"}</h2>
-        {#if isMobile && !practiceActive}
-          <p class="export-hint">Tap to download</p>
+      <span class="title-group">
+        <span class="sequence-title">Sequence Viewer</span>
+        {#if isMobile}
+          <span class="export-hint">Tap to download</span>
         {/if}
+      </span>
+    {/if}
+    {#if hasMenu}
+      <i class="fas fa-chevron-down title-caret" class:open={isOpen} aria-hidden="true"></i>
+    {/if}
+  {/snippet}
+
+  <div class="header-center">
+    {#if practiceActive}
+      <div class="title-group">
+        <h2 class="sequence-title">Practice Mode</h2>
       </div>
+    {:else}
+      <!-- The centered title IS the overflow-menu trigger: title + chevron opens
+           the actions menu below the header (replaces the old three-dot). -->
+      <ViewerOverflowMenu
+        trigger={titleTrigger}
+        dropDown
+        align="center"
+        variant="header"
+        sequenceId={sequence?.id}
+        isFavorite={isFavorite}
+        onFavoriteToggle={isMobile ? onFavorite : undefined}
+        isSaved={isSaved}
+        onSave={isMobile ? onSave : undefined}
+        onRemix={isMobile ? onEdit : undefined}
+        onVideoUpload={isLoggedIn ? onVideoUpload : undefined}
+        {isPublished}
+        onPublish={isOwned && isSaved ? onPublish : undefined}
+        onUnpublish={isOwned && isSaved ? onUnpublish : undefined}
+        onDeleteRequest={isOwned && isSaved ? onDeleteRequest : undefined}
+      />
     {/if}
   </div>
 
@@ -190,14 +221,17 @@
     {/if}
 
     {#if onPracticeToggle}
+      <!-- Icon-only on mobile so the pill doesn't hug the centered title; desktop
+           keeps the label. -->
       <button
         type="button"
         class="header-action-btn practice"
+        class:icon-only={isMobile}
         onclick={onPracticeToggle}
         aria-label="Practice"
       >
-        <i class="fas fa-signal" aria-hidden="true"></i>
-        <span>Practice</span>
+        <i class="fas fa-dumbbell" aria-hidden="true"></i>
+        {#if !isMobile}<span>Practice</span>{/if}
       </button>
     {/if}
 
@@ -216,21 +250,6 @@
         <i class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}" aria-hidden="true"></i>
       </button>
     {/if}
-
-    <ViewerOverflowMenu
-      variant="header"
-      sequenceId={sequence?.id}
-      isFavorite={isFavorite}
-      onFavoriteToggle={isMobile ? onFavorite : undefined}
-      isSaved={isSaved}
-      onSave={isMobile ? onSave : undefined}
-      onRemix={isMobile ? onEdit : undefined}
-      onVideoUpload={isLoggedIn ? onVideoUpload : undefined}
-      {isPublished}
-      onPublish={isOwned && isSaved ? onPublish : undefined}
-      onUnpublish={isOwned && isSaved ? onUnpublish : undefined}
-      onDeleteRequest={isOwned && isSaved ? onDeleteRequest : undefined}
-    />
     {/if}
   </div>
 </header>
@@ -245,6 +264,9 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     flex-shrink: 0;
+    /* Lift the header so the title-trigger dropdown lands above the viewer body. */
+    position: relative;
+    z-index: 20;
   }
 
   .route-header[data-hidden="true"] {
@@ -376,6 +398,11 @@
     background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
     color: #fff;
   }
+  /* Icon-only variant (mobile): square accent button, no label padding. */
+  .header-action-btn.practice.icon-only {
+    gap: 0;
+    padding: 0;
+  }
 
   .header-action-btn.practice-exit {
     gap: 8px;
@@ -407,8 +434,7 @@
   }
 
   /* Sequence title in header */
-  .sequence-title,
-  .mode-title {
+  .sequence-title {
     margin: 0;
     font-size: var(--font-size-lg, 18px);
     font-weight: 600;
@@ -425,6 +451,22 @@
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
     font-weight: 400;
+  }
+
+  /* Chevron affordance beside the clickable title; rotates when the menu opens. */
+  .title-caret {
+    font-size: 11px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    transition: transform 180ms ease;
+    flex-shrink: 0;
+  }
+  .title-caret.open {
+    transform: rotate(180deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .title-caret {
+      transition: none;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -371,11 +371,31 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
         {@const videoExportNarrow = isVideoExportActive && !isRecordSceneActive && !isMobileWidth && bodyWidth < exportSidebarMinWidth()}
         {@const effectiveMobile = isMobileWidth || cardExportNarrow || videoExportNarrow}
         {@const showRail = !effectiveMobile}
+        {#snippet titleTrigger({ isOpen, hasMenu }: { isOpen: boolean; hasMenu: boolean })}
+          <span class="drawer-header-title">
+            {#key `${isAnyExportActive}|${isVideoExportActive}|${isImageExportActive}|${ctx.renderMode}`}
+              <span
+                class="drawer-header-title-text"
+                in:fade|local={{ duration: prefersReducedMotion ? 0 : 150 }}
+              >
+                {#if isAnyExportActive}
+                  {isVideoExportActive ? (ctx.renderMode === '3d' ? "Record Scene" : "Download Animation") : isImageExportActive ? "Download Card" : "Upload Video"}
+                {:else}
+                  Sequence Viewer
+                {/if}
+              </span>
+            {/key}
+          </span>
+          {#if hasMenu}
+            <i class="fas fa-chevron-down drawer-title-caret" class:open={isOpen} aria-hidden="true"></i>
+          {/if}
+        {/snippet}
         {#snippet overflowMenu(includeMotion: boolean)}
           <ViewerOverflowMenu
             variant="header"
             dropDown
-            align={includeMotion ? 'left' : 'right'}
+            align="center"
+            trigger={titleTrigger}
             isFavorite={ctx.isFavorite}
             onFavoriteToggle={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
             isSaved={ctx.isSaved}
@@ -418,16 +438,16 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 
                   <div class="left-actions-layer normal" class:active={!ctx.practiceActive} inert={ctx.practiceActive}>
                     {#if isMobileWidth}
+                      <!-- Icon-only on mobile: a labeled pill hugs the centered
+                           title trigger. Desktop keeps the label (room to spare). -->
                       <button
                         type="button"
-                        class="header-action-btn practice"
+                        class="header-action-btn practice icon-only"
                         onclick={() => ctx.enterPracticeMode()}
                         aria-label="Practice"
                       >
-                        <i class="fas fa-signal" aria-hidden="true"></i>
-                        <span>Practice</span>
+                        <i class="fas fa-dumbbell" aria-hidden="true"></i>
                       </button>
-                      {@render overflowMenu(true)}
                     {:else}
                       <button
                         type="button"
@@ -465,7 +485,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                         onclick={() => ctx.enterPracticeMode()}
                         aria-label="Practice"
                       >
-                        <i class="fas fa-signal" aria-hidden="true"></i>
+                        <i class="fas fa-dumbbell" aria-hidden="true"></i>
                         <span>Practice</span>
                       </button>
 
@@ -489,22 +509,15 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                 </div>
 
                 <div class="drawer-header-title-group">
-                  <div class="drawer-header-title">
-                    {#key `${isAnyExportActive}|${ctx.practiceActive}|${isVideoExportActive}|${isImageExportActive}|${ctx.renderMode}`}
-                      <span
-                        class="drawer-header-title-text"
-                        in:fade|local={{ duration: prefersReducedMotion ? 0 : 150 }}
-                      >
-                        {#if isAnyExportActive}
-                          {isVideoExportActive ? (ctx.renderMode === '3d' ? "Record Scene" : "Download Animation") : isImageExportActive ? "Download Card" : "Upload Video"}
-                        {:else if ctx.practiceActive}
-                          Practice Mode
-                        {:else}
-                          Sequence Viewer
-                        {/if}
-                      </span>
-                    {/key}
-                  </div>
+                  {#if ctx.practiceActive}
+                    <div class="drawer-header-title">
+                      <span class="drawer-header-title-text">Practice Mode</span>
+                    </div>
+                  {:else}
+                    <!-- The centered title IS the overflow-menu trigger: title +
+                         chevron opens the actions menu below the header. -->
+                    {@render overflowMenu(isMobileWidth)}
+                  {/if}
                 </div>
 
                 <div class="drawer-header-right-actions">
@@ -522,10 +535,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                     >
                       <i class="fas fa-sliders" aria-hidden="true"></i>
                     </button>
-                  {/if}
-
-                  {#if !isMobileWidth && !ctx.practiceActive}
-                    {@render overflowMenu(false)}
                   {/if}
 
                   <button
@@ -845,6 +854,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     flex-shrink: 0;
     overflow: visible;
+    /* Lift the header so the title-trigger dropdown lands above the viewer body. */
+    z-index: 20;
   }
 
 
@@ -857,7 +868,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     flex-direction: column;
     align-items: center;
     gap: 3px;
-    pointer-events: none;
+    /* The title group hosts the menu trigger now, so it must accept clicks. */
+    pointer-events: auto;
     overflow: visible;
   }
 
@@ -867,7 +879,22 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     line-height: 1.2;
     color: var(--theme-text, #ffffff);
     white-space: nowrap;
-    pointer-events: none;
+  }
+
+  /* Chevron affordance beside the clickable title; rotates when the menu opens. */
+  .drawer-title-caret {
+    font-size: 11px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    transition: transform 180ms ease;
+    flex-shrink: 0;
+  }
+  .drawer-title-caret.open {
+    transform: rotate(180deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .drawer-title-caret {
+      transition: none;
+    }
   }
 
   .drawer-close-button {
@@ -958,6 +985,11 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
     color: #fff;
   }
+  /* Icon-only variant (mobile): square accent button, no label padding. */
+  .header-action-btn.practice.icon-only {
+    gap: 0;
+    padding: 0;
+  }
 
   .header-action-btn.practice-exit {
     gap: 8px;
@@ -1012,9 +1044,9 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     border-bottom: none;
   }
 
-  .landscape .drawer-header-title-group {
-    display: none;
-  }
+  /* Landscape used to hide the centered title for vertical space. It now hosts the
+     overflow-menu trigger, so it must stay reachable — kept visible (practice still
+     hides it via .practice-mobile below). */
 
   /* Mobile-portrait practice: the red "Exit Practice" pill already communicates
      the mode, and a wide labeled pill collides with the absolutely-centered

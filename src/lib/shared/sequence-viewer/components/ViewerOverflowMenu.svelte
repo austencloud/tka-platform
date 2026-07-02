@@ -6,6 +6,7 @@
   WAI-ARIA menu pattern with keyboard navigation.
 -->
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { goto } from "$app/navigation";
   import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
 
@@ -22,8 +23,21 @@
     onVideoUpload?: () => void;
     variant?: 'header' | 'footer';
     dropDown?: boolean;
-    /** Horizontal edge the popover aligns to. 'left' when the trigger sits at the screen's left edge. */
-    align?: 'left' | 'right';
+    /**
+     * Horizontal edge the popover aligns to. 'left' when the trigger sits at the
+     * screen's left edge; 'center' drops the popover centred under the trigger
+     * (used when the header title itself is the trigger).
+     */
+    align?: 'left' | 'right' | 'center';
+    /**
+     * Custom trigger content. When provided, the trigger button renders this
+     * snippet (a transparent title-style row) instead of the three-dot glyph, so
+     * the header title can BE the menu trigger. Open/close, backdrop, keyboard
+     * nav, and the item model are unchanged. Omit for the default three-dot.
+     * `hasMenu` is false when there are no items to open — the caller hides the
+     * chevron in that case so a dead title doesn't advertise a dropdown.
+     */
+    trigger?: Snippet<[{ isOpen: boolean; hasMenu: boolean }]>;
     isFavorite?: boolean;
     onFavoriteToggle?: () => void;
     isSaved?: boolean;
@@ -64,6 +78,7 @@
     variant = 'header',
     dropDown = false,
     align = 'right',
+    trigger,
     isFavorite = false,
     onFavoriteToggle,
     isSaved = true,
@@ -84,6 +99,7 @@
   let menuEl: HTMLDivElement | null = $state(null);
 
   function toggle() {
+    if (!hasMenu) return;
     isOpen = !isOpen;
     if (isOpen) {
       requestAnimationFrame(() => {
@@ -169,7 +185,7 @@
     if (onPracticeToggle) {
       items.push({
         label: practiceActive ? "Stop Practice" : "Practice Mode",
-        icon: practiceActive ? "fa-stop" : "fa-signal",
+        icon: practiceActive ? "fa-stop" : "fa-dumbbell",
         action: onPracticeToggle,
         className: practiceActive ? "practice-active" : undefined,
         dividerBefore: items.length > 0,
@@ -219,26 +235,43 @@
   });
 
   let hasItems = $derived(menuItems.length > 0);
-  let hasContent = $derived(hasItems || !!motionVisibility);
+  // The menu can open only when it has items (or the motion row). A title trigger
+  // still RENDERS with no items so the header title never disappears — it just
+  // isn't interactive (chevron hidden by the caller, toggle no-ops).
+  let hasMenu = $derived(hasItems || !!motionVisibility);
+  let shouldRender = $derived(hasMenu || !!trigger);
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-{#if hasContent}
-  <div class="overflow-wrapper" class:drop-down={dropDown} class:align-left={align === 'left'} onkeydown={handleKeydown}>
+{#if shouldRender}
+  <div
+    class="overflow-wrapper"
+    class:drop-down={dropDown}
+    class:align-left={align === 'left'}
+    class:align-center={align === 'center'}
+    class:title-trigger={!!trigger}
+    onkeydown={handleKeydown}
+  >
     <button
       bind:this={triggerEl}
       type="button"
       class="overflow-trigger"
-      class:header-variant={variant === 'header'}
+      class:header-variant={variant === 'header' && !trigger}
+      class:title-variant={!!trigger}
+      class:static={!!trigger && !hasMenu}
       onclick={toggle}
-      aria-haspopup="menu"
-      aria-expanded={isOpen}
+      aria-haspopup={hasMenu ? "menu" : undefined}
+      aria-expanded={hasMenu ? isOpen : undefined}
       aria-label="More actions"
     >
-      <i class="fas fa-ellipsis-vertical" aria-hidden="true"></i>
+      {#if trigger}
+        {@render trigger({ isOpen, hasMenu })}
+      {:else}
+        <i class="fas fa-ellipsis-vertical" aria-hidden="true"></i>
+      {/if}
     </button>
 
-    {#if isOpen}
+    {#if isOpen && hasMenu}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="overflow-backdrop" onclick={close} onkeydown={() => {}}></div>
 
@@ -343,6 +376,43 @@
   .overflow-wrapper.align-left .overflow-popover {
     right: auto;
     left: 0;
+  }
+
+  /* Centred under the trigger — used when the header title itself is the trigger. */
+  .overflow-wrapper.align-center .overflow-popover {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* Title-as-trigger: the button is a transparent inline row (title text + chevron)
+     rather than the three-dot circle. It carries the 44px touch floor. */
+  .overflow-trigger.title-variant {
+    width: auto;
+    height: auto;
+    min-height: var(--min-touch-target, 44px);
+    padding: 2px 8px;
+    gap: 8px;
+    border-radius: 10px;
+    background: none;
+    border: none;
+    color: var(--theme-text, #fff);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .overflow-trigger.title-variant:hover {
+      background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+      color: var(--theme-text, #fff);
+    }
+  }
+  .overflow-trigger.title-variant:active {
+    transform: none;
+  }
+  /* No items to open: the title still shows, but reads as plain text. */
+  .overflow-trigger.title-variant.static {
+    cursor: default;
+  }
+  .overflow-trigger.title-variant.static:hover {
+    background: none;
   }
 
   .overflow-item {
