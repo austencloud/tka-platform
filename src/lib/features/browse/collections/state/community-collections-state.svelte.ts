@@ -26,55 +26,50 @@ class CommunityCollectionsState {
 	loading = $state(false);
 	error = $state<string | null>(null);
 
-	private loadedFor: string | null = null;
+	private loaded = false;
 
 	/**
-	 * Load once per session (keyed by whose view it is, so signing in/out
-	 * refreshes the "not yours" filtering). Your own public collections are
-	 * excluded — they already live in the Mine view.
+	 * Load once per session. EVERY public collection is here — including your
+	 * own and including empty ones. Publishing something and not seeing it in
+	 * Community reads as a bug, so the feed shows exactly what the flag says.
 	 */
-	async ensureLoaded(excludeUserId: string | null): Promise<void> {
-		const key = excludeUserId ?? "anon";
-		if (this.loadedFor === key || this.loading) return;
+	async ensureLoaded(): Promise<void> {
+		if (this.loaded || this.loading) return;
 
 		this.loading = true;
 		this.error = null;
 		try {
-			// Second arg only decorates follow-status — not needed for a feed.
 			const creators = await getUsers();
 
 			const perCreator = await Promise.all(
-				creators
-					.filter((c) => c.id !== excludeUserId)
-					.map(async (creator) => {
-						try {
-							const collections = await getUserPublicCollections(creator.id);
-							return collections.map(
-								(collection): CommunityCollection => ({
-									collection,
-									ownerId: creator.id,
-									ownerName: creator.displayName || "Someone",
-								}),
-							);
-						} catch (err) {
-							// One creator failing shouldn't blank the whole feed.
-							console.warn(
-								`[community-collections] Failed for ${creator.id}:`,
-								err,
-							);
-							return [];
-						}
-					}),
+				creators.map(async (creator) => {
+					try {
+						const collections = await getUserPublicCollections(creator.id);
+						return collections.map(
+							(collection): CommunityCollection => ({
+								collection,
+								ownerId: creator.id,
+								ownerName: creator.displayName || "Someone",
+							}),
+						);
+					} catch (err) {
+						// One creator failing shouldn't blank the whole feed.
+						console.warn(
+							`[community-collections] Failed for ${creator.id}:`,
+							err,
+						);
+						return [];
+					}
+				}),
 			);
 
 			this.items = perCreator
 				.flat()
-				.filter((item) => item.collection.sequenceCount > 0)
 				.sort(
 					(a, b) =>
 						b.collection.updatedAt.getTime() - a.collection.updatedAt.getTime(),
 				);
-			this.loadedFor = key;
+			this.loaded = true;
 		} catch (err) {
 			console.error("[community-collections] Failed to load:", err);
 			this.error = "Couldn't load community collections.";
@@ -83,9 +78,12 @@ class CommunityCollectionsState {
 		}
 	}
 
-	/** Drop the cache so the next ensureLoaded refetches. */
+	/**
+	 * Drop the cache so the next ensureLoaded refetches — call after anything
+	 * that changes what's public (Make public / Make private).
+	 */
 	invalidate(): void {
-		this.loadedFor = null;
+		this.loaded = false;
 	}
 
 	/** Find a loaded community collection by its owner + id (for detail restore). */

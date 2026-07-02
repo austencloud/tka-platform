@@ -14,6 +14,7 @@ first and only removes the folder — the sequences inside stay in the library.
 	import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 	import { isSystemCollection } from "$lib/shared/library/domain/models/collection";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
+	import { communityCollectionsState } from "../state/community-collections-state.svelte";
 	import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
 	import type {
 		ContextMenuEntry,
@@ -60,9 +61,15 @@ first and only removes the folder — the sequences inside stay in the library.
 			id: "visibility",
 			label: collection.isPublic ? "Make private" : "Make public",
 			icon: collection.isPublic ? "fa-lock" : "fa-globe",
-			action() {
+			async action() {
 				menuState = { open: false };
-				void collectionsState.setPublic(collection.id, !collection.isPublic);
+				const ok = await collectionsState.setPublic(
+					collection.id,
+					!collection.isPublic,
+				);
+				// The Community feed caches for the session; publishing has to show
+				// up there the moment the user flips over to look.
+				if (ok) communityCollectionsState.invalidate();
 			},
 		},
 		{ type: "separator" } as ContextMenuEntry,
@@ -105,7 +112,9 @@ first and only removes the folder — the sequences inside stay in the library.
 		}
 		saving = true;
 		try {
-			await collectionsState.rename(collection.id, name);
+			const ok = await collectionsState.rename(collection.id, name);
+			// A public collection's name is showing in the Community feed too.
+			if (ok && collection.isPublic) communityCollectionsState.invalidate();
 		} finally {
 			saving = false;
 			renaming = false;
@@ -124,7 +133,9 @@ first and only removes the folder — the sequences inside stay in the library.
 
 	async function performDelete() {
 		deleteConfirmOpen = false;
-		await collectionsState.remove(collection.id);
+		const ok = await collectionsState.remove(collection.id);
+		// A deleted public collection would ghost in the cached Community feed.
+		if (ok && collection.isPublic) communityCollectionsState.invalidate();
 	}
 
 	function countLabel(n: number): string {

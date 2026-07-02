@@ -25,6 +25,7 @@ instead of showing a ghost.
 		getUserCollectionSequences,
 	} from "$lib/features/library/services/public-collection-loader";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
+	import { communityCollectionsState } from "../state/community-collections-state.svelte";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
 	import BrowseGrid from "$lib/features/browse/sequences/display/components/BrowseGrid.svelte";
 	import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
@@ -214,7 +215,10 @@ instead of showing a ghost.
 		const name = renameValue.trim();
 		renaming = false;
 		if (!collection || !name || name === collection.name) return;
-		await collectionsState.rename(collectionId, name);
+		const wasPublic = collection.isPublic;
+		const ok = await collectionsState.rename(collectionId, name);
+		// A public collection's name is showing in the Community feed too.
+		if (ok && wasPublic) communityCollectionsState.invalidate();
 	}
 
 	function handleRenameKeydown(e: KeyboardEvent) {
@@ -229,8 +233,13 @@ instead of showing a ghost.
 
 	async function performDelete() {
 		deleteConfirmOpen = false;
+		const wasPublic = collection?.isPublic ?? false;
 		const ok = await collectionsState.remove(collectionId);
-		if (ok) onBack();
+		if (ok) {
+			// A deleted public collection would ghost in the cached Community feed.
+			if (wasPublic) communityCollectionsState.invalidate();
+			onBack();
+		}
 	}
 
 	function countLabel(n: number): string {

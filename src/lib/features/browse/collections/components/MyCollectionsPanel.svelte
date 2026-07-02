@@ -37,7 +37,7 @@ instead of showing an empty shell.
 
 	$effect(() => {
 		if (subView === "community") {
-			void communityCollectionsState.ensureLoaded(authState.user?.uid ?? null);
+			void communityCollectionsState.ensureLoaded();
 		}
 	});
 
