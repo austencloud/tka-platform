@@ -93,10 +93,10 @@ export const APP_CAPABILITIES: AppCapability[] = [
     id: "browse-collections",
     action: "Organize sequences into collections",
     module: "Browse",
-    tab: "Collections",
-    keywords: ["collection", "folder", "organize", "group", "playlist"],
+    tab: "Library",
+    keywords: ["collection", "folder", "organize", "group", "playlist", "library"],
     instructions:
-      "Go to Browse > Collections. Create a new collection, then add sequences to it from the gallery by long-pressing or using the sequence menu.",
+      "Go to Browse > Library. Create a new collection, then add sequences to it from the gallery by long-pressing or using the sequence menu. The All shelf at the top shows everything you've saved.",
   },
 
   // ═══════════════════════════════════════════════════════════════════════════

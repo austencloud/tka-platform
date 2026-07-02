@@ -50,7 +50,7 @@ export const MODULE_USAGE_CONFIG: Record<string, AnalyticsDisplayConfig> = {
 
   // Browse tabs
   "browse:gallery": { label: "Browse → Gallery", color: "#a855f7" },
-  "browse:collections": { label: "Browse → Collections", color: "#f59e0b" },
+  "browse:collections": { label: "Browse → Library", color: "#f59e0b" },
 
   // Community tabs
   "community:leaderboards": {

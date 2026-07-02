@@ -31,10 +31,23 @@
   } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import { createKeyboardInset } from "$lib/shared/mobile/utils/keyboard-inset.svelte";
 
   // Responsive placement
   let isMobile = $state(false);
   let placement = $derived(isMobile ? "bottom" : "right") as "bottom" | "right";
+
+  // Lift the sheet clear of the on-screen keyboard on mobile. The drawer is
+  // fixed to the viewport bottom, so a focused input (compose search, group
+  // name, message composer) would otherwise sit behind the keyboard. Shrinking
+  // the container by the keyboard height raises its bottom edge above it —
+  // matching QuickFeedbackPanel / the feedback + word-input flows.
+  const keyboard = createKeyboardInset(() => inboxState.isOpen && isMobile);
+  const containerStyle = $derived(
+    keyboard.isVisible && keyboard.height > 0
+      ? `height: calc(100% - ${keyboard.height}px); min-height: 0;`
+      : ""
+  );
 
   // Haptic feedback service
   let hapticService: HapticFeedback | undefined;
@@ -375,6 +388,7 @@
   <div
     class="inbox-container"
     class:expanded={isMobile && inboxState.currentView !== "list"}
+    style={containerStyle}
     role="dialog"
     aria-labelledby="inbox-title"
   >
@@ -689,6 +703,14 @@
       /* Always fill viewport on mobile - list, thread, and compose views */
       --sheet-max-height: none;
       --sheet-radius-large: 0;
+    }
+
+    /* Thread / compose / group-settings fill the viewport so the container's
+       height:100% is the full sheet. Shrinking it by the keyboard height then
+       raises the bottom-anchored composer clear of the keyboard. */
+    :global(.drawer-content.inbox-drawer.inbox-expanded) {
+      height: 100vh;
+      height: 100dvh;
     }
 
     .inbox-container.expanded {

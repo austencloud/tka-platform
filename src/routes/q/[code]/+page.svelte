@@ -846,7 +846,7 @@
                  Ducks while a ControlDock tray is open, with the same displaced-by-
                  the-tray choreography as the app viewer: slot height eases closed
                  while the bar glides down, both on the tray's 260ms cubicOut. -->
-            <div transition:slide={{ duration: prefersReducedMotion ? 0 : 260, easing: cubicOut }}>
+            <div class="mode-bar-slot" transition:slide={{ duration: prefersReducedMotion ? 0 : 260, easing: cubicOut }}>
               <div transition:fly={{ y: 72, duration: prefersReducedMotion ? 0 : 260, easing: cubicOut }}>
                 <ViewerModeBottomBar
                   activeMode={qrViewerMode}
@@ -1033,6 +1033,18 @@
     padding: 8px;
     gap: 6px;
     overflow: hidden;
+  }
+
+  /* .player-layout centers its children (canvas-area / controls-column are
+     max-width-capped and meant to sit centered). The portrait mode bar must NOT
+     inherit that: it's a full-width row, and ViewerModeBottomBar's
+     container-type:inline-size makes its <nav> contribute ~0 intrinsic width, so
+     under align-items:center the wrapper shrink-wraps to nothing and the buttons
+     overflow to one side ("tucked right"). Opt this one child out into a full
+     stretch so width:100% resolves against the real column width. */
+  .mode-bar-slot {
+    align-self: stretch;
+    width: 100%;
   }
 
   .canvas-area {
