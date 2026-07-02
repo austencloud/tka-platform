@@ -53,7 +53,9 @@ describe("sw.js install precache", () => {
       await h.cacheHas(h.constants.cacheName, "/images/grid/diamond_grid.svg")
     ).toBe(true);
     expect(await h.cacheHas(h.constants.cacheName, "/images/arrow.svg")).toBe(true);
-    expect(h.self.skipWaiting).toHaveBeenCalled();
+    // install no longer force-activates: it must NOT skipWaiting, so an open
+    // tab keeps running old code until the user opts into the update.
+    expect(h.self.skipWaiting).not.toHaveBeenCalled();
   });
 
   // Fix: precacheSvgAssets is failure-tolerant — an older deploy without the
@@ -253,5 +255,31 @@ describe("sw.js lie-fi timeout", () => {
     expect(res).not.toBeNull();
     expect(res!.status).toBe(200);
     expect(await res!.text()).toBe(SHELL_HTML);
+  });
+});
+
+describe("sw.js update flow", () => {
+  // Fix: silent auto-update — install used to skipWaiting(), so a new deploy
+  // took over an open tab and served new immutable chunks to old in-memory
+  // code (→ 404 on the next lazy chunk). Install must now WAIT.
+  it("does not skipWaiting on install", async () => {
+    const h = createSwHarness();
+    h.route("/app", respondWith("<html></html>", { contentType: "text/html" }));
+    await h.dispatchInstall();
+    expect(h.self.skipWaiting).not.toHaveBeenCalled();
+  });
+
+  // Fix: skipWaiting fires ONLY when the client posts SKIP_WAITING (the user
+  // clicked Reload), and ignores any other message type.
+  it("skipWaiting fires only on a SKIP_WAITING message", async () => {
+    const h = createSwHarness();
+    h.route("/app", respondWith("<html></html>", { contentType: "text/html" }));
+    await h.dispatchInstall();
+
+    h.dispatchMessage({ type: "SOMETHING_ELSE" });
+    expect(h.self.skipWaiting).not.toHaveBeenCalled();
+
+    h.dispatchMessage({ type: "SKIP_WAITING" });
+    expect(h.self.skipWaiting).toHaveBeenCalledTimes(1);
   });
 });

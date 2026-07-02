@@ -20,7 +20,20 @@ self.addEventListener("install", (event) => {
       await precacheSvgAssets(cache);
     })
   );
-  self.skipWaiting();
+  // NOTE: no self.skipWaiting() here. Auto-skipWaiting made a new deploy take
+  // over an already-open tab, serving new content-hashed chunks to old code
+  // still in memory → 404 on the next lazy chunk. Instead the new SW WAITS;
+  // the page posts SKIP_WAITING below only when the user clicks Reload. First
+  // install has no controller to wait behind, so it activates immediately
+  // anyway (no reload prompt shown — see sw-update-manager.ts).
+});
+
+// Activate the waiting worker on demand (user clicked "Reload" in the update
+// toast). Mirrors static/legacy-sw.js:431.
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 // Precache the shell's boot-critical JS/CSS chunks by scraping them out of the

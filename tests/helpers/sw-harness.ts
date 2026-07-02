@@ -354,6 +354,12 @@ export function createSwHarness(options: SwHarnessOptions = {}) {
     return responsePromise ?? Promise.resolve(null);
   }
 
+  /** Fires the SW's `message` listeners with a { data } event (postMessage). */
+  function dispatchMessage(data: unknown): void {
+    const event = { data };
+    for (const fn of listeners.get("message") ?? []) fn(event);
+  }
+
   // --- test conveniences ---
   function route(matcher: string | RegExp, handler: RouteHandler): void {
     routes.set(matcher, handler);
@@ -394,6 +400,7 @@ export function createSwHarness(options: SwHarnessOptions = {}) {
     dispatchInstall: () => dispatchLifecycle("install"),
     dispatchActivate: () => dispatchLifecycle("activate"),
     dispatchFetch,
+    dispatchMessage,
     makeRequest,
     seedCache,
     cacheHas,
