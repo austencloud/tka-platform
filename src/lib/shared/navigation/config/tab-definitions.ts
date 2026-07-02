@@ -111,7 +111,8 @@ export const LEARN_TABS: Section[] = [
 ];
 
 // Browse tabs configuration (browsing sequences, creators, collections)
-// Note: Library functionality is now integrated into Gallery via scope toggle (Community / My Library)
+// Gallery = pure community discovery. Your saved work lives in Library
+// (id stays "collections" — routes and persisted state reference it).
 export const BROWSE_TABS: Section[] = [
   {
     id: "gallery",
@@ -127,9 +128,9 @@ export const BROWSE_TABS: Section[] = [
     id: "collections",
     labelKey: "tab_browse_collections",
     descKey: "tab_desc_browse_collections",
-    label: "Collections",
-    icon: '<i class="fas fa-folder" aria-hidden="true"></i>',
-    description: "Browse curated playlists",
+    label: "Library",
+    icon: '<i class="fas fa-book" aria-hidden="true"></i>',
+    description: "Your saved sequences and collections",
     color: "#c084fc",
     gradient: "linear-gradient(135deg, #d8b4fe 0%, #c084fc 100%)",
   },

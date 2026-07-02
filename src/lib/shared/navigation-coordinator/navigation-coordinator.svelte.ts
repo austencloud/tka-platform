@@ -597,13 +597,8 @@ function parsePathNavigation(): {
     // Redirect legacy module URLs to their new locations
     // (Note: these IDs are not in ModuleId type but may exist in legacy URLs)
     if (moduleId === ("library" as unknown)) {
-      // Library is now integrated into Gallery via Community/My Library toggle
+      // Your library lives in Browse > Library (Collections module)
       moduleId = "browse" as ModuleId;
-      try {
-        localStorage.setItem("tka-gallery-source", "my-library");
-      } catch {
-        // Ignore storage errors
-      }
     } else if (moduleId === ("dashboard" as unknown)) {
       // Dashboard removed Jan 2026 - Create is now the default landing
       moduleId = "create" as ModuleId;
@@ -639,11 +634,6 @@ function parsePathNavigation(): {
     // (Note: these IDs are not in ModuleId type but may exist in legacy hash URLs)
     if (moduleId === ("library" as unknown)) {
       moduleId = "browse" as ModuleId;
-      try {
-        localStorage.setItem("tka-gallery-source", "my-library");
-      } catch {
-        // Ignore storage errors
-      }
     } else if (moduleId === ("dashboard" as unknown)) {
       // Dashboard removed Jan 2026 - Create is now the default landing
       moduleId = "create" as ModuleId;
@@ -736,11 +726,6 @@ export function initializeNavigationHistory() {
       targetModule = "browse" as ModuleId;
       targetSection = undefined;
       needsHistoryUpdate = true;
-      try {
-        localStorage.setItem("tka-gallery-source", "my-library");
-      } catch {
-        // Ignore storage errors
-      }
     } else if (targetModule === ("dashboard" as unknown)) {
       // Dashboard removed Jan 2026 - Create is now the default landing
       targetModule = "create" as ModuleId;
