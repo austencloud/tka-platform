@@ -111,6 +111,19 @@ class WhatsNewState {
   }
 
   /**
+   * Open the modal with an already-loaded version (no refetch).
+   * Used by the update toast, which already holds the version data — skips the
+   * network round-trip openManual() would do. Manual mode so the footer shows
+   * the "All Releases" affordance rather than the auto "Got it" framing.
+   */
+  openDetail(version: AppVersion) {
+    this.mode = "manual";
+    this.version = version;
+    this.error = null;
+    this.isOpen = true;
+  }
+
+  /**
    * Open the modal manually (triggered by clicking version number)
    * Loads the current version data first, then opens modal to prevent layout shift
    */

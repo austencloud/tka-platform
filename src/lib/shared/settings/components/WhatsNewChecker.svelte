@@ -9,6 +9,7 @@
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte";
   import { whatsNewState } from "../state/whats-new-state.svelte";
   import * as versionService from "$lib/shared/feedback/services/version-service";
+  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import WhatsNewModal from "./WhatsNewModal.svelte";
 
   // Configuration
@@ -68,8 +69,20 @@
       const versionData = versions.find((v) => v.version === currentVersion);
 
       if (versionData && versionData.changelogEntries?.length) {
-        // Only show if there's actual changelog content
-        whatsNewState.open(versionData);
+        // Non-blocking update toast instead of an auto-popup modal. Mark seen
+        // on fire (like BetaNoticeToast) so it never re-nags even if ignored;
+        // the "See what's new" action opens the full modal for detail on demand.
+        whatsNewState.markVersionAsSeen(currentVersion);
+        const count = versionData.changelogEntries.length;
+        showToast({
+          message: `TKA v${currentVersion} · ${count} ${count === 1 ? "update" : "updates"}`,
+          type: "info",
+          duration: 10000,
+          action: {
+            label: "See what's new",
+            onClick: () => whatsNewState.openDetail(versionData),
+          },
+        });
       } else {
         // No changelog for this version, mark as seen silently
         whatsNewState.markVersionAsSeen(currentVersion);
