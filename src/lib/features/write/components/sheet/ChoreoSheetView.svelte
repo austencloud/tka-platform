@@ -39,11 +39,26 @@
   import { getCollections } from "$lib/shared/library/services/collection-manager";
   import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 
+  // Hydrates one sequence id when a draft/saved act restores. Order matters:
+  // most rows on a sheet are the user's OWN sequences, and the public gallery
+  // loader can never see private library docs — routing everything through it
+  // was the bug that made rows show "Failed to load" after navigating away and
+  // back. So: private library first, public/community gallery as the fallback.
+  async function loadSheetSequence(id: string): Promise<SequenceData | null> {
+    try {
+      const own = await getLibraryRepository().getSequence(id);
+      if (own && own.steps.length > 0) return own;
+    } catch {
+      // Signed out or a library fetch failure — the public path below may
+      // still resolve community ids.
+    }
+    return getBrowseLoader().loadFullSequenceData(id, id);
+  }
+
   // Builder-state object. The sheet auto-saves to localStorage (persistKey) and
-  // restores on reload/HMR. loadSequence resolves BOTH community and library ids
-  // (a restored draft — or a card picked from community — may be either).
+  // restores on reload/HMR.
   const builder = createChoreoSheetState({
-    loadSequence: (id) => getBrowseLoader().loadFullSequenceData(id, id),
+    loadSequence: loadSheetSequence,
     persistKey: "tka-choreo-sheet-draft",
   });
   setChoreoSheetContext({ state: builder });
@@ -199,10 +214,11 @@
   }
 
   // BrowsePanel emits a metadata-only SequenceData on select, so hydrate its
-  // steps (via the browse loader) before adding — otherwise the row draws blank.
+  // steps (library first, public fallback — same path the draft restore uses)
+  // before adding — otherwise the row draws blank.
   async function handleBrowseSelect(seq: SequenceData): Promise<void> {
     try {
-      const full = await getBrowseLoader().loadFullSequenceData(seq.id, seq.id);
+      const full = await loadSheetSequence(seq.id);
       builder.addHydratedSequences([full ?? seq]);
     } catch (err) {
       console.warn("[ChoreoSheetView] Failed to hydrate selected sequence:", err);
