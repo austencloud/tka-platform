@@ -1,0 +1,273 @@
+/**
+ * Presence-as-Signal Guards — StepData→Step migration tripwires.
+ *
+ * App `StepData.motions` is Partial<Record<MotionColor, MotionData>>; canonical
+ * `Step.motions` is {blue, red} BOTH REQUIRED. These sites branch on motion
+ * ABSENCE — after adoption their checks become always-true and behavior changes
+ * SILENTLY (the compiler cannot flag it, the data/pixel parity nets see data
+ * drift not logic drift). Each test locks the CURRENT absence semantics.
+ *
+ * A failing test here during the migration is the tripwire working: whoever
+ * flips the type must consciously re-encode the absent state (isBlank, view-side
+ * visibility, or explicit presence flag) — not delete the test.
+ *
+ * Full 110-site register:
+ * docs/superpowers/specs/active/2026-07-01-presence-as-signal-register.md
+ */
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createMotionData, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import {
+  MotionColor,
+  MotionType,
+  Orientation,
+  RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { GridLocation, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
+
+import { reconcileStepDerived } from "$lib/shared/create/services/sequence-derived-fields";
+import { deriveSequenceLetters } from "$lib/shared/create/services/sequence-transforms";
+import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
+import { hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
+import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
+import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
+import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
+import { FrameParameterBuilder } from "$lib/shared/animation-engine/services/frame-parameter-builder";
+import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
+import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+
+vi.mock("$lib/shared/browse/get-browse-loader", () => ({
+  getBrowseLoader: vi.fn(),
+}));
+
+function motion(overrides: Partial<MotionData> = {}): MotionData {
+  return createMotionData({
+    motionType: MotionType.PRO,
+    rotationDirection: RotationDirection.CLOCKWISE,
+    startLocation: GridLocation.NORTH,
+    endLocation: GridLocation.EAST,
+    startOrientation: Orientation.IN,
+    endOrientation: Orientation.OUT,
+    turns: 1,
+    ...overrides,
+  });
+}
+
+function oneHandStep(overrides: Partial<StepData> = {}): StepData {
+  return createStepData({
+    letter: Letter.A,
+    stepNumber: 1,
+    motions: { [MotionColor.BLUE]: motion() },
+    ...overrides,
+  });
+}
+
+function bothHandStep(overrides: Partial<StepData> = {}): StepData {
+  return createStepData({
+    letter: Letter.A,
+    stepNumber: 1,
+    motions: {
+      [MotionColor.BLUE]: motion(),
+      [MotionColor.RED]: motion({
+        color: MotionColor.RED,
+        startLocation: GridLocation.SOUTH,
+        endLocation: GridLocation.WEST,
+      }),
+    },
+    ...overrides,
+  });
+}
+
+function seq(steps: StepData[]): SequenceData {
+  return createSequenceData({ word: "GUARD", steps });
+}
+
+// ── sequence-derived-fields.ts:34 ───────────────────────────────────────────
+describe("reconcileStepDerived — one-hand steps pass through UNCHANGED", () => {
+  it("does not recompute gridMode/positions for a one-hand step (stale values kept)", () => {
+    const step = oneHandStep({
+      startPosition: GridPosition.GAMMA11, // deliberately stale/wrong
+      endPosition: GridPosition.GAMMA11,
+    });
+    const out = reconcileStepDerived(step);
+    expect(out).toBe(step); // identity: absence short-circuits derivation entirely
+  });
+
+  it("DOES recompute for a both-hand step (control: proves the gate is presence)", () => {
+    const step = bothHandStep({ startPosition: GridPosition.GAMMA11 });
+    const out = reconcileStepDerived(step);
+    expect(out).not.toBe(step);
+    expect(out.startPosition).not.toBe(GridPosition.GAMMA11);
+  });
+});
+
+// ── sequence-transforms.ts:551 ──────────────────────────────────────────────
+describe("deriveSequenceLetters — one-hand steps keep their letter, no lookup", () => {
+  it("skips the dataframe lookup for a step missing a hand", async () => {
+    const handler = { findLetterByMotionConfiguration: vi.fn(async () => Letter.B) };
+    const out = await deriveSequenceLetters(
+      seq([oneHandStep({ letter: Letter.A })]),
+      handler as unknown as Parameters<typeof deriveSequenceLetters>[1]
+    );
+    expect(handler.findLetterByMotionConfiguration).not.toHaveBeenCalled();
+    expect(out.steps[0]!.letter).toBe(Letter.A); // stale letter preserved by design
+  });
+
+  it("DOES look up for a both-hand step (control)", async () => {
+    const handler = { findLetterByMotionConfiguration: vi.fn(async () => Letter.B) };
+    const out = await deriveSequenceLetters(
+      seq([bothHandStep({ letter: Letter.A })]),
+      handler as unknown as Parameters<typeof deriveSequenceLetters>[1]
+    );
+    expect(handler.findLetterByMotionConfiguration).toHaveBeenCalledTimes(1);
+    expect(out.steps[0]!.letter).toBe(Letter.B);
+  });
+});
+
+// ── sequence-loopability-checker.ts:92,142 ──────────────────────────────────
+describe("isSeamlesslyLoopable — absent hand passes vacuously; both absent = not loopable", () => {
+  const circularBlue = motion({
+    startLocation: GridLocation.NORTH,
+    endLocation: GridLocation.NORTH,
+    startOrientation: Orientation.IN,
+    endOrientation: Orientation.IN,
+  });
+
+  it("one-hand sequence is loopable when the present hand closes (red vacuously passes)", () => {
+    const step = createStepData({ stepNumber: 1, motions: { [MotionColor.BLUE]: circularBlue } });
+    expect(isSeamlesslyLoopable(seq([step]))).toBe(true);
+  });
+
+  it("one-hand sequence is NOT loopable when the present hand does not close (control)", () => {
+    const open = motion({ startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST });
+    const step = createStepData({ stepNumber: 1, motions: { [MotionColor.BLUE]: open } });
+    expect(isSeamlesslyLoopable(seq([step]))).toBe(false);
+  });
+
+  it("zero-hand sequence is NOT loopable (no data = no determination)", () => {
+    const step = createStepData({ stepNumber: 1, motions: {} });
+    expect(isSeamlesslyLoopable(seq([step]))).toBe(false);
+  });
+});
+
+// ── content-hasher.ts:113 ───────────────────────────────────────────────────
+describe('hashSequenceContent — absent motion hashes as the "-" sentinel', () => {
+  it("one-hand and both-hand versions of the same step hash differently", () => {
+    const blue = motion();
+    const oneHand = createStepData({ stepNumber: 1, motions: { [MotionColor.BLUE]: blue } });
+    const bothHands = createStepData({
+      id: oneHand.id,
+      stepNumber: 1,
+      motions: { [MotionColor.BLUE]: blue, [MotionColor.RED]: motion({ color: MotionColor.RED }) },
+    });
+    const h1 = hashSequenceContent({ word: "W", steps: [oneHand], startPosition: undefined });
+    const h2 = hashSequenceContent({ word: "W", steps: [bothHands], startPosition: undefined });
+    expect(h1).not.toBe(h2); // a bridge that fabricates the red motion re-keys render caches
+  });
+
+  it("absence hashes deterministically (sentinel is stable)", () => {
+    const step = oneHandStep();
+    const a = hashSequenceContent({ word: "W", steps: [step], startPosition: undefined });
+    const b = hashSequenceContent({ word: "W", steps: [step], startPosition: undefined });
+    expect(a).toBe(b);
+  });
+});
+
+// ── tnd-deriver.ts:114 ──────────────────────────────────────────────────────
+describe("deriveTnDFromPictograph — absent hand yields NULL_RESULT", () => {
+  it("returns null classification when a hand is missing", () => {
+    const out = deriveTnDFromPictograph(oneHandStep());
+    expect(out.tndMode).toBeNull();
+    expect(out.elementalType).toBeNull();
+  });
+
+  it("classifies when both hands present with shift arcs (control)", () => {
+    const step = bothHandStep(); // blue N->E, red S->W: opposite-side shift arcs
+    const out = deriveTnDFromPictograph(step);
+    expect(out.tndMode).not.toBeNull();
+  });
+});
+
+// ── turns-tuple-generator.ts:47 ─────────────────────────────────────────────
+describe('TurnsTupleGenerator — absent hand falls back to "(0, 0)"', () => {
+  it('returns the generic "(0, 0)" tuple for a one-hand pictograph', () => {
+    expect(turnsTupleGenerator.generateTurnsTuple(oneHandStep())).toBe("(0, 0)");
+  });
+
+  it("returns a letter-type-specific tuple for a both-hand pictograph (control)", () => {
+    const tuple = turnsTupleGenerator.generateTurnsTuple(bothHandStep({ letter: Letter.A }));
+    expect(tuple).not.toBe("(0, 0)");
+  });
+});
+
+// ── prop-interpolator.ts:57,67 — the mandala solo-animation path ────────────
+describe("interpolatePropAngles — absent hand animates NOTHING (solo path)", () => {
+  it("one-hand step: present hand gets angles, absent hand stays null, frame valid", () => {
+    const out = interpolatePropAngles(oneHandStep(), 0.5);
+    expect(out.isValid).toBe(true);
+    expect(out.blueAngles).not.toBeNull();
+    expect(out.redAngles).toBeNull(); // mandala club solo animation depends on this
+  });
+
+  it("zero-hand step: frame is invalid (blank beat, nothing animates)", () => {
+    const out = interpolatePropAngles(createStepData({ stepNumber: 1, motions: {} }), 0.5);
+    expect(out.isValid).toBe(false);
+    expect(out.blueAngles).toBeNull();
+    expect(out.redAngles).toBeNull();
+  });
+});
+
+// ── frame-parameter-builder.ts:509 — single-hand prop nulling ───────────────
+describe("FrameParameterBuilder.updateHandPresenceCache — absent hand's prop is suppressed", () => {
+  it("sequence with only blue motions reports sequenceHasRedMotion=false", () => {
+    const builder = new FrameParameterBuilder();
+    builder.updateHandPresenceCache(seq([oneHandStep()]));
+    expect(builder.sequenceHasBlueMotion).toBe(true);
+    expect(builder.sequenceHasRedMotion).toBe(false); // renderer nulls the red prop
+  });
+
+  it("both-hand sequence reports both present (control)", () => {
+    const builder = new FrameParameterBuilder();
+    builder.updateHandPresenceCache(seq([bothHandStep()]));
+    expect(builder.sequenceHasBlueMotion).toBe(true);
+    expect(builder.sequenceHasRedMotion).toBe(true);
+  });
+});
+
+// ── sequence-motion-loader.ts:15 — the hydration gate ───────────────────────
+describe("ensureMotionData — motion absence triggers the gallery fetch", () => {
+  const loadFullSequenceData = vi.fn();
+
+  beforeEach(() => {
+    loadFullSequenceData.mockReset();
+    vi.mocked(getBrowseLoader).mockReturnValue({
+      loadFullSequenceData,
+    } as unknown as ReturnType<typeof getBrowseLoader>);
+  });
+
+  it("sequence that already has both motions is returned as-is, no fetch", async () => {
+    const s = seq([bothHandStep()]);
+    const out = await ensureMotionData(s);
+    expect(out).toBe(s);
+    expect(loadFullSequenceData).not.toHaveBeenCalled();
+  });
+
+  it("thin sequence (no step has both motions) fetches from the gallery", async () => {
+    const hydrated = seq([bothHandStep()]);
+    loadFullSequenceData.mockResolvedValue(hydrated);
+    const out = await ensureMotionData(seq([oneHandStep()]));
+    expect(loadFullSequenceData).toHaveBeenCalledWith("GUARD");
+    expect(out).toBe(hydrated);
+  });
+
+  it("failed fetch falls back to the original thin sequence", async () => {
+    loadFullSequenceData.mockResolvedValue(null);
+    const thin = seq([oneHandStep()]);
+    const out = await ensureMotionData(thin);
+    expect(out).toBe(thin);
+  });
+});
