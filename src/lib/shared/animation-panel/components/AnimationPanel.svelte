@@ -744,9 +744,10 @@
    * stay >=44px — we only collapse gaps, paddings, and >44px tiles.
    * ============================================================ */
   .dock-dense :global(.section-pad) { gap: 8px; padding: 4px 12px 10px; }
-  /* EffectsPanel strip */
+  /* EffectsPanel drill-down: the picker grid owns tile WIDTH (4 equal columns);
+     only compress height in the dock tray. */
   .dock-dense :global(.mep) { gap: 6px; }
-  .dock-dense :global(.fx-tile) { width: 52px; height: 52px; }
+  .dock-dense :global(.fx-tile) { height: 52px; }
   .dock-dense :global(.slider-row) { padding: 6px 10px; gap: 8px; }
   /* BentoPropGrid */
   .dock-dense :global(.grid-scroll) { padding: 6px 12px; }

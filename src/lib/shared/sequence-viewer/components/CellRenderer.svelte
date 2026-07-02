@@ -129,9 +129,17 @@
     user-select: none;
   }
 
-  /* First paint: fade the freshly loaded pictograph in instead of popping. The
-     crossfade/swap variants manage their own opacity, so exclude them. */
-  .cell-image:not(.cell-fade-old):not(.cell-fade-new):not(.cell-swap-new) {
+  /* First paint: fade the freshly loaded pictograph in instead of popping.
+     Scoped to :not(.cell-fade-old) ONLY — the persistent "new" img must keep a
+     constant animation-name across a crossfade so a class change never restarts
+     the pop-in. Excluding .cell-fade-new/.cell-swap-new here (as before) meant
+     that clearing fadeOutUrl at crossfade cleanup flipped animation-name
+     none→cellLoadIn on every cell at once, re-firing the pop-in — the whole grid
+     "flashed out and in" AFTER the transition. The animation is a one-shot at
+     mount (long finished before any crossfade), so it never fights the crossfade
+     opacity; keeping its name on the element is what stops the restart. The old
+     fade layer stays excluded so it doesn't pop-in on the way out. */
+  .cell-image:not(.cell-fade-old) {
     animation: cellLoadIn var(--duration-fast, 150ms) ease;
   }
   @keyframes cellLoadIn {
@@ -179,6 +187,21 @@
   .cell-image.cell-swap-new.reveal {
     opacity: 1;
     transition: opacity 200ms ease-in 150ms;
+  }
+
+  /* HTML annotation overlays (start "Start" label, solo location/turn/orientation,
+     duration badge) MUST paint above BOTH crossfade image layers. The old fade
+     layer is `position:absolute; z-index:1`, which — being a positioned element
+     with an explicit z-index — stacks above these auto-z-index absolute overlays
+     regardless of DOM order. Without this, starting a crossfade instantly covered
+     the "Start" text with the opaque outgoing image, so it popped out and back in
+     as the layer faded. z-index:2 keeps the text on top for the whole transition. */
+  .step-number-overlay,
+  .duration-badge,
+  .solo-locations,
+  .solo-turn-number,
+  .solo-orientation {
+    z-index: 2;
   }
 
   /* Step number overlay - rendered as HTML instead of baked into blobs

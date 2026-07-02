@@ -137,6 +137,12 @@ async function getStaticManifest(): Promise<Set<string>> {
   return staticManifestLoading;
 }
 
+// Mirror of sanitizeFilename() in scripts/sync-static-thumbnails.cjs — files
+// land on disk (Windows) with these characters replaced, so lookups must too.
+function sanitizeForStaticPath(name: string): string {
+  return name.replace(/:/g, "-").replace(/[?<>"|*]/g, "_");
+}
+
 function uploadToCloud(orchestrator: ThumbnailRenderOrchestrator, key: ThumbnailCacheKey, blob: Blob): void {
   cloudCacheModule.upload(orchestrator.buildCloudKey(key), blob)
     .then(() => {
@@ -213,10 +219,13 @@ export class ThumbnailRenderOrchestrator {
 
     // Step 1: Check STATIC bundled thumbnails (instant, no network latency)
     if (key.usesDefaults && !mustSkipCache) {
-      const staticKey = this.buildStaticKey(key);
       const manifest = await getStaticManifest();
+      // Current format first (variant/prop/name_id_mode — mirrors cloud storage
+      // paths), legacy format second (prop/name_mode — pre-variant bundles).
+      const staticKey = [this.buildStaticKey(key), this.buildLegacyStaticKey(key)]
+        .find((candidate) => manifest.has(candidate));
 
-      if (manifest.has(staticKey)) {
+      if (staticKey) {
         const staticUrl = `/thumbnails/${staticKey}.webp`;
         this.memoryCache.set(key.hash, staticUrl);
         this.renderedGenerations.set(key.hash, this.cacheGeneration);
@@ -225,7 +234,7 @@ export class ThumbnailRenderOrchestrator {
         request.onStatusChange?.({ state: "complete", url: staticUrl });
         return { url: staticUrl, fromCache: true, key };
       } else if (manifest.size > 0) {
-        console.debug(`[Static] Not in manifest: "${staticKey}" (sequence: ${key.inputs.sequenceName})`);
+        console.debug(`[Static] Not in manifest: "${this.buildStaticKey(key)}" (sequence: ${key.inputs.sequenceName})`);
       }
     }
 
@@ -286,7 +295,7 @@ export class ThumbnailRenderOrchestrator {
 
         // Render locally with progress tracking
         request.onStatusChange?.({ state: "rendering" });
-        const blob = await this.renderer.render(
+        const { blob, qrConsistent } = await this.renderer.render(
           request.sequence,
           key.inputs,
           undefined, // use default render options
@@ -309,17 +318,25 @@ export class ThumbnailRenderOrchestrator {
         // Create blob URL for display
         const url = URL.createObjectURL(blob);
 
-        // Save to local cache (for ALL thumbnails - instant next time)
-        this.localCache.set(key.hash, blob).catch(() => {});
+        // Persist ONLY when the render matches its key. A QR-on key whose QR
+        // bitmap failed to produce yields a QR-less image — displaying it once
+        // is fine, but caching/uploading it under the QR key would poison the
+        // shared cache for everyone. Skip all cache writes so the next mount
+        // retries (and succeeds once the short code / network is available).
+        if (qrConsistent) {
+          // Save to local cache (for ALL thumbnails - instant next time)
+          this.localCache.set(key.hash, blob).catch(() => {});
 
-        // Upload to cloud (for default settings only - shared cache)
-        if (key.usesDefaults) {
-          uploadToCloud(this, key, blob);
+          // Upload to cloud (for shared/default classes only — includes the
+          // deterministic QR variant now)
+          if (key.usesDefaults) {
+            uploadToCloud(this, key, blob);
+          }
+
+          // Store in memory cache for instant revisits
+          this.memoryCache.set(key.hash, url);
+          this.renderedGenerations.set(key.hash, this.cacheGeneration);
         }
-
-        // Store in memory cache for instant revisits
-        this.memoryCache.set(key.hash, url);
-        this.renderedGenerations.set(key.hash, this.cacheGeneration);
         this.completedCount++;
         this.metrics?.endRequest(requestId, "render", { queueWaitTime, renderTime });
         request.onStatusChange?.({ state: "complete", url });
@@ -381,22 +398,36 @@ export class ThumbnailRenderOrchestrator {
       propType: key.propKey as PropType,
       lightMode: key.inputs.lightMode,
       variant: key.inputs.variant,
+      showQRCode: key.inputs.visibility?.showQRCode ?? false,
     };
   }
 
   /**
-   * Build key for static manifest lookup
-   * Format: {propType}/{sequenceName}_{mode}
-   * Static thumbnails use legacy format (no variant level) for backwards compatibility
-   * Must match the keys in /static/thumbnails/manifest.json
+   * Build key for static manifest lookup — current format.
+   * Format: {variant}/{propType}/{sequenceName}_{sequenceId}_{mode}
+   * Mirrors the cloud storage path (sync-static-thumbnails.cjs downloads files
+   * verbatim and derives manifest keys from the on-disk paths), so this must
+   * stay in lockstep with getStoragePath() in cloud-thumbnail-cache.ts.
    */
   buildStaticKey(key: ThumbnailCacheKey): string {
     const modeSuffix = key.inputs.lightMode ? "_light" : "_dark";
-    // Sanitize sequence name for Windows compatibility (colons from timestamps, etc.)
-    const sanitizedName = key.inputs.sequenceName
-      .replace(/:/g, "-")
-      .replace(/[?<>"|*]/g, "_");
-    return `${key.propKey}/${sanitizedName}${modeSuffix}`;
+    const idSuffix = key.inputs.sequenceId ? `_${key.inputs.sequenceId}` : "";
+    const qrSuffix = key.inputs.visibility?.showQRCode ? "_qr" : "";
+    return `${key.inputs.variant}/${key.propKey}/${sanitizeForStaticPath(
+      `${key.inputs.sequenceName}${idSuffix}`
+    )}${qrSuffix}${modeSuffix}`;
+  }
+
+  /**
+   * Legacy static key (pre-variant bundles): {propType}/{sequenceName}_{mode}.
+   * Old synced files (no variant folder, no sequence id) still live in
+   * /static/thumbnails/ — keep them reachable until the next full re-sync.
+   * The `_qr` suffix means QR-on requests never match a legacy (no-QR) file.
+   */
+  buildLegacyStaticKey(key: ThumbnailCacheKey): string {
+    const modeSuffix = key.inputs.lightMode ? "_light" : "_dark";
+    const qrSuffix = key.inputs.visibility?.showQRCode ? "_qr" : "";
+    return `${key.propKey}/${sanitizeForStaticPath(key.inputs.sequenceName)}${qrSuffix}${modeSuffix}`;
   }
 
   /**

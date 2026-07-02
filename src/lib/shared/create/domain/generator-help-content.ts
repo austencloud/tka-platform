@@ -62,7 +62,7 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
       "Sets how many steps (individual moves) your generated sequence will have. Each step is one pictograph showing a single movement.",
     bullets: [
       "Freeform mode: 1-64 steps",
-      "LOOP mode: 2-64 steps (must be even for symmetry)",
+      "LOOP mode: 4-64 steps (must be even for symmetry)",
     ],
     tip: "Shorter sequences are easier to learn and memorize.",
   },

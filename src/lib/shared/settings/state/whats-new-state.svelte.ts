@@ -66,6 +66,20 @@ class WhatsNewState {
   }
 
   /**
+   * Whether the user has ever seen ANY version's notes. Distinguishes a
+   * first-ever visitor (no baseline) from a returning user landing on a new
+   * version — the former should be baselined silently, not greeted with a
+   * changelog for a build they're seeing for the first time.
+   */
+  hasSeenAnyVersion(): boolean {
+    const service = getOnboardingService();
+    if (service) return service.getLastSeenVersion() != null;
+
+    if (typeof localStorage === "undefined") return true;
+    return localStorage.getItem(STORAGE_KEY) != null;
+  }
+
+  /**
    * Mark current version as seen.
    * Updates localStorage immediately and syncs to Firebase via OnboardingPersister.
    * Stores the high-water mark — never downgrades to an older version.

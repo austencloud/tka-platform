@@ -28,6 +28,10 @@ export interface CloudThumbnailKey {
   lightMode: boolean;
   /** Cache variant - defaults to 'gallery' for backwards compatibility */
   variant?: ThumbnailVariant;
+  /** QR-baked variant. The short code is content-hash-deduped globally so the
+   * QR image is identical for all signed-in users — cacheable, but stored at a
+   * distinct `_qr` path so it never collides with the guest/no-QR card. */
+  showQRCode?: boolean;
 }
 
 export interface DeleteProgress {
@@ -41,7 +45,7 @@ export interface DeleteProgress {
 const URL_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 // Longer TTL for "known missing" entries - no need to re-check frequently
-const _MISSING_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const MISSING_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 interface CachedUrl {
   url: string | null;
@@ -108,6 +112,67 @@ function persistKnownExists(): void {
   }
 }
 
+// Track thumbnails we've confirmed DON'T exist (404 from the existence probe),
+// so unknown keys are probed at most once per TTL per browser instead of on
+// every visit. This is what lets getUrl() probe optimistically when the
+// manifest hasn't caught up — the manifest becomes a warm-start optimization
+// instead of a hard gate that rots whenever regeneration lags uploads.
+const KNOWN_MISSING_KEY = "tka-cloud-thumbnails-missing";
+let knownMissing: Map<string, number> | null = null;
+
+function getKnownMissing(): Map<string, number> {
+  if (knownMissing) return knownMissing;
+  knownMissing = new Map();
+  try {
+    const stored = localStorage.getItem(KNOWN_MISSING_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as { entries: [string, number][] };
+      const now = Date.now();
+      for (const [key, ts] of parsed.entries) {
+        if (now - ts < MISSING_CACHE_TTL_MS) knownMissing.set(key, ts);
+      }
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+  return knownMissing;
+}
+
+function isKnownMissing(cacheKey: string): boolean {
+  const missing = getKnownMissing();
+  const ts = missing.get(cacheKey);
+  if (ts === undefined) return false;
+  if (Date.now() - ts >= MISSING_CACHE_TTL_MS) {
+    missing.delete(cacheKey);
+    return false;
+  }
+  return true;
+}
+
+function addKnownMissing(cacheKey: string): void {
+  const missing = getKnownMissing();
+  missing.set(cacheKey, Date.now());
+  try {
+    // Cap to the most recent 3000 entries to bound localStorage size
+    const entries = Array.from(missing.entries()).slice(-3000);
+    localStorage.setItem(KNOWN_MISSING_KEY, JSON.stringify({ entries }));
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
+function clearKnownMissing(cacheKey: string): void {
+  const missing = getKnownMissing();
+  if (missing.delete(cacheKey)) {
+    try {
+      const entries = Array.from(missing.entries());
+      localStorage.setItem(KNOWN_MISSING_KEY, JSON.stringify({ entries }));
+    } catch {
+      // Ignore localStorage errors
+    }
+  }
+}
+
 /**
  * Check if a cached entry is still valid (not expired)
  */
@@ -163,7 +228,8 @@ export function getStoragePath(key: CloudThumbnailKey): string {
   const variant = key.variant ?? "gallery";
   const modeSuffix = key.lightMode ? "_light" : "_dark";
   const idSuffix = key.sequenceId ? `_${key.sequenceId}` : "";
-  return `thumbnails/${variant}/${key.propType}/${key.sequenceName}${idSuffix}${modeSuffix}.webp`;
+  const qrSuffix = key.showQRCode ? "_qr" : "";
+  return `thumbnails/${variant}/${key.propType}/${key.sequenceName}${idSuffix}${qrSuffix}${modeSuffix}.webp`;
 }
 
 /**
@@ -175,7 +241,8 @@ function getCacheKey(key: CloudThumbnailKey): string {
   const variant = key.variant ?? "gallery";
   const modeSuffix = key.lightMode ? "_light" : "_dark";
   const idSuffix = key.sequenceId ? `_${key.sequenceId}` : "";
-  return `${variant}/${key.propType}/${key.sequenceName}${idSuffix}${modeSuffix}`;
+  const qrSuffix = key.showQRCode ? "_qr" : "";
+  return `${variant}/${key.propType}/${key.sequenceName}${idSuffix}${qrSuffix}${modeSuffix}`;
 }
 
 /**
@@ -198,11 +265,14 @@ export function getCachedUrl(key: CloudThumbnailKey): string | null | undefined 
 
 /**
  * Get thumbnail URL from Firebase Storage
- * Returns null if thumbnail doesn't exist in cloud (or we don't know if it exists)
+ * Returns null if thumbnail doesn't exist in cloud
  *
- * IMPORTANT: This method only fetches thumbnails we KNOW exist (from previous uploads).
- * If we don't know it exists, we return null immediately to avoid 404 errors.
- * The caller should render locally, then upload() will register it as "known to exist".
+ * Keys in the "known exists" list (manifest + own uploads) resolve to a URL
+ * with zero network cost. Unknown keys get ONE existence probe (a tiny
+ * metadata GET), throttled by the priority queue; a 404 is remembered for
+ * 24 hours so the probe never repeats per key. This keeps the crowd-sourced
+ * cache alive even when the manifest lags behind uploads — without the probe,
+ * a stale manifest silently kills the whole cloud tier (June 2026 incident).
  *
  * @param priority - Lower = higher priority (Y position). Visible thumbnails get served first.
  */
@@ -219,33 +289,56 @@ export async function getUrl(key: CloudThumbnailKey, priority: number = Infinity
     urlCache.delete(cacheKey);
   }
 
-  // KEY CHANGE: Only fetch if we KNOW this thumbnail exists
-  // This prevents 404 errors entirely - we never request things we haven't confirmed
-  if (!getKnownExists().has(cacheKey)) {
-    // We don't know if it exists - return null, caller will render locally
-    // After upload(), this will be added to knownExists for next time
+  const storagePath = getStoragePath(key);
+  const encodedPath = encodeURIComponent(storagePath);
+  const objectUrl = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_STORAGE_BUCKET}/o/${encodedPath}`;
+  const publicUrl = `${objectUrl}?alt=media`;
+
+  // Fast path: manifest or a previous upload/probe confirmed this exists —
+  // build the public URL directly, no request needed.
+  if (getKnownExists().has(cacheKey)) {
+    urlCache.set(cacheKey, { url: publicUrl, timestamp: Date.now() });
+    return publicUrl;
+  }
+
+  // Unknown key: probe once per TTL. Recently confirmed missing → straight to
+  // local render, no request.
+  if (isKnownMissing(cacheKey)) {
     return null;
   }
 
-  // We know this exists - safe to fetch without 404
-  // Acquire a slot before making request (respects priority queue)
+  // Acquire a slot before probing (respects the Y-position priority queue)
   await acquireCheckSlot(priority);
 
   try {
-    // Double-check cache after acquiring slot (might have been populated while waiting)
+    // Double-check caches after acquiring slot (might have been populated
+    // by another card's probe or an upload while waiting)
     const cachedAgain = urlCache.get(cacheKey);
     if (cachedAgain && isCacheValid(cachedAgain)) {
       return cachedAgain.url;
     }
+    if (getKnownExists().has(cacheKey)) {
+      urlCache.set(cacheKey, { url: publicUrl, timestamp: Date.now() });
+      return publicUrl;
+    }
 
-    // Build the public URL directly
-    const storagePath = getStoragePath(key);
-    const encodedPath = encodeURIComponent(storagePath);
-    const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_STORAGE_BUCKET}/o/${encodedPath}?alt=media`;
+    // Existence probe: the object METADATA endpoint (no ?alt=media) returns a
+    // small JSON on 200 and a 404 if absent — far cheaper than fetching the image.
+    const response = await fetch(objectUrl);
+    if (response.ok) {
+      addKnownExists(cacheKey);
+      urlCache.set(cacheKey, { url: publicUrl, timestamp: Date.now() });
+      return publicUrl;
+    }
 
-    // Cache and return - we know it exists, no need to verify
-    urlCache.set(cacheKey, { url: publicUrl, timestamp: Date.now() });
-    return publicUrl;
+    // Confirmed missing — remember so we don't re-probe for 24h. The caller
+    // renders locally and upload() clears this entry on success.
+    addKnownMissing(cacheKey);
+    return null;
+  } catch {
+    // Network/CORS error — don't poison the negative cache, just fall back
+    // to local render this time.
+    return null;
   } finally {
     // Always release the slot
     releaseCheckSlot();
@@ -325,6 +418,7 @@ export async function upload(key: CloudThumbnailKey, blob: Blob): Promise<string
     const url = await uploadPromise;
     urlCache.set(cacheKey, { url, timestamp: Date.now() });
     addKnownExists(cacheKey); // Register as existing - future getUrl() calls will fetch it
+    clearKnownMissing(cacheKey); // A pre-upload probe may have 404'd this key
     return url;
   } finally {
     pendingUploads.delete(cacheKey);
@@ -370,8 +464,10 @@ export function clearMemoryCache(includeKnownExists: boolean = false): void {
   urlCache.clear();
   if (includeKnownExists) {
     knownExists = new Set();
+    knownMissing = new Map();
     try {
       localStorage.removeItem(KNOWN_EXISTS_KEY);
+      localStorage.removeItem(KNOWN_MISSING_KEY);
     } catch {
       // Ignore localStorage errors
     }

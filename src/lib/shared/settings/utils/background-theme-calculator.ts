@@ -497,7 +497,7 @@ export function applyThemeFromColors(
   root.style.setProperty("--accent-teal", "#14b8a6"); // Axis-alternating, flipped transforms
   root.style.setProperty("--accent-pink", "#ec4899"); // Section palette
   root.style.setProperty("--accent-rotation", "#36c3ff"); // Rotation transform viz
-  root.style.setProperty("--accent-swap", "#26e600"); // Swap transform viz
+  root.style.setProperty("--accent-swap", "#2ecc71"); // Swap transform viz
   root.style.setProperty("--accent-inversion", "#eb7d00"); // Inversion transform viz
 
   // ═══════════════════════════════════════════════════════════════════════════

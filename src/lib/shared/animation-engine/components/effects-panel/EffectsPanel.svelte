@@ -9,6 +9,7 @@
   import { matchPresetId, valuesEqual } from "./presets/match-preset";
   import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
 
   /** Synthetic chip id for the factory default look (not a named preset). */
   const DEFAULT_CHIP_ID = "__default__";
@@ -93,6 +94,35 @@
       return;
     }
     if (isEffectId(effectId)) effectsConfigState.setActiveEffect(effectId);
+  }
+
+  // ── Mobile drill-down (layout="strip") ────────────────────────────────────
+  // The Instagram-filter contract: tapping a tile applies the effect live and
+  // STAYS in the picker (browsing costs zero navigation); tapping the
+  // already-active tile drills into its detail screen (looks + primary slider +
+  // More tuning). An explicit Off tile replaces the old tap-again-to-disable
+  // toggle, which the drill gesture now owns.
+  let detailOpen = $state(false);
+
+  const stripView = $derived<"picker" | "detail" | "customize">(
+    customizeOpen && CustomizeComponent
+      ? "customize"
+      : detailOpen && activeEffect !== "none" && registration
+        ? "detail"
+        : "picker",
+  );
+
+  function handleTileTap(effectId: string): void {
+    if (effectId === activeEffect) {
+      detailOpen = true;
+      return;
+    }
+    if (isEffectId(effectId)) effectsConfigState.setActiveEffect(effectId);
+  }
+
+  function handleOffTap(): void {
+    detailOpen = false;
+    effectsConfigState.setActiveEffect("none");
   }
 
   // Hover/press intent: warm the effect's webgl renderer before the click so the
@@ -241,8 +271,102 @@
       </button>
     </div>
   </div>
-{:else if layout === "strip" || layout === "grid"}
-  <!-- Mobile / popover layout -->
+{:else if layout === "strip"}
+  <!-- Mobile drill-down: picker grid (all 16 + Off, no h-scroll) ⇄ per-effect
+       detail screen ⇄ deep tuning. Tap a tile = apply live + stay; tap the
+       active tile = drill into its detail. -->
+  <div class="mep">
+    <Crossfade key={stripView}>
+      {#if stripView === "customize" && CustomizeComponent}
+        <div class="drill-view">
+          <button type="button" class="back-row" onclick={handleCustomizeClose} aria-label="Back to {EFFECT_LABELS[activeEffect] ?? activeEffect}">
+            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            <span class="back-row-title">
+              <span class="back-row-label">{EFFECT_LABELS[activeEffect] ?? activeEffect}</span>
+              <span class="back-row-sub">More tuning</span>
+            </span>
+          </button>
+          {@render customizeAnchors()}
+          <CustomizeComponent onBack={handleCustomizeClose} />
+        </div>
+      {:else if stripView === "detail" && registration && activeEffect !== "none"}
+        <div class="drill-view">
+          <div class="detail-head">
+            <button type="button" class="back-btn" onclick={() => (detailOpen = false)} aria-label="All effects">
+              <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            </button>
+            <i class="fas {EFFECTS.find((e) => e.id === activeEffect)?.icon} detail-icon" style:color={EFFECT_COLORS[activeEffect]} aria-hidden="true"></i>
+            <span class="detail-name">{EFFECT_LABELS[activeEffect] ?? activeEffect}</span>
+          </div>
+
+          <div class="preset-wrap" role="radiogroup" aria-label="{EFFECT_LABELS[activeEffect] ?? activeEffect} presets">
+            {#each registration.presetGroup.presets as preset (preset.id)}
+              {@const isActive = activePresetId === preset.id}
+              <button type="button" class="preset-chip" class:active={isActive} role="radio" aria-checked={isActive} onclick={() => handlePresetSelect(preset.id)}>
+                {#if preset.previewColor === "rainbow"}
+                  <span class="swatch rainbow" aria-hidden="true"></span>
+                {:else if preset.previewColor === "custom"}
+                  <span class="swatch custom" aria-hidden="true"></span>
+                {:else if preset.previewColor2}
+                  <span class="swatch dual" aria-hidden="true">
+                    <span class="half" style:background={preset.previewColor}></span>
+                    <span class="half" style:background={preset.previewColor2}></span>
+                  </span>
+                {:else}
+                  <span class="swatch" style:background={preset.previewColor} aria-hidden="true"></span>
+                {/if}
+                {preset.name}
+              </button>
+            {/each}
+          </div>
+
+          {#if primarySpec}
+            <div class="slider-row">
+              <span class="slider-label">{primarySpec.label}</span>
+              <input type="range" class="slider" min={primarySpec.min} max={primarySpec.max} step={primarySpec.step} value={primaryValue} oninput={handleSliderInput} aria-label="{primarySpec.label} for {EFFECT_LABELS[activeEffect] ?? activeEffect}" />
+              <span class="slider-val">{primarySpec.format(primaryValue)}</span>
+            </div>
+            <button type="button" class="more-btn" onclick={handleCustomizeOpen}>
+              <span>More tuning…</span>
+              <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </button>
+          {/if}
+        </div>
+      {:else}
+        <div class="drill-view">
+          <!-- Off lives above the grid (not as a 17th tile) so the picker stays
+               a clean 4×4. Tapping the active effect's tile drills into tuning,
+               so this chip is the one explicit kill switch. -->
+          <div class="picker-bar">
+            <button
+              type="button"
+              class="off-chip"
+              class:active={activeEffect === "none"}
+              aria-pressed={activeEffect === "none"}
+              onclick={handleOffTap}
+            >
+              <i class="fas fa-ban" aria-hidden="true"></i>
+              <span>{activeEffect === "none" ? "Off" : `Turn off ${EFFECT_LABELS[activeEffect] ?? ""}`}</span>
+            </button>
+          </div>
+          <div class="fx-picker" role="radiogroup" aria-label="Select effect">
+            {#each EFFECTS as e (e.id)}
+              {@const isActive = activeEffect === e.id}
+              <button type="button" class="fx-tile" class:active={isActive} role="radio" aria-checked={isActive} aria-label={isActive ? `Tune ${e.label}` : e.label} style:--fx={e.color} onpointerenter={() => handleEffectPrewarm(e.id)} onpointerdown={() => handleEffectPrewarm(e.id)} onclick={() => handleTileTap(e.id)}>
+                <i class="fas {e.icon}" aria-hidden="true"></i>
+                <span>{e.label}</span>
+                {#if isActive}
+                  <span class="tune-badge" aria-hidden="true"><i class="fas fa-sliders"></i></span>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </Crossfade>
+  </div>
+{:else if layout === "grid"}
+  <!-- Desktop popover layout (3D controls): everything on one surface. -->
   <div class="mep">
     {#if customizeOpen && CustomizeComponent}
       <button type="button" class="back-row" onclick={handleCustomizeClose} aria-label="Back to effect presets">
@@ -255,7 +379,7 @@
       {@render customizeAnchors()}
       <CustomizeComponent onBack={handleCustomizeClose} />
     {:else}
-      <div class="fx-strip" class:grid={layout === "grid"} role="radiogroup" aria-label="Select effect">
+      <div class="fx-strip grid" role="radiogroup" aria-label="Select effect">
         {#each EFFECTS as e (e.id)}
           {@const isActive = activeEffect === e.id}
           <button type="button" class="fx-tile" class:active={isActive} role="radio" aria-checked={isActive} aria-label={e.label} style:--fx={e.color} onpointerenter={() => handleEffectPrewarm(e.id)} onpointerdown={() => handleEffectPrewarm(e.id)} onclick={() => handleEffectSelect(e.id)}>
@@ -442,6 +566,121 @@
   .fx-strip::-webkit-scrollbar,
   .preset-strip::-webkit-scrollbar {
     display: none;
+  }
+
+  /* ── Mobile drill-down (strip layout) ── */
+  .drill-view {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  /* Off chip row above the grid. Only child in its row, so its label growing
+     ("Off" → "Turn off Sparkle") reflows nothing. */
+  .picker-bar {
+    display: flex;
+  }
+  .off-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 150ms ease;
+  }
+  .off-chip:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
+    color: var(--theme-text, #fff);
+  }
+  .off-chip.active {
+    background: color-mix(in srgb, var(--fx-accent) 18%, var(--theme-panel-bg, rgba(20, 22, 32, 0.6)));
+    border-color: color-mix(in srgb, var(--fx-accent) 45%, transparent);
+    color: var(--fx-accent-text);
+  }
+
+  /* Picker: every effect visible at once — no horizontal scroll, no hidden
+     tail. 4 columns; tiles stretch to the cell so the grid owns sizing. */
+  .fx-picker {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .fx-picker .fx-tile {
+    width: 100%;
+    height: 60px;
+  }
+
+  /* Tap-again affordance on the active tile: a sliders badge signals the
+     second tap opens that effect's tuning screen. */
+  .tune-badge {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--fx) 30%, var(--theme-panel-bg, rgba(20, 22, 32, 0.9)));
+    box-shadow: 0 0 6px color-mix(in srgb, var(--fx) 60%, transparent);
+  }
+  .fx-tile .tune-badge i {
+    font-size: 9px;
+    color: var(--fx);
+  }
+
+  .detail-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .back-btn {
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 150ms ease;
+  }
+  .back-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
+  }
+  .detail-icon {
+    font-size: 18px;
+  }
+  .detail-name {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--theme-text, white);
+  }
+
+  /* Detail presets wrap — the screen has the whole tray, so every look is
+     visible instead of h-scrolled. */
+  .preset-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   /* Desktop grid variant - wraps tiles into rows that auto-fit the host width.

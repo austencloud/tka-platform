@@ -8,8 +8,8 @@ import { deriveCacheKey } from "./cell-cache-key-deriver";
 import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 import { getWorkerRenderPool } from "$lib/shared/render/services/worker-render-pool";
-import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+import { buildRenderOptions as buildCellRenderOptions } from "$lib/shared/choreo-card/services/choreo-card-cell-pipeline";
 import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
 import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
 import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
@@ -107,27 +107,36 @@ export class CellPreWarmer {
   }
 
   private buildRenderOptions(): PreviewCellRenderOptions {
-    const settings = getSettings();
-    const visibility = settings.visibility;
     const bluePropType = settingsService.settings.bluePropType;
     const redPropType = settingsService.settings.redPropType;
     const catDogMode = settingsService.settings.catDogMode;
     const catDogModeEnabled = isCatDogMode(bluePropType, redPropType, catDogMode);
+    const vm = getVisibilityStateManager();
 
-    return {
-      size: 240, 
+    // Mirror ChoreoCard's canonical render options EXACTLY — same VM source, same
+    // pipeline builder — so warmed cache keys match what the card reads. Pre-warm
+    // targets the default full-card view: no solo/hand-path filtering, both
+    // motions visible. (showGrid was previously omitted here, so a grid-off card
+    // baked grid:true into the pre-warm key and never hit.)
+    return buildCellRenderOptions({
+      cellSize: 240,
       bluePropType,
       redPropType,
       catDogModeEnabled,
-      showStepNumbers: false,
-      showNonRadialPoints: visibility?.nonRadialPoints ?? true,
-      handPointVisibility: visibility?.handPointVisibility ?? "all",
-      showTKA: visibility?.tkaGlyph ?? true,
-      showReversals: visibility?.reversalIndicators ?? true,
-      showTnD: getVisibilityStateManager().getRawGlyphVisibility("tndGlyph"),
-      showElemental: getVisibilityStateManager().getRawGlyphVisibility("elementalGlyph"),
-      showPositions: getVisibilityStateManager().getRawGlyphVisibility("positionsGlyph"),
-    };
+      showNonRadial: vm.getNonRadialVisibility(),
+      showGrid: vm.getGridVisibility(),
+      handPointVis: vm.getHandPointVisibility(),
+      showTKA: vm.getRawGlyphVisibility("tkaGlyph"),
+      showReversals: vm.getRawGlyphVisibility("reversalIndicators"),
+      showTnD: vm.getRawGlyphVisibility("tndGlyph"),
+      showElemental: vm.getRawGlyphVisibility("elementalGlyph"),
+      showPositions: vm.getRawGlyphVisibility("positionsGlyph"),
+      isSoloMode: false,
+      handPathMode: false,
+      browseViewMode: undefined,
+      showBlueMotion: true,
+      showRedMotion: true,
+    });
   }
 
   private buildCellTasks(

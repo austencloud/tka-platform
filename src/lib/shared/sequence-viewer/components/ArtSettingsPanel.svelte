@@ -26,6 +26,10 @@
   import MandalaCategoryControl, {
     type MandalaCategory,
   } from "./mandala/MandalaCategoryControl.svelte";
+  import ControlDock, {
+    type ControlDockTab,
+    type ControlDockAction,
+  } from "./ControlDock.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { ViewerPlaybackState } from "../domain/viewer-prop-groups";
   import type { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
@@ -48,6 +52,7 @@
     controller,
     mandalaController,
     artType,
+    layout = "sidebar",
     onExport,
     bpm = $bindable(60),
     playbackMode = "continuous",
@@ -66,6 +71,9 @@
     controller: TunnelViewController;
     mandalaController: MandalaViewerController;
     artType: ArtType;
+    /** "bottom" swaps the desktop sidebar for a mobile ControlDock (pill-tab bar
+     *  + slide-up tray) floating over the art. Default "sidebar". */
+    layout?: "sidebar" | "bottom";
     onExport: () => void;
     bpm?: number;
     playbackMode?: PlaybackMode;
@@ -137,8 +145,199 @@
     flyDir = next >= prev ? 1 : -1;
     controller.section = id;
   }
+
+  // ── Mobile bottom-dock (layout="bottom") ──
+  // The shared ControlDock shell (same one AnimationPanel + the native mandala
+  // dock use): a pill-tab bar with a slide-up tray, floating over the art. A tab
+  // toggles its tray open/closed (null = collapsed); the persisted desktop
+  // `section` stays synced for the tunnel so both presentations agree.
+  let openTunnelTab = $state<TunnelRailId | null>(null);
+  let openMandalaCat = $state<MandalaRailId | null>(null);
+
+  function selectTunnelDock(id: string): void {
+    if (exporting) return;
+    const tid = id as TunnelRailId;
+    openTunnelTab = openTunnelTab === tid ? null : tid;
+    if (openTunnelTab) controller.section = tid;
+  }
+  function selectMandalaDock(id: string): void {
+    const cid = id as MandalaRailId;
+    openMandalaCat = openMandalaCat === cid ? null : cid;
+  }
+
+  const tunnelDockTabs = $derived<ControlDockTab[]>(
+    tunnelRail.map((p) => ({
+      id: p.id,
+      label: p.label,
+      icon: p.icon,
+      accentColor: p.accentColor,
+    })),
+  );
+  // Colors gets the live accent-pair dots (matching the native mandala dock);
+  // "download" is excluded — it's the trailing Export action, not a tray tab.
+  const mandalaDockTabs = $derived<ControlDockTab[]>(
+    mandalaRail
+      .filter((c) => c.id !== "download")
+      .map((c) =>
+        c.id === "colors"
+          ? { id: c.id, label: c.label, dots: mandalaController.accentPair }
+          : { id: c.id, label: c.label, icon: c.icon },
+      ),
+  );
+  const tunnelDockExport = $derived<ControlDockAction>({
+    icon: "fa-film",
+    label: "Export Video",
+    onClick: onExport,
+    disabled: exporting,
+    busy: exporting,
+  });
+  const mandalaDockExport: ControlDockAction = {
+    icon: "fa-download",
+    label: "Export MP4",
+    onClick: () => mandalaController.startExport(),
+  };
 </script>
 
+<!-- Tunnel section body — one source feeds the desktop sidebar and the mobile
+     dock tray. `dense` tightens the shared sub-panels for the tray. -->
+{#snippet tunnelSectionBody(id: TunnelRailId, dense: boolean)}
+  {#if id === "tunnel"}
+    <div class="section-pad">
+      <div class="group">
+        <span class="lbl">Fold</span>
+        {#each folds as f (f)}
+          <button class:active={controller.fold === f} onclick={() => controller.setFold(f)}>{f}×</button>
+        {/each}
+      </div>
+      <div class="group">
+        <button class:active={controller.mirror} onclick={() => (controller.mirror = !controller.mirror)}>
+          <i class="fas fa-arrows-left-right" aria-hidden="true"></i> Mirror
+        </button>
+        <button class:active={controller.gridVisible} onclick={() => (controller.gridVisible = !controller.gridVisible)}>
+          <i class="fas fa-border-all" aria-hidden="true"></i> Grid
+        </button>
+      </div>
+
+      {#if controller.heavyLoad}
+        <p class="warn">Heavy effect on a large stack: may drop frames on weaker devices.</p>
+      {/if}
+
+      <div class="presets">
+        <input
+          class="name-input"
+          type="text"
+          placeholder="name this look…"
+          bind:value={newName}
+          onkeydown={(e) => { if (e.key === "Enter") { controller.saveCurrentAs(newName); newName = ""; } }}
+        />
+        <button onclick={() => { controller.saveCurrentAs(newName); newName = ""; }}>Save</button>
+        {#each controller.presets as p (p.id)}
+          <div class="chip">
+            <button class="chip-apply" onclick={() => controller.applyPreset(p)}>{p.name}</button>
+            <button class="chip-del" aria-label={`Delete ${p.name}`} onclick={() => controller.deletePreset(p.id)}>×</button>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {:else if id === "effects"}
+    <div class="section-pad">
+      <div class="group">
+        <button
+          class:active={controller.spectrum}
+          aria-pressed={controller.spectrum}
+          onclick={() => (controller.spectrum = !controller.spectrum)}
+        >
+          <i class="fas fa-rainbow" aria-hidden="true"></i> Rainbow spectrum
+        </button>
+      </div>
+      {#if !dense}
+        <p class="section-hint">
+          {controller.spectrum
+            ? "Every kaleidoscope copy fans across the spectrum."
+            : "Props follow the colors you choose below."}
+        </p>
+      {/if}
+      <EffectsPanel
+        layout={dense ? "strip" : "sidebar"}
+        showPlayback={false}
+        {bpm}
+        {onBpmChange}
+        {isPlaying}
+        {onPlaybackToggle}
+      />
+    </div>
+  {:else if id === "effort"}
+    <div class="section-pad">
+      {#if !dense}<p class="section-hint">How each beat speeds up and slows down.</p>{/if}
+      <EffortPanel columns={dense ? 4 : 2} showSubtitles={!dense} />
+    </div>
+  {:else}
+    <div class="section-pad">
+      <div class="rt-section">
+        <span class="rt-section-label">Tempo</span>
+        <TempoControl
+          {bpm}
+          {onBpmChange}
+          showPresets={!dense}
+          showPractice={false}
+          presetsMode={dense ? "popover" : "inline"}
+          vertical={!dense}
+        />
+      </div>
+      <div class="rt-section">
+        <span class="rt-section-label">Mode</span>
+        <PlaybackModeToggle
+          {playbackMode}
+          {isPlaying}
+          {onPlaybackModeChange}
+          {onPlaybackToggle}
+          showDescriptions={!dense}
+        />
+      </div>
+    </div>
+  {/if}
+{/snippet}
+
+{#if layout === "bottom"}
+  <!-- Mobile: the shared ControlDock floats over the art. A pill-tab bar opens a
+       slide-up tray; the trailing action is Export. Same chrome as the 2D
+       Download-Animation panel and the native mandala dock. -->
+  {#if artType === "tunnel"}
+    <ControlDock
+      overlay
+      tabs={tunnelDockTabs}
+      activeTab={openTunnelTab}
+      onTabSelect={selectTunnelDock}
+      trailingAction={tunnelDockExport}
+    >
+      {#snippet tray()}
+        <div class="dock-dense">
+          {#if openTunnelTab}{@render tunnelSectionBody(openTunnelTab, true)}{/if}
+        </div>
+      {/snippet}
+    </ControlDock>
+  {:else}
+    <ControlDock
+      overlay
+      tabs={mandalaDockTabs}
+      activeTab={openMandalaCat}
+      onTabSelect={selectMandalaDock}
+      trailingAction={mandalaDockExport}
+    >
+      {#snippet tray()}
+        <div class="dock-dense">
+          {#if openMandalaCat}
+            <MandalaCategoryControl
+              ctrl={mandalaController}
+              category={openMandalaCat}
+              showExportButton={false}
+            />
+          {/if}
+        </div>
+      {/snippet}
+    </ControlDock>
+  {/if}
+{:else}
 <div class="art-settings-panel" class:exporting inert={exporting || undefined}>
   <!-- Pinned header: the current art type (the mode rail switches between
        Mandala and Tunnel now — no in-panel toggle). -->
@@ -167,99 +366,7 @@
                 <div class="panel-center-inner">
                   <h2 class="panel-title">{tunnelSectionLabel}</h2>
 
-                  {#if tunnelSection === "tunnel"}
-                    <div class="section-pad">
-                      <div class="group">
-                        <span class="lbl">Fold</span>
-                        {#each folds as f (f)}
-                          <button class:active={controller.fold === f} onclick={() => controller.setFold(f)}>{f}×</button>
-                        {/each}
-                      </div>
-                      <div class="group">
-                        <button class:active={controller.mirror} onclick={() => (controller.mirror = !controller.mirror)}>
-                          <i class="fas fa-arrows-left-right" aria-hidden="true"></i> Mirror
-                        </button>
-                        <button class:active={controller.gridVisible} onclick={() => (controller.gridVisible = !controller.gridVisible)}>
-                          <i class="fas fa-border-all" aria-hidden="true"></i> Grid
-                        </button>
-                      </div>
-
-                      {#if controller.heavyLoad}
-                        <p class="warn">Heavy effect on a large stack: may drop frames on weaker devices.</p>
-                      {/if}
-
-                      <div class="presets">
-                        <input
-                          class="name-input"
-                          type="text"
-                          placeholder="name this look…"
-                          bind:value={newName}
-                          onkeydown={(e) => { if (e.key === "Enter") { controller.saveCurrentAs(newName); newName = ""; } }}
-                        />
-                        <button onclick={() => { controller.saveCurrentAs(newName); newName = ""; }}>Save</button>
-                        {#each controller.presets as p (p.id)}
-                          <div class="chip">
-                            <button class="chip-apply" onclick={() => controller.applyPreset(p)}>{p.name}</button>
-                            <button class="chip-del" aria-label={`Delete ${p.name}`} onclick={() => controller.deletePreset(p.id)}>×</button>
-                          </div>
-                        {/each}
-                      </div>
-                    </div>
-                  {:else if tunnelSection === "effects"}
-                    <div class="section-pad">
-                      <div class="group">
-                        <button
-                          class:active={controller.spectrum}
-                          aria-pressed={controller.spectrum}
-                          onclick={() => (controller.spectrum = !controller.spectrum)}
-                        >
-                          <i class="fas fa-rainbow" aria-hidden="true"></i> Rainbow spectrum
-                        </button>
-                      </div>
-                      <p class="section-hint">
-                        {controller.spectrum
-                          ? "Every kaleidoscope copy fans across the spectrum."
-                          : "Props follow the colors you choose below."}
-                      </p>
-                      <EffectsPanel
-                        layout="sidebar"
-                        showPlayback={false}
-                        {bpm}
-                        {onBpmChange}
-                        {isPlaying}
-                        {onPlaybackToggle}
-                      />
-                    </div>
-                  {:else if tunnelSection === "effort"}
-                    <div class="section-pad">
-                      <p class="section-hint">How each beat speeds up and slows down.</p>
-                      <EffortPanel columns={2} showSubtitles />
-                    </div>
-                  {:else}
-                    <div class="section-pad">
-                      <div class="rt-section">
-                        <span class="rt-section-label">Tempo</span>
-                        <TempoControl
-                          {bpm}
-                          {onBpmChange}
-                          showPresets
-                          showPractice={false}
-                          presetsMode="inline"
-                          vertical
-                        />
-                      </div>
-                      <div class="rt-section">
-                        <span class="rt-section-label">Mode</span>
-                        <PlaybackModeToggle
-                          {playbackMode}
-                          {isPlaying}
-                          {onPlaybackModeChange}
-                          {onPlaybackToggle}
-                          showDescriptions
-                        />
-                      </div>
-                    </div>
-                  {/if}
+                  {@render tunnelSectionBody(tunnelSection, false)}
                 </div>
               </div>
             {/key}
@@ -300,6 +407,7 @@
     </div>
   {/if}
 </div>
+{/if}
 
 <style>
   /* Card chrome mirrors `.horizontal-sidebar` (the 2D animation rail). */
@@ -514,4 +622,16 @@
       transition: none;
     }
   }
+
+  /* Mobile dock tray: tighten the shared section bodies. Buttons/inputs keep
+     their var(--min-touch-target) floor — only gaps and outer paddings collapse
+     so the tray stays compact floating over the art. */
+  .dock-dense .section-pad { gap: 8px; padding: 2px 2px 6px; }
+  .dock-dense .group { gap: 6px; }
+  .dock-dense .presets { gap: 6px; }
+  /* EffectsPanel lives in a child component — mirror AnimationPanel's dock-dense
+     compression (:global) so the tunnel tray fits the 4×4 picker without scroll. */
+  .dock-dense :global(.mep) { gap: 6px; }
+  .dock-dense :global(.fx-tile) { height: 52px; }
+  .dock-dense :global(.slider-row) { padding: 6px 10px; gap: 8px; }
 </style>

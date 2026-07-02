@@ -121,7 +121,12 @@ export function deriveKey(input: ThumbnailRenderInput): ThumbnailCacheKey {
   const mode = input.lightMode ? "light" : "dark";
   // Include sequence ID in cloud path so variations of the same word get separate thumbnails
   const idSuffix = input.sequenceId ? `_${input.sequenceId}` : "";
-  const cloudPath = `thumbnails/${input.variant}/${propKey}/${input.sequenceName}${idSuffix}_${mode}.webp`;
+  // QR is a shareable-but-distinct variant: the Firebase short code is
+  // content-hash-deduped globally, so a QR-baked thumbnail is byte-identical for
+  // every signed-in user — cacheable, but keyed apart from the no-QR card so a
+  // guest's QR-less render can't overwrite it (and vice-versa).
+  const qrSuffix = input.visibility?.showQRCode ? "_qr" : "";
+  const cloudPath = `thumbnails/${input.variant}/${propKey}/${input.sequenceName}${idSuffix}${qrSuffix}_${mode}.webp`;
 
   // Compute hash of all inputs that affect visual output
   const hashInput = usesDefaults
@@ -133,6 +138,9 @@ export function deriveKey(input: ThumbnailRenderInput): ThumbnailCacheKey {
         variant: input.variant,
         loop: input.loopType ?? null,
         spl: input.startPositionLayout ?? "row",
+        // QR is part of the shareable class now (deterministic short code), so
+        // it must discriminate the key — QR-on and QR-off are distinct images.
+        qr: input.visibility?.showQRCode ?? false,
       }
     : buildFullHashInput(input);
 
@@ -223,15 +231,20 @@ function checkInputUsesDefaults(
 
   // Visibility settings affect rendered appearance - check if any are non-default
   if (input.visibility) {
-    // Default values for visibility
+    // Canonical (shared-cacheable) visibility values. These MUST match the
+    // product defaults in image-composition-state, or every user on default
+    // settings keys as "non-default" and the static/cloud tiers + crowd
+    // uploads silently die for the whole population (June 2026 incident:
+    // showMandala defaulted true in settings but false here — cloud cache
+    // starved down to 6 files).
     const defaultVisibility = {
       showTKA: true,
       showReversals: true,
       showGrid: true,
       showNonRadialPoints: false,
       handPointVisibility: "all" as const,
-      showQRCode: false, // QR codes only enabled in choreo card context
-      showMandala: false, // Mandalas only enabled in deck card context
+      showQRCode: false, // QR only in viewer/wordcard contexts, never grid cards
+      showMandala: true, // Product default: LOOP mandalas fill empty cells
     };
     // If any visibility setting differs from default, not using defaults
     if (input.visibility.showTKA !== undefined && input.visibility.showTKA !== defaultVisibility.showTKA)
@@ -244,8 +257,12 @@ function checkInputUsesDefaults(
       return false;
     if (input.visibility.handPointVisibility !== undefined && input.visibility.handPointVisibility !== defaultVisibility.handPointVisibility)
       return false;
-    if (input.visibility.showQRCode !== undefined && input.visibility.showQRCode !== defaultVisibility.showQRCode)
-      return false;
+    // showQRCode is intentionally NOT a disqualifier: the QR is the Firebase
+    // short code (content-hash-deduped globally → identical for all signed-in
+    // users), so a QR-on render is still a shareable/cacheable class. It's kept
+    // distinct from the no-QR card via the `qr` hash field + `_qr` storage path,
+    // not by falling out of the shared cache. (Was a disqualifier — that forced
+    // every signed-in default-settings card to local-render forever.)
     if (input.visibility.handPathMode !== undefined && input.visibility.handPathMode !== false)
       return false;
     if (input.visibility.showMandala !== undefined && input.visibility.showMandala !== defaultVisibility.showMandala)

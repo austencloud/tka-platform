@@ -26,6 +26,20 @@ export interface ChoreoCardRenderKeys {
   imageKey: string;
   contentKey: string;
   gridStableKey: string;
+  /**
+   * The subset of imageKey that changes the pictograph's ARROW/PROP GEOMETRY —
+   * sequence identity, letters, prop types, cat-dog, durations, motion
+   * visibility. When THIS changes, old and new pictographs are structurally
+   * different, so an overlapping crossfade would ghost/double-expose them
+   * (the `swap` transition exists for exactly this case).
+   *
+   * When imageKey changes but structuralKey does NOT, only an OVERLAY toggled —
+   * non-radial points, grid, hand points, TKA/VTG/elemental/positions glyphs,
+   * step numbers. The base pictograph is identical, so a crossfade dissolves the
+   * overlay in/out with zero ghosting. Routing those through `swap` was the
+   * "whole grid flashes out and in" bug (swap blanks every cell mid-transition).
+   */
+  structuralKey: string;
   renderKey: string;
 }
 
@@ -57,7 +71,11 @@ export function buildChoreoCardRenderKeys(i: ChoreoCardRenderKeyInputs): ChoreoC
   const layoutKey = `${i.includeStartPosition}-cols:${i.effectiveColumns}`;
   const contentKey = `${imageKey}-${layoutKey}`;
   const gridStableKey = `${stepCount}-${durationKey}-cols:${i.effectiveColumns}-isp:${i.includeStartPosition}`;
+  // Geometry-only subset (see interface docs). Deliberately excludes every
+  // overlay-visibility flag so a non-radial / glyph / grid / points toggle
+  // leaves it unchanged → crossfade, not swap.
+  const structuralKey = `${i.sequence?.id ?? ""}-${stepLetters}-${stepCount}-${i.bluePropType}-${i.redPropType}-${i.catDogModeEnabled}-${durationKey}-mv:${i.showBlueMotion ? "1" : "0"}${i.showRedMotion ? "1" : "0"}`;
   const renderKey = `${contentKey}-${i.darkMode}`;
 
-  return { imageKey, contentKey, gridStableKey, renderKey };
+  return { imageKey, contentKey, gridStableKey, structuralKey, renderKey };
 }

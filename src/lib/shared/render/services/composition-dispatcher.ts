@@ -244,17 +244,21 @@ export class CompositionDispatcher {
     options: Partial<SequenceExportOptions>,
     onProgress?: CompositionProgressCallback,
     signal?: AbortSignal,
+    /** Pre-rendered QR bitmap (main-thread produced). The worker has no QR
+     * generator, so a baked QR MUST be transferred in; the main-thread fallback
+     * reads it via options.qrImageBitmap. Null = no QR baked. */
+    qrBitmap: ImageBitmap | null = null,
   ): Promise<Blob> {
     if (CompositionDispatcher.canUseWorker()) {
       try {
-        return await this.composeOnWorker(sequence, options, onProgress, signal);
+        return await this.composeOnWorker(sequence, options, onProgress, signal, qrBitmap);
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") throw error;
         console.warn("[CompositionDispatcher] Worker failed, falling back to main thread:", error);
-        return this.composeOnMainThread(sequence, options, onProgress, signal);
+        return this.composeOnMainThread(sequence, options, onProgress, signal, qrBitmap);
       }
     }
-    return this.composeOnMainThread(sequence, options, onProgress, signal);
+    return this.composeOnMainThread(sequence, options, onProgress, signal, qrBitmap);
   }
 
   // ---- Worker path ----
@@ -264,6 +268,7 @@ export class CompositionDispatcher {
     options: Partial<SequenceExportOptions>,
     onProgress?: CompositionProgressCallback,
     signal?: AbortSignal,
+    qrBitmap: ImageBitmap | null = null,
   ): Promise<Blob> {
     await this.ensureInitialized();
 
@@ -272,8 +277,6 @@ export class CompositionDispatcher {
     const id = this.nextRequestId++;
     const worker = this.pickWorker();
     worker.pendingCount++;
-
-    const qrBitmap: ImageBitmap | null = null;
 
     return new Promise<Blob>((resolve, reject) => {
       const pending: PendingRequest = { resolve, reject, onProgress, signal, workerEntry: worker };
@@ -417,10 +420,15 @@ export class CompositionDispatcher {
     options: Partial<SequenceExportOptions>,
     onProgress?: CompositionProgressCallback,
     signal?: AbortSignal,
+    qrBitmap: ImageBitmap | null = null,
   ): Promise<Blob> {
-    const canvas: RenderCanvas = options.cardMode
-      ? await this.imageComposer.composeCardImage(sequence, options, onProgress, signal)
-      : await this.imageComposer.composeSequenceImage(sequence, options, onProgress, signal);
+    // The main-thread ImageComposer draws a pre-rendered QR from
+    // options.qrImageBitmap (falls back to its own generator otherwise). Thread
+    // the transferred bitmap in so the fallback path matches the worker path.
+    const opts = qrBitmap ? { ...options, qrImageBitmap: qrBitmap } : options;
+    const canvas: RenderCanvas = opts.cardMode
+      ? await this.imageComposer.composeCardImage(sequence, opts, onProgress, signal)
+      : await this.imageComposer.composeSequenceImage(sequence, opts, onProgress, signal);
 
     if (canvas instanceof OffscreenCanvas) {
       return canvas.convertToBlob({ type: "image/webp", quality: 0.9 });

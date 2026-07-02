@@ -1,7 +1,8 @@
 <script lang="ts">
 import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { onMount } from "svelte";
-  import { fade } from "svelte/transition";
+  import { fade, slide, fly } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
   import { goto, replaceState } from "$app/navigation";
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
@@ -14,6 +15,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
   import ViewerContentRail from "./ViewerContentRail.svelte";
   import ViewerModeBottomBar from "./ViewerModeBottomBar.svelte";
+  import { dockTrayState } from "./ControlDock.svelte";
   import type { OrchestratorContext } from "./SequenceViewerOrchestrator.svelte";
   import type { ContentType } from "../state/viewer-state.svelte";
   import VideoGallery from "./VideoGallery.svelte";
@@ -735,14 +737,22 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                 {/if}
               {/if}
             </div>
-            {#if effectiveMobile && ctx.hasSequence && ctx.effectiveSequence && !ctx.practiceActive}
-              <div transition:fade={{ duration: prefersReducedMotion ? 0 : 180 }}>
-                <ViewerModeBottomBar
-                  activeMode={ctx.viewerState.viewerMode}
-                  webgl2Available={ctx.viewer3DState.webgl2Available}
-                  onSelectSplit={() => selectSplitMode(ctx)}
-                  onSelectMode={(mode) => selectViewerMode(ctx, mode)}
-                />
+            {#if effectiveMobile && ctx.hasSequence && ctx.effectiveSequence && !ctx.practiceActive && dockTrayState.openCount === 0}
+              <!-- Ducks while any ControlDock tray is open — the media switcher is
+                   noise while the user edits, and the tray gets the room.
+                   Choreography: the slot height eases closed (outer slide) while
+                   the bar itself glides down (inner fly), on the SAME 260ms
+                   cubicOut curve as the tray — reads as the tray displacing the
+                   bar, not a pop. -->
+              <div transition:slide={{ duration: prefersReducedMotion ? 0 : 260, easing: cubicOut }}>
+                <div transition:fly={{ y: 72, duration: prefersReducedMotion ? 0 : 260, easing: cubicOut }}>
+                  <ViewerModeBottomBar
+                    activeMode={ctx.viewerState.viewerMode}
+                    webgl2Available={ctx.viewer3DState.webgl2Available}
+                    onSelectSplit={() => selectSplitMode(ctx)}
+                    onSelectMode={(mode) => selectViewerMode(ctx, mode)}
+                  />
+                </div>
               </div>
             {/if}
           </div>
@@ -1215,11 +1225,15 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     overflow: hidden;
   }
 
+  /* Flow child of .drawer-body-content (a flex column), NOT an absolute overlay.
+     As a flow sibling it claims real height, so .viewer-and-export (flex: 1)
+     yields and the card's contain-box shrinks — the card lifts fully above the
+     dock instead of hiding behind it. When the tray slides open the footer grows,
+     the card reflows up in lockstep (same pattern the practice-bar-rise uses).
+     Never covers card content: not the collapsed cat-bar, not the open tray. */
   .export-footer-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    position: relative;
+    flex-shrink: 0;
     z-index: 3;
   }
 

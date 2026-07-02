@@ -56,6 +56,15 @@
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
   import ViewerContentRail from "$lib/shared/sequence-viewer/components/ViewerContentRail.svelte";
   import ViewerModeBottomBar from "$lib/shared/sequence-viewer/components/ViewerModeBottomBar.svelte";
+  import { dockTrayState } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
+  import { slide, fly } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+
+  // Reduced-motion gate for the mode-bar duck choreography (matches the app
+  // viewer's SequenceViewerDrawerHost).
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   import ViewerOverflowMenu from "$lib/shared/sequence-viewer/components/ViewerOverflowMenu.svelte";
   import ToastContainer from "$lib/shared/toast/components/ToastContainer.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
@@ -831,15 +840,22 @@
               </div>
             </div>
           {/if}
-          {#if !isSidebarLayout}
+          {#if !isSidebarLayout && dockTrayState.openCount === 0}
             <!-- Portrait: bottom bar to switch views — the same ViewerModeBottomBar
-                 the mobile viewer uses. webgl2Available={false} drops 3D. -->
-            <ViewerModeBottomBar
-              activeMode={qrViewerMode}
-              webgl2Available={false}
-              onSelectMode={selectQrMode}
-              onSelectSplit={selectQrSplit}
-            />
+                 the mobile viewer uses. webgl2Available={false} drops 3D.
+                 Ducks while a ControlDock tray is open, with the same displaced-by-
+                 the-tray choreography as the app viewer: slot height eases closed
+                 while the bar glides down, both on the tray's 260ms cubicOut. -->
+            <div transition:slide={{ duration: prefersReducedMotion ? 0 : 260, easing: cubicOut }}>
+              <div transition:fly={{ y: 72, duration: prefersReducedMotion ? 0 : 260, easing: cubicOut }}>
+                <ViewerModeBottomBar
+                  activeMode={qrViewerMode}
+                  webgl2Available={false}
+                  onSelectMode={selectQrMode}
+                  onSelectSplit={selectQrSplit}
+                />
+              </div>
+            </div>
           {/if}
         </div>
       {/snippet}

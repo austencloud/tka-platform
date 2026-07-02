@@ -43,6 +43,13 @@ export interface SwipeToDismissOptions {
   onDragEnd?: (offset: number, velocity: number, duration: number) => boolean;
   /** Drawer ID for stack management - only top drawer responds to swipe */
   drawerId?: string;
+  /**
+   * Skip the `data-swipe-block` opt-out. That marker exempts a region from an
+   * ANCESTOR drawer's dismiss gesture; a handler attached INSIDE such a region
+   * (e.g. the ControlDock tray, which lives in a swipe-blocked dock) owns its
+   * own gestures and must not be silenced by its own marker.
+   */
+  ignoreSwipeBlock?: boolean;
 }
 
 export class SwipeToDismiss {
@@ -315,8 +322,9 @@ export class SwipeToDismiss {
     // General opt-out: any element marked `data-swipe-block` owns its own touch
     // gestures, so the whole region (not just the slider thumb) is exempt from
     // dismiss. The relocated mobile playback transport uses this so grabbing the
-    // scrubber bar is never mistaken for a swipe-to-close.
-    if (target.closest("[data-swipe-block]")) {
+    // scrubber bar is never mistaken for a swipe-to-close. Handlers attached
+    // INSIDE a blocked region pass `ignoreSwipeBlock` (see option docs).
+    if (!this.options.ignoreSwipeBlock && target.closest("[data-swipe-block]")) {
       return;
     }
 

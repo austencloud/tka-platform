@@ -9,6 +9,8 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { fade } from "svelte/transition";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import type { ExportOptionsStateManager } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
@@ -238,6 +240,11 @@
     trailingAction={dockTrailing}
   >
     {#snippet tray()}
+      <!-- Cross-dissolve the tab bodies (true 4-state swap in one box) so
+           switching tabs doesn't hard-cut. Height between the differing bodies
+           is tweened by ControlDock's .tray-anim wrapper; this handles the
+           content. Chips are cheap, so the {#key} remount is fine. -->
+      <Crossfade key={activeTab} duration={DURATION.normal}>
       <div class="dock-dense">
         {#if activeTab === "labels"}
           <div class="field">
@@ -267,10 +274,10 @@
               <button type="button" class="rt-chip" aria-pressed={nonRadial} onclick={() => vm.setNonRadialVisibility(!nonRadial)}>Non-radial</button>
             </div>
           </div>
-          <div class="field">
-            <span class="field-label">Info</span>
-            <div class="rt-chip-row">
-              {#if hasInfoCell}
+          {#if hasInfoCell}
+            <div class="field">
+              <span class="field-label">Info</span>
+              <div class="rt-chip-row">
                 {#if isOneSpot}
                   <div class="seg-fill">
                     <SegmentedControl
@@ -287,11 +294,20 @@
                   {/if}
                   <button type="button" class="rt-chip" aria-pressed={showMandala} onclick={() => imageComposition.setShowMandala(!showMandala)}><i class="fas fa-asterisk" aria-hidden="true"></i> Mandala</button>
                 {/if}
-              {/if}
-              <button type="button" class="rt-chip" aria-pressed={showStartPos} onclick={() => imageComposition.setIncludeStartPosition(!showStartPos)}>Start</button>
+              </div>
+            </div>
+          {/if}
+          <!-- Start position is its own group: the Show toggle plus (when on) the
+               single-select layout. Kept apart from the Info-cell chooser so the
+               segmented control never sits next to loose chips (label mirrors the
+               desktop sidebar: "Start" label + "Show" chip). -->
+          <div class="field">
+            <span class="field-label">Start</span>
+            <div class="rt-chip-row">
+              <button type="button" class="rt-chip" aria-pressed={showStartPos} onclick={() => imageComposition.setIncludeStartPosition(!showStartPos)}>Show</button>
               {#if showStartPos}
-                <button type="button" class="rt-chip" aria-pressed={startPosLayout === "row"} onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "row")}>Top Row</button>
-                <button type="button" class="rt-chip" aria-pressed={startPosLayout === "column"} onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "column")}>Left Column</button>
+                <button type="button" class="rt-chip" transition:fade={{ duration: 150 }} aria-pressed={startPosLayout === "row"} onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "row")}>Top Row</button>
+                <button type="button" class="rt-chip" transition:fade={{ duration: 150 }} aria-pressed={startPosLayout === "column"} onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "column")}>Left Column</button>
               {/if}
             </div>
           </div>
@@ -308,6 +324,7 @@
           </div>
         {/if}
       </div>
+      </Crossfade>
     {/snippet}
   </ControlDock>
 {:else}
@@ -536,16 +553,41 @@
    * MOBILE BOTTOM BAR
    * ============================================================ */
 
-  /* Mobile dock tray density (mirrors AnimationPanel .dock-dense). */
-  .dock-dense { display: flex; flex-direction: column; gap: 8px; }
+  /* Mobile dock tray density (mirrors AnimationPanel .dock-dense).
+     Tight vertical rhythm on purpose — every px the tray gives up goes to the
+     card/media hero above it. Touch targets stay at 44px (the chips); only
+     gaps, the segmented frame, and the handle shrink. */
+  .dock-dense {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    /* One accent for the whole tray: retint the Info SegmentedControl's
+       indicator (it reads var(--theme-accent), the dynamic cyan) to the same
+       fixed blue the rt-chips use for their active state (--rail-accent in
+       rail-tile.css). Chips read --rail-accent directly, so this override only
+       touches the segmented — no other tray control uses --theme-accent. */
+    --theme-accent: #4a9eff;
+  }
+  /* Info segmented sits flush like a chip: drop the inset track frame so its
+     height matches the 44px chips instead of towering ~7px over them (44px
+     touch target + 3px track pad + 1px border was ~51px). */
+  .dock-dense :global(.segmented-control.sm) { padding: 0; }
+  .dock-dense :global(.segmented-control.sm .indicator) { top: 0; bottom: 0; border-radius: 9px; }
   /* Inline label-left rows: each section is one row, not a label line + chips line. */
   .dock-dense .field {
     display: grid;
     grid-template-columns: 58px 1fr;
-    align-items: center;
+    /* start (not center): when chips wrap to a 2nd row the label stays with row 1
+       instead of floating in the block's vertical middle. */
+    align-items: start;
     gap: 10px;
   }
   .dock-dense .field-label {
+    /* Own a 44px box (chip row height) and center the text in it, so the label
+       sits on the same optical line as the first chip row — no magic offset. */
+    display: flex;
+    align-items: center;
+    min-height: 44px;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.06em;

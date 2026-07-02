@@ -38,7 +38,6 @@
   import { markScan, reportScanToStable } from "$lib/shared/analytics/scan-perf";
   import { buildChoreoCardRenderKeys } from "$lib/shared/choreo-card/services/choreo-card-render-keys";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
   import { getScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
@@ -227,12 +226,12 @@
 
   let gridScrollRef: HTMLDivElement | undefined = $state();
 
-  // Visibility settings from user preferences (reactive)
-  const visibilitySettings = $derived(getSettings().visibility);
-  const showNonRadial = $derived(visibilitySettings?.nonRadialPoints ?? true);
-  const handPointVis = $derived<"all" | "active" | "none">(visibilitySettings?.handPointVisibility ?? "all");
-  const showTKA = $derived(visibilitySettings?.tkaGlyph ?? true);
-  const showReversals = $derived(visibilitySettings?.reversalIndicators ?? true);
+  // Pictograph visibility — ALL flags are sourced from the VisibilityStateManager
+  // below (showGrid / showNonRadial / handPointVis / showTKA / showReversals),
+  // the SAME source the export panel's toggles write to, so the button state and
+  // the rendered cells can never diverge. Reading getSettings().visibility with
+  // hardcoded `?? true` defaults is what produced the non-radial desync — the
+  // render defaulted ON while the toggle (VM) defaulted OFF.
 
   // Motion visibility - when one hand is hidden, the sequence is a hand-path
   // view: letters and word become meaningless (letters are defined by both
@@ -244,7 +243,7 @@
   function onGlyphVisibilityChanged(): void { glyphVisibilityVersion++; }
   // "all" so the master Grid toggle (which notifies ["all"], not ["glyph"])
   // re-renders the card cells — without it the grid never toggled off.
-  vm.registerObserver(onGlyphVisibilityChanged, ["glyph", "all"]);
+  vm.registerObserver(onGlyphVisibilityChanged, ["glyph", "non_radial", "all"]);
   onDestroy(() => {
     vm.unregisterObserver(onGlyphVisibilityChanged);
   });
@@ -305,6 +304,27 @@
   const showGrid = $derived.by(() => {
     void glyphVisibilityVersion;
     return vm.getGridVisibility();
+  });
+  // Non-radial points: read from the VM — the SAME source as the export panel's
+  // Non-radial toggle — so the button state and the rendered cells can never
+  // diverge. This previously read getSettings().visibility.nonRadialPoints with a
+  // `?? true` default while the VM (and the toggle) default to false, so a
+  // never-toggled card rendered the points the button showed as OFF.
+  const showNonRadial = $derived.by(() => {
+    void glyphVisibilityVersion;
+    return vm.getNonRadialVisibility();
+  });
+  const handPointVis = $derived.by<"all" | "active" | "none">(() => {
+    void glyphVisibilityVersion;
+    return vm.getHandPointVisibility();
+  });
+  const showTKA = $derived.by(() => {
+    void glyphVisibilityVersion;
+    return vm.getRawGlyphVisibility("tkaGlyph");
+  });
+  const showReversals = $derived.by(() => {
+    void glyphVisibilityVersion;
+    return vm.getRawGlyphVisibility("reversalIndicators");
   });
 
   // QR code state - generated async, cached by sequence ID + dark mode.
@@ -980,8 +1000,13 @@
    * Cross-fade between dark and light mode without showing sequential spinners.
    * Renders all new-mode images in the background while keeping old images visible,
    * then swaps all at once with a simultaneous opacity cross-fade.
+   *
+   * `animate: false` skips the fade and swaps the images in place (the <img>
+   * elements persist, keyed by cell index, so only their src changes). Used for
+   * the initial post-mount settle, where async-loaded visibility catching up to
+   * persisted values would otherwise blip every pictograph out and in at once.
    */
-  async function crossfadeCellImages(mode: "crossfade" | "swap" = "crossfade") {
+  async function crossfadeCellImages(mode: "crossfade" | "swap" = "crossfade", animate = true) {
     if (!sequence?.steps?.length || cells.length === 0) return;
 
     if (isRendering) {
@@ -1053,24 +1078,37 @@
         return;
       }
 
-      // Batch swap: set fadeOutUrl to old image, imageUrl to new image
-      cells = cells.map(c => ({
-        ...c,
-        fadeOutUrl: c.imageUrl,
-        imageUrl: newUrls.get(c.index) ?? c.imageUrl,
-      }));
+      if (!animate) {
+        // In-place swap, no fade: replace each cell's imageUrl on the persistent
+        // <img> element. No fadeOutUrl layer and no crossfadeActive, so nothing
+        // animates — the corrected pictographs just appear. activeDarkMode is set
+        // directly since we skip beginCrossfade (which normally applies it).
+        crossfader.setActiveDarkMode(isDark);
+        cells = cells.map(c => ({
+          ...c,
+          fadeOutUrl: undefined,
+          imageUrl: newUrls.get(c.index) ?? c.imageUrl,
+        }));
+      } else {
+        // Batch swap: set fadeOutUrl to old image, imageUrl to new image
+        cells = cells.map(c => ({
+          ...c,
+          fadeOutUrl: c.imageUrl,
+          imageUrl: newUrls.get(c.index) ?? c.imageUrl,
+        }));
 
-      // Wait for DOM to render both images (old at opacity 1, new at opacity 0)
-      await new Promise<void>(resolve => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-      });
+        // Wait for DOM to render both images (old at opacity 1, new at opacity 0)
+        await new Promise<void>(resolve => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        });
 
-      crossfader.beginCrossfade(isDark, mode);
+        crossfader.beginCrossfade(isDark, mode);
 
-      // Clean up after the CSS transition completes.
-      crossfader.scheduleCrossfadeEnd(() => {
-        cells = cells.map(c => ({ ...c, fadeOutUrl: undefined }));
-      });
+        // Clean up after the CSS transition completes.
+        crossfader.scheduleCrossfadeEnd(() => {
+          cells = cells.map(c => ({ ...c, fadeOutUrl: undefined }));
+        });
+      }
     } catch (error) {
       console.error("Failed to cross-fade dark mode:", error);
       // Fallback: apply dark mode immediately
@@ -1255,6 +1293,22 @@
   let flipEnabled = $state(false);
   const flipDuration = $derived(flipEnabled && !suppressFlip ? 250 : 0);
   let lastEffectRenderKey = "";
+  // Tracks the geometry-only key so the grid-stable-image branch can tell a
+  // structural change (swap) from an overlay-only visibility toggle (crossfade).
+  let lastStructuralKey = "";
+  // The FIRST re-render after mount is not a user action — it's async-loaded
+  // visibility settling to persisted values (the global VisibilityStateManager
+  // boots with hardcoded glyph defaults, then applies the user's saved
+  // tnd/elemental/positions/grid visibility one macrotask later; app settings
+  // and prop type settle the same way). Because that lands AFTER the first cells
+  // are painted, the render $effect saw an imageKey change with a stable grid and
+  // fired an animated group crossfade — every pictograph blipping out and in at
+  // once (the reported "flash"). We apply that first settle WITHOUT the crossfade
+  // animation: an in-place src swap on the persistent <img> elements, so the
+  // corrected pictographs appear with no flash. A backstop closes the window so a
+  // genuine user toggle moments later still animates.
+  let settleWindowOpen = true;
+  let settleWindowTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Re-render when relevant props or visibility settings change.
   // Three fast paths avoid full sequential re-render:
@@ -1291,7 +1345,7 @@
     // onMount can never drift — that drift (showGrid missing from one copy's gv)
     // fired a spurious post-mount "grid-stable-image" crossfade, the "blip out
     // and in as a group" bug. gridStableKey is still derived just below.
-    const { imageKey, contentKey, renderKey } = buildChoreoCardRenderKeys({
+    const { imageKey, contentKey, structuralKey, renderKey } = buildChoreoCardRenderKeys({
       sequence,
       bluePropType: bpt,
       redPropType: rpt,
@@ -1328,13 +1382,22 @@
     const darkModeChanged = untrack(() => crossfader.activeDarkMode) !== dm;
 
     const changeType = crossfader.classifyChange(contentKey, imageKey, gridStableKey, cellsLoaded, hasDurations, darkModeChanged);
+    // Captured against the PRIOR structuralKey before we overwrite it below.
+    const structuralChanged = structuralKey !== lastStructuralKey;
 
     lastEffectRenderKey = renderKey;
+    lastStructuralKey = structuralKey;
     crossfader.updateKeys({ contentKey, imageKey, gridStableKey });
+
+    // The first image-changing re-render after mount is the async settle, not a
+    // user action — apply it with no fade (in-place swap) so it doesn't flash.
+    // Consume the window here so a subsequent genuine change animates normally.
+    const animateChange = !settleWindowOpen;
+    settleWindowOpen = false;
 
     if (changeType === "dark-mode-only") {
       untrack(() => {
-        crossfadeCellImages();
+        crossfadeCellImages("crossfade", animateChange);
       });
     } else if (changeType === "layout-only") {
       crossfader.setActiveDarkMode(dm);
@@ -1343,8 +1406,13 @@
       });
     } else if (changeType === "grid-stable-image") {
       crossfader.setActiveDarkMode(dm);
+      // Structural change (letters/props/motions differ → different arrows) uses
+      // `swap` so the two pictographs never ghost-overlap. Overlay-only change
+      // (non-radial, grid, points, glyphs — base pictograph identical) uses
+      // `crossfade` so the overlay dissolves in/out with no whole-grid blank.
+      const gridStableMode: "swap" | "crossfade" = structuralChanged ? "swap" : "crossfade";
       untrack(() => {
-        crossfadeCellImages("swap");
+        crossfadeCellImages(gridStableMode, animateChange);
       });
     } else {
       crossfader.setActiveDarkMode(dm);
@@ -1453,6 +1521,12 @@
   });
 
   onMount(() => {
+    // Backstop: close the no-flash settle window shortly after mount. The window
+    // is normally consumed by the first post-mount re-render (the async settle);
+    // this timer covers the warm case where settings are already loaded and no
+    // settle fires, so a genuine user toggle later still animates.
+    settleWindowTimer = setTimeout(() => { settleWindowOpen = false; }, 1500);
+
     // Initialize change-detection keys via the SAME builder the render $effect
     // uses, so onMount and the effect agree on the very first comparison. (A
     // mismatch here — onMount's gv omitted showGrid — fired a spurious
@@ -1479,6 +1553,7 @@
     });
     crossfader.updateKeys({ contentKey: initKeys.contentKey, imageKey: initKeys.imageKey, gridStableKey: initKeys.gridStableKey });
     lastEffectRenderKey = initKeys.renderKey;
+    lastStructuralKey = initKeys.structuralKey;
 
     // Synchronous cache probe: if the global cache already has this exact render,
     // populate cells immediately so the first paint shows content instead of a
@@ -1519,6 +1594,7 @@
     cancelLongPress();
     clearCellUrls();
     crossfader.destroy();
+    if (settleWindowTimer !== null) clearTimeout(settleWindowTimer);
     if (resizeObserver) {
       resizeObserver.disconnect();
     }

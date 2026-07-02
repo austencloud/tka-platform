@@ -112,6 +112,7 @@
   closeOnBackdrop={true}
   autoFocus={false}
   class="virtual-keyboard-drawer"
+  backdropClass="keyboard-backdrop"
   onclose={onClose}
 >
   <div class="virtual-keyboard-content" role="region" aria-label="TKA Virtual Keyboard">
@@ -134,8 +135,12 @@
         {:else}
           <span class="keyboard-title">{t("browse_keyboard_title")}</span>
         {/if}
-        {#if resultCount > 0}
-          <div class="result-badge" transition:fly={{ y: -10, duration: 200 }}>
+        {#if value}
+          <div
+            class="result-badge"
+            class:none={resultCount === 0}
+            transition:fly={{ y: -10, duration: 200 }}
+          >
             {resultCount} {resultCount === 1 ? 'match' : 'matches'}
           </div>
         {/if}
@@ -232,6 +237,13 @@
     max-height: 75vh !important;
   }
 
+  /* The keyboard is a live search tool — the grid behind IS the feedback.
+     A dimming backdrop hid the results while typing. */
+  :global(.drawer-overlay.keyboard-backdrop) {
+    background: transparent !important;
+    backdrop-filter: none !important;
+  }
+
   .virtual-keyboard-content {
     display: flex;
     flex-direction: column;
@@ -300,6 +312,10 @@
     padding: 2px 16px;
     background: rgba(99, 102, 241, 0.1);
     border-radius: 20px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .keyboard-title {
@@ -318,6 +334,11 @@
     font-weight: 700;
     padding: 1px 10px;
     border-radius: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .result-badge.none {
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 80%, black);
   }
 
   .keyboard-scroll-area { flex: 1; overflow-y: auto; padding: 0 12px; }
@@ -327,14 +348,16 @@
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 
-  .keyboard-row { display: flex; justify-content: center; gap: 8px; }
+  .keyboard-row { display: flex; justify-content: center; gap: 6px; }
 
   .key {
     width: 48px;
-    height: 46px;
+    /* 44px design-system touch floor — narrow the keys to fit rows, never
+       shorten them below the floor. */
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -411,8 +434,8 @@
   }
 
   @media (max-width: 400px) {
-    .key { width: 38px; height: 42px; }
-    .keyboard-row { gap: 6px; }
+    .key { width: 38px; height: 44px; }
+    .keyboard-row { gap: 5px; }
     .control-key { width: 48px; }
   }
 </style>

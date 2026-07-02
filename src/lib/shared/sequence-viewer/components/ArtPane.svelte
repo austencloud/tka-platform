@@ -25,6 +25,7 @@
     sequence,
     playback,
     artType,
+    layout = "sidebar",
     bluePropType,
     redPropType,
     bpm = 60,
@@ -39,6 +40,9 @@
     /** Which art view this pane renders. The mode rail switches between Mandala
      *  and Tunnel now, so the pane no longer hosts an in-panel toggle. */
     artType: ArtType;
+    /** "bottom" (mobile) swaps the right sidebar for a ControlDock floating over
+     *  the art; "sidebar" (default, desktop) keeps the right rail. */
+    layout?: "sidebar" | "bottom";
     bluePropType?: string;
     redPropType?: string;
     bpm?: number;
@@ -144,7 +148,7 @@
   }
 </script>
 
-<div class="art-pane">
+<div class="art-pane" class:dock-mode={layout === "bottom"}>
   <div class="art-body">
     {#if artType === "mandala"}
       <!-- controlsPlacement="external": the mandala's controls live in the Art
@@ -198,6 +202,7 @@
     {controller}
     {mandalaController}
     {artType}
+    {layout}
     onExport={handleExport}
     {bpm}
     {playbackMode}
@@ -262,11 +267,14 @@
 
   /* On narrow viewports the rail stacks under the canvas so the art still has
      room to breathe rather than being crushed beside a 240px sidebar. */
+  /* Legacy narrow-sidebar stack — only when NOT in dock mode. In dock mode the
+     controls become a ControlDock floating over a full-bleed art body, so the
+     art keeps the whole pane. */
   @container (max-width: 620px) {
-    .art-pane {
+    .art-pane:not(.dock-mode) {
       flex-direction: column;
     }
-    .art-body {
+    .art-pane:not(.dock-mode) .art-body {
       flex: 1 1 55%;
       min-height: 0;
     }

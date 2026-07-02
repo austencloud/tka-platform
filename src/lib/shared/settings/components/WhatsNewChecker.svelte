@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte";
   import { whatsNewState } from "../state/whats-new-state.svelte";
   import * as versionService from "$lib/shared/feedback/services/version-service";
   import WhatsNewModal from "./WhatsNewModal.svelte";
@@ -20,6 +21,12 @@
   // The effect runs on mount too, so it covers the already-authenticated case.
   $effect(() => {
     if (!authState.isAuthenticated || !authState.user || hasChecked) return;
+    // Never stack What's New onto the first-run onboarding overlays (beta
+    // notice, create-tutorial prompt/walkthrough). Wait until app entry has
+    // resolved — returning users are already "complete" on mount, so this only
+    // holds back a brand-new user, who gets baselined below and never sees a
+    // changelog for their debut build anyway.
+    if (!appEntryState.isComplete()) return;
     // Small delay to let the app settle
     const timer = setTimeout(checkForNewVersion, CHECK_DELAY_MS);
     return () => clearTimeout(timer);
@@ -38,8 +45,18 @@
     );
     await syncOnboardingFromCloud();
 
-    // Check if user has already seen this version
     const currentVersion = __APP_VERSION__;
+
+    // First-ever visitor: no version baseline yet. Don't greet a brand-new user
+    // with a changelog for the build they're seeing for the first time — set the
+    // baseline silently so What's New only ever fires on a genuine update for a
+    // returning user.
+    if (!whatsNewState.hasSeenAnyVersion()) {
+      whatsNewState.markVersionAsSeen(currentVersion);
+      return;
+    }
+
+    // Check if user has already seen this version
     if (whatsNewState.hasSeenVersion(currentVersion)) {
       return;
     }

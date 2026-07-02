@@ -44,12 +44,21 @@
     /** Accent-filled emphasis (primary CTA). */
     accent?: boolean;
   }
+
+  /**
+   * Live count of open dock trays across every ControlDock instance. Viewer
+   * chrome (e.g. the mode bottom bar) reads this to get out of the way while
+   * the user is editing in a tray.
+   */
+  export const dockTrayState = $state({ openCount: 0 });
 </script>
 
 <script lang="ts">
+  import { untrack } from "svelte";
   import { slide, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import type { Snippet } from "svelte";
+  import { SwipeToDismiss } from "$lib/shared/foundation/ui/drawer/swipe-to-dismiss";
 
   interface Props {
     tabs: ControlDockTab[];
@@ -104,6 +113,72 @@
   const isLink = (a: ControlDockLink | ControlDockAction): a is ControlDockLink =>
     "href" in a;
 
+  // ── Tray open/close plumbing ──
+  const trayOpen = $derived(!!(activeTab && tray));
+  function closeTray(): void {
+    if (activeTab) onTabSelect(activeTab); // every consumer toggles on re-select
+  }
+
+  // Publish tray-open to the shared counter so viewer chrome (mode bottom bar)
+  // can duck out of the way while the user edits.
+  $effect(() => {
+    if (!trayOpen) return;
+    // untrack: `++` READS openCount too — tracked, it retriggers this effect
+    // forever. The counter is write-only from here.
+    untrack(() => dockTrayState.openCount++);
+    return () => {
+      untrack(() => dockTrayState.openCount--);
+    };
+  });
+
+  // Swipe-down dismiss on the tray — the shared drawer gesture primitive, with
+  // the sheet following the finger. `ignoreSwipeBlock` because the dock root
+  // is (deliberately) swipe-blocked against the parent viewer drawer.
+  let trayEl = $state<HTMLDivElement>();
+  let trayDragOffset = $state(0);
+  let trayDragging = $state(false);
+  $effect(() => {
+    const el = trayEl;
+    if (!el) return;
+    const swipe = new SwipeToDismiss({
+      placement: "bottom",
+      dismissible: true,
+      ignoreSwipeBlock: true,
+      onDismiss: () => closeTray(),
+      onDragChange: (offset, _progress, isDragging) => {
+        trayDragging = isDragging;
+        trayDragOffset = isDragging ? offset : 0;
+      },
+    });
+    swipe.attach(el);
+    return () => swipe.detach();
+  });
+
+  // ── Tray body height animation ──
+  // The tray content swaps (tab -> tab) and grows/shrinks in place (revealing
+  // options within a tab). Both used to snap the tray — and the media hero above
+  // it — to the new height instantly. Measure the active content's natural
+  // height off a child that is NOT the height-constrained element (no feedback
+  // loop), and tween `.tray-anim` to it. First set is auto -> px (browsers don't
+  // animate from auto), so the entrance slide isn't doubled; later px -> px
+  // changes tween. Reset to null when the tray unmounts so the next open starts
+  // clean.
+  let trayMeasureEl = $state<HTMLDivElement>();
+  let trayBodyH = $state<number | null>(null);
+  $effect(() => {
+    const el = trayMeasureEl;
+    if (!el) {
+      trayBodyH = null;
+      return;
+    }
+    const ro = new ResizeObserver((entries) => {
+      const e = entries[0];
+      if (e) trayBodyH = Math.ceil(e.contentRect.height);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+
   // Measure: own height (-> stage padding) and own width (-> label-hide).
   // Parent width drives the desktop floating layout (measuring the parent
   // avoids a feedback loop with the dock's own width changing under .wide).
@@ -153,8 +228,42 @@
   out:fly={{ y: 80, duration: dur(200), easing: cubicOut }}
 >
   {#if activeTab && tray}
-    <div class="tray" transition:slide={{ duration: dur(260), easing: cubicOut }}>
-      {@render tray()}
+    <!-- Sheet behavior: swipe down anywhere on the tray (scroll-aware — only
+         dismisses when the inner scroll sits at its top) or tap the handle.
+         While dragging, the sheet follows the finger and slides in under the
+         opaque tab bar below it. -->
+    <div
+      class="tray"
+      class:tray-dragging={trayDragging}
+      style:transform={trayDragOffset > 0 ? `translateY(${trayDragOffset}px)` : ""}
+      bind:this={trayEl}
+      transition:slide={{ duration: dur(260), easing: cubicOut }}
+    >
+      <button
+        type="button"
+        class="tray-handle"
+        onclick={closeTray}
+        aria-label="Hide controls"
+      >
+        <span class="grab" aria-hidden="true"></span>
+        <i class="fas fa-chevron-down" aria-hidden="true"></i>
+      </button>
+      <div class="tray-scroll">
+        <!-- Height-animated body: .tray-measure reports the active content's
+             natural height; .tray-anim tweens to it so switching tabs or
+             revealing options resizes the tray (and the hero above) smoothly
+             instead of snapping. Content dissolve/reveal is the consumer's job
+             (Crossfade in the tray snippet). -->
+        <div
+          class="tray-anim"
+          style:height={trayBodyH == null ? "auto" : `${trayBodyH}px`}
+          style:--tray-anim-dur={`${dur(260)}ms`}
+        >
+          <div class="tray-measure" bind:this={trayMeasureEl}>
+            {@render tray()}
+          </div>
+        </div>
+      </div>
     </div>
   {/if}
 
@@ -168,6 +277,7 @@
           style:--btn-i={i}
           onclick={() => onTabSelect(t.id)}
           aria-pressed={activeTab === t.id}
+          aria-label={t.label}
         >
           {#if t.dots}
             <span class="cat-dots">
@@ -243,6 +353,8 @@
   .dock {
     display: flex;
     flex-direction: column;
+    /* Clip the tray while a swipe drags it down past the tab bar. */
+    overflow: hidden;
   }
   /* Overlay model (mandala): float over the stage, bottom-anchored. */
   .dock.overlay {
@@ -266,22 +378,78 @@
   .dock.wide .cat-bar { border-top: none; }
 
   .tray {
-    padding: 12px 12px 8px;
-    max-height: min(45vh, 420px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    max-height: min(58vh, 440px);
     background: color-mix(in srgb, var(--theme-panel-bg, rgba(18, 18, 28, 0.96)) 92%, transparent);
     backdrop-filter: blur(16px);
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    /* Snap-back after a below-threshold swipe; disabled while the finger owns it. */
+    transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    touch-action: pan-y;
   }
-  .tray::-webkit-scrollbar { width: 5px; }
-  .tray::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
+  .tray.tray-dragging {
+    transition: none;
+  }
+  /* Content scrolls under the pinned handle. */
+  .tray-scroll {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 12px 8px;
+  }
+  /* Height-tween wrapper: clips while it interpolates between content states so
+     the tray resizes smoothly. --tray-anim-dur collapses to 0ms under reduced
+     motion (set inline via dur()). */
+  .tray-anim {
+    overflow: hidden;
+    transition: height var(--tray-anim-dur, 260ms) cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Full-width dismiss row pinned at the tray top: grab bar + down chevron.
+     Slim, but the whole row is the hit area. */
+  .tray-handle {
+    width: 100%;
+    /* Slim grab strip — the sheet's vertical budget belongs to the media hero,
+       not chrome. Swipe-down + re-tapping the tab also dismiss, so a thin handle
+       is enough (bottom-sheet convention). */
+    min-height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 2px 0 3px;
+    background: transparent;
+    border: none;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 150ms ease;
+  }
+  .tray-handle .grab {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+  }
+  .tray-handle i {
+    font-size: 11px;
+  }
+  @media (hover: hover) {
+    .tray-handle:hover {
+      color: var(--theme-text, #fff);
+    }
+  }
+  .tray-scroll::-webkit-scrollbar { width: 5px; }
+  .tray-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
 
   .cat-bar {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 6px;
+    /* Trimmed 8->6: the dock bar is always on screen, so every px here is a px
+       the media hero never gets back. */
+    padding: 6px;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.96));
     backdrop-filter: blur(16px);
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -310,7 +478,9 @@
     align-items: center;
     justify-content: center;
     gap: 2px;
-    min-height: 52px;
+    /* 46px: still clears the 44px touch floor and fits icon + label, but reclaims
+       ~6px of always-on chrome per the hero-space goal. */
+    min-height: 46px;
     border-radius: 12px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: color-mix(in srgb, var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 70%, transparent);

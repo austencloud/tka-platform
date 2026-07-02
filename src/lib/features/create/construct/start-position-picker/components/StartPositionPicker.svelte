@@ -19,18 +19,11 @@ Controls moved below the grid for better UX
   import AdvancedStartPositionPicker from "./AdvancedStartPositionPicker.svelte";
   import OrientationCycler from "./OrientationCycler.svelte";
   import PictographGrid from "./PictographGrid.svelte";
-  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte";
 
-  // Guests (not full accounts) get an easy, always-available way to replay the
-  // guided build right where it starts — they can't reach the Settings replay
-  // path as readily as members can.
-  const isGuest = $derived(!authState.isFullAccount);
-
-  function handleShowGuide() {
-    hapticService?.trigger("selection");
-    appEntryState.replay();
-  }
+  // The guest "New here? Show me how" chip was removed: it only ever rendered
+  // in the exact window the create-tutorial prompt was already on screen (both
+  // gated on the same not-yet-decided state), so it was pure duplicate noise on
+  // a first-run mobile view. Replaying the guided build lives in Settings.
 
   // Local storage key for persisting picker preferences
   const STORAGE_KEY = "tka-start-position-picker-prefs";
@@ -231,13 +224,6 @@ Controls moved below the grid for better UX
     <p class="workspace-hint">Choose your start position</p>
   {/if}
 
-  {#if isGuest && !embedded}
-    <button class="guide-link" onclick={handleShowGuide}>
-      <i class="fas fa-circle-question" aria-hidden="true"></i>
-      New here? Show me how
-    </button>
-  {/if}
-
   <!-- Animated transition container - keyed on view mode only (grid mode animates in-place) -->
   <div class="picker-view">
     {#key showAdvancedPicker}
@@ -380,49 +366,6 @@ Controls moved below the grid for better UX
     white-space: nowrap;
     color: var(--theme-text, #fff);
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
-  }
-
-  .guide-link {
-    flex-shrink: 0;
-    align-self: center;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    /* Clear the serif title's descenders ("p" in "position") above us — no
-       negative pull-up, which collided the pill border into the headline. */
-    margin: 12px 0 4px;
-    padding: 6px 12px;
-    background: transparent;
-    border: 1px solid color-mix(in srgb, var(--theme-accent) 35%, transparent);
-    border-radius: 999px;
-    color: var(--theme-accent, #818cf8);
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 500;
-    cursor: pointer;
-    transition:
-      background var(--duration-fast) ease,
-      border-color var(--duration-fast) ease;
-  }
-
-  .guide-link:hover {
-    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent) 55%, transparent);
-  }
-
-  .guide-link:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
-    outline-offset: 2px;
-  }
-
-  .guide-link i {
-    font-size: 0.85em;
-    opacity: 0.85;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .guide-link {
-      transition: none;
-    }
   }
 
   /* ============================================
