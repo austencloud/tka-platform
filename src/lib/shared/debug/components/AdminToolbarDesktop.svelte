@@ -46,6 +46,8 @@
     onPreviewCreateTutorial: () => void;
     onClearCloudThumbnails: () => void;
     isClearingThumbnails: boolean;
+    onWarmGallery: () => void;
+    isWarming: boolean;
     onClearLocalCache: () => void;
     isClearingLocalCache: boolean;
     onClearTikaCache: () => void;
@@ -74,6 +76,8 @@
     onPreviewCreateTutorial,
     onClearCloudThumbnails,
     isClearingThumbnails,
+    onWarmGallery,
+    isWarming,
     onClearLocalCache,
     isClearingLocalCache,
     onClearTikaCache,
@@ -95,6 +99,11 @@
   function handleClearCloudThumbnails() {
     onClearCloudThumbnails();
     isActionsOpen = false;
+  }
+
+  function handleWarmGallery() {
+    onWarmGallery();
+    // Keep the dropdown open — the warm run is long and clicking again cancels.
   }
 
   function handleClearLocalCache() {
@@ -258,6 +267,29 @@
             class="actions-dropdown"
             transition:fly={{ y: -8, duration: 150 }}
           >
+            <button
+              type="button"
+              class="dropdown-item"
+              onclick={handleWarmGallery}
+            >
+              {#if isWarming}
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                <span>Stop warming</span>
+              {:else}
+                <i class="fas fa-fire" aria-hidden="true"></i>
+                <span>Warm Gallery (lean)</span>
+              {/if}
+            </button>
+
+            <a
+              href="/admin/generate-thumbnails"
+              class="dropdown-item"
+              onclick={() => (isActionsOpen = false)}
+            >
+              <i class="fas fa-sliders" aria-hidden="true"></i>
+              <span>Warm Gallery (full)…</span>
+            </a>
+
             <button
               type="button"
               class="dropdown-item danger"

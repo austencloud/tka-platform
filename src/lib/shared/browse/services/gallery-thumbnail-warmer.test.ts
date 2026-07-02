@@ -1,0 +1,173 @@
+import { describe, expect, it, vi } from "vitest";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { ThumbnailResult } from "./thumbnail-render-orchestrator";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { expandCombos, startGalleryWarm, type WarmScope } from "./gallery-thumbnail-warmer";
+
+/** Minimal SequenceData — only identity + steps affect the warmer path. */
+function seq(overrides: Partial<SequenceData>): SequenceData {
+  return {
+    id: "id",
+    name: "",
+    word: "",
+    steps: [],
+    thumbnails: [],
+    isFavorite: false,
+    isCircular: false,
+    tags: [],
+    metadata: {},
+    ...overrides,
+  } as SequenceData;
+}
+
+const scope: WarmScope = {
+  props: [PropType.STAFF, PropType.FAN],
+  modes: ["dark", "light"],
+  qr: [false, true],
+};
+
+/** Fake orchestrator whose getThumbnail returns a scripted result. */
+function fakeOrchestrator(
+  respond: (input: unknown, sequence: SequenceData) => ThumbnailResult
+) {
+  const getThumbnail = vi.fn(async (req: { sequence: SequenceData; input: unknown }) =>
+    respond(req.input, req.sequence)
+  );
+  return { orchestrator: { getThumbnail } as never, getThumbnail };
+}
+
+const loaderOf = (sequences: SequenceData[]) => ({
+  loadSequenceMetadata: vi.fn(async () => sequences),
+});
+
+const okResult = (fromCache: boolean): ThumbnailResult =>
+  ({ url: "blob:x", fromCache, key: { hash: "h" } } as unknown as ThumbnailResult);
+const nullResult = (): ThumbnailResult =>
+  ({ url: null, fromCache: false, key: { hash: "h" } } as unknown as ThumbnailResult);
+
+describe("expandCombos", () => {
+  it("produces sequences × props × modes × qr combos", () => {
+    const sequences = [seq({ word: "A" }), seq({ word: "B" })];
+    const combos = expandCombos(sequences, scope);
+    expect(combos).toHaveLength(2 * 2 * 2 * 2); // 16
+  });
+
+  it("is empty when any axis is empty", () => {
+    expect(expandCombos([seq({ word: "A" })], { ...scope, props: [] })).toHaveLength(0);
+  });
+});
+
+describe("startGalleryWarm", () => {
+  it("tallies rendered / skipped / failed by result shape", async () => {
+    const sequences = [seq({ word: "A" }), seq({ word: "B" }), seq({ word: "C" })];
+    // fresh render for A, cache hit for B, failure for C — across all combos.
+    const { orchestrator } = fakeOrchestrator((_input, s) => {
+      if (s.word === "A") return okResult(false);
+      if (s.word === "B") return okResult(true);
+      return nullResult();
+    });
+    const single: WarmScope = { props: [PropType.STAFF], modes: ["dark"], qr: [false] };
+
+    const handle = startGalleryWarm(single, () => {}, {
+      orchestrator,
+      loader: loaderOf(sequences),
+      concurrency: 2,
+    });
+    const final = await handle.promise;
+
+    expect(final.total).toBe(3);
+    expect(final.done).toBe(3);
+    expect(final.rendered).toBe(1);
+    expect(final.skipped).toBe(1);
+    expect(final.failed).toBe(1);
+    expect(final.finished).toBe(true);
+    expect(final.cancelled).toBe(false);
+  });
+
+  it("counts a thrown getThumbnail as failed, not a crash", async () => {
+    const { orchestrator, getThumbnail } = fakeOrchestrator(() => okResult(false));
+    getThumbnail.mockRejectedValueOnce(new Error("boom"));
+
+    const single: WarmScope = { props: [PropType.STAFF], modes: ["dark"], qr: [false] };
+    const handle = startGalleryWarm(single, () => {}, {
+      orchestrator,
+      loader: loaderOf([seq({ word: "A" }), seq({ word: "B" })]),
+      concurrency: 1,
+    });
+    const final = await handle.promise;
+
+    expect(final.failed).toBe(1);
+    expect(final.rendered).toBe(1);
+    expect(final.done).toBe(2);
+  });
+
+  it("builds a usesDefaults input: gallery variant, row layout, mandala on, QR per combo", async () => {
+    const inputs: Array<Record<string, unknown>> = [];
+    const { orchestrator } = fakeOrchestrator((input) => {
+      inputs.push(input as Record<string, unknown>);
+      return okResult(false);
+    });
+    const s: WarmScope = { props: [PropType.STAFF], modes: ["dark"], qr: [false, true] };
+    const handle = startGalleryWarm(s, () => {}, {
+      orchestrator,
+      loader: loaderOf([seq({ word: "AB", steps: [{} as never, {} as never] })]),
+      concurrency: 1,
+    });
+    await handle.promise;
+
+    expect(inputs).toHaveLength(2);
+    for (const input of inputs) {
+      expect(input.variant).toBe("gallery");
+      expect(input.startPositionLayout).toBe("row");
+      expect(input.bluePropType).toBe(PropType.STAFF);
+      expect((input.visibility as { showMandala: boolean }).showMandala).toBe(true);
+    }
+    const qrFlags = inputs.map((i) => (i.visibility as { showQRCode: boolean }).showQRCode);
+    expect(qrFlags).toContain(true);
+    expect(qrFlags).toContain(false);
+  });
+
+  it("stops early and reports cancelled when cancel() is called", async () => {
+    let calls = 0;
+    // Slow responses so cancel lands mid-run.
+    const { orchestrator } = fakeOrchestrator(() => {
+      calls++;
+      return okResult(false);
+    });
+    const many = Array.from({ length: 50 }, (_, i) => seq({ word: `S${i}` }));
+    const single: WarmScope = { props: [PropType.STAFF], modes: ["dark"], qr: [false] };
+
+    const handle = startGalleryWarm(single, () => {}, {
+      orchestrator,
+      loader: loaderOf(many),
+      concurrency: 1,
+    });
+    handle.cancel();
+    const final = await handle.promise;
+
+    expect(final.cancelled).toBe(true);
+    expect(final.finished).toBe(true);
+    expect(calls).toBeLessThan(50); // did not process the whole list
+  });
+
+  it("never exceeds the concurrency cap in flight", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    const getThumbnail = vi.fn(async () => {
+      inFlight++;
+      peak = Math.max(peak, inFlight);
+      await Promise.resolve();
+      inFlight--;
+      return okResult(false);
+    });
+    const single: WarmScope = { props: [PropType.STAFF], modes: ["dark"], qr: [false] };
+    const handle = startGalleryWarm(single, () => {}, {
+      orchestrator: { getThumbnail } as never,
+      loader: loaderOf(Array.from({ length: 20 }, (_, i) => seq({ word: `S${i}` }))),
+      concurrency: 3,
+    });
+    await handle.promise;
+
+    expect(peak).toBeLessThanOrEqual(3);
+  });
+});

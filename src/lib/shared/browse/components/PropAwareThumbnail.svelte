@@ -24,6 +24,7 @@
   import type { ThumbnailLoadStatus, ThumbnailRenderOrchestrator } from "$lib/shared/browse/services/thumbnail-render-orchestrator";
   import type { ThumbnailLocalCache } from "$lib/shared/browse/services/thumbnail-local-cache";
   import { deriveKey } from "$lib/shared/browse/services/thumbnail-key-deriver";
+  import { buildGalleryRenderInput, galleryStepCount } from "$lib/shared/browse/services/gallery-render-input";
   import { invalidateUrl as invalidateCloudUrl } from "$lib/shared/browse/services/cloud-thumbnail-cache";
   import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -61,6 +62,9 @@
     showRedMotion?: boolean;
     // Skip IntersectionObserver and load immediately (use in modals/pickers)
     eager?: boolean;
+    /** Allow a QR code to be baked in (signed-in only). Grids/peeks pass false —
+     * a QR at thumbnail size is unscannable noise and steals a beat cell. */
+    allowQR?: boolean;
     /** Use 5:7 playing card layout for physical card export (different from lightMode/printMode) */
     cardMode?: boolean;
   }
@@ -88,6 +92,7 @@
     showBlueMotion = true,
     showRedMotion = true,
     eager = false,
+    allowQR = true,
     cardMode = false,
   }: Props = $props();
 
@@ -119,9 +124,7 @@
   // Priority: steps array length (if not empty) > sequenceLength field > fallback to 4
   // NOTE: Use || not ?? because steps is often [] (empty array) for Community sequences,
   // and [].length is 0 which ?? treats as valid (only null/undefined fall through)
-  const stepCount = $derived(
-    sequence.steps?.length || sequence.sequenceLength || 4
-  );
+  const stepCount = $derived(galleryStepCount(sequence));
 
   // Resolve the per-step-count start-position layout (honors the user's
   // "Top Row" / "Left Column" choice for THIS length), matching the viewer
@@ -131,31 +134,6 @@
   const effectiveStartPositionLayout = $derived(
     startPositionLayout ?? compositionManager.getStartPositionLayoutForStepCount(stepCount)
   );
-
-  // Merge composition manager's QR/mandala settings into visibility when no explicit visibility passed
-  // Also merges showBlueMotion/showRedMotion from props into the visibility object
-  const effectiveVisibility = $derived.by<ThumbnailVisibilitySettings | undefined>(() => {
-    const needsMotionFilter = showBlueMotion !== true || showRedMotion !== true;
-    const motionOverrides = needsMotionFilter ? { showBlueMotion, showRedMotion } : {};
-    // Guests get no QR baked into the thumbnail — only signed-in renders carry a
-    // (Firebase short-code) QR. Because showQRCode is part of the cache key, a
-    // guest's no-QR card keys separately (showQRCode:false) and can never
-    // overwrite the signed-in short-code card in the shared cloud cache.
-    // One-count cards (single beat + start) never carry a QR — there is no spare
-    // cell, so it would land on the start position. Gating it here also re-keys
-    // any one-count thumbnail that was previously cached with a QR baked in.
-    const qrAllowed = authState.isAuthenticated && stepCount > 1;
-    if (visibility) {
-      const qrGated = qrAllowed ? visibility : { ...visibility, showQRCode: false };
-      return (handPathMode || needsMotionFilter || !qrAllowed)
-        ? { ...qrGated, ...(handPathMode && { handPathMode: true }), ...motionOverrides }
-        : qrGated;
-    }
-    const qr = qrAllowed && compositionManager.showQRCode;
-    const mandala = compositionManager.showMandala;
-    if (!qr && !mandala && !handPathMode && !needsMotionFilter) return undefined;
-    return { showQRCode: qr, showMandala: mandala, ...(handPathMode && { handPathMode: true }), ...motionOverrides };
-  });
 
   // Derived: sequence name (raw) — used as the cache-key + source-doc lookup
   // identity. Kept as word||name so existing cloud/local thumbnail keys and
@@ -179,30 +157,37 @@
     return calculateGalleryAspectRatio(stepCount, effectiveStartPositionLayout);
   });
 
-  // Derived: Build render input from props
-  const renderInput = $derived<ThumbnailRenderInput>({
-    sequenceName,
-    sequenceId: sequence.id,
-    bluePropType,
-    redPropType,
-    catDogModeEnabled,
-    lightMode,
-    variant,
-    loopType: sequence.loopType ?? null,
-    addWord,
-    addStepNumbers,
-    includeStartPosition,
-    startPositionLayout: effectiveStartPositionLayout,
-    addDifficultyLevel,
-    addUserInfo,
-    userName,
-    showCreatorName,
-    showNotes,
-    showBirthday,
-    customNotesText,
-    visibility: effectiveVisibility,
-    cardMode: cardMode || undefined, // Only include when true to avoid polluting cache keys
-  });
+  // Derived: Build render input from props via the shared builder so the live
+  // card and the gallery-thumbnail-warmer produce byte-identical cache keys.
+  const renderInput = $derived<ThumbnailRenderInput>(
+    buildGalleryRenderInput({
+      sequence,
+      bluePropType,
+      redPropType,
+      catDogModeEnabled,
+      lightMode,
+      variant,
+      addWord,
+      addStepNumbers,
+      includeStartPosition,
+      startPositionLayout,
+      addDifficultyLevel,
+      addUserInfo,
+      userName,
+      showCreatorName,
+      showNotes,
+      showBirthday,
+      customNotesText,
+      visibility,
+      handPathMode,
+      showBlueMotion,
+      showRedMotion,
+      allowQR,
+      cardMode,
+      compositionManager,
+      isAuthenticated: authState.isAuthenticated,
+    })
+  );
 
 
 

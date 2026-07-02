@@ -34,6 +34,8 @@
     onPreviewCreateTutorial: () => void;
     onClearCloudThumbnails: () => void;
     isClearingThumbnails: boolean;
+    onWarmGallery: () => void;
+    isWarming: boolean;
     onClearLocalCache: () => void;
     isClearingLocalCache: boolean;
     onClearTikaCache: () => void;
@@ -59,6 +61,8 @@
     onPreviewCreateTutorial,
     onClearCloudThumbnails,
     isClearingThumbnails,
+    onWarmGallery,
+    isWarming,
     onClearLocalCache,
     isClearingLocalCache,
     onClearTikaCache,
@@ -191,6 +195,21 @@
         <i class="fas fa-mobile-screen" aria-hidden="true"></i>
         <span>Show PWA Banner</span>
       </button>
+
+      <button type="button" class="action-card" onclick={onWarmGallery}>
+        {#if isWarming}
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          <span>Stop warming</span>
+        {:else}
+          <i class="fas fa-fire" aria-hidden="true"></i>
+          <span>Warm Gallery (lean)</span>
+        {/if}
+      </button>
+
+      <a href="/admin/generate-thumbnails" class="action-card">
+        <i class="fas fa-sliders" aria-hidden="true"></i>
+        <span>Warm Gallery (full)…</span>
+      </a>
 
       <button
         type="button"

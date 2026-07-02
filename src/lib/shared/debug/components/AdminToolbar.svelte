@@ -27,6 +27,8 @@
   import * as cloudThumbnailCacheModule from "$lib/shared/browse/services/cloud-thumbnail-cache";
   import { getThumbnailLocalCache } from "$lib/shared/browse/get-thumbnail-local-cache";
   import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/get-thumbnail-render-orchestrator";
+  import { startGalleryWarm, type WarmHandle } from "$lib/shared/browse/services/gallery-thumbnail-warmer";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getQuickAccessPersister } from "$lib/shared/debug/get-quick-access-persister";
   import { getImageComposer } from "$lib/shared/render/get-image-composer";
   import type { QuickAccessPersister } from "../services/quick-access-persister";
@@ -226,6 +228,47 @@ import type { QuickAccessUser } from "../services/types";
     }
   }
 
+  let isWarming = $state(false);
+  let warmHandle: WarmHandle | null = null;
+
+  /**
+   * Lean one-click warm: renders + uploads the observed cold set (staff, dark,
+   * QR + non-QR) through the real orchestrator so those cloud thumbnails exist.
+   * Clicking again while running cancels. Full-matrix control lives at
+   * /admin/generate-thumbnails. Follow a run with `npm run thumbnails:manifest`
+   * + `npm run thumbnails:sync` to index + bundle the results.
+   */
+  async function warmGalleryThumbnails() {
+    if (isWarming) {
+      warmHandle?.cancel();
+      return;
+    }
+    isWarming = true;
+    introResetMessage = "Warming gallery thumbnails...";
+
+    warmHandle = startGalleryWarm(
+      { props: [PropType.STAFF], modes: ["dark"], qr: [false, true] },
+      (p) => {
+        introResetMessage = p.finished
+          ? `Warm ${p.cancelled ? "cancelled" : "done"}: ${p.rendered} new, ${p.skipped} cached, ${p.failed} failed`
+          : `Warming ${p.done}/${p.total} — ${p.rendered} new`;
+      }
+    );
+
+    try {
+      await warmHandle.promise;
+    } catch (error) {
+      console.error("❌ Gallery warm failed:", error);
+      introResetMessage = `Warm error: ${error instanceof Error ? error.message : "Unknown"}`;
+    } finally {
+      isWarming = false;
+      warmHandle = null;
+      setTimeout(() => {
+        introResetMessage = null;
+      }, 8000);
+    }
+  }
+
   let isClearingLocalCache = $state(false);
 
   async function clearLocalPictographCache() {
@@ -356,6 +399,8 @@ import type { QuickAccessUser } from "../services/types";
     onPreviewCreateTutorial={previewCreateTutorial}
     onClearCloudThumbnails={clearCloudThumbnails}
     {isClearingThumbnails}
+    onWarmGallery={warmGalleryThumbnails}
+    {isWarming}
     onClearLocalCache={clearLocalPictographCache}
     {isClearingLocalCache}
     onClearTikaCache={clearTikaPictographCache}
@@ -387,6 +432,8 @@ import type { QuickAccessUser } from "../services/types";
     onPreviewCreateTutorial={previewCreateTutorial}
     onClearCloudThumbnails={clearCloudThumbnails}
     {isClearingThumbnails}
+    onWarmGallery={warmGalleryThumbnails}
+    {isWarming}
     onClearLocalCache={clearLocalPictographCache}
     {isClearingLocalCache}
     onClearTikaCache={clearTikaPictographCache}

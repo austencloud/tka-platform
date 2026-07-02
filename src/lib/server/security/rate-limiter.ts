@@ -158,7 +158,7 @@ export const RATE_LIMITS = {
     windowMs: 60 * 1000, // 1 minute
     binding: "RL_AI_CHAT",
   },
-  /** AI render endpoints (batch-render, render-pictograph, test-render): 20 requests per minute per IP */
+  /** AI render endpoints (render-pictograph, test-render): 20 requests per minute per IP */
   AI_RENDER: {
     maxRequests: 20,
     windowMs: 60 * 1000, // 1 minute
