@@ -50,6 +50,13 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      # Unit tests prove the code; this proves the artifact. Catches the class
+      # of bug where the build/trim pipeline eats part of the offline kit
+      # (missing precache manifest, sw.js not copied, fonts trimmed) — invisible
+      # to every test above because the code is fine.
+      - name: Verify offline kit in build artifact
+        run: pnpm run verify:offline
+
   component-tests:
     name: Component Tests (browser)
     runs-on: ubuntu-latest

@@ -1,0 +1,32 @@
+name: Offline Kit Prod Check
+
+# Cloudflare Pages builds from its own dashboard-configured command, not from
+# web-ci.yml — CI verifying its own artifact says nothing about what CF actually
+# shipped. This check hits the live origin daily (and on demand) so drift in the
+# dashboard build command, the trim script, or the CDN shows up as a red run
+# instead of a user on a plane with blank pictographs.
+#
+# The verifier is dependency-free (node builtins + global fetch), so this job
+# skips pnpm install entirely — checkout + node + one script, ~15 seconds.
+
+on:
+  schedule:
+    - cron: "17 9 * * *" # daily, 09:17 UTC (~4am Chicago)
+  workflow_dispatch:
+
+jobs:
+  verify-prod:
+    name: Verify tkaflowarts.com offline kit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Verify live offline kit
+        run: node scripts/verify-offline-deploy.mjs --url https://tkaflowarts.com
