@@ -30,14 +30,12 @@
   import ActsDock from "./ActsDock.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
-  import BrowseGrid from "$lib/features/browse/sequences/display/components/BrowseGrid.svelte";
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
-  import { getBrowseThumbnailProvider } from "$lib/shared/browse/get-browse-thumbnail-provider";
-  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import GalleryFilterSheet from "$lib/features/browse/gallery-home/GalleryFilterSheet.svelte";
+  import CollectionChipsRow from "$lib/features/library/components/collection-picker/CollectionChipsRow.svelte";
+  import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
-  import { getCollections } from "$lib/shared/library/services/collection-manager";
-  import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 
   // Hydrates one sequence id when a draft/saved act restores. Order matters:
   // most rows on a sheet are the user's OWN sequences, and the public gallery
@@ -117,26 +115,21 @@
 
   // ── Add-sequences picker (inline docked column) ─────────────────────────────
   // Reuses the full Browse experience (BrowsePanel + a browse engine): real
-  // rendered pictograph cards, search/filter/sort, virtualization. My Library /
-  // Community drive the engine; Collections is a client-side id filter over the
-  // library (collections aren't an engine source). Open state, source, selected
-  // collection and the engine's filters all persist across reload/HMR so the
-  // picker reopens exactly as it was left.
-  type PickerSource = "my-library" | "community" | "collections";
-
+  // rendered pictograph cards, filter sheet, sort, virtualization. Sources are
+  // the two POOLS (My Library | Community — the toolbar toggle); collections
+  // organize the library, so they surface as the chips row above the grid
+  // (CollectionChipsRow → the engine's COLLECTION filter). Open state and the
+  // engine's source/sort/filters persist across reload/HMR so the picker
+  // reopens exactly as it was left.
   const PICKER_PREFS_KEY = "tka-choreo-sheet-picker-ui";
   interface PickerPrefs {
     open: boolean;
-    source: PickerSource;
-    collectionId: string | null;
     playerOpen: boolean;
     actsOpen: boolean;
   }
   function loadPickerPrefs(): PickerPrefs {
     const fallback: PickerPrefs = {
       open: false,
-      source: "my-library",
-      collectionId: null,
       playerOpen: false,
       actsOpen: false,
     };
@@ -145,12 +138,8 @@
       const raw = localStorage.getItem(PICKER_PREFS_KEY);
       if (!raw) return fallback;
       const p = JSON.parse(raw) as Partial<PickerPrefs>;
-      const source: PickerSource =
-        p.source === "community" || p.source === "collections" ? p.source : "my-library";
       return {
         open: !!p.open,
-        source,
-        collectionId: typeof p.collectionId === "string" ? p.collectionId : null,
         playerOpen: !!p.playerOpen,
         actsOpen: !!p.actsOpen,
       };
@@ -162,31 +151,27 @@
 
   let browseOpen = $state(initialPrefs.open);
   let browseInitialized = false;
+  // Grid chrome follows the gallery grammar: Filters pill → shared drill sheet
+  // (search included there), no toolbar magnifier, no inline dropdown chips.
+  let pickerFilterSheetOpen = $state(false);
+  let pickerSideBySide = $state(false);
+  onMount(() => {
+    pickerSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
+    const unsubscribe = responsiveLayoutManager.onLayoutChange(() => {
+      pickerSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
+    });
+    return unsubscribe;
+  });
   let playerOpen = $state(initialPrefs.playerOpen);
   let actsOpen = $state(initialPrefs.actsOpen);
-  let pickerSource = $state<PickerSource>(initialPrefs.source);
-  let selectedCollectionId = $state<string | null>(initialPrefs.collectionId);
 
   const browseEngine = createBrowseEngine({
     // Persists source/sort/filters/columns across reload; BrowsePanel persists its
     // own scroll via browseScrollState.
     persistKey: "tka-choreo-sheet-picker",
-    initialSource: initialPrefs.source === "collections" ? "my-library" : initialPrefs.source,
+    initialSource: "my-library",
     minColumns: 2,
   });
-
-  const sourceOptions: { value: PickerSource; label: string }[] = [
-    { value: "my-library", label: "My Library" },
-    { value: "community", label: "Community" },
-    { value: "collections", label: "Collections" },
-  ];
-  const thumbnailProvider = getBrowseThumbnailProvider();
-  let collections = $state<LibraryCollection[]>([]);
-  let libSequences = $state<SequenceData[]>([]);
-  let collectionsLoaded = false;
-  // Mirrors the saveMessage pattern: a failed collections fetch surfaces here
-  // (rendered in the picker with a retry) instead of dying in the console.
-  let pickerError = $state<string | null>(null);
 
   function initEngineOnce(): void {
     if (browseInitialized) return;
@@ -196,19 +181,15 @@
 
   onMount(() => {
     // Restore: if the picker was left open, bring its data back up immediately.
-    if (browseOpen) {
-      if (pickerSource === "collections") void ensureCollectionsLoaded();
-      else initEngineOnce();
-    }
+    if (browseOpen) initEngineOnce();
     return () => browseEngine.destroy();
   });
 
-  // Persist picker UI state (open / source / collection) on every change.
+  // Persist picker UI state on every change (the engine persists its own
+  // source/sort/filters under its persistKey).
   $effect(() => {
     const prefs: PickerPrefs = {
       open: browseOpen,
-      source: pickerSource,
-      collectionId: selectedCollectionId,
       playerOpen,
       actsOpen,
     };
@@ -225,8 +206,7 @@
     if (!browseOpen) return;
     playerOpen = false; // docks are mutually exclusive — keep the page readable
     actsOpen = false;
-    if (pickerSource === "collections") void ensureCollectionsLoaded();
-    else initEngineOnce();
+    initEngineOnce();
   }
 
   function togglePlayer(): void {
@@ -258,67 +238,6 @@
     }
   }
 
-  async function ensureCollectionsLoaded(): Promise<void> {
-    if (collectionsLoaded) return;
-    collectionsLoaded = true;
-    pickerError = null;
-    try {
-      const [cols, seqs] = await Promise.all([
-        getCollections(),
-        getLibraryRepository().getSequences(),
-      ]);
-      collections = cols;
-      libSequences = seqs as SequenceData[];
-    } catch (e) {
-      console.error("[ChoreoSheetView] collections load failed", e);
-      collectionsLoaded = false; // let a retry re-attempt
-      pickerError = "Couldn't load your collections.";
-    }
-  }
-
-  function onSourceChange(v: PickerSource): void {
-    pickerSource = v;
-    if (v === "collections") {
-      void ensureCollectionsLoaded();
-    } else {
-      initEngineOnce();
-      void browseEngine.setSource(v);
-    }
-  }
-
-  // Persist/restore the collections grid scroll (BrowsePanel handles its own).
-  const SCROLL_KEY = "tka-choreo-sheet-picker-scroll";
-  function scrollMemory(el: HTMLElement) {
-    if (typeof localStorage !== "undefined") {
-      try {
-        const saved = Number(localStorage.getItem(SCROLL_KEY));
-        if (saved > 0) requestAnimationFrame(() => (el.scrollTop = saved));
-      } catch {
-        /* ignore */
-      }
-    }
-    const onScroll = () => {
-      try {
-        localStorage.setItem(SCROLL_KEY, String(el.scrollTop));
-      } catch {
-        /* ignore */
-      }
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return {
-      destroy() {
-        el.removeEventListener("scroll", onScroll);
-      },
-    };
-  }
-
-  const collectionSequences = $derived.by<SequenceData[]>(() => {
-    if (!selectedCollectionId) return [];
-    const col = collections.find((c) => c.id === selectedCollectionId);
-    if (!col) return [];
-    const ids = new Set(col.sequenceIds);
-    return libSequences.filter((s) => ids.has(s.id));
-  });
 
   let exporting = $state(false);
   let exportPct = $state(0);
@@ -636,70 +555,28 @@
           </button>
         </div>
 
-        <div class="dock-source">
-          <SegmentedControl
-            options={sourceOptions}
-            value={pickerSource}
-            onchange={onSourceChange}
-            color="accent"
-            size="sm"
+        <!-- Collections lead the grid as chips: yours on My Library, followed
+             ones on Community — the row's count gate routes per pool. Sources
+             are the toolbar's standard Community | My Library toggle. -->
+        <CollectionChipsRow engine={browseEngine} />
+
+        <div class="browse-panel-host">
+          <BrowsePanel
+            engine={browseEngine}
+            layout="compact"
+            showSourceToggle
+            onSelect={(seq) => handleBrowseSelect(seq)}
+            hideToolbarSearch
+            onOpenFilters={() => (pickerFilterSheetOpen = true)}
           />
         </div>
-
-        {#if pickerSource === "collections"}
-          <div class="collection-chips">
-            {#each collections as col (col.id)}
-              <FilterChipBase
-                mode="toggle"
-                label={col.name}
-                count={col.sequenceCount}
-                active={selectedCollectionId === col.id}
-                onclick={() =>
-                  (selectedCollectionId = selectedCollectionId === col.id ? null : col.id)}
-                size="sm"
-              />
-            {/each}
-          </div>
-          <div class="browse-panel-host">
-            {#if pickerError}
-              <!-- Swaps into the same flexible host slot the empty states use, so
-                   showing it never shifts the dock's chrome. -->
-              <div class="picker-error" role="alert">
-                <p class="dock-empty">{pickerError}</p>
-                <button
-                  type="button"
-                  class="btn"
-                  onclick={() => void ensureCollectionsLoaded()}
-                >
-                  <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
-                  Retry
-                </button>
-              </div>
-            {:else if !selectedCollectionId}
-              <p class="dock-empty">Pick a collection.</p>
-            {:else if collectionSequences.length === 0}
-              <p class="dock-empty">No sequences in this collection.</p>
-            {:else}
-              <div class="dock-grid-scroll" use:scrollMemory>
-                <BrowseGrid
-                  sequences={collectionSequences}
-                  thumbnailService={thumbnailProvider}
-                  disableVirtualization
-                  onAction={(_a, seq) => builder.addHydratedSequences([seq])}
-                />
-              </div>
-            {/if}
-          </div>
-        {:else}
-          <div class="browse-panel-host">
-            <BrowsePanel
-              engine={browseEngine}
-              layout="compact"
-              onSelect={(seq) => handleBrowseSelect(seq)}
-            />
-          </div>
-        {/if}
       </aside>
+
+      <GalleryFilterSheet
+        engine={browseEngine}
+        bind:isOpen={pickerFilterSheetOpen}
+        isMobile={!pickerSideBySide}
+      />
     {/if}
 
     {#if actsOpen}
@@ -898,49 +775,6 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 8px;
     overflow: hidden;
-  }
-
-  .dock-source {
-    padding: var(--spacing-sm) var(--spacing-md) 0;
-    flex-shrink: 0;
-  }
-
-  .collection-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-sm) var(--spacing-md);
-    flex-shrink: 0;
-    overflow-y: auto;
-    max-height: 30%;
-  }
-
-  .dock-grid-scroll {
-    height: 100%;
-    overflow-y: auto;
-    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
-  }
-
-  .dock-empty {
-    text-align: center;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-sm, 0.875rem);
-    margin: var(--spacing-md) 0;
-  }
-
-  /* Collections fetch failure: message + retry in the same slot as the empty
-     states, so the dock chrome never moves. */
-  .picker-error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-md);
-  }
-
-  .picker-error .dock-empty {
-    margin: 0;
-    color: var(--theme-danger, #ef4444);
   }
 
   .browse-drawer-head {
