@@ -47,7 +47,7 @@ const POSITION_LETTER_DIMENSIONS: Record<string, { width: number; height: number
   gamma: { width: 79, height: 100.11, yOffset: 0.0 },
 };
 
-const STATIC_LETTERS = [Letter.ALPHA, Letter.BETA, Letter.GAMMA];
+const STATIC_LETTERS: readonly Letter[] = [Letter.ALPHA, Letter.BETA, Letter.GAMMA];
 
 export function drawTKAGlyphText(
   ctx: CanvasRenderingContext2D,
