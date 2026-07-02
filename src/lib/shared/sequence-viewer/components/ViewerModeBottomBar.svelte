@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ContentType, ViewerMode } from '../state/viewer-state.svelte';
 	import { viewerModeOptions, PRACTICE_OPTION } from '../services/viewer-modes';
+	import { viewportFits3D } from '$lib/shared/3d/capabilities/viewport-3d-gate.svelte';
 	import NavButton from '$lib/shared/navigation/components/buttons/NavButton.svelte';
 
 	interface Props {
@@ -29,7 +30,7 @@
 	}: Props = $props();
 
 	const modes = $derived(
-		viewerModeOptions(webgl2Available).filter((m) => allowSplit || m.id !== 'split')
+		viewerModeOptions(webgl2Available, viewportFits3D()).filter((m) => allowSplit || m.id !== 'split')
 	);
 
 	function selectMode(id: ViewerMode) {

@@ -27,6 +27,7 @@ import type { FormationPreset } from "@austencloud/scene-3d";
 import { calculateFacingAngle } from "@austencloud/scene-3d";
 import { PRESET_VALID_COUNTS, createFormationFromPreset } from "@austencloud/scene-3d";
 import { isWebGL2Available } from "../capabilities/webgl-capabilities";
+import { fits3DViewportNow } from "../capabilities/viewport-3d-gate.svelte";
 import { userProportionsState } from "@austencloud/scene-3d";
 import { createCameraChoreographyState } from "$lib/shared/sequence-viewer/camera-choreography/state.svelte";
 import { computeChoreographerShot, computeBehindPerformerShot } from "$lib/shared/sequence-viewer/camera-choreography/presets/shots";
@@ -277,7 +278,12 @@ function migrateLegacyPlanesIfNeeded(): void {
 export function createViewer3DState() {
   const sceneUndo = getSceneUndoManager();
   const _webgl2Available = isWebGL2Available();
-  const _persistedMode = _webgl2Available ? loadPersistedMode() : "2d";
+  // Start in 2D on viewports too small to host 3D even if '3d' was persisted from
+  // a larger screen — avoids briefly mounting the 3D overlay before the
+  // orchestrator's fits3D guard corrects it. Non-mutating: storage keeps '3d', so
+  // unfolding restores 3D.
+  const _persistedMode =
+    _webgl2Available && fits3DViewportNow() ? loadPersistedMode() : "2d";
   const _persistedCamera = loadPersistedCamera();
 
   // Synchronously restore the last render mode from localStorage so that

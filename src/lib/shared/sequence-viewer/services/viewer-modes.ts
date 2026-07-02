@@ -1,4 +1,5 @@
 import type { ViewerMode } from '../state/viewer-state.svelte';
+import type { ContentType, SplitConfig } from './viewer-state-persistence';
 
 /** One switchable view in the sequence viewer (rail + mobile bottom bar). */
 export interface ViewerModeOption {
@@ -9,6 +10,12 @@ export interface ViewerModeOption {
 	label: string;
 	/** When true, the option is hidden unless WebGL2 is available. */
 	requiresWebgl2?: boolean;
+	/**
+	 * When true, the option is hidden unless the viewport is large enough to host
+	 * 3D (see `MIN_3D_VIEWPORT_PX` / `viewportFits3D`). The 3D viewer is not
+	 * phone-friendly yet, so it is withheld on small screens.
+	 */
+	requiresLargeViewport?: boolean;
 }
 
 /**
@@ -19,7 +26,7 @@ export interface ViewerModeOption {
 export const VIEWER_MODE_OPTIONS: ViewerModeOption[] = [
 	{ id: 'split', icon: 'fa-columns', label: 'Side by Side' },
 	{ id: 'animation', icon: 'fa-play', label: '2D Animation' },
-	{ id: 'animation-3d', icon: 'fa-cube', label: '3D Animation', requiresWebgl2: true },
+	{ id: 'animation-3d', icon: 'fa-cube', label: '3D Animation', requiresWebgl2: true, requiresLargeViewport: true },
 	{ id: 'card', icon: 'fa-grip', label: 'Card' },
 	// Mandala and Tunnel are separate top-level art modes. Each id is its own
 	// pane/persistence key; the mode rail switches between them directly (no
@@ -31,9 +38,36 @@ export const VIEWER_MODE_OPTIONS: ViewerModeOption[] = [
 /** Practice is a toggle, not a ViewerMode. Rendered as its own item in both switchers. */
 export const PRACTICE_OPTION = { icon: 'fa-signal', label: 'Practice' } as const;
 
-/** Filter helper: drops WebGL2-only options when WebGL2 is unavailable. */
-export function viewerModeOptions(webgl2Available: boolean): ViewerModeOption[] {
-	return webgl2Available
-		? VIEWER_MODE_OPTIONS
-		: VIEWER_MODE_OPTIONS.filter((m) => !m.requiresWebgl2);
+/**
+ * Filter helper: drops WebGL2-only options when WebGL2 is unavailable, and
+ * large-viewport-only options (3D) when the viewport is too small to host them.
+ */
+export function viewerModeOptions(
+	webgl2Available: boolean,
+	viewportFits3D = true
+): ViewerModeOption[] {
+	return VIEWER_MODE_OPTIONS.filter(
+		(m) =>
+			(!m.requiresWebgl2 || webgl2Available) &&
+			(!m.requiresLargeViewport || viewportFits3D)
+	);
+}
+
+/**
+ * Coerce a single content type away from 3D when the viewport can't host it.
+ * `'animation-3d' → 'animation'` when `!fits3D`; everything else untouched.
+ * Pure — used by the viewer-state getters so a persisted 3D preference renders
+ * as 2D on a small screen without overwriting the stored preference.
+ */
+export function coerce3DContent(content: ContentType, fits3D: boolean): ContentType {
+	return !fits3D && content === 'animation-3d' ? 'animation' : content;
+}
+
+/** Coerce both panes of a split config away from 3D when the viewport can't host it. */
+export function coerce3DSplit(config: SplitConfig, fits3D: boolean): SplitConfig {
+	if (fits3D) return config;
+	return {
+		leftPane: coerce3DContent(config.leftPane, fits3D),
+		rightPane: coerce3DContent(config.rightPane, fits3D)
+	};
 }

@@ -24,6 +24,7 @@ import type { AnimationVisibilityStateManager, GridMode } from "../../state/anim
 import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import { animationSettings } from "../../state/animation-settings-state.svelte";
+import { fits3DViewportNow } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
 import { TrackingMode } from "../../domain/types/trail-types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
@@ -396,7 +397,7 @@ export function buildCanvasContextMenuItems(
     );
   }
 
-  if (deps.viewer3DState?.webgl2Available && deps.onToggle3DView) {
+  if (deps.viewer3DState?.webgl2Available && deps.onToggle3DView && fits3DViewportNow()) {
     items.push({ type: "separator" as const });
     items.push({
       id: "toggle-3d-view",

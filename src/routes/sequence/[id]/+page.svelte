@@ -3,6 +3,7 @@
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
+  import { viewportFits3D } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
   import { page } from "$app/state";
   import { goto, replaceState } from "$app/navigation";
   import { browser } from "$app/environment";
@@ -598,7 +599,7 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
               class:desktop={!isMobile}
             >
               <!-- Mobile 3D fullscreen overlay (lazy-loaded — Three.js is 3.8MB) -->
-              {#if isMobile && ctx.renderMode === '3d' && ctx.effectiveSequence}
+              {#if isMobile && ctx.renderMode === '3d' && ctx.effectiveSequence && viewportFits3D()}
                 {#await import("$lib/shared/3d/components/Viewer3DFullscreen.svelte") then mod}
                   <mod.default
                     sequenceData={ctx.effectiveSequence}

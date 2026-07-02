@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ContentType, ViewerMode } from '../state/viewer-state.svelte';
 	import { viewerModeOptions, PRACTICE_OPTION } from '../services/viewer-modes';
+	import { viewportFits3D } from '$lib/shared/3d/capabilities/viewport-3d-gate.svelte';
 
 	const RAIL_WIDTH_KEY = 'tka-viewer-rail-width';
 	const DEFAULT_WIDTH = 180;
@@ -24,7 +25,7 @@
 	let { activeMode, webgl2Available = true, practiceActive = false, onSelectMode, onSelectSplit, onPracticeToggle, footerAction }: Props = $props();
 
 	const railItems = $derived([
-		...viewerModeOptions(webgl2Available).map((m) => ({ id: m.id, icon: m.icon, label: m.label })),
+		...viewerModeOptions(webgl2Available, viewportFits3D()).map((m) => ({ id: m.id, icon: m.icon, label: m.label })),
 		// Practice is only listed when a toggle handler is wired (feature not ready — entry point withheld).
 		...(onPracticeToggle ? [{ id: 'practice' as const, icon: PRACTICE_OPTION.icon, label: PRACTICE_OPTION.label }] : [])
 	]);

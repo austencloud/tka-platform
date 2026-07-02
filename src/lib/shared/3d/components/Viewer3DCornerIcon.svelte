@@ -4,11 +4,12 @@
    *
    * A 24px cube icon that appears in the bottom-right corner of the 2D viewer.
    * It fades after 3 seconds so it stays out of the way during normal use,
-   * but tapping it enters 3D mode. Only rendered when WebGL2 is available and
-   * the viewer is currently in 2D mode.
+   * but tapping it enters 3D mode. Only rendered when WebGL2 is available, the
+   * viewport is large enough to host 3D, and the viewer is currently in 2D mode.
    */
 
   import { getViewer3DContext } from "../context/viewer-3d-context";
+  import { viewportFits3D } from "../capabilities/viewport-3d-gate.svelte";
 
   interface Props {
     onEnter3D: () => void;
@@ -27,7 +28,7 @@
   });
 </script>
 
-{#if viewer3DState.renderMode === "2d" && viewer3DState.webgl2Available}
+{#if viewer3DState.renderMode === "2d" && viewer3DState.webgl2Available && viewportFits3D()}
   <button
     class="corner-icon"
     class:faded

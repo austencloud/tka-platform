@@ -209,6 +209,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
+  import { viewportFits3D } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
   import { SequenceViewerVisibilityState } from "../state/viewer-visibility-state.svelte";
   import { setViewerVisibilityContext } from "../context/viewer-visibility-context";
   import type { PendingActionType } from "$lib/shared/sequence-viewer/services/pending-action-queue";
@@ -526,7 +527,11 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     if (!sequence) return;
     if (!viewer3DState.webgl2Available) return;
 
-    const shouldBe3D = viewerState.wants3D || initialRenderMode === '3d';
+    // Gate 3D on viewport size. When the screen is too small (phone, folded
+    // foldable), shouldBe3D is false even if the stored preference wants 3D — so
+    // a persisted 3D mode auto-downgrades to 2D. viewportFits3D() is reactive, so
+    // shrinking below threshold mid-3D runs exit3D(); growing back re-enters.
+    const shouldBe3D = (viewerState.wants3D || initialRenderMode === '3d') && viewportFits3D();
     const is3D = viewer3DState.renderMode === '3d';
 
     const performersReady = viewer3DState.performerManager.performers.length > 0;
