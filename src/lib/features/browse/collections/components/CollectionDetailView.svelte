@@ -35,6 +35,7 @@ instead of showing a ghost.
 	} from "$lib/shared/components/context-menu/context-menu-types";
 	import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 	import AddSequencesSheet from "./AddSequencesSheet.svelte";
+	import ScanCardSheet from "./ScanCardSheet.svelte";
 
 	let {
 		collectionId,
@@ -179,6 +180,8 @@ instead of showing a ghost.
 
 	// Build-from-inside: the add-sequences browser overlay.
 	let addSheetOpen = $state(false);
+	// File physical cards: the camera scan sheet.
+	let scanSheetOpen = $state(false);
 
 	// ── Header options (rename / delete) ─────────────────────────────
 	let menuState: ContextMenuState = $state({ open: false });
@@ -293,6 +296,14 @@ instead of showing a ghost.
 				<i class="fas fa-plus" aria-hidden="true"></i>
 				<span>Add</span>
 			</button>
+			<button
+				type="button"
+				class="scan-btn"
+				onclick={() => (scanSheetOpen = true)}
+			>
+				<i class="fas fa-qrcode" aria-hidden="true"></i>
+				<span>Scan</span>
+			</button>
 		{/if}
 
 		{#if collection && !isSystem && !renaming && !foreignOwnerId}
@@ -337,6 +348,14 @@ instead of showing a ghost.
 						<i class="fas fa-plus" aria-hidden="true"></i>
 						<span>Add sequences</span>
 					</button>
+					<button
+						type="button"
+						class="empty-cta"
+						onclick={() => (scanSheetOpen = true)}
+					>
+						<i class="fas fa-qrcode" aria-hidden="true"></i>
+						<span>Scan a card</span>
+					</button>
 				{/if}
 			</div>
 		{:else}
@@ -371,6 +390,10 @@ instead of showing a ghost.
 
 {#if addSheetOpen && !foreignOwnerId}
 	<AddSequencesSheet {collectionId} onClose={() => (addSheetOpen = false)} />
+{/if}
+
+{#if scanSheetOpen && !foreignOwnerId}
+	<ScanCardSheet {collectionId} onClose={() => (scanSheetOpen = false)} />
 {/if}
 
 <style>
@@ -444,6 +467,34 @@ instead of showing a ghost.
 	}
 
 	.add-btn:focus-visible {
+		outline: 2px solid var(--tile-color);
+		outline-offset: 2px;
+	}
+
+	/* Same look as .add-btn, minus the auto margin (Add stays the first
+	   right-aligned control; Scan sits between it and options). */
+	.scan-btn {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		height: 44px;
+		padding: 0 16px;
+		flex-shrink: 0;
+		border: 1px solid color-mix(in srgb, var(--tile-color) 45%, transparent);
+		border-radius: 12px;
+		background: color-mix(in srgb, var(--tile-color) 18%, transparent);
+		color: var(--theme-text, white);
+		font-size: var(--font-size-sm, 14px);
+		font-weight: 600;
+		cursor: pointer;
+		transition: background var(--duration-fast, 150ms) ease;
+	}
+
+	.scan-btn:hover {
+		background: color-mix(in srgb, var(--tile-color) 30%, transparent);
+	}
+
+	.scan-btn:focus-visible {
 		outline: 2px solid var(--tile-color);
 		outline-offset: 2px;
 	}
@@ -597,7 +648,8 @@ instead of showing a ghost.
 
 	@media (prefers-reduced-motion: reduce) {
 		.back-btn,
-		.options-btn {
+		.options-btn,
+		.scan-btn {
 			transition: none;
 		}
 		.card-skeleton {
