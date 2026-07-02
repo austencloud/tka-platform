@@ -22,11 +22,12 @@
   } from "../../state/choreo-sheet-state.svelte";
   import { getChoreoSheetRepository } from "../../services/choreo-sheet-repository";
   import { downloadChoreoSheetPDF } from "../../services/sheet-pdf-exporter";
-  import type { GroupSeparator } from "../../domain/types/choreo-sheet";
+  import type { ChoreoSheet, GroupSeparator } from "../../domain/types/choreo-sheet";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import SheetPreviewPages from "./SheetPreviewPages.svelte";
   import ActPlayer from "./ActPlayer.svelte";
+  import ActsDock from "./ActsDock.svelte";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import BrowseGrid from "$lib/features/browse/sequences/display/components/BrowseGrid.svelte";
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
@@ -81,6 +82,7 @@
     source: PickerSource;
     collectionId: string | null;
     playerOpen: boolean;
+    actsOpen: boolean;
   }
   function loadPickerPrefs(): PickerPrefs {
     const fallback: PickerPrefs = {
@@ -88,6 +90,7 @@
       source: "my-library",
       collectionId: null,
       playerOpen: false,
+      actsOpen: false,
     };
     if (typeof localStorage === "undefined") return fallback;
     try {
@@ -101,6 +104,7 @@
         source,
         collectionId: typeof p.collectionId === "string" ? p.collectionId : null,
         playerOpen: !!p.playerOpen,
+        actsOpen: !!p.actsOpen,
       };
     } catch {
       return fallback;
@@ -111,6 +115,7 @@
   let browseOpen = $state(initialPrefs.open);
   let browseInitialized = false;
   let playerOpen = $state(initialPrefs.playerOpen);
+  let actsOpen = $state(initialPrefs.actsOpen);
   let pickerSource = $state<PickerSource>(initialPrefs.source);
   let selectedCollectionId = $state<string | null>(initialPrefs.collectionId);
 
@@ -157,6 +162,7 @@
       source: pickerSource,
       collectionId: selectedCollectionId,
       playerOpen,
+      actsOpen,
     };
     if (typeof localStorage === "undefined") return;
     try {
@@ -170,13 +176,25 @@
     browseOpen = !browseOpen;
     if (!browseOpen) return;
     playerOpen = false; // docks are mutually exclusive — keep the page readable
+    actsOpen = false;
     if (pickerSource === "collections") void ensureCollectionsLoaded();
     else initEngineOnce();
   }
 
   function togglePlayer(): void {
     playerOpen = !playerOpen;
-    if (playerOpen) browseOpen = false;
+    if (playerOpen) {
+      browseOpen = false;
+      actsOpen = false;
+    }
+  }
+
+  function toggleActs(): void {
+    actsOpen = !actsOpen;
+    if (actsOpen) {
+      browseOpen = false;
+      playerOpen = false;
+    }
   }
 
   // BrowsePanel emits a metadata-only SequenceData on select, so hydrate its
@@ -277,17 +295,55 @@
 
   let saving = $state(false);
   let saveMessage = $state<string | null>(null);
-  async function save() {
-    if (saving) return;
+
+  // ── Saved acts (dock) ────────────────────────────────────────────────────────
+  // Dirty = the sheet has content the cloud hasn't seen: either it was never
+  // saved/loaded this session (null stamp) or it was edited after the last sync.
+  // Every builder mutation bumps sheet.updatedAt, so the comparison is exact.
+  let lastSyncedAt = $state<number | null>(null);
+  const dirty = $derived(
+    builder.sequenceIds.length > 0 &&
+      (lastSyncedAt === null || builder.sheet.updatedAt.getTime() > lastSyncedAt),
+  );
+  // Bumped on every successful save so the acts dock refetches (the saved act
+  // re-sorts to the top with a fresh timestamp).
+  let saveRefreshKey = $state(0);
+
+  async function save(): Promise<boolean> {
+    if (saving) return false;
     saving = true;
     saveMessage = null;
     try {
       await getChoreoSheetRepository().saveSheet(builder.sheet);
       saveMessage = "Saved";
+      lastSyncedAt = Date.now();
+      saveRefreshKey += 1;
+      return true;
     } catch (error) {
       saveMessage = error instanceof Error ? error.message : "Save failed";
+      return false;
     } finally {
       saving = false;
+    }
+  }
+
+  function openAct(act: ChoreoSheet): void {
+    builder.replaceSheet(act);
+    lastSyncedAt = Date.now(); // freshly loaded = in sync with the cloud copy
+    saveMessage = null;
+  }
+
+  function newAct(): void {
+    builder.newSheet();
+    lastSyncedAt = null;
+    saveMessage = null;
+  }
+
+  // Deleting the act that's open leaves the builder holding an unsaved draft.
+  function handleActDeleted(id: string): void {
+    if (id === builder.sheet.id) {
+      lastSyncedAt = null;
+      saveMessage = null;
     }
   }
 </script>
@@ -310,6 +366,10 @@
       placeholder="Untitled Sheet"
     />
     <div class="toolbar-actions">
+      <button type="button" class="btn" class:active={actsOpen} onclick={toggleActs}>
+        <i class="fa-solid fa-clapperboard" aria-hidden="true"></i>
+        Acts
+      </button>
       <button type="button" class="btn" class:active={browseOpen} onclick={toggleBrowse}>
         <i class="fa-solid fa-plus" aria-hidden="true"></i>
         Add sequences
@@ -324,9 +384,19 @@
         <i class="fa-solid fa-play" aria-hidden="true"></i>
         Play act
       </button>
-      <button type="button" class="btn" onclick={save} disabled={saving || builder.sequenceIds.length === 0}>
+      <button
+        type="button"
+        class="btn btn-save"
+        onclick={() => void save()}
+        disabled={saving || builder.sequenceIds.length === 0}
+        title={dirty ? "Unsaved changes" : undefined}
+      >
         <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
-        {saving ? "Saving…" : "Save"}
+        <span class="btn-label">
+          <span class="btn-label-sizer" aria-hidden="true">Saving…</span>
+          <span class="btn-label-live">{saving ? "Saving…" : "Save"}</span>
+        </span>
+        <span class="unsaved-dot" class:show={dirty} aria-hidden="true"></span>
       </button>
       <button
         type="button"
@@ -558,6 +628,22 @@
       </aside>
     {/if}
 
+    {#if actsOpen}
+      <!-- Saved acts: create / open / delete, same inline-dock pattern as the
+           picker so the two surfaces feel like one design. -->
+      <ActsDock
+        currentActId={builder.sheet.id}
+        currentActName={builder.sheet.name}
+        {dirty}
+        refreshKey={saveRefreshKey}
+        onOpenAct={openAct}
+        onNewAct={newAct}
+        onSaveCurrent={save}
+        onDeleted={handleActDeleted}
+        onClose={() => (actsOpen = false)}
+      />
+    {/if}
+
     {#if playerOpen}
       <ActPlayer sequence={builder.actSequence} onClose={() => (playerOpen = false)} />
     {/if}
@@ -640,6 +726,60 @@
     background: var(--theme-accent, #6366f1);
     border-color: transparent;
     color: var(--theme-text-on-accent, #fff);
+  }
+
+  /* Ghost-sizer keeps the Save button's width fixed while the label swaps
+     between "Save" and "Saving…" (no-layout-shift). */
+  .btn-save {
+    position: relative;
+  }
+
+  .btn-label {
+    display: inline-grid;
+    justify-items: center;
+  }
+
+  .btn-label-sizer,
+  .btn-label-live {
+    grid-area: 1 / 1;
+    white-space: nowrap;
+  }
+
+  .btn-label-sizer {
+    visibility: hidden;
+  }
+
+  /* Unsaved-changes dot: absolutely positioned (reserves nothing, shifts
+     nothing), eases in and breathes gently while changes are pending. */
+  .unsaved-dot {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--theme-accent, #6366f1);
+    opacity: 0;
+    transform: scale(0.4);
+    transition:
+      opacity var(--duration-fast, 0.12s) ease,
+      transform var(--duration-fast, 0.12s) ease;
+  }
+
+  .unsaved-dot.show {
+    opacity: 1;
+    transform: scale(1);
+    animation: unsaved-breathe 2.4s ease-in-out infinite;
+  }
+
+  @keyframes unsaved-breathe {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
   }
 
   /* Inline docked picker column — sits beside the preview so the whole page
@@ -990,8 +1130,13 @@
   @media (prefers-reduced-motion: reduce) {
     .toggle-track,
     .toggle-thumb,
-    .btn {
+    .btn,
+    .unsaved-dot {
       transition: none;
+    }
+
+    .unsaved-dot.show {
+      animation: none;
     }
   }
 </style>

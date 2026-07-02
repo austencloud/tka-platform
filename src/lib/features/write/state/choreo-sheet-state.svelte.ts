@@ -343,6 +343,23 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     };
   }
 
+  // Load a saved sheet into the builder (the Acts dock's "open"). Replaces the
+  // whole sheet — the persist $effect then snapshots it as the live draft — and
+  // hydrates whatever steps aren't cached yet. Selection is cleared because it
+  // referenced the outgoing roster.
+  function replaceSheet(next: ChoreoSheet): void {
+    sheet = { ...next, sequenceIds: [...next.sequenceIds] };
+    selectedSequenceId = null;
+    if (sheet.sequenceIds.length > 0) void ensureHydrated(sheet.sequenceIds);
+  }
+
+  // Start a fresh act. The hydration cache is retained on purpose (keyed by id —
+  // re-adding a sequence must not refetch).
+  function newSheet(): void {
+    sheet = createEmptyChoreoSheet("");
+    selectedSequenceId = null;
+  }
+
   // Restore path: a draft loaded with ids needs its steps hydrated now (via the
   // loader dep, which must resolve both community and library ids).
   if (sheet.sequenceIds.length > 0) {
@@ -406,6 +423,8 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     addSequences,
     retryHydration,
     addHydratedSequences,
+    replaceSheet,
+    newSheet,
     removeAt,
     removeById,
     selectSequence,
