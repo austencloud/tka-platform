@@ -13,7 +13,7 @@ describe("toast action passthrough", () => {
       action: { label: "Reload", onClick },
     });
 
-    const toast = toastQueue[toastQueue.length - 1];
+    const toast = toastQueue[toastQueue.length - 1]!;
     expect(toast.action?.label).toBe("Reload");
 
     toast.action?.onClick();
@@ -22,7 +22,7 @@ describe("toast action passthrough", () => {
 
   it("leaves action undefined for a plain string toast", () => {
     showToast("hello");
-    const toast = toastQueue[toastQueue.length - 1];
+    const toast = toastQueue[toastQueue.length - 1]!;
     expect(toast.action).toBeUndefined();
   });
 });
