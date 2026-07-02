@@ -380,6 +380,19 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
+      // CHOREO SHEETS (Choreo module — printable sheet rosters)
+      // -------------------------------------------------------------------------
+      // Lightweight per-user docs: ordered sequence ids + layout + name. Written
+      // by ChoreoSheetRepository (users/{uid}/choreoSheets). Private to the owner,
+      // same pattern as handPaths/soloProps.
+      match /choreoSheets/{sheetId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId) || isAdmin();
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
       // TIKA CONVERSATIONS (AI Learning Assistant)
       // -------------------------------------------------------------------------
       match /tikaConversations/{conversationId} {
