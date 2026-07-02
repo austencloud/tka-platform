@@ -134,8 +134,16 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 	// --- Reactive state ---
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
+	// A persisted source the config no longer offers (e.g. the gallery dropped
+	// its toggle) would strand the user in a scope they can't leave — sanitize
+	// back to the configured initial source.
+	const allowedSources = config.sources ?? ["community", "my-library"];
+	const restoredSource =
+		persisted?.source && allowedSources.includes(persisted.source)
+			? persisted.source
+			: undefined;
 	let source = $state<SequenceSource>(
-		persisted?.source ?? config.initialSource ?? "community"
+		restoredSource ?? config.initialSource ?? "community"
 	);
 	let allSequences = $state<SequenceData[]>([]);
 	let sectionsReady = $state(false);

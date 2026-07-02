@@ -21,6 +21,36 @@ import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-d
 import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
 import { TnDMode } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
+// ---------------------------------------------------------------------------
+// Collection membership
+// ---------------------------------------------------------------------------
+// COLLECTION filters need a collection's member ids — feature data this pure
+// module must not import. collections-state registers a resolver at startup;
+// reading it inside the engine's $derived pipeline makes membership changes
+// reactive for free. No resolver / unknown id → empty result (a stale
+// persisted filter surfaces as a dismissible zero-result chip, not as
+// silently unfiltered data).
+type CollectionMembershipResolver = (
+  collectionId: string
+) => ReadonlySet<string> | undefined;
+
+let collectionMembershipResolver: CollectionMembershipResolver | null = null;
+
+export function setCollectionMembershipResolver(
+  resolver: CollectionMembershipResolver
+): void {
+  collectionMembershipResolver = resolver;
+}
+
+function filterByCollection(
+  sequences: SequenceData[],
+  filterValue: BrowseFilterValue
+): SequenceData[] {
+  const memberIds = collectionMembershipResolver?.(String(filterValue));
+  if (!memberIds) return [];
+  return sequences.filter((seq) => memberIds.has(seq.id));
+}
+
 // Constants
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -65,6 +95,8 @@ export function applyFilter(
       return filterByLOOPType(sequences, filterValue);
     case BrowseFilterType.TND_FAMILY:
       return filterByTnDFamily(sequences, filterValue);
+    case BrowseFilterType.COLLECTION:
+      return filterByCollection(sequences, filterValue);
     default:
       return sequences;
   }

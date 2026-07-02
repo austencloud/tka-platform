@@ -76,7 +76,6 @@
     {engine}
     layout="fullpage"
     onSelect={(sequence, variations) => onSequenceAction("view-detail", sequence, variations)}
-    showSourceToggle
     onBack={onBackToStart}
     backLabel="Start here"
     hideToolbarSearch

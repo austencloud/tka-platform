@@ -29,4 +29,9 @@ export enum BrowseFilterType {
    * derived per step from arc geometry — a sequence matches when ANY of its
    * steps classifies into the family. Stackable (composite keys) like LOOP_TYPE. */
   TND_FAMILY = "tnd_family",
+  /** Filter to members of one of the user's library collections. Value = the
+   * collection id; membership resolves through the resolver registered by
+   * collections-state (browse-filter stays pure of feature imports).
+   * One-per-type: picking a collection replaces the previous pick. */
+  COLLECTION = "collection",
 }

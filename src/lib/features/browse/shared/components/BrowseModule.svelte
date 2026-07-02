@@ -46,7 +46,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     setGalleryViewState,
   } from "../services/gallery-view-persister";
 
-  // Note: Library tab removed - now integrated into Sequences via scope toggle (Community / My Library)
+  // "collections" is the Library tab (label renamed 2026-07-02; id frozen —
+  // routes and persisted nav state reference it).
   type BrowseModuleType = "gallery" | "collections" | "creators" | "hall-of-shame";
 
   // Tab order for determining slide direction (left-to-right in bottom nav)
@@ -72,8 +73,10 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     sections: true,
     // No defaultSectionGroupBy: the left section index follows the active sort
     // (A–Z → letters, Level → difficulty, Date → dates, Length → lengths).
-    allowSourceToggle: true,
-    sources: ["community", "my-library"],
+    // Gallery is pure discovery — your saved work lives in Library
+    // (Collections module: the All shelf). A previously persisted
+    // "my-library" source sanitizes back to community in the engine.
+    sources: ["community"],
     // The canonical T&D alphabet joins the community pool as normal sequences:
     // one card per word ("AAAA" displays simplified as "A"), 49 turn combos as
     // its variations in the standard picker. Same citizenship as saved work.
@@ -557,6 +560,21 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
                 engine.clearUserFilters();
                 engine.setSearch(q);
                 galleryView = "browse-all";
+              }}
+              onOpenCollection={(ownerId, collectionId, name, ownerName) => {
+                // Discovery hand-off: a community collection opens in the
+                // Library tab's detail view (the location effect flips the
+                // tab). Same contextId encoding MyCollectionsPanel uses.
+                browseNavigationState.navigateTo({
+                  tab: "collections",
+                  view: "detail",
+                  contextId: `${ownerId}:${collectionId}`,
+                  filter: {
+                    type: "collectionName",
+                    value: name,
+                    displayName: ownerName,
+                  },
+                });
               }}
             />
           {:else}

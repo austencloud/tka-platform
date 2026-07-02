@@ -45,6 +45,7 @@
     getDrillSection,
     setDrillSection,
   } from "$lib/features/browse/shared/services/gallery-view-persister";
+  import { communityCollectionsState } from "$lib/features/browse/collections/state/community-collections-state.svelte";
 
   interface Props {
     pool?: readonly SequenceData[];
@@ -78,6 +79,16 @@
       color: string,
       nowActive: boolean,
     ) => void;
+    /** Community-collections discovery: open a collection's detail view.
+     * NAVIGATES AWAY (it's not an engine filter), so only the page variant
+     * wires it — a filter sheet must never navigate. The category renders
+     * only when this is provided. */
+    onOpenCollection?: (
+      ownerId: string,
+      collectionId: string,
+      name: string,
+      ownerName: string,
+    ) => void;
     /** "page" = the gallery front door (with search). "sheet" = the grid's
      * filter bottom sheet — same filter categories, no search. */
     variant?: "page" | "sheet";
@@ -92,6 +103,7 @@
     onToggleLoop,
     activeFamilyValues,
     onToggleFamily,
+    onOpenCollection,
     variant = "page",
   }: Props = $props();
 
@@ -104,7 +116,8 @@
     | "gridmode"
     | "author"
     | "loop"
-    | "family";
+    | "family"
+    | "collections";
   const SECTIONS: readonly Section[] = [
     "chooser",
     "level",
@@ -115,6 +128,7 @@
     "author",
     "loop",
     "family",
+    "collections",
   ];
   /** Page variant restores its sub-screen across reload/HMR (sessionStorage);
    * a stale/unknown stored value degrades to the chooser. Sheet always opens
@@ -129,6 +143,17 @@
   let section = $state<Section>(restoreSection());
   $effect(() => {
     if (variant === "page") setDrillSection(section);
+  });
+  // A host without onOpenCollection can't act on the collections screen —
+  // a stale restore of it degrades to the chooser.
+  if (section === "collections" && !onOpenCollection) {
+    section = "chooser";
+  }
+  // Community collections load lazily, only when the screen is opened.
+  $effect(() => {
+    if (section === "collections" && onOpenCollection) {
+      void communityCollectionsState.ensureLoaded();
+    }
   });
   let query = $state("");
 
@@ -575,6 +600,20 @@
                   </span>
                 </button>
               {/if}
+              <!-- Discovery, not a filter: tapping a collection navigates to
+                   its detail view — so only hosts that wire onOpenCollection
+                   (the page front door) show it. -->
+              {#if onOpenCollection}
+                <button class="mini-tile" type="button" onclick={() => (section = "collections")}>
+                  <span class="mini-art" aria-hidden="true">
+                    <i class="fas fa-folder"></i>
+                  </span>
+                  <span class="mini-main">
+                    <span class="mini-title">Collections</span>
+                    <span class="mini-sub">Curated by the community</span>
+                  </span>
+                </button>
+              {/if}
             </div>
           {/if}
         </div>
@@ -809,6 +848,50 @@
             {/each}
           </div>
         </div>
+      {:else if section === "collections"}
+        <div class="drill-screen">
+          {@render valueHead("Pick a collection", "Sequences curated by other people.")}
+          {#if communityCollectionsState.loading}
+            <div class="value-list" aria-hidden="true">
+              {#each Array(4) as _}
+                <span class="collection-skeleton"></span>
+              {/each}
+            </div>
+          {:else if communityCollectionsState.error}
+            <p class="collections-empty">{communityCollectionsState.error}</p>
+          {:else if communityCollectionsState.items.length === 0}
+            <p class="collections-empty">
+              No public collections yet. Make one of yours public from its card
+              menu in Library and it shows up here for everyone.
+            </p>
+          {:else}
+            <div class="value-list">
+              {#each communityCollectionsState.items as item (item.ownerId + item.collection.id)}
+                <button
+                  class="length-row tall"
+                  style:--row-color={item.collection.color ?? "#c084fc"}
+                  type="button"
+                  onclick={() =>
+                    onOpenCollection?.(
+                      item.ownerId,
+                      item.collection.id,
+                      item.collection.name,
+                      item.ownerName,
+                    )}
+                >
+                  <span class="value-folder" aria-hidden="true">
+                    <i class={`fas ${item.collection.icon ?? "fa-folder"}`}></i>
+                  </span>
+                  <span class="value-main">
+                    <span class="value-label">{item.collection.name}</span>
+                    <span class="value-desc">by {item.ownerName}</span>
+                  </span>
+                  <span class="value-count">{item.collection.sequenceCount}</span>
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
       {/if}
     </Crossfade>
   </div>
@@ -866,6 +949,48 @@
     margin: 0 auto;
     width: 100%;
   }
+  /* Collection rows: folder glyph in the same 44px plate the value images use. */
+  .value-folder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--row-color, #c084fc) 20%, transparent);
+    color: var(--row-color, #c084fc);
+    font-size: 17px;
+  }
+  .collection-skeleton {
+    min-height: 64px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--theme-text-muted, #9aa6b8) 12%, transparent);
+    animation: drill-skeleton-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes drill-skeleton-pulse {
+    0%,
+    100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.85;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .collection-skeleton {
+      animation: none;
+    }
+  }
+  .collections-empty {
+    margin: 0 auto;
+    max-width: 380px;
+    text-align: center;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--theme-text-muted, #9aa6b8);
+  }
+
   /* Each screen fills its (absolute, stage-sized) crossfade layer and owns its
      own scroll; short screens center, tall ones scroll from the top. */
   .drill-screen {
