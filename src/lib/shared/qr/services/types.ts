@@ -167,6 +167,19 @@ export interface CreateShortCodeResult {
 }
 
 /**
+ * Result of resolving a scanned card for FILING into a collection (not
+ * viewing). See ShortCodeManager.resolveForImport.
+ */
+export interface ImportResolution {
+  /** Fully hydrated sequence. When docBacked, its id is a Firestore sequence
+   *  doc id a collection can reference directly. */
+  sequence: import("$lib/shared/foundation/domain/models/sequence-data").SequenceData;
+  /** True when a referenceable doc backs this card (own or public). False =
+   *  self-contained data only; the caller must import a copy before filing. */
+  docBacked: boolean;
+}
+
+/**
  * Options for short code URL generation
  */
 export interface ShortCodeURLOptions {

@@ -35,7 +35,7 @@ import {
   decodeSequenceFromQR,
 } from "$lib/shared/navigation/services/sequence-encoder";
 import type { PublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/services/public-sequence-hash-matcher";
-import type { ShortCodeRecord, CreateShortCodeResult, ShortCodeURLOptions } from "./types";
+import type { ShortCodeRecord, CreateShortCodeResult, ShortCodeURLOptions, ImportResolution } from "./types";
 import { ShortCodeCache, SHORT_CODE_CACHE_SCHEMA } from "./short-code-cache";
 
 const SHORTCODES_COLLECTION = "shortcodes";
@@ -521,6 +521,99 @@ export class ShortCodeManager {
     }
 
     return this.hydrateFromRecord(code, data);
+  }
+
+  /**
+   * Resolve a scanned card for FILING into a collection, not viewing.
+   *
+   * resolveShortCode prefers the self-contained encoded blob (fastest to
+   * show) and returns id = code — but a collection member must be a
+   * Firestore sequence doc the member-loader can find later (own or
+   * public). So this resolver runs identity-first: public index, then
+   * sequenceId-as-word, then direct doc load; the blob and embedded data
+   * come last and are flagged docBacked: false so the caller knows to
+   * import a copy before filing.
+   */
+  async resolveForImport(
+    code: string,
+    currentUserId: string | null
+  ): Promise<ImportResolution | null> {
+    // Self-contained payload: nothing to reference, always a copy.
+    if (isInlineEncoded(code)) {
+      try {
+        return { sequence: await decodeSequenceFromQR(code), docBacked: false };
+      } catch (error) {
+        console.error("[ShortCode] Failed to decode inline sequence:", error);
+        return null;
+      }
+    }
+
+    let data: ShortCodeData | null = null;
+    try {
+      data = await this.resolveFromFirestore(code);
+    } catch (error) {
+      console.warn(`[ShortCode] Firebase unavailable for "${code}", trying static fallback:`, error);
+    }
+    if (!data) data = await this.resolveFromStaticSnapshot(code);
+    if (!data) return null;
+
+    // Strategy: public index by stored word + sequenceId.
+    try {
+      const bySeq = await this.browseLoader.loadFullSequenceData(data.sequence, data.sequenceId);
+      if (bySeq) return { sequence: bySeq, docBacked: true };
+    } catch {
+      // fall through
+    }
+
+    // Strategy: sequenceId as the (simplified) word.
+    if (data.sequenceId && data.sequenceId !== data.sequence) {
+      try {
+        const byId = await this.browseLoader.loadFullSequenceData(data.sequenceId, data.sequenceId);
+        if (byId) return { sequence: byId, docBacked: true };
+      } catch {
+        // fall through
+      }
+    }
+
+    // Strategy: direct doc load. Referenceable only when the collection
+    // member-loader will find it later — the user's own doc, or a public
+    // one. A foreign private doc would file as an invisible member, so it
+    // feeds the copy path instead (we still use its full data).
+    if (data.ownerId && data.sequenceId) {
+      try {
+        const firestore = await this.ensureFirestore();
+        const directSnap = await getDoc(
+          doc(firestore, `users/${data.ownerId}/sequences/${data.sequenceId}`)
+        );
+        if (directSnap.exists()) {
+          const seqData = directSnap.data();
+          const referenceable =
+            data.ownerId === currentUserId || seqData["visibility"] === "public";
+          return {
+            sequence: { ...seqData, id: directSnap.id, ownerId: data.ownerId } as SequenceData,
+            docBacked: referenceable,
+          };
+        }
+      } catch (error) {
+        console.error(`[ShortCode] Direct load failed for "${code}":`, error);
+      }
+    }
+
+    // Self-contained fallbacks — data exists but no referenceable doc.
+    if (data.encoded) {
+      try {
+        const decoded = await decodeSequenceFromQR(data.encoded);
+        return { sequence: { ...decoded, id: code } as SequenceData, docBacked: false };
+      } catch {
+        // fall through
+      }
+    }
+    if (data.sequenceData) {
+      return { sequence: createSequenceData({ id: code, ...data.sequenceData }), docBacked: false };
+    }
+
+    console.error(`[ShortCode] ✗ resolveForImport: all strategies failed for "${code}"`);
+    return null;
   }
 
   /**
