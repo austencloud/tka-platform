@@ -4,6 +4,7 @@ import type { SoloPropData } from "../domain/models/solo-prop-data";
 import type { SoloPropStepData } from "../domain/models/solo-prop-step-data";
 import type { StepPairingData } from "../domain/models/step-pairing-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   Orientation,
@@ -127,9 +128,11 @@ function extractSoloProp(
     const steps: SoloPropStepData[] = sequence.steps.map((step) => {
       const motion = step.motions?.[color];
 
-      if (!motion) {
-        // A step missing one colour is unusual but possible in blank beats.
-        // Produce a static placeholder so the factory doesn't throw.
+      if (!isVisibleMotion(motion)) {
+        // A hand that is "not really there" (blank beat / assembly gap) is an
+        // invisible placeholder under the both-required Step shape. Decompose
+        // it exactly like the old absent hand: a static placeholder step, so
+        // soloProp content hashes stay byte-identical across the migration.
         return makePlaceholderStep(startLocation, startOrientation, step.duration);
       }
 

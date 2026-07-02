@@ -21,7 +21,7 @@ function spin(motion: { motionType?: string; prefloatMotionType?: string } | und
 export function classifyRotationStyle(seq: SequenceData): RotationStyle {
   for (const step of seq.steps) {
     if ((step as { isBlank?: boolean }).isBlank) continue;
-    const motions = step.motions as Partial<Record<string, { motionType?: string; prefloatMotionType?: string }>>;
+    const motions = step.motions as unknown as Partial<Record<string, { motionType?: string; prefloatMotionType?: string }>>;
     const b = spin(motions[MotionColor.BLUE]);
     const r = spin(motions[MotionColor.RED]);
     if (!b || !r) continue;

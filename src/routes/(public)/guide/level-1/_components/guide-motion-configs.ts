@@ -265,6 +265,9 @@ export function buildGuideMotionSequence(config: GuideMotionConfig): SequenceDat
     blueReversal: false,
     redReversal: false,
     isBlank: false,
+    letter: null,
+    startPosition: null,
+    endPosition: null,
     gridMode: GridMode.DIAMOND,
     motions: {
       blue: makeMotion(MotionColor.BLUE, bStart, bEnd, bMotion),

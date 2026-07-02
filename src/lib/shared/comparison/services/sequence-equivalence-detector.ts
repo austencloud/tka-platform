@@ -73,6 +73,7 @@ import type { SpatialTransformDetector } from "./spatial-transform-detector";
 import type { WordCyclicEquivalenceDetector } from "$lib/shared/foundation/utils/word-cyclic-equivalence-detector";
 import type { MotionSignature, StepSignature } from "../domain/models/signatures";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 export class SequenceEquivalenceDetector {
   constructor(
@@ -236,7 +237,13 @@ export class SequenceEquivalenceDetector {
       const blueB = stepB.motions[MotionColor.BLUE];
       const redB = stepB.motions[MotionColor.RED];
 
-      if (!blueA || !redA || !blueB || !redB) {
+      // Invisible placeholder = hand not really there (both-required Step shape).
+      if (
+        !isVisibleMotion(blueA) ||
+        !isVisibleMotion(redA) ||
+        !isVisibleMotion(blueB) ||
+        !isVisibleMotion(redB)
+      ) {
         return false;
       }
 

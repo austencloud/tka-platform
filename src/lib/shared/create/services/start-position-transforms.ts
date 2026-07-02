@@ -14,6 +14,7 @@ import type { StartPositionData } from "$lib/shared/foundation/domain/models/sta
 import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
@@ -56,7 +57,8 @@ function deriveGridPositionFromMotions(
   const blueMotion = startPos.motions[MotionColor.BLUE];
   const redMotion = startPos.motions[MotionColor.RED];
 
-  if (blueMotion && redMotion) {
+  // Invisible placeholder = hand not really there (both-required Step shape).
+  if (isVisibleMotion(blueMotion) && isVisibleMotion(redMotion)) {
     return getGridPositionFromLocations(
       blueMotion.startLocation,
       redMotion.startLocation
@@ -187,7 +189,7 @@ export function rotateStartPosition(
   const blueMotion = rotatedMotions[MotionColor.BLUE];
   const redMotion = rotatedMotions[MotionColor.RED];
 
-  if (blueMotion && redMotion) {
+  if (isVisibleMotion(blueMotion) && isVisibleMotion(redMotion)) {
     rotatedGridPosition = getGridPositionFromLocations(
       blueMotion.startLocation,
       redMotion.startLocation

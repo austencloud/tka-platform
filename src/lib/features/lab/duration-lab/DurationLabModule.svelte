@@ -20,6 +20,7 @@
   import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 
   // State
   let stepCount = $state(8);
@@ -60,16 +61,17 @@
         }
       }
 
-      steps.push({
-        id: `lab-step-${i}`,
-        letter: letter as import("$lib/shared/foundation/domain/models/letter").Letter,
-        stepNumber: i + 1,
-        duration,
-        blueReversal: false,
-        redReversal: false,
-        isBlank: false,
-        motions: {},
-      });
+      // Factory fills both hands with invisible placeholders (both-required
+      // canonical Step shape) — the duration lab only reads letters/durations.
+      steps.push(
+        createStepData({
+          id: `lab-step-${i}`,
+          letter: letter as import("$lib/shared/foundation/domain/models/letter").Letter,
+          stepNumber: i + 1,
+          duration,
+          isBlank: false,
+        })
+      );
     }
 
     return createSequenceData({

@@ -20,6 +20,7 @@ import type { SVGPathData } from "../domain/mandala-types";
 import type { PreparedMandalaPath, PreparedMandalaPaths } from "./types";
 import type { StepLike } from "./types";
 import { calculate as calculateMandalaGeometry } from "./mandala-geometry-calculator";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 // ─── Path length measurement ───────────────────────────────────────────────
 
@@ -100,10 +101,11 @@ export class MandalaPathPreparer {
 			return this.cachedResult;
 		}
 
-		// Count motion steps (steps that have at least one hand with motion data).
-		// This matches the filtering MandalaGeometryCalculator does internally.
+		// Count motion steps (steps that have at least one VISIBLE hand with
+		// motion data — invisible placeholders don't count). This matches the
+		// filtering MandalaGeometryCalculator does internally.
 		const stepsWithMotions = steps.filter(
-			(s) => s.motions?.blue || s.motions?.red,
+			(s) => isVisibleMotion(s.motions?.blue) || isVisibleMotion(s.motions?.red),
 		);
 
 		if (stepsWithMotions.length === 0) {

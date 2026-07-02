@@ -17,6 +17,7 @@
  * is derived from these core fields at creation time via createMotionData defaults.
  */
 
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
@@ -209,7 +210,8 @@ function correctColorAssignment(
   if (!firstStep) return;
 
   const blueMotion = firstStep.motions?.[MotionColor.BLUE];
-  if (!blueMotion?.startLocation) return;
+  // Invisible placeholder = hand not really there (both-required Step shape).
+  if (!isVisibleMotion(blueMotion) || !blueMotion.startLocation) return;
 
   const actualBlueStart = blueMotion.startLocation.toLowerCase();
   const traceBlueStart = trace.blue[0];

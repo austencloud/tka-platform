@@ -6,7 +6,10 @@
  */
 
 import type { ArrowPlacementData } from "../../positioning/placement/domain/arrow-placement-data";
-import type { MotionData } from "../../../shared/domain/models/motion-data";
+import {
+  isVisibleMotion,
+  type MotionData,
+} from "../../../shared/domain/models/motion-data";
 import type { PictographData } from "../../../shared/domain/models/pictograph-data";
 import type { GridMode } from "../../../grid/domain/enums/grid-enums";
 import { getInitialPosition, getSceneCenter } from "./arrow-grid-coordinator";
@@ -129,7 +132,7 @@ export async function calculateAllArrowPoints(
       const motionData =
         pictographData.motions[color as keyof typeof pictographData.motions];
       const arrowData = motionData?.arrowPlacementData;
-      if (arrowData && motionData) {
+      if (arrowData && isVisibleMotion(motionData)) {
         const calculatedLocation = arrowLocationCalculator.calculateLocation(
           motionData,
           updatedPictograph

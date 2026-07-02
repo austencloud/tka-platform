@@ -54,6 +54,7 @@ interface MotionLike {
   skewDirection?: string;
   skew?: string;
   plane?: string;
+  isVisible?: boolean;
 }
 
 interface StepLike {
@@ -99,7 +100,8 @@ function scanStep(step: StepLike, note: (level: number, feature: string) => void
   const motions = step.motions ?? {};
   for (const color of Object.keys(motions)) {
     const motion = motions[color];
-    if (motion) scanMotion(motion, color, note);
+    // invisible placeholder = hand not really there (both-required Step shape)
+    if (motion && motion.isVisible !== false) scanMotion(motion, color, note);
   }
 }
 

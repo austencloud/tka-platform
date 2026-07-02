@@ -19,6 +19,7 @@ import { deriveGridMode as _deriveGridMode } from "$lib/shared/pictograph/grid/s
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   createMotionData,
+  isVisibleMotion,
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
@@ -222,7 +223,9 @@ async function recalculateLetterAsync(
   const blueMotion = stepToCheck.motions?.[MotionColor.BLUE];
   const redMotion = stepToCheck.motions?.[MotionColor.RED];
 
-  if (!blueMotion || !redMotion) return;
+  // Invisible placeholder = hand not really there (both-required Step shape):
+  // a dataframe lookup against a placeholder would rewrite the letter/word.
+  if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) return;
 
   try {
     const gridMode = _deriveGridMode(blueMotion, redMotion);
@@ -296,7 +299,7 @@ export async function recalculateLetterForBeat(
   const blueMotion = stepData.motions?.[MotionColor.BLUE];
   const redMotion = stepData.motions?.[MotionColor.RED];
 
-  if (!blueMotion || !redMotion) {
+  if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) {
     return;
   }
 

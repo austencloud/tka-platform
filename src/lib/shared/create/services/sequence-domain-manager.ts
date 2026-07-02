@@ -8,6 +8,7 @@
  */
 
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import type {
   ValidationErrorInfo,
   ValidationResult,
@@ -262,19 +263,9 @@ function simplifyRepeatedWord(word: string): string {
 }
 
 function createEmptyBeat(stepNumber: number): StepData {
-  return {
-    id: crypto.randomUUID(),
-    stepNumber: stepNumber,
-    duration: 1.0,
-    blueReversal: false,
-    redReversal: false,
-    isBlank: true,
-    // PictographData properties (since StepData extends PictographData)
-    letter: null,
-    startPosition: null,
-    endPosition: null,
-    motions: {},
-  };
+  // Blank beat: the factory fills both hands with invisible static
+  // placeholders (both-required canonical Step shape).
+  return createStepData({ stepNumber, isBlank: true });
 }
 
 function generateId(): string {

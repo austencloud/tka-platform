@@ -14,6 +14,7 @@
 <script lang="ts">
 
 import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
+  import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -95,16 +96,15 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     const currentSeq = sequence;
     const stepNum = selectedStepNumber;
 
-    // Step 0 = start position
+    // Step 0 = start position. The factory fills any missing hand with an
+    // invisible placeholder (both-required canonical Step shape).
     if (stepNum === 0 && startPos) {
-      return {
+      return createStepData({
         ...startPos,
         stepNumber: 0,
         duration: 1,
-        blueReversal: false,
-        redReversal: false,
         isBlank: false,
-      };
+      });
     }
 
     // Regular steps: stepNumber 1 = index 0, stepNumber 2 = index 1, etc.

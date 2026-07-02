@@ -6,7 +6,10 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  isVisibleMotion,
+  type MotionData,
+} from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { MotionConfig3D } from "../domain/models/motion-data-3d";
 import { Plane } from "@austencloud/scene-3d";
 import {
@@ -65,22 +68,20 @@ export function stepDataToConfigs(
 
   return {
     stepNumber,
-    blue:
-      blueMotion && blueMotion.isVisible !== false
-        ? {
-            ...motionDataToConfig3D(blueMotion, bluePlane),
-            ...(modeConfig ? { plane: bluePlane } : {}),
-            rotationPlane: rotPlane,
-          }
-        : null,
-    red:
-      redMotion && redMotion.isVisible !== false
-        ? {
-            ...motionDataToConfig3D(redMotion, redPlane),
-            ...(modeConfig ? { plane: redPlane } : {}),
-            rotationPlane: rotPlane,
-          }
-        : null,
+    blue: isVisibleMotion(blueMotion)
+      ? {
+          ...motionDataToConfig3D(blueMotion, bluePlane),
+          ...(modeConfig ? { plane: bluePlane } : {}),
+          rotationPlane: rotPlane,
+        }
+      : null,
+    red: isVisibleMotion(redMotion)
+      ? {
+          ...motionDataToConfig3D(redMotion, redPlane),
+          ...(modeConfig ? { plane: redPlane } : {}),
+          rotationPlane: rotPlane,
+        }
+      : null,
   };
 }
 
@@ -98,7 +99,7 @@ function deriveStartConfigFromStep(
 
   return {
     stepNumber: 0,
-    blue: blueMotion
+    blue: isVisibleMotion(blueMotion)
       ? {
           plane: bluePlane,
           startLocation: blueMotion.startLocation,
@@ -110,7 +111,7 @@ function deriveStartConfigFromStep(
           endOrientation: blueMotion.startOrientation,
         }
       : null,
-    red: redMotion
+    red: isVisibleMotion(redMotion)
       ? {
           plane: redPlane,
           startLocation: redMotion.startLocation,

@@ -26,8 +26,8 @@ function applyToBeat(beat: StepData, propType: PropType): StepData {
   return {
     ...beat,
     motions: {
-      blue: beat.motions.blue ? { ...beat.motions.blue, propType } : undefined,
-      red: beat.motions.red ? { ...beat.motions.red, propType } : undefined,
+      blue: { ...beat.motions.blue, propType },
+      red: { ...beat.motions.red, propType },
     },
   };
 }

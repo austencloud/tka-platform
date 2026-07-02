@@ -7,6 +7,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { FilteringError } from "../domain/errors/generation-errors";
 import { getLetterType } from "$lib/shared/foundation/domain/models/letter";
 import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
@@ -59,7 +60,8 @@ export function filterByRotation(
     const blueMotion = option.motions.blue;
     const redMotion = option.motions.red;
 
-    if (!blueMotion || !redMotion) return false;
+    // Invisible placeholder = hand not really there (both-required Step shape).
+    if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) return false;
 
     const blueMotionRotDir = blueMotion.rotationDirection;
     const redMotionRotDir = redMotion.rotationDirection;
@@ -159,7 +161,7 @@ export function filterByPropType(
     const blueMotion = option.motions.blue;
     const redMotion = option.motions.red;
 
-    if (!blueMotion || !redMotion) return false;
+    if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) return false;
 
     return (
       blueMotion.propType === propType && redMotion.propType === propType

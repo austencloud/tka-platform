@@ -15,6 +15,7 @@
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { createStartPositionData } from "$lib/shared/foundation/domain/factories/create-start-position-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { RECIPE_PREFIX, TAG_TO_LOOP_TYPE } from "./types";
 import type { ICompositionalDecoder } from "./types";
 import {
@@ -88,18 +89,14 @@ export class CompositionalDecoder implements ICompositionalDecoder {
     const startPos =
       seedSequence.startPosition ?? seedSequence.startingPosition;
     if (startPos) {
-      const startStep: StepData = {
+      const startStep: StepData = createStepData({
         stepNumber: 0,
-        motions: startPos.motions ?? { blue: undefined, red: undefined },
+        motions: startPos.motions,
         duration: 1,
-        blueReversal: false,
-        redReversal: false,
         isBlank: true,
         id: startPos.id ?? crypto.randomUUID(),
         letter: startPos.letter ?? null,
-        startPosition: null,
-        endPosition: null,
-      };
+      });
       enrichStepsWithGridPositions([startStep]);
       inputSteps.unshift(startStep);
     }

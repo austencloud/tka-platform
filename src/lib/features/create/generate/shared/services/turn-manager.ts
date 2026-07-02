@@ -3,11 +3,19 @@
  */
 
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropContinuity } from "../domain/models/generate-models";
+
+// This module mutates generator-owned draft beats in place (legacy port
+// contract: void functions, callers rely on mutation). StepMotions is
+// readonly for everyone else; the drafts here are freshly built copies.
+type MutableStepMotions = { blue: MotionData; red: MotionData };
+const mutableMotions = (beat: StepData): MutableStepMotions =>
+  beat.motions as MutableStepMotions;
 
 const ROTATION_DIRS = {
   CLOCKWISE: RotationDirection.CLOCKWISE,
@@ -68,7 +76,7 @@ function setTurnForColor(
       motion.motionType === MotionType.PRO ||
       motion.motionType === MotionType.ANTI
     ) {
-      beat.motions[color] = {
+      mutableMotions(beat)[color] = {
         ...motion,
         turns: "fl",
         prefloatMotionType: motion.motionType,
@@ -77,13 +85,13 @@ function setTurnForColor(
         rotationDirection: RotationDirection.NO_ROTATION,
       };
     } else {
-      beat.motions[color] = {
+      mutableMotions(beat)[color] = {
         ...motion,
         turns: 0,
       };
     }
   } else {
-    beat.motions[color] = {
+    mutableMotions(beat)[color] = {
       ...motion,
       turns: turn,
     };
@@ -124,7 +132,7 @@ function updateRotationForColor(
     newRotationDirection = getRandomRotationDirection();
   }
 
-  beat.motions[color] = {
+  mutableMotions(beat)[color] = {
     ...motion,
     rotationDirection: newRotationDirection,
   };

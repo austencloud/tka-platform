@@ -7,6 +7,7 @@
 
 import { extractSequenceMetadata } from "$lib/shared/pictograph/shared/utils/png-metadata-extractor";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -102,16 +103,14 @@ export function convertPngMetadata(
       letter: step.letter as Letter, // Guaranteed valid string
     });
 
-    // Return StepData that extends PictographData
-    return {
-      ...pictographData, // Spread PictographData properties
+    // Route through the factory: fills any missing hand with an invisible
+    // placeholder so the both-required canonical Step shape holds.
+    return createStepData({
+      ...pictographData,
       id: `${stepNumber}-${step.letter}`,
       stepNumber, // Derived from array index or metadata
       duration: 1,
-      blueReversal: false,
-      redReversal: false,
-      isBlank: false,
-    };
+    });
   });
 
   // Create sequence data with validated structure - final validation

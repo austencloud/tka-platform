@@ -11,6 +11,7 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import { withEffectivePropTypes } from "../services/with-effective-prop-types";
@@ -44,19 +45,16 @@
   function handleStartClick(): void {
     const start = sequence.startPosition;
     if (!start) return;
-    // StartPositionData and StepData both extend PictographData; drop the
-    // start-position-only discriminator and add the beat-context fields so the
-    // result structurally satisfies StepData without an `unknown` bridge cast.
+    // Drop the start-position-only discriminator and route through the
+    // factory: it fills defaults + any missing hand with an invisible
+    // placeholder (both-required canonical Step shape).
     const { isStartPosition: _isStart, ...pictograph } = start;
-    const step: StepData = {
+    const step: StepData = createStepData({
       ...pictograph,
-      isStep: true,
       stepNumber: 0,
       duration: 1,
-      blueReversal: false,
-      redReversal: false,
       isBlank: false,
-    };
+    });
     emit(step);
   }
 </script>

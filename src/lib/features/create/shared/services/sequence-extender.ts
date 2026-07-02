@@ -6,6 +6,7 @@
  */
 
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { GridMode, type GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { LOOPOption } from "./loop-validator";
@@ -363,7 +364,8 @@ export class SequenceExtender {
     const blueMotion = step.motions?.blue;
     const redMotion = step.motions?.red;
 
-    if (!blueMotion || !redMotion) {
+    // Invisible placeholder = hand not really there (both-required Step shape).
+    if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) {
       return null;
     }
 

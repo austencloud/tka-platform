@@ -1,5 +1,5 @@
 import type { PictographData } from "../domain/models/pictograph-data";
-import type { MotionData } from "../domain/models/motion-data";
+import { isVisibleMotion, type MotionData } from "../domain/models/motion-data";
 import type {
   PreparedPictographData,
   PreparedRenderData,
@@ -164,6 +164,10 @@ export class PictographPreparer {
       options?.showBlueMotion === false ? "hideBlue" : "",
       options?.showRedMotion === false ? "hideRed" : "",
       pictograph.betaSwapped ? "bs" : "",
+      // Visibility is render-relevant: an invisible placeholder hand must not
+      // share a cache entry with a visible static twin.
+      blue?.isVisible === false ? "bInvis" : "",
+      red?.isVisible === false ? "rInvis" : "",
     ];
 
     return parts.join("|");
@@ -178,7 +182,7 @@ export class PictographPreparer {
       return raw;
     }
 
-    if (!pictograph.motions?.blue || !pictograph.motions?.red) {
+    if (!isVisibleMotion(pictograph.motions?.blue) || !isVisibleMotion(pictograph.motions?.red)) {
       return GridMode.DIAMOND;
     }
     try {
@@ -264,7 +268,8 @@ export class PictographPreparer {
     options?: PrepareOptions
   ): [string, MotionData][] {
     return Object.entries(pictograph.motions || {})
-      .filter((entry): entry is [string, MotionData] => entry[1] !== undefined)
+      // invisible placeholder = hand not really there (both-required Step shape)
+      .filter((entry): entry is [string, MotionData] => isVisibleMotion(entry[1]))
       .map(([color, motion]) => {
         const explicitPropType =
           color === "blue" ? options?.bluePropType : options?.redPropType;

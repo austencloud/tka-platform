@@ -6,6 +6,7 @@
  */
 
 import type { MotionData } from "../../../../shared/domain/models/motion-data";
+import { isVisibleMotion } from "../../../../shared/domain/models/motion-data";
 import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 import {
   getBlueState,
@@ -44,7 +45,10 @@ export class TurnsTupleGenerator {
       const blueMotion = pictographData.motions.blue;
       const redMotion = pictographData.motions.red;
 
-      if (!blueMotion || !redMotion) {
+      // Invisible placeholder = hand not really there (both-required Step
+      // shape): keep the "(0, 0)" fallback the old absent-hand path produced
+      // (the tuple keys glyph caches + special-placement lookups).
+      if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) {
         return "(0, 0)";
       }
 

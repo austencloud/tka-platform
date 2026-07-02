@@ -8,6 +8,7 @@
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/models/motion-endpoints";
 import type { InterpolationResult } from "./animation-state-manager";
 import { lerpAngle, normalizeAnglePositive } from "./angle-calculator";
@@ -50,8 +51,15 @@ export function interpolatePropAngles(
   vm?: AnimationVisibilityStateManager
 ): InterpolationResult {
   // Get motion data directly from domain beat (PURE DOMAIN!)
-  const blueMotion = currentStepData.motions?.blue;
-  const redMotion = currentStepData.motions?.red;
+  // A hand that is "not really there" is an invisible placeholder under the
+  // both-required Step shape — treat it exactly like the old absent hand
+  // (solo/mandala animations and blank beats rely on this skip).
+  const blueMotion = isVisibleMotion(currentStepData.motions?.blue)
+    ? currentStepData.motions.blue
+    : undefined;
+  const redMotion = isVisibleMotion(currentStepData.motions?.red)
+    ? currentStepData.motions.red
+    : undefined;
 
   // Both hands missing = truly invalid
   if (!blueMotion && !redMotion) {
@@ -214,8 +222,13 @@ function interpolateConcaveMotion(
  */
 export function calculateInitialAngles(firstStep: StepData): InterpolationResult {
   // Get motion data directly from domain beat (PURE DOMAIN!)
-  const blueStartMotion = firstStep.motions?.blue;
-  const redStartMotion = firstStep.motions?.red;
+  // Invisible placeholders count as "not there" (see interpolatePropAngles).
+  const blueStartMotion = isVisibleMotion(firstStep.motions?.blue)
+    ? firstStep.motions.blue
+    : undefined;
+  const redStartMotion = isVisibleMotion(firstStep.motions?.red)
+    ? firstStep.motions.red
+    : undefined;
 
   // Both hands missing = truly invalid
   if (!blueStartMotion && !redStartMotion) {

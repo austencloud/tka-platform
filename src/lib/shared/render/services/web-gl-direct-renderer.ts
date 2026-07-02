@@ -17,7 +17,10 @@ import type {
 } from "./IDirectRenderer";
 import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import type { MotionData } from "../../pictograph/shared/domain/models/motion-data";
+import {
+  isVisibleMotion,
+  type MotionData,
+} from "../../pictograph/shared/domain/models/motion-data";
 import { MotionColor } from "../../pictograph/shared/domain/enums/pictograph-enums";
 import { drawPathCommands, type PathCommand } from "../utils/svg-path-parser";
 
@@ -375,14 +378,14 @@ export class WebGLDirectRenderer implements IDirectRenderer {
     const showRed = options.visibility.showRedMotion ?? true;
 
     // Draw arrows
-    if (blueMotion && showBlue) {
+    if (isVisibleMotion(blueMotion) && showBlue) {
       const arrowId = this.getArrowId(blueMotion);
       if (arrowId) {
         this.drawArrow(arrowId, size, BLUE_COLOR, blueMotion);
       }
     }
 
-    if (redMotion && showRed) {
+    if (isVisibleMotion(redMotion) && showRed) {
       const arrowId = this.getArrowId(redMotion);
       if (arrowId) {
         this.drawArrow(arrowId, size, RED_COLOR, redMotion);

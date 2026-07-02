@@ -6,6 +6,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { PreparedPictographData } from "../shared/domain/models/prepared-pictograph-data";
+  import { isVisibleMotion } from "../shared/domain/models/motion-data";
   import PictographRenderer from "../shared/components/PictographRenderer.svelte";
   import { getVisibilityStateManager } from "../shared/state/visibility-state.svelte";
   import type { GridLocation } from "../grid/domain/enums/grid-enums";
@@ -52,8 +53,8 @@
     const locations: GridLocation[] = [];
     const blue = pictograph.motions?.blue;
     const red = pictograph.motions?.red;
-    if (blue?.endLocation) locations.push(blue.endLocation as GridLocation);
-    if (red?.endLocation) locations.push(red.endLocation as GridLocation);
+    if (isVisibleMotion(blue) && blue.endLocation) locations.push(blue.endLocation as GridLocation);
+    if (isVisibleMotion(red) && red.endLocation) locations.push(red.endLocation as GridLocation);
     return locations;
   });
 </script>

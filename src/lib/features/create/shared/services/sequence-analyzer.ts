@@ -1,5 +1,8 @@
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { BetaDetector } from "$lib/shared/pictograph/prop/services/beta-detector";
 
@@ -566,21 +569,20 @@ export class SequenceAnalyzer {
 
     if (startPosData) {
       const startPos = this.getStartPosition(sequence);
-      // Create a beat 0 entry from the start position data
-      const startStep: StepData = {
+      // Create a beat 0 entry from the start position data. The factory fills
+      // any missing hand with an invisible placeholder (both-required shape).
+      const startStep: StepData = createStepData({
         id: "start-position",
         stepNumber: 0,
         startPosition: startPos,
         endPosition: startPos, // Start position ends where it starts
         letter: null,
-        motions:
-          ((startPosData as unknown as Record<string, unknown>)
-            .motions as Record<string, unknown>) || {},
+        motions: (startPosData as unknown as {
+          motions?: Partial<Record<MotionColor, MotionData | undefined>>;
+        }).motions,
         duration: 1,
-        blueReversal: false,
-        redReversal: false,
         isBlank: false,
-      };
+      });
       result.push(startStep);
     }
 

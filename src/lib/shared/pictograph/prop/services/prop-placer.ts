@@ -9,7 +9,10 @@
 import { GridMode } from "../../grid/domain/enums/grid-enums";
 import { deriveGridMode as _deriveGridMode } from "../../grid/services/grid-mode-deriver";
 import { MotionColor } from "../../shared/domain/enums/pictograph-enums";
-import type { MotionData } from "../../shared/domain/models/motion-data";
+import {
+  isVisibleMotion,
+  type MotionData,
+} from "../../shared/domain/models/motion-data";
 import type { PictographData } from "../../shared/domain/models/pictograph-data";
 import { pictographRequiresStrictHandpoints } from "../domain/enums/prop-classification";
 
@@ -158,7 +161,8 @@ export class PropPlacer {
     const redMotion = pictographData.motions.red;
     const blueMotion = pictographData.motions.blue;
 
-    if (!redMotion || !blueMotion) {
+    // invisible placeholder = hand not really there (both-required Step shape)
+    if (!isVisibleMotion(redMotion) || !isVisibleMotion(blueMotion)) {
       return { x: 0, y: 0 };
     }
 

@@ -20,6 +20,7 @@ Usage:
 
 <script lang="ts">
   import type { PreparedPictographData } from "../domain/models/prepared-pictograph-data";
+  import { isVisibleMotion, type MotionData } from "../domain/models/motion-data";
   import GridSvg from "../../grid/components/GridSvg.svelte";
   import PropSvg from "../../prop/components/PropSvg.svelte";
   import ArrowSvg from "../../arrow/rendering/components/ArrowSvg.svelte";
@@ -183,7 +184,7 @@ Usage:
       if (pictograph._prepared?.gridMode) {
         return pictograph._prepared.gridMode;
       }
-      if (!pictograph.motions?.blue || !pictograph.motions?.red) {
+      if (!isVisibleMotion(pictograph.motions?.blue) || !isVisibleMotion(pictograph.motions?.red)) {
         return GridMode.DIAMOND;
       }
       try {
@@ -211,7 +212,10 @@ Usage:
   const motions = $derived.by(() => {
     if (!pictograph.motions) return [];
     return Object.entries(pictograph.motions)
-      .filter((entry): entry is [string, any] => entry[1] !== undefined)
+      // invisible placeholder = hand not really there (both-required Step shape)
+      .filter((entry): entry is [string, MotionData] =>
+        isVisibleMotion(entry[1] as MotionData | undefined)
+      )
       .filter(([color]) => visibleHand === null || color === visibleHand)
       .sort(([a], [b]) => (a === "blue" ? -1 : 1))
       .map(([color, data]) => ({
@@ -282,7 +286,7 @@ Usage:
   // NOTE: Fallback must be "(0, 0)" not "(s, 0, 0)" - the "s" prefix would cause
   // DirectionDot to show incorrectly on all pictographs
   const turnsTuple = $derived.by(() => {
-    if (!pictograph?.motions?.blue || !pictograph?.motions?.red) {
+    if (!isVisibleMotion(pictograph?.motions?.blue) || !isVisibleMotion(pictograph?.motions?.red)) {
       return "(0, 0)";
     }
     try {
@@ -294,7 +298,7 @@ Usage:
 
   // Check if we have valid data for glyphs
   const hasValidData = $derived(
-    !!pictograph?.motions?.blue || !!pictograph?.motions?.red
+    isVisibleMotion(pictograph?.motions?.blue) || isVisibleMotion(pictograph?.motions?.red)
   );
 
   // Track loaded letter dimensions with $state for reactivity

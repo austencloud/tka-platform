@@ -23,6 +23,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 /**
  * Structural type for the orientation calculator dependency.
@@ -88,7 +89,9 @@ export function validateTransition(
   // Check blue prop orientation
   const blueMotion = nextPictograph.motions[MotionColor.BLUE];
   const lastBlueMotion = lastStep.motions[MotionColor.BLUE];
-  if (blueMotion && lastBlueMotion) {
+  // Invisible placeholder = hand not really there (both-required Step shape):
+  // vacuously valid, exactly like the old absent-hand skip.
+  if (isVisibleMotion(blueMotion) && isVisibleMotion(lastBlueMotion)) {
     const expectedStartOrientation = lastBlueMotion.endOrientation;
     const actualStartOrientation = blueMotion.startOrientation;
 
@@ -106,7 +109,7 @@ export function validateTransition(
   // Check red prop orientation
   const redMotion = nextPictograph.motions[MotionColor.RED];
   const lastRedMotion = lastStep.motions[MotionColor.RED];
-  if (redMotion && lastRedMotion) {
+  if (isVisibleMotion(redMotion) && isVisibleMotion(lastRedMotion)) {
     const expectedStartOrientation = lastRedMotion.endOrientation;
     const actualStartOrientation = redMotion.startOrientation;
 
@@ -143,8 +146,8 @@ function validateColorContinuity(
   const currentMotion = currentStep.motions[color];
   const previousMotion = previousBeat.motions[color];
 
-  if (!currentMotion || !previousMotion) {
-    return null; // Skip if either beat doesn't have this color
+  if (!isVisibleMotion(currentMotion) || !isVisibleMotion(previousMotion)) {
+    return null; // Skip if either beat doesn't really have this color
   }
 
   const expectedStartOrientation = previousMotion.endOrientation;

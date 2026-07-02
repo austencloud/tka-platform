@@ -10,6 +10,7 @@ import { createStartPositionData } from "$lib/shared/create/factories/create-sta
 import type { ICreateModuleState } from "../../types/create-module-types";
 import {
   createMotionData,
+  isVisibleMotion,
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type {
@@ -218,7 +219,8 @@ export function findPreviousRotationDirection(
 ): RotationDirection {
   for (let i = stepNumber - 2; i >= 0; i--) {
     const motion = steps[i]?.motions?.[color];
-    if (motion && motion.rotationDirection !== RotationDirection.NO_ROTATION) {
+    // Invisible placeholder = hand not really there (both-required Step shape).
+    if (isVisibleMotion(motion) && motion.rotationDirection !== RotationDirection.NO_ROTATION) {
       return motion.rotationDirection;
     }
   }

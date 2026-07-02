@@ -35,6 +35,7 @@
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 
   let visible = $state(false);
   let stepData: StepData | null = $state(null);
@@ -127,7 +128,9 @@
 
     const gridMode = input.grid === "box" ? GridMode.BOX : GridMode.DIAMOND;
 
-    return {
+    // Factory fills any missing hand with an invisible placeholder
+    // (both-required canonical Step shape).
+    return createStepData({
       id: "debug-" + Date.now(),
       stepNumber: input.beat ?? 1,
       letter: (input.letter ?? "?") as any,
@@ -146,7 +149,7 @@
           ? { red: expandMotion(input.red, MotionColor.RED, gridMode) }
           : {}),
       },
-    };
+    });
   }
 
   // Default: the X beat that exposed the arrow placement bug

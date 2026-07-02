@@ -19,7 +19,13 @@
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+
+/** Treat invisible placeholders like the old absent hand. */
+function visibleOrUndefined(m: MotionData | undefined): MotionData | undefined {
+  return isVisibleMotion(m) ? m : undefined;
+}
 
 /**
  * Check if a sequence can loop seamlessly - position AND orientation must match.
@@ -81,10 +87,12 @@ function analyzeLocationCircularity(sequence: SequenceData): boolean {
   const lastStep = steps[steps.length - 1];
   if (!firstStep?.motions || !lastStep?.motions) return false;
 
-  const firstBlue = firstStep.motions[MotionColor.BLUE];
-  const firstRed = firstStep.motions[MotionColor.RED];
-  const lastBlue = lastStep.motions[MotionColor.BLUE];
-  const lastRed = lastStep.motions[MotionColor.RED];
+  // Invisible placeholder = hand not really there (both-required Step shape):
+  // it must vacuously pass exactly like the old absent hand.
+  const firstBlue = visibleOrUndefined(firstStep.motions[MotionColor.BLUE]);
+  const firstRed = visibleOrUndefined(firstStep.motions[MotionColor.RED]);
+  const lastBlue = visibleOrUndefined(lastStep.motions[MotionColor.BLUE]);
+  const lastRed = visibleOrUndefined(lastStep.motions[MotionColor.RED]);
 
   // Need at least one prop with location data to make a determination
   const hasBlueData = firstBlue?.startLocation && lastBlue?.endLocation;
@@ -127,16 +135,16 @@ function analyzeOrientationCircularity(sequence: SequenceData): boolean {
   // stationary in the start position). Fall back to first step when
   // start position data is missing.
   const startBlueOri = getStartOrientation(
-    startPosData?.motions?.[MotionColor.BLUE],
-    firstStep.motions[MotionColor.BLUE]
+    visibleOrUndefined(startPosData?.motions?.[MotionColor.BLUE]),
+    visibleOrUndefined(firstStep.motions[MotionColor.BLUE])
   );
   const startRedOri = getStartOrientation(
-    startPosData?.motions?.[MotionColor.RED],
-    firstStep.motions[MotionColor.RED]
+    visibleOrUndefined(startPosData?.motions?.[MotionColor.RED]),
+    visibleOrUndefined(firstStep.motions[MotionColor.RED])
   );
 
-  const endBlue = lastStep.motions[MotionColor.BLUE];
-  const endRed = lastStep.motions[MotionColor.RED];
+  const endBlue = visibleOrUndefined(lastStep.motions[MotionColor.BLUE]);
+  const endRed = visibleOrUndefined(lastStep.motions[MotionColor.RED]);
 
   // Compare blue prop orientation
   if (startBlueOri != null && endBlue) {

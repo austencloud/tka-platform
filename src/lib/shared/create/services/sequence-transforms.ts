@@ -19,6 +19,7 @@ import {
 } from "$lib/shared/foundation/domain/models/sequence-data";
 import { createStepData } from "$lib/shared/create/factories/create-step-data";
 import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
 import {
@@ -548,7 +549,10 @@ export async function deriveSequenceLetters(
       const blueMotion = step.motions[MotionColor.BLUE];
       const redMotion = step.motions[MotionColor.RED];
 
-      if (!blueMotion || !redMotion) return step;
+      // Invisible placeholder = hand not really there (both-required Step
+      // shape): keep the existing letter, exactly like the old absent-hand skip
+      // (a dataframe lookup against a placeholder would rewrite the word).
+      if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) return step;
 
       // Derive gridMode per-step from the motions — never trust the stale
       // sequence-level value (a box step inside a diamond-labelled sequence

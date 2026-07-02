@@ -13,6 +13,7 @@ import type { SequenceExtender } from "../../shared/services/sequence-extender";
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 import type { LetterTransitionGraph } from "./letter-transition-graph";
@@ -660,16 +661,14 @@ export class WordSequenceGenerator {
       const bridgeLetter = variation.letter as Letter;
       const bridgeEndPos = variation.endPosition || "";
 
-      // Create a temporary beat for the bridge letter
-      const bridgeBeat: StepData = {
+      // Create a temporary beat for the bridge letter (factory fills any
+      // missing hand with an invisible placeholder)
+      const bridgeBeat: StepData = createStepData({
         ...variation,
-        isStep: true,
         stepNumber: sequence.steps.length + 1,
         duration: 1,
-        blueReversal: false,
-        redReversal: false,
         isBlank: false,
-      };
+      });
 
       // Create a temporary sequence with the bridge letter to analyze
       const tempSequence: SequenceData = {

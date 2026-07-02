@@ -17,6 +17,7 @@
  * shape, and batched writes).
  */
 
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { doc, writeBatch } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import {
@@ -51,6 +52,7 @@ interface MutableMotion {
   rotationDirection?: string;
   startLocation?: string;
   endLocation?: string;
+  isVisible?: boolean;
   [key: string]: unknown;
 }
 
@@ -117,7 +119,8 @@ export function transformSequence(
 
     // Re-derive the letter from the CSV. Match is on positions + motionType +
     // locations only (NOT rotationDirection) — consistent with the reference.
-    if (blue && red) {
+    // Invisible placeholder = hand not really there (both-required Step shape).
+    if (isVisibleMotion(blue) && isVisibleMotion(red)) {
       const letter = lookupLetter(edges, {
         startPosition: String(mutable.startPosition ?? ""),
         endPosition: String(mutable.endPosition ?? ""),

@@ -16,6 +16,7 @@
 
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { createStepData } from "$lib/shared/create/factories/create-step-data";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -186,7 +187,9 @@ export async function rotateBeat(
     let rotatedStartPosition = step.startPosition ?? null;
     let rotatedEndPosition = step.endPosition ?? null;
 
-    if (blueMotion && redMotion) {
+    // Invisible placeholder = hand not really there (both-required Step
+    // shape): keep the stale-position behavior the old absent-hand path had.
+    if (isVisibleMotion(blueMotion) && isVisibleMotion(redMotion)) {
       rotatedStartPosition = getGridPositionFromLocations(
         blueMotion.startLocation,
         redMotion.startLocation

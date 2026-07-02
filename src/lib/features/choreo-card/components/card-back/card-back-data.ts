@@ -4,6 +4,7 @@
  * so each visual variant doesn't duplicate this logic.
  */
 
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { explainLOOP } from "../../services/loop-explainer";
 import type { LOOPExplanation } from "../../services/types";
@@ -160,9 +161,10 @@ function deriveAnatomy(sequence: SequenceData): SequenceAnatomy {
     const sp = sequence.startPosition;
     addPosition(sp.gridPosition as string | undefined);
 
-    // Orientations from start position motions
+    // Orientations from start position motions (invisible placeholder = hand
+    // not really there under the both-required Step shape)
     for (const motion of Object.values(sp.motions ?? {})) {
-      if (!motion) continue;
+      if (!isVisibleMotion(motion)) continue;
       addOrientation(motion.startOrientation, orientations);
     }
   }
@@ -172,7 +174,7 @@ function deriveAnatomy(sequence: SequenceData): SequenceAnatomy {
     addPosition(step.endPosition as string | undefined);
 
     for (const motion of Object.values(step.motions ?? {})) {
-      if (!motion) continue;
+      if (!isVisibleMotion(motion)) continue;
 
       // Motion type: pro and anti are both "shift"
       const mt = motion.motionType;
@@ -366,7 +368,7 @@ export function deriveTnDRatio(sequence: SequenceData): string | null {
 
   for (const step of sequence.steps ?? []) {
     for (const motion of Object.values(step.motions ?? {})) {
-      if (!motion) continue;
+      if (!isVisibleMotion(motion)) continue;
       const t = motion.turns;
       if (t === "fl" || typeof t !== "number") continue;
       hasTurns = true;

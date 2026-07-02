@@ -6,6 +6,7 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { PoiTimingDirection, PoiPatternRatio } from "../domain/poi-enums";
 import type { VTGTerminologyMapping } from "../domain/poi-models";
 
@@ -13,8 +14,9 @@ export function deriveVTGTerminology(pictograph: PictographData): VTGTerminology
   const blue = pictograph.motions?.blue;
   const red = pictograph.motions?.red;
 
-  // Need both motions to derive VTG terminology
-  if (!blue || !red) {
+  // Need both hands really there to derive VTG terminology (invisible
+  // placeholder = hand not really there under the both-required Step shape)
+  if (!isVisibleMotion(blue) || !isVisibleMotion(red)) {
     return null;
   }
 

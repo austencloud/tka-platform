@@ -18,6 +18,19 @@ import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-s
 import type { ILOOPDetector } from "$lib/shared/create/services/ILOOPDetector";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { ThumbnailRenderInput, CompositionDefaults } from "$lib/shared/browse/services/thumbnail-key-deriver";
+import type { QRCodeGenerator } from "$lib/shared/qr/services/qr-code-generator";
+
+/** Result of a thumbnail render. `qrConsistent` is false only when a QR was
+ * requested but its bitmap could not be produced — the orchestrator uses it to
+ * avoid caching a QR-less image under a QR cache key. */
+export interface ThumbnailRenderResult {
+  blob: Blob;
+  qrConsistent: boolean;
+}
+
+// The QR is drawn scaled into a single grid cell; 256px is crisp at any card
+// size the gallery uses and cheap to rasterize.
+const QR_BITMAP_SIZE = 256;
 
 export interface RenderOptions {
   /** Beat size in pixels (default: 240) */
@@ -60,7 +73,10 @@ export class ThumbnailRenderer {
     private compositionDispatcher: CompositionDispatcher,
     private startPositionDeriver: StartPositionDeriver,
     private browseLoader: PublicSequencesLoader | null,
-    private loopDetector: ILOOPDetector
+    private loopDetector: ILOOPDetector,
+    /** Lazy factory (QR generator is browser-only + needs the short-code
+     * manager configured first). Absent/throwing → renders without a QR. */
+    private qrCodeGeneratorFactory?: () => QRCodeGenerator | null
   ) {}
 
   async render(
@@ -69,7 +85,7 @@ export class ThumbnailRenderer {
     options?: RenderOptions,
     onProgress?: RenderProgressCallback,
     signal?: AbortSignal
-  ): Promise<Blob> {
+  ): Promise<ThumbnailRenderResult> {
     // Load full sequence data if needed (fetches from user's source doc)
     const loadedSequence = await this.ensureFullSequenceData(sequence, input.sequenceName);
 
@@ -103,6 +119,30 @@ export class ThumbnailRenderer {
       fullSequence.dateAdded ??
       undefined;
 
+    // Pre-render the QR bitmap on the main thread when requested. The worker
+    // pool has no QR generator, so a baked QR must be transferred in. The short
+    // code is content-hash-deduped globally, so this bitmap is identical for all
+    // signed-in users (safe to share once cached). On any failure we render
+    // without a QR and flag the render inconsistent so it isn't cached.
+    const wantsQR = input.visibility?.showQRCode === true;
+    let qrBitmap: ImageBitmap | null = null;
+    if (wantsQR) {
+      try {
+        const generator = this.qrCodeGeneratorFactory?.();
+        if (generator) {
+          const qrImage = await generator.generateAsImage(sequenceWithStartPos, QR_BITMAP_SIZE, {
+            darkMode: !input.lightMode,
+            bluePropType: input.bluePropType,
+            redPropType: input.redPropType,
+          });
+          qrBitmap = await createImageBitmap(qrImage);
+        }
+      } catch (err) {
+        console.debug("[ThumbnailRenderer] QR pre-render failed; rendering without QR:", err);
+        qrBitmap = null;
+      }
+    }
+
     // Render via CompositionDispatcher (worker pool with main-thread fallback)
     // Explicitly pass loopType in options so it doesn't rely on sequence fallback
     const blob = await this.compositionDispatcher.compose(
@@ -117,9 +157,11 @@ export class ThumbnailRenderer {
       },
       onProgress,
       signal,
+      qrBitmap,
     );
 
-    return blob;
+    // QR-consistent unless a QR was wanted but its bitmap couldn't be produced.
+    return { blob, qrConsistent: !wantsQR || qrBitmap !== null };
   }
 
   private async ensureFullSequenceData(

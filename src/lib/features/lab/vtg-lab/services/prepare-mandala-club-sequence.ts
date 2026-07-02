@@ -10,21 +10,24 @@ type MotionsMap = PictographData["motions"];
 
 /**
  * Produce a single-club, single-hand SequenceData: the non-shown hand is
- * STRIPPED from the start position and every step, and the shown hand's motion
- * is tagged with club + the path shape. The engine null-guards each hand
- * (prop-interpolator `if (redMotion)`), so the stripped hand has no prop, no
- * endpoints, and no path line — a genuine solo animation, not a hidden hand.
+ * marked `isVisible: false` on the start position and every step, and the
+ * shown hand's motion is tagged with club + the path shape. The engine and
+ * renderers skip invisible hands (isVisibleMotion guards — the both-required
+ * Step layer's absence encoding), so the hidden hand has no prop, no
+ * endpoints, and no path line — a genuine solo animation, not a dimmed hand.
  */
 export function prepareMandalaClubSequence(
   seq: SequenceData,
   opts: { show: "blue" | "red"; pathShape: MandalaPathShape },
 ): SequenceData {
   const { show, pathShape } = opts;
-  const tag = (m: MotionData | undefined): MotionData | null =>
-    m ? { ...m, propType: PropType.CLUB, pathShape } : null;
+  const tag = (m: MotionData | undefined): MotionData | undefined =>
+    m ? { ...m, propType: PropType.CLUB, pathShape, isVisible: true } : undefined;
+  const hide = (m: MotionData | undefined): MotionData | undefined =>
+    m ? { ...m, isVisible: false } : undefined;
   const soloMotions = (motions: MotionsMap): MotionsMap => ({
-    blue: show === "blue" ? tag(motions.blue) ?? undefined : undefined,
-    red: show === "red" ? tag(motions.red) ?? undefined : undefined,
+    blue: show === "blue" ? tag(motions.blue) : hide(motions.blue),
+    red: show === "red" ? tag(motions.red) : hide(motions.red),
   });
   // The spread is structurally `T` with a refined `motions`; TS can't narrow a
   // generic spread back to `T`, so assert it (input shape is otherwise preserved).

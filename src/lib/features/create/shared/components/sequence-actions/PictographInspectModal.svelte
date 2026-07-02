@@ -142,9 +142,15 @@
       const calculated =
         await calculateAllArrowPoints(pictographData);
 
+      // Arrow-point calculation returns partial motions (it only computes
+      // present/visible hands); keep the step's original motion for any hand
+      // it skipped so the both-required Step shape holds.
       calculatedData = {
         ...stepData,
-        motions: calculated.motions,
+        motions: {
+          blue: calculated.motions.blue ?? stepData.motions.blue,
+          red: calculated.motions.red ?? stepData.motions.red,
+        },
       };
 
       await checkRotationOverrides(pictographData);

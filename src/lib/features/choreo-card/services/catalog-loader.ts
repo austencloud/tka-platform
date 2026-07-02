@@ -6,6 +6,7 @@ import { createSequenceData } from "$lib/shared/foundation/domain/models/sequenc
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -51,7 +52,9 @@ function hydrateSteps(
   return steps.map((step, index) => {
     const raw = step as unknown as Record<string, unknown>;
     const beat = typeof raw.beat === "number" ? raw.beat : undefined;
-    return {
+    // The factory fills any hand missing from the raw Firestore blob with an
+    // invisible placeholder (both-required canonical Step shape).
+    return createStepData({
       ...step,
       stepNumber: step.stepNumber ?? (beat !== undefined ? beat + 1 : index + 1),
       duration: step.duration ?? 1,
@@ -59,7 +62,7 @@ function hydrateSteps(
       redReversal: step.redReversal ?? false,
       isBlank: step.isBlank ?? false,
       motions: hydrateMotions(step.motions),
-    };
+    });
   });
 }
 

@@ -14,6 +14,7 @@ import type { SimilarityReport, CommonSubsequence, SimilarityBreakdown, QuickSim
 import type { StepSignatureGenerator } from "./step-signature-generator";
 import type { SequenceAligner } from "./sequence-aligner";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 const DEFAULT_OPTIONS: Required<SimilarityOptions> = {
   wordWeight: 0.2,
@@ -405,13 +406,15 @@ export class SimilarityCalculator {
       const blueB = stepB.motions[MotionColor.BLUE];
       const redB = stepB.motions[MotionColor.RED];
 
-      if (blueA && blueA.motionType === blueB?.motionType) {
+      // Invisible placeholder = hand not really there (both-required Step
+      // shape): counts as a mismatch, like the old absent hand.
+      if (isVisibleMotion(blueA) && isVisibleMotion(blueB) && blueA.motionType === blueB.motionType) {
         motionTypeMatches++;
       } else {
         motionTypeMismatches++;
       }
 
-      if (redA && redA.motionType === redB?.motionType) {
+      if (isVisibleMotion(redA) && isVisibleMotion(redB) && redA.motionType === redB.motionType) {
         motionTypeMatches++;
       } else {
         motionTypeMismatches++;
@@ -496,10 +499,10 @@ export class SimilarityCalculator {
       const blueB = stepB.motions[MotionColor.BLUE];
       const redB = stepB.motions[MotionColor.RED];
 
-      if (blueA && blueA.motionType === blueB?.motionType) {
+      if (isVisibleMotion(blueA) && isVisibleMotion(blueB) && blueA.motionType === blueB.motionType) {
         matches++;
       }
-      if (redA && redA.motionType === redB?.motionType) {
+      if (isVisibleMotion(redA) && isVisibleMotion(redB) && redA.motionType === redB.motionType) {
         matches++;
       }
     }

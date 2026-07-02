@@ -1,5 +1,6 @@
 import type { LayerType, LayerRenderOptions, LayerVisibility, LayerRenderResult, CompositionResult, LayerCacheStats, RenderCanvas, RenderContext2D } from "./types";
 import type { PreparedPictographData } from "../../pictograph/shared/domain/models/prepared-pictograph-data";
+import { isVisibleMotion } from "../../pictograph/shared/domain/models/motion-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { deriveBaseLayerKey, deriveGridPointsLayerKey, deriveTKALayerKey, deriveReversalLayerKey } from "./layer-key-deriver";
 import { turnsTupleGenerator } from "../../pictograph/arrow/positioning/placement/services/turns-tuple-generator";
@@ -562,13 +563,13 @@ export class LayerCompositor {
     const activeLocations = new Set<string>();
 
     const blueMotion = pictograph.motions?.blue;
-    if (blueMotion) {
+    if (isVisibleMotion(blueMotion)) {
       if (blueMotion.startLocation) activeLocations.add(blueMotion.startLocation.toLowerCase());
       if (blueMotion.endLocation) activeLocations.add(blueMotion.endLocation.toLowerCase());
     }
 
     const redMotion = pictograph.motions?.red;
-    if (redMotion) {
+    if (isVisibleMotion(redMotion)) {
       if (redMotion.startLocation) activeLocations.add(redMotion.startLocation.toLowerCase());
       if (redMotion.endLocation) activeLocations.add(redMotion.endLocation.toLowerCase());
     }

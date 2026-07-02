@@ -6,6 +6,7 @@
  * and hot-swapping sequences into the playback controller.
  */
 
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
@@ -285,8 +286,14 @@ export class SequenceChainingOrchestrator {
 
     return {
       position,
-      blueOrientation: (finalStep?.motions?.blue?.endOrientation ?? null) as Orientation | null,
-      redOrientation: (finalStep?.motions?.red?.endOrientation ?? null) as Orientation | null,
+      // Invisible placeholder = hand not really there (both-required Step
+      // shape): null orientation disables orientation matching downstream.
+      blueOrientation: (isVisibleMotion(finalStep?.motions?.blue)
+        ? finalStep.motions.blue.endOrientation
+        : null) as Orientation | null,
+      redOrientation: (isVisibleMotion(finalStep?.motions?.red)
+        ? finalStep.motions.red.endOrientation
+        : null) as Orientation | null,
     };
   }
 

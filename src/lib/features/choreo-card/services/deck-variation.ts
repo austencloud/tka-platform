@@ -24,6 +24,7 @@
  *     startOrientation per hand) rather than silently dropping it.
  */
 
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   SIMPLE_PATTERNS,
   getCompatiblePatterns,
@@ -394,7 +395,8 @@ function loopCloses(seq: SequenceData): { blue: boolean; red: boolean } {
   function handCloses(hand: "blue" | "red"): boolean {
     const fm = first?.motions?.[hand];
     const lm = last?.motions?.[hand];
-    if (!fm || !lm) return true;
+    // Invisible placeholder = hand not really there: vacuously closed.
+    if (!isVisibleMotion(fm) || !isVisibleMotion(lm)) return true;
     return lm.endOrientation === fm.startOrientation;
   }
   return { blue: handCloses("blue"), red: handCloses("red") };

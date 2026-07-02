@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { formatRotationValue } from "../../../domain/models/rotation-direction-pattern-data";
 
   interface Props {
@@ -33,21 +34,25 @@
       <h3>Current Pattern ({sequence.steps.length} steps)</h3>
       <div class="preview-grid">
         {#each sequence.steps as beat, i}
+          <!-- Invisible placeholder = hand not really there: null (no-motion
+               display state), never "none" (motion present, no rotation). -->
+          {@const blueMotion = isVisibleMotion(beat.motions?.blue) ? beat.motions.blue : null}
+          {@const redMotion = isVisibleMotion(beat.motions?.red) ? beat.motions.red : null}
           {@const blueRotation = formatRotationValue(
-            beat.motions?.blue?.rotationDirection === "cw"
+            blueMotion?.rotationDirection === "cw"
               ? "cw"
-              : beat.motions?.blue?.rotationDirection === "ccw"
+              : blueMotion?.rotationDirection === "ccw"
                 ? "ccw"
-                : beat.motions?.blue
+                : blueMotion
                   ? "none"
                   : null
           )}
           {@const redRotation = formatRotationValue(
-            beat.motions?.red?.rotationDirection === "cw"
+            redMotion?.rotationDirection === "cw"
               ? "cw"
-              : beat.motions?.red?.rotationDirection === "ccw"
+              : redMotion?.rotationDirection === "ccw"
                 ? "ccw"
-                : beat.motions?.red
+                : redMotion
                   ? "none"
                   : null
           )}

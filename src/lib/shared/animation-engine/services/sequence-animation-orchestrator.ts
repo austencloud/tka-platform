@@ -37,6 +37,7 @@ import { interpolatePhrase } from "$lib/shared/phrase-effort-lab/services/phrase
 import { findPhraseAtBeat } from "$lib/shared/effort/domain/effort-timeline-types";
 import type { EffortTimeline } from "$lib/shared/effort/domain/effort-timeline-types";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 /**
  * Lightweight Animation Orchestrator
@@ -127,8 +128,10 @@ export class SequenceAnimationOrchestrator {
       }
 
       this.missingMotionLogged.clear();
+      // Invisible placeholders = hand not really there (both-required Step shape).
       this.hasMotionData = steps.some(
-        (step) => step?.motions?.blue || step?.motions?.red
+        (step) =>
+          isVisibleMotion(step?.motions?.blue) || isVisibleMotion(step?.motions?.red)
       );
 
       // Extract metadata from domain data
@@ -191,7 +194,10 @@ export class SequenceAnimationOrchestrator {
       this.currentStepProgress = 0;
 
       const firstStep = this.steps[0];
-      if (firstStep?.motions?.blue || firstStep?.motions?.red) {
+      if (
+        isVisibleMotion(firstStep?.motions?.blue) ||
+        isVisibleMotion(firstStep?.motions?.red)
+      ) {
         const initialAngles = calculateInitialAngles(firstStep);
         if (initialAngles.isValid) {
           if (initialAngles.blueAngles) {
@@ -232,9 +238,10 @@ export class SequenceAnimationOrchestrator {
     this.currentStepIndex = stepState.currentStepIndex;
     this.currentStepProgress = stepState.stepProgress;
 
-    // Skip steps without ANY motion data (neither hand present) and log once
+    // Skip steps without ANY motion data (neither hand really there) and log once
     const beatMotions = stepState.currentStepData?.motions;
-    const hasStepMotions = beatMotions?.blue || beatMotions?.red;
+    const hasStepMotions =
+      isVisibleMotion(beatMotions?.blue) || isVisibleMotion(beatMotions?.red);
     if (!hasStepMotions) {
       const key =
         stepState.currentStepData?.stepNumber ?? stepState.currentStepIndex;
@@ -407,8 +414,11 @@ export class SequenceAnimationOrchestrator {
 
   private findFirstBeatWithMotion(): StepData | null {
     return (
-      this.steps.find((step) => step?.motions?.blue || step?.motions?.red) ??
-      null
+      this.steps.find(
+        (step) =>
+          isVisibleMotion(step?.motions?.blue) ||
+          isVisibleMotion(step?.motions?.red)
+      ) ?? null
     );
   }
 
@@ -645,7 +655,10 @@ export class SequenceAnimationOrchestrator {
     this.currentStepProgress = 0;
 
     const firstStep = this.steps[0];
-    if (firstStep?.motions?.blue || firstStep?.motions?.red) {
+    if (
+      isVisibleMotion(firstStep?.motions?.blue) ||
+      isVisibleMotion(firstStep?.motions?.red)
+    ) {
       const initialAngles = calculateInitialAngles(firstStep);
       if (initialAngles.isValid) {
         if (initialAngles.blueAngles) {

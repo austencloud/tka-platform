@@ -12,6 +12,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import type { TurnValue } from "$lib/shared/create/domain/turn-pattern-data";
 import {
   createMotionData,
+  isVisibleMotion,
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
@@ -80,7 +81,7 @@ function findRotationContext(
     const beat = steps[i];
     if (!beat) continue;
     const motion = beat.motions?.[color];
-    if (motion && motion.rotationDirection !== RotationDirection.NO_ROTATION) {
+    if (isVisibleMotion(motion) && motion.rotationDirection !== RotationDirection.NO_ROTATION) {
       logger.log(
         `Found backward rotation context at beat ${i + 1}: ${motion.rotationDirection}`
       );
@@ -92,7 +93,7 @@ function findRotationContext(
     const beat = steps[i];
     if (!beat) continue;
     const motion = beat.motions?.[color];
-    if (motion && motion.rotationDirection !== RotationDirection.NO_ROTATION) {
+    if (isVisibleMotion(motion) && motion.rotationDirection !== RotationDirection.NO_ROTATION) {
       logger.log(
         `Found forward rotation context at beat ${i + 1}: ${motion.rotationDirection}`
       );
@@ -212,7 +213,9 @@ export function applyPendingTurnsToOption(
 ): PictographData {
   const blue = option.motions?.blue;
   const red = option.motions?.red;
-  if (!blue || !red) return option;
+  // Invisible placeholder = hand not really there (both-required Step shape):
+  // never bake turns-bar values into placeholders.
+  if (!isVisibleMotion(blue) || !isVisibleMotion(red)) return option;
 
   return {
     ...option,

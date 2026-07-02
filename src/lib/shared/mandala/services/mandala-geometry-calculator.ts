@@ -19,6 +19,7 @@ import {
 	PI,
 } from "$lib/shared/foundation/domain/math-constants";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
 	BASE_SAMPLES_PER_BEAT,
 	MANDALA_GRID_RADIUS,
@@ -443,6 +444,8 @@ function generatePathPoints(
 
 	for (const step of steps) {
 		const rawMotion = step.motions?.[hand];
+		// invisible placeholder = hand not really there (both-required Step shape)
+		if (!isVisibleMotion(rawMotion)) continue;
 		const motion = extractMotion(rawMotion);
 		if (!motion) continue;
 
@@ -528,7 +531,9 @@ function buildCacheKey(
 	for (const step of steps) {
 		const b = step.motions?.blue;
 		const r = step.motions?.red;
-		if (b)
+		// Key must track geometry: invisible hands produce no paths, so they
+		// must not share a cache key with visible variants of the same motion.
+		if (isVisibleMotion(b))
 			parts.push(
 				b.motionType +
 				b.rotationDirection +
@@ -538,7 +543,7 @@ function buildCacheKey(
 				(b.endOrientation ?? '') +
 				(b.turns ?? 0)
 			);
-		if (r)
+		if (isVisibleMotion(r))
 			parts.push(
 				r.motionType +
 				r.rotationDirection +
@@ -592,7 +597,7 @@ export function calculateMorphed(
 	tipOverride?: { dx: number; dy: number }
 ): MandalaPaths {
 	const stepsWithMotions = steps.filter(
-		(s) => s.motions?.blue || s.motions?.red
+		(s) => isVisibleMotion(s.motions?.blue) || isVisibleMotion(s.motions?.red)
 	);
 	if (stepsWithMotions.length === 0) {
 		return { blue: [], red: [], purple: [] };
@@ -633,9 +638,10 @@ export function calculate(
 		}
 	}
 
-	// Filter to steps that have motions (skip start position / empty steps)
+	// Filter to steps that have motions (skip start position / empty steps).
+	// Steps whose hands are all invisible placeholders count as motionless.
 	const stepsWithMotions = steps.filter(
-		(s) => s.motions?.blue || s.motions?.red
+		(s) => isVisibleMotion(s.motions?.blue) || isVisibleMotion(s.motions?.red)
 	);
 
 	if (stepsWithMotions.length === 0) {

@@ -110,7 +110,10 @@ interface HashableNode {
 }
 
 function serializeMotion(m?: MotionData): string {
-  if (!m) return "-";
+  // Invisible placeholder = hand not really there (both-required Step shape):
+  // hash it exactly like the old absent hand so render-cache keys for
+  // blank/one-hand content are stable across the migration.
+  if (!m || m.isVisible === false) return "-";
   return `${m.motionType}:${m.rotationDirection}:${m.startLocation}:${m.endLocation}:${m.turns}:${m.startOrientation}:${m.endOrientation}`;
 }
 

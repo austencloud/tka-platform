@@ -6,6 +6,7 @@
  * Falls back to rotating circular sequences or generating bridges when no direct match.
  */
 
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -407,7 +408,13 @@ export class EndlessSpinnerOrchestrator {
     const blueMotion = beat.motions?.[MotionColor.BLUE];
     const redMotion = beat.motions?.[MotionColor.RED];
 
-    if (blueMotion?.endLocation && redMotion?.endLocation) {
+    // Invisible placeholder = hand not really there (both-required Step shape).
+    if (
+      isVisibleMotion(blueMotion) &&
+      isVisibleMotion(redMotion) &&
+      blueMotion.endLocation &&
+      redMotion.endLocation
+    ) {
       try {
         return getGridPositionFromLocations(
           blueMotion.endLocation,
@@ -602,7 +609,7 @@ export class EndlessSpinnerOrchestrator {
       if (!candidate) continue;
       const blue = candidate.motions?.[MotionColor.BLUE];
       const red = candidate.motions?.[MotionColor.RED];
-      if (!blue || !red) continue;
+      if (!isVisibleMotion(blue) || !isVisibleMotion(red)) continue;
 
       // Both motions need start+end locations for reliable detection
       if (
@@ -658,13 +665,8 @@ export class EndlessSpinnerOrchestrator {
           ...step,
           gridMode,
           motions: {
-            ...step.motions,
-            [MotionColor.BLUE]: blueMotion
-              ? { ...blueMotion, gridMode }
-              : undefined,
-            [MotionColor.RED]: redMotion
-              ? { ...redMotion, gridMode }
-              : undefined,
+            blue: { ...blueMotion, gridMode },
+            red: { ...redMotion, gridMode },
           },
         };
       });

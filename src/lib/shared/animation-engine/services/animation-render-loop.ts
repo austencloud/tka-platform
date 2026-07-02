@@ -37,6 +37,7 @@ import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-
 import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import type { FireTipUpdateResult } from './fire-tip-tracker';
 import type { FireFrameInput } from '../domain/types/fire-types';
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 // ============================================================================
 // Longtask observer singleton - one PerformanceObserver shared across every
@@ -902,7 +903,9 @@ export class AnimationRenderLoop {
     const blueMotion = stepData?.motions?.blue;
     const redMotion = stepData?.motions?.red;
     const turnsTuple =
-      blueMotion && redMotion ? `${blueMotion.turns}${redMotion.turns}` : null;
+      isVisibleMotion(blueMotion) && isVisibleMotion(redMotion)
+        ? `${blueMotion.turns}${redMotion.turns}`
+        : null;
 
     if (this.loopStartTime === 0) {
       this.loopStartTime = currentTime;

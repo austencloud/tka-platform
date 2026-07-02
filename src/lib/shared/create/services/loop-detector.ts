@@ -42,6 +42,7 @@ import {
 // Canonical MotionType is a superset of the app enum (adds "shift"); StepLike
 // motions carry the canonical type, so type-level comparisons use it.
 import type { MotionType as CanonicalMotionType } from "@tka/tka-types";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 export class LOOPDetector implements ILOOPDetector {
 
@@ -55,7 +56,14 @@ export class LOOPDetector implements ILOOPDetector {
     const blueMotion = step.motions?.[MotionColor.BLUE];
     const redMotion = step.motions?.[MotionColor.RED];
 
-    if (!blueMotion?.startLocation || !redMotion?.startLocation) {
+    // Invisible placeholder = hand not really there (both-required Step
+    // shape): deriving LOOP positions from placeholder locations misclassifies.
+    if (
+      !isVisibleMotion(blueMotion) ||
+      !isVisibleMotion(redMotion) ||
+      !blueMotion.startLocation ||
+      !redMotion.startLocation
+    ) {
       return null;
     }
 
@@ -78,7 +86,12 @@ export class LOOPDetector implements ILOOPDetector {
     const blueMotion = step.motions?.[MotionColor.BLUE];
     const redMotion = step.motions?.[MotionColor.RED];
 
-    if (!blueMotion?.endLocation || !redMotion?.endLocation) {
+    if (
+      !isVisibleMotion(blueMotion) ||
+      !isVisibleMotion(redMotion) ||
+      !blueMotion.endLocation ||
+      !redMotion.endLocation
+    ) {
       return null;
     }
 
@@ -366,7 +379,13 @@ export class LOOPDetector implements ILOOPDetector {
       const secondBlue = secondStep?.motions?.[MotionColor.BLUE];
       const secondRed = secondStep?.motions?.[MotionColor.RED];
 
-      if (firstBlue && firstRed && secondBlue && secondRed) {
+      // Invisible placeholder = hand not really there (both-required Step shape).
+      if (
+        isVisibleMotion(firstBlue) &&
+        isVisibleMotion(firstRed) &&
+        isVisibleMotion(secondBlue) &&
+        isVisibleMotion(secondRed)
+      ) {
         // Skip pairs where both hands have the same motion type -
         // swapping two identical types is trivially true and meaningless.
         // When both hands are pro, "secondBlue.type === firstRed.type" is
@@ -421,7 +440,7 @@ export class LOOPDetector implements ILOOPDetector {
       const firstRed = firstStep.motions?.[MotionColor.RED];
       const secondRed = secondStep.motions?.[MotionColor.RED];
 
-      if (firstBlue && secondBlue) {
+      if (isVisibleMotion(firstBlue) && isVisibleMotion(secondBlue)) {
         validComparisons++;
         if (
           !this.isMotionTypeInverted(
@@ -433,7 +452,7 @@ export class LOOPDetector implements ILOOPDetector {
         }
       }
 
-      if (firstRed && secondRed) {
+      if (isVisibleMotion(firstRed) && isVisibleMotion(secondRed)) {
         validComparisons++;
         if (
           !this.isMotionTypeInverted(firstRed.motionType, secondRed.motionType)
@@ -564,7 +583,13 @@ export class LOOPDetector implements ILOOPDetector {
       const secondBlue = secondStep?.motions?.[MotionColor.BLUE];
       const secondRed = secondStep?.motions?.[MotionColor.RED];
 
-      if (firstBlue && firstRed && secondBlue && secondRed) {
+      // Invisible placeholder = hand not really there (both-required Step shape).
+      if (
+        isVisibleMotion(firstBlue) &&
+        isVisibleMotion(firstRed) &&
+        isVisibleMotion(secondBlue) &&
+        isVisibleMotion(secondRed)
+      ) {
         // Skip pairs where both hands have the same motion type -
         // swapping two identical types is trivially true and meaningless.
         if (firstBlue.motionType === firstRed.motionType) continue;
@@ -617,7 +642,7 @@ export class LOOPDetector implements ILOOPDetector {
       const firstRed = firstStep.motions?.[MotionColor.RED];
       const secondRed = secondStep.motions?.[MotionColor.RED];
 
-      if (firstBlue && secondBlue) {
+      if (isVisibleMotion(firstBlue) && isVisibleMotion(secondBlue)) {
         validComparisons++;
         if (
           !this.isMotionTypeInverted(
@@ -629,7 +654,7 @@ export class LOOPDetector implements ILOOPDetector {
         }
       }
 
-      if (firstRed && secondRed) {
+      if (isVisibleMotion(firstRed) && isVisibleMotion(secondRed)) {
         validComparisons++;
         if (
           !this.isMotionTypeInverted(firstRed.motionType, secondRed.motionType)

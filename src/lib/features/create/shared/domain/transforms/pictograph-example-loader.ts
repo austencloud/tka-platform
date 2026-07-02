@@ -9,7 +9,7 @@
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { createMotionData, isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionType, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { calculateAllArrowPoints } from "$lib/shared/pictograph/arrow/orchestration/services/arrow-positioning-orchestrator";
@@ -139,7 +139,8 @@ async function enhancePictographForInvert(pictograph: PictographData): Promise<P
 export async function reclassifyLetter(pictograph: PictographData): Promise<PictographData> {
   const blue = pictograph.motions?.blue;
   const red = pictograph.motions?.red;
-  if (!blue || !red) return pictograph;
+  // Invisible placeholder = hand not really there (both-required Step shape).
+  if (!isVisibleMotion(blue) || !isVisibleMotion(red)) return pictograph;
 
   const allPictographs = await loadAllPictographs();
 
@@ -173,7 +174,7 @@ function filterForTransform(pictographs: PictographData[], transformId: Transfor
   return pictographs.filter(p => {
     const blue = p.motions?.blue;
     const red = p.motions?.red;
-    if (!blue || !red) return false;
+    if (!isVisibleMotion(blue) || !isVisibleMotion(red)) return false;
 
     switch (transformId) {
       case "mirror":
@@ -221,9 +222,10 @@ export async function loadAllPictographs(): Promise<PictographData[]> {
       const pictographs = await letterQueryHandler.getAllPictographVariations(
         GridMode.DIAMOND
       );
-      // Filter out any invalid pictographs (need both motions)
+      // Filter out any invalid pictographs (need both hands really there)
       cachedPictographs = pictographs.filter(
-        (p: PictographData) => p.motions?.blue && p.motions?.red
+        (p: PictographData) =>
+          isVisibleMotion(p.motions?.blue) && isVisibleMotion(p.motions?.red)
       );
       return cachedPictographs;
     } catch (error) {

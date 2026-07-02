@@ -55,6 +55,7 @@ export interface RotationDirectionPatternApplyResult {
 }
 import {
   createMotionData,
+  isVisibleMotion,
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
@@ -136,11 +137,12 @@ export async function applyPattern(
     let stepModified = false;
     const updatedMotions = { ...step.motions };
 
-    // Apply blue rotation direction (if targeting blue or both)
+    // Apply blue rotation direction (if targeting blue or both).
+    // Invisible placeholder = hand not really there (both-required Step shape).
     if (
       (targetHand === "both" || targetHand === "blue") &&
       entry.blue !== null &&
-      step.motions?.blue
+      isVisibleMotion(step.motions?.blue)
     ) {
       const result = applyRotationToMotion(
         entry.blue,
@@ -161,7 +163,7 @@ export async function applyPattern(
     if (
       (targetHand === "both" || targetHand === "red") &&
       entry.red !== null &&
-      step.motions?.red
+      isVisibleMotion(step.motions?.red)
     ) {
       const result = applyRotationToMotion(
         entry.red,
@@ -512,7 +514,7 @@ function propagateOrientations(steps: StepData[]): void {
     const nextStep = steps[i + 1];
     if (!currentStep || !nextStep) continue;
 
-    if (currentStep.motions?.blue && nextStep.motions?.blue) {
+    if (isVisibleMotion(currentStep.motions?.blue) && isVisibleMotion(nextStep.motions?.blue)) {
       const currentEndOrientation = currentStep.motions.blue.endOrientation;
       const nextStartOrientation = nextStep.motions.blue.startOrientation;
 
@@ -533,7 +535,7 @@ function propagateOrientations(steps: StepData[]): void {
       }
     }
 
-    if (currentStep.motions?.red && nextStep.motions?.red) {
+    if (isVisibleMotion(currentStep.motions?.red) && isVisibleMotion(nextStep.motions?.red)) {
       const currentEndOrientation = currentStep.motions.red.endOrientation;
       const nextStartOrientation = nextStep.motions.red.startOrientation;
 

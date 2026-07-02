@@ -47,6 +47,7 @@ export interface TurnPatternApplyResult {
 }
 import {
   createMotionData,
+  isVisibleMotion,
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
@@ -71,8 +72,10 @@ export function extractPattern(sequence: SequenceData, name: string): TurnPatter
     const beat = sequence.steps[i];
     if (!beat) continue;
 
-    const blueMotion = beat.motions?.blue;
-    const redMotion = beat.motions?.red;
+    // Invisible placeholder = hand not really there (both-required Step
+    // shape): extract null (the "skip this hand" signal), never placeholder turns.
+    const blueMotion = isVisibleMotion(beat.motions?.blue) ? beat.motions.blue : undefined;
+    const redMotion = isVisibleMotion(beat.motions?.red) ? beat.motions.red : undefined;
 
     entries.push({
       stepIndex: i,
@@ -118,7 +121,7 @@ export function applyPattern(
     if (
       (targetHand === "both" || targetHand === "blue") &&
       entry.blue !== null &&
-      step.motions?.blue
+      isVisibleMotion(step.motions?.blue)
     ) {
       const result = applyTurnToMotion(
         entry.blue,
@@ -140,7 +143,7 @@ export function applyPattern(
     if (
       (targetHand === "both" || targetHand === "red") &&
       entry.red !== null &&
-      step.motions?.red
+      isVisibleMotion(step.motions?.red)
     ) {
       const result = applyTurnToMotion(
         entry.red,
@@ -172,8 +175,9 @@ export function applyPattern(
     const nextStep = updatedSteps[i + 1];
     if (!currentStep || !nextStep) continue;
 
-    // Propagate blue motion orientation
-    if (currentStep.motions?.blue && nextStep.motions?.blue) {
+    // Propagate blue motion orientation (skip invisible placeholders — the
+    // hand isn't really there on that beat)
+    if (isVisibleMotion(currentStep.motions?.blue) && isVisibleMotion(nextStep.motions?.blue)) {
       const currentEndOrientation = currentStep.motions.blue.endOrientation;
       const nextStartOrientation = nextStep.motions.blue.startOrientation;
 
@@ -195,7 +199,7 @@ export function applyPattern(
     }
 
     // Propagate red motion orientation
-    if (currentStep.motions?.red && nextStep.motions?.red) {
+    if (isVisibleMotion(currentStep.motions?.red) && isVisibleMotion(nextStep.motions?.red)) {
       const currentEndOrientation = currentStep.motions.red.endOrientation;
       const nextStartOrientation = nextStep.motions.red.startOrientation;
 

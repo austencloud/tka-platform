@@ -43,13 +43,13 @@ function twoStepSeq(): SequenceData {
       {
         id: "s1",
         stepNumber: 1, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
-        startPosition: null, endPosition: null,
+        letter: null, startPosition: null, endPosition: null,
         motions: { blue: motion(), red: motion() },
       },
       {
         id: "s2",
         stepNumber: 2, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
-        startPosition: null, endPosition: null,
+        letter: null, startPosition: null, endPosition: null,
         motions: { blue: motion(), red: motion() },
       },
     ],

@@ -4,11 +4,11 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import { createStartPositionData } from "$lib/shared/foundation/domain/factories/create-start-position-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type {
-  MotionColor} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
+  MotionColor,
   MotionType,
   RotationDirection,
   Orientation,
@@ -127,7 +127,11 @@ const INLINE_PREFIX = "s~";
 
 
 function encodeMotion(motion: MotionData | undefined): string {
-  if (!motion) return "";
+  // An invisible motion is the both-required step layer's encoding of "this
+  // hand is not really there" (placeholder / stripped hand). Encode it as an
+  // empty segment — byte-identical to the pre-migration absent-hand output,
+  // and the decoder synthesizes the placeholder back on the way in.
+  if (!motion || motion.isVisible === false) return "";
 
   const startLoc = LOCATION_ENCODE[motion.startLocation];
   const endLoc = LOCATION_ENCODE[motion.endLocation];
@@ -376,18 +380,7 @@ export function encodeSequence(sequence: SequenceData): string {
       startPositionStep = step0;
       actualSteps = sequence.steps.filter((b) => b.stepNumber !== 0);
     } else {
-      startPositionStep = {
-        stepNumber: 0,
-        motions: { blue: undefined, red: undefined },
-        duration: 1,
-        blueReversal: false,
-        redReversal: false,
-        isBlank: true,
-        id: crypto.randomUUID(),
-        letter: null,
-        startPosition: null,
-        endPosition: null,
-      };
+      startPositionStep = createStartPositionData({ id: crypto.randomUUID() });
       actualSteps = sequence.steps;
     }
   }
@@ -423,16 +416,25 @@ export function decodeSequence(encoded: string): SequenceData {
   const beatEncodings = parts.slice(1);
   if (beatEncodings.length === 0) throw new Error("Invalid sequence encoding - no beats");
 
+  // Per-hand location chain: an empty segment ("this hand is not really
+  // there") synthesizes an invisible static placeholder at the hand's last
+  // known location/orientation, keeping the both-required Step shape while
+  // the re-encode path (encodeMotion) drops it back to an empty segment.
+  let blueLoc: GridLocation | undefined;
+  let redLoc: GridLocation | undefined;
   const decodeChained = (enc: string, stepNumber: number): StepData => {
     const segs = enc.split(":");
     const blue = decodeMotion(segs[0] ?? "", "blue", blueOri, blueProp);
     const red = decodeMotion(segs[1] ?? "", "red", redOri, redProp);
-    if (blue) blueOri = blue.endOrientation;
-    if (red) redOri = red.endOrientation;
+    if (blue) { blueOri = blue.endOrientation; blueLoc = blue.endLocation; }
+    if (red) { redOri = red.endOrientation; redLoc = red.endLocation; }
     return {
       stepNumber, duration: 1, blueReversal: false, redReversal: false,
       isBlank: !(segs[0] ?? "") && !(segs[1] ?? ""),
-      motions: { blue, red },
+      motions: {
+        blue: blue ?? createPlaceholderMotion(MotionColor.BLUE, { location: blueLoc, orientation: blueOri }),
+        red: red ?? createPlaceholderMotion(MotionColor.RED, { location: redLoc, orientation: redOri }),
+      },
       id: crypto.randomUUID(), letter: null, startPosition: null, endPosition: null,
     };
   };

@@ -12,6 +12,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import type { SequenceAnimationState } from "../animation/sequence-animation-state.svelte";
 import type { SequenceCoreState } from "../core/sequence-core-state.svelte";
 import type { SequenceSelectionState } from "../selection/sequence-selection-state.svelte";
@@ -41,19 +42,11 @@ export function createSequenceBeatOperations(config: StepOperationsConfig) {
     sequence: SequenceData,
     stepData?: Partial<StepData>
   ): SequenceData {
-    const newStep: StepData = {
-      id: stepData?.id ?? crypto.randomUUID(),
-      stepNumber: sequence.steps.length + 1,
-      isBlank: stepData?.isBlank ?? true,
-      duration: stepData?.duration ?? 1,
-      blueReversal: stepData?.blueReversal ?? false,
-      redReversal: stepData?.redReversal ?? false,
-      letter: stepData?.letter ?? null,
-      startPosition: stepData?.startPosition ?? null,
-      endPosition: stepData?.endPosition ?? null,
-      motions: stepData?.motions ?? {},
+    const newStep: StepData = createStepData({
+      isBlank: true,
       ...(stepData ?? {}),
-    };
+      stepNumber: stepData?.stepNumber ?? sequence.steps.length + 1,
+    });
     return { ...sequence, steps: [...sequence.steps, newStep] };
   }
 
@@ -97,19 +90,11 @@ export function createSequenceBeatOperations(config: StepOperationsConfig) {
     stepIndex: number,
     stepData: Partial<StepData>
   ): SequenceData {
-    const newStep: StepData = {
-      id: stepData.id ?? crypto.randomUUID(),
-      stepNumber: stepIndex + 1,
-      isBlank: stepData.isBlank ?? true,
-      duration: stepData.duration ?? 1,
-      blueReversal: stepData.blueReversal ?? false,
-      redReversal: stepData.redReversal ?? false,
-      letter: stepData.letter ?? null,
-      startPosition: stepData.startPosition ?? null,
-      endPosition: stepData.endPosition ?? null,
-      motions: stepData.motions ?? {},
+    const newStep: StepData = createStepData({
+      isBlank: true,
       ...stepData,
-    };
+      stepNumber: stepData.stepNumber ?? stepIndex + 1,
+    });
     const newSteps = [
       ...sequence.steps.slice(0, stepIndex),
       newStep,

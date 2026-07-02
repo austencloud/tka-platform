@@ -2,7 +2,7 @@ import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/servic
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { createMotionData, isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/create-pictograph-data";
 import {
   MotionType,
@@ -18,7 +18,8 @@ export class StartPositionDeriver {
     const blueMotion = firstStep.motions?.[MotionColor.BLUE];
     const redMotion = firstStep.motions?.[MotionColor.RED];
 
-    if (!blueMotion || !redMotion) {
+    // Invisible placeholder = hand not really there (both-required Step shape).
+    if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) {
       throw new Error(
         "Cannot derive start position: first beat missing blue or red motion"
       );

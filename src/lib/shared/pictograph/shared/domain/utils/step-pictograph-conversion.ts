@@ -7,6 +7,7 @@
  */
 
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createPictographData } from "../factories/create-pictograph-data";
 import type { PictographData } from "../models/pictograph-data";
 
@@ -61,7 +62,9 @@ export function pictographDataToStepData(
     isBlank?: boolean;
   };
 
-  return {
+  // The factory fills any missing hand with an invisible placeholder so the
+  // both-required canonical Step shape holds even for one-hand pictographs.
+  return createStepData({
     ...enhancedData, // Spread all PictographData properties
     id: stepId || enhancedData.id,
     stepNumber: enhancedDataWithBeatContext.stepNumber ?? 1,
@@ -69,7 +72,7 @@ export function pictographDataToStepData(
     blueReversal: enhancedDataWithBeatContext.blueReversal ?? false,
     redReversal: enhancedDataWithBeatContext.redReversal ?? false,
     isBlank: enhancedDataWithBeatContext.isBlank ?? false,
-  };
+  });
 }
 
 /**

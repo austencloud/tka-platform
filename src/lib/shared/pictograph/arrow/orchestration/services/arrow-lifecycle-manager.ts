@@ -10,7 +10,10 @@
  */
 
 import type { PictographData } from "../../../shared/domain/models/pictograph-data";
-import type { MotionData } from "../../../shared/domain/models/motion-data";
+import {
+  isVisibleMotion,
+  type MotionData,
+} from "../../../shared/domain/models/motion-data";
 import type { ArrowSvgLoader } from "../../rendering/services/arrow-svg-loader";
 import {
   calculateArrowPoint,
@@ -178,7 +181,8 @@ export class ArrowLifecycleManager {
     // Process all motions in parallel for better performance
     const motionPromises = Object.entries(pictographData.motions).map(
       async ([color, motionData]) => {
-        if (!motionData) {
+        // invisible placeholder = hand not really there (both-required Step shape)
+        if (!isVisibleMotion(motionData)) {
           return;
         }
 

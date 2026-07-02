@@ -2,6 +2,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 export class FrameBuilder {
   calculateBeatNumber(
@@ -23,8 +24,8 @@ export class FrameBuilder {
     if (
       !stepData ||
       !("motions" in stepData) ||
-      !stepData.motions?.blue ||
-      !stepData.motions?.red
+      !isVisibleMotion(stepData.motions?.blue) ||
+      !isVisibleMotion(stepData.motions?.red)
     ) {
       return "(s, 0, 0)";
     }

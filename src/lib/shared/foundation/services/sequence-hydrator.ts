@@ -8,6 +8,7 @@ import type { SequenceData } from "../domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { MotionType, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { calculateHandpathDirection } from "$lib/shared/pictograph/arrow/positioning/calculation/services/handpath-direction-calculator";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
@@ -109,7 +110,9 @@ function deriveStartPositionFromSteps(
 	steps: readonly StepData[]
 ): SequenceData["startPosition"] | undefined {
 	const first = steps[0];
-	if (!first?.motions?.blue || !first?.motions?.red) return undefined;
+	// Invisible placeholder = hand not really there (both-required Step shape);
+	// deriving a start cell from a placeholder's default location would lie.
+	if (!isVisibleMotion(first?.motions?.blue) || !isVisibleMotion(first?.motions?.red)) return undefined;
 	try {
 		return startPositionDeriver.deriveFromFirstBeat(first) as SequenceData["startPosition"];
 	} catch {

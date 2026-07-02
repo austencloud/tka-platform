@@ -25,6 +25,7 @@
  */
 
 import { TnDMode, MotionColor } from "../enums/pictograph-enums";
+import { isVisibleMotion } from "../models/motion-data";
 import type { GridLocation } from "../../../grid/domain/enums/grid-enums";
 import type { PictographData } from "../models/pictograph-data";
 import { deriveHandOrbitalDirection } from "../../../../render/core/calculations/orientation";
@@ -111,7 +112,8 @@ export function deriveTnDFromPictograph(
 ): TnDCalculationResult {
   const blue = p?.motions?.[MotionColor.BLUE];
   const red = p?.motions?.[MotionColor.RED];
-  if (!blue || !red) return NULL_RESULT;
+  // Invisible placeholder = hand not really there (both-required Step shape).
+  if (!isVisibleMotion(blue) || !isVisibleMotion(red)) return NULL_RESULT;
 
   return deriveTnD(
     blue.startLocation,

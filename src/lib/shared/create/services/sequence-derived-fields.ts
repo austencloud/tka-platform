@@ -12,6 +12,8 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
@@ -31,7 +33,10 @@ export function reconcileStepDerived<T extends StepData>(step: T): T {
 
   const blue = step.motions?.[MotionColor.BLUE];
   const red = step.motions?.[MotionColor.RED];
-  if (!blue || !red) return step;
+  // A hand that is "not really there" is an invisible placeholder under the
+  // both-required Step shape — same pass-through as the old absent-hand skip
+  // (deriving positions from a placeholder's default location would corrupt).
+  if (!isVisibleMotion(blue) || !isVisibleMotion(red)) return step;
 
   const gridMode: GridMode = deriveGridMode(blue, red);
 
@@ -78,17 +83,18 @@ export function normalizeSequenceDerived(seq: SequenceData): SequenceData {
   const firstReal = steps.find(
     (s) =>
       !s.isBlank &&
-      s.motions?.[MotionColor.BLUE] &&
-      s.motions?.[MotionColor.RED]
+      isVisibleMotion(s.motions?.[MotionColor.BLUE]) &&
+      isVisibleMotion(s.motions?.[MotionColor.RED])
   );
   const gridMode = firstReal?.gridMode ?? seq.gridMode;
 
   return updateSequenceData(seq, { steps, gridMode });
 }
 
-/** Minimal pose shape shared by StepData and StartPositionData for rotation. */
+/** Minimal pose shape shared by StepData and StartPositionData for rotation.
+ *  Motions stay partial here: StartPositionData is a pictograph-level pose. */
 type RotatablePose = {
-  motions?: StepData["motions"];
+  motions?: Partial<Record<MotionColor, MotionData | undefined>>;
   isBlank?: boolean;
 };
 
@@ -128,7 +134,10 @@ export function rotateSequenceGeometry(seq: SequenceData, steps: number): Sequen
     : seq.startingPosition;
 
   const firstReal = rotatedSteps.find(
-    (s) => !s.isBlank && s.motions?.[MotionColor.BLUE] && s.motions?.[MotionColor.RED]
+    (s) =>
+      !s.isBlank &&
+      isVisibleMotion(s.motions?.[MotionColor.BLUE]) &&
+      isVisibleMotion(s.motions?.[MotionColor.RED])
   );
   const gridMode = firstReal?.gridMode ?? startPosition?.gridMode ?? seq.gridMode;
 

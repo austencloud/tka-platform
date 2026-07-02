@@ -35,6 +35,7 @@ with pre-prepared data for better performance.
   import { pictographPreparer } from "../services/pictograph-preparer";
   import type { PreparedPictographData } from "../domain/models/prepared-pictograph-data";
   import type { PictographData } from "../domain/models/pictograph-data";
+  import { isVisibleMotion } from "../domain/models/motion-data";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { PropType } from "../../prop/domain/enums/prop-type";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
@@ -293,10 +294,10 @@ with pre-prepared data for better performance.
     const blueMotion = pictographData.motions?.blue;
     const redMotion = pictographData.motions?.red;
 
-    if (blueMotion?.endLocation) {
+    if (isVisibleMotion(blueMotion) && blueMotion.endLocation) {
       locations.push(blueMotion.endLocation as GridLocation);
     }
-    if (redMotion?.endLocation) {
+    if (isVisibleMotion(redMotion) && redMotion.endLocation) {
       locations.push(redMotion.endLocation as GridLocation);
     }
 

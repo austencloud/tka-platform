@@ -15,6 +15,8 @@ export interface MotionLike {
 	startOrientation?: string;
 	endOrientation?: string;
 	pathShape?: "arc" | "linear" | "concave";
+	/** false = invisible placeholder — hand not really there (both-required Step shape) */
+	isVisible?: boolean;
 }
 
 export interface MandalaPathOptions {

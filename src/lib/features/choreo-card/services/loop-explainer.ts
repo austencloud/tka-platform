@@ -9,6 +9,7 @@
  * Does NOT modify the LOOPDetector - wraps its output with richer analysis.
  */
 
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -380,7 +381,13 @@ function checkSwapped(a: readonly StepData[], b: readonly StepData[]): boolean {
     const bBlue = stepB.motions?.blue;
     const bRed = stepB.motions?.red;
 
-    if (aBlue && aRed && bBlue && bRed) {
+    // Invisible placeholder = hand not really there (both-required Step shape).
+    if (
+      isVisibleMotion(aBlue) &&
+      isVisibleMotion(aRed) &&
+      isVisibleMotion(bBlue) &&
+      isVisibleMotion(bRed)
+    ) {
       if (aBlue.motionType === aRed.motionType) continue;
       checkCount++;
       if (
@@ -417,14 +424,14 @@ function checkInverted(a: readonly StepData[], b: readonly StepData[]): boolean 
 
     const aBlue = stepA.motions?.blue;
     const bBlue = stepB.motions?.blue;
-    if (aBlue && bBlue) {
+    if (isVisibleMotion(aBlue) && isVisibleMotion(bBlue)) {
       validComparisons++;
       if (!isMotionTypeInverted(aBlue.motionType, bBlue.motionType)) return false;
     }
 
     const aRed = stepA.motions?.red;
     const bRed = stepB.motions?.red;
-    if (aRed && bRed) {
+    if (isVisibleMotion(aRed) && isVisibleMotion(bRed)) {
       validComparisons++;
       if (!isMotionTypeInverted(aRed.motionType, bRed.motionType)) return false;
     }

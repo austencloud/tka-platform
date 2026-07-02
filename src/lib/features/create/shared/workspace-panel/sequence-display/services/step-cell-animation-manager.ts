@@ -8,6 +8,7 @@
  * spread across multiple $effect blocks and state variables in StepCell.svelte.
  */
 
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StepCellAnimationState, StepCellAnimationConfig } from "./types";
 
@@ -18,8 +19,11 @@ import type { StepCellAnimationState, StepCellAnimationConfig } from "./types";
 function getPictographSignature(stepData: StepData): string {
   if (stepData.isBlank) return "blank";
 
-  const hasBlue = !!stepData.motions?.blue;
-  const hasRed = !!stepData.motions?.red;
+  // Invisible placeholder = hand not really there (both-required Step shape):
+  // encode only visible hands so absence-to-presence transitions still
+  // retrigger the cell bloom animation.
+  const hasBlue = isVisibleMotion(stepData.motions?.blue);
+  const hasRed = isVisibleMotion(stepData.motions?.red);
   const motionStructure = `${hasBlue ? "B" : ""}${hasRed ? "R" : ""}`;
 
   return `${stepData.letter || "null"}-${motionStructure}`;

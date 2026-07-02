@@ -9,6 +9,7 @@
  */
 
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { RenderFrameParams } from "./IAnimationRenderLoop";
 import { type TrailSettings, DEFAULT_TRAIL_SETTINGS, TrailMode } from "../domain/types/trail-types";
@@ -499,15 +500,16 @@ export class FrameParameterBuilder {
     let hasBlue = false;
     let hasRed = false;
 
-    // Check start position
+    // Check start position. Invisible placeholders count as "not there"
+    // (both-required Step shape: absence is encoded as isVisible:false).
     const startPos = seq.startPosition ?? seq.startingPosition;
-    if (startPos?.motions?.blue) hasBlue = true;
-    if (startPos?.motions?.red) hasRed = true;
+    if (isVisibleMotion(startPos?.motions?.blue)) hasBlue = true;
+    if (isVisibleMotion(startPos?.motions?.red)) hasRed = true;
 
     // Check all steps
     for (const step of steps) {
-      if (step.motions?.blue) hasBlue = true;
-      if (step.motions?.red) hasRed = true;
+      if (isVisibleMotion(step.motions?.blue)) hasBlue = true;
+      if (isVisibleMotion(step.motions?.red)) hasRed = true;
       if (hasBlue && hasRed) break;
     }
 

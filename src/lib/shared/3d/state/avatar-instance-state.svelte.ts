@@ -34,6 +34,7 @@ import {
 import type { EffectType } from "$lib/shared/effects/domain/effects-config";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PerformerDomainSnapshot } from "../undo/scene-undo-types";
 
 // ============================================
@@ -81,24 +82,25 @@ function isSeamlesslyLoopable(sequence: SequenceData): boolean {
   }
 
   // Check blue prop orientations
+  // invisible placeholder = hand not really there (both-required Step shape)
   const blueFirst = firstStep.motions?.blue;
   const blueLast = lastStep.motions?.blue;
-  if (blueFirst && blueLast) {
+  if (isVisibleMotion(blueFirst) && isVisibleMotion(blueLast)) {
     if (blueFirst.startOrientation !== blueLast.endOrientation) {
       return false;
     }
-  } else if (blueFirst || blueLast) {
+  } else if (isVisibleMotion(blueFirst) || isVisibleMotion(blueLast)) {
     return false;
   }
 
   // Check red prop orientations
   const redFirst = firstStep.motions?.red;
   const redLast = lastStep.motions?.red;
-  if (redFirst && redLast) {
+  if (isVisibleMotion(redFirst) && isVisibleMotion(redLast)) {
     if (redFirst.startOrientation !== redLast.endOrientation) {
       return false;
     }
-  } else if (redFirst || redLast) {
+  } else if (isVisibleMotion(redFirst) || isVisibleMotion(redLast)) {
     return false;
   }
 

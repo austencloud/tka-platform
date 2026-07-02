@@ -1,27 +1,26 @@
 /**
  * Motion Data Domain Model
  *
- * Immutable motion data for props and arrows with embedded placement data.
- * Represents complete motion information including positioning and rendering data.
+ * The app's working motion type: a canonical `@tka/tka-types` `Motion`
+ * composed with REQUIRED view-layer fields (visibility, prop type, computed
+ * arrow location, grid mode, placement data) plus the optional authored view
+ * fields (handPath, skew, pathShape).
  *
- * @deprecated This type mixes engine-structural and view-layer concerns.
- * Migrate consumers to one of:
- *   - `Motion` from `@tka/tka-types` - engine/structural fields only
- *     (motionType, startLocation, endLocation, rotationDirection,
- *     startOrientation, endOrientation, turns, plane, color, prefloat fields)
- *   - `MotionView` from `./motion-view` - visual/runtime fields only
- *     (isVisible, propType, arrowLocation, gridMode, arrowPlacementData,
- *     propPlacementData, handPath, skewSteps, skewDir)
- *   - `MotionWithView` from `./motion-view` - composition for mixed consumers
+ * Since 2026-07-02 this extends the canonical `Motion` directly, so every
+ * `MotionData` IS a `Motion` (and a `MotionWithView`) by declaration — no
+ * bridge needed. The view fields stay required here because rendering needs
+ * them; `MotionView`/`MotionWithView` (./motion-view) model the same fields
+ * as optional for consumers that accept lean engine output.
  *
- * See docs/superpowers/specs/2026-04-20-sequence-engine-unification-design.md
- * (Phase 2a - Sequence Engine Unification).
+ * The only narrowed fields are `motionType`/`prefloatMotionType` (the app
+ * union omits the canonical "shift" generalization) and `color` (required
+ * app-side).
  */
 
 // IMPORTANT: Import directly from specific files to avoid circular dependencies
 // DO NOT import from barrel exports (../../../arrow, ../../../prop) as they import MotionData
+import type { Motion } from "@tka/tka-types";
 import { type ArrowPlacementData } from "../../../arrow/positioning/placement/domain/arrow-placement-data";
-import type { Plane } from "@austencloud/scene-3d";
 import { createArrowPlacementData } from "../../../arrow/positioning/placement/domain/create-arrow-placement-data";
 import { GridLocation, GridMode } from "../../../grid/domain/enums/grid-enums";
 import { type PropPlacementData } from "../../../prop/domain/models/prop-placement-data";
@@ -37,14 +36,11 @@ import {
   Orientation
 } from "../enums/pictograph-enums";
 
-export interface MotionData {
+export interface MotionData extends Motion {
+  // App narrowing of the canonical superset (no "shift" in app data).
   readonly motionType: MotionType;
-  readonly rotationDirection: RotationDirection;
-  readonly startLocation: GridLocation;
-  readonly endLocation: GridLocation;
-  readonly turns: number | "fl"; // Can be 'fl' for float motions
-  readonly startOrientation: Orientation;
-  readonly endOrientation: Orientation;
+  readonly prefloatMotionType?: MotionType;
+
   readonly isVisible: boolean;
   readonly propType: PropType;
   readonly arrowLocation: GridLocation;
@@ -54,10 +50,6 @@ export interface MotionData {
   // EMBEDDED PLACEMENT DATA: Everything accessible through motion data
   readonly arrowPlacementData: ArrowPlacementData;
   readonly propPlacementData: PropPlacementData;
-
-  // Prefloat attributes for letter determination
-  readonly prefloatMotionType?: MotionType;
-  readonly prefloatRotationDirection?: RotationDirection;
 
   // Hand path direction - essential for floats (no rotation to derive from),
   // explicitly stored for all motion types for self-documenting data
@@ -69,11 +61,6 @@ export interface MotionData {
   // Direction of skew: + goes further, - goes less far than normal
   // Only meaningful when skewSteps > 0
   readonly skewDir?: SkewDirection | null;
-
-  // Which 3D plane this motion is performed on.
-  // Absent/undefined = Plane.WALL (backward compatible).
-  // Only used by the 3D viewer - 2D pictographs ignore this field.
-  readonly plane?: Plane;
 
   // Per-step path shape override for animation interpolation.
   // Absent/undefined = use global pathShape setting.
@@ -136,4 +123,44 @@ export function createMotionData(data: Partial<MotionData> = {}): MotionData {
     plane: data.plane ?? undefined,
     pathShape: data.pathShape ?? undefined,
   };
+}
+
+/**
+ * A hand that is "not really there" — the single absence encoding for the
+ * both-required step layer (see docs/superpowers/specs/active/
+ * 2026-07-02-stepdata-step-absence-encoding-design.md).
+ *
+ * A static, non-rotating motion at the hand's last known location/orientation
+ * (hard default NORTH/IN — same recipe as the sequence-decomposer placeholder),
+ * marked `isVisible: false` so renderers, the animation engine, and derivation
+ * gates skip it exactly where they used to skip an absent motion.
+ */
+/**
+ * True when the hand is really there: present AND not an invisible
+ * placeholder / stripped hand. The presence-as-signal sites that used to
+ * branch on `if (motion)` branch on this after the both-required flip.
+ */
+export function isVisibleMotion<M extends { readonly isVisible?: boolean }>(
+  m: M | null | undefined
+): m is M {
+  return !!m && m.isVisible !== false;
+}
+
+export function createPlaceholderMotion(
+  color: MotionColor,
+  opts: { location?: GridLocation; orientation?: Orientation } = {}
+): MotionData {
+  const location = opts.location ?? GridLocation.NORTH;
+  const orientation = opts.orientation ?? Orientation.IN;
+  return createMotionData({
+    color,
+    motionType: MotionType.STATIC,
+    rotationDirection: RotationDirection.NO_ROTATION,
+    startLocation: location,
+    endLocation: location,
+    startOrientation: orientation,
+    endOrientation: orientation,
+    turns: 0,
+    isVisible: false,
+  });
 }

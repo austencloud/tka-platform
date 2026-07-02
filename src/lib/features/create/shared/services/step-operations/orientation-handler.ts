@@ -10,6 +10,7 @@ import { createStartPositionData } from "$lib/shared/create/factories/create-sta
 import type { ICreateModuleState } from "../../types/create-module-types";
 import {
   createMotionData,
+  isVisibleMotion,
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -233,7 +234,9 @@ export function calculatePropagatedSteps(
 
     const beatMotion: MotionData | undefined =
       beat.motions[color as MotionColor];
-    if (!beatMotion) {
+    // Invisible placeholder = hand not really there (both-required Step
+    // shape): keep breaking the propagation chain at blank/one-hand beats.
+    if (!isVisibleMotion(beatMotion)) {
       logger.warn(
         `No motion data for ${color} at beat ${i + 1}, stopping propagation`
       );

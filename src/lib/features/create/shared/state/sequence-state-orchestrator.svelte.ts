@@ -19,6 +19,7 @@
 import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
 import type { ArrowPosition } from "$lib/shared/pictograph/arrow/orchestration/domain/arrow-models";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ValidationResult } from "$lib/shared/validation/validation-result";
@@ -434,14 +435,14 @@ export function createSequenceState(services: SequenceStateServices) {
       selectionState.isStartPositionSelected &&
       selectionState.selectedStartPosition
     ) {
-      return {
+      // Factory fills any missing hand with an invisible placeholder
+      // (both-required canonical Step shape).
+      return createStepData({
         ...selectionState.selectedStartPosition,
         stepNumber: 0,
         duration: 1,
-        blueReversal: false,
-        redReversal: false,
         isBlank: false,
-      };
+      });
     }
 
     // Otherwise return selected beat

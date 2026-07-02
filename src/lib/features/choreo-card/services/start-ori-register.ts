@@ -17,6 +17,7 @@
  * Pure module — no sequence-engine / firebase deps, so it loads in unit tests
  * (unlike deck-variation.ts). deck-variation re-exports for backward compat.
  */
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import { Orientation, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
@@ -37,7 +38,8 @@ export function positionFamilyOf(sp: StartPositionData): PositionFamily | null {
   if (!pos) {
     const blue = sp.motions?.[MotionColor.BLUE];
     const red = sp.motions?.[MotionColor.RED];
-    if (blue && red) {
+    // Invisible placeholder = hand not really there (both-required Step shape).
+    if (isVisibleMotion(blue) && isVisibleMotion(red)) {
       try {
         pos = getGridPositionFromLocations(blue.startLocation, red.startLocation);
       } catch {

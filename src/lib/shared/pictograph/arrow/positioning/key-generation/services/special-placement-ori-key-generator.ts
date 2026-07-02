@@ -4,6 +4,7 @@
  */
 
 import type { MotionData } from "../../../../shared/domain/models/motion-data";
+import { isVisibleMotion } from "../../../../shared/domain/models/motion-data";
 import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 
 export function generateOrientationKey(
@@ -13,7 +14,9 @@ export function generateOrientationKey(
   try {
     const blueMotion = pictographData.motions.blue;
     const redMotion = pictographData.motions.red;
-    if (blueMotion && redMotion) {
+    // Invisible placeholder = hand not really there (both-required Step
+    // shape): keep the "in_in" fallback the old absent-hand path produced.
+    if (isVisibleMotion(blueMotion) && isVisibleMotion(redMotion)) {
       const blueStartOri = blueMotion.startOrientation || "in";
       const redStartOri = redMotion.startOrientation || "in";
       return `${blueStartOri}_${redStartOri}`;

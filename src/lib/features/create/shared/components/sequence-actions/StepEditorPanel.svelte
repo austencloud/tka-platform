@@ -22,6 +22,7 @@
   import { stepEditorTourState } from "$lib/shared/onboarding/state/step-editor-tour-state.svelte";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionColor,
     MotionType,
@@ -270,12 +271,17 @@
       : "none",
   );
 
-  // Beta swap state — both hands end at same location
+  // Beta swap state — both hands end at same location. Invisible placeholder =
+  // hand not really there (both-required Step shape): not a beta position.
   const isBetaPosition = $derived.by(() => {
     if (!displayedStepData || isStartPositionSelected) return false;
     const blue = displayedStepData.motions?.[MotionColor.BLUE];
     const red = displayedStepData.motions?.[MotionColor.RED];
-    return !!(blue && red && blue.endLocation === red.endLocation);
+    return !!(
+      isVisibleMotion(blue) &&
+      isVisibleMotion(red) &&
+      blue.endLocation === red.endLocation
+    );
   });
   const isBetaSwapped = $derived(!!displayedStepData?.betaSwapped);
 

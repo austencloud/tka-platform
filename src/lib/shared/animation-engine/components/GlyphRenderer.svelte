@@ -31,6 +31,7 @@ canvas rendering. This ensures the entire glyph fades as a unified unit.
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
+  import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { onMount } from "svelte";
 
   let {
@@ -53,7 +54,11 @@ canvas rendering. This ensures the entire glyph fades as a unified unit.
 
   // Generate turns tuple from step data
   const turnsTuple = $derived.by(() => {
-    if (!stepData || !stepData.motions?.blue || !stepData.motions?.red) {
+    if (
+      !stepData ||
+      !isVisibleMotion(stepData.motions?.blue) ||
+      !isVisibleMotion(stepData.motions?.red)
+    ) {
       return "(s, 0, 0)";
     }
     return turnsTupleGenerator.generateTurnsTuple(stepData);

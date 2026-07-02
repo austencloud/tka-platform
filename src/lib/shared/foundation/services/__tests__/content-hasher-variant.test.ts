@@ -20,13 +20,13 @@ function seq() {
       {
         id: "s1",
         stepNumber: 1, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
-        startPosition: null, endPosition: null,
+        letter: null, startPosition: null, endPosition: null,
         motions: { blue: m(), red: m() },
       },
       {
         id: "s2",
         stepNumber: 2, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
-        startPosition: null, endPosition: null,
+        letter: null, startPosition: null, endPosition: null,
         motions: { blue: m(), red: m() },
       },
     ],

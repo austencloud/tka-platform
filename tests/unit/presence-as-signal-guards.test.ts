@@ -1,18 +1,20 @@
 /**
  * Presence-as-Signal Guards — StepData→Step migration tripwires.
  *
- * App `StepData.motions` is Partial<Record<MotionColor, MotionData>>; canonical
- * `Step.motions` is {blue, red} BOTH REQUIRED. These sites branch on motion
- * ABSENCE — after adoption their checks become always-true and behavior changes
- * SILENTLY (the compiler cannot flag it, the data/pixel parity nets see data
- * drift not logic drift). Each test locks the CURRENT absence semantics.
+ * Since 2026-07-02 `StepData.motions` is {blue, red} BOTH REQUIRED (canonical
+ * Step shape) and "this hand is not really there" is an INVISIBLE STATIC
+ * PLACEHOLDER (`createStepData` fills missing hands; `isVisibleMotion` is the
+ * presence predicate at every re-encoded site). These tests lock that the
+ * re-encoded semantics match the old absence semantics exactly: one-hand and
+ * blank steps still skip derivation, still hash with the "-" sentinel, still
+ * animate solo, still suppress the missing prop.
  *
- * A failing test here during the migration is the tripwire working: whoever
- * flips the type must consciously re-encode the absent state (isBlank, view-side
- * visibility, or explicit presence flag) — not delete the test.
+ * A failing test here is the tripwire working: whoever changes the encoding
+ * must consciously re-encode these behaviors — not delete the test.
  *
- * Full 110-site register:
+ * Full 110-site register + absence-encoding design:
  * docs/superpowers/specs/active/2026-07-01-presence-as-signal-register.md
+ * docs/superpowers/specs/active/2026-07-02-stepdata-step-absence-encoding-design.md
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createMotionData, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
@@ -256,18 +258,33 @@ describe("ensureMotionData — motion absence triggers the gallery fetch", () =>
     expect(loadFullSequenceData).not.toHaveBeenCalled();
   });
 
-  it("thin sequence (no step has both motions) fetches from the gallery", async () => {
+  // Thin gallery records are RAW Firestore blobs that never passed through the
+  // factory — their motions really are absent at runtime, whatever the type
+  // says. Model them as raw-shaped objects, not factory output (which now
+  // placeholder-fills and therefore reads as full data).
+  function rawThinStep(): StepData {
+    return { ...bothHandStep(), motions: {} } as unknown as StepData;
+  }
+
+  it("thin sequence (raw record, no step has both motions) fetches from the gallery", async () => {
     const hydrated = seq([bothHandStep()]);
     loadFullSequenceData.mockResolvedValue(hydrated);
-    const out = await ensureMotionData(seq([oneHandStep()]));
+    const out = await ensureMotionData(seq([rawThinStep()]));
     expect(loadFullSequenceData).toHaveBeenCalledWith("GUARD");
     expect(out).toBe(hydrated);
   });
 
   it("failed fetch falls back to the original thin sequence", async () => {
     loadFullSequenceData.mockResolvedValue(null);
-    const thin = seq([oneHandStep()]);
+    const thin = seq([rawThinStep()]);
     const out = await ensureMotionData(thin);
     expect(out).toBe(thin);
+  });
+
+  it("placeholder-filled one-hand step counts as full data (assembly workspaces never re-fetch)", async () => {
+    const s = seq([oneHandStep()]);
+    const out = await ensureMotionData(s);
+    expect(out).toBe(s);
+    expect(loadFullSequenceData).not.toHaveBeenCalled();
   });
 });
