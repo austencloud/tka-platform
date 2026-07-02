@@ -369,6 +369,10 @@ instead of showing a ghost.
 	onCancel={() => (deleteConfirmOpen = false)}
 />
 
+{#if addSheetOpen && !foreignOwnerId}
+	<AddSequencesSheet {collectionId} onClose={() => (addSheetOpen = false)} />
+{/if}
+
 <style>
 	.collection-detail {
 		display: flex;
