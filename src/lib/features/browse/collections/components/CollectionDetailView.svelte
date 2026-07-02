@@ -25,6 +25,7 @@ instead of showing a ghost.
 		getUserCollectionSequences,
 	} from "$lib/features/library/services/public-collection-loader";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
+	import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
 	import { communityCollectionsState } from "../state/community-collections-state.svelte";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
 	import BrowseGrid from "$lib/features/browse/sequences/display/components/BrowseGrid.svelte";
@@ -75,6 +76,8 @@ instead of showing a ghost.
 
 		// Someone else's public collection: one-shot read, nothing to keep live.
 		if (owner) {
+			// Follow state powers the header button; idempotent if already live.
+			followedCollectionsState.ensureStarted();
 			void loadForeign(owner, id);
 			return;
 		}
@@ -287,6 +290,26 @@ instead of showing a ghost.
 			</div>
 		{/if}
 
+		{#if collection && foreignOwnerId}
+			{@const following = followedCollectionsState.isFollowed(foreignOwnerId, collectionId)}
+			<button
+				type="button"
+				class="add-btn follow-btn"
+				class:following
+				aria-pressed={following}
+				onclick={() => {
+					if (following) {
+						void followedCollectionsState.unfollow(foreignOwnerId, collectionId);
+					} else {
+						void followedCollectionsState.follow(foreignOwnerId, collectionId);
+					}
+				}}
+			>
+				<i class={`fas ${following ? "fa-check" : "fa-plus"}`} aria-hidden="true"></i>
+				<span>{following ? "Following" : "Follow"}</span>
+			</button>
+		{/if}
+
 		{#if collection && !renaming && !foreignOwnerId}
 			<button
 				type="button"
@@ -469,6 +492,17 @@ instead of showing a ghost.
 	.add-btn:focus-visible {
 		outline: 2px solid var(--tile-color);
 		outline-offset: 2px;
+	}
+
+	/* Follow/Following swap: reserve the wider state so the button's edge
+	   doesn't jump when the label changes. */
+	.follow-btn {
+		min-width: 128px;
+		justify-content: center;
+	}
+
+	.follow-btn.following {
+		background: color-mix(in srgb, var(--tile-color) 32%, transparent);
 	}
 
 	/* Same look as .add-btn, minus the auto margin (Add stays the first

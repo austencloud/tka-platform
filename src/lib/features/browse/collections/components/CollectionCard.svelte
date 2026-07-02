@@ -28,6 +28,7 @@ first and only removes the folder — the sequences inside stay in the library.
 		onOpen,
 		ownerName,
 		readonly: isReadonly = false,
+		onUnfollow,
 	}: {
 		collection: LibraryCollection;
 		onOpen: () => void;
@@ -35,6 +36,8 @@ first and only removes the folder — the sequences inside stay in the library.
 		ownerName?: string;
 		/** Someone else's collection: no kebab, no rename/delete/publish. */
 		readonly?: boolean;
+		/** Followed collection: the kebab offers Unfollow instead of owner actions. */
+		onUnfollow?: () => void;
 	} = $props();
 
 	const isSystem = $derived(isSystemCollection(collection));
@@ -46,7 +49,24 @@ first and only removes the folder — the sequences inside stay in the library.
 	let saving = $state(false);
 	let deleteConfirmOpen = $state(false);
 
-	const menuItems: ContextMenuEntry[] = $derived.by(() => [
+	const menuItems: ContextMenuEntry[] = $derived.by(() => {
+		if (onUnfollow) {
+			return [
+				{
+					id: "unfollow",
+					label: "Unfollow",
+					icon: "fa-xmark",
+					action: () => {
+						menuState = { open: false };
+						onUnfollow?.();
+					},
+				},
+			];
+		}
+		return ownerMenuItems();
+	});
+
+	const ownerMenuItems = (): ContextMenuEntry[] => [
 		{
 			id: "rename",
 			label: "Rename",
@@ -83,10 +103,10 @@ first and only removes the folder — the sequences inside stay in the library.
 				deleteConfirmOpen = true;
 			},
 		},
-	]);
+	];
 
 	function openMenuAt(x: number, y: number) {
-		if (isSystem || isReadonly) return;
+		if (isSystem || (isReadonly && !onUnfollow)) return;
 		menuState = { open: true, x, y };
 	}
 
@@ -186,7 +206,7 @@ first and only removes the folder — the sequences inside stay in the library.
 			</span>
 		</button>
 
-		{#if !isSystem && !isReadonly}
+		{#if (!isSystem && !isReadonly) || onUnfollow}
 			<button
 				type="button"
 				class="kebab"

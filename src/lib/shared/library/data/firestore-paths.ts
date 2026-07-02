@@ -50,6 +50,28 @@ export function getUserCollectionPath(
 }
 
 /**
+ * Path to a user's followed collections (references to other users' public
+ * collections). Doc id is `${ownerId}_${collectionId}` so follow state is a
+ * direct doc lookup, no query.
+ * @example "users/abc123/followedCollections"
+ */
+export function getFollowedCollectionsPath(userId: string): string {
+  return `users/${userId}/followedCollections`;
+}
+
+/**
+ * Path to a specific followed-collection reference
+ * @example "users/abc123/followedCollections/owner456_col789"
+ */
+export function getFollowedCollectionPath(
+  userId: string,
+  ownerId: string,
+  collectionId: string
+): string {
+  return `users/${userId}/followedCollections/${ownerId}_${collectionId}`;
+}
+
+/**
  * Path to a user's acts (playlists)
  * @example "users/abc123/acts"
  */

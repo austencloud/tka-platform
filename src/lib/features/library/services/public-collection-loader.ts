@@ -51,6 +51,25 @@ export async function getUserPublicCollections(
   return collections;
 }
 
+/**
+ * Fetch a single public collection doc. Returns null when it doesn't exist or
+ * isn't public — a followed collection whose owner deleted or unpublished it
+ * resolves to null and drops out of the follower's list.
+ */
+export async function getPublicCollection(
+  ownerId: string,
+  collectionId: string
+): Promise<LibraryCollection | null> {
+  const firestore = await getFirestoreInstance();
+  const snap = await getDoc(
+    doc(firestore, getUserCollectionPath(ownerId, collectionId))
+  );
+  if (!snap.exists()) return null;
+
+  const data = mapDocToCollection(snap.data(), collectionId);
+  return data.isPublic ? data : null;
+}
+
 export async function getUserCollectionSequences(
   userId: string,
   collectionId: string

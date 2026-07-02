@@ -489,6 +489,14 @@ service cloud.firestore {
       allow create, update, delete: if isOwner(userId);
     }
 
+    // Followed collections - lightweight pointers to other users' public
+    // collections (users/{uid}/followedCollections/{ownerId}_{collectionId}).
+    // Private to the follower; the pointed-at collection is already
+    // world-readable above.
+    match /users/{userId}/followedCollections/{followId} {
+      allow read, write: if isOwner(userId);
+    }
+
     // Sequences within collections
     match /users/{userId}/collections/{collectionId}/sequences/{sequenceId} {
       // ANYONE can read public sequences (no authentication required)

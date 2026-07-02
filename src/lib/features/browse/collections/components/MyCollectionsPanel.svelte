@@ -1,43 +1,36 @@
 <!--
 MyCollectionsPanel.svelte
 
-The Browse > Collections tab: YOUR collections, not a directory of everyone's
-libraries (that lives in the Creators tab). Favorites always leads — the
-subscription orders by sortOrder and Favorites is pinned to the front.
+The Browse > Library tab: YOUR stuff, one place — the All shelf (the whole
+library), Favorites, your collections, and collections you follow. Discovery
+of other people's collections lives in the gallery drill ("Collections"
+category), not here; following one from there lands it in this list.
 
 List vs detail is derived straight from browseNavigationState's current
 location, so the module's back/forward buttons and the localStorage restore
 both work without any extra sync wiring: opening a collection pushes a
 "detail" location, going back re-renders the list.
 
-Signed out, collections have nowhere to live, so the tab explains itself
+Signed out, a library has nowhere to live, so the tab explains itself
 instead of showing an empty shell.
 -->
 <script lang="ts">
 	import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
-	import {
-		communityCollectionsState,
-		type CommunityCollection,
-	} from "../state/community-collections-state.svelte";
+	import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
 	import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
-	import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
 	import CollectionCard from "./CollectionCard.svelte";
 	import CollectionDetailView from "./CollectionDetailView.svelte";
+	import AllLibraryView from "./AllLibraryView.svelte";
+	import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+	import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 
 	const signedIn = $derived(!!authState.user);
 
-	// Mine | Community. Local state survives the detail round-trip because the
-	// panel stays mounted while detail replaces the list.
-	let subView = $state<"mine" | "community">("mine");
-
 	$effect(() => {
-		if (signedIn) collectionsState.ensureStarted();
-	});
-
-	$effect(() => {
-		if (subView === "community") {
-			void communityCollectionsState.ensureLoaded();
+		if (signedIn) {
+			collectionsState.ensureStarted();
+			followedCollectionsState.ensureStarted();
 		}
 	});
 
@@ -54,6 +47,35 @@ instead of showing an empty shell.
 		),
 	);
 	const loading = $derived(collectionsState.loading);
+
+	// ── "All" shelf ──────────────────────────────────────────────────────────
+	// The library pile itself, pinned above Favorites (it's the superset).
+	// Synthetic — not a Firestore doc. Its id "all" can't collide with real
+	// collections (Firestore auto-ids are 20 chars; system ids use "system_").
+	let libraryCount = $state(0);
+	$effect(() => {
+		if (!signedIn) {
+			libraryCount = 0;
+			return;
+		}
+		getLibraryRepository()
+			.getSequences()
+			.then((seqs) => (libraryCount = seqs.length))
+			.catch(() => {});
+	});
+
+	const allShelf = $derived<LibraryCollection>({
+		id: "all",
+		name: "All",
+		ownerId: authState.user?.uid ?? "",
+		sequenceIds: [],
+		sequenceCount: libraryCount,
+		icon: "fa-layer-group",
+		isPublic: false,
+		sortOrder: -2000,
+		createdAt: new Date(0),
+		updatedAt: new Date(0),
+	});
 
 	// The nav state is the single source of truth for which view is showing.
 	// Foreign (community) collections encode their owner in the contextId as
@@ -82,23 +104,20 @@ instead of showing an empty shell.
 		browseNavigationState.viewCollectionDetail(id, name);
 	}
 
-	function openCommunityCollection(item: CommunityCollection) {
+	function openForeignCollection(ownerId: string, collectionId: string, name: string, ownerName: string) {
 		browseNavigationState.navigateTo({
 			tab: "collections",
 			view: "detail",
-			contextId: `${item.ownerId}:${item.collection.id}`,
+			contextId: `${ownerId}:${collectionId}`,
 			filter: {
 				type: "collectionName",
-				value: item.collection.name,
-				displayName: item.ownerName,
+				value: name,
+				displayName: ownerName,
 			},
 		});
 	}
 
 	function backToList() {
-		// Leaving a community collection should land back on the Community view,
-		// not flip the user over to Mine.
-		if (detail?.ownerId) subView = "community";
 		browseNavigationState.viewCollections();
 	}
 
@@ -133,42 +152,34 @@ instead of showing an empty shell.
 </script>
 
 {#if detail}
-	<CollectionDetailView
-		collectionId={detail.id}
-		foreignOwnerId={detail.ownerId}
-		ownerName={detail.ownerName}
-		onBack={backToList}
-	/>
+	{#if detail.id === "all" && !detail.ownerId}
+		<AllLibraryView onBack={backToList} />
+	{:else}
+		<CollectionDetailView
+			collectionId={detail.id}
+			foreignOwnerId={detail.ownerId}
+			ownerName={detail.ownerName}
+			onBack={backToList}
+		/>
+	{/if}
 {:else}
 	<div class="collections-list">
 		<header class="list-header">
-			<h2 class="list-title">Collections</h2>
-			<SegmentedControl
-				options={[
-					{ value: "mine", label: "Mine" },
-					{ value: "community", label: "Community" },
-				]}
-				value={subView}
-				onchange={(v) => (subView = v)}
-				color="accent"
-				size="sm"
-			/>
+			<h2 class="list-title">Library</h2>
 		</header>
 
-		{#if subView === "mine"}
-			{#if !signedIn}
-				<div class="signed-out">
-					<span class="signed-out-icon">
-						<i class="fas fa-folder-open" aria-hidden="true"></i>
-					</span>
-					<p class="signed-out-title">Collections live in your account</p>
-					<p class="signed-out-hint">
-						Sign in to group sequences into collections and keep your favorites
-						in one place. Community collections are open right now — take a
-						look.
-					</p>
-				</div>
-			{:else if loading && collections.length === 0}
+		{#if !signedIn}
+			<div class="signed-out">
+				<span class="signed-out-icon">
+					<i class="fas fa-folder-open" aria-hidden="true"></i>
+				</span>
+				<p class="signed-out-title">Your library lives in your account</p>
+				<p class="signed-out-hint">
+					Sign in to keep every sequence you save in one place, organize them
+					into collections, and follow collections other people share.
+				</p>
+			</div>
+		{:else if loading && collections.length === 0}
 				<div class="card-grid" aria-hidden="true">
 					{#each Array(4) as _}
 						<span class="tile-skeleton"></span>
@@ -176,6 +187,12 @@ instead of showing an empty shell.
 				</div>
 			{:else}
 				<div class="card-grid">
+					<CollectionCard
+						collection={allShelf}
+						readonly
+						onOpen={() => openCollection("all", "All")}
+					/>
+
 					{#each collections as c (c.id)}
 						<CollectionCard
 							collection={c}
@@ -215,42 +232,28 @@ instead of showing an empty shell.
 						</button>
 					{/if}
 				</div>
-			{/if}
-		{:else if communityCollectionsState.loading}
-			<div class="card-grid" aria-hidden="true">
-				{#each Array(6) as _}
-					<span class="tile-skeleton"></span>
-				{/each}
-			</div>
-		{:else if communityCollectionsState.error}
-			<div class="signed-out">
-				<span class="signed-out-icon">
-					<i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
-				</span>
-				<p class="signed-out-title">{communityCollectionsState.error}</p>
-			</div>
-		{:else if communityCollectionsState.items.length === 0}
-			<div class="signed-out">
-				<span class="signed-out-icon">
-					<i class="fas fa-globe" aria-hidden="true"></i>
-				</span>
-				<p class="signed-out-title">No public collections yet</p>
-				<p class="signed-out-hint">
-					Make one of yours public from its card menu and it shows up here for
-					everyone.
-				</p>
-			</div>
-		{:else}
-			<div class="card-grid">
-				{#each communityCollectionsState.items as item (item.ownerId + item.collection.id)}
-					<CollectionCard
-						collection={item.collection}
-						ownerName={item.ownerName}
-						readonly
-						onOpen={() => openCommunityCollection(item)}
-					/>
-				{/each}
-			</div>
+
+				{#if followedCollectionsState.items.length > 0}
+					<h3 class="following-title">Following</h3>
+					<div class="card-grid">
+						{#each followedCollectionsState.items as item (item.ownerId + item.collection.id)}
+							<CollectionCard
+								collection={item.collection}
+								ownerName={item.ownerName}
+								readonly
+								onUnfollow={() =>
+									followedCollectionsState.unfollow(item.ownerId, item.collection.id)}
+								onOpen={() =>
+									openForeignCollection(
+										item.ownerId,
+										item.collection.id,
+										item.collection.name,
+										item.ownerName,
+									)}
+							/>
+						{/each}
+					</div>
+				{/if}
 		{/if}
 	</div>
 {/if}
@@ -292,6 +295,16 @@ instead of showing an empty shell.
 		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 		gap: 10px;
 		align-content: start;
+	}
+
+	/* Followed collections read as their own shelf under yours. */
+	.following-title {
+		margin: 10px 0 0;
+		font-size: var(--font-size-sm, 14px);
+		font-weight: 700;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
 	}
 
 	/* Add tile: dashed, quieter, same footprint as a collection card. */

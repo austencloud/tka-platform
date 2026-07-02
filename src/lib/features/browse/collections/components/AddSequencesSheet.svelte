@@ -24,6 +24,7 @@ compensation), so the detail view behind this sheet updates on its own.
 	import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
 	import GalleryDrill from "$lib/features/browse/gallery-home/GalleryDrill.svelte";
 	import GalleryFilterSheet from "$lib/features/browse/gallery-home/GalleryFilterSheet.svelte";
+	import CollectionChipsRow from "$lib/features/library/components/collection-picker/CollectionChipsRow.svelte";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
 	import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
 	import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
@@ -168,6 +169,10 @@ compensation), so the detail view behind this sheet updates on its own.
 					/>
 				</div>
 			{:else}
+				<!-- Collections lead the grid as chips (yours on My Library,
+				     followed on Community) — pull from one collection into
+				     another without leaving the sheet. -->
+				<CollectionChipsRow {engine} />
 				<BrowsePanel
 					{engine}
 					layout="compact"
@@ -176,6 +181,7 @@ compensation), so the detail view behind this sheet updates on its own.
 					onSelect={handleSelect}
 					onBack={backToDrill}
 					backLabel="Start here"
+					hideToolbarSearch
 					onOpenFilters={() => (filterSheetOpen = true)}
 				/>
 			{/if}
@@ -279,6 +285,12 @@ compensation), so the detail view behind this sheet updates on its own.
 	.panel-body > :global(*) {
 		flex: 1;
 		min-height: 0;
+	}
+
+	/* Chips hug their content — the grid below takes the rest (overrides the
+	   flex-fill default above). */
+	.panel-body > :global(.collection-chips-row) {
+		flex: 0 0 auto;
 	}
 
 	.drill-host {
