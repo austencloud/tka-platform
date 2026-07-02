@@ -64,10 +64,10 @@
 
   let presetHint = $derived(
     selected === "creep"
-      ? "Speeds up +1 BPM every loop — a gentle, continuous climb."
+      ? "Speeds up +1 BPM every loop. A gentle, steady climb."
       : selected === "staircase"
         ? "Holds 5 loops at each speed, then jumps +5 BPM."
-        : "Custom ramp — tune it with the gear."
+        : "Custom ramp. Tune it with the gear."
   );
 
   // Read reduced-motion synchronously so the Start glow doesn't race a flag flip.
@@ -77,33 +77,45 @@
 </script>
 
 <div class="practice-setup-bar">
-  <!-- Left: how the tempo climbs -->
-  <div class="bar-left" bind:this={presetsEl}>
-    <SegmentedControl options={PRESETS} value={selected} onchange={pick} color="accent" size="sm" />
-    <p class="bar-hint">{presetHint}</p>
-  </div>
+  <div class="setup-inner">
+    <!-- Left: how the tempo climbs -->
+    <div class="bar-left" bind:this={presetsEl}>
+      <SegmentedControl options={PRESETS} value={selected} onchange={pick} color="accent" size="sm" />
+      <p class="bar-hint">{presetHint}</p>
+    </div>
 
-  <!-- Center: the hero. Biggest, most central control — this is the one action. -->
-  <button
-    class="setup-start"
-    class:no-glow={reduceMotion}
-    type="button"
-    onclick={onStart}
-  >
-    <i class="fas fa-play" aria-hidden="true"></i>
-    <span>Start practice</span>
-  </button>
+    <!-- Center: the hero. Biggest, most central control — this is the one action. -->
+    <button
+      class="setup-start"
+      class:no-glow={reduceMotion}
+      type="button"
+      onclick={onStart}
+    >
+      <i class="fas fa-play" aria-hidden="true"></i>
+      <span>Start practice</span>
+    </button>
 
-  <!-- Right: fine-tune (also opened by the Custom preset) -->
-  <div class="bar-right">
-    <PracticeConfigPopover {config} onUpdate={onSetConfig} bind:open={cfgOpen} customAnchor={configAnchor} />
+    <!-- Right: fine-tune (also opened by the Custom preset) -->
+    <div class="bar-right">
+      <PracticeConfigPopover {config} onUpdate={onSetConfig} bind:open={cfgOpen} customAnchor={configAnchor} />
+    </div>
   </div>
 </div>
 
 <style>
+  /* Container for the inner grid so it (a descendant) can respond to the bar's
+     own width via a container query — the bar spans the drawer, which is narrower
+     than the viewport when embedded, so query the bar not the viewport. */
+  .practice-setup-bar {
+    container-type: inline-size;
+    container-name: setup-bar;
+    width: 100%;
+    height: 100%;
+  }
+
   /* 3-column grid centers the Start hero regardless of the left/right widths:
      presets (start) · Start (center) · gear (end). */
-  .practice-setup-bar {
+  .setup-inner {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
@@ -197,5 +209,37 @@
     .setup-start { transition: none; animation: none; }
     .setup-start i { transition: none; }
     .setup-start:active { transform: none; }
+  }
+
+  /* Mobile: the desktop 3-column grid crushes the presets against the big center
+     Start on a phone (they overlap). Stack instead — presets + gear on top, the
+     hint under them, Start as a full-width hero below. Lives AFTER the base rules:
+     container queries add no specificity, so source order is what lets these win. */
+  @container setup-bar (max-width: 600px) {
+    .setup-inner {
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        "left  right"
+        "start start";
+      gap: 10px 12px;
+      align-content: center;
+      padding: 12px 16px;
+    }
+    .bar-left { grid-area: left; }
+    .bar-right { grid-area: right; align-self: start; }
+    /* Stacked layout has vertical room — wrap the hint instead of ellipsizing it. */
+    .bar-hint {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+    }
+    .setup-start {
+      grid-area: start;
+      justify-self: stretch;
+      width: 100%;
+      min-height: 52px;
+      padding: 0 20px;
+      font-size: 1.1rem;
+    }
   }
 </style>
