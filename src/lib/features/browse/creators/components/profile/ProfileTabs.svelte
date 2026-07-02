@@ -160,6 +160,10 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 12px;
+    /* Thumbnails carry per-beat-count aspect ratios, so card heights vary.
+       Same rule as BrowseGrid: hug content instead of stretching every card
+       to the row's tallest — otherwise short cards render big blank slabs. */
+    align-items: start;
   }
 
   .gallery-card {
