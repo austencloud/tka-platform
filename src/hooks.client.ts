@@ -2,6 +2,8 @@
  * Client-side hooks
  */
 import { browser, dev } from "$app/environment";
+import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+import { createSwUpdateManager } from "$lib/shared/offline/services/sw-update-manager";
 if (typeof window !== 'undefined' && 'Capacitor' in window) {
   import('@capgo/capacitor-updater').then(({ CapacitorUpdater }) => {
     CapacitorUpdater.notifyAppReady();
@@ -199,6 +201,21 @@ if (browser && !dev) {
 if (browser && !dev && "serviceWorker" in navigator) {
   navigator.serviceWorker
     .register("/sw.js", { scope: "/" })
+    .then((registration) => {
+      // Prompt to reload when a new deploy is waiting, rather than letting the
+      // new SW silently take over this tab. See sw-update-manager.ts.
+      createSwUpdateManager({
+        registration,
+        onUpdateReady: (apply) => {
+          showToast({
+            message: "A new version is available.",
+            type: "info",
+            duration: 0, // persistent — the user dismisses or reloads
+            action: { label: "Reload", onClick: apply },
+          });
+        },
+      });
+    })
     .catch((err) => {
       console.error("[SW] Registration failed:", err);
     });
