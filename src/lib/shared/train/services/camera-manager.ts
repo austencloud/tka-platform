@@ -1,6 +1,3 @@
-import { getErrorHandler } from "$lib/shared/application/get-error-handler";
-import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
-
 export interface CameraConfig {
   facingMode: "user" | "environment";
   width: number;
@@ -97,7 +94,11 @@ export class CameraManager {
     } catch (error) {
       console.error("Failed to start camera:", error);
 
-      let message = "Couldn't access your camera";
+      // A denied prompt or missing device is an expected user state, not a bug.
+      // Every consumer (CameraPreview, VideoRecordPanel, PerformancePreview)
+      // renders this message inline with its own retry affordance — no global
+      // error modal.
+      let message = "Couldn't access your camera.";
       if (error instanceof Error) {
         if (error.name === "NotAllowedError") {
           message = "Camera access was denied. Check your browser permissions.";
@@ -108,23 +109,7 @@ export class CameraManager {
         }
       }
 
-      const errorHandler = getErrorHandler() as ErrorHandler;
-      errorHandler.showUserError({
-        message,
-        technicalDetails: error instanceof Error ? error.message : String(error),
-        error: error instanceof Error ? error : new Error(String(error)),
-        severity: "error",
-        context: {
-          module: "train",
-          action: "camera-access",
-          additionalData: {
-            errorName: error instanceof Error ? error.name : "unknown",
-            facingMode: this._currentConfig.facingMode,
-          },
-        },
-      });
-
-      throw new Error(`Camera access failed: ${error}`);
+      throw new Error(message, { cause: error });
     }
   }
 

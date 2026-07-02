@@ -115,10 +115,11 @@ export const handle: Handle = async ({ event, resolve }) => {
     ].join("; "),
   );
 
-  // Permissions Policy - block unused browser APIs
+  // Permissions Policy - block unused browser APIs. Camera stays first-party:
+  // train pose detection, practice AR mirror, and video-record all use it.
   response.headers.set(
     "Permissions-Policy",
-    "camera=(), microphone=(self), geolocation=(), payment=()",
+    "camera=(self), microphone=(self), geolocation=(), payment=()",
   );
 
   return response;
