@@ -45,14 +45,37 @@
   // was the bug that made rows show "Failed to load" after navigating away and
   // back. So: private library first, public/community gallery as the fallback.
   async function loadSheetSequence(id: string): Promise<SequenceData | null> {
+    let own: SequenceData | null = null;
     try {
-      const own = await getLibraryRepository().getSequence(id);
-      if (own && own.steps.length > 0) return own;
+      // steps can be undefined at runtime: the library mapper only sets
+      // `steps` when the doc carries a steps array, and compositional docs
+      // whose hydration failed come back without one. Never trust the typed
+      // shape here — `own.steps.length` on undefined was itself a bug that
+      // turned an existing sequence into "Failed to load".
+      own = await getLibraryRepository().getSequence(id);
+      if (own && (own.steps?.length ?? 0) > 0) return own;
     } catch {
       // Signed out or a library fetch failure — the public path below may
       // still resolve community ids.
     }
-    return getBrowseLoader().loadFullSequenceData(id, id);
+    const pub = await getBrowseLoader().loadFullSequenceData(id, id);
+    if (pub && (pub.steps?.length ?? 0) > 0) return pub;
+    // Neither path produced steps. Prefer returning SOMETHING found over a
+    // false "Failed to load": the row then shows its real name (with zero
+    // cells) instead of claiming the sequence is gone. Normalize steps to []
+    // so downstream planners/counters never read .length off undefined.
+    const found = pub ?? own;
+    if (!found) {
+      // Terminal miss: name the id and both paths so a bug report carries
+      // everything needed (row tooltip shows the same id).
+      console.warn(
+        `[ChoreoSheet] Sequence "${id}" not found in your library or the ` +
+          `community gallery. It may have been deleted or renamed. ` +
+          `Retry the row, or remove it from the sheet.`,
+      );
+      return null;
+    }
+    return { ...found, steps: found.steps ?? [] };
   }
 
   // Builder-state object. The sheet auto-saves to localStorage (persistKey) and
@@ -73,8 +96,17 @@
     if (seq) return seq.displayName ?? seq.word ?? seq.name ?? "Untitled";
     return builder.failedSequenceIds.has(id) ? "Failed to load" : "Loading…";
   }
+  // Tooltip: failed rows carry the id + what to do, so "Failed to load" is
+  // never a dead end (and a screenshot of the tooltip identifies the doc).
+  function rowTitle(id: string): string {
+    if (!builder.failedSequenceIds.has(id)) return rowLabel(id);
+    return (
+      `Couldn't find "${id}" in your library or the community gallery. ` +
+      `It may have been deleted. Retry, or remove it from the sheet.`
+    );
+  }
   function rowCount(id: string): number | null {
-    return byId.get(id)?.steps.length ?? null;
+    return byId.get(id)?.steps?.length ?? null;
   }
 
   const separatorOptions: { value: GroupSeparator; label: string }[] = [
@@ -488,7 +520,7 @@
                 <button
                   type="button"
                   class="row-label"
-                  title={rowLabel(id)}
+                  title={rowTitle(id)}
                   aria-pressed={builder.selectedSequenceId === id}
                   onclick={() => builder.toggleSequenceSelection(id)}
                 >

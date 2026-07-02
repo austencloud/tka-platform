@@ -10,7 +10,19 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { shiftStartPosition } from "$lib/shared/create/services/sequence-transformer";
+
+/** A hand's orientation, or undefined when the hand is not really there
+ *  (invisible placeholder under the both-required Step shape) — preserving the
+ *  old absent-hand comparison semantics in statesMatch. */
+function oriOf(
+  m: { readonly isVisible?: boolean; readonly startOrientation?: string; readonly endOrientation?: string } | undefined,
+  which: "start" | "end"
+): string | undefined {
+  if (!isVisibleMotion(m)) return undefined;
+  return which === "start" ? m.startOrientation : m.endOrientation;
+}
 
 export interface EdgeState {
   // Opaque comparison keys — the exact domain types don't matter to this module,
@@ -26,8 +38,8 @@ export function startStateOf(seq: SequenceData): EdgeState | null {
   if (!first) return null;
   return {
     position: first.startPosition,
-    blueOri: first.motions?.[MotionColor.BLUE]?.startOrientation,
-    redOri: first.motions?.[MotionColor.RED]?.startOrientation,
+    blueOri: oriOf(first.motions?.[MotionColor.BLUE], "start"),
+    redOri: oriOf(first.motions?.[MotionColor.RED], "start"),
   };
 }
 
@@ -37,8 +49,8 @@ export function endStateOf(seq: SequenceData): EdgeState | null {
   if (!last) return null;
   return {
     position: last.endPosition,
-    blueOri: last.motions?.[MotionColor.BLUE]?.endOrientation,
-    redOri: last.motions?.[MotionColor.RED]?.endOrientation,
+    blueOri: oriOf(last.motions?.[MotionColor.BLUE], "end"),
+    redOri: oriOf(last.motions?.[MotionColor.RED], "end"),
   };
 }
 
