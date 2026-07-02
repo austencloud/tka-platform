@@ -13,7 +13,10 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { buildVariationMap } from "$lib/shared/browse/services/variation-grouper";
+  import {
+    buildVariationMap,
+    variationGroupKey,
+  } from "$lib/shared/browse/services/variation-grouper";
   import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";
 
   /**
@@ -70,11 +73,11 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
     return buildVariationMap(sequences);
   });
 
-  // Get variations for a specific sequence
+  // Get variations for a specific sequence (keyed by simplified word — the label)
   function getVariationsForSequence(sequence: SequenceData): SequenceData[] {
-    const word = sequence.word || sequence.name;
-    if (!word) return [sequence];
-    return variationMap.get(word.trim()) ?? [sequence];
+    const key = variationGroupKey(sequence);
+    if (!key) return [sequence];
+    return variationMap.get(key) ?? [sequence];
   }
 
   // Get user's prop settings for prop-aware thumbnails

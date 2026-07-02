@@ -23,9 +23,30 @@
   interface Props {
     engine: BrowseEngine;
     showSourceToggle?: boolean;
+    /** Renders a leading back pill (e.g. "← Start here") inside the toolbar —
+     * keeps the back affordance without spending a whole band on it. */
+    onBack?: () => void;
+    backLabel?: string;
+    /** Hide the inline search (host provides its own entry point, e.g. the
+     * drill front door's search field). */
+    hideSearch?: boolean;
+    /** Bottom-sheet filter pattern: renders a Filters pill (with active-count
+     * badge) and hides the inline selector chips — the sheet owns them. */
+    onOpenFilters?: () => void;
   }
 
-  let { engine, showSourceToggle = false }: Props = $props();
+  let {
+    engine,
+    showSourceToggle = false,
+    onBack,
+    backLabel = "Start here",
+    hideSearch = false,
+    onOpenFilters,
+  }: Props = $props();
+
+  const activeUserFilterCount = $derived(
+    engine.allFilterChips.filter((c) => !c.locked).length,
+  );
 
   // ---------------------------------------------------------------------------
   // Sort dropdown state
@@ -186,9 +207,14 @@
     else engine.addFilter(BrowseFilterType.LENGTH, length, `${length} beats`, "#f59e0b");
   }
 
+  // Loop filters live under composite keys ("cap_type:<value>") so several can
+  // stack — find by type, not by key. The dropdown shows the first (its
+  // single-select semantics replace all loop filters on change).
   const activeLoopComponent = $derived.by(() => {
-    const f = engine.activeFilters.get("cap_type");
-    return f ? (f.value as string) : null;
+    for (const f of engine.activeFilters.values()) {
+      if (f.type === BrowseFilterType.LOOP_TYPE && !f.locked) return f.value as string;
+    }
+    return null;
   });
 
   const LOOP_FILTER_COLORS: Record<string, string> = {
@@ -196,19 +222,40 @@
     "component:rotated_quartered": "#36c3ff",
     "component:mirrored": "#6F2DA8",
     "component:flipped": "#e91e63",
-    "component:swapped": "#26e600",
+    "component:swapped": "#2ecc71",
     "component:inverted": "#eb7d00",
     "component:rewound": "#00bcd4",
   };
 
   function handleLoopSelect(value: string | null) {
+    // removeFilter("cap_type") clears ALL stacked loop filters (prefix-aware) —
+    // the dropdown is single-select, so a new pick replaces the whole stack.
     if (value == null) engine.removeFilter("cap_type");
     else {
+      engine.removeFilter("cap_type");
       const label = value.startsWith("component:")
         ? value.slice("component:".length).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
         : value;
       engine.addFilter(BrowseFilterType.LOOP_TYPE, value, label, LOOP_FILTER_COLORS[value] ?? "#8b5cf6");
     }
+  }
+
+  // Active filters the selector chips don't cover (drill picks: letter,
+  // position, owner, recent…) plus locked constraints — rendered as
+  // dismissible chips inline, mirroring BrowseFilterBar's merged row.
+  const SELECTOR_TYPES = new Set(["difficulty", "favorites", "length", "cap_type"]);
+  const extraChips = $derived(
+    engine.allFilterChips.filter(
+      (chip) => chip.locked || !SELECTOR_TYPES.has(String(chip.type)),
+    ),
+  );
+
+  function handleDismissChip(typeKey: string) {
+    engine.removeFilter(typeKey);
+  }
+
+  function handleClearAll() {
+    engine.clearUserFilters();
   }
 
   // ---------------------------------------------------------------------------
@@ -233,6 +280,14 @@
 </script>
 
 <div class="browse-toolbar">
+  <!-- 0. Leading back pill -->
+  {#if onBack}
+    <button type="button" class="back-pill" onclick={onBack} aria-label={backLabel}>
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      <span class="back-pill-label">{backLabel}</span>
+    </button>
+  {/if}
+
   <!-- 1. Source toggle -->
   {#if showSourceToggle && engine.canSwitchSource}
     <div class="source-toggle" role="group" aria-label="Sequence source">
@@ -314,7 +369,38 @@
     {/if}
   </div>
 
-  <!-- 4. Inline filter chips (wide screens only) -->
+  <!-- 3b. Filters pill (bottom-sheet pattern). The result count lives IN the
+       pill — a bare number floating at the toolbar's edge read as noise
+       (Austen, 2026-07-02); on the button it says "482 behind this filter
+       set, tap to tune". Badge = active filter count, number = results. -->
+  {#if onOpenFilters}
+    <button
+      type="button"
+      class="filters-pill"
+      onclick={onOpenFilters}
+      aria-label="Filters — {engine.resultCount}
+        {engine.resultCount === 1 ? 'sequence' : 'sequences'}{activeUserFilterCount > 0
+        ? `, ${activeUserFilterCount} active`
+        : ''}"
+    >
+      <i class="fas fa-sliders" aria-hidden="true"></i>
+      <span class="filters-pill-count">
+        {engine.resultCount}<span class="result-count-word"
+          >&nbsp;{engine.resultCount === 1 ? "sequence" : "sequences"}</span
+        >
+      </span>
+      {#if activeUserFilterCount > 0}
+        <span class="filters-badge">{activeUserFilterCount}</span>
+      {/if}
+    </button>
+    <span class="sr-only" aria-live="polite" aria-atomic="true">
+      {engine.resultCount}
+      {engine.resultCount === 1 ? "sequence" : "sequences"}
+    </span>
+  {/if}
+
+  <!-- 4. Inline filter chips (wide screens only; sheet pattern replaces them) -->
+  {#if !onOpenFilters}
   <span class="toolbar-divider" aria-hidden="true"></span>
   <div class="inline-filters" role="toolbar" aria-label="Filter options">
     {#if !isHandsMode}
@@ -341,22 +427,63 @@
       loopTypeCounts={engine.loopTypeCounts}
       onSelect={handleLoopSelect}
     />
+
+    <!-- Keyed by map key, not type — stacked loop filters share a type. -->
+    {#each extraChips as chip (chip.key)}
+      <span class="active-chip" style="--chip-color: {chip.chipColor};">
+        {#if chip.locked}
+          <i class="fas fa-lock chip-lock" aria-hidden="true"></i>
+        {/if}
+        <span class="chip-label">{chip.label}</span>
+        {#if !chip.locked}
+          <button
+            class="chip-dismiss"
+            type="button"
+            aria-label="Remove filter {chip.label}"
+            onclick={(e) => {
+              e.stopPropagation();
+              handleDismissChip(chip.key);
+            }}
+          >
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        {/if}
+      </span>
+    {/each}
+
+    {#if engine.hasActiveFilters}
+      <button
+        class="clear-all-btn"
+        type="button"
+        onclick={(e) => {
+          e.stopPropagation();
+          handleClearAll();
+        }}
+      >
+        Clear all
+      </button>
+    {/if}
   </div>
+  {/if}
 
   <!-- 5. ExpandableSearchBar -->
-  <div class="search-slot">
-    <ExpandableSearchBar
-      onSearch={(q) => engine.setSearch(q)}
-      value={engine.searchQuery}
-      placeholder="Search sequences..."
-      resultCount={engine.resultCount}
-    />
-  </div>
+  {#if !hideSearch}
+    <div class="search-slot">
+      <ExpandableSearchBar
+        onSearch={(q) => engine.setSearch(q)}
+        value={engine.searchQuery}
+        placeholder="Search sequences..."
+      />
+    </div>
+  {/if}
 
-  <!-- 6. Result count -->
-  <span class="result-count" aria-live="polite" aria-atomic="true">
-    {engine.resultCount} {engine.resultCount === 1 ? "sequence" : "sequences"}
-  </span>
+  <!-- 6. Result count (word drops on narrow screens, number stays).
+       Sheet-pattern hosts carry the count inside the Filters pill instead. -->
+  {#if !onOpenFilters}
+    <span class="result-count" aria-live="polite" aria-atomic="true">
+      {engine.resultCount}<span class="result-count-word">&nbsp;{engine.resultCount === 1 ? "sequence" : "sequences"}</span>
+    </span>
+  {/if}
 </div>
 
 <style>
@@ -368,6 +495,37 @@
     background: var(--theme-panel-bg);
     width: 100%;
     min-height: var(--min-touch-target, 48px);
+  }
+
+  /* ---- Back pill ---- */
+  .back-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    min-height: var(--min-touch-target, 48px);
+    background: transparent;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 999px;
+    color: var(--theme-text);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition:
+      border-color var(--duration-fast, 150ms) ease,
+      background var(--duration-fast, 150ms) ease;
+  }
+
+  .back-pill:hover {
+    border-color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+  }
+
+  .back-pill:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
   }
 
   /* ---- Source toggle ---- */
@@ -614,6 +772,141 @@
     flex-shrink: 0;
   }
 
+  /* ---- Filters pill (bottom-sheet pattern) ---- */
+  .filters-pill {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    min-height: var(--min-touch-target, 48px);
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--border-radius-md, 10px);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition:
+      border-color var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease;
+  }
+
+  .filters-pill:hover {
+    color: var(--theme-text);
+    border-color: color-mix(in srgb, var(--theme-stroke) 80%, var(--theme-text));
+  }
+
+  .filters-pill:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .filters-pill-count {
+    color: var(--theme-text);
+    font-weight: 700;
+    /* Changing number must not jitter the pill width (no-layout-shift). */
+    font-variant-numeric: tabular-nums;
+  }
+
+  .filters-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--theme-accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Inline active chips — same visual language as BrowseFilterBar's chips */
+  .active-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+    padding: 4px 8px 4px 12px;
+    min-height: 28px;
+    background: color-mix(in srgb, var(--chip-color) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--chip-color) 30%, transparent);
+    border-radius: 100px;
+    color: var(--theme-text);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .chip-lock {
+    font-size: 9px;
+    opacity: 0.5;
+    flex-shrink: 0;
+  }
+
+  .chip-label {
+    line-height: 1;
+  }
+
+  .chip-dismiss {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    /* Beat the global 44px button floor — the WCAG target lives on the
+       ::before hit zone, not the visible glyph. */
+    min-width: 16px;
+    min-height: 16px;
+    padding: 0;
+    background: color-mix(in srgb, var(--theme-text, white) 15%, transparent);
+    border: none;
+    border-radius: 50%;
+    color: var(--theme-text);
+    font-size: 9px;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .chip-dismiss::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .chip-dismiss:hover {
+    background: color-mix(in srgb, var(--theme-text, white) 25%, transparent);
+  }
+
+  .clear-all-btn {
+    padding: 4px var(--spacing-md, 12px);
+    min-height: 28px;
+    background: transparent;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 100px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .clear-all-btn:hover {
+    color: var(--semantic-error);
+    border-color: color-mix(in srgb, var(--semantic-error) 30%, transparent);
+  }
+
   @container gallery (min-width: 900px) {
     .inline-filters { display: flex; }
     .toolbar-divider { display: block; }
@@ -643,7 +936,11 @@
       display: none;
     }
 
-    .result-count {
+    .back-pill-label {
+      display: none;
+    }
+
+    .result-count-word {
       display: none;
     }
   }

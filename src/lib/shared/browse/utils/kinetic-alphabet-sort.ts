@@ -85,7 +85,7 @@ function getLetterSortIndex(letter: string): number {
  * Extract the base letter from a word (first letter or first letter+dash)
  * Type 6 letters: α, β, γ, ζ, η, τ, ⊕
  */
-function extractBaseLetter(word: string): string {
+export function extractBaseLetter(word: string): string {
   if (!word || word.length === 0) return "";
 
   const firstChar = word[0]!;

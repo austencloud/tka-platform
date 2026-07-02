@@ -100,6 +100,12 @@ their own copies drifted (dropdown popovers, stale search) within days.
 							if (key) engine.removeFilter(key);
 						}
 					}}
+					onSearch={(q) => {
+						// Applies like any drill pick: chip appears in the filter bar
+						// (dismiss there), sheet closes onto the results.
+						engine.setSearch(q);
+						isOpen = false;
+					}}
 					onShowAll={() => {
 						engine.clearUserFilters();
 						isOpen = false;

@@ -130,6 +130,14 @@ export interface BrowseEngineConfig {
 
 	/** Which sources are available. Defaults to both community and my-library. */
 	sources?: SequenceSource[];
+
+	/**
+	 * Extra sequences appended to the COMMUNITY pool once resolved (e.g. the
+	 * canonical T&D alphabet — generated, not saved, so the loader can't know
+	 * them). Appended asynchronously after the loader's results so first paint
+	 * never waits on it; deduplicated by id against the loaded pool.
+	 */
+	extraCommunitySequences?: () => Promise<readonly SequenceData[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -173,8 +181,11 @@ export interface BrowseEngine {
 
 	/** All active filters (user-set + locked constraints). */
 	readonly activeFilters: ReadonlyMap<string, ActiveFilter>;
-	/** All filter chips (locked + user), for chip bar rendering. */
-	readonly allFilterChips: readonly ActiveFilter[];
+	/** All filter chips (locked + user), for chip bar rendering. Each carries
+	 * its map key — the handle for removeFilter. One-per-type filters key as
+	 * String(type); stackable loop-component filters key as `${type}:${value}`,
+	 * so several can coexist (a sequence can be mirrored AND swapped). */
+	readonly allFilterChips: readonly (ActiveFilter & { key: string })[];
 	/** Number of active user-set (non-locked) filters. */
 	readonly userFilterCount: number;
 	/** True if any user-set (non-locked) filters are active. */
@@ -231,7 +242,8 @@ export interface BrowseEngine {
 
 	/**
 	 * Add or replace a user filter. Locked filters cannot be overwritten
-	 * by this method.
+	 * by this method. LOOP_TYPE filters STACK (keyed `${type}:${value}`) —
+	 * adding a second loop component ANDs with the first instead of replacing.
 	 */
 	addFilter(
 		type: BrowseFilterType,
@@ -240,7 +252,9 @@ export interface BrowseEngine {
 		chipColor: string
 	): void;
 
-	/** Remove a user filter by type key. Locked filters are ignored. */
+	/** Remove a user filter by map key. Locked filters are ignored. Prefix
+	 * aware: removeFilter("cap_type") clears every stacked "cap_type:<value>"
+	 * loop filter; a full composite key clears just that one. */
 	removeFilter(typeKey: string): void;
 
 	/** Clear all user-set filters. Locked filters remain. */

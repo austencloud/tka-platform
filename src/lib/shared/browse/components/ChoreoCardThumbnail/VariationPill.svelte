@@ -45,11 +45,12 @@ Touch target: var(--min-touch-target) minimum for WCAG AA accessibility.
 {/if}
 
 <style>
+  /* Bottom-right corner — centered it sat on top of the card's beat cells
+     (worst on mobile 2-col grids where the pill covered whole pictographs). */
   .variation-pill {
     position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: 6px;
+    right: 6px;
 
     /* var(--min-touch-target) minimum touch target (WCAG AA) */
     min-width: var(--min-touch-target);
@@ -88,11 +89,11 @@ Touch target: var(--min-touch-target) minimum for WCAG AA accessibility.
   .variation-pill:hover {
     background: var(--theme-overlay-bg-hover, rgba(0, 0, 0, 0.7));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
-    transform: translateX(-50%) scale(1.05);
+    transform: scale(1.05);
   }
 
   .variation-pill:active {
-    transform: translateX(-50%) scale(0.95);
+    transform: scale(0.95);
   }
 
   .variation-pill:focus-visible {
@@ -125,7 +126,7 @@ Touch target: var(--min-touch-target) minimum for WCAG AA accessibility.
     }
     .variation-pill:hover,
     .variation-pill:active {
-      transform: translateX(-50%);
+      transform: none;
     }
   }
 </style>

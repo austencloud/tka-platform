@@ -14,7 +14,10 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { buildVariationMap } from "$lib/shared/browse/services/variation-grouper";
+  import {
+    buildVariationMap,
+    variationGroupKey,
+  } from "$lib/shared/browse/services/variation-grouper";
   import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/cell-pre-warmer";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -45,7 +48,10 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
     showRedMotion = true,
     addWord,
     addDifficultyLevel,
+    allowQR = true,
     collectionContext,
+    selectedIds,
+    variationSource,
   } = $props<{
     sequences: SequenceData[];
     thumbnailService: BrowseThumbnailProvider | null;
@@ -59,20 +65,32 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
     showRedMotion?: boolean;
     addWord?: boolean;
     addDifficultyLevel?: boolean;
+    /** Allow a baked-in QR (signed-in only, gated by the showQRCode setting +
+     * a spare cell). Default true — the QR is its own shared cache class, so it
+     * still loads from static/cloud. Pass false only for tiny/unscannable
+     * surfaces. */
+    allowQR?: boolean;
     /** When rendering a collection's members: adds "Remove from this collection" to each card's menu */
     collectionContext?: { id: string; name: string; onRemove: (sequenceId: string) => void };
+    /** Picker hosts: ids to render with the selected outline. */
+    selectedIds?: ReadonlySet<string>;
+    /** Full (un-collapsed) list to build the variation map from. When the host
+     * passes a word-deduped `sequences` list, the map MUST come from the full
+     * list or every card sees exactly one variation and the collapsed ones
+     * become unreachable. */
+    variationSource?: SequenceData[];
   }>();
 
   const compositionManager = getImageCompositionManager();
 
   const variationMap = $derived.by(() => {
-    return buildVariationMap(sequences);
+    return buildVariationMap(variationSource ?? sequences);
   });
 
   function getVariationsForSequence(sequence: SequenceData): SequenceData[] {
-    const word = sequence.word || sequence.name;
-    if (!word) return [sequence];
-    return variationMap.get(word.trim()) ?? [sequence];
+    const key = variationGroupKey(sequence);
+    if (!key) return [sequence];
+    return variationMap.get(key) ?? [sequence];
   }
 
   const propSettings = $derived({
@@ -380,7 +398,9 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
               {showRedMotion}
               {addWord}
               {addDifficultyLevel}
+              {allowQR}
               {collectionContext}
+              {selectedIds}
             />
           </div>
         {/each}

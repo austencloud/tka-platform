@@ -20,13 +20,14 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
 
   import type { BrowseEventHandler } from "../services/browse-event-handler";
-  import CollectionsBrowsePanel from "../../collections/components/CollectionsBrowsePanel.svelte";
+  import MyCollectionsPanel from "../../collections/components/MyCollectionsPanel.svelte";
   import CreatorsPanel from "../../creators/components/CreatorsPanel.svelte";
   import UserProfilePanel from "../../creators/components/UserProfilePanel.svelte";
   import { creatorsViewState } from "../../creators/state/creators-view-state.svelte";
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import GalleryTab from "./GalleryTab.svelte";
-  import StartHere from "$lib/features/browse/start-here/components/StartHere.svelte";
+  import GalleryDrill from "$lib/features/browse/gallery-home/GalleryDrill.svelte";
+  import { loadCanonicalTnDSequences } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
   import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
   import {
     browseNavigationState,
@@ -40,6 +41,10 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   import { consumePendingSequenceView } from "../../state/pending-sequence.svelte";
   import HallOfShameGallery from "$lib/features/hall-of-shame/components/HallOfShameGallery.svelte";
   import { openSequenceViewer } from "../../../../shared/sequence-viewer/services/sequence-viewer-navigator";
+  import {
+    getGalleryViewState,
+    setGalleryViewState,
+  } from "../services/gallery-view-persister";
 
   // Note: Library tab removed - now integrated into Sequences via scope toggle (Community / My Library)
   type BrowseModuleType = "gallery" | "collections" | "creators" | "hall-of-shame";
@@ -69,7 +74,25 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     // (A–Z → letters, Level → difficulty, Date → dates, Length → lengths).
     allowSourceToggle: true,
     sources: ["community", "my-library"],
+    // The canonical T&D alphabet joins the community pool as normal sequences:
+    // one card per word ("AAAA" displays simplified as "A"), 49 turn combos as
+    // its variations in the standard picker. Same citizenship as saved work.
+    extraCommunitySequences: loadCanonicalTnDSequences,
   });
+
+  // Restore where this SESSION was (sessionStorage — survives reload/HMR,
+  // dies with the tab). Mid-browse: keep the engine's restored filters and
+  // re-apply the search. Otherwise the module lands on the drill, where
+  // persisted user filters are invisible but still compose into every live
+  // count (a stale restored filter zeroed out most of the letter catalog) —
+  // so filters + search start fresh; sort / view / source persistence stays.
+  const restoredGalleryView = getGalleryViewState();
+  if (restoredGalleryView?.view === "browse-all") {
+    engine.setSearch(restoredGalleryView.search);
+  } else {
+    engine.clearUserFilters();
+    engine.setSearch("");
+  }
 
   // Service resolved lazily in onMount to ensure feature module is loaded
   let eventHandlerService: BrowseEventHandler | null = null;
@@ -83,9 +106,18 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   let _selectedSequence = $state<SequenceData | null>(null);
   let error = $state<string | null>(null);
   let activeTab = $state<BrowseModuleType>("gallery");
-  // Gallery opens on the taxonomy-first "Start here" surface; "Browse all"
-  // reveals the full GalleryTab. Stays on the chosen view while mounted.
-  let galleryView = $state<"start-here" | "browse-all">("start-here");
+  // Gallery opens on the drill front door (GalleryDrill); any pick or
+  // "Browse all" reveals the full GalleryTab. Stays on the chosen view
+  // while mounted, and this session's view survives reload/HMR.
+  let galleryView = $state<"start-here" | "browse-all">(
+    restoredGalleryView?.view ?? "start-here"
+  );
+
+  // Record view + search whenever they change so a reload/HMR remount
+  // restores this exact spot (filters restore via the engine's own persist).
+  $effect(() => {
+    setGalleryViewState({ view: galleryView, search: engine.searchQuery });
+  });
   let showAnimator = $state<boolean>(false);
   let sequenceToAnimate = $state<SequenceData | null>(null);
   let isAnimationModalOpen = $state(false);
@@ -506,35 +538,48 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       >
         {#if activeTab === "gallery"}
           {#if galleryView === "start-here"}
-            <StartHere
-              onBrowseAll={() => (galleryView = "browse-all")}
-              pool={engine.sequences}
+            <GalleryDrill
+              pool={engine.allSequences}
+              getCount={(type, value) => engine.getFilteredCount(type, value)}
+              onApply={(type, value, label, color) => {
+                // A drill pick means "exactly this slice" — engine filters can
+                // survive view remounts, so clear leftovers or the pick
+                // silently compounds with a stale filter.
+                engine.clearUserFilters();
+                engine.addFilter(type, value, label, color ?? "#6aa0ff");
+                galleryView = "browse-all";
+              }}
+              onShowAll={() => {
+                engine.clearUserFilters();
+                galleryView = "browse-all";
+              }}
+              onSearch={(q) => {
+                engine.clearUserFilters();
+                engine.setSearch(q);
+                galleryView = "browse-all";
+              }}
             />
           {:else}
-            <div class="browse-all-wrap">
-              <button
-                type="button"
-                class="back-to-start"
-                onclick={() => (galleryView = "start-here")}
-              >
-                ← Start here
-              </button>
-              <div class="gallery-host">
-                <GalleryTab
-                  {isMobile}
-                  {drawerWidth}
-                  {engine}
-                  {error}
-                  onSequenceAction={(action, sequence, variations) => {
-                    return eventHandlerService?.handleSequenceAction(action, sequence, variations) ??
-                      Promise.resolve();
-                  }}
-                />
-              </div>
-            </div>
+            <GalleryTab
+              {isMobile}
+              {drawerWidth}
+              {engine}
+              {error}
+              onSequenceAction={(action, sequence, variations) => {
+                return eventHandlerService?.handleSequenceAction(action, sequence, variations) ??
+                  Promise.resolve();
+              }}
+              onBackToStart={() => {
+                // Fresh drill each time: clear the applied filter + search so the
+                // chooser's live counts reflect the whole catalog, not a leftover slice.
+                engine.clearUserFilters();
+                engine.setSearch("");
+                galleryView = "start-here";
+              }}
+            />
           {/if}
         {:else if activeTab === "collections"}
-          <CollectionsBrowsePanel />
+          <MyCollectionsPanel />
         {:else if activeTab === "creators"}
           {#if creatorsViewState.currentView === "user-profile" && creatorsViewState.viewingUserId}
             <UserProfilePanel userId={creatorsViewState.viewingUserId} />
@@ -572,34 +617,4 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     overflow: hidden;
   }
 
-  .browse-all-wrap {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-height: 0;
-  }
-
-  .gallery-host {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .back-to-start {
-    align-self: flex-start;
-    margin: 0.5rem 0.75rem;
-    background: transparent;
-    border: 1px solid var(--theme-stroke);
-    color: var(--theme-text);
-    padding: 0.4rem 0.85rem;
-    border-radius: 999px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    flex: 0 0 auto;
-  }
-
-  .back-to-start:hover {
-    border-color: var(--theme-accent);
-  }
 </style>

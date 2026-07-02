@@ -3,8 +3,13 @@
 
   const TKA_LETTER_RE = /^[a-zA-ZͰ-Ͽ⊕]-?$/;
 
-  const { title } = $props<{
+  const { title, count: countOverride, hideSteps = false } = $props<{
     title: string;
+    /** Override the count parsed from the title (e.g. collapsed word count). */
+    count?: number;
+    /** Hide the "(N steps)" meta — redundant when a length filter already
+     * pins every section to the same step count. */
+    hideSteps?: boolean;
   }>();
 
   // Parse "R (8 STEPS) (3 SEQUENCES)" into parts
@@ -36,11 +41,11 @@
           {parsed.label}
         {/if}
       </h3>
-      {#if parsed.steps}
+      {#if parsed.steps && !hideSteps}
         <span class="section-meta">{parsed.steps} steps</span>
       {/if}
-      {#if parsed.count}
-        <span class="section-count">{parsed.count}</span>
+      {#if countOverride ?? parsed.count}
+        <span class="section-count">{countOverride ?? parsed.count}</span>
       {/if}
       <div class="section-divider"></div>
     </div>

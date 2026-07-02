@@ -59,7 +59,9 @@ Variation support:
     showRedMotion = true,
     addWord,
     addDifficultyLevel,
+    allowQR = true,
     collectionContext,
+    selectedIds,
   }: {
     sequence: SequenceData;
     variations?: SequenceData[];
@@ -80,6 +82,12 @@ Variation support:
     showRedMotion?: boolean;
     addWord?: boolean;
     addDifficultyLevel?: boolean;
+    /** Allow a baked-in QR (signed-in only, gated by the user's showQRCode
+     * setting + a spare grid cell). Default true so the gallery honors the
+     * setting. The QR variant is its own shared cache class (deterministic
+     * short code), so it still loads from static/cloud — no per-card local
+     * render. Pass false for surfaces too small to scan (e.g. peeks). */
+    allowQR?: boolean;
     /**
      * Set when this card renders inside one of the viewer's own collections
      * (Browse > Collections detail). Adds a "Remove from this collection"
@@ -92,6 +100,10 @@ Variation support:
       name: string;
       onRemove: (sequenceId: string) => void;
     };
+    /** Picker hosts: ids currently selected. Checked against the DISPLAYED
+     * variation (the pill cycles it), not the base card — taps act on the
+     * displayed sequence, so the outline must follow it. Overrides `selected`. */
+    selectedIds?: ReadonlySet<string>;
   } = $props();
 
   // Track which variation is currently displayed.
@@ -350,11 +362,15 @@ Variation support:
   function closeContextMenu() {
     contextMenuState = { open: false };
   }
+
+  const isSelected = $derived(
+    selectedIds ? selectedIds.has(displayedSequence.id) : selected,
+  );
 </script>
 
 <button
   class="choreo-card"
-  class:selected
+  class:selected={isSelected}
   class:light-mode={lightMode}
   onclick={handlePrimaryAction}
   oncontextmenu={handleContextMenu}
@@ -380,6 +396,7 @@ Variation support:
       {showRedMotion}
       {addWord}
       {addDifficultyLevel}
+      {allowQR}
       userName={displayedSequence.ownerDisplayName}
     />
   </div>

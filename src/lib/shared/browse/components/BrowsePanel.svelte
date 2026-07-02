@@ -24,6 +24,17 @@
     showSourceToggle?: boolean;
     eager?: boolean;
     title?: string;
+    /** Leading back pill inside the toolbar (e.g. "← Start here"). */
+    onBack?: () => void;
+    backLabel?: string;
+    /** Hide the toolbar search when the host provides its own entry point. */
+    hideToolbarSearch?: boolean;
+    /** Picker hosts: ids to render with the selected outline (e.g. sequences
+     * already in the collection being built). */
+    selectedIds?: ReadonlySet<string>;
+    /** Bottom-sheet filter pattern: Filters pill in the toolbar, applied-only
+     * chips in the filter bar. The host owns the sheet. */
+    onOpenFilters?: () => void;
   }
 
   let {
@@ -36,6 +47,11 @@
     showSourceToggle: sourceToggleOverride,
     eager: eagerOverride,
     title,
+    onBack,
+    backLabel,
+    hideToolbarSearch = false,
+    selectedIds,
+    onOpenFilters,
   }: Props = $props();
 
   const showToolbar = $derived(toolbarOverride ?? (layout !== "minimal"));
@@ -189,11 +205,18 @@
   {/if}
 
   {#if showToolbar}
-    <BrowseToolbar {engine} showSourceToggle={showSourceToggle} />
+    <BrowseToolbar
+      {engine}
+      showSourceToggle={showSourceToggle}
+      {onBack}
+      {backLabel}
+      hideSearch={hideToolbarSearch}
+      {onOpenFilters}
+    />
   {/if}
 
   {#if showFilterBar}
-    <BrowseFilterBar {engine} />
+    <BrowseFilterBar {engine} chipsOnly={!!onOpenFilters} />
   {/if}
 
   <div class="panel-content" bind:this={contentEl} onscroll={handleScroll}>
@@ -226,6 +249,7 @@
               onAction={handleAction}
               {disableVirtualization}
               eager={isEager}
+              {selectedIds}
             />
           </div>
         {/if}
@@ -288,6 +312,13 @@
 
   .browse-panel.minimal .grid-area {
     padding: var(--spacing-sm);
+  }
+
+  /* Narrow containers: cards get the width, not the gutters. */
+  @container gallery (max-width: 640px) {
+    .grid-area {
+      padding: var(--spacing-sm, 8px);
+    }
   }
 
   .skeleton-overlay {

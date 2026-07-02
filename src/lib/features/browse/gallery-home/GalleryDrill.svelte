@@ -1,0 +1,1340 @@
+<!--
+  GalleryDrill — the newcomer front door, a faithful port of the legacy desktop
+  app's InitialFilterChoiceWidget: a "series of presets" drill-down.
+  Screen 1 = pick HOW to browse (a filter category). Screen 2 = pick the value
+  (live counts, never a dead end). Then hand off to the real filtered grid.
+  "Show all" + search are always available (no gating). One dimension at a time
+  — mobile-first, no card wall, no horizontal scroll.
+
+  Visual layer (2026-07-01 content-peek redesign): every visual carries data.
+  Category tiles preview REAL sequences from their bucket (deterministic picks,
+  fixed tilts). Level tiles wear the canonical DIFFICULTY_LEVELS gradients —
+  the same coding as every difficulty badge and printed card. Counts render as
+  density bars (fill = count ÷ largest bucket) + tabular-nums figures. The
+  Timing & Direction tile's six dots are the six TnD family colors; the
+  LOOPs tile's dots are the loop-component colors present in the catalog.
+  Both are real composable filters; families derive per step from arc geometry
+  (browse-filter's getSequenceTnDFamilies), and the canonical T&D alphabet
+  lives IN the community pool as first-class cards (canonical-tnd-pool.ts) —
+  one card per word, 49 turn combos in the standard variation picker.
+  Class names are drill-prefixed: the app carries GLOBAL `.tile`/`.head` rules
+  that leak column layout into unprefixed names.
+  Spec: docs/superpowers/specs/active/2026-07-01-gallery-drill-content-peek-design.md
+-->
+<script lang="ts">
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import SequencePeek from "./SequencePeek.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
+  import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
+  import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
+  import { LOOP_COMPONENT_MAP } from "$lib/shared/browse/domain/constants/loop-constants";
+  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
+  import { resolveStepCount } from "$lib/shared/browse/services/browse-sorter";
+  import {
+    deriveCreators,
+    deriveStartingLetters,
+    pickCollage,
+    pickLengthPair,
+    pickLevelRepresentatives,
+  } from "./pick-representatives";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import {
+    getDrillSection,
+    setDrillSection,
+  } from "$lib/features/browse/shared/services/gallery-view-persister";
+
+  interface Props {
+    pool?: readonly SequenceData[];
+    /** Live count of results if this filter value were applied. */
+    getCount: (type: BrowseFilterType, value: string | number) => number;
+    /** Apply the chosen filter and hand off to the grid. Values with a
+     * canonical color (loop components) pass it for the applied-filter chip. */
+    onApply: (
+      type: BrowseFilterType,
+      value: string | number,
+      label: string,
+      color?: string,
+    ) => void;
+    onShowAll?: () => void;
+    onSearch?: (query: string) => void;
+    /** Loop-component values currently applied (e.g. "component:mirrored").
+     * LOOP rows render active and toggle off on re-tap. */
+    activeLoopValues?: ReadonlySet<string>;
+    /** Sheet: toggle a loop component in place — the sheet stays open so
+     * LOOPs STACK (a sequence can be mirrored AND swapped). When absent,
+     * LOOP rows fall back to onApply like every other category. */
+    onToggleLoop?: (value: string, label: string, color: string, nowActive: boolean) => void;
+    /** TnD family ids currently applied (e.g. "split-same"). Family rows
+     * render active and toggle off on re-tap. */
+    activeFamilyValues?: ReadonlySet<string>;
+    /** Sheet: toggle a family in place — same stacking contract as LOOPs
+     * (a sequence can touch several families). */
+    onToggleFamily?: (
+      familyId: string,
+      label: string,
+      color: string,
+      nowActive: boolean,
+    ) => void;
+    /** "page" = the gallery front door (with search). "sheet" = the grid's
+     * filter bottom sheet — same filter categories, no search. */
+    variant?: "page" | "sheet";
+  }
+  let {
+    pool = [],
+    getCount,
+    onApply,
+    onShowAll,
+    onSearch,
+    activeLoopValues,
+    onToggleLoop,
+    activeFamilyValues,
+    onToggleFamily,
+    variant = "page",
+  }: Props = $props();
+
+  type Section =
+    | "chooser"
+    | "level"
+    | "length"
+    | "letter"
+    | "position"
+    | "gridmode"
+    | "author"
+    | "loop"
+    | "family";
+  const SECTIONS: readonly Section[] = [
+    "chooser",
+    "level",
+    "length",
+    "letter",
+    "position",
+    "gridmode",
+    "author",
+    "loop",
+    "family",
+  ];
+  /** Page variant restores its sub-screen across reload/HMR (sessionStorage);
+   * a stale/unknown stored value degrades to the chooser. Sheet always opens
+   * fresh — it's a transient drawer. */
+  function restoreSection(): Section {
+    if (variant !== "page") return "chooser";
+    const stored = getDrillSection();
+    return stored && (SECTIONS as readonly string[]).includes(stored)
+      ? (stored as Section)
+      : "chooser";
+  }
+  let section = $state<Section>(restoreSection());
+  $effect(() => {
+    if (variant === "page") setDrillSection(section);
+  });
+  let query = $state("");
+
+  const LEVELS = [1, 2, 3];
+
+  // Legacy desktop app's level descriptions, verbatim (filter_by_level_section).
+  const LEVEL_DESCRIPTIONS: Record<number, string> = {
+    1: "Base letters with no turns.",
+    2: "Turns added with only radial orientations.",
+    3: "Non-radial orientations.",
+  };
+
+  // Legacy starting_position_section values + descriptions, verbatim.
+  const POSITIONS = [
+    { value: "alpha", label: "Alpha", desc: "Hands apart.", img: "/images/position_images/alpha.png" },
+    { value: "beta", label: "Beta", desc: "Hands together.", img: "/images/position_images/beta.png" },
+    { value: "gamma", label: "Gamma", desc: "Hands form a right angle.", img: "/images/position_images/gamma.png" },
+  ];
+
+  // Legacy grid_mode_section values + descriptions (same grid SVGs, already in static/).
+  const GRID_MODES = [
+    { value: "diamond", label: "Diamond", desc: "Cardinal points — N, E, S, W", img: "/images/grid/diamond_grid.svg" },
+    { value: "box", label: "Box", desc: "Diagonal points — NE, SE, SW, NW", img: "/images/grid/box_grid.svg" },
+  ];
+
+  // Loop structure — the same component catalog the LOOP filter chip exposes
+  // (labels/icons/colors from the canonical LOOP_COMPONENT_MAP; rotated splits
+  // into halved/quartered exactly like the chip). Applies the composable
+  // cap_type engine filter, so in the sheet it stacks with level/length picks.
+  // Halved/quartered descs restate the filter's own selection (rotated +
+  // period 2 / period 4).
+  const LOOP_OPTIONS = (() => {
+    const rotated = LOOP_COMPONENT_MAP.get(LOOPComponent.ROTATED)!;
+    return [
+      {
+        value: "component:rotated_halved",
+        label: "Rotated (halved)",
+        desc: "Repeats in two rotated halves.",
+        icon: "fa-rotate",
+        color: rotated.color,
+      },
+      {
+        value: "component:rotated_quartered",
+        label: "Rotated (quartered)",
+        desc: "Repeats in four rotated quarters.",
+        icon: "fa-arrows-spin",
+        color: rotated.color,
+      },
+      ...[
+        LOOPComponent.MIRRORED,
+        LOOPComponent.FLIPPED,
+        LOOPComponent.SWAPPED,
+        LOOPComponent.INVERTED,
+        LOOPComponent.REWOUND,
+      ].map((comp) => {
+        const info = LOOP_COMPONENT_MAP.get(comp)!;
+        return {
+          value: `component:${comp}`,
+          label: info.label,
+          desc: info.description,
+          icon: `fa-${info.icon}`,
+          color: info.color,
+        };
+      }),
+    ];
+  })();
+
+  const levelValues = $derived(
+    LEVELS.map((lvl) => ({
+      value: lvl,
+      label: `Level ${lvl}`,
+      count: getCount(BrowseFilterType.DIFFICULTY, lvl),
+    })).filter((v) => v.count > 0),
+  );
+  const maxLevelCount = $derived(
+    Math.max(1, ...levelValues.map((v) => v.count)),
+  );
+
+  const lengthValues = $derived.by(() => {
+    const lengths = new Set<number>();
+    for (const seq of pool) {
+      const n = resolveStepCount(seq);
+      if (n > 0) lengths.add(n);
+    }
+    return [...lengths]
+      .sort((a, b) => a - b)
+      .map((n) => ({
+        value: n,
+        label: `${n} steps`,
+        count: getCount(BrowseFilterType.LENGTH, n),
+      }))
+      .filter((v) => v.count >= 3);
+  });
+  const maxLengthCount = $derived(
+    Math.max(1, ...lengthValues.map((v) => v.count)),
+  );
+
+  const letterValues = $derived(
+    deriveStartingLetters(pool)
+      .map((letter) => ({
+        value: letter,
+        count: getCount(BrowseFilterType.STARTING_LETTER, letter),
+      }))
+      .filter((v) => v.count > 0),
+  );
+
+  const positionValues = $derived(
+    POSITIONS.map((p) => ({
+      ...p,
+      count: getCount(BrowseFilterType.STARTING_POSITION, p.value),
+    })).filter((v) => v.count > 0),
+  );
+  const maxPositionCount = $derived(
+    Math.max(1, ...positionValues.map((v) => v.count)),
+  );
+
+  const gridModeValues = $derived(
+    GRID_MODES.map((g) => ({
+      ...g,
+      count: getCount(BrowseFilterType.GRID_MODE, g.value),
+    })).filter((v) => v.count > 0),
+  );
+  const maxGridModeCount = $derived(
+    Math.max(1, ...gridModeValues.map((v) => v.count)),
+  );
+
+  // Keep APPLIED values in the list even at count 0 — counts compose with the
+  // other active filters, so a later pick can zero out an applied structure;
+  // its row must stay visible (and toggleable) or the filter becomes invisible
+  // inside the very sheet that owns it.
+  const loopValues = $derived(
+    LOOP_OPTIONS.map((o) => ({
+      ...o,
+      count: getCount(BrowseFilterType.LOOP_TYPE, o.value),
+    })).filter((v) => v.count > 0 || (activeLoopValues?.has(v.value) ?? false)),
+  );
+  const maxLoopCount = $derived(
+    Math.max(1, ...loopValues.map((v) => v.count)),
+  );
+
+  // Timing & Direction — the six families as a real, composable catalog
+  // filter (contains-semantics, derived per step from arc geometry). Same
+  // applied-at-zero retention as LOOPs so an active family can't vanish
+  // from the very sheet that owns it.
+  const familyValues = $derived(
+    TND_ELEMENTS.map((el) => ({
+      value: el.familyId,
+      label: el.name,
+      element: el.element.charAt(0).toUpperCase() + el.element.slice(1),
+      color: el.accentColor,
+      icon: el.iconPath,
+      count: getCount(BrowseFilterType.TND_FAMILY, el.familyId),
+    })).filter((v) => v.count > 0 || (activeFamilyValues?.has(v.value) ?? false)),
+  );
+  const maxFamilyCount = $derived(
+    Math.max(1, ...familyValues.map((v) => v.count)),
+  );
+
+  // Most-prolific first: with a skewed catalog the ordering itself says
+  // "who made all this", and the density bars carry the proportions.
+  const creatorValues = $derived(
+    deriveCreators(pool)
+      .map((name) => ({
+        value: name,
+        count: getCount(BrowseFilterType.OWNER, name),
+      }))
+      .filter((v) => v.count > 0)
+      .sort((a, b) => b.count - a.count),
+  );
+  const maxCreatorCount = $derived(
+    Math.max(1, ...creatorValues.map((v) => v.count)),
+  );
+
+  // Single-value categories apply directly from the chooser (legacy behavior
+  // for Favorites / Most Recent). Hidden at zero — never a dead end.
+  const recentCount = $derived(getCount(BrowseFilterType.RECENT, "recent"));
+  const favoritesCount = $derived(
+    getCount(BrowseFilterType.FAVORITES, "favorites"),
+  );
+
+  // Dots on the "Structure" mini tile: one per loop component actually present
+  // in the catalog, wearing its canonical color (rotated variants share one).
+  const loopDotColors = $derived(
+    [...new Set(loopValues.map((v) => v.color))].slice(0, 4),
+  );
+
+  // Glyph sample on the "Starting letter" mini tile: the first three real
+  // letters of the catalog, rendered as actual TKA glyphs.
+  const letterSample = $derived(
+    letterValues.slice(0, 3).map((v) => v.value).join(""),
+  );
+
+  // Deterministic content peeks — same real sequences every visit.
+  const levelReps = $derived(pickLevelRepresentatives(pool, LEVELS));
+  const lengthPair = $derived(pickLengthPair(pool));
+  const collage = $derived(pickCollage(pool, 4));
+  // Fixed 4 slots so the collage box is reserved before the pool loads.
+  const collageSlots = $derived([0, 1, 2, 3].map((i) => collage[i]));
+
+  const lengthSub = $derived(
+    lengthPair.min !== undefined && lengthPair.max !== undefined
+      ? `${lengthPair.min} to ${lengthPair.max} steps`
+      : "Short to long",
+  );
+
+  // Fixed per-slot tilts (deterministic; random tilt reads as instability).
+  const FAN_TILTS = [-8, -2, 6];
+
+  function submitSearch(event: Event) {
+    event.preventDefault();
+    const q = query.trim();
+    if (q) onSearch?.(q);
+  }
+
+  function pickLoop(v: { value: string; label: string; color: string }) {
+    if (onToggleLoop) {
+      onToggleLoop(v.value, v.label, v.color, !(activeLoopValues?.has(v.value) ?? false));
+    } else {
+      onApply(BrowseFilterType.LOOP_TYPE, v.value, v.label, v.color);
+    }
+  }
+
+  function pickFamily(v: { value: string; label: string; color: string }) {
+    if (onToggleFamily) {
+      onToggleFamily(v.value, v.label, v.color, !(activeFamilyValues?.has(v.value) ?? false));
+    } else {
+      onApply(BrowseFilterType.TND_FAMILY, v.value, v.label, v.color);
+    }
+  }
+</script>
+
+<div class="drill" class:sheet={variant === "sheet"}>
+  <!-- Search renders wherever the host wires it — the page front door AND the
+       filter sheet (the grid toolbar carries no search input; the sheet is the
+       grid's complete find-surface). -->
+  {#if onSearch}
+    <form class="drill-search" role="search" onsubmit={submitSearch}>
+      <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+      <input
+        type="search"
+        bind:value={query}
+        placeholder="Search sequences…"
+        aria-label="Search sequences"
+      />
+    </form>
+  {/if}
+
+  {#snippet valueHead(title: string, hint?: string)}
+    <!-- Back lives IN the screen header (same spot on every value screen, part
+         of the crossfading layer) — a persistent bar above the stage burned
+         ~44px on the chooser where Back doesn't exist (iPhone: shoved the
+         chooser down for nothing). -->
+    <header class="drill-head with-back">
+      <button
+        class="head-back"
+        type="button"
+        onclick={() => (section = "chooser")}
+        aria-label="Back to browse options"
+      >
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      </button>
+      <h2>{title}</h2>
+      {#if hint}<p>{hint}</p>{/if}
+    </header>
+  {/snippet}
+
+  <div class="drill-stage">
+    <!-- fill mode: screens differ in height, so the content-sized grid-stack
+         would resize (and shove neighbors) at every section change. The stage
+         is the sized box; layers fill it and each screen scrolls itself. -->
+    <Crossfade key={section} duration={DURATION.normal} fill>
+      {#if section === "chooser"}
+        <div class="drill-screen">
+          <header class="drill-head">
+            <h2>{variant === "sheet" ? "Filter sequences" : "How do you want to browse?"}</h2>
+            <p>
+              {variant === "sheet"
+                ? "Counts update with your current filters."
+                : "Pick one to narrow it down."}
+            </p>
+          </header>
+
+          <button class="choice-tile" type="button" onclick={() => (section = "level")}>
+            <span class="choice-main">
+              <span class="choice-title">By level</span>
+              <span class="choice-sub">Beginner to advanced</span>
+            </span>
+            <span class="peek-fan" aria-hidden="true">
+              {#each LEVELS as lvl, i (lvl)}
+                <SequencePeek
+                  sequence={levelReps.get(lvl)}
+                  width={76}
+                  height={92}
+                  tilt={FAN_TILTS[i]}
+                >
+                  {#snippet overlay()}
+                    <DifficultyBadge level={lvl} size="18px" />
+                  {/snippet}
+                </SequencePeek>
+              {/each}
+            </span>
+            <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
+          </button>
+
+          <button class="choice-tile" type="button" onclick={() => (section = "length")}>
+            <span class="choice-main">
+              <span class="choice-title">By length</span>
+              <span class="choice-sub">{lengthSub}</span>
+            </span>
+            <span class="peek-fan pair" aria-hidden="true">
+              <SequencePeek sequence={lengthPair.short} width={56} height={84} tilt={-3} />
+              <SequencePeek sequence={lengthPair.long} width={118} height={84} tilt={3} />
+            </span>
+            <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
+          </button>
+
+          <button class="choice-tile compact" type="button" onclick={() => onShowAll?.()}>
+            <span class="choice-main">
+              <span class="choice-title">Show all {pool.length} sequences</span>
+              <span class="choice-sub">The whole gallery, one grid</span>
+            </span>
+            <span class="peek-collage" aria-hidden="true">
+              {#each collageSlots as seq, i (i)}
+                <SequencePeek sequence={seq} width={44} height={34} />
+              {/each}
+            </span>
+            <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
+          </button>
+
+          {#if pool.length > 0}
+            <p class="more-head">More ways to browse</p>
+            <div class="mini-grid">
+              {#if letterValues.length > 1}
+                <button class="mini-tile" type="button" onclick={() => (section = "letter")}>
+                  <span class="mini-art" aria-hidden="true">
+                    <TKAWordGlyph word={letterSample} height={20} darkMode />
+                  </span>
+                  <span class="mini-main">
+                    <span class="mini-title">Starting letter</span>
+                    <span class="mini-sub">{letterValues.length} letters</span>
+                  </span>
+                </button>
+              {/if}
+              <!-- A one-value category is a dead-end picker (its only value
+                   = the whole catalog) — require at least two real values. -->
+              {#if positionValues.length > 1}
+                <button class="mini-tile" type="button" onclick={() => (section = "position")}>
+                  <span class="mini-art plate" aria-hidden="true">
+                    <img src={positionValues[0]?.img} alt="" width="32" height="32" loading="lazy" />
+                  </span>
+                  <span class="mini-main">
+                    <span class="mini-title">Start position</span>
+                    <span class="mini-sub">Alpha, beta, gamma</span>
+                  </span>
+                </button>
+              {/if}
+              {#if gridModeValues.length > 1}
+                <button class="mini-tile" type="button" onclick={() => (section = "gridmode")}>
+                  <span class="mini-art plate" aria-hidden="true">
+                    {#each gridModeValues as g (g.value)}
+                      <img src={g.img} alt="" width="20" height="20" loading="lazy" />
+                    {/each}
+                  </span>
+                  <span class="mini-main">
+                    <span class="mini-title">Grid mode</span>
+                    <span class="mini-sub">Diamond or box</span>
+                  </span>
+                </button>
+              {/if}
+              <!-- Structure filters to a subset even with one value, so no
+                   two-value gate like the categories above. (loopValues
+                   already retains applied-at-zero values, so the tile can't
+                   disappear while a structure filter is active.) -->
+              {#if loopValues.length > 0}
+                <button class="mini-tile" type="button" onclick={() => (section = "loop")}>
+                  <span class="mini-art" aria-hidden="true">
+                    <span class="element-dots">
+                      {#each loopDotColors as color (color)}
+                        <span class="element-dot" style:background={color}></span>
+                      {/each}
+                    </span>
+                  </span>
+                  <span class="mini-main">
+                    <span class="mini-title">LOOPs</span>
+                    <span class="mini-sub">Mirrored, rotated, swapped…</span>
+                  </span>
+                </button>
+              {/if}
+              {#if creatorValues.length > 1}
+                <button class="mini-tile" type="button" onclick={() => (section = "author")}>
+                  <span class="mini-art" aria-hidden="true">
+                    <i class="fas fa-users"></i>
+                  </span>
+                  <span class="mini-main">
+                    <span class="mini-title">Creator</span>
+                    <span class="mini-sub">{creatorValues.length} creators</span>
+                  </span>
+                </button>
+              {/if}
+              {#if recentCount > 0}
+                <button
+                  class="mini-tile"
+                  type="button"
+                  onclick={() => onApply(BrowseFilterType.RECENT, "recent", "Recently added")}
+                >
+                  <span class="mini-art" aria-hidden="true">
+                    <i class="fas fa-clock-rotate-left"></i>
+                  </span>
+                  <span class="mini-main">
+                    <span class="mini-title">Recently added</span>
+                    <span class="mini-sub">Last 30 days · {recentCount}</span>
+                  </span>
+                </button>
+              {/if}
+              {#if favoritesCount > 0}
+                <button
+                  class="mini-tile"
+                  type="button"
+                  onclick={() => onApply(BrowseFilterType.FAVORITES, "favorites", "Favorites")}
+                >
+                  <span class="mini-art" aria-hidden="true">
+                    <i class="fas fa-heart"></i>
+                  </span>
+                  <span class="mini-main">
+                    <span class="mini-title">Favorites</span>
+                    <span class="mini-sub">{favoritesCount} saved</span>
+                  </span>
+                </button>
+              {/if}
+              <!-- Real composable filter (families derived per step from
+                   arc geometry) — available in page AND sheet, like LOOPs. -->
+              {#if familyValues.length > 0}
+                <button class="mini-tile" type="button" onclick={() => (section = "family")}>
+                  <span class="mini-art" aria-hidden="true">
+                    <span class="element-dots">
+                      {#each TND_ELEMENTS as el (el.familyId)}
+                        <span class="element-dot" style:background={el.accentColor}></span>
+                      {/each}
+                    </span>
+                  </span>
+                  <span class="mini-main">
+                    <span class="mini-title">Timing &amp; Direction</span>
+                    <span class="mini-sub">The six families</span>
+                  </span>
+                </button>
+              {/if}
+            </div>
+          {/if}
+        </div>
+      {:else if section === "level"}
+        <div class="drill-screen">
+          {@render valueHead("Pick a level")}
+          <div class="value-list">
+            {#each levelValues as v (v.value)}
+              {@const style = DIFFICULTY_LEVELS[v.value]}
+              <button
+                class="level-tile"
+                type="button"
+                style:background={style?.cssBg}
+                style:color={style?.text ?? "#000"}
+                onclick={() => onApply(BrowseFilterType.DIFFICULTY, v.value, v.label)}
+              >
+                <span class="value-numeral">{v.value}</span>
+                <span class="value-main">
+                  <span class="value-label">Level {v.value}</span>
+                  <span class="value-desc on-gradient">{LEVEL_DESCRIPTIONS[v.value]}</span>
+                  <span class="density-bar on-gradient">
+                    <span
+                      class="density-fill"
+                      style:width="{(v.count / maxLevelCount) * 100}%"
+                    ></span>
+                  </span>
+                </span>
+                <span class="value-count">{v.count}</span>
+                <SequencePeek sequence={levelReps.get(v.value)} width={62} height={56} />
+              </button>
+            {/each}
+          </div>
+        </div>
+      {:else if section === "length"}
+        <div class="drill-screen">
+          {@render valueHead("Pick a length")}
+          <div class="value-list">
+            {#each lengthValues as v (v.value)}
+              <button
+                class="length-row"
+                type="button"
+                onclick={() => onApply(BrowseFilterType.LENGTH, v.value, v.label)}
+              >
+                <span class="value-numeral small">{v.value}</span>
+                <span class="value-main">
+                  <span class="value-label muted">steps</span>
+                  <span class="density-bar">
+                    <span
+                      class="density-fill"
+                      style:width="{(v.count / maxLengthCount) * 100}%"
+                    ></span>
+                  </span>
+                </span>
+                <span class="value-count">{v.count}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {:else if section === "letter"}
+        <div class="drill-screen">
+          {@render valueHead("Pick a starting letter")}
+          <div class="letter-grid">
+            {#each letterValues as v (v.value)}
+              <button
+                class="letter-chip"
+                type="button"
+                aria-label="{v.value} — {v.count} sequences"
+                onclick={() => onApply(BrowseFilterType.STARTING_LETTER, v.value, v.value)}
+              >
+                <span class="letter-glyph">
+                  <TKAWordGlyph word={v.value} height={26} darkMode />
+                </span>
+                <span class="letter-count">{v.count}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {:else if section === "position"}
+        <div class="drill-screen">
+          {@render valueHead("Pick a start position")}
+          <div class="value-list">
+            {#each positionValues as v (v.value)}
+              <button
+                class="length-row tall"
+                type="button"
+                onclick={() => onApply(BrowseFilterType.STARTING_POSITION, v.value, v.label)}
+              >
+                <img class="value-img" src={v.img} alt="" width="56" height="56" loading="lazy" />
+                <span class="value-main">
+                  <span class="value-label">{v.label}</span>
+                  <span class="value-desc">{v.desc}</span>
+                  <span class="density-bar">
+                    <span
+                      class="density-fill"
+                      style:width="{(v.count / maxPositionCount) * 100}%"
+                    ></span>
+                  </span>
+                </span>
+                <span class="value-count">{v.count}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {:else if section === "author"}
+        <div class="drill-screen">
+          {@render valueHead("Pick a creator")}
+          <div class="value-list">
+            {#each creatorValues as v (v.value)}
+              <button
+                class="length-row"
+                type="button"
+                onclick={() => onApply(BrowseFilterType.OWNER, v.value, v.value)}
+              >
+                <span class="value-main">
+                  <span class="value-label">{v.value}</span>
+                  <span class="density-bar">
+                    <span
+                      class="density-fill"
+                      style:width="{(v.count / maxCreatorCount) * 100}%"
+                    ></span>
+                  </span>
+                </span>
+                <span class="value-count">{v.count}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {:else if section === "gridmode"}
+        <div class="drill-screen">
+          {@render valueHead("Pick a grid mode")}
+          <div class="value-list">
+            {#each gridModeValues as v (v.value)}
+              <button
+                class="length-row tall"
+                type="button"
+                onclick={() => onApply(BrowseFilterType.GRID_MODE, v.value, v.label)}
+              >
+                <img class="value-img plate" src={v.img} alt="" width="56" height="56" loading="lazy" />
+                <span class="value-main">
+                  <span class="value-label">{v.label}</span>
+                  <span class="value-desc">{v.desc}</span>
+                  <span class="density-bar">
+                    <span
+                      class="density-fill"
+                      style:width="{(v.count / maxGridModeCount) * 100}%"
+                    ></span>
+                  </span>
+                </span>
+                <span class="value-count">{v.count}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {:else if section === "loop"}
+        <div class="drill-screen">
+          {@render valueHead(
+            "Pick a LOOP type",
+            onToggleLoop ? "LOOPs stack — tap several to combine them." : undefined,
+          )}
+          <div class="value-list">
+            {#each loopValues as v (v.value)}
+              {@const isOn = activeLoopValues?.has(v.value) ?? false}
+              <button
+                class="length-row tall"
+                class:loop-active={isOn}
+                style:--row-color={v.color}
+                type="button"
+                aria-pressed={onToggleLoop ? isOn : undefined}
+                onclick={() => pickLoop(v)}
+              >
+                <span class="loop-icon" style:color={v.color} aria-hidden="true">
+                  <i class="fas {v.icon}"></i>
+                </span>
+                <span class="value-main">
+                  <span class="value-label">{v.label}</span>
+                  <span class="value-desc">{v.desc}</span>
+                  <span class="density-bar">
+                    <span
+                      class="density-fill"
+                      style:width="{(v.count / maxLoopCount) * 100}%"
+                      style:background={v.color}
+                    ></span>
+                  </span>
+                </span>
+                <span class="value-count">{v.count}</span>
+                <!-- Slot reserved either way — appearing check must not shift the row. -->
+                {#if onToggleLoop}
+                  <span class="loop-check" class:on={isOn} aria-hidden="true">
+                    <i class="fas fa-check"></i>
+                  </span>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {:else if section === "family"}
+        <div class="drill-screen">
+          {@render valueHead(
+            "Pick a family",
+            onToggleFamily ? "Families stack — tap several to combine them." : undefined,
+          )}
+          <div class="value-list">
+            {#each familyValues as v (v.value)}
+              {@const isOn = activeFamilyValues?.has(v.value) ?? false}
+              <button
+                class="length-row tall"
+                class:loop-active={isOn}
+                style:--row-color={v.color}
+                type="button"
+                aria-pressed={onToggleFamily ? isOn : undefined}
+                onclick={() => pickFamily(v)}
+              >
+                <img class="value-img family-icon" src={v.icon} alt="" width="44" height="44" loading="lazy" />
+                <span class="value-main">
+                  <span class="value-label">{v.label}</span>
+                  <span class="value-desc">{v.element}</span>
+                  <span class="density-bar">
+                    <span
+                      class="density-fill"
+                      style:width="{(v.count / maxFamilyCount) * 100}%"
+                      style:background={v.color}
+                    ></span>
+                  </span>
+                </span>
+                <span class="value-count">{v.count}</span>
+                {#if onToggleFamily}
+                  <span class="loop-check" class:on={isOn} aria-hidden="true">
+                    <i class="fas fa-check"></i>
+                  </span>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </Crossfade>
+  </div>
+</div>
+
+<style>
+  /* The drill box never scrolls — each screen scrolls inside its Crossfade
+     fill layer, so the stage keeps ONE fixed size across section changes and
+     the transition can't shift anything. */
+  .drill {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 0.9rem 1rem 1.25rem;
+    overflow: hidden;
+  }
+  /* Sheet variant: fills the fixed-height drawer body, top-aligned. */
+  .drill.sheet {
+    padding: 0.5rem 1rem 1rem;
+  }
+  .drill.sheet .drill-screen {
+    justify-content: flex-start;
+  }
+  .drill-search {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid var(--theme-border, #2a3140);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-muted, #9aa6b8);
+    max-width: 520px;
+    margin: 0 auto;
+    width: 100%;
+    flex: 0 0 auto;
+  }
+  .drill-search input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--theme-text, #e8edf6);
+    font-size: 0.95rem;
+  }
+  .drill-stage {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    max-width: 520px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  /* Each screen fills its (absolute, stage-sized) crossfade layer and owns its
+     own scroll; short screens center, tall ones scroll from the top. */
+  .drill-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: safe center;
+    gap: 0.75rem;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+  }
+  .drill-head {
+    display: block;
+    text-align: center;
+  }
+  .drill-head h2 {
+    margin: 0 0 0.2rem;
+    font-size: 1.25rem;
+    font-weight: 800;
+    text-transform: none;
+    color: var(--theme-text, #e8edf6);
+  }
+  .drill-head p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--theme-text-muted, #9aa6b8);
+  }
+  /* Value-screen header: back arrow inline-left of the centered title (equal
+     right column keeps the title truly centered); hint spans the full row. */
+  .drill-head.with-back {
+    display: grid;
+    grid-template-columns: 44px 1fr 44px;
+    align-items: center;
+    row-gap: 0.3rem;
+  }
+  .drill-head.with-back h2 {
+    grid-column: 2;
+    margin: 0;
+  }
+  .drill-head.with-back p {
+    grid-column: 1 / -1;
+  }
+  .head-back {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: transparent;
+    border: 1px solid var(--theme-border, #2a3140);
+    border-radius: 999px;
+    color: var(--theme-text, #e8edf6);
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  .head-back:hover {
+    border-color: var(--theme-accent, #6aa0ff);
+  }
+  .head-back:focus-visible {
+    outline: 2px solid var(--theme-accent, #6aa0ff);
+    outline-offset: 2px;
+  }
+
+  /* ── Chooser tiles ─────────────────────────────────────────────── */
+  .choice-tile {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 116px;
+    padding: 0.9rem 2rem 0.9rem 1.1rem;
+    text-align: left;
+    border-radius: 18px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #e8edf6);
+    cursor: pointer;
+    overflow: hidden;
+    transition:
+      border-color 0.16s ease,
+      transform 0.16s ease;
+  }
+  .choice-tile:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    transform: translateY(-1px);
+  }
+  .choice-tile:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+  .choice-tile.compact {
+    min-height: 84px;
+  }
+  .choice-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+  .choice-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .choice-sub {
+    font-size: 0.82rem;
+    color: var(--theme-text-muted, #9aa6b8);
+    font-variant-numeric: tabular-nums;
+  }
+  .drill-chev {
+    position: absolute;
+    right: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--theme-text-muted, #9aa6b8);
+    font-size: 0.85rem;
+  }
+
+  /* Peek fan: fixed tilts, overlapping, bleeding off the tile's right edge
+     (the tile's overflow:hidden does the clipping). */
+  .peek-fan {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-right: -1.4rem;
+    flex: 0 0 auto;
+  }
+  .peek-fan > :global(.peek + .peek) {
+    margin-left: -1.4rem;
+  }
+  .peek-fan.pair > :global(.peek + .peek) {
+    margin-left: -0.6rem;
+  }
+  .peek-collage {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    gap: 3px;
+    margin-right: 0.4rem;
+    flex: 0 0 auto;
+  }
+
+  /* ── Tier 2: more ways to browse ───────────────────────────────── */
+  .more-head {
+    margin: 0.35rem 0 -0.25rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--theme-text-muted, #9aa6b8);
+    text-align: center;
+  }
+  .mini-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+  }
+  .mini-tile {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 64px;
+    padding: 0.6rem 0.7rem;
+    text-align: left;
+    border-radius: 14px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #e8edf6);
+    cursor: pointer;
+    transition: border-color 0.16s ease, transform 0.16s ease;
+  }
+  .mini-tile:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    transform: translateY(-1px);
+  }
+  .mini-tile:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+  .mini-art {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 44px;
+    height: 32px;
+    color: var(--theme-text-muted, #9aa6b8);
+    font-size: 1rem;
+  }
+  /* Legacy PNGs/SVGs draw dark lines — give them the same white plate the
+     legacy app rendered them on. */
+  .mini-art.plate {
+    background: #fff;
+    border-radius: 8px;
+    padding: 3px 4px;
+  }
+  .mini-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .mini-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  .mini-sub {
+    font-size: 0.75rem;
+    color: var(--theme-text-muted, #9aa6b8);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Family / loop color dots (mini-tile art) ──────────────────── */
+  .element-dots {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+  }
+  .element-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .value-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    width: 100%;
+  }
+
+  /* Level tiles wear the canonical difficulty gradients (light backgrounds,
+     black text per the canonical config). */
+  .level-tile {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.85rem;
+    width: 100%;
+    min-height: 76px;
+    padding: 0.7rem 0.9rem;
+    text-align: left;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+    transition: transform 0.16s ease, filter 0.16s ease;
+  }
+  .level-tile:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+  }
+  .level-tile:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .length-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.85rem;
+    width: 100%;
+    min-height: 56px;
+    padding: 0.55rem 0.9rem;
+    text-align: left;
+    border-radius: 14px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #e8edf6);
+    cursor: pointer;
+    transition: border-color 0.16s ease, transform 0.16s ease;
+  }
+  .length-row:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    transform: translateY(-1px);
+  }
+  .length-row:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  /* Monument numeral — same face as DifficultyBadge (Cambria serif). */
+  .value-numeral {
+    font-family: Cambria, Georgia, serif;
+    font-weight: 700;
+    font-size: 2.4rem;
+    line-height: 1;
+    min-width: 2ch;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .value-numeral.small {
+    font-size: 1.6rem;
+  }
+
+  .value-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+  .value-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+  .value-label.muted {
+    color: var(--theme-text-muted, #9aa6b8);
+    font-weight: 600;
+    font-size: 0.8rem;
+  }
+  .value-desc {
+    font-size: 0.75rem;
+    line-height: 1.25;
+    color: var(--theme-text-muted, #9aa6b8);
+  }
+  /* On the light level gradients, descriptions read in dark ink. */
+  .value-desc.on-gradient {
+    color: rgba(0, 0, 0, 0.65);
+  }
+  .value-img {
+    flex: 0 0 auto;
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    border-radius: 10px;
+  }
+  .value-img.plate {
+    background: #fff;
+    padding: 4px;
+  }
+  /* Family rows lead with the element PNG at the loop-icon footprint so the
+     two stacking screens (LOOPs / families) share one row rhythm. */
+  .value-img.family-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 0;
+  }
+  .length-row.tall {
+    min-height: 76px;
+  }
+  /* Loop-structure rows lead with the component's canonical icon + color —
+     the same coding as the LOOP icon strip and deck labels. */
+  .loop-icon {
+    flex: 0 0 auto;
+    width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+  /* Applied structure (sheet toggles): border + tint in the component's color. */
+  .length-row.loop-active {
+    border-color: color-mix(in srgb, var(--row-color) 60%, transparent);
+    background: color-mix(in srgb, var(--row-color) 10%, transparent);
+  }
+  .loop-check {
+    flex: 0 0 auto;
+    width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--row-color);
+    font-size: 0.9rem;
+    visibility: hidden;
+  }
+  .loop-check.on {
+    visibility: visible;
+  }
+
+  /* ── Letter grid ───────────────────────────────────────────────── */
+  .letter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 0.5rem;
+  }
+  .letter-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-height: 60px;
+    padding: 0.45rem 0.3rem;
+    border-radius: 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #e8edf6);
+    cursor: pointer;
+    transition: border-color 0.16s ease, transform 0.16s ease;
+  }
+  .letter-chip:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    transform: translateY(-1px);
+  }
+  .letter-chip:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+  .letter-glyph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+  }
+  .letter-count {
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text-muted, #9aa6b8);
+  }
+
+  /* Density bar: fill = count ÷ largest bucket on screen. Fixed track. */
+  .density-bar {
+    display: block;
+    width: 100%;
+    max-width: 160px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    overflow: hidden;
+  }
+  .density-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--theme-text-muted, #9aa6b8);
+  }
+  .density-bar.on-gradient {
+    background: rgba(0, 0, 0, 0.15);
+  }
+  .density-bar.on-gradient .density-fill {
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .value-count {
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .length-row .value-count {
+    color: var(--theme-text, #e8edf6);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .choice-tile,
+    .level-tile,
+    .length-row,
+    .mini-tile,
+    .letter-chip {
+      transition: none;
+    }
+    .choice-tile:hover,
+    .level-tile:hover,
+    .length-row:hover,
+    .mini-tile:hover,
+    .letter-chip:hover {
+      transform: none;
+    }
+  }
+</style>

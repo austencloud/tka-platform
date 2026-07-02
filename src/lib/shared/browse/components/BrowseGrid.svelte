@@ -8,7 +8,10 @@
     type VirtualGridApi,
   } from "$lib/shared/browse/components/VirtualizedSequenceGrid.svelte";
   import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/browse-thumbnail-provider";
-  import { buildVariationMap } from "$lib/shared/browse/services/variation-grouper";
+  import {
+    buildVariationMap,
+    variationGroupKey,
+  } from "$lib/shared/browse/services/variation-grouper";
   import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
@@ -23,6 +26,8 @@
     disableVirtualization?: boolean;
     eager?: boolean;
     onGridReady?: (api: VirtualGridApi) => void;
+    /** Picker hosts: ids to render with the selected outline. */
+    selectedIds?: ReadonlySet<string>;
   }
 
   const {
@@ -32,6 +37,7 @@
     disableVirtualization = false,
     eager = false,
     onGridReady,
+    selectedIds,
   }: Props = $props();
 
   // Derived state from engine — sections take priority over virtualization
@@ -46,16 +52,39 @@
   });
 
   function getVariationsForSequence(sequence: SequenceData): SequenceData[] {
-    const word = sequence.word || sequence.name;
-    if (!word) return [sequence];
-    return variationMap.get(word.trim()) ?? [sequence];
+    const key = variationGroupKey(sequence);
+    if (!key) return [sequence];
+    return variationMap.get(key) ?? [sequence];
   }
+
+  // One card per WORD — the variation pill + crossfade exist to cycle a word's
+  // variations inside a single card (legacy counted "number of words" and drew
+  // one thumbnail box per word). Rendering every variation as its own card
+  // filled sections with near-identical duplicates. Keyed by the SIMPLIFIED
+  // word (the label) so raw-word variants sharing a label collapse too.
+  function dedupeByWord(seqs: SequenceData[]): SequenceData[] {
+    const seen = new Set<string>();
+    const out: SequenceData[] = [];
+    for (const seq of seqs) {
+      const key = variationGroupKey(seq) ?? seq.id;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(seq);
+    }
+    return out;
+  }
+
+  // With a length filter active every section shares the same step count —
+  // repeating "(8 steps)" in each header is noise.
+  const stepsRedundant = $derived(engine.activeFilters.has("length"));
 
   // Level-sorted sections render a colored "Level N" banner (blue/silver/gold)
   // with letter subsections beneath. Annotate each section with whether it
   // starts a new level and that level's total count.
   interface SectionRow {
     section: SequenceSection;
+    /** Word-collapsed cards for this section (one per word, pill cycles the rest). */
+    displaySequences: SequenceData[];
     isLevel: boolean;
     showBanner: boolean;
     level: number;
@@ -74,6 +103,7 @@
       const showBanner = isLevel && s.level !== prevLevel;
       rows.push({
         section: s,
+        displaySequences: dedupeByWord(s.sequences as SequenceData[]),
         isLevel,
         showBanner,
         level: s.level ?? 0,
@@ -150,7 +180,8 @@
 {#if useVirtualization}
   <!-- Virtualized: large flat list with 50+ items -->
   <VirtualizedSequenceGrid
-    sequences={engine.sequences as SequenceData[]}
+    sequences={dedupeByWord(engine.sequences as SequenceData[])}
+    variationSource={engine.sequences as SequenceData[]}
     {thumbnailService}
     {onAction}
     pinchColumnOverride={engine.columnCount}
@@ -160,6 +191,7 @@
     {showRedMotion}
     {addWord}
     {addDifficultyLevel}
+    {selectedIds}
   />
 {:else if engine.sectionsEnabled && engine.sections.length > 0}
   <!-- Sectioned: group by section with headers -->
@@ -175,15 +207,19 @@
         </div>
       {/if}
       <div class="sequence-section" class:under-level={row.isLevel} data-section={section.title}>
-        <SectionHeader title={row.isLevel ? letterTitle(section.title) : section.title} />
+        <SectionHeader
+          title={row.isLevel ? letterTitle(section.title) : section.title}
+          count={row.displaySequences.length}
+          hideSteps={stepsRedundant}
+        />
 
-        {#if section.sequences.length > 0}
+        {#if row.displaySequences.length > 0}
           <div
             class="sequences-grid grid-view"
             class:is-transitioning={engine.isTransitioning}
             style:grid-template-columns="repeat({engine.columnCount}, 1fr)"
           >
-            {#each section.sequences as sequence (sequence.id)}
+            {#each row.displaySequences as sequence (sequence.id)}
               {@const seqVariations = getVariationsForSequence(sequence)}
               <ChoreoCardThumbnail
                 {sequence}
@@ -200,6 +236,7 @@
                 {showRedMotion}
                 {addWord}
                 {addDifficultyLevel}
+                {selectedIds}
               />
             {/each}
           </div>
@@ -214,7 +251,7 @@
     class:is-transitioning={engine.isTransitioning}
     style:grid-template-columns="repeat({engine.columnCount}, 1fr)"
   >
-    {#each engine.sequences as sequence (sequence.id)}
+    {#each dedupeByWord(engine.sequences as SequenceData[]) as sequence (sequence.id)}
       {@const seqVariations = getVariationsForSequence(sequence)}
       <ChoreoCardThumbnail
         {sequence}
@@ -229,6 +266,7 @@
         {handPathMode}
         {showBlueMotion}
         {showRedMotion}
+        {selectedIds}
       />
     {/each}
   </div>

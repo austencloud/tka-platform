@@ -231,7 +231,7 @@
         style:top="{virtualRow.start}px"
         style:width="100%"
         style:display="grid"
-        style:grid-template-columns="repeat({columnCount}, 1fr)"
+        style:grid-template-columns="repeat({columnCount}, minmax(0, 1fr))"
         style:column-gap="{GAP}px"
         role="row"
         aria-rowindex={virtualRow.index + 1}
@@ -307,6 +307,14 @@
   .virtual-row {
     padding: 0 var(--spacing-sm, 4px);
     box-sizing: border-box;
+  }
+
+  /* Grid items default to min-width:auto (min-content). A card with a long
+     nowrap name would otherwise refuse to shrink and overflow its 1fr track,
+     making one column wider than its neighbor. min-width:0 lets the cell honor
+     the equal track width so the card's own ellipsis truncation takes over. */
+  .virtual-row [role="gridcell"] {
+    min-width: 0;
   }
 
   .load-more-trigger {

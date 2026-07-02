@@ -262,7 +262,9 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 	const hasActiveFilters = $derived(userFilterCount > 0);
 
 	const allFilterChips = $derived.by(() => {
-		return Array.from(activeFilters.values());
+		// Attach each filter's map key — chips dismiss by key, and loop-component
+		// filters use composite keys so several can be active at once.
+		return Array.from(activeFilters, ([key, f]) => ({ ...f, key }));
 	});
 
 	const availableLengths = $derived.by(() => {
@@ -303,9 +305,12 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			}
 			if (comps.includes(LOOPComponent.ROTATED)) {
 				const period = seq.period ?? (seq.steps?.length ? detectRotationPeriod(seq.id, seq.steps) : 2);
+				// Match filterByLOOPComponent exactly: halved = period <= 2,
+				// quartered = period === 4. Anomalous stored periods (3, 5+)
+				// match neither filter, so they must count in neither bucket.
 				if (period === 4) {
 					rotatedQuarteredCount++;
-				} else {
+				} else if (period <= 2) {
 					rotatedHalvedCount++;
 				}
 			}
@@ -405,12 +410,30 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			const sequences = await loaderService.loadSequenceMetadata();
 			allSequences = deduplicateById(sequences);
 			sectionsReady = true;
+			appendExtraCommunitySequences();
 		} catch (err) {
 			console.error("[BrowseEngine] Failed to load community sequences:", err);
 			error = err instanceof Error ? err.message : "Failed to load sequences";
 		} finally {
 			isLoading = false;
 		}
+	}
+
+	/** Append host-provided extras (e.g. the canonical T&D alphabet) to the
+	 * community pool without blocking first paint. Guarded on source so a
+	 * mid-resolve switch to my-library never pollutes the library view; the
+	 * next community load re-runs this (the provider caches its result). */
+	function appendExtraCommunitySequences(): void {
+		const provider = config.extraCommunitySequences;
+		if (!provider) return;
+		provider()
+			.then((extra) => {
+				if (source !== "community" || extra.length === 0) return;
+				allSequences = deduplicateById([...allSequences, ...extra]);
+			})
+			.catch((err) => {
+				console.error("[BrowseEngine] extraCommunitySequences failed:", err);
+			});
 	}
 
 	async function loadLibrarySequences(): Promise<void> {
@@ -606,7 +629,15 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			label: string,
 			chipColor: string
 		): void {
-			const key = String(type);
+			// Loop-component and TnD-family filters STACK (a sequence can be
+			// mirrored AND swapped; can touch several families), so each value
+			// gets its own key. Every other type stays one-per-type: re-adding
+			// replaces.
+			const key =
+				type === BrowseFilterType.LOOP_TYPE ||
+				type === BrowseFilterType.TND_FAMILY
+					? `${type}:${String(value)}`
+					: String(type);
 			// Don't overwrite locked constraints
 			const existing = activeFilters.get(key);
 			if (existing?.locked) return;
@@ -623,11 +654,19 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 		},
 
 		removeFilter(typeKey: string): void {
-			const existing = activeFilters.get(typeKey);
-			if (!existing || existing.locked) return;
+			// Exact key, plus any stacked children under it — so
+			// removeFilter("cap_type") clears every "cap_type:<value>" loop
+			// filter, while removeFilter("cap_type:component:mirrored") clears
+			// just the one.
+			const targets = [...activeFilters.keys()].filter(
+				(k) =>
+					(k === typeKey || k.startsWith(`${typeKey}:`)) &&
+					!activeFilters.get(k)?.locked
+			);
+			if (targets.length === 0) return;
 
 			const newMap = new Map(activeFilters);
-			newMap.delete(typeKey);
+			for (const k of targets) newMap.delete(k);
 			activeFilters = newMap;
 		},
 
@@ -646,8 +685,18 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			candidateType: BrowseFilterType,
 			candidateValue: BrowseFilterValue
 		): number {
+			// Compose the ACTUAL result pipeline (filters AND search) — counts
+			// are previews of results, and ignoring an active search let a
+			// count>0 pick land on a zero-result grid.
+			const base = _searchQuery.trim()
+				? applyBrowseFilter(
+						allSequences,
+						BrowseFilterType.CONTAINS_LETTERS,
+						_searchQuery
+					)
+				: allSequences;
 			return getMultiFilteredCount(
-				allSequences,
+				base,
 				candidateType,
 				candidateValue,
 				activeFilters

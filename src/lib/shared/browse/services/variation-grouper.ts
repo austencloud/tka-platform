@@ -1,11 +1,16 @@
 /**
  * Variation Grouper
  *
- * Groups sequences by their "word" to identify variations.
+ * Groups sequences by their SIMPLIFIED word to identify variations — the same
+ * normalization the card label wears (simplifyRepeatedWord: "GGGG" → "G",
+ * "ABAB" → "AB"). Grouping MUST match the label: two cards both labeled "G"
+ * that don't merge read as a bug (Austen, 2026-07-02: "grouping by the
+ * simplified word all the time is the way to go").
  * Caches results for performance and sorts variations by date (newest first).
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
 // Cache for variation map to avoid recomputation
 let cachedMap: Map<string, SequenceData[]> | null = null;
@@ -88,13 +93,20 @@ function getOrBuildMap(sequences: SequenceData[]): Map<string, SequenceData[]> {
 }
 
 /**
- * Get the word from a sequence, normalizing for comparison
+ * The canonical grouping key for a sequence: its simplified display word.
+ * Every surface that buckets or looks up variations must use THIS (not the raw
+ * word) or raw-word variants that share a label split into separate cards
+ * (community "G" vs canonical "GGGG").
  */
-function getWord(sequence: SequenceData): string | null {
+export function variationGroupKey(sequence: SequenceData): string | null {
   const word = sequence.word || sequence.name;
   if (!word) return null;
-  // Normalize: trim whitespace, preserve case (words are case-sensitive)
-  return word.trim();
+  // Trim, preserve case (words are case-sensitive), collapse repetition.
+  return simplifyRepeatedWord(word.trim());
+}
+
+function getWord(sequence: SequenceData): string | null {
+  return variationGroupKey(sequence);
 }
 
 /**

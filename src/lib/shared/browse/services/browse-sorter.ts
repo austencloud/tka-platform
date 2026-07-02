@@ -11,7 +11,7 @@ import { sortSequencesByKineticAlphabet } from "$lib/shared/browse/utils/kinetic
 import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 
 /** Numeric difficulty (1–3). Prefers stored `level`, else computes from steps. */
-function resolveLevel(sequence: SequenceData): number {
+export function resolveDifficultyLevel(sequence: SequenceData): number {
   if (typeof sequence.level === "number") return sequence.level;
   if (sequence.steps?.length) return calculateDifficultyLevel([...sequence.steps]);
   return 1;
@@ -23,7 +23,7 @@ function resolveLevel(sequence: SequenceData): number {
  * Never use word length — the dash convention (Δ-, Z-) inflates it past the
  * real step count.
  */
-function stepCountOf(sequence: SequenceData): number {
+export function resolveStepCount(sequence: SequenceData): number {
   return sequence.sequenceLength ?? sequence.steps?.length ?? 0;
 }
 
@@ -98,11 +98,11 @@ function sortByDateAdded(sequences: SequenceData[]): SequenceData[] {
 }
 
 function sortByDifficulty(sequences: SequenceData[]): SequenceData[] {
-  return sequences.sort((a, b) => resolveLevel(a) - resolveLevel(b)); // Easiest first
+  return sequences.sort((a, b) => resolveDifficultyLevel(a) - resolveDifficultyLevel(b)); // Easiest first
 }
 
 function sortByLength(sequences: SequenceData[]): SequenceData[] {
-  return sequences.sort((a, b) => stepCountOf(a) - stepCountOf(b));
+  return sequences.sort((a, b) => resolveStepCount(a) - resolveStepCount(b));
 }
 
 function sortByAuthor(sequences: SequenceData[]): SequenceData[] {
@@ -129,7 +129,7 @@ function getSectionKey(
     case BrowseSortMethod.ALPHABETICAL:
       return getAlphabeticalSection(sequence);
     case BrowseSortMethod.DIFFICULTY_LEVEL:
-      return String(resolveLevel(sequence));
+      return String(resolveDifficultyLevel(sequence));
     case BrowseSortMethod.AUTHOR:
       return sequence.author ?? "Unknown";
     case BrowseSortMethod.SEQUENCE_LENGTH:
@@ -167,7 +167,7 @@ function getAlphabeticalSection(sequence: SequenceData): string {
 }
 
 function getLengthSection(sequence: SequenceData): string {
-  const length = stepCountOf(sequence);
+  const length = resolveStepCount(sequence);
 
   if (length <= 4) return "3-4 steps";
   if (length <= 6) return "5-6 steps";

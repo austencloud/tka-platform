@@ -18,6 +18,8 @@ import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/g
 import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
 import { detectRotationPeriod } from "$lib/shared/create/domain/detect-rotation-period";
 import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
+import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
+import { TnDMode } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 // Constants
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -51,6 +53,8 @@ export function applyFilter(
       return filterByEndPosition(sequences, filterValue);
     case BrowseFilterType.AUTHOR:
       return filterByAuthor(sequences, filterValue);
+    case BrowseFilterType.OWNER:
+      return filterByOwner(sequences, filterValue);
     case BrowseFilterType.GRID_MODE:
       return filterByGridMode(sequences, filterValue);
     case BrowseFilterType.FAVORITES:
@@ -59,6 +63,8 @@ export function applyFilter(
       return filterByRecent(sequences);
     case BrowseFilterType.LOOP_TYPE:
       return filterByLOOPType(sequences, filterValue);
+    case BrowseFilterType.TND_FAMILY:
+      return filterByTnDFamily(sequences, filterValue);
     default:
       return sequences;
   }
@@ -98,14 +104,27 @@ function filterByStartingLetter(
     return sequences;
   }
 
+  // Dash-variant base letter (Type 3/5, e.g. "W-", "Σ-"): match the two-char
+  // letter exactly. Must run before the range check — "W-" contains "-" and
+  // would otherwise fall into the "A-D" range parser, which no-ops on it.
+  if (filterValue.length === 2 && filterValue[1] === "-") {
+    const target = filterValue.toUpperCase();
+    return sequences.filter(
+      (seq) => seq.word.slice(0, 2).toUpperCase() === target
+    );
+  }
+
   // Handle range format (e.g., "A-D")
   if (filterValue.includes("-")) {
     return filterByLetterRange(sequences, filterValue);
   }
 
-  // Handle single letter
+  // Handle single letter. A bare letter must NOT swallow its dash variant —
+  // "W" means W-words, not W- words (legacy treats them as separate sections).
   return sequences.filter(
-    (seq) => seq.word[0]?.toUpperCase() === filterValue.toUpperCase()
+    (seq) =>
+      seq.word[0]?.toUpperCase() === filterValue.toUpperCase() &&
+      seq.word[1] !== "-"
   );
 }
 
@@ -164,6 +183,13 @@ function filterByContainsLetters(
   });
 }
 
+/** Step count with the same fallback the sorter/drill use (resolveStepCount):
+ * legacy/imported docs lack `sequenceLength` and would otherwise be counted
+ * into length buckets by the UI but unreachable through the filter. */
+function stepCountForFilter(seq: SequenceData): number {
+  return seq.sequenceLength ?? seq.steps?.length ?? 0;
+}
+
 function filterByLength(
   sequences: SequenceData[],
   filterValue: BrowseFilterValue
@@ -174,7 +200,7 @@ function filterByLength(
 
   // Handle "8+" case
   if (filterValue === "8+") {
-    return sequences.filter((seq) => (seq.sequenceLength ?? 0) >= 8);
+    return sequences.filter((seq) => stepCountForFilter(seq) >= 8);
   }
 
   // Handle numeric length
@@ -183,7 +209,7 @@ function filterByLength(
     return sequences;
   }
 
-  return sequences.filter((seq) => seq.sequenceLength === length);
+  return sequences.filter((seq) => stepCountForFilter(seq) === length);
 }
 
 function filterByDifficulty(
@@ -261,32 +287,39 @@ function filterByStartingPosition(
     return sequences;
   }
 
-  // Extract position group (alpha, beta, gamma) for fallback matching
+  // A bare-group value ("alpha") means "the whole group"; a specific value
+  // ("alpha3") must stay exact. Enabling the group fallback for specific
+  // values would silently degrade "alpha3" into "all alpha".
+  const isGroupFilter = targetPosition === targetPosition.replace(/[0-9]/g, "");
   const targetGroup = targetPosition.replace(/[0-9]/g, "");
 
   const results = sequences.filter((seq) => {
     // Try exact position match first
     const seqStartPos = seq.startPosition || seq.startingPosition;
-    if (seqStartPos) {
-      // Check gridPosition field (StartPositionData)
-      const gridPos = (seqStartPos as { gridPosition?: string | null })
-        .gridPosition;
-      if (gridPos?.toLowerCase() === targetPosition) {
-        return true;
-      }
-
-      // Check startPosition field (PictographData/StepData)
-      const startPos = (seqStartPos as { startPosition?: string | null })
-        .startPosition;
-      if (startPos?.toLowerCase() === targetPosition) {
-        return true;
-      }
+    const gridPos = seqStartPos
+      ? (seqStartPos as { gridPosition?: string | null }).gridPosition
+      : null;
+    const startPos = seqStartPos
+      ? (seqStartPos as { startPosition?: string | null }).startPosition
+      : null;
+    if (gridPos?.toLowerCase() === targetPosition) {
+      return true;
+    }
+    if (startPos?.toLowerCase() === targetPosition) {
+      return true;
     }
 
-    // Fallback: match by position group (alpha, beta, gamma)
-    const seqGroup = normalizePositionGroup(seq.startingPositionGroup);
-    if (seqGroup === targetGroup) {
-      return true;
+    // Group-fallback for BARE-GROUP filters only. The explicit group field is
+    // often absent on community docs — derive the group from any position
+    // string too (normalizePositionGroup strips the digits, "alpha3" → "alpha").
+    if (isGroupFilter) {
+      const seqGroup =
+        normalizePositionGroup(seq.startingPositionGroup) ||
+        normalizePositionGroup(gridPos) ||
+        normalizePositionGroup(startPos);
+      if (seqGroup === targetGroup) {
+        return true;
+      }
     }
 
     return false;
@@ -364,6 +397,19 @@ function filterByAuthor(
   }
 
   return sequences.filter((seq) => seq.author === filterValue);
+}
+
+function filterByOwner(
+  sequences: SequenceData[],
+  filterValue: BrowseFilterValue
+): SequenceData[] {
+  if (!filterValue || typeof filterValue !== "string") {
+    return sequences;
+  }
+
+  return sequences.filter(
+    (seq) => (seq.ownerDisplayName ?? "").trim() === filterValue
+  );
 }
 
 function filterByGridMode(
@@ -465,6 +511,57 @@ function filterByLOOPComponent(
 
   const componentEnum = componentKey as LOOPComponent;
   return sequences.filter((seq) => getSequenceComponents(seq).includes(componentEnum));
+}
+
+// ============================================================================
+// TnD family filtering
+// ============================================================================
+
+/** TnDMode → familyId (the TND_ELEMENTS ids). Mirrors deck-composer's map —
+ * kept local so shared/browse doesn't import a feature-layer service. */
+const TND_MODE_TO_FAMILY: Readonly<Record<TnDMode, string>> = {
+  [TnDMode.SPLIT_SAME]: "split-same",
+  [TnDMode.SPLIT_OPP]: "split-opp",
+  [TnDMode.TOG_SAME]: "tog-same",
+  [TnDMode.TOG_OPP]: "tog-opp",
+  [TnDMode.QUARTER_SAME]: "quarter-same",
+  [TnDMode.QUARTER_OPP]: "quarter-opp",
+};
+
+// Classification is pure geometry over immutable steps — memoize per sequence
+// object (engine loads each catalog once; counts recompute far more often).
+const tndFamilyCache = new WeakMap<SequenceData, ReadonlySet<string>>();
+
+/**
+ * Every TnD family a sequence touches: each non-blank step's arc geometry is
+ * classified (deriveTnDFromPictograph); steps with no orbital sense (static /
+ * dash legs) contribute nothing. Empty set = sequence has no TnD content.
+ */
+export function getSequenceTnDFamilies(seq: SequenceData): ReadonlySet<string> {
+  let families = tndFamilyCache.get(seq);
+  if (!families) {
+    const found = new Set<string>();
+    for (const step of seq.steps ?? []) {
+      if (step.isBlank) continue;
+      const { tndMode } = deriveTnDFromPictograph(step);
+      if (tndMode) found.add(TND_MODE_TO_FAMILY[tndMode]);
+    }
+    families = found;
+    tndFamilyCache.set(seq, families);
+  }
+  return families;
+}
+
+/** Contains-semantics: a sequence matches when ANY step is in the family.
+ * Stacked family filters therefore AND into "touches all of these". */
+function filterByTnDFamily(
+  sequences: SequenceData[],
+  filterValue: BrowseFilterValue
+): SequenceData[] {
+  if (!filterValue || typeof filterValue !== "string") {
+    return sequences;
+  }
+  return sequences.filter((seq) => getSequenceTnDFamilies(seq).has(filterValue));
 }
 
 // ============================================================================

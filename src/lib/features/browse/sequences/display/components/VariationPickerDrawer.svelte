@@ -73,6 +73,8 @@
       <!-- data-animate reuses BaseModal's staggered entrance (modal-tokens.css);
            capped at the defined 1..6 range, reduced-motion-safe automatically. -->
       <div class="picker-item" data-animate={Math.min(i + 1, 6)}>
+        <!-- allowQR: unlike grid cards, these render at 300-340px — scannable
+             size, and the grid's fixed cells already reserve the QR slot. -->
         <ChoreoCardThumbnail
           sequence={variation}
           onPrimaryAction={() => handleSelect(variation)}
@@ -81,6 +83,7 @@
           catDogModeEnabled={isCatDog}
           {lightMode}
           eager
+          allowQR
         />
       </div>
     {/each}
@@ -106,18 +109,24 @@
     width: min(1100px, 92vw);
   }
 
-  /* Phones: go full-screen so the grid isn't cramped. Mirrors BaseModal's own
-     mobile rule but at the 767px breakpoint per the variations spec. The
-     view-transition-name suppression on mobile lives inside ChoreoCardThumbnail
-     and still applies regardless of this wrapper. */
+  /* Phones: 2-up compact cards so BOTH variations are visible at once.
+     Full-screen single-column 340px cards made each variation fill the whole
+     viewport — nothing signalled that the second one was below the fold. */
   @media (max-width: 767px) {
     :global(dialog.base-modal.variation-picker-modal) {
       width: 100%;
       max-width: none;
-      max-height: 100%;
-      height: 100%;
-      border-radius: 0;
-      margin: 0;
+      max-height: 90dvh;
+      height: auto;
+      border-radius: 16px 16px 0 0;
+      margin: auto 0 0;
+    }
+
+    .picker-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      justify-content: stretch;
+      gap: 10px;
+      padding: 12px 12px 20px;
     }
   }
 </style>
