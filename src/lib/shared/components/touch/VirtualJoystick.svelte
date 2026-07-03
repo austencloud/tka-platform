@@ -251,8 +251,8 @@
   .joystick-base {
     position: absolute;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.15));
+    border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -264,13 +264,13 @@
 
   .joystick-base.active {
     opacity: 1;
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.2));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.5));
   }
 
   .joystick-knob {
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.8);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.8));
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     transition: transform 0.05s ease-out;
   }

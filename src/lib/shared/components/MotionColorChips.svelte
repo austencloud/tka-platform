@@ -55,7 +55,7 @@
   .chip {
     padding: 6px 14px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
     background: transparent;
     color: rgba(255, 255, 255, 0.62);
     font-size: 13px;
@@ -67,7 +67,7 @@
   }
 
   .chip:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
     color: rgba(255, 255, 255, 0.95);
   }
 

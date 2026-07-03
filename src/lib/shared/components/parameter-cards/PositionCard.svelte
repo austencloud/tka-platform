@@ -244,12 +244,12 @@ Supports Alpha, Beta, Gamma positions with Greek symbol pills
   }
 
   .pill-option:hover:not(.selected):not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     color: var(--theme-text);
   }
 
   .pill-option.selected {
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.95));
     color: #6d28d9;
     box-shadow: 0 2px 8px var(--theme-shadow);
   }

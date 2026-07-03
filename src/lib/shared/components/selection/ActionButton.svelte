@@ -58,7 +58,7 @@
     padding: 14px 24px;
     min-height: var(--min-touch-target);
     background: var(--action-gradient);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 20px;
     color: #ffffff;
     font-size: 0.9rem;

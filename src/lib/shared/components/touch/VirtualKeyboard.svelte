@@ -263,8 +263,8 @@
   .header-right { justify-content: flex-end; }
 
   .header-action-btn {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     color: var(--theme-text);
     padding: 6px 12px;
     border-radius: 8px;
@@ -276,7 +276,7 @@
   .clear-btn { color: #f87171; }
 
   .mode-toggle {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border: 1px solid var(--theme-stroke);
     color: var(--theme-text-dim);
     padding: 4px 10px;
@@ -378,7 +378,7 @@
     opacity: 0.15;
     cursor: not-allowed;
     filter: grayscale(1);
-    border-color: rgba(255,255,255,0.05);
+    border-color: var(--theme-stroke, rgba(255,255,255,0.05));
     pointer-events: none;
   }
 
@@ -413,15 +413,15 @@
   }
   .type-6-key:active:not(.disabled) { background: rgba(235, 125, 0, 0.2); }
 
-  .control-key { background: rgba(255, 255, 255, 0.15); width: 64px; }
+  .control-key { background: var(--theme-card-bg, rgba(255, 255, 255, 0.15)); width: 64px; }
   .backspace-btn { color: #f87171; border-color: rgba(248, 113, 113, 0.3); }
   
   .dash-btn { 
-    font-size: 28px; 
-    font-weight: 900; 
-    color: var(--theme-accent); 
-    background: rgba(255, 255, 255, 0.1); 
-    border-color: var(--theme-accent); 
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--theme-accent);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-accent);
     box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
   }
   .dash-btn:active:not(.disabled) { background: rgba(99, 102, 241, 0.2); }

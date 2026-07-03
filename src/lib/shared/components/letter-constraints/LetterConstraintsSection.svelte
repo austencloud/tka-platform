@@ -304,11 +304,11 @@ LetterConstraintsSection.svelte - Section for letter must-contain/must-not-conta
   }
 
   .section-header:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
   }
 
   .section-header:active {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
   }
 
   .header-content {
@@ -338,7 +338,7 @@ LetterConstraintsSection.svelte - Section for letter must-contain/must-not-conta
 
   .value-badge {
     padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.2));
     border-radius: 16px;
     font-size: var(--font-size-sm);
     font-weight: 600;
@@ -380,8 +380,8 @@ LetterConstraintsSection.svelte - Section for letter must-contain/must-not-conta
     gap: 8px;
     padding: 12px 16px;
 
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 12px;
 
     color: rgba(255, 255, 255, 0.8);
@@ -393,7 +393,7 @@ LetterConstraintsSection.svelte - Section for letter must-contain/must-not-conta
   }
 
   .tab-button:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
   }
 
   .tab-button.active {
@@ -419,7 +419,7 @@ LetterConstraintsSection.svelte - Section for letter must-contain/must-not-conta
   }
 
   .tab-count {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.2));
     padding: 2px 8px;
     border-radius: 10px;
     font-size: var(--font-size-compact);

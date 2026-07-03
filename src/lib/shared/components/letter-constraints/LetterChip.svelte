@@ -37,8 +37,8 @@ Supports include (green) and exclude (red) modes
     align-items: center;
     justify-content: center;
 
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 12px;
 
     color: white;
@@ -56,8 +56,8 @@ Supports include (green) and exclude (red) modes
   }
 
   .letter-chip:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     transform: scale(1.05);
   }
 
