@@ -65,6 +65,14 @@
       ]
     },
     {
+      "collectionGroup": "collections",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "isPublic", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "publicHandPaths",
       "queryScope": "COLLECTION",
       "fields": [

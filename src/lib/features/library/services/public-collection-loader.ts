@@ -7,9 +7,11 @@
 
 import {
   collection,
+  collectionGroup,
   doc,
   getDoc,
   getDocs,
+  limit,
   query,
   where,
   orderBy,
@@ -49,6 +51,61 @@ export async function getUserPublicCollections(
   });
 
   return collections;
+}
+
+/** A public collection paired with the uid of the user who owns it. */
+export interface PublicCollectionWithOwner {
+  collection: LibraryCollection;
+  ownerId: string;
+}
+
+/**
+ * Fetch every public collection across all users in ONE collection-group query,
+ * newest first. Replaces the old per-creator N+1 crawl (list all users → query
+ * each user's collections): that scaled with the user count; this scales with
+ * the number of public collections and is capped.
+ *
+ * Requires the COLLECTION_GROUP index on collections (isPublic ASC, updatedAt
+ * DESC) — see firestore.indexes.json.
+ *
+ * `collectionGroup("collections")` also matches root-level `/collections` docs
+ * (a legacy path with no parent user). The owner is the parent user-doc id, so
+ * root docs — which have no parent user — are skipped. The `ownerId` field on
+ * the doc is not trusted for identity here; the path is authoritative.
+ */
+export async function getAllPublicCollections(
+  max = 200
+): Promise<PublicCollectionWithOwner[]> {
+  const firestore = await getFirestoreInstance();
+  const q = query(
+    collectionGroup(firestore, "collections"),
+    where("isPublic", "==", true),
+    orderBy("updatedAt", "desc"),
+    limit(max)
+  );
+
+  const snapshot = await getDocs(q);
+  const results: PublicCollectionWithOwner[] = [];
+  snapshot.forEach((docSnap) => {
+    const ownerId = docSnap.ref.parent.parent?.id;
+    if (!ownerId) return; // root-level /collections doc — not a user collection
+    const collection = mapDocToCollection(docSnap.data(), docSnap.id);
+    // System collections (e.g. a Favorites doc flipped public) are personal
+    // library plumbing, not curated discovery items — keep them out of the feed.
+    if (collection.systemType) return;
+    results.push({ collection, ownerId });
+  });
+
+  // The feed is capped; past the cap the oldest public collections are not
+  // shown. Surface it rather than silently truncating (higher-up organization
+  // over the pile is a tracked follow-up).
+  if (snapshot.size >= max) {
+    console.warn(
+      `[public-collection-loader] getAllPublicCollections hit the ${max}-doc cap; older public collections are not shown.`
+    );
+  }
+
+  return results;
 }
 
 /**

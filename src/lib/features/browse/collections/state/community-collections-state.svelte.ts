@@ -1,16 +1,17 @@
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
-import { getUsers } from "$lib/shared/community/services/user-repository";
-import { getUserPublicCollections } from "$lib/features/library/services/public-collection-loader";
+import { getVisibleOwnerNames } from "$lib/shared/community/services/user-repository";
+import { getAllPublicCollections } from "$lib/features/library/services/public-collection-loader";
 
 /**
  * community-collections-state - everyone's public collections, flattened.
  *
- * The Community sub-view of Browse > Collections shows public collections
- * from every creator as one grid. There's no cross-user Firestore index for
- * this yet, so we aggregate the same way the old creator-browser did: list
- * creators, then pull each one's public collections (a cheap per-creator
- * query the rules already allow — no sign-in required). Results are cached
- * for the session so tab-hopping doesn't refetch.
+ * The Community sub-view of Browse > Collections shows public collections from
+ * every creator as one grid. One collection-group query pulls them all (newest
+ * first, capped) via `getAllPublicCollections`, then a single batched pass
+ * resolves owner display names. This scales with the number of public
+ * collections, not the user count — the earlier per-creator crawl (list every
+ * user, query each one) grew with the whole user base. Results are cached for
+ * the session so tab-hopping doesn't refetch.
  *
  * A public collection with its owner attached — the card needs a name to
  * credit, and opening one read-only needs the owner's uid to find it.
@@ -27,6 +28,7 @@ class CommunityCollectionsState {
 	error = $state<string | null>(null);
 
 	private loaded = false;
+	private refetchPending = false;
 
 	/**
 	 * Load once per session. EVERY public collection is here — including your
@@ -39,35 +41,23 @@ class CommunityCollectionsState {
 		this.loading = true;
 		this.error = null;
 		try {
-			const creators = await getUsers();
+			// One collection-group query, already sorted newest-first server-side.
+			const withOwners = await getAllPublicCollections();
 
-			const perCreator = await Promise.all(
-				creators.map(async (creator) => {
-					try {
-						const collections = await getUserPublicCollections(creator.id);
-						return collections.map(
-							(collection): CommunityCollection => ({
-								collection,
-								ownerId: creator.id,
-								ownerName: creator.displayName || "Someone",
-							}),
-						);
-					} catch (err) {
-						// One creator failing shouldn't blank the whole feed.
-						console.warn(
-							`[community-collections] Failed for ${creator.id}:`,
-							err,
-						);
-						return [];
-					}
-				}),
-			);
+			// One batched pass for the names of the (few) distinct owners. Owners
+			// that are hidden/guest/deleted are absent from the map, and their
+			// collections are filtered out — discovery never credits or surfaces a
+			// moderated or orphaned owner.
+			const names = await getVisibleOwnerNames(withOwners.map((w) => w.ownerId));
 
-			this.items = perCreator
-				.flat()
-				.sort(
-					(a, b) =>
-						b.collection.updatedAt.getTime() - a.collection.updatedAt.getTime(),
+			this.items = withOwners
+				.filter((w) => names.has(w.ownerId))
+				.map(
+					({ collection, ownerId }): CommunityCollection => ({
+						collection,
+						ownerId,
+						ownerName: names.get(ownerId) ?? "Someone",
+					}),
 				);
 			this.loaded = true;
 		} catch (err) {
@@ -75,24 +65,30 @@ class CommunityCollectionsState {
 			this.error = "Couldn't load community collections.";
 		} finally {
 			this.loading = false;
+			// An invalidate() that landed mid-load (e.g. publish/unpublish while
+			// the grid was open) is honored now so the view self-heals instead of
+			// showing stale cards until the next navigation.
+			if (this.refetchPending) {
+				this.refetchPending = false;
+				this.loaded = false;
+				void this.ensureLoaded();
+			}
 		}
 	}
 
 	/**
-	 * Drop the cache so the next ensureLoaded refetches — call after anything
-	 * that changes what's public (Make public / Make private).
+	 * Drop the cache and refetch — call after anything that changes what's
+	 * public (Make public / Make private). If a load is in flight, defer the
+	 * refetch to its completion; otherwise refetch now so a currently-open grid
+	 * updates without waiting for a navigation.
 	 */
 	invalidate(): void {
 		this.loaded = false;
-	}
-
-	/** Find a loaded community collection by its owner + id (for detail restore). */
-	find(ownerId: string, collectionId: string): CommunityCollection | null {
-		return (
-			this.items.find(
-				(i) => i.ownerId === ownerId && i.collection.id === collectionId,
-			) ?? null
-		);
+		if (this.loading) {
+			this.refetchPending = true;
+		} else {
+			void this.ensureLoaded();
+		}
 	}
 }
 

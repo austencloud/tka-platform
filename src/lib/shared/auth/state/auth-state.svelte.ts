@@ -652,6 +652,19 @@ export async function signOut(): Promise<void> {
       // Mandala collection may not be loaded - that's ok
     }
 
+    try {
+      const [{ collectionsState }, { followedCollectionsState }] = await Promise.all([
+        import("$lib/features/library/state/collections-state.svelte"),
+        import("$lib/features/library/state/followed-collections-state.svelte"),
+      ]);
+      // Otherwise the previous user's Firestore listeners stay live after
+      // logout and throw permission errors once the auth token is revoked.
+      collectionsState.teardown();
+      followedCollectionsState.teardown();
+    } catch {
+      // Collection states may not be loaded - that's ok
+    }
+
     // Sign out from Firebase
     await firebaseSignOut(auth);
     // State will be updated automatically by onAuthStateChanged

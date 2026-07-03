@@ -156,7 +156,14 @@ Landed design:
   dismissible zero-result chip, never as silently unfiltered data.
 - **NEW `CollectionChipsRow.svelte`** (library/components/collection-picker):
   All + one FilterChipBase per collection (live composed counts, collection
-  colors), driving the engine filter. Renders ONLY on the my-library source.
+  colors), driving the engine filter. **Ownership routes the candidates:** the
+  My Library source shows your own collections, the Community source shows
+  collections you follow — counts only PRUNE within the routed set (drop a chip
+  whose live count is zero), they never route. (An earlier build gated purely
+  on count; because your published sequences also live in the community pool,
+  your own collections intersected it and surfaced under Community, reading as a
+  bug — hence explicit ownership routing.) A `$effect` clears a COLLECTION
+  filter whose id leaves the candidate set on a pool switch / unfollow.
   At-most-one-that-clears semantics → FilterChipBase toggles per
   chip-primitives routing, not SegmentedControl.
 - **Choreo sheet picker rebuilt on the grammar:** 3-way slider deleted; source
@@ -174,6 +181,81 @@ Landed design:
 Principle: pickers hunt POOLS (My Library | Community — toolbar toggle);
 collections are views over the library pool and lead it as chips.
 
+## Addendum — collection-group discovery (shipped same session)
+
+"Build a bigger fishbowl": the two N+1 read patterns behind discovery were
+replaced with scale-right shapes now rather than at migration time.
+
+- **Community feed** was `getUsers()` → `getUserPublicCollections` per creator
+  (grew with the whole user base). Now ONE `getAllPublicCollections(max=200)` in
+  `public-collection-loader.ts`: `collectionGroup("collections")` where
+  `isPublic == true`, `orderBy(updatedAt desc)`, `limit`. Owner id is the parent
+  user-doc path (`docSnap.ref.parent.parent.id`), authoritative over the stored
+  `ownerId` field; root-level `/collections` docs (no parent user) are skipped.
+- **Owner names** resolve in one batched pass — NEW `getUserDisplayNames(ids)`
+  in user-repository: 30-chunk `in` query on `documentId()` over the
+  world-readable users collection, `displayName ?? name ?? "Someone"`. Both
+  `community-collections-state` and `followed-collections-state` use it (the
+  latter dropped its per-ref `getUserProfile`). Followed collection DOCS still
+  read per-path in parallel — inherent to the pointer model (no cross-path batch
+  get), fine at follow-list scale.
+- **Index:** COLLECTION_GROUP on `collections` (`isPublic ASC, updatedAt DESC`),
+  created live + tracked in `firestore.indexes.json`. Rules already
+  world-readable on both `collections` paths (`firestore.rules:486`), so the
+  collection-group query adds no new exposure.
+
+## Audit + hardening (2026-07-03)
+
+Full-dimension audit of the collection-group work (3 parallel reviewers: security,
+scale, reactivity) + live Firebase verification. The top-suspected defect —
+`orderBy("updatedAt")` silently dropping docs that lack the field — was **refuted
+as a live bug**: every collection writer stamps `updatedAt` since the feature's
+inception, and there is no code path that sets `isPublic` without also writing
+`updatedAt`, so a public collection can never be dropped. Latent tripwire only:
+add an `updatedAt` guard before collaborative/import writers land. Index verified
+live + READY; rules verified **deployed** (`collections: allow read: if true` and
+the owner-scoped `followedCollections` block are live) — resolves the earlier
+"rules deploy pending" flag.
+
+Fixes shipped (7 files + regression test, all type-clean):
+
+- **HIGH — `followed-collections-state.resolve()` had no error handling.** One
+  `getPublicCollection` rejection (network, or a rule denying a now-private doc)
+  rejected the `Promise.all`, wedging `loading = true` forever — the "Following"
+  section silently never rendered and the chips-row stale-filter guard never
+  cleared. Now each read is `.catch(() => null)` (drops just that entry) and the
+  method is wrapped in try/catch/finally so `loading` always clears. This also
+  makes the state resilient if the read rule is ever tightened (below).
+- `refs` → `$state` so `isFollowed()` recomputes the foreign Follow/Unfollow
+  button reactively after a snapshot.
+- `collectionsState` + `followedCollectionsState` `teardown()` wired into
+  `authState` sign-out — they were leaking Firestore listeners past logout.
+- System collections (a Favorites doc flipped public) excluded from
+  `getAllPublicCollections`, and `updateCollection` now blocks `isPublic` on
+  system collections — Favorites publicness is `settings.favoritesPublic`, a
+  separate signal, and must not leak the whole favorites list into discovery.
+- NEW `getVisibleOwnerNames` suppresses hidden/guest/deleted owners from the
+  community feed (matches the Browse Creators listing); the feed filters to
+  owners the map still contains.
+- `invalidate()` self-heals — refetches immediately (or defers via a pending
+  flag if a load is in flight) so an in-view publish/unpublish updates without a
+  navigation.
+- `batchFetchSequences` caps at 500 — guards against read-amplification when a
+  viewer opens a hostile public collection with an oversized `sequenceIds`.
+- Removed dead `communityCollectionsState.find()`.
+
+**Open security decision (NOT changed unilaterally — outward-facing).**
+`firestore.rules` `users/{uid}/collections/{id}` is `allow read: if true`,
+unconditional (not gated on `isPublic`). A `collectionGroup("collections")`
+query with the `where` clause dropped therefore enumerates **every** collection,
+private included, for anyone with the SDK. Documented as by-design
+(`firestore.rules:175-211`), and the exposure is collection **metadata**
+(names/descriptions/sequence-id lists), not private sequence bodies (those gate
+on `visibility=='public'`). If "private" must mean server-private, tighten to
+`allow read: if resource.data.isPublic == true || isOwner(userId) || isAdmin();`
+— the resilience fix above means the app already tolerates the denied reads that
+rule would introduce.
+
 ## Follow-ups (out of scope, on record)
 
 - Profile becomes collection-first (public collections as the profile spine) —
@@ -181,3 +263,5 @@ collections are views over the library pool and lead it as chips.
 - Collaborative collections (multi-member editing).
 - Locale files for the rename.
 - "Clean up dead follows" affordance.
+- Higher-up organization over the community-collection pile (curation, sort,
+  search) — its own spec once the pile is big enough to need it.

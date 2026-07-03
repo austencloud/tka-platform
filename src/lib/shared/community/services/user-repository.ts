@@ -317,6 +317,70 @@ export async function getUserProfile(
   }
 }
 
+/**
+ * Resolve display names for a set of user ids in batched `in` queries (30 per
+ * chunk, Firestore's limit). Used by discovery surfaces that hold a list of
+ * owner ids (e.g. the community collections feed) and need names to credit
+ * them, without fetching every user. Missing/anonymous docs resolve to
+ * "Someone" so a name is always present.
+ */
+export async function getUserDisplayNames(
+  userIds: string[]
+): Promise<Map<string, string>> {
+  const names = new Map<string, string>();
+  const unique = [...new Set(userIds)].filter(Boolean);
+  if (unique.length === 0) return names;
+
+  const firestore = await getFirestoreInstance();
+  const usersRef = collection(firestore, USERS_COLLECTION);
+
+  for (let i = 0; i < unique.length; i += 30) {
+    const chunk = unique.slice(i, i + 30);
+    const q = query(usersRef, where(documentId(), "in", chunk));
+    const snapshot = await getDocs(q);
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      names.set(docSnap.id, data["displayName"] ?? data["name"] ?? "Someone");
+    });
+  }
+
+  return names;
+}
+
+/**
+ * Like getUserDisplayNames, but only returns owners eligible to appear in a
+ * public discovery surface: moderated (isHidden) accounts and anonymous guests
+ * are omitted from the returned map. Callers filter their items to owners the
+ * map still contains — so hiding a creator also removes their public
+ * collections from discovery, matching the Browse Creators listing which
+ * already skips these accounts (getUsersPaginated / getFeaturedCreators).
+ * Owners whose user doc is missing entirely (deleted account) are also omitted.
+ */
+export async function getVisibleOwnerNames(
+  userIds: string[]
+): Promise<Map<string, string>> {
+  const names = new Map<string, string>();
+  const unique = [...new Set(userIds)].filter(Boolean);
+  if (unique.length === 0) return names;
+
+  const firestore = await getFirestoreInstance();
+  const usersRef = collection(firestore, USERS_COLLECTION);
+
+  for (let i = 0; i < unique.length; i += 30) {
+    const chunk = unique.slice(i, i + 30);
+    const q = query(usersRef, where(documentId(), "in", chunk));
+    const snapshot = await getDocs(q);
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data() as FirestoreUserData;
+      if (data.isHidden === true) return; // moderated — suppress from discovery
+      if (isAnonymousGuest(data)) return; // guests aren't creators yet
+      names.set(docSnap.id, data.displayName ?? data.name ?? "Someone");
+    });
+  }
+
+  return names;
+}
+
 export async function getUsers(
   options?: CreatorQueryOptions,
   currentUserId?: string

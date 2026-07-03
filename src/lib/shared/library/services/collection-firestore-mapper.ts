@@ -118,10 +118,23 @@ export async function batchFetchSequences(
     return [];
   }
 
+  // Client cap is 500 members/collection, but nothing in the rules enforces it.
+  // When another user opens a hostile PUBLIC collection, an oversized
+  // sequenceIds array would fan out into one `in` read per 30 ids against the
+  // viewer's quota. Cap the work; legitimate collections never exceed 500.
+  const MAX_FETCH = 500;
+  const ids =
+    sequenceIds.length > MAX_FETCH ? sequenceIds.slice(0, MAX_FETCH) : sequenceIds;
+  if (sequenceIds.length > MAX_FETCH) {
+    console.warn(
+      `[collection-firestore-mapper] sequenceIds length ${sequenceIds.length} exceeds ${MAX_FETCH}; capping the fetch.`
+    );
+  }
+
   const sequences: LibrarySequence[] = [];
 
-  for (let i = 0; i < sequenceIds.length; i += BATCH_SIZE) {
-    const chunk = sequenceIds.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+    const chunk = ids.slice(i, i + BATCH_SIZE);
     const sequencesRef = collection(firestore, `users/${userId}/sequences`);
     const batchQuery = query(sequencesRef, where(documentId(), "in", chunk));
     const batchSnapshot = await getDocs(batchQuery);

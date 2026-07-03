@@ -201,6 +201,17 @@ export async function updateCollection(
     );
   }
 
+  if (isSystemCollection(existing) && updates.isPublic !== undefined) {
+    // Favorites publicness is governed separately (settings.favoritesPublic);
+    // flipping the system collection doc's own isPublic would leak the whole
+    // Favorites list into the community discovery feed.
+    throw new CollectionError(
+      "Cannot change visibility of a system collection",
+      "SYSTEM_COLLECTION",
+      collectionId
+    );
+  }
+
   const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
   try {
     await updateDoc(docRef, {

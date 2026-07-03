@@ -8,7 +8,7 @@ import {
 	type FollowedCollectionRef,
 } from "$lib/shared/library/services/followed-collections";
 import { getPublicCollection } from "$lib/features/library/services/public-collection-loader";
-import { getUserProfile } from "$lib/shared/community/services/user-repository";
+import { getUserDisplayNames } from "$lib/shared/community/services/user-repository";
 
 export interface FollowedCollection {
 	readonly collection: LibraryCollection;
@@ -29,7 +29,9 @@ class FollowedCollectionsState {
 	items = $state<FollowedCollection[]>([]);
 	loading = $state(false);
 
-	private refs: FollowedCollectionRef[] = [];
+	// $state so isFollowed() recomputes in reactive positions (the foreign
+	// detail Follow/Unfollow button) when a snapshot rewrites the refs.
+	private refs = $state<FollowedCollectionRef[]>([]);
 	private unsubscribe: (() => void) | null = null;
 	private startedFor: string | null = null;
 	private resolveEpoch = 0;
@@ -96,22 +98,49 @@ class FollowedCollectionsState {
 
 	private async resolve(refs: FollowedCollectionRef[]): Promise<void> {
 		const epoch = ++this.resolveEpoch;
-		const resolved = await Promise.all(
-			refs.map(async (ref) => {
-				const col = await getPublicCollection(ref.ownerId, ref.collectionId);
-				if (!col) return null;
-				const owner = await getUserProfile(ref.ownerId);
-				return {
+
+		try {
+			// Collection docs live at per-owner paths, so each is its own read (no
+			// cross-path batch get exists) — but they fetch in parallel. A single
+			// read that rejects (network, or a rule that DENIES a now-private
+			// collection instead of returning it) must drop only THAT entry, so
+			// each read is caught to null — Promise.all is all-or-nothing and one
+			// rejection would otherwise take down the whole followed list.
+			const cols = await Promise.all(
+				refs.map((ref) =>
+					getPublicCollection(ref.ownerId, ref.collectionId).catch(() => null),
+				),
+			);
+
+			const surviving = refs
+				.map((ref, i) => ({ ref, col: cols[i] }))
+				.filter((r): r is { ref: FollowedCollectionRef; col: LibraryCollection } => r.col !== null);
+
+			// Owner names resolve in ONE batched pass over the surviving owners,
+			// not one profile read per follow.
+			const names = await getUserDisplayNames(surviving.map((s) => s.ref.ownerId));
+
+			// A newer snapshot's resolution may have started while this one awaited.
+			if (epoch !== this.resolveEpoch) return;
+			this.items = surviving.map(
+				({ ref, col }): FollowedCollection => ({
 					collection: col,
 					ownerId: ref.ownerId,
-					ownerName: owner?.displayName ?? "Someone",
-				} satisfies FollowedCollection;
-			}),
-		);
-		// A newer snapshot's resolution may have started while this one awaited.
-		if (epoch !== this.resolveEpoch) return;
-		this.items = resolved.filter((r): r is FollowedCollection => r !== null);
-		this.loading = false;
+					ownerName: names.get(ref.ownerId) ?? "Someone",
+				}),
+			);
+		} catch (err) {
+			// Batched name lookup failed; keep the last good items rather than
+			// wedging. The next snapshot re-resolves.
+			if (epoch === this.resolveEpoch) {
+				console.error("[followed-collections] resolve failed:", err);
+			}
+		} finally {
+			// Always clear loading for the newest resolve so the "Following"
+			// section can render (or fall back to empty) instead of spinning
+			// forever.
+			if (epoch === this.resolveEpoch) this.loading = false;
+		}
 	}
 }
 
