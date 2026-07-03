@@ -35,3 +35,58 @@ describe("sheet geometry — orientation + annotation bands", () => {
     expect(geo.usableHeightPt).toBeLessThan(geo.pageHeightPt);
   });
 });
+
+import { planBands, type BandPlanInput } from "$lib/features/write/services/sheet-row-planner";
+import { bandKey } from "$lib/features/write/domain/types/choreo-sheet";
+
+function seq(id: string, n: number) {
+  return { id, steps: Array.from({ length: n }, (_, i) => ({ stepNumber: i + 1, letter: "A" })) } as any;
+}
+
+describe("planBands (row-aligned)", () => {
+  const geo = getSheetPageLayout({ ...base, orientation: "landscape", showCueRail: true, showNoteStrips: true });
+
+  it("chunks a 12-step sequence into 2 bands of 8 + 4, keyed by rowInSequence", () => {
+    const input: BandPlanInput = { sequences: [seq("x", 12)], geo, cues: [], notes: [] };
+    const pages = planBands(input);
+    const bands = pages.flatMap((p) => p.bands);
+    expect(bands.length).toBe(2);
+    expect(bands[0].key).toBe(bandKey("x", 0));
+    expect(bands[0].cells.length).toBe(8);
+    expect(bands[1].key).toBe(bandKey("x", 1));
+    expect(bands[1].cells.length).toBe(4); // short last row, NOT cross-padded
+    expect(bands[0].isSequenceStart).toBe(true);
+    expect(bands[1].isSequenceStart).toBe(false);
+  });
+
+  it("each sequence starts a fresh band (no straddling)", () => {
+    const input: BandPlanInput = { sequences: [seq("x", 4), seq("y", 4)], geo, cues: [], notes: [] };
+    const bands = planBands(input).flatMap((p) => p.bands);
+    expect(bands.length).toBe(2);
+    expect(bands[0].key).toBe(bandKey("x", 0));
+    expect(bands[1].key).toBe(bandKey("y", 0));
+    expect(bands[1].isSequenceStart).toBe(true);
+  });
+
+  it("resolves cue + notes onto their band by key", () => {
+    const cues = [{ band: bandKey("x", 1), timestamp: "0:08", text: "drop" }];
+    const notes = [{ id: "n1", band: bandKey("x", 0), count: 5, text: "pack bags" }];
+    const bands = planBands({ sequences: [seq("x", 12)], geo, cues, notes }).flatMap((p) => p.bands);
+    expect(bands[0].notes).toHaveLength(1);
+    expect(bands[0].notes[0].text).toBe("pack bags");
+    expect(bands[0].cue).toBeNull();
+    expect(bands[1].cue?.text).toBe("drop");
+  });
+
+  it("packs bands onto pages by height and overflows to a new page", () => {
+    // 40 sequences of 8 steps each = 40 bands; landscape usableHeight fits ~4.
+    const many = Array.from({ length: 40 }, (_, i) => seq(`s${i}`, 8));
+    const pages = planBands({ sequences: many, geo, cues: [], notes: [] });
+    expect(pages.length).toBeGreaterThan(1);
+    // every page's summed band height must not exceed usable height
+    for (const page of pages) {
+      const sum = page.bands.reduce((h, b) => h + b.heightPt, 0);
+      expect(sum).toBeLessThanOrEqual(geo.usableHeightPt + 0.01);
+    }
+  });
+});

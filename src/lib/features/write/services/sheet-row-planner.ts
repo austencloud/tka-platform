@@ -17,6 +17,8 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { ChoreoSheetLayout } from "../domain/types/choreo-sheet";
+import type { SheetPageGeometry } from "../domain/sheet-page-layout";
+import { bandKey, type CueMark, type NoteMark, type BandKey } from "../domain/types/choreo-sheet";
 
 export interface SheetCell {
   step: StepData | null;
@@ -73,5 +75,95 @@ export function planSheet(
     }
   }
   if (rows.length) pages.push({ rows });
+  return pages;
+}
+
+export interface SheetBand {
+  key: BandKey;
+  sequenceId: string;
+  rowInSequence: number;
+  cells: SheetCell[]; // ≤ columns; short last row NOT cross-padded
+  cue: CueMark | null;
+  notes: NoteMark[];
+  isSequenceStart: boolean;
+  firstBeatIndex: number; // running step index across the sheet, for BPM prefill
+  heightPt: number;
+}
+export interface SheetBandPage {
+  bands: SheetBand[];
+  pageIndex: number;
+}
+export interface BandPlanInput {
+  sequences: readonly SequenceData[];
+  geo: SheetPageGeometry;
+  cues: readonly CueMark[];
+  notes: readonly NoteMark[];
+}
+
+// Base band height: pictograph row + note strip + inter-band gutter. Grows in
+// half-line steps when a strip holds a full-width bullet + pinned rows that would
+// exceed one line; kept simple here (bullets and pins each cost one line).
+function estimateBandHeight(geo: SheetPageGeometry, notes: NoteMark[]): number {
+  const noteLines = notes.length === 0 ? 0 : Math.max(1, notes.length);
+  const stripHeight = geo.stripBaseHeightPt > 0 ? Math.max(geo.stripBaseHeightPt, noteLines * geo.stripBaseHeightPt) : 0;
+  return geo.cellSizePt + stripHeight + geo.interBandGutterPt;
+}
+
+export function planBands(input: BandPlanInput): SheetBandPage[] {
+  const { sequences, geo, cues, notes } = input;
+  const columns = geo.columns;
+  const cueByBand = new Map(cues.map((c) => [c.band, c]));
+  const notesByBand = new Map<BandKey, NoteMark[]>();
+  for (const n of notes) {
+    const list = notesByBand.get(n.band) ?? [];
+    list.push(n);
+    notesByBand.set(n.band, list);
+  }
+
+  // 1. Row-aligned bands: each sequence chunked into rows of `columns`.
+  const bands: SheetBand[] = [];
+  let beatIndex = 0;
+  for (const seq of sequences) {
+    const steps = seq.steps ?? [];
+    for (let row = 0, s = 0; s < steps.length; row++, s += columns) {
+      const slice = steps.slice(s, s + columns);
+      const key = bandKey(seq.id, row);
+      const bandNotes = notesByBand.get(key) ?? [];
+      const cells: SheetCell[] = slice.map((step, i) => ({
+        step,
+        isBlank: false,
+        sequenceId: seq.id,
+        isSequenceStart: row === 0 && i === 0,
+      }));
+      bands.push({
+        key,
+        sequenceId: seq.id,
+        rowInSequence: row,
+        cells,
+        cue: cueByBand.get(key) ?? null,
+        notes: bandNotes,
+        isSequenceStart: row === 0,
+        firstBeatIndex: beatIndex + s,
+        heightPt: estimateBandHeight(geo, bandNotes),
+      });
+    }
+    beatIndex += steps.length;
+  }
+
+  // 2. Height-packed pagination.
+  const pages: SheetBandPage[] = [];
+  let current: SheetBand[] = [];
+  let used = 0;
+  let pageIndex = 0;
+  for (const band of bands) {
+    if (current.length > 0 && used + band.heightPt > geo.usableHeightPt) {
+      pages.push({ bands: current, pageIndex: pageIndex++ });
+      current = [];
+      used = 0;
+    }
+    current.push(band);
+    used += band.heightPt;
+  }
+  if (current.length) pages.push({ bands: current, pageIndex: pageIndex++ });
   return pages;
 }
