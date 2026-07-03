@@ -25,9 +25,14 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import type { SheetPage, SheetCell } from "../../services/sheet-row-planner";
+  import type { SheetPage, SheetCell, SheetBand, SheetBandPage } from "../../services/sheet-row-planner";
   import type { SheetPageGeometry } from "../../domain/sheet-page-layout";
-  import type { ChoreoSheetLayout } from "../../domain/types/choreo-sheet";
+  import type {
+    ChoreoSheetLayout,
+    ChoreoSheetAnnotations,
+    SheetHeader,
+    NoteMark,
+  } from "../../domain/types/choreo-sheet";
   import { SHEET_CELL_VISIBILITY } from "../../services/sheet-cell-config";
 
   let {
@@ -38,6 +43,15 @@
     selectedSequenceId = null,
     onSelectSequence,
     onRemoveSequence,
+    // ── Annotated ("aligned") branch ────────────────────────────────────────
+    bandPages = [],
+    annotations,
+    sheetName = "",
+    onSetCue,
+    onAddNote,
+    onSetNote,
+    onRemoveNote,
+    onSetHeader,
   }: {
     pages: SheetPage[];
     geo: SheetPageGeometry;
@@ -48,7 +62,33 @@
     selectedSequenceId?: string | null;
     onSelectSequence?: (sequenceId: string) => void;
     onRemoveSequence?: (sequenceId: string) => void;
+    /** Row-aligned, height-packed pages — only consumed when packing="aligned". */
+    bandPages?: SheetBandPage[];
+    /** Cue/note/header annotations for the aligned branch. */
+    annotations?: ChoreoSheetAnnotations;
+    /** The act/sheet name, shown in the page-1 title block. */
+    sheetName?: string;
+    onSetCue?: (band: string, patch: { timestamp?: string; text?: string }) => void;
+    onAddNote?: (band: string, count: number | null) => string;
+    onSetNote?: (id: string, patch: { text?: string }) => void;
+    onRemoveNote?: (id: string) => void;
+    onSetHeader?: (patch: Partial<SheetHeader>) => void;
   } = $props();
+
+  // Header for the title block / running header (aligned branch only).
+  const header = $derived(annotations?.header);
+  // Column indices for the note-strip's per-count add affordances.
+  const columnIndexes = $derived(Array.from({ length: geo.columns }, (_, i) => i));
+
+  // A note pins under a column only when its count addresses an existing cell;
+  // otherwise (null, or a count past a short last row) it reads as a full-width
+  // bullet — matching the planner's contract.
+  function pinnedNotes(band: SheetBand): NoteMark[] {
+    return band.notes.filter((n) => n.count != null && n.count <= band.cells.length);
+  }
+  function bulletNotes(band: SheetBand): NoteMark[] {
+    return band.notes.filter((n) => n.count == null || n.count > band.cells.length);
+  }
 
   // PictographContainer takes a boolean showHandPoints; the locked config carries
   // the richer "all" | "active" | "none". Map "none" → hidden, everything else on.
@@ -126,7 +166,210 @@
   }
 </script>
 
-{#if pages.length === 0}
+{#if layout.packing === "aligned"}
+  {#if bandPages.length === 0}
+    <p class="empty">No sequences yet.</p>
+  {:else}
+    <div class="pages-scroll">
+      {#each bandPages as page (page.pageIndex)}
+        <div
+          class="page annotated"
+          class:no-rail={!layout.showCueRail}
+          class:no-strip={!layout.showNoteStrips}
+          use:observePage={page.pageIndex}
+          style="aspect-ratio: {pageAspect}; --pt: calc(100cqw / {geo.pageWidthPt}); --rail-w: calc({geo.railWidthPt} * var(--pt)); --gutter: calc({geo.gutterPt} * var(--pt)); --strip-h: calc({geo.stripBaseHeightPt} * var(--pt)); --margin: calc({geo.marginYPt} * var(--pt)); --band-gap: calc({geo.interBandGutterPt} * var(--pt));"
+        >
+          <div class="pad">
+            {#if page.pageIndex === 0 && header?.showTitleBlock}
+              <span class="cornerno" aria-hidden="true">1</span>
+              {#if header?.date}
+                <span class="date">{header.date}</span>
+              {/if}
+              <div class="titleblock">
+                <div class="act">{sheetName || "Untitled"}</div>
+                <div class="by">
+                  Choreography by
+                  <input
+                    class="hdr-inline"
+                    value={header?.choreographer ?? ""}
+                    placeholder="choreographer"
+                    aria-label="Choreographer"
+                    oninput={(e) => onSetHeader?.({ choreographer: e.currentTarget.value })}
+                  />
+                </div>
+                <div class="by">
+                  Song by
+                  <input
+                    class="hdr-inline"
+                    value={header?.songArtist ?? ""}
+                    placeholder="artist"
+                    aria-label="Song artist"
+                    oninput={(e) => onSetHeader?.({ songArtist: e.currentTarget.value })}
+                  />
+                </div>
+                <div class="made">Created using The Kinetic Alphabet</div>
+                <input
+                  class="tag"
+                  value={header?.tagline ?? ""}
+                  placeholder="tagline…"
+                  aria-label="Tagline"
+                  oninput={(e) => onSetHeader?.({ tagline: e.currentTarget.value })}
+                />
+              </div>
+            {:else if page.pageIndex > 0}
+              <div class="runhead">
+                <span class="song"
+                  >{header?.songName || sheetName}{header?.songArtist
+                    ? ` — ${header.songArtist}`
+                    : ""}</span
+                >
+                <span class="ts">page starts {page.bands[0]?.cue?.timestamp || "—"}</span>
+                <span class="pageno">{page.pageIndex + 1}</span>
+              </div>
+            {/if}
+
+            <div class="bands">
+              {#each page.bands as band, bi (band.key)}
+                <div class="band">
+                  {#if layout.showCueRail}
+                    <div class="rail">
+                      <input
+                        class="ts-input"
+                        value={band.cue?.timestamp ?? ""}
+                        placeholder="0:00"
+                        aria-label="Cue timestamp"
+                        oninput={(e) => onSetCue?.(band.key, { timestamp: e.currentTarget.value })}
+                      />
+                      <textarea
+                        class="cue-input"
+                        rows="1"
+                        value={band.cue?.text ?? ""}
+                        placeholder="cue…"
+                        aria-label="Cue text"
+                        oninput={(e) => onSetCue?.(band.key, { text: e.currentTarget.value })}
+                      ></textarea>
+                    </div>
+                  {/if}
+                  <div class="band-body">
+                    <div
+                      class="cells"
+                      style="grid-template-columns: repeat({geo.columns}, 1fr); gap: var(--gutter);"
+                    >
+                      {#each band.cells as cell, ci (ci)}
+                        <div
+                          class="cell"
+                          class:break={isCellBreak(cell)}
+                          class:separator={isCellSeparator(
+                            cell,
+                            page.pageIndex === 0 && bi === 0 && ci === 0,
+                          )}
+                        >
+                          {#if isCellBreak(cell)}
+                            <span class="cell-break-label">
+                              <i class="fa-solid fa-link-slash" aria-hidden="true"></i> break
+                            </span>
+                          {/if}
+                          {#if cell.step && visiblePages.has(page.pageIndex)}
+                            <PictographContainer
+                              pictographData={cell.step}
+                              disableTransitions={true}
+                              printMode={true}
+                              darkMode={false}
+                              showGrid={SHEET_CELL_VISIBILITY.showGrid}
+                              showTKA={SHEET_CELL_VISIBILITY.showTKA}
+                              showReversals={SHEET_CELL_VISIBILITY.showReversals}
+                              showNonRadialPoints={SHEET_CELL_VISIBILITY.showNonRadialPoints}
+                              showTnD={SHEET_CELL_VISIBILITY.showTnD}
+                              showElemental={SHEET_CELL_VISIBILITY.showElemental}
+                              showPositions={SHEET_CELL_VISIBILITY.showPositions}
+                              stepNumberOverride={layout.showStepNumbers}
+                              {showHandPoints}
+                            />
+                          {/if}
+                        </div>
+                      {/each}
+                    </div>
+                    {#if layout.showNoteStrips}
+                      <div class="strip">
+                        <!-- Behind the notes: one clickable column per count. Clicking an
+                             empty column pins a fresh note under that count. -->
+                        <div
+                          class="add-cols"
+                          style="grid-template-columns: repeat({geo.columns}, 1fr);"
+                        >
+                          {#each columnIndexes as ci (ci)}
+                            <button
+                              type="button"
+                              class="add-col"
+                              aria-label={`Add note under count ${ci + 1}`}
+                              onclick={() => onAddNote?.(band.key, ci + 1)}
+                            ></button>
+                          {/each}
+                        </div>
+                        {#each pinnedNotes(band) as note (note.id)}
+                          <div
+                            class="pin"
+                            style="left: {(((note.count ?? 1) - 1) / geo.columns) * 100}%;"
+                          >
+                            <input
+                              class="pin-input"
+                              value={note.text}
+                              placeholder="note…"
+                              aria-label={`Note at count ${note.count}`}
+                              oninput={(e) => onSetNote?.(note.id, { text: e.currentTarget.value })}
+                            />
+                            <button
+                              type="button"
+                              class="note-remove"
+                              aria-label="Remove note"
+                              onclick={() => onRemoveNote?.(note.id)}
+                            >
+                              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                            </button>
+                          </div>
+                        {/each}
+                        <div class="bullets">
+                          {#each bulletNotes(band) as note (note.id)}
+                            <div class="bullet-row">
+                              <span class="bullet-dot" aria-hidden="true">•</span>
+                              <input
+                                class="bullet-input"
+                                value={note.text}
+                                placeholder="note…"
+                                aria-label="Note"
+                                oninput={(e) =>
+                                  onSetNote?.(note.id, { text: e.currentTarget.value })}
+                              />
+                              <button
+                                type="button"
+                                class="note-remove"
+                                aria-label="Remove note"
+                                onclick={() => onRemoveNote?.(note.id)}
+                              >
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                              </button>
+                            </div>
+                          {/each}
+                          <button
+                            type="button"
+                            class="add-note"
+                            onclick={() => onAddNote?.(band.key, null)}
+                          >
+                            <i class="fa-solid fa-plus" aria-hidden="true"></i> note
+                          </button>
+                        </div>
+                      </div>
+                    {/if}
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
+{:else if pages.length === 0}
   <p class="empty">No sequences yet.</p>
 {:else}
   <div class="pages-scroll">
@@ -340,5 +583,314 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-min, 14px);
     padding: 40px 0;
+  }
+
+  /* ── Annotated ("aligned") branch ─────────────────────────────────────────
+     A container-query context makes 1 PDF point resolve to a fixed fraction of
+     the (fluid) page width via --pt = 100cqw / pageWidthPt, so every pt-based
+     size below scales exactly with the sheet the way the PDF export does — no
+     magic screen pixels. Print-fixed ink/accent tokens (like the .page border
+     tokens) never track the app theme. */
+  .page.annotated {
+    container-type: inline-size;
+    --print-ink: #1a1a1a;
+    --print-ink-soft: #333333;
+    --print-ink-faint: #555555;
+    --print-accent: #6ea8fe;
+    --print-accent-bg: rgba(110, 168, 254, 0.1);
+  }
+
+  .pad {
+    position: absolute;
+    inset: var(--margin);
+    color: var(--print-ink);
+    font-family: Georgia, "Times New Roman", serif;
+  }
+
+  /* Page-1 title block */
+  .titleblock {
+    text-align: center;
+    padding-bottom: calc(10 * var(--pt));
+  }
+  .titleblock .act {
+    font-size: calc(40 * var(--pt));
+    letter-spacing: 0.02em;
+  }
+  .titleblock .by {
+    font-size: calc(15 * var(--pt));
+    margin-top: calc(6 * var(--pt));
+    color: var(--print-ink-soft);
+  }
+  .titleblock .made {
+    font-size: calc(11 * var(--pt));
+    font-style: italic;
+    color: var(--print-ink-faint);
+    margin-top: calc(6 * var(--pt));
+  }
+  .titleblock .tag {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: calc(13 * var(--pt));
+    margin-top: calc(10 * var(--pt));
+  }
+
+  /* Editable header fields sit invisibly on the print surface until hovered /
+     focused, so the sheet reads clean but every value is one click from edit. */
+  .hdr-inline,
+  .tag,
+  .ts-input,
+  .cue-input,
+  .pin-input,
+  .bullet-input {
+    border: 1px solid transparent;
+    background: transparent;
+    color: inherit;
+    padding: 0 calc(2 * var(--pt));
+    border-radius: 3px;
+    transition:
+      background-color var(--duration-fast, 0.12s) ease,
+      border-color var(--duration-fast, 0.12s) ease;
+  }
+  .hdr-inline:hover,
+  .tag:hover,
+  .ts-input:hover,
+  .cue-input:hover,
+  .pin-input:hover,
+  .bullet-input:hover {
+    background: var(--print-accent-bg);
+  }
+  .hdr-inline:focus-visible,
+  .tag:focus-visible,
+  .ts-input:focus-visible,
+  .cue-input:focus-visible,
+  .pin-input:focus-visible,
+  .bullet-input:focus-visible {
+    outline: none;
+    border-color: var(--print-accent);
+    background: var(--print-accent-bg);
+  }
+  .hdr-inline {
+    font-family: inherit;
+    font-size: inherit;
+    text-align: center;
+    min-width: calc(120 * var(--pt));
+  }
+
+  /* Page-2+ running header */
+  .runhead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: calc(11 * var(--pt));
+    color: var(--print-ink-soft);
+    padding-bottom: calc(6 * var(--pt));
+    border-bottom: 1px solid var(--print-border-faint, rgba(0, 0, 0, 0.06));
+  }
+  .runhead .song {
+    font-style: italic;
+  }
+  .runhead .ts {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+  .runhead .pageno {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(20 * var(--pt));
+    height: calc(20 * var(--pt));
+    border: 1.5px solid var(--print-ink);
+    border-radius: 50%;
+    font-size: calc(11 * var(--pt));
+  }
+  .cornerno {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(22 * var(--pt));
+    height: calc(22 * var(--pt));
+    border: 1.5px solid var(--print-ink);
+    border-radius: 50%;
+    font-size: calc(12 * var(--pt));
+  }
+  .date {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: calc(10 * var(--pt));
+    color: var(--print-ink-faint);
+  }
+
+  /* Bands flow top-down; a growing note strip pushes later bands DOWN, never
+     shifts a sibling sideways (no-layout-shift by construction). */
+  .bands {
+    margin-top: calc(8 * var(--pt));
+  }
+  .band {
+    display: grid;
+    grid-template-columns: var(--rail-w) 1fr;
+    column-gap: calc(6 * var(--pt));
+  }
+  .no-rail .band {
+    grid-template-columns: 1fr;
+  }
+  .band + .band {
+    margin-top: var(--band-gap);
+  }
+
+  .rail {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-right: calc(6 * var(--pt));
+    border-right: 1px solid var(--print-border-faint, rgba(0, 0, 0, 0.06));
+  }
+  .ts-input {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: calc(11 * var(--pt));
+    font-variant-numeric: tabular-nums;
+  }
+  .cue-input {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: calc(10.5 * var(--pt));
+    color: var(--print-ink-soft);
+    line-height: 1.25;
+    margin-top: calc(2 * var(--pt));
+    resize: none;
+    overflow: hidden;
+    /* Auto-grow to fit the cue text without a manual resize handler. */
+    field-sizing: content;
+  }
+
+  .band-body {
+    min-width: 0;
+  }
+  .cells {
+    display: grid;
+  }
+
+  /* Note strip: a half-cell floor that grows with stacked bullets. */
+  .strip {
+    position: relative;
+    min-height: var(--strip-h);
+    margin-top: calc(2 * var(--pt));
+    border-top: 1px dashed var(--print-border-faint, rgba(0, 0, 0, 0.06));
+    font-family: "Segoe UI", Roboto, sans-serif;
+  }
+  .add-cols {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    z-index: 0;
+  }
+  .add-col {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    transition: background-color var(--duration-fast, 0.12s) ease;
+  }
+  .add-col:hover {
+    background: var(--print-accent-bg);
+  }
+
+  .bullets {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding-top: calc(2 * var(--pt));
+  }
+  .bullet-row {
+    display: flex;
+    align-items: center;
+    gap: calc(2 * var(--pt));
+    width: 100%;
+  }
+  .bullet-dot {
+    font-size: calc(10.5 * var(--pt));
+    color: var(--print-ink);
+  }
+  .bullet-input {
+    flex: 1;
+    min-width: 0;
+    font-family: inherit;
+    font-size: calc(10.5 * var(--pt));
+    font-style: italic;
+    color: var(--print-ink);
+  }
+
+  .pin {
+    position: absolute;
+    top: calc(2 * var(--pt));
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: calc(2 * var(--pt));
+    padding: 1px calc(3 * var(--pt));
+    border-left: 1.5px solid var(--print-accent);
+    background: var(--print-accent-bg);
+    white-space: nowrap;
+  }
+  .pin-input {
+    font-family: inherit;
+    font-size: calc(9.5 * var(--pt));
+    color: var(--print-ink-soft);
+  }
+
+  /* Interactive chrome keeps a 44px touch floor even on the scaled sheet. */
+  .note-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    border: 0;
+    background: transparent;
+    color: var(--print-ink-faint);
+    font-size: calc(9 * var(--pt));
+    cursor: pointer;
+  }
+  .note-remove:hover {
+    color: var(--theme-danger, #ef4444);
+  }
+  .add-note {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(2 * var(--pt));
+    min-height: var(--min-touch-target, 44px);
+    margin-top: calc(2 * var(--pt));
+    padding: 0 calc(6 * var(--pt));
+    border: 1px dashed var(--print-border-faint, rgba(0, 0, 0, 0.06));
+    border-radius: 6px;
+    background: transparent;
+    color: var(--print-ink-faint);
+    font-family: inherit;
+    font-size: calc(9.5 * var(--pt));
+    cursor: pointer;
+  }
+  .add-note:hover {
+    border-color: var(--print-accent);
+    color: var(--print-ink);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hdr-inline,
+    .tag,
+    .ts-input,
+    .cue-input,
+    .pin-input,
+    .bullet-input,
+    .add-col {
+      transition: none;
+    }
   }
 </style>
