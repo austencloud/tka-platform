@@ -300,7 +300,7 @@
 
   .compare-divider {
     width: 1px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
     margin: 0 4px;
   }
 

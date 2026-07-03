@@ -313,7 +313,7 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     padding: 2px 10px;
     border-radius: 12px;
     white-space: nowrap;

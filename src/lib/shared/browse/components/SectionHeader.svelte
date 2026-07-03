@@ -101,7 +101,7 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     padding: 1px 8px;
     border-radius: 10px;
     white-space: nowrap;
