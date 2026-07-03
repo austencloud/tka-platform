@@ -66,7 +66,6 @@
   const prefersReducedMotion =
     typeof window !== "undefined" &&
     !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  import ViewerOverflowMenu from "$lib/shared/sequence-viewer/components/ViewerOverflowMenu.svelte";
   import ToastContainer from "$lib/shared/toast/components/ToastContainer.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
   import type { ExportPhase } from "$lib/shared/video-export/components/ExportTakeover.svelte";
@@ -704,11 +703,6 @@
               webgl2Available={false}
               onSelectMode={selectQrMode}
               onSelectSplit={selectQrSplit}
-              footerAction={{
-                label: "Open TKA",
-                icon: "fa-compass",
-                href: `/browse/gallery?from=scan&code=${shortCode}`,
-              }}
             />
           {/if}
           <div class="canvas-area">
@@ -748,35 +742,6 @@
               playbackMode={ctx.playbackMode}
               onPlaybackModeChange={ctx.handlePlaybackModeChange}
             />
-            {/if}
-            {#if isSidebarLayout}
-              <!-- Landscape/desktop has no bottom dock outside animation mode,
-                   so the scan page's two exits float over the stage. -->
-              <div class="scan-cta-cluster">
-                <button class="cta-button" onclick={openInComposer}>
-                  <i class="fas fa-pen" aria-hidden="true"></i>
-                  Open in Composer
-                </button>
-                <a class="cta-button ghost" href={`/browse/gallery?from=scan&code=${shortCode}`}>
-                  <i class="fas fa-compass" aria-hidden="true"></i>
-                  Open TKA
-                </a>
-              </div>
-            {:else}
-              <!-- Portrait: the funnel actions live in a floating "…" menu over
-                   the stage — mirroring the viewer's mobile header overflow — so
-                   the panes keep the full body height. Reuses ViewerOverflowMenu. -->
-              <div class="scan-overflow">
-                <ViewerOverflowMenu
-                  variant="header"
-                  dropDown
-                  align="right"
-                  onRemix={openInComposer}
-                  onDownload={() => handleExport(ctx)}
-                  downloadBusy={isExporting}
-                  onOpenApp={() => goto(`/browse/gallery?from=scan&code=${shortCode}`)}
-                />
-              </div>
             {/if}
             <ExportTakeover
               phase={takeoverPhase}
@@ -819,12 +784,7 @@
                   onPlaybackModeChange={ctx.handlePlaybackModeChange}
                   onBpmChange={ctx.handleBpmChange}
                   onExport={() => handleExport(ctx)}
-                  secondaryActions={isSidebarLayout
-                    ? [
-                        { label: "Remix", icon: "fa-pen", onClick: openInComposer, accent: true },
-                        { label: "Open TKA", href: `/browse/gallery?from=scan&code=${shortCode}`, icon: "fa-compass" },
-                      ]
-                    : []}
+                  secondaryActions={[]}
                 />
               {/await}
             </div>
@@ -961,26 +921,6 @@
     background: rgba(18, 18, 28, 0.85);
     border: 1px solid var(--theme-stroke-strong);
     color: var(--theme-text);
-  }
-
-  /* Floating exits over the stage (sidebar/landscape only — portrait gets
-     the same two actions in the bottom ControlDock). */
-  .scan-cta-cluster {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 10;
-    display: flex;
-    gap: 8px;
-  }
-
-  /* Portrait: floating "…" overflow over the stage (zero layout height) so the
-     panes keep the full body. Mirrors the viewer's mobile header overflow. */
-  .scan-overflow {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 10;
   }
 
   .word-loader {
