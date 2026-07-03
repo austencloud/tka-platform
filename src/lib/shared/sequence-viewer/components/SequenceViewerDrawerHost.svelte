@@ -20,6 +20,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import type { ContentType } from "../state/viewer-state.svelte";
   import VideoGallery from "./VideoGallery.svelte";
   import ViewerOverflowMenu from "./ViewerOverflowMenu.svelte";
+  import { buildHeaderActions } from "../services/viewer-actions";
   import ExportVideoDrawer from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
   import ExportImagePanel from "./ExportImagePanel.svelte";
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
@@ -371,6 +372,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
         {@const videoExportNarrow = isVideoExportActive && !isRecordSceneActive && !isMobileWidth && bodyWidth < exportSidebarMinWidth()}
         {@const effectiveMobile = isMobileWidth || cardExportNarrow || videoExportNarrow}
         {@const showRail = !effectiveMobile}
+        {@const headerActions = buildHeaderActions(ctx, "full", { onDeleteRequest: () => (deleteConfirmOpen = true) })}
         {#snippet titleTrigger({ isOpen, hasMenu }: { isOpen: boolean; hasMenu: boolean })}
           <span class="drawer-header-title">
             {#key `${isAnyExportActive}|${isVideoExportActive}|${isImageExportActive}|${ctx.renderMode}`}
@@ -396,18 +398,18 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
             dropDown
             align="center"
             trigger={titleTrigger}
-            isFavorite={ctx.isFavorite}
-            onFavoriteToggle={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
-            isSaved={ctx.isSaved}
-            onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
-            onRemix={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
+            isFavorite={headerActions.isFavorite}
+            onFavoriteToggle={headerActions.onFavoriteToggle}
+            isSaved={headerActions.isSaved}
+            onSave={headerActions.onSave}
+            onRemix={headerActions.onRemix}
             onCopyData={authState.isAdmin ? handleCopyForClaude : undefined}
             copyDataFeedback={copyClaudeFeedback}
-            onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
-            isPublished={ctx.isPublished}
-            onPublish={ctx.isOwned && ctx.isSaved ? () => ctx.invokeGatedAction("publish", ctx.handlePublishAction) : undefined}
-            onUnpublish={ctx.isOwned && ctx.isSaved ? ctx.handleUnpublishAction : undefined}
-            onDeleteRequest={ctx.isOwned && ctx.isSaved ? () => (deleteConfirmOpen = true) : undefined}
+            onVideoUpload={headerActions.onVideoUpload}
+            isPublished={headerActions.isPublished}
+            onPublish={headerActions.onPublish}
+            onUnpublish={headerActions.onUnpublish}
+            onDeleteRequest={headerActions.onDeleteRequest}
             motionVisibility={includeMotion
               ? {
                   showBlue: ctx.viewerVisibility.blueMotion,
