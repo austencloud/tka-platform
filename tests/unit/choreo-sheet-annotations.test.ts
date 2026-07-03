@@ -72,3 +72,38 @@ describe("annotation editing on the state factory", () => {
     expect(s.sheet.annotations.cues[0].timestamp).toBe("0:08");
   });
 });
+
+// ── Persistence + back-compat ────────────────────────────────────────────────
+import { parseChoreoSheet } from "$lib/features/write/services/choreo-sheet-repository";
+
+describe("choreo-sheet persistence back-compat", () => {
+  it("hydrates a pre-annotation sheet to flow mode with empty annotations", () => {
+    const legacy = {
+      id: "s1",
+      name: "Old",
+      ownerId: "u1",
+      sequenceIds: ["a", "b"],
+      layout: { columns: 8, rowsPerPage: 6, paperSize: "letter", orientation: "landscape", showStepNumbers: true, groupSeparator: "rule", keepBlocksTogether: true },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const sheet = parseChoreoSheet(legacy);
+    expect(sheet.annotations.cues).toEqual([]);
+    expect(sheet.layout.packing).toBe("flow");
+    expect(sheet.layout.showCueRail).toBe(false);
+  });
+
+  it("round-trips annotations", () => {
+    const withAnn = {
+      id: "s2", name: "New", ownerId: "u1", sequenceIds: ["a"],
+      layout: { columns: 8, rowsPerPage: 6, paperSize: "letter", orientation: "portrait", packing: "aligned", showStepNumbers: true, groupSeparator: "rule", keepBlocksTogether: true, showCueRail: true, showNoteStrips: true },
+      annotations: { cues: [{ band: "a:0", timestamp: "0:00", text: "hi" }], notes: [{ id: "n1", band: "a:0", count: 5, text: "note" }], header: { showTitleBlock: true, songName: "X" } },
+      bpm: 120,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    };
+    const sheet = parseChoreoSheet(withAnn);
+    expect(sheet.annotations.cues[0].text).toBe("hi");
+    expect(sheet.layout.packing).toBe("aligned");
+    expect(sheet.bpm).toBe(120);
+  });
+});

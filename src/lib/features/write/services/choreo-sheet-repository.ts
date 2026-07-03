@@ -49,7 +49,15 @@ const SheetLayoutSchema = z
     columns: z.number().catch(DEFAULT_SHEET_LAYOUT.columns),
     rowsPerPage: z.number().catch(DEFAULT_SHEET_LAYOUT.rowsPerPage),
     paperSize: z.literal("letter").catch("letter"),
-    orientation: z.literal("landscape").catch("landscape"),
+    // Annotated sheets (Task 6+) may be portrait; legacy docs lack the field and
+    // fall back to landscape via .catch — the same lenient shape as every field
+    // here, so a pre-annotation doc still resolves to a full v1 layout.
+    orientation: z
+      .enum(["landscape", "portrait"])
+      .catch(DEFAULT_SHEET_LAYOUT.orientation),
+    packing: z.enum(["flow", "aligned"]).catch(DEFAULT_SHEET_LAYOUT.packing),
+    showCueRail: z.boolean().catch(DEFAULT_SHEET_LAYOUT.showCueRail),
+    showNoteStrips: z.boolean().catch(DEFAULT_SHEET_LAYOUT.showNoteStrips),
     showStepNumbers: z.boolean().catch(DEFAULT_SHEET_LAYOUT.showStepNumbers),
     groupSeparator: z
       .enum(["rule", "gap", "none"])
@@ -58,12 +66,44 @@ const SheetLayoutSchema = z
   })
   .catch({ ...DEFAULT_SHEET_LAYOUT });
 
+// Annotation layer (cue rail + note strips + page header). All read leniently:
+// a legacy doc has no `annotations` at all and hydrates to an empty set via the
+// top-level .catch, so opening a pre-annotation sheet never fails validation.
+const CueMarkSchema = z.object({
+  band: z.string(),
+  timestamp: z.string().catch(""),
+  text: z.string().catch(""),
+});
+const NoteMarkSchema = z.object({
+  id: z.string(),
+  band: z.string(),
+  count: z.number().nullable().catch(null),
+  text: z.string().catch(""),
+});
+const SheetHeaderSchema = z.object({
+  songName: z.string().optional(),
+  choreographer: z.string().optional(),
+  songArtist: z.string().optional(),
+  tagline: z.string().optional(),
+  date: z.string().optional(),
+  showTitleBlock: z.boolean().catch(true),
+});
+const AnnotationsSchema = z
+  .object({
+    cues: z.array(CueMarkSchema).catch([]),
+    notes: z.array(NoteMarkSchema).catch([]),
+    header: SheetHeaderSchema.catch({ showTitleBlock: true }),
+  })
+  .catch({ cues: [], notes: [], header: { showTitleBlock: true } });
+
 const ChoreoSheetDocSchema = z.object({
   id: z.string(),
   name: z.string().catch("Untitled Sheet"),
   ownerId: z.string().catch(""),
   sequenceIds: z.array(z.string()).catch([]),
   layout: SheetLayoutSchema,
+  annotations: AnnotationsSchema,
+  bpm: z.number().optional().catch(undefined),
   // serverTimestamp can read back as a pending null on the writing client; the
   // optional+catch keeps the doc parseable and toSheet supplies the fallback.
   createdAt: firestoreDate.optional().catch(undefined),
@@ -79,9 +119,22 @@ function toSheet(doc: ChoreoSheetDoc): ChoreoSheet {
     ownerId: doc.ownerId,
     sequenceIds: doc.sequenceIds,
     layout: doc.layout,
+    annotations: doc.annotations,
+    bpm: doc.bpm,
     createdAt: doc.createdAt ?? new Date(),
     updatedAt: doc.updatedAt ?? new Date(),
   };
+}
+
+/**
+ * Validate + hydrate a raw sheet object (Firestore snapshot or persisted JSON)
+ * into a ChoreoSheet, filling every missing field from its v1 default. Reuses
+ * the same lenient schema the repository reads through, so a pre-annotation doc
+ * hydrates to flow mode with empty annotations rather than being rejected. Date
+ * fields coerce from Firestore Timestamps OR ISO strings via `firestoreDate`.
+ */
+export function parseChoreoSheet(raw: unknown): ChoreoSheet {
+  return toSheet(ChoreoSheetDocSchema.parse(raw));
 }
 
 export class ChoreoSheetRepository {
@@ -122,6 +175,13 @@ export class ChoreoSheetRepository {
         ownerId: uid,
         sequenceIds: [...sheet.sequenceIds],
         layout: { ...sheet.layout },
+        annotations: {
+          cues: [...sheet.annotations.cues],
+          notes: [...sheet.annotations.notes],
+          header: { ...sheet.annotations.header },
+        },
+        // firestoreSet strips undefined, so an act with no BPM writes no field.
+        bpm: sheet.bpm,
         createdAt: sheet.createdAt,
       } as Record<string, unknown>,
       { trackOffline: true, repoName: "choreo-sheets" },
