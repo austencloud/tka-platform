@@ -111,7 +111,7 @@
     padding: 8px;
     border-radius: 8px;
   }
-  .close-btn:hover { background: rgba(255,255,255,0.08); }
+  .close-btn:hover { background: var(--theme-card-hover-bg, rgba(255,255,255,0.08)); }
   .title {
     font-size: 20px;
     font-weight: 600;

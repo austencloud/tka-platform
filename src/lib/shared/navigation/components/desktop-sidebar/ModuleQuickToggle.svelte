@@ -686,8 +686,8 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-sm);
     text-align: center;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px dashed rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
+    border: 1px dashed var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
   }
 

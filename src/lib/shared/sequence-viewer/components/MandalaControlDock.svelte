@@ -154,7 +154,7 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.2); }
+  .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2)); }
 
   .cat-bar {
     display: flex;

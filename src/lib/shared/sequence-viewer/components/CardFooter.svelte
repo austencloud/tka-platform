@@ -95,7 +95,7 @@
 
   .footer-section.dark-mode {
     background: rgba(10, 10, 15, 0.98);
-    border-top-color: rgba(255, 255, 255, 0.15);
+    border-top-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
     color: white;
   }
 

@@ -59,14 +59,14 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 14px;
   }
-  .info-chip:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.95); }
+  .info-chip:hover { background: var(--theme-card-hover-bg, rgba(255,255,255,0.06)); color: rgba(255,255,255,0.95); }
   .info-popover {
     position: absolute; top: calc(100% + 8px); right: 0;
     width: 320px;
     padding: 16px 18px;
     background: rgba(20, 22, 32, 0.9);
     backdrop-filter: blur(22px) saturate(140%);
-    border: 1px solid rgba(255,255,255,0.18);
+    border: 1px solid var(--theme-stroke, rgba(255,255,255,0.18));
     border-radius: 14px;
     box-shadow: 0 12px 40px rgba(0,0,0,0.55);
     color: rgba(255,255,255,0.92);
@@ -76,7 +76,7 @@
   }
   .info-popover h3 { margin: 0 0 6px 0; font-size: 13px; font-weight: 700; }
   .info-popover p { margin: 0 0 8px 0; }
-  .info-popover p.aside { color: rgba(255,255,255,0.68); font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .info-popover p.aside { color: rgba(255,255,255,0.68); font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--theme-stroke, rgba(255,255,255,0.08)); }
   .link {
     background: none; border: none; padding: 0;
     color: #8fc3ff;

@@ -396,7 +396,7 @@
     flex: 1;
     min-height: 200px;
     padding: 32px 24px;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
     border: 2px dashed var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 16px;
     cursor: pointer;
@@ -406,7 +406,7 @@
 
   .drop-zone:hover,
   .drop-zone.drag-over {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.04));
     border-color: var(--theme-accent, #6366f1);
   }
 

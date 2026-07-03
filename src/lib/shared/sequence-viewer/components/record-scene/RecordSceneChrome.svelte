@@ -168,7 +168,7 @@
 
   .pill-settings:hover {
     color: white;
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
   }
 
   .pill-divider {
@@ -196,7 +196,7 @@
   }
 
   .pill-record:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
   }
 
   .pill-record:disabled {
@@ -228,7 +228,7 @@
     min-width: 160px;
     background: rgba(18, 18, 28, 0.96);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 12px;
     padding: 4px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
@@ -267,7 +267,7 @@
 
   .settings-item:hover,
   .settings-item:focus {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: white;
     outline: none;
   }

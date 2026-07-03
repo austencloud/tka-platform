@@ -105,7 +105,7 @@
   }
 
   .pictograph-cell.dark {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .cell-image {

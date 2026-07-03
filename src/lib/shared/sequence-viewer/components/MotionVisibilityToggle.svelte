@@ -127,7 +127,7 @@
     gap: 3px;
     padding: 0 6px;
   }
-  .motion-vis-btn:hover { background: rgba(255, 255, 255, 0.06); }
+  .motion-vis-btn:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06)); }
 
   .prop-silhouette {
     width: 4px;
@@ -161,7 +161,7 @@
     padding: 8px;
     background: rgba(20, 22, 32, 0.95);
     backdrop-filter: blur(20px) saturate(140%);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.10));
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
     z-index: 20;
