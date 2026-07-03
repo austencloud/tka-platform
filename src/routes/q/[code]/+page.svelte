@@ -56,7 +56,7 @@
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
   import ViewerContentRail from "$lib/shared/sequence-viewer/components/ViewerContentRail.svelte";
   import ViewerModeBottomBar from "$lib/shared/sequence-viewer/components/ViewerModeBottomBar.svelte";
-  import ScanViewerHeader from "$lib/shared/sequence-viewer/components/ScanViewerHeader.svelte";
+  import ViewerHeader from "$lib/shared/sequence-viewer/components/ViewerHeader.svelte";
   import { dockTrayState } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import { slide, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
@@ -687,10 +687,13 @@
           class:sidebar-mode={isSidebarLayout}
           class:with-panel={isSidebarLayout && (qrViewerMode === "animation" || qrViewerMode === "card")}
         >
-          <ScanViewerHeader
+          <ViewerHeader
+            profile="scan"
+            {ctx}
             isMobile={!isSidebarLayout}
+            sequence={resolvedSeq}
             onOpenInComposer={openInComposer}
-            openTkaHref={`/browse/gallery?from=scan&code=${shortCode}`}
+            openAppHref={`/browse/gallery?from=scan&code=${shortCode}`}
             onDownload={() => handleExport(ctx)}
             downloadBusy={isExporting}
           />

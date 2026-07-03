@@ -37,7 +37,7 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
   import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
   import PracticeBar from "$lib/shared/sequence-viewer/components/PracticeBar.svelte";
   import PracticeSetupBar from "$lib/shared/sequence-viewer/components/PracticeSetupBar.svelte";
-  import RouteViewerHeader from "$lib/shared/sequence-viewer/components/RouteViewerHeader.svelte";
+  import ViewerHeader from "$lib/shared/sequence-viewer/components/ViewerHeader.svelte";
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
 
   import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
@@ -536,28 +536,15 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
         ontouchend={() => handleTouchEnd(ctx)}
       >
         <!-- Header -->
-        <RouteViewerHeader
-          editingPane={ctx.editingPane}
-          isFullscreen={ctx.isFullscreen}
+        <ViewerHeader
+          profile="full"
+          {ctx}
           {isMobile}
+          isFullscreen={ctx.isFullscreen}
+          editingPane={ctx.editingPane}
           returnLabel={handoffData?.returnLabel || "Back"}
           homeHref="/browse/gallery"
-          onClose={ctx.onClose}
-          onExitEditMode={ctx.exitEditMode}
           sequence={sequence}
-          isFavorite={ctx.isFavorite}
-          isSaved={ctx.isSaved}
-          isPublished={ctx.isPublished}
-          isOwned={ctx.isOwned}
-          isLoggedIn={ctx.isLoggedIn}
-          practiceActive={ctx.practiceActive}
-          onFavorite={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
-          onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
-          onEdit={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
-          onPracticeToggle={() => ctx.practiceActive ? ctx.exitPracticeMode() : ctx.enterPracticeMode()}
-          onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
-          onPublish={() => ctx.invokeGatedAction("publish", ctx.handlePublishAction)}
-          onUnpublish={ctx.handleUnpublishAction}
           onDeleteRequest={() => (deleteConfirmOpen = true)}
         />
 
