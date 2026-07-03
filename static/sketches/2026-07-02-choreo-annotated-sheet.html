@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Choreo Annotated Sheet — layout sketch</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --faint: #9aa0a6;
+    --rule: rgba(0, 0, 0, 0.22);
+    --rule-soft: rgba(0, 0, 0, 0.1);
+    --break: #e23d3d;
+    --sep: #6a6a6a;
+    --blue: #2b3fa0;
+    --red: #c0272d;
+    --panel: #1e2128;
+    --panel-2: #262a33;
+    --accent: #6ea8fe;
+    --pt: 1.15px; /* one PDF point in screen px — scales the whole sheet */
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: #14161b;
+    color: #e6e8ec;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { display: flex; min-height: 100vh; }
+
+  /* ---- controls ---- */
+  .controls {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    width: 260px;
+    min-width: 260px;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 20px 18px;
+    background: var(--panel);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .controls h1 { font-size: 15px; margin: 0 0 4px; }
+  .controls .sub { font-size: 12px; color: #9aa0a6; margin: 0 0 18px; line-height: 1.4; }
+  .group { margin-bottom: 18px; }
+  .group > label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #8a90a0; margin-bottom: 8px; }
+  .seg { display: flex; gap: 4px; background: var(--panel-2); border-radius: 9px; padding: 4px; }
+  .seg button {
+    flex: 1; border: 0; border-radius: 6px; padding: 8px 6px; font-size: 12px;
+    background: transparent; color: #c6cad3; cursor: pointer; transition: background 0.12s;
+  }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #0a0c10; font-weight: 600; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .toggle-row:last-child { border-bottom: 0; }
+  .toggle { position: relative; width: 40px; height: 22px; border-radius: 11px; border: 0; background: #3a3f4b; cursor: pointer; transition: background 0.15s; }
+  .toggle[aria-pressed="true"] { background: var(--accent); }
+  .toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
+  .toggle[aria-pressed="true"]::after { transform: translateX(18px); }
+  .note { font-size: 11px; color: #7f8696; line-height: 1.5; margin-top: 14px; }
+
+  /* ---- stage ---- */
+  .stage { flex: 1; padding: 40px; display: flex; flex-direction: column; align-items: center; gap: 40px; overflow-x: auto; }
+  .caption { font-size: 12px; color: #9aa0a6; margin-bottom: -22px; align-self: center; }
+
+  /* ---- the sheet ---- */
+  .sheet {
+    background: #fff;
+    color: var(--ink);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    position: relative;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+  /* landscape 792x612pt, portrait 612x792pt, scaled by --pt */
+  .sheet.landscape { width: calc(792 * var(--pt)); height: calc(612 * var(--pt)); }
+  .sheet.portrait  { width: calc(612 * var(--pt)); height: calc(792 * var(--pt)); }
+  .pad { position: absolute; inset: calc(18 * var(--pt)); }
+
+  /* title block (page 1) */
+  .titleblock { text-align: center; padding-bottom: calc(10 * var(--pt)); }
+  .titleblock .act { font-size: calc(40 * var(--pt)); letter-spacing: 0.02em; margin: 0; }
+  .titleblock .by { font-size: calc(15 * var(--pt)); margin: calc(6 * var(--pt)) 0 0; color: #333; }
+  .titleblock .made { font-size: calc(11 * var(--pt)); font-style: italic; color: #555; margin-top: calc(6 * var(--pt)); }
+  .titleblock .tag { font-family: "Comic Sans MS", "Segoe UI", sans-serif; font-weight: 700; font-size: calc(13 * var(--pt)); margin-top: calc(10 * var(--pt)); }
+
+  /* running header (page 2+) */
+  .runhead { display: flex; align-items: baseline; justify-content: space-between; font-size: calc(11 * var(--pt)); color: #444; padding-bottom: calc(6 * var(--pt)); border-bottom: 1px solid var(--rule-soft); }
+  .runhead .song { font-style: italic; }
+  .runhead .ts { font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+  .runhead .pageno { display: inline-flex; align-items: center; justify-content: center; width: calc(20 * var(--pt)); height: calc(20 * var(--pt)); border: 1.5px solid var(--ink); border-radius: 50%; font-size: calc(11 * var(--pt)); }
+  .date { position: absolute; top: calc(18 * var(--pt)); left: calc(18 * var(--pt)); font-size: calc(10 * var(--pt)); color: #666; }
+  .cornerno { position: absolute; top: calc(16 * var(--pt)); right: calc(16 * var(--pt)); display: inline-flex; align-items: center; justify-content: center; width: calc(22 * var(--pt)); height: calc(22 * var(--pt)); border: 1.5px solid var(--ink); border-radius: 50%; font-size: calc(12 * var(--pt)); }
+
+  /* band grid */
+  .bands { margin-top: calc(8 * var(--pt)); }
+  .band { display: grid; grid-template-columns: var(--rail-w) 1fr; }
+  .band + .band { margin-top: calc(6 * var(--pt)); }
+  .no-rail .band { grid-template-columns: 1fr; }
+
+  .rail { padding-right: calc(6 * var(--pt)); border-right: 1px solid var(--rule-soft); display: flex; flex-direction: column; justify-content: center; }
+  .no-rail .rail { display: none; }
+  .rail .ts { font-family: Georgia, serif; font-style: italic; font-size: calc(11 * var(--pt)); font-variant-numeric: tabular-nums; }
+  .rail .cue { font-family: Georgia, serif; font-style: italic; font-size: calc(10.5 * var(--pt)); color: #222; line-height: 1.25; margin-top: calc(2 * var(--pt)); }
+
+  .row-area { padding-left: calc(6 * var(--pt)); }
+  .no-rail .row-area { padding-left: 0; }
+
+  .counts { display: grid; grid-template-columns: repeat(8, 1fr); }
+  .counts span { font-family: "Segoe UI", sans-serif; font-size: calc(10 * var(--pt)); color: #333; padding-left: calc(3 * var(--pt)); }
+
+  .cells { display: grid; grid-template-columns: repeat(8, 1fr); gap: var(--gutter); }
+  .cell {
+    aspect-ratio: 1 / 1;
+    border: 0.75px solid var(--rule);
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff;
+  }
+  .cell.seqstart { border-left: 1px solid var(--sep); }
+  .cell.brk { border-left: 2.5px solid var(--break); }
+  .cell .brklabel { position: absolute; bottom: 1px; left: 2px; font-size: calc(6 * var(--pt)); color: var(--break); font-family: "Segoe UI", sans-serif; }
+  .cell .lbl { position: absolute; bottom: calc(-13 * var(--pt)); left: 0; right: 0; text-align: center; font-size: calc(10 * var(--pt)); font-weight: 700; color: #111; }
+  .cell svg { width: 82%; height: 82%; }
+
+  .labels-space { height: calc(13 * var(--pt)); }
+
+  /* note strip — half the cell height */
+  .strip {
+    height: var(--strip-h);
+    border-top: 1px dashed var(--rule-soft);
+    margin-top: calc(2 * var(--pt));
+    position: relative;
+    font-family: "Segoe UI", sans-serif;
+  }
+  .no-strip .strip, .no-strip .labels-space { }
+  .no-strip .strip { display: none; }
+  .strip .bullet { position: absolute; top: 2px; left: calc(2 * var(--pt)); font-size: calc(10.5 * var(--pt)); font-style: italic; color: #1a1a1a; }
+  .strip .pin {
+    position: absolute; top: 2px;
+    font-size: calc(9.5 * var(--pt)); color: #333;
+    padding: 1px calc(3 * var(--pt)); border-left: 1.5px solid var(--accent);
+    background: rgba(110,168,254,0.10);
+    white-space: nowrap;
+  }
+  .strip .pin::before { content: "“"; }
+  .strip .pin::after { content: "”"; }
+
+  /* pictograph wireframe grid dots */
+  .griddot { fill: #111; }
+  .arm-blue { stroke: var(--blue); }
+  .arm-red  { stroke: var(--red); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <aside class="controls">
+    <h1>Annotated Choreo Sheet</h1>
+    <p class="sub">Layout sketch at real US-Letter proportions. Toggle to feel the balance — cue rail, note strips, header, orientation.</p>
+
+    <div class="group">
+      <label>Orientation</label>
+      <div class="seg" id="seg-orient">
+        <button data-v="portrait" aria-pressed="true">Portrait</button>
+        <button data-v="landscape" aria-pressed="false">Landscape</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <label>Page</label>
+      <div class="seg" id="seg-page">
+        <button data-v="1" aria-pressed="true">Page 1 (title)</button>
+        <button data-v="2" aria-pressed="false">Page 2+ (running)</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <label>Count style</label>
+      <div class="seg" id="seg-count">
+        <button data-v="perRow8" aria-pressed="true">Per-row 1–8</button>
+        <button data-v="global" aria-pressed="false">Global 1…N</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="toggle-row"><span>Cue rail (left)</span><button class="toggle" id="t-rail" aria-pressed="true"></button></div>
+      <div class="toggle-row"><span>Note strips</span><button class="toggle" id="t-strip" aria-pressed="true"></button></div>
+    </div>
+
+    <p class="note">Pictographs shown as the 8-point TKA grid wireframe — real render drops in unchanged. This sketch is about where the chrome sits, not the glyphs.</p>
+  </aside>
+
+  <main class="stage">
+    <div class="caption" id="caption"></div>
+    <div id="sheet-host"></div>
+  </main>
+</div>
+
+<script>
+  const state = { orient: "portrait", page: "1", count: "perRow8", rail: true, strip: true };
+
+  // 8-point diamond grid wireframe + a couple of arcs so a cell reads as "pictograph slot"
+  function picto(seed) {
+    const cx = 50, cy = 50, r = 34;
+    const pts = [];
+    for (let i = 0; i < 8; i++) {
+      const a = (Math.PI / 4) * i - Math.PI / 2;
+      pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+    }
+    const dots = pts.map(([x, y]) => `<circle class="griddot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2"/>`).join("");
+    const center = `<circle class="griddot" cx="${cx}" cy="${cy}" r="1.4" opacity="0.5"/>`;
+    // one blue + one red arc, varied by seed, purely decorative placeholder
+    const b = pts[seed % 8], r2 = pts[(seed * 3 + 2) % 8];
+    const arcs = `
+      <path class="arm-blue" fill="none" stroke-width="2.4" d="M${cx} ${cy} Q ${(cx+b[0])/2} ${(cy+b[1])/2 - 10} ${b[0].toFixed(1)} ${b[1].toFixed(1)}"/>
+      <path class="arm-red"  fill="none" stroke-width="2.4" d="M${cx} ${cy} Q ${(cx+r2[0])/2 + 8} ${(cy+r2[1])/2} ${r2[0].toFixed(1)} ${r2[1].toFixed(1)}"/>`;
+    return `<svg viewBox="0 0 100 100">${arcs}${dots}${center}</svg>`;
+  }
+
+  const LETTERS = ["Δ-", "Λ₁", "R", "Ż₁", "Δ-", "Λ₁", "R", "Ż₁"];
+  // per band: timestamp, cue phrase, then note config (bullet + optional pinned note)
+  const BANDS = [
+    { ts: "0:09", cue: "intro riff",       bullet: "Walk out with one end lit",          pin: null,                          seqstart: true,  brk: false },
+    { ts: "0:14", cue: "“pack my bags”",   bullet: "Pirouette to left, pass staff L",     pin: { count: 5, text: "pack my bags" }, seqstart: false, brk: false },
+    { ts: "0:20", cue: "“something's”",    bullet: null,                                   pin: { count: 3, text: "my mind" },  seqstart: true,  brk: true },
+    { ts: "0:31", cue: "“so rise”",        bullet: "Fuel transfer · pose, head in hand",   pin: null,                          seqstart: false, brk: false },
+    { ts: "0:42", cue: "“and smile”",      bullet: null,                                   pin: { count: 7, text: "don't need" }, seqstart: false, brk: false },
+    { ts: "0:53", cue: "bridge",           bullet: "Add steps, right foot first",          pin: null,                          seqstart: true,  brk: false },
+  ];
+
+  function bandHTML(b, idx, opts) {
+    const counts = [];
+    for (let i = 0; i < 8; i++) {
+      const label = opts.count === "global" ? String(idx * 8 + i + 1) : String(i + 1);
+      counts.push(`<span>${label}</span>`);
+    }
+    const cells = [];
+    for (let i = 0; i < 8; i++) {
+      const cls = ["cell"];
+      if (i === 0 && b.seqstart) cls.push(b.brk ? "brk" : "seqstart");
+      const brklabel = i === 0 && b.brk ? `<span class="brklabel">break</span>` : "";
+      const lbl = `<span class="lbl">${LETTERS[i]}</span>`;
+      cells.push(`<div class="${cls.join(" ")}">${brklabel}${picto(idx * 7 + i)}${lbl}</div>`);
+    }
+    // strip: full-width bullet + optional pinned note at a count column
+    let stripInner = "";
+    if (b.bullet) stripInner += `<span class="bullet">• ${b.bullet}</span>`;
+    if (b.pin) {
+      const leftPct = ((b.pin.count - 1) / 8) * 100;
+      stripInner += `<span class="pin" style="left:calc(${leftPct}% + 6px)">${b.pin.text}</span>`;
+    }
+    return `
+      <div class="band">
+        <div class="rail"><span class="ts">${b.ts}</span><span class="cue">${b.cue}</span></div>
+        <div class="row-area">
+          <div class="counts">${counts.join("")}</div>
+          <div class="cells">${cells.join("")}</div>
+          <div class="labels-space"></div>
+          <div class="strip">${stripInner}</div>
+        </div>
+      </div>`;
+  }
+
+  function render() {
+    const isPortrait = state.orient === "portrait";
+    // geometry per orientation (points)
+    const railW = state.rail ? 64 : 0;
+    const gutter = 3;
+    const stripFactor = 0.5;
+    // bands that fit — landscape ~4, portrait ~6 (sketch approximations)
+    const nBands = isPortrait ? 6 : 4;
+    const bands = BANDS.slice(0, nBands);
+
+    const railWpx = `calc(${railW} * var(--pt))`;
+    const gutterPx = `calc(${gutter} * var(--pt))`;
+    // strip height keyed to computed cell size so it stays ~half a cell
+    const cols = 8;
+    const usableW = (isPortrait ? 612 : 792) - 36 - railW;
+    const cell = (usableW - (cols - 1) * gutter) / cols;
+    const stripH = cell * stripFactor;
+
+    const page1 = state.page === "1";
+    const header = page1
+      ? `<div class="titleblock">
+           <h2 class="act">~ 1940 ~</h2>
+           <div class="by">Choreography by Austen Cloud</div>
+           <div class="by">Song by The Submarines (AmpLive Remix)</div>
+           <div class="made">Created using The Kinetic Alphabet</div>
+           <div class="tag">“The year is one thousand nine hundred and forty…”</div>
+         </div>`
+      : `<div class="runhead">
+           <span class="song">1940 — The Submarines</span>
+           <span class="ts">page starts 0:42</span>
+           <span class="pageno">2</span>
+         </div>`;
+    const corner = page1
+      ? `<span class="date">3/24/2023</span><span class="cornerno">1</span>`
+      : ``;
+
+    const cls = ["sheet", state.orient];
+    const padCls = ["pad"];
+    if (!state.rail) padCls.push("no-rail");
+    if (!state.strip) padCls.push("no-strip");
+
+    const html = `
+      <div class="${cls.join(" ")}" style="--rail-w:${railWpx}; --gutter:${gutterPx}; --strip-h:calc(${stripH} * var(--pt));">
+        ${corner}
+        <div class="${padCls.join(" ")}">
+          ${header}
+          <div class="bands">
+            ${bands.map((b, i) => bandHTML(b, i, state)).join("")}
+          </div>
+        </div>
+      </div>`;
+    document.getElementById("sheet-host").innerHTML = html;
+
+    const cap = `${isPortrait ? "Portrait" : "Landscape"} · ${page1 ? "page 1 (title block)" : "page 2+ (running header)"} · `
+      + `${state.rail ? "rail on" : "rail off"} · ${state.strip ? "strips on" : "strips off"} · ~${nBands} bands/page · strip ≈ ${stripFactor}× cell`;
+    document.getElementById("caption").textContent = cap;
+  }
+
+  function wireSeg(id, key) {
+    const el = document.getElementById(id);
+    el.addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      [...el.children].forEach((c) => c.setAttribute("aria-pressed", String(c === btn)));
+      state[key] = btn.dataset.v;
+      render();
+    });
+  }
+  function wireToggle(id, key) {
+    const el = document.getElementById(id);
+    el.addEventListener("click", () => {
+      state[key] = !state[key];
+      el.setAttribute("aria-pressed", String(state[key]));
+      render();
+    });
+  }
+  wireSeg("seg-orient", "orient");
+  wireSeg("seg-page", "page");
+  wireSeg("seg-count", "count");
+  wireToggle("t-rail", "rail");
+  wireToggle("t-strip", "strip");
+  render();
+</script>
+</body>
+</html>
