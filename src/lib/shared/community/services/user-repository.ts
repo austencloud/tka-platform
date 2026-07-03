@@ -338,6 +338,8 @@ export async function getUsers(
 
     for (const docSnap of querySnapshot.docs) {
       const data = docSnap.data() as FirestoreUserData;
+      if (data.isHidden) continue;
+      if (isAnonymousGuest(data)) continue; // guests aren't real creators yet
       const isFollowing =
         currentUserId !== docSnap.id && followingSet.has(docSnap.id);
       const user = await mapFirestoreToEnhancedProfile(
