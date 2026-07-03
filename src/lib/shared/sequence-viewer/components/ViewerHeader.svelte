@@ -132,7 +132,7 @@
         dropDown
         align="center"
         variant="header"
-        sequenceId={sequence?.id}
+        sequenceId={profile === "full" ? sequence?.id : undefined}
         isFavorite={actions.isFavorite}
         onFavoriteToggle={isMobile ? actions.onFavoriteToggle : undefined}
         isSaved={actions.isSaved}
