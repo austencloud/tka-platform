@@ -19,13 +19,18 @@
 import { getContext, setContext } from "svelte";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 import {
+  createEmptyAnnotations,
   createEmptyChoreoSheet,
   DEFAULT_SHEET_LAYOUT,
   type ChoreoSheet,
+  type ChoreoSheetAnnotations,
   type ChoreoSheetLayout,
+  type CueMark,
+  type NoteMark,
 } from "../domain/types/choreo-sheet";
 import { getSheetPageLayout, type SheetPageGeometry } from "../domain/sheet-page-layout";
-import { planSheet, type SheetPage } from "../services/sheet-row-planner";
+import { planBands, planSheet, type SheetBandPage, type SheetPage } from "../services/sheet-row-planner";
+import { prefillTimestamps as computePrefill } from "../services/timestamp-prefill";
 import { buildActSequence } from "../services/sheet-act-sequence";
 import {
   connects,
@@ -87,6 +92,8 @@ export function loadDraft(key: string): ChoreoSheet | null {
         (x): x is string => typeof x === "string"
       ),
       layout: { ...DEFAULT_SHEET_LAYOUT, ...(p.layout ?? {}) },
+      annotations: p.annotations ?? createEmptyAnnotations(),
+      bpm: typeof p.bpm === "number" ? p.bpm : undefined,
       createdAt: parseDraftDate(p.createdAt, now),
       updatedAt: parseDraftDate(p.updatedAt, now),
     };
@@ -112,6 +119,14 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
       (deps.persistKey ? loadDraft(deps.persistKey) : null) ??
       createEmptyChoreoSheet("")
   );
+
+  // Dirty = the live sheet object differs from the construction / last-loaded
+  // baseline. Every mutator reassigns `sheet` to a fresh object (bumping
+  // `updatedAt`), so reference identity is an exact, allocation-cheap dirty
+  // signal with no timestamp races. Exposed via a getter that reads both
+  // `$state`s live, so component consumers still track it. Reset the baseline on
+  // load/new-sheet so a freshly opened or freshly created sheet reads clean.
+  let pristineSheet = $state<ChoreoSheet>(sheet);
 
   // id -> hydrated SequenceData. A SvelteMap (not a plain Map) so `.set()`/`.get()`
   // are reactive — the moment a sequence finishes hydrating, the rows that need
@@ -180,6 +195,20 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // lockstep with what connects.
   const geo = $derived<SheetPageGeometry>(getSheetPageLayout(sheet.layout));
   const pages = $derived<SheetPage[]>(planSheet(normalizedRows, sheet.layout));
+
+  // Annotated-branch planner output: row-aligned, height-packed bands carrying
+  // their resolved cue + notes. Only computed in "aligned" packing — flow sheets
+  // keep using `pages` above. Preview and PDF read this so they stay in lockstep.
+  const bandPages = $derived<SheetBandPage[]>(
+    sheet.layout.packing === "aligned"
+      ? planBands({
+          sequences: normalizedRows,
+          geo,
+          cues: sheet.annotations.cues,
+          notes: sheet.annotations.notes,
+        })
+      : []
+  );
 
   // The whole sheet as ONE continuous sequence, for act playback. Recomputes only
   // when the normalized rows or the name change.
@@ -322,6 +351,87 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     };
   }
 
+  // ── Annotation editing ───────────────────────────────────────────────────────
+  // Each mutator reassigns `sheet` with a bumped `updatedAt` (same pattern as the
+  // roster/layout mutators above), so `isDirty` and every downstream `$derived`
+  // refresh together.
+
+  // Patch the page header (song/choreographer/tagline/title-block toggle).
+  function setHeader(patch: Partial<ChoreoSheetAnnotations["header"]>): void {
+    sheet = {
+      ...sheet,
+      annotations: {
+        ...sheet.annotations,
+        header: { ...sheet.annotations.header, ...patch },
+      },
+      updatedAt: new Date(),
+    };
+  }
+
+  // Upsert a cue by its band key: patch the existing cue for that band, or seed
+  // a fresh one (blank timestamp/text) with the patch applied.
+  function setCue(band: string, patch: Partial<Omit<CueMark, "band">>): void {
+    const cues = sheet.annotations.cues.slice();
+    const idx = cues.findIndex((c) => c.band === band);
+    if (idx === -1) cues.push({ band, timestamp: "", text: "", ...patch });
+    else cues[idx] = { ...cues[idx]!, ...patch };
+    sheet = {
+      ...sheet,
+      annotations: { ...sheet.annotations, cues },
+      updatedAt: new Date(),
+    };
+  }
+
+  // Add a blank note pinned to `count` (a column index, or null for a full-width
+  // bullet) and return its stable id so the caller can immediately edit/remove it.
+  function addNote(band: string, count: number | null): string {
+    const id = crypto.randomUUID();
+    const notes = [...sheet.annotations.notes, { id, band, count, text: "" }];
+    sheet = {
+      ...sheet,
+      annotations: { ...sheet.annotations, notes },
+      updatedAt: new Date(),
+    };
+    return id;
+  }
+
+  // Patch a note (text and/or count) by id.
+  function setNote(id: string, patch: Partial<Omit<NoteMark, "id">>): void {
+    const notes = sheet.annotations.notes.map((n) =>
+      n.id === id ? { ...n, ...patch } : n
+    );
+    sheet = {
+      ...sheet,
+      annotations: { ...sheet.annotations, notes },
+      updatedAt: new Date(),
+    };
+  }
+
+  // Remove a note by id.
+  function removeNote(id: string): void {
+    const notes = sheet.annotations.notes.filter((n) => n.id !== id);
+    sheet = {
+      ...sheet,
+      annotations: { ...sheet.annotations, notes },
+      updatedAt: new Date(),
+    };
+  }
+
+  // Fill blank cue timestamps from each band's first-step beat index at the
+  // sheet's BPM (1 step = 1 beat). Never overwrites a timestamp the user typed —
+  // the pure helper only returns keys for blank bands; a no-op when BPM is unset.
+  function prefillTimestamps(): void {
+    const bands = bandPages
+      .flatMap((p) => p.bands)
+      .map((b) => ({
+        key: b.key,
+        firstBeatIndex: b.firstBeatIndex,
+        timestamp: b.cue?.timestamp ?? "",
+      }));
+    const filled = computePrefill(bands, sheet.bpm);
+    for (const [band, timestamp] of Object.entries(filled)) setCue(band, { timestamp });
+  }
+
   // Turn an Act into a sheet roster ("Send to Sheet"). An Act already carries a
   // fully-hydrated SequenceData per placement, so we seed the cache straight from
   // it and skip the library round-trip entirely. Duplicate placements collapse to
@@ -349,6 +459,7 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // referenced the outgoing roster.
   function replaceSheet(next: ChoreoSheet): void {
     sheet = { ...next, sequenceIds: [...next.sequenceIds] };
+    pristineSheet = sheet; // a freshly loaded sheet is clean
     selectedSequenceId = null;
     if (sheet.sequenceIds.length > 0) void ensureHydrated(sheet.sequenceIds);
   }
@@ -357,6 +468,7 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // re-adding a sequence must not refetch).
   function newSheet(): void {
     sheet = createEmptyChoreoSheet("");
+    pristineSheet = sheet; // a freshly created sheet is clean
     selectedSequenceId = null;
   }
 
@@ -394,6 +506,12 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     },
     get pages() {
       return pages;
+    },
+    get bandPages() {
+      return bandPages;
+    },
+    get isDirty() {
+      return sheet !== pristineSheet;
     },
     get actSequence() {
       return actSequence;
@@ -434,6 +552,12 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     setName,
     setLayout,
     seedFromAct,
+    setHeader,
+    setCue,
+    addNote,
+    setNote,
+    removeNote,
+    prefillTimestamps,
   };
 }
 

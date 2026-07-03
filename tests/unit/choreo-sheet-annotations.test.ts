@@ -33,3 +33,42 @@ describe("choreo-sheet annotations model", () => {
     expect(sheet.annotations.header.showTitleBlock).toBe(true);
   });
 });
+
+// ── State-factory annotation editing ─────────────────────────────────────────
+import { createChoreoSheetState } from "$lib/features/write/state/choreo-sheet-state.svelte";
+
+function makeState() {
+  return createChoreoSheetState({
+    loadSequence: async () => null,
+  });
+}
+
+describe("annotation editing on the state factory", () => {
+  it("setHeader patches header fields and marks dirty", () => {
+    const s = makeState();
+    expect(s.isDirty).toBe(false);
+    s.setHeader({ songName: "1940" });
+    expect(s.sheet.annotations.header.songName).toBe("1940");
+    expect(s.isDirty).toBe(true);
+  });
+
+  it("addNote then setNote then removeNote round-trips", () => {
+    const s = makeState();
+    const id = s.addNote("x:0", 5);
+    expect(s.sheet.annotations.notes).toHaveLength(1);
+    s.setNote(id, { text: "pack bags" });
+    expect(s.sheet.annotations.notes[0].text).toBe("pack bags");
+    s.removeNote(id);
+    expect(s.sheet.annotations.notes).toHaveLength(0);
+  });
+
+  it("setCue upserts a cue by band key", () => {
+    const s = makeState();
+    s.setCue("x:1", { timestamp: "0:08", text: "drop" });
+    expect(s.sheet.annotations.cues).toHaveLength(1);
+    s.setCue("x:1", { text: "drop harder" });
+    expect(s.sheet.annotations.cues).toHaveLength(1);
+    expect(s.sheet.annotations.cues[0].text).toBe("drop harder");
+    expect(s.sheet.annotations.cues[0].timestamp).toBe("0:08");
+  });
+});
