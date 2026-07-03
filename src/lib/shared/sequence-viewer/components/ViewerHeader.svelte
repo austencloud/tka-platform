@@ -80,7 +80,7 @@
   class:export-header={!!editingPane}
   data-hidden={isFullscreen}
 >
-  {#if isMobile && !editingPane}
+  {#if isMobile && !editingPane && profile === "full"}
     <div class="swipe-handle" aria-hidden="true"></div>
   {/if}
 
