@@ -442,8 +442,8 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
     align-items: center;
     gap: 12px;
     padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     font-size: var(--font-size-compact);
   }
 
@@ -545,8 +545,8 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
     flex-direction: column;
     gap: 8px;
     padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .scrubber {
@@ -616,7 +616,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
   }
 
   .transport-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     color: white;
   }
 

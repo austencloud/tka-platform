@@ -199,7 +199,7 @@
 	}
 
 	.anim-cell.empty-cell {
-		background: rgba(255, 255, 255, 0.015);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.015));
 	}
 
 	/* Force AnimatorCanvas to fill the cell without chrome */

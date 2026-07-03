@@ -285,7 +285,7 @@
     padding: 0.6rem;
     background: var(--theme-card-bg);
     border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     color: var(--theme-text-dim);
     font-size: 0.85rem;
     cursor: pointer;
@@ -293,7 +293,7 @@
   }
 
   .change-cell-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     color: white;
   }
 
@@ -324,7 +324,7 @@
     align-items: center;
     justify-content: center;
     background: var(--theme-card-bg);
-    border: 2px dashed rgba(255, 255, 255, 0.2);
+    border: 2px dashed var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 50%;
     font-size: 1.5rem;
     transition: all var(--duration-normal) ease;

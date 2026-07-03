@@ -379,7 +379,7 @@
     height: 100%;
     border-radius: 12px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     background: var(--surface-panel, #0f1119);
     container-type: inline-size;
     container-name: celleditorpanel;
@@ -450,8 +450,8 @@
     min-height: 44px;
     padding: 8px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.55);
     font-size: 12px;
     cursor: pointer;

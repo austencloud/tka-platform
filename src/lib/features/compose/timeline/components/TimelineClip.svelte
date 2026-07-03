@@ -497,7 +497,7 @@
     color: rgba(255, 255, 255, 0.95);
     white-space: nowrap;
     font-weight: 500;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .clip-badge.speed {

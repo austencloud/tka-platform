@@ -305,8 +305,8 @@ import { resolveThumbnail, generatePlaceholderSvg } from "$lib/features/compose/
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgba(255, 255, 255, 0.15);
-		border: 1px solid rgba(255, 255, 255, 0.2);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.15));
+		border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
 		border-radius: 50%;
 		color: #fff;
 		font-size: var(--font-size-min, 14px);
@@ -316,7 +316,7 @@ import { resolveThumbnail, generatePlaceholderSvg } from "$lib/features/compose/
 	}
 
 	.quick-action:hover {
-		background: rgba(255, 255, 255, 0.25);
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.25));
 	}
 
 	/* Footer */
