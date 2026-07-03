@@ -31,6 +31,11 @@
   import { BackgroundType } from "@austencloud/backgrounds";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { MandalaPathShape } from "$lib/shared/mandala/domain/mandala-types";
+  import {
+    getRotationEpoch,
+    getGridRotationDirection,
+  } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
   const MANDALA_CELL_SCALE = 0.78;
   const hapticService = getHapticFeedback();
@@ -255,6 +260,56 @@
       })),
     },
   ]);
+
+  // --- Rotation sync (Alt+[ / Alt+]) ---
+  // Rotating the sequence via the grid-rotation hotkeys redraws each mandala
+  // fill cell at its new (data-rotated) orientation. On its own that's an
+  // instant 45° jump; the pictograph grids beside it sweep smoothly (GridSvg
+  // animates the morph over DURATION.normal with cubic-bezier(.25,.1,.25,1)).
+  // Play the same 45° sweep on the mandala cells so the whole grid turns as one:
+  // animate FROM -45·dir TO 0, i.e. a +45·dir motion that lands at rest.
+  //
+  // WAAPI, not a CSS transition: the {#each} redraw on rotation drops any
+  // in-flight CSS transition, and Svelte batches a set-then-reset so the browser
+  // never computes the intermediate angle. element.animate() is imperative and
+  // immune to both — the same imperative approach GridSvg uses for its morph.
+  const ROTATION_EASING = "cubic-bezier(0.25, 0.1, 0.25, 1)";
+  const mandalaCellNodes = new Set<HTMLElement>();
+
+  function registerMandalaCell(node: HTMLElement) {
+    mandalaCellNodes.add(node);
+    return { destroy: () => mandalaCellNodes.delete(node) };
+  }
+
+  // Seed with the current epoch so a fresh mount never animates.
+  let lastRotationEpoch = getRotationEpoch();
+
+  $effect(() => {
+    const epoch = getRotationEpoch();
+    const direction = getGridRotationDirection();
+    if (epoch === lastRotationEpoch) return;
+    lastRotationEpoch = epoch;
+
+    if (
+      typeof window === "undefined" ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+
+    // -45·dir → 0 is a +45·dir sweep, matching the grid's rotation direction.
+    const fromTransform = `rotate(${-45 * direction}deg)`;
+    // Defer one frame so the rotated mandala has painted before it sweeps in.
+    requestAnimationFrame(() => {
+      for (const node of mandalaCellNodes) {
+        if (typeof node.animate !== "function") continue;
+        node.animate(
+          [{ transform: fromTransform }, { transform: "rotate(0deg)" }],
+          { duration: DURATION.normal, easing: ROTATION_EASING },
+        );
+      }
+    });
+  });
 </script>
 
 <div
@@ -299,6 +354,7 @@
             <div
               class="timeline-cell mandala-cell"
               class:light-bg={isLightBackground}
+              use:registerMandalaCell
               oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show)}
             >
               <SequenceMandala
@@ -442,6 +498,7 @@
           class:light-bg={isLightBackground}
           style:grid-row={cell.row}
           style:grid-column={cell.column}
+          use:registerMandalaCell
           oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show)}
         >
           <SequenceMandala
