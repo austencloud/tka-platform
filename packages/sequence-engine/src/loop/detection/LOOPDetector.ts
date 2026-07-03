@@ -788,29 +788,49 @@ function checkSwappedPattern(steps: SequenceStep[], halfLength: number): boolean
   return matchCount >= threshold;
 }
 
+/**
+ * Inversion is signalled by motion TYPE flipping PRO↔ANTI — never by rotation
+ * direction. Only the INVERTED transform touches motion type; MIRROR, FLIP,
+ * ROTATE, and SWAP leave it alone. Rotation direction is unreliable: MIRROR and
+ * FLIP already flip it, so a composite like mirrored+inverted PRESERVES rotation
+ * direction (the two flips cancel). Keying off a rotation-direction flip made
+ * this detector miss inversion on every mirrored+inverted / flipped+inverted
+ * loop and report a bare "mirrored" instead — matching the class detector's
+ * motion-type check fixes that.
+ *
+ * A pair contributes a genuine flip when a PRO/ANTI motion becomes its opposite.
+ * A PRO/ANTI motion that stays the same (or drops to static/dash) contradicts
+ * inversion. STATIC/DASH/FLOAT carry no PRO/ANTI signal and are neutral. The
+ * pattern is inverted only when at least one genuine flip is seen and nothing
+ * contradicts it.
+ */
 function checkInvertedPattern(steps: SequenceStep[], halfLength: number): boolean {
-  let matchCount = 0;
+  let genuineFlips = 0;
+  let contradictions = 0;
 
   for (let i = 0; i < halfLength; i++) {
     const step1 = steps[i];
     const step2 = steps[i + halfLength];
     if (!step1 || !step2) continue;
 
-    const blueInverted =
-      (step1.motions.blue?.rotationDirection === "cw" && step2.motions.blue?.rotationDirection === "ccw") ||
-      (step1.motions.blue?.rotationDirection === "ccw" && step2.motions.blue?.rotationDirection === "cw");
+    for (const color of ["blue", "red"] as const) {
+      const t1 = step1.motions[color]?.motionType;
+      const t2 = step2.motions[color]?.motionType;
+      if (!t1 || !t2) continue;
 
-    const redInverted =
-      (step1.motions.red?.rotationDirection === "cw" && step2.motions.red?.rotationDirection === "ccw") ||
-      (step1.motions.red?.rotationDirection === "ccw" && step2.motions.red?.rotationDirection === "cw");
+      const proAnti1 = t1 === "pro" || t1 === "anti";
+      const proAnti2 = t2 === "pro" || t2 === "anti";
 
-    if (blueInverted || redInverted) {
-      matchCount++;
+      if (proAnti1 && proAnti2) {
+        if (t1 !== t2) genuineFlips++;
+        else contradictions++;
+      } else if (proAnti1 !== proAnti2) {
+        contradictions++;
+      }
     }
   }
 
-  const threshold = Math.floor(halfLength * 0.75);
-  return matchCount >= threshold;
+  return genuineFlips > 0 && contradictions === 0;
 }
 
 
