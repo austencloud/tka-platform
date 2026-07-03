@@ -8,8 +8,15 @@
   import CreateTutorialWizard from "$lib/shared/onboarding/components/create-tutorial/CreateTutorialWizard.svelte";
   import { createTutorialState } from "$lib/shared/onboarding/state/create-tutorial-state.svelte";
 
-  // Always start fresh at the first step.
+  // Always start fresh at the first step. Pass ?step=N (0-3) to jump straight to
+  // a step for isolated verification (e.g. ?step=3 lands on the Ready step).
   createTutorialState.reset();
+  if (typeof window !== "undefined") {
+    const jump = Number(new URLSearchParams(window.location.search).get("step"));
+    if (Number.isFinite(jump)) {
+      for (let i = 0; i < jump; i++) createTutorialState.advance();
+    }
+  }
 
   function handleComplete() {
     createTutorialState.reset();

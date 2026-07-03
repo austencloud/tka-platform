@@ -235,8 +235,13 @@
     grid-template-columns: 3fr 2fr;
     gap: 20px;
     width: 100%;
-    flex: 1;
-    min-height: 0;
+    /* flex-grow to fill a tall card, but never shrink below the mockup +
+       legend's own height. Without this floor (min-height:auto), a short
+       viewport compressed this box below its content, so the legend column
+       spilled downward over the "Start building" button. The card
+       (.tutorial-step, overflow-y:auto) scrolls instead when space is tight. */
+    flex: 1 1 auto;
+    min-height: min-content;
   }
 
   .mobile-only {
@@ -628,9 +633,13 @@
     outline-offset: 2px;
   }
 
-  /* ── Mobile: swap mockup for accordion ── */
+  /* ── Compact: swap the side-by-side mockup for the accordion ──
+     Breakpoint matches the wizard's fullscreen threshold (900px). Below it the
+     card goes edge-to-edge, where the wide desktop mockup + legend can't fit on
+     a short viewport without shoving the "Start building" button under the fixed
+     step-dots. The accordion is content-sized and always clears them. */
 
-  @media (max-width: 640px) {
+  @media (max-width: 900px) {
     .desktop-only {
       display: none;
     }
