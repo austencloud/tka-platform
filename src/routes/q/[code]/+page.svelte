@@ -56,6 +56,7 @@
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
   import ViewerContentRail from "$lib/shared/sequence-viewer/components/ViewerContentRail.svelte";
   import ViewerModeBottomBar from "$lib/shared/sequence-viewer/components/ViewerModeBottomBar.svelte";
+  import ScanViewerHeader from "$lib/shared/sequence-viewer/components/ScanViewerHeader.svelte";
   import { dockTrayState } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import { slide, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
@@ -687,6 +688,13 @@
           class:sidebar-mode={isSidebarLayout}
           class:with-panel={isSidebarLayout && (qrViewerMode === "animation" || qrViewerMode === "card")}
         >
+          <ScanViewerHeader
+            isMobile={!isSidebarLayout}
+            onOpenInComposer={openInComposer}
+            openTkaHref={`/browse/gallery?from=scan&code=${shortCode}`}
+            onDownload={() => handleExport(ctx)}
+            downloadBusy={isExporting}
+          />
           {#if isSidebarLayout}
             <!-- Landscape / large: vertical side rail to switch views — the same
                  ViewerContentRail the desktop viewer uses. webgl2Available={false}
@@ -1035,6 +1043,14 @@
     overflow: hidden;
   }
 
+  /* Scan header: full-width row atop the player layout at every breakpoint.
+     Portrait player-layout centers its children, so opt the header out into a
+     full stretch (same trick as .mode-bar-slot). */
+  .player-layout :global(.scan-header) {
+    align-self: stretch;
+    width: 100%;
+  }
+
   /* .player-layout centers its children (canvas-area / controls-column are
      max-width-capped and meant to sit centered). The portrait mode bar must NOT
      inherit that: it's a full-width row, and ViewerModeBottomBar's
@@ -1081,13 +1097,19 @@
 
   .player-layout.sidebar-mode {
     display: grid;
-    /* rail (auto) | canvas (flex). Mirrors the desktop viewer: no permanent
-       right panel — Side-by-Side / Card / Mandala fill the full width. */
+    /* header (full width) on top; below: rail (auto) | canvas (flex). Mirrors
+       the desktop viewer: no permanent right panel — Side-by-Side / Card /
+       Mandala fill the full width. */
     grid-template-columns: auto 1fr;
-    grid-template-rows: 1fr;
+    grid-template-rows: auto 1fr;
     align-items: stretch;
     padding: 8px 12px;
     gap: 8px;
+  }
+
+  .sidebar-mode :global(.scan-header) {
+    grid-column: 1 / -1;
+    grid-row: 1;
   }
 
   /* 2D Animation mode opens the Effects/BPM panel as a right sidebar — the
@@ -1099,19 +1121,19 @@
   /* The view-switcher rail owns the first column at landscape/desktop widths. */
   .sidebar-mode :global(.content-rail) {
     grid-column: 1;
-    grid-row: 1;
+    grid-row: 2;
   }
 
   .sidebar-mode .canvas-area {
     grid-column: 2;
-    grid-row: 1;
+    grid-row: 2;
     max-width: none;
     min-height: 0;
   }
 
   .sidebar-mode .controls-column {
     grid-column: 3;
-    grid-row: 1;
+    grid-row: 2;
     max-width: none;
     overflow: hidden;
   }
