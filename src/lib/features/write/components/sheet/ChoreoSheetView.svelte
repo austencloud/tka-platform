@@ -22,9 +22,15 @@
   } from "../../state/choreo-sheet-state.svelte";
   import { getChoreoSheetRepository } from "../../services/choreo-sheet-repository";
   import { downloadChoreoSheetPDF } from "../../services/sheet-pdf-exporter";
-  import type { ChoreoSheet, GroupSeparator } from "../../domain/types/choreo-sheet";
+  import type {
+    ChoreoSheet,
+    GroupSeparator,
+    SheetOrientation,
+    SheetPacking,
+  } from "../../domain/types/choreo-sheet";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import SheetPreviewPages from "./SheetPreviewPages.svelte";
   import ActPlayer from "./ActPlayer.svelte";
   import ActsDock from "./ActsDock.svelte";
@@ -112,6 +118,18 @@
     { value: "gap", label: "Gap" },
     { value: "none", label: "None" },
   ];
+
+  // Study = the dense continuous-flow sheet (flow packing). Annotated = the
+  // row-aligned sheet with a cue rail + note strips + page header.
+  const packingOptions: { value: SheetPacking; label: string }[] = [
+    { value: "flow", label: "Study (dense)" },
+    { value: "aligned", label: "Annotated" },
+  ];
+  const orientationOptions: { value: SheetOrientation; label: string }[] = [
+    { value: "landscape", label: "Landscape" },
+    { value: "portrait", label: "Portrait" },
+  ];
+  const isAnnotated = $derived(builder.layout.packing === "aligned");
 
   // ── Add-sequences picker (inline docked column) ─────────────────────────────
   // Reuses the full Browse experience (BrowsePanel + a browse engine): real
@@ -520,6 +538,81 @@
             size="sm"
           />
         </div>
+        <div class="setting-col">
+          <span class="setting-label">Sheet style</span>
+          <SegmentedControl
+            options={packingOptions}
+            value={builder.layout.packing}
+            onchange={(v) => builder.setLayout({ packing: v })}
+            color="accent"
+            size="sm"
+          />
+        </div>
+        {#if isAnnotated}
+          <div class="setting-col">
+            <span class="setting-label">Orientation</span>
+            <SegmentedControl
+              options={orientationOptions}
+              value={builder.layout.orientation}
+              onchange={(v) => builder.setLayout({ orientation: v })}
+              color="accent"
+              size="sm"
+            />
+          </div>
+          <div class="setting-col">
+            <span class="setting-label">Annotations</span>
+            <div class="chip-row">
+              <FilterChipBase
+                label="Cue rail"
+                icon="fa-solid fa-clock"
+                mode="toggle"
+                size="sm"
+                active={builder.layout.showCueRail}
+                onclick={() => builder.setLayout({ showCueRail: !builder.layout.showCueRail })}
+              />
+              <FilterChipBase
+                label="Note strips"
+                icon="fa-solid fa-note-sticky"
+                mode="toggle"
+                size="sm"
+                active={builder.layout.showNoteStrips}
+                onclick={() =>
+                  builder.setLayout({ showNoteStrips: !builder.layout.showNoteStrips })}
+              />
+            </div>
+          </div>
+          {#if builder.layout.showCueRail}
+            <div class="setting-col">
+              <span class="setting-label">Timestamps</span>
+              <div class="bpm-row">
+                <input
+                  class="bpm-input"
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputmode="numeric"
+                  value={builder.sheet.bpm ?? ""}
+                  oninput={(e) => {
+                    const n = Number(e.currentTarget.value);
+                    if (Number.isFinite(n) && n > 0) builder.setBpm(n);
+                  }}
+                  aria-label="Beats per minute"
+                  placeholder="BPM"
+                />
+                <button
+                  type="button"
+                  class="btn btn-prefill"
+                  onclick={() => builder.prefillTimestamps()}
+                  disabled={!builder.sheet.bpm || builder.sheet.bpm <= 0}
+                  title="Fill blank cue timestamps from the BPM (1 step = 1 beat)"
+                >
+                  <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                  Prefill timestamps
+                </button>
+              </div>
+            </div>
+          {/if}
+        {/if}
       </section>
     </aside>
 
@@ -536,6 +629,14 @@
         selectedSequenceId={builder.selectedSequenceId}
         onSelectSequence={(id) => builder.toggleSequenceSelection(id)}
         onRemoveSequence={(id) => builder.removeById(id)}
+        bandPages={builder.bandPages}
+        annotations={builder.sheet.annotations}
+        sheetName={builder.sheet.name}
+        onSetCue={builder.setCue}
+        onAddNote={builder.addNote}
+        onSetNote={builder.setNote}
+        onRemoveNote={builder.removeNote}
+        onSetHeader={builder.setHeader}
       />
     </div>
 
@@ -997,6 +1098,44 @@
   .setting-label {
     font-size: var(--font-size-sm, 0.875rem);
     color: var(--theme-text, #fff);
+  }
+
+  /* Cue-rail / note-strip toggles sit as a wrapping chip row under their label. */
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+  }
+
+  .bpm-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+  }
+
+  .bpm-input {
+    width: 5rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 var(--spacing-sm);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 8px;
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-sm, 0.875rem);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bpm-input:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 1px;
+  }
+
+  .btn-prefill {
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+    padding: 0 var(--spacing-sm);
   }
 
   /* Button + sliding indicator toggle (design system — never a checkbox). */

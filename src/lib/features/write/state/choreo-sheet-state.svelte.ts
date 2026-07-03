@@ -351,6 +351,12 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     };
   }
 
+  // Set the sheet's BPM (drives cue-rail timestamp prefill). Same reassign
+  // pattern as the other mutators so the dirty flag + downstream $derived refresh.
+  function setBpm(bpm: number): void {
+    sheet = { ...sheet, bpm, updatedAt: new Date() };
+  }
+
   // ── Annotation editing ───────────────────────────────────────────────────────
   // Each mutator reassigns `sheet` with a bumped `updatedAt` (same pattern as the
   // roster/layout mutators above), so `isDirty` and every downstream `$derived`
@@ -551,6 +557,7 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     move,
     setName,
     setLayout,
+    setBpm,
     seedFromAct,
     setHeader,
     setCue,
