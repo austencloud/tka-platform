@@ -45,7 +45,7 @@
     padding: 0 8px 0 6px;
     background: rgba(20, 22, 32, 0.78);
     backdrop-filter: blur(20px) saturate(140%);
-    border: 1px solid rgba(255,255,255,0.10);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 14px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     z-index: 10;
