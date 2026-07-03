@@ -80,14 +80,15 @@
   // Column indices for the note-strip's per-count add affordances.
   const columnIndexes = $derived(Array.from({ length: geo.columns }, (_, i) => i));
 
-  // A note pins under a column only when its count addresses an existing cell;
-  // otherwise (null, or a count past a short last row) it reads as a full-width
-  // bullet — matching the planner's contract.
+  // A note pins under a column only when its count addresses an existing cell
+  // (1..cells.length); otherwise (null, < 1, or past a short last row) it reads as
+  // a full-width bullet. Predicate matches the PDF exporter's exactly so a note
+  // never classifies differently on screen vs paper.
   function pinnedNotes(band: SheetBand): NoteMark[] {
-    return band.notes.filter((n) => n.count != null && n.count <= band.cells.length);
+    return band.notes.filter((n) => n.count != null && n.count >= 1 && n.count <= band.cells.length);
   }
   function bulletNotes(band: SheetBand): NoteMark[] {
-    return band.notes.filter((n) => n.count == null || n.count > band.cells.length);
+    return band.notes.filter((n) => n.count == null || n.count < 1 || n.count > band.cells.length);
   }
 
   // PictographContainer takes a boolean showHandPoints; the locked config carries
@@ -309,7 +310,7 @@
                         {#each pinnedNotes(band) as note (note.id)}
                           <div
                             class="pin"
-                            style="left: {(((note.count ?? 1) - 1) / geo.columns) * 100}%;"
+                            style="left: calc({(note.count ?? 1) - 1} * ({geo.cellSizePt} + {geo.gutterPt}) * var(--pt));"
                           >
                             <input
                               class="pin-input"
