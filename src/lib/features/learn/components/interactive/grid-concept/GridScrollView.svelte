@@ -4,7 +4,7 @@
   Used when viewMode === "scroll"
 -->
 <script lang="ts">
-	import LessonGridDisplay from '../LessonGridDisplay.svelte';
+	import LessonGridDisplay from '$lib/shared/pictograph/grid/components/LessonGridDisplay.svelte';
 	import GridMergeAnimation from '../grid-merge/GridMergeAnimation.svelte';
 	import PageDivider from '../PageDivider.svelte';
 </script>

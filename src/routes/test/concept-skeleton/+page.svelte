@@ -17,7 +17,7 @@
   ConceptExperience under features/learn.
 -->
 <script lang="ts">
-  import LessonGridDisplay from "$lib/features/learn/components/interactive/LessonGridDisplay.svelte";
+  import LessonGridDisplay from "$lib/shared/pictograph/grid/components/LessonGridDisplay.svelte";
   import GuidePictograph from "../../(public)/guide/level-1/_components/GuidePictograph.svelte";
   import GuideMotionVideo from "../../(public)/guide/level-1/_components/GuideMotionVideo.svelte";
   import positionsData from "../../(public)/guide/level-1/_data/positions-motions.json";

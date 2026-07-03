@@ -18,7 +18,7 @@
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/prop-placement-data";
-  import LessonGridDisplay from "$lib/features/learn/components/interactive/LessonGridDisplay.svelte";
+  import LessonGridDisplay from "$lib/shared/pictograph/grid/components/LessonGridDisplay.svelte";
 
   type SvgData = { svgContent: string; viewBox: { width: number; height: number }; center: { x: number; y: number } };
 
