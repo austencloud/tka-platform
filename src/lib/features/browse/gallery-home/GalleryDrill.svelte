@@ -1446,6 +1446,19 @@
     color: var(--theme-text, #e8edf6);
   }
 
+  /* Instant tap feedback — touch has no :hover, so a press must register
+     visually the moment it lands (the grid paints a beat later). */
+  .choice-tile:active,
+  .mini-tile:active,
+  .length-row:active,
+  .letter-chip:active {
+    transform: scale(0.985);
+  }
+  .level-tile:active {
+    transform: scale(0.985);
+    filter: brightness(1.08);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .choice-tile,
     .level-tile,
@@ -1458,7 +1471,12 @@
     .level-tile:hover,
     .length-row:hover,
     .mini-tile:hover,
-    .letter-chip:hover {
+    .letter-chip:hover,
+    .choice-tile:active,
+    .level-tile:active,
+    .length-row:active,
+    .mini-tile:active,
+    .letter-chip:active {
       transform: none;
     }
   }

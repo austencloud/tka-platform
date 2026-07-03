@@ -12,6 +12,7 @@
   import BrowseFilterBar from "./BrowseFilterBar.svelte";
   import BrowseSidebar from "./BrowseSidebar.svelte";
   import BrowseGrid from "./BrowseGrid.svelte";
+  import type { SectionedGridApi } from "./SectionedVirtualGrid.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
@@ -66,6 +67,10 @@
   let contentEl: HTMLElement | null = $state(null);
   let containerEl: HTMLElement | null = $state(null);
   let activeSection = $state<string | undefined>(undefined);
+  // Set once the sectioned virtual grid mounts. When present, it owns
+  // section-jump + active-section (the DOM-offset scan can't see off-screen,
+  // virtualized headers).
+  let sectionApi = $state<SectionedGridApi | null>(null);
 
   let showSkeleton = $state(true);
   let skeletonFading = $state(false);
@@ -132,6 +137,10 @@
   });
 
   function updateActiveSection() {
+    // The sectioned virtual grid reports active section via onActiveSectionChange
+    // (off-screen headers aren't in the DOM). Only scan the DOM for non-virtual
+    // section layouts.
+    if (sectionApi) return;
     if (!contentEl || !engine.sections.length) return;
     const scrollTop = contentEl.scrollTop;
     const sections = contentEl.querySelectorAll("[data-section]");
@@ -144,6 +153,11 @@
   }
 
   function scrollToSection(sectionTitle: string) {
+    // Virtualized: delegate to the grid (target header may be unmounted).
+    if (sectionApi) {
+      sectionApi.scrollToSectionTitle(sectionTitle);
+      return;
+    }
     if (!contentEl) return;
     const el = contentEl.querySelector(`[data-section="${CSS.escape(sectionTitle)}"]`) as HTMLElement;
     if (!el) return;
@@ -250,6 +264,9 @@
               {disableVirtualization}
               eager={isEager}
               {selectedIds}
+              scrollElement={contentEl}
+              onSectionGridReady={(api) => (sectionApi = api)}
+              onActiveSectionChange={(title) => (activeSection = title)}
             />
           </div>
         {/if}

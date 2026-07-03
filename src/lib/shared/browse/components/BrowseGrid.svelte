@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
-  import SectionHeader from "$lib/shared/browse/components/SectionHeader.svelte";
-  import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
-  import type { SequenceSection } from "$lib/shared/browse/domain/models/browse-models";
   import VirtualizedSequenceGrid, {
     type VirtualGridApi,
   } from "$lib/shared/browse/components/VirtualizedSequenceGrid.svelte";
+  import SectionedVirtualGrid, {
+    type SectionedGridApi,
+  } from "$lib/shared/browse/components/SectionedVirtualGrid.svelte";
   import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/browse-thumbnail-provider";
   import {
     buildVariationMap,
@@ -28,6 +28,13 @@
     onGridReady?: (api: VirtualGridApi) => void;
     /** Picker hosts: ids to render with the selected outline. */
     selectedIds?: ReadonlySet<string>;
+    /** Shared external scroll element for the sectioned virtual grid
+     * (BrowsePanel's `.panel-content`). */
+    scrollElement?: HTMLElement | null;
+    /** Sectioned virtual grid: imperative API for the sidebar's section jump. */
+    onSectionGridReady?: (api: SectionedGridApi) => void;
+    /** Sectioned virtual grid: reports the section at the top of the viewport. */
+    onActiveSectionChange?: (title: string | undefined) => void;
   }
 
   const {
@@ -38,6 +45,9 @@
     eager = false,
     onGridReady,
     selectedIds,
+    scrollElement = null,
+    onSectionGridReady,
+    onActiveSectionChange,
   }: Props = $props();
 
   // Derived state from engine — sections take priority over virtualization
@@ -74,50 +84,9 @@
     return out;
   }
 
-  // With a length filter active every section shares the same step count —
-  // repeating "(8 steps)" in each header is noise.
-  const stepsRedundant = $derived(engine.activeFilters.has("length"));
-
-  // Level-sorted sections render a colored "Level N" banner (blue/silver/gold)
-  // with letter subsections beneath. Annotate each section with whether it
-  // starts a new level and that level's total count.
-  interface SectionRow {
-    section: SequenceSection;
-    /** Word-collapsed cards for this section (one per word, pill cycles the rest). */
-    displaySequences: SequenceData[];
-    isLevel: boolean;
-    showBanner: boolean;
-    level: number;
-    levelTotal: number;
-  }
-  const sectionRows = $derived.by((): SectionRow[] => {
-    const secs = engine.sections as SequenceSection[];
-    const isLevel = secs.length > 0 && secs.every((s) => typeof s.level === "number");
-    const totals = new Map<number, number>();
-    if (isLevel) {
-      for (const s of secs) totals.set(s.level!, (totals.get(s.level!) ?? 0) + s.count);
-    }
-    let prevLevel: number | undefined;
-    const rows: SectionRow[] = [];
-    for (const s of secs) {
-      const showBanner = isLevel && s.level !== prevLevel;
-      rows.push({
-        section: s,
-        displaySequences: dedupeByWord(s.sequences as SequenceData[]),
-        isLevel,
-        showBanner,
-        level: s.level ?? 0,
-        levelTotal: isLevel ? (totals.get(s.level!) ?? 0) : 0,
-      });
-      prevLevel = s.level;
-    }
-    return rows;
-  });
-
-  /** Strip the "Level N · " prefix so the per-letter sub-header shows just the letter. */
-  function letterTitle(title: string): string {
-    return title.replace(/^Level\s+\d+\s+·\s+/u, "");
-  }
+  // The sectioned layout (level banners, letter subsections, word-collapsed
+  // rows) is virtualized in SectionedVirtualGrid — the flat/small fallback
+  // below still uses dedupeByWord + getVariationsForSequence.
 
   const handPathMode = $derived(engine.viewMode.subject === "hands");
   const isSoloMode = $derived(engine.viewMode.granularity === "solo");
@@ -194,56 +163,22 @@
     {selectedIds}
   />
 {:else if engine.sectionsEnabled && engine.sections.length > 0}
-  <!-- Sectioned: group by section with headers -->
-  <div class="sections-container">
-    {#each sectionRows as row (row.section.id)}
-      {@const section = row.section}
-      {#if row.showBanner}
-        <div class="level-banner">
-          <DifficultyBadge level={row.level} size="34px" />
-          <span class="level-banner-title">Level {row.level}</span>
-          <span class="level-banner-count">{row.levelTotal}</span>
-          <div class="level-banner-divider"></div>
-        </div>
-      {/if}
-      <div class="sequence-section" class:under-level={row.isLevel} data-section={section.title}>
-        <SectionHeader
-          title={row.isLevel ? letterTitle(section.title) : section.title}
-          count={row.displaySequences.length}
-          hideSteps={stepsRedundant}
-        />
-
-        {#if row.displaySequences.length > 0}
-          <div
-            class="sequences-grid grid-view"
-            class:is-transitioning={engine.isTransitioning}
-            style:grid-template-columns="repeat({engine.columnCount}, 1fr)"
-          >
-            {#each row.displaySequences as sequence (sequence.id)}
-              {@const seqVariations = getVariationsForSequence(sequence)}
-              <ChoreoCardThumbnail
-                {sequence}
-                variations={seqVariations}
-                onPrimaryAction={(seq) => handleSequenceAction("view-detail", seq, seqVariations)}
-                onHover={handleSequenceHover}
-                bluePropType={propSettings.bluePropType}
-                redPropType={propSettings.redPropType}
-                catDogModeEnabled={isCatDog}
-                {lightMode}
-                {eager}
-                {handPathMode}
-                {showBlueMotion}
-                {showRedMotion}
-                {addWord}
-                {addDifficultyLevel}
-                {selectedIds}
-              />
-            {/each}
-          </div>
-        {/if}
-      </div>
-    {/each}
-  </div>
+  <!-- Sectioned: virtualized (level banners + letter headers + word rows) -->
+  <SectionedVirtualGrid
+    {engine}
+    {thumbnailService}
+    {scrollElement}
+    {onAction}
+    {eager}
+    {handPathMode}
+    {showBlueMotion}
+    {showRedMotion}
+    {addWord}
+    {addDifficultyLevel}
+    {selectedIds}
+    onGridReady={onSectionGridReady}
+    {onActiveSectionChange}
+  />
 {:else if engine.sequences.length > 0}
   <!-- Flat: simple grid fallback -->
   <div
@@ -273,65 +208,8 @@
 {/if}
 
 <style>
-  .sections-container {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-  }
-
-  .sequence-section {
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Letter subsections sit slightly indented beneath their level banner. */
-  .sequence-section.under-level {
-    padding-left: var(--spacing-sm, 8px);
-  }
-
-  .level-banner {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm, 8px);
-    margin-top: var(--spacing-lg, 20px);
-    margin-bottom: var(--spacing-xs, 4px);
-  }
-
-  .level-banner:first-child {
-    margin-top: 0;
-  }
-
-  .level-banner-title {
-    font-size: var(--font-size-lg, 20px);
-    font-weight: 800;
-    color: var(--theme-text, #fff);
-    letter-spacing: 0.01em;
-    white-space: nowrap;
-  }
-
-  .level-banner-count {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-    background: rgba(255, 255, 255, 0.08);
-    padding: 2px 10px;
-    border-radius: 12px;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .level-banner-divider {
-    flex: 1;
-    height: 2px;
-    border-radius: 2px;
-    background: linear-gradient(
-      to right,
-      var(--theme-stroke, rgba(255, 255, 255, 0.12)) 0%,
-      transparent 100%
-    );
-    min-width: 40px;
-  }
-
+  /* Flat/small fallback grid only — the sectioned layout's styles live in
+     SectionedVirtualGrid. */
   .sequences-grid.grid-view {
     display: grid;
     gap: var(--spacing-sm);
