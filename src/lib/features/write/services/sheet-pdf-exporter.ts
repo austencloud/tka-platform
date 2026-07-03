@@ -1,20 +1,28 @@
 /**
  * Choreo sheet PDF exporter.
  *
- * Builds a print-ready landscape US-Letter PDF (792×612pt) from a sheet and its
- * hydrated sequences. Each step cell is rasterized once at 300 DPI through the
- * existing card render stack (PictographPreparer → Canvas2DDirectRenderer),
- * embedded as a PNG, and positioned by the shared geometry + planner — the same
- * `getSheetPageLayout()` + `planSheet()` the live preview uses, so the PDF lays
- * out identically. Identical pictographs embed once (keyed by rendered identity).
+ * Builds a print-ready US-Letter PDF from a sheet and its hydrated sequences.
+ * Each step cell is rasterized once at 300 DPI through the existing card render
+ * stack (PictographPreparer → Canvas2DDirectRenderer), embedded as a PNG, and
+ * positioned by the shared geometry + planner — the same `getSheetPageLayout()`
+ * the live preview uses, so the PDF lays out identically. Identical pictographs
+ * embed once (keyed by rendered identity).
+ *
+ * Two layouts share the cell renderer:
+ *  - `packing: "flow"` (study sheet): one continuous grid via `planSheet()`.
+ *  - `packing: "aligned"` (annotated sheet): row-aligned bands via `planBands()`,
+ *    each with an optional left cue rail (timestamp + lyric), a note strip below
+ *    the pictograph row, and a page header (title block on page 1, running header
+ *    after). The rail/strip/header chrome is vector pdf-lib text; only the
+ *    pictograph cells are raster.
  *
  * Step numbers are baked into the raster via the canonical drawStepNumber (the
  * same overlay StepNumber.svelte / the card pipeline use), so print matches the
- * live preview glyph-for-glyph. Block separators stay vector via pdf-lib.
+ * live preview glyph-for-glyph in BOTH layouts. Block separators stay vector.
  */
-import { PDFDocument, StandardFonts, rgb, type PDFImage } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
 import { getSheetPageLayout, type SheetPageGeometry } from "../domain/sheet-page-layout";
-import { planSheet, type SheetPage } from "./sheet-row-planner";
+import { planSheet, planBands, type SheetPage, type SheetCell } from "./sheet-row-planner";
 import { SHEET_CELL_VISIBILITY } from "./sheet-cell-config";
 import type { ChoreoSheet } from "../domain/types/choreo-sheet";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -77,6 +85,24 @@ async function canvasToPngBytes(canvas: RenderCanvas): Promise<Uint8Array> {
   return new Uint8Array(await blob.arrayBuffer());
 }
 
+// Greedy word-wrap for the cue rail + header — pdf-lib has no text layout.
+function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let line = "";
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word;
+    if (line && font.widthOfTextAtSize(test, size) > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
 export async function buildChoreoSheetPDF(
   sheet: ChoreoSheet,
   hydrated: readonly SequenceData[], // normalized rows, in order (see ChoreoSheetView)
@@ -84,7 +110,7 @@ export async function buildChoreoSheetPDF(
   breakSequenceIds: Set<string> = new Set(),
 ): Promise<Blob> {
   const geo = getSheetPageLayout(sheet.layout);
-  const pages: SheetPage[] = planSheet(hydrated, sheet.layout);
+  const aligned = sheet.layout.packing === "aligned";
 
   // Match the live preview's prop types — PictographContainer falls back to the
   // user's settings when no override is given, so the print uses the same.
@@ -97,12 +123,8 @@ export async function buildChoreoSheetPDF(
 
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
-
-  // Count non-blank cells up front so progress is meaningful card-by-card.
-  let total = 0;
-  for (const page of pages) for (const row of page.rows) for (const cell of row.cells) if (!cell.isBlank && cell.step) total++;
-  let done = 0;
-  onProgress?.(done, total);
+  const fontOblique = await pdf.embedFont(StandardFonts.HelveticaOblique);
+  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
   // Embed-once cache: rendered-identity → PDFImage.
   const imageCache = new Map<string, PDFImage>();
@@ -111,101 +133,228 @@ export async function buildChoreoSheetPDF(
   const cellStroke = rgb(0.8, 0.8, 0.8); // ≈ preview rgba(0,0,0,0.18) on white
   const blankStroke = rgb(0.92, 0.92, 0.92);
   const breakColor = rgb(0.9, 0.24, 0.24);
+  const railRule = rgb(0.86, 0.86, 0.86);
+  const ink = rgb(0.1, 0.1, 0.1);
+  const inkSoft = rgb(0.27, 0.27, 0.27);
   const stride = geo.cellSizePt + geo.gutterPt;
 
-  let pageIndex = -1;
-  for (const page of pages) {
-    pageIndex++;
-    const pdfPage = pdf.addPage([geo.pageWidthPt, geo.pageHeightPt]);
+  let total = 0;
+  let done = 0;
 
-    for (let ri = 0; ri < page.rows.length; ri++) {
-      const row = page.rows[ri]!;
+  // Render one pictograph cell exactly the same in both layouts: outline the box,
+  // draw the vector separator/break edge, then embed the raster with its canonical
+  // baked step number. `isFirstCell` suppresses the separator on the sheet's very
+  // first cell (a boundary reads as an edge BETWEEN runs). `cellBottomY` is the
+  // pdf-lib bottom-left y of the cell.
+  async function drawCell(
+    pdfPage: PDFPage,
+    cell: SheetCell,
+    cellX: number,
+    cellBottomY: number,
+    isFirstCell: boolean,
+  ): Promise<void> {
+    // Outline every cell (blanks fainter) so the grid reads as discrete boxes.
+    pdfPage.drawRectangle({
+      x: cellX,
+      y: cellBottomY,
+      width: geo.cellSizePt,
+      height: geo.cellSizePt,
+      borderColor: cell.isBlank ? blankStroke : cellStroke,
+      borderWidth: 0.75,
+    });
 
-      for (let ci = 0; ci < row.cells.length; ci++) {
-        const cell = row.cells[ci]!;
+    // Sequences flow continuously, so a boundary is a VERTICAL edge on the
+    // sequence-start cell (it can land mid-row), matching the preview.
+    if (sheet.layout.groupSeparator === "rule" && cell.isSequenceStart && !isFirstCell) {
+      pdfPage.drawLine({
+        start: { x: cellX, y: cellBottomY },
+        end: { x: cellX, y: cellBottomY + geo.cellSizePt },
+        thickness: 1,
+        color: separatorColor,
+      });
+    }
 
-        // pdf-lib draws from the bottom-left; the page origin is bottom-left too.
-        const cellX = geo.marginXPt + ci * stride;
-        const cellBottomY = geo.pageHeightPt - geo.marginYPt - ri * stride - geo.cellSizePt;
+    // Break: thick red left edge + label on a sequence start that doesn't
+    // connect to the sequence before it. Independent of separator style.
+    if (cell.isSequenceStart && cell.sequenceId && breakSequenceIds.has(cell.sequenceId)) {
+      pdfPage.drawLine({
+        start: { x: cellX, y: cellBottomY },
+        end: { x: cellX, y: cellBottomY + geo.cellSizePt },
+        thickness: 2.5,
+        color: breakColor,
+      });
+      pdfPage.drawText("break", {
+        x: cellX + 2,
+        y: cellBottomY + 2,
+        size: 6,
+        font,
+        color: breakColor,
+      });
+    }
 
-        // Outline every cell (blanks fainter) so the grid reads as discrete boxes.
-        pdfPage.drawRectangle({
-          x: cellX,
-          y: cellBottomY,
-          width: geo.cellSizePt,
-          height: geo.cellSizePt,
-          borderColor: cell.isBlank ? blankStroke : cellStroke,
-          borderWidth: 0.75,
+    if (cell.isBlank || !cell.step) return;
+    const step = cell.step;
+
+    // Step numbers honor the sheet flag; start positions (stepNumber 0) never
+    // get one, though the planner only feeds actual steps (>= 1).
+    const bakedNumber =
+      sheet.layout.showStepNumbers && step.stepNumber && step.stepNumber > 0 ? step.stepNumber : null;
+
+    const key = cellRasterKey(step, blueProp, redProp, bakedNumber);
+    let img = imageCache.get(key);
+    if (!img) {
+      const prepared = await pictographPreparer.prepareSingle(step, {
+        themeMode: "light",
+        bluePropType: blueProp,
+        redPropType: redProp,
+      });
+      const canvas = await renderer.renderPictograph(prepared, {
+        size: rasterPx,
+        visibility: { ...SHEET_CELL_VISIBILITY, darkMode: false, bluePropType: blueProp, redPropType: redProp },
+      });
+      if (bakedNumber !== null) {
+        // Canonical overlay — same drawStepNumber the preview's StepNumber.svelte
+        // mirrors and the card pipeline bakes, anchored 50/950 from the top-left.
+        const ctx = canvas.getContext("2d") as
+          | CanvasRenderingContext2D
+          | OffscreenCanvasRenderingContext2D
+          | null;
+        if (ctx) drawStepNumber(ctx, bakedNumber, 0, 0, rasterPx, false);
+      }
+      const bytes = await canvasToPngBytes(canvas);
+      img = await pdf.embedPng(bytes);
+      imageCache.set(key, img);
+    }
+
+    pdfPage.drawImage(img, { x: cellX, y: cellBottomY, width: geo.cellSizePt, height: geo.cellSizePt });
+
+    done++;
+    onProgress?.(done, total);
+  }
+
+  if (aligned) {
+    const bandPages = planBands({
+      sequences: hydrated,
+      geo,
+      cues: sheet.annotations.cues,
+      notes: sheet.annotations.notes,
+    });
+
+    // Count non-blank cells up front so progress is meaningful card-by-card.
+    for (const page of bandPages) for (const band of page.bands) for (const cell of band.cells) if (!cell.isBlank && cell.step) total++;
+    onProgress?.(done, total);
+
+    // Rail + strip type scale keyed to cell size, clamped so it stays legible in
+    // landscape (large cells) and doesn't crowd portrait (small cells).
+    const tsSize = Math.min(11, geo.cellSizePt * 0.12);
+    const cueSize = Math.min(10.5, geo.cellSizePt * 0.115);
+    const noteSize = Math.min(11, geo.cellSizePt * 0.16);
+    const railInnerW = Math.max(0, geo.railWidthPt - geo.gutterPt * 2);
+    const railLeftX = geo.marginXPt - geo.railWidthPt; // base margin, left of the grid
+
+    for (const page of bandPages) {
+      const pdfPage = pdf.addPage([geo.pageWidthPt, geo.pageHeightPt]);
+      let yUsed = 0;
+
+      // ---- Header band (reserves its own height above the first band) ----
+      if (page.pageIndex === 0 && sheet.annotations.header.showTitleBlock) {
+        yUsed += drawTitleBlock(pdfPage, sheet, geo, { fontBold, font, fontOblique, ink, inkSoft });
+      } else if (page.pageIndex > 0) {
+        yUsed += drawRunningHeader(pdfPage, sheet, page.pageIndex, page.bands[0]?.cue?.timestamp ?? "", geo, {
+          font,
+          fontOblique,
+          ink,
+          inkSoft,
+          railRule,
         });
+      }
 
-        // Sequences flow continuously, so a boundary is a VERTICAL edge on the
-        // sequence-start cell (it can land mid-row), matching the preview.
-        const isFirstCell = pageIndex === 0 && ri === 0 && ci === 0;
-        if (sheet.layout.groupSeparator === "rule" && cell.isSequenceStart && !isFirstCell) {
+      for (let bi = 0; bi < page.bands.length; bi++) {
+        const band = page.bands[bi]!;
+        const cellTopY = geo.pageHeightPt - geo.marginYPt - yUsed;
+        const cellBottomY = cellTopY - geo.cellSizePt;
+
+        // ---- Cue rail ----
+        if (sheet.layout.showCueRail) {
+          // Faint divider echoing the preview's rail border-right.
           pdfPage.drawLine({
-            start: { x: cellX, y: cellBottomY },
-            end: { x: cellX, y: cellBottomY + geo.cellSizePt },
-            thickness: 1,
-            color: separatorColor,
+            start: { x: geo.marginXPt - geo.gutterPt, y: cellBottomY },
+            end: { x: geo.marginXPt - geo.gutterPt, y: cellTopY },
+            thickness: 0.75,
+            color: railRule,
           });
-        }
-
-        // Break: thick red left edge + label on a sequence start that doesn't
-        // connect to the sequence before it. Independent of separator style.
-        if (cell.isSequenceStart && cell.sequenceId && breakSequenceIds.has(cell.sequenceId)) {
-          pdfPage.drawLine({
-            start: { x: cellX, y: cellBottomY },
-            end: { x: cellX, y: cellBottomY + geo.cellSizePt },
-            thickness: 2.5,
-            color: breakColor,
-          });
-          pdfPage.drawText("break", {
-            x: cellX + 2,
-            y: cellBottomY + 2,
-            size: 6,
-            font,
-            color: breakColor,
-          });
-        }
-
-        if (cell.isBlank || !cell.step) continue;
-        const step = cell.step;
-
-        // Step numbers honor the sheet flag; start positions (stepNumber 0) never
-        // get one, though the planner only feeds actual steps (>= 1).
-        const bakedNumber =
-          sheet.layout.showStepNumbers && step.stepNumber && step.stepNumber > 0 ? step.stepNumber : null;
-
-        const key = cellRasterKey(step, blueProp, redProp, bakedNumber);
-        let img = imageCache.get(key);
-        if (!img) {
-          const prepared = await pictographPreparer.prepareSingle(step, {
-            themeMode: "light",
-            bluePropType: blueProp,
-            redPropType: redProp,
-          });
-          const canvas = await renderer.renderPictograph(prepared, {
-            size: rasterPx,
-            visibility: { ...SHEET_CELL_VISIBILITY, darkMode: false, bluePropType: blueProp, redPropType: redProp },
-          });
-          if (bakedNumber !== null) {
-            // Canonical overlay — same drawStepNumber the preview's StepNumber.svelte
-            // mirrors and the card pipeline bakes, anchored 50/950 from the top-left.
-            const ctx = canvas.getContext("2d") as
-              | CanvasRenderingContext2D
-              | OffscreenCanvasRenderingContext2D
-              | null;
-            if (ctx) drawStepNumber(ctx, bakedNumber, 0, 0, rasterPx, false);
+          const cue = band.cue;
+          if (cue && cue.timestamp) {
+            pdfPage.drawText(cue.timestamp, {
+              x: railLeftX,
+              y: cellTopY - tsSize,
+              size: tsSize,
+              font: fontOblique,
+              color: ink,
+            });
           }
-          const bytes = await canvasToPngBytes(canvas);
-          img = await pdf.embedPng(bytes);
-          imageCache.set(key, img);
+          if (cue && cue.text) {
+            const lines = wrapText(cue.text, fontOblique, cueSize, railInnerW);
+            let ty = cellTopY - tsSize - cueSize - 3;
+            for (const line of lines) {
+              pdfPage.drawText(line, { x: railLeftX, y: ty, size: cueSize, font: fontOblique, color: inkSoft });
+              ty -= cueSize * 1.2;
+            }
+          }
         }
 
-        pdfPage.drawImage(img, { x: cellX, y: cellBottomY, width: geo.cellSizePt, height: geo.cellSizePt });
+        // ---- Pictograph cells ----
+        for (let ci = 0; ci < band.cells.length; ci++) {
+          const cell = band.cells[ci]!;
+          const cellX = geo.marginXPt + ci * stride;
+          const isFirstCell = page.pageIndex === 0 && bi === 0 && ci === 0;
+          await drawCell(pdfPage, cell, cellX, cellBottomY, isFirstCell);
+        }
 
-        done++;
-        onProgress?.(done, total);
+        // ---- Note strip (below the pictograph row) ----
+        if (sheet.layout.showNoteStrips && band.notes.length > 0) {
+          let noteY = cellBottomY - 4 - noteSize;
+          for (const note of band.notes) {
+            const pinned = note.count != null && note.count >= 1 && note.count <= band.cells.length;
+            if (pinned) {
+              const x = geo.marginXPt + (note.count! - 1) * stride;
+              pdfPage.drawText(note.text, { x, y: noteY, size: noteSize, font, color: ink });
+            } else {
+              const bullet = `• ${note.text}`;
+              pdfPage.drawText(bullet, { x: geo.marginXPt, y: noteY, size: noteSize, font: fontOblique, color: ink });
+            }
+            noteY -= noteSize * 1.35;
+          }
+        }
+
+        yUsed += band.heightPt;
+      }
+    }
+  } else {
+    const pages: SheetPage[] = planSheet(hydrated, sheet.layout);
+
+    // Count non-blank cells up front so progress is meaningful card-by-card.
+    for (const page of pages) for (const row of page.rows) for (const cell of row.cells) if (!cell.isBlank && cell.step) total++;
+    onProgress?.(done, total);
+
+    let pageIndex = -1;
+    for (const page of pages) {
+      pageIndex++;
+      const pdfPage = pdf.addPage([geo.pageWidthPt, geo.pageHeightPt]);
+
+      for (let ri = 0; ri < page.rows.length; ri++) {
+        const row = page.rows[ri]!;
+
+        for (let ci = 0; ci < row.cells.length; ci++) {
+          const cell = row.cells[ci]!;
+
+          // pdf-lib draws from the bottom-left; the page origin is bottom-left too.
+          const cellX = geo.marginXPt + ci * stride;
+          const cellBottomY = geo.pageHeightPt - geo.marginYPt - ri * stride - geo.cellSizePt;
+          const isFirstCell = pageIndex === 0 && ri === 0 && ci === 0;
+
+          await drawCell(pdfPage, cell, cellX, cellBottomY, isFirstCell);
+        }
       }
     }
   }
@@ -213,6 +362,112 @@ export async function buildChoreoSheetPDF(
   renderer.dispose();
   const bytes = await pdf.save();
   return new Blob([bytes.buffer as ArrayBuffer], { type: "application/pdf" });
+}
+
+interface HeaderFonts {
+  fontBold: PDFFont;
+  font: PDFFont;
+  fontOblique: PDFFont;
+  ink: ReturnType<typeof rgb>;
+  inkSoft: ReturnType<typeof rgb>;
+}
+
+// Page-1 title block: centered act name + choreography/song credit + tagline.
+// Returns the vertical space it consumed (so the first band starts below it).
+function drawTitleBlock(pdfPage: PDFPage, sheet: ChoreoSheet, geo: SheetPageGeometry, f: HeaderFonts): number {
+  const header = sheet.annotations.header;
+  const topY = geo.pageHeightPt - geo.marginYPt;
+  const centerX = geo.pageWidthPt / 2;
+  const drawCentered = (text: string, y: number, font: PDFFont, size: number, color: ReturnType<typeof rgb>) => {
+    const w = font.widthOfTextAtSize(text, size);
+    pdfPage.drawText(text, { x: centerX - w / 2, y, size, font, color });
+  };
+
+  const actSize = 28;
+  const bySize = 12;
+  const madeSize = 10;
+  const tagSize = 13;
+
+  let ty = topY;
+  ty -= actSize;
+  drawCentered(sheet.name || "Untitled Sheet", ty, f.fontBold, actSize, f.ink);
+  ty -= 10;
+
+  if (header.choreographer) {
+    ty -= bySize;
+    drawCentered(`Choreography by ${header.choreographer}`, ty, f.font, bySize, f.inkSoft);
+    ty -= 4;
+  }
+  const songLine = header.songArtist
+    ? `Song by ${header.songArtist}`
+    : header.songName
+      ? `Song: ${header.songName}`
+      : "";
+  if (songLine) {
+    ty -= bySize;
+    drawCentered(songLine, ty, f.font, bySize, f.inkSoft);
+    ty -= 4;
+  }
+  ty -= madeSize;
+  drawCentered("Created using The Kinetic Alphabet", ty, f.fontOblique, madeSize, f.inkSoft);
+  ty -= 4;
+  if (header.tagline) {
+    ty -= tagSize;
+    drawCentered(header.tagline, ty, f.fontBold, tagSize, f.ink);
+    ty -= 4;
+  }
+
+  return topY - ty + geo.interBandGutterPt * 2;
+}
+
+interface RunHeaderFonts {
+  font: PDFFont;
+  fontOblique: PDFFont;
+  ink: ReturnType<typeof rgb>;
+  inkSoft: ReturnType<typeof rgb>;
+  railRule: ReturnType<typeof rgb>;
+}
+
+// Pages 2+: a slim running header — song name left, page-start timestamp center,
+// page number right — with a hairline rule beneath. Returns the space consumed.
+function drawRunningHeader(
+  pdfPage: PDFPage,
+  sheet: ChoreoSheet,
+  pageIndex: number,
+  startTimestamp: string,
+  geo: SheetPageGeometry,
+  f: RunHeaderFonts,
+): number {
+  const size = 11;
+  const topY = geo.pageHeightPt - geo.marginYPt;
+  const baselineY = topY - size;
+  const leftX = geo.marginXPt - geo.railWidthPt; // page-left margin, ignoring the rail
+  const rightX = geo.pageWidthPt - geo.marginXPt;
+
+  const song = sheet.annotations.header.songName || sheet.name || "";
+  if (song) {
+    pdfPage.drawText(song, { x: leftX, y: baselineY, size, font: f.fontOblique, color: f.inkSoft });
+  }
+
+  if (startTimestamp) {
+    const mid = `page starts ${startTimestamp}`;
+    const w = f.font.widthOfTextAtSize(mid, size);
+    pdfPage.drawText(mid, { x: geo.pageWidthPt / 2 - w / 2, y: baselineY, size, font: f.font, color: f.inkSoft });
+  }
+
+  const pageLabel = String(pageIndex + 1);
+  const plw = f.font.widthOfTextAtSize(pageLabel, size);
+  pdfPage.drawText(pageLabel, { x: rightX - plw, y: baselineY, size, font: f.font, color: f.ink });
+
+  const ruleY = baselineY - 5;
+  pdfPage.drawLine({
+    start: { x: leftX, y: ruleY },
+    end: { x: rightX, y: ruleY },
+    thickness: 0.75,
+    color: f.railRule,
+  });
+
+  return topY - ruleY + geo.interBandGutterPt;
 }
 
 /** Build the sheet PDF and trigger a browser download. Mirrors downloadCodexSheetPDF. */
