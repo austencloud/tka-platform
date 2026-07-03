@@ -36,6 +36,7 @@
   import { markScan } from "$lib/shared/analytics/scan-perf";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
   import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
+  import { authState, initializeAuthListener } from "$lib/shared/auth/state/auth-state.svelte";
   import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -405,6 +406,19 @@
     return [...seen];
   }
 
+  // Signed-in scanner: wire the deferred library/video/QR registrations the bare
+  // /q route skipped. save/favorite/publish call getLibraryRepository(), which
+  // THROWS without registerPublicIndexSyncerFactory() (done in deferred-registrations,
+  // normally run once at root startup — a bootstrap this route bypasses). Gated on
+  // auth so guests never pull the heavy video-export / profanity-list chunks. One-shot.
+  let deferredWired = false;
+  $effect(() => {
+    if (authState.isAuthenticated && !deferredWired) {
+      deferredWired = true;
+      void import("$lib/shared/composition-root/deferred-registrations");
+    }
+  });
+
   onMount(async () => {
     markScan("start");
     if (browser) {
@@ -442,6 +456,16 @@
       // console on every refresh with no self-heal. Wire it here so /q gets the
       // same failed-apply recovery + dynamic-import retry as the rest of the app.
       handleHMRInit();
+
+      // Auth-aware scan (Increment 3): the bare /q layout skips the root auth
+      // bootstrap, and forceGuest hid every signed-in action. Fire-and-forget the
+      // listener so it reads the already-persisted Firebase session in the
+      // background — guest first paint is unaffected (auth resolves to null;
+      // funnel-only stays), and a signed-in scanner's header lights up. The heavy
+      // library/video/QR registrations those actions need are wired lazily and
+      // only for signed-in users (the auth $effect above), so guests never pull
+      // the video-export / profanity chunks.
+      void initializeAuthListener();
     }
 
     if (!shortCode) {
@@ -675,7 +699,6 @@
     <OrchestratorComponent
       sequence={resolvedSeq}
       isMobile={!isSidebarLayout}
-      forceGuest={true}
       initialRenderMode="2d"
       initialBpm={BASE_BPM}
       initialActiveEffect="trails"
