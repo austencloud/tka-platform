@@ -10,27 +10,72 @@
  */
 
 export type PaperSize = "letter"; // 'a4' is a future variant
-export type SheetOrientation = "landscape"; // fixed for v1
+export type SheetOrientation = "landscape" | "portrait";
+export type SheetPacking = "flow" | "aligned";
 export type GroupSeparator = "rule" | "gap" | "none";
+
+/** Stable per-band anchor: which sequence, and which of its wrapped rows. */
+export type BandKey = string;
+export function bandKey(sequenceId: string, rowInSequence: number): BandKey {
+  return `${sequenceId}:${rowInSequence}`;
+}
+
+export interface CueMark {
+  band: BandKey;
+  timestamp: string; // "0:42" — user-editable, BPM-prefilled
+  text: string; // lyric / musical cue
+}
+
+export interface NoteMark {
+  id: string; // stable id for edit/remove
+  band: BandKey;
+  count: number | null; // 1..columns to pin under a column; null = full-width bullet
+  text: string;
+}
+
+export interface SheetHeader {
+  songName?: string;
+  choreographer?: string;
+  songArtist?: string;
+  tagline?: string;
+  date?: string;
+  showTitleBlock: boolean;
+}
+
+export interface ChoreoSheetAnnotations {
+  cues: CueMark[];
+  notes: NoteMark[];
+  header: SheetHeader;
+}
+
+export function createEmptyAnnotations(): ChoreoSheetAnnotations {
+  return { cues: [], notes: [], header: { showTitleBlock: true } };
+}
 
 export interface ChoreoSheetLayout {
   columns: number; // cells per row (default 8)
   rowsPerPage: number; // rows per printed page (default 6)
   paperSize: PaperSize;
-  orientation: SheetOrientation;
   showStepNumbers: boolean;
   groupSeparator: GroupSeparator;
   keepBlocksTogether: boolean; // never split one sequence's rows across a page break
+  orientation: SheetOrientation;
+  packing: SheetPacking;
+  showCueRail: boolean;
+  showNoteStrips: boolean;
 }
 
 export const DEFAULT_SHEET_LAYOUT: ChoreoSheetLayout = {
   columns: 8,
   rowsPerPage: 6,
   paperSize: "letter",
-  orientation: "landscape",
   showStepNumbers: true,
   groupSeparator: "rule",
   keepBlocksTogether: true,
+  orientation: "landscape",
+  packing: "flow",
+  showCueRail: false,
+  showNoteStrips: false,
 };
 
 export interface ChoreoSheet {
@@ -39,6 +84,8 @@ export interface ChoreoSheet {
   ownerId: string;
   sequenceIds: readonly string[]; // ordered; one block per sequence
   layout: ChoreoSheetLayout;
+  annotations: ChoreoSheetAnnotations;
+  bpm?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,6 +98,7 @@ export function createEmptyChoreoSheet(ownerId: string, name = "Untitled Sheet")
     ownerId,
     sequenceIds: [],
     layout: { ...DEFAULT_SHEET_LAYOUT },
+    annotations: createEmptyAnnotations(),
     createdAt: now,
     updatedAt: now,
   };
