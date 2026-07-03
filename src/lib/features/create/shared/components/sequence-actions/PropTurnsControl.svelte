@@ -335,7 +335,7 @@
     flex-wrap: wrap;
     justify-content: center;
     padding-top: 6px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     margin-top: 4px;
     width: 100%;
   }
@@ -349,8 +349,8 @@
   .shape-pill {
     padding: 4px 8px;
     border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: rgba(255, 255, 255, 0.4);
     font-size: 0.65rem;
     font-weight: 600;
@@ -366,7 +366,7 @@
   }
 
   .shape-pill:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.7);
   }
 
@@ -385,8 +385,8 @@
   }
 
   .shape-pill.reset {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.08));
     font-size: 0.6rem;
   }
 

@@ -123,7 +123,7 @@
   }
 
   .pattern-item:hover:not(.disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     border-color: rgba(245, 158, 11, 0.4);
   }
 

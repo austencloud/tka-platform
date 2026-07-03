@@ -509,7 +509,7 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
     gap: 8px;
     padding: 4px 10px;
     background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 6px;
     font-size: 0.75rem;
   }
@@ -644,8 +644,8 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     cursor: pointer;
     display: flex;
@@ -658,7 +658,7 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
 
   .reset-btn:hover,
   .clear-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     color: white;
   }
 
@@ -684,8 +684,8 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
     height: 20px;
     padding: 0 6px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     font-size: 0.6rem;
@@ -693,7 +693,7 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
   }
 
   .rotation-override-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     color: white;
   }
 

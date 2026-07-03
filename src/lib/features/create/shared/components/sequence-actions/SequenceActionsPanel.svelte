@@ -1043,7 +1043,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   }
 
   .icon-btn.back:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
     color: var(--theme-text);
   }
 
@@ -1094,7 +1094,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   }
 
   .icon-btn.help:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
     color: var(--theme-text);
   }
 

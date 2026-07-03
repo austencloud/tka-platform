@@ -62,9 +62,9 @@ Action-oriented pattern: Shows the mode you can switch TO (not current mode)
     padding: 0 20px;
 
     /* Glass morphism styling */
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
     backdrop-filter: blur(10px);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 24px;
 
     /* Typography */
@@ -96,8 +96,8 @@ Action-oriented pattern: Shows the mode you can switch TO (not current mode)
   /* Hover state */
   @media (hover: hover) {
     .grid-mode-toggle:hover {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.3);
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
+      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
       transform: translateY(-2px);
       box-shadow:
         0 4px 12px rgba(0, 0, 0, 0.15),

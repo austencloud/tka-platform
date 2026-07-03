@@ -92,7 +92,7 @@
     gap: 4px;
     padding: 4px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.045);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.045));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 

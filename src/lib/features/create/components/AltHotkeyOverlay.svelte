@@ -385,8 +385,8 @@
   }
 
   .alt-key-badge {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 6px;
     padding: 4px 10px;
     font-family: monospace;
@@ -455,8 +455,8 @@
   .transform-item:hover:not(:disabled),
   .action-item:hover:not(:disabled),
   .preset-item:hover {
-    background: rgba(255, 255, 255, 0.07);
-    border-color: rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
   }
 
   .rotate-btn:active:not(:disabled),
@@ -597,8 +597,8 @@
     display: flex;
     align-items: center;
     gap: 5px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 6px;
     padding: 4px 10px;
     min-height: 44px;
@@ -610,9 +610,9 @@
   }
 
   .edit-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.6);
-    border-color: rgba(255, 255, 255, 0.18);
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.18));
   }
 
   .edit-btn i { font-size: 9px; }
@@ -626,8 +626,8 @@
     width: 44px;
     height: 44px;
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 6px;
     cursor: pointer;
     color: rgba(255, 255, 255, 0.3);
@@ -636,9 +636,9 @@
   }
 
   .close-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
     color: rgba(255, 255, 255, 0.8);
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   /* ===== Reduced motion ===== */

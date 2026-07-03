@@ -233,8 +233,8 @@ Animates forward in z-axis and expands to fill the container space
     display: flex;
     align-items: center;
     gap: 6px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 8px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     cursor: pointer;
@@ -267,8 +267,8 @@ Animates forward in z-axis and expands to fill the container space
   }
 
   .close-button {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 8px;
     color: var(--theme-text, white);
     cursor: pointer;
@@ -282,8 +282,8 @@ Animates forward in z-axis and expands to fill the container space
   }
 
   .close-button:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
 
   .close-button svg {

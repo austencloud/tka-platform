@@ -41,8 +41,8 @@
     align-items: center;
     padding: clamp(6px, 1vw, 14px);
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     transition: all 0.2s ease;
   }
 

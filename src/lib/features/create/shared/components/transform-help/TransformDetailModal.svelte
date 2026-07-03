@@ -319,8 +319,8 @@
     width: 44px;
     height: 44px;
     border-radius: 11px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     color: rgba(255, 255, 255, 0.85); /* AAA contrast */
     cursor: pointer;
     transition: all var(--duration-fast) ease;
@@ -328,7 +328,7 @@
   }
 
   .close-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
     color: white;
   }
 
@@ -432,13 +432,13 @@
   }
 
   .action-btn.shuffle {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.85); /* AAA contrast */
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
   }
 
   .action-btn.shuffle:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
     color: white;
   }
 
@@ -485,15 +485,15 @@
     border-radius: 9px;
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     color: white;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
   }
 
   .done-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
   }
 
   .done-btn:focus-visible {

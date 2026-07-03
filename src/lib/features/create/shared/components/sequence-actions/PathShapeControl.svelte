@@ -130,8 +130,8 @@
     justify-content: center;
     padding: 6px 10px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     color: rgba(255, 255, 255, 0.5);
     font-size: 0.7rem;
     font-weight: 600;
@@ -142,8 +142,8 @@
   }
 
   .shape-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
     color: rgba(255, 255, 255, 0.8);
   }
 
@@ -162,12 +162,12 @@
   }
 
   .shape-btn.reset {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .shape-btn.reset:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
   }
 
   .shape-btn:disabled {

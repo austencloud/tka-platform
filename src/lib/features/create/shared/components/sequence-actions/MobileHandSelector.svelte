@@ -42,7 +42,7 @@
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     flex-shrink: 0;
   }
 
@@ -99,7 +99,7 @@
 
   /* Hover */
   .segment:not(.active):hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
     color: var(--theme-text, rgba(255, 255, 255, 0.9));
   }
 
