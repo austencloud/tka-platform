@@ -7,7 +7,18 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { addDoc, collection, deleteDoc, doc, getDocs, setDoc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  collectionGroup,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  where,
+} from "firebase/firestore";
 
 let testEnv: RulesTestEnvironment;
 
@@ -198,6 +209,71 @@ describe("full users: community write paths succeed", () => {
     await assertSucceeds(
       setDoc(doc(db, `festivalSubmissions/fs1`), {})
     );
+  });
+});
+
+describe("collections: private is server-private, public is world-readable", () => {
+  const OWNER = "coll-owner-1";
+  const OTHER = "coll-other-1";
+
+  function userCtx(uid: string) {
+    return testEnv.authenticatedContext(uid, {
+      firebase: { sign_in_provider: "password" },
+    });
+  }
+
+  async function seed() {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `users/${OWNER}/collections/pub`), {
+        ownerId: OWNER,
+        isPublic: true,
+        name: "Public picks",
+      });
+      await setDoc(doc(db, `users/${OWNER}/collections/priv`), {
+        ownerId: OWNER,
+        isPublic: false,
+        name: "Gift ideas",
+      });
+    });
+  }
+
+  it("anyone (unauthenticated) can read a PUBLIC collection", async () => {
+    await seed();
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertSucceeds(getDoc(doc(db, `users/${OWNER}/collections/pub`)));
+  });
+
+  it("an unauthenticated user CANNOT read a PRIVATE collection", async () => {
+    await seed();
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(db, `users/${OWNER}/collections/priv`)));
+  });
+
+  it("a signed-in stranger CANNOT read someone else's PRIVATE collection", async () => {
+    await seed();
+    const db = userCtx(OTHER).firestore();
+    await assertFails(getDoc(doc(db, `users/${OWNER}/collections/priv`)));
+  });
+
+  it("the owner CAN read their own PRIVATE collection", async () => {
+    await seed();
+    const db = userCtx(OWNER).firestore();
+    await assertSucceeds(getDoc(doc(db, `users/${OWNER}/collections/priv`)));
+  });
+
+  it("a collectionGroup query filtered to isPublic==true is ALLOWED (the discovery feed)", async () => {
+    await seed();
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertSucceeds(
+      getDocs(query(collectionGroup(db, "collections"), where("isPublic", "==", true)))
+    );
+  });
+
+  it("a bare collectionGroup query (no isPublic filter) is DENIED — no enumeration of private collections", async () => {
+    await seed();
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertFails(getDocs(collectionGroup(db, "collections")));
   });
 });
 

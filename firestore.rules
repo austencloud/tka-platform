@@ -180,26 +180,21 @@ service cloud.firestore {
     //    - Contains: Display name, avatar, public stats (XP, level, sequence count)
     //    - Sensitive data (email, settings) stored in protected subcollections
     //
-    // 2. /users/{userId}/collections - Public collections
-    //    - Enables: Sharing curated sequence collections
-    //    - Privacy: isPublic flag controls visibility in UI
+    // NOTE: collections are NOT in this `if true` list. A collection doc is
+    // readable only when isPublic == true (or by its owner/admin) — see the
+    // per-user and root /collections rules below. This is enforced server-side
+    // so a collectionGroup query cannot enumerate private collections.
     //
-    // 3. /users/{userId}/collections/{}/sequences - Sequences in collections
-    //    - Enables: Viewing sequences in shared collections
-    //    - Privacy: visibility field ("public"/"private") controls UI access
-    //
-    // 4. /sequences - Public sequences index
+    // 2. /sequences - Public sequences index
     //    - Enables: Browse page, search, gallery browsing
     //    - Only contains sequences users explicitly published
     //
-    // 5. /collections - Public collections index
-    //    - Enables: Browsing shared collections
-    //
-    // 6. /products - Subscription products catalog
+    // 3. /products - Subscription products catalog
     //    - Enables: Displaying pricing before auth
     //
-    // SECURITY MODEL: Data separation, not access restriction
-    // - Public data is stored in these public-readable collections
+    // SECURITY MODEL: mostly data separation, plus per-doc visibility gating
+    // - Public profile/index data is stored in these public-readable collections
+    // - Collections & sequences gate reads on their isPublic/visibility flag
     // - Private data (messages, settings, drafts) uses auth-gated rules
     // -------------------------------------------------------------------------
 
@@ -480,10 +475,25 @@ service cloud.firestore {
     // COLLECTIONS - User Collections for sequences, beats, etc.
     // ============================================================================
 
-    // User Collections - PUBLIC browsing allowed for everyone
+    // Collection-group read authorization: a PUBLIC collection is readable
+    // wherever it lives. This is the rule that authorizes the discovery
+    // collectionGroup("collections") query — which filters isPublic == true, so
+    // the list is provably safe. A private collection (isPublic != true) is
+    // granted nothing here, so a bare unfiltered collectionGroup query cannot
+    // enumerate private collections; private reads fall through to the per-user
+    // owner/admin rule below. A recursive-wildcard match is required for
+    // collection-group queries (a nested-path rule only covers single-doc gets).
+    match /{path=**}/collections/{collectionId} {
+      allow read: if resource.data.isPublic == true;
+    }
+
+    // User Collections - PUBLIC collections are world-readable (via the
+    // collection-group rule above); PRIVATE ones are readable only by their
+    // owner (or an admin) for single-doc gets.
     match /users/{userId}/collections/{collectionId} {
-      // ANYONE can read public collections (no authentication required)
-      allow read: if true;
+      allow read: if resource.data.isPublic == true
+        || isOwner(userId)
+        || isAdmin();
 
       // Only the owner can create/update/delete their collections
       allow create, update, delete: if isOwner(userId);
@@ -497,10 +507,12 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
-    // Sequences within collections
+    // Sequences within collections - public sequences world-readable, private
+    // ones owner/admin-only (mirrors the primary users/{uid}/sequences rule).
     match /users/{userId}/collections/{collectionId}/sequences/{sequenceId} {
-      // ANYONE can read public sequences (no authentication required)
-      allow read: if true;
+      allow read: if resource.data.visibility == 'public'
+        || isOwner(userId)
+        || isAdmin();
 
       // Only the owner can create/update/delete their sequences
       allow create, update, delete: if isOwner(userId);
@@ -517,10 +529,12 @@ service cloud.firestore {
         && resource.data.userId == request.auth.uid;
     }
 
-    // User collections metadata (if stored at root level)
+    // User collections metadata (if stored at root level) - public-only read,
+    // owner/admin otherwise (same posture as the per-user collections above).
     match /collections/{collectionId} {
-      // ANYONE can read public collections (no authentication required)
-      allow read: if true;
+      allow read: if resource.data.isPublic == true
+        || (isAuthenticated() && resource.data.userId == request.auth.uid)
+        || isAdmin();
 
       // Only the creator can modify their collections
       allow create: if isAuthenticated() && hasValidUserId();
