@@ -1,10 +1,12 @@
 /**
- * Landscape choreo-sheet page geometry.
+ * Choreo-sheet page geometry.
  *
- * v1: US-Letter landscape (792 x 612 pt). Cells are square (a pictograph's
- * viewBox is square), sized by the page width / column count, then clamped so the
- * row count also fits the page height. The grid is centered on both axes.
- * paperSize / orientation are reserved for future variants (A4, portrait).
+ * US-Letter, landscape (792 x 612 pt) or portrait (612 x 792 pt). Cells are
+ * square (a pictograph's viewBox is square), sized by the rail-adjusted usable
+ * width / column count. The annotated ("aligned") branch reserves a left rail
+ * for cue timestamps and a per-band note strip, and packs bands by measured
+ * height. The continuous-flow ("flow") study branch still lays out by fixed
+ * `rows`/`cellsPerPage` and does its own centering.
  */
 import type { ChoreoSheetLayout } from "./types/choreo-sheet";
 
@@ -14,45 +16,68 @@ const LETTER_SHORT_PT = 612; // 8.5"
 const MARGIN_PT = 18;
 const GUTTER_PT = 3;
 
+const RAIL_WIDTH_PT = 64; // ~0.9" left column for timestamp + cue
+const STRIP_FACTOR = 0.5; // note-strip base height as a fraction of a cell
+const INTER_BAND_GUTTER_PT = 6;
+
 export interface SheetPageGeometry {
   pageWidthPt: number;
   pageHeightPt: number;
   columns: number;
-  rows: number;
   cellSizePt: number; // square
   gutterPt: number;
   marginXPt: number;
   marginYPt: number;
+  railWidthPt: number; // 0 when cue rail hidden
+  stripBaseHeightPt: number; // 0 when note strips hidden
+  interBandGutterPt: number;
+  usableWidthPt: number; // grid area width (page − margins − rail)
+  usableHeightPt: number; // grid area height (page − margins)
+  orientation: "landscape" | "portrait";
+  // Retained for the flow branch, which still lays out by fixed rows:
+  rows: number;
   cellsPerPage: number;
 }
 
-type GeometryInput = Pick<ChoreoSheetLayout, "columns" | "rowsPerPage" | "paperSize" | "orientation">;
+type GeometryInput = Pick<
+  ChoreoSheetLayout,
+  "columns" | "rowsPerPage" | "orientation" | "packing" | "showCueRail" | "showNoteStrips"
+>;
 
 export function getSheetPageLayout(layout: GeometryInput): SheetPageGeometry {
-  // v1: letter landscape only.
-  const pageWidthPt = LETTER_LONG_PT;
-  const pageHeightPt = LETTER_SHORT_PT;
+  const portrait = layout.orientation === "portrait";
+  const pageWidthPt = portrait ? LETTER_SHORT_PT : LETTER_LONG_PT;
+  const pageHeightPt = portrait ? LETTER_LONG_PT : LETTER_SHORT_PT;
+
   const { columns } = layout;
-  const rows = layout.rowsPerPage;
+  const railWidthPt = layout.showCueRail ? RAIL_WIDTH_PT : 0;
 
-  const usableW = pageWidthPt - 2 * MARGIN_PT;
+  const usableW = pageWidthPt - 2 * MARGIN_PT - railWidthPt;
   const usableH = pageHeightPt - 2 * MARGIN_PT;
-  const widthBound = (usableW - (columns - 1) * GUTTER_PT) / columns;
-  const heightBound = (usableH - (rows - 1) * GUTTER_PT) / rows;
-  const cellSizePt = Math.min(widthBound, heightBound);
 
-  const gridW = columns * cellSizePt + (columns - 1) * GUTTER_PT;
-  const gridH = rows * cellSizePt + (rows - 1) * GUTTER_PT;
+  // Cell width is set by the columns fitting the rail-adjusted usable width.
+  const cellSizePt = (usableW - (columns - 1) * GUTTER_PT) / columns;
+  const stripBaseHeightPt = layout.showNoteStrips ? cellSizePt * STRIP_FACTOR : 0;
+
+  // Flow-branch fixed-row values (unchanged semantics) so today's dense sheet keeps
+  // rendering identically; the aligned branch ignores `rows` and packs by height.
+  const rows = layout.rowsPerPage;
 
   return {
     pageWidthPt,
     pageHeightPt,
     columns,
-    rows,
     cellSizePt,
     gutterPt: GUTTER_PT,
-    marginXPt: (pageWidthPt - gridW) / 2,
-    marginYPt: (pageHeightPt - gridH) / 2,
+    marginXPt: MARGIN_PT + railWidthPt, // grid starts right of the rail
+    marginYPt: MARGIN_PT,
+    railWidthPt,
+    stripBaseHeightPt,
+    interBandGutterPt: INTER_BAND_GUTTER_PT,
+    usableWidthPt: usableW,
+    usableHeightPt: usableH,
+    orientation: portrait ? "portrait" : "landscape",
+    rows,
     cellsPerPage: columns * rows,
   };
 }
