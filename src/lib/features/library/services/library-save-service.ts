@@ -109,10 +109,20 @@ export class LibrarySaveService {
       });
     };
 
+    // Resolve the sequence id ONCE up front so the thumbnail upload, the Dexie
+    // row, the Firestore doc, and the returned id all reference the same
+    // sequence. Previously the thumbnail + Firestore sync received the original
+    // (often id-less) `sequence`, so LibraryRepository minted a *different* UUID
+    // for the cloud copy — duplicating the cloud doc and orphaning the Dexie row.
+    const resolvedSequence: SequenceData = {
+      ...sequence,
+      id: sequence.id || crypto.randomUUID(),
+    };
+
     // Step 1: Generate thumbnail image
     emitProgress(1);
     const thumbnailUrl = await this.generateAndUploadThumbnail(
-      sequence,
+      resolvedSequence,
       emitProgress
     );
 
@@ -120,8 +130,7 @@ export class LibrarySaveService {
     // The sequence is safe in local storage before we ever touch Firestore.
     emitProgress(2);
     const sequenceToSave: SequenceData = {
-      ...sequence,
-      id: sequence.id || crypto.randomUUID(),
+      ...resolvedSequence,
       name,
       displayName: displayName || undefined,
       tags: [...tags],
@@ -133,7 +142,23 @@ export class LibrarySaveService {
       const cloneable = JSON.parse(JSON.stringify(sequenceToSave));
       await db.sequences.put(cloneable);
     } catch (dexieError) {
+      // Dexie is the guaranteed-persistence layer ("safe in local storage
+      // before we ever touch Firestore"). If it fails, that guarantee is void —
+      // surface it instead of swallowing, so the user isn't shown "Saved!" for a
+      // sequence that may exist nowhere (the Firestore sync below is
+      // fire-and-forget and may be offline).
       console.warn("[LibrarySaveService] Dexie optimistic save failed:", dexieError);
+      const errorHandler = getErrorHandler() as ErrorHandler;
+      errorHandler.showUserError({
+        message:
+          "Couldn't save a local copy — this sequence may not be available offline",
+        technicalDetails:
+          dexieError instanceof Error ? dexieError.message : String(dexieError),
+        error:
+          dexieError instanceof Error ? dexieError : new Error(String(dexieError)),
+        severity: "warning",
+        context: { module: "library", action: "save-to-library" },
+      });
     }
 
     const sequenceId = sequenceToSave.id;
@@ -145,7 +170,7 @@ export class LibrarySaveService {
     // Step 4: Background Firestore sync (non-blocking)
     // If offline, the sequence is already in Dexie and the user sees success.
     emitProgress(4);
-    this.syncToFirestore(sequence, { name, displayName, visibility, tags, notes: notes ?? "", thumbnailUrl })
+    this.syncToFirestore(resolvedSequence, { name, displayName, visibility, tags, notes: notes ?? "", thumbnailUrl })
       .catch(err => console.warn("[LibrarySaveService] Firestore sync pending:", err));
 
     // Fire-and-forget: pre-render this sequence's pictograph cells to the cloud
