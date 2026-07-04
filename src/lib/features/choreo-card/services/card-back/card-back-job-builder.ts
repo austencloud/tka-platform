@@ -298,19 +298,16 @@ export async function buildBackJob(
   //    than the filter-free Path2D approximation (renderMandalaToCanvas).
   //
   //    Mirror SequenceMandala (CardBack.svelte mounts it with size=380,
-  //    style="stroke", show="both", pathShape="hybrid", no strokeWidth [→ 2.5],
+  //    style="stroke", show="both", pathShape="arc", no strokeWidth [→ 2.5],
   //    no tipDx [→ MANDALA_STANDARD_TIP_DX], darkMode={isDarkTheme}):
-  //      - pathShape "hybrid" → motionAware:true (see pathOptions below)
+  //      - pathShape "arc"  → no pathShape key
   //      - tip dx is the standard tip (no animation, no override)
   //    Prop-aware: a single-ended prop (club) traces ONE tip, not the staff's
   //    two. Without this every back drew the double-staff locus regardless of
   //    the prop the card is rendered with.
-  // Motion-aware petals: PRO tips trace arcs, ANTI tips trace concave curves, so
-  // the flower is drawn from the actual motion instead of a uniform arc. Mirrors
-  // CardBack.svelte's pathShape="hybrid" (SequenceMandala.optionsFor -> motionAware).
   const tipEnds = pairTipEnds(opts.bluePropType, opts.redPropType);
-  const pathOptions: MandalaPathOptions =
-    tipEnds === 1 ? { tipEnds: 1, motionAware: true } : { motionAware: true };
+  const pathOptions: MandalaPathOptions | undefined =
+    tipEnds === 1 ? { tipEnds: 1 } : undefined;
   const mandalaPaths = d.calculatePaths(
     sequence.steps,
     opts.bluePropType,
