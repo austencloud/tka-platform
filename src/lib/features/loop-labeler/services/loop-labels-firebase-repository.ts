@@ -204,20 +204,14 @@ export class LOOPLabelsFirebaseRepository {
     try {
       this.syncStatus = "syncing";
 
-      // Check if sequence exists in publicSequences
-      const sequence = await firestoreGet(
-        PUBLIC_SEQUENCES_COLLECTION,
-        sequenceId,
-        LabeledSequenceSchema,
-      );
-
-      if (!sequence) {
-        console.warn(`Sequence "${sequenceId}" not found in publicSequences`);
-        // Continue anyway to delete the LOOP label
-      } else {
-        // Delete from publicSequences
-        await firestoreDelete(PUBLIC_SEQUENCES_COLLECTION, sequenceId);
-      }
+      // Delete the sequence from publicSequences. deleteDoc is idempotent —
+      // it succeeds whether or not the document exists — so we delete directly.
+      // The previous implementation gated this on a firestoreGet validated
+      // against LabeledSequenceSchema, which a publicSequences doc never
+      // satisfies (it has no designations/isFreeform/labeledAt/notes). That
+      // read always returned null, so the delete never ran and every sequence
+      // was orphaned in publicSequences while the call still reported success.
+      await firestoreDelete(PUBLIC_SEQUENCES_COLLECTION, sequenceId);
 
       // Also delete the LOOP label if it exists
       const label = await firestoreGet(

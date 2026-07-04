@@ -11,6 +11,7 @@ import { convertFileName } from "../services/file-name-converter";
 
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
+import { toDate } from "$lib/shared/library/services/collection-firestore-mapper";
 
 export interface RecycleBinItem {
 	id: string;
@@ -22,21 +23,6 @@ export interface RecycleBinItem {
 	deletedAt: Date;
 	/** Derived from beat count (128 bytes per beat) */
 	size: number;
-}
-
-/**
- * Firestore timestamps come back with a .toDate() method, but after
- * hydration they might already be plain Date objects. Handles both.
- */
-function toDate(timestamp: unknown): Date {
-	if (timestamp instanceof Date) return timestamp;
-	if (
-		timestamp &&
-		typeof (timestamp as { toDate: () => Date }).toDate === "function"
-	) {
-		return (timestamp as { toDate: () => Date }).toDate();
-	}
-	return new Date();
 }
 
 /**
