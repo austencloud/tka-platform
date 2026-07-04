@@ -49,6 +49,7 @@ import {
   updatePronouns as doUpdatePronouns,
 } from "../services/profile-field-updater";
 import { initializeChildServices } from "../services/auth-boot-orchestrator";
+import { clearBootSnapshot } from "$lib/shared/application/services/boot-snapshot";
 
 interface AuthState {
   user: User | null;
@@ -564,6 +565,12 @@ export async function signOut(): Promise<void> {
         key.includes("session")
     );
     keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+    // The boot snapshot key ("tka-boot-snapshot") is hyphenated, so the tka_/
+    // auth/session filter above never matched it — a signed-out premium user's
+    // stale tier would survive and flash premium-gated content on the next
+    // reload during the auth-loading window. Clear it explicitly.
+    clearBootSnapshot();
 
     // Clear sessionStorage entirely
     sessionStorage.clear();
