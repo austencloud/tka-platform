@@ -121,6 +121,24 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   $effect(() => {
     setGalleryViewState({ view: galleryView, search: engine.searchQuery });
   });
+
+  // Instant tap feel. A drill pick used to apply the filter AND mount the grid
+  // in the same task, so the filter/sort/section compute (~250ms on the prod
+  // pool) blocked the first paint — a dead beat where nothing changed on tap.
+  // Instead: flip to the grid + paint its skeleton THIS frame, then run the
+  // mutation (the expensive compute) a frame later, behind the skeleton. The
+  // layout changes the instant you tap; cards fill in a beat afterward.
+  let gridWarming = $state(false);
+  function applyToGrid(mutate: () => void) {
+    galleryView = "browse-all";
+    gridWarming = true;
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        mutate();
+        gridWarming = false;
+      })
+    );
+  }
   let showAnimator = $state<boolean>(false);
   let sequenceToAnimate = $state<SequenceData | null>(null);
   let isAnimationModalOpen = $state(false);
@@ -547,20 +565,19 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
               onApply={(type, value, label, color) => {
                 // A drill pick means "exactly this slice" — engine filters can
                 // survive view remounts, so clear leftovers or the pick
-                // silently compounds with a stale filter.
-                engine.clearUserFilters();
-                engine.addFilter(type, value, label, color ?? "#6aa0ff");
-                galleryView = "browse-all";
+                // silently compounds with a stale filter. Deferred so the grid
+                // layout paints instantly and the compute runs behind the skeleton.
+                applyToGrid(() => {
+                  engine.clearUserFilters();
+                  engine.addFilter(type, value, label, color ?? "#6aa0ff");
+                });
               }}
-              onShowAll={() => {
-                engine.clearUserFilters();
-                galleryView = "browse-all";
-              }}
-              onSearch={(q) => {
-                engine.clearUserFilters();
-                engine.setSearch(q);
-                galleryView = "browse-all";
-              }}
+              onShowAll={() => applyToGrid(() => engine.clearUserFilters())}
+              onSearch={(q) =>
+                applyToGrid(() => {
+                  engine.clearUserFilters();
+                  engine.setSearch(q);
+                })}
               onOpenCollection={(ownerId, collectionId, name, ownerName) => {
                 // Discovery hand-off: a community collection opens in the
                 // Library tab's detail view (the location effect flips the
@@ -583,6 +600,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
               {drawerWidth}
               {engine}
               {error}
+              warming={gridWarming}
               onSequenceAction={(action, sequence, variations) => {
                 return eventHandlerService?.handleSequenceAction(action, sequence, variations) ??
                   Promise.resolve();

@@ -27,6 +27,9 @@
     onSequenceAction: (action: string, sequence: SequenceData, variations?: SequenceData[]) => Promise<void>;
     /** Back to the drill chooser — rendered as a leading pill in the toolbar. */
     onBackToStart?: () => void;
+    /** Grid warm-up: show the skeleton and skip the filtered-set reads for one
+     * frame so a drill pick paints the layout instantly (the compute runs after). */
+    warming?: boolean;
   }
 
   let {
@@ -36,6 +39,7 @@
     error,
     onSequenceAction,
     onBackToStart,
+    warming = false,
   }: Props = $props();
 
   // State for sub-sheets
@@ -65,9 +69,10 @@
     });
   }
 
-  // Derived: available sections for SortJumpSheet
+  // Derived: available sections for SortJumpSheet. Skipped while warming so the
+  // instant-tap frame doesn't trigger the section compute before the skeleton paints.
   const availableNavigationSections = $derived(
-    engine.sections.map((s) => s.title)
+    warming ? [] : engine.sections.map((s) => s.title)
   );
 </script>
 
@@ -80,6 +85,7 @@
     backLabel="Start here"
     hideToolbarSearch
     onOpenFilters={() => (isFilterSheetOpen = true)}
+    {warming}
   />
 </div>
 

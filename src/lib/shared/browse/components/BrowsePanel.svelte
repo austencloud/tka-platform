@@ -36,6 +36,10 @@
     /** Bottom-sheet filter pattern: Filters pill in the toolbar, applied-only
      * chips in the filter bar. The host owns the sheet. */
     onOpenFilters?: () => void;
+    /** Instant-tap warm-up: render only the skeleton (no grid/sidebar, so no
+     * filtered-set read) for the frame a new filter is applied, so the layout
+     * paints immediately and the compute lands behind the skeleton. */
+    warming?: boolean;
   }
 
   let {
@@ -53,6 +57,7 @@
     hideToolbarSearch = false,
     selectedIds,
     onOpenFilters,
+    warming = false,
   }: Props = $props();
 
   const showToolbar = $derived(toolbarOverride ?? (layout !== "minimal"));
@@ -76,8 +81,10 @@
   let skeletonFading = $state(false);
 
   const isInitializing = $derived(engine.isLoading);
-  const isEmpty = $derived(!isInitializing && !engine.error && engine.sequences.length === 0);
-  const hasSequences = $derived(!isInitializing && !engine.error && engine.sequences.length > 0);
+  // `!warming` short-circuits FIRST so the filtered-set read (which triggers the
+  // filter/sort/section compute) is skipped during the instant-tap warm frame.
+  const isEmpty = $derived(!warming && !isInitializing && !engine.error && engine.sequences.length === 0);
+  const hasSequences = $derived(!warming && !isInitializing && !engine.error && engine.sequences.length > 0);
 
   const emptyMessage = $derived(
     engine.hasActiveFilters
@@ -88,7 +95,7 @@
   );
 
   $effect((): void | (() => void) => {
-    if (isInitializing) { showSkeleton = true; skeletonFading = false; }
+    if (isInitializing || warming) { showSkeleton = true; skeletonFading = false; }
     else if (showSkeleton) {
       skeletonFading = true;
       const timer = setTimeout(() => { showSkeleton = false; skeletonFading = false; }, 300);
@@ -238,6 +245,12 @@
       <div class="error-state" role="alert">
         <p>{engine.error}</p>
         <button onclick={() => engine.refresh()}>Try again</button>
+      </div>
+    {:else if warming}
+      <!-- Instant-tap warm frame: skeleton only. No sidebar/grid → no
+           filtered-set read → the layout paints before the compute. -->
+      <div class="grid-area">
+        <BrowseThumbnailSkeleton count={12} />
       </div>
     {:else if isEmpty}
       <div class="empty-state" role="status">
