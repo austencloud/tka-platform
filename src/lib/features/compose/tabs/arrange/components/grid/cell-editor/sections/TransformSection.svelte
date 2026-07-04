@@ -93,8 +93,8 @@
     gap: 5px;
     padding: 6px 8px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.75);
     font-size: 12px;
     cursor: pointer;
@@ -106,8 +106,8 @@
   }
 
   .transform-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
   }
 
   .transform-btn:active {

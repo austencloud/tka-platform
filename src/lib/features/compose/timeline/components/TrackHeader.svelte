@@ -326,7 +326,7 @@
   }
 
   .status-badge.locked {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.2));
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--font-size-compact);
   }

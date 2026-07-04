@@ -204,7 +204,7 @@
       color-mix(in srgb, var(--left-color) 8%, transparent),
       color-mix(in srgb, var(--right-color) 8%, transparent)
     );
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: var(--action-radius, 10px);
   }
 
@@ -218,7 +218,7 @@
     width: clamp(12px, 3cqi, 14px);
     height: clamp(12px, 3cqi, 14px);
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     box-shadow: 0 0 6px color-mix(in srgb, var(--dot-color, currentColor) 25%, transparent);
   }
 
@@ -255,8 +255,8 @@
     justify-content: center;
     width: 44px;
     height: 44px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
     border-radius: var(--action-radius, 10px);
     cursor: pointer;
@@ -266,8 +266,8 @@
   }
 
   .chip-action-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.12));
     color: var(--theme-text, white);
   }
 

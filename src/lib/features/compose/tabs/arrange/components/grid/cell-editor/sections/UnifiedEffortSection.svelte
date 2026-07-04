@@ -290,8 +290,8 @@
     padding: 8px 10px;
     min-height: 44px;
     width: 100%;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 8px;
     cursor: pointer;
     transition: background 150ms ease, border-color 150ms ease;
@@ -299,12 +299,12 @@
   }
 
   .accordion-row:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.12));
   }
 
   .accordion-row.expanded {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
   }
@@ -341,8 +341,8 @@
     flex-direction: column;
     gap: 10px;
     padding: 10px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-top: none;
     border-radius: 0 0 8px 8px;
     animation: slideDown 180ms ease-out;
@@ -413,8 +413,8 @@
 
   .scope-strip {
     display: flex;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 10px;
     overflow: hidden;
     flex: 1;
@@ -434,12 +434,12 @@
     color: rgba(255, 255, 255, 0.45);
     background: transparent;
     border: none;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     transition: all 150ms ease;
   }
 
   .scope-seg:last-child { border-right: none; }
-  .scope-seg:hover { background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.7); }
+  .scope-seg:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05)); color: rgba(255, 255, 255, 0.7); }
   .scope-seg.active {
     background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
     color: var(--theme-accent-light, #c084fc);
@@ -459,14 +459,14 @@
     align-items: flex-start;
     gap: 10px;
     padding: 9px 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 10px;
     min-height: 48px;
     transition: border-color 150ms ease;
   }
 
-  .channel:hover { border-color: rgba(255, 255, 255, 0.12); }
+  .channel:hover { border-color: var(--theme-stroke, rgba(255, 255, 255, 0.12)); }
 
   .channel-id {
     display: flex;
@@ -482,7 +482,7 @@
     width: 11px;
     height: 11px;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
   }
 
   .channel-name {
@@ -510,15 +510,15 @@
     min-height: 44px;
     padding: 6px 4px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     cursor: pointer;
     transition: all 120ms ease;
   }
 
   .effort-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
   }
 
   .effort-btn.active {

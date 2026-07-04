@@ -216,8 +216,8 @@
     display: flex;
     align-items: center;
     gap: 2px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
     padding: 2px;
   }
@@ -238,7 +238,7 @@
   }
 
   .dim-step:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.8);
   }
 
@@ -318,9 +318,9 @@
   }
 
   .confirm-btn.cancel {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
     color: rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .confirm-btn.apply {
@@ -329,7 +329,7 @@
   }
 
   @media (hover: hover) {
-    .confirm-btn.cancel:hover { background: rgba(255, 255, 255, 0.1); }
+    .confirm-btn.cancel:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1)); }
     .confirm-btn.apply:hover {
       background: color-mix(in srgb, var(--semantic-error, #ef4444) 75%, transparent);
     }
@@ -350,8 +350,8 @@
     align-items: center;
     gap: 4px;
     padding: 10px 6px 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 10px;
     cursor: pointer;
     transition: background 120ms ease, border-color 120ms ease,
@@ -368,8 +368,8 @@
 
   @media (hover: hover) {
     .preset-card:not(.active):hover {
-      background: rgba(255, 255, 255, 0.06);
-      border-color: rgba(255, 255, 255, 0.12);
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+      border-color: var(--theme-stroke, rgba(255, 255, 255, 0.12));
     }
   }
 
