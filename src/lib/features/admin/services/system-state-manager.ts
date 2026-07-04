@@ -209,8 +209,14 @@ export class SystemStateManager {
           message: (data["message"] as string) ?? "",
           severity:
             (data["severity"] as "info" | "warning" | "critical") ?? "info",
-          audiences: (data["audiences"] as string[]) ?? [],
-          displayMode: (data["displayMode"] as "modal" | "banner") ?? "modal",
+          // Announcements are written with `targetAudience` (a single audience
+          // enum) and `showAsModal` (boolean) by announcement-manager. The old
+          // reads of `audiences`/`displayMode` matched no written field, so
+          // every cached announcement collapsed to [] / "modal".
+          audiences: data["targetAudience"]
+            ? [data["targetAudience"] as string]
+            : [],
+          displayMode: data["showAsModal"] === true ? "modal" : "banner",
           createdAt: createdAtDate,
           expiresAt: expiresAtDate,
           actionLabel: (data["actionLabel"] as string) ?? undefined,
