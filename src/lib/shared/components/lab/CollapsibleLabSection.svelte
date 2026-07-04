@@ -78,8 +78,8 @@
 
 <style>
   .collapsible-section {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
     transition: all var(--duration-normal) ease;
   }
@@ -111,13 +111,13 @@
 
   @media (hover: hover) {
     .section-toggle:hover {
-      background: rgba(255, 255, 255, 0.04);
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.04));
       color: #ffffff;
     }
   }
 
   .section-toggle:active {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.04));
   }
 
   .section-icon {

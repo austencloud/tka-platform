@@ -234,7 +234,7 @@
   }
 
   .tab:hover:not(.active) {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
   }
 
   .error-message {

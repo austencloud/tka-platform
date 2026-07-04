@@ -199,8 +199,8 @@
     gap: 5px;
     padding: 6px 12px;
     border-radius: 6px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     color: var(--theme-text, #ffffff);
     font-size: var(--font-size-xs, 12px);
     cursor: pointer;
@@ -208,7 +208,7 @@
   }
 
   .upload-btn-sm:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
   }
 
   .gallery-grid {
@@ -220,8 +220,8 @@
   .video-card {
     border-radius: 8px;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .video-thumb {

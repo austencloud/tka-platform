@@ -429,8 +429,8 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   }
 
   .close-button {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 8px;
     color: var(--theme-text, white);
     cursor: pointer;
@@ -446,8 +446,8 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   }
 
   .close-button:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
 
   .close-button svg {
@@ -471,7 +471,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     border-radius: 10px;
     overflow: hidden;
     background: rgba(0, 0, 0, 0.15);
-    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   /* The active/expanded section gets column layout but doesn't stretch */
@@ -497,11 +497,11 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   }
 
   .accordion-header:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
   }
 
   .accordion-header.active {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .accordion-label {

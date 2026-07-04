@@ -85,7 +85,7 @@
 </div>
 
 <style>
-  .info-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 10px 18px; border-bottom: 1px solid var(--theme-stroke, rgba(255,255,255,0.1)); background: rgba(255,255,255,0.015); }
+  .info-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 10px 18px; border-bottom: 1px solid var(--theme-stroke, rgba(255,255,255,0.1)); background: var(--theme-card-bg, rgba(255,255,255,0.015)); }
   .basic-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; font-size: var(--font-size-min, 16px); font-weight: 600; color: var(--theme-text-muted, #c9d1d9); font-variant-numeric: tabular-nums; }
   .basic-line .letter { color: var(--semantic-info, #79c0ff); font-weight: 800; font-size: 19px; }
   .basic-line .path { color: var(--theme-text, #fff); }

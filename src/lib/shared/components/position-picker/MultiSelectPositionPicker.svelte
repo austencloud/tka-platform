@@ -243,13 +243,13 @@ Uses blocklist approach: positions in blockedPositions are excluded.
 
   /* Enabled state - bright and ready */
   .position-cell.enabled {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.12));
     border-color: var(--letter-border-color, rgba(100, 200, 255, 0.6));
     box-shadow: 0 0 8px rgba(100, 200, 255, 0.15);
   }
 
   .position-cell.enabled:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.18));
     border-color: var(--letter-border-color, rgba(100, 200, 255, 0.8));
     transform: scale(1.02);
   }
@@ -257,13 +257,13 @@ Uses blocklist approach: positions in blockedPositions are excluded.
   /* Disabled state - dimmed with X overlay */
   .position-cell.disabled {
     background: rgba(0, 0, 0, 0.2);
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     opacity: 0.5;
   }
 
   .position-cell.disabled:hover {
     opacity: 0.7;
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .position-cell:active {

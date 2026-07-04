@@ -138,7 +138,7 @@
 
   .header-section.dark-mode {
     background: rgba(10, 10, 15, 0.98);
-    border-bottom-color: rgba(255, 255, 255, 0.15);
+    border-bottom-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
   }
 
   .badge-wrapper {

@@ -362,7 +362,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--theme-stroke);
     border-radius: 6px;
     transition: all 150ms ease;

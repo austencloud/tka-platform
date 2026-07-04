@@ -187,7 +187,7 @@
   }
   .history-row {
     display: flex; align-items: center; gap: 10px; padding: 7px 9px;
-    background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03)); border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 8px; font-size: var(--font-size-compact, 12px);
   }
   .action-badge {
@@ -251,11 +251,11 @@
   .history-panel { display: flex; flex-direction: column; gap: 4px; }
   .toggle-btn {
     display: flex; align-items: center; gap: 4px; padding: 2px 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1)); background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5)); border-radius: 4px;
     cursor: pointer; font-size: 0.65rem; transition: all var(--duration-fast) ease;
   }
-  .toggle-btn:hover { background: rgba(255, 255, 255, 0.08); color: white; }
+  .toggle-btn:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08)); color: white; }
 
   @media (prefers-reduced-motion: reduce) {
     .toggle-btn, .revert-btn, .trigger-btn { transition: none; }

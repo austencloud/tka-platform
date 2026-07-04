@@ -82,9 +82,9 @@
     align-items: center;
     gap: 8px;
     padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     flex-wrap: wrap;
   }
 
@@ -95,7 +95,7 @@
     font-weight: 600;
     text-transform: capitalize;
     white-space: nowrap;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.05));
   }
 
   .energy-mini {
@@ -115,7 +115,7 @@
   .energy-track {
     width: 48px;
     height: 8px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border-radius: 4px;
     overflow: hidden;
   }

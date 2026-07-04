@@ -53,7 +53,7 @@
     border-radius: 18px;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
   }
 
   .mode-chip {
@@ -71,7 +71,7 @@
 
   .mode-chip:hover {
     color: rgba(255, 255, 255, 0.9);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
   }
 
   .mode-chip.active {

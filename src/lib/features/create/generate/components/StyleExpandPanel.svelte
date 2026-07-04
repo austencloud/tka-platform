@@ -139,7 +139,7 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     flex: 1;
     min-height: 44px;
     background: rgba(0, 0, 0, 0.25);
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 10px;
     color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
@@ -158,8 +158,8 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
   }
 
   .option-btn.selected {
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.25));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.5));
     color: #fff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   }

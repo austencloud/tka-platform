@@ -58,7 +58,7 @@
     min-height: 0;
     border-top: 1px solid var(--theme-stroke);
     border-bottom: 1px solid var(--theme-stroke);
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -89,8 +89,8 @@
   .shift-mode-banner .cancel-btn {
     padding: 4px 12px;
     border-radius: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: white;
     font-size: 0.8rem;
     cursor: pointer;
@@ -98,7 +98,7 @@
   }
 
   .shift-mode-banner .cancel-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.2));
   }
 
   @media (prefers-reduced-motion: reduce) {

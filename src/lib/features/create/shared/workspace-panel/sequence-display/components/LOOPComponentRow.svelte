@@ -34,8 +34,8 @@
     align-items: center;
     padding: clamp(6px, 1vw, 12px);
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     transition: all 0.2s ease;
     text-align: center;
   }
@@ -70,7 +70,7 @@
   }
   .card.dim .icon-badge {
     filter: grayscale(1) brightness(0.85);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
   .card.dim .label {
