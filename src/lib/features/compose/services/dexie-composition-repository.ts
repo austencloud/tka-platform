@@ -201,9 +201,13 @@ export async function toggleFavorite(compositionId: string): Promise<boolean> {
 
 export async function getFavorites(): Promise<Composition[]> {
   try {
+    // isFavorite is stored as a JS boolean, and IndexedDB cannot index boolean
+    // values — so the record never enters the isFavorite index and the stored
+    // value is never the numeric 1 this query looked for, making .equals(1)
+    // match nothing. Filter-scan to match the boolean, as getCompositions/
+    // getStats already do.
     return await db.compositions
-      .where("isFavorite")
-      .equals(1) // IndexedDB stores booleans as 0/1
+      .filter((c) => c.isFavorite === true)
       .toArray();
   } catch (error) {
     console.error("Failed to get favorites:", error);

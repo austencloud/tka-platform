@@ -95,7 +95,14 @@ export async function saveSession(
         ...session,
         createdAt,
       } as Record<string, unknown>,
-      { merge: false, trackOffline: true, repoName: "tika" }
+      // merge:true — a session is built fresh from messages (createTikaSession)
+      // and carries none of the review fields (flaggedForReview, reviewStatus,
+      // reviewMetadata, flaggedAt) that flagForReview/claimForReview write to the
+      // same doc via updateDoc. A merge:false write here replaced the whole doc
+      // and silently wiped a reviewer's grade + dropped the item from the review
+      // queue on the next message. merge:true updates the session fields (the
+      // messages array is still fully replaced) while preserving review state.
+      { merge: true, trackOffline: true, repoName: "tika" }
     );
 
     return session;
