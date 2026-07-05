@@ -257,7 +257,14 @@
   const cardExportNarrow = $derived(isImageExportActive && !isMobile && bodyWidth < exportSidebarMinWidth());
   const videoExportNarrow = $derived(isVideoExportActive && !isRecordSceneActive && !isMobile && bodyWidth < exportSidebarMinWidth());
   const effectiveMobile = $derived(isMobile || cardExportNarrow || videoExportNarrow);
-  const showRail = $derived(!effectiveMobile);
+  // The rail is the desktop mode switcher — it stays at every desktop width,
+  // including the narrow-export fallback, so Card / 2D Animation don't swap to
+  // phone chrome while Split / Mandala / Tunnel keep the rail (inconsistent).
+  // Only real mobile (<768) drops the rail for the bottom bar.
+  const showRail = $derived(!isMobile);
+  // Narrow-desktop export: settings stack under the hero (mobile presentation)
+  // but the rail column persists beside them.
+  const stackedExportWithRail = $derived(isSidebarExportActive && effectiveMobile && !isMobile);
   const headerActions = $derived(buildHeaderActions(ctx, "full", { onDeleteRequest: () => (deleteConfirmOpen = true) }));
 
   // ── Export routing: host override (scan gated pipeline) or the orchestrator ──
@@ -470,6 +477,7 @@
           class:export-active={isSidebarExportActive}
           class:record-scene-active={isRecordSceneActive}
           class:desktop={!effectiveMobile}
+          class:stacked-rail={stackedExportWithRail}
           class:sidebar-collapsed={exportSidebarCollapsed && !isImageExportActive}
           class:has-rail={showRail}
         >
@@ -622,15 +630,17 @@
                     onCancel={ctx.handleCancelExport}
                   />
                 {/if}
-              {:else if isImageExportActive && !effectiveMobile}
-                <!-- No onClose on desktop: the card export settings are
+              {:else if isImageExportActive && !isMobile}
+                <!-- No onClose on desktop widths: the card export settings are
                      required to configure the download and must stay put.
-                     Leave the Download Card mode via the content rail. -->
+                     Leave the Download Card mode via the content rail. Below
+                     the sidebar threshold the panel stacks under the hero
+                     (layout="bottom") while the rail column persists. -->
                 <ExportImagePanel
                   exportOptions={ctx.exportOptions}
                   isExporting={cardBusy}
                   stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
-                  layout="sidebar"
+                  layout={effectiveMobile ? "bottom" : "sidebar"}
                   onExport={handleCardExport}
                 />
               {:else if isVideoUploadActive}
@@ -645,7 +655,7 @@
             </div>
           {/if}
         </div>
-        {#if effectiveMobile && isImageExportActive && ctx.effectiveSequence}
+        {#if isMobile && isImageExportActive && ctx.effectiveSequence}
           <!-- Entrance/exit fly now lives on ControlDock's root
                (shared by every dock); this wrapper only positions. -->
           <div class="export-footer-overlay">
@@ -661,7 +671,7 @@
         {/if}
       {/if}
     </div>
-    {#if effectiveMobile && ctx.hasSequence && ctx.effectiveSequence && !ctx.practiceActive && dockTrayState.openCount === 0}
+    {#if isMobile && ctx.hasSequence && ctx.effectiveSequence && !ctx.practiceActive && dockTrayState.openCount === 0}
       <!-- Ducks while any ControlDock tray is open — the media switcher is
            noise while the user edits, and the tray gets the room.
            Choreography: the slot height eases closed (outer slide) while
@@ -1166,6 +1176,35 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
+  }
+
+  /* Narrow-desktop export (Card / 2D Animation below the sidebar threshold):
+     the settings stack under the hero exactly like the phone layout, but the
+     rail keeps its column — otherwise entering Card/2D at these widths swapped
+     the whole chrome to phone mode while Split/Mandala/Tunnel kept the rail. */
+  .viewer-and-export.stacked-rail {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .viewer-and-export.stacked-rail .viewer-rail-wrap {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+  .viewer-and-export.stacked-rail :global(.view-container) {
+    grid-column: 2;
+    grid-row: 1;
+    position: relative;
+    inset: auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .viewer-and-export.stacked-rail .export-panel-container {
+    grid-column: 2;
+    grid-row: 2;
+    border-left: none;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    overflow: visible;
   }
 
   /* Flow child of .drawer-body-content (a flex column), NOT an absolute overlay.

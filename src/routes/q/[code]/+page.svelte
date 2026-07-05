@@ -42,6 +42,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { updateSettings } from "$lib/shared/application/state/app-state.svelte";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { handleHMRInit, clearModuleChunkRecoveryGuard } from "$lib/shared/hmr-helper";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
@@ -437,6 +438,22 @@
       // Idempotent init wires the singleton so prop changes actually apply.
       await initializeAppServices();
 
+      // Chrome color parity: run the SAME background→theme pipeline
+      // MainApplication runs (sets --theme-* on :root), seeded from the
+      // scanner's persisted settings — a fresh guest gets the default
+      // background's theme. Without this the scan chrome renders the .page
+      // fallback palette and drifts from the app viewer's colors.
+      try {
+        await settingsService.loadSettings();
+        const { applyThemeForBackground } = await import(
+          "$lib/shared/settings/utils/background-theme-calculator"
+        );
+        const bgType = settingsService.currentSettings?.backgroundType;
+        if (bgType) applyThemeForBackground(bgType);
+      } catch {
+        // Theme pipeline unavailable — component-level var fallbacks still render.
+      }
+
       // The bare /q layout also skips MainInterface, the only caller of
       // handleHMRInit(). Without it, NONE of the HMR resilience runs on this
       // route — a failed HMR apply (a dynamic import transiently resolving to
@@ -749,23 +766,17 @@
     font-family: system-ui, -apple-system, sans-serif;
     overflow: hidden;
 
-    /* Theme variables for shared components */
-    --theme-panel-bg: rgba(18, 18, 28, 0.98);
-    --theme-card-bg: rgba(255, 255, 255, 0.04);
-    --theme-card-hover-bg: rgba(255, 255, 255, 0.08);
-    --theme-stroke: rgba(255, 255, 255, 0.1);
-    --theme-stroke-strong: rgba(255, 255, 255, 0.18);
-    --theme-text: #ffffff;
-    --theme-text-dim: rgba(255, 255, 255, 0.6);
-    --theme-accent: #6366f1;
-    --theme-shadow: rgba(0, 0, 0, 0.3);
+    /* Non-theme tokens only. The --theme-* / --semantic-* palette comes from
+       the SAME background→theme pipeline the app runs (applyThemeForBackground
+       sets them on :root in onMount) — declaring them here would shadow the
+       root values for this whole subtree and drift the chrome color from the
+       app viewer. */
     --min-touch-target: 44px;
     --font-size-min: 14px;
     --font-size-compact: 12px;
     --duration-normal: 150ms;
     --duration-emphasis: 250ms;
     --duration-dramatic: 350ms;
-    --semantic-error: #f87171;
     --scrollbar-track: rgba(255, 255, 255, 0.04);
     --scrollbar-thumb: rgba(255, 255, 255, 0.12);
     --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
@@ -782,7 +793,7 @@
 
   .status-text {
     font-size: 0.875rem;
-    color: var(--theme-text-dim);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     margin: 0 0 0.5rem;
   }
 
@@ -812,7 +823,7 @@
     gap: 0.5rem;
     min-height: var(--min-touch-target);
     padding: 0.75rem 1.5rem;
-    background: var(--theme-accent);
+    background: var(--theme-accent, #0891b2);
     color: white;
     border: none;
     border-radius: 0.5rem;
@@ -824,8 +835,8 @@
 
   .cta-button.ghost {
     background: rgba(18, 18, 28, 0.85);
-    border: 1px solid var(--theme-stroke-strong);
-    color: var(--theme-text);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.14));
+    color: var(--theme-text, #ffffff);
   }
 
   .word-loader {
@@ -855,7 +866,7 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: var(--theme-accent);
+    background: var(--theme-accent, #0891b2);
     animation: dot-pulse 1.2s ease-in-out infinite;
   }
 
