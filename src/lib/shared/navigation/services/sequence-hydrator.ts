@@ -21,6 +21,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { deriveLettersForSequence } from "$lib/shared/navigation/services/letter-deriver";
 import { derivePositionsForSequence } from "$lib/shared/navigation/services/position-deriver";
 import type { ILOOPDetector } from "$lib/shared/create/services/ILOOPDetector";
@@ -86,10 +87,17 @@ export async function hydrateSequence(
 
   // gridMode: infer from the first beat whose motions decoded cleanly.
   // Using the start position's motions isn't reliable - at beat 0 the
-  // encoded form may be a blank placeholder (no motions carried).
+  // encoded form may be a blank placeholder. Since the both-required flip
+  // (2026-07-02) that placeholder is an invisible static MotionData, so the
+  // donor scan must check VISIBILITY, not presence — otherwise a leading
+  // blank beat always wins and donates gridMode derived from placeholder
+  // locations (Wave 0 straggler fix, presence register site B).
   let gridMode: GridMode | undefined;
   for (const step of merged.steps) {
-    if (step.motions?.blue && step.motions?.red) {
+    if (
+      isVisibleMotion(step.motions?.blue) &&
+      isVisibleMotion(step.motions?.red)
+    ) {
       gridMode = deriveGridMode(step.motions.blue, step.motions.red);
       break;
     }

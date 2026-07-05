@@ -13,6 +13,7 @@
     PipelineTier,
   } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/pipeline-diagnostics";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import type { SelectedArrowContext } from "../../../services/arrow-adjustment-orchestrator";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
@@ -48,13 +49,22 @@
         wants to commit + leave in one click. */
     onDone?: () => void;
   }
-  let { stepData, blueDiagnostics, redDiagnostics, onDiagnosticsChanged, onDone }: Props = $props();
+  let {
+    stepData,
+    blueDiagnostics,
+    redDiagnostics,
+    onDiagnosticsChanged,
+    onDone,
+  }: Props = $props();
 
   // Selection-driven binding (live re-bind on color switch)
   const activeColor = $derived<"blue" | "red" | null>(
-    (selectedArrowState.selectedArrow?.color as "blue" | "red" | undefined) ?? null
+    (selectedArrowState.selectedArrow?.color as "blue" | "red" | undefined) ??
+      null
   );
-  const diagnostics = $derived(activeColor === "red" ? redDiagnostics : blueDiagnostics);
+  const diagnostics = $derived(
+    activeColor === "red" ? redDiagnostics : blueDiagnostics
+  );
 
   let editTarget = $state<"special-json" | "default">("special-json");
   let editX = $state(0);
@@ -65,16 +75,25 @@
   // Head identity derived
   const colorName = $derived(activeColor === "red" ? "Red" : "Blue");
   const colorToken = $derived(
-    activeColor === "red" ? "var(--prop-red, #f85149)" : "var(--prop-blue, #58a6ff)"
+    activeColor === "red"
+      ? "var(--prop-red, #f85149)"
+      : "var(--prop-blue, #58a6ff)"
   );
-  const segColor = $derived<"blue" | "red">(activeColor === "red" ? "red" : "blue");
+  const segColor = $derived<"blue" | "red">(
+    activeColor === "red" ? "red" : "blue"
+  );
 
   // Publish the in-flight edit so PipelineTraceSection can show the edited tier's
   // value live (before Save). Only while an actual edit is pending on this color;
   // cleared on Save/tier-switch/deselect (hasLocalChanges resets) and on teardown.
   $effect(() => {
     if (hasLocalChanges && activeColor) {
-      livePipelineEdit.publish({ color: activeColor, tier: editTarget, x: editX, y: editY });
+      livePipelineEdit.publish({
+        color: activeColor,
+        tier: editTarget,
+        x: editX,
+        y: editY,
+      });
     } else {
       livePipelineEdit.clear();
     }
@@ -86,10 +105,13 @@
     { value: "default" as const, label: "Default" },
   ];
 
+  // Invisible placeholder hands keep the dock inert — WASD-adjusting a
+  // fabricated motion would write special-placement overrides keyed off
+  // placeholder data (Wave 0 straggler fix: dead presence gate).
   const selectedArrowContext = $derived.by((): SelectedArrowContext | null => {
     if (!activeColor) return null;
     const motion = stepData.motions?.[activeColor];
-    if (!motion) return null;
+    if (!isVisibleMotion(motion)) return null;
     const pictographData: PictographData = {
       id: stepData.id,
       letter: stepData.letter ?? null,
@@ -120,7 +142,8 @@
     const c = activeColor ?? "blue";
     const motion = stepData.motions?.[c];
     const settings = getSettings();
-    const settingsPropType = c === "blue" ? settings.bluePropType : settings.redPropType;
+    const settingsPropType =
+      c === "blue" ? settings.bluePropType : settings.redPropType;
     return (motion?.propType ?? settingsPropType)?.toLowerCase() || "staff";
   });
 
@@ -141,24 +164,26 @@
   });
 
   // The Default-tier lookup identity, surfaced by the diagnostics producer.
-  const defaultLookup = $derived.by((): {
-    gridMode: string;
-    propType: string;
-    motionType: string;
-    placementKey: string;
-    turns: string;
-  } | null => {
-    if (!diagnostics?.default) return null;
-    const d = diagnostics.default;
-    if (!d.gridMode || !d.motionType || !d.placementKey) return null;
-    return {
-      gridMode: d.gridMode,
-      propType: d.propType,
-      motionType: d.motionType,
-      placementKey: d.placementKey,
-      turns: d.turns,
-    };
-  });
+  const defaultLookup = $derived.by(
+    (): {
+      gridMode: string;
+      propType: string;
+      motionType: string;
+      placementKey: string;
+      turns: string;
+    } | null => {
+      if (!diagnostics?.default) return null;
+      const d = diagnostics.default;
+      if (!d.gridMode || !d.motionType || !d.placementKey) return null;
+      return {
+        gridMode: d.gridMode,
+        propType: d.propType,
+        motionType: d.motionType,
+        placementKey: d.placementKey,
+        turns: d.turns,
+      };
+    }
+  );
 
   // Reactive "an override exists here" flag for the Revert button.
   const defaultHasValue = $derived.by(() => {
@@ -171,7 +196,7 @@
         lk.propType,
         lk.motionType,
         lk.placementKey,
-        lk.turns,
+        lk.turns
       ) ?? false
     );
   });
@@ -179,15 +204,19 @@
   const dockTitleText = $derived(
     editTarget === "default"
       ? `${colorName} · ${thisPropType} · Default`
-      : `${colorName} · ${tierLabel(editTarget)}`,
+      : `${colorName} · ${tierLabel(editTarget)}`
   );
 
   function tierLabel(tier: PipelineTier): string {
     switch (tier) {
-      case "global": return "Global Override";
-      case "special-json": return "Special JSON";
-      case "prop-geometry": return "Prop Geometry";
-      case "default": return "Default";
+      case "global":
+        return "Global Override";
+      case "special-json":
+        return "Special JSON";
+      case "prop-geometry":
+        return "Prop Geometry";
+      case "default":
+        return "Default";
     }
   }
 
@@ -202,7 +231,11 @@
     const c = activeColor;
     if (c === lastBoundColor) return;
     lastBoundColor = c;
-    if (!c) { saveState = "idle"; hasLocalChanges = false; return; }
+    if (!c) {
+      saveState = "idle";
+      hasLocalChanges = false;
+      return;
+    }
     editTarget = defaultEditTargetForActiveTier();
     hasLocalChanges = false;
     saveState = "idle";
@@ -266,7 +299,11 @@
 
   function handleKeydown(event: KeyboardEvent): boolean {
     const target = event.target as HTMLElement;
-    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+    if (
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.isContentEditable
+    )
       return false;
     if (!activeColor) return false;
     const key = event.key.toLowerCase();
@@ -300,15 +337,17 @@
     const isSaveCombo =
       event.key.toLowerCase() === "s" && (event.ctrlKey || event.metaKey);
     const target = event.target as HTMLElement;
-    const isEnterInInput =
-      event.key === "Enter" && target?.tagName === "INPUT";
+    const isEnterInInput = event.key === "Enter" && target?.tagName === "INPUT";
     if (!isSaveCombo && !isEnterInInput) return false;
     event.preventDefault();
     if (hasLocalChanges) handleSave();
     return true;
   }
 
-  async function handleWASDMovement(key: "w" | "a" | "s" | "d", increment: number) {
+  async function handleWASDMovement(
+    key: "w" | "a" | "s" | "d",
+    increment: number
+  ) {
     const directionMap: Record<string, { dx: number; dy: number }> = {
       w: { dx: 0, dy: -increment },
       s: { dx: 0, dy: increment },
@@ -324,19 +363,22 @@
       const refDelta = screenSpaceAdjustmentTransformer.transformToReference(
         new Point(dir.dx, dir.dy),
         motion,
-        arrowLocation,
+        arrowLocation
       );
       editX += refDelta.x;
       editY += refDelta.y;
       // TEMP DIAGNOSTIC — set window.__DBG_ARROW = true, then press a direction.
       // Pairs with [XFORM] (transform internals) + [TUPLE] (render). Shows the
       // screen delta we asked for vs the reference delta stored. Remove once fixed.
-      if (typeof globalThis !== "undefined" && (globalThis as { __DBG_ARROW?: boolean }).__DBG_ARROW) {
+      if (
+        typeof globalThis !== "undefined" &&
+        (globalThis as { __DBG_ARROW?: boolean }).__DBG_ARROW
+      ) {
         console.log(
           `[WASD] key=${key} screenDelta=(${dir.dx},${dir.dy}) ${activeColor}` +
             ` mt=${String(motion.motionType).toLowerCase()} rot=${String(motion.rotationDirection).toLowerCase()}` +
             ` prop=${motion.propType?.toLowerCase() ?? "staff"} arrowLoc=${arrowLocation}` +
-            ` → refDelta=(${refDelta.x},${refDelta.y}) editXY=(${editX},${editY})`,
+            ` → refDelta=(${refDelta.x},${refDelta.y}) editXY=(${editX},${editY})`
         );
       }
     } else {
@@ -386,16 +428,21 @@
           ? repo.hasOverride(specialOverrideKey)
           : false;
       const hasSpecial =
-        !!diagnostics?.specialJson?.firestoreOverride || repoHas || hasLocalChanges;
+        !!diagnostics?.specialJson?.firestoreOverride ||
+        repoHas ||
+        hasLocalChanges;
       // TEMP DIAGNOSTIC — set window.__DBG_ARROW = true, press Z. Shows the three
       // signals the guard ORs together + repo init (the card-context concern).
       // Remove once Z-delete is confirmed.
-      if (typeof globalThis !== "undefined" && (globalThis as { __DBG_ARROW?: boolean }).__DBG_ARROW) {
+      if (
+        typeof globalThis !== "undefined" &&
+        (globalThis as { __DBG_ARROW?: boolean }).__DBG_ARROW
+      ) {
         console.log(
           `[Z-DELETE] tier=special key=${specialOverrideKey ?? "null"}` +
             ` repoInit=${!!repo?.isInitialized} repoHas=${repoHas}` +
             ` firestoreOverride=${!!diagnostics?.specialJson?.firestoreOverride}` +
-            ` hasLocalChanges=${hasLocalChanges} → willDelete=${hasSpecial}`,
+            ` hasLocalChanges=${hasLocalChanges} → willDelete=${hasSpecial}`
         );
       }
       if (!hasSpecial) {
@@ -422,8 +469,9 @@
   function handleSpecialJsonNumericUpdate() {
     const repo = getSpecialOverrideRepository();
     if (!repo || !specialOverrideKey) return;
-    const originalValue = diagnostics?.specialJson?.firestoreOverride?.original
-      ?? (diagnostics?.specialJson ? diagnostics.specialJson.value : null);
+    const originalValue =
+      diagnostics?.specialJson?.firestoreOverride?.original ??
+      (diagnostics?.specialJson ? diagnostics.specialJson.value : null);
     const input = buildSpecialJsonInput(editX, editY, originalValue);
     if (!input) return;
     repo.saveOverrideLocal(input);
@@ -433,7 +481,8 @@
   }
 
   function buildSpecialJsonInput(
-    x: number, y: number,
+    x: number,
+    y: number,
     original: { x: number; y: number } | null
   ): SpecialArrowPlacementInput | null {
     const c = activeColor ?? "blue";
@@ -449,7 +498,9 @@
       endPosition: stepData.endPosition,
       motions: stepData.motions as PictographData["motions"],
     };
-    const fields = parseSpecialOverrideKey(computeSpecialOverrideKey(pd, motion, c));
+    const fields = parseSpecialOverrideKey(
+      computeSpecialOverrideKey(pd, motion, c)
+    );
     if (!fields) return null;
 
     return {
@@ -470,9 +521,11 @@
   async function handleSpecialJsonSave() {
     const repo = getSpecialOverrideRepository();
     if (!repo || !specialOverrideKey) return;
-    const originalValue = diagnostics?.specialJson?.firestoreOverride?.original
-      ?? (diagnostics?.specialJson && !diagnostics.specialJson.firestoreOverride
-        ? diagnostics.specialJson.value : null);
+    const originalValue =
+      diagnostics?.specialJson?.firestoreOverride?.original ??
+      (diagnostics?.specialJson && !diagnostics.specialJson.firestoreOverride
+        ? diagnostics.specialJson.value
+        : null);
     const input = buildSpecialJsonInput(editX, editY, originalValue);
     if (!input) return;
     try {
@@ -483,7 +536,9 @@
       const haptic = getHapticFeedback();
       haptic?.trigger("success");
       onDiagnosticsChanged?.();
-      setTimeout(() => { saveState = "idle"; }, 2000);
+      setTimeout(() => {
+        saveState = "idle";
+      }, 2000);
     } catch (error) {
       logger.error("Special JSON save failed:", error);
       saveState = "idle";
@@ -511,7 +566,14 @@
     const repo = getDefaultOverrideRepository();
     const lk = defaultLookup;
     if (!repo || !lk) return;
-    repo.saveDefaultLocal(lk.gridMode, lk.propType, lk.motionType, lk.placementKey, lk.turns, [editX, editY]);
+    repo.saveDefaultLocal(
+      lk.gridMode,
+      lk.propType,
+      lk.motionType,
+      lk.placementKey,
+      lk.turns,
+      [editX, editY]
+    );
     pictographPreparer.clearCache();
     globalAdjustmentVersion.increment();
     hasLocalChanges = true;
@@ -523,12 +585,21 @@
     if (!repo || !lk) return;
     try {
       saveState = "saving";
-      await repo.saveDefault(lk.gridMode, lk.propType, lk.motionType, lk.placementKey, lk.turns, [editX, editY]);
+      await repo.saveDefault(
+        lk.gridMode,
+        lk.propType,
+        lk.motionType,
+        lk.placementKey,
+        lk.turns,
+        [editX, editY]
+      );
       saveState = "saved";
       hasLocalChanges = false;
       getHapticFeedback()?.trigger("success");
       onDiagnosticsChanged?.();
-      setTimeout(() => { saveState = "idle"; }, 2000);
+      setTimeout(() => {
+        saveState = "idle";
+      }, 2000);
     } catch (error) {
       logger.error("Default save failed:", error);
       saveState = "idle";
@@ -540,8 +611,20 @@
     const lk = defaultLookup;
     if (!repo || !lk) return;
     try {
-      repo.deleteDefaultLocal(lk.gridMode, lk.propType, lk.motionType, lk.placementKey, lk.turns);
-      await repo.deleteDefault(lk.gridMode, lk.propType, lk.motionType, lk.placementKey, lk.turns);
+      repo.deleteDefaultLocal(
+        lk.gridMode,
+        lk.propType,
+        lk.motionType,
+        lk.placementKey,
+        lk.turns
+      );
+      await repo.deleteDefault(
+        lk.gridMode,
+        lk.propType,
+        lk.motionType,
+        lk.placementKey,
+        lk.turns
+      );
       pictographPreparer.clearCache();
       globalAdjustmentVersion.increment();
       hasLocalChanges = false;
@@ -553,11 +636,20 @@
   }
 </script>
 
-<svelte:window onkeydown={(e) => { if (!activeColor) return; if (handleSaveHotkey(e)) return; handleKeydown(e); }} />
+<svelte:window
+  onkeydown={(e) => {
+    if (!activeColor) return;
+    if (handleSaveHotkey(e)) return;
+    handleKeydown(e);
+  }}
+/>
 
 <footer class="editor-dock" class:idle={!activeColor} style="--c: {colorToken}">
   {#if !activeColor}
-    <span class="dock-idle"><i class="fas fa-hand-pointer" aria-hidden="true"></i> Select an arrow to adjust its position →</span>
+    <span class="dock-idle"
+      ><i class="fas fa-hand-pointer" aria-hidden="true"></i> Select an arrow to adjust
+      its position →</span
+    >
   {:else}
     <div class="dock-head">
       <span class="dock-dot" style="background: {colorToken}"></span>
@@ -566,22 +658,48 @@
            and shoves the rest of the dock row. The hidden sizer must hold the
            widest combination of {colorName} · {tierLabel}. -->
       <span class="dock-title">
-        <span class="dock-title-sizer" aria-hidden="true">Blue · bigdoublecontactball · Default</span>
+        <span class="dock-title-sizer" aria-hidden="true"
+          >Blue · bigdoublecontactball · Default</span
+        >
         <span class="dock-title-live">{dockTitleText}</span>
       </span>
     </div>
 
     <div class="dock-tier">
-      <SegmentedControl options={tierOptions} value={editTarget} onchange={selectEditTarget} color={segColor} size="sm" />
+      <SegmentedControl
+        options={tierOptions}
+        value={editTarget}
+        onchange={selectEditTarget}
+        color={segColor}
+        size="sm"
+      />
     </div>
 
     <div class="dock-vals">
-      <label class="dock-input-label">X<input type="number" class="dock-input" bind:value={editX} onchange={handleNumericChange} /></label>
-      <label class="dock-input-label">Y<input type="number" class="dock-input" bind:value={editY} onchange={handleNumericChange} /></label>
+      <label class="dock-input-label"
+        >X<input
+          type="number"
+          class="dock-input"
+          bind:value={editX}
+          onchange={handleNumericChange}
+        /></label
+      >
+      <label class="dock-input-label"
+        >Y<input
+          type="number"
+          class="dock-input"
+          bind:value={editY}
+          onchange={handleNumericChange}
+        /></label
+      >
     </div>
 
-    <span class="dock-hint"><kbd>W A S D</kbd> move · Shift ×4 · Ctrl+Shift ×40 · <kbd>Ctrl+S</kbd> save · live preview
-      {#if hasLocalChanges}<span class="dock-unsaved"><i class="fas fa-circle" aria-hidden="true"></i> Unsaved</span>{/if}
+    <span class="dock-hint"
+      ><kbd>W A S D</kbd> move · Shift ×4 · Ctrl+Shift ×40 · <kbd>Ctrl+S</kbd>
+      save · live preview
+      {#if hasLocalChanges}<span class="dock-unsaved"
+          ><i class="fas fa-circle" aria-hidden="true"></i> Unsaved</span
+        >{/if}
     </span>
 
     <div class="dock-actions">
@@ -596,18 +714,41 @@
         />
       {/if}
       {#if editTarget === "special-json" && diagnostics?.specialJson?.firestoreOverride}
-        <button class="btn btn-delete" onclick={handleDelete} title="Revert to original"><i class="fas fa-undo" aria-hidden="true"></i> Revert</button>
+        <button
+          class="btn btn-delete"
+          onclick={handleDelete}
+          title="Revert to original"
+          ><i class="fas fa-undo" aria-hidden="true"></i> Revert</button
+        >
       {:else if editTarget === "default" && defaultHasValue}
-        <button class="btn btn-delete" onclick={handleDelete} title="Revert to JSON baseline"><i class="fas fa-undo" aria-hidden="true"></i> Revert</button>
+        <button
+          class="btn btn-delete"
+          onclick={handleDelete}
+          title="Revert to JSON baseline"
+          ><i class="fas fa-undo" aria-hidden="true"></i> Revert</button
+        >
       {/if}
       {#if onDone}
         <button class="btn btn-done" onclick={handleDoneClick}>
-          {#if saveState === "saving"}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>{:else}<i class="fas fa-check" aria-hidden="true"></i>{/if}
+          {#if saveState === "saving"}<i
+              class="fas fa-spinner fa-spin"
+              aria-hidden="true"
+            ></i>{:else}<i class="fas fa-check" aria-hidden="true"></i>{/if}
           Done
         </button>
       {:else}
-        <button class="btn btn-save" onclick={handleSave} disabled={!hasLocalChanges}>
-          {#if saveState === "saving"}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>{:else if saveState === "saved"}<i class="fas fa-check" aria-hidden="true"></i>{:else}<i class="fas fa-save" aria-hidden="true"></i>{/if}
+        <button
+          class="btn btn-save"
+          onclick={handleSave}
+          disabled={!hasLocalChanges}
+        >
+          {#if saveState === "saving"}<i
+              class="fas fa-spinner fa-spin"
+              aria-hidden="true"
+            ></i>{:else if saveState === "saved"}<i
+              class="fas fa-check"
+              aria-hidden="true"
+            ></i>{:else}<i class="fas fa-save" aria-hidden="true"></i>{/if}
           Save
         </button>
       {/if}
@@ -625,45 +766,160 @@
     flex-wrap: wrap;
     padding: 12px 18px;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: color-mix(in srgb, var(--c, #58a6ff) 8%, var(--theme-panel-bg, rgba(13, 17, 23, 0.98)));
+    background: color-mix(
+      in srgb,
+      var(--c, #58a6ff) 8%,
+      var(--theme-panel-bg, rgba(13, 17, 23, 0.98))
+    );
   }
-  .editor-dock.idle { background: var(--theme-panel-bg, rgba(13, 17, 23, 0.98)); }
-  .dock-idle { display: flex; align-items: center; gap: 8px; color: var(--theme-text-dim, rgba(255,255,255,0.5)); font-size: var(--font-size-min, 14px); }
-  .dock-head { display: flex; align-items: center; gap: 8px; }
-  .dock-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .editor-dock.idle {
+    background: var(--theme-panel-bg, rgba(13, 17, 23, 0.98));
+  }
+  .dock-idle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-min, 14px);
+  }
+  .dock-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dock-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex: none;
+  }
   /* inline-grid stacks sizer + live text in one cell; cell width = widest of
      the two = the sizer. Live text left-aligns over it. No reflow on switch. */
-  .dock-title { display: inline-grid; font-size: var(--font-size-min, 14px); font-weight: 700; color: var(--theme-text, #fff); }
+  .dock-title {
+    display: inline-grid;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: var(--theme-text, #fff);
+  }
   .dock-title-sizer,
-  .dock-title-live { grid-area: 1 / 1; white-space: nowrap; }
-  .dock-title-sizer { visibility: hidden; }
-  .dock-title-live { font-variant-numeric: tabular-nums; }
+  .dock-title-live {
+    grid-area: 1 / 1;
+    white-space: nowrap;
+  }
+  .dock-title-sizer {
+    visibility: hidden;
+  }
+  .dock-title-live {
+    font-variant-numeric: tabular-nums;
+  }
   /* Wide enough that the equal-width segments fit their longest label
      ("Special JSON") without clipping. Grows into spare
      dock space, wraps to its own full-width row when the dock is cramped. */
-  .dock-tier { flex: 1 1 520px; min-width: 460px; max-width: 680px; }
-  .dock-vals { display: flex; gap: 12px; }
-  .dock-input-label { display: flex; align-items: center; gap: 6px; color: var(--theme-text-dim, rgba(255,255,255,0.6)); font-size: var(--font-size-min, 14px); font-weight: 600; }
+  .dock-tier {
+    flex: 1 1 520px;
+    min-width: 460px;
+    max-width: 680px;
+  }
+  .dock-vals {
+    display: flex;
+    gap: 12px;
+  }
+  .dock-input-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+  }
   .dock-input {
-    width: 76px; min-height: var(--min-touch-target, 44px); padding: 8px 12px;
-    border: 1px solid var(--theme-stroke, rgba(255,255,255,0.15)); border-radius: 10px;
-    background: rgba(0,0,0,0.25); color: var(--theme-text, #fff);
-    font-variant-numeric: tabular-nums; font-size: 18px; font-weight: 700; text-align: center;
+    width: 76px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 8px 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--theme-text, #fff);
+    font-variant-numeric: tabular-nums;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
   }
-  .dock-input:focus { outline: none; border-color: var(--theme-accent, #58a6ff); }
-  .dock-hint { display: flex; align-items: center; gap: 8px; font-size: var(--font-size-compact, 12px); color: var(--theme-text-dim, rgba(255,255,255,0.55)); }
-  .dock-hint kbd { background: var(--theme-card-bg, rgba(255,255,255,0.1)); border: 1px solid var(--theme-stroke, rgba(255,255,255,0.15)); border-radius: 6px; padding: 3px 9px; font-size: var(--font-size-compact, 12px); font-weight: 700; }
-  .dock-unsaved { display: flex; align-items: center; gap: 6px; color: var(--semantic-warning, #f59e0b); }
-  .dock-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .dock-input:focus {
+    outline: none;
+    border-color: var(--theme-accent, #58a6ff);
+  }
+  .dock-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+  }
+  .dock-hint kbd {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+  }
+  .dock-unsaved {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--semantic-warning, #f59e0b);
+  }
+  .dock-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
   .btn {
-    min-height: var(--min-touch-target, 44px); padding: 0 20px; border-radius: 10px;
-    border: 1px solid var(--theme-stroke, rgba(255,255,255,0.15)); font-size: var(--font-size-min, 14px);
-    font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 20px;
+    border-radius: 10px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: inherit;
   }
-.btn-delete { background: transparent; color: var(--semantic-error, #f85149); border-color: color-mix(in srgb, var(--semantic-error, #f85149) 40%, transparent); }
-  .btn-save { background: var(--semantic-success, #238636); color: #fff; border-color: var(--semantic-success, #238636); }
-  .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-delete {
+    background: transparent;
+    color: var(--semantic-error, #f85149);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #f85149) 40%,
+      transparent
+    );
+  }
+  .btn-save {
+    background: var(--semantic-success, #238636);
+    color: #fff;
+    border-color: var(--semantic-success, #238636);
+  }
+  .btn-save:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
   /* One-shot "Done": prominent — it's the primary action for the Fix Arrows flow. */
-  .btn-done { background: var(--semantic-success, #238636); color: #fff; border-color: var(--semantic-success, #238636); font-size: 16px; font-weight: 700; padding: 0 28px; }
-  @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+  .btn-done {
+    background: var(--semantic-success, #238636);
+    color: #fff;
+    border-color: var(--semantic-success, #238636);
+    font-size: 16px;
+    font-weight: 700;
+    padding: 0 28px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .btn {
+      transition: none;
+    }
+  }
 </style>

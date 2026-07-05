@@ -6,10 +6,10 @@
   with deliberate Save/Delete/Cancel actions (no auto-save).
 -->
 <script lang="ts">
-
-import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/get-arrow-adjustment-orchestrator";
+  import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/get-arrow-adjustment-orchestrator";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orchestrator";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import LayerTabBar from "./LayerTabBar.svelte";
@@ -19,7 +19,7 @@ import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/get-
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import type { ArrowAdjustmentOrchestrator } from "../../services/arrow-adjustment-orchestrator";
-import type { SelectedArrowContext } from "../../services/arrow-adjustment-orchestrator";
+  import type { SelectedArrowContext } from "../../services/arrow-adjustment-orchestrator";
   import type { GlobalAdjustmentKey } from "$lib/shared/pictograph/arrow/positioning/global/domain/global-arrow-adjustment";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
@@ -38,7 +38,8 @@ import type { SelectedArrowContext } from "../../services/arrow-adjustment-orche
 
   $effect(() => {
     if (open && !adjustmentOrchestrator) {
-      adjustmentOrchestrator = getArrowAdjustmentOrchestrator() as ArrowAdjustmentOrchestrator;
+      adjustmentOrchestrator =
+        getArrowAdjustmentOrchestrator() as ArrowAdjustmentOrchestrator;
     }
   });
 
@@ -50,10 +51,13 @@ import type { SelectedArrowContext } from "../../services/arrow-adjustment-orche
   let snapshotValue: { x: number; y: number } | null = null;
   let snapshotLayer: 1 | 2 | 3 = 2;
 
-  // Build the SelectedArrowContext from stepData + color
+  // Build the SelectedArrowContext from stepData + color. Invisible
+  // placeholder hands keep the modal inert — adjusting a fabricated motion
+  // would write special-placement overrides keyed off placeholder data
+  // (Wave 0 straggler fix: dead presence gate).
   const selectedArrowContext = $derived.by((): SelectedArrowContext | null => {
     const motion = stepData.motions?.[arrowColor];
-    if (!motion) return null;
+    if (!isVisibleMotion(motion)) return null;
 
     // Build pictograph data from step
     const pictographData: PictographData = {
@@ -74,9 +78,8 @@ import type { SelectedArrowContext } from "../../services/arrow-adjustment-orche
   // Prop types from global settings (matches rendering pipeline)
   const thisPropType = $derived.by(() => {
     const settings = getSettings();
-    const settingsPropType = arrowColor === "blue"
-      ? settings.bluePropType
-      : settings.redPropType;
+    const settingsPropType =
+      arrowColor === "blue" ? settings.bluePropType : settings.redPropType;
     const motion = stepData.motions?.[arrowColor];
     return (settingsPropType ?? motion?.propType)?.toLowerCase() || "staff";
   });
@@ -84,11 +87,12 @@ import type { SelectedArrowContext } from "../../services/arrow-adjustment-orche
   const otherPropType = $derived.by(() => {
     const settings = getSettings();
     const otherColor = arrowColor === "blue" ? "red" : "blue";
-    const settingsPropType = otherColor === "blue"
-      ? settings.bluePropType
-      : settings.redPropType;
+    const settingsPropType =
+      otherColor === "blue" ? settings.bluePropType : settings.redPropType;
     const otherMotion = stepData.motions?.[otherColor];
-    return (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff";
+    return (
+      (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff"
+    );
   });
 
   // Check which layers have values
@@ -135,7 +139,9 @@ import type { SelectedArrowContext } from "../../services/arrow-adjustment-orche
     const _ = globalAdjustmentVersion.version;
     if (!selectedArrowContext || !adjustmentOrchestrator) return null;
     const result = adjustmentOrchestrator.getCurrentAdjustment(
-      selectedArrowContext, thisPropType, otherPropType
+      selectedArrowContext,
+      thisPropType,
+      otherPropType
     );
     if (result && result.layer !== activeLayer) return result.layer;
     return null;
@@ -145,7 +151,10 @@ import type { SelectedArrowContext } from "../../services/arrow-adjustment-orche
   $effect(() => {
     if (open) {
       const defaultLayer = adjustmentOrchestrator
-        ? adjustmentOrchestrator.getDefaultSaveLayer(thisPropType, otherPropType)
+        ? adjustmentOrchestrator.getDefaultSaveLayer(
+            thisPropType,
+            otherPropType
+          )
         : 2;
       activeLayer = defaultLayer;
       hasLocalChanges = false;
@@ -162,7 +171,10 @@ import type { SelectedArrowContext } from "../../services/arrow-adjustment-orche
   function getKeyForLayer(layer: 1 | 2 | 3): GlobalAdjustmentKey | null {
     if (!selectedArrowContext || !adjustmentOrchestrator) return null;
     return adjustmentOrchestrator.generateTargetKey(
-      selectedArrowContext, layer, thisPropType, otherPropType
+      selectedArrowContext,
+      layer,
+      thisPropType,
+      otherPropType
     );
   }
 
@@ -185,7 +197,10 @@ import type { SelectedArrowContext } from "../../services/arrow-adjustment-orche
     }
   }
 
-  async function handleWASDMovement(key: "w" | "a" | "s" | "d", increment: number) {
+  async function handleWASDMovement(
+    key: "w" | "a" | "s" | "d",
+    increment: number
+  ) {
     if (!selectedArrowContext || !adjustmentOrchestrator) return;
 
     const repo = getGlobalAdjustmentRepository();
@@ -377,15 +392,21 @@ import type { SelectedArrowContext } from "../../services/arrow-adjustment-orche
 
   {#snippet footer()}
     <div class="modal-footer">
-      <button class="btn btn-cancel" onclick={handleCancel}>
-        Cancel
-      </button>
+      <button class="btn btn-cancel" onclick={handleCancel}> Cancel </button>
       {#if hasValue || layer1HasValue || layer2HasValue || layer3HasValue}
-        <button class="btn btn-delete" onclick={handleDelete} title="Delete adjustment at this layer">
+        <button
+          class="btn btn-delete"
+          onclick={handleDelete}
+          title="Delete adjustment at this layer"
+        >
           <i class="fas fa-trash-alt" aria-hidden="true"></i> Delete Layer
         </button>
       {/if}
-      <button class="btn btn-save" onclick={handleSave} disabled={!hasLocalChanges && !hasValue}>
+      <button
+        class="btn btn-save"
+        onclick={handleSave}
+        disabled={!hasLocalChanges && !hasValue}
+      >
         <i class="fas fa-check" aria-hidden="true"></i> Save
       </button>
     </div>

@@ -17,7 +17,10 @@
  * docs/superpowers/specs/active/2026-07-02-stepdata-step-absence-encoding-design.md
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createMotionData, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  createMotionData,
+  type MotionData,
+} from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -28,7 +31,10 @@ import {
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { GridLocation, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridLocation,
+  GridPosition,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 
 import { reconcileStepDerived } from "$lib/shared/create/services/sequence-derived-fields";
@@ -45,6 +51,21 @@ import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
 vi.mock("$lib/shared/browse/get-browse-loader", () => ({
   getBrowseLoader: vi.fn(),
 }));
+
+// Wave 0 guards: hydrateSequence's letter/position derivers hit the pictograph
+// dataframe (fetch) — identity-stub them so the gridMode donor loop is the
+// unit under test.
+vi.mock("$lib/shared/navigation/services/letter-deriver", () => ({
+  deriveLettersForSequence: vi.fn(async (s: unknown) => s),
+}));
+vi.mock("$lib/shared/navigation/services/position-deriver", () => ({
+  derivePositionsForSequence: vi.fn(async (s: unknown) => s),
+}));
+import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
+import { analyzeDifficulty } from "$lib/shared/browse/services/sequence-difficulty-calculator";
+import { enrichStepsWithGridPositions } from "$lib/shared/qr/services/compositional-utils";
+import { extractPattern } from "$lib/features/create/shared/services/rotation-direction-pattern-manager";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 function motion(overrides: Partial<MotionData> = {}): MotionData {
   return createMotionData({
@@ -110,7 +131,9 @@ describe("reconcileStepDerived — one-hand steps pass through UNCHANGED", () =>
 // ── sequence-transforms.ts:551 ──────────────────────────────────────────────
 describe("deriveSequenceLetters — one-hand steps keep their letter, no lookup", () => {
   it("skips the dataframe lookup for a step missing a hand", async () => {
-    const handler = { findLetterByMotionConfiguration: vi.fn(async () => Letter.B) };
+    const handler = {
+      findLetterByMotionConfiguration: vi.fn(async () => Letter.B),
+    };
     const out = await deriveSequenceLetters(
       seq([oneHandStep({ letter: Letter.A })]),
       handler as unknown as Parameters<typeof deriveSequenceLetters>[1]
@@ -120,7 +143,9 @@ describe("deriveSequenceLetters — one-hand steps keep their letter, no lookup"
   });
 
   it("DOES look up for a both-hand step (control)", async () => {
-    const handler = { findLetterByMotionConfiguration: vi.fn(async () => Letter.B) };
+    const handler = {
+      findLetterByMotionConfiguration: vi.fn(async () => Letter.B),
+    };
     const out = await deriveSequenceLetters(
       seq([bothHandStep({ letter: Letter.A })]),
       handler as unknown as Parameters<typeof deriveSequenceLetters>[1]
@@ -140,13 +165,22 @@ describe("isSeamlesslyLoopable — absent hand passes vacuously; both absent = n
   });
 
   it("one-hand sequence is loopable when the present hand closes (red vacuously passes)", () => {
-    const step = createStepData({ stepNumber: 1, motions: { [MotionColor.BLUE]: circularBlue } });
+    const step = createStepData({
+      stepNumber: 1,
+      motions: { [MotionColor.BLUE]: circularBlue },
+    });
     expect(isSeamlesslyLoopable(seq([step]))).toBe(true);
   });
 
   it("one-hand sequence is NOT loopable when the present hand does not close (control)", () => {
-    const open = motion({ startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST });
-    const step = createStepData({ stepNumber: 1, motions: { [MotionColor.BLUE]: open } });
+    const open = motion({
+      startLocation: GridLocation.NORTH,
+      endLocation: GridLocation.EAST,
+    });
+    const step = createStepData({
+      stepNumber: 1,
+      motions: { [MotionColor.BLUE]: open },
+    });
     expect(isSeamlesslyLoopable(seq([step]))).toBe(false);
   });
 
@@ -160,21 +194,43 @@ describe("isSeamlesslyLoopable — absent hand passes vacuously; both absent = n
 describe('hashSequenceContent — absent motion hashes as the "-" sentinel', () => {
   it("one-hand and both-hand versions of the same step hash differently", () => {
     const blue = motion();
-    const oneHand = createStepData({ stepNumber: 1, motions: { [MotionColor.BLUE]: blue } });
+    const oneHand = createStepData({
+      stepNumber: 1,
+      motions: { [MotionColor.BLUE]: blue },
+    });
     const bothHands = createStepData({
       id: oneHand.id,
       stepNumber: 1,
-      motions: { [MotionColor.BLUE]: blue, [MotionColor.RED]: motion({ color: MotionColor.RED }) },
+      motions: {
+        [MotionColor.BLUE]: blue,
+        [MotionColor.RED]: motion({ color: MotionColor.RED }),
+      },
     });
-    const h1 = hashSequenceContent({ word: "W", steps: [oneHand], startPosition: undefined });
-    const h2 = hashSequenceContent({ word: "W", steps: [bothHands], startPosition: undefined });
+    const h1 = hashSequenceContent({
+      word: "W",
+      steps: [oneHand],
+      startPosition: undefined,
+    });
+    const h2 = hashSequenceContent({
+      word: "W",
+      steps: [bothHands],
+      startPosition: undefined,
+    });
     expect(h1).not.toBe(h2); // a bridge that fabricates the red motion re-keys render caches
   });
 
   it("absence hashes deterministically (sentinel is stable)", () => {
     const step = oneHandStep();
-    const a = hashSequenceContent({ word: "W", steps: [step], startPosition: undefined });
-    const b = hashSequenceContent({ word: "W", steps: [step], startPosition: undefined });
+    const a = hashSequenceContent({
+      word: "W",
+      steps: [step],
+      startPosition: undefined,
+    });
+    const b = hashSequenceContent({
+      word: "W",
+      steps: [step],
+      startPosition: undefined,
+    });
     expect(a).toBe(b);
   });
 });
@@ -197,11 +253,15 @@ describe("deriveTnDFromPictograph — absent hand yields NULL_RESULT", () => {
 // ── turns-tuple-generator.ts:47 ─────────────────────────────────────────────
 describe('TurnsTupleGenerator — absent hand falls back to "(0, 0)"', () => {
   it('returns the generic "(0, 0)" tuple for a one-hand pictograph', () => {
-    expect(turnsTupleGenerator.generateTurnsTuple(oneHandStep())).toBe("(0, 0)");
+    expect(turnsTupleGenerator.generateTurnsTuple(oneHandStep())).toBe(
+      "(0, 0)"
+    );
   });
 
   it("returns a letter-type-specific tuple for a both-hand pictograph (control)", () => {
-    const tuple = turnsTupleGenerator.generateTurnsTuple(bothHandStep({ letter: Letter.A }));
+    const tuple = turnsTupleGenerator.generateTurnsTuple(
+      bothHandStep({ letter: Letter.A })
+    );
     expect(tuple).not.toBe("(0, 0)");
   });
 });
@@ -216,7 +276,10 @@ describe("interpolatePropAngles — absent hand animates NOTHING (solo path)", (
   });
 
   it("zero-hand step: frame is invalid (blank beat, nothing animates)", () => {
-    const out = interpolatePropAngles(createStepData({ stepNumber: 1, motions: {} }), 0.5);
+    const out = interpolatePropAngles(
+      createStepData({ stepNumber: 1, motions: {} }),
+      0.5
+    );
     expect(out.isValid).toBe(false);
     expect(out.blueAngles).toBeNull();
     expect(out.redAngles).toBeNull();
@@ -286,5 +349,143 @@ describe("ensureMotionData — motion absence triggers the gallery fetch", () =>
     const out = await ensureMotionData(s);
     expect(out).toBe(s);
     expect(loadFullSequenceData).not.toHaveBeenCalled();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WAVE 0 — straggler re-encodes (2026-07-05). The checkpoint package
+// (2026-07-05-stepdata-migration-checkpoint-package.md §1c) found these sites
+// still keyed on raw presence after the both-required flip; each guard below
+// locks the restored absence semantics.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function invisibleMotion(overrides: Partial<MotionData> = {}): MotionData {
+  return motion({
+    motionType: MotionType.STATIC,
+    rotationDirection: RotationDirection.NO_ROTATION,
+    turns: 0,
+    isVisible: false,
+    ...overrides,
+  });
+}
+
+// ── navigation/sequence-hydrator.ts gridMode donor ──────────────────────────
+describe("hydrateSequence — placeholder beats cannot donate gridMode", () => {
+  it("skips a leading blank beat and derives gridMode from the first VISIBLE beat", async () => {
+    const blankBoxish = createStepData({
+      stepNumber: 1,
+      motions: {
+        [MotionColor.BLUE]: invisibleMotion({
+          startLocation: GridLocation.NORTHEAST,
+          endLocation: GridLocation.NORTHEAST,
+        }),
+        [MotionColor.RED]: invisibleMotion({
+          color: MotionColor.RED,
+          startLocation: GridLocation.SOUTHWEST,
+          endLocation: GridLocation.SOUTHWEST,
+        }),
+      },
+    });
+    const realDiamond = bothHandStep({ stepNumber: 2 });
+    const out = await hydrateSequence(seq([blankBoxish, realDiamond]), {
+      loopDetector: null,
+    });
+    // Placeholder locations are intercardinal (box-implying); the real beat is
+    // cardinal (diamond). The donor must be the real beat.
+    expect(out.gridMode).toBe(GridMode.DIAMOND);
+  });
+
+  it("all-placeholder sequence leaves gridMode unset (no fabricated donor)", async () => {
+    const blank = createStepData({
+      stepNumber: 1,
+      motions: {
+        [MotionColor.BLUE]: invisibleMotion(),
+        [MotionColor.RED]: invisibleMotion({ color: MotionColor.RED }),
+      },
+    });
+    const out = await hydrateSequence(seq([blank]), { loopDetector: null });
+    expect(out.gridMode).toBeUndefined();
+  });
+});
+
+// ── browse/sequence-difficulty-calculator.ts ────────────────────────────────
+describe("analyzeDifficulty — invisible placeholders don't inflate the badge", () => {
+  const calmVisible = () =>
+    motion({
+      turns: 0,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.OUT,
+    });
+
+  it("an invisible CLOCK-orientation placeholder does not trigger level 3", () => {
+    const step = createStepData({
+      stepNumber: 1,
+      motions: {
+        [MotionColor.BLUE]: calmVisible(),
+        [MotionColor.RED]: invisibleMotion({
+          color: MotionColor.RED,
+          startOrientation: Orientation.CLOCK,
+          endOrientation: Orientation.CLOCK,
+        }),
+      },
+    });
+    expect(analyzeDifficulty([step])).toEqual({ level: 1, trigger: "none" });
+  });
+
+  it("the SAME motion visible DOES trigger level 3 (control: the gate is visibility)", () => {
+    const step = createStepData({
+      stepNumber: 1,
+      motions: {
+        [MotionColor.BLUE]: calmVisible(),
+        [MotionColor.RED]: motion({
+          color: MotionColor.RED,
+          turns: 0,
+          startOrientation: Orientation.CLOCK,
+          endOrientation: Orientation.CLOCK,
+        }),
+      },
+    });
+    expect(analyzeDifficulty([step]).level).toBe(3);
+  });
+});
+
+// ── qr/compositional-utils.ts grid-position enrichment ──────────────────────
+describe("enrichStepsWithGridPositions — placeholder beats keep null positions", () => {
+  it("does not fabricate GridPositions from placeholder locations", () => {
+    const blank = createStepData({
+      stepNumber: 1,
+      motions: {
+        [MotionColor.BLUE]: invisibleMotion(),
+        [MotionColor.RED]: invisibleMotion({ color: MotionColor.RED }),
+      },
+    });
+    enrichStepsWithGridPositions([blank]);
+    expect(blank.startPosition).toBeNull();
+    expect(blank.endPosition).toBeNull();
+  });
+
+  it("DOES derive for a visible both-hand step (control)", () => {
+    const step = bothHandStep();
+    enrichStepsWithGridPositions([step]);
+    expect(step.startPosition).not.toBeNull();
+    expect(step.endPosition).not.toBeNull();
+  });
+});
+
+// ── create/rotation-direction-pattern-manager.ts extract side ───────────────
+describe("extractPattern — placeholder hands extract as null (skip slot), not 'none'", () => {
+  it("invisible hand yields null; visible cw hand yields 'cw'", () => {
+    const step = createStepData({
+      stepNumber: 1,
+      motions: {
+        [MotionColor.BLUE]: motion(), // PRO cw, turns 1 -> "cw"
+        [MotionColor.RED]: invisibleMotion({ color: MotionColor.RED }),
+      },
+    });
+    const pattern = extractPattern(seq([step]), "wave0-guard");
+    expect(pattern.entries[0]?.blue).toBe("cw");
+    // Before the fix this was "none" (placeholder STATIC@0), permanently
+    // disabling nothing — but baking a fabricated slot into saved patterns.
+    expect(pattern.entries[0]?.red).toBeNull();
   });
 });

@@ -91,8 +91,16 @@ export function extractPattern(
     const beat = sequence.steps[i];
     if (!beat) continue;
 
-    const blueMotion = beat.motions?.blue;
-    const redMotion = beat.motions?.red;
+    // Invisible placeholders must extract as null ("skip this hand" in
+    // applyPattern) — otherwise placeholder rotation values get baked into
+    // saved patterns. Mirrors turn-pattern-manager's extract side
+    // (Wave 0 straggler fix).
+    const blueMotion = isVisibleMotion(beat.motions?.blue)
+      ? beat.motions.blue
+      : undefined;
+    const redMotion = isVisibleMotion(beat.motions?.red)
+      ? beat.motions.red
+      : undefined;
 
     entries.push({
       stepIndex: i,
@@ -280,9 +288,7 @@ export async function loadPatterns(
     });
   });
 
-  logger.log(
-    `Loaded ${patterns.length} rotation patterns for user ${userId}`
-  );
+  logger.log(`Loaded ${patterns.length} rotation patterns for user ${userId}`);
   return patterns;
 }
 
@@ -327,14 +333,26 @@ export function validateForSequence(
 
 // CW hand orbital pairs: startLocation → endLocation traces a clockwise arc
 const CW_PAIRS: [string, string][] = [
-  ["s", "w"], ["w", "n"], ["n", "e"], ["e", "s"],
-  ["ne", "se"], ["se", "sw"], ["sw", "nw"], ["nw", "ne"],
+  ["s", "w"],
+  ["w", "n"],
+  ["n", "e"],
+  ["e", "s"],
+  ["ne", "se"],
+  ["se", "sw"],
+  ["sw", "nw"],
+  ["nw", "ne"],
 ];
 
 // CCW hand orbital pairs
 const CCW_PAIRS: [string, string][] = [
-  ["w", "s"], ["n", "w"], ["e", "n"], ["s", "e"],
-  ["ne", "nw"], ["nw", "sw"], ["sw", "se"], ["se", "ne"],
+  ["w", "s"],
+  ["n", "w"],
+  ["e", "n"],
+  ["s", "e"],
+  ["ne", "nw"],
+  ["nw", "sw"],
+  ["sw", "se"],
+  ["se", "ne"],
 ];
 
 function deriveHandOrbitalDirection(
@@ -493,10 +511,7 @@ function applyRotationToMotion(
     rotationDirection: newRotationDirection,
     motionType: newMotionType,
   });
-  const newEndOrientation = calculateEndOrientation(
-    tempMotion,
-    color
-  );
+  const newEndOrientation = calculateEndOrientation(tempMotion, color);
 
   return {
     motion: createMotionData({
@@ -514,7 +529,10 @@ function propagateOrientations(steps: StepData[]): void {
     const nextStep = steps[i + 1];
     if (!currentStep || !nextStep) continue;
 
-    if (isVisibleMotion(currentStep.motions?.blue) && isVisibleMotion(nextStep.motions?.blue)) {
+    if (
+      isVisibleMotion(currentStep.motions?.blue) &&
+      isVisibleMotion(nextStep.motions?.blue)
+    ) {
       const currentEndOrientation = currentStep.motions.blue.endOrientation;
       const nextStartOrientation = nextStep.motions.blue.startOrientation;
 
@@ -535,7 +553,10 @@ function propagateOrientations(steps: StepData[]): void {
       }
     }
 
-    if (isVisibleMotion(currentStep.motions?.red) && isVisibleMotion(nextStep.motions?.red)) {
+    if (
+      isVisibleMotion(currentStep.motions?.red) &&
+      isVisibleMotion(nextStep.motions?.red)
+    ) {
       const currentEndOrientation = currentStep.motions.red.endOrientation;
       const nextStartOrientation = nextStep.motions.red.startOrientation;
 
@@ -570,10 +591,7 @@ function updateMotionStartOrientation(
     startOrientation: newStartOrientation,
   });
 
-  const newEndOrientation = calculateEndOrientation(
-    tempMotion,
-    color
-  );
+  const newEndOrientation = calculateEndOrientation(tempMotion, color);
 
   return createMotionData({
     ...motion,

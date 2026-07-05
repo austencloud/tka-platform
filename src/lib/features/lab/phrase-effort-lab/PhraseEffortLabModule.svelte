@@ -17,12 +17,16 @@
   import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { EffortId } from "$lib/shared/effort/domain/effort-types";
-  import type { EffortTimeline, EffortPhrase } from "./domain/effort-timeline-types";
+  import type {
+    EffortTimeline,
+    EffortPhrase,
+  } from "./domain/effort-timeline-types";
   import { findPhraseAtBeat } from "./domain/effort-timeline-types";
   import { interpolatePhrase } from "$lib/shared/phrase-effort-lab/services/phrase-interpolator";
 
   import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
   import { mapTimePositionToBeat } from "$lib/shared/animation-engine/services/step-calculator";
+  import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -183,11 +187,7 @@
     let localProgress: number;
 
     if (activePhrase) {
-      const result = interpolatePhrase(
-        activePhrase,
-        beat1Based,
-        steps.length,
-      );
+      const result = interpolatePhrase(activePhrase, beat1Based, steps.length);
       stepIndex = result.stepIndex;
       localProgress = result.localProgress;
 
@@ -198,15 +198,16 @@
         // Check if we're near the END of this phrase (approaching next phrase)
         const phraseEnd = activePhrase.endStep + 1; // exclusive end
         const distToEnd = phraseEnd - beat1Based;
-        const nextPhrase = distToEnd <= halfBlend ? findNextPhrase(beat1Based) : null;
+        const nextPhrase =
+          distToEnd <= halfBlend ? findNextPhrase(beat1Based) : null;
 
         if (nextPhrase && distToEnd > 0) {
           // Blend: lerp between current phrase result and next phrase result
-          const blendT = 1 - (distToEnd / halfBlend); // 0 at blend start → 1 at boundary
+          const blendT = 1 - distToEnd / halfBlend; // 0 at blend start → 1 at boundary
           const nextResult = interpolatePhrase(
             nextPhrase,
             beat1Based,
-            steps.length,
+            steps.length
           );
           // Lerp step positions
           const posA = stepIndex + localProgress;
@@ -230,7 +231,7 @@
             const prevResult = interpolatePhrase(
               prevPhrase,
               beat1Based,
-              steps.length,
+              steps.length
             );
             const posA = prevResult.stepIndex + prevResult.localProgress;
             const posB = stepIndex + localProgress;
@@ -248,7 +249,14 @@
     }
 
     const stepData = steps[stepIndex];
-    if (!stepData?.motions?.blue && !stepData?.motions?.red) return;
+    // Blank beats (both hands invisible placeholders since the 2026-07-02
+    // both-required flip) freeze the lab state — same as when the motions
+    // were absent outright (Wave 0 straggler fix: dead presence gate).
+    if (
+      !isVisibleMotion(stepData?.motions?.blue) &&
+      !isVisibleMotion(stepData?.motions?.red)
+    )
+      return;
 
     lab.currentStepData = stepData;
     lab.currentStep = stepIndex + 1;
@@ -308,7 +316,10 @@
 
   // ─── Presets ───────────────────────────────────────────────────────
   /** 4x4 preset: divide beats into 4 equal sections, assign efforts */
-  const PRESET_4X4_COMBOS: { label: string; efforts: [EffortId, EffortId, EffortId, EffortId] }[] = [
+  const PRESET_4X4_COMBOS: {
+    label: string;
+    efforts: [EffortId, EffortId, EffortId, EffortId];
+  }[] = [
     { label: "Laban Cycle", efforts: ["glide", "dab", "press", "punch"] },
     { label: "Build Up", efforts: ["glide", "press", "dab", "punch"] },
     { label: "Wave", efforts: ["press", "glide", "press", "glide"] },
@@ -335,7 +346,7 @@
       const firestore = await getFirestoreInstance();
       const sequenceRef = doc(
         firestore,
-        `users/${user.uid}/sequences/${sequence.id}`,
+        `users/${user.uid}/sequences/${sequence.id}`
       );
       // JSON round-trip strips Svelte $state proxies - Firestore rejects them
       // and structuredClone can't handle proxy Symbols either.
@@ -343,8 +354,10 @@
       const propConfig = sequence.creatorIntent?.propConfig
         ? JSON.parse(JSON.stringify(sequence.creatorIntent.propConfig))
         : {
-            bluePropType: (settingsService.settings.bluePropType || PropType.STAFF) as PropType,
-            redPropType: (settingsService.settings.redPropType || PropType.STAFF) as PropType,
+            bluePropType: (settingsService.settings.bluePropType ||
+              PropType.STAFF) as PropType,
+            redPropType: (settingsService.settings.redPropType ||
+              PropType.STAFF) as PropType,
             catDogMode: settingsService.settings.catDogMode ?? false,
           };
       const updatedIntent = {
@@ -359,7 +372,7 @@
           creatorIntent: updatedIntent,
           updatedAt: serverTimestamp(),
         },
-        { merge: true },
+        { merge: true }
       );
 
       lab.sequence = {
@@ -394,7 +407,7 @@
         type="button"
       >
         <i class="fas fa-search" aria-hidden="true"></i>
-        {lab.sequence ? (lab.sequenceWord || "Sequence") : "Pick Sequence"}
+        {lab.sequence ? lab.sequenceWord || "Sequence" : "Pick Sequence"}
       </button>
 
       {#if lab.sequence}
@@ -487,7 +500,9 @@
     <div class="palette-section">
       <EffortPalette
         selectedEffort={lab.selectedEffort}
-        onSelect={(effort) => { lab.selectedEffort = effort; }}
+        onSelect={(effort) => {
+          lab.selectedEffort = effort;
+        }}
       />
     </div>
 
@@ -556,14 +571,21 @@
       />
 
       {#if lab.timeline.phrases.length > 0}
-        <PhraseEasingCurveOverlay timeline={lab.timeline} totalSteps={lab.totalSteps} />
+        <PhraseEasingCurveOverlay
+          timeline={lab.timeline}
+          totalSteps={lab.totalSteps}
+        />
       {/if}
     </div>
 
     <!-- Transition toggle -->
     <div class="transition-bar">
       <span class="transition-label">Transition:</span>
-      <div class="transition-toggle" role="radiogroup" aria-label="Transition mode">
+      <div
+        class="transition-toggle"
+        role="radiogroup"
+        aria-label="Transition mode"
+      >
         <button
           class="toggle-btn"
           class:active={lab.timeline.transition === "hard"}
@@ -686,7 +708,8 @@
 
   .save-btn {
     background: color-mix(in srgb, var(--phrase-accent) 15%, transparent);
-    border: 1.5px solid color-mix(in srgb, var(--phrase-accent) 30%, transparent);
+    border: 1.5px solid
+      color-mix(in srgb, var(--phrase-accent) 30%, transparent);
     color: var(--phrase-accent-text);
   }
 
@@ -701,14 +724,30 @@
   }
 
   .save-btn.saved {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 15%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 30%,
+      transparent
+    );
     color: color-mix(in srgb, var(--semantic-success, #22c55e) 70%, white);
   }
 
   .save-btn.error {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 30%,
+      transparent
+    );
     color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, white);
   }
 
@@ -740,7 +779,8 @@
     font-weight: 600;
     border-radius: 10px;
     background: color-mix(in srgb, var(--phrase-accent) 20%, transparent);
-    border: 1.5px solid color-mix(in srgb, var(--phrase-accent) 40%, transparent);
+    border: 1.5px solid
+      color-mix(in srgb, var(--phrase-accent) 40%, transparent);
     color: var(--phrase-accent-text);
     cursor: pointer;
     transition: all var(--duration-fast, 100ms) ease;
@@ -826,8 +866,16 @@
 
   .delete-btn:hover {
     color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, white);
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 30%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      transparent
+    );
   }
 
   /* ─── Restart Button ─────────────────────────────────────────── */

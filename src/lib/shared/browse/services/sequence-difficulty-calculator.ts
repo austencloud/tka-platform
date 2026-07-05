@@ -7,6 +7,7 @@
  */
 
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   Orientation,
   MotionColor,
@@ -29,8 +30,14 @@ export function analyzeDifficulty(steps: StepData[]): DifficultyAnalysis {
   for (const step of steps) {
     if (!step.motions) continue;
 
-    const blueMotion = step.motions[MotionColor.BLUE];
-    const redMotion = step.motions[MotionColor.RED];
+    // Invisible placeholders (blank beats / stripped hands after the
+    // 2026-07-02 both-required flip) must not contribute — a decode-path
+    // placeholder carrying a non-radial last-known orientation would
+    // silently inflate the difficulty badge (Wave 0 straggler fix).
+    const blueRaw = step.motions[MotionColor.BLUE];
+    const redRaw = step.motions[MotionColor.RED];
+    const blueMotion = isVisibleMotion(blueRaw) ? blueRaw : undefined;
+    const redMotion = isVisibleMotion(redRaw) ? redRaw : undefined;
 
     if (hasNonRadialOrientation(blueMotion, redMotion)) {
       hasNonRadial = true;
@@ -51,16 +58,20 @@ export function calculateDifficultyLevel(steps: StepData[]): number {
 
 export function levelToString(level: number): string {
   switch (level) {
-    case 1: return "beginner";
-    case 2: return "intermediate";
-    case 3: return "advanced";
-    default: return "beginner";
+    case 1:
+      return "beginner";
+    case 2:
+      return "intermediate";
+    case 3:
+      return "advanced";
+    default:
+      return "beginner";
   }
 }
 
 function hasNonRadialOrientation(
   blueMotion: unknown,
-  redMotion: unknown,
+  redMotion: unknown
 ): boolean {
   const blueObj = blueMotion as Record<string, unknown> | undefined;
   const redObj = redMotion as Record<string, unknown> | undefined;
@@ -74,7 +85,7 @@ function hasNonRadialOrientation(
 
   return orientationsToCheck.some(
     (orientation) =>
-      orientation === Orientation.CLOCK || orientation === Orientation.COUNTER,
+      orientation === Orientation.CLOCK || orientation === Orientation.COUNTER
   );
 }
 

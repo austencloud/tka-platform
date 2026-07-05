@@ -13,6 +13,7 @@ import { Period } from "$lib/shared/foundation/domain/models/generation/circular
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 /** The executor interface both encoder and decoder need */
 export interface LOOPExecutorLike {
@@ -29,39 +30,33 @@ export async function getLoopExecutor(
 ): Promise<LOOPExecutorLike | null> {
   switch (tag) {
     case "sr": {
-      const mod = await import(
-        "$lib/features/create/generate/circular/services/strict-rotated-loop-executor"
-      );
+      const mod =
+        await import("$lib/features/create/generate/circular/services/strict-rotated-loop-executor");
       return mod.strictRotatedLOOPExecutor;
     }
     case "sm": {
-      const mod = await import(
-        "$lib/features/create/generate/circular/services/strict-mirrored-loop-executor"
-      );
+      const mod =
+        await import("$lib/features/create/generate/circular/services/strict-mirrored-loop-executor");
       return mod.strictMirroredLOOPExecutor;
     }
     case "sf": {
-      const mod = await import(
-        "$lib/features/create/generate/circular/services/strict-flipped-loop-executor"
-      );
+      const mod =
+        await import("$lib/features/create/generate/circular/services/strict-flipped-loop-executor");
       return mod.strictFlippedLOOPExecutor;
     }
     case "ss": {
-      const mod = await import(
-        "$lib/features/create/generate/circular/services/strict-swapped-loop-executor"
-      );
+      const mod =
+        await import("$lib/features/create/generate/circular/services/strict-swapped-loop-executor");
       return mod.strictSwappedLOOPExecutor;
     }
     case "si": {
-      const mod = await import(
-        "$lib/features/create/generate/circular/services/strict-inverted-loop-executor"
-      );
+      const mod =
+        await import("$lib/features/create/generate/circular/services/strict-inverted-loop-executor");
       return mod.strictInvertedLOOPExecutor;
     }
     case "rw": {
-      const mod = await import(
-        "$lib/features/create/generate/circular/services/rewound-loop-executor"
-      );
+      const mod =
+        await import("$lib/features/create/generate/circular/services/rewound-loop-executor");
       return mod.rewoundLOOPExecutor;
     }
     default:
@@ -88,8 +83,14 @@ export function getPeriodForTag(tag: string): Period {
  */
 export function enrichStepsWithGridPositions(steps: StepData[]): void {
   for (const step of steps) {
-    const blue = step.motions?.[MotionColor.BLUE];
-    const red = step.motions?.[MotionColor.RED];
+    // Only really-there hands may donate positions. Decode synthesizes
+    // invisible placeholders for empty segments; deriving GridPositions from
+    // placeholder locations would hand LOOP executors fabricated positions
+    // for blank beats (Wave 0 straggler fix, presence register site C).
+    const blueRaw = step.motions?.[MotionColor.BLUE];
+    const redRaw = step.motions?.[MotionColor.RED];
+    const blue = isVisibleMotion(blueRaw) ? blueRaw : undefined;
+    const red = isVisibleMotion(redRaw) ? redRaw : undefined;
 
     // StepData fields are readonly, but we need to set them here because
     // the flat encoder strips GridPosition and the executor needs it.
@@ -97,11 +98,10 @@ export function enrichStepsWithGridPositions(steps: StepData[]): void {
 
     if (blue?.startLocation && red?.startLocation) {
       try {
-        mutable.startPosition =
-          getGridPositionFromLocations(
-            blue.startLocation as GridLocation,
-            red.startLocation as GridLocation
-          );
+        mutable.startPosition = getGridPositionFromLocations(
+          blue.startLocation as GridLocation,
+          red.startLocation as GridLocation
+        );
       } catch {
         // Unknown location combo - leave null
       }
@@ -109,11 +109,10 @@ export function enrichStepsWithGridPositions(steps: StepData[]): void {
 
     if (blue?.endLocation && red?.endLocation) {
       try {
-        mutable.endPosition =
-          getGridPositionFromLocations(
-            blue.endLocation as GridLocation,
-            red.endLocation as GridLocation
-          );
+        mutable.endPosition = getGridPositionFromLocations(
+          blue.endLocation as GridLocation,
+          red.endLocation as GridLocation
+        );
       } catch {
         // Unknown location combo - leave null
       }

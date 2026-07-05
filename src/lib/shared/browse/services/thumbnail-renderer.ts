@@ -17,7 +17,11 @@ import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/service
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
 import type { ILOOPDetector } from "$lib/shared/create/services/ILOOPDetector";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import type { ThumbnailRenderInput, CompositionDefaults } from "$lib/shared/browse/services/thumbnail-key-deriver";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type {
+  ThumbnailRenderInput,
+  CompositionDefaults,
+} from "$lib/shared/browse/services/thumbnail-key-deriver";
 import type { QRCodeGenerator } from "$lib/shared/qr/services/qr-code-generator";
 
 /** Result of a thumbnail render. `qrConsistent` is false only when a QR was
@@ -87,12 +91,19 @@ export class ThumbnailRenderer {
     signal?: AbortSignal
   ): Promise<ThumbnailRenderResult> {
     // Load full sequence data if needed (fetches from user's source doc)
-    const loadedSequence = await this.ensureFullSequenceData(sequence, input.sequenceName);
+    const loadedSequence = await this.ensureFullSequenceData(
+      sequence,
+      input.sequenceName
+    );
 
     // Resolve loopType: loaded doc -> index fallback -> runtime detection
     let resolvedLoopType = loadedSequence.loopType ?? sequence.loopType ?? null;
 
-    if (!resolvedLoopType && loadedSequence.steps && loadedSequence.steps.length >= 2) {
+    if (
+      !resolvedLoopType &&
+      loadedSequence.steps &&
+      loadedSequence.steps.length >= 2
+    ) {
       try {
         const detection = this.loopDetector.detectLOOPType(loadedSequence);
         resolvedLoopType = detection.loopType;
@@ -130,15 +141,22 @@ export class ThumbnailRenderer {
       try {
         const generator = this.qrCodeGeneratorFactory?.();
         if (generator) {
-          const qrImage = await generator.generateAsImage(sequenceWithStartPos, QR_BITMAP_SIZE, {
-            darkMode: !input.lightMode,
-            bluePropType: input.bluePropType,
-            redPropType: input.redPropType,
-          });
+          const qrImage = await generator.generateAsImage(
+            sequenceWithStartPos,
+            QR_BITMAP_SIZE,
+            {
+              darkMode: !input.lightMode,
+              bluePropType: input.bluePropType,
+              redPropType: input.redPropType,
+            }
+          );
           qrBitmap = await createImageBitmap(qrImage);
         }
       } catch (err) {
-        console.debug("[ThumbnailRenderer] QR pre-render failed; rendering without QR:", err);
+        console.debug(
+          "[ThumbnailRenderer] QR pre-render failed; rendering without QR:",
+          err
+        );
         qrBitmap = null;
       }
     }
@@ -157,7 +175,7 @@ export class ThumbnailRenderer {
       },
       onProgress,
       signal,
-      qrBitmap,
+      qrBitmap
     );
 
     // QR-consistent unless a QR was wanted but its bitmap couldn't be produced.
@@ -183,32 +201,42 @@ export class ThumbnailRenderer {
       );
     }
 
-    const loadedSequence = await this.browseLoader.loadFullSequenceData(sequenceName, sequence.id);
+    const loadedSequence = await this.browseLoader.loadFullSequenceData(
+      sequenceName,
+      sequence.id
+    );
     if (!loadedSequence) {
       throw new Error(`Sequence not found: ${sequenceName}`);
     }
 
     // Check if loaded sequence actually has steps (guards against orphaned data)
     if (!loadedSequence.steps || loadedSequence.steps.length === 0) {
-      throw new Error(`ORPHANED_SEQUENCE: "${sequenceName}" exists in index but has no step data`);
+      throw new Error(
+        `ORPHANED_SEQUENCE: "${sequenceName}" exists in index but has no step data`
+      );
     }
 
     return loadedSequence;
   }
 
   private ensureStartPosition(sequence: SequenceData): SequenceData {
+    // A start position whose hands are invisible placeholders is NOT valid —
+    // it must be repaired from the first beat, same as a missing one
+    // (Wave 0 straggler fix: presence check → visibility check).
     const existingStartPos = sequence.startPosition;
     const hasValidStartPosition =
-      existingStartPos?.motions?.blue &&
-      existingStartPos.motions?.red;
+      isVisibleMotion(existingStartPos?.motions?.blue) &&
+      isVisibleMotion(existingStartPos?.motions?.red);
 
     if (hasValidStartPosition) {
       return sequence;
     }
 
-    // Try to derive from first beat
+    // Try to derive from first beat — placeholder hands can't donate.
     const firstStep = sequence.steps?.[0];
     const firstStepHasValidMotions =
+      isVisibleMotion(firstStep?.motions?.blue) &&
+      isVisibleMotion(firstStep?.motions?.red) &&
       firstStep?.motions?.blue?.startLocation &&
       firstStep?.motions?.red?.startLocation;
 
@@ -217,7 +245,8 @@ export class ThumbnailRenderer {
     }
 
     try {
-      const derivedStartPos = this.startPositionDeriver.deriveFromFirstBeat(firstStep);
+      const derivedStartPos =
+        this.startPositionDeriver.deriveFromFirstBeat(firstStep);
       return {
         ...sequence,
         startPosition: derivedStartPos,
@@ -254,11 +283,13 @@ export class ThumbnailRenderer {
       quality: options?.quality ?? DEFAULT_QUALITY,
 
       // Composition settings (use input or fall back to variant defaults)
-      includeStartPosition: input.includeStartPosition ?? defaults.includeStartPosition,
+      includeStartPosition:
+        input.includeStartPosition ?? defaults.includeStartPosition,
       startPositionLayout: input.startPositionLayout ?? "row",
       addStepNumbers: input.addStepNumbers ?? defaults.addStepNumbers,
       addWord: input.addWord ?? defaults.addWord,
-      addDifficultyLevel: input.addDifficultyLevel ?? defaults.addDifficultyLevel,
+      addDifficultyLevel:
+        input.addDifficultyLevel ?? defaults.addDifficultyLevel,
       addUserInfo: input.addUserInfo ?? defaults.addUserInfo,
       userName: input.userName ?? "",
 
@@ -286,9 +317,21 @@ export class ThumbnailRenderer {
       blueVisible: input.visibility?.showBlueMotion ?? true,
       redVisible: input.visibility?.showRedMotion ?? true,
 
-      propTypeOverride: isHandPath ? undefined : (isCatDog ? undefined : (input.bluePropType || input.redPropType || PropType.STAFF)),
-      bluePropTypeOverride: isHandPath ? undefined : (isCatDog ? (input.bluePropType || PropType.STAFF) : undefined),
-      redPropTypeOverride: isHandPath ? undefined : (isCatDog ? (input.redPropType || PropType.STAFF) : undefined),
+      propTypeOverride: isHandPath
+        ? undefined
+        : isCatDog
+          ? undefined
+          : input.bluePropType || input.redPropType || PropType.STAFF,
+      bluePropTypeOverride: isHandPath
+        ? undefined
+        : isCatDog
+          ? input.bluePropType || PropType.STAFF
+          : undefined,
+      redPropTypeOverride: isHandPath
+        ? undefined
+        : isCatDog
+          ? input.redPropType || PropType.STAFF
+          : undefined,
 
       // Visibility settings - respect user preferences from input
       visibilityOverrides: {
