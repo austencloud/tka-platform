@@ -250,3 +250,40 @@ Approve (or amend) the Option-C wave plan in §2. Wave 0 (8 straggler sites) and
 (53-file widening) are independently shippable, each gated by the §3 net. Nothing in this
 package changed migration-relevant behavior: the harness is additive, and the parity nets
 prove HEAD is a clean baseline.
+
+---
+
+## 5. WAVE 0 EXECUTED — 2026-07-05 (approved by Austen; Waves 1–2 remain gated)
+
+Commit `cd2b8ee349` re-encoded all 8 straggler sites from §1c onto the canonical
+`isVisibleMotion` predicate:
+
+| Site                                                            | Fix                                                                                                                                    |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `navigation/sequence-hydrator.ts` gridMode donor                | Placeholder beats skipped; first VISIBLE beat donates. All-placeholder → gridMode stays unset (no fabricated donor).                   |
+| `browse/sequence-difficulty-calculator.ts`                      | Invisible motions excluded from orientation/turns scans — placeholder CLOCK orientations can no longer inflate the badge.              |
+| `qr/compositional-utils.ts` `enrichStepsWithGridPositions`      | Placeholder beats keep null GridPositions (LOOP executors see them unset, as pre-migration).                                           |
+| `create/rotation-direction-pattern-manager.ts` `extractPattern` | Placeholder hands extract as `null` (skip slot), not `"none"` — mirrors turn-pattern-manager's fixed extract side.                     |
+| `browse/thumbnail-renderer.ts` `ensureStartPosition`            | Placeholder-bearing start positions count as invalid (repair runs); placeholder first beats can't donate the repair.                   |
+| `PhraseEffortLabModule.svelte` playback tick                    | Blank-step freeze gate fires again for placeholder beats.                                                                              |
+| `ArrowLayerModal.svelte` / `PipelineEditorDock.svelte`          | Arrow-adjust surfaces inert for placeholder hands — WASD can no longer write special-placement overrides keyed off fabricated motions. |
+
+Guardrail evidence (all run 2026-07-05, post-fix):
+
+- **Render parity: 360/360, 0 drifted, worst 0%** vs a baseline recaptured at pre-change
+  HEAD (mandatory recapture — `63a3840053` changed reversal display after the previous
+  baseline). Zero diffs is the EXPECTED result: the corpus is real both-handed sequences;
+  the fixes bind only where invisible placeholders flow. No cell-by-cell explanations owed.
+- **Presence guards: 28/28** (21 original + 7 new Wave-0 tripwires covering the four
+  pure-function sites, each with a visible-motion control). The three component sites
+  (PhraseEffortLab, ArrowLayerModal, PipelineEditorDock) and the private
+  `ensureStartPosition` carry the identical predicate change, verified by typecheck —
+  component-test scaffolding for lab/modal internals was deliberately not built
+  (`component-test-discipline.md`).
+- **Full `svelte-check`: 0 errors, 0 warnings** (clean run after formatting).
+- **jsdom suite: 3,676 passed / 23 failed — the identical 23 pre-existing unrelated
+  failures**, zero new.
+- Reversal-dot policy untouched: no fix touches reversal logic or display
+  (prop-channel-only per `63a3840053` stands).
+
+**Still open:** Wave 1 (free widening) and Wave 2 (extras retirement) — gated on approval.
