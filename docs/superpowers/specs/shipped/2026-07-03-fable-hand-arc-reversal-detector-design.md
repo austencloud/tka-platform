@@ -55,3 +55,78 @@ Consequence: comparing only `rotationDirection` sees prop/full-style spin flips 
 
 - Root cause **A** shared with Spec 1 — a unified motion-signal model serves both.
 - **Ship-ordering dependency on Spec 3** (above). Coordinate.
+
+---
+
+## Completion note — 2026-07-05 (Fable)
+
+**Shipped and ENABLED.** Ship-gate verified satisfied before enabling:
+`CONTENT_HASH_VERSION === HASH_VERSION_V2` at
+`src/lib/shared/library/services/sequence-content-hasher.ts:51` — derived
+reversal flags are no longer identity-bearing, so enabling cannot fork
+sequence identity. (The render-cache key `foundation/services/content-hasher.ts`
+still includes the flags, correctly: dots change the rendered output, so
+affected pictographs re-render once.)
+
+### Ground truth re-verified (MCP, this session)
+
+- `get_term_definition("pro")` / `("reversal")` — pro = prop rotates same
+  direction as the hand's arc; three reversal types (hand / prop / full), all
+  dotted.
+- `get_pictograph_data("A")` vs `("B")` — decisive canonical proof that
+  `rotationDirection` records the PROP's spin, not the hand's arc: identical
+  blue hand path w→n (clockwise arc), A (pro) stores `cw`, B (anti) stores
+  `ccw`. Hence the rotation-only detector was blind to hand reversals.
+
+### Open decisions resolved
+
+- **Hand-arc computation: hybrid.** Authored `handPath` (app view field) wins
+  when present — it exists precisely for floats ("no rotation to derive from")
+  and skewed long-way arcs that endpoint geometry cannot see. Fallback:
+  endpoint geometry on the 8-point circle (shortest arc; static and
+  dash/opposite have no arc), the same convention as the pre-existing
+  primitives `HAND_ROTATION_DIRECTION_MAP` (engine loop maps, proven equal on
+  all 32 pairs by test), `deriveHandPath` (pictograph-preparer), and
+  `calculateRotationDirection` (hand-path-motion-calculator). Orientation
+  delta rejected: orientation is a prop property subject to turn parity, not a
+  hand-path signal.
+- **Consolidate (not converge).** One canonical detector:
+  `deriveReversals(steps, { loop })` in
+  `packages/sequence-engine/src/analysis/deriveReversals.ts`, using
+  `analysis/motion-signals.ts` (`handArcDirection`, `propRotationDirection` —
+  the unified motion-signal model Spec 1 shares). The app's
+  `processReversals`/option-preview module
+  (`src/lib/shared/create/services/reversal-detector.ts`) is now a thin
+  adapter delegating to it. The engine's `ReversalDetector` class (third
+  implementation, zero consumers — verified) was deleted.
+- **Canonical semantics = production semantics.** Loop-wrap for loop
+  sequences (a loop is cyclic; step 1's predecessor is the last step) and
+  transparent chains (blanks / noRotation / arc-less motions never flag,
+  never anchor, never break the chain — consistent with how the prop chain
+  always treated statics). The engine functions' chain-breaking blank
+  semantics were drift from production, not design; the deck reversal system
+  ("WYSIWYG") depends on parity with production, re-proven by the untouched
+  `reversal-matrix-solver.test.ts` passing against the new detector.
+
+### Proof
+
+- Engine: 29 analysis tests (17 deriveReversals + 12 motion-signals) covering
+  all three MCP reversal types, float-via-handPath reversals, loop wrap,
+  blank transparency, geometry↔legacy-map agreement on all 32 location pairs;
+  full engine suite 267/267 green.
+- App: 11 new tests through the production API (three types, loop wrap,
+  option previews now hand-arc aware); pre-existing
+  `ReversalDetectionService.test.ts` (13) and `reversal-matrix-solver.test.ts`
+  (3) pass UNCHANGED — legacy prop-flip behavior and deck WYSIWYG preserved.
+- Corpus (`tests/unit/hand-arc-reversal-impact.test.ts`, 460 published
+  sequences / 6188 steps): **0 legacy dots suppressed** (hard assert — the
+  guardrail), 2582 reversal cells gained (1032 → 3614; blue 1222, red 1360),
+  **318/460 sequences (69%) gain ≥1 dot** (279 loop, 39 non-loop). Spot-check
+  verified by hand on corpus word `AABB`: gained dots land exactly where the
+  hand returns to its previous point while the prop continues (A→B pro→anti
+  boundaries) — verbatim the MCP hand-reversal definition.
+- `svelte-check`: 0 errors, 0 warnings.
+
+Display-level effect (expected): reversal dots increase on cards/UI for 69%
+of the published corpus; render caches for those sequences invalidate once.
+Identity hashes are untouched (V2 excludes the flags).

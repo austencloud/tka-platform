@@ -35,4 +35,13 @@ export type {
 export {
   deriveReversals,
   type StepReversals,
+  type DeriveReversalsOptions,
+  type ReversalStepLike,
 } from "./analysis/deriveReversals.js";
+export {
+  handArcDirection,
+  propRotationDirection,
+  type ArcDirection,
+  type PropRotation,
+  type MotionSignalSource,
+} from "./analysis/motion-signals.js";

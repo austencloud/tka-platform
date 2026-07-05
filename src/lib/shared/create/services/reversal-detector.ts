@@ -1,14 +1,28 @@
 /**
  * reversal-detector.ts
  *
- * Detects reversals between steps in sequences based on prop rotation direction changes.
- * Ported from desktop app's ReversalDetector logic.
+ * App adapter over THE canonical reversal detector,
+ * `deriveReversals` in `@tka/sequence-engine` (hand-arc aware since
+ * 2026-07-05). This module keeps the app-facing API (SequenceData in,
+ * StepData out, option-preview helpers) and delegates all detection
+ * semantics — loop wrap, transparent blank/noRotation chains, and the
+ * two-signal (prop rotation + hand arc) reversal rule — to the engine.
+ *
+ * Why two signals: pro/anti is the relation between prop rotation and the
+ * hand's arc (MCP ground truth). Comparing `rotationDirection` alone missed
+ * hand reversals (hand retraces, prop spin unchanged). See
+ * packages/sequence-engine/src/analysis/deriveReversals.ts for the canon.
  */
 
+import {
+  deriveReversals,
+  handArcDirection,
+  propRotationDirection,
+  type MotionSignalSource,
+} from "@tka/sequence-engine";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createStepData } from "$lib/shared/create/factories/create-step-data";
 
 /**
@@ -29,34 +43,19 @@ export interface PictographWithReversals extends PictographData {
  *
  * For loop sequences (rotated, mirrored, etc.) the last steps wrap into the
  * first steps, so step 1's "previous" context includes the tail of the
- * sequence. We build a virtual prefix from the end of the sequence so that
- * early steps can detect reversals across the loop boundary.
+ * sequence — the engine detector handles the wrap when `loop` is set.
  */
 export function processReversals(sequence: SequenceData): SequenceData {
-  const isLoop = !!sequence.loopType;
-  const steps = sequence.steps;
-  const processedSteps: StepData[] = [];
+  const flags = deriveReversals(sequence.steps, {
+    loop: !!sequence.loopType,
+  });
 
-  for (let i = 0; i < steps.length; i++) {
-    const currentStep = steps[i]!;
-
-    // For loop sequences, early steps that have no prior context (or only
-    // noRotation predecessors) can look back through the tail of the sequence.
-    // We concatenate the full sequence before the current slice so that
-    // _getLastValidPropRotDir can walk backwards across the loop boundary.
-    let previousSteps: StepData[];
-    if (isLoop && i < steps.length) {
-      // Wrap: [...allSteps, ...stepsBeforeCurrent]
-      previousSteps = [...steps, ...steps.slice(0, i)];
-    } else {
-      previousSteps = steps.slice(0, i);
-    }
-
-    const reversalInfo = detectReversal(previousSteps, currentStep);
-    const processedStep = applyReversalSymbols(currentStep, reversalInfo);
-
-    processedSteps.push(processedStep);
-  }
+  const processedSteps = sequence.steps.map((step, i) =>
+    applyReversalSymbols(step, {
+      blueReversal: flags[i]?.blue ?? false,
+      redReversal: flags[i]?.red ?? false,
+    })
+  );
 
   return {
     ...sequence,
@@ -65,38 +64,19 @@ export function processReversals(sequence: SequenceData): SequenceData {
 }
 
 /**
- * Detect reversal for a single step based on previous steps
+ * Detect reversal for a single step based on previous steps (non-loop
+ * context: no wrap).
  */
 export function detectReversal(
   previousSteps: StepData[],
   currentStep: StepData
 ): ReversalInfo {
-  const reversalInfo: ReversalInfo = {
-    blueReversal: false,
-    redReversal: false,
+  const flags = deriveReversals([...previousSteps, currentStep]);
+  const last = flags[flags.length - 1];
+  return {
+    blueReversal: last?.blue ?? false,
+    redReversal: last?.red ?? false,
   };
-
-  if (currentStep.isBlank) {
-    return reversalInfo;
-  }
-
-  // Check blue motion reversal
-  const lastBluePropRotDir = getLastValidPropRotDir(previousSteps, "blue");
-  const currentBluePropRotDir = getPropRotDir(currentStep, "blue");
-
-  if (isReversal(lastBluePropRotDir, currentBluePropRotDir)) {
-    reversalInfo.blueReversal = true;
-  }
-
-  // Check red motion reversal
-  const lastRedPropRotDir = getLastValidPropRotDir(previousSteps, "red");
-  const currentRedPropRotDir = getPropRotDir(currentStep, "red");
-
-  if (isReversal(lastRedPropRotDir, currentRedPropRotDir)) {
-    reversalInfo.redReversal = true;
-  }
-
-  return reversalInfo;
 }
 
 /**
@@ -135,34 +115,16 @@ export function detectReversalForOption(
     return reversalInfo;
   }
 
-  // Get the last valid prop rotation directions from the current sequence
-  const lastBluePropRotDir = getLastValidPropRotDirFromSequence(
+  reversalInfo.blueReversal = optionFlips(
     currentSequence,
-    "blue"
-  );
-  const lastRedPropRotDir = getLastValidPropRotDirFromSequence(
-    currentSequence,
-    "red"
-  );
-
-  // Get the prop rotation directions from the option's motion data
-  const optionBluePropRotDir = getPropRotDirFromPictographData(
     optionPictographData,
     "blue"
   );
-  const optionRedPropRotDir = getPropRotDirFromPictographData(
+  reversalInfo.redReversal = optionFlips(
+    currentSequence,
     optionPictographData,
     "red"
   );
-
-  // Check for reversals
-  if (isReversal(lastBluePropRotDir, optionBluePropRotDir)) {
-    reversalInfo.blueReversal = true;
-  }
-
-  if (isReversal(lastRedPropRotDir, optionRedPropRotDir)) {
-    reversalInfo.redReversal = true;
-  }
 
   return reversalInfo;
 }
@@ -184,43 +146,18 @@ export function detectReversalsForOptions(
     }));
   }
 
-  // Get the last valid prop rotation directions from the current sequence
-  const lastBluePropRotDir = getLastValidPropRotDirFromPictographs(
-    currentSequence,
-    "blue"
-  );
-  const lastRedPropRotDir = getLastValidPropRotDirFromPictographs(
-    currentSequence,
-    "red"
-  );
+  // Anchor once for the whole option set.
+  const blueAnchor = lastActiveSignals(currentSequence, "blue");
+  const redAnchor = lastActiveSignals(currentSequence, "red");
 
-  // Process each option and add reversal information
   return options.map((option) => {
-    const reversalInfo: ReversalInfo = {
-      blueReversal: false,
-      redReversal: false,
-    };
-
     if (!option.motions) {
-      return { ...option, ...reversalInfo };
+      return { ...option, blueReversal: false, redReversal: false };
     }
-
-    // Get the prop rotation directions from the option's motion data
-    const optionBluePropRotDir = getPropRotDirFromPictographData(option, "blue");
-    const optionRedPropRotDir = getPropRotDirFromPictographData(option, "red");
-
-    // Check for reversals
-    if (isReversal(lastBluePropRotDir, optionBluePropRotDir)) {
-      reversalInfo.blueReversal = true;
-    }
-
-    if (isReversal(lastRedPropRotDir, optionRedPropRotDir)) {
-      reversalInfo.redReversal = true;
-    }
-
     return {
       ...option,
-      ...reversalInfo,
+      blueReversal: flipsAgainst(blueAnchor, option.motions.blue),
+      redReversal: flipsAgainst(redAnchor, option.motions.red),
     };
   });
 }
@@ -229,104 +166,83 @@ export function detectReversalsForOptions(
 // MODULE-PRIVATE HELPERS
 // ============================================================================
 
-function getLastValidPropRotDir(
-  steps: StepData[],
+interface SignalAnchors {
+  prop: "cw" | "ccw" | null;
+  arc: "cw" | "ccw" | null;
+}
+
+interface SignalCarrier {
+  readonly isBlank?: boolean;
+  readonly motions?: {
+    readonly blue?: MotionSignalSource | null;
+    readonly red?: MotionSignalSource | null;
+  } | null;
+}
+
+/**
+ * Last active prop-rotation and hand-arc values for one hand, walking
+ * backwards through the sequence. Each signal anchors independently and looks
+ * past blanks / inactive values (production chain semantics).
+ */
+function lastActiveSignals(
+  items: readonly SignalCarrier[],
   color: "blue" | "red"
-): string | null {
-  for (let i = steps.length - 1; i >= 0; i--) {
-    const step = steps[i]!;
-    const propRotDir = getPropRotDir(step, color);
+): SignalAnchors {
+  let prop: "cw" | "ccw" | null = null;
+  let arc: "cw" | "ccw" | null = null;
 
-    if (propRotDir && propRotDir !== "noRotation") {
-      return propRotDir;
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    if (!item || item.isBlank) continue;
+    const motion = item.motions?.[color];
+    if (!motion) continue;
+
+    if (prop === null) {
+      const p = propRotationDirection(motion);
+      if (p === "cw" || p === "ccw") prop = p;
     }
+    if (arc === null) {
+      arc = handArcDirection(motion);
+    }
+    if (prop !== null && arc !== null) break;
   }
-  return null;
+
+  return { prop, arc };
 }
 
-function getPropRotDir(step: StepData, color: "blue" | "red"): string | null {
-  if (!step || step.isBlank) {
-    return null;
-  }
-
-  // Use current data structure: motions[MotionColor]
-  const motionColor = color === "blue" ? MotionColor.BLUE : MotionColor.RED;
-  const motionData = step.motions[motionColor];
-
-  if (!motionData) {
-    return null;
-  }
-
-  // PRIMARY: Use rotationDirection if present
-  if (motionData.rotationDirection) {
-    return motionData.rotationDirection;
-  }
-
-  // Static and dash motions legitimately have no rotation - the prop doesn't
-  // spin during these motions, so rotationDirection is intentionally absent.
-  // Treat the missing value as "noRotation" rather than warning.
-  if (motionData.motionType === "static" || motionData.motionType === "dash") {
-    return "noRotation";
-  }
-
-  // Pro/anti/float motions should always have a rotationDirection. If one
-  // really is missing here it's bad data - warn and fall through to cw so
-  // downstream reversal detection doesn't crash.
-  console.warn(
-    `Missing rotationDirection for ${color} at step ${step.stepNumber}. ` +
-      `Motion type: ${motionData.motionType}. Defaulting to 'cw'.`
-  );
-
-  return "cw";
-}
-
-function isReversal(
-  lastPropRotDir: string | null,
-  currentPropRotDir: string | null
+/**
+ * Reversal rule for an option's motion against the sequence anchors: either
+ * the prop rotation or the hand arc flips. The option's prop side reads the
+ * raw rotationDirection (no bad-data defaulting), preserving the pre-existing
+ * option-preview behavior; the arc side is the new hand-reversal signal.
+ */
+function flipsAgainst(
+  anchors: SignalAnchors,
+  motion: MotionSignalSource | null | undefined
 ): boolean {
-  // If either is null or noRotation, no reversal
-  if (
-    !lastPropRotDir ||
-    !currentPropRotDir ||
-    lastPropRotDir === "noRotation" ||
-    currentPropRotDir === "noRotation"
-  ) {
-    return false;
-  }
+  if (!motion) return false;
 
-  // If directions are different, it's a reversal
-  return lastPropRotDir !== currentPropRotDir;
+  const curProp = motion.rotationDirection || null;
+  const propFlip =
+    anchors.prop !== null &&
+    curProp !== null &&
+    curProp !== "noRotation" &&
+    curProp !== anchors.prop;
+
+  const curArc = handArcDirection(motion);
+  const arcFlip =
+    anchors.arc !== null && curArc !== null && curArc !== anchors.arc;
+
+  return propFlip || arcFlip;
 }
 
-function getLastValidPropRotDirFromSequence(
-  steps: StepData[],
+function optionFlips(
+  currentSequence: readonly SignalCarrier[],
+  option: PictographData,
   color: "blue" | "red"
-): string | null {
-  for (let i = steps.length - 1; i >= 0; i--) {
-    const step = steps[i];
-    if (step && !step.isBlank) {
-      const propRotDir = getPropRotDir(step, color);
-      if (propRotDir && propRotDir !== "noRotation") {
-        return propRotDir;
-      }
-    }
-  }
-  return null;
-}
-
-function getPropRotDirFromPictographData(
-  pictographData: PictographData,
-  color: "blue" | "red"
-): string | null {
-  const motionColor = color === "blue" ? MotionColor.BLUE : MotionColor.RED;
-  const motionData = pictographData.motions[motionColor];
-
-  if (!motionData) {
-    return null;
-  }
-
-  const rotationDirection = motionData.rotationDirection;
-  return rotationDirection || null;
+): boolean {
+  const anchors = lastActiveSignals(currentSequence, color);
+  return flipsAgainst(anchors, option.motions?.[color]);
 }
 
 // ============================================================================
@@ -342,19 +258,3 @@ export const reversalDetector = {
 
 /** Structural type matching the reversal-detector module's public API. */
 export type ReversalDetector = typeof reversalDetector;
-
-function getLastValidPropRotDirFromPictographs(
-  pictographs: PictographData[],
-  color: "blue" | "red"
-): string | null {
-  for (let i = pictographs.length - 1; i >= 0; i--) {
-    const pictograph = pictographs[i]!;
-    if (pictograph.motions) {
-      const propRotDir = getPropRotDirFromPictographData(pictograph, color);
-      if (propRotDir && propRotDir !== "noRotation") {
-        return propRotDir;
-      }
-    }
-  }
-  return null;
-}
